@@ -25,19 +25,39 @@ from beeai_framework.agents.runners.granite.prompts import (
 from beeai_framework.agents.types import BeeAgentTemplates, BeeRunInput
 from beeai_framework.backend.message import Message, MessageInput
 from beeai_framework.memory.base_memory import BaseMemory
-from beeai_framework.parsers.line_prefix import LinePrefixParser, Prefix
+from beeai_framework.parsers.field import ParserField
+from beeai_framework.parsers.line_prefix import LinePrefixParser, LinePrefixParserNode
+from beeai_framework.utils.strings import create_strenum
 
 
 class GraniteRunner(DefaultRunner):
     def create_parser(self) -> LinePrefixParser:
-        """Prefixes are renamed for granite"""
-        prefixes = [
-            Prefix(name="thought", line_prefix="Thought: "),
-            Prefix(name="tool_name", line_prefix="Tool Name: "),
-            Prefix(name="tool_input", line_prefix="Tool Input: ", terminal=True),
-            Prefix(name="final_answer", line_prefix="Final Answer: ", terminal=True),
-        ]
-        return LinePrefixParser(prefixes)
+        tool_names = create_strenum("ToolsEnum", [tool.name for tool in self._input.tools])
+
+        return LinePrefixParser(
+            {
+                "thought": LinePrefixParserNode(
+                    prefix="Thought: ",
+                    field=ParserField.from_type(str),
+                    is_start=True,
+                    next=["tool_name", "final_answer"],
+                ),
+                "tool_name": LinePrefixParserNode(
+                    prefix="Tool Name: ",
+                    field=ParserField.from_type(tool_names, lambda v: v.trim()),
+                    next=["tool_input"],
+                ),  # validate enum
+                "tool_input": LinePrefixParserNode(
+                    prefix="Tool Input: ", field=ParserField.from_type(dict), next=["tool_output"]
+                ),
+                "tool_output": LinePrefixParserNode(
+                    prefix="Function Input: ", field=ParserField.from_type(str), is_end=True, next=["final_answer"]
+                ),
+                "final_answer": LinePrefixParserNode(
+                    prefix="Final Answer: ", field=ParserField.from_type(str), is_end=True, is_start=True
+                ),
+            }
+        )
 
     def default_templates(self) -> BeeAgentTemplates:
         return BeeAgentTemplates(

@@ -42,9 +42,11 @@ from beeai_framework.backend.message import SystemMessage, UserMessage
 from beeai_framework.emitter.emitter import Emitter, EventMeta
 from beeai_framework.memory.base_memory import BaseMemory
 from beeai_framework.memory.token_memory import TokenMemory
-from beeai_framework.parsers.line_prefix import LinePrefixParser, Prefix
+from beeai_framework.parsers.field import ParserField
+from beeai_framework.parsers.line_prefix import LinePrefixParser, LinePrefixParserNode
 from beeai_framework.tools import ToolError, ToolInputValidationError
 from beeai_framework.tools.tool import StringToolOutput, Tool, ToolOutput
+from beeai_framework.utils.strings import create_strenum
 
 
 class DefaultRunner(BaseRunner):
@@ -58,15 +60,34 @@ class DefaultRunner(BaseRunner):
         )
 
     def create_parser(self) -> LinePrefixParser:
-        # TODO: implement transitions rules
-        # TODO Enforce set of prefix names
-        prefixes = [
-            Prefix(name="thought", line_prefix="Thought: "),
-            Prefix(name="tool_name", line_prefix="Function Name: "),
-            Prefix(name="tool_input", line_prefix="Function Input: ", terminal=True),
-            Prefix(name="final_answer", line_prefix="Final Answer: ", terminal=True),
-        ]
-        return LinePrefixParser(prefixes)
+        tool_names = create_strenum("ToolsEnum", [tool.name for tool in self._input.tools])
+
+        return LinePrefixParser(
+            {
+                "thought": LinePrefixParserNode(
+                    prefix="Thought: ",
+                    field=ParserField.from_type(str),
+                    is_start=True,
+                    next=["tool_name", "final_answer"],
+                ),
+                "tool_name": LinePrefixParserNode(
+                    prefix="Function Name: ",
+                    field=ParserField.from_type(tool_names, lambda v: v.trim()),
+                    next=["tool_input"],
+                ),  # validate enum
+                "tool_input": LinePrefixParserNode(
+                    prefix="Function Input: ",
+                    field=ParserField.from_type(dict),
+                    next=["tool_output"],
+                ),
+                "tool_output": LinePrefixParserNode(
+                    prefix="Function Input: ", field=ParserField.from_type(str), is_end=True, next=["final_answer"]
+                ),
+                "final_answer": LinePrefixParserNode(
+                    prefix="Final Answer: ", field=ParserField.from_type(str), is_end=True, is_start=True
+                ),
+            }
+        )
 
     async def llm(self, input: BeeRunnerLLMInput) -> BeeAgentRunIteration:
         await input.emitter.emit("start", {"meta": input.meta, "tools": self._input.tools, "memory": self.memory})
