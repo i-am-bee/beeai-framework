@@ -38,18 +38,20 @@ class WikipediaSearchTool(Tool[WikipediaSearchToolInput]):
     name = "Wikipedia"
     description = "Search factual and historical information, including biography, history, politics, geography, society, culture, science, technology, people, animal species, mathematics, and other subjects."
     input_schema = WikipediaSearchToolInput
-    wiki_wiki = wikipediaapi.Wikipedia(user_agent="beeai-framework https://github.com/i-am-bee/beeai-framework", language='en')
+    client = wikipediaapi.Wikipedia(user_agent="beeai-framework https://github.com/i-am-bee/beeai-framework", language='en')
 
-    def __init__(self) -> None:
+    def __init__(self, full_text: bool = False) -> None:
         super().__init__()
+        self.full_text = full_text
 
     def _run(self, input: WikipediaSearchToolInput, _: Any | None = None) -> WikipediaSearchToolOutput:
         try:
-            page_py = self.wiki_wiki.page(input.query)
+            page_py = self.client.page(input.query)
             if(page_py.exists()):
+                description_output = page_py.text if self.full_text else page_py.summary 
                 search_results: list[WikipediaSearchToolResult] = [
                     WikipediaSearchToolResult(
-                        title=input.query or "", description=page_py.summary or "", url=page_py.fullurl or ""
+                        title=input.query or "", description=description_output or "", url=page_py.fullurl or ""
                     )
                 ]
                 return WikipediaSearchToolOutput(search_results)
