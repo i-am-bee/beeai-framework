@@ -38,6 +38,7 @@ wikipedia = "^1.4.0"
 mcp = "^1.2.0"
 duckduckgo-search = "^7.3.2"
 json-repair = "^0.39.0"
+wikipedia-api = "^0.8.1"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^8.3.4"
@@ -71,7 +72,6 @@ major_version_zero = true
 bump_message = "chore: python release $new_version"
 
 [tool.pytest.ini_options]
-addopts = "-v --cov --cov-report html"
 testpaths = ["tests", "beeai_framework"]
 python_files = ["test_*.py", "*_test.py"]
 markers = [
