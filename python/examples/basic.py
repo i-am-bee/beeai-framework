@@ -7,7 +7,7 @@ from beeai_framework.memory.unconstrained_memory import UnconstrainedMemory
 
 
 async def main() -> None:
-    chat_model = await ChatModel.from_name("ollama:llama3.1")
+    chat_model = ChatModel.from_name("ollama:llama3.1")
 
     agent = BeeAgent(BeeInput(llm=chat_model, tools=[], memory=UnconstrainedMemory()))
 

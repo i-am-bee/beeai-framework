@@ -27,7 +27,7 @@ Arguments
 
 
 async def main(model: str) -> None:
-    chat_model = await ChatModel.from_name(model)
+    chat_model = ChatModel.from_name(model)
     bee_input = BeeInput(llm=chat_model, tools=[], memory=UnconstrainedMemory())
     agent = BeeAgent(bee_input)
 

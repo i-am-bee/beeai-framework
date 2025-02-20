@@ -57,6 +57,7 @@ class MonorepoCommitsCz(ConventionalCommitsCz):
                             "tools",
                             "cache",
                             "emitter",
+                            "examples",
                             "internals",
                             "logger",
                             "memory",

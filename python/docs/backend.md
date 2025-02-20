@@ -28,7 +28,7 @@ The following table depicts supported providers.
 
 > [!TIP]
 >
-> If you don't see your provider raise an issue [here](https://github.com/i-am-bee/bee-py/discussions). Meanwhile, you can use [Ollama adapter](/examples/backend/providers/ollama.py).
+> If you don't see your provider raise an issue [here](https://github.com/i-am-bee/beeai-framework/discussions). Meanwhile, you can use [Ollama adapter](/examples/backend/providers/ollama.py).
 
 ### Initialization
 

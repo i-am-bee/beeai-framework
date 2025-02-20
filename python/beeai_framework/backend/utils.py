@@ -58,11 +58,10 @@ def parse_model(name: str) -> ProviderModelDef:
     )
 
 
-async def load_model(name: ProviderName | str, model_type: Literal["embedding", "chat"] = "chat") -> type[T]:
+def load_model(name: ProviderName | str, model_type: Literal["embedding", "chat"] = "chat") -> type[T]:
     parsed = parse_model(name)
     provider_def = parsed.provider_def
 
-    # TODO: rename `beeai` to `beeai_framework`
     module_path = f"beeai_framework.adapters.{provider_def.module}.backend.{model_type}"
     module = import_module(module_path)
 

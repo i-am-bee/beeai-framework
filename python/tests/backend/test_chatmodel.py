@@ -135,11 +135,10 @@ async def test_chat_model_abort(reverse_words_chat: ChatModel, chat_messages_lis
         print("No response returned.")
 
 
-@pytest.mark.asyncio
 @pytest.mark.unit
-async def test_chat_model_from() -> None:
-    ollama_chat_model = await ChatModel.from_name("ollama:llama3.1")
+def test_chat_model_from() -> None:
+    ollama_chat_model = ChatModel.from_name("ollama:llama3.1")
     assert isinstance(ollama_chat_model, OllamaChatModel)
 
-    watsonx_chat_model = await ChatModel.from_name("watsonx:ibm/granite-3-8b-instruct")
+    watsonx_chat_model = ChatModel.from_name("watsonx:ibm/granite-3-8b-instruct")
     assert isinstance(watsonx_chat_model, WatsonxChatModel)

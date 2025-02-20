@@ -69,7 +69,7 @@ from beeai_framework.workflows.workflow import WorkflowError
 
 
 async def main() -> None:
-    llm = await ChatModel.from_name("ollama:granite3.1-dense:8b")
+    llm = ChatModel.from_name("ollama:granite3.1-dense:8b")
 
     try:
         workflow = AgentWorkflow(name="Smart assistant")

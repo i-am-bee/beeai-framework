@@ -34,7 +34,7 @@ from beeai_framework.tools.weather.openmeteo import OpenMeteoTool
 @pytest.mark.asyncio
 @pytest.mark.e2e
 async def test_runner_init() -> None:
-    llm: ChatModel = await ChatModel.from_name("ollama:granite3.1-dense:8b")
+    llm: ChatModel = ChatModel.from_name("ollama:granite3.1-dense:8b")
 
     input = BeeInput(
         llm=llm,

@@ -7,14 +7,14 @@
 </p>
 
 <h1 align="center">BeeAI Framework</h1>
+<p align="center"> <b>Build production-ready multi-agent systems</b><br> </p>
 
-BeeAI Framework is an open-source library for building **production-ready multi-agent systems**.<br>
-The framework is available both as a [Python](/python/docs) and [TypeScript](/typescript/docs) library. 
+BeeAI framework is available both as a [Python](/python/docs) and [TypeScript](/typescript/docs) library. 
 We are committed to maintaining parity between the two.
 
 ## Latest updates
 
-- 🚀 **2025-02-19**: Launched an alpha of the Python library and rebranded to BeeAI Framework. See our [getting started guide](/python/docs).
+- 🐍 **2025-02-19**: Launched an alpha of the Python library and rebranded to BeeAI Framework. See our [getting started guide](/python/docs).
 - 🚀 **2025-02-07**: Introduced [Backend](/typescript/docs/backend.md) module to simplify working with AI services (chat, embedding). See our [migration guide](/typescript/docs/migration_guide.md).
 - 🧠 **2025-01-28**: Added support for [DeepSeek R1](https://api-docs.deepseek.com/news/news250120), check out the [Competitive Analysis Workflow example](/typescript/examples/workflows/competitive-analysis)
 - 🚀 **2025-01-09**:
@@ -25,13 +25,13 @@ We are committed to maintaining parity between the two.
 
 For a full changelog, see our [releases page](https://github.com/i-am-bee/beeai-framework/releases).
 
-## Why pick BeeAI?
+## Why BeeAI?
 
-**🏆 Build the optimal agent architecture for your use case.** To design the right architecture for your use case, you need flexibility in both orchestrating agents and defining their roles and behaviors. With the BeeAI framework, you can implement any multi-agent pattern using [Workflows](/python/docs/workflows.md). Start with our out-of-the-box [ReActAgent](/python/examples/agents/bee.py), or easily [customize your own agent](/python/docs/agents.md#creating-your-own-agent).
+**🏆 Build for your use case.**  Implement simple to complex multi-agent patterns using [Workflows](/python/docs/workflows.md), start with a [ReActAgent](/python/examples/agents/bee.py), or easily [build your own agent architecture](/python/docs/agents.md#creating-your-own-agent). There is no one-size-fits-all agent architecture, you need full flexibility in orchestrating agents and defining their roles and behaviors. 
 
-**🚀 Scale effortlessly with production-grade controls.** Deploying multi-agent systems requires efficient resource management and reliability. With the BeeAI framework, you can optimize token usage through [memory strategies](/python/docs/memory.md), persist and restore agent state via  [(de)serialization](/python/docs/serialization.md), generate structured outputs, and execute generated code in a sandboxed environment. When things go wrong, BeeAI helps you track the full agent workflow through [events](/python/docs/emitter.md), collect [telemetry](/python/docs/instrumentation.md), log diagnostic data, and handle errors with clear, well-defined [exceptions](/python/docs/errors.md).
+**🔌 Seamlessly integrate with your models and tools.** Get started with any model from [Ollama](/python/examples/backend/providers/ollama.py), [watsonx.ai](/python/examples/backend/providers/watsonx.py), and [more](/python/docs/backend.md). Leverage tools from [LangChain](https://python.langchain.com/docs/integrations/tools/), connect to any server using the [Model Context Protocol](/python/docs/tools.md#using-the-mcptool-class), or build your own [custom tools](/python/docs/tools.md#using-the-customtool-python-functions). BeeAI is designed to integrate with the systems and capabilities you need.
 
-**🔌 Seamlessly integrate with your models and tools.** Get started with any model from [Ollama](/python/examples/backend/providers/ollama.py), [watsonx.ai](/python/examples/backend/providers/watsonx.py), and [more](/python/docs/backend.md). Leverage tools from [LangChain](https://python.langchain.com/docs/integrations/tools/), connect to any server using the [Model Context Protocol](/python/docs/tools.md#using-the-mcptool-class), or build your own [custom tools](/python/docs/tools.md#using-the-customtool-python-functions). BeeAI is designed for extensibility, allowing you to integrate with the systems and capabilities you need.
+**🚀 Scale with production-grade controls.** Optimize token usage through [memory strategies](/python/docs/memory.md), persist and restore agent state via  [(de)serialization](/python/docs/serialization.md), generate structured outputs, and execute generated code in a sandboxed environment. When things go wrong, BeeAI tracks the full agent workflow through [events](/python/docs/emitter.md), collects [telemetry](/python/docs/instrumentation.md), logs diagnostic data, and handles errors with clear, well-defined [exceptions](/python/docs/errors.md). Deploying multi-agent systems requires resource management and reliability.
 
 ## Installation
 
@@ -139,21 +139,21 @@ python [project_name].py
 - More OTTB agent implementations
 - Native tool calling with supported LLM providers
 
-To stay up-to-date with out latest priorities, check out our [public roadmap](https://github.com/orgs/i-am-bee/projects/1/views/2).
+To stay up-to-date on our [public roadmap](https://github.com/orgs/i-am-bee/projects/1/views/2).
 
 ## Contribution guidelines
 
-The BeeAI Framework is an open-source project and we ❤️ contributions.<br>
+The BeeAI Framework is open-source and we ❤️ contributions.<br>
 
-If you'd like to help build BeeAI, take a look at our [contribution guidelines](/typescript/docs/CONTRIBUTING.md).
+To help build BeeAI, take a look at our [contribution guidelines](/typescript/docs/CONTRIBUTING.md).
 
 ## Bugs
 
-We are using GitHub Issues to manage public bugs. We keep a close eye on this, so before filing a new issue, please check to make sure it hasn't already been logged.
+We use GitHub Issues to manage bugs. Before filing a new issue, please check to make sure it hasn't already been logged. 🙏
 
 ## Code of conduct
 
-This project and everyone participating in it are governed by the [Code of Conduct](./CODE_OF_CONDUCT.md). By participating, you are expected to uphold this code. Please read the [full text](./CODE_OF_CONDUCT.md) so that you can read which actions may or may not be tolerated.
+This project and everyone participating in it are governed by the [Code of Conduct](./CODE_OF_CONDUCT.md). By participating, you are expected to uphold this code. Please read the [full text](./CODE_OF_CONDUCT.md) so that you know which actions may or may not be tolerated.
 
 ## Legal notice
 

@@ -55,17 +55,14 @@ class Run:
         return self._run_tasks().__await__()
 
     def observe(self, fn: Callable[[Emitter], Awaitable[None]]) -> Self:
-        # self.tasks.append(lambda: fn(self.context.emitter))
         self.tasks.append((fn, self.run_context.emitter))
         return self
 
     def context(self, context: GetRunContext) -> Self:
-        # self.tasks.append(lambda: self._set_context(context))
         self.tasks.append((self._set_context, context))
         return self
 
     def middleware(self, fn: Callable[[GetRunContext], None]) -> Self:
-        # self.tasks.append(lambda: fn(self.context))
         self.tasks.append((fn, self.run_context))
         return self
 

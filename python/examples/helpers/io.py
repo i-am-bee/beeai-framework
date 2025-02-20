@@ -1,16 +1,47 @@
-def prompt_input(default: str | None = None) -> str:
-    prompt: str = ""
+import sys
 
-    while prompt == "":
-        user_input = input("User 👤 : ").strip()
-        if user_input:
-            prompt = user_input
-            break
-        elif default:
-            prompt = default
-            print("Empty prompt is not allowed. Using example prompt:\n", default)
-            break
-        else:
-            print("Error: Empty prompt is not allowed. Please try again.")
+from pydantic import BaseModel
+from termcolor import colored
 
-    return prompt
+from beeai_framework.utils.models import ModelLike, to_model_optional
+
+
+class ReaderOptions(BaseModel):
+    fallback: str = ""
+    input: str = "User 👤 : "
+    allow_empty: bool = False
+
+
+class ConsoleReader:
+    def __init__(self, options: ModelLike[ReaderOptions] | None = None) -> None:
+        options = to_model_optional(ReaderOptions, options) or ReaderOptions()
+        self.fallback = options.fallback
+        self.input = options.input
+        self.allow_empty = options.allow_empty
+
+    def __iter__(self) -> "ConsoleReader":
+        print("Interactive session has started. To escape, input 'q' and submit.")
+        return self
+
+    def __next__(self) -> str:
+        while True:
+            prompt = input(colored(self.input, "cyan", attrs=["bold"])).strip()
+
+            if prompt == "q":
+                raise StopIteration
+
+            prompt = prompt if prompt else self.fallback
+
+            if not prompt and not self.allow_empty:
+                print("Error: Empty prompt is not allowed. Please try again.")
+                continue
+
+            return prompt
+
+    def write(self, role: str, data: str) -> None:
+        print(colored(role, "red", attrs=["bold"]), data)
+
+    def prompt(self) -> str | None:
+        for prompt in self:
+            return prompt
+        sys.exit()

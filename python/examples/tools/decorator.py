@@ -3,8 +3,8 @@ import json
 from urllib.parse import quote
 
 import requests
-from beeai import BeeAgent, tool
 
+from beeai_framework import BeeAgent, tool
 from beeai_framework.agents.types import BeeInput, BeeRunInput
 from beeai_framework.backend.chat import ChatModel
 from beeai_framework.memory.unconstrained_memory import UnconstrainedMemory
@@ -44,7 +44,7 @@ def basic_calculator(expression: str) -> int:
 async def main() -> None:
     # using the tool in an agent
 
-    chat_model = await ChatModel.from_name("ollama:granite3.1-dense:8b")
+    chat_model = ChatModel.from_name("ollama:granite3.1-dense:8b")
 
     agent = BeeAgent(BeeInput(llm=chat_model, tools=[basic_calculator], memory=UnconstrainedMemory()))
 

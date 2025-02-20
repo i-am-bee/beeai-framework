@@ -11,14 +11,14 @@ from beeai_framework.parsers.line_prefix import LinePrefixParser, Prefix
 
 
 async def ollama_from_name() -> None:
-    llm = await ChatModel.from_name("ollama:llama3.1")
+    llm = ChatModel.from_name("ollama:llama3.1")
     user_message = UserMessage("what states are part of New England?")
     response = await llm.create({"messages": [user_message]})
     print(response.get_text_content())
 
 
 async def ollama_granite_from_name() -> None:
-    llm = await ChatModel.from_name("ollama:granite3.1-dense:8b")
+    llm = ChatModel.from_name("ollama:granite3.1-dense:8b")
     user_message = UserMessage("what states are part of New England?")
     response = await llm.create({"messages": [user_message]})
     print(response.get_text_content())

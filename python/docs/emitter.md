@@ -2,7 +2,7 @@
 
 *Disclaimer: The notes below may refer to the TypeScript version or missing files as the Python version moves toward parity in the near future. Additional Python examples coming soon. TODO*
 
-> Location within the framework `bee-py/emitter`.
+> Location within the framework `python/beeai_framework/emitter`.
 
 An emitter is a core functionality of the framework that allows you to see what is happening under the hood.
 

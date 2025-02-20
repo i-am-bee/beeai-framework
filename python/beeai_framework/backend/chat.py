@@ -18,7 +18,7 @@ from abc import ABC, abstractmethod
 from collections.abc import AsyncGenerator, Callable
 from typing import Annotated, Any, Literal, Self, TypeVar
 
-from pydantic import BaseModel, BeforeValidator, ValidationError
+from pydantic import BaseModel, BeforeValidator, Field, ValidationError
 
 from beeai_framework.backend.constants import ProviderName
 from beeai_framework.backend.errors import ChatModelError
@@ -68,7 +68,7 @@ class ChatConfig(BaseModel):
 
 
 class ChatModelStructureInput(BaseModel):
-    schema: type[T]
+    input_schema: type[T] = Field(..., alias="schema")
     messages: Annotated[list, BeforeValidator(message_validator)]
     abort_signal: AbortSignal | None = None
     max_retries: int | None = None
@@ -270,9 +270,9 @@ IMPORTANT: You MUST answer with a JSON object that matches the JSON schema above
             )
 
     @staticmethod
-    async def from_name(name: str | ProviderName, options: ModelLike[ChatModelParameters] | None = None) -> "ChatModel":
+    def from_name(name: str | ProviderName, options: ModelLike[ChatModelParameters] | None = None) -> "ChatModel":
         parsed_model = parse_model(name)
-        TargetChatModel = await load_model(parsed_model.provider_id, "chat")  # noqa: N806
+        TargetChatModel = load_model(parsed_model.provider_id, "chat")  # noqa: N806
 
         settings = options.model_dump() if isinstance(options, ChatModelParameters) else options
 

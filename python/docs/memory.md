@@ -46,8 +46,8 @@ from beeai_framework.memory.unconstrained_memory import UnconstrainedMemory
 memory = UnconstrainedMemory()
 
 
-async def create_agent() -> BeeAgent:
-    llm = await ChatModel.from_name("ollama:granite3.1-dense:8b")
+def create_agent() -> BeeAgent:
+    llm = ChatModel.from_name("ollama:granite3.1-dense:8b")
 
     # Initialize the agent
     agent = BeeAgent(BeeInput(llm=llm, memory=memory, tools=[]))
@@ -66,7 +66,7 @@ async def main() -> None:
         print("Added user message to memory")
 
         # Create agent
-        agent = await create_agent()
+        agent = create_agent()
 
         response = await agent.run(
             BeeRunInput(
@@ -317,7 +317,7 @@ from beeai_framework.memory.summarize_memory import SummarizeMemory
 async def main() -> None:
     try:
         # Initialize the LLM with parameters
-        llm = await ChatModel.from_name(
+        llm = ChatModel.from_name(
             "ollama:granite3.1-dense:8b",
             # ChatModelParameters(temperature=0\),
         )

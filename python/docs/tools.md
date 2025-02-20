@@ -30,7 +30,7 @@ These tools extend the agent's abilities, allowing it to interact with external 
 | `MilvusDatabaseTool`                                                      | Perform retrieval queries (search, insert, delete, manage collections) against a MilvusDatabaseTool database. |
 | `OpenAPITool`                                                             | Send requests to and receive responses from API server.                                                       |
 | `MCPTool`                                                                 | Discover and use tools exposed by arbitrary [MCP Server](https://modelcontextprotocol.io/examples).           |
-| ➕ [Request](https://github.com/i-am-bee/bee-py/discussions) |                                                                                                               |
+| ➕ [Request](https://github.com/i-am-bee/beeai-framework/discussions) |                                                                                                               |
 
 All examples can be found [here](/examples/tools).
 
@@ -75,8 +75,8 @@ import json
 from urllib.parse import quote
 
 import requests
-from beeai import BeeAgent, tool
 
+from beeai_framework import BeeAgent, tool
 from beeai_framework.agents.types import BeeInput, BeeRunInput
 from beeai_framework.backend.chat import ChatModel
 from beeai_framework.memory.unconstrained_memory import UnconstrainedMemory
@@ -116,7 +116,7 @@ def basic_calculator(expression: str) -> int:
 async def main() -> None:
     # using the tool in an agent
 
-    chat_model = await ChatModel.from_name("ollama:granite3.1-dense:8b")
+    chat_model = ChatModel.from_name("ollama:granite3.1-dense:8b")
 
     agent = BeeAgent(BeeInput(llm=chat_model, tools=[basic_calculator], memory=UnconstrainedMemory()))
 
@@ -147,7 +147,7 @@ from beeai_framework.tools.search.duckduckgo import DuckDuckGoSearchTool
 
 
 async def main() -> None:
-    chat_model = await ChatModel.from_name("ollama:granite3.1-dense:8b")
+    chat_model = ChatModel.from_name("ollama:granite3.1-dense:8b")
     agent = BeeAgent(BeeInput(llm=chat_model, tools=[DuckDuckGoSearchTool()], memory=UnconstrainedMemory()))
 
     result = await agent.run(BeeRunInput(prompt="How tall is the mount Everest?"))
@@ -177,7 +177,7 @@ from beeai_framework.tools.weather.openmeteo import OpenMeteoTool
 
 
 async def main() -> None:
-    llm = await ChatModel.from_name("ollama:granite3.1-dense:8b")
+    llm = ChatModel.from_name("ollama:granite3.1-dense:8b")
     agent = BeeAgent(BeeInput(llm=llm, tools=[OpenMeteoTool()], memory=UnconstrainedMemory()))
 
     result = await agent.run(BeeRunInput(prompt="What's the current weather in Las Vegas?"))
@@ -242,7 +242,7 @@ _Source: examples/tools/custom/openLibrary.py TODO
 
   Note: Convention and best practice is to set the tool's name to the name of its class
 
-  ```pt
+  ```py
   name = "MyNewTool"
   ```
 

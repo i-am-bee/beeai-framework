@@ -69,6 +69,8 @@ class DefaultRunner(BaseRunner):
         return LinePrefixParser(prefixes)
 
     async def llm(self, input: BeeRunnerLLMInput) -> BeeAgentRunIteration:
+        await input.emitter.emit("start", {"meta": input.meta, "tools": self._input.tools, "memory": self.memory})
+
         state: dict[str, Any] = {}
         parser = self.create_parser()
 
@@ -79,6 +81,16 @@ class DefaultRunner(BaseRunner):
             for result in parser.feed(chunk):
                 if result is not None:
                     state[result.prefix.name] = result.content
+
+                    await input.emitter.emit(
+                        "update",
+                        {
+                            "update": {"key": result.prefix.name, "parsedValue": result.content},
+                            "meta": input.meta,
+                            "tools": self._input.tools,
+                            "memory": self.memory,
+                        },
+                    )
 
                     if result.prefix.terminal:
                         abort()
@@ -94,6 +106,16 @@ class DefaultRunner(BaseRunner):
         for result in parser.finalize():
             if result is not None:
                 state[result.prefix.name] = result.content
+
+                await input.emitter.emit(
+                    "update",
+                    {
+                        "update": {"key": result.prefix.name, "parsedValue": result.content},
+                        "meta": input.meta,
+                        "tools": self._input.tools,
+                        "memory": self.memory,
+                    },
+                )
 
         return BeeAgentRunIteration(raw=output, state=BeeIterationResult(**state))
 
