@@ -14,15 +14,18 @@ This series of notebooks will guide you through the features of the BeeAI framew
 
 These notebooks use Ollama and the IBM Granite 3.1 8B LLM.
 
-Here are instructions for [installing Ollama and running Granite 3.1](https://ollama.com/download).
-
 Ollama is a free, open-source tool that lets you run large language models (LLMs) locally on your computer. 🚀
+
+You will need to have Ollama installed with the required model installed.
+
+⚙️ [Install Ollama](https://ollama.com/download/)
+⚙️ Install the IBM Granite 3.1 model using `ollama pull granite3.1-dense:8b`
 
 ⚡ If you'd prefer to use watsonx to run Granite 3.1 instead of Ollama (e.g., if your machine lacks sufficient resources), refer to the [watsonx.ipynb](watsonx.ipynb) notebook, which demonstrates how to use watsonx. You can then substitute the watsonx ChatModel when working through the main series of notebooks. ⚡
 
 ## 🛠 Setup Instructions
 
-⚙️ First clone the beeai-framework repo. 
+⚙️ First clone the beeai-framework repo.
 
 If you frequently work with git and have ssh keys configured:
 
@@ -91,6 +94,7 @@ jupyter-lab examples/notebooks/basics.ipynb --port 9999
 There are three notebooks available. It is recommended to start with [basics.ipynb](basics.ipynb), followed by [workflows.ipynb](workflows.ipynb), and finally [agents.ipynb](agents.ipynb). You can navigate through the notebooks using the embedded links.
 
 The [basics.ipynb](basics.ipynb) notebook introduces the core components of the BeeAI framework, including PromptTemplates, Messages, and Memory. It also covers setting up a ChatModel and generating output.
+
 - If you plan to use watsonx, be sure you have reviewed the supplementary [watsonx.ipynb](watsonx.ipynb) notebook before proceeding.
 
 The [workflows.ipynb](workflows.ipynb) notebook explains how to use BeeAI Workflows to create AI agents of varying complexity. It builds upon the concepts introduced in [basics.ipynb](basics.ipynb).
