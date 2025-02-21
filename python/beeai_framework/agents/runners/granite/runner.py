@@ -22,8 +22,10 @@ from beeai_framework.agents.runners.granite.prompts import (
     GraniteToolNotFoundErrorTemplate,
     GraniteUserPromptTemplate,
 )
-from beeai_framework.agents.types import BeeAgentTemplates, BeeRunInput
-from beeai_framework.backend.message import Message, MessageInput
+from beeai_framework.agents.types import BeeAgentTemplates, BeeInput, BeeRunInput, BeeRunOptions
+from beeai_framework.backend.message import CustomMessage, Message, MessageInput
+from beeai_framework.context import RunContext
+from beeai_framework.emitter import EmitterOptions, EventMeta
 from beeai_framework.memory.base_memory import BaseMemory
 from beeai_framework.parsers.field import ParserField
 from beeai_framework.parsers.line_prefix import LinePrefixParser, LinePrefixParserNode
@@ -31,6 +33,22 @@ from beeai_framework.utils.strings import create_strenum
 
 
 class GraniteRunner(DefaultRunner):
+    def __init__(self, input: BeeInput, options: BeeRunOptions, run: RunContext) -> None:
+        super().__init__(input, options, run)
+
+        async def on_update(data: dict, event: EventMeta) -> None:
+            if data.get("key") == "tool_output":
+                memory: BaseMemory = data.get("memory")
+                await memory.add(
+                    CustomMessage(
+                        role="tool_response",
+                        content=data.get("update").value,
+                        meta={"success": data.get("meta").get("success", True)},
+                    )
+                )
+
+        run.emitter.on("update", on_update, EmitterOptions(is_blocking=True))
+
     def create_parser(self) -> LinePrefixParser:
         tool_names = create_strenum("ToolsEnum", [tool.name for tool in self._input.tools])
 
@@ -46,12 +64,9 @@ class GraniteRunner(DefaultRunner):
                     prefix="Tool Name: ",
                     field=ParserField.from_type(tool_names, lambda v: v.trim()),
                     next=["tool_input"],
-                ),  # validate enum
-                "tool_input": LinePrefixParserNode(
-                    prefix="Tool Input: ", field=ParserField.from_type(dict), next=["tool_output"]
                 ),
-                "tool_output": LinePrefixParserNode(
-                    prefix="Function Input: ", field=ParserField.from_type(str), is_end=True, next=["final_answer"]
+                "tool_input": LinePrefixParserNode(
+                    prefix="Tool Input: ", field=ParserField.from_type(dict), is_end=True, next=[]
                 ),
                 "final_answer": LinePrefixParserNode(
                     prefix="Final Answer: ", field=ParserField.from_type(str), is_end=True, is_start=True

@@ -15,6 +15,7 @@
 import re
 from collections.abc import Sequence
 from enum import StrEnum
+from typing import cast
 
 
 def trim_left_spaces(value: str) -> str:
@@ -37,5 +38,6 @@ def split_string(input: str, size: int = 25, overlap: int = 0) -> list[str]:
     return chunks
 
 
-def create_strenum(name: str, keys: Sequence[str]) -> StrEnum:
-    return StrEnum(name, {value: value for value in keys})
+def create_strenum(name: str, keys: Sequence[str]) -> type[StrEnum]:
+    target = StrEnum(name, {value: value for value in keys})  # type: ignore[misc]
+    return cast(type[StrEnum], target)

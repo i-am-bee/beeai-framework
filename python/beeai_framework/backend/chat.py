@@ -18,7 +18,7 @@ from abc import ABC, abstractmethod
 from collections.abc import AsyncGenerator, Callable
 from typing import Annotated, Any, Literal, Self, TypeVar
 
-from pydantic import BaseModel, BeforeValidator, Field, ValidationError
+from pydantic import BaseModel, BeforeValidator, ConfigDict, Field, ValidationError
 
 from beeai_framework.backend.constants import ProviderName
 from beeai_framework.backend.errors import ChatModelError
@@ -85,6 +85,8 @@ class ChatModelInput(ChatModelParameters):
     response_format: dict[str, Any] | type[BaseModel] = None
     # tool_choice: NoneType # TODO
     messages: Annotated[list, BeforeValidator(message_validator)]
+
+    model_config = ConfigDict(frozen=True)
 
 
 class ChatModelUsage(BaseModel):

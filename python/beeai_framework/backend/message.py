@@ -57,10 +57,13 @@ class MessageInput(BaseModel):
 class Message(Generic[T]):
     role: Role | str
     content: T
+    meta: MessageMeta
 
     def __init__(self, content: T | list[T], meta: MessageMeta | None = None) -> None:
         if meta and not meta.get("createdAt"):
             meta["createdAt"] = datetime.now(tz=UTC)
+
+        self.meta = meta or {}
 
         if isinstance(content, str):
             self.content = [self.from_string(text=content)]
