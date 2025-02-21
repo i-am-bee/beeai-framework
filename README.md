@@ -1,27 +1,29 @@
-<p align="center">
-  <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="/docs/assets/Bee_logo_white.svg">
-    <source media="(prefers-color-scheme: light)" srcset="/docs/assets/Bee_logo_black.svg">
-    <img alt="BeeAI logo" height="90">
-  </picture>
-</p>
 
-<h1 align="center">BeeAI Framework</h1>
-<p align="center"> <b>Build production-ready multi-agent systems</b><br> </p>
+<h1 align="left">BeeAI Framework </h1>
 
-BeeAI framework is available both as a [Python](/python) and [TypeScript](/typescript) library. 
-We are committed to maintaining parity between the two.
+<div align="left">
 
-## Latest updates
+[![Python library](https://img.shields.io/badge/Python-4584b6?style=flat&logo=python&logoColor=white)](https://github.com/i-am-bee/beeai-framework/tree/main/python)
+[![Typescript library](https://img.shields.io/badge/TypeScript-3178c6?style=flat&logo=typescript&logoColor=white)](https://github.com/i-am-bee/beeai-framework/tree/main/typescript)
+[![License](https://img.shields.io/badge/License-Apache%202.0-EA7826?style=flat)](https://github.com/i-am-bee/beeai-framework?tab=Apache-2.0-1-ov-file#readme)
+[![Bluesky](https://img.shields.io/badge/Bluesky-0285FF?style=flat&logo=bluesky&logoColor=white)](https://bsky.app/profile/beeaiagents.bsky.social)
+[![Discord](https://img.shields.io/discord/1309202615556378705?style=social&logo=discord&logoColor=black&label=Discord&labelColor=7289da&color=black)](https://discord.com/invite/NradeA6ZNF)
+[![GitHub Repo stars](https://img.shields.io/github/stars/I-am-bee/beeai-framework)](https://github.com/i-am-bee/beeai-framework)
 
-- 🐍 **2025-02-19**: Launched an alpha of the Python library and rebranded to BeeAI Framework. See our [getting started guide](/python/docs).
-- 🚀 **2025-02-07**: Introduced [Backend](/typescript/docs/backend.md) module to simplify working with AI services (chat, embedding). See our [migration guide](/typescript/docs/migration_guide.md).
-- 🧠 **2025-01-28**: Added support for [DeepSeek R1](https://api-docs.deepseek.com/news/news250120), check out the [Competitive Analysis Workflow example](/typescript/examples/workflows/competitive-analysis)
-- 🚀 **2025-01-09**:
-  - Introduced [Workflows](/typescript/docs/workflows.md), a way of building multi-agent systems.
-  - Added support for [Model Context Protocol](/typescript/docs/tools.md#using-the-mcptool-class), featured on the [official page](https://modelcontextprotocol.io/clients#bee-agent-framework).
-- 🚀 **2024-12-09**: Added support for [LLaMa 3.3](https://huggingface.co/meta-llama/Llama-3.3-70B-Instruct).
-- 🚀 **2024-11-21**: Added an experimental [Streamlit agent](typescript/examples/agents/experimental/streamlit.ts).
+</div>
+
+Build production-ready multi-agent systems in [Python](/python) or [TypeScript](/typescript).
+
+## Latest updates 🚀
+
+- **2025-02-19**: Launched Python library alpha. See [getting started guide](/python/docs)
+- **2025-02-07**: Introduced [Backend](/typescript/docs/backend.md) module to simplify working with AI services (chat, embedding). See [migration guide](/typescript/docs/migration_guide.md)
+- **2025-01-28**: Added support for DeepSeek R1, check out the [Competitive Analysis Workflow example](/typescript/examples/workflows/competitive-analysis)
+- **2025-01-09**:
+  - Introduced [Workflows](/typescript/docs/workflows.md), a way of building multi-agent systems
+  - Added support for [Model Context Protocol](/typescript/docs/tools.md#using-the-mcptool-class)
+- **2024-12-09**: Added support for [LLaMa 3.3](https://huggingface.co/meta-llama/Llama-3.3-70B-Instruct)
+- **2024-11-21**: Added an experimental [Streamlit agent](typescript/examples/agents/experimental/streamlit.ts)
 
 For a full changelog, see our [releases page](https://github.com/i-am-bee/beeai-framework/releases).
 
@@ -132,7 +134,7 @@ python [project_name].py
 
 ## Roadmap
 
-- Python parity with Typescript
+- Python parity with TypeScript
 - Standalone docs site
 - Integration with watsonx.ai for deployment
 - More multi-agent reference architecture implementations using workflows
