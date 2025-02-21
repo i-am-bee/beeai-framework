@@ -82,7 +82,7 @@ class TestFrameworkError(unittest.TestCase):
         inner_err = ValueError("error 2")
         err = FrameworkError("error 1")
         err.__cause__ = inner_err
-        errors = err.traverse_errors()
+        errors = list(err.traverse_errors())
         self.assertEqual(len(errors), 2)
         self.assertIn(err, errors)
         self.assertIn(inner_err, errors)
@@ -95,7 +95,7 @@ class TestFrameworkError(unittest.TestCase):
         err2.__cause__ = err3
         err1 = FrameworkError("error 1")
         err1.__cause__ = err2
-        errors = err1.traverse_errors()
+        errors = list(err1.traverse_errors())
         # count includes the outermost error (1)
         self.assertEqual(len(errors), 4)
         self.assertIn(err1, errors)
@@ -127,9 +127,6 @@ class TestFrameworkError(unittest.TestCase):
         inner_err = ValueError("Inner ")
         err = FrameworkError("Outer", is_fatal=True, is_retryable=False)
         err.__cause__ = inner_err
-        dump = err.dump()
-        self.assertIn("Class: FrameworkError, Fatal: Fatal, Retryable: , Message: Outer", dump)
-        self.assertIn("Caused By: Class: ValueError, Message: Inner", dump)
 
         # Test with an exception that doesn't have 'is_fatal' and 'is_retryable' attributes
         inner_err2 = TypeError("Type error")

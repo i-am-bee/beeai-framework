@@ -14,6 +14,7 @@
 
 
 import json
+from abc import ABC
 from collections.abc import AsyncGenerator
 from typing import Any
 
@@ -52,20 +53,18 @@ class LiteLLMParameters(BaseModel):
     model_config = ConfigDict(extra="allow", arbitrary_types_allowed=True)
 
 
-class LiteLLMChatModel(ChatModel):
+class LiteLLMChatModel(ChatModel, ABC):
     @property
     def model_id(self) -> str:
         return self._model_id
 
-    @property
-    def provider_id(self) -> str:
-        return self._provider_id
-
-    def __init__(self, model_id: str | None = None, **settings: Any) -> None:
+    def __init__(self, model_id: str, **settings: Any) -> None:
+        self._model_id = model_id
         llm_provider = "ollama_chat" if self.provider_id == "ollama" else self.provider_id
-        self.supported_params = get_supported_openai_params(model=self.model_id, custom_llm_provider=llm_provider)
+        self.supported_params = get_supported_openai_params(model=self.model_id, custom_llm_provider=llm_provider) or []
         # drop any unsupported parameters that were passed in
         litellm.drop_params = True
+        self.settings = settings
         super().__init__()
 
     async def _create(
@@ -83,7 +82,7 @@ class LiteLLMChatModel(ChatModel):
             litellm_input.messages.append({"role": Role.ASSISTANT, "content": response_content})
             for tool_call in tool_calls:
                 function_name = tool_call.function.name
-                function_to_call: Tool = next(filter(lambda t: t.name == function_name, input.tools))
+                function_to_call: Tool = next(filter(lambda t: t.name == function_name, input.tools or []))
 
                 function_args = json.loads(tool_call.function.arguments)
                 function_response = function_to_call.run(input=function_args)
@@ -92,7 +91,7 @@ class LiteLLMChatModel(ChatModel):
                 response = await acompletion(**litellm_input.model_dump())
 
         response_output = self._transform_output(response)
-        logger.trace(f"Inference response output:\n{response_output}")
+        logger.debug(f"Inference response output:\n{response_output}")
         return response_output
 
     async def _create_stream(self, input: ChatModelInput, _: RunContext) -> AsyncGenerator[ChatModelOutput]:
@@ -120,7 +119,7 @@ class LiteLLMChatModel(ChatModel):
                 run,
             )
 
-            logger.trace(f"Structured response received:\n{response}")
+            logger.debug(f"Structured response received:\n{response}")
 
             text_response = response.get_text_content()
             result = parse_broken_json(text_response)
@@ -155,8 +154,6 @@ class LiteLLMChatModel(ChatModel):
         usage = choice.get("usage")
 
         if isinstance(chunk, ModelResponseStream):
-            if finish_reason:
-                return None
             content = choice.get("delta", {}).get("content")
             if choice.get("tool_calls"):
                 message = ToolMessage(content)

@@ -22,7 +22,6 @@ from datetime import UTC, datetime
 from typing import Any, TypeVar
 
 from beeai_framework.memory.errors import SerializerError
-from beeai_framework.memory.task_map import SlidingTaskMap, Task
 
 T = TypeVar("T")
 
@@ -187,33 +186,6 @@ Serializer.register(
     {
         "to_plain": lambda x: base64.b64encode(x).decode("utf-8"),
         "from_plain": lambda x: base64.b64decode(x.encode("utf-8")),
-    },
-)
-
-Serializer.register(
-    SlidingTaskMap,
-    {
-        "to_plain": lambda value: {
-            "config": {"size": value.size, "ttl": value.ttl},
-            "entries": list(value.entries()),
-        },
-        "from_plain": lambda data: SlidingTaskMap.from_snapshot(data),
-        "create_empty": lambda: SlidingTaskMap(size=1, ttl=1000),
-        "update_instance": lambda instance, update: instance.load_snapshot(update),
-    },
-)
-
-# Register Task for serialization
-Serializer.register(
-    Task,
-    {
-        "to_plain": lambda task: {
-            "value": task.get_value() if task.is_resolved() else None,
-            "state": task.get_state(),
-        },
-        "from_plain": lambda data: Task.from_snapshot(data),
-        "create_empty": lambda: Task(),
-        "update_instance": lambda instance, update: instance.load_snapshot(update),
     },
 )
 

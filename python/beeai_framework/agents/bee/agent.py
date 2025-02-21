@@ -40,7 +40,7 @@ from beeai_framework.emitter import Emitter, EmitterInput
 from beeai_framework.memory import BaseMemory
 
 
-class BeeAgent(BaseAgent):
+class BeeAgent(BaseAgent[BeeRunOutput]):
     runner: Callable[..., BaseRunner]
 
     def __init__(self, bee_input: BeeInput) -> None:

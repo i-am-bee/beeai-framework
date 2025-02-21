@@ -23,15 +23,15 @@ from pydantic import BaseModel, Field
 
 from beeai_framework.backend import MessageError
 
-T = TypeVar("T")
+T = TypeVar("T", bound=dict)
 MessageMeta = dict[str, Any]
 
 
 class Role(str, Enum):
-    ASSISTANT: str = "assistant"
-    SYSTEM: str = "system"
-    TOOL: str = "tool"
-    USER: str = "user"
+    ASSISTANT = "assistant"
+    SYSTEM = "system"
+    TOOL = "tool"
+    USER = "user"
 
     def __str__(self) -> str:
         return self.value
@@ -56,10 +56,10 @@ class MessageInput(BaseModel):
 
 class Message(Generic[T]):
     role: Role | str
-    content: T
+    content: list[T]
     meta: MessageMeta
 
-    def __init__(self, content: T | list[T], meta: MessageMeta | None = None) -> None:
+    def __init__(self, content: T | list[T] | str, meta: MessageMeta | None = None) -> None:
         if meta and not meta.get("createdAt"):
             meta["createdAt"] = datetime.now(tz=UTC)
 
@@ -71,10 +71,6 @@ class Message(Generic[T]):
             self.content = content
         else:
             self.content = [content]
-
-    @property
-    def role(self) -> Role | str:
-        return self._role
 
     @property
     def text(self) -> str:
@@ -102,7 +98,7 @@ class Message(Generic[T]):
         elif message_input.role == Role.TOOL:
             return ToolMessage(message_input.text, message_input.meta)
         else:
-            return CustomMessage(message_input.role, message_input.text, message_input.meta)
+            return CustomMessage(message_input.role, message_input.text, message_input.meta or {})
 
 
 class AssistantMessage(Message):
@@ -147,11 +143,13 @@ class UserMessage(Message):
 
 
 class CustomMessage(Message):
-    def __init__(self, role: str, content: T, meta: MessageMeta = None) -> None:
+    role: str
+
+    def __init__(self, role: str, content: T | str, meta: MessageMeta = None) -> None:
         super().__init__(content, meta)
-        if not role:
+        self.role = role
+        if not self.role:
             raise MessageError("Role must be specified!")
-        self._role = role
 
     def from_string(self, text: str) -> dict[str, Any]:
         return {"type": "text", "text": text}
