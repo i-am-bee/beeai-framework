@@ -7,7 +7,7 @@
 [![GitHub Repo stars](https://img.shields.io/github/stars/I-am-bee/beeai-framework)](https://github.com/i-am-bee/beeai-framework)
 
 
-Build production-ready multi-agent systems in Python. BeeAI framework is also available in [Typescript](https://github.com/i-am-bee/beeai-framework/tree/main/typescript).
+Build production-ready multi-agent systems in Python. BeeAI framework is also available in [TypeScript](https://github.com/i-am-bee/beeai-framework/tree/main/typescript).
 
 ## Modules
 
