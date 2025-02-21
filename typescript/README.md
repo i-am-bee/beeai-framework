@@ -13,14 +13,6 @@
   <h4 align="center">Build production-ready multi-agent systems</h4>
 </p>
 
-## Why pick BeeAI?
-
-**🏆 Build for your use case.** Implement simple to complex multi-agent patterns using [Workflows](/typescript/docs/workflows.md), start with a [ReActAgent](/typescript/examples/agents/bee.py), or easily [build your own agent architecture](/typescript/docs/agents.md#creating-your-own-agent). There is no one-size-fits-all agent architecture, you need full flexibility in orchestrating agents and defining their roles and behaviors.
-
-**🔌 Seamlessly integrate with your models and tools.** Get started with any model from [Ollama](/typescript/examples/backend/providers/ollama.py), [Groq](/typescript/examples/backend/providers/groq.ts), [OpenAI](/typescript/examples/backend/providers/openai.ts), [watsonx.ai](/typescript/examples/backend/providers/watsonx.py), and [more](/typescript/docs/backend.md). Leverage tools from [LangChain](/typescript/examples/tools/langchain.ts), connect to any server using the [Model Context Protocol](/typescript/docs/tools.md#using-the-mcptool-class), or build your own [custom tools](/typescript/docs/tools.md#using-the-customtool-typescript-functions). BeeAI is designed to integrate with the systems and capabilities you need.
-
-**🚀 Scale with production-grade controls.** Optimize token usage through [memory strategies](/typescript/docs/memory.md), persist and restore agent state via [(de)serialization](/typescript/docs/serialization.md), generate structured outputs, and execute generated code in a sandboxed environment. When things go wrong, BeeAI tracks the full agent workflow through [events](/typescript/docs/emitter.md), collects [telemetry](/typescript/docs/instrumentation.md), logs diagnostic data, and handles [errors](/typescript/docs/errors.md) with clear, well-defined exceptions. Deploying multi-agent systems requires resource management and reliability.
-
 ## Modules
 
 The source directory (`src`) contains the available modules:
