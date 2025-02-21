@@ -17,7 +17,7 @@ from abc import ABC, abstractmethod
 from copy import deepcopy
 from typing import Any, ClassVar, TypeVar
 
-T = TypeVar("T")
+T = TypeVar("T", bound="Serializable")
 
 
 class Serializable(ABC):
@@ -73,7 +73,7 @@ class Serializable(ABC):
     def clone(self: T) -> T:
         """Create a deep copy of the object."""
         snapshot = self.create_snapshot()
-        return self.__class__.from_snapshot(deepcopy(snapshot))
+        return type(self).from_snapshot(deepcopy(snapshot))
 
 
 # Example of how to use the base class:

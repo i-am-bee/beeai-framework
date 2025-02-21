@@ -68,14 +68,6 @@ source .venv/bin/activate
 
 📦 You are now ready to install dependencies:
 
-Install beeai-framework from local package.
-
-```shell
-pip install . 
-```
-
-Install other dependencies.
-
 ```shell
 pip install -r examples/notebooks/requirements.txt
 ```

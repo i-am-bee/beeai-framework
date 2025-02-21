@@ -32,6 +32,7 @@ from beeai_framework.backend.chat import (
 from beeai_framework.backend.message import AssistantMessage, CustomMessage, Message, UserMessage
 from beeai_framework.cancellation import AbortSignal
 from beeai_framework.context import RunContext
+from beeai_framework.errors import AbortError
 
 
 class ReverseWordsDummyModel(ChatModel):
@@ -120,19 +121,10 @@ async def test_chat_model_stream(reverse_words_chat: ChatModel, chat_messages_li
 @pytest.mark.asyncio
 @pytest.mark.unit
 async def test_chat_model_abort(reverse_words_chat: ChatModel, chat_messages_list: list[Message]) -> None:
-    response = await reverse_words_chat.create(
-        {"messages": chat_messages_list, "stream": True, "abort_signal": AbortSignal.timeout(5)}
-    )
-
-    # depending on when the abort occurs the response may be None or a subset of expected response
-    if response is not None:
-        assert len(response.messages) < 4
-        assert all(isinstance(message, AssistantMessage) for message in response.messages)
-        text = response.messages[0].get_texts()[0].get("text")
-        print("Response returned:", text)
-        assert "llet em gnihtemos gnitseretni".startswith(text)
-    else:
-        print("No response returned.")
+    with pytest.raises(AbortError):
+        await reverse_words_chat.create(
+            {"messages": chat_messages_list, "stream": True, "abort_signal": AbortSignal.timeout(2)}
+        )
 
 
 @pytest.mark.unit

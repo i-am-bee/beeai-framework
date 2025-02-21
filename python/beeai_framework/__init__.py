@@ -24,7 +24,6 @@ from beeai_framework.backend import (
     ToolMessage,
     UserMessage,
 )
-from beeai_framework.llms import LLM, AgentInput, BaseLLM
 from beeai_framework.memory import BaseMemory, ReadOnlyMemory, TokenMemory, UnconstrainedMemory
 from beeai_framework.memory.serializable import Serializable
 from beeai_framework.tools import Tool, tool
@@ -32,11 +31,8 @@ from beeai_framework.tools.weather.openmeteo import OpenMeteoTool
 from beeai_framework.utils.templates import Prompt
 
 __all__ = [
-    "LLM",
-    "AgentInput",
     "AssistantMessage",
     "BaseAgent",
-    "BaseLLM",
     "BaseMemory",
     "BeeAgent",
     "CustomMessage",

@@ -14,22 +14,19 @@
 
 
 from collections.abc import Iterable
-from typing import TYPE_CHECKING
 
 from beeai_framework.backend import Message, SystemMessage
+from beeai_framework.backend.chat import ChatModel
 from beeai_framework.backend.message import UserMessage
 from beeai_framework.memory.base_memory import BaseMemory
-
-if TYPE_CHECKING:
-    from beeai_framework.llms import BaseLLM
 
 
 class SummarizeMemory(BaseMemory):
     """Memory implementation that summarizes conversations."""
 
-    def __init__(self, llm: "BaseLLM") -> None:
+    def __init__(self, model: ChatModel) -> None:
         self._messages: list[Message] = []
-        self.llm = llm
+        self.model = model
 
     @property
     def messages(self) -> list[Message]:
@@ -64,7 +61,7 @@ Summary:""".format("\n".join([f"{msg.role}: {msg.text}" for msg in messages]))
         )
 
         # Generate is synchronous, not async
-        response = await self.llm.create({"messages": [prompt]})
+        response = await self.model.create({"messages": [prompt]})
 
         return response.messages[0].get_texts()[0].get("text")
 
