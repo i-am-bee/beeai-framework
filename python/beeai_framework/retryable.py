@@ -67,15 +67,6 @@ class Meta(BaseModel):
     remaining: int
 
 
-class RunStrategy(str, Enum):
-    THROW_IMMEDIATELY: str = "THROW_IMMEDIATELY"
-    SETTLE_ROUND: str = "SETTLE_ROUND"
-    SETTLE_ALL: str = "SETTLE_ALL"
-
-    def __str__(self) -> str:
-        return self.value
-
-
 class RetryableConfig(BaseModel):
     max_retries: int
     factor: float | None = None
@@ -140,15 +131,10 @@ class Retryable:
         self._config = retry_input.config
 
     @staticmethod
-    async def run_group(strategy: RunStrategy, inputs: list[Self]) -> list[T]:
-        if strategy == RunStrategy.THROW_IMMEDIATELY:
-            return await asyncio.gather([input.get() for input in inputs])
-
+    async def run_group(inputs: list[Self]) -> list[T]:
         async def input_get(input: Self, controller: AbortController) -> Task | None:
             try:
-                return (
-                    await input.get({"group_signal": controller.signal}) if strategy == RunStrategy.SETTLE_ALL else None
-                )
+                return await input.get({"group_signal": controller.signal})
             except Exception as err:
                 controller.abort(err)
                 raise err
