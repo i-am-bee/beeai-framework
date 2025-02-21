@@ -37,6 +37,7 @@ pyventus = "^0.6.0"
 wikipedia = "^1.4.0"
 mcp = "^1.2.0"
 duckduckgo-search = "^7.3.2"
+json-repair = "^0.39.0"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^8.3.4"
@@ -194,12 +195,13 @@ shell = "TYPE=${type} ./scripts/copyright.sh"
 
 [tool.poe.tasks.release]
 help = "Release a new version"
+args = [{ name = "version", positional = true }]
 sequence = [
     { shell = '[ -z "$(git status -uno --porcelain)" ] || { echo "Your index contains uncommitted changes! Commit them and try again." && exit 1; }' },
     { "ref" = "clean"},
-    { "cmd" = "cz bump"},
+    { "cmd" = "cz bump $version"},
     { "script" = "scripts.absolute_links:update('README.md')"},
-    { "cmd" = "poetry publish --build --dry-run" },
+    { "cmd" = "poetry publish --build" },
     { "shell" = "git add README.md >/dev/null && git checkout HEAD README.md >/dev/null" },
     { "cmd" = "git push && git push origin $(git describe --tags --exact-match)"}
 ]

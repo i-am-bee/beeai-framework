@@ -14,12 +14,13 @@
 
 
 from collections.abc import Callable
-from typing import Any, Generic, TypedDict, TypeVar
+from typing import Generic, TypedDict, TypeVar
 
 import chevron
 from pydantic import BaseModel
 
 from beeai_framework.utils.errors import PromptTemplateError
+from beeai_framework.utils.models import ModelLike, to_model
 
 
 class Prompt(TypedDict):
@@ -35,14 +36,8 @@ class PromptTemplate(Generic[T]):
         self._template: str = template
         self._functions: dict[str, Callable[[], str]] | None = functions
 
-    def validate_input(self, input: T | dict[str, Any]) -> None:
-        self._schema.model_validate(input)
-
-    def render(self, input: T | dict[str, Any]) -> str:
-        self.validate_input(input)
-
-        # Make sure the data is converted to a dict
-        data = input.model_dump() if isinstance(input, BaseModel) else input
+    def render(self, input: ModelLike[T]) -> str:
+        data = to_model(self._schema, input).model_dump()
 
         # Apply function derived data
         if self._functions:

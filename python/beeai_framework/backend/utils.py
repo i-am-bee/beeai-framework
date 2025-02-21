@@ -13,9 +13,10 @@
 # limitations under the License.
 
 
-import json
 from importlib import import_module
 from typing import Any, Literal, TypeVar
+
+import json_repair
 
 from beeai_framework.backend.constants import (
     BackendProviders,
@@ -69,10 +70,5 @@ def load_model(name: ProviderName | str, model_type: Literal["embedding", "chat"
     return getattr(module, class_name)
 
 
-def parse_broken_json(input: str, options: dict | None = None) -> dict[str, Any]:
-    input = (input or "").strip()
-    try:
-        return json.loads(input)
-    except Exception as ex:
-        # TODO: handle parsing errors
-        raise BackendError("Failed to parse JSON") from ex
+def parse_broken_json(input: str) -> Any:
+    return json_repair.loads(input)

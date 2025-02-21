@@ -1,13 +1,15 @@
 import asyncio
 
 from pydantic import BaseModel, Field
-from pyventus import EventLinker
+from traitlets import Callable
 
 from beeai_framework.adapters.ollama.backend.chat import OllamaChatModel
 from beeai_framework.backend.chat import ChatModel, ChatModelOutput
 from beeai_framework.backend.message import UserMessage
 from beeai_framework.cancellation import AbortSignal
-from beeai_framework.parsers.line_prefix import LinePrefixParser, Prefix
+from beeai_framework.emitter import EventMeta
+from beeai_framework.parsers.field import ParserField
+from beeai_framework.parsers.line_prefix import LinePrefixParser, LinePrefixParserNode
 
 
 async def ollama_from_name() -> None:
@@ -67,22 +69,24 @@ async def ollama_structure() -> None:
 async def ollama_stream_parser() -> None:
     llm = OllamaChatModel("llama3.1")
 
-    parser = LinePrefixParser(prefixes=[Prefix(name="test", line_prefix="Prefix: ")])
+    parser = LinePrefixParser(
+        nodes={
+            "test": LinePrefixParserNode(
+                prefix="Prefix: ", field=ParserField.from_type(str), is_start=True, is_end=True
+            )
+        }
+    )
 
-    @EventLinker.on("newToken")
-    async def listener(data: dict[str, ChatModelOutput]) -> None:
-        output: ChatModelOutput = data["value"]
-        for result in parser.feed(output.get_text_content()):
-            if result is not None:
-                print(result.prefix.name, result.content)
+    async def on_new_token(value: tuple[ChatModelOutput, Callable], event: EventMeta) -> None:
+        data, abort = value
+        await parser.add(data.get_text_content())
 
     user_message = UserMessage("Produce 3 lines each starting with 'Prefix: ' followed by a sentence and a new line.")
-    await llm.create({"messages": [user_message], "stream": True})
-
-    # Pick up any remaining lines in parser buffer
-    for result in parser.finalize():
-        if result is not None:
-            print(result.prefix.name, result.content)
+    await llm.create({"messages": [user_message], "stream": True}).observe(
+        lambda emitter: emitter.on("newToken", on_new_token)
+    )
+    result = await parser.end()
+    print(result)
 
 
 async def main() -> None:

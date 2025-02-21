@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import json
+
 from pydantic import BaseModel, InstanceOf
 
 from beeai_framework.backend import Message
@@ -44,9 +46,18 @@ class BeeRunOptions(BaseModel):
 class BeeIterationResult(BaseModel):
     thought: str | None = None
     tool_name: str | None = None
-    tool_input: str | None = None
+    tool_input: dict | None = None
     tool_output: str | None = None
     final_answer: str | None = None
+
+    def to_template(self) -> dict:
+        return {
+            "thought": self.thought or "",
+            "tool_name": self.tool_name or "",
+            "tool_input": json.dumps(self.tool_input) if self.tool_input else "",
+            "tool_output": self.tool_output or "",
+            "final_answer": self.final_answer or "",
+        }
 
 
 class BeeAgentRunIteration(BaseModel):

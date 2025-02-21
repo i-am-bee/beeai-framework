@@ -14,7 +14,6 @@
 
 import json
 from collections.abc import Awaitable, Callable
-from typing import Any
 
 from beeai_framework.agents.runners.base import (
     BaseRunner,
@@ -39,14 +38,16 @@ from beeai_framework.agents.types import (
 )
 from beeai_framework.backend.chat import ChatModelInput, ChatModelOutput
 from beeai_framework.backend.message import SystemMessage, UserMessage
-from beeai_framework.emitter.emitter import Emitter, EventMeta
+from beeai_framework.emitter.emitter import EventMeta
 from beeai_framework.errors import FrameworkError
 from beeai_framework.memory.base_memory import BaseMemory
 from beeai_framework.memory.token_memory import TokenMemory
-from beeai_framework.parsers.line_prefix import LinePrefixParser, Prefix
+from beeai_framework.parsers.field import ParserField
+from beeai_framework.parsers.line_prefix import LinePrefixParser, LinePrefixParserNode, LinePrefixParserUpdate
 from beeai_framework.retryable import Retryable, RetryableConfig, RetryableContext, RetryableInput
 from beeai_framework.tools import ToolError, ToolInputValidationError
 from beeai_framework.tools.tool import StringToolOutput, Tool, ToolOutput
+from beeai_framework.utils.strings import create_strenum
 
 
 class DefaultRunner(BaseRunner):
@@ -60,17 +61,36 @@ class DefaultRunner(BaseRunner):
         )
 
     def create_parser(self) -> LinePrefixParser:
-        # TODO: implement transitions rules
-        # TODO Enforce set of prefix names
-        prefixes = [
-            Prefix(name="thought", line_prefix="Thought: "),
-            Prefix(name="tool_name", line_prefix="Function Name: "),
-            Prefix(name="tool_input", line_prefix="Function Input: ", terminal=True),
-            Prefix(name="final_answer", line_prefix="Final Answer: ", terminal=True),
-        ]
-        return LinePrefixParser(prefixes)
+        tool_names = create_strenum("ToolsEnum", [tool.name for tool in self._input.tools])
 
-    async def llm(self, input: BeeRunnerLLMInput) -> Awaitable[BeeAgentRunIteration]:
+        return LinePrefixParser(
+            {
+                "thought": LinePrefixParserNode(
+                    prefix="Thought: ",
+                    field=ParserField.from_type(str),
+                    is_start=True,
+                    next=["tool_name", "final_answer"],
+                ),
+                "tool_name": LinePrefixParserNode(
+                    prefix="Function Name: ",
+                    field=ParserField.from_type(tool_names),
+                    next=["tool_input"],
+                ),  # validate enum
+                "tool_input": LinePrefixParserNode(
+                    prefix="Function Input: ",
+                    field=ParserField.from_type(dict),
+                    next=["tool_output"],
+                ),
+                "tool_output": LinePrefixParserNode(
+                    prefix="Function Input: ", field=ParserField.from_type(str), is_end=True, next=["final_answer"]
+                ),
+                "final_answer": LinePrefixParserNode(
+                    prefix="Final Answer: ", field=ParserField.from_type(str), is_end=True, is_start=True
+                ),
+            }
+        )
+
+    async def llm(self, input: BeeRunnerLLMInput) -> BeeAgentRunIteration:
         def on_retry() -> None:
             input.emitter.emit("retry", {"meta": input.meta})
 
@@ -84,53 +104,62 @@ class DefaultRunner(BaseRunner):
         async def executor(_: RetryableContext) -> Awaitable[BeeAgentRunIteration]:
             await input.emitter.emit("start", {"meta": input.meta, "tools": self._input.tools, "memory": self.memory})
 
-            state: dict[str, Any] = {}
             parser = self.create_parser()
 
-            async def new_token(value: tuple[ChatModelOutput, Callable], event: EventMeta) -> None:
+            async def on_update(data: LinePrefixParserUpdate, event: EventMeta) -> None:
+                if data.key == "tool_output" and parser.done:
+                    return
+
+                await input.emitter.emit(
+                    "update",
+                    {
+                        "data": parser.final_state,
+                        "update": {"key": data.key, "value": data.field.raw, "parsedValue": data.value.model_dump()},
+                        "meta": {**input.meta.model_dump(), "success": True},
+                        "tools": self._input.tools,
+                        "memory": self.memory,
+                    },
+                )
+
+            async def on_partial_update(data: LinePrefixParserUpdate, event: EventMeta) -> None:
+                await input.emitter.emit(
+                    "partialUpdate",
+                    {
+                        "data": parser.final_state,
+                        "update": {"key": data.key, "value": data.delta, "parsedValue": data.value.model_dump()},
+                        "meta": {**input.meta.model_dump(), "success": True},
+                        "tools": self._input.tools,
+                        "memory": self.memory,
+                    },
+                )
+
+            parser.emitter.on("update", on_update)
+            parser.emitter.on("partialUpdate", on_partial_update)
+
+            async def on_new_token(value: tuple[ChatModelOutput, Callable], event: EventMeta) -> None:
                 data, abort = value
+
+                if parser.done:
+                    abort()
+                    return
+
                 chunk = data.get_text_content()
+                await parser.add(chunk)
 
-                for result in parser.feed(chunk):
-                    if result is not None:
-                        state[result.prefix.name] = result.content
-
-                        await input.emitter.emit(
-                            "update",
-                            {
-                                "update": {"key": result.prefix.name, "parsedValue": result.content},
-                                "meta": input.meta,
-                                "tools": self._input.tools,
-                                "memory": self.memory,
-                            },
-                        )
-
-                        if result.prefix.terminal:
-                            abort()
-
-            def observe(llm_emitter: Emitter) -> None:
-                llm_emitter.on("newToken", new_token)
+                if parser.partial_state.get("tool_output") is not None:
+                    abort()
 
             output: ChatModelOutput = await self._input.llm.create(
-                ChatModelInput(messages=self.memory.messages[:], stream=True, abort_signal=input.signal)
-            ).observe(fn=observe)
+                ChatModelInput(messages=self.memory.messages[:], stream=True)
+            ).observe(lambda llm_emitter: llm_emitter.on("newToken", on_new_token))
 
-            # Pick up any remaining lines in parser buffer
-            for result in parser.finalize():
-                if result is not None:
-                    state[result.prefix.name] = result.content
+            await parser.end()
 
-                    await input.emitter.emit(
-                        "update",
-                        {
-                            "update": {"key": result.prefix.name, "parsedValue": result.content},
-                            "meta": input.meta,
-                            "tools": self._input.tools,
-                            "memory": self.memory,
-                        },
-                    )
+            await self.memory.delete_many([msg for msg in self.memory.messages if not msg.meta.get("success", True)])
 
-            return BeeAgentRunIteration(raw=output, state=BeeIterationResult(**state))
+            return BeeAgentRunIteration(
+                raw=output, state=BeeIterationResult.model_validate(parser.final_state, strict=False)
+            )
 
         if self._options and self._options.execution and self._options.execution.max_retries_per_step:
             max_retries = self._options.execution.max_retries_per_step
@@ -192,23 +221,10 @@ class DefaultRunner(BaseRunner):
 
         async def executor(_: RetryableContext) -> Awaitable[BeeRunnerToolResult]:
             try:
-                await input.emitter.emit(
-                    "toolStart",
-                    {
-                        "data": {
-                            "tool": tool,
-                            "input": input.state.tool_input,
-                            "options": self._options,
-                            "iteration": input.state,
-                        },
-                        "meta": input.meta,
-                    },
-                )
                 # tool_options = copy.copy(self._options)
                 # TODO Tool run is not async
                 # Convert tool input to dict
-                tool_input = json.loads(input.state.tool_input or "")
-                tool_output: ToolOutput = tool.run(tool_input, options={})  # TODO: pass tool options
+                tool_output: ToolOutput = tool.run(input.state.tool_input, options={})  # TODO: pass tool options
                 return BeeRunnerToolResult(output=tool_output, success=True)
             # TODO These error templates should be customized to help the LLM to recover
             except ToolInputValidationError as e:

@@ -27,7 +27,7 @@ GraniteUserPromptTemplate = PromptTemplate(schema=UserPromptTemplateInput, templ
 
 GraniteAssistantPromptTemplate = PromptTemplate(
     schema=AssistantPromptTemplateInput,
-    template="{{#thought}}Thought: {{.}}\n{{/thought}}{{#tool_name}}Tool Name: {{.}}\n{{/tool_name}}{{#tool_input}}Tool Input: {{&.}}\n{{/tool_input}}{{#tool_output}}Tool Output: {{&.}}\n{{/tool_output}}{{#final_answer}}Final Answer: {{.}}{{/final_answer}}",  # noqa: E501
+    template="{{#thought}}Thought: {{.}}\n{{/thought}}{{#tool_name}}Tool Name: {{.}}\n{{/tool_name}}{{#tool_input}}Tool Input: {{&.}}\n{{/tool_input}}{{#final_answer}}Final Answer: {{.}}{{/final_answer}}",  # noqa: E501
 )
 
 GraniteSystemPromptTemplate = PromptTemplate(

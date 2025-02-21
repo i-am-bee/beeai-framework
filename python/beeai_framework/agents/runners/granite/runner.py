@@ -22,22 +22,62 @@ from beeai_framework.agents.runners.granite.prompts import (
     GraniteToolNotFoundErrorTemplate,
     GraniteUserPromptTemplate,
 )
-from beeai_framework.agents.types import BeeAgentTemplates, BeeRunInput
-from beeai_framework.backend.message import Message, MessageInput
+from beeai_framework.agents.types import BeeAgentTemplates, BeeInput, BeeRunInput, BeeRunOptions
+from beeai_framework.backend.message import CustomMessage, Message, MessageInput
+from beeai_framework.context import RunContext
+from beeai_framework.emitter import EmitterOptions, EventMeta
 from beeai_framework.memory.base_memory import BaseMemory
-from beeai_framework.parsers.line_prefix import LinePrefixParser, Prefix
+from beeai_framework.parsers.field import ParserField
+from beeai_framework.parsers.line_prefix import LinePrefixParser, LinePrefixParserNode
+from beeai_framework.utils.strings import create_strenum
 
 
 class GraniteRunner(DefaultRunner):
+    def __init__(self, input: BeeInput, options: BeeRunOptions, run: RunContext) -> None:
+        super().__init__(input, options, run)
+
+        async def on_update(data: dict, event: EventMeta) -> None:
+            update = data.get("update")
+            assert update is not None
+            if update.get("key") == "tool_output":
+                memory: BaseMemory = data.get("memory")
+                await memory.add(
+                    CustomMessage(
+                        role="tool_response",
+                        content=update.get("value").get_text_content(),
+                        meta={"success": data.get("meta").get("success", True)},
+                    )
+                )
+
+        run.emitter.on("update", on_update, EmitterOptions(is_blocking=True))
+
     def create_parser(self) -> LinePrefixParser:
-        """Prefixes are renamed for granite"""
-        prefixes = [
-            Prefix(name="thought", line_prefix="Thought: "),
-            Prefix(name="tool_name", line_prefix="Tool Name: "),
-            Prefix(name="tool_input", line_prefix="Tool Input: ", terminal=True),
-            Prefix(name="final_answer", line_prefix="Final Answer: ", terminal=True),
-        ]
-        return LinePrefixParser(prefixes)
+        tool_names = create_strenum("ToolsEnum", [tool.name for tool in self._input.tools])
+
+        return LinePrefixParser(
+            {
+                "thought": LinePrefixParserNode(
+                    prefix="Thought: ",
+                    field=ParserField.from_type(str),
+                    is_start=True,
+                    next=["tool_name", "final_answer"],
+                ),
+                "tool_name": LinePrefixParserNode(
+                    prefix="Tool Name: ",
+                    field=ParserField.from_type(tool_names),
+                    next=["tool_input"],
+                ),
+                "tool_input": LinePrefixParserNode(
+                    prefix="Tool Input: ", field=ParserField.from_type(dict), is_end=True, next=[]
+                ),
+                "tool_output": LinePrefixParserNode(
+                    prefix="Tool Output: ", field=ParserField.from_type(str), is_end=True, next=["final_answer"]
+                ),
+                "final_answer": LinePrefixParserNode(
+                    prefix="Final Answer: ", field=ParserField.from_type(str), is_end=True, is_start=True
+                ),
+            }
+        )
 
     def default_templates(self) -> BeeAgentTemplates:
         return BeeAgentTemplates(
