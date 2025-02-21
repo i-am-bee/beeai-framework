@@ -23,10 +23,10 @@ async def main() -> None:
 
     prompt = reader.prompt()
 
-    async def update_callback(data: dict, event: EventMeta) -> None:
+    def update_callback(data: dict, event: EventMeta) -> None:
         reader.write(f"Agent({data['update']['key']}) 🤖 : ", data["update"]["parsedValue"])
 
-    async def on_update(emitter: Emitter) -> None:
+    def on_update(emitter: Emitter) -> None:
         emitter.on("update", update_callback)
 
     output: BeeRunOutput = await agent.run(

@@ -16,12 +16,13 @@
 import asyncio
 import copy
 import functools
+import inspect
 import uuid
 from collections.abc import Callable
 from datetime import UTC, datetime
 from typing import Any, Generic, TypeVar
 
-from pydantic import BaseModel, InstanceOf
+from pydantic import BaseModel, ConfigDict, InstanceOf
 
 from beeai_framework.emitter.errors import EmitterError
 from beeai_framework.emitter.types import EmitterInput, EmitterOptions, EventTrace
@@ -38,11 +39,13 @@ Callback = Callable[[Any, "EventMeta"], Any]
 CleanupFn = Callable[[], None]
 
 
-class Listener(BaseModel, frozen=True):
+class Listener(BaseModel):
     match: MatcherFn
     raw: Matcher
     callback: Callback
     options: InstanceOf[EmitterOptions] | None = None
+
+    model_config = ConfigDict(frozen=True)
 
 
 class EventMeta(BaseModel):
@@ -182,7 +185,10 @@ class Emitter(Generic[T]):
                 self.listeners.remove(listener)
 
             async def run(ln: Listener = listener) -> Any:
-                return await ln.callback(data, event)
+                if inspect.iscoroutinefunction(ln.callback):
+                    return await ln.callback(data, event)
+                else:
+                    return ln.callback(data, event)
 
             if listener.options and listener.options.is_blocking:
                 executions.append(run())

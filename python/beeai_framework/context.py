@@ -14,8 +14,9 @@
 
 
 import asyncio
+import inspect
 import uuid
-from collections.abc import Awaitable, Callable
+from collections.abc import Callable
 from contextvars import ContextVar
 from dataclasses import dataclass
 from datetime import UTC, datetime
@@ -48,13 +49,13 @@ class Run:
     def __init__(self, handler: Callable[[], R], context: GetRunContext) -> None:
         super().__init__()
         self.handler = handler
-        self.tasks: list[tuple[Callable[[Emitter], Awaitable[None]], Any]] = []
+        self.tasks: list[tuple[Callable[[Any], None], Any]] = []
         self.run_context = context
 
     def __await__(self) -> R:
         return self._run_tasks().__await__()
 
-    def observe(self, fn: Callable[[Emitter], Awaitable[None]]) -> Self:
+    def observe(self, fn: Callable[[Emitter], Any]) -> Self:
         self.tasks.append((fn, self.run_context.emitter))
         return self
 
@@ -68,13 +69,16 @@ class Run:
 
     async def _run_tasks(self) -> R:
         for fn, param in self.tasks:
-            await fn(param)
+            if inspect.iscoroutinefunction(fn):
+                await fn(param)
+            else:
+                fn(param)
         self.tasks.clear()
         return await self.handler()
 
     def _set_context(self, context: GetRunContext) -> None:
-        self.context.context = context
-        self.context.emitter.context = context
+        self.run_context.context = context
+        self.run_context.emitter.context = context
 
 
 class RunContext(RunInstance):
@@ -135,7 +139,7 @@ class RunContext(RunInstance):
                     RunContext.storage.set(context)
                     return await fn(context)
 
-                async def _context_signal_aborted() -> str:
+                async def _context_signal_aborted() -> None:
                     cancel_future = asyncio.get_event_loop().create_future()
 
                     def _on_abort() -> None:

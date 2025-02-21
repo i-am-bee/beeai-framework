@@ -83,7 +83,7 @@ def create_agent() -> BeeAgent:
     return agent
 
 
-async def process_agent_events(event_data: dict[str, Any], event_meta: EventMeta) -> None:
+def process_agent_events(event_data: dict[str, Any], event_meta: EventMeta) -> None:
     """Process agent events and log appropriately"""
 
     if event_meta.name == "error":
@@ -98,7 +98,7 @@ async def process_agent_events(event_data: dict[str, Any], event_meta: EventMeta
     #     reader.write("Agent 🤖 : ", "success")
 
 
-async def observer(emitter: Emitter) -> None:
+def observer(emitter: Emitter) -> None:
     emitter.on("*.*", process_agent_events, EmitterOptions(match_nested=True))
 
 

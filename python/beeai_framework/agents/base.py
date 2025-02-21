@@ -14,12 +14,17 @@
 
 
 from abc import ABC, abstractmethod
+from typing import TypeVar
 
-from beeai_framework.agents.types import AgentMeta, BeeRunInput, BeeRunOptions, BeeRunOutput
+from pydantic import BaseModel
+
+from beeai_framework.agents.types import AgentMeta, BeeRunInput, BeeRunOptions
 from beeai_framework.context import Run, RunContext, RunContextInput, RunInstance
 from beeai_framework.emitter import Emitter
 from beeai_framework.memory import BaseMemory
 from beeai_framework.utils.models import ModelLike, to_model, to_model_optional
+
+T = TypeVar("T", bound=BaseModel)
 
 
 class BaseAgent(ABC):
@@ -34,6 +39,8 @@ class BaseAgent(ABC):
             raise RuntimeError("Agent is already running!")
 
         try:
+            self.is_running = True
+
             return RunContext.enter(
                 RunInstance(emitter=self.emitter),
                 RunContextInput(signal=options.signal if options else None, params=(run_input, options)),
@@ -48,7 +55,7 @@ class BaseAgent(ABC):
             self.is_running = False
 
     @abstractmethod
-    async def _run(self, run_input: BeeRunInput, options: BeeRunOptions | None, context: RunContext) -> BeeRunOutput:
+    async def _run(self, run_input: BeeRunInput, options: BeeRunOptions | None, context: RunContext) -> T:
         pass
 
     def destroy(self) -> None:

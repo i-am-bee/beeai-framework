@@ -113,7 +113,7 @@ cmd = "poetry build"
 
 [tool.poe.tasks.commit]
 help = "Creates a commit"
-cmd = "cz commit"
+cmd = "cz commit -- --signoff"
 
 [tool.poe.tasks.format]
 help = "Run all formating tools"

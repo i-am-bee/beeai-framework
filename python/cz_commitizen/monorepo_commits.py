@@ -41,6 +41,9 @@ class MonorepoCommitsCz(ConventionalCommitsCz):
     def questions(self) -> Questions:
         questions = super().questions()
         for index, question in enumerate(questions):
+            if question["name"] == "prefix":
+                question["choices"].append({"value": "chore", "name": "chore: other uncategorized changes"})
+
             if question["name"] == "scope":
                 questions[index] = {
                     "type": "list",
