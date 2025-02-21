@@ -29,6 +29,9 @@ from beeai_framework.parsers.line_prefix import LinePrefixParser, Prefix
 
 
 class GraniteRunner(DefaultRunner):
+    # TODO:333 - Currently a global variable is used to determine if the tool calling should be used or not
+    use_native_tool_calling: bool = True
+
     def create_parser(self) -> LinePrefixParser:
         """Prefixes are renamed for granite"""
         prefixes = [

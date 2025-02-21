@@ -48,6 +48,9 @@ from beeai_framework.tools.tool import StringToolOutput, Tool, ToolOutput
 
 
 class DefaultRunner(BaseRunner):
+    # TODO: 333 - Currently a global variable is used to determine if the tool calling should be used or not
+    use_native_tool_calling: bool = False
+
     def default_templates(self) -> BeeAgentTemplates:
         return BeeAgentTemplates(
             system=SystemPromptTemplate,
@@ -98,8 +101,13 @@ class DefaultRunner(BaseRunner):
         def observe(llm_emitter: Emitter) -> None:
             llm_emitter.on("newToken", new_token)
 
+        # TODO: 333 check this exists, shallow copy
+        tools: list[Tool] = self._input.tools[:]
         output: ChatModelOutput = await self._input.llm.create(
-            ChatModelInput(messages=self.memory.messages[:], stream=True)
+            # For native tool calling we pass the tools to the llm call.
+            ChatModelInput(
+                messages=self.memory.messages[:], stream=True, tools=tools if self.use_native_tool_calling else None
+            )
         ).observe(fn=observe)
 
         # Pick up any remaining lines in parser buffer
