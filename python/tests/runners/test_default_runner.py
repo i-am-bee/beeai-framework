@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import json
 
 import pytest
 
@@ -50,9 +49,7 @@ async def test_runner_init() -> None:
 
     await runner.tool(
         input=BeeRunnerToolInput(
-            state=BeeIterationResult(
-                tool_name="OpenMeteoTool", tool_input=json.dumps({"location_name": "White Plains"})
-            ),
+            state=BeeIterationResult(tool_name="OpenMeteoTool", tool_input={"location_name": "White Plains"}),
             emitter=None,
             meta=BeeMeta(iteration=0),
             signal=None,

@@ -83,8 +83,8 @@ class TestFrameworkError(unittest.TestCase):
         err = FrameworkError("error 1")
         err.__cause__ = inner_err
         errors = list(err.traverse_errors())
-        self.assertEqual(len(errors), 2)
-        self.assertIn(err, errors)
+        self.assertEqual(len(errors), 1)
+        self.assertNotIn(err, errors)
         self.assertIn(inner_err, errors)
 
         # Test deeper nesting - 4
@@ -96,9 +96,8 @@ class TestFrameworkError(unittest.TestCase):
         err1 = FrameworkError("error 1")
         err1.__cause__ = err2
         errors = list(err1.traverse_errors())
-        # count includes the outermost error (1)
-        self.assertEqual(len(errors), 4)
-        self.assertIn(err1, errors)
+        self.assertEqual(len(errors), 3)
+        self.assertNotIn(err1, errors)
         self.assertIn(err2, errors)
         self.assertIn(err3, errors)
         self.assertIn(err4, errors)
@@ -110,7 +109,7 @@ class TestFrameworkError(unittest.TestCase):
         err.__cause__ = inner_err
         explanation = err.explain()
         self.assertIn("Outer", explanation)
-        self.assertIn("Caused: Inner", explanation)
+        self.assertIn("  Inner", explanation)
 
         # Test with an exception that doesn't have a 'message' attribute (not all do)
         class NoMessageError(Exception):
@@ -121,7 +120,7 @@ class TestFrameworkError(unittest.TestCase):
         err2.__cause__ = inner_err2
         explanation2 = err2.explain()
         self.assertIn("Outer error", explanation2)
-        self.assertIn("Caused by: NoMessageError", explanation2)
+        self.assertIn("  NoMessageError", explanation2)
 
     # @unittest.skip("TODO: Skip as wrapped exception is not implemented correctly")
     def test_ensure(self) -> None:

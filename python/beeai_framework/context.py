@@ -25,7 +25,7 @@ from pydantic import BaseModel
 
 from beeai_framework.cancellation import AbortController, AbortSignal, register_signals
 from beeai_framework.emitter import Emitter, EmitterInput, EventTrace
-from beeai_framework.errors import FrameworkError
+from beeai_framework.errors import AbortError, FrameworkError
 from beeai_framework.utils.asynchronous import ensure_async
 from beeai_framework.utils.custom_logger import BeeLogger
 
@@ -156,16 +156,18 @@ class RunContext(RunInstance):
                 )
                 runner_task = asyncio.create_task(_context_storage_run(), name="run-task")
 
+                result: R | None = None
                 for first_done in asyncio.as_completed([abort_task, runner_task]):
                     result = await first_done
-                    if result is None:
-                        raise ValueError("Aborted")
-
                     abort_task.cancel()
-                    await emitter.emit("success", result)
-                    return result
+                    break
 
-                raise ValueError("Aborted")
+                if result is None:
+                    raise AbortError()
+
+                await emitter.emit("success", result)
+                assert result is not None
+                return result
             except Exception as e:
                 error = FrameworkError.ensure(e)
                 await emitter.emit("error", error)

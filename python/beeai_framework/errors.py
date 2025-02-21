@@ -90,10 +90,8 @@ class FrameworkError(Exception):
         errors = [self, *self.traverse_errors()]
         for index, error in enumerate(errors):
             offset = "  " * (2 * index)
-            output.append(f"{offset}{error!s}")
-            cause = error.__cause__
-            if cause:
-                output.append(f"{offset}Cause: {cause!s}")
+            message = str(error) if len(str(error)) > 0 else type(error).__name__
+            output.append(f"{offset}{message}")
         return "\n".join(output)
 
     @staticmethod
