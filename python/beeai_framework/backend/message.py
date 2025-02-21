@@ -102,7 +102,7 @@ class Message(Generic[T]):
 
 
 class AssistantMessage(Message):
-    _role = Role.ASSISTANT
+    role = Role.ASSISTANT
 
     def from_string(self, text: str) -> T:
         return {"type": "text", "text": text}
@@ -112,7 +112,7 @@ class AssistantMessage(Message):
 
 
 class ToolMessage(Message):
-    _role = Role.TOOL
+    role = Role.TOOL
 
     def from_string(self, text: str) -> ToolResult:
         tool_result = ToolResult.model_validate(json.loads(text))
@@ -123,14 +123,14 @@ class ToolMessage(Message):
 
 
 class SystemMessage(Message):
-    _role = Role.SYSTEM
+    role = Role.SYSTEM
 
     def from_string(self, text: str) -> T:
         return {"type": "text", "text": text}
 
 
 class UserMessage(Message):
-    _role = Role.USER
+    role = Role.USER
 
     def from_string(self, text: str) -> T:
         return {"type": "text", "text": text}
