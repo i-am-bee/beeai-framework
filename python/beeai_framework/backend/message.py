@@ -70,7 +70,7 @@ class Message(Generic[T]):
         elif isinstance(content, list):
             self.content = content
         else:
-            self.content = [content]
+            self.content = [content] if content else []
 
     @property
     def text(self) -> str:
