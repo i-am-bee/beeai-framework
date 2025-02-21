@@ -16,8 +16,7 @@
 import asyncio
 import uuid
 from collections.abc import AsyncGenerator, Awaitable, Callable
-from enum import Enum
-from typing import Any, Self, TypeVar
+from typing import Any, Literal, Self, TypeVar
 
 from pydantic import BaseModel
 
@@ -30,36 +29,25 @@ T = TypeVar("T", bound=BaseModel)
 logger = BeeLogger(__name__)
 
 
-class TaskState(str, Enum):
-    PENDING: str = "PENDING"
-    RESOLVED: str = "RESOLVED"
-    REJECTED: str = "REJECTED"
-
-    def __str__(self) -> str:
-        return self.value
-
-
-class Task:
-    def __init__(self) -> None:
-        self.state = TaskState.PENDING
-        self._resolved_value: Any | None = None
-        self._rejected_value: Exception | None = None
+class RetryableState(BaseModel):
+    state: Literal["pending", "resolved", "rejected"] = "pending"
+    value: Any | None = None
 
     def resolve(self, value: Any) -> None:
-        self.state = TaskState.RESOLVED
-        self._resolved_value = value
+        self.state = "resolved"
+        self.value = value
 
     def reject(self, error: Exception) -> None:
-        self.state = TaskState.REJECTED
-        self._rejected_value = error
+        self.state = "rejected"
+        self.value = error
 
     @property
-    def resolved_value(self) -> Any:
-        return self._resolved_value
+    def is_resolved(self) -> bool:
+        return self.state == "resolved"
 
     @property
-    def rejected_value(self) -> Exception | None:
-        return self._rejected_value
+    def is_rejected(self) -> bool:
+        return self.state == "rejected"
 
 
 class Meta(BaseModel):
@@ -91,7 +79,7 @@ class RetryableRunConfig:
     group_signal: AbortSignal
 
 
-async def p_retry(fn: Callable[[int], Awaitable[Any]], options: dict[str, Any] | None = None) -> Awaitable[Any]:
+async def do_retry(fn: Callable[[int], Awaitable[Any]], options: dict[str, Any] | None = None) -> Awaitable[Any]:
     async def handler(attempt: int, remaining: int) -> Awaitable:
         logger.debug(f"Entering p_retry handler({attempt}, {remaining})")
         try:
@@ -125,14 +113,14 @@ async def p_retry(fn: Callable[[int], Awaitable[Any]], options: dict[str, Any] |
 class Retryable:
     def __init__(self, retryable_input: ModelLike[RetryableInput]) -> None:
         self._id = str(uuid.uuid4())
-        self._value: Task | None = None
+        self._retry_state: RetryableState | None = None
         retry_input = to_model(RetryableInput, retryable_input)
         self._handlers = retry_input.model_dump()
         self._config = retry_input.config
 
     @staticmethod
     async def run_group(inputs: list[Self]) -> list[T]:
-        async def input_get(input: Self, controller: AbortController) -> Task | None:
+        async def input_get(input: Self, controller: AbortController) -> RetryableState | None:
             try:
                 return await input.get({"group_signal": controller.signal})
             except Exception as err:
@@ -163,13 +151,13 @@ class Retryable:
         return ctx
 
     def is_resolved(self) -> bool:
-        return self._value.state == TaskState.RESOLVED if self._value else False
+        return self._retry_state.is_resolved if self._retry_state else False
 
     def is_rejected(self) -> bool:
-        return self._value.state == TaskState.REJECTED if self._value else False
+        return self._retry_state.is_rejected if self._retry_state else False
 
-    async def _run(self, config: RetryableRunConfig | None = None) -> Task:
-        task = Task()
+    async def _run(self, config: RetryableRunConfig | None = None) -> RetryableState:
+        retry_state = RetryableState()
 
         def assert_aborted() -> None:
             if self._config.signal and self._config.signal.throw_if_aborted:
@@ -211,23 +199,23 @@ class Retryable:
         }
 
         try:
-            retry_task = await p_retry(_retry, options)
-            task.resolve(retry_task)
+            retry_response = await do_retry(_retry, options)
+            retry_state.resolve(retry_response)
         except Exception as e:
-            task.reject(e)
+            retry_state.reject(e)
 
-        return task
+        return retry_state
 
     async def get(self, config: RetryableRunConfig | None = None) -> Awaitable[T]:
         if self.is_resolved():
-            return self._value.resolved_value
+            return self._retry_state.value
         if self.is_rejected():
-            raise self._value.rejected_value
-        if (self._value.state == TaskState.PENDING if self._value else False) and not config:
-            return self._value
-        self._value = await self._run(config)
-        return self._value
+            raise self._retry_state.value
+        if (self._retry_state.state not in ["resolved", "rejected"] if self._retry_state else False) and not config:
+            return self._retry_state
+        self._retry_state = await self._run(config)
+        return self._retry_state
 
     def reset(self) -> None:
-        self._value = None
+        self._retry_state = None
         self._handlers.get("on_reset")()

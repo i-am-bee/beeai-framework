@@ -17,7 +17,7 @@ from collections.abc import Awaitable
 import pytest
 
 from beeai_framework.errors import FrameworkError
-from beeai_framework.retryable import Retryable, RetryableConfig, RetryableContext, RetryableInput, TaskState
+from beeai_framework.retryable import Retryable, RetryableConfig, RetryableContext, RetryableInput
 
 
 async def executor(ctx: RetryableContext) -> Awaitable:
@@ -38,7 +38,7 @@ async def on_retry(ctx: RetryableContext, last_error: Exception) -> None:
 
 @pytest.mark.asyncio
 async def test_retryable() -> None:
-    retry_task = await Retryable(
+    retry_state = await Retryable(
         {
             "executor": executor,
             "on_reset": on_reset,
@@ -48,7 +48,7 @@ async def test_retryable() -> None:
         }
     ).get()
 
-    assert retry_task.state == TaskState.RESOLVED
+    assert retry_state.is_resolved
 
 
 @pytest.mark.asyncio
@@ -66,8 +66,8 @@ async def test_retryable_error() -> None:
         )
     )
 
-    retry_task = await retry.get()
-    assert retry_task.state == TaskState.REJECTED
+    retry_state = await retry.get()
+    assert retry_state.is_rejected
 
 
 @pytest.mark.asyncio
@@ -88,10 +88,10 @@ async def test_retryable_retries() -> None:
         }
     )
 
-    retry_task = await retry.get()
+    retry_state = await retry.get()
 
-    assert retry_task.state == TaskState.REJECTED
-    assert retry_task.rejected_value.message == f"frameworkerror:test_retryable_retries:{max_retries + 1}"
+    assert retry_state.is_rejected
+    assert retry_state.value.message == f"frameworkerror:test_retryable_retries:{max_retries + 1}"
     assert retry.is_rejected()
 
 
@@ -117,15 +117,15 @@ async def test_retryable_reset() -> None:
         )
     )
 
-    retry_task = await retry.get()
+    retry_state = await retry.get()
 
-    assert retry_task.state == TaskState.REJECTED
-    assert retry_task.rejected_value.message == "frameworkerror:test_retryable_reset:1"
+    assert retry_state.is_rejected
+    assert retry_state.value.message == "frameworkerror:test_retryable_reset:1"
     assert retry.is_rejected()
 
     retry.reset()
-    retry_task = await retry.get()
+    retry_state = await retry.get()
 
-    assert retry_task.state == TaskState.RESOLVED
-    assert retry_task.resolved_value.get("counter") == counter
+    assert retry_state.is_resolved
+    assert retry_state.value.get("counter") == counter
     assert retry.is_resolved()

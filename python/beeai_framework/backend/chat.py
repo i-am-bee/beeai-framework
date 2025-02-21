@@ -219,14 +219,14 @@ IMPORTANT: You MUST answer with a JSON object that matches the JSON schema above
             # TODO: validate result matches expected schema
             return ChatModelStructureOutput(object=result)
 
-        retryable_task = await Retryable(
+        retryable_state = await Retryable(
             {
                 "executor": executor,
                 "config": RetryableConfig(max_retries=input.max_retries if input else 1, signal=run.signal),
             }
         ).get()
 
-        return retryable_task.resolved_value
+        return retryable_state.value
 
     def create(self, chat_model_input: ModelLike[ChatModelInput]) -> Run:
         input = to_model(ChatModelInput, chat_model_input)

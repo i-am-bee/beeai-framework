@@ -137,7 +137,7 @@ class DefaultRunner(BaseRunner):
         else:
             max_retries = 0
 
-        retryable_task = await Retryable(
+        retryable_state = await Retryable(
             RetryableInput(
                 on_retry=on_retry,
                 on_error=on_error,
@@ -146,7 +146,7 @@ class DefaultRunner(BaseRunner):
             )
         ).get()
 
-        return retryable_task.resolved_value
+        return retryable_state.value
 
     async def tool(self, input: BeeRunnerToolInput) -> BeeRunnerToolResult:
         tool: Tool | None = next(
@@ -237,11 +237,11 @@ class DefaultRunner(BaseRunner):
         else:
             max_retries = 0
 
-        retryable_task = await Retryable(
+        retryable_state = await Retryable(
             {"on_error": on_error, "executor": executor, "config": RetryableConfig(max_retries=max_retries)}
         ).get()
 
-        return retryable_task.resolved_value
+        return retryable_state.value
 
     async def init_memory(self, input: BeeRunInput) -> BaseMemory:
         memory = TokenMemory(
