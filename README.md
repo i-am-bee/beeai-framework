@@ -134,7 +134,7 @@ python [project_name].py
 
 ## Roadmap
 
-- Python parity with Typescript
+- Python parity with TypeScript
 - Standalone docs site
 - Integration with watsonx.ai for deployment
 - More multi-agent reference architecture implementations using workflows
