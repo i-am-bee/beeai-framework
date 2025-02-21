@@ -10,16 +10,16 @@
 
 <p align="center">
   <img align="center" alt="Project Status: Beta" src="https://img.shields.io/badge/Status-Beta-blue">
-  <h4 align="center">BeeAI Framework is an open-source library for building production-ready multi-agent systems.</h4>
+  <h4 align="center">Build production-ready multi-agent systems</h4>
 </p>
 
 ## Why pick BeeAI?
 
-**🏆 Build the optimal agent architecture for your use case.** To design the right architecture for your use case, you need flexibility in both orchestrating agents and defining their roles and behaviors. With the BeeAI framework, you can implement any multi-agent pattern using [Workflows](/typescript/docs/workflows.md). Start with our out-of-the-box [ReActAgent](/typescript/examples/agents/bee.ts), or easily [customize your own agent](/typescript/docs/agents.md#creating-your-own-agent).
+**🏆 Build for your use case.** Implement simple to complex multi-agent patterns using [Workflows](/typescript/docs/workflows.md), start with a [ReActAgent](/typescript/examples/agents/bee.py), or easily [build your own agent architecture](/typescript/docs/agents.md#creating-your-own-agent). There is no one-size-fits-all agent architecture, you need full flexibility in orchestrating agents and defining their roles and behaviors.
 
-**🚀 Scale effortlessly with production-grade controls.** Deploying multi-agent systems requires efficient resource management and reliability. With the BeeAI framework, you can optimize token usage through [memory strategies](/typescript/docs/memory.md), persist and restore agent state via [(de)serialization](/typescript/docs/serialization.md), generate [structured outputs](typescript/examples/backend/structured.ts), and execute generated code in a sandboxed environment. When things go wrong, BeeAI helps you track the full agent workflow through [events](/typescript/docs/emitter.md), collect [telemetry](/typescript/docs/instrumentation.md), log diagnostic data, and handle errors with clear, well-defined [exceptions](/typescript/docs/errors.md).
+**🔌 Seamlessly integrate with your models and tools.** Get started with any model from [Ollama](/typescript/examples/backend/providers/ollama.py), [Groq](/typescript/examples/backend/providers/groq.ts), [OpenAI](/typescript/examples/backend/providers/openai.ts), [watsonx.ai](/typescript/examples/backend/providers/watsonx.py), and [more](/typescript/docs/backend.md). Leverage tools from [LangChain](/typescript/examples/tools/langchain.ts), connect to any server using the [Model Context Protocol](/typescript/docs/tools.md#using-the-mcptool-class), or build your own [custom tools](/typescript/docs/tools.md#using-the-customtool-typescript-functions). BeeAI is designed to integrate with the systems and capabilities you need.
 
-**🔌 Seamlessly integrate with your models and tools.** Get started with any model from [Ollama](/typescript/examples/backend/providers/ollama.ts), [Groq](/typescript/examples/backend/providers/groq.ts), [OpenAI](/typescript/examples/backend/providers/openai.ts), [watsonx.ai](/typescript/examples/backend/providers/watsonx.ts), and [more](/typescript/docs/backend.md). Leverage tools from [LangChain](https://python.langchain.com/docs/integrations/tools/), connect to any server using the [Model Context Protocol](/typescript/docs/tools.md#using-the-mcptool-class), or build your own [custom tools](/typescript/docs/tools.md#using-the-customtool-python-functions). BeeAI is designed for extensibility, allowing you to integrate with the systems and capabilities you need.
+**🚀 Scale with production-grade controls.** Optimize token usage through [memory strategies](/typescript/docs/memory.md), persist and restore agent state via [(de)serialization](/typescript/docs/serialization.md), generate structured outputs, and execute generated code in a sandboxed environment. When things go wrong, BeeAI tracks the full agent workflow through [events](/typescript/docs/emitter.md), collects [telemetry](/typescript/docs/instrumentation.md), logs diagnostic data, and handles [errors](/typescript/docs/errors.md) with clear, well-defined exceptions. Deploying multi-agent systems requires resource management and reliability.
 
 ## Modules
 
@@ -128,13 +128,13 @@ Using npm:
 npm run start [project_name].ts
 ```
 
-➡️ Explore more in our [examples library](/python/examples).
+➡️ Explore more in our [examples library](/typescript/examples).
 
 ## Contribution guidelines
 
 The BeeAI Framework is an open-source project and we ❤️ contributions.<br>
 
-If you'd like to help build BeeAI, take a look at our [contribution guidelines](/python/docs/CONTRIBUTING.md).
+If you'd like to help build BeeAI, take a look at our [contribution guidelines](/typescript/docs/CONTRIBUTING.md).
 
 ## Bugs
 
