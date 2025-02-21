@@ -44,7 +44,7 @@ from beeai_framework.errors import FrameworkError
 from beeai_framework.memory.base_memory import BaseMemory
 from beeai_framework.memory.token_memory import TokenMemory
 from beeai_framework.parsers.line_prefix import LinePrefixParser, Prefix
-from beeai_framework.retryable import Retryable, RetryableConfig, RetryableContext
+from beeai_framework.retryable import Retryable, RetryableConfig, RetryableContext, RetryableInput
 from beeai_framework.tools import ToolError, ToolInputValidationError
 from beeai_framework.tools.tool import StringToolOutput, Tool, ToolOutput
 
@@ -138,12 +138,12 @@ class DefaultRunner(BaseRunner):
             max_retries = 0
 
         retryable_task = await Retryable(
-            {
-                "on_retry": on_retry,
-                "on_error": on_error,
-                "executor": executor,
-                "config": RetryableConfig(max_retries=max_retries, signal=input.signal),
-            }
+            RetryableInput(
+                on_retry=on_retry,
+                on_error=on_error,
+                executor=executor,
+                config=RetryableConfig(max_retries=max_retries, signal=input.signal),
+            )
         ).get()
 
         return retryable_task.resolved_value
