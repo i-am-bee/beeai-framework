@@ -13,7 +13,7 @@
 # limitations under the License.
 
 
-from pydantic import BaseModel, InstanceOf
+from pydantic import BaseModel, ConfigDict, InstanceOf
 
 
 class EventTrace(BaseModel):
@@ -30,8 +30,10 @@ class EmitterInput(BaseModel):
     trace: InstanceOf[EventTrace] | None = None
 
 
-class EmitterOptions(BaseModel, frozen=True):
+class EmitterOptions(BaseModel):
     is_blocking: bool | None = None
     once: bool | None = None
     persistent: bool | None = None
     match_nested: bool | None = None
+
+    model_config = ConfigDict(frozen=True)

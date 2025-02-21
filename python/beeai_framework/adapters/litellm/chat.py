@@ -114,7 +114,9 @@ class LiteLLMChatModel(ChatModel):
             return await super()._create_structure(input, run)
         else:
             response = await self._create(
-                ChatModelInput(messages=input.messages, response_format=input.schema, abort_signal=input.abort_signal),
+                ChatModelInput(
+                    messages=input.messages, response_format=input.input_schema, abort_signal=input.abort_signal
+                ),
                 run,
             )
 

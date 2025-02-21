@@ -173,7 +173,7 @@ class ChatModel(ABC):
         input: ChatModelStructureInput,
         run: RunContext,
     ) -> ChatModelStructureOutput:
-        schema = input.schema
+        schema = input.input_schema
 
         json_schema = schema.model_json_schema(mode="serialization") if issubclass(schema, BaseModel) else schema
 

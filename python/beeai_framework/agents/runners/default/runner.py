@@ -95,7 +95,7 @@ class DefaultRunner(BaseRunner):
                     if result.prefix.terminal:
                         abort()
 
-        async def observe(llm_emitter: Emitter) -> None:
+        def observe(llm_emitter: Emitter) -> None:
             llm_emitter.on("newToken", new_token)
 
         output: ChatModelOutput = await self._input.llm.create(

@@ -15,10 +15,10 @@ async def main() -> None:
         bee_input=BeeInput(llm=llm, tools=[DuckDuckGoSearchTool(), OpenMeteoTool()], memory=UnconstrainedMemory())
     )
 
-    async def update_callback(data: dict, event: EventMeta) -> None:
+    def update_callback(data: dict, event: EventMeta) -> None:
         print(f"Agent({data['update']['key']}) 🤖 : ", data["update"]["parsedValue"])
 
-    async def on_update(emitter: Emitter) -> None:
+    def on_update(emitter: Emitter) -> None:
         emitter.on("update", update_callback)
 
     output: BeeRunOutput = await agent.run(

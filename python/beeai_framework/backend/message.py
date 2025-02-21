@@ -23,7 +23,7 @@ from pydantic import BaseModel, Field
 
 from beeai_framework.backend import MessageError
 
-T = TypeVar("T", bound=BaseModel)
+T = TypeVar("T")
 MessageMeta = dict[str, Any]
 
 
@@ -109,7 +109,7 @@ class AssistantMessage(Message):
         return {"type": "text", "text": text}
 
     def get_tool_calls(self) -> list[T]:
-        return filter(lambda x: x.get("type") == "tool-call", self.content)
+        return list(filter(lambda x: x.get("type") == "tool-call", self.content))
 
 
 class ToolMessage(Message):
@@ -120,7 +120,7 @@ class ToolMessage(Message):
         return tool_result.model_dump(by_alias=True)
 
     def get_tool_results(self) -> list[T]:
-        return filter(lambda x: x.get("type") == "tool-result", self.content)
+        return list(filter(lambda x: x.get("type") == "tool-result", self.content))
 
 
 class SystemMessage(Message):
@@ -137,10 +137,10 @@ class UserMessage(Message):
         return {"type": "text", "text": text}
 
     def get_images(self) -> list[T]:
-        return filter(lambda x: x.get("type") == "image", self.content)
+        return list(filter(lambda x: x.get("type") == "image", self.content))
 
     def get_files(self) -> list[T]:
-        return filter(lambda x: x.get("type") == "file", self.content)
+        return list(filter(lambda x: x.get("type") == "file", self.content))
 
 
 class CustomMessage(Message):
