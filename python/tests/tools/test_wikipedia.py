@@ -28,7 +28,7 @@ def tool() -> WikipediaSearchTool:
     return WikipediaSearchTool()
 
 
-@pytest.mark.unit
+@pytest.mark.e2e
 def test_call_invalid_input_type(tool: WikipediaSearchTool) -> None:
     with pytest.raises(ToolInputValidationError):
         tool.run(input={"search": "Bee"})
