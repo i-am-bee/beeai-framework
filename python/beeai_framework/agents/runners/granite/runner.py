@@ -37,12 +37,14 @@ class GraniteRunner(DefaultRunner):
         super().__init__(input, options, run)
 
         async def on_update(data: dict, event: EventMeta) -> None:
-            if data.get("key") == "tool_output":
+            update = data.get("update")
+            assert update is not None
+            if update.get("key") == "tool_output":
                 memory: BaseMemory = data.get("memory")
                 await memory.add(
                     CustomMessage(
                         role="tool_response",
-                        content=data.get("update").value,
+                        content=update.get("value").get_text_content(),
                         meta={"success": data.get("meta").get("success", True)},
                     )
                 )
@@ -67,6 +69,9 @@ class GraniteRunner(DefaultRunner):
                 ),
                 "tool_input": LinePrefixParserNode(
                     prefix="Tool Input: ", field=ParserField.from_type(dict), is_end=True, next=[]
+                ),
+                "tool_output": LinePrefixParserNode(
+                    prefix="Tool Output: ", field=ParserField.from_type(str), is_end=True, next=["final_answer"]
                 ),
                 "final_answer": LinePrefixParserNode(
                     prefix="Final Answer: ", field=ParserField.from_type(str), is_end=True, is_start=True
