@@ -72,6 +72,7 @@ major_version_zero = true
 bump_message = "chore: python release $new_version"
 
 [tool.pytest.ini_options]
+addopts = "-v --cov --cov-report html"
 testpaths = ["tests", "beeai_framework"]
 python_files = ["test_*.py", "*_test.py"]
 markers = [
