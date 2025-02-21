@@ -29,22 +29,24 @@ class TaskState(str, Enum):
 class Task:
     def __init__(self) -> None:
         self.state = TaskState.PENDING
-        self.resolved_value: any | None = None
-        self.rejected_value: Exception | None = None
+        self._resolved_value: Any | None = None
+        self._rejected_value: Exception | None = None
 
-    def resolve(self, value: any) -> None:
+    def resolve(self, value: Any) -> None:
         self.state = TaskState.RESOLVED
-        self.resolved_value = value
+        self._resolved_value = value
 
     def reject(self, error: Exception) -> None:
         self.state = TaskState.REJECTED
-        self.rejected_value = error
+        self._rejected_value = error
 
-    def resolved_value(self) -> any:
-        return self.resolved_value
+    @property
+    def resolved_value(self) -> Any:
+        return self._resolved_value
 
+    @property
     def rejected_value(self) -> Exception | None:
-        return self.rejected_value
+        return self._rejected_value
 
 
 class Meta(BaseModel):
@@ -75,9 +77,9 @@ class RetryableContext(BaseModel):
 
 class RetryableInput(BaseModel):
     executor: Callable[[RetryableContext], Awaitable[T]]
-    on_reset: Callable[[], None] | None
-    on_error: Callable[[Exception, RetryableContext], Awaitable[None]] | None
-    on_retry: Callable[[RetryableContext, Exception], Awaitable[None]] | None
+    on_reset: Callable[[], None] | None = None
+    on_error: Callable[[Exception, RetryableContext], Awaitable[None]] | None = None
+    on_retry: Callable[[RetryableContext, Exception], Awaitable[None]] | None = None
     config: RetryableConfig
 
 
@@ -217,7 +219,7 @@ class Retryable:
 
         return task
 
-    async def get(self, config: RetryableRunConfig | None = None) -> Task:
+    async def get(self, config: RetryableRunConfig | None = None) -> Awaitable[T]:
         if self.is_resolved():
             return self._value.resolved_value
         if self.is_rejected():

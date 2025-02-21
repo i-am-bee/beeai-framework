@@ -14,6 +14,7 @@
 
 
 from abc import ABC, abstractmethod
+from collections.abc import Awaitable
 from dataclasses import dataclass
 
 from beeai_framework.agents.types import (
@@ -120,7 +121,7 @@ class BaseRunner(ABC):
         self._memory = await self.init_memory(input)
 
     @abstractmethod
-    async def llm(self, input: BeeRunnerLLMInput) -> BeeAgentRunIteration:
+    async def llm(self, input: BeeRunnerLLMInput) -> Awaitable[BeeAgentRunIteration]:
         pass
 
     @abstractmethod
