@@ -108,7 +108,7 @@ python -m venv test_env
 source test_env/bin/activate  # On Windows: test_env\Scripts\activate
 
 # Install the built package
-pip install dist/beeai-framework-0.1.0.tar.gz
+pip install dist/beeai_framework-0.1.1.tar.gz
 ```
 
 #### Run Linters/Formatters

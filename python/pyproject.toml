@@ -1,6 +1,6 @@
 [project]
 name = "beeai-framework"
-version="0.1.0"
+version="0.1.1"
 license = "Apache-2.0"
 readme = "README.md"
 authors = [{ name = "IBM Corp." }]
@@ -195,15 +195,14 @@ shell = "TYPE=${type} ./scripts/copyright.sh"
 
 [tool.poe.tasks.release]
 help = "Release a new version"
-args = [{ name = "version", positional = true }]
 sequence = [
     { shell = '[ -z "$(git status -uno --porcelain)" ] || { echo "Your index contains uncommitted changes! Commit them and try again." && exit 1; }' },
     { "ref" = "clean"},
-    { "cmd" = "cz bump $version"},
+    { "cmd" = "cz bump --increment PATCH"},
     { "script" = "scripts.absolute_links:update('README.md')"},
     { "cmd" = "poetry publish --build" },
     { "shell" = "git add README.md >/dev/null && git checkout HEAD README.md >/dev/null" },
-    { "cmd" = "git push && git push origin $(git describe --tags --exact-match)"}
+    { "shell" = "git push && git push origin $(git describe --tags --exact-match)"}
 ]
 
 [tool.poe.tasks.test]
