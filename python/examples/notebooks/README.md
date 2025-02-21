@@ -36,10 +36,10 @@ Otherwise you can use https if you don't want to set up SSH keys or are in an en
 git clone https://github.com/i-am-bee/beeai-framework.git
 ```
 
-🧭 Next you should navigate to the example notebooks in the python subfolder:
+🧭 Next you should navigate to the python subfolder:
 
 ```shell
-cd beeai-framework/python/examples/notebooks
+cd beeai-framework/python
 ```
 
 🐍 You will need Python 3.11 or above. This can be checked with:
@@ -65,14 +65,22 @@ source .venv/bin/activate
 
 📦 You are now ready to install dependencies:
 
+Install beeai-framework from local package.
+
 ```shell
-pip install -r requirements.txt
+pip install . 
+```
+
+Install other dependencies.
+
+```shell
+pip install -r examples/notebooks/requirements.txt
 ```
 
 ✨ And finally you can spin up the first notebook ✨
 
 ```shell
-jupyter-lab basics.ipynb --port 9999
+jupyter-lab examples/notebooks/basics.ipynb --port 9999
 ```
 
 > [!NOTE]
