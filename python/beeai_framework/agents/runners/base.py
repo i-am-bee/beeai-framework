@@ -114,7 +114,6 @@ class BaseRunner(ABC):
             BeeRunnerLLMInput(emitter=emitter, signal=self._run.signal, meta=meta)
         )
         self._iterations.append(iteration)
-
         return RunnerIteration(emitter=emitter, state=iteration.state, meta=meta, signal=self._run.signal)
 
     async def init(self, input: BeeRunInput) -> None:

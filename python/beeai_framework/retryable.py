@@ -209,12 +209,13 @@ class Retryable:
     async def get(self, config: RetryableRunConfig | None = None) -> Awaitable[T]:
         if self.is_resolved():
             return self._retry_state.value
-        if self.is_rejected():
+        elif self.is_rejected():
             raise self._retry_state.value
-        if (self._retry_state.state not in ["resolved", "rejected"] if self._retry_state else False) and not config:
+        elif (self._retry_state.state not in ["resolved", "rejected"] if self._retry_state else False) and not config:
             return self._retry_state
-        self._retry_state = await self._run(config)
-        return self._retry_state
+        else:
+            self._retry_state = await self._run(config)
+            return self._retry_state
 
     def reset(self) -> None:
         self._retry_state = None

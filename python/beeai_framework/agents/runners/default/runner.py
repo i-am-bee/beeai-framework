@@ -23,6 +23,8 @@ from beeai_framework.agents.runners.base import (
 )
 from beeai_framework.agents.runners.default.prompts import (
     AssistantPromptTemplate,
+    SchemaErrorTemplate,
+    SchemaErrorTemplateInput,
     SystemPromptTemplate,
     SystemPromptTemplateInput,
     ToolDefinition,
@@ -37,13 +39,18 @@ from beeai_framework.agents.types import (
     BeeRunInput,
 )
 from beeai_framework.backend.chat import ChatModelInput, ChatModelOutput
-from beeai_framework.backend.message import SystemMessage, UserMessage
+from beeai_framework.backend.message import AssistantMessage, SystemMessage, UserMessage
 from beeai_framework.emitter.emitter import EventMeta
 from beeai_framework.errors import FrameworkError
 from beeai_framework.memory.base_memory import BaseMemory
 from beeai_framework.memory.token_memory import TokenMemory
 from beeai_framework.parsers.field import ParserField
-from beeai_framework.parsers.line_prefix import LinePrefixParser, LinePrefixParserNode, LinePrefixParserUpdate
+from beeai_framework.parsers.line_prefix import (
+    LinePrefixParser,
+    LinePrefixParserError,
+    LinePrefixParserNode,
+    LinePrefixParserUpdate,
+)
 from beeai_framework.retryable import Retryable, RetryableConfig, RetryableContext, RetryableInput
 from beeai_framework.tools import ToolError, ToolInputValidationError
 from beeai_framework.tools.tool import StringToolOutput, Tool, ToolOutput
@@ -58,6 +65,7 @@ class DefaultRunner(BaseRunner):
             user=UserPromptTemplate,
             tool_not_found_error=ToolNotFoundErrorTemplate,
             tool_input_error=ToolInputErrorTemplate,
+            schema_error=SchemaErrorTemplate,
         )
 
     def create_parser(self) -> LinePrefixParser:
@@ -91,15 +99,19 @@ class DefaultRunner(BaseRunner):
         )
 
     async def llm(self, input: BeeRunnerLLMInput) -> BeeAgentRunIteration:
-        def on_retry() -> None:
-            input.emitter.emit("retry", {"meta": input.meta})
+        async def on_retry(ctx: RetryableContext, last_error: Exception) -> None:
+            await input.emitter.emit("retry", {"meta": input.meta})
 
         async def on_error(error: Exception, _: RetryableContext) -> None:
-            input.emitter.emit("error", {"error": error, "meta": input.meta})
+            await input.emitter.emit("error", {"error": error, "meta": input.meta})
             self._failedAttemptsCounter.use(error)
 
-            # TODO: handle
-            # if isinstance(error, LinePrefixParserError)
+            if isinstance(error, LinePrefixParserError):
+                if error.reason == LinePrefixParserError.Reason.NoDataReceived:
+                    await self.memory.add(AssistantMessage("\n", {"tempMessage": True}))
+                else:
+                    schema_error_prompt: str = self.templates.schema_error.render(SchemaErrorTemplateInput())
+                    await self.memory.add(UserMessage(schema_error_prompt, {"tempMessage": True}))
 
         async def executor(_: RetryableContext) -> Awaitable[BeeAgentRunIteration]:
             await input.emitter.emit("start", {"meta": input.meta, "tools": self._input.tools, "memory": self.memory})
@@ -254,7 +266,11 @@ class DefaultRunner(BaseRunner):
             max_retries = 0
 
         retryable_state = await Retryable(
-            {"on_error": on_error, "executor": executor, "config": RetryableConfig(max_retries=max_retries)}
+            RetryableInput(
+                on_error=on_error,
+                executor=executor,
+                config=RetryableConfig(max_retries=max_retries),
+            )
         ).get()
 
         return retryable_state.value
