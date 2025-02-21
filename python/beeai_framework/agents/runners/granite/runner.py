@@ -62,7 +62,7 @@ class GraniteRunner(DefaultRunner):
                 ),
                 "tool_name": LinePrefixParserNode(
                     prefix="Tool Name: ",
-                    field=ParserField.from_type(tool_names, lambda v: v.trim()),
+                    field=ParserField.from_type(tool_names),
                     next=["tool_input"],
                 ),
                 "tool_input": LinePrefixParserNode(

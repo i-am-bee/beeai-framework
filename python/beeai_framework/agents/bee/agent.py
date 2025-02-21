@@ -124,15 +124,7 @@ class BeeAgent(BaseAgent):
                 )
                 await runner.memory.add(
                     AssistantMessage(
-                        content=runner.templates.assistant.render(
-                            {
-                                "thought": iteration.state.thought,
-                                "tool_name": iteration.state.tool_name,
-                                "tool_input": iteration.state.tool_input,
-                                "tool_output": tool_result.output.to_string(),
-                                "final_answer": iteration.state.final_answer,
-                            }
-                        ),
+                        content=runner.templates.assistant.render(iteration.state.to_template()),
                         meta=MessageMeta({"success": tool_result.success}),
                     )
                 )

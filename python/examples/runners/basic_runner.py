@@ -1,5 +1,4 @@
 import asyncio
-from dataclasses import asdict
 
 from beeai_framework.agents.runners.base import (
     BeeRunnerToolInput,
@@ -8,7 +7,6 @@ from beeai_framework.agents.runners.base import (
 )
 from beeai_framework.agents.runners.default.prompts import (
     AssistantPromptTemplate,
-    AssistantPromptTemplateInput,
 )
 from beeai_framework.agents.runners.default.runner import DefaultRunner
 from beeai_framework.agents.types import (
@@ -70,13 +68,11 @@ async def main() -> None:
             )
 
             iteration.state.tool_output = tool_result.output.get_text_content()
-            assistant_prompt = AssistantPromptTemplate.render(AssistantPromptTemplateInput(**asdict(iteration.state)))
-            print(assistant_prompt)
+            assistant_prompt = AssistantPromptTemplate.render(iteration.state.to_template())
             await runner.memory.add(AssistantMessage(content=assistant_prompt))
 
         elif iteration.state.final_answer:
-            assistant_prompt = AssistantPromptTemplate.render(AssistantPromptTemplateInput(**asdict(iteration.state)))
-            print(assistant_prompt)
+            assistant_prompt = AssistantPromptTemplate.render(iteration.state.to_template())
             final_answer = iteration.state.final_answer
 
     print(final_answer)

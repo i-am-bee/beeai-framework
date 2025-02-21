@@ -71,7 +71,7 @@ class DefaultRunner(BaseRunner):
                 ),
                 "tool_name": LinePrefixParserNode(
                     prefix="Function Name: ",
-                    field=ParserField.from_type(tool_names, lambda v: v.trim()),
+                    field=ParserField.from_type(tool_names),
                     next=["tool_input"],
                 ),  # validate enum
                 "tool_input": LinePrefixParserNode(
@@ -144,7 +144,9 @@ class DefaultRunner(BaseRunner):
 
         await self.memory.delete_many([msg for msg in self.memory.messages if not msg.meta.get("success", True)])
 
-        return BeeAgentRunIteration(raw=output, state=BeeIterationResult.model_validate(parser.final_state))
+        return BeeAgentRunIteration(
+            raw=output, state=BeeIterationResult.model_validate(parser.final_state, strict=False)
+        )
 
     async def tool(self, input: BeeRunnerToolInput) -> BeeRunnerToolResult:
         tool: Tool | None = next(
@@ -176,8 +178,7 @@ class DefaultRunner(BaseRunner):
             # tool_options = copy.copy(self._options)
             # TODO Tool run is not async
             # Convert tool input to dict
-            tool_input = json.loads(input.state.tool_input or "")
-            tool_output: ToolOutput = tool.run(tool_input, options={})  # TODO: pass tool options
+            tool_output: ToolOutput = tool.run(input.state.tool_input, options={})  # TODO: pass tool options
             return BeeRunnerToolResult(output=tool_output, success=True)
         # TODO These error templates should be customized to help the LLM to recover
         except ToolInputValidationError as e:
