@@ -1,4 +1,3 @@
-
 # BeeAI Framework for TypeScript <img align="cener" alt="Project Status: Alpha" src="https://img.shields.io/badge/Status-Beta-blue">
 
 [![License](https://img.shields.io/badge/License-Apache%202.0-EA7826?style=flat)](https://github.com/i-am-bee/beeai-framework?tab=Apache-2.0-1-ov-file#readme)
@@ -6,9 +5,7 @@
 [![Discord](https://img.shields.io/discord/1309202615556378705?style=social&logo=discord&logoColor=black&label=Discord&labelColor=7289da&color=black)](https://discord.com/invite/NradeA6ZNF)
 [![GitHub Repo stars](https://img.shields.io/github/stars/I-am-bee/beeai-framework)](https://github.com/i-am-bee/beeai-framework)
 
-
 Build production-ready multi-agent systems in TypeScript. BeeAI framework is also available in [Python](https://github.com/i-am-bee/beeai-framework/tree/main/python).
-
 
 ## Modules
 
