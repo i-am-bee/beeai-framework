@@ -38,6 +38,7 @@ wikipedia = "^1.4.0"
 mcp = "^1.2.0"
 duckduckgo-search = "^7.3.2"
 json-repair = "^0.39.0"
+wikipedia-api = "^0.8.1"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^8.3.4"

@@ -3185,6 +3185,20 @@ beautifulsoup4 = "*"
 requests = ">=2.0.0,<3.0.0"
 
 [[package]]
+name = "wikipedia-api"
+version = "0.8.1"
+description = "Python Wrapper for Wikipedia"
+optional = false
+python-versions = "*"
+groups = ["main"]
+files = [
+    {file = "wikipedia_api-0.8.1.tar.gz", hash = "sha256:b31e93b3f5407c1a1ba413ed7326a05379a3c270df6cf6a211aca67a14c5658b"},
+]
+
+[package.dependencies]
+requests = "*"
+
+[[package]]
 name = "yarl"
 version = "1.18.3"
 description = "Yet another URL library"
@@ -3304,4 +3318,4 @@ type = ["pytest-mypy"]
 [metadata]
 lock-version = "2.1"
 python-versions = ">= 3.11,<4.0"
-content-hash = "02321113cea97f76c799d196c6044e9f9f9e6955a20c4fd5e7b56cb2ee0ebb0b"
+content-hash = "ff93be7be761dfdd23ac1eba1c93862d0e95fb095484fc81c2cd39f537626cac"
