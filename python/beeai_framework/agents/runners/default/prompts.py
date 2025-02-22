@@ -49,6 +49,10 @@ class ToolInputErrorTemplateInput(BaseModel):
     reason: str
 
 
+class SchemaErrorTemplateInput(BaseModel):
+    pass
+
+
 UserPromptTemplate = PromptTemplate(schema=UserPromptTemplateInput, template="Message: {{input}}")
 
 AssistantPromptTemplate = PromptTemplate(
@@ -149,4 +153,10 @@ HINT: If you're convinced that the input was correct but the function cannot pro
 AssistantPromptTemplate = PromptTemplate(
     schema=AssistantPromptTemplateInput,
     template="""{{#thought}}Thought: {{&.}}\n{{/thought}}{{#tool_name}}Function Name: {{&.}}\n{{/tool_name}}{{#tool_input}}Function Input: {{&.}}\n{{/tool_input}}{{#tool_output}}Function Output: {{&.}}\n{{/tool_output}}{{#final_answer}}Final Answer: {{&.}}{{/final_answer}}""",  # noqa: E501
+)
+
+SchemaErrorTemplate = PromptTemplate(
+    schema=SchemaErrorTemplateInput,
+    template="""Error: The generated response does not adhere to the communication structure mentioned in the system prompt.
+You communicate only in instruction lines. Valid instruction lines are 'Thought' followed by either 'Function Name' + 'Function Input' + 'Function Output' or 'Final Answer'.""",  # noqa: E501
 )

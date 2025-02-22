@@ -80,7 +80,7 @@ class BeeAgentTemplates(BaseModel):
     tool_input_error: InstanceOf[PromptTemplate]
     # tool_no_result_error: InstanceOf[PromptTemplate]
     tool_not_found_error: InstanceOf[PromptTemplate]
-    # schema_error: InstanceOf[PromptTemplate]
+    schema_error: InstanceOf[PromptTemplate]
 
 
 class AgentMeta(BaseModel):

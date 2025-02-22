@@ -3,6 +3,7 @@ import asyncio
 from pydantic import BaseModel, Field
 
 from beeai_framework.adapters.watsonx.backend.chat import WatsonxChatModel
+from beeai_framework.backend.chat import ChatModel
 from beeai_framework.backend.message import UserMessage
 from beeai_framework.cancellation import AbortSignal
 
@@ -16,8 +17,8 @@ llm = WatsonxChatModel(
 
 
 async def watsonx_from_name() -> None:
-    watsonx_llm = await WatsonxChatModel.from_name(
-        "ollama:llama3.1",
+    watsonx_llm = ChatModel.from_name(
+        "watsonx:ibm/granite-3-8b-instruct",
         {
             # "project_id": "WATSONX_PROJECT_ID",
             # "api_key": "WATSONX_API_KEY",

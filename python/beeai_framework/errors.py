@@ -47,9 +47,12 @@ class FrameworkError(Exception):
         message = str(error) if len(str(error)) > 0 else type(error).__name__
         return message
 
-    def is_retryable(self) -> bool:
+    @staticmethod
+    def is_retryable(error: Exception) -> bool:
         """is error retryable?."""
-        return self._is_retryable
+        if isinstance(error, FrameworkError):
+            return error._is_retryable
+        return isinstance(error, CancelledError)
 
     def is_fatal(self) -> bool:
         """is error fatal?"""

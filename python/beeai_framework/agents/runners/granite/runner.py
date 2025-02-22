@@ -17,6 +17,7 @@ import json
 from beeai_framework.agents.runners.default.runner import DefaultRunner
 from beeai_framework.agents.runners.granite.prompts import (
     GraniteAssistantPromptTemplate,
+    GraniteSchemaErrorTemplate,
     GraniteSystemPromptTemplate,
     GraniteToolInputErrorTemplate,
     GraniteToolNotFoundErrorTemplate,
@@ -86,6 +87,7 @@ class GraniteRunner(DefaultRunner):
             user=GraniteUserPromptTemplate,
             tool_not_found_error=GraniteToolNotFoundErrorTemplate,
             tool_input_error=GraniteToolInputErrorTemplate,
+            schema_error=GraniteSchemaErrorTemplate,
         )
 
     async def init_memory(self, input: BeeRunInput) -> BaseMemory:
