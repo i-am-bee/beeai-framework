@@ -45,8 +45,7 @@ class BeeAgent(BaseAgent[BeeRunOutput]):
     runner: Callable[..., BaseRunner]
 
     def __init__(self, bee_input: ModelLike[BeeInput]) -> None:
-        bee_input = to_model(BeeInput, bee_input)
-        self.input = bee_input
+        self.input = to_model(BeeInput, bee_input)
         if "granite" in self.input.llm.model_id:
             self.runner = GraniteRunner
         else:
