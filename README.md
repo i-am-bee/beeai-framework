@@ -130,7 +130,9 @@ To run projects, use:
 python [project_name].py
 ```
 
-➡️ Explore more in our [examples library](/typescript/examples).
+➡️ Explore more in our: 
+  - [Python examples library](/python/examples) 
+  - [TypeScript examples library](/typescript/examples)
 
 ## Roadmap
 
@@ -147,7 +149,9 @@ To stay up-to-date on our [public roadmap](https://github.com/orgs/i-am-bee/proj
 
 The BeeAI Framework is open-source and we ❤️ contributions.<br>
 
-To help build BeeAI, take a look at our [contribution guidelines](/typescript/docs/CONTRIBUTING.md).
+To help build BeeAI, take a look at our:
+- [Python contribution guidelines](/python/docs/CONTRIBUTING.md)
+- [TypeScript contribution guidelines](/typescript/docs/CONTRIBUTING.md)
 
 ## Bugs
 
