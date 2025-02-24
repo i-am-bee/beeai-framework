@@ -32,6 +32,7 @@ from beeai_framework.emitter.types import EmitterInput
 from beeai_framework.memory.base_memory import BaseMemory
 from beeai_framework.tools import ToolOutput
 from beeai_framework.utils.counter import RetryCounter
+from beeai_framework.utils.templates import PromptTemplate
 
 
 @dataclass
@@ -137,7 +138,15 @@ class BaseRunner(ABC):
 
     @property
     def templates(self) -> BeeAgentTemplates:
-        # TODO: overrides
-        return self.default_templates()
+        overrides = self._input.templates or {}
+        templates = {}
+
+        for key, default_template in self.default_templates().model_dump().items():
+            override = overrides.get(key) or default_template
+            if isinstance(override, PromptTemplate):
+                templates[key] = override
+                continue
+            templates[key] = override(default_template) or default_template
+        return BeeAgentTemplates(**templates)
 
     # TODO: Serialization

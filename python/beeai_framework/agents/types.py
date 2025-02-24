@@ -13,6 +13,8 @@
 # limitations under the License.
 
 import json
+from collections.abc import Callable
+from typing import Annotated
 
 from pydantic import BaseModel, InstanceOf
 
@@ -90,11 +92,15 @@ class AgentMeta(BaseModel):
     extra_description: str | None = None
 
 
+BeeTemplateFactory = Callable[[InstanceOf[BeeAgentTemplates]], InstanceOf[BeeAgentTemplates]]
+ModelKeysType = Annotated[str, lambda v: v in BeeAgentTemplates.__fields__]
+
+
 class BeeInput(BaseModel):
     llm: InstanceOf[ChatModel]
     tools: list[InstanceOf[Tool]]  # TODO AnyTool?
     memory: InstanceOf[BaseMemory]
     meta: InstanceOf[AgentMeta] | None = None
-    templates: InstanceOf[BeeAgentTemplates] | None = None
+    templates: dict[ModelKeysType, InstanceOf[BeeAgentTemplates] | BeeTemplateFactory | None] = None
     execution: BeeAgentExecutionConfig | None = None
     stream: bool | None = None

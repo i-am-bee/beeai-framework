@@ -30,7 +30,7 @@ from beeai_framework.emitter import Emitter, EmitterInput
 from beeai_framework.tools.tool import Tool
 from beeai_framework.utils.custom_logger import BeeLogger
 from beeai_framework.utils.models import ModelLike, to_model
-from beeai_framework.utils.templates import PromptTemplate
+from beeai_framework.utils.templates import PromptTemplate, PromptTemplateInput
 
 T = TypeVar("T", bound=BaseModel)
 ChatModelFinishReason: Literal["stop", "length", "function_call", "content_filter", "null"]
@@ -183,15 +183,17 @@ class ChatModel(ABC):
             schema: str
 
         system_template = PromptTemplate(
-            schema=DefaultChatModelStructureSchema,
-            template=(
-                """You are a helpful assistant that generates only valid JSON """
-                """adhering to the following JSON Schema.
+            PromptTemplateInput(
+                schema=DefaultChatModelStructureSchema,
+                template=(
+                    """You are a helpful assistant that generates only valid JSON """
+                    """adhering to the following JSON Schema.
 ```
 {{schema}}
 ```
 IMPORTANT: You MUST answer with a JSON object that matches the JSON schema above."""
-            ),
+                ),
+            )
         )
 
         input_messages = input.messages
@@ -201,7 +203,11 @@ IMPORTANT: You MUST answer with a JSON object that matches the JSON schema above
         ]
 
         response = await self._create(
-            ChatModelInput(messages=messages, response_format={"type": "object-json"}, abort_signal=input.abort_signal),
+            ChatModelInput(
+                messages=messages,
+                response_format={"type": "object-json"},
+                abort_signal=input.abort_signal,
+            ),
         )
 
         logger.debug(f"Recieved structured response:\n{response}")
