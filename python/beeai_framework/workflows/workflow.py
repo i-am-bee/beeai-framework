@@ -20,8 +20,8 @@ from typing import ClassVar, Final, Generic, Literal
 from pydantic import BaseModel
 from typing_extensions import TypeVar
 
-from beeai_framework.utils._types import MaybeAsync
 from beeai_framework.utils.models import ModelLike, check_model, to_model
+from beeai_framework.utils.types import MaybeAsync
 from beeai_framework.workflows.errors import WorkflowError
 
 T = TypeVar("T", bound=BaseModel)

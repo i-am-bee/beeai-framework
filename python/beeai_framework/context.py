@@ -58,7 +58,7 @@ class Run(Generic[R]):
         self.tasks.append((fn, self.run_context.emitter))
         return self
 
-    def context(self, context: "RunContext") -> Self:
+    def context(self, context: dict) -> Self:
         self.tasks.append((self._set_context, context))
         return self
 
@@ -73,7 +73,7 @@ class Run(Generic[R]):
         self.tasks.clear()
         return await self.handler()
 
-    def _set_context(self, context: "RunContext") -> None:
+    def _set_context(self, context: dict) -> None:
         self.run_context.context = context
         self.run_context.emitter.context = context
 

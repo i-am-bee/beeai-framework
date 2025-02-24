@@ -20,7 +20,7 @@ import inspect
 import uuid
 from collections.abc import Callable
 from datetime import UTC, datetime
-from typing import Any, Generic, TypeVar
+from typing import Any, Generic, ParamSpec, TypeAlias, TypeVar
 
 from pydantic import BaseModel, ConfigDict, InstanceOf
 
@@ -30,13 +30,15 @@ from beeai_framework.emitter.utils import (
     assert_valid_name,
     assert_valid_namespace,
 )
+from beeai_framework.utils.types import MaybeAsync
 
 T = TypeVar("T", bound=BaseModel)
+P = ParamSpec("P")
 
-MatcherFn = Callable[["EventMeta"], bool]
-Matcher = str | MatcherFn
-Callback = Callable[[Any, "EventMeta"], Any]
-CleanupFn = Callable[[], None]
+MatcherFn: TypeAlias = Callable[["EventMeta"], bool]
+Matcher: TypeAlias = str | MatcherFn
+Callback: TypeAlias = MaybeAsync[[P, "EventMeta"], None]
+CleanupFn: TypeAlias = Callable[[], None]
 
 
 class Listener(BaseModel):
