@@ -1,6 +1,6 @@
 # Workflows (experimental)
 
-*Disclaimer: The notes below may refer to the TypeScript version or missing files as the Python version moves toward parity in the near future. Additional Python examples coming soon. TODO*
+_Disclaimer: The notes below may refer to the TypeScript version or missing files as the Python version moves toward parity in the near future. Additional Python examples coming soon. TODO_
 
 > [!TIP]
 >
@@ -18,9 +18,10 @@ Workflows provide a flexible and extensible component for managing and executing
 ### Basic
 
 ```py
+
 ```
 
-_Source: /examples/workflows/basic.py TODO
+\_Source: /examples/workflows/basic.py TODO
 
 ### Simple
 
@@ -132,20 +133,21 @@ if __name__ == "__main__":
 
 _Source: [examples/workflows/simple.py](/examples/workflows/advanced.py)_
 
-
 ### Nesting
 
 ```py
+
 ```
 
-_Source: /examples/workflows/nesting.py TODO
+\_Source: /examples/workflows/nesting.py TODO
 
 ### Agent Delegation
 
 ```py
+
 ```
 
-_Source: /examples/workflows/agent.py TODO
+\_Source: /examples/workflows/agent.py TODO
 
 ### Memory
 
@@ -270,7 +272,7 @@ from pydantic import BaseModel, Field, ValidationError
 from beeai_framework.adapters.ollama.backend.chat import OllamaChatModel
 from beeai_framework.backend.chat import ChatModelOutput, ChatModelStructureOutput
 from beeai_framework.backend.message import UserMessage
-from beeai_framework.utils.templates import PromptTemplate
+from beeai_framework.utils.templates import PromptTemplate, PromptTemplateInput
 from beeai_framework.workflows.workflow import Workflow, WorkflowError
 
 
@@ -296,11 +298,12 @@ async def main() -> None:
     async def web_search(state: State) -> str:
         print("Step: ", sys._getframe().f_code.co_name)
         prompt = PromptTemplate(
+            PromptTemplateInput(
             schema=InputSchema,
             template="""
             Please create a web search query for the following input.
             Query: {{input}}""",
-        ).render(InputSchema(input=state.input))
+        )).render(InputSchema(input=state.input))
 
         output: ChatModelStructureOutput = await llm.create_structure(
             {
@@ -316,6 +319,7 @@ async def main() -> None:
         print("Step: ", sys._getframe().f_code.co_name)
 
         prompt = PromptTemplate(
+            PromptTemplateInput(
             schema=RAGSchema,
             template="""
     Use the following search results to answer the query accurately. If the results are irrelevant or insufficient, say 'I don't know.'
@@ -325,7 +329,7 @@ async def main() -> None:
 
     Query: {{input}}
     """,  # noqa: E501
-        ).render(RAGSchema(input=state.input, search_results=state.search_results or "No results available."))
+        )).render(RAGSchema(input=state.input, search_results=state.search_results or "No results available."))
 
         output: ChatModelOutput = await llm.create({"messages": [UserMessage(prompt)]})
         state.output = output.get_text_content()
@@ -360,13 +364,15 @@ _Source: [examples/workflows/web_agent.py](/examples/workflows/web_agent.py)_
 ### Multi-agent Content Creator
 
 ```py
+
 ```
 
-_Source: /examples/workflows/contentCreator.py TODO
+\_Source: /examples/workflows/contentCreator.py TODO
 
 ### Multi Agents Workflows
 
 ```py
+
 ```
 
-_Source: /examples/workflows/multiAgents.py TODO
+\_Source: /examples/workflows/multiAgents.py TODO

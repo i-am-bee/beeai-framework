@@ -30,10 +30,12 @@ from beeai_framework.emitter import Emitter, EmitterInput
 from beeai_framework.tools.tool import Tool
 from beeai_framework.utils.custom_logger import BeeLogger
 from beeai_framework.utils.models import ModelLike, to_model
-from beeai_framework.utils.templates import PromptTemplate
+from beeai_framework.utils.templates import PromptTemplate, PromptTemplateInput
 
 T = TypeVar("T", bound=BaseModel)
-ChatModelFinishReason: Literal["stop", "length", "function_call", "content_filter", "null"]
+ChatModelFinishReason: Literal[
+    "stop", "length", "function_call", "content_filter", "null"
+]
 logger = BeeLogger(__name__)
 
 
@@ -64,7 +66,11 @@ class ChatModelParameters(BaseModel):
 
 class ChatConfig(BaseModel):
     # TODO: cache: ChatModelCache | Callable[[ChatModelCache], ChatModelCache] | None = None
-    parameters: ChatModelParameters | Callable[[ChatModelParameters], ChatModelParameters] | None = None
+    parameters: (
+        ChatModelParameters
+        | Callable[[ChatModelParameters], ChatModelParameters]
+        | None
+    ) = None
 
 
 class ChatModelStructureInput(BaseModel):
@@ -120,15 +126,28 @@ class ChatModelOutput:
         if self.usage and other.usage:
             merged_usage = self.usage.model_copy()
             if other.usage.get("total_tokens"):
-                merged_usage.total_tokens = max(self.usage.total_tokens, other.usage.total_tokens)
-                merged_usage.prompt_tokens = max(self.usage.prompt_tokens, other.usage.prompt_tokens)
-                merged_usage.completion_tokens = max(self.usage.completion_tokens, other.usage.completion_tokens)
+                merged_usage.total_tokens = max(
+                    self.usage.total_tokens, other.usage.total_tokens
+                )
+                merged_usage.prompt_tokens = max(
+                    self.usage.prompt_tokens, other.usage.prompt_tokens
+                )
+                merged_usage.completion_tokens = max(
+                    self.usage.completion_tokens, other.usage.completion_tokens
+                )
             self.usage = merged_usage
         elif other.usage:
             self.usage = other.usage.model_copy()
 
     def get_text_content(self) -> str:
-        return "".join([x.text for x in list(filter(lambda x: isinstance(x, AssistantMessage), self.messages))])
+        return "".join(
+            [
+                x.text
+                for x in list(
+                    filter(lambda x: isinstance(x, AssistantMessage), self.messages)
+                )
+            ]
+        )
 
 
 class ChatModel(ABC):
@@ -177,21 +196,27 @@ class ChatModel(ABC):
     ) -> ChatModelStructureOutput:
         schema = input.input_schema
 
-        json_schema = schema.model_json_schema(mode="serialization") if issubclass(schema, BaseModel) else schema
+        json_schema = (
+            schema.model_json_schema(mode="serialization")
+            if issubclass(schema, BaseModel)
+            else schema
+        )
 
         class DefaultChatModelStructureSchema(BaseModel):
             schema: str
 
         system_template = PromptTemplate(
-            schema=DefaultChatModelStructureSchema,
-            template=(
-                """You are a helpful assistant that generates only valid JSON """
-                """adhering to the following JSON Schema.
+            PromptTemplateInput(
+                schema=DefaultChatModelStructureSchema,
+                template=(
+                    """You are a helpful assistant that generates only valid JSON """
+                    """adhering to the following JSON Schema.
 ```
 {{schema}}
 ```
 IMPORTANT: You MUST answer with a JSON object that matches the JSON schema above."""
-            ),
+                ),
+            )
         )
 
         input_messages = input.messages
@@ -201,7 +226,11 @@ IMPORTANT: You MUST answer with a JSON object that matches the JSON schema above
         ]
 
         response = await self._create(
-            ChatModelInput(messages=messages, response_format={"type": "object-json"}, abort_signal=input.abort_signal),
+            ChatModelInput(
+                messages=messages,
+                response_format={"type": "object-json"},
+                abort_signal=input.abort_signal,
+            ),
         )
 
         logger.debug(f"Recieved structured response:\n{response}")
@@ -224,7 +253,9 @@ IMPORTANT: You MUST answer with a JSON object that matches the JSON schema above
                     generator = self._create_stream(input, context)
                     async for value in generator:
                         chunks.append(value)
-                        await context.emitter.emit("newToken", (value, lambda: abort_controller.abort()))
+                        await context.emitter.emit(
+                            "newToken", (value, lambda: abort_controller.abort())
+                        )
                         if abort_controller.signal.aborted:
                             break
 
@@ -249,7 +280,9 @@ IMPORTANT: You MUST answer with a JSON object that matches the JSON schema above
             run_create,
         )
 
-    def create_structure(self, structure_input: ModelLike[ChatModelStructureInput]) -> Run:
+    def create_structure(
+        self, structure_input: ModelLike[ChatModelStructureInput]
+    ) -> Run:
         input = to_model(ChatModelStructureInput, structure_input)
 
         async def run_structure(context: RunContext) -> ChatModelStructureOutput:
@@ -268,14 +301,22 @@ IMPORTANT: You MUST answer with a JSON object that matches the JSON schema above
 
         if chat_config.parameters:
             self.parameters = (
-                chat_config.parameters(self.parameters) if callable(chat_config.parameters) else chat_config.parameters
+                chat_config.parameters(self.parameters)
+                if callable(chat_config.parameters)
+                else chat_config.parameters
             )
 
     @staticmethod
-    def from_name(name: str | ProviderName, options: ModelLike[ChatModelParameters] | None = None) -> "ChatModel":
+    def from_name(
+        name: str | ProviderName, options: ModelLike[ChatModelParameters] | None = None
+    ) -> "ChatModel":
         parsed_model = parse_model(name)
         TargetChatModel = load_model(parsed_model.provider_id, "chat")  # noqa: N806
 
-        settings = options.model_dump() if isinstance(options, ChatModelParameters) else options
+        settings = (
+            options.model_dump()
+            if isinstance(options, ChatModelParameters)
+            else options
+        )
 
         return TargetChatModel(parsed_model.model_id, **(settings or {}))
