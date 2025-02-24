@@ -1,25 +1,13 @@
-<p align="center">
-  <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="/docs/assets/Bee_logo_white.svg">
-    <source media="(prefers-color-scheme: light)" srcset="/docs/assets/Bee_logo_black.svg">
-    <img alt="Bee Framework logo" src="https://raw.githubusercontent.com/i-am-bee/beeai-framework/refs/heads/main/docs/assets/Bee_logo_black.svg" height="90">
-  </picture>
-</p>
 
-<h1 align="center">BeeAI Framework for Python</h1>
+# BeeAI Framework for Python <img align="cener" alt="Project Status: Alpha" src="https://img.shields.io/badge/Status-Alpha-red">
 
-<p align="center">
-  <img align="center" alt="Project Status: Alpha" src="https://img.shields.io/badge/Status-Alpha-red">
-  <h4 align="center">Build production-ready multi-agent systems</h4>
-</p>
+[![License](https://img.shields.io/badge/License-Apache%202.0-EA7826?style=flat)](https://github.com/i-am-bee/beeai-framework?tab=Apache-2.0-1-ov-file#readme)
+[![Bluesky](https://img.shields.io/badge/Bluesky-0285FF?style=flat&logo=bluesky&logoColor=white)](https://bsky.app/profile/beeaiagents.bsky.social)
+[![Discord](https://img.shields.io/discord/1309202615556378705?style=social&logo=discord&logoColor=black&label=Discord&labelColor=7289da&color=black)](https://discord.com/invite/NradeA6ZNF)
+[![GitHub Repo stars](https://img.shields.io/github/stars/I-am-bee/beeai-framework)](https://github.com/i-am-bee/beeai-framework)
 
-## Why pick BeeAI?
 
-**🏆 Build for your use case.**  Implement simple to complex multi-agent patterns using [Workflows](/python/docs/workflows.md), start with a [ReActAgent](/python/examples/agents/bee.py), or easily [build your own agent architecture](/python/docs/agents.md#creating-your-own-agent). There is no one-size-fits-all agent architecture, you need full flexibility in orchestrating agents and defining their roles and behaviors. 
-
-**🚀 Scale with production-grade controls.** Optimize token usage through [memory strategies](/python/docs/memory.md), persist and restore agent state via [(de)serialization](/python/docs/serialization.md), generate structured outputs, and execute generated code in a sandboxed environment. When things go wrong, BeeAI tracks the full agent workflow through [events](/python/docs/emitter.md), collects [telemetry](/python/docs/instrumentation.md), logs diagnostic data, and handles [errors](/python/docs/errors.md) with clear, well-defined exceptions. Deploying multi-agent systems requires resource management and reliability.
-
-**🔌 Seamlessly integrate with your models and tools.** Get started with any model from [Ollama](/python/examples/backend/providers/ollama.py), [Groq](/typescript/examples/backend/providers/groq.ts), [OpenAI](/typescript/examples/backend/providers/openai.ts), [watsonx.ai](/python/examples/backend/providers/watsonx.py), and [more](/python/docs/backend.md). Leverage tools from [LangChain](/typescript/examples/tools/langchain.ts), connect to any server using the [Model Context Protocol](/python/docs/tools.md#using-the-mcptool-class), or build your own [custom tools](/python/docs/tools.md#using-the-customtool-python-functions). BeeAI is designed to integrate with the systems and capabilities you need.
+Build production-ready multi-agent systems in Python. BeeAI framework is also available in [TypeScript](https://github.com/i-am-bee/beeai-framework/tree/main/typescript).
 
 ## Modules
 

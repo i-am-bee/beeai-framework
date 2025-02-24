@@ -14,7 +14,6 @@
 
 
 import os
-from typing import Any
 
 from beeai_framework.adapters.litellm.chat import LiteLLMChatModel
 from beeai_framework.backend.constants import ProviderName
@@ -28,8 +27,8 @@ class OllamaChatModel(LiteLLMChatModel):
     def provider_id(self) -> ProviderName:
         return "ollama"
 
-    def __init__(self, model_id: str | None = None, **settings: Any) -> None:
+    def __init__(self, model_id: str | None = None, settings: dict | None = None) -> None:
         super().__init__(
             model_id if model_id else os.getenv("OLLAMA_CHAT_MODEL", "llama3.1:8b"),
-            settings={"base_url": "http://localhost:11434"} | settings,
+            settings={"base_url": "http://localhost:11434"} | (settings or {}),
         )
