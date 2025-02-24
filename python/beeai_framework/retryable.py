@@ -20,7 +20,7 @@ from typing import Any, Literal, Self, TypeVar
 
 from pydantic import BaseModel
 
-from beeai_framework.cancellation import AbortController, AbortSignal, signal_race
+from beeai_framework.cancellation import AbortController, AbortSignal, abort_signal_handler
 from beeai_framework.errors import FrameworkError
 from beeai_framework.utils.custom_logger import BeeLogger
 from beeai_framework.utils.models import ModelLike, to_model
@@ -107,7 +107,7 @@ async def do_retry(fn: Callable[[int], Awaitable[Any]], options: dict[str, Any] 
 
             return await handler(attempt + 1, remaining - 1)
 
-    return await signal_race(lambda: handler(1, options.get("retries", 0)))
+    return await abort_signal_handler(lambda: handler(1, options.get("retries", 0)), options.get("signal"))
 
 
 class Retryable:
@@ -115,7 +115,7 @@ class Retryable:
         self._id = str(uuid.uuid4())
         self._retry_state: RetryableState | None = None
         retry_input = to_model(RetryableInput, retryable_input)
-        self._handlers = retry_input.model_dump()
+        self._handlers = to_model(RetryableInput, retry_input)
         self._config = retry_input.config
 
     @staticmethod
@@ -171,8 +171,8 @@ class Retryable:
             assert_aborted()
             ctx = self._get_context(attempt)
             if attempt > 1:
-                await self._handlers.get("on_retry")(ctx, last_error)
-            return await self._handlers.get("executor")(ctx)
+                await self._handlers.on_retry(ctx, last_error)
+            return await self._handlers.executor(ctx)
 
         def _should_retry(e: FrameworkError) -> bool:
             should_retry = not (
@@ -185,7 +185,7 @@ class Retryable:
         async def _on_failed_attempt(e: FrameworkError, meta: Meta) -> None:
             nonlocal last_error
             last_error = e
-            await self._handlers.get("on_error")(e, self._get_context(meta.attempt))
+            await self._handlers.on_error(e, self._get_context(meta.attempt))
             if not FrameworkError.is_retryable(e):
                 raise e
             assert_aborted()
@@ -219,4 +219,4 @@ class Retryable:
 
     def reset(self) -> None:
         self._retry_state = None
-        self._handlers.get("on_reset")()
+        self._handlers.on_reset()

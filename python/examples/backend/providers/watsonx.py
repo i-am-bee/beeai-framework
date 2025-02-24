@@ -6,6 +6,7 @@ from beeai_framework.adapters.watsonx.backend.chat import WatsonxChatModel
 from beeai_framework.backend.chat import ChatModel
 from beeai_framework.backend.message import UserMessage
 from beeai_framework.cancellation import AbortSignal
+from beeai_framework.errors import AbortError
 
 # Setting can be passed here during initiation or pre-configured via environment variables
 llm = WatsonxChatModel(
@@ -44,12 +45,18 @@ async def watsonx_stream() -> None:
 
 async def watsonx_stream_abort() -> None:
     user_message = UserMessage("What is the smallest of the Cape Verde islands?")
-    response = await llm.create({"messages": [user_message], "stream": True, "abort_signal": AbortSignal.timeout(0.5)})
 
-    if response is not None:
-        print(response.get_text_content())
-    else:
-        print("No response returned.")
+    try:
+        response = await llm.create(
+            {"messages": [user_message], "stream": True, "abort_signal": AbortSignal.timeout(0.5)}
+        )
+
+        if response is not None:
+            print(response.get_text_content())
+        else:
+            print("No response returned.")
+    except AbortError as err:
+        print(f"Aborted: {err}")
 
 
 async def watson_structure() -> None:

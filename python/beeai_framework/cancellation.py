@@ -95,7 +95,7 @@ def register_signals(controller: AbortController, signals: list[AbortSignal]) ->
         signal.add_event_listener(trigger_abort)
 
 
-async def signal_race(
+async def abort_signal_handler(
     fn: Callable[[], Awaitable[Any]], signal: AbortSignal | None = None, on_abort: Callable[[], None] | None = None
 ) -> Awaitable[Any]:
     def abort_handler() -> None:
