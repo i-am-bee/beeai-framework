@@ -36,6 +36,7 @@ from beeai_framework.memory import ReadOnlyMemory, UnconstrainedMemory
 from beeai_framework.tools.tool import Tool
 from beeai_framework.utils.asynchronous import ensure_async
 from beeai_framework.workflows.workflow import Workflow, WorkflowRun
+from beeai_framework.utils.templates import PromptTemplateInput
 
 AgentFactory = Callable[[ReadOnlyMemory], BaseAgent | Awaitable[BaseAgent]]
 
@@ -68,12 +69,21 @@ class AgentWorkflow:
         return self
 
     def add_agent(
-        self, agent: BaseAgent | Callable[[ReadOnlyMemory], BaseAgent | asyncio.Future[BaseAgent]] | AgentFactoryInput
+        self,
+        agent: (
+            BaseAgent
+            | Callable[[ReadOnlyMemory], BaseAgent | asyncio.Future[BaseAgent]]
+            | AgentFactoryInput
+        ),
     ) -> "AgentWorkflow":
         if isinstance(agent, BaseAgent):
 
             async def factory(memory: ReadOnlyMemory) -> BaseAgent:
-                instance: BaseAgent = await ensure_async(agent)(memory.as_read_only()) if isfunction(agent) else agent
+                instance: BaseAgent = (
+                    await ensure_async(agent)(memory.as_read_only())
+                    if isfunction(agent)
+                    else agent
+                )
                 instance.memory = memory
                 return instance
 
@@ -81,17 +91,29 @@ class AgentWorkflow:
 
         random_string = "".join(random.choice(string.ascii_letters) for _ in range(4))
         name = agent.name if not callable(agent) else f"Agent{random_string}"
-        return self._add(name, agent if callable(agent) else self._create_factory(agent))
+        return self._add(
+            name, agent if callable(agent) else self._create_factory(agent)
+        )
 
     def _create_factory(self, input: AgentFactoryInput) -> AgentFactory:
         def factory(memory: BaseMemory) -> BeeAgent:
+            def customizer(config: PromptTemplateInput):
+                config.defaults["instructions"] = (
+                    input.instructions or config.defaults.get("instructions")
+                )
+                return config
+
             return BeeAgent(
                 bee_input=BeeInput(
                     llm=input.llm,
                     tools=input.tools or [],
                     memory=memory,
-                    # template TODO
-                    meta=AgentMeta(name=input.name, description=input.instructions or "", tools=[]),
+                    templates={
+                        "system": lambda template: template.fork(customizer=customizer)
+                    },
+                    meta=AgentMeta(
+                        name=input.name, description=input.instructions or "", tools=[]
+                    ),
                     execution=input.execution,
                 )
             )
@@ -108,7 +130,9 @@ class AgentWorkflow:
             run_output: BeeRunOutput = await agent.run(run_input=BeeRunInput())
             state.final_answer = run_output.result.text
             state.new_messages.append(
-                AssistantMessage(f"Assistant Name: {name}\nAssistant Response: {run_output.result.text}")
+                AssistantMessage(
+                    f"Assistant Name: {name}\nAssistant Response: {run_output.result.text}"
+                )
             )
 
         self.workflow.add_step(name, step)

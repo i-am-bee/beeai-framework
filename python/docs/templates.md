@@ -1,6 +1,6 @@
 # Templates (Prompt Templates)
 
-*Disclaimer: The notes below may refer to the TypeScript version or missing files as the Python version moves toward parity in the near future. Additional Python examples coming soon. TODO*
+_Disclaimer: The notes below may refer to the TypeScript version or missing files as the Python version moves toward parity in the near future. Additional Python examples coming soon. TODO_
 
 > [!TIP]
 >
@@ -22,37 +22,42 @@ The Framework exposes such functionality via the [`PromptTemplate TODO`]() class
 ### Primitives
 
 ```py
+
 ```
 
-_Source: /examples/templates/primitives.py TODO
+\_Source: /examples/templates/primitives.py TODO
 
 ### Arrays
 
 ```py
+
 ```
 
-_Source: /examples/templates/arrays.py TODO
+\_Source: /examples/templates/arrays.py TODO
 
 ### Objects
 
 ```py
+
 ```
 
-_Source: /examples/templates/objects.py TODO
+\_Source: /examples/templates/objects.py TODO
 
 ### Forking
 
 ```py
+
 ```
 
-_Source: /examples/templates/forking.py TODO
+\_Source: /examples/templates/forking.py TODO
 
 ### Functions
 
 ```py
+
 ```
 
-_Source: functions.py TODO
+\_Source: functions.py TODO
 
 ### Agent Sys Prompt
 
@@ -92,7 +97,7 @@ from zoneinfo import ZoneInfo
 
 from pydantic import BaseModel
 
-from beeai_framework.utils.templates import PromptTemplate
+from beeai_framework.utils.templates import PromptTemplate, PromptTemplateInput
 
 os.environ["USER"] = "BeeAI"
 
@@ -102,6 +107,7 @@ class UserQuery(BaseModel):
 
 
 template = PromptTemplate(
+    PromptTemplateInput(
     schema=UserQuery,
     functions={
         "format_date": lambda: datetime.now(ZoneInfo("US/Eastern")).strftime("%A, %B %d, %Y at %I:%M:%S %p"),
@@ -111,7 +117,7 @@ template = PromptTemplate(
 {{format_date}}
 {{current_user}}: {{query}}
 """,
-)
+))
 
 ```
 
@@ -124,7 +130,7 @@ _Source: [examples/templates/basic_functions.py](/examples/templates/basic_funct
 ```py
 from pydantic import BaseModel
 
-from beeai_framework.utils.templates import PromptTemplate
+from beeai_framework.utils.templates import PromptTemplate, PromptTemplateInput
 
 
 class UserMessage(BaseModel):
@@ -133,9 +139,10 @@ class UserMessage(BaseModel):
 
 
 template = PromptTemplate(
+    PromptTemplateInput(
     schema=UserMessage,
     template="""{{label}}: {{input}}""",
-)
+))
 
 prompt = template.render(UserMessage(label="Query", input="What interesting things happened on this day in history?"))
 
