@@ -116,7 +116,7 @@ if __name__ == "__main__":
     asyncio.run(main())
 ```
 
-TypeScript version of this example can be found [here](/typescript/README.md).
+TypeScript version of this example can be found [here](/typescript/examples/workflows/multiAgents.ts).
 
 ### Running the example
 
