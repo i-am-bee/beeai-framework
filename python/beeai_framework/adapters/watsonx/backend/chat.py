@@ -14,7 +14,6 @@
 
 
 import os
-from typing import Any
 
 from beeai_framework.adapters.litellm.chat import LiteLLMChatModel
 from beeai_framework.backend.constants import ProviderName
@@ -28,7 +27,9 @@ class WatsonxChatModel(LiteLLMChatModel):
     def provider_id(self) -> ProviderName:
         return "watsonx"
 
-    def __init__(self, model_id: str | None = None, **settings: Any) -> None:
+    def __init__(self, model_id: str | None = None, settings: dict | None = None) -> None:
+        if settings is None:
+            settings = {}
         super().__init__(
-            model_id if model_id else os.getenv("WATSONX_CHAT_MODEL", "ibm/granite-3-8b-instruct"), **settings
+            model_id if model_id else os.getenv("WATSONX_CHAT_MODEL", "ibm/granite-3-8b-instruct"), settings=settings
         )

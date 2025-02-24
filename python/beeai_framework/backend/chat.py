@@ -278,4 +278,4 @@ IMPORTANT: You MUST answer with a JSON object that matches the JSON schema above
 
         settings = options.model_dump() if isinstance(options, ChatModelParameters) else options
 
-        return TargetChatModel(parsed_model.model_id, **(settings or {}))
+        return TargetChatModel(parsed_model.model_id, settings=settings or {})
