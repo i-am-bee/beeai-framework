@@ -9,20 +9,22 @@ from beeai_framework.cancellation import AbortSignal
 # Setting can be passed here during initiation or pre-configured via environment variables
 llm = WatsonxChatModel(
     "ibm/granite-3-8b-instruct",
-    # project_id="WATSONX_PROJECT_ID",
-    # api_key="WATSONX_API_KEY",
-    # api_base="WATSONX_API_URL",
+    # settings={
+    #     "project_id": "WATSONX_PROJECT_ID",
+    #     "api_key": "WATSONX_API_KEY",
+    #     "api_base": "WATSONX_API_URL",
+    # },
 )
 
 
 async def watsonx_from_name() -> None:
-    watsonx_llm = await WatsonxChatModel.from_name(
-        "ollama:llama3.1",
-        {
-            # "project_id": "WATSONX_PROJECT_ID",
-            # "api_key": "WATSONX_API_KEY",
-            # "api_base": "WATSONX_API_URL",
-        },
+    watsonx_llm = WatsonxChatModel.from_name(
+        "watsonx:ibm/granite-3-8b-instruct",
+        # {
+        #     "project_id": "WATSONX_PROJECT_ID",
+        #     "api_key": "WATSONX_API_KEY",
+        #     "api_base": "WATSONX_API_URL",
+        # },
     )
     user_message = UserMessage("what states are part of New England?")
     response = await watsonx_llm.create({"messages": [user_message]})

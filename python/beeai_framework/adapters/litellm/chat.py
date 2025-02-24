@@ -58,13 +58,13 @@ class LiteLLMChatModel(ChatModel, ABC):
     def model_id(self) -> str:
         return self._model_id
 
-    def __init__(self, model_id: str, **settings: Any) -> None:
+    def __init__(self, model_id: str, settings: dict | None = None) -> None:
         self._model_id = model_id
         llm_provider = "ollama_chat" if self.provider_id == "ollama" else self.provider_id
         self.supported_params = get_supported_openai_params(model=self.model_id, custom_llm_provider=llm_provider) or []
         # drop any unsupported parameters that were passed in
         litellm.drop_params = True
-        self.settings = settings
+        self.settings = settings or {}
         super().__init__()
 
     async def _create(
