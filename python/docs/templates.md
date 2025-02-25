@@ -1,7 +1,6 @@
 # Templates (Prompt Templates)
 
-_Disclaimer: The notes below may refer to the TypeScript version or missing files as the Python version moves toward parity in the near future. Additional Python examples coming soon. TODO_
-
+*Disclaimer: The notes below may refer to the TypeScript version or missing files as the Python version moves toward parity in the near future. Additional Python examples coming soon. TODO*
 > [!TIP]
 >
 > Location within the framework `beeai/template`.
@@ -22,42 +21,37 @@ The Framework exposes such functionality via the [`PromptTemplate TODO`]() class
 ### Primitives
 
 ```py
-
 ```
 
-\_Source: /examples/templates/primitives.py TODO
+_Source: /examples/templates/primitives.py TODO
 
 ### Arrays
 
 ```py
-
 ```
 
-\_Source: /examples/templates/arrays.py TODO
+_Source: /examples/templates/arrays.py TODO
 
 ### Objects
 
 ```py
-
 ```
 
-\_Source: /examples/templates/objects.py TODO
+_Source: /examples/templates/objects.py TODO
 
 ### Forking
 
 ```py
-
 ```
 
-\_Source: /examples/templates/forking.py TODO
+_Source: /examples/templates/forking.py TODO
 
 ### Functions
 
 ```py
-
 ```
 
-\_Source: functions.py TODO
+_Source: functions.py TODO
 
 ### Agent Sys Prompt
 

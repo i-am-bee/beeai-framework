@@ -1,6 +1,6 @@
 # Workflows (experimental)
 
-_Disclaimer: The notes below may refer to the TypeScript version or missing files as the Python version moves toward parity in the near future. Additional Python examples coming soon. TODO_
+*Disclaimer: The notes below may refer to the TypeScript version or missing files as the Python version moves toward parity in the near future. Additional Python examples coming soon. TODO*
 
 > [!TIP]
 >
@@ -18,10 +18,9 @@ Workflows provide a flexible and extensible component for managing and executing
 ### Basic
 
 ```py
-
 ```
 
-\_Source: /examples/workflows/basic.py TODO
+_Source: /examples/workflows/basic.py TODO
 
 ### Simple
 
@@ -136,18 +135,16 @@ _Source: [examples/workflows/simple.py](/examples/workflows/advanced.py)_
 ### Nesting
 
 ```py
-
 ```
 
-\_Source: /examples/workflows/nesting.py TODO
+_Source: /examples/workflows/nesting.py TODO
 
 ### Agent Delegation
 
 ```py
-
 ```
 
-\_Source: /examples/workflows/agent.py TODO
+_Source: /examples/workflows/agent.py TODO
 
 ### Memory
 
@@ -364,15 +361,13 @@ _Source: [examples/workflows/web_agent.py](/examples/workflows/web_agent.py)_
 ### Multi-agent Content Creator
 
 ```py
-
 ```
 
-\_Source: /examples/workflows/contentCreator.py TODO
+_Source: /examples/workflows/contentCreator.py TODO
 
 ### Multi Agents Workflows
 
 ```py
-
 ```
 
-\_Source: /examples/workflows/multiAgents.py TODO
+_Source: /examples/workflows/multiAgents.py TODO
