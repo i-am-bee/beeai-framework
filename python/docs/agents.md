@@ -85,8 +85,7 @@ You can customize your agent's behavior in five ways:
 
 Control how the agent runs by configuring retries, timeouts, and iteration limits.
 
-From [bee.py](/python/examples/agents/bee.py):
-```python
+```py
 response = await agent.run(
     BeeRunInput(prompt=prompt),
     {
@@ -98,6 +97,8 @@ response = await agent.run(
     },
 ).observe(observer)
 ```
+
+_Source: [python/examples/agents/bee.py](/python/examples/agents/bee.py)_
 
 > 💡 **Tip:** The default is zero retries and no timeout. For complex tasks, increasing the max_iterations is recommended.
 
@@ -128,6 +129,8 @@ print(prompt)
 
 ```
 
+_Source: [python/examples/templates/agent_sys_prompt.py](/python/examples/templates/agent_sys_prompt.py)_
+
 The agent uses several templates that you can override:
 1. **System Prompt** - Defines the agent's behavior and capabilities
 2. **User Prompt** - Formats the user's input
@@ -141,8 +144,7 @@ The agent uses several templates that you can override:
 
 Enhance your agent's capabilities by providing it with tools to interact with external systems.
 
-From [simple.py](/python/examples/agents/simple.py):
-```python
+```py
 agent = BeeAgent(
     bee_input=BeeInput(
         llm=llm, 
@@ -151,6 +153,8 @@ agent = BeeAgent(
     )
 )
 ```
+
+_Source: [python/examples/agents/simple.py](/python/examples/agents/simple.py)_
 
 **Available tools include:**
 - Search tools (`DuckDuckGoSearchTool`)
@@ -164,7 +168,6 @@ agent = BeeAgent(
 
 Memory allows your agent to maintain context across multiple interactions.
 
-From [simple.py](/python/examples/agents/simple.py):
 ```python
 agent = BeeAgent(
     bee_input=BeeInput(
@@ -174,6 +177,8 @@ agent = BeeAgent(
     )
 )
 ```
+
+_Source: [python/examples/agents/simple.py](/python/examples/agents/simple.py)_
 
 **Memory types for different use cases:**
 - [UnconstrainedMemory](/python/examples/memory/unconstrainedMemory.py) - For unlimited storage
@@ -187,8 +192,7 @@ agent = BeeAgent(
 
 Monitor the agent's execution by observing events it emits. This allows you to track its reasoning process, handle errors, or implement custom logging.
 
-From [simple.py](/python/examples/agents/simple.py):
-```python
+```py
 def update_callback(data: dict, event: EventMeta) -> None:
     print(f"Agent({data['update']['key']}) 🤖 : ", data['update']['parsedValue'])
 
@@ -199,6 +203,8 @@ output: BeeRunOutput = await agent.run(
     run_input=BeeRunInput(prompt="What's the current weather in Las Vegas?")
 ).observe(on_update)
 ```
+
+_Source: [python/examples/agents/simple.py](/python/examples/agents/simple.py)_
 
 > 💡 **Tip:** See the [emitter.md](/python/docs/emitter.md) documentation for more information on event observation.
 
@@ -212,6 +218,7 @@ To create your own agent, you must implement the agent's base class (`BaseAgent`
 
 ```py
 # Coming soon
+
 ```
 
 ---
@@ -220,8 +227,21 @@ To create your own agent, you must implement the agent's base class (`BaseAgent`
 
 Agents can be configured to use memory to maintain conversation context and state.
 
-From [agentMemory.py](/python/examples/memory/agentMemory.py):
+<!-- embedme examples/memory/agentMemory.py -->
+
 ```py
+import asyncio
+
+from beeai_framework.agents.bee.agent import BeeAgent
+from beeai_framework.agents.types import BeeInput, BeeRunInput
+from beeai_framework.backend.chat import ChatModel
+from beeai_framework.backend.message import AssistantMessage, UserMessage
+from beeai_framework.memory.unconstrained_memory import UnconstrainedMemory
+
+# Initialize the memory and LLM
+memory = UnconstrainedMemory()
+
+
 def create_agent() -> BeeAgent:
     llm = ChatModel.from_name("ollama:granite3.1-dense:8b")
 
@@ -230,31 +250,67 @@ def create_agent() -> BeeAgent:
 
     return agent
 
-# Create user message
-user_input = "Hello world!"
-user_message = UserMessage(user_input)
 
-# Await adding user message to memory
-await memory.add(user_message)
+async def main() -> None:
+    try:
+        # Create user message
+        user_input = "Hello world!"
+        user_message = UserMessage(user_input)
 
-# Run agent
-response = await agent.run(
-    BeeRunInput(
-        prompt=user_input,
-        options={
-            "execution": {
-                "max_retries_per_step": 3,
-                "total_max_retries": 10,
-                "max_iterations": 20,
-            }
-        },
-    )
-)
+        # Await adding user message to memory
+        await memory.add(user_message)
+        print("Added user message to memory")
 
-# Create and store assistant's response
-assistant_message = AssistantMessage(response.result.text)
-await memory.add(assistant_message)
+        # Create agent
+        agent = create_agent()
+
+        response = await agent.run(
+            BeeRunInput(
+                prompt=user_input,
+                options={
+                    "execution": {
+                        "max_retries_per_step": 3,
+                        "total_max_retries": 10,
+                        "max_iterations": 20,
+                    }
+                },
+            )
+        )
+        print(f"Received response: {response}")
+
+        # Create and store assistant's response
+        assistant_message = AssistantMessage(response.result.text)
+
+        # Await adding assistant message to memory
+        await memory.add(assistant_message)
+        print("Added assistant message to memory")
+
+        # Print results
+        print(f"\nMessages in memory: {len(agent.memory.messages)}")
+
+        if len(agent.memory.messages) >= 1:
+            user_msg = agent.memory.messages[0]
+            print(f"User: {user_msg.text}")
+
+        if len(agent.memory.messages) >= 2:
+            agent_msg = agent.memory.messages[1]
+            print(f"Agent: {agent_msg.text}")
+        else:
+            print("No agent message found in memory")
+
+    except Exception as e:
+        print(f"An error occurred: {e!s}")
+        import traceback
+
+        print(traceback.format_exc())
+
+
+if __name__ == "__main__":
+    asyncio.run(main())
+
 ```
+
+_Source: [python/examples/memory/agentMemory.py](/python/examples/memory/agentMemory.py)_
 
 **Memory types for different use cases:**
 - [UnconstrainedMemory](/python/examples/memory/unconstrainedMemory.py) - For unlimited storage
@@ -268,40 +324,73 @@ await memory.add(assistant_message)
 
 For complex applications, you can create multi-agent workflows where specialized agents collaborate.
 
-From [multi_agents.py](/python/examples/workflows/multi_agents.py):
-```python
-workflow = AgentWorkflow(name="Smart assistant")
-workflow.add_agent(
-    agent=AgentFactoryInput(
-        name="WeatherForecaster",
-        instructions="You are a weather assistant. Respond only if you can provide a useful answer.",
-        tools=[OpenMeteoTool()],
-        llm=llm,
-        execution=BeeAgentExecutionConfig(max_iterations=3),
-    )
-)
-workflow.add_agent(
-    agent=AgentFactoryInput(
-        name="Researcher",
-        instructions="You are a researcher assistant. Respond only if you can provide a useful answer.",
-        tools=[DuckDuckGoSearchTool()],
-        llm=llm,
-    )
-)
-workflow.add_agent(
-    agent=AgentFactoryInput(
-        name="Solver",
-        instructions="""Your task is to provide the most useful final answer based on the assistants'
-responses which all are relevant. Ignore those where assistant do not know.""",
-        llm=llm,
-    )
-)
+<!-- embedme examples/workflows/multi_agents.py -->
 
-prompt = "What is the weather in New York?"
-memory = UnconstrainedMemory()
-await memory.add(UserMessage(content=prompt))
-response = await workflow.run(messages=memory.messages)
+```py
+import asyncio
+import traceback
+
+from pydantic import ValidationError
+
+from beeai_framework.agents.bee.agent import BeeAgentExecutionConfig
+from beeai_framework.backend.chat import ChatModel
+from beeai_framework.backend.message import UserMessage
+from beeai_framework.memory import UnconstrainedMemory
+from beeai_framework.tools.search.duckduckgo import DuckDuckGoSearchTool
+from beeai_framework.tools.weather.openmeteo import OpenMeteoTool
+from beeai_framework.workflows.agent import AgentFactoryInput, AgentWorkflow
+from beeai_framework.workflows.workflow import WorkflowError
+
+
+async def main() -> None:
+    llm = ChatModel.from_name("ollama:granite3.1-dense:8b")
+
+    try:
+        workflow = AgentWorkflow(name="Smart assistant")
+        workflow.add_agent(
+            agent=AgentFactoryInput(
+                name="WeatherForecaster",
+                instructions="You are a weather assistant. Respond only if you can provide a useful answer.",
+                tools=[OpenMeteoTool()],
+                llm=llm,
+                execution=BeeAgentExecutionConfig(max_iterations=3),
+            )
+        )
+        workflow.add_agent(
+            agent=AgentFactoryInput(
+                name="Researcher",
+                instructions="You are a researcher assistant. Respond only if you can provide a useful answer.",
+                tools=[DuckDuckGoSearchTool()],
+                llm=llm,
+            )
+        )
+        workflow.add_agent(
+            agent=AgentFactoryInput(
+                name="Solver",
+                instructions="""Your task is to provide the most useful final answer based on the assistants'
+responses which all are relevant. Ignore those where assistant do not know.""",
+                llm=llm,
+            )
+        )
+
+        prompt = "What is the weather in New York?"
+        memory = UnconstrainedMemory()
+        await memory.add(UserMessage(content=prompt))
+        response = await workflow.run(messages=memory.messages)
+        print(f"result: {response.state.final_answer}")
+
+    except WorkflowError:
+        traceback.print_exc()
+    except ValidationError:
+        traceback.print_exc()
+
+
+if __name__ == "__main__":
+    asyncio.run(main())
+
 ```
+
+_Source: [python/examples/workflows/multi_agents.py](/python/examples/workflows/multi_agents.py)_
 
 **Example Workflow Patterns:**
 - [multi_agents.py](/python/examples/workflows/multi_agents.py) - Multiple specialized agents working together

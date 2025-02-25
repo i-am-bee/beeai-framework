@@ -346,7 +346,7 @@ if __name__ == "__main__":
 
 Only a single summarization of the conversation is preserved. Summarization is updated with every new message.
 
-From [summarizeMemory.py](/python/examples/memory/summarizeMemory.py):
+<!-- embedme examples/memory/summarizeMemory.py -->
 
 ```py
 import asyncio
@@ -393,7 +393,10 @@ async def main() -> None:
 
 if __name__ == "__main__":
     asyncio.run(main())
+
 ```
+
+_Source: [python/examples/memory/summarizeMemory.py](/python/examples/memory/summarizeMemory.py)_
 
 ---
 
@@ -401,11 +404,13 @@ if __name__ == "__main__":
 
 To create your memory implementation, you must implement the `BaseMemory` class.
 
-From [custom.py](/python/examples/memory/custom.py)
+<!-- embedme examples/memory/custom.py -->
 
-```text
-Coming soon
+```py
+# Coming soon
 ```
+
+_Source: [python/examples/memory/custom.py](/python/examples/memory/custom.py)_
 
 > [!TIP]
 >
