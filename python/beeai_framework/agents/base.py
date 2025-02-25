@@ -38,24 +38,24 @@ class BaseAgent(ABC, Generic[T]):
         if self.is_running:
             raise RuntimeError("Agent is already running!")
 
-        try:
-            self.is_running = True
+        self.is_running = True
 
-            async def handler(context: RunContext) -> T:
+        async def handler(context: RunContext) -> T:
+            try:
                 return await self._run(run_input, options, context)
+            except Exception as e:
+                if isinstance(e, RuntimeError):
+                    raise e
+                else:
+                    raise RuntimeError("Error has occurred!") from e
+            finally:
+                self.is_running = False
 
-            return RunContext.enter(
-                RunInstance(emitter=self.emitter),
-                RunContextInput(signal=options.signal if options else None, params=(run_input, options)),
-                handler,
-            )
-        except Exception as e:
-            if isinstance(e, RuntimeError):
-                raise e
-            else:
-                raise RuntimeError("Error has occurred!") from e
-        finally:
-            self.is_running = False
+        return RunContext.enter(
+            RunInstance(emitter=self.emitter),
+            RunContextInput(signal=options.signal if options else None, params=(run_input, options)),
+            handler,
+        )
 
     @abstractmethod
     async def _run(self, run_input: BeeRunInput, options: BeeRunOptions | None, context: RunContext) -> T:
