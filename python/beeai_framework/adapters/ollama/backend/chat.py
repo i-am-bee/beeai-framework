@@ -28,7 +28,7 @@ class OllamaChatModel(LiteLLMChatModel):
         return "ollama"
 
     def __init__(self, model_id: str | None = None, settings: dict | None = None) -> None:
-        if not hasattr(settings, "base_url") and "OLLAMA_BASE_URL" in os.environ:
+        if settings is not None and not hasattr(settings, "base_url") and "OLLAMA_BASE_URL" in os.environ:
             settings["base_url"] = os.getenv("OLLAMA_BASE_URL")
 
         super().__init__(
