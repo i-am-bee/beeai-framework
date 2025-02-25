@@ -27,7 +27,9 @@ fi
 # Run hooks based on staged files
 if [ "$HAS_TS_FILES" -eq 1  ] && grep -q "\"git:$HOOK_NAME\"" "$TS_DIR/package.json"; then
   echo "Running $HOOK_NAME hook in $TS_DIR..."
-  (cd "$TS_DIR" && npm run "git:$HOOK_NAME" "$HOOK_ARGS") || exit $?
+  HOOK_ARGS_RELATIVE=$(echo "$HOOK_ARGS" | sed 's/[^ ]* */..\/&/g' | sed 's/..\/typescript\///g')
+  (cd "$TS_DIR" && npm run "git:$HOOK_NAME" "$HOOK_ARGS_RELATIVE") || exit $?
+  echo ${CHANGED_FILES} | xargs -r git add
 fi
 
 if [ "$HAS_PY_FILES" -eq 1 ]; then
@@ -41,7 +43,7 @@ fi
 if [ "$HAS_TS_FILES" -eq 0 ] && [ "$HAS_PY_FILES" -eq 0 ]; then
   if [ "$HOOK_NAME" = "commit-msg" ] ; then
     COMMIT_MSG=$(cat "$COMMIT_MSG_FILE")
-    CONVENTIONAL_COMMIT_REGEX="^(feat|chore|ci|docs|revert)(\(\w+\))?!?: .+"
+    CONVENTIONAL_COMMIT_REGEX="^(feat|fix|chore|ci|docs|revert)(\(\w+\))?!?: .+"
 
     if ! echo "$COMMIT_MSG" | grep -qE "$CONVENTIONAL_COMMIT_REGEX"; then
       echo "Error: The provided commit message does not adhere to conventional commit style!"
