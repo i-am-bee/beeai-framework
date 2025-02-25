@@ -98,6 +98,7 @@ class LiteLLMChatModel(ChatModel, ABC):
         litellm_input = self._transform_input(input)
         parameters = litellm_input.model_dump()
         parameters["stream"] = True
+        logger.trace(f"LiteLLM Parameters:\n{json.dumps(parameters, sort_keys=True, indent=4)}")
         response = await acompletion(**parameters)
 
         # TODO: handle tool calling for streaming
