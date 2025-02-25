@@ -26,7 +26,6 @@ from beeai_framework.agents.bee import BeeAgent
 from beeai_framework.agents.types import (
     AgentMeta,
     BeeAgentExecutionConfig,
-    BeeInput,
     BeeRunOutput,
 )
 from beeai_framework.backend.chat import ChatModel
@@ -85,14 +84,12 @@ class AgentWorkflow:
     def _create_factory(self, input: AgentFactoryInput) -> AgentFactory:
         def factory(memory: BaseMemory) -> BeeAgent:
             return BeeAgent(
-                bee_input=BeeInput(
-                    llm=input.llm,
-                    tools=input.tools or [],
-                    memory=memory,
-                    # template TODO
-                    meta=AgentMeta(name=input.name, description=input.instructions or "", tools=[]),
-                    execution=input.execution,
-                )
+                llm=input.llm,
+                tools=input.tools or [],
+                memory=memory,
+                # template TODO
+                meta=AgentMeta(name=input.name, description=input.instructions or "", tools=[]),
+                execution=input.execution,
             )
 
         return factory

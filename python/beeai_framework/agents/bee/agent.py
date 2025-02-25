@@ -28,24 +28,37 @@ from beeai_framework.agents.runners.granite.runner import GraniteRunner
 from beeai_framework.agents.types import (
     AgentMeta,
     BeeAgentExecutionConfig,
+    BeeAgentTemplates,
     BeeInput,
     BeeRunInput,
     BeeRunOptions,
     BeeRunOutput,
 )
 from beeai_framework.backend import Message
+from beeai_framework.backend.chat import ChatModel
 from beeai_framework.backend.message import AssistantMessage, MessageMeta, UserMessage
 from beeai_framework.context import RunContext
 from beeai_framework.emitter import Emitter, EmitterInput
 from beeai_framework.memory import BaseMemory
-from beeai_framework.utils.models import ModelLike, to_model
+from beeai_framework.tools.tool import Tool
 
 
 class BeeAgent(BaseAgent[BeeRunOutput]):
     runner: Callable[..., BaseRunner]
 
-    def __init__(self, bee_input: ModelLike[BeeInput]) -> None:
-        self.input = to_model(BeeInput, bee_input)
+    def __init__(
+        self,
+        llm: ChatModel,
+        tools: list[Tool],
+        memory: BaseMemory,
+        meta: AgentMeta | None = None,
+        templates: BeeAgentTemplates | None = None,
+        execution: BeeAgentExecutionConfig | None = None,
+        stream: bool | None = None,
+    ) -> None:
+        self.input = BeeInput(
+            llm=llm, tools=tools, memory=memory, meta=meta, templates=templates, execution=execution, stream=stream
+        )
         if "granite" in self.input.llm.model_id:
             self.runner = GraniteRunner
         else:

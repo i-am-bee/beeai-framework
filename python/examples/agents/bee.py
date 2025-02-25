@@ -10,7 +10,6 @@ from langchain_community.utilities import WikipediaAPIWrapper
 from pydantic import BaseModel, Field
 
 from beeai_framework.agents.bee.agent import BeeAgent
-from beeai_framework.agents.types import BeeInput
 from beeai_framework.backend.chat import ChatModel
 from beeai_framework.emitter.emitter import Emitter, EventMeta
 from beeai_framework.emitter.types import EmitterOptions
@@ -78,7 +77,7 @@ def create_agent() -> BeeAgent:
         pass
 
     # Create agent with memory and tools
-    agent = BeeAgent(BeeInput(llm=llm, tools=tools, memory=TokenMemory(llm)))
+    agent = BeeAgent(llm=llm, tools=tools, memory=TokenMemory(llm))
 
     return agent
 

@@ -1,7 +1,7 @@
 import asyncio
 
 from beeai_framework.agents.bee.agent import BeeAgent
-from beeai_framework.agents.types import BeeInput, BeeRunOutput
+from beeai_framework.agents.types import BeeRunOutput
 from beeai_framework.backend.chat import ChatModel
 from beeai_framework.emitter import Emitter, EventMeta
 from beeai_framework.memory.unconstrained_memory import UnconstrainedMemory
@@ -14,9 +14,7 @@ async def main() -> None:
     chat_model: ChatModel = ChatModel.from_name("ollama:granite3.1-dense:8b")
 
     agent = BeeAgent(
-        BeeInput(
-            llm=chat_model, tools=[OpenMeteoTool(), DuckDuckGoSearchTool(max_results=3)], memory=UnconstrainedMemory()
-        )
+        llm=chat_model, tools=[OpenMeteoTool(), DuckDuckGoSearchTool(max_results=3)], memory=UnconstrainedMemory()
     )
 
     reader = ConsoleReader()

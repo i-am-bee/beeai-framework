@@ -37,7 +37,6 @@ _Source: /examples/memory/llmMemory.py TODO
 import asyncio
 
 from beeai_framework.agents.bee.agent import BeeAgent
-from beeai_framework.agents.types import BeeInput
 from beeai_framework.backend.chat import ChatModel
 from beeai_framework.backend.message import AssistantMessage, UserMessage
 from beeai_framework.memory.unconstrained_memory import UnconstrainedMemory
@@ -50,7 +49,7 @@ def create_agent() -> BeeAgent:
     llm = ChatModel.from_name("ollama:granite3.1-dense:8b")
 
     # Initialize the agent
-    agent = BeeAgent(BeeInput(llm=llm, memory=memory, tools=[]))
+    agent = BeeAgent(llm=llm, memory=memory, tools=[])
 
     return agent
 
