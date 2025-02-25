@@ -102,16 +102,17 @@ class UserQuery(BaseModel):
 
 template = PromptTemplate(
     PromptTemplateInput(
-    schema=UserQuery,
-    functions={
-        "format_date": lambda: datetime.now(ZoneInfo("US/Eastern")).strftime("%A, %B %d, %Y at %I:%M:%S %p"),
-        "current_user": lambda: os.environ["USER"],
-    },
-    template="""
+        schema=UserQuery,
+        functions={
+            "format_date": lambda: datetime.now(ZoneInfo("US/Eastern")).strftime("%A, %B %d, %Y at %I:%M:%S %p"),
+            "current_user": lambda: os.environ["USER"],
+        },
+        template="""
 {{format_date}}
 {{current_user}}: {{query}}
 """,
-))
+    )
+)
 
 ```
 
@@ -134,9 +135,10 @@ class UserMessage(BaseModel):
 
 template = PromptTemplate(
     PromptTemplateInput(
-    schema=UserMessage,
-    template="""{{label}}: {{input}}""",
-))
+        schema=UserMessage,
+        template="""{{label}}: {{input}}""",
+    )
+)
 
 prompt = template.render(UserMessage(label="Query", input="What interesting things happened on this day in history?"))
 

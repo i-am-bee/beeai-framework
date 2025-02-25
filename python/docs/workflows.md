@@ -296,11 +296,12 @@ async def main() -> None:
         print("Step: ", sys._getframe().f_code.co_name)
         prompt = PromptTemplate(
             PromptTemplateInput(
-            schema=InputSchema,
-            template="""
+                schema=InputSchema,
+                template="""
             Please create a web search query for the following input.
             Query: {{input}}""",
-        )).render(InputSchema(input=state.input))
+            )
+        ).render(InputSchema(input=state.input))
 
         output: ChatModelStructureOutput = await llm.create_structure(
             {
@@ -317,8 +318,8 @@ async def main() -> None:
 
         prompt = PromptTemplate(
             PromptTemplateInput(
-            schema=RAGSchema,
-            template="""
+                schema=RAGSchema,
+                template="""
     Use the following search results to answer the query accurately. If the results are irrelevant or insufficient, say 'I don't know.'
 
     Search Results:
@@ -326,7 +327,13 @@ async def main() -> None:
 
     Query: {{input}}
     """,  # noqa: E501
-        )).render(RAGSchema(input=state.input, search_results=state.search_results or "No results available."))
+            )
+        ).render(
+            RAGSchema(
+                input=state.input,
+                search_results=state.search_results or "No results available.",
+            )
+        )
 
         output: ChatModelOutput = await llm.create({"messages": [UserMessage(prompt)]})
         state.output = output.get_text_content()
