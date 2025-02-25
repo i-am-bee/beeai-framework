@@ -10,7 +10,7 @@ from langchain_community.utilities import WikipediaAPIWrapper
 from pydantic import BaseModel, Field
 
 from beeai_framework.agents.bee.agent import BeeAgent
-from beeai_framework.agents.types import BeeInput, BeeRunInput
+from beeai_framework.agents.types import BeeInput
 from beeai_framework.backend.chat import ChatModel
 from beeai_framework.emitter.emitter import Emitter, EventMeta
 from beeai_framework.emitter.types import EmitterOptions
@@ -123,7 +123,7 @@ async def main() -> None:
         for prompt in reader:
             # Run agent with the prompt
             response = await agent.run(
-                BeeRunInput(prompt=prompt),
+                prompt,
                 {
                     "execution": {
                         "max_retries_per_step": 3,

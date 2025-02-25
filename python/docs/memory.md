@@ -69,16 +69,14 @@ async def main() -> None:
         agent = create_agent()
 
         response = await agent.run(
-            BeeRunInput(
-                prompt=user_input,
-                options={
-                    "execution": {
-                        "max_retries_per_step": 3,
-                        "total_max_retries": 10,
-                        "max_iterations": 20,
-                    }
-                },
-            )
+            prompt=user_input,
+            options={
+                "execution": {
+                    "max_retries_per_step": 3,
+                    "total_max_retries": 10,
+                    "max_iterations": 20,
+                }
+            },
         )
         print(f"Received response: {response}")
 

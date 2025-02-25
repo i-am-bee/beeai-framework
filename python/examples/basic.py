@@ -1,7 +1,7 @@
 import asyncio
 
 from beeai_framework.agents.bee.agent import BeeAgent
-from beeai_framework.agents.types import BeeInput, BeeRunInput
+from beeai_framework.agents.types import BeeInput
 from beeai_framework.backend.chat import ChatModel
 from beeai_framework.memory.unconstrained_memory import UnconstrainedMemory
 
@@ -11,7 +11,7 @@ async def main() -> None:
 
     agent = BeeAgent(BeeInput(llm=chat_model, tools=[], memory=UnconstrainedMemory()))
 
-    result = await agent.run(BeeRunInput(prompt="What is the capital of Massachusetts"))
+    result = await agent.run("What is the capital of Massachusetts")
 
     print("answer:", result.result.text)
 

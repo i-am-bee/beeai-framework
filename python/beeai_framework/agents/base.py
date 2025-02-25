@@ -22,7 +22,7 @@ from beeai_framework.agents.types import AgentMeta, BeeRunInput, BeeRunOptions
 from beeai_framework.context import Run, RunContext, RunContextInput, RunInstance
 from beeai_framework.emitter import Emitter
 from beeai_framework.memory import BaseMemory
-from beeai_framework.utils.models import ModelLike, to_model, to_model_optional
+from beeai_framework.utils.models import ModelLike, to_model_optional
 
 T = TypeVar("T", bound=BaseModel)
 
@@ -31,8 +31,8 @@ class BaseAgent(ABC, Generic[T]):
     is_running: bool = False
     emitter: Emitter
 
-    def run(self, run_input: ModelLike[BeeRunInput], options: ModelLike[BeeRunOptions] | None = None) -> Run[T]:
-        run_input = to_model(BeeRunInput, run_input)
+    def run(self, prompt: str | None = None, options: ModelLike[BeeRunOptions] | None = None) -> Run[T]:
+        run_input = BeeRunInput(prompt=prompt)
         options = to_model_optional(BeeRunOptions, options)
 
         if self.is_running:

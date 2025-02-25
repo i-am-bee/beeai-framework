@@ -120,7 +120,7 @@ async def main() -> None:
 
     agent = BeeAgent(BeeInput(llm=chat_model, tools=[basic_calculator], memory=UnconstrainedMemory()))
 
-    result = await agent.run(BeeRunInput(prompt="What is the square root of 36?"))
+    result = await agent.run("What is the square root of 36?")
 
     print(result.result.text)
 
@@ -150,7 +150,7 @@ async def main() -> None:
     chat_model = ChatModel.from_name("ollama:granite3.1-dense:8b")
     agent = BeeAgent(BeeInput(llm=chat_model, tools=[DuckDuckGoSearchTool()], memory=UnconstrainedMemory()))
 
-    result = await agent.run(BeeRunInput(prompt="How tall is the mount Everest?"))
+    result = await agent.run("How tall is the mount Everest?")
 
     print(result.result.text)
 
@@ -180,7 +180,7 @@ async def main() -> None:
     llm = ChatModel.from_name("ollama:granite3.1-dense:8b")
     agent = BeeAgent(BeeInput(llm=llm, tools=[OpenMeteoTool()], memory=UnconstrainedMemory()))
 
-    result = await agent.run(BeeRunInput(prompt="What's the current weather in London?"))
+    result = await agent.run("What's the current weather in London?")
 
     print(result.result.text)
 

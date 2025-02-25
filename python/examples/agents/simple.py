@@ -1,7 +1,7 @@
 import asyncio
 
 from beeai_framework.agents.bee.agent import BeeAgent
-from beeai_framework.agents.types import BeeInput, BeeRunInput, BeeRunOutput
+from beeai_framework.agents.types import BeeInput, BeeRunOutput
 from beeai_framework.backend.chat import ChatModel
 from beeai_framework.emitter.emitter import Emitter, EventMeta
 from beeai_framework.memory.unconstrained_memory import UnconstrainedMemory
@@ -21,9 +21,7 @@ async def main() -> None:
     def on_update(emitter: Emitter) -> None:
         emitter.on("update", update_callback)
 
-    output: BeeRunOutput = await agent.run(
-        run_input=BeeRunInput(prompt="What's the current weather in Las Vegas?")
-    ).observe(on_update)
+    output: BeeRunOutput = await agent.run("What's the current weather in Las Vegas?").observe(on_update)
 
     print("Agent 🤖 : ", output.result.text)
 
