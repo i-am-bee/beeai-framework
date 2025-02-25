@@ -18,49 +18,60 @@ from typing import Any
 import wikipediaapi
 from pydantic import BaseModel, Field
 
-from beeai_framework.tools import ToolError
 from beeai_framework.tools.search import SearchToolOutput, SearchToolResult
 from beeai_framework.tools.tool import Tool
 
 
-class WikipediaSearchToolInput(BaseModel):
+class WikipediaToolInput(BaseModel):
     query: str = Field(description="Search query, name of the Wikipedia page.")
+    full_text: bool = Field(description="If set to true will return the full text of the page.", default=False)
+    section_titles: bool = Field(description="If set to true returns section titles as the description.", default=False)
+    language: str | None = Field(description="Retrieves specified language version if available.", default=None)
 
 
-class WikipediaSearchToolResult(SearchToolResult):
+class WikipediaToolResult(SearchToolResult):
     pass
 
 
-class WikipediaSearchToolOutput(SearchToolOutput):
+class WikipediaToolOutput(SearchToolOutput):
     pass
 
 
-class WikipediaSearchTool(Tool[WikipediaSearchToolInput]):
+class WikipediaTool(Tool[WikipediaToolInput]):
     name = "Wikipedia"
     description = "Search factual and historical information, including biography, \
         history, politics, geography, society, culture, science, technology, people, \
         animal species, mathematics, and other subjects."
-    input_schema = WikipediaSearchToolInput
+    input_schema = WikipediaToolInput
     client = wikipediaapi.Wikipedia(
         user_agent="beeai-framework https://github.com/i-am-bee/beeai-framework", language="en"
     )
 
-    def __init__(self, full_text: bool = False) -> None:
-        super().__init__()
-        self.full_text = full_text
+    def get_section_titles(self, sections: wikipediaapi.WikipediaPage.sections) -> str:
+        titles = []
+        for section in sections:
+            titles.append(section.title)
+        return ",".join(str(title) for title in titles)
 
-    def _run(self, input: WikipediaSearchToolInput, _: Any | None = None) -> WikipediaSearchToolOutput:
-        try:
-            page_py = self.client.page(input.query)
-            if page_py.exists():
-                description_output = page_py.text if self.full_text else page_py.summary
-                search_results: list[WikipediaSearchToolResult] = [
-                    WikipediaSearchToolResult(
-                        title=input.query or "", description=description_output or "", url=page_py.fullurl or ""
-                    )
-                ]
-                return WikipediaSearchToolOutput(search_results)
+    def _run(self, input: WikipediaToolInput, _: Any | None = None) -> WikipediaToolOutput:
+        page_py = self.client.page(input.query)
+
+        if page_py.exists():
+            if input.language is not None and input.language in page_py.langlinks:
+                page_py = page_py.langlinks[input.language]
+
+            if input.section_titles:
+                description_output = self.get_section_titles(page_py.sections)
+            elif input.full_text:
+                description_output = page_py.text
             else:
-                raise Exception(f"No Wikipedia page matched the search term: {input.query}.")
-        except Exception as e:
-            raise ToolError("Error performing Wikipedia search: ") from e
+                description_output = page_py.summary
+
+            search_results: list[WikipediaToolResult] = [
+                WikipediaToolResult(
+                    title=input.query or "", description=description_output or "", url=page_py.fullurl or ""
+                )
+            ]
+            return WikipediaToolOutput(search_results)
+        else:
+            raise Exception(f"No Wikipedia page matched the search term: {input.query}.")
