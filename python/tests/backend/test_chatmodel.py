@@ -131,7 +131,7 @@ async def test_chat_model_abort(reverse_words_chat: ChatModel, chat_messages_lis
 @pytest.mark.unit
 def test_chat_model_from() -> None:
     # Ollama with Llama model and base_url specified in code
-    del os.environ["OLLAMA_BASE_URL"]
+    os.environ.pop("OLLAMA_BASE_URL", None)
     ollama_chat_model = ChatModel.from_name("ollama:llama3.1", {"base_url": "http://somewhere:12345"})
     assert isinstance(ollama_chat_model, OllamaChatModel)
     assert ollama_chat_model.settings["base_url"] == "http://somewhere:12345"
