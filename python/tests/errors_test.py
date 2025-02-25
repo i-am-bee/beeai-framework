@@ -38,7 +38,7 @@ class TestFrameworkError(unittest.TestCase):
         err = FrameworkError("Basic")
         self.assertEqual(err.message, "Basic")
         self.assertTrue(err.is_fatal())
-        self.assertFalse(err.is_retryable())
+        self.assertFalse(FrameworkError.is_retryable(err))
         # Will be this exception or exception at end of chain
         self.assertEqual(err.get_cause(), err)
         self.assertEqual(err.name(), "FrameworkError")
@@ -46,7 +46,7 @@ class TestFrameworkError(unittest.TestCase):
     def test_custom_properties(self) -> None:
         err = FrameworkError("Custom", is_fatal=False, is_retryable=True)
         self.assertFalse(err.is_fatal())
-        self.assertTrue(err.is_retryable())
+        self.assertTrue(FrameworkError.is_retryable(err))
 
     # Get cause returns the last exception in the chain - *itself* otherwise
     def test_cause_single(self) -> None:
@@ -140,7 +140,7 @@ class TestFrameworkError(unittest.TestCase):
         err = UnimplementedError()
         self.assertEqual(err.message, "Not implemented!")
         self.assertTrue(err.is_fatal())
-        self.assertFalse(err.is_retryable())
+        self.assertFalse(FrameworkError.is_retryable(err))
 
         err2 = UnimplementedError("Custom not implemented message")
         self.assertEqual(err2.message, "Custom not implemented message")
@@ -149,7 +149,7 @@ class TestFrameworkError(unittest.TestCase):
         err = ArgumentError()
         self.assertEqual(err.message, "Provided value is not supported!")
         self.assertTrue(err.is_fatal())
-        self.assertFalse(err.is_retryable())
+        self.assertFalse(FrameworkError.is_retryable(err))
 
         err2 = ArgumentError("Custom argument error message")
         self.assertEqual(err2.message, "Custom argument error message")

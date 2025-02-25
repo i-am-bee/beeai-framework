@@ -34,6 +34,6 @@ class OllamaChatModel(LiteLLMChatModel):
             _settings["base_url"] = os.getenv("OLLAMA_BASE_URL")
 
         super().__init__(
-            model_id if model_id else os.getenv("OLLAMA_CHAT_MODEL", "llama3.1:8b"),
+            model_id if model_id else os.getenv("OLLAMA_CHAT_MODEL", "llama3.1"),
             settings={"base_url": "http://localhost:11434"} | (_settings or {}),
         )
