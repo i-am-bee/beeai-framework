@@ -1,39 +1,74 @@
-# Workflows (experimental)
+# 🔄 Workflows (experimental)
 
-*Disclaimer: The notes below may refer to the TypeScript version or missing files as the Python version moves toward parity in the near future. Additional Python examples coming soon. TODO*
+<!-- TOC -->
+## Table of Contents
+- [Overview](#overview)
+- [Core Concepts](#core-concepts)
+  - [State](#state)
+  - [Steps](#steps)
+  - [Transitions](#transitions)
+- [Basic Usage](#basic-usage)
+  - [Simple Workflow](#simple-workflow)
+  - [Multi-Step Workflow](#multi-step-workflow)
+- [Advanced Features](#advanced-features)
+  - [Workflow Nesting](#workflow-nesting)
+  - [Multi-Agent Workflows](#multi-agent-workflows)
+  - [Memory in Workflows](#memory-in-workflows)
+  - [Web Agent Example](#web-agent-example)
+- [Resources](#resources)
+<!-- /TOC -->
 
-> [!TIP]
->
-> Location within the framework `beeai/workflows`.
+---
 
-Workflows provide a flexible and extensible component for managing and executing structured sequences of tasks.
+## Overview
 
-- Dynamic Execution: Steps can direct the flow based on state or results.
-- Validation: Define schemas for data consistency and type safety.
-- Modularity: Steps can be standalone or invoke nested workflows.
-- Observability: Emit events during execution to track progress or handle errors.
+Workflows provide a flexible and extensible component for managing and executing structured sequences of tasks. They are particularly useful for:
 
-## Usage
+- 🔄 Dynamic Execution: Steps can direct the flow based on state or results
+- ✅ Validation: Define schemas for data consistency and type safety
+- 🧩 Modularity: Steps can be standalone or invoke nested workflows
+- 👁️ Observability: Emit events during execution to track progress or handle errors
 
-### Basic
+---
 
-```py
-```
+## Core Concepts
 
-_Source: /examples/workflows/basic.py TODO
+### State
 
-### Simple
+State is the central data structure in a workflow. It's a Pydantic model that:
+- Holds the data passed between steps
+- Provides type validation and safety
+- Persists throughout the workflow execution
 
-<!-- embedme examples/workflows/simple.py -->
+### Steps
+
+Steps are the building blocks of a workflow. Each step is a function that:
+- Takes the current state as input
+- Can modify the state
+- Returns the name of the next step to execute or a special reserved value
+
+### Transitions
+
+Transitions determine the flow of execution between steps. Each step returns either:
+- The name of the next step to execute
+- `Workflow.NEXT` - proceed to the next step in order
+- `Workflow.SELF` - repeat the current step
+- `Workflow.END` - end the workflow execution
+
+---
+
+## Basic Usage
+
+### Simple Workflow
+
+From [simple.py](/python/examples/workflows/simple.py):
 
 ```py
 import asyncio
 import traceback
 
 from pydantic import BaseModel, ValidationError
-
 from beeai_framework.workflows.workflow import Workflow, WorkflowError
-
 
 async def main() -> None:
     # State
@@ -53,26 +88,25 @@ async def main() -> None:
     except ValidationError:
         traceback.print_exc()
 
-
 if __name__ == "__main__":
     asyncio.run(main())
-
 ```
 
-_Source: [examples/workflows/simple.py](/examples/workflows/simple.py)_
+In this example:
+1. We define a simple state model with an `input` field
+2. Create a workflow with three steps that each print a message
+3. Run the workflow with an initial state
 
-### Advanced
+### Multi-Step Workflow
 
-<!-- embedme examples/workflows/advanced.py -->
+From [advanced.py](/python/examples/workflows/advanced.py):
 
 ```py
 import asyncio
+
 from typing import Literal, TypeAlias
-
 from pydantic import BaseModel, ValidationError
-
 from beeai_framework.workflows.workflow import Workflow, WorkflowError, WorkflowReservedStepName
-
 
 async def main() -> None:
     # State
@@ -124,32 +158,104 @@ async def main() -> None:
     except ValidationError as e:
         print(e)
 
+if __name__ == "__main__":
+    asyncio.run(main())
+```
+
+This example demonstrates:
+1. More complex state with multiple fields
+2. Step functions that modify state and control flow
+3. Conditional logic using `Workflow.SELF` to repeat a step
+4. Different execution paths based on input values
+
+---
+
+## Advanced Features
+
+### Workflow Nesting
+
+Workflows can be composed of other workflows, allowing complex behavior to be built from simpler components.
+
+From [nesting.py](/python/examples/workflows/nesting.py):
+
+```text
+Coming soon
+```
+
+### Multi-Agent Workflows
+
+From [multi_agents.py](/python/examples/workflows/multi_agents.py):
+
+```py
+import asyncio
+import traceback
+
+from pydantic import ValidationError
+
+from beeai_framework.agents.bee.agent import BeeAgentExecutionConfig
+from beeai_framework.backend.chat import ChatModel
+from beeai_framework.backend.message import UserMessage
+from beeai_framework.memory import UnconstrainedMemory
+from beeai_framework.tools.search.duckduckgo import DuckDuckGoSearchTool
+from beeai_framework.tools.weather.openmeteo import OpenMeteoTool
+from beeai_framework.workflows.agent import AgentFactoryInput, AgentWorkflow
+from beeai_framework.workflows.workflow import WorkflowError
+
+async def main() -> None:
+    llm = ChatModel.from_name("ollama:granite3.1-dense:8b")
+
+    try:
+        workflow = AgentWorkflow(name="Smart assistant")
+        workflow.add_agent(
+            agent=AgentFactoryInput(
+                name="WeatherForecaster",
+                instructions="You are a weather assistant. Respond only if you can provide a useful answer.",
+                tools=[OpenMeteoTool()],
+                llm=llm,
+                execution=BeeAgentExecutionConfig(max_iterations=3),
+            )
+        )
+        workflow.add_agent(
+            agent=AgentFactoryInput(
+                name="Researcher",
+                instructions="You are a researcher assistant. Respond only if you can provide a useful answer.",
+                tools=[DuckDuckGoSearchTool()],
+                llm=llm,
+            )
+        )
+        workflow.add_agent(
+            agent=AgentFactoryInput(
+                name="Solver",
+                instructions="""Your task is to provide the most useful final answer based on the assistants'
+responses which all are relevant. Ignore those where assistant do not know.""",
+                llm=llm,
+            )
+        )
+
+        prompt = "What is the weather in New York?"
+        memory = UnconstrainedMemory()
+        await memory.add(UserMessage(content=prompt))
+        response = await workflow.run(messages=memory.messages)
+        print(f"result: {response.state.final_answer}")
+
+    except WorkflowError:
+        traceback.print_exc()
+    except ValidationError:
+        traceback.print_exc()
 
 if __name__ == "__main__":
     asyncio.run(main())
-
 ```
 
-_Source: [examples/workflows/simple.py](/examples/workflows/advanced.py)_
+This example demonstrates:
+1. Creating a specialized workflow for coordinating multiple agents
+2. Defining specialized agents with different roles and tools
+3. Passing memory with messages between agents
+4. Collecting and processing the results from all agents
 
+### Memory in Workflows
 
-### Nesting
-
-```py
-```
-
-_Source: /examples/workflows/nesting.py TODO
-
-### Agent Delegation
-
-```py
-```
-
-_Source: /examples/workflows/agent.py TODO
-
-### Memory
-
-<!-- embedme examples/workflows/memory.py -->
+From [memory.py](/python/examples/workflows/memory.py):
 
 ```py
 import asyncio
@@ -160,7 +266,6 @@ from pydantic import BaseModel, InstanceOf, ValidationError
 from beeai_framework.backend.message import AssistantMessage, UserMessage
 from beeai_framework.memory.unconstrained_memory import UnconstrainedMemory
 from beeai_framework.workflows.workflow import Workflow, WorkflowError
-
 
 async def main() -> None:
     # State with memory
@@ -193,71 +298,18 @@ async def main() -> None:
     except ValidationError:
         traceback.print_exc()
 
-
 if __name__ == "__main__":
     asyncio.run(main())
-
 ```
 
-_Source: [examples/workflows/memory.py](/examples/workflows/memory.py)_
+This example shows:
+1. Integrating memory into workflow state
+2. Accessing message history during workflow execution
+3. Updating memory with new messages in a conversation loop
 
-### Memory
+### Web Agent Example
 
-<!-- embedme examples/workflows/memory.py -->
-
-```py
-import asyncio
-import traceback
-
-from pydantic import BaseModel, InstanceOf, ValidationError
-
-from beeai_framework.backend.message import AssistantMessage, UserMessage
-from beeai_framework.memory.unconstrained_memory import UnconstrainedMemory
-from beeai_framework.workflows.workflow import Workflow, WorkflowError
-
-
-async def main() -> None:
-    # State with memory
-    class State(BaseModel):
-        memory: InstanceOf[UnconstrainedMemory]
-        output: str | None = None
-
-    async def echo(state: State) -> str:
-        # Get the last message in memory
-        last_message = state.memory.messages[-1]
-        state.output = last_message.text[::-1]
-        return Workflow.END
-
-    try:
-        memory = UnconstrainedMemory()
-        workflow = Workflow(State)
-        workflow.add_step("echo", echo)
-
-        while True:
-            # Add user message to memory
-            await memory.add(UserMessage(content=input("User: ")))
-            # Run workflow with memory
-            response = await workflow.run(State(memory=memory))
-            # Add assistant response to memory
-            await memory.add(AssistantMessage(content=response.state.output))
-
-            print("Assistant: ", response.state.output)
-    except WorkflowError:
-        traceback.print_exc()
-    except ValidationError:
-        traceback.print_exc()
-
-
-if __name__ == "__main__":
-    asyncio.run(main())
-
-```
-
-_Source: [examples/workflows/memory.py](/examples/workflows/memory.py)_
-
-### Web Agent
-
-<!-- embedme examples/workflows/web_agent.py -->
+From [web_agent.py](/python/examples/workflows/web_agent.py):
 
 ```py
 import asyncio
@@ -272,7 +324,6 @@ from beeai_framework.backend.chat import ChatModelOutput, ChatModelStructureOutp
 from beeai_framework.backend.message import UserMessage
 from beeai_framework.utils.templates import PromptTemplate
 from beeai_framework.workflows.workflow import Workflow, WorkflowError
-
 
 async def main() -> None:
     llm = OllamaChatModel("granite3.1-dense:8b")
@@ -349,24 +400,29 @@ async def main() -> None:
     except ValidationError:
         traceback.print_exc()
 
-
 if __name__ == "__main__":
     asyncio.run(main())
-
 ```
 
-_Source: [examples/workflows/web_agent.py](/examples/workflows/web_agent.py)_
+This example demonstrates:
+1. Building a web search agent with structured steps
+2. Using templates to format prompts
+3. Generating structured data from LLM outputs
+4. Processing search results to generate answers
 
-### Multi-agent Content Creator
+---
 
-```py
-```
+## Resources
 
-_Source: /examples/workflows/contentCreator.py TODO
+- **Examples:**
+  - [simple.py](/python/examples/workflows/simple.py) - Basic workflow example
+  - [advanced.py](/python/examples/workflows/advanced.py) - More complex workflow with loops
+  - [memory.py](/python/examples/workflows/memory.py) - Using memory in workflows
+  - [multi_agents.py](/python/examples/workflows/multi_agents.py) - Multi-agent workflow
+  - [web_agent.py](/python/examples/workflows/web_agent.py) - Web search agent workflow
+  - [workflows.ipynb](/python/examples/notebooks/workflows.ipynb) - Interactive notebook examples
 
-### Multi Agents Workflows
-
-```py
-```
-
-_Source: /examples/workflows/multiAgents.py TODO
+- **Related Documentation:**
+  - [Agents Documentation](/python/docs/agents.md)
+  - [Memory Documentation](/python/docs/memory.md)
+  - [Tools Documentation](/python/docs/tools.md)
