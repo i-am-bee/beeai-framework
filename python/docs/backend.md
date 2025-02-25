@@ -11,7 +11,7 @@
 The backend module is an umbrella module that encapsulates a unified way to work with the following functionalities:
 
 - Chat Models via (`ChatModel` class)
-- Embedding Models via (`EmbeddingModel` class)
+- Embedding Models via (coming soon)
 - Audio Models (coming soon)
 - Image Models (coming soon)
 
@@ -23,8 +23,9 @@ The following table depicts supported providers.
 
 | Name             | Chat | Embedding | Dependency               | Environment Variables                                                                                                                                                 |
 | ---------------- | :--: | :-------: | ------------------------ | :-------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `Ollama`         |  ✅  |    ✅     | `ollama-ai-provider`     | OLLAMA_CHAT_MODEL<br>OLLAMA_EMBEDDING_MODEL<br/>OLLAMA_BASE_URL                                                                                                       |
-| `Watsonx`        |  ✅  |    ✅     | `@ibm-cloud/watsonx-ai`  | WATSONX_CHAT_MODEL<br/>WATSONX_EMBEDDING_MODEL<br>WATSONX_API_KEY<br/>WATSONX_PROJECT_ID<br/>WATSONX_SPACE_ID<br>WATSONX_VERSION<br>WATSONX_REGION                    |
+| `Ollama`         |  ✅  |          | `ollama-ai-provider`     | OLLAMA_CHAT_MODEL<br/>OLLAMA_BASE_URL                                                                                                       |
+| `OpenAI`         |  ✅  |          | `openai`     | OPENAI_CHAT_MODEL<br/>OPENAI_API_BASE<br/>OPENAI_API_KEY<br/>OPENAI_ORGANIZATION                                                                                                       |
+| `Watsonx`        |  ✅  |          | `@ibm-cloud/watsonx-ai`  | WATSONX_CHAT_MODEL<br/>WATSONX_EMBEDDING_MODEL<br>WATSONX_API_KEY<br/>WATSONX_PROJECT_ID<br/>WATSONX_SPACE_ID<br>WATSONX_VERSION<br>WATSONX_REGION                    |
 
 > [!TIP]
 >
@@ -42,14 +43,18 @@ All providers examples can be found in [examples/backend/providers](/examples/ba
 
 The `ChatModel` class represents a Chat Large Language Model and can be initiated in one of the following ways.
 
-```txt
-Coming soon
+```python
+from beeai_framework.backend.chat import ChatModel
+
+ollama_chat_model = ChatModel.from_name("ollama:llama3.1")
 ```
 
 or you can always create the concrete provider's chat model directly
 
-```txt
-Coming soon
+```python
+from beeai_framework.adapters.ollama.backend.chat import OllamaChatModel
+
+ollama_chat_model = OllamaChatModel("llama3.1")
 ```
 
 ### Configuration
@@ -60,8 +65,16 @@ Coming soon
 
 ### Generation
 
-```txt
-Coming soon
+```python
+from beeai_framework.adapters.ollama.backend.chat import OllamaChatModel
+from beeai_framework.backend.message import UserMessage
+
+ollama_chat_model = OllamaChatModel("llama3.1")
+response = await llm.create({
+    "messages": [UserMessage("what states are part of New England?")]
+})
+
+print(response.get_text_content())
 ```
 
 > [!NOTE]
@@ -70,8 +83,13 @@ Coming soon
 
 ### Stream
 
-```txt
-Coming soon
+```python
+from beeai_framework.adapters.ollama.backend.chat import OllamaChatModel
+from beeai_framework.backend.message import UserMessage
+
+llm = OllamaChatModel("llama3.1")
+user_message = UserMessage("How many islands make up the country of Cape Verde?")
+response = await llm.create({"messages": [user_message], "stream": True})
 ```
 
 ### Structured Generation
