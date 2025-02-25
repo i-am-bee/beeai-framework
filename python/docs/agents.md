@@ -211,6 +211,7 @@ To create your own agent, you must implement the agent's base class (`BaseAgent`
 <!-- embedme examples/agents/custom_agent.py -->
 
 ```py
+# Coming soon
 ```
 
 ---
