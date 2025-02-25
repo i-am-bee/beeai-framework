@@ -53,7 +53,6 @@ For more guidance and starter examples in your desired language, head to the doc
 
 This example demonstrates how to build a multi-agent workflow using BeeAI framework in Python.
 
-From [multi_agents.py](/python/examples/workflows/multi_agents.py):
 ```py
 import asyncio
 import traceback
@@ -116,6 +115,8 @@ responses which all are relevant. Ignore those where assistant do not know.""",
 if __name__ == "__main__":
     asyncio.run(main())
 ```
+
+_Source: [python/examples/workflows/multi_agents.py](/python/examples/workflows/multi_agents.py)_
 
 TypeScript version of this example can be found [here](/typescript/README.md).
 
