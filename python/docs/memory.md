@@ -37,7 +37,7 @@ _Source: /examples/memory/llmMemory.py TODO
 import asyncio
 
 from beeai_framework.agents.bee.agent import BeeAgent
-from beeai_framework.agents.types import BeeInput, BeeRunInput
+from beeai_framework.agents.types import BeeInput
 from beeai_framework.backend.chat import ChatModel
 from beeai_framework.backend.message import AssistantMessage, UserMessage
 from beeai_framework.memory.unconstrained_memory import UnconstrainedMemory

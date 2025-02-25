@@ -77,7 +77,7 @@ from urllib.parse import quote
 import requests
 
 from beeai_framework import BeeAgent, tool
-from beeai_framework.agents.types import BeeInput, BeeRunInput
+from beeai_framework.agents.types import BeeInput
 from beeai_framework.backend.chat import ChatModel
 from beeai_framework.memory.unconstrained_memory import UnconstrainedMemory
 from beeai_framework.tools.tool import StringToolOutput
@@ -140,7 +140,7 @@ _Source: [examples/tools/decorator.py](/examples/tools/decorator.py)_
 import asyncio
 
 from beeai_framework.agents.bee import BeeAgent
-from beeai_framework.agents.types import BeeInput, BeeRunInput
+from beeai_framework.agents.types import BeeInput
 from beeai_framework.backend.chat import ChatModel
 from beeai_framework.memory import UnconstrainedMemory
 from beeai_framework.tools.search.duckduckgo import DuckDuckGoSearchTool
@@ -170,7 +170,7 @@ _Source: [examples/tools/duckduckgo.py](/examples/tools/duckduckgo.py)_
 import asyncio
 
 from beeai_framework.agents.bee import BeeAgent
-from beeai_framework.agents.types import BeeInput, BeeRunInput
+from beeai_framework.agents.types import BeeInput
 from beeai_framework.backend.chat import ChatModel
 from beeai_framework.memory import UnconstrainedMemory
 from beeai_framework.tools.weather.openmeteo import OpenMeteoTool
