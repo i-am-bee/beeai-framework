@@ -14,6 +14,7 @@
 
 
 from asyncio import CancelledError
+from collections.abc import Generator
 
 
 class FrameworkError(Exception):
@@ -59,113 +60,45 @@ class FrameworkError(Exception):
         return type(self).__name__
 
     def has_fatal_error(self) -> bool:
-        """
-        Check if this error or any in the chain of exceptions under __cause__ is fatal (iterative).
-        """
-        current_exception = self  # Start with the current exception
+        current_exception: BaseException | None = self
 
         while current_exception is not None:
             if isinstance(current_exception, FrameworkError) and current_exception.is_fatal():
-                return True  # Found a fatal FrameworkError
-            current_exception = current_exception.__cause__  # Move to the next exception in the chain
+                return True
 
-        return False  # No fatal FrameworkError found in the chain
-
-    # TODO: Better method name could be 'get_nested_exceptions'
-    def traverse_errors(self) -> list[Exception]:
-        """
-        Traverses all nested exceptions (iterative implementation).
-        """
-        exceptions: list[Exception] = []
-        current_exception: Exception = self  # Start with the current exception
-
-        while current_exception is not None:
-            exceptions.append(current_exception)
             current_exception = current_exception.__cause__
 
-        return exceptions
+        return False
 
-    def get_cause(self) -> Exception:
-        """
-        finds the innermost exception - deemed to be cause
-        """
-        deepest_cause = self
+    def traverse_errors(self) -> Generator[BaseException, None, None]:
+        cause: BaseException | None = self.__cause__
+
+        while cause is not None:
+            yield cause
+            cause = cause.__cause__
+
+    def get_cause(self) -> BaseException:
+        deepest_cause: BaseException = self
 
         while deepest_cause.__cause__ is not None:
             deepest_cause = deepest_cause.__cause__
 
         return deepest_cause
 
-    # TODO: Copied across from typescript - need to check on desired output
-
     def explain(self) -> str:
-        """
-        Return a string to explain the error, suitable for the LLM (iterative).
-        """
-        lines = []
-        current_exception = self
-        indent_level = 0
-
-        while current_exception:
-            prefix = f"{indent_level * '  '}"
-            if indent_level > 0:
-                prefix += "Caused by: "
-
-            message = f"{prefix}{self.__get_message(current_exception)}"
-            lines.append(message)
-
-            current_exception = current_exception.__cause__
-            indent_level += 1
-
-        return "\n".join(lines)
-
-    # TODO: Desired output format needs reviewing (or just dump full exception as string with stacktraces)
-    def dump(self) -> str:
-        """
-        Produce a string representation of the error suitable for debugging (iterative).
-        """
-        lines = []
-        current_exception = self
-        indent_level = 0
-
-        while current_exception:
-            prefix = f"{indent_level * '  '}"
-            if indent_level > 0:
-                prefix += "Caused By: "
-
-            # TODO Needs generalization by checking attributes - helps when classes extended in future
-            if isinstance(current_exception, FrameworkError):
-                fatal = "Fatal" if current_exception.is_fatal() else ""
-                retryable = "Retryable" if current_exception.is_retryable() else ""
-                class_name = current_exception.name()
-                message = current_exception.message
-                line = f"{prefix}Class: {class_name}, Fatal: {fatal}, Retryable: {retryable}, Message: {message}"
-            else:
-                class_name = type(current_exception).__name__
-                message = str(current_exception)
-                line = f"{prefix}Class: {class_name}, Message: {message}"
-
-            lines.append(line)
-
-            current_exception = current_exception.__cause__
-            indent_level += 1
-
-        return "\n".join(lines)
+        output = []
+        errors = [self, *self.traverse_errors()]
+        for index, error in enumerate(errors):
+            offset = "  " * (2 * index)
+            message = str(error) if len(str(error)) > 0 else type(error).__name__
+            output.append(f"{offset}{message}")
+        return "\n".join(output)
 
     @staticmethod
     def ensure(error: Exception) -> "FrameworkError":
-        """
-        Ensure we have a FrameworkError - create and wrap error passed if required
-        """
         if isinstance(error, FrameworkError):
             return error
         return FrameworkError(message=str(error), cause=error)
-
-    # TODO: Remove? Just use isinstance?
-    @staticmethod
-    def is_instance_of(obj: Exception) -> bool:
-        """Static method to check if the given object is an instance of FrameworkError."""
-        return isinstance(obj, FrameworkError)
 
 
 class UnimplementedError(FrameworkError):

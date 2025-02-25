@@ -1,3 +1,4 @@
+beeai-framework
 langchain-community
 ipykernel
 jupyterlab

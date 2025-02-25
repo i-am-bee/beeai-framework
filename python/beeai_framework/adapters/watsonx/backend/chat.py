@@ -24,9 +24,11 @@ logger = BeeLogger(__name__)
 
 
 class WatsonxChatModel(LiteLLMChatModel):
-    provider_id: ProviderName = "watsonx"
+    @property
+    def provider_id(self) -> ProviderName:
+        return "watsonx"
 
     def __init__(self, model_id: str | None = None, **settings: Any) -> None:
-        self._model_id = model_id if model_id else os.getenv("WATSONX_CHAT_MODEL", "ibm/granite-3-8b-instruct")
-        self.settings = settings
-        super().__init__()
+        super().__init__(
+            model_id if model_id else os.getenv("WATSONX_CHAT_MODEL", "ibm/granite-3-8b-instruct"), **settings
+        )

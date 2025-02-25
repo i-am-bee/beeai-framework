@@ -14,7 +14,7 @@
 
 
 from abc import ABC, abstractmethod
-from typing import TypeVar
+from typing import Generic, TypeVar
 
 from pydantic import BaseModel
 
@@ -27,11 +27,11 @@ from beeai_framework.utils.models import ModelLike, to_model, to_model_optional
 T = TypeVar("T", bound=BaseModel)
 
 
-class BaseAgent(ABC):
+class BaseAgent(ABC, Generic[T]):
     is_running: bool = False
-    emitter: Emitter = None
+    emitter: Emitter
 
-    def run(self, run_input: ModelLike[BeeRunInput], options: ModelLike[BeeRunOptions] | None = None) -> Run:
+    def run(self, run_input: ModelLike[BeeRunInput], options: ModelLike[BeeRunOptions] | None = None) -> Run[T]:
         run_input = to_model(BeeRunInput, run_input)
         options = to_model_optional(BeeRunOptions, options)
 
@@ -41,10 +41,13 @@ class BaseAgent(ABC):
         try:
             self.is_running = True
 
+            async def handler(context: RunContext) -> T:
+                return await self._run(run_input, options, context)
+
             return RunContext.enter(
                 RunInstance(emitter=self.emitter),
                 RunContextInput(signal=options.signal if options else None, params=(run_input, options)),
-                lambda context: self._run(run_input, options, context),
+                handler,
             )
         except Exception as e:
             if isinstance(e, RuntimeError):

@@ -15,7 +15,9 @@
 import asyncio
 import random
 import string
-from collections.abc import Callable
+from collections.abc import Awaitable, Callable
+from inspect import isfunction
+from typing import Self
 
 from pydantic import BaseModel, ConfigDict, Field, InstanceOf
 
@@ -32,9 +34,10 @@ from beeai_framework.backend.chat import ChatModel
 from beeai_framework.backend.message import AssistantMessage, Message
 from beeai_framework.memory import ReadOnlyMemory, UnconstrainedMemory
 from beeai_framework.tools.tool import Tool
+from beeai_framework.utils.asynchronous import ensure_async
 from beeai_framework.workflows.workflow import Workflow, WorkflowRun
 
-AgentFactory = Callable[[ReadOnlyMemory], BaseAgent | asyncio.Future[BaseAgent]]
+AgentFactory = Callable[[ReadOnlyMemory], BaseAgent | Awaitable[BaseAgent]]
 
 
 class AgentFactoryInput(BaseModel):
@@ -54,23 +57,25 @@ class Schema(BaseModel):
 
 
 class AgentWorkflow:
-    def __init__(self, name: str = "AgentWorkflow") -> "AgentWorkflow":
+    def __init__(self, name: str = "AgentWorkflow") -> None:
         self.workflow = Workflow(name=name, schema=Schema)
 
     async def run(self, messages: list[Message]) -> WorkflowRun:
         return await self.workflow.run(Schema(messages=messages))
 
     def del_agent(self, name: str) -> "AgentWorkflow":
-        return self.workflow.delete_step(name)
+        self.workflow.delete_step(name)
+        return self
 
     def add_agent(
         self, agent: BaseAgent | Callable[[ReadOnlyMemory], BaseAgent | asyncio.Future[BaseAgent]] | AgentFactoryInput
     ) -> "AgentWorkflow":
         if isinstance(agent, BaseAgent):
 
-            def factory(memory: ReadOnlyMemory) -> AgentFactory:
-                agent.memory = memory
-                return agent
+            async def factory(memory: ReadOnlyMemory) -> BaseAgent:
+                instance: BaseAgent = await ensure_async(agent)(memory.as_read_only()) if isfunction(agent) else agent
+                instance.memory = memory
+                return instance
 
             return self._add(agent.meta.name, factory)
 
@@ -93,13 +98,13 @@ class AgentWorkflow:
 
         return factory
 
-    def _add(self, name: str, factory: AgentFactory) -> "AgentWorkflow":
+    def _add(self, name: str, factory: AgentFactory) -> Self:
         async def step(state: Schema) -> None:
             memory = UnconstrainedMemory()
             for message in state.messages + state.new_messages:
                 await memory.add(message)
 
-            agent: BaseAgent = factory(memory.as_read_only())
+            agent = await ensure_async(factory)(memory.as_read_only())
             run_output: BeeRunOutput = await agent.run(run_input=BeeRunInput())
             state.final_answer = run_output.result.text
             state.new_messages.append(

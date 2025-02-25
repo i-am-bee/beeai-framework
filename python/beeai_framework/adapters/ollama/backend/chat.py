@@ -24,9 +24,12 @@ logger = BeeLogger(__name__)
 
 
 class OllamaChatModel(LiteLLMChatModel):
-    provider_id: ProviderName = "ollama"
+    @property
+    def provider_id(self) -> ProviderName:
+        return "ollama"
 
     def __init__(self, model_id: str | None = None, **settings: Any) -> None:
-        self._model_id = model_id if model_id else os.getenv("OLLAMA_CHAT_MODEL", "llama3.1:8b")
-        self.settings = {"base_url": "http://localhost:11434"} | settings
-        super().__init__()
+        super().__init__(
+            model_id if model_id else os.getenv("OLLAMA_CHAT_MODEL", "llama3.1:8b"),
+            settings={"base_url": "http://localhost:11434"} | settings,
+        )

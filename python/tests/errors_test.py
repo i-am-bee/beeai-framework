@@ -82,9 +82,9 @@ class TestFrameworkError(unittest.TestCase):
         inner_err = ValueError("error 2")
         err = FrameworkError("error 1")
         err.__cause__ = inner_err
-        errors = err.traverse_errors()
-        self.assertEqual(len(errors), 2)
-        self.assertIn(err, errors)
+        errors = list(err.traverse_errors())
+        self.assertEqual(len(errors), 1)
+        self.assertNotIn(err, errors)
         self.assertIn(inner_err, errors)
 
         # Test deeper nesting - 4
@@ -95,10 +95,9 @@ class TestFrameworkError(unittest.TestCase):
         err2.__cause__ = err3
         err1 = FrameworkError("error 1")
         err1.__cause__ = err2
-        errors = err1.traverse_errors()
-        # count includes the outermost error (1)
-        self.assertEqual(len(errors), 4)
-        self.assertIn(err1, errors)
+        errors = list(err1.traverse_errors())
+        self.assertEqual(len(errors), 3)
+        self.assertNotIn(err1, errors)
         self.assertIn(err2, errors)
         self.assertIn(err3, errors)
         self.assertIn(err4, errors)
@@ -110,7 +109,7 @@ class TestFrameworkError(unittest.TestCase):
         err.__cause__ = inner_err
         explanation = err.explain()
         self.assertIn("Outer", explanation)
-        self.assertIn("Caused by: Inner", explanation)
+        self.assertIn("  Inner", explanation)
 
         # Test with an exception that doesn't have a 'message' attribute (not all do)
         class NoMessageError(Exception):
@@ -121,23 +120,7 @@ class TestFrameworkError(unittest.TestCase):
         err2.__cause__ = inner_err2
         explanation2 = err2.explain()
         self.assertIn("Outer error", explanation2)
-        self.assertIn("Caused by: NoMessageError", explanation2)
-
-    def test_dump(self) -> None:
-        inner_err = ValueError("Inner ")
-        err = FrameworkError("Outer", is_fatal=True, is_retryable=False)
-        err.__cause__ = inner_err
-        dump = err.dump()
-        self.assertIn("Class: FrameworkError, Fatal: Fatal, Retryable: , Message: Outer", dump)
-        self.assertIn("Caused By: Class: ValueError, Message: Inner", dump)
-
-        # Test with an exception that doesn't have 'is_fatal' and 'is_retryable' attributes
-        inner_err2 = TypeError("Type error")
-        err2 = FrameworkError("Outer")
-        err2.__cause__ = inner_err2
-        dump2 = err2.dump()
-        self.assertIn("Class: FrameworkError, Fatal: Fatal, Retryable: , Message: Outer", dump2)  # Outer
-        self.assertIn("Caused By: Class: TypeError, Message: Type error", dump2)  # Inner
+        self.assertIn("  NoMessageError", explanation2)
 
     # @unittest.skip("TODO: Skip as wrapped exception is not implemented correctly")
     def test_ensure(self) -> None:

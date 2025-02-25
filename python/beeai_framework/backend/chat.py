@@ -133,17 +133,17 @@ class ChatModelOutput:
 
 class ChatModel(ABC):
     emitter: Emitter
-    parameters: ChatModelParameters = None
+    parameters: ChatModelParameters
 
     @property
     @abstractmethod
     def model_id(self) -> str:
-        return self._model_id
+        pass
 
     @property
     @abstractmethod
-    def provider_id(self) -> str:
-        return self._provider_id
+    def provider_id(self) -> ProviderName:
+        pass
 
     def __init__(self) -> None:
         self.emitter = Emitter.root().child(
@@ -204,7 +204,7 @@ IMPORTANT: You MUST answer with a JSON object that matches the JSON schema above
             ChatModelInput(messages=messages, response_format={"type": "object-json"}, abort_signal=input.abort_signal),
         )
 
-        logger.trace(f"Recieved structured response:\n{response}")
+        logger.debug(f"Recieved structured response:\n{response}")
 
         text_response = response.get_text_content()
         result = parse_broken_json(text_response)
