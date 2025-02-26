@@ -82,8 +82,8 @@ def test_tool_message() -> None:
     tool_result = {
         "type": "tool-result",
         "result": "this is a tool message",
-        "toolName": "tool_name",
-        "toolCallId": "tool_call_id",
+        "tool_name": "tool_name",
+        "tool_call_id": "tool_call_id",
     }
     message = Message.of(
         {
