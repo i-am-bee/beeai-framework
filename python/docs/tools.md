@@ -206,7 +206,7 @@ from beeai_framework.tools.search.wikipedia import (
 
 
 async def main() -> None:
-    wikipedia_client = WikipediaTool(full_text=True)
+    wikipedia_client = WikipediaTool({"full_text": True})
     input = WikipediaToolInput(query="bee")
     result = wikipedia_client.run(input)
     print(result.get_text_content())
