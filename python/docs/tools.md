@@ -44,7 +44,7 @@ if __name__ == "__main__":
 
 ```
 
-_Source: [python/examples/tools/base.py](python/examples/tools/base.py)_
+_Source: [/python/examples/tools/base.py](/python/examples/tools/base.py)_
 
 ### Advanced
 
@@ -71,7 +71,7 @@ if __name__ == "__main__":
 
 ```
 
-_Source: [python/examples/tools/advanced.py](python/examples/tools/advanced.py)_
+_Source: [/python/examples/tools/advanced.py](/python/examples/tools/advanced.py)_
 
 > [!TIP]
 >
@@ -105,7 +105,7 @@ if __name__ == "__main__":
 
 ```
 
-_Source: [python/examples/tools/agent.py](python/examples/tools/agent.py)_
+_Source: [/python/examples/tools/agent.py](/python/examples/tools/agent.py)_
 
 ### Usage with decorator
 
@@ -172,7 +172,7 @@ if __name__ == "__main__":
 
 ```
 
-_Source: [python/examples/tools/decorator.py](python/examples/tools/decorator.py)_
+_Source: [/python/examples/tools/decorator.py](/python/examples/tools/decorator.py)_
 
 ### Usage with duckduckgo
 
@@ -202,7 +202,7 @@ if __name__ == "__main__":
 
 ```
 
-_Source: [python/examples/tools/duckduckgo.py](python/examples/tools/duckduckgo.py)_
+_Source: [/python/examples/tools/duckduckgo.py](/python/examples/tools/duckduckgo.py)_
 
 ### Usage with openmeteo
 
@@ -232,7 +232,7 @@ if __name__ == "__main__":
 
 ```
 
-_Source: [python/examples/tools/openmeteo.py](python/examples/tools/openmeteo.py)_
+_Source: [/python/examples/tools/openmeteo.py](/python/examples/tools/openmeteo.py)_
 
 
 ### Usage with Wikipedia
@@ -260,13 +260,13 @@ if __name__ == "__main__":
 
 ```
 
-_Source: [python/examples/tools/wikipedia.py](python/examples/tools/wikipedia.py)_
+_Source: [/python/examples/tools/wikipedia.py](/python/examples/tools/wikipedia.py)_
 
 ## Writing a new tool
 
 To create a new tool it is recommended to implement the base `Tool` class.  
 
-- Initiate the [`Tool`](/beeai-framework/python/beeai_framework/tools/tool.py) by passing your own handler (function) with the `name`, `description` and `input schema`.
+- Initiate the [`Tool`](/python/beeai_framework/tools/tool.py) by passing your own handler (function) with the `name`, `description` and `input schema`.
 
 #### Basic
 
@@ -318,7 +318,7 @@ if __name__ == "__main__":
 
 ```
 
-_Source: [python/examples/tools/custom/base.py](python/examples/tools/custom/base.py)_
+_Source: [/python/examples/tools/custom/base.py](/python/examples/tools/custom/base.py)_
 
 > [!TIP]
 >
@@ -335,7 +335,7 @@ If your tool is more complex, you may want to use the full power of the tool abs
 ```py
 ```
 
-_Source: [python/examples/tools/custom/openLibrary.py](python/examples/tools/custom/openLibrary.py)_ TODO
+_Source: [/python/examples/tools/custom/openLibrary.py](/python/examples/tools/custom/openLibrary.py)_ TODO
 
 #### Implementation Notes
 
@@ -378,7 +378,7 @@ _Source: [python/examples/tools/custom/openLibrary.py](python/examples/tools/cus
           description="The unit to express temperature", default="celsius"
       )
   ```
-  _Source: [python/beeai_framework/tools/weather/openmeteo.py](python/beeai_framework/tools/weather/openmeteo.py)_
+  _Source: [/python/beeai_framework/tools/weather/openmeteo.py](/python/beeai_framework/tools/weather/openmeteo.py)_
 
 - **Implement the `_run()` method:**
 
@@ -394,7 +394,7 @@ _Source: [python/examples/tools/custom/openLibrary.py](python/examples/tools/cus
         response.raise_for_status()
         return StringToolOutput(json.dumps(response.json()))
   ```
-    _Source: [python/beeai_framework/tools/weather/openmeteo.py](python/beeai_framework/tools/weather/openmeteo.py)_
+    _Source: [/python/beeai_framework/tools/weather/openmeteo.py](/python/beeai_framework/tools/weather/openmeteo.py)_
 
 The `name` of the tool is required and must only contain characters between
 a-z, A-Z, 0-9, or one of - or \_.
