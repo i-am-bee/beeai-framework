@@ -29,19 +29,19 @@ async def watsonx_from_name() -> None:
         # },
     )
     user_message = UserMessage("what states are part of New England?")
-    response = await watsonx_llm.create({"messages": [user_message]})
+    response = await watsonx_llm.create(messages=[user_message])
     print(response.get_text_content())
 
 
 async def watsonx_sync() -> None:
     user_message = UserMessage("what is the capital of Massachusetts?")
-    response = await llm.create({"messages": [user_message]})
+    response = await llm.create(messages=[user_message])
     print(response.get_text_content())
 
 
 async def watsonx_stream() -> None:
     user_message = UserMessage("How many islands make up the country of Cape Verde?")
-    response = await llm.create({"messages": [user_message], "stream": True})
+    response = await llm.create(messages=[user_message], stream=True)
     print(response.get_text_content())
 
 
@@ -49,9 +49,7 @@ async def watsonx_stream_abort() -> None:
     user_message = UserMessage("What is the smallest of the Cape Verde islands?")
 
     try:
-        response = await llm.create(
-            {"messages": [user_message], "stream": True, "abort_signal": AbortSignal.timeout(0.5)}
-        )
+        response = await llm.create(messages=[user_message], stream=True, abort_signal=AbortSignal.timeout(0.5))
 
         if response is not None:
             print(response.get_text_content())

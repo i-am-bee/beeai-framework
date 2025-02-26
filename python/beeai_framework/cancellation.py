@@ -56,14 +56,14 @@ class AbortSignal(BaseModel):
                 callback()
 
     @classmethod
-    def timeout(cls, duration: int) -> "AbortSignal":
+    def timeout(cls, duration: float) -> "AbortSignal":
         signal = cls()
 
         def _callback() -> None:
             signal._timer.cancel()
             signal._abort(f"Operation timed out after {duration} ms")
 
-        signal._timer = threading.Timer(duration * 1.0, _callback)
+        signal._timer = threading.Timer(duration, _callback)
         signal._timer.start()
 
         return signal

@@ -65,7 +65,7 @@ async def main() -> None:
     """,  # noqa: E501
         ).render(RAGSchema(input=state.input, search_results=state.search_results or "No results available."))
 
-        output: ChatModelOutput = await llm.create({"messages": [UserMessage(prompt)]})
+        output: ChatModelOutput = await llm.create(messages=[UserMessage(prompt)])
         state.output = output.get_text_content()
         return Workflow.END
 

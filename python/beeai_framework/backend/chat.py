@@ -83,7 +83,7 @@ class ChatModelInput(ChatModelParameters):
     tools: Annotated[list, BeforeValidator(tool_validator)] | None = None
     abort_signal: AbortSignal | None = None
     stop_sequences: list[str] | None = None
-    response_format: dict[str, Any] | type[BaseModel] = None
+    response_format: dict[str, Any] | type[BaseModel] | None = None
     # tool_choice: NoneType # TODO
     messages: Annotated[list, BeforeValidator(message_validator)]
 
@@ -223,17 +223,32 @@ IMPORTANT: You MUST answer with a JSON object that matches the JSON schema above
 
         return retryable_state.value
 
-    def create(self, chat_model_input: ModelLike[ChatModelInput]) -> Run[ChatModelOutput]:
-        input = to_model(ChatModelInput, chat_model_input)
+    def create(
+        self,
+        messages: Annotated[list, BeforeValidator(message_validator)],
+        tools: Annotated[list, BeforeValidator(tool_validator)] | None = None,
+        abort_signal: AbortSignal | None = None,
+        stop_sequences: list[str] | None = None,
+        response_format: dict[str, Any] | type[BaseModel] | None = None,
+        stream: bool | None = None,
+    ) -> Run[ChatModelOutput]:
+        model_input = ChatModelInput(
+            messages=messages,
+            tools=tools,
+            abort_signal=abort_signal,
+            stop_sequences=stop_sequences,
+            response_format=response_format,
+            stream=stream,
+        )
 
         async def run_create(context: RunContext) -> ChatModelOutput:
             try:
-                await context.emitter.emit("start", input)
+                await context.emitter.emit("start", model_input)
                 chunks: list[ChatModelOutput] = []
 
-                if input.stream:
+                if model_input.stream:
                     abort_controller: AbortController = AbortController()
-                    generator = self._create_stream(input, context)
+                    generator = self._create_stream(model_input, context)
                     async for value in generator:
                         chunks.append(value)
                         await context.emitter.emit("newToken", (value, lambda: abort_controller.abort()))
@@ -242,7 +257,7 @@ IMPORTANT: You MUST answer with a JSON object that matches the JSON schema above
 
                     result = ChatModelOutput.from_chunks(chunks)
                 else:
-                    result = await self._create(input, context)
+                    result = await self._create(model_input, context)
 
                 await context.emitter.emit("success", {"value": result})
                 return result
@@ -257,7 +272,7 @@ IMPORTANT: You MUST answer with a JSON object that matches the JSON schema above
 
         return RunContext.enter(
             RunInstance(emitter=self.emitter),
-            RunContextInput(params=[input], signal=input.abort_signal),
+            RunContextInput(params=[model_input], signal=model_input.abort_signal),
             run_create,
         )
 

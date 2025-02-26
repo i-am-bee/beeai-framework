@@ -38,7 +38,7 @@ from beeai_framework.agents.types import (
     BeeIterationResult,
     BeeRunInput,
 )
-from beeai_framework.backend.chat import ChatModelInput, ChatModelOutput
+from beeai_framework.backend.chat import ChatModelOutput
 from beeai_framework.backend.message import AssistantMessage, SystemMessage, UserMessage
 from beeai_framework.emitter.emitter import EventMeta
 from beeai_framework.errors import FrameworkError
@@ -162,7 +162,7 @@ class DefaultRunner(BaseRunner):
                     abort()
 
             output: ChatModelOutput = await self._input.llm.create(
-                ChatModelInput(messages=self.memory.messages[:], stream=True)
+                messages=self.memory.messages[:], stream=True
             ).observe(lambda llm_emitter: llm_emitter.on("newToken", on_new_token))
 
             await parser.end()
