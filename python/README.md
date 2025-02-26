@@ -36,6 +36,9 @@ BeeAI framework provides a comprehensive set of features for building powerful A
 | [**Serialization**](/python/docs/serialization.md) | Save and load agent state for persistence across sessions. Serialize workflows, memory, and other components to support stateful applications. |
 | [**Errors**](/python/docs/errors.md) | Implement robust error management with specialized error classes. Distinguish between different error types and implement appropriate recovery strategies. |
 
+> [NOTE!]
+> Cache and serialization features are not yet implemented in Python, but they are coming soon!
+
 ### Observability & control
 
 | Feature | Description |
@@ -45,7 +48,10 @@ BeeAI framework provides a comprehensive set of features for building powerful A
 | [**Instrumentation**](/python/docs/instrumentation.md) | Monitor performance and usage with OpenTelemetry integration. Collect metrics and traces to understand system behavior in production environments. |
 | [**Version**](/python/docs/version.md) | Access framework version information programmatically to ensure compatibility. |
 
-## Prerequisites
+> [NOTE!]
+> Instrumentation and version features are not yet implemented in Python, but they are coming soon!
+
+# Prerequisites
 
 ✅ Python >= 3.11
 

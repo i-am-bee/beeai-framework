@@ -1,3 +1,4 @@
 # BeeAI Framework Tutorials
 
-Coming soon
+> [!NOTE]  
+> **Tutorials have not yet been added, but stay tuned!**
