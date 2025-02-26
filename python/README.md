@@ -45,6 +45,10 @@ BeeAI framework provides a comprehensive set of features for building powerful A
 | [**Instrumentation**](/python/docs/instrumentation.md) | Monitor performance and usage with OpenTelemetry integration. Collect metrics and traces to understand system behavior in production environments. |
 | [**Version**](/python/docs/version.md) | Access framework version information programmatically to ensure compatibility. |
 
+## Prerequisites
+
+✅ Python >= 3.11
+
 ## Installation
 
 Install BeeAI framework using pip:
