@@ -50,6 +50,7 @@ mypy = "^1.15.0"
 pytest-asyncio = "^0.25.3"
 nbstripout = "^0.8.1"
 pytest-cov = "^6.0.0"
+pytest-console-scripts = "^1.4.1"
 
 [tool.mypy]
 mypy_path = "$MYPY_CONFIG_FILE_DIR/beeai_framework"

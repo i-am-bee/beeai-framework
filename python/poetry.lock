@@ -2381,6 +2381,21 @@ docs = ["sphinx (>=5.3)", "sphinx-rtd-theme (>=1)"]
 testing = ["coverage (>=6.2)", "hypothesis (>=5.7.1)"]
 
 [[package]]
+name = "pytest-console-scripts"
+version = "1.4.1"
+description = "Pytest plugin for testing console scripts"
+optional = false
+python-versions = ">=3.8"
+groups = ["dev"]
+files = [
+    {file = "pytest-console-scripts-1.4.1.tar.gz", hash = "sha256:5a826ed84cc0afa202eb9e44381d7d762f7bdda8e0c23f9f79a7f1f44cf4a895"},
+    {file = "pytest_console_scripts-1.4.1-py3-none-any.whl", hash = "sha256:ad860a951a90eca4bd3bd1159b8f5428633ba4ea01abd5c9526b67a95f65437a"},
+]
+
+[package.dependencies]
+pytest = ">=4.0.0"
+
+[[package]]
 name = "pytest-cov"
 version = "6.0.0"
 description = "Pytest plugin for measuring coverage."
@@ -3318,4 +3333,4 @@ type = ["pytest-mypy"]
 [metadata]
 lock-version = "2.1"
 python-versions = ">= 3.11,<4.0"
-content-hash = "ff93be7be761dfdd23ac1eba1c93862d0e95fb095484fc81c2cd39f537626cac"
+content-hash = "135ba283981dc49bd21e2469f32bd5757e91eed9d533e43902f19a760da8ff71"
