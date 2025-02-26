@@ -23,6 +23,10 @@ from mcp.types import Tool as MCPToolInfo
 
 from beeai_framework.tools.mcp_tools import MCPTool, MCPToolOutput, Tool
 
+"""
+Utility functions and classes
+"""
+
 
 # Common Fixtures
 @pytest.fixture
@@ -75,9 +79,15 @@ def add_result() -> CallToolResult:
     )
 
 
+"""
+Unit Tests
+"""
+
+
 # Basic Tool Tests
 class TestMCPTool:
     @pytest.mark.asyncio
+    @pytest.mark.unit
     async def test_mcp_tool_initialization(self, mock_client_session: ClientSession, mock_tool_info: Tool) -> None:
         tool = MCPTool(client=mock_client_session, tool=mock_tool_info)
 
@@ -101,6 +111,7 @@ class TestMCPTool:
         assert result.result == call_tool_result
 
     @pytest.mark.asyncio
+    @pytest.mark.unit
     async def test_mcp_tool_from_client(self, mock_client_session: ClientSession, mock_tool_info: Tool) -> None:
         tools_result = MagicMock()
         tools_result.tools = [mock_tool_info]

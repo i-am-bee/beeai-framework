@@ -22,10 +22,19 @@ from beeai_framework.tools.search.wikipedia import (
     WikipediaToolOutput,
 )
 
+"""
+Utility functions and classes
+"""
+
 
 @pytest.fixture
 def tool() -> WikipediaTool:
     return WikipediaTool()
+
+
+"""
+E2E Tests
+"""
 
 
 @pytest.mark.e2e

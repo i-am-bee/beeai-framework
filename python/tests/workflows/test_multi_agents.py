@@ -21,14 +21,18 @@ from beeai_framework.backend.message import UserMessage
 from beeai_framework.memory import TokenMemory, UnconstrainedMemory
 from beeai_framework.workflows.agent import AgentFactoryInput, AgentWorkflow
 
+"""
+E2E Tests
+"""
+
 
 @pytest.mark.e2e
 @pytest.mark.asyncio
 async def test_multi_agents_workflow_basic() -> None:
-    llm = OllamaChatModel()
+    chat_model = OllamaChatModel()
 
     workflow: AgentWorkflow = AgentWorkflow()
-    workflow.add_agent(agent=AgentFactoryInput(name="Translator assistant", tools=[], llm=llm))
+    workflow.add_agent(agent=AgentFactoryInput(name="Translator assistant", tools=[], llm=chat_model))
 
     memory = UnconstrainedMemory()
     await memory.add(UserMessage(content="Say Hello in German."))
@@ -40,11 +44,11 @@ async def test_multi_agents_workflow_basic() -> None:
 @pytest.mark.e2e
 @pytest.mark.asyncio
 async def test_multi_agents_workflow_creation() -> None:
-    llm = OllamaChatModel()
+    chat_model = OllamaChatModel()
 
     workflow: AgentWorkflow = AgentWorkflow()
-    workflow.add_agent(BeeAgent(BeeInput(llm=llm, tools=[], memory=TokenMemory(llm))))
-    workflow.add_agent(agent=lambda memory: BeeAgent(BeeInput(llm=llm, tools=[], memory=memory)))
+    workflow.add_agent(BeeAgent(BeeInput(llm=chat_model, tools=[], memory=TokenMemory(chat_model))))
+    workflow.add_agent(agent=lambda memory: BeeAgent(BeeInput(llm=chat_model, tools=[], memory=memory)))
 
     assert len(workflow.workflow.step_names) == 2
 
@@ -57,11 +61,11 @@ async def test_multi_agents_workflow_creation() -> None:
 @pytest.mark.e2e
 @pytest.mark.asyncio
 async def test_multi_agents_workflow_agent_delete() -> None:
-    llm = OllamaChatModel()
+    chat_model = OllamaChatModel()
 
     workflow: AgentWorkflow = AgentWorkflow()
-    workflow.add_agent(BeeAgent(BeeInput(llm=llm, tools=[], memory=UnconstrainedMemory())))
+    workflow.add_agent(BeeAgent(BeeInput(llm=chat_model, tools=[], memory=UnconstrainedMemory())))
     workflow.del_agent("BeeAI")
-    workflow.add_agent(BeeAgent(BeeInput(llm=llm, tools=[], memory=UnconstrainedMemory())))
+    workflow.add_agent(BeeAgent(BeeInput(llm=chat_model, tools=[], memory=UnconstrainedMemory())))
 
     assert len(workflow.workflow.step_names) == 1

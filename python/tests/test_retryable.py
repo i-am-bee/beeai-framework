@@ -19,6 +19,10 @@ import pytest
 from beeai_framework.errors import FrameworkError
 from beeai_framework.retryable import Retryable, RetryableConfig, RetryableContext, RetryableInput
 
+"""
+Utility functions and classes
+"""
+
 
 async def executor(ctx: RetryableContext) -> Awaitable:
     print(f"running executor: {ctx}")
@@ -36,7 +40,13 @@ async def on_retry(ctx: RetryableContext, last_error: Exception) -> None:
     print(f"on_retry: {ctx}")
 
 
+"""
+Unit Tests
+"""
+
+
 @pytest.mark.asyncio
+@pytest.mark.unit
 async def test_retryable() -> None:
     retry_state = await Retryable(
         {
@@ -52,6 +62,7 @@ async def test_retryable() -> None:
 
 
 @pytest.mark.asyncio
+@pytest.mark.unit
 async def test_retryable_error() -> None:
     async def executor(ctx: RetryableContext) -> Awaitable:
         raise FrameworkError("frameworkerror:test_retryable_error")
@@ -71,6 +82,7 @@ async def test_retryable_error() -> None:
 
 
 @pytest.mark.asyncio
+@pytest.mark.unit
 async def test_retryable_retries() -> None:
     async def executor(ctx: RetryableContext) -> Awaitable:
         print(f"Executing attempt: {ctx.attempt}")
@@ -96,6 +108,7 @@ async def test_retryable_retries() -> None:
 
 
 @pytest.mark.asyncio
+@pytest.mark.unit
 async def test_retryable_reset() -> None:
     counter = 0
 

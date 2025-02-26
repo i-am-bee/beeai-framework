@@ -22,6 +22,10 @@ from pydantic import BaseModel, ValidationError
 from beeai_framework.utils.errors import PromptTemplateError
 from beeai_framework.utils.templates import PromptTemplate
 
+"""
+Utility functions and classes
+"""
+
 
 @pytest.fixture
 def template() -> PromptTemplate:
@@ -32,6 +36,11 @@ def template() -> PromptTemplate:
     template = PromptTemplate(schema=TestPromptInputSchema, template="""This is the task: {{task}}{{count}}""")
 
     return template
+
+
+"""
+Unit Tests
+"""
 
 
 @pytest.mark.unit

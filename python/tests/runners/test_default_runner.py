@@ -29,6 +29,10 @@ from beeai_framework.backend.chat import ChatModel
 from beeai_framework.memory.token_memory import TokenMemory
 from beeai_framework.tools.weather.openmeteo import OpenMeteoTool
 
+"""
+E2E Tests
+"""
+
 
 @pytest.mark.asyncio
 @pytest.mark.e2e

@@ -19,10 +19,19 @@ from beeai_framework.tools import ToolInputValidationError
 from beeai_framework.tools.tool import StringToolOutput
 from beeai_framework.tools.weather.openmeteo import OpenMeteoTool, OpenMeteoToolInput
 
+"""
+Utility functions and classes
+"""
+
 
 @pytest.fixture
 def tool() -> OpenMeteoTool:
     return OpenMeteoTool()
+
+
+"""
+E2E Tests
+"""
 
 
 @pytest.mark.e2e

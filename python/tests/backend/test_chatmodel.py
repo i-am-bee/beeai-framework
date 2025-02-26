@@ -36,6 +36,10 @@ from beeai_framework.cancellation import AbortSignal
 from beeai_framework.context import RunContext
 from beeai_framework.errors import AbortError
 
+"""
+Utility functions and classes
+"""
+
 
 class ReverseWordsDummyModel(ChatModel):
     """Dummy model that simply reverses every word in a UserMessages"""
@@ -81,6 +85,11 @@ def chat_messages_list() -> list[Message]:
     user_message = UserMessage("tell me something interesting")
     custom_message = CustomMessage(role="custom", content="this is a custom message")
     return [user_message, custom_message]
+
+
+"""
+Unit Tests
+"""
 
 
 @pytest.mark.asyncio
