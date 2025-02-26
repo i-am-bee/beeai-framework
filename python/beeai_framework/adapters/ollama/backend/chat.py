@@ -30,8 +30,13 @@ class OllamaChatModel(LiteLLMChatModel):
     def __init__(self, model_id: str | None = None, settings: dict | None = None) -> None:
         _settings = settings.copy() if settings is not None else None
 
-        if _settings is not None and not hasattr(_settings, "base_url") and "OLLAMA_BASE_URL" in os.environ:
-            _settings["base_url"] = os.getenv("OLLAMA_BASE_URL")
+        ollama_base_url_from_env = os.getenv("OLLAMA_BASE_URL")
+
+        if ollama_base_url_from_env:
+            if _settings is None:
+                _settings = {"base_url": ollama_base_url_from_env}
+            elif _settings is not None and "base_url" not in _settings:
+                _settings["base_url"] = ollama_base_url_from_env
 
         super().__init__(
             model_id if model_id else os.getenv("OLLAMA_CHAT_MODEL", "llama3.1"),
