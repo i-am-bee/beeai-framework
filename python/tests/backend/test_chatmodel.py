@@ -14,6 +14,7 @@
 
 
 import asyncio
+import os
 from collections.abc import AsyncGenerator
 
 import pytest
@@ -21,6 +22,7 @@ import pytest_asyncio
 from pydantic import BaseModel
 
 from beeai_framework.adapters.ollama.backend.chat import OllamaChatModel
+from beeai_framework.adapters.openai.backend.chat import OpenAIChatModel
 from beeai_framework.adapters.watsonx.backend.chat import WatsonxChatModel
 from beeai_framework.backend.chat import (
     ChatModel,
@@ -129,8 +131,20 @@ async def test_chat_model_abort(reverse_words_chat: ChatModel, chat_messages_lis
 
 @pytest.mark.unit
 def test_chat_model_from() -> None:
-    ollama_chat_model = ChatModel.from_name("ollama:llama3.1")
+    # Ollama with Llama model and base_url specified in code
+    os.environ.pop("OLLAMA_BASE_URL", None)
+    ollama_chat_model = ChatModel.from_name("ollama:llama3.1", {"base_url": "http://somewhere:12345"})
     assert isinstance(ollama_chat_model, OllamaChatModel)
+    assert ollama_chat_model.settings["base_url"] == "http://somewhere:12345"
+
+    # Ollama with Granite model and base_url specified in env var
+    os.environ["OLLAMA_BASE_URL"] = "http://somewhere-else:12345"
+    ollama_chat_model = ChatModel.from_name("ollama:granite3.1-dense:8b")
+    assert isinstance(ollama_chat_model, OllamaChatModel)
+    assert ollama_chat_model.settings["base_url"] == "http://somewhere-else:12345"
 
     watsonx_chat_model = ChatModel.from_name("watsonx:ibm/granite-3-8b-instruct")
     assert isinstance(watsonx_chat_model, WatsonxChatModel)
+
+    openai_chat_model = ChatModel.from_name("openai:gpt-4o")
+    assert isinstance(openai_chat_model, OpenAIChatModel)

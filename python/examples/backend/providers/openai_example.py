@@ -3,7 +3,7 @@ import asyncio
 from pydantic import BaseModel, Field
 from traitlets import Callable
 
-from beeai_framework.adapters.ollama.backend.chat import OllamaChatModel
+from beeai_framework.adapters.openai.backend.chat import OpenAIChatModel
 from beeai_framework.backend.chat import ChatModel, ChatModelOutput
 from beeai_framework.backend.message import UserMessage
 from beeai_framework.cancellation import AbortSignal
@@ -13,36 +13,36 @@ from beeai_framework.parsers.field import ParserField
 from beeai_framework.parsers.line_prefix import LinePrefixParser, LinePrefixParserNode
 
 
-async def ollama_from_name() -> None:
-    llm = ChatModel.from_name("ollama:llama3.1")
+async def openai_from_name() -> None:
+    llm = ChatModel.from_name("openai:gpt-4o-mini")
     user_message = UserMessage("what states are part of New England?")
     response = await llm.create({"messages": [user_message]})
     print(response.get_text_content())
 
 
-async def ollama_granite_from_name() -> None:
-    llm = ChatModel.from_name("ollama:granite3.1-dense:8b")
+async def openai_granite_from_name() -> None:
+    llm = ChatModel.from_name("openai:gpt-4o-mini")
     user_message = UserMessage("what states are part of New England?")
     response = await llm.create({"messages": [user_message]})
     print(response.get_text_content())
 
 
-async def ollama_sync() -> None:
-    llm = OllamaChatModel("llama3.1")
+async def openai_sync() -> None:
+    llm = OpenAIChatModel("gpt-4o-mini")
     user_message = UserMessage("what is the capital of Massachusetts?")
     response = await llm.create({"messages": [user_message]})
     print(response.get_text_content())
 
 
-async def ollama_stream() -> None:
-    llm = OllamaChatModel("llama3.1")
+async def openai_stream() -> None:
+    llm = OpenAIChatModel("gpt-4o-mini")
     user_message = UserMessage("How many islands make up the country of Cape Verde?")
     response = await llm.create({"messages": [user_message], "stream": True})
     print(response.get_text_content())
 
 
-async def ollama_stream_abort() -> None:
-    llm = OllamaChatModel("llama3.1")
+async def openai_stream_abort() -> None:
+    llm = OpenAIChatModel("gpt-4o-mini")
     user_message = UserMessage("What is the smallest of the Cape Verde islands?")
 
     try:
@@ -58,11 +58,11 @@ async def ollama_stream_abort() -> None:
         print(f"Aborted: {err}")
 
 
-async def ollama_structure() -> None:
+async def openai_structure() -> None:
     class TestSchema(BaseModel):
         answer: str = Field(description="your final answer")
 
-    llm = OllamaChatModel("llama3.1")
+    llm = OpenAIChatModel("gpt-4o-mini")
     user_message = UserMessage("How many islands make up the country of Cape Verde?")
     response = await llm.create_structure(
         {
@@ -73,8 +73,8 @@ async def ollama_structure() -> None:
     print(response.object)
 
 
-async def ollama_stream_parser() -> None:
-    llm = OllamaChatModel("llama3.1")
+async def openai_stream_parser() -> None:
+    llm = OpenAIChatModel("gpt-4o-mini")
 
     parser = LinePrefixParser(
         nodes={
@@ -97,20 +97,20 @@ async def ollama_stream_parser() -> None:
 
 
 async def main() -> None:
-    print("*" * 10, "ollama_from_name")
-    await ollama_from_name()
-    print("*" * 10, "ollama_granite_from_name")
-    await ollama_granite_from_name()
-    print("*" * 10, "ollama_sync")
-    await ollama_sync()
-    print("*" * 10, "ollama_stream")
-    await ollama_stream()
-    print("*" * 10, "ollama_stream_abort")
-    await ollama_stream_abort()
-    print("*" * 10, "ollama_structure")
-    await ollama_structure()
-    print("*" * 10, "ollama_stream_parser")
-    await ollama_stream_parser()
+    print("*" * 10, "openai_from_name")
+    await openai_from_name()
+    print("*" * 10, "openai_granite_from_name")
+    await openai_granite_from_name()
+    print("*" * 10, "openai_sync")
+    await openai_sync()
+    print("*" * 10, "openai_stream")
+    await openai_stream()
+    print("*" * 10, "openai_stream_abort")
+    await openai_stream_abort()
+    print("*" * 10, "openai_structure")
+    await openai_structure()
+    print("*" * 10, "openai_stream_parser")
+    await openai_stream_parser()
 
 
 if __name__ == "__main__":

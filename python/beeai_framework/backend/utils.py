@@ -66,7 +66,7 @@ def load_model(name: ProviderName | str, model_type: Literal["embedding", "chat"
     module_path = f"beeai_framework.adapters.{provider_def.module}.backend.{model_type}"
     module = import_module(module_path)
 
-    class_name = f"{provider_def.name.capitalize()}{model_type.capitalize()}Model"
+    class_name = f"{provider_def.name}{model_type.capitalize()}Model"
     return getattr(module, class_name)
 
 
