@@ -192,6 +192,33 @@ if __name__ == "__main__":
 
 _Source: [examples/tools/openmeteo.py](/examples/tools/openmeteo.py)_
 
+### Usage with Wikipedia
+
+<!-- embedme examples/tools/wikipedia.py -->
+
+```py
+import asyncio
+
+from beeai_framework.tools.search.wikipedia import (
+    WikipediaTool,
+    WikipediaToolInput,
+)
+
+
+async def main() -> None:
+    wikipedia_client = WikipediaTool(full_text=True)
+    input = WikipediaToolInput(query="bee")
+    result = wikipedia_client.run(input)
+    print(result.get_text_content())
+
+
+if __name__ == "__main__":
+    asyncio.run(main())
+
+```
+
+_Source: [examples/tools/wikipedia.py](/examples/tools/wikipedia.py)_
+
 ## Writing a new tool
 
 To create a new tool, you have the following options on how to do that:

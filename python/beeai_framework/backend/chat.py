@@ -15,7 +15,7 @@
 
 import json
 from abc import ABC, abstractmethod
-from collections.abc import AsyncGenerator, Callable
+from collections.abc import AsyncGenerator, Awaitable, Callable
 from typing import Annotated, Any, Literal, Self, TypeVar
 
 from pydantic import BaseModel, BeforeValidator, ConfigDict, Field, InstanceOf, ValidationError
@@ -27,6 +27,7 @@ from beeai_framework.backend.utils import load_model, parse_broken_json, parse_m
 from beeai_framework.cancellation import AbortController, AbortSignal
 from beeai_framework.context import Run, RunContext, RunContextInput, RunInstance
 from beeai_framework.emitter import Emitter, EmitterInput
+from beeai_framework.retryable import Retryable, RetryableConfig, RetryableContext
 from beeai_framework.tools.tool import Tool
 from beeai_framework.utils.custom_logger import BeeLogger
 from beeai_framework.utils.models import ModelLike, to_model
@@ -193,16 +194,34 @@ IMPORTANT: You MUST answer with a JSON object that matches the JSON schema above
             *input_messages,
         ]
 
-        response = await self._create(
-            ChatModelInput(messages=messages, response_format={"type": "object-json"}, abort_signal=input.abort_signal),
-        )
+        class DefaultChatModelStructureErrorSchema(BaseModel):
+            errors: str
+            expected: str
+            received: str
 
-        logger.debug(f"Recieved structured response:\n{response}")
+        async def executor(_: RetryableContext) -> Awaitable[ChatModelOutput]:
+            response = await self._create(
+                ChatModelInput(
+                    messages=messages, response_format={"type": "object-json"}, abort_signal=input.abort_signal
+                ),
+                run,
+            )
 
-        text_response = response.get_text_content()
-        result = parse_broken_json(text_response)
-        # TODO: validate result matches expected schema
-        return ChatModelStructureOutput(object=result)
+            logger.debug(f"Recieved structured response:\n{response}")
+
+            text_response = response.get_text_content()
+            result = parse_broken_json(text_response)
+            # TODO: validate result matches expected schema
+            return ChatModelStructureOutput(object=result)
+
+        retryable_state = await Retryable(
+            {
+                "executor": executor,
+                "config": RetryableConfig(max_retries=input.max_retries if input else 1, signal=run.signal),
+            }
+        ).get()
+
+        return retryable_state.value
 
     def create(self, chat_model_input: ModelLike[ChatModelInput]) -> Run[ChatModelOutput]:
         input = to_model(ChatModelInput, chat_model_input)

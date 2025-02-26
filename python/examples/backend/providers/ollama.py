@@ -8,6 +8,7 @@ from beeai_framework.backend.chat import ChatModel, ChatModelOutput
 from beeai_framework.backend.message import UserMessage
 from beeai_framework.cancellation import AbortSignal
 from beeai_framework.emitter import EventMeta
+from beeai_framework.errors import AbortError
 from beeai_framework.parsers.field import ParserField
 from beeai_framework.parsers.line_prefix import LinePrefixParser, LinePrefixParserNode
 
@@ -43,12 +44,18 @@ async def ollama_stream() -> None:
 async def ollama_stream_abort() -> None:
     llm = OllamaChatModel("llama3.1")
     user_message = UserMessage("What is the smallest of the Cape Verde islands?")
-    response = await llm.create({"messages": [user_message], "stream": True, "abort_signal": AbortSignal.timeout(0.5)})
 
-    if response is not None:
-        print(response.get_text_content())
-    else:
-        print("No response returned.")
+    try:
+        response = await llm.create(
+            {"messages": [user_message], "stream": True, "abort_signal": AbortSignal.timeout(0.5)}
+        )
+
+        if response is not None:
+            print(response.get_text_content())
+        else:
+            print("No response returned.")
+    except AbortError as err:
+        print(f"Aborted: {err}")
 
 
 async def ollama_structure() -> None:

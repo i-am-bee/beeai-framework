@@ -3,8 +3,10 @@ import asyncio
 from pydantic import BaseModel, Field
 
 from beeai_framework.adapters.watsonx.backend.chat import WatsonxChatModel
+from beeai_framework.backend.chat import ChatModel
 from beeai_framework.backend.message import UserMessage
 from beeai_framework.cancellation import AbortSignal
+from beeai_framework.errors import AbortError
 
 # Setting can be passed here during initiation or pre-configured via environment variables
 llm = WatsonxChatModel(
@@ -18,7 +20,7 @@ llm = WatsonxChatModel(
 
 
 async def watsonx_from_name() -> None:
-    watsonx_llm = WatsonxChatModel.from_name(
+    watsonx_llm = ChatModel.from_name(
         "watsonx:ibm/granite-3-8b-instruct",
         # {
         #     "project_id": "WATSONX_PROJECT_ID",
@@ -45,12 +47,18 @@ async def watsonx_stream() -> None:
 
 async def watsonx_stream_abort() -> None:
     user_message = UserMessage("What is the smallest of the Cape Verde islands?")
-    response = await llm.create({"messages": [user_message], "stream": True, "abort_signal": AbortSignal.timeout(0.5)})
 
-    if response is not None:
-        print(response.get_text_content())
-    else:
-        print("No response returned.")
+    try:
+        response = await llm.create(
+            {"messages": [user_message], "stream": True, "abort_signal": AbortSignal.timeout(0.5)}
+        )
+
+        if response is not None:
+            print(response.get_text_content())
+        else:
+            print("No response returned.")
+    except AbortError as err:
+        print(f"Aborted: {err}")
 
 
 async def watson_structure() -> None:

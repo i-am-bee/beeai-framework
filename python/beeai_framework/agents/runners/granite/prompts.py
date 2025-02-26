@@ -16,6 +16,7 @@ from datetime import datetime
 
 from beeai_framework.agents.runners.default.prompts import (
     AssistantPromptTemplateInput,
+    SchemaErrorTemplateInput,
     SystemPromptTemplateInput,
     ToolInputErrorTemplateInput,
     ToolNotFoundErrorTemplateInput,
@@ -91,4 +92,10 @@ GraniteToolInputErrorTemplate = PromptTemplate(
     template="""{{reason}}
 
 HINT: If you're convinced that the input was correct but the tool cannot process it then use a different tool or say I don't know.""",  # noqa: E501
+)
+
+GraniteSchemaErrorTemplate = PromptTemplate(
+    schema=SchemaErrorTemplateInput,
+    template="""Error: The generated response does not adhere to the communication structure mentioned in the system prompt.
+You communicate only in instruction lines. Valid instruction lines are 'Thought' followed by either 'Function Name' + 'Function Input' + 'Function Output' or 'Final Answer'.""",  # noqa: E501
 )
