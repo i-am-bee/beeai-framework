@@ -12,10 +12,12 @@ These tools extend the agent's abilities, allowing it to interact with external 
 
 | Name                                                                      | Description                                                                                                   |
 | ------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------- |
-`WikipediaTool`                                                           | Search for data on Wikipedia.                                                                                 |
-| `DuckDuckGoTool`                                                          | Search for data on DuckDuckGo.                                                                                                                        |
-| `OpenMeteoTool`                                                           | Retrieve current, previous, or upcoming weather for a given destination.                                      |
-| 
+| `DuckDuckGoTool`                                                          | Search for data on DuckDuckGo.                                                                                |
+| `OpenMeteoTool`                                                           | Retrieve current, previous, or upcoming weather for a given destination. environment.                                                            |
+| `WikipediaTool`                                                           | Search for data on Wikipedia.                                                                                 |
+| `MCPTool`                                                                 | Discover and use tools exposed by arbitrary [MCP Server](https://modelcontextprotocol.io/examples).                                                |
+| ➕ [Request](https://github.com/i-am-bee/beeai-framework/discussions)     |                                                                                              |
+
 
 All examples can be found [here](/python/examples/tools).
 
@@ -30,38 +32,46 @@ import asyncio
 
 from beeai_framework.tools.weather.openmeteo import OpenMeteoTool, OpenMeteoToolInput
 
+
 async def main() -> None:
     tool = OpenMeteoTool()
-    result = tool.run(input=OpenMeteoToolInput(location_name= "New York"))
+    result = tool.run(input=OpenMeteoToolInput(location_name="New York"))
     print(result.get_text_content())
+
 
 if __name__ == "__main__":
     asyncio.run(main())
 
 ```
 
-_Source: /examples/tools/base.py_
+_Source: [python/examples/tools/base.py](python/examples/tools/base.py)_
 
 ### Advanced
 
 <!-- embedme examples/tools/advanced.py -->
-From [base.py](examples/tools/advanced.py):
+From [advanced.py](examples/tools/advanced.py):
 ```py
 import asyncio
 
 from beeai_framework.tools.weather.openmeteo import OpenMeteoTool, OpenMeteoToolInput
 
+
 async def main() -> None:
     tool = OpenMeteoTool()
-    result = tool.run(input=OpenMeteoToolInput(location_name= "New York", start_date="2025-01-01", end_date="2025-01-02", temperature_unit="celsius"))
+    result = tool.run(
+        input=OpenMeteoToolInput(
+            location_name="New York", start_date="2025-01-01", end_date="2025-01-02", temperature_unit="celsius"
+        )
+    )
     print(result.get_text_content())
+
 
 if __name__ == "__main__":
     asyncio.run(main())
 
 ```
 
-_Source: /examples/tools/advanced.py_
+_Source: [python/examples/tools/advanced.py](python/examples/tools/advanced.py)_
 
 > [!TIP]
 >
@@ -70,7 +80,7 @@ _Source: /examples/tools/advanced.py_
 ### Usage with agents
 
 <!-- embedme examples/tools/agent.py -->
-From [base.py](examples/tools/agent.py):
+From [agent.py](examples/tools/agent.py):
 ```py
 import asyncio
 
@@ -79,6 +89,7 @@ from beeai_framework.agents.types import BeeInput, BeeRunInput
 from beeai_framework.backend.chat import ChatModel
 from beeai_framework.memory import UnconstrainedMemory
 from beeai_framework.tools.weather.openmeteo import OpenMeteoTool
+
 
 async def main() -> None:
     llm = ChatModel.from_name("ollama:3.1")
@@ -94,7 +105,7 @@ if __name__ == "__main__":
 
 ```
 
-_Source: /examples/tools/agent.py_
+_Source: [python/examples/tools/agent.py](python/examples/tools/agent.py)_
 
 ### Usage with decorator
 
@@ -161,7 +172,7 @@ if __name__ == "__main__":
 
 ```
 
-_Source: [examples/tools/decorator.py](/examples/tools/decorator.py)_
+_Source: [python/examples/tools/decorator.py](python/examples/tools/decorator.py)_
 
 ### Usage with duckduckgo
 
@@ -191,7 +202,37 @@ if __name__ == "__main__":
 
 ```
 
-_Source: [examples/tools/duckduckgo.py](/examples/tools/duckduckgo.py)_
+_Source: [python/examples/tools/duckduckgo.py](python/examples/tools/duckduckgo.py)_
+
+### Usage with openmeteo
+
+<!-- embedme examples/tools/openmeteo.py -->
+
+```py
+import asyncio
+
+from beeai_framework.agents.bee import BeeAgent
+from beeai_framework.agents.types import BeeInput, BeeRunInput
+from beeai_framework.backend.chat import ChatModel
+from beeai_framework.memory import UnconstrainedMemory
+from beeai_framework.tools.weather.openmeteo import OpenMeteoTool
+
+
+async def main() -> None:
+    llm = ChatModel.from_name("ollama:granite3.1-dense:8b")
+    agent = BeeAgent(BeeInput(llm=llm, tools=[OpenMeteoTool()], memory=UnconstrainedMemory()))
+
+    result = await agent.run(BeeRunInput(prompt="What's the current weather in London?"))
+
+    print(result.result.text)
+
+
+if __name__ == "__main__":
+    asyncio.run(main())
+
+```
+
+_Source: [python/examples/tools/openmeteo.py](python/examples/tools/openmeteo.py)_
 
 
 ### Usage with Wikipedia
@@ -219,7 +260,7 @@ if __name__ == "__main__":
 
 ```
 
-_Source: [examples/tools/wikipedia.py](/examples/tools/wikipedia.py)_
+_Source: [python/examples/tools/wikipedia.py](python/examples/tools/wikipedia.py)_
 
 ## Writing a new tool
 
@@ -233,9 +274,6 @@ To create a new tool it is recommended to implement the base `Tool` class.
 From [base.py](examples/tools/custom/base.py):
 ```py
 import asyncio
-
-import json
-
 from typing import Any
 
 from pydantic import BaseModel, Field
@@ -245,6 +283,7 @@ from beeai_framework.tools.tool import Tool
 
 class RiddleToolInput(BaseModel):
     riddle_number: int = Field(description="Index of riddle to retrieve.")
+
 
 class RiddleTool(Tool[RiddleToolInput]):
     name = "Riddle"
@@ -258,26 +297,28 @@ class RiddleTool(Tool[RiddleToolInput]):
         "What has to be broken before you can use it?",
         "What has a head, a tail, but no body?",
         "The more you take, the more you leave behind. What am I?",
-        "What goes up but never comes down?"
+        "What goes up but never comes down?",
     )
 
     def _run(self, input: RiddleToolInput, _: Any | None = None) -> None:
         index = input.riddle_number % (len(self.data))
         riddle = self.data[index]
         return riddle
-    
+
+
 async def main() -> None:
     tool = RiddleTool()
     input = RiddleToolInput(riddle_number=1)
     result = tool.run(input)
     print(result)
 
+
 if __name__ == "__main__":
     asyncio.run(main())
 
 ```
 
-_Source: /examples/tools/custom/base.py_
+_Source: [python/examples/tools/custom/base.py](python/examples/tools/custom/base.py)_
 
 > [!TIP]
 >
@@ -294,7 +335,7 @@ If your tool is more complex, you may want to use the full power of the tool abs
 ```py
 ```
 
-_Source: examples/tools/custom/openLibrary.py TODO
+_Source: [python/examples/tools/custom/openLibrary.py](python/examples/tools/custom/openLibrary.py)_ TODO
 
 #### Implementation Notes
 
@@ -337,7 +378,7 @@ _Source: examples/tools/custom/openLibrary.py TODO
           description="The unit to express temperature", default="celsius"
       )
   ```
-  _Source: beeai_framework/tools/weather/openmeteo.py_
+  _Source: [python/beeai_framework/tools/weather/openmeteo.py](python/beeai_framework/tools/weather/openmeteo.py)_
 
 - **Implement the `_run()` method:**
 
@@ -353,7 +394,7 @@ _Source: examples/tools/custom/openLibrary.py TODO
         response.raise_for_status()
         return StringToolOutput(json.dumps(response.json()))
   ```
-    _Source: beeai_framework/tools/weather/openmeteo.py_
+    _Source: [python/beeai_framework/tools/weather/openmeteo.py](python/beeai_framework/tools/weather/openmeteo.py)_
 
 The `name` of the tool is required and must only contain characters between
 a-z, A-Z, 0-9, or one of - or \_.
