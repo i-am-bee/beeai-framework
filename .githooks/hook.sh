@@ -29,14 +29,14 @@ if [ "$HAS_TS_FILES" -eq 1  ] && grep -q "\"git:$HOOK_NAME\"" "$TS_DIR/package.j
   echo "Running $HOOK_NAME hook in $TS_DIR..."
   HOOK_ARGS_SCOPED=$(echo "$HOOK_ARGS" | sed 's/[^ ]* */..\/&/g' | sed 's/..\/typescript\///g')
   (cd "$TS_DIR" && npm run "git:$HOOK_NAME" "$HOOK_ARGS_SCOPED") || exit $?
-  echo "$STAGED_FILES" | xargs -r git add
+  echo "$STAGED_EXISTING_FILES" | xargs -r git add
 fi
 
 if [ "$HAS_PY_FILES" -eq 1 ]; then
   echo "Running Python $HOOK_NAME hook..."
   HOOK_ARGS_SCOPED=$(echo "$HOOK_ARGS" | sed 's/[^ ]* */..\/&/g' | sed 's/..\/python\///g')
   (cd "$PY_DIR" && poetry run poe git --hook "$HOOK_NAME" "$HOOK_ARGS_SCOPED") || exit $?
-  echo "$STAGED_FILES" | xargs -r git add
+  echo "$STAGED_EXISTING_FILES" | xargs -r git add
 fi
 
 # General commit style check
