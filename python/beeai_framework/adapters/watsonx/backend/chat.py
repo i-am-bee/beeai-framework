@@ -42,9 +42,11 @@ class WatsonxChatModel(LiteLLMChatModel):
         messages_list = []
         for message in input.messages:
             if isinstance(message, ToolMessage):
-                content = message.content[0]
-                messages_list.append(
-                    {"role": "tool", "content": content.get("result"), "tool_call_id": content.get("tool_call_id")}
+                messages_list.extend(
+                    [
+                        {"role": "tool", "content": content.get("result"), "tool_call_id": content.get("tool_call_id")}
+                        for content in message.content
+                    ]
                 )
             else:
                 messages_list.append(message.to_plain())

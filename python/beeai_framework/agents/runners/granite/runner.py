@@ -24,7 +24,7 @@ from beeai_framework.agents.runners.granite.prompts import (
     GraniteUserPromptTemplate,
 )
 from beeai_framework.agents.types import BeeAgentTemplates, BeeInput, BeeRunInput, BeeRunOptions
-from beeai_framework.backend.message import CustomMessage, ToolMessage, ToolResult
+from beeai_framework.backend.message import SystemMessage, ToolMessage, ToolResult
 from beeai_framework.context import RunContext
 from beeai_framework.emitter import EmitterOptions, EventMeta
 from beeai_framework.memory.base_memory import BaseMemory
@@ -103,9 +103,7 @@ class GraniteRunner(DefaultRunner):
         if self._input.tools and len(self._input.tools) > 0:
             memory.messages.insert(
                 1,
-                # TODO: this works, but needs be reviewed
-                CustomMessage(
-                    role="system",
+                SystemMessage(
                     content="\n".join(json.dumps(tool.prompt_data(), indent=4) for tool in self._input.tools),
                 ),
             )
