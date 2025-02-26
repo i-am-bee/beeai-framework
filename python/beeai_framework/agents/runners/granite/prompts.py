@@ -22,7 +22,7 @@ from beeai_framework.agents.runners.default.prompts import (
     ToolNotFoundErrorTemplateInput,
     UserPromptTemplateInput,
 )
-from beeai_framework.utils.templates import PromptTemplate, PromptTemplateInput
+from beeai_framework.template import PromptTemplate, PromptTemplateInput
 
 GraniteUserPromptTemplate = PromptTemplate(PromptTemplateInput(schema=UserPromptTemplateInput, template="{{input}}"))
 

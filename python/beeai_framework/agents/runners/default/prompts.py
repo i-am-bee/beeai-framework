@@ -14,7 +14,7 @@
 
 from pydantic import BaseModel
 
-from beeai_framework.utils.templates import PromptTemplate, PromptTemplateInput
+from beeai_framework.template import PromptTemplate, PromptTemplateInput
 
 
 class UserPromptTemplateInput(BaseModel):

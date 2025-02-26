@@ -13,14 +13,13 @@
 # limitations under the License.
 
 
-import copy
 from collections.abc import Callable
 from typing import Generic, TypedDict, TypeVar
 
 import chevron
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
-from beeai_framework.utils.errors import PromptTemplateError
+from beeai_framework.errors import FrameworkError
 from beeai_framework.utils.models import ModelLike, to_model
 
 
@@ -31,18 +30,11 @@ class Prompt(TypedDict):
 T = TypeVar("T", bound=BaseModel)
 
 
-class PromptTemplateInput(Generic[T]):
-    def __init__(
-        self,
-        schema: type[T],
-        template: str,
-        functions: dict[str, Callable[[], str]] | None = None,
-        defaults: dict[str, str] | None = None,
-    ) -> None:
-        self.schema = schema
-        self.template = template
-        self.functions = functions
-        self.defaults = defaults or {}
+class PromptTemplateInput(BaseModel, Generic[T]):
+    input_schema: type[T] = Field(..., alias="schema")
+    template: str
+    functions: dict[str, Callable[[], str]] | None = None
+    defaults: dict[str, str] | None = {}
 
 
 class PromptTemplate(Generic[T]):
@@ -50,7 +42,7 @@ class PromptTemplate(Generic[T]):
         self._config = config
 
     def render(self, input: ModelLike[T]) -> str:
-        data = to_model(self._config.schema, input).model_dump()
+        data = to_model(self._config.input_schema, input).model_dump()
 
         if self._config.defaults:
             for key, value in self._config.defaults.items():
@@ -67,8 +59,14 @@ class PromptTemplate(Generic[T]):
         return chevron.render(template=self._config.template, data=data)
 
     def fork(self, customizer: Callable[[PromptTemplateInput], "PromptTemplate"] | None) -> "PromptTemplate":
-        config = copy.copy(self._config)
-        new_config = customizer(config) if customizer else config
-        if isinstance(new_config, dict):
-            raise ValueError("Return type from customizer must be a config or nothing.")
+        new_config = customizer(self._config) if customizer else self._config
+        if not isinstance(new_config, PromptTemplateInput):
+            raise ValueError("Return type from customizer must be a PromptTemplateInput or nothing.")
         return PromptTemplate(new_config)
+
+
+class PromptTemplateError(FrameworkError):
+    """Raised for errors caused by PromptTemplate."""
+
+    def __init__(self, message: str = "PromptTemplate error", *, cause: Exception | None = None) -> None:
+        super().__init__(message, is_fatal=True, is_retryable=False, cause=cause)

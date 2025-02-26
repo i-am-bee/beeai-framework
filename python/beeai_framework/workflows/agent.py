@@ -33,9 +33,9 @@ from beeai_framework.agents.types import (
 from beeai_framework.backend.chat import ChatModel
 from beeai_framework.backend.message import AssistantMessage, Message
 from beeai_framework.memory import ReadOnlyMemory, UnconstrainedMemory
+from beeai_framework.template import PromptTemplateInput
 from beeai_framework.tools.tool import Tool
 from beeai_framework.utils.asynchronous import ensure_async
-from beeai_framework.utils.templates import PromptTemplateInput
 from beeai_framework.workflows.workflow import Workflow, WorkflowRun
 
 AgentFactory = Callable[[ReadOnlyMemory], BaseAgent | Awaitable[BaseAgent]]
@@ -88,8 +88,9 @@ class AgentWorkflow:
     def _create_factory(self, input: AgentFactoryInput) -> AgentFactory:
         def factory(memory: BaseMemory) -> BeeAgent:
             def customizer(config: PromptTemplateInput) -> PromptTemplateInput:
-                config.defaults["instructions"] = input.instructions or config.defaults.get("instructions")
-                return config
+                new_config = config.model_copy()
+                new_config.defaults["instructions"] = input.instructions or config.defaults.get("instructions")
+                return new_config
 
             return BeeAgent(
                 bee_input=BeeInput(

@@ -19,8 +19,11 @@ from zoneinfo import ZoneInfo
 import pytest
 from pydantic import BaseModel, ValidationError
 
-from beeai_framework.utils.errors import PromptTemplateError
-from beeai_framework.utils.templates import PromptTemplate, PromptTemplateInput
+from beeai_framework.template import (
+    PromptTemplate,
+    PromptTemplateError,
+    PromptTemplateInput,
+)
 
 
 @pytest.fixture

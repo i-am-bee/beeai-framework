@@ -91,7 +91,7 @@ from zoneinfo import ZoneInfo
 
 from pydantic import BaseModel
 
-from beeai_framework.utils.templates import PromptTemplate, PromptTemplateInput
+from beeai_framework.template import PromptTemplate, PromptTemplateInput
 
 os.environ["USER"] = "BeeAI"
 
@@ -125,7 +125,7 @@ _Source: [examples/templates/basic_functions.py](/examples/templates/basic_funct
 ```py
 from pydantic import BaseModel
 
-from beeai_framework.utils.templates import PromptTemplate, PromptTemplateInput
+from beeai_framework.template import PromptTemplate, PromptTemplateInput
 
 
 class UserMessage(BaseModel):

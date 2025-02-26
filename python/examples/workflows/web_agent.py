@@ -8,7 +8,7 @@ from pydantic import BaseModel, Field, ValidationError
 from beeai_framework.adapters.ollama.backend.chat import OllamaChatModel
 from beeai_framework.backend.chat import ChatModelOutput, ChatModelStructureOutput
 from beeai_framework.backend.message import UserMessage
-from beeai_framework.utils.templates import PromptTemplate, PromptTemplateInput
+from beeai_framework.template import PromptTemplate, PromptTemplateInput
 from beeai_framework.workflows.workflow import Workflow, WorkflowError
 
 

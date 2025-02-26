@@ -22,8 +22,8 @@ from beeai_framework.backend import Message
 from beeai_framework.backend.chat import ChatModel, ChatModelOutput
 from beeai_framework.cancellation import AbortSignal
 from beeai_framework.memory.base_memory import BaseMemory
+from beeai_framework.template import PromptTemplate
 from beeai_framework.tools.tool import Tool
-from beeai_framework.utils.templates import PromptTemplate
 
 
 class BeeRunInput(BaseModel):

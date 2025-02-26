@@ -31,9 +31,9 @@ from beeai_framework.context import RunContext
 from beeai_framework.emitter.emitter import Emitter
 from beeai_framework.emitter.types import EmitterInput
 from beeai_framework.memory.base_memory import BaseMemory
+from beeai_framework.template import PromptTemplate
 from beeai_framework.tools import ToolOutput
 from beeai_framework.utils.counter import RetryCounter
-from beeai_framework.utils.templates import PromptTemplate
 
 
 @dataclass

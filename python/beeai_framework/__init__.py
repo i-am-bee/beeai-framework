@@ -24,11 +24,17 @@ from beeai_framework.backend import (
     ToolMessage,
     UserMessage,
 )
-from beeai_framework.memory import BaseMemory, ReadOnlyMemory, TokenMemory, UnconstrainedMemory
+from beeai_framework.memory import (
+    BaseMemory,
+    ReadOnlyMemory,
+    TokenMemory,
+    UnconstrainedMemory,
+)
 from beeai_framework.memory.serializable import Serializable
+from beeai_framework.template import Prompt, PromptTemplateError
 from beeai_framework.tools import Tool, tool
 from beeai_framework.tools.weather.openmeteo import OpenMeteoTool
-from beeai_framework.utils.templates import Prompt
+from beeai_framework.utils.errors import LoggerError
 
 __all__ = [
     "AssistantMessage",
@@ -36,9 +42,11 @@ __all__ = [
     "BaseMemory",
     "BeeAgent",
     "CustomMessage",
+    "LoggerError",
     "Message",
     "OpenMeteoTool",
     "Prompt",
+    "PromptTemplateError",
     "ReadOnlyMemory",
     "Role",
     "Serializable",
