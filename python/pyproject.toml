@@ -143,7 +143,6 @@ cmd = "ruff check ${FIX:+--fix} ${PY_FILES}"
 
 [tool.poe.tasks.git]
 control.expr = "hook"
-cwd = ".."
 args = ["hook", { name = "TARGET", positional = true, multiple = true }]
 default = "pass"
 
@@ -156,8 +155,7 @@ default = "pass"
     sequence = [
         { "ref" = "copyright ${TARGET}"},
         { "ref" = "format --fix ${TARGET}"},
-        { "ref" = "lint --fix ${TARGET}" },
-        { "shell" = "echo ${TARGET} | xargs -r git add" }
+        { "ref" = "lint --fix ${TARGET}" }
     ]
 
 [tool.poe.tasks.docs]
