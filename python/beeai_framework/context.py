@@ -24,7 +24,7 @@ from typing import Any, Generic, Self, TypeVar
 from pydantic import BaseModel
 
 from beeai_framework.cancellation import AbortController, AbortSignal, register_signals
-from beeai_framework.emitter import Emitter, EmitterInput, EventTrace
+from beeai_framework.emitter import Emitter, EventTrace
 from beeai_framework.errors import AbortError, FrameworkError
 from beeai_framework.utils.asynchronous import ensure_async
 from beeai_framework.utils.custom_logger import BeeLogger
@@ -92,14 +92,12 @@ class RunContext(RunInstance):
         self.context: dict = {k: v for k, v in parent.context.items() if k not in ["id", "parentId"]} if parent else {}
 
         self.emitter = self.instance.emitter.child(
-            EmitterInput(
-                context=self.context,
-                trace=EventTrace(
-                    id=self.group_id,
-                    run_id=self.run_id,
-                    parent_run_id=parent.run_id if parent else None,
-                ),
-            )
+            context=self.context,
+            trace=EventTrace(
+                id=self.group_id,
+                run_id=self.run_id,
+                parent_run_id=parent.run_id if parent else None,
+            ),
         )
 
         if parent:
@@ -129,9 +127,7 @@ class RunContext(RunInstance):
         context = RunContext(instance=instance, context_input=context_input, parent=parent)
 
         async def handler() -> R:
-            emitter = context.emitter.child(
-                EmitterInput(namespace=["run"], creator=context, context={"internal": True})
-            )
+            emitter = context.emitter.child(namespace=["run"], creator=context, context={"internal": True})
 
             try:
                 await emitter.emit("start", None)

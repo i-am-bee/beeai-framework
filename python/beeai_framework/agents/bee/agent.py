@@ -40,7 +40,7 @@ from beeai_framework.backend import Message
 from beeai_framework.backend.chat import ChatModel
 from beeai_framework.backend.message import AssistantMessage, MessageMeta, UserMessage
 from beeai_framework.context import RunContext
-from beeai_framework.emitter import Emitter, EmitterInput
+from beeai_framework.emitter import Emitter
 from beeai_framework.memory import BaseMemory
 from beeai_framework.tools.tool import Tool
 
@@ -66,10 +66,8 @@ class BeeAgent(BaseAgent[BeeRunOutput]):
         else:
             self.runner = DefaultRunner
         self.emitter = Emitter.root().child(
-            EmitterInput(
-                namespace=["agent", "bee"],
-                creator=self,
-            )
+            namespace=["agent", "bee"],
+            creator=self,
         )
 
     @property

@@ -26,7 +26,7 @@ from beeai_framework.backend.message import AssistantMessage, Message, SystemMes
 from beeai_framework.backend.utils import load_model, parse_broken_json, parse_model
 from beeai_framework.cancellation import AbortController, AbortSignal
 from beeai_framework.context import Run, RunContext, RunContextInput, RunInstance
-from beeai_framework.emitter import Emitter, EmitterInput
+from beeai_framework.emitter import Emitter
 from beeai_framework.retryable import Retryable, RetryableConfig, RetryableContext
 from beeai_framework.template import PromptTemplate, PromptTemplateInput
 from beeai_framework.tools.tool import Tool
@@ -141,10 +141,8 @@ class ChatModel(ABC):
 
     def __init__(self) -> None:
         self.emitter = Emitter.root().child(
-            EmitterInput(
-                namespace=["backend", self.provider_id, "chat"],
-                creator=self,
-            )
+            namespace=["backend", self.provider_id, "chat"],
+            creator=self,
         )
 
     @abstractmethod

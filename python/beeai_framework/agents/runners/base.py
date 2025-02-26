@@ -29,7 +29,6 @@ from beeai_framework.agents.types import (
 from beeai_framework.cancellation import AbortSignal
 from beeai_framework.context import RunContext
 from beeai_framework.emitter.emitter import Emitter
-from beeai_framework.emitter.types import EmitterInput
 from beeai_framework.memory.base_memory import BaseMemory
 from beeai_framework.template import PromptTemplate
 from beeai_framework.tools import ToolOutput
@@ -110,7 +109,7 @@ class BaseRunner(ABC):
             # https://github.com/i-am-bee/beeai-framework/blob/aa4d5e6091ed3bab8096492707ceb03d3b03863b/src/agents/bee/runners/base.ts#L70
             raise Exception(f"Agent was not able to resolve the task in {max_iterations} iterations.")
 
-        emitter = self._run.emitter.child(emitter_input=EmitterInput(group_id=f"`iteration-${meta.iteration}"))
+        emitter = self._run.emitter.child(group_id=f"`iteration-{meta.iteration}")
         iteration: BeeAgentRunIteration = await self.llm(
             BeeRunnerLLMInput(emitter=emitter, signal=self._run.signal, meta=meta)
         )
