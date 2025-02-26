@@ -152,8 +152,32 @@ def test_chat_model_from() -> None:
     assert isinstance(ollama_chat_model, OllamaChatModel)
     assert ollama_chat_model.settings["base_url"] == "http://somewhere-else:12345"
 
+    # Watsonx with Granite model and settings specified in code
+    os.environ.pop("WATSONX_URL", None)
+    os.environ.pop("WATSONX_PROJECT_ID", None)
+    os.environ.pop("WATSONX_APIKEY", None)
+    watsonx_chat_model = ChatModel.from_name(
+        "watsonx:ibm/granite-3-8b-instruct",
+        {
+            "url": "http://somewhere",
+            "project_id": "proj_id_123",
+            "api_key": "api_key_123",
+        },
+    )
+    assert isinstance(watsonx_chat_model, WatsonxChatModel)
+    assert watsonx_chat_model.settings["url"] == "http://somewhere"
+    assert watsonx_chat_model.settings["project_id"] == "proj_id_123"
+    assert watsonx_chat_model.settings["api_key"] == "api_key_123"
+
+    # Watsonx with Granite model and settings specified in env vars
+    os.environ["WATSONX_URL"] = "http://somewhere-else"
+    os.environ["WATSONX_PROJECT_ID"] = "proj_id_456"
+    os.environ["WATSONX_APIKEY"] = "api_key_456"
     watsonx_chat_model = ChatModel.from_name("watsonx:ibm/granite-3-8b-instruct")
     assert isinstance(watsonx_chat_model, WatsonxChatModel)
+    assert watsonx_chat_model.settings["url"] == "http://somewhere-else"
+    assert watsonx_chat_model.settings["project_id"] == "proj_id_456"
+    assert watsonx_chat_model.settings["api_key"] == "api_key_456"
 
     openai_chat_model = ChatModel.from_name("openai:gpt-4o")
     assert isinstance(openai_chat_model, OpenAIChatModel)
