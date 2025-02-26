@@ -3,7 +3,34 @@ from typing import Literal, TypeAlias
 
 from pydantic import BaseModel, ValidationError
 
+from beeai_framework.emitter.emitter import Emitter, EventMeta
+from beeai_framework.emitter.types import EmitterOptions
 from beeai_framework.workflows.workflow import Workflow, WorkflowError, WorkflowReservedStepName
+
+
+def print_event(event_data: dict, event_meta: EventMeta) -> None:
+    """Process agent events and log appropriately"""
+
+    if event_meta.name == "error":
+        print("Agent 🤖 : ", event_data)
+    elif event_meta.name == "retry":
+        print("Agent 🤖 : ", "retrying the action...")
+    elif event_meta.name == "update":
+        print(f"Agent({event_data['update']['key']}) 🤖 : ", event_data["update"]["parsedValue"])
+    elif event_meta.name == "start":
+        if event_data:
+            print(f"Agent 🤖 : Starting step: {event_data.get('step')}")
+        else:
+            print("Agent 🤖 : Starting")
+    elif event_meta.name == "success":
+        if isinstance(event_data, dict):
+            run = event_data.get("run")
+            print(f"Agent 🤖 : Completed step: {run.steps[-1].name}, Result: {run.state.result}")
+            print(f"Agent 🤖 : Next step: {event_data.get('next')}")
+        else:
+            print("Agent 🤖 : Result: ", event_data.result)
+    elif event_meta.name == "finish":
+        print("Agent 🤖 : Finished")
 
 
 async def main() -> None:
@@ -16,8 +43,11 @@ async def main() -> None:
 
     WorkflowStep: TypeAlias = Literal["pre_process", "add_loop", "post_process"]
 
+    # Observe the agent
+    async def observer(emitter: Emitter) -> None:
+        emitter.on("*.*", print_event, EmitterOptions(match_nested=True))
+
     def pre_process(state: State) -> WorkflowStep:
-        print("pre_process")
         state.abs_repetitions = abs(state.y)
         return "add_loop"
 
@@ -33,7 +63,6 @@ async def main() -> None:
             return "post_process"
 
     def post_process(state: State) -> WorkflowReservedStepName:
-        print("post_process")
         if state.y < 0:
             result = -(state.result if state.result is not None else 0)
             state.result = result
@@ -45,10 +74,10 @@ async def main() -> None:
         multiplication_workflow.add_step("add_loop", add_loop)
         multiplication_workflow.add_step("post_process", post_process)
 
-        response = await multiplication_workflow.run(State(x=8, y=5))
+        response = await multiplication_workflow.run(State(x=8, y=5)).observe(observer)
         print(f"result: {response.state.result}")
 
-        response = await multiplication_workflow.run(State(x=8, y=-5))
+        response = await multiplication_workflow.run(State(x=8, y=-5)).observe(observer)
         print(f"result: {response.state.result}")
 
     except WorkflowError as e:
