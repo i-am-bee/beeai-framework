@@ -22,6 +22,7 @@ import pytest_asyncio
 from pydantic import BaseModel
 
 from beeai_framework.adapters.ollama.backend.chat import OllamaChatModel
+from beeai_framework.adapters.openai.backend.chat import OpenAIChatModel
 from beeai_framework.adapters.watsonx.backend.chat import WatsonxChatModel
 from beeai_framework.backend.chat import (
     ChatModel,
@@ -144,3 +145,6 @@ def test_chat_model_from() -> None:
 
     watsonx_chat_model = ChatModel.from_name("watsonx:ibm/granite-3-8b-instruct")
     assert isinstance(watsonx_chat_model, WatsonxChatModel)
+
+    openai_chat_model = ChatModel.from_name("openai:gpt-4o")
+    assert isinstance(openai_chat_model, OpenAIChatModel)

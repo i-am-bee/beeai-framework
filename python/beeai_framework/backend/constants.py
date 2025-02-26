@@ -18,7 +18,7 @@ from typing import Literal
 from pydantic import BaseModel
 
 ProviderName = Literal["ollama", "openai", "watsonx"]
-ProviderHumanName = Literal["Ollama", "OpenAI", "watsonx"]
+ProviderHumanName = Literal["Ollama", "OpenAI", "Watsonx"]
 
 
 class ProviderDef(BaseModel):
@@ -36,5 +36,5 @@ class ProviderModelDef(BaseModel):
 BackendProviders = {
     "Ollama": ProviderDef(name="Ollama", module="ollama", aliases=[]),
     "OpenAI": ProviderDef(name="OpenAI", module="openai", aliases=["openai"]),
-    "watsonx": ProviderDef(name="watsonx", module="watsonx", aliases=["watsonx", "ibm"]),
+    "watsonx": ProviderDef(name="Watsonx", module="watsonx", aliases=["watsonx", "ibm"]),
 }
