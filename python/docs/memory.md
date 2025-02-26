@@ -1,37 +1,93 @@
-# Memory
+# 🧠 Memory
 
-*Disclaimer: The notes below may refer to the TypeScript version or missing files as the Python version moves toward parity in the near future. Additional Python examples coming soon. TODO*
+<!-- TOC -->
+## Table of Contents
+- [Overview](#overview)
+- [Core Concepts](#core-concepts)
+  - [Messages](#messages)
+  - [Memory Types](#memory-types)
+  - [Integration Points](#integration-points)
+- [Basic Usage](#basic-usage)
+  - [Capabilities Showcase](#capabilities-showcase)
+  - [Usage with LLMs](#usage-with-llms)
+  - [Usage with Agents](#usage-with-agents)
+- [Memory Types](#memory-types)
+  - [UnconstrainedMemory](#unconstrainedmemory)
+  - [SlidingMemory](#slidingmemory)
+  - [TokenMemory](#tokenmemory)
+  - [SummarizeMemory](#summarizememory)
+- [Creating Custom Memory](#creating-custom-memory)
+- [Resources](#resources)
+<!-- /TOC -->
 
-> [!TIP]
->
-> Location within the framework `beeai/memory`.
+---
+
+## Overview
 
 Memory in the context of an agent refers to the system's capability to store, recall, and utilize information from past interactions. This enables the agent to maintain context over time, improve its responses based on previous exchanges, and provide a more personalized experience.
 
-## Usage
+BeeAI framework provides several memory implementations:
 
-### Capabilities showcase
+| Type | Description |
+|------|-------------|
+| [**UnconstrainedMemory**](#unconstrainedmemory) | Unlimited storage for all messages |
+| [**SlidingMemory**](#slidingmemory) | Keeps only the most recent k entries |
+| [**TokenMemory**](#tokenmemory) | Manages token usage to stay within model context limits |
+| [**SummarizeMemory**](#summarizememory) | Maintains a single summarization of the conversation |
 
+---
 
-```py
+## Core Concepts
+
+### Messages
+
+Messages are the fundamental units stored in memory, representing interactions between users and agents:
+- Each message has a role (USER, ASSISTANT, SYSTEM)
+- Messages contain text content
+- Messages can be added, retrieved, and processed
+
+### Memory Types
+
+Different memory strategies are available depending on your requirements:
+- **Unconstrained** - Store unlimited messages
+- **Sliding Window** - Keep only the most recent N messages
+- **Token-based** - Manage a token budget to stay within model context limits
+- **Summarization** - Compress previous interactions into summaries
+
+### Integration Points
+
+Memory components integrate with other parts of the framework:
+- LLMs use memory to maintain conversation context
+- Agents access memory to process and respond to interactions
+- Workflows can share memory between different processing steps
+
+---
+
+## Basic Usage
+
+### Capabilities Showcase
+
+From [base.py](/python/examples/memory/base.py):
+
+```txt
+Coming soon
 ```
-
-_Source: /examples/memory/base.py TODO
 
 ### Usage with LLMs
 
-```py
-```
+From [llmMemory.py](/python/examples/memory/llmMemory.py):
 
-_Source: /examples/memory/llmMemory.py TODO
+```txt
+Coming soon
+```
 
 > [!TIP]
 >
 > Memory for non-chat LLMs works exactly the same way.
 
-### Usage with agents
+### Usage with Agents
 
-<!-- embedme examples/memory/agentMemory.py -->
+From [agentMemory](/python/examples/memory/agentMemory.py):
 
 ```py
 import asyncio
@@ -111,10 +167,7 @@ async def main() -> None:
 
 if __name__ == "__main__":
     asyncio.run(main())
-
 ```
-
-_Source: [examples/memory/agentMemory.py](/examples/memory/agentMemory.py)_
 
 > [!TIP]
 >
@@ -124,19 +177,17 @@ _Source: [examples/memory/agentMemory.py](/examples/memory/agentMemory.py)_
 >
 > Bee Agent internally uses `TokenMemory` to store intermediate steps for a given run.
 
-> [!NOTE]
->
-> Agent typically works with a memory similar to what was just shown.
+---
 
-## Memory types
+## Memory Types
 
-The framework provides multiple out-of-the-box memory implementations.
+The framework provides multiple out-of-the-box memory implementations for different use cases.
 
 ### UnconstrainedMemory
 
-Unlimited in size.
+Unlimited in size, stores all messages without constraints.
 
-<!-- embedme examples/memory/unconstrainedMemory.py -->
+From [unconstrainedMemory.py](/python/examples/memory/unconstrainedMemory.py):
 
 ```py
 import asyncio
@@ -170,16 +221,13 @@ async def main() -> None:
 
 if __name__ == "__main__":
     asyncio.run(main())
-
 ```
-
-_Source: [examples/memory/unconstrainedMemory.py](/examples/memory/unconstrainedMemory.py)_
 
 ### SlidingMemory
 
 Keeps last `k` entries in the memory. The oldest ones are deleted (unless specified otherwise).
 
-<!-- embedme examples/memory/slidingMemory.py -->
+From [slidingMemory.py](/python/examples/memory/slidingMemory.py):
 
 ```py
 import asyncio
@@ -222,17 +270,14 @@ async def main() -> None:
 
 if __name__ == "__main__":
     asyncio.run(main())
-
 ```
-
-_Source: [examples/memory/slidingMemory.py](/examples/memory/slidingMemory.py)_
 
 ### TokenMemory
 
 Ensures that the token sum of all messages is below the given threshold.
 If overflow occurs, the oldest message will be removed.
 
-<!-- embedme examples/memory/tokenMemory.py -->
+From [tokenMemory.py](/python/examples/memory/tokenMemory.py):
 
 ```py
 import asyncio
@@ -295,10 +340,7 @@ async def main() -> None:
 
 if __name__ == "__main__":
     asyncio.run(main())
-
 ```
-
-_Source: [examples/memory/tokenMemory.py](/examples/memory/tokenMemory.py)_
 
 ### SummarizeMemory
 
@@ -354,15 +396,38 @@ if __name__ == "__main__":
 
 ```
 
-_Source: [examples/memory/summarizeMemory.py](/examples/memory/summarizeMemory.py)_
+_Source: [python/examples/memory/summarizeMemory.py](/python/examples/memory/summarizeMemory.py)_
 
-## Creating a custom memory provider
+---
+
+## Creating Custom Memory
 
 To create your memory implementation, you must implement the `BaseMemory` class.
 
+<!-- embedme examples/memory/custom.py -->
+
 ```py
+# Coming soon
 ```
 
-_Source: /examples/memory/custom.py TODO
+_Source: [python/examples/memory/custom.py](/python/examples/memory/custom.py)_
 
-The simplest implementation is `UnconstrainedMemory`, which can be found [here](/beeai/memory/unconstrained_memory.py).
+> [!TIP]
+>
+> The simplest implementation is `UnconstrainedMemory`.
+
+---
+
+## Resources
+
+- **Examples:**
+  - [unconstrainedMemory.py](/examples/memory/unconstrainedMemory.py) - Basic memory usage
+  - [slidingMemory.py](/examples/memory/slidingMemory.py) - Sliding window memory example
+  - [tokenMemory.py](/examples/memory/tokenMemory.py) - Token-based memory management
+  - [summarizeMemory.py](/examples/memory/summarizeMemory.py) - Summarization memory example
+  - [agentMemory.py](/examples/memory/agentMemory.py) - Using memory with agents
+
+- **Related Documentation:**
+  - [Agents Documentation](/python/docs/agents.md)
+  - [Workflows Documentation](/python/docs/workflows.md)
+  - [Backend Documentation](/python/docs/backend.md)
