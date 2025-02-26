@@ -12,25 +12,25 @@ def print_event(event_data: dict, event_meta: EventMeta) -> None:
     """Process agent events and log appropriately"""
 
     if event_meta.name == "error":
-        print("Agent 🤖 : ", event_data)
+        print("Workflow : ", event_data)
     elif event_meta.name == "retry":
-        print("Agent 🤖 : ", "retrying the action...")
+        print("Workflow : ", "retrying the action...")
     elif event_meta.name == "update":
         print(f"Agent({event_data['update']['key']}) 🤖 : ", event_data["update"]["parsedValue"])
     elif event_meta.name == "start":
         if event_data:
-            print(f"Agent 🤖 : Starting step: {event_data.get('step')}")
+            print(f"Workflow : Starting step: {event_data.get('step')}")
         else:
-            print("Agent 🤖 : Starting")
+            print("Workflow : Starting")
     elif event_meta.name == "success":
         if isinstance(event_data, dict):
             run = event_data.get("run")
-            print(f"Agent 🤖 : Completed step: {run.steps[-1].name}, Result: {run.state.result}")
-            print(f"Agent 🤖 : Next step: {event_data.get('next')}")
+            print(f"Workflow : Completed step: {run.steps[-1].name}, Result: {run.state.result}")
+            print(f"Workflow : Next step: {event_data.get('next')}")
         else:
-            print("Agent 🤖 : Result: ", event_data.result)
+            print("Workflow : Result: ", event_data.result)
     elif event_meta.name == "finish":
-        print("Agent 🤖 : Finished")
+        print("Workflow : Finished")
 
 
 async def main() -> None:
