@@ -99,12 +99,7 @@ async def test_chat_model_structure(reverse_words_chat: ChatModel, chat_messages
         reversed: str
 
     reverse_words_chat = ReverseWordsDummyModel()
-    response = await reverse_words_chat.create_structure(
-        {
-            "schema": ReverseWordsSchema,
-            "messages": chat_messages_list,
-        }
-    )
+    response = await reverse_words_chat.create_structure(schema=ReverseWordsSchema, messages=chat_messages_list)
 
     ReverseWordsSchema.model_validate(response.object)
 

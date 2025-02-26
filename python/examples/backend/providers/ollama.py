@@ -62,12 +62,7 @@ async def ollama_structure() -> None:
 
     llm = OllamaChatModel("llama3.1")
     user_message = UserMessage("How many islands make up the country of Cape Verde?")
-    response = await llm.create_structure(
-        {
-            "schema": TestSchema,
-            "messages": [user_message],
-        }
-    )
+    response = await llm.create_structure(schema=TestSchema, messages=[user_message])
     print(response.object)
 
 

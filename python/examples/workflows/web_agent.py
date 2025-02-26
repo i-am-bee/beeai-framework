@@ -41,10 +41,7 @@ async def main() -> None:
         ).render(InputSchema(input=state.input))
 
         output: ChatModelStructureOutput = await llm.create_structure(
-            {
-                "schema": WebSearchQuery,
-                "messages": [UserMessage(prompt)],
-            }
+            schema=WebSearchQuery, messages=[UserMessage(prompt)]
         )
         # TODO Why is object not of type schema T?
         state.search_results = search.run(f"current weather in {output.object['search_query']}")

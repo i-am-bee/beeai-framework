@@ -30,7 +30,7 @@ from beeai_framework.emitter import Emitter, EmitterInput
 from beeai_framework.retryable import Retryable, RetryableConfig, RetryableContext
 from beeai_framework.tools.tool import Tool
 from beeai_framework.utils.custom_logger import BeeLogger
-from beeai_framework.utils.models import ModelLike, to_model
+from beeai_framework.utils.models import ModelLike
 from beeai_framework.utils.templates import PromptTemplate
 
 T = TypeVar("T", bound=BaseModel)
@@ -276,15 +276,23 @@ IMPORTANT: You MUST answer with a JSON object that matches the JSON schema above
             run_create,
         )
 
-    def create_structure(self, structure_input: ModelLike[ChatModelStructureInput]) -> Run:
-        input = to_model(ChatModelStructureInput, structure_input)
+    def create_structure(
+        self,
+        schema: type[T],
+        messages: Annotated[list, BeforeValidator(message_validator)],
+        abort_signal: AbortSignal | None = None,
+        max_retries: int | None = None,
+    ) -> Run:
+        model_input = ChatModelStructureInput(
+            schema=schema, messages=messages, abort_signal=abort_signal, max_retries=max_retries
+        )
 
         async def run_structure(context: RunContext) -> ChatModelStructureOutput:
-            return await self._create_structure(input, context)
+            return await self._create_structure(model_input, context)
 
         return RunContext.enter(
             RunInstance(emitter=self.emitter),
-            RunContextInput(params=[input], signal=input.abort_signal),
+            RunContextInput(params=[model_input], signal=model_input.abort_signal),
             run_structure,
         )
 

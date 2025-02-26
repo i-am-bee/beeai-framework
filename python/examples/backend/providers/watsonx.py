@@ -64,12 +64,7 @@ async def watson_structure() -> None:
         answer: str = Field(description="your final answer")
 
     user_message = UserMessage("How many islands make up the country of Cape Verde?")
-    response = await llm.create_structure(
-        {
-            "schema": TestSchema,
-            "messages": [user_message],
-        }
-    )
+    response = await llm.create_structure(schema=TestSchema, messages=[user_message])
     print(response.object)
 
 
