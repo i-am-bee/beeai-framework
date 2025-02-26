@@ -1,7 +1,7 @@
-# OpenTelemetry Instrumentation in beeai-framework 
+# 📊 OpenTelemetry Instrumentation
 
 > [!NOTE]  
-> **Instrumentation is not yet implemented in Python, but it's coming soon!**
+> **Instrumentation is not yet implemented in Python, but it's coming soon! 🚀**
 
 This document provides an overview of the OpenTelemetry instrumentation setup in beeai-framework.
 The implementation is designed to [create telemetry spans](https://opentelemetry.io/docs/languages/python/instrumentation/#creating-spans) for observability when instrumentation is enabled.

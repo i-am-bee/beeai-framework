@@ -1,7 +1,7 @@
 # 📦 Serialization
 
 > [!NOTE]  
-> **Serialization is not yet implemented in Python, but it's coming soon! 🚀
+> **Serialization is not yet implemented in Python, but it's coming soon! 🚀**
 
 <!-- TOC -->
 ## Table of Contents
@@ -16,7 +16,7 @@
     - [Custom Serialization](#custom-serialization)
     - [Serialization Context](#serialization-context)
     - [Handling Unknown Classes](#handling-unknown-classes)
-- [Resources](#resources)
+- [Examples](#examples)
 <!-- /TOC -->
 
 ---
@@ -118,14 +118,10 @@ _Source: [examples/serialization/context.py](/python/examples/serialization/cont
 
 ---
 
-## Resources
+## Examples
 
-- **Examples:**
-    - [base.py](/python/examples/serialization/base.py) - Base example
-    - [memory.py](/python/examples/serialization/memory.py) - Example of serializing and deserializing memory components
-    - [customExternal.py](/python/examples/serialization/customExternal.py) - Registering external classes with the serializer
-    - [customInternal.py](/python/examples/serialization/customInternal.py) - Implementing the Serializable interface
-    - [context.py](/python/examples/serialization/context.py) - Using serialization context for advanced scenarios
-
-- **Related Documentation:**
-  - [Errors Documentation](/python/docs/errors.md)
+- [base.py](/python/examples/serialization/base.py) - Base example
+- [memory.py](/python/examples/serialization/memory.py) - Example of serializing and deserializing memory components
+- [customExternal.py](/python/examples/serialization/customExternal.py) - Registering external classes with the serializer
+- [customInternal.py](/python/examples/serialization/customInternal.py) - Implementing the Serializable interface
+- [context.py](/python/examples/serialization/context.py) - Using serialization context for advanced scenarios

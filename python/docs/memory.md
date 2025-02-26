@@ -17,7 +17,7 @@
   - [TokenMemory](#tokenmemory)
   - [SummarizeMemory](#summarizememory)
 - [Creating Custom Memory](#creating-custom-memory)
-- [Resources](#resources)
+- [Examples](#examples)
 <!-- /TOC -->
 
 ---
@@ -418,16 +418,10 @@ _Source: [python/examples/memory/custom.py](/python/examples/memory/custom.py)_
 
 ---
 
-## Resources
+## Examples
 
-- **Examples:**
-  - [unconstrainedMemory.py](/examples/memory/unconstrainedMemory.py) - Basic memory usage
-  - [slidingMemory.py](/examples/memory/slidingMemory.py) - Sliding window memory example
-  - [tokenMemory.py](/examples/memory/tokenMemory.py) - Token-based memory management
-  - [summarizeMemory.py](/examples/memory/summarizeMemory.py) - Summarization memory example
-  - [agentMemory.py](/examples/memory/agentMemory.py) - Using memory with agents
-
-- **Related Documentation:**
-  - [Agents Documentation](/python/docs/agents.md)
-  - [Workflows Documentation](/python/docs/workflows.md)
-  - [Backend Documentation](/python/docs/backend.md)
+- [unconstrainedMemory.py](/examples/memory/unconstrainedMemory.py) - Basic memory usage
+- [slidingMemory.py](/examples/memory/slidingMemory.py) - Sliding window memory example
+- [tokenMemory.py](/examples/memory/tokenMemory.py) - Token-based memory management
+- [summarizeMemory.py](/examples/memory/summarizeMemory.py) - Summarization memory example
+- [agentMemory.py](/examples/memory/agentMemory.py) - Using memory with agents

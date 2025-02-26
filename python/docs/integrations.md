@@ -1,13 +1,16 @@
-# Integrations
+# 🔌 Integrations
 
-*Disclaimer: The notes below may refer to the TypeScript version or missing files as the Python version moves toward parity in the near future. Additional Python examples coming soon. TODO*
+> [!NOTE]  
+> **Integrations are not yet available in Python, but we’re working on it! 🚀**
 
-BeeAI Framework is open-source framework for building, deploying, and serving powerful multi-agent workflows at scale which includes integrating with other agent frameworks.
+## Overview
 
-## LangGraph
+BeeAI framework supports seamless integration with other agent frameworks to expand its capabilities.
 
+### LangGraph
 
-```py
+```txt
+Coming soon
 ```
 
-_Source: /examples/integrations/langgraph.py TODO
+_Source: /examples/integrations/langgraph.py_

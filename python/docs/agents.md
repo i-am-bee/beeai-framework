@@ -31,7 +31,8 @@ AI agents built on large language models (LLMs) provide a structured approach to
 
 Agents control the path to solving a problem, acting on feedback to refine their plan, a capability that improves performance and helps them accomplish sophisticated tasks.
 
-> 💡 **Tip:** For a deeper understanding of AI agents, read this [research article on AI agents and LLMs](https://research.ibm.com/blog/what-are-ai-agents-llm).
+> [!TIP]
+> For a deeper understanding of AI agents, read this [research article on AI agents and LLMs](https://research.ibm.com/blog/what-are-ai-agents-llm).
 
 ---
 
@@ -66,9 +67,8 @@ thought: I have the current weather in Las Vegas in Celsius.
 final_answer: The current weather in Las Vegas is 20.5°C with an apparent temperature of 18.3°C.
 ```
 
-> ⚠️ **Note:** During execution, the agent emits partial updates as it generates each line, followed by complete updates. Updates follow a strict order: first all partial updates for "thought," then a complete "thought" update, then moving to the next component.
-
-For more complex tasks, the agent may perform many more iterations, utilizing different tools and reasoning steps.
+> [!NOTE]
+> During execution, the agent emits partial updates as it generates each line, followed by complete updates. Updates follow a strict order: first all partial updates for "thought," then a complete "thought" update, then moving to the next component.
 
 For practical examples, see:
 - [simple.py](/python/examples/agents/simple.py) - Basic example of a Bee Agent using OpenMeteo and DuckDuckGo tools
@@ -100,7 +100,8 @@ response = await agent.run(
 
 _Source: [examples/agents/bee.py](/python/examples/agents/bee.py)_
 
-> 💡 **Tip:** The default is zero retries and no timeout. For complex tasks, increasing the max_iterations is recommended.
+> [!TIP]
+> The default is zero retries and no timeout. For complex tasks, increasing the max_iterations is recommended.
 
 ### 2. Overriding Prompt Templates
 
@@ -162,7 +163,8 @@ _Source: [examples/agents/simple.py](/python/examples/agents/simple.py)_
 - Knowledge tools (`LangChainWikipediaTool`)
 - And many more in the `beeai_framework.tools` module
 
-> 💡 **Tip:** See the [tools.md](/python/docs/tools.md) documentation for more information on available tools and creating custom tools.
+> [!TIP]
+> See the [tools documentation](/python/docs/tools.md) for more information on available tools and creating custom tools.
 
 ### 4. Configuring Memory
 
@@ -186,7 +188,8 @@ _Source: [examples/agents/simple.py](/python/examples/agents/simple.py)_
 - [TokenMemory](/python/examples/memory/tokenMemory.py) - For managing token limits
 - [SummarizeMemory](/python/examples/memory/summarizeMemory.py) - For summarizing previous conversations
 
-> 💡 **Tip:** See the [memory.md](/python/docs/memory.md) documentation for more information on memory types.
+> [!TIP]
+> See the [memory documentation](/python/docs/memory.md) for more information on memory types.
 
 ### 5. Event Observation
 
@@ -206,7 +209,8 @@ output: BeeRunOutput = await agent.run(
 
 _Source: [examples/agents/simple.py](/python/examples/agents/simple.py)_
 
-> 💡 **Tip:** See the [emitter.md](/python/docs/emitter.md) documentation for more information on event observation.
+> [!TIP]
+> See the [emitter documentation](/python/docs/emitter.md) for more information on event observation.
 
 ---
 
@@ -396,7 +400,8 @@ _Source: [examples/workflows/multi_agents.py](/python/examples/workflows/multi_a
 - [multi_agents.py](/python/examples/workflows/multi_agents.py) - Multiple specialized agents working together
 - [memory.py](/python/examples/workflows/memory.py) - Memory-aware workflow for conversation
 
-> 💡 **Tip:** See the [workflows.md](/python/docs/workflows.md) documentation for more information.
+> [!TIP]
+> See the [workflows documentation](/python/docs/workflows.md) for more information.
 
 ---
 
