@@ -30,10 +30,24 @@ class WatsonxChatModel(LiteLLMChatModel):
         return "watsonx"
 
     def __init__(self, model_id: str | None = None, settings: dict | None = None) -> None:
-        if settings is None:
-            settings = {}
+        _settings = settings.copy() if settings is not None else {}
+
+        watsonx_url_from_env = os.getenv("WATSONX_URL")
+        watsonx_project_id_from_env = os.getenv("WATSONX_PROJECT_ID")
+        watsonx_api_key_from_env = os.getenv("WATSONX_APIKEY")
+
+        if watsonx_url_from_env and "url" not in _settings:
+            _settings["url"] = watsonx_url_from_env
+
+        if watsonx_project_id_from_env and "project_id" not in _settings:
+            _settings["project_id"] = watsonx_project_id_from_env
+
+        if watsonx_api_key_from_env and "api_key" not in _settings:
+            _settings["api_key"] = watsonx_api_key_from_env
+
         super().__init__(
-            model_id if model_id else os.getenv("WATSONX_CHAT_MODEL", "ibm/granite-3-8b-instruct"), settings=settings
+            model_id if model_id else os.getenv("WATSONX_CHAT_MODEL", "ibm/granite-3-8b-instruct"),
+            settings={"url": "https://us-south.ml.cloud.ibm.com"} | _settings,
         )
 
     def _transform_input(self, input: ChatModelInput) -> LiteLLMParameters:
