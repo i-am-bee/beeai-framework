@@ -51,7 +51,7 @@ For more guidance and starter examples in your desired language, head to the doc
 
 ## Quick example
 
-This example demonstrates how to build a multi-agent workflow using BeeAI Framework in Python:
+This example demonstrates how to build a multi-agent workflow using BeeAI framework in Python.
 
 ```py
 import asyncio
@@ -116,6 +116,8 @@ if __name__ == "__main__":
     asyncio.run(main())
 ```
 
+_Source: [python/examples/workflows/multi_agents.py](/python/examples/workflows/multi_agents.py)_
+
 TypeScript version of this example can be found [here](/typescript/README.md).
 
 ### Running the example
@@ -145,7 +147,7 @@ To stay up-to-date on our [public roadmap](https://github.com/orgs/i-am-bee/proj
 
 ## Contribution guidelines
 
-The BeeAI Framework is open-source and we ❤️ contributions.<br>
+BeeAI framework is open-source and we ❤️ contributions.<br>
 
 To help build BeeAI, take a look at our [contribution guidelines](/typescript/docs/CONTRIBUTING.md).
 
@@ -163,7 +165,7 @@ All content in these repositories including code has been provided by IBM under 
 
 ## Contributors
 
-Special thanks to our contributors for helping us improve the BeeAI Framework.
+Special thanks to our contributors for helping us improve BeeAI framework.
 
 <a href="https://github.com/i-am-bee/beeai-framework/graphs/contributors">
   <img alt="Contributors list" src="https://contrib.rocks/image?repo=i-am-bee/beeai-framework" />

@@ -24,7 +24,7 @@ from beeai_framework.agents.runners.granite.prompts import (
     GraniteUserPromptTemplate,
 )
 from beeai_framework.agents.types import BeeAgentTemplates, BeeInput, BeeRunInput, BeeRunOptions
-from beeai_framework.backend.message import CustomMessage, Message, MessageInput
+from beeai_framework.backend.message import SystemMessage, ToolMessage, ToolResult
 from beeai_framework.context import RunContext
 from beeai_framework.emitter import EmitterOptions, EventMeta
 from beeai_framework.memory.base_memory import BaseMemory
@@ -42,10 +42,15 @@ class GraniteRunner(DefaultRunner):
             assert update is not None
             if update.get("key") == "tool_output":
                 memory: BaseMemory = data.get("memory")
+                tool_result = ToolResult(
+                    type="tool-result",
+                    result=update.get("value").get_text_content(),
+                    tool_name=data.get("data").tool_name,
+                    tool_call_id="DUMMY_ID",
+                )
                 await memory.add(
-                    CustomMessage(
-                        role="tool_response",
-                        content=update.get("value").get_text_content(),
+                    ToolMessage(
+                        content=tool_result.model_dump_json(),
                         meta={"success": data.get("meta").get("success", True)},
                     )
                 )
@@ -98,11 +103,8 @@ class GraniteRunner(DefaultRunner):
         if self._input.tools and len(self._input.tools) > 0:
             memory.messages.insert(
                 1,
-                Message.of(
-                    MessageInput(
-                        role="available_tools",
-                        text="\n".join(json.dumps(tool.prompt_data(), indent=4) for tool in self._input.tools),
-                    ).model_dump()
+                SystemMessage(
+                    content="\n".join(json.dumps(tool.prompt_data(), indent=4) for tool in self._input.tools),
                 ),
             )
 

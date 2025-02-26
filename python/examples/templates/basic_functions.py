@@ -4,7 +4,7 @@ from zoneinfo import ZoneInfo
 
 from pydantic import BaseModel
 
-from beeai_framework.utils.templates import PromptTemplate
+from beeai_framework.template import PromptTemplate, PromptTemplateInput
 
 os.environ["USER"] = "BeeAI"
 
@@ -14,13 +14,15 @@ class UserQuery(BaseModel):
 
 
 template = PromptTemplate(
-    schema=UserQuery,
-    functions={
-        "format_date": lambda: datetime.now(ZoneInfo("US/Eastern")).strftime("%A, %B %d, %Y at %I:%M:%S %p"),
-        "current_user": lambda: os.environ["USER"],
-    },
-    template="""
+    PromptTemplateInput(
+        schema=UserQuery,
+        functions={
+            "format_date": lambda: datetime.now(ZoneInfo("US/Eastern")).strftime("%A, %B %d, %Y at %I:%M:%S %p"),
+            "current_user": lambda: os.environ["USER"],
+        },
+        template="""
 {{format_date}}
 {{current_user}}: {{query}}
 """,
+    )
 )

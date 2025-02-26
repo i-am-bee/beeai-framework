@@ -14,7 +14,7 @@
 
 from pydantic import BaseModel
 
-from beeai_framework.utils.templates import PromptTemplate
+from beeai_framework.template import PromptTemplate, PromptTemplateInput
 
 
 class UserPromptTemplateInput(BaseModel):
@@ -53,16 +53,19 @@ class SchemaErrorTemplateInput(BaseModel):
     pass
 
 
-UserPromptTemplate = PromptTemplate(schema=UserPromptTemplateInput, template="Message: {{input}}")
+UserPromptTemplate = PromptTemplate(PromptTemplateInput(schema=UserPromptTemplateInput, template="Message: {{input}}"))
 
 AssistantPromptTemplate = PromptTemplate(
-    schema=AssistantPromptTemplateInput,
-    template="{{#thought}}Thought: {{.}}\n{{/thought}}{{#tool_name}}Function Name: {{.}}\n{{/tool_name}}{{#tool_input}}Function Input: {{&.}}\n{{/tool_input}}{{#tool_output}}Function Output: {{&.}}\n{{/tool_output}}{{#final_answer}}Final Answer: {{.}}{{/final_answer}}",  # noqa: E501
+    PromptTemplateInput(
+        schema=AssistantPromptTemplateInput,
+        template="{{#thought}}Thought: {{.}}\n{{/thought}}{{#tool_name}}Function Name: {{.}}\n{{/tool_name}}{{#tool_input}}Function Input: {{&.}}\n{{/tool_input}}{{#tool_output}}Function Output: {{&.}}\n{{/tool_output}}{{#final_answer}}Final Answer: {{.}}{{/final_answer}}",  # noqa: E501
+    )
 )
 
 SystemPromptTemplate = PromptTemplate(
-    schema=SystemPromptTemplateInput,
-    template="""# Available functions
+    PromptTemplateInput(
+        schema=SystemPromptTemplateInput,
+        template="""# Available functions
 {{#tools_length}}
 You can only use the following functions. Always use all required parameters.
 
@@ -133,30 +136,39 @@ Prefer to use these capabilities over functions.
 {{instructions}}
 {{/instructions}}
 """,  # noqa: E501
+    )
 )
 
 ToolNotFoundErrorTemplate = PromptTemplate(
-    schema=ToolNotFoundErrorTemplateInput,
-    template="""Function does not exist!
+    PromptTemplateInput(
+        schema=ToolNotFoundErrorTemplateInput,
+        template="""Function does not exist!
 {{#tools.length}}
 Use one of the following functions: {{#trim}}{{#tools}}{{name}},{{/tools}}{{/trim}}
 {{/tools.length}}""",
+    )
 )
 
 ToolInputErrorTemplate = PromptTemplate(
-    schema=ToolInputErrorTemplateInput,
-    template="""{{reason}}
+    PromptTemplateInput(
+        schema=ToolInputErrorTemplateInput,
+        template="""{{reason}}
 
 HINT: If you're convinced that the input was correct but the function cannot process it then use a different function or say I don't know.""",  # noqa: E501
+    )
 )
 
 AssistantPromptTemplate = PromptTemplate(
-    schema=AssistantPromptTemplateInput,
-    template="""{{#thought}}Thought: {{&.}}\n{{/thought}}{{#tool_name}}Function Name: {{&.}}\n{{/tool_name}}{{#tool_input}}Function Input: {{&.}}\n{{/tool_input}}{{#tool_output}}Function Output: {{&.}}\n{{/tool_output}}{{#final_answer}}Final Answer: {{&.}}{{/final_answer}}""",  # noqa: E501
+    PromptTemplateInput(
+        schema=AssistantPromptTemplateInput,
+        template="""{{#thought}}Thought: {{&.}}\n{{/thought}}{{#tool_name}}Function Name: {{&.}}\n{{/tool_name}}{{#tool_input}}Function Input: {{&.}}\n{{/tool_input}}{{#tool_output}}Function Output: {{&.}}\n{{/tool_output}}{{#final_answer}}Final Answer: {{&.}}{{/final_answer}}""",  # noqa: E501
+    )
 )
 
 SchemaErrorTemplate = PromptTemplate(
-    schema=SchemaErrorTemplateInput,
-    template="""Error: The generated response does not adhere to the communication structure mentioned in the system prompt.
-You communicate only in instruction lines. Valid instruction lines are 'Thought' followed by either 'Function Name' + 'Function Input' + 'Function Output' or 'Final Answer'.""",  # noqa: E501
+    PromptTemplateInput(
+        schema=SchemaErrorTemplateInput,
+        template="""Error: The generated response does not adhere to the communication structure mentioned in the system prompt.
+    You communicate only in instruction lines. Valid instruction lines are 'Thought' followed by either 'Function Name' + 'Function Input' + 'Function Output' or 'Final Answer'.""",  # noqa: E501
+    )
 )

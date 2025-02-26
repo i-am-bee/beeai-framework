@@ -27,8 +27,43 @@ from beeai_framework.parsers.line_prefix import (
 )
 from beeai_framework.utils.strings import split_string
 
+"""
+Utility functions and classes
+"""
+
+
+def get_fallback_parser() -> LinePrefixParser:
+    config = {
+        "thought": LinePrefixParserNode(
+            prefix="Thought:",
+            field=ParserField.from_type(str),
+            is_start=True,
+            next=["final_answer"],
+        ),
+        "final_answer": LinePrefixParserNode(
+            prefix="Final Answer:",
+            field=ParserField.from_type(str),
+            is_end=True,
+            next=[],
+        ),
+    }
+
+    def fallback(value: str) -> list[dict]:
+        return [
+            {"key": "thought", "value": "I now know the final answer."},
+            {"key": "final_answer", "value": value},
+        ]
+
+    return LinePrefixParser(config, options=LinePrefixParserOptions(fallback=fallback))
+
+
+"""
+Unit Tests
+"""
+
 
 @pytest.mark.asyncio
+@pytest.mark.unit
 @pytest.mark.parametrize("chunk_size", [1, 5, 20, 50, 100, 1000])
 async def test_handles_arbitrary_chunk_size(chunk_size: int) -> None:
     class ToolNames(StrEnum):
@@ -99,32 +134,8 @@ async def test_handles_arbitrary_chunk_size(chunk_size: int) -> None:
     assert updates["partial"] == updates["final"]
 
 
-def get_fallback_parser() -> LinePrefixParser:
-    config = {
-        "thought": LinePrefixParserNode(
-            prefix="Thought:",
-            field=ParserField.from_type(str),
-            is_start=True,
-            next=["final_answer"],
-        ),
-        "final_answer": LinePrefixParserNode(
-            prefix="Final Answer:",
-            field=ParserField.from_type(str),
-            is_end=True,
-            next=[],
-        ),
-    }
-
-    def fallback(value: str) -> list[dict]:
-        return [
-            {"key": "thought", "value": "I now know the final answer."},
-            {"key": "final_answer", "value": value},
-        ]
-
-    return LinePrefixParser(config, options=LinePrefixParserOptions(fallback=fallback))
-
-
 @pytest.mark.asyncio
+@pytest.mark.unit
 async def test_fallback_process() -> None:
     parser = get_fallback_parser()
     await parser.add("2+2=4")
@@ -137,6 +148,7 @@ async def test_fallback_process() -> None:
 
 
 @pytest.mark.asyncio
+@pytest.mark.unit
 async def test_fallback_process_2() -> None:
     parser = get_fallback_parser()
     await parser.add("A\nB\nC")
@@ -149,6 +161,7 @@ async def test_fallback_process_2() -> None:
 
 
 @pytest.mark.asyncio
+@pytest.mark.unit
 async def test_fallback_process_3() -> None:
     parser = get_fallback_parser()
     await parser.add("Thought")
@@ -161,6 +174,7 @@ async def test_fallback_process_3() -> None:
 
 
 @pytest.mark.asyncio
+@pytest.mark.unit
 async def test_prevents_processing_potential_prefix() -> None:
     config = {
         "final_answer": LinePrefixParserNode(
@@ -202,6 +216,7 @@ async def test_prevents_processing_potential_prefix() -> None:
 
 
 @pytest.mark.asyncio
+@pytest.mark.unit
 @pytest.mark.parametrize("should_throw", [True, False])
 async def test_interprets_new_lines(should_throw: bool) -> None:
     input_str = "Thought: Summarize the discussion. Final Answer: The discussion thread is about ..."
@@ -236,6 +251,7 @@ async def test_interprets_new_lines(should_throw: bool) -> None:
 
 
 @pytest.mark.asyncio
+@pytest.mark.unit
 async def test_ignores_unrelated_text_and_non_starting_nodes() -> None:
     config = {
         "first": LinePrefixParserNode(
@@ -268,6 +284,7 @@ async def test_ignores_unrelated_text_and_non_starting_nodes() -> None:
 
 
 @pytest.mark.asyncio
+@pytest.mark.unit
 @pytest.mark.parametrize("end_on_repeat", [True, False])
 async def test_ignores_other_prefixes(end_on_repeat: bool) -> None:
     config = {
@@ -304,6 +321,7 @@ async def test_ignores_other_prefixes(end_on_repeat: bool) -> None:
 
 
 @pytest.mark.asyncio
+@pytest.mark.unit
 async def test_premature_ends_when_existing_node_visited() -> None:
     config = {
         "thought": LinePrefixParserNode(
@@ -346,11 +364,13 @@ async def test_premature_ends_when_existing_node_visited() -> None:
     assert parser.final_state == expected
 
 
+@pytest.mark.unit
 def test_throws_when_no_node_provided() -> None:
     with pytest.raises(ValueError):
         LinePrefixParser({})
 
 
+@pytest.mark.unit
 def test_throws_when_no_start_node_provided() -> None:
     with pytest.raises(ValueError) as excinfo:
         LinePrefixParser(
@@ -367,6 +387,7 @@ def test_throws_when_no_start_node_provided() -> None:
     assert "At least one start node must be provided!" in str(excinfo.value)
 
 
+@pytest.mark.unit
 def test_throws_when_no_end_node_provided() -> None:
     with pytest.raises(ValueError) as excinfo:
         LinePrefixParser(

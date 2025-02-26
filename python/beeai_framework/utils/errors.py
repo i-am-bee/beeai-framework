@@ -21,10 +21,3 @@ class LoggerError(FrameworkError):
 
     def __init__(self, message: str = "Logger error", *, cause: Exception | None = None) -> None:
         super().__init__(message, is_fatal=True, is_retryable=False, cause=cause)
-
-
-class PromptTemplateError(FrameworkError):
-    """Raised for errors caused by PromptTemplate."""
-
-    def __init__(self, message: str = "PromptTemplate error", *, cause: Exception | None = None) -> None:
-        super().__init__(message, is_fatal=True, is_retryable=False, cause=cause)

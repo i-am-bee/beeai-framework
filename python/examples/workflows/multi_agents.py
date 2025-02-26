@@ -21,7 +21,7 @@ async def main() -> None:
         workflow.add_agent(
             agent=AgentFactoryInput(
                 name="WeatherForecaster",
-                instructions="You are a weather assistant. Respond only if you can provide a useful answer.",
+                instructions="You are a weather assistant.",
                 tools=[OpenMeteoTool()],
                 llm=llm,
                 execution=BeeAgentExecutionConfig(max_iterations=3),
@@ -30,7 +30,7 @@ async def main() -> None:
         workflow.add_agent(
             agent=AgentFactoryInput(
                 name="Researcher",
-                instructions="You are a researcher assistant. Respond only if you can provide a useful answer.",
+                instructions="You are a researcher assistant.",
                 tools=[DuckDuckGoSearchTool()],
                 llm=llm,
             )

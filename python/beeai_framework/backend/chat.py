@@ -28,10 +28,10 @@ from beeai_framework.cancellation import AbortController, AbortSignal
 from beeai_framework.context import Run, RunContext, RunContextInput, RunInstance
 from beeai_framework.emitter import Emitter, EmitterInput
 from beeai_framework.retryable import Retryable, RetryableConfig, RetryableContext
+from beeai_framework.template import PromptTemplate, PromptTemplateInput
 from beeai_framework.tools.tool import Tool
 from beeai_framework.utils.custom_logger import BeeLogger
 from beeai_framework.utils.models import ModelLike
-from beeai_framework.utils.templates import PromptTemplate
 
 T = TypeVar("T", bound=BaseModel)
 ChatModelFinishReason: Literal["stop", "length", "function_call", "content_filter", "null"]
@@ -177,15 +177,17 @@ class ChatModel(ABC):
             schema: str
 
         system_template = PromptTemplate(
-            schema=DefaultChatModelStructureSchema,
-            template=(
-                """You are a helpful assistant that generates only valid JSON """
-                """adhering to the following JSON Schema.
+            PromptTemplateInput(
+                schema=DefaultChatModelStructureSchema,
+                template=(
+                    """You are a helpful assistant that generates only valid JSON """
+                    """adhering to the following JSON Schema.
 ```
 {{schema}}
 ```
 IMPORTANT: You MUST answer with a JSON object that matches the JSON schema above."""
-            ),
+                ),
+            )
         )
 
         input_messages = input.messages

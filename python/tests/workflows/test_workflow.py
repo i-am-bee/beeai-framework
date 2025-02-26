@@ -19,8 +19,12 @@ from pydantic import BaseModel, ValidationError
 
 from beeai_framework.workflows import Workflow
 
+"""
+Unit Tests
+"""
 
-@pytest.mark.e2e
+
+@pytest.mark.unit
 @pytest.mark.asyncio
 async def test_workflow_basic() -> None:
     # State
@@ -58,7 +62,7 @@ async def test_workflow_basic() -> None:
     assert response.state.output == "There are 0 hops remaining!"
 
 
-@pytest.mark.e2e
+@pytest.mark.unit
 @pytest.mark.asyncio
 async def test_workflow_validation() -> None:
     # State
@@ -96,7 +100,7 @@ async def test_workflow_validation() -> None:
         await workflow.run(State(input="Hello there!", hops=10))
 
 
-@pytest.mark.e2e
+@pytest.mark.unit
 @pytest.mark.asyncio
 async def test_workflow_step_delete() -> None:
     # State
@@ -128,7 +132,7 @@ async def test_workflow_step_delete() -> None:
     assert response.state.output is None
 
 
-@pytest.mark.e2e
+@pytest.mark.unit
 @pytest.mark.asyncio
 async def test_workflow_async_steps() -> None:
     mock_func = AsyncMock(return_value="Mocked data")

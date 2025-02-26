@@ -31,6 +31,7 @@ from beeai_framework.agents.types import (
 from beeai_framework.backend.chat import ChatModel
 from beeai_framework.backend.message import AssistantMessage, Message
 from beeai_framework.memory import ReadOnlyMemory, UnconstrainedMemory
+from beeai_framework.template import PromptTemplateInput
 from beeai_framework.tools.tool import Tool
 from beeai_framework.utils.asynchronous import ensure_async
 from beeai_framework.workflows.workflow import Workflow, WorkflowRun
@@ -66,7 +67,8 @@ class AgentWorkflow:
         return self
 
     def add_agent(
-        self, agent: BaseAgent | Callable[[ReadOnlyMemory], BaseAgent | asyncio.Future[BaseAgent]] | AgentFactoryInput
+        self,
+        agent: (BaseAgent | Callable[[ReadOnlyMemory], BaseAgent | asyncio.Future[BaseAgent]] | AgentFactoryInput),
     ) -> "AgentWorkflow":
         if isinstance(agent, BaseAgent):
 
@@ -83,11 +85,16 @@ class AgentWorkflow:
 
     def _create_factory(self, input: AgentFactoryInput) -> AgentFactory:
         def factory(memory: BaseMemory) -> BeeAgent:
+            def customizer(config: PromptTemplateInput) -> PromptTemplateInput:
+                new_config = config.model_copy()
+                new_config.defaults["instructions"] = input.instructions or config.defaults.get("instructions")
+                return new_config
+
             return BeeAgent(
                 llm=input.llm,
                 tools=input.tools or [],
                 memory=memory,
-                # template TODO
+                templates={"system": lambda template: template.fork(customizer=customizer)},
                 meta=AgentMeta(name=input.name, description=input.instructions or "", tools=[]),
                 execution=input.execution,
             )

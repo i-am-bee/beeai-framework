@@ -170,7 +170,7 @@
     "copyright:check": "TYPE=check ./scripts/copyright.sh",
     "release": "release-it",
     "_ensure_env": "cp -n .env.template .env || true",
-    "git:commit-msg": "yarn commitlint --edit $1",
+    "git:commit-msg": "yarn commitlint --edit --",
     "git:pre-commit": "yarn copyright:check && yarn docs:check && yarn lint && yarn format && yarn ts:check && yarn run test:unit"
   },
   "dependencies": {
@@ -276,8 +276,8 @@
     "@ai-sdk/google-vertex": "^2.1.6",
     "@ai-sdk/groq": "^1.1.6",
     "@ai-sdk/openai": "^1.1.2",
-    "@commitlint/cli": "^19.6.0",
-    "@commitlint/config-conventional": "^19.6.0",
+    "@commitlint/cli": "^19.7.1",
+    "@commitlint/config-conventional": "^19.7.1",
     "@elastic/elasticsearch": "^8.16.2",
     "@eslint/js": "^9.16.0",
     "@eslint/markdown": "^6.2.1",

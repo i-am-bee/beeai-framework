@@ -22,6 +22,7 @@ import pytest_asyncio
 from pydantic import BaseModel
 
 from beeai_framework.adapters.ollama.backend.chat import OllamaChatModel
+from beeai_framework.adapters.openai.backend.chat import OpenAIChatModel
 from beeai_framework.adapters.watsonx.backend.chat import WatsonxChatModel
 from beeai_framework.backend.chat import (
     ChatModel,
@@ -34,6 +35,10 @@ from beeai_framework.backend.message import AssistantMessage, CustomMessage, Mes
 from beeai_framework.cancellation import AbortSignal
 from beeai_framework.context import RunContext
 from beeai_framework.errors import AbortError
+
+"""
+Utility functions and classes
+"""
 
 
 class ReverseWordsDummyModel(ChatModel):
@@ -80,6 +85,11 @@ def chat_messages_list() -> list[Message]:
     user_message = UserMessage("tell me something interesting")
     custom_message = CustomMessage(role="custom", content="this is a custom message")
     return [user_message, custom_message]
+
+
+"""
+Unit Tests
+"""
 
 
 @pytest.mark.asyncio
@@ -137,3 +147,6 @@ def test_chat_model_from() -> None:
 
     watsonx_chat_model = ChatModel.from_name("watsonx:ibm/granite-3-8b-instruct")
     assert isinstance(watsonx_chat_model, WatsonxChatModel)
+
+    openai_chat_model = ChatModel.from_name("openai:gpt-4o")
+    assert isinstance(openai_chat_model, OpenAIChatModel)

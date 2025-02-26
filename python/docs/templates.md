@@ -1,7 +1,6 @@
 # Templates (Prompt Templates)
 
 *Disclaimer: The notes below may refer to the TypeScript version or missing files as the Python version moves toward parity in the near future. Additional Python examples coming soon. TODO*
-
 > [!TIP]
 >
 > Location within the framework `beeai/template`.
@@ -92,7 +91,7 @@ from zoneinfo import ZoneInfo
 
 from pydantic import BaseModel
 
-from beeai_framework.utils.templates import PromptTemplate
+from beeai_framework.template import PromptTemplate, PromptTemplateInput
 
 os.environ["USER"] = "BeeAI"
 
@@ -102,15 +101,17 @@ class UserQuery(BaseModel):
 
 
 template = PromptTemplate(
-    schema=UserQuery,
-    functions={
-        "format_date": lambda: datetime.now(ZoneInfo("US/Eastern")).strftime("%A, %B %d, %Y at %I:%M:%S %p"),
-        "current_user": lambda: os.environ["USER"],
-    },
-    template="""
+    PromptTemplateInput(
+        schema=UserQuery,
+        functions={
+            "format_date": lambda: datetime.now(ZoneInfo("US/Eastern")).strftime("%A, %B %d, %Y at %I:%M:%S %p"),
+            "current_user": lambda: os.environ["USER"],
+        },
+        template="""
 {{format_date}}
 {{current_user}}: {{query}}
 """,
+    )
 )
 
 ```
@@ -124,7 +125,7 @@ _Source: [examples/templates/basic_functions.py](/examples/templates/basic_funct
 ```py
 from pydantic import BaseModel
 
-from beeai_framework.utils.templates import PromptTemplate
+from beeai_framework.template import PromptTemplate, PromptTemplateInput
 
 
 class UserMessage(BaseModel):
@@ -133,8 +134,10 @@ class UserMessage(BaseModel):
 
 
 template = PromptTemplate(
-    schema=UserMessage,
-    template="""{{label}}: {{input}}""",
+    PromptTemplateInput(
+        schema=UserMessage,
+        template="""{{label}}: {{input}}""",
+    )
 )
 
 prompt = template.render(UserMessage(label="Query", input="What interesting things happened on this day in history?"))

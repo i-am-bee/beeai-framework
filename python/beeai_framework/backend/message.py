@@ -19,7 +19,7 @@ from datetime import UTC, datetime
 from enum import Enum
 from typing import Any, Generic, Literal, TypeVar
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
 
 from beeai_framework.backend import MessageError
 
@@ -44,8 +44,8 @@ class Role(str, Enum):
 class ToolResult(BaseModel):
     type: Literal["tool-result"]
     result: Any
-    tool_name: str = Field(alias="toolName")
-    tool_call_id: str = Field(alias="toolCallId")
+    tool_name: str
+    tool_call_id: str
 
 
 class MessageInput(BaseModel):
@@ -116,7 +116,7 @@ class ToolMessage(Message):
 
     def from_string(self, text: str) -> ToolResult:
         tool_result = ToolResult.model_validate(json.loads(text))
-        return tool_result.model_dump(by_alias=True)
+        return tool_result.model_dump()
 
     def get_tool_results(self) -> list[T]:
         return list(filter(lambda x: x.get("type") == "tool-result", self.content))

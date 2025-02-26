@@ -19,6 +19,10 @@ import pytest
 from beeai_framework.backend import Role
 from beeai_framework.utils import BeeLogger, MessageEvent
 
+"""
+Unit Tests
+"""
+
 
 @pytest.mark.unit
 def test_redefine_logging_methods() -> None:

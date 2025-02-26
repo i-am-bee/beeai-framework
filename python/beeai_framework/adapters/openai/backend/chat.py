@@ -13,8 +13,22 @@
 # limitations under the License.
 
 
-from beeai_framework.utils.config import CONFIG
-from beeai_framework.utils.custom_logger import BeeLogger
-from beeai_framework.utils.events import MessageEvent
+import os
 
-__all__ = ["CONFIG", "BeeLogger", "MessageEvent"]
+from beeai_framework.adapters.litellm.chat import LiteLLMChatModel
+from beeai_framework.backend.constants import ProviderName
+from beeai_framework.utils.custom_logger import BeeLogger
+
+logger = BeeLogger(__name__)
+
+
+class OpenAIChatModel(LiteLLMChatModel):
+    @property
+    def provider_id(self) -> ProviderName:
+        return "openai"
+
+    def __init__(self, model_id: str | None = None, settings: dict | None = None) -> None:
+        super().__init__(
+            model_id if model_id else os.getenv("OPENAI_CHAT_MODEL", "gpt-4o"),
+            settings=settings or {},
+        )
