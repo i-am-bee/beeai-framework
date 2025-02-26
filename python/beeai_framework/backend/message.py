@@ -19,7 +19,7 @@ from datetime import UTC, datetime
 from enum import Enum
 from typing import Any, Generic, Literal, TypeVar
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel
 
 from beeai_framework.backend import MessageError
 
@@ -44,12 +44,8 @@ class Role(str, Enum):
 class ToolResult(BaseModel):
     type: Literal["tool-result"]
     result: Any
-    tool_name: str = Field(alias="toolName")
-    tool_call_id: str = Field(alias="toolCallId")
-
-    model_config = ConfigDict(
-        populate_by_name=True,
-    )
+    tool_name: str
+    tool_call_id: str
 
 
 class MessageInput(BaseModel):
