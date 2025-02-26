@@ -1,69 +1,131 @@
-# Serialization
+# 📦 Serialization
 
-*Disclaimer: The notes below may refer to the TypeScript version or missing files as the Python version moves toward parity in the near future. Additional Python examples coming soon. TODO*
+> [!NOTE]  
+> **Serialization is not yet implemented in Python, but it's coming soon! 🚀
 
-> [!TIP]
->
-> Location within the framework `beeai/serializer`.
+<!-- TOC -->
+## Table of Contents
+- [Overview](#overview)
+- [Core Concepts](#core-concepts)
+    - [`Serializable` Class](#serializable-class)
+    - [Serialization Process](#serialization-process)
+- [Basic Usage](#basic-usage)
+    - [Serializing Framework Components](#serializing-framework-components)
+    - [Deserializing Objects](#deserializing-objects)
+- [Advanced Features](#advanced-features)
+    - [Custom Serialization](#custom-serialization)
+    - [Serialization Context](#serialization-context)
+    - [Handling Unknown Classes](#handling-unknown-classes)
+- [Resources](#resources)
+<!-- /TOC -->
 
-Serialization is a process of converting complex data structures or objects into a format that can be easily stored, transmitted, and reconstructed later.
-Serialization is a difficult task, and JavaScript does not provide a magic tool to serialize and deserialize an arbitrary input. That is why we made such one.
+---
 
-```py
+## Overview
+
+Serialization is a process of converting complex data structures or objects (e.g., agents, memories, or tools) into a format that can be easily stored, transmitted, and reconstructed later. Think of it as creating a blueprint of your object that can be used to rebuild it exactly as it was.
+
+BeeAI framework provides robust serialization capabilities through its built-in `Serializer` class that enables:
+
+- 💾 Persistence: Store agent state, memory, tools, and other components
+- 🔄 Transmission: Send complex objects across network boundaries or processes
+- 📦 Snapshots: Create point-in-time captures of component state
+- 🔧 Reconstruction: Rebuild objects from their serialized representation
+
+```text
+Coming soon
 ```
 
-_Source: /examples/tools/base.py TODO
+_Source: [examples/serialization/base.py](/python/examples/serialization/base.py)_
 
-> [!NOTE]
->
-> Serializer knows how to serialize/deserialize the most well-known JavaScript data structures. Continue reading to see how to register your own.
+---
 
-## Being Serializable
+## Core Concepts
 
-Most parts of the framework implement the internal [`Serializable`](/beeai/internals/serializable.py) class, which exposes the following methods.
+### `Serializable` Class
 
-- `createSnapshot` (returns an object that "snapshots" the current state)
-- `loadSnapshot` (applies the provided snapshot to the current instance)
+Most framework components implement the `Serializable` class with these key methods:
 
-- `fromSerialized` (static, creates the new instance from the given serialized input)
-- `fromSnapshot` (static, creates the new instance from the given snapshot)
+| Method | Purpose |
+|--------|---------|
+| `createSnapshot()` | Captures the current state |
+| `loadSnapshot(snapshot)` | Applies a snapshot to the current instance |
+| `fromSnapshot(snapshot)` | Creates a new instance from a snapshot (static) |
+| `fromSerialized(data)` | Creates a new instance from serialized data (static) |
 
-See the direct usage on the following memory example.
+### Serialization Process
 
-```py
+The serialization process involves:
+
+1. Converting complex objects into a format that preserves their structure and data
+2. Including type information to enable proper reconstruction
+3. Managing references to maintain object identity across serialization boundaries
+4. Handling special cases like circular references and custom types
+
+---
+
+## Basic Usage
+
+### Serializing framework components
+
+Most BeeAI components can be serialized out of the box. Here's an example using memory:
+
+```text
+Coming soon
 ```
 
-_Source: /examples/serialization/memory.py TODO
+_Source: [examples/serialization/memory.py](/python/examples/serialization/memory.py)_
 
-### Serializing unknowns
-
-If you want to serialize a class that the `Serializer` does not know, it throws the `SerializerError` error.
-However, you can tell the `Serializer` how to work with your class by registering it as a serializable.
-
-```py
-```
-
-_Source: /examples/serialization/customExternal.py TODO
-
-or you can extend the `Serializable` class.
-
-```py
-```
-
-_Source: /examples/serialization/customInternal.py TODO
-
-> [!TIP]
->
+> [TIP!]
 > Most framework components are `Serializable`.
 
-### Context matters
+## Advanced Features
 
-```py
+### Custom Serialization
+
+If you want to serialize a class that the `Serializer` does not know, you may register it using one of the following options.
+
+**1. Register External Classes**
+
+You can register external classes with the serializer:
+
+```text
+Coming soon
 ```
 
-_Source: /examples/serialization/context.py TODO
+_Source: [examples/serialization/customExternal.py](/python/examples/serialization/customExternal.py)_
 
-> [!IMPORTANT]
->
-> Ensuring that all classes are registered in advance can be annoying, but there's a good reason for that.
-> If we imported all the classes for you, that would significantly increase your application's size and bootstrapping time + you would have to install all peer dependencies that you may not even need.
+**2. Implement the `Serializable` Interface**
+
+For deeper integration, extend the Serializable class:
+
+```text
+Coming soon
+```
+
+_Source: [examples/serialization/customInternal.py](/python/examples/serialization/customInternal.py)_
+
+> [NOTE!]
+> Failure to register a class that the `Serializer` does not know will result in the `SerializerError` error. BeeAI framework avoids importing all potential classes automatically to prevent increased application size and unnecessary dependencies.
+
+## Context matters
+
+```text
+Coming soon
+```
+
+_Source: [examples/serialization/context.py](/python/examples/serialization/context.py)_
+
+---
+
+## Resources
+
+- **Examples:**
+    - [base.py](/python/examples/serialization/base.py) - Base example
+    - [memory.py](/python/examples/serialization/memory.py) - Example of serializing and deserializing memory components
+    - [customExternal.py](/python/examples/serialization/customExternal.py) - Registering external classes with the serializer
+    - [customInternal.py](/python/examples/serialization/customInternal.py) - Implementing the Serializable interface
+    - [context.py](/python/examples/serialization/context.py) - Using serialization context for advanced scenarios
+
+- **Related Documentation:**
+  - [Errors Documentation](/python/docs/errors.md)
