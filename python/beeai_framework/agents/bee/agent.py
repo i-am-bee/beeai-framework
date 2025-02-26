@@ -33,6 +33,8 @@ from beeai_framework.agents.types import (
     BeeRunInput,
     BeeRunOptions,
     BeeRunOutput,
+    BeeTemplateFactory,
+    ModelKeysType,
 )
 from beeai_framework.backend import Message
 from beeai_framework.backend.chat import ChatModel
@@ -52,7 +54,7 @@ class BeeAgent(BaseAgent[BeeRunOutput]):
         tools: list[Tool],
         memory: BaseMemory,
         meta: AgentMeta | None = None,
-        templates: BeeAgentTemplates | None = None,
+        templates: dict[ModelKeysType, BeeAgentTemplates | BeeTemplateFactory] | None = None,
         execution: BeeAgentExecutionConfig | None = None,
         stream: bool | None = None,
     ) -> None:
