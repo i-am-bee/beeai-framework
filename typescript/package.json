@@ -170,7 +170,7 @@
     "copyright:check": "TYPE=check ./scripts/copyright.sh",
     "release": "release-it",
     "_ensure_env": "cp -n .env.template .env || true",
-    "git:commit-msg": "yarn commitlint --edit $1",
+    "git:commit-msg": "yarn commitlint --edit",
     "git:pre-commit": "yarn copyright:check && yarn docs:check && yarn lint && yarn format && yarn ts:check && yarn run test:unit"
   },
   "dependencies": {
