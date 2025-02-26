@@ -67,19 +67,23 @@ Memory components integrate with other parts of the framework:
 
 ### Capabilities Showcase
 
-From [base.py](/python/examples/memory/base.py):
+<!-- embedme examples/memory/base.py -->
 
-```txt
-Coming soon
+```py
+# Coming soon
 ```
+
+_Source: [examples/memory/base.py](/python/examples/memory/base.py)_
 
 ### Usage with LLMs
 
-From [llmMemory.py](/python/examples/memory/llmMemory.py):
+<!-- embedme examples/memory/base.py -->
 
-```txt
-Coming soon
+```py
+# Coming soon
 ```
+
+_Source: [examples/memory/llmMemory.py](/python/examples/memory/llmMemory.py)_
 
 > [!TIP]
 >
@@ -87,7 +91,7 @@ Coming soon
 
 ### Usage with Agents
 
-From [agentMemory](/python/examples/memory/agentMemory.py):
+<!-- embedme examples/memory/agentMemory.py -->
 
 ```py
 import asyncio
@@ -167,7 +171,10 @@ async def main() -> None:
 
 if __name__ == "__main__":
     asyncio.run(main())
+
 ```
+
+_Source: [examples/memory/agentMemory.py](/python/examples/memory/agentMemory.py)_
 
 > [!TIP]
 >
@@ -187,7 +194,7 @@ The framework provides multiple out-of-the-box memory implementations for differ
 
 Unlimited in size, stores all messages without constraints.
 
-From [unconstrainedMemory.py](/python/examples/memory/unconstrainedMemory.py):
+<!-- embedme examples/memory/unconstrainedMemory.py -->
 
 ```py
 import asyncio
@@ -221,13 +228,16 @@ async def main() -> None:
 
 if __name__ == "__main__":
     asyncio.run(main())
+
 ```
+
+_Source: [examples/memory/unconstrainedMemory.py](/python/examples/memory/unconstrainedMemory.py)_
 
 ### SlidingMemory
 
 Keeps last `k` entries in the memory. The oldest ones are deleted (unless specified otherwise).
 
-From [slidingMemory.py](/python/examples/memory/slidingMemory.py):
+<!-- embedme examples/memory/slidingMemory.py -->
 
 ```py
 import asyncio
@@ -270,14 +280,17 @@ async def main() -> None:
 
 if __name__ == "__main__":
     asyncio.run(main())
+
 ```
+
+_Source: [examples/memory/slidingMemory.py](/python/examples/memory/slidingMemory.py)_
 
 ### TokenMemory
 
 Ensures that the token sum of all messages is below the given threshold.
 If overflow occurs, the oldest message will be removed.
 
-From [tokenMemory.py](/python/examples/memory/tokenMemory.py):
+<!-- embedme examples/memory/tokenMemory.py -->
 
 ```py
 import asyncio
@@ -340,7 +353,10 @@ async def main() -> None:
 
 if __name__ == "__main__":
     asyncio.run(main())
+
 ```
+
+_Source: [examples/memory/tokenMemory.py](/python/examples/memory/tokenMemory.py)_
 
 ### SummarizeMemory
 
@@ -396,7 +412,7 @@ if __name__ == "__main__":
 
 ```
 
-_Source: [python/examples/memory/summarizeMemory.py](/python/examples/memory/summarizeMemory.py)_
+_Source: [examples/memory/summarizeMemory.py](/python/examples/memory/summarizeMemory.py)_
 
 ---
 

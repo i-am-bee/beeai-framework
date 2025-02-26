@@ -1,18 +1,43 @@
-# Cache
+# 🗄️ Cache
 
-*Disclaimer: The notes below may refer to the TypeScript version or missing files as the Python version moves toward parity in the near future. Additional Python examples coming soon. TODO*
+> [!NOTE]  
+> **Cache is not yet implemented in Python, but it's coming soon! 🚀
+
+<!-- TOC -->
+## Table of Contents
+- [Overview](#overview)
+- [Implementation in BeeAI Framework](#implementation-in-beeai-framework)
+  - [ReActAgent](#react-agent)
+  - [Agent Execution Process](#agent-execution-process)
+- [Customizing Agent Behavior](#customizing-agent-behavior)
+  - [1. Setting Execution Policy](#1-setting-execution-policy)
+  - [2. Overriding Prompt Templates](#2-overriding-prompt-templates)
+  - [3. Adding Tools](#3-adding-tools)
+  - [4. Configuring Memory](#4-configuring-memory)
+  - [5. Event Observation](#5-event-observation)
+- [Creating Your Own Agent](#creating-your-own-agent)
+- [Agent with Memory](#agent-with-memory)
+- [Agent Workflows](#agent-workflows)
+- [Resources](#resources)
+<!-- /TOC -->
+
+---
+
+## Overview 
 
 Caching is a process used to temporarily store copies of data or computations in a cache (a storage location) to facilitate faster access upon future requests. The primary purpose of caching is to improve the efficiency and performance of systems by reducing the need to repeatedly fetch or compute the same data from a slower or more resource-intensive source.
 
-## Usage
+---
+
+## Basic usage
 
 ### Capabilities showcase
 
-
-```py
+```text
+Coming soon
 ```
 
-_Source: /examples/cache/unconstrainedCache.py TODO
+_Source: examples/cache/unconstrainedCache.py_
 
 ### Caching function output + intermediate steps
 
