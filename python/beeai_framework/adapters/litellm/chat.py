@@ -75,7 +75,7 @@ class LiteLLMChatModel(ChatModel, ABC):
         litellm.logging = enable
 
         logger = logging.getLogger("LiteLLM")
-        logger.setLevel(logging.CRITICAL + 1 if enable else logging.DEBUG)
+        logger.setLevel(logging.DEBUG if enable else logging.CRITICAL + 1)
 
     async def _create(
         self,
