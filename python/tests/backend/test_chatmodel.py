@@ -141,17 +141,38 @@ async def test_chat_model_abort(reverse_words_chat: ChatModel, chat_messages_lis
 @pytest.mark.unit
 def test_chat_model_from() -> None:
     # Ollama with Llama model and base_url specified in code
-    os.environ.pop("OLLAMA_BASE_URL", None)
+    os.environ.pop("OLLAMA_API_BASE", None)
     ollama_chat_model = ChatModel.from_name("ollama:llama3.1", {"base_url": "http://somewhere:12345"})
     assert isinstance(ollama_chat_model, OllamaChatModel)
     assert ollama_chat_model.settings["base_url"] == "http://somewhere:12345"
 
     # Ollama with Granite model and base_url specified in env var
-    os.environ["OLLAMA_BASE_URL"] = "http://somewhere-else:12345"
+    os.environ["OLLAMA_API_BASE"] = "http://somewhere-else:12345"
     ollama_chat_model = ChatModel.from_name("ollama:granite3.1-dense:8b")
     assert isinstance(ollama_chat_model, OllamaChatModel)
     assert ollama_chat_model.settings["base_url"] == "http://somewhere-else:12345"
 
+    # Watsonx with Granite model and settings specified in code
+    os.environ.pop("WATSONX_URL", None)
+    os.environ.pop("WATSONX_PROJECT_ID", None)
+    os.environ.pop("WATSONX_API_KEY", None)
+    watsonx_chat_model = ChatModel.from_name(
+        "watsonx:ibm/granite-3-8b-instruct",
+        {
+            "url": "http://somewhere",
+            "project_id": "proj_id_123",
+            "api_key": "api_key_123",
+        },
+    )
+    assert isinstance(watsonx_chat_model, WatsonxChatModel)
+    assert watsonx_chat_model.settings["url"] == "http://somewhere"
+    assert watsonx_chat_model.settings["project_id"] == "proj_id_123"
+    assert watsonx_chat_model.settings["api_key"] == "api_key_123"
+
+    # Watsonx with Granite model and settings specified in env vars
+    os.environ["WATSONX_URL"] = "http://somewhere-else"
+    os.environ["WATSONX_PROJECT_ID"] = "proj_id_456"
+    os.environ["WATSONX_API_KEY"] = "api_key_456"
     watsonx_chat_model = ChatModel.from_name("watsonx:ibm/granite-3-8b-instruct")
     assert isinstance(watsonx_chat_model, WatsonxChatModel)
 

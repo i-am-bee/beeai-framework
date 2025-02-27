@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-
 from asyncio import CancelledError
 from collections.abc import Generator
 
@@ -27,16 +26,16 @@ class FrameworkError(Exception):
         self,
         message: str = "Framework error",
         *,
-        is_fatal: bool = True,
-        is_retryable: bool = False,
+        is_fatal: bool = False,
+        is_retryable: bool = True,
         cause: Exception | None = None,
     ) -> None:
         super().__init__(message)
 
         # TODO: What other attributes should all our framework errors have?
         self.message = message
-        self._is_fatal = is_fatal
-        self._is_retryable = is_retryable
+        self.is_fatal = is_fatal
+        self.is_retryable = is_retryable
         self.__cause__ = cause
 
     @staticmethod
@@ -51,12 +50,16 @@ class FrameworkError(Exception):
     def is_retryable(error: Exception) -> bool:
         """is error retryable?."""
         if isinstance(error, FrameworkError):
-            return error._is_retryable
-        return isinstance(error, CancelledError)
+            return error.is_retryable
+        return not isinstance(error, CancelledError)
 
-    def is_fatal(self) -> bool:
+    @staticmethod
+    def is_fatal(error: Exception) -> bool:
         """is error fatal?"""
-        return self._is_fatal
+        if isinstance(error, FrameworkError):
+            return error.is_fatal
+        else:
+            return False
 
     def name(self) -> str:
         """get name (class) of this error"""
@@ -66,7 +69,7 @@ class FrameworkError(Exception):
         current_exception: BaseException | None = self
 
         while current_exception is not None:
-            if isinstance(current_exception, FrameworkError) and current_exception.is_fatal():
+            if isinstance(current_exception, FrameworkError) and current_exception.is_fatal:
                 return True
 
             current_exception = current_exception.__cause__
@@ -99,26 +102,7 @@ class FrameworkError(Exception):
 
     @staticmethod
     def ensure(error: Exception) -> "FrameworkError":
-        if isinstance(error, FrameworkError):
-            return error
-        return FrameworkError(message=str(error), cause=error)
-
-
-class UnimplementedError(FrameworkError):
-    """
-    Raised when a method or function has not been implemented.
-    """
-
-    def __init__(self, message: str = "Not implemented!", *, cause: Exception | None = None) -> None:
-        super().__init__(message, is_fatal=True, is_retryable=False, cause=cause)
-
-
-class ArgumentError(FrameworkError):
-    """Raised for invalid or unsupported values."""
-
-    def __init__(self, message: str = "Provided value is not supported!", *, cause: Exception | None = None) -> None:
-        # TODO is a value error fatal. It is with same value...
-        super().__init__(message, is_fatal=True, is_retryable=False, cause=cause)
+        return error if isinstance(error, FrameworkError) else FrameworkError(message=str(error), cause=error)
 
 
 class AbortError(FrameworkError, CancelledError):

@@ -1,16 +1,15 @@
-# Version
+# ➡️ Version
 
 > [!NOTE]  
-> **Version is not yet implemented in Python, but it's coming soon!**
+> **Version is not yet implemented in Python, but it's coming soon! 🚀**
 
-> [!TIP]
->
-> Location within the framework `beeai/version`.
+## Overview
 
-```py
+```txt
+Coming soon
 ```
 
-_Source: /examples/version.py TODO
+_Source: /examples/version.py_
 
 > [!NOTE]
 >

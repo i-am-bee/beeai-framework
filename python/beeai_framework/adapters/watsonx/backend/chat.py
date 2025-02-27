@@ -30,10 +30,11 @@ class WatsonxChatModel(LiteLLMChatModel):
         return "watsonx"
 
     def __init__(self, model_id: str | None = None, settings: dict | None = None) -> None:
-        if settings is None:
-            settings = {}
+        _settings = settings.copy() if settings is not None else {}
+
         super().__init__(
-            model_id if model_id else os.getenv("WATSONX_CHAT_MODEL", "ibm/granite-3-8b-instruct"), settings=settings
+            model_id if model_id else os.getenv("WATSONX_CHAT_MODEL", "ibm/granite-3-8b-instruct"),
+            settings=_settings,
         )
 
     def _transform_input(self, input: ChatModelInput) -> LiteLLMParameters:

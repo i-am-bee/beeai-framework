@@ -16,9 +16,7 @@
 import pytest
 
 from beeai_framework.errors import (
-    ArgumentError,
     FrameworkError,
-    UnimplementedError,
 )
 
 """
@@ -42,17 +40,17 @@ class TestFrameworkError:
     def test_basic_exception(self) -> None:
         err = FrameworkError("Basic")
         assert err.message == "Basic"
-        assert err.is_fatal() is True
-        assert FrameworkError.is_retryable(err) is False
+        assert FrameworkError.is_fatal(err) is False
+        assert FrameworkError.is_retryable(err) is True
         # Will be this exception or exception at end of chain
         assert err.get_cause() == err
         assert err.name() == "FrameworkError"
 
     @pytest.mark.unit
     def test_custom_properties(self) -> None:
-        err = FrameworkError("Custom", is_fatal=False, is_retryable=True)
-        assert err.is_fatal() is False
-        assert FrameworkError.is_retryable(err) is True
+        err = FrameworkError("Custom", is_fatal=False, is_retryable=False)
+        assert err.is_fatal is False
+        assert FrameworkError.is_retryable(err) is False
 
     # Get cause returns the last exception in the chain - *itself* otherwise
     @pytest.mark.unit
@@ -146,24 +144,3 @@ class TestFrameworkError:
         fw_err = FrameworkError("Already a FrameworkError")
         wrapped_fw_err = FrameworkError.ensure(fw_err)
         assert wrapped_fw_err == fw_err  # Check it returns the original.
-
-    # Basic tests for custom errors. Not much new behaviour, only default properties
-    @pytest.mark.unit
-    def test_not_implemented_error(self) -> None:
-        err = UnimplementedError()
-        assert err.message == "Not implemented!"
-        assert err.is_fatal() is True
-        assert FrameworkError.is_retryable(err) is False
-
-        err2 = UnimplementedError("Custom not implemented message")
-        assert err2.message == "Custom not implemented message"
-
-    @pytest.mark.unit
-    def test_value_framework_error(self) -> None:
-        err = ArgumentError()
-        assert err.message == "Provided value is not supported!"
-        assert err.is_fatal() is True
-        assert FrameworkError.is_retryable(err) is False
-
-        err2 = ArgumentError("Custom argument error message")
-        assert err2.message == "Custom argument error message"
