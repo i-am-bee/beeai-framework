@@ -10,7 +10,7 @@ from beeai_framework.backend.chat import ChatModelOutput, ChatModelStructureOutp
 from beeai_framework.backend.message import UserMessage
 from beeai_framework.errors import FrameworkError
 from beeai_framework.template import PromptTemplate, PromptTemplateInput
-from beeai_framework.workflows.workflow import Workflow, WorkflowError
+from beeai_framework.workflows.workflow import Workflow
 
 
 async def main() -> None:
@@ -92,7 +92,7 @@ async def main() -> None:
         print("Input: ", result.state.input)
         print("Agent: ", result.state.output)
 
-    except (WorkflowError, FrameworkError):
+    except FrameworkError:
         traceback.print_exc()
 
 
