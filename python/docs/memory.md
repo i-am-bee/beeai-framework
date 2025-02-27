@@ -67,19 +67,82 @@ Memory components integrate with other parts of the framework:
 
 ### Capabilities Showcase
 
+<!-- embedme examples/memory/base.py -->
 From [base.py](/python/examples/memory/base.py):
 
-```txt
-Coming soon
+```py
+import asyncio
+
+from beeai_framework.backend.message import AssistantMessage, SystemMessage, UserMessage
+from beeai_framework.memory.unconstrained_memory import UnconstrainedMemory
+
+
+async def main() -> None:
+    memory = UnconstrainedMemory()
+
+    # Single Message
+    await memory.add(SystemMessage("You are a helpful assistant"))
+
+    # Multiple Messages
+    await memory.add_many([UserMessage("What can you do?"), AssistantMessage("Everything!")])
+
+    print(memory.is_empty())  # false
+    print(memory.messages)  # prints saved messages as objects
+    for message in memory.messages:  # prints the text of all messages
+        print(message.text)
+    print(memory.as_read_only())  # returns a new read only instance
+    memory.reset()  # removes all messages
+
+
+if __name__ == "__main__":
+    asyncio.run(main())
+
 ```
+
+_Source: [/python/examples/memory/base.py](/python/examples/memory/base.py)_
 
 ### Usage with LLMs
 
+<!-- embedme examples/memory/llmMemory.py -->
 From [llmMemory.py](/python/examples/memory/llmMemory.py):
 
-```txt
-Coming soon
+```py
+import asyncio
+
+from beeai_framework.adapters.ollama.backend.chat import OllamaChatModel
+from beeai_framework.backend.message import Message, Role
+from beeai_framework.memory.unconstrained_memory import UnconstrainedMemory
+
+
+async def main() -> None:
+    memory = UnconstrainedMemory()
+    await memory.add_many(
+        [
+            Message.of(
+                {
+                    "role": Role.SYSTEM,
+                    "text": "Always respond very concisely.",
+                }
+            ),
+            Message.of({"role": Role.USER, "text": "Give me the first 5 prime numbers."}),
+        ]
+    )
+
+    llm = OllamaChatModel("llama3.1")
+    response = await llm.create({"messages": memory.messages})
+    await memory.add(Message.of({"role": Role.ASSISTANT, "text": response.get_text_content()}))
+
+    print("Conversation history")
+    for message in memory:
+        print(f"{message.role}: {message.text}")
+
+
+if __name__ == "__main__":
+    asyncio.run(main())
+
 ```
+
+_Source: [/python/examples/memory/llmMemory.py](/python/examples/memory/llmMemory.py)_
 
 > [!TIP]
 >
@@ -405,12 +468,38 @@ _Source: [python/examples/memory/summarizeMemory.py](/python/examples/memory/sum
 To create your memory implementation, you must implement the `BaseMemory` class.
 
 <!-- embedme examples/memory/custom.py -->
-
+From [custom.py](/python/examples/memory/custom.py):
 ```py
-# Coming soon
+from typing import Any
+
+from beeai_framework.backend.message import Message
+from beeai_framework.errors import UnimplementedError
+from beeai_framework.memory import BaseMemory
+
+
+class MyMemory(BaseMemory):
+    @property
+    def messages(self) -> list[Message]:
+        raise UnimplementedError("Method not yet implemented.")
+
+    def add(self, message: Message, index: int | None = None) -> None:
+        raise UnimplementedError("Method not yet implemented.")
+
+    def delete(self, message: Message) -> bool:
+        raise UnimplementedError("Method not yet implemented.")
+
+    def reset(self) -> None:
+        raise UnimplementedError("Method not yet implemented.")
+
+    def create_snapshot(self) -> Any:
+        raise UnimplementedError("Method not yet implemented.")
+
+    def load_snapshot(self, state: Any) -> None:
+        raise UnimplementedError("Method not yet implemented.")
+
 ```
 
-_Source: [python/examples/memory/custom.py](/python/examples/memory/custom.py)_
+_Source: [/python/examples/memory/custom.py](/python/examples/memory/custom.py)_
 
 > [!TIP]
 >
