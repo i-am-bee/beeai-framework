@@ -26,7 +26,6 @@ All examples can be found [here](/python/examples/tools).
 ### Basic
 
 <!-- embedme examples/tools/base.py -->
-From [base.py](examples/tools/base.py):
 ```py
 import asyncio
 
@@ -49,7 +48,6 @@ _Source: [/python/examples/tools/base.py](/python/examples/tools/base.py)_
 ### Advanced
 
 <!-- embedme examples/tools/advanced.py -->
-From [advanced.py](examples/tools/advanced.py):
 ```py
 import asyncio
 
@@ -80,7 +78,6 @@ _Source: [/python/examples/tools/advanced.py](/python/examples/tools/advanced.py
 ### Usage with agents
 
 <!-- embedme examples/tools/agent.py -->
-From [agent.py](examples/tools/agent.py):
 ```py
 import asyncio
 
@@ -110,7 +107,6 @@ _Source: [/python/examples/tools/agent.py](/python/examples/tools/agent.py)_
 ### Usage with decorator
 
 <!-- embedme examples/tools/decorator.py -->
-From [decorator.py](examples/tools/decorator.py):
 ```py
 import asyncio
 import json
@@ -177,7 +173,6 @@ _Source: [/python/examples/tools/decorator.py](/python/examples/tools/decorator.
 ### Usage with duckduckgo
 
 <!-- embedme examples/tools/duckduckgo.py -->
-From [duckduckgo.py](examples/tools/duckduckgo.py):
 ```py
 import asyncio
 
@@ -271,7 +266,6 @@ To create a new tool it is recommended to implement the base `Tool` class.
 #### Basic
 
 <!-- embedme examples/tools/custom/base.py -->
-From [base.py](examples/tools/custom/base.py):
 ```py
 import asyncio
 from typing import Any
@@ -333,7 +327,6 @@ _Source: [/python/examples/tools/custom/base.py](/python/examples/tools/custom/b
 If your tool is more complex, you may want to use the full power of the tool abstraction, as the following example shows.
 
 <!-- embedme examples/tools/custom/openlibrary.py -->
-From [base.py](examples/tools/custom/openlibrary.py):
 ```py
 import asyncio
 from typing import Any
