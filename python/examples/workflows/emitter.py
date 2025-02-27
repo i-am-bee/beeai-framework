@@ -14,9 +14,9 @@ def print_event(event_data: dict, event_meta: EventMeta) -> None:
     if event_meta.name == "error":
         print("Workflow : ", event_data)
     elif event_meta.name == "retry":
-        print("Workflow : ", "retrying the action...")
+        print("Workflow : ", "retrying...")
     elif event_meta.name == "update":
-        print(f"Agent({event_data['update']['key']}) 🤖 : ", event_data["update"]["parsedValue"])
+        print(f"Workflow({event_data['update']['key']}) : ", event_data["update"]["parsedValue"])
     elif event_meta.name == "start":
         if event_data:
             print(f"Workflow : Starting step: {event_data.get('step')}")
