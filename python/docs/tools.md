@@ -1,10 +1,8 @@
 # Tools
 
-*Disclaimer: The notes below may refer to the TypeScript version or missing files as the Python version moves toward parity in the near future. Additional Python examples coming soon. TODO*
-
 > [!TIP]
 >
-> Location within the framework `beeai/tools`.
+> Location within the framework `python/beeai_framework/tools`.
 
 Tools in the context of an agent refer to additional functionalities or capabilities integrated with the agent to perform specific tasks beyond text processing.
 
@@ -14,61 +12,90 @@ These tools extend the agent's abilities, allowing it to interact with external 
 
 | Name                                                                      | Description                                                                                                   |
 | ------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------- |
-| `PythonTool`                                                              | Run arbitrary Python code in the remote environment.                                                          |
-| `WikipediaTool`                                                           | Search for data on Wikipedia.                                                                                 |
-| `GoogleSearchTool`                                                        | Search for data on Google using Custom Search Engine.                                                         |
 | `DuckDuckGoTool`                                                          | Search for data on DuckDuckGo.                                                                                |
-| [`SearXNGTool`](./searxng-tool.md)                                        | Privacy-respecting, hackable metasearch engine.                                                               |
-| [`SQLTool`](./sql-tool.md)                                                | Execute SQL queries against relational databases.                                                             |
-| `ElasticSearchTool`                                                       | Perform search or aggregation queries against an ElasticSearch database.                                      |
-| `CustomTool`                                                              | Run your own Python function in the remote environment.                                                       |
-| `LLMTool`                                                                 | Use an LLM to process input data.                                                                             |
-| `DynamicTool`                                                             | Construct to create dynamic tools.                                                                            |
-| `ArXivTool`                                                               | Retrieve research articles published on arXiv.                                                                |
-| `WebCrawlerTool`                                                          | Retrieve content of an arbitrary website.                                                                     |
-| `OpenMeteoTool`                                                           | Retrieve current, previous, or upcoming weather for a given destination.                                      |
-| `MilvusDatabaseTool`                                                      | Perform retrieval queries (search, insert, delete, manage collections) against a MilvusDatabaseTool database. |
-| `OpenAPITool`                                                             | Send requests to and receive responses from API server.                                                       |
-| `MCPTool`                                                                 | Discover and use tools exposed by arbitrary [MCP Server](https://modelcontextprotocol.io/examples).           |
-| ➕ [Request](https://github.com/i-am-bee/beeai-framework/discussions) |                                                                                                               |
+| `OpenMeteoTool`                                                           | Retrieve current, previous, or upcoming weather for a given destination. environment.                                                            |
+| `WikipediaTool`                                                           | Search for data on Wikipedia.                                                                                 |
+| `MCPTool`                                                                 | Discover and use tools exposed by arbitrary [MCP Server](https://modelcontextprotocol.io/examples).                                                |
+| ➕ [Request](https://github.com/i-am-bee/beeai-framework/discussions)     |                                                                                              |
 
-All examples can be found [here](/examples/tools).
 
-> [!TIP]
->
-> Would you like to use a tool from LangChain? See the [example](/examples/tools/langchain.py).
+All examples can be found [here](/python/examples/tools).
 
 ## Usage
 
 ### Basic
 
+<!-- embedme examples/tools/base.py -->
 ```py
+import asyncio
+
+from beeai_framework.tools.weather.openmeteo import OpenMeteoTool, OpenMeteoToolInput
+
+
+async def main() -> None:
+    tool = OpenMeteoTool()
+    result = tool.run(
+        input=OpenMeteoToolInput(location_name="New York", start_date="2025-01-01", end_date="2025-01-02")
+    )
+    print(result.get_text_content())
+
+
+if __name__ == "__main__":
+    asyncio.run(main())
+
 ```
 
-_Source: /examples/tools/base.py TODO
+_Source: [/python/examples/tools/base.py](/python/examples/tools/base.py)_
 
 ### Advanced
 
+<!-- embedme examples/tools/advanced.py -->
 ```py
+import asyncio
+
+from beeai_framework.tools.weather.openmeteo import OpenMeteoTool, OpenMeteoToolInput
+
+
+async def main() -> None:
+    tool = OpenMeteoTool()
+    result = tool.run(
+        input=OpenMeteoToolInput(
+            location_name="New York", start_date="2025-01-01", end_date="2025-01-02", temperature_unit="celsius"
+        )
+    )
+    print(result.get_text_content())
+
+
+if __name__ == "__main__":
+    asyncio.run(main())
+
 ```
 
-_Source: /examples/tools/advanced.py TODO
+_Source: [/python/examples/tools/advanced.py](/python/examples/tools/advanced.py)_
 
 > [!TIP]
 >
-> To learn more about caching, refer to the [Cache documentation page](./cache.md).
+> COMING SOON: Caching
 
 ### Usage with agents
 
+<!-- embedme examples/tools/agent.py -->
 ```py
+from beeai_framework.adapters.ollama.backend.chat import OllamaChatModel
+from beeai_framework.agents.bee import BeeAgent
+from beeai_framework.agents.types import BeeInput
+from beeai_framework.memory import UnconstrainedMemory
+from beeai_framework.tools.weather.openmeteo import OpenMeteoTool
+
+agent = BeeAgent(BeeInput(llm=OllamaChatModel("llama3.1"), tools=[OpenMeteoTool()], memory=UnconstrainedMemory()))
+
 ```
 
-_Source: agent.py TODO
+_Source: [/python/examples/tools/agent.py](/python/examples/tools/agent.py)_
 
 ### Usage with decorator
 
 <!-- embedme examples/tools/decorator.py -->
-
 ```py
 import asyncio
 import json
@@ -129,12 +156,11 @@ if __name__ == "__main__":
 
 ```
 
-_Source: [examples/tools/decorator.py](/examples/tools/decorator.py)_
+_Source: [/python/examples/tools/decorator.py](/python/examples/tools/decorator.py)_
 
 ### Usage with duckduckgo
 
 <!-- embedme examples/tools/duckduckgo.py -->
-
 ```py
 import asyncio
 
@@ -158,7 +184,7 @@ if __name__ == "__main__":
 
 ```
 
-_Source: [examples/tools/duckduckgo.py](/examples/tools/duckduckgo.py)_
+_Source: [/python/examples/tools/duckduckgo.py](/python/examples/tools/duckduckgo.py)_
 
 ### Usage with openmeteo
 
@@ -187,7 +213,8 @@ if __name__ == "__main__":
 
 ```
 
-_Source: [examples/tools/openmeteo.py](/examples/tools/openmeteo.py)_
+_Source: [/python/examples/tools/openmeteo.py](/python/examples/tools/openmeteo.py)_
+
 
 ### Usage with Wikipedia
 
@@ -214,26 +241,65 @@ if __name__ == "__main__":
 
 ```
 
-_Source: [examples/tools/wikipedia.py](/examples/tools/wikipedia.py)_
+_Source: [/python/examples/tools/wikipedia.py](/python/examples/tools/wikipedia.py)_
 
 ## Writing a new tool
 
-To create a new tool, you have the following options on how to do that:
+To create a new tool it is recommended to implement the base `Tool` class.  
 
-- Implement the base [`Tool TODO`]() class.
-- Initiate the [`DynamicTool TODO`]() by passing your own handler (function) with the `name`, `description` and `input schema`.
-- Initiate the [`CustomTool TODO`]() by passing your own Python function (code interpreter needed).
-
-### Implementing the `Tool` class
-
-The recommended and most sustainable way to create a tool is by implementing the base `Tool` class.
+- Initiate the [`Tool`](/python/beeai_framework/tools/tool.py) by passing your own handler (function) with the `name`, `description` and `input schema`.
 
 #### Basic
 
+<!-- embedme examples/tools/custom/base.py -->
 ```py
+import asyncio
+import random
+from typing import Any
+
+from pydantic import BaseModel, Field
+
+from beeai_framework.tools.tool import Tool
+
+
+class RiddleToolInput(BaseModel):
+    riddle_number: int = Field(description="Index of riddle to retrieve.")
+
+
+class RiddleTool(Tool[RiddleToolInput]):
+    name = "Riddle"
+    description = "It selects a riddle to test your knowledge."
+    input_schema = RiddleToolInput
+
+    data = (
+        "What has hands but can't clap?",
+        "What has a face and two hands but no arms or legs?",
+        "What gets wetter the more it dries?",
+        "What has to be broken before you can use it?",
+        "What has a head, a tail, but no body?",
+        "The more you take, the more you leave behind. What am I?",
+        "What goes up but never comes down?",
+    )
+
+    def _run(self, input: RiddleToolInput, _: Any | None = None) -> None:
+        index = input.riddle_number % (len(self.data))
+        riddle = self.data[index]
+        return riddle
+
+
+async def main() -> None:
+    tool = RiddleTool()
+    input = RiddleToolInput(riddle_number=random.randint(0, len(RiddleTool.data)))
+    result = tool.run(input)
+    print(result)
+
+
+if __name__ == "__main__":
+    asyncio.run(main())
+
 ```
 
-_Source: /examples/tools/custom/base.py TODO
+_Source: [/python/examples/tools/custom/base.py](/python/examples/tools/custom/base.py)_
 
 > [!TIP]
 >
@@ -247,20 +313,81 @@ _Source: /examples/tools/custom/base.py TODO
 
 If your tool is more complex, you may want to use the full power of the tool abstraction, as the following example shows.
 
+<!-- embedme examples/tools/custom/openlibrary.py -->
 ```py
+import asyncio
+from typing import Any
+
+import requests
+from pydantic import BaseModel, Field
+
+from beeai_framework.tools import ToolInputValidationError
+from beeai_framework.tools.tool import Tool
+
+
+class OpenLibraryToolInput(BaseModel):
+    title: str | None = Field(description="Title of book to retrieve.", default=None)
+    olid: str | None = Field(description="Open Library number of book to retrieve.", default=None)
+    subjects: str | None = Field(description="Subject of a book to retrieve.", default=None)
+
+
+class OpenLibraryToolResult(BaseModel):
+    preview_url: str
+    info_url: str
+    bib_key: str
+
+
+class OpenLibraryTool(Tool[OpenLibraryToolInput]):
+    name = "OpenLibrary"
+    description = """Provides access to a library of books with information about book titles,
+        authors, contributors, publication dates, publisher and isbn."""
+    input_schema = OpenLibraryToolInput
+
+    def _run(self, input: OpenLibraryToolInput, _: Any | None = None) -> OpenLibraryToolResult:
+        key = ""
+        value = ""
+        input_vars = vars(input)
+        for val in input_vars:
+            if input_vars[val] is not None:
+                key = val
+                value = input_vars[val]
+                break
+        else:
+            raise ToolInputValidationError("All input values in OpenLibraryToolInput were empty.") from None
+
+        response = requests.get(
+            f"https://openlibrary.org/api/books?bibkeys={key}:{value}&jsmcd=data&format=json",
+            headers={"Content-Type": "application/json", "Accept": "application/json"},
+        )
+
+        response.raise_for_status()
+
+        json_output = response.json()[f"{key}:{value}"]
+
+        return OpenLibraryToolResult(
+            preview_url=json_output["preview_url"], info_url=json_output["info_url"], bib_key=json_output["bib_key"]
+        )
+
+
+async def main() -> None:
+    tool = OpenLibraryTool()
+    input = OpenLibraryToolInput(title="It")
+    result = tool.run(input)
+    print(result)
+
+
+if __name__ == "__main__":
+    asyncio.run(main())
+
 ```
 
-_Source: examples/tools/custom/openLibrary.py TODO
+_Source: [/python/examples/tools/custom/openlibrary.py](/python/examples/tools/custom/openlibrary.py)_
 
 #### Implementation Notes
 
 - **Implement the `Tool` class:**
 
   - `MyNewToolOutput` is required, must be an implementation of `ToolOutput` such as `StringToolOutput` or `JSONToolOutput`.
-
-  - `ToolOptions` is optional (default BaseToolOptions), constructor parameters that are passed during tool creation
-
-  - `ToolRunOptions` is optional (default BaseToolRunOptions), optional parameters that are passed to the run method
 
 - **Be given a unique name:**
 
@@ -281,71 +408,43 @@ _Source: examples/tools/custom/openLibrary.py TODO
 
 - **Declare an input schema:**
 
-  This is used to define the format of the input to your tool. The agent will formalise the natural language input(s) it has received and structure them into the fields described in the tool's input. The input schema can be specified using [Zod](https://github.com/colinhacks/zod) (recommended) or JSONSchema. It must be a function (either sync or async). Zod effects (e.g. `z.object().transform(...)`) are not supported. The return value of `inputSchema` must always be an object and pass validation by the `validateSchema()` function defined in [schema.py TODO](). Keep your tool input schema simple and provide schema descriptions to help the agent to interpret fields.
+  This is used to define the format of the input to your tool. The agent will formalise the natural language input(s) it has received and structure them into the fields described in the tool's input. The input schema will be created based on the MyNewToolInput class. Keep your tool input schema simple and provide schema descriptions to help the agent to interpret fields.
 
-  ```txt
-  Coming soon
+  ```py
+  class OpenMeteoToolInput(BaseModel):
+      location_name: str = Field(description="The name of the location to retrieve weather information.")
+      country: str | None = Field(description="Country name.", default=None)
+      start_date: str | None = Field(
+          description="Start date for the weather forecast in the format YYYY-MM-DD (UTC)", default=None
+      )
+      end_date: str | None = Field(
+          description="End date for the weather forecast in the format YYYY-MM-DD (UTC)", default=None
+      )
+      temperature_unit: Literal["celsius", "fahrenheit"] = Field(
+          description="The unit to express temperature", default="celsius"
+      )
   ```
-
-- **Implement initialisation:**
-
-  The unnamed static block is executed when your tool is called for the first time. It is used to register your tool as `serializable` (you can then use the `serialize()` method).
-
-
-  ```txt
-  Coming soon
-  ```
+  _Source: [/python/beeai_framework/tools/weather/openmeteo.py](/python/beeai_framework/tools/weather/openmeteo.py)_
 
 - **Implement the `_run()` method:**
 
 
-  ```txt
-  Coming soon
+  ```py
+  def _run(self, input: OpenMeteoToolInput, options: Any = None) -> None:
+        params = urlencode(self.get_params(input), doseq=True)
+        logger.debug(f"Using OpenMeteo URL: https://api.open-meteo.com/v1/forecast?{params}")
+        response = requests.get(
+            f"https://api.open-meteo.com/v1/forecast?{params}",
+            headers={"Content-Type": "application/json", "Accept": "application/json"},
+        )
+        response.raise_for_status()
+        return StringToolOutput(json.dumps(response.json()))
   ```
-
-### Using the `DynamicTool` class
-
-The `DynamicTool` allows you to create a tool without extending the base tool class.
-
-```py
-```
-
-_Source: /examples/tools/custom/dynamic.py TODO
+    _Source: [/python/beeai_framework/tools/weather/openmeteo.py](/python/beeai_framework/tools/weather/openmeteo.py)_
 
 The `name` of the tool is required and must only contain characters between
 a-z, A-Z, 0-9, or one of - or \_.
 The `inputSchema` and `description` are also both required.
-
-### Using the `CustomTool` (Python functions)
-
-If you want to use the Python function, use the [`CustomTool`](/beeai/tools/custom.py).
-
-```py
-```
-
-_Source: /examples/tools/custom/python.py TODO
-
-> [!TIP]
->
-> Environmental variables can be overridden (or defined) in the following ways:
->
-> 1. During the creation of a `CustomTool`, either via the constructor or the factory function (`CustomTool.fromSourceCode`).
-> 2. By passing them directly as part of the options when invoking: `myTool.run({ ... }, { env: { MY_ENV: 'MY_VALUE' } })`.
-> 3. Dynamically during execution via [`Emitter`](/docs/emitter.md): `myTool.emitter.on("start", ({ options }) => { options.env.MY_ENV = 'MY_VALUE'; })`.
-
-> [!IMPORTANT]
->
-> Custom tools are executed within the code interpreter, but they cannot access any files.
-> Only `PythonTool` does.
-
-### Using the `MCPTool` class
-
-The `MCPTool` allows you to instantiate tools given a connection to [MCP server](https://modelcontextprotocol.io/examples) with tools capability.
-
-```py
-```
-
-_Source: /examples/tools/mcp.py TODO
 
 ## General Tips
 
