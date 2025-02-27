@@ -2,6 +2,7 @@ import asyncio
 import json
 import logging
 import os
+import sys
 from typing import Any
 
 from dotenv import load_dotenv
@@ -10,10 +11,11 @@ from langchain_community.utilities import WikipediaAPIWrapper
 from pydantic import BaseModel, Field
 
 from beeai_framework.agents.bee.agent import BeeAgent
-from beeai_framework.agents.types import BeeInput, BeeRunInput
+from beeai_framework.agents.types import BeeAgentExecutionConfig, BeeInput, BeeRunInput, BeeRunOptions
 from beeai_framework.backend.chat import ChatModel
 from beeai_framework.emitter.emitter import Emitter, EventMeta
 from beeai_framework.emitter.types import EmitterOptions
+from beeai_framework.errors import FrameworkError
 from beeai_framework.memory.token_memory import TokenMemory
 from beeai_framework.tools.tool import StringToolOutput, Tool
 from beeai_framework.utils.custom_logger import BeeLogger
@@ -26,11 +28,6 @@ load_dotenv()
 logger = BeeLogger("app", level=logging.DEBUG)
 
 reader = ConsoleReader()
-
-
-def get_env_var(key: str, default: str | None = None) -> str:
-    """Helper function to get environment variables with defaults"""
-    return os.getenv(key, default)
 
 
 class LangChainWikipediaToolInput(BaseModel):
@@ -72,7 +69,7 @@ def create_agent() -> BeeAgent:
     tools = [LangChainWikipediaTool()]
 
     # Add code interpreter tool if URL is configured
-    code_interpreter_url = get_env_var("CODE_INTERPRETER_URL")
+    code_interpreter_url = os.getenv("CODE_INTERPRETER_URL")
     if code_interpreter_url:
         # Note: Python tool implementation would go here
         pass
@@ -83,62 +80,57 @@ def create_agent() -> BeeAgent:
     return agent
 
 
-def process_agent_events(event_data: dict[str, Any], event_meta: EventMeta) -> None:
+def process_agent_events(data: dict[str, Any], event: EventMeta) -> None:
     """Process agent events and log appropriately"""
 
-    if event_meta.name == "error":
-        reader.write("Agent 🤖 : ", event_data["error"])
-    elif event_meta.name == "retry":
+    if event.name == "error":
+        reader.write("Agent 🤖 : ", "error has occurred")
+    elif event.name == "retry":
         reader.write("Agent 🤖 : ", "retrying the action...")
-    elif event_meta.name == "update":
-        reader.write(f"Agent({event_data['update']['key']}) 🤖 : ", event_data["update"]["parsedValue"])
-    # elif event_meta.name == "start":
-    #     reader.write("Agent 🤖 : ", "starting new iteration")
-    # elif event_meta.name == "success":
-    #     reader.write("Agent 🤖 : ", "success")
+    elif event.name == "update":
+        reader.write(f"Agent({data['update']['key']}) 🤖 : ", data["update"]["parsedValue"])
+    elif event.name == "start":
+        reader.write("Agent 🤖 : ", "starting new iteration")
+    elif event.name == "success":
+        reader.write("Agent 🤖 : ", "success")
 
 
 def observer(emitter: Emitter) -> None:
-    emitter.on("*.*", process_agent_events, EmitterOptions(match_nested=True))
+    emitter.on("*", process_agent_events, EmitterOptions(match_nested=False))
 
 
 async def main() -> None:
     """Main application loop"""
 
-    try:
-        # Create agent
-        agent = create_agent()
+    # Create agent
+    agent = create_agent()
 
-        # Log code interpreter status if configured
-        code_interpreter_url = get_env_var("CODE_INTERPRETER_URL")
-        if code_interpreter_url:
-            reader.write(
-                "🛠️ System: ",
-                f"The code interpreter tool is enabled. Please ensure that it is running on {code_interpreter_url}",
-            )
+    # Log code interpreter status if configured
+    code_interpreter_url = os.getenv("CODE_INTERPRETER_URL")
+    if code_interpreter_url:
+        reader.write(
+            "🛠️ System: ",
+            f"The code interpreter tool is enabled. Please ensure that it is running on {code_interpreter_url}",
+        )
 
-        reader.write("🛠️ System: ", "Agent initialized with LangChain Wikipedia tool.")
+    reader.write("🛠️ System: ", "Agent initialized with LangChain Wikipedia tool.")
 
-        # Main interaction loop with user input
-        for prompt in reader:
-            # Run agent with the prompt
-            response = await agent.run(
-                BeeRunInput(prompt=prompt),
-                {
-                    "execution": {
-                        "max_retries_per_step": 3,
-                        "total_max_retries": 10,
-                        "max_iterations": 20,
-                    }
-                },
-            ).observe(observer)
+    # Main interaction loop with user input
+    for prompt in reader:
+        # Run agent with the prompt
+        response = await agent.run(
+            BeeRunInput(prompt=prompt),
+            BeeRunOptions(
+                execution=BeeAgentExecutionConfig(max_retries_per_step=3, total_max_retries=10, max_iterations=20)
+            ),
+        ).observe(observer)
 
-            reader.write("Agent 🤖 : ", response.result.text)
-
-    except Exception as e:
-        logger.error(f"Application error: {e!s}")
+        reader.write("Agent 🤖 : ", response.result.text)
 
 
 if __name__ == "__main__":
-    # Run the async main function
-    asyncio.run(main())
+    try:
+        asyncio.run(main())
+    except FrameworkError as e:
+        print(e.explain())
+        sys.exit(1)

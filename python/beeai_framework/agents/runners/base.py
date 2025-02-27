@@ -14,9 +14,9 @@
 
 
 from abc import ABC, abstractmethod
-from collections.abc import Awaitable
 from dataclasses import dataclass
 
+from beeai_framework.agents import AgentError
 from beeai_framework.agents.types import (
     BeeAgentRunIteration,
     BeeAgentTemplates,
@@ -73,14 +73,14 @@ class BaseRunner(ABC):
             max_retries=(
                 options.execution.max_iterations if options.execution and options.execution.max_iterations else 0
             ),
-            error_type=Exception,  # TODO Specific error type
+            error_type=AgentError,
         )
 
         self._memory: BaseMemory | None = None
 
         self._iterations: list[BeeAgentRunIteration] = []
         self._failedAttemptsCounter: RetryCounter = RetryCounter(
-            error_type=Exception,  # TODO AgentError
+            error_type=AgentError,
             max_retries=(
                 options.execution.total_max_retries if options.execution and options.execution.total_max_retries else 0
             ),
@@ -111,9 +111,7 @@ class BaseRunner(ABC):
             raise Exception(f"Agent was not able to resolve the task in {max_iterations} iterations.")
 
         emitter = self._run.emitter.child(emitter_input=EmitterInput(group_id=f"`iteration-${meta.iteration}"))
-        iteration: BeeAgentRunIteration = await self.llm(
-            BeeRunnerLLMInput(emitter=emitter, signal=self._run.signal, meta=meta)
-        )
+        iteration = await self.llm(BeeRunnerLLMInput(emitter=emitter, signal=self._run.signal, meta=meta))
         self._iterations.append(iteration)
         return RunnerIteration(emitter=emitter, state=iteration.state, meta=meta, signal=self._run.signal)
 
@@ -121,7 +119,7 @@ class BaseRunner(ABC):
         self._memory = await self.init_memory(input)
 
     @abstractmethod
-    async def llm(self, input: BeeRunnerLLMInput) -> Awaitable[BeeAgentRunIteration]:
+    async def llm(self, input: BeeRunnerLLMInput) -> BeeAgentRunIteration:
         pass
 
     @abstractmethod

@@ -12,11 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-
+import asyncio
 import contextlib
-import threading
 from collections.abc import Awaitable, Callable
-from typing import Any
+from typing import TypeVar
 
 from pydantic import BaseModel
 
@@ -24,6 +23,8 @@ from beeai_framework.errors import AbortError
 from beeai_framework.utils.custom_logger import BeeLogger
 
 logger = BeeLogger(__name__)
+
+T = TypeVar("T")
 
 
 class AbortSignal(BaseModel):
@@ -39,7 +40,7 @@ class AbortSignal(BaseModel):
 
     @property
     def reason(self) -> str:
-        return self._reason
+        return self._reason or "Action has been aborted"
 
     def add_event_listener(self, callback: Callable[[], None]) -> None:
         self._listeners.append(callback)
@@ -52,19 +53,14 @@ class AbortSignal(BaseModel):
         self._aborted = True
         self._reason = reason
         for callback in self._listeners:
-            if callback:
-                callback()
+            callback()
 
     @classmethod
     def timeout(cls, duration: int) -> "AbortSignal":
         signal = cls()
 
-        def _callback() -> None:
-            signal._timer.cancel()
-            signal._abort(f"Operation timed out after {duration} ms")
-
-        signal._timer = threading.Timer(duration * 1.0, _callback)
-        signal._timer.start()
+        loop = asyncio.get_event_loop()
+        loop.call_later(duration, lambda *args: signal._abort(f"Operation timed out after {duration} ms"))
 
         return signal
 
@@ -86,23 +82,22 @@ class AbortController:
 
 
 def register_signals(controller: AbortController, signals: list[AbortSignal]) -> None:
-    def trigger_abort(reason: str | None = None) -> None:
-        controller.abort(reason)
+    def register(signal: AbortSignal) -> None:
+        if signal.aborted:
+            controller.abort(signal.reason)
+        else:
+            signal.add_event_listener(lambda: controller.abort(signal.reason))
 
     for signal in filter(lambda x: x is not None, signals):
-        if signal.aborted:
-            trigger_abort(signal.reason)
-        signal.add_event_listener(trigger_abort)
+        register(signal)
 
 
 async def abort_signal_handler(
-    fn: Callable[[], Awaitable[Any]], signal: AbortSignal | None = None, on_abort: Callable[[], None] | None = None
-) -> Awaitable[Any]:
+    fn: Callable[[], Awaitable[T]], signal: AbortSignal | None = None, on_abort: Callable[[], None] | None = None
+) -> T:
     def abort_handler() -> None:
         if on_abort:
             on_abort()
-        if signal:
-            signal.cancel()
 
     if signal:
         if signal.aborted:

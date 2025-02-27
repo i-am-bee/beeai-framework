@@ -31,7 +31,7 @@ pylint = "^3.3.2"
 pydantic-settings = "^2.7"
 chevron = "^0.14.0"
 types-requests = "^2.32.0.20241016"
-litellm = "^1.61.19"
+litellm = "1.61.19"
 aiofiles = "^24.1.0"
 pyventus = "^0.6.0"
 wikipedia = "^1.4.0"
@@ -39,6 +39,7 @@ mcp = "^1.2.0"
 duckduckgo-search = "^7.3.2"
 json-repair = "^0.39.0"
 wikipedia-api = "^0.8.1"
+async-generator = "^1.10"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^8.3.4"
@@ -263,7 +264,7 @@ lint.select = [
     "ASYNC", # async
 ]
 force-exclude = true
-lint.ignore = ["ANN401"]
+lint.ignore = ["ANN401", "B904"]
 lint.fixable = ["ALL"]
 lint.unfixable = []
 line-length = 120

@@ -66,7 +66,7 @@ class ReverseWordsDummyModel(ChatModel):
         for count, chunk in enumerate(words):
             if context.signal.aborted:
                 break
-            await asyncio.sleep(3)
+            await asyncio.sleep(5)
             yield ChatModelOutput(messages=[AssistantMessage(f"{chunk} " if count != last else chunk)])
 
     async def _create_structure(self, input: ChatModelStructureInput, run: RunContext) -> ChatModelStructureOutput:
@@ -134,7 +134,7 @@ async def test_chat_model_stream(reverse_words_chat: ChatModel, chat_messages_li
 async def test_chat_model_abort(reverse_words_chat: ChatModel, chat_messages_list: list[Message]) -> None:
     with pytest.raises(AbortError):
         await reverse_words_chat.create(
-            {"messages": chat_messages_list, "stream": True, "abort_signal": AbortSignal.timeout(2)}
+            {"messages": chat_messages_list, "stream": True, "abort_signal": AbortSignal.timeout(1)}
         )
 
 

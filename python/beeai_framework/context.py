@@ -145,7 +145,8 @@ class RunContext(RunInstance):
 
                     def _on_abort() -> None:
                         if not cancel_future.done() and not cancel_future.cancelled():
-                            cancel_future.set_result(context.signal.reason)
+                            err = AbortError(context.signal.reason)
+                            cancel_future.set_exception(err)
 
                     context.signal.add_event_listener(_on_abort)
                     await cancel_future
@@ -156,22 +157,15 @@ class RunContext(RunInstance):
                 )
                 runner_task = asyncio.create_task(_context_storage_run(), name="run-task")
 
-                result: R | None = None
-                for first_done in asyncio.as_completed([abort_task, runner_task]):
-                    result = await first_done
-                    abort_task.cancel()
-                    break
-
-                if result is None:
-                    raise AbortError()
-
+                done, pending = await asyncio.wait([abort_task, runner_task], return_when=asyncio.FIRST_COMPLETED)
+                result = done.pop().result()
                 await emitter.emit("success", result)
                 assert result is not None
                 return result
             except Exception as e:
                 error = FrameworkError.ensure(e)
-                await emitter.emit("error", error)
-                raise
+                await emitter.emit("error", {"error": error})
+                raise error
             finally:
                 await emitter.emit("finish", None)
                 context.destroy()

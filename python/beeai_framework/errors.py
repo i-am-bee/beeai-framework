@@ -16,6 +16,18 @@ from asyncio import CancelledError
 from collections.abc import Generator
 
 
+def _format_error_message(e: BaseException, *, offset: int = 0, strip_traceback: bool = True) -> str:
+    cls = type(e).__name__
+    module = type(e).__module__
+
+    prefix = "  " * offset
+    formatted = f"{cls}({module}): {e!s}"
+    if strip_traceback:
+        formatted = formatted.split("\nTraceback")[0]
+
+    return "\n".join([f"{prefix}{line}" for line in formatted.split("\n")])
+
+
 class FrameworkError(Exception):
     """
     Base class for Framework errors which extends Exception
@@ -28,36 +40,32 @@ class FrameworkError(Exception):
         *,
         is_fatal: bool = False,
         is_retryable: bool = True,
-        cause: Exception | None = None,
+        cause: BaseException | None = None,
     ) -> None:
         super().__init__(message)
 
-        # TODO: What other attributes should all our framework errors have?
         self.message = message
-        self.is_fatal = is_fatal
-        self.is_retryable = is_retryable
+        self.fatal = is_fatal
+        self.retryable = is_retryable
+        self._predecessor = cause
         self.__cause__ = cause
 
-    @staticmethod
-    def __get_message(error: Exception) -> str:
-        """
-        Get message from exception, but use classname if none (for dump/explain)
-        """
-        message = str(error) if len(str(error)) > 0 else type(error).__name__
-        return message
+    @property
+    def predecessor(self) -> BaseException | None:
+        return self._predecessor or self.__cause__
 
     @staticmethod
     def is_retryable(error: Exception) -> bool:
         """is error retryable?."""
         if isinstance(error, FrameworkError):
-            return error.is_retryable
+            return error.retryable
         return not isinstance(error, CancelledError)
 
     @staticmethod
-    def is_fatal(error: Exception) -> bool:
+    def is_fatal(error: BaseException) -> bool:
         """is error fatal?"""
         if isinstance(error, FrameworkError):
-            return error.is_fatal
+            return error.fatal
         else:
             return False
 
@@ -69,19 +77,18 @@ class FrameworkError(Exception):
         current_exception: BaseException | None = self
 
         while current_exception is not None:
-            if isinstance(current_exception, FrameworkError) and current_exception.is_fatal:
+            if FrameworkError.is_fatal(current_exception):
                 return True
 
             current_exception = current_exception.__cause__
 
         return False
 
-    def traverse_errors(self) -> Generator[BaseException, None, None]:
-        cause: BaseException | None = self.__cause__
-
-        while cause is not None:
-            yield cause
-            cause = cause.__cause__
+    def traverse(self) -> Generator["FrameworkError", None, None]:
+        next: FrameworkError | BaseException | None = self
+        while isinstance(next, FrameworkError):
+            yield next
+            next = next.predecessor
 
     def get_cause(self) -> BaseException:
         deepest_cause: BaseException = self
@@ -93,20 +100,30 @@ class FrameworkError(Exception):
 
     def explain(self) -> str:
         output = []
-        errors = [self, *self.traverse_errors()]
-        for index, error in enumerate(errors):
-            offset = "  " * (2 * index)
-            message = str(error) if len(str(error)) > 0 else type(error).__name__
-            output.append(f"{offset}{message}")
-        return "\n".join(output)
 
-    @staticmethod
-    def ensure(error: Exception) -> "FrameworkError":
-        return error if isinstance(error, FrameworkError) else FrameworkError(message=str(error), cause=error)
+        for offset, error in enumerate(self.traverse()):
+            message = _format_error_message(error, offset=offset)
+            output.append(message)
+
+        if error and error.predecessor:
+            message = _format_error_message(error.predecessor, offset=offset + 1, strip_traceback=False)
+            output.append(message)
+
+        return "\n".join(output).strip()
+
+    @classmethod
+    def ensure(cls, error: Exception) -> "FrameworkError":
+        if isinstance(error, FrameworkError):
+            return error
+
+        if isinstance(error, CancelledError):
+            return AbortError(cause=error)
+
+        return cls(cause=error)
 
 
 class AbortError(FrameworkError, CancelledError):
     """Raised when an operation has been aborted."""
 
-    def __init__(self, message: str = "Operation has been aborted!") -> None:
-        super().__init__(message, is_fatal=True, is_retryable=False)
+    def __init__(self, message: str = "Operation has been aborted!", *, cause: BaseException | None = None) -> None:
+        super().__init__(message, is_fatal=True, is_retryable=False, cause=cause)
