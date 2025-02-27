@@ -223,7 +223,7 @@ IMPORTANT: You MUST answer with a JSON object that matches the JSON schema above
     ) -> Run[ChatModelOutput]:
         model_input = ChatModelInput(
             messages=messages,
-            tools=tools,
+            tools=tools or [],
             abort_signal=abort_signal,
             stop_sequences=stop_sequences,
             response_format=response_format,
