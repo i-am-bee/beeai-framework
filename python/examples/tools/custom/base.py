@@ -1,4 +1,5 @@
 import asyncio
+import random
 from typing import Any
 
 from pydantic import BaseModel, Field
@@ -33,7 +34,7 @@ class RiddleTool(Tool[RiddleToolInput]):
 
 async def main() -> None:
     tool = RiddleTool()
-    input = RiddleToolInput(riddle_number=1)
+    input = RiddleToolInput(riddle_number=random.randint(0, len(RiddleTool.data)))
     result = tool.run(input)
     print(result)
 

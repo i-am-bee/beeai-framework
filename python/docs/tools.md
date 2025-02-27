@@ -34,7 +34,9 @@ from beeai_framework.tools.weather.openmeteo import OpenMeteoTool, OpenMeteoTool
 
 async def main() -> None:
     tool = OpenMeteoTool()
-    result = tool.run(input=OpenMeteoToolInput(location_name="New York"))
+    result = tool.run(input=OpenMeteoToolInput(
+        location_name="New York", start_date="2025-01-01", end_date="2025-01-02")
+    )
     print(result.get_text_content())
 
 
@@ -82,7 +84,7 @@ _Source: [/python/examples/tools/advanced.py](/python/examples/tools/advanced.py
 import asyncio
 
 from beeai_framework.agents.bee import BeeAgent
-from beeai_framework.agents.types import BeeInput, BeeRunInput
+from beeai_framework.agents.types import BeeInput, BeeRunInput, BeeRunOutput
 from beeai_framework.backend.chat import ChatModel
 from beeai_framework.memory import UnconstrainedMemory
 from beeai_framework.tools.weather.openmeteo import OpenMeteoTool
@@ -90,11 +92,12 @@ from beeai_framework.tools.weather.openmeteo import OpenMeteoTool
 
 async def main() -> None:
     llm = ChatModel.from_name("ollama:3.1")
-    agent = BeeAgent(BeeInput(llm=llm, tools=[OpenMeteoTool()], memory=UnconstrainedMemory()))
 
-    result = await agent.run(BeeRunInput(prompt="What's the current weather in London?"))
+    agent = BeeAgent(bee_input=BeeInput(llm=llm, tools=[OpenMeteoTool()], memory=UnconstrainedMemory()))
 
-    print(result.result.text)
+    output: BeeRunOutput = await agent.run(run_input=BeeRunInput(prompt="What's the current weather in London?"))
+
+    print(output.result.text)
 
 
 if __name__ == "__main__":
@@ -268,6 +271,7 @@ To create a new tool it is recommended to implement the base `Tool` class.
 <!-- embedme examples/tools/custom/base.py -->
 ```py
 import asyncio
+import random
 from typing import Any
 
 from pydantic import BaseModel, Field
@@ -302,7 +306,7 @@ class RiddleTool(Tool[RiddleToolInput]):
 
 async def main() -> None:
     tool = RiddleTool()
-    input = RiddleToolInput(riddle_number=1)
+    input = RiddleToolInput(riddle_number=random.randint(0, len(RiddleTool.data)))
     result = tool.run(input)
     print(result)
 
@@ -356,7 +360,7 @@ class OpenLibraryTool(Tool[OpenLibraryToolInput]):
         authors, contributors, publication dates, publisher and isbn."""
     input_schema = OpenLibraryToolInput
 
-    def _run(self, input: OpenLibraryToolInput, _: Any | None = None) -> None:
+    def _run(self, input: OpenLibraryToolInput, _: Any | None = None) -> OpenLibraryToolResult:
         key = ""
         value = ""
         input_vars = vars(input)

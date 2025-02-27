@@ -26,7 +26,7 @@ class OpenLibraryTool(Tool[OpenLibraryToolInput]):
         authors, contributors, publication dates, publisher and isbn."""
     input_schema = OpenLibraryToolInput
 
-    def _run(self, input: OpenLibraryToolInput, _: Any | None = None) -> None:
+    def _run(self, input: OpenLibraryToolInput, _: Any | None = None) -> OpenLibraryToolResult:
         key = ""
         value = ""
         input_vars = vars(input)
