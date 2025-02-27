@@ -14,6 +14,7 @@
 
 
 import json
+import logging
 from abc import ABC
 from collections.abc import AsyncGenerator
 from typing import Any
@@ -67,6 +68,15 @@ class LiteLLMChatModel(ChatModel, ABC):
         self.settings = settings or {}
         super().__init__()
 
+    @staticmethod
+    def litellm_debug(enable: bool = True) -> None:
+        litellm.set_verbose = enable
+        litellm.suppress_debug_info = not enable
+        litellm.logging = enable
+
+        logger = logging.getLogger("LiteLLM")
+        logger.setLevel(logging.DEBUG if enable else logging.CRITICAL + 1)
+
     async def _create(
         self,
         input: ChatModelInput,
@@ -95,17 +105,22 @@ class LiteLLMChatModel(ChatModel, ABC):
         return response_output
 
     async def _create_stream(self, input: ChatModelInput, _: RunContext) -> AsyncGenerator[ChatModelOutput]:
+        # TODO: handle tool calling for streaming
         litellm_input = self._transform_input(input)
         parameters = litellm_input.model_dump()
         parameters["stream"] = True
         response = await acompletion(**parameters)
 
-        # TODO: handle tool calling for streaming
+        is_empty = True
         async for chunk in response:
+            is_empty = False
             response_output = self._transform_output(chunk)
-            if not response_output:
-                continue
-            yield response_output
+            if response_output:
+                yield response_output
+
+        if is_empty:
+            # TODO: issue https://github.com/BerriAI/litellm/issues/8868
+            raise ChatModelError("Stream response is empty.")
 
     async def _create_structure(self, input: ChatModelStructureInput, run: RunContext) -> ChatModelStructureOutput:
         if "response_format" not in self.supported_params:
@@ -168,3 +183,6 @@ class LiteLLMChatModel(ChatModel, ABC):
             message = AssistantMessage(content)
 
         return ChatModelOutput(messages=[message], finish_reason=finish_reason, usage=usage)
+
+
+LiteLLMChatModel.litellm_debug(False)

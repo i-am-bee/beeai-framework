@@ -13,7 +13,7 @@
 # limitations under the License.
 
 import json
-from collections.abc import Awaitable, Callable
+from collections.abc import Callable
 
 from beeai_framework.agents.runners.base import (
     BaseRunner,
@@ -113,7 +113,7 @@ class DefaultRunner(BaseRunner):
                     schema_error_prompt: str = self.templates.schema_error.render(SchemaErrorTemplateInput())
                     await self.memory.add(UserMessage(schema_error_prompt, {"tempMessage": True}))
 
-        async def executor(_: RetryableContext) -> Awaitable[BeeAgentRunIteration]:
+        async def executor(_: RetryableContext) -> BeeAgentRunIteration:
             await input.emitter.emit("start", {"meta": input.meta, "tools": self._input.tools, "memory": self.memory})
 
             parser = self.create_parser()
@@ -178,7 +178,7 @@ class DefaultRunner(BaseRunner):
         else:
             max_retries = 0
 
-        retryable_state = await Retryable(
+        return await Retryable(
             RetryableInput(
                 on_retry=on_retry,
                 on_error=on_error,
@@ -186,8 +186,6 @@ class DefaultRunner(BaseRunner):
                 config=RetryableConfig(max_retries=max_retries, signal=input.signal),
             )
         ).get()
-
-        return retryable_state.value
 
     async def tool(self, input: BeeRunnerToolInput) -> BeeRunnerToolResult:
         tool: Tool | None = next(
@@ -231,7 +229,7 @@ class DefaultRunner(BaseRunner):
             )
             self._failed_attempts_counter.use(error)
 
-        async def executor(_: RetryableContext) -> Awaitable[BeeRunnerToolResult]:
+        async def executor(_: RetryableContext) -> BeeRunnerToolResult:
             try:
                 # tool_options = copy.copy(self._options)
                 # TODO Tool run is not async
@@ -265,15 +263,13 @@ class DefaultRunner(BaseRunner):
         else:
             max_retries = 0
 
-        retryable_state = await Retryable(
+        return await Retryable(
             RetryableInput(
                 on_error=on_error,
                 executor=executor,
                 config=RetryableConfig(max_retries=max_retries),
             )
         ).get()
-
-        return retryable_state.value
 
     async def init_memory(self, input: BeeRunInput) -> BaseMemory:
         memory = TokenMemory(

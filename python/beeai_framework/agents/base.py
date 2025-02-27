@@ -43,11 +43,6 @@ class BaseAgent(ABC, Generic[T]):
         async def handler(context: RunContext) -> T:
             try:
                 return await self._run(run_input, options, context)
-            except Exception as e:
-                if isinstance(e, RuntimeError):
-                    raise e
-                else:
-                    raise RuntimeError("Error has occurred!") from e
             finally:
                 self.is_running = False
 

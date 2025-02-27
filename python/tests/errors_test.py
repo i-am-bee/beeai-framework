@@ -49,7 +49,7 @@ class TestFrameworkError:
     @pytest.mark.unit
     def test_custom_properties(self) -> None:
         err = FrameworkError("Custom", is_fatal=False, is_retryable=False)
-        assert err.is_fatal is False
+        assert err.fatal is False
         assert FrameworkError.is_retryable(err) is False
 
     # Get cause returns the last exception in the chain - *itself* otherwise
@@ -90,25 +90,29 @@ class TestFrameworkError:
         inner_err = ValueError("error 2")
         err = FrameworkError("error 1")
         err.__cause__ = inner_err
-        errors = list(err.traverse_errors())
+        errors = list(err.traverse())
         assert len(errors) == 1
-        assert err not in errors
-        assert inner_err in errors
+        assert err in errors
+        assert inner_err not in errors
+        assert err.predecessor == inner_err
 
         # Test deeper nesting - 4
         err4 = ValueError("error 4")
-        err3 = TypeError("error 3")
+        err3 = FrameworkError("error 3")
         err3.__cause__ = err4
         err2 = FrameworkError("error 2")
         err2.__cause__ = err3
         err1 = FrameworkError("error 1")
         err1.__cause__ = err2
-        errors = list(err1.traverse_errors())
+        errors = list(err1.traverse())
         assert len(errors) == 3
-        assert err1 not in errors
+        assert err1 in errors
         assert err2 in errors
         assert err3 in errors
-        assert err4 in errors
+        assert err4 not in errors
+        assert err3.predecessor == err4
+        assert err2.predecessor == err3
+        assert err1.predecessor == err2
 
     # @unittest.skip("TODO: Skip as message ie str(err) needs to be used in dump/explain")
     @pytest.mark.unit
@@ -117,8 +121,7 @@ class TestFrameworkError:
         err = FrameworkError("Outer")
         err.__cause__ = inner_err
         explanation = err.explain()
-        assert "Outer" in explanation
-        assert "  Inner" in explanation
+        assert explanation == "FrameworkError(beeai_framework.errors): Outer\n  ValueError(builtins): Inner"
 
         # Test with an exception that doesn't have a 'message' attribute (not all do)
         class NoMessageError(Exception):
@@ -128,8 +131,9 @@ class TestFrameworkError:
         err2 = FrameworkError("Outer error")
         err2.__cause__ = inner_err2
         explanation2 = err2.explain()
-        assert "Outer error" in explanation2
-        assert "  NoMessageError" in explanation2
+        assert (
+            explanation2 == "FrameworkError(beeai_framework.errors): Outer error\n  NoMessageError(tests.errors_test):"
+        )
 
     # @unittest.skip("TODO: Skip as wrapped exception is not implemented correctly")
     @pytest.mark.unit
@@ -138,7 +142,6 @@ class TestFrameworkError:
         wrapped_err = FrameworkError.ensure(inner_err)
         assert isinstance(wrapped_err, FrameworkError)
         assert wrapped_err.get_cause() == inner_err
-        assert str(inner_err) == wrapped_err.message
 
         # Ensure doesn't re-wrap a FrameworkError
         fw_err = FrameworkError("Already a FrameworkError")

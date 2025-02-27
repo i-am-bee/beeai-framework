@@ -15,18 +15,22 @@
 
 import logging
 import sys
+from logging import Formatter
 
-from pyventus import EventHandler, EventLinker
-
-from beeai_framework.backend import Role
+from beeai_framework.errors import FrameworkError
 from beeai_framework.utils.config import CONFIG
 from beeai_framework.utils.events import MessageEvent
 
-_handler: EventHandler = None
+
+class LoggerError(FrameworkError):
+    """Raised for errors caused by logging."""
+
+    def __init__(self, message: str = "Logger error", *, cause: Exception | None = None) -> None:
+        super().__init__(message, is_fatal=True, is_retryable=False, cause=cause)
 
 
-class BeeLoggerFormatter:
-    def format(self, record: logging.LogRecord) -> logging.Formatter:
+class BeeLoggerFormatter(Formatter):
+    def format(self, record: logging.LogRecord) -> str:
         if hasattr(record, "is_event_message") and record.is_event_message:
             return logging.Formatter(
                 "{asctime} | {levelname:<8s} |{message}",
@@ -51,10 +55,6 @@ class BeeLogger(logging.Logger):
         console_handler.setFormatter(BeeLoggerFormatter())
 
         self.addHandler(console_handler)
-
-        global _handler
-        if _handler is None:
-            _handler = EventLinker.subscribe(MessageEvent, event_callback=self.log_message_events)
 
     # https://stackoverflow.com/questions/2183233/how-to-add-a-custom-loglevel-to-pythons-logging-facility/35804945#35804945
     def add_logging_level(self, level_name: str, level_num: int, method_name: str | None = None) -> None:
@@ -98,11 +98,11 @@ class BeeLogger(logging.Logger):
         # This method was inspired by the answers to Stack Overflow post
         # http://stackoverflow.com/q/2183233/2988730, especially
         # http://stackoverflow.com/a/13638084/2988730
-        def log_for_level(self: logging.Logger, message: str, *args: int, **kwargs: int) -> None:  # pragma: no cover
+        def log_for_level(self: logging.Logger, message: str, *args: int, **kwargs: dict) -> None:  # pragma: no cover
             if self.isEnabledFor(level_num):
                 self._log(level_num, message, args, stacklevel=2, **kwargs)
 
-        def log_to_root(message: str, *args: int, **kwargs: int) -> None:  # pragma: no cover
+        def log_to_root(message: str, *args: int, **kwargs: dict) -> None:  # pragma: no cover
             logging.log(level_num, message, *args, **kwargs)
 
         logging.addLevelName(level_num, level_name)
@@ -113,7 +113,7 @@ class BeeLogger(logging.Logger):
     def log_message_events(self, event: MessageEvent) -> None:
         source = str.lower(event.source)
         state = f" ({event.state})" if event.state else ""
-        icon = " 👤" if source == str.lower(Role.USER) else " 🤖"
+        icon = " 👤" if source == str.lower("user") else " 🤖"
         self.info(
             f" {str.capitalize(source)}{state}{icon}: {event.message}",
             extra={"is_event_message": True},
