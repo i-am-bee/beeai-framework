@@ -14,7 +14,6 @@ async def main() -> None:
     await memory.add_many([UserMessage("What can you do?"), AssistantMessage("Everything!")])
 
     print(memory.is_empty())  # false
-    print(memory.messages)  # prints saved messages as objects
     for message in memory.messages:  # prints the text of all messages
         print(message.text)
     print(memory.as_read_only())  # returns a new read only instance
