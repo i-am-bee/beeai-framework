@@ -1,15 +1,15 @@
-# Version
+# ➡️ Version
 
-*Disclaimer: The notes below may refer to the TypeScript version or missing files as the Python version moves toward parity in the near future. Additional Python examples coming soon. TODO*
+> [!NOTE]  
+> **Version is not yet implemented in Python, but it's coming soon! 🚀**
 
-> [!TIP]
->
-> Location within the framework `beeai/version`.
+## Overview
 
-```py
+```txt
+Coming soon
 ```
 
-_Source: /examples/version.py TODO
+_Source: /examples/version.py_
 
 > [!NOTE]
 >
