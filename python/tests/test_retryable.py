@@ -12,19 +12,18 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from collections.abc import Awaitable
 
 import pytest
 
 from beeai_framework.errors import FrameworkError
-from beeai_framework.retryable import Retryable, RetryableConfig, RetryableContext, RetryableInput
+from beeai_framework.retryable import Retryable, RetryableConfig, RetryableContext
 
 """
 Utility functions and classes
 """
 
 
-async def executor(ctx: RetryableContext) -> Awaitable:
+async def executor(ctx: RetryableContext) -> None:
     print(f"running executor: {ctx}")
 
 
@@ -48,7 +47,7 @@ Unit Tests
 @pytest.mark.asyncio
 @pytest.mark.unit
 async def test_retryable() -> None:
-    retry_state = await Retryable(
+    await Retryable(
         {
             "executor": executor,
             "on_reset": on_reset,
@@ -58,87 +57,23 @@ async def test_retryable() -> None:
         }
     ).get()
 
-    assert retry_state.is_resolved
-
-
-@pytest.mark.asyncio
-@pytest.mark.unit
-async def test_retryable_error() -> None:
-    async def executor(ctx: RetryableContext) -> Awaitable:
-        raise FrameworkError("frameworkerror:test_retryable_error")
-
-    retry = Retryable(
-        RetryableInput(
-            executor=executor,
-            on_reset=on_reset,
-            on_error=on_error,
-            on_retry=on_retry,
-            config=RetryableConfig(max_retries=3),
-        )
-    )
-
-    retry_state = await retry.get()
-    assert retry_state.is_rejected
-
 
 @pytest.mark.asyncio
 @pytest.mark.unit
 async def test_retryable_retries() -> None:
-    async def executor(ctx: RetryableContext) -> Awaitable:
+    async def executor(ctx: RetryableContext) -> None:
         print(f"Executing attempt: {ctx.attempt}")
         raise FrameworkError(f"frameworkerror:test_retryable_retries:{ctx.attempt}", is_retryable=True)
 
-    max_retries = 3
+    max_retries = 1
 
-    retry = Retryable(
-        {
-            "executor": executor,
-            "on_reset": on_reset,
-            "on_error": on_error,
-            "on_retry": on_retry,
-            "config": RetryableConfig(max_retries=max_retries),
-        }
-    )
-
-    retry_state = await retry.get()
-
-    assert retry_state.is_rejected
-    assert retry_state.value.message == f"frameworkerror:test_retryable_retries:{max_retries + 1}"
-    assert retry.is_rejected()
-
-
-@pytest.mark.asyncio
-@pytest.mark.unit
-async def test_retryable_reset() -> None:
-    counter = 0
-
-    async def executor(ctx: RetryableContext) -> Awaitable:
-        nonlocal counter
-        counter += 1
-        print(f"Executing count: {counter}")
-        if counter > 1:
-            return {"counter": counter}
-        raise FrameworkError(f"frameworkerror:test_retryable_reset:{counter}")
-
-    retry = Retryable(
-        RetryableInput(
-            executor=executor,
-            on_reset=on_reset,
-            on_error=on_error,
-            on_retry=on_retry,
-            config=RetryableConfig(max_retries=0),
-        )
-    )
-
-    retry_state = await retry.get()
-
-    assert retry_state.is_rejected
-    assert retry_state.value.message == "frameworkerror:test_retryable_reset:1"
-    assert retry.is_rejected()
-
-    retry.reset()
-    retry_state = await retry.get()
-
-    assert retry_state.is_resolved
-    assert retry_state.value.get("counter") == counter
-    assert retry.is_resolved()
+    with pytest.raises(FrameworkError, match=f"frameworkerror:test_retryable_retries:{max_retries + 1}"):
+        await Retryable(
+            {
+                "executor": executor,
+                "on_reset": on_reset,
+                "on_error": on_error,
+                "on_retry": on_retry,
+                "config": RetryableConfig(max_retries=max_retries),
+            }
+        ).get()

@@ -22,7 +22,7 @@ ModelLike = Union[T, dict]  # noqa: UP007
 
 
 def to_model(cls: type[T], obj: ModelLike[T]) -> T:
-    return obj if isinstance(obj, cls) else cls.model_validate(obj, strict=True)
+    return obj if isinstance(obj, cls) else cls.model_validate(obj, strict=False, from_attributes=True)
 
 
 def to_model_optional(cls: type[T], obj: ModelLike[T] | None) -> T | None:

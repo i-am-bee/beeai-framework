@@ -1,9 +1,11 @@
 import asyncio
+import sys
 
 from beeai_framework.agents.bee.agent import BeeAgent
 from beeai_framework.agents.types import BeeInput, BeeRunOutput
 from beeai_framework.backend.chat import ChatModel
 from beeai_framework.emitter import Emitter, EventMeta
+from beeai_framework.errors import FrameworkError
 from beeai_framework.memory.unconstrained_memory import UnconstrainedMemory
 from beeai_framework.tools.search import DuckDuckGoSearchTool
 from beeai_framework.tools.weather.openmeteo import OpenMeteoTool
@@ -38,4 +40,8 @@ async def main() -> None:
 
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    try:
+        asyncio.run(main())
+    except FrameworkError as e:
+        print(e.explain())
+        sys.exit(1)

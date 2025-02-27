@@ -55,7 +55,7 @@ async def test_multi_agents_workflow_creation() -> None:
     memory = UnconstrainedMemory()
     await memory.add(UserMessage(content="Say Hello in Italian."))
     response = await workflow.run(memory.messages)
-    assert "Ciao" in response.state.final_answer
+    assert "ciao" in response.state.final_answer.lower()
 
 
 @pytest.mark.e2e

@@ -18,8 +18,8 @@ from typing import Annotated
 
 from pydantic import BaseModel, InstanceOf
 
-from beeai_framework.backend import Message
 from beeai_framework.backend.chat import ChatModel, ChatModelOutput
+from beeai_framework.backend.message import Message
 from beeai_framework.cancellation import AbortSignal
 from beeai_framework.memory.base_memory import BaseMemory
 from beeai_framework.template import PromptTemplate
