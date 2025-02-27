@@ -15,8 +15,9 @@
 from unittest.mock import AsyncMock
 
 import pytest
-from pydantic import BaseModel, ValidationError
+from pydantic import BaseModel
 
+from beeai_framework.errors import FrameworkError
 from beeai_framework.workflows import Workflow
 
 """
@@ -96,7 +97,7 @@ async def test_workflow_validation() -> None:
     workflow.add_step("second", second)
     workflow.add_step("third", third)
 
-    with pytest.raises(ValidationError):
+    with pytest.raises(FrameworkError):
         await workflow.run(State(input="Hello there!", hops=10))
 
 

@@ -26,6 +26,7 @@ from beeai_framework.cancellation import AbortSignal
 from beeai_framework.context import Run, RunContext, RunContextInput, RunInstance
 from beeai_framework.emitter.emitter import Emitter
 from beeai_framework.emitter.types import EmitterInput
+from beeai_framework.errors import FrameworkError
 from beeai_framework.utils.models import ModelLike, check_model, to_model, to_model_optional
 from beeai_framework.utils.types import MaybeAsync
 from beeai_framework.workflows.errors import WorkflowError
@@ -192,7 +193,8 @@ class Workflow(Generic[T, K]):
                             "next": next,
                         },
                     )
-                except Exception as err:
+                except Exception as e:
+                    err = FrameworkError.ensure(e)
                     await context.emitter.emit(
                         "error",
                         {
@@ -201,7 +203,7 @@ class Workflow(Generic[T, K]):
                             "error": err,
                         },
                     )
-                    raise err
+                    raise err from None
 
             return run
 
