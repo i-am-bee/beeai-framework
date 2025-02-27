@@ -67,19 +67,79 @@ Memory components integrate with other parts of the framework:
 
 ### Capabilities Showcase
 
-From [base.py](/python/examples/memory/base.py):
+<!-- embedme examples/memory/base.py -->
 
-```txt
-Coming soon
+```py
+import asyncio
+
+from beeai_framework.backend.message import AssistantMessage, SystemMessage, UserMessage
+from beeai_framework.memory.unconstrained_memory import UnconstrainedMemory
+
+
+async def main() -> None:
+    memory = UnconstrainedMemory()
+
+    # Single Message
+    await memory.add(SystemMessage("You are a helpful assistant"))
+
+    # Multiple Messages
+    await memory.add_many([UserMessage("What can you do?"), AssistantMessage("Everything!")])
+
+    print(memory.is_empty())  # false
+    for message in memory.messages:  # prints the text of all messages
+        print(message.text)
+    print(memory.as_read_only())  # returns a new read only instance
+    memory.reset()  # removes all messages
+
+
+if __name__ == "__main__":
+    asyncio.run(main())
+
 ```
+
+_Source: [/python/examples/memory/base.py](/python/examples/memory/base.py)_
 
 ### Usage with LLMs
 
-From [llmMemory.py](/python/examples/memory/llmMemory.py):
+<!-- embedme examples/memory/llmMemory.py -->
 
-```txt
-Coming soon
+```py
+import asyncio
+
+from beeai_framework.adapters.ollama.backend.chat import OllamaChatModel
+from beeai_framework.backend.message import Message, Role
+from beeai_framework.memory.unconstrained_memory import UnconstrainedMemory
+
+
+async def main() -> None:
+    memory = UnconstrainedMemory()
+    await memory.add_many(
+        [
+            Message.of(
+                {
+                    "role": Role.SYSTEM,
+                    "text": "Always respond very concisely.",
+                }
+            ),
+            Message.of({"role": Role.USER, "text": "Give me the first 5 prime numbers."}),
+        ]
+    )
+
+    llm = OllamaChatModel("llama3.1")
+    response = await llm.create({"messages": memory.messages})
+    await memory.add(Message.of({"role": Role.ASSISTANT, "text": response.get_text_content()}))
+
+    print("Conversation history")
+    for message in memory:
+        print(f"{message.role}: {message.text}")
+
+
+if __name__ == "__main__":
+    asyncio.run(main())
+
 ```
+
+_Source: [/python/examples/memory/llmMemory.py](/python/examples/memory/llmMemory.py)_
 
 > [!TIP]
 >
@@ -87,7 +147,7 @@ Coming soon
 
 ### Usage with Agents
 
-From [agentMemory](/python/examples/memory/agentMemory.py):
+<!-- embedme examples/memory/agentMemory.py -->
 
 ```py
 import asyncio
@@ -169,6 +229,8 @@ if __name__ == "__main__":
     asyncio.run(main())
 ```
 
+_Source: [/python/examples/memory/agentMemory.py](/python/examples/memory/agentMemory.py)_
+
 > [!TIP]
 >
 > If your memory already contains the user message, run the agent with `prompt: null`.
@@ -187,7 +249,7 @@ The framework provides multiple out-of-the-box memory implementations for differ
 
 Unlimited in size, stores all messages without constraints.
 
-From [unconstrainedMemory.py](/python/examples/memory/unconstrainedMemory.py):
+<!-- embedme examples/memory/unconstrainedMemory.py -->
 
 ```py
 import asyncio
@@ -223,11 +285,14 @@ if __name__ == "__main__":
     asyncio.run(main())
 ```
 
+_Source: [/python/examples/memory/unconstrainedMemory.py](/python/examples/memory/unconstrainedMemory.py)_
+
+
 ### SlidingMemory
 
 Keeps last `k` entries in the memory. The oldest ones are deleted (unless specified otherwise).
 
-From [slidingMemory.py](/python/examples/memory/slidingMemory.py):
+<!-- embedme examples/memory/slidingMemory.py -->
 
 ```py
 import asyncio
@@ -272,12 +337,15 @@ if __name__ == "__main__":
     asyncio.run(main())
 ```
 
+_Source: [/python/examples/memory/slidingMemory.py](/python/examples/memory/slidingMemory.py)_
+
+
 ### TokenMemory
 
 Ensures that the token sum of all messages is below the given threshold.
 If overflow occurs, the oldest message will be removed.
 
-From [tokenMemory.py](/python/examples/memory/tokenMemory.py):
+<!-- embedme examples/memory/tokenMemory.py -->
 
 ```py
 import asyncio
@@ -341,6 +409,8 @@ async def main() -> None:
 if __name__ == "__main__":
     asyncio.run(main())
 ```
+
+_Source: [/python/examples/memory/tokenMemory.py](/python/examples/memory/tokenMemory.py)_
 
 ### SummarizeMemory
 
@@ -407,10 +477,35 @@ To create your memory implementation, you must implement the `BaseMemory` class.
 <!-- embedme examples/memory/custom.py -->
 
 ```py
-# Coming soon
+from typing import Any
+
+from beeai_framework.backend.message import Message
+from beeai_framework.memory import BaseMemory
+
+
+class MyMemory(BaseMemory):
+    @property
+    def messages(self) -> list[Message]:
+        raise NotImplementedError("Method not yet implemented.")
+
+    def add(self, message: Message, index: int | None = None) -> None:
+        raise NotImplementedError("Method not yet implemented.")
+
+    def delete(self, message: Message) -> bool:
+        raise NotImplementedError("Method not yet implemented.")
+
+    def reset(self) -> None:
+        raise NotImplementedError("Method not yet implemented.")
+
+    def create_snapshot(self) -> Any:
+        raise NotImplementedError("Method not yet implemented.")
+
+    def load_snapshot(self, state: Any) -> None:
+        raise NotImplementedError("Method not yet implemented.")
+
 ```
 
-_Source: [python/examples/memory/custom.py](/python/examples/memory/custom.py)_
+_Source: [/python/examples/memory/custom.py](/python/examples/memory/custom.py)_
 
 > [!TIP]
 >
