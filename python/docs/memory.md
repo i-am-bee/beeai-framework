@@ -68,7 +68,6 @@ Memory components integrate with other parts of the framework:
 ### Capabilities Showcase
 
 <!-- embedme examples/memory/base.py -->
-From [base.py](/python/examples/memory/base.py):
 
 ```py
 import asyncio
@@ -104,7 +103,6 @@ _Source: [/python/examples/memory/base.py](/python/examples/memory/base.py)_
 ### Usage with LLMs
 
 <!-- embedme examples/memory/llmMemory.py -->
-From [llmMemory.py](/python/examples/memory/llmMemory.py):
 
 ```py
 import asyncio
@@ -150,7 +148,7 @@ _Source: [/python/examples/memory/llmMemory.py](/python/examples/memory/llmMemor
 
 ### Usage with Agents
 
-From [agentMemory](/python/examples/memory/agentMemory.py):
+<!-- embedme examples/memory/agentMemory.py -->
 
 ```py
 import asyncio
@@ -232,6 +230,8 @@ if __name__ == "__main__":
     asyncio.run(main())
 ```
 
+_Source: [/python/examples/memory/agentMemory.py](/python/examples/memory/agentMemory.py)_
+
 > [!TIP]
 >
 > If your memory already contains the user message, run the agent with `prompt: null`.
@@ -250,7 +250,7 @@ The framework provides multiple out-of-the-box memory implementations for differ
 
 Unlimited in size, stores all messages without constraints.
 
-From [unconstrainedMemory.py](/python/examples/memory/unconstrainedMemory.py):
+<!-- embedme examples/memory/unconstrainedMemory.py -->
 
 ```py
 import asyncio
@@ -286,11 +286,14 @@ if __name__ == "__main__":
     asyncio.run(main())
 ```
 
+_Source: [/python/examples/memory/unconstrainedMemory.py](/python/examples/memory/unconstrainedMemory.py)_
+
+
 ### SlidingMemory
 
 Keeps last `k` entries in the memory. The oldest ones are deleted (unless specified otherwise).
 
-From [slidingMemory.py](/python/examples/memory/slidingMemory.py):
+<!-- embedme examples/memory/slidingMemory.py -->
 
 ```py
 import asyncio
@@ -335,12 +338,15 @@ if __name__ == "__main__":
     asyncio.run(main())
 ```
 
+_Source: [/python/examples/memory/slidingMemory.py](/python/examples/memory/slidingMemory.py)_
+
+
 ### TokenMemory
 
 Ensures that the token sum of all messages is below the given threshold.
 If overflow occurs, the oldest message will be removed.
 
-From [tokenMemory.py](/python/examples/memory/tokenMemory.py):
+<!-- embedme examples/memory/tokenMemory.py -->
 
 ```py
 import asyncio
@@ -405,6 +411,8 @@ if __name__ == "__main__":
     asyncio.run(main())
 ```
 
+_Source: [/python/examples/memory/tokenMemory.py](/python/examples/memory/tokenMemory.py)_
+
 ### SummarizeMemory
 
 Only a single summarization of the conversation is preserved. Summarization is updated with every new message.
@@ -468,34 +476,33 @@ _Source: [python/examples/memory/summarizeMemory.py](/python/examples/memory/sum
 To create your memory implementation, you must implement the `BaseMemory` class.
 
 <!-- embedme examples/memory/custom.py -->
-From [custom.py](/python/examples/memory/custom.py):
+
 ```py
 from typing import Any
 
 from beeai_framework.backend.message import Message
-from beeai_framework.errors import UnimplementedError
 from beeai_framework.memory import BaseMemory
 
 
 class MyMemory(BaseMemory):
     @property
     def messages(self) -> list[Message]:
-        raise UnimplementedError("Method not yet implemented.")
+        raise NotImplementedError("Method not yet implemented.")
 
     def add(self, message: Message, index: int | None = None) -> None:
-        raise UnimplementedError("Method not yet implemented.")
+        raise NotImplementedError("Method not yet implemented.")
 
     def delete(self, message: Message) -> bool:
-        raise UnimplementedError("Method not yet implemented.")
+        raise NotImplementedError("Method not yet implemented.")
 
     def reset(self) -> None:
-        raise UnimplementedError("Method not yet implemented.")
+        raise NotImplementedError("Method not yet implemented.")
 
     def create_snapshot(self) -> Any:
-        raise UnimplementedError("Method not yet implemented.")
+        raise NotImplementedError("Method not yet implemented.")
 
     def load_snapshot(self, state: Any) -> None:
-        raise UnimplementedError("Method not yet implemented.")
+        raise NotImplementedError("Method not yet implemented.")
 
 ```
 
