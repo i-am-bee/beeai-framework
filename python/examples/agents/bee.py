@@ -121,7 +121,7 @@ async def main() -> None:
         response = await agent.run(
             BeeRunInput(prompt=prompt),
             BeeRunOptions(
-                execution=BeeAgentExecutionConfig(max_retries_per_step=3, total_max_retries=0, max_iterations=20)
+                execution=BeeAgentExecutionConfig(max_retries_per_step=3, total_max_retries=10, max_iterations=20)
             ),
         ).observe(observer)
 
