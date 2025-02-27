@@ -28,7 +28,9 @@ class OpenAIChatModel(LiteLLMChatModel):
         return "openai"
 
     def __init__(self, model_id: str | None = None, settings: dict | None = None) -> None:
+        _settings = settings.copy() if settings is not None else {}
+
         super().__init__(
             model_id if model_id else os.getenv("OPENAI_CHAT_MODEL", "gpt-4o"),
-            settings=settings or {},
+            settings=_settings,
         )
