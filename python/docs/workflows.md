@@ -14,7 +14,7 @@
   - [Workflow Nesting](#workflow-nesting)
   - [Multi-Agent Workflows](#multi-agent-workflows)
   - [Memory in Workflows](#memory-in-workflows)
-- [Resources](#resources)
+- [Examples](#examples)
 <!-- /TOC -->
 
 ---
@@ -97,7 +97,7 @@ if __name__ == "__main__":
 
 ```
 
-_Source: [python/examples/workflows/simple.py](/python/examples/workflows/simple.py)_
+_Source: [examples/workflows/simple.py](/python/examples/workflows/simple.py)_
 
 ### Multi-Step Workflow
 
@@ -170,7 +170,7 @@ if __name__ == "__main__":
 
 ```
 
-_Source: [python/examples/workflows/advanced.py](/python/examples/workflows/advanced.py)_
+_Source: [examples/workflows/advanced.py](/python/examples/workflows/advanced.py)_
 
 This workflow demonstrates several powerful concepts:
 - Implementing loops by returning `Workflow.SELF`
@@ -193,7 +193,7 @@ Workflow nesting allows complex behaviors to be encapsulated as reusable compone
 # Coming soon
 ```
 
-_Source: [python/examples/workflows/nesting.py](/python/examples/workflows/nesting.py)_
+_Source: [examples/workflows/nesting.py](/python/examples/workflows/nesting.py)_
 
 ### Multi-Agent Workflows
 
@@ -265,7 +265,7 @@ if __name__ == "__main__":
 
 ```
 
-_Source: [python/examples/workflows/multi_agents.py](/python/examples/workflows/multi_agents.py)_
+_Source: [examples/workflows/multi_agents.py](/python/examples/workflows/multi_agents.py)_
 
 This pattern demonstrates:
 
@@ -329,7 +329,7 @@ if __name__ == "__main__":
 
 ```
 
-_Source: [python/examples/workflows/memory.py](/python/examples/workflows/memory.py)_
+_Source: [examples/workflows/memory.py](/python/examples/workflows/memory.py)_
 
 This pattern demonstrates:
 - Integration of memory as a first-class citizen in workflow state
@@ -339,16 +339,10 @@ This pattern demonstrates:
 
 ---
 
-## Resources
+## Examples
 
-- **Examples:**
-  - [simple.py](/python/examples/workflows/simple.py) - Basic workflow example
-  - [advanced.py](/python/examples/workflows/advanced.py) - More complex workflow with loops
-  - [memory.py](/python/examples/workflows/memory.py) - Using memory in workflows
-  - [multi_agents.py](/python/examples/workflows/multi_agents.py) - Multi-agent workflow
-  - [workflows.ipynb](/python/examples/notebooks/workflows.ipynb) - Interactive notebook examples
-
-- **Related Documentation:**
-  - [Agents Documentation](/python/docs/agents.md)
-  - [Memory Documentation](/python/docs/memory.md)
-  - [Tools Documentation](/python/docs/tools.md)
+- [simple.py](/python/examples/workflows/simple.py) - Basic workflow example
+- [advanced.py](/python/examples/workflows/advanced.py) - More complex workflow with loops
+- [memory.py](/python/examples/workflows/memory.py) - Using memory in workflows
+- [multi_agents.py](/python/examples/workflows/multi_agents.py) - Multi-agent workflow
+- [workflows.ipynb](/python/examples/notebooks/workflows.ipynb) - Interactive notebook examples

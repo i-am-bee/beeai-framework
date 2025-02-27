@@ -1,6 +1,7 @@
 # Version
 
-*Disclaimer: The notes below may refer to the TypeScript version or missing files as the Python version moves toward parity in the near future. Additional Python examples coming soon. TODO*
+> [!NOTE]  
+> **Version is not yet implemented in Python, but it's coming soon!**
 
 > [!TIP]
 >

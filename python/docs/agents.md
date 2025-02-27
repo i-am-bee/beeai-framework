@@ -15,7 +15,7 @@
 - [Creating Your Own Agent](#creating-your-own-agent)
 - [Agent with Memory](#agent-with-memory)
 - [Agent Workflows](#agent-workflows)
-- [Resources](#resources)
+- [Examples](#examples)
 <!-- /TOC -->
 
 ---
@@ -98,7 +98,7 @@ response = await agent.run(
 ).observe(observer)
 ```
 
-_Source: [python/examples/agents/bee.py](/python/examples/agents/bee.py)_
+_Source: [examples/agents/bee.py](/python/examples/agents/bee.py)_
 
 > 💡 **Tip:** The default is zero retries and no timeout. For complex tasks, increasing the max_iterations is recommended.
 
@@ -129,7 +129,7 @@ print(prompt)
 
 ```
 
-_Source: [python/examples/templates/agent_sys_prompt.py](/python/examples/templates/agent_sys_prompt.py)_
+_Source: [examples/templates/agent_sys_prompt.py](/python/examples/templates/agent_sys_prompt.py)_
 
 The agent uses several templates that you can override:
 1. **System Prompt** - Defines the agent's behavior and capabilities
@@ -154,7 +154,7 @@ agent = BeeAgent(
 )
 ```
 
-_Source: [python/examples/agents/simple.py](/python/examples/agents/simple.py)_
+_Source: [examples/agents/simple.py](/python/examples/agents/simple.py)_
 
 **Available tools include:**
 - Search tools (`DuckDuckGoSearchTool`)
@@ -178,7 +178,7 @@ agent = BeeAgent(
 )
 ```
 
-_Source: [python/examples/agents/simple.py](/python/examples/agents/simple.py)_
+_Source: [examples/agents/simple.py](/python/examples/agents/simple.py)_
 
 **Memory types for different use cases:**
 - [UnconstrainedMemory](/python/examples/memory/unconstrainedMemory.py) - For unlimited storage
@@ -204,7 +204,7 @@ output: BeeRunOutput = await agent.run(
 ).observe(on_update)
 ```
 
-_Source: [python/examples/agents/simple.py](/python/examples/agents/simple.py)_
+_Source: [examples/agents/simple.py](/python/examples/agents/simple.py)_
 
 > 💡 **Tip:** See the [emitter.md](/python/docs/emitter.md) documentation for more information on event observation.
 
@@ -310,7 +310,7 @@ if __name__ == "__main__":
 
 ```
 
-_Source: [python/examples/memory/agentMemory.py](/python/examples/memory/agentMemory.py)_
+_Source: [examples/memory/agentMemory.py](/python/examples/memory/agentMemory.py)_
 
 **Memory types for different use cases:**
 - [UnconstrainedMemory](/python/examples/memory/unconstrainedMemory.py) - For unlimited storage
@@ -390,7 +390,7 @@ if __name__ == "__main__":
 
 ```
 
-_Source: [python/examples/workflows/multi_agents.py](/python/examples/workflows/multi_agents.py)_
+_Source: [examples/workflows/multi_agents.py](/python/examples/workflows/multi_agents.py)_
 
 **Example Workflow Patterns:**
 - [multi_agents.py](/python/examples/workflows/multi_agents.py) - Multiple specialized agents working together
@@ -400,16 +400,9 @@ _Source: [python/examples/workflows/multi_agents.py](/python/examples/workflows/
 
 ---
 
-## Resources
+## Examples
 
-- **Examples:**
-  - [simple.py](/python/examples/agents/simple.py) - Basic agent implementation
-  - [bee.py](/python/examples/agents/bee.py) - More complete implementation
-  - [granite.py](/python/examples/agents/granite.py) - Using Granite model
-  - [agents.ipynb](/python/examples/notebooks/agents.ipynb) - Interactive notebook examples
-
-- **Related Documentation:**
-  - [Tools Documentation](/python/docs/tools.md)
-  - [Memory Documentation](/python/docs/memory.md)
-  - [Workflows Documentation](/python/docs/workflows.md)
-  - [Emitter Documentation](/python/docs/emitter.md)
+- [simple.py](/python/examples/agents/simple.py) - Basic agent implementation
+- [bee.py](/python/examples/agents/bee.py) - More complete implementation
+- [granite.py](/python/examples/agents/granite.py) - Using Granite model
+- [agents.ipynb](/python/examples/notebooks/agents.ipynb) - Interactive notebook examples
