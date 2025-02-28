@@ -4,7 +4,6 @@ import sys
 from dotenv import load_dotenv
 
 from beeai_framework.agents.bee import BeeAgent
-from beeai_framework.agents.types import BeeInput, BeeRunInput
 from beeai_framework.backend.chat import ChatModel
 from beeai_framework.memory.unconstrained_memory import UnconstrainedMemory
 
@@ -28,11 +27,9 @@ Arguments
 
 async def main(model: str) -> None:
     chat_model = ChatModel.from_name(model)
-    bee_input = BeeInput(llm=chat_model, tools=[], memory=UnconstrainedMemory())
-    agent = BeeAgent(bee_input)
+    agent = BeeAgent(llm=chat_model, tools=[], memory=UnconstrainedMemory())
 
-    run_input = BeeRunInput(prompt="What is the smallest of the Cabo Verde islands?")
-    result = await agent.run(run_input)
+    result = await agent.run("What is the smallest of the Cabo Verde islands?")
 
     print("answer:", result.result.text)
 

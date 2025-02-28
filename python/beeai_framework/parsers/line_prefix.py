@@ -18,7 +18,7 @@ from typing import Any, NoReturn
 
 from pydantic import BaseModel, InstanceOf, ValidationError
 
-from beeai_framework.emitter import Emitter, EmitterInput
+from beeai_framework.emitter import Emitter
 from beeai_framework.errors import FrameworkError
 from beeai_framework.parsers.field import ParserField
 from beeai_framework.utils.strings import trim_left_spaces
@@ -79,7 +79,7 @@ class LinePrefixParser:
             options = LinePrefixParserOptions()
         self.nodes: Nodes = nodes
         self.options: LinePrefixParserOptions = options
-        self.emitter: Emitter = Emitter(EmitterInput(creator=self, namespace=["parser", "line"]))
+        self.emitter: Emitter = Emitter(creator=self, namespace=["parser", "line"])
         self.lines: list[LinePrefixParserLine] = []
         self.excluded_lines: list[LinePrefixParserLine] = []
         self.done: bool = False

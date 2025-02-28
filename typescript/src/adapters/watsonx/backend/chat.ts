@@ -62,8 +62,7 @@ export class WatsonxChatModel extends ChatModel {
 
   config(config: ChatConfig) {
     super.config(config);
-    // TODO: missing parameters https://github.com/IBM/watsonx-ai-node-sdk/issues/4
-    for (const name of ["topK", "seed", "stopSequences"] as (keyof ChatModelParameters)[]) {
+    for (const name of ["topK"] as (keyof ChatModelParameters)[]) {
       if (this.parameters[name] !== undefined) {
         this.parameters[name] = undefined;
         throw new NotImplementedError(
@@ -203,9 +202,8 @@ export class WatsonxChatModel extends ChatModel {
       maxTokens: input.maxTokens,
       presencePenalty: input.presencePenalty,
       toolChoice: input.toolChoice,
-      // TODO: missing parameters https://github.com/IBM/watsonx-ai-node-sdk/issues/4
-      // stop: input.stopSequences,
-      // seed: input.seed,
+      stop: input.stopSequences,
+      seed: input.seed,
     };
   }
 

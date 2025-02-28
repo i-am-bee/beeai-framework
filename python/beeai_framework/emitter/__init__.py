@@ -23,14 +23,13 @@ from beeai_framework.emitter.emitter import (
     MatcherFn,
 )
 from beeai_framework.emitter.errors import EmitterError
-from beeai_framework.emitter.types import EmitterInput, EmitterOptions, EventTrace
+from beeai_framework.emitter.types import EmitterOptions, EventTrace
 
 __all__ = [
     "Callback",
     "CleanupFn",
     "Emitter",
     "EmitterError",
-    "EmitterInput",
     "EmitterOptions",
     "EventMeta",
     "EventTrace",

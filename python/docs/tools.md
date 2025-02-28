@@ -83,11 +83,10 @@ _Source: [/python/examples/tools/advanced.py](/python/examples/tools/advanced.py
 ```py
 from beeai_framework.adapters.ollama.backend.chat import OllamaChatModel
 from beeai_framework.agents.bee import BeeAgent
-from beeai_framework.agents.types import BeeInput
 from beeai_framework.memory import UnconstrainedMemory
 from beeai_framework.tools.weather.openmeteo import OpenMeteoTool
 
-agent = BeeAgent(BeeInput(llm=OllamaChatModel("llama3.1"), tools=[OpenMeteoTool()], memory=UnconstrainedMemory()))
+agent = BeeAgent(llm=OllamaChatModel("llama3.1"), tools=[OpenMeteoTool()], memory=UnconstrainedMemory())
 
 ```
 
@@ -104,7 +103,6 @@ from urllib.parse import quote
 import requests
 
 from beeai_framework import BeeAgent, tool
-from beeai_framework.agents.types import BeeInput, BeeRunInput
 from beeai_framework.backend.chat import ChatModel
 from beeai_framework.memory.unconstrained_memory import UnconstrainedMemory
 from beeai_framework.tools.tool import StringToolOutput
@@ -145,9 +143,9 @@ async def main() -> None:
 
     chat_model = ChatModel.from_name("ollama:granite3.1-dense:8b")
 
-    agent = BeeAgent(BeeInput(llm=chat_model, tools=[basic_calculator], memory=UnconstrainedMemory()))
+    agent = BeeAgent(llm=chat_model, tools=[basic_calculator], memory=UnconstrainedMemory())
 
-    result = await agent.run(BeeRunInput(prompt="What is the square root of 36?"))
+    result = await agent.run("What is the square root of 36?")
 
     print(result.result.text)
 
@@ -166,7 +164,6 @@ _Source: [/python/examples/tools/decorator.py](/python/examples/tools/decorator.
 import asyncio
 
 from beeai_framework.agents.bee import BeeAgent
-from beeai_framework.agents.types import BeeInput, BeeRunInput
 from beeai_framework.backend.chat import ChatModel
 from beeai_framework.memory import UnconstrainedMemory
 from beeai_framework.tools.search.duckduckgo import DuckDuckGoSearchTool
@@ -174,9 +171,9 @@ from beeai_framework.tools.search.duckduckgo import DuckDuckGoSearchTool
 
 async def main() -> None:
     chat_model = ChatModel.from_name("ollama:granite3.1-dense:8b")
-    agent = BeeAgent(BeeInput(llm=chat_model, tools=[DuckDuckGoSearchTool()], memory=UnconstrainedMemory()))
+    agent = BeeAgent(llm=chat_model, tools=[DuckDuckGoSearchTool()], memory=UnconstrainedMemory())
 
-    result = await agent.run(BeeRunInput(prompt="How tall is the mount Everest?"))
+    result = await agent.run("How tall is the mount Everest?")
 
     print(result.result.text)
 
@@ -196,7 +193,6 @@ _Source: [/python/examples/tools/duckduckgo.py](/python/examples/tools/duckduckg
 import asyncio
 
 from beeai_framework.agents.bee import BeeAgent
-from beeai_framework.agents.types import BeeInput, BeeRunInput
 from beeai_framework.backend.chat import ChatModel
 from beeai_framework.memory import UnconstrainedMemory
 from beeai_framework.tools.weather.openmeteo import OpenMeteoTool
@@ -204,9 +200,9 @@ from beeai_framework.tools.weather.openmeteo import OpenMeteoTool
 
 async def main() -> None:
     llm = ChatModel.from_name("ollama:granite3.1-dense:8b")
-    agent = BeeAgent(BeeInput(llm=llm, tools=[OpenMeteoTool()], memory=UnconstrainedMemory()))
+    agent = BeeAgent(llm=llm, tools=[OpenMeteoTool()], memory=UnconstrainedMemory())
 
-    result = await agent.run(BeeRunInput(prompt="What's the current weather in London?"))
+    result = await agent.run("What's the current weather in London?")
 
     print(result.result.text)
 

@@ -25,12 +25,12 @@ from beeai_framework.backend.message import AssistantMessage, Message, SystemMes
 from beeai_framework.backend.utils import load_model, parse_broken_json, parse_model
 from beeai_framework.cancellation import AbortController, AbortSignal
 from beeai_framework.context import Run, RunContext, RunContextInput, RunInstance
-from beeai_framework.emitter import Emitter, EmitterInput
+from beeai_framework.emitter import Emitter
 from beeai_framework.retryable import Retryable, RetryableConfig, RetryableContext, RetryableInput
 from beeai_framework.template import PromptTemplate, PromptTemplateInput
 from beeai_framework.tools.tool import Tool
 from beeai_framework.utils.custom_logger import BeeLogger
-from beeai_framework.utils.models import ModelLike, to_model
+from beeai_framework.utils.models import ModelLike
 from beeai_framework.utils.strings import to_json
 
 T = TypeVar("T", bound=BaseModel)
@@ -133,10 +133,8 @@ class ChatModel(ABC):
 
     def __init__(self) -> None:
         self.emitter = Emitter.root().child(
-            EmitterInput(
-                namespace=["backend", self.provider_id, "chat"],
-                creator=self,
-            )
+            namespace=["backend", self.provider_id, "chat"],
+            creator=self,
         )
 
     @abstractmethod
@@ -215,17 +213,32 @@ IMPORTANT: You MUST answer with a JSON object that matches the JSON schema above
             )
         ).get()
 
-    def create(self, chat_model_input: ModelLike[ChatModelInput]) -> Run[ChatModelOutput]:
-        input = to_model(ChatModelInput, chat_model_input)
+    def create(
+        self,
+        messages: list[Message],
+        tools: list[Message] | None = None,
+        abort_signal: AbortSignal | None = None,
+        stop_sequences: list[str] | None = None,
+        response_format: dict[str, Any] | type[BaseModel] | None = None,
+        stream: bool | None = None,
+    ) -> Run[ChatModelOutput]:
+        model_input = ChatModelInput(
+            messages=messages,
+            tools=tools or [],
+            abort_signal=abort_signal,
+            stop_sequences=stop_sequences,
+            response_format=response_format,
+            stream=stream,
+        )
 
         async def run_create(context: RunContext) -> ChatModelOutput:
             try:
-                await context.emitter.emit("start", input)
+                await context.emitter.emit("start", model_input)
                 chunks: list[ChatModelOutput] = []
 
-                if input.stream:
+                if model_input.stream:
                     abort_controller: AbortController = AbortController()
-                    async for value in self._create_stream(input, context):
+                    async for value in self._create_stream(model_input, context):
                         chunks.append(value)
                         await context.emitter.emit("newToken", (value, lambda: abort_controller.abort()))
                         if abort_controller.signal.aborted:
@@ -233,7 +246,7 @@ IMPORTANT: You MUST answer with a JSON object that matches the JSON schema above
 
                     result = ChatModelOutput.from_chunks(chunks)
                 else:
-                    result = await self._create(input, context)
+                    result = await self._create(model_input, context)
 
                 await context.emitter.emit("success", {"value": result})
                 return result
@@ -246,19 +259,27 @@ IMPORTANT: You MUST answer with a JSON object that matches the JSON schema above
 
         return RunContext.enter(
             RunInstance(emitter=self.emitter),
-            RunContextInput(params=[input], signal=input.abort_signal),
+            RunContextInput(params=[model_input], signal=model_input.abort_signal),
             run_create,
         )
 
-    def create_structure(self, structure_input: ModelLike[ChatModelStructureInput]) -> Run:
-        input = to_model(ChatModelStructureInput, structure_input)
+    def create_structure(
+        self,
+        schema: type[T],
+        messages: list[Message],
+        abort_signal: AbortSignal | None = None,
+        max_retries: int | None = None,
+    ) -> Run:
+        model_input = ChatModelStructureInput(
+            schema=schema, messages=messages, abort_signal=abort_signal, max_retries=max_retries
+        )
 
         async def run_structure(context: RunContext) -> ChatModelStructureOutput:
-            return await self._create_structure(input, context)
+            return await self._create_structure(model_input, context)
 
         return RunContext.enter(
             RunInstance(emitter=self.emitter),
-            RunContextInput(params=[input], signal=input.abort_signal),
+            RunContextInput(params=[model_input], signal=model_input.abort_signal),
             run_structure,
         )
 

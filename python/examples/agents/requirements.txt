@@ -1,2 +1,2 @@
-wikipedia
+wikipedia-api
 langchain_community

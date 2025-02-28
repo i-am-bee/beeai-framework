@@ -13,21 +13,13 @@
 # limitations under the License.
 
 
-from pydantic import BaseModel, ConfigDict, InstanceOf
+from pydantic import BaseModel, ConfigDict
 
 
 class EventTrace(BaseModel):
     id: str
     run_id: str
     parent_run_id: str | None = None
-
-
-class EmitterInput(BaseModel):
-    group_id: str | None = None
-    namespace: list[str] | None = None
-    creator: object | None = None
-    context: object | None = None
-    trace: InstanceOf[EventTrace] | None = None
 
 
 class EmitterOptions(BaseModel):

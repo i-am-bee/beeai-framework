@@ -93,7 +93,7 @@ class AgentMeta(BaseModel):
 
 
 BeeTemplateFactory = Callable[[InstanceOf[BeeAgentTemplates]], InstanceOf[BeeAgentTemplates]]
-ModelKeysType = Annotated[str, lambda v: v in BeeAgentTemplates.__fields__]
+ModelKeysType = Annotated[str, lambda v: v in BeeAgentTemplates.model_fields]
 
 
 class BeeInput(BaseModel):
@@ -101,6 +101,6 @@ class BeeInput(BaseModel):
     tools: list[InstanceOf[Tool]]
     memory: InstanceOf[BaseMemory]
     meta: InstanceOf[AgentMeta] | None = None
-    templates: dict[ModelKeysType, InstanceOf[BeeAgentTemplates] | BeeTemplateFactory | None] = None
+    templates: dict[ModelKeysType, InstanceOf[BeeAgentTemplates] | BeeTemplateFactory] | None = None
     execution: BeeAgentExecutionConfig | None = None
     stream: bool | None = None
