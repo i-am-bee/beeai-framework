@@ -87,14 +87,14 @@ Control how the agent runs by configuring retries, timeouts, and iteration limit
 
 ```py
 response = await agent.run(
-    BeeRunInput(prompt=prompt),
-    {
-        "execution": {
-            "max_retries_per_step": 3,
-            "total_max_retries": 10,
-            "max_iterations": 20,
-        }
-    },
+    prompt,
+    BeeRunOptions(
+        execution=BeeAgentExecutionConfig(
+            max_retries_per_step=3,
+            total_max_retries=10,
+            max_iterations=20
+        )
+    ),
 ).observe(observer)
 ```
 
@@ -147,11 +147,9 @@ Enhance your agent's capabilities by providing it with tools to interact with ex
 
 ```py
 agent = BeeAgent(
-    bee_input=BeeInput(
-        llm=llm, 
-        tools=[DuckDuckGoSearchTool(), OpenMeteoTool()], 
-        memory=UnconstrainedMemory()
-    )
+    llm=llm,
+    tools=[DuckDuckGoSearchTool(), OpenMeteoTool()],
+    memory=UnconstrainedMemory()
 )
 ```
 
@@ -172,11 +170,9 @@ Memory allows your agent to maintain context across multiple interactions.
 
 ```python
 agent = BeeAgent(
-    bee_input=BeeInput(
-        llm=llm, 
-        tools=[DuckDuckGoSearchTool(), OpenMeteoTool()], 
-        memory=UnconstrainedMemory()
-    )
+    llm=llm,
+    tools=[DuckDuckGoSearchTool(), OpenMeteoTool()],
+    memory=UnconstrainedMemory()
 )
 ```
 
@@ -202,9 +198,7 @@ def update_callback(data: dict, event: EventMeta) -> None:
 def on_update(emitter: Emitter) -> None:
     emitter.on("update", update_callback)
 
-output: BeeRunOutput = await agent.run(
-    run_input=BeeRunInput(prompt="What's the current weather in Las Vegas?")
-).observe(on_update)
+output: BeeRunOutput = await agent.run("What's the current weather in Las Vegas?").observe(on_update)
 ```
 
 _Source: [examples/agents/simple.py](/python/examples/agents/simple.py)_

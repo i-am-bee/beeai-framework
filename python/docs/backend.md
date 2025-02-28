@@ -175,9 +175,9 @@ from beeai_framework.adapters.ollama.backend.chat import OllamaChatModel
 from beeai_framework.backend.message import UserMessage
 
 ollama_chat_model = OllamaChatModel("llama3.1")
-response = await llm.create({
-    "messages": [UserMessage("what states are part of New England?")]
-})
+response = await ollama_chat_model.create(
+    messages=[UserMessage("what states are part of New England?")]
+)
 
 print(response.get_text_content())
 ```
@@ -194,7 +194,7 @@ from beeai_framework.backend.message import UserMessage
 
 llm = OllamaChatModel("llama3.1")
 user_message = UserMessage("How many islands make up the country of Cape Verde?")
-response = await llm.create({"messages": [user_message], "stream": True})
+response = await llm.create(messages=[user_message], stream=True)
 ```
 
 ### Structured Generation
