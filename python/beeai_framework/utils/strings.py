@@ -46,3 +46,8 @@ def create_strenum(name: str, keys: Sequence[str]) -> type[StrEnum]:
 
 def to_json(input: Any, *, indent: int | None = None) -> str:
     return json.dumps(input, ensure_ascii=False, default=lambda o: o.__dict__, sort_keys=True, indent=indent)
+
+
+def to_safe_word(phrase: str) -> str:
+    # replace any non-alphanumeric char with _
+    return re.sub(r"\W+", "_", phrase).lower()

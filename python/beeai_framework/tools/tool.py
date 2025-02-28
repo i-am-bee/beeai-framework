@@ -14,7 +14,6 @@
 
 
 import inspect
-import re
 from abc import ABC, abstractmethod
 from collections.abc import Callable
 from typing import Any, Generic, TypeVar
@@ -27,6 +26,7 @@ from beeai_framework.errors import FrameworkError
 from beeai_framework.retryable import Retryable, RetryableConfig, RetryableContext, RetryableInput
 from beeai_framework.tools.errors import ToolError, ToolInputValidationError
 from beeai_framework.utils import BeeLogger
+from beeai_framework.utils.strings import to_safe_word
 
 logger = BeeLogger(__name__)
 
@@ -197,10 +197,8 @@ def tool(tool_function: Callable) -> Tool:
 
         def __init__(self, options: dict[str, Any] | None = None) -> None:
             super().__init__(options)
-            # replace any non-alphanumeric char with _
-            formatted_name = re.sub(r"\W+", "_", self.name).lower()
             self.emitter = Emitter.root().child(
-                namespace=["tool", "custom", formatted_name],
+                namespace=["tool", "custom", to_safe_word(self.name)],
                 creator=self,
             )
 

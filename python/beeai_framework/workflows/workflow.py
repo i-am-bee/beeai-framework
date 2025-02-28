@@ -14,7 +14,6 @@
 
 import asyncio
 import inspect
-import re
 from collections.abc import Awaitable, Callable
 from dataclasses import field
 from typing import Any, ClassVar, Final, Generic, Literal
@@ -27,6 +26,7 @@ from beeai_framework.context import Run, RunContext, RunContextInput, RunInstanc
 from beeai_framework.emitter.emitter import Emitter
 from beeai_framework.errors import FrameworkError
 from beeai_framework.utils.models import ModelLike, check_model, to_model, to_model_optional
+from beeai_framework.utils.strings import to_safe_word
 from beeai_framework.utils.types import MaybeAsync
 from beeai_framework.workflows.errors import WorkflowError
 
@@ -84,10 +84,8 @@ class Workflow(Generic[T, K]):
         self._steps: dict[K, WorkflowStepDefinition[T, K]] = {}
         self._start_step: K | None = None
 
-        # replace any non-alphanumeric char with _
-        formatted_name = re.sub(r"\W+", "_", self._name).lower()
         self.emitter = Emitter.root().child(
-            namespace=["workflow", formatted_name],
+            namespace=["workflow", to_safe_word(self._name)],
             creator=self,
         )
 
