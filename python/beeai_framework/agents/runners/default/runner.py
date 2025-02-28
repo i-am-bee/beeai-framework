@@ -241,7 +241,7 @@ class DefaultRunner(BaseRunner):
                 # tool_options = copy.copy(self._options)
                 # TODO Tool run is not async
                 # Convert tool input to dict
-                tool_output: ToolOutput = tool.run(input.state.tool_input, options={})  # TODO: pass tool options
+                tool_output: ToolOutput = await tool.run(input.state.tool_input, options={})  # TODO: pass tool options
                 return BeeRunnerToolResult(output=tool_output, success=True)
             # TODO These error templates should be customized to help the LLM to recover
             except ToolInputValidationError as e:

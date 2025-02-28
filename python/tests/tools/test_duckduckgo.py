@@ -38,9 +38,10 @@ Unit Tests
 
 
 @pytest.mark.unit
-def test_call_invalid_input_type(tool: DuckDuckGoSearchTool) -> None:
+@pytest.mark.asyncio
+async def test_call_invalid_input_type(tool: DuckDuckGoSearchTool) -> None:
     with pytest.raises(ToolInputValidationError):
-        tool.run(input={"search": "Poland"})
+        await tool.run(input={"search": "Poland"})
 
 
 """
@@ -49,7 +50,8 @@ E2E Tests
 
 
 @pytest.mark.e2e
-def test_output(tool: DuckDuckGoSearchTool) -> None:
-    result = tool.run(input=DuckDuckGoSearchToolInput(query="What is the area of the Poland?"))
+@pytest.mark.asyncio
+async def test_output(tool: DuckDuckGoSearchTool) -> None:
+    result = await tool.run(input=DuckDuckGoSearchToolInput(query="What is the area of the Poland?"))
     assert type(result) is DuckDuckGoSearchToolOutput
     assert "322,575" in result.get_text_content()

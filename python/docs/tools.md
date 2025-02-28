@@ -34,7 +34,7 @@ from beeai_framework.tools.weather.openmeteo import OpenMeteoTool, OpenMeteoTool
 
 async def main() -> None:
     tool = OpenMeteoTool()
-    result = tool.run(
+    result = await tool.run(
         input=OpenMeteoToolInput(location_name="New York", start_date="2025-01-01", end_date="2025-01-02")
     )
     print(result.get_text_content())
@@ -58,7 +58,7 @@ from beeai_framework.tools.weather.openmeteo import OpenMeteoTool, OpenMeteoTool
 
 async def main() -> None:
     tool = OpenMeteoTool()
-    result = tool.run(
+    result = await tool.run(
         input=OpenMeteoToolInput(
             location_name="New York", start_date="2025-01-01", end_date="2025-01-02", temperature_unit="celsius"
         )
@@ -235,7 +235,7 @@ from beeai_framework.tools.search.wikipedia import (
 async def main() -> None:
     wikipedia_client = WikipediaTool({"full_text": True})
     input = WikipediaToolInput(query="bee")
-    result = wikipedia_client.run(input)
+    result = await wikipedia_client.run(input)
     print(result.get_text_content())
 
 
@@ -262,6 +262,8 @@ from typing import Any
 
 from pydantic import BaseModel, Field
 
+from beeai_framework.emitter.emitter import Emitter
+from beeai_framework.emitter.types import EmitterInput
 from beeai_framework.tools.tool import Tool
 
 
@@ -284,6 +286,15 @@ class RiddleTool(Tool[RiddleToolInput]):
         "What goes up but never comes down?",
     )
 
+    def __init__(self, options: dict[str, Any] | None = None) -> None:
+        super().__init__(options)
+        self.emitter = Emitter.root().child(
+            EmitterInput(
+                namespace=["tool", "example", "riddle"],
+                creator=self,
+            )
+        )
+
     def _run(self, input: RiddleToolInput, _: Any | None = None) -> None:
         index = input.riddle_number % (len(self.data))
         riddle = self.data[index]
@@ -293,7 +304,7 @@ class RiddleTool(Tool[RiddleToolInput]):
 async def main() -> None:
     tool = RiddleTool()
     input = RiddleToolInput(riddle_number=random.randint(0, len(RiddleTool.data)))
-    result = tool.run(input)
+    result = await tool.run(input)
     print(result)
 
 
@@ -324,6 +335,8 @@ from typing import Any
 import requests
 from pydantic import BaseModel, Field
 
+from beeai_framework.emitter.emitter import Emitter
+from beeai_framework.emitter.types import EmitterInput
 from beeai_framework.tools import ToolInputValidationError
 from beeai_framework.tools.tool import Tool
 
@@ -345,6 +358,15 @@ class OpenLibraryTool(Tool[OpenLibraryToolInput]):
     description = """Provides access to a library of books with information about book titles,
         authors, contributors, publication dates, publisher and isbn."""
     input_schema = OpenLibraryToolInput
+
+    def __init__(self, options: dict[str, Any] | None = None) -> None:
+        super().__init__(options)
+        self.emitter = Emitter.root().child(
+            EmitterInput(
+                namespace=["tool", "example", "openlibrary"],
+                creator=self,
+            )
+        )
 
     def _run(self, input: OpenLibraryToolInput, _: Any | None = None) -> OpenLibraryToolResult:
         key = ""
@@ -375,7 +397,7 @@ class OpenLibraryTool(Tool[OpenLibraryToolInput]):
 async def main() -> None:
     tool = OpenLibraryTool()
     input = OpenLibraryToolInput(title="It")
-    result = tool.run(input)
+    result = await tool.run(input)
     print(result)
 
 

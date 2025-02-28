@@ -57,11 +57,12 @@ class MCPTool(Tool[MCPToolOutput]):
 
     def __init__(self, client: ClientSession, tool: MCPToolInfo, **options: int) -> None:
         """Initialize MCPTool with client and tool configuration."""
-        super().__init__(options)
         self.client = client
         self._tool = tool
         self._name = tool.name
         self._description = tool.description or "No available description, use the tool based on its name and schema."
+
+        super().__init__(options)
         self.emitter = Emitter.root().child(
             EmitterInput(
                 namespace=["tool", "mcp", self._name],

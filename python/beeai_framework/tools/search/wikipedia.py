@@ -18,6 +18,8 @@ from typing import Any
 import wikipediaapi
 from pydantic import BaseModel, Field
 
+from beeai_framework.emitter.emitter import Emitter
+from beeai_framework.emitter.types import EmitterInput
 from beeai_framework.tools.search import SearchToolOutput, SearchToolResult
 from beeai_framework.tools.tool import Tool
 
@@ -46,6 +48,15 @@ class WikipediaTool(Tool[WikipediaToolInput]):
     client = wikipediaapi.Wikipedia(
         user_agent="beeai-framework https://github.com/i-am-bee/beeai-framework", language="en"
     )
+
+    def __init__(self, options: dict[str, Any] | None = None) -> None:
+        super().__init__(options)
+        self.emitter = Emitter.root().child(
+            EmitterInput(
+                namespace=["tool", "search", "wikipedia"],
+                creator=self,
+            )
+        )
 
     def get_section_titles(self, sections: wikipediaapi.WikipediaPage.sections) -> str:
         titles = []
