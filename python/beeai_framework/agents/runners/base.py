@@ -68,17 +68,9 @@ class BaseRunner(ABC):
     def __init__(self, input: BeeInput, options: BeeRunOptions, run: RunContext) -> None:
         self._input = input
         self._options = options
-        self._failed_attempts_counter = RetryCounter(
-            max_retries=(
-                options.execution.max_iterations if options.execution and options.execution.max_iterations else 0
-            ),
-            error_type=AgentError,
-        )
-
         self._memory: BaseMemory | None = None
-
         self._iterations: list[BeeAgentRunIteration] = []
-        self._failedAttemptsCounter: RetryCounter = RetryCounter(
+        self._failed_attempts_counter: RetryCounter = RetryCounter(
             error_type=AgentError,
             max_retries=(
                 options.execution.total_max_retries if options.execution and options.execution.total_max_retries else 0
@@ -105,9 +97,7 @@ class BaseRunner(ABC):
         )
 
         if meta.iteration > max_iterations:
-            # TODO: Raise Agent Error with metadata
-            # https://github.com/i-am-bee/beeai-framework/blob/aa4d5e6091ed3bab8096492707ceb03d3b03863b/src/agents/bee/runners/base.ts#L70
-            raise Exception(f"Agent was not able to resolve the task in {max_iterations} iterations.")
+            raise AgentError(f"Agent was not able to resolve the task in {max_iterations} iterations.")
 
         emitter = self._run.emitter.child(group_id=f"`iteration-{meta.iteration}")
         iteration = await self.llm(BeeRunnerLLMInput(emitter=emitter, signal=self._run.signal, meta=meta))

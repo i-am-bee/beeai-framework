@@ -127,7 +127,7 @@ class BeeAgent(BaseAgent[BeeRunOutput]):
         while not final_message:
             iteration: RunnerIteration = await runner.create_iteration()
 
-            if iteration.state.tool_name and iteration.state.tool_input:
+            if iteration.state.tool_name and iteration.state.tool_input is not None:
                 tool_result: BeeRunnerToolResult = await runner.tool(
                     input=BeeRunnerToolInput(
                         state=iteration.state,
@@ -136,13 +136,14 @@ class BeeAgent(BaseAgent[BeeRunOutput]):
                         signal=iteration.signal,
                     )
                 )
+
+                iteration.state.tool_output = tool_result.output.get_text_content()
                 await runner.memory.add(
                     AssistantMessage(
                         content=runner.templates.assistant.render(iteration.state.to_template()),
                         meta=MessageMeta({"success": tool_result.success}),
                     )
                 )
-                iteration.state.tool_output = tool_result.output.get_text_content()
 
                 for key in ["partialUpdate", "update"]:
                     await iteration.emitter.emit(

@@ -56,22 +56,25 @@ class WikipediaTool(Tool[WikipediaToolInput]):
     def _run(self, input: WikipediaToolInput, _: Any | None = None) -> WikipediaToolOutput:
         page_py = self.client.page(input.query)
 
-        if page_py.exists():
-            if input.language is not None and input.language in page_py.langlinks:
-                page_py = page_py.langlinks[input.language]
+        if not page_py.exists():
+            return WikipediaToolOutput([])
 
-            if input.section_titles:
-                description_output = self.get_section_titles(page_py.sections)
-            elif input.full_text:
-                description_output = page_py.text
-            else:
-                description_output = page_py.summary
+        if input.language is not None and input.language in page_py.langlinks:
+            page_py = page_py.langlinks[input.language]
 
-            search_results: list[WikipediaToolResult] = [
+        if input.section_titles:
+            description_output = self.get_section_titles(page_py.sections)
+        elif input.full_text:
+            description_output = page_py.text
+        else:
+            description_output = page_py.summary
+
+        return WikipediaToolOutput(
+            [
                 WikipediaToolResult(
-                    title=input.query or "", description=description_output or "", url=page_py.fullurl or ""
+                    title=page_py.title or input.query,
+                    description=description_output or "",
+                    url=page_py.fullurl or "",
                 )
             ]
-            return WikipediaToolOutput(search_results)
-        else:
-            raise Exception(f"No Wikipedia page matched the search term: {input.query}.")
+        )

@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import json
 from collections.abc import Callable
 from typing import Annotated
 
@@ -24,6 +23,7 @@ from beeai_framework.cancellation import AbortSignal
 from beeai_framework.memory.base_memory import BaseMemory
 from beeai_framework.template import PromptTemplate
 from beeai_framework.tools.tool import Tool
+from beeai_framework.utils.strings import to_json
 
 
 class BeeRunInput(BaseModel):
@@ -56,7 +56,7 @@ class BeeIterationResult(BaseModel):
         return {
             "thought": self.thought or "",
             "tool_name": self.tool_name or "",
-            "tool_input": json.dumps(self.tool_input) if self.tool_input else "",
+            "tool_input": to_json(self.tool_input) if self.tool_input else "",
             "tool_output": self.tool_output or "",
             "final_answer": self.final_answer or "",
         }
@@ -98,7 +98,7 @@ ModelKeysType = Annotated[str, lambda v: v in BeeAgentTemplates.model_fields]
 
 class BeeInput(BaseModel):
     llm: InstanceOf[ChatModel]
-    tools: list[InstanceOf[Tool]]  # TODO AnyTool?
+    tools: list[InstanceOf[Tool]]
     memory: InstanceOf[BaseMemory]
     meta: InstanceOf[AgentMeta] | None = None
     templates: dict[ModelKeysType, InstanceOf[BeeAgentTemplates] | BeeTemplateFactory] | None = None

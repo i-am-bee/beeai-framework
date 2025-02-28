@@ -13,7 +13,6 @@
 # limitations under the License.
 
 
-import json
 from abc import ABC, abstractmethod
 from collections.abc import AsyncGenerator, Callable
 from typing import Any, Literal, Self, TypeVar
@@ -29,8 +28,10 @@ from beeai_framework.context import Run, RunContext, RunContextInput, RunInstanc
 from beeai_framework.emitter import Emitter
 from beeai_framework.retryable import Retryable, RetryableConfig, RetryableContext, RetryableInput
 from beeai_framework.template import PromptTemplate, PromptTemplateInput
+from beeai_framework.tools.tool import Tool
 from beeai_framework.utils.custom_logger import BeeLogger
 from beeai_framework.utils.models import ModelLike
+from beeai_framework.utils.strings import to_json
 
 T = TypeVar("T", bound=BaseModel)
 ChatModelFinishReason: Literal["stop", "length", "function_call", "content_filter", "null"]
@@ -67,7 +68,7 @@ class ChatModelStructureOutput(BaseModel):
 
 
 class ChatModelInput(ChatModelParameters):
-    tools: list[InstanceOf[Message]] = []
+    tools: list[InstanceOf[Tool]] | None = None
     abort_signal: AbortSignal | None = None
     stop_sequences: list[str] | None = None
     response_format: dict[str, Any] | type[BaseModel] | None = None
@@ -181,7 +182,7 @@ IMPORTANT: You MUST answer with a JSON object that matches the JSON schema above
 
         input_messages = input.messages
         messages: list[Message] = [
-            SystemMessage(system_template.render({"schema": json.dumps(json_schema)})),
+            SystemMessage(system_template.render({"schema": to_json(json_schema, indent=4)})),
             *input_messages,
         ]
 

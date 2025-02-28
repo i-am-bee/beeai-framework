@@ -84,7 +84,6 @@ class Tool(Generic[T], ABC):
         try:
             return self.input_schema.model_validate(input)
         except ValidationError as e:
-            logger.error(f"Validation error: {e!s}")
             raise ToolInputValidationError("Tool input validation error") from e
 
     def prompt_data(self) -> dict[str, str]:

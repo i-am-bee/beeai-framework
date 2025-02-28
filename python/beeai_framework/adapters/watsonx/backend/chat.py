@@ -34,6 +34,7 @@ class WatsonxChatModel(LiteLLMChatModel):
 
         super().__init__(
             model_id if model_id else os.getenv("WATSONX_CHAT_MODEL", "ibm/granite-3-8b-instruct"),
+            provider_id="watsonx",
             settings=_settings,
         )
 

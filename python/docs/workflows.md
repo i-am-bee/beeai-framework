@@ -228,7 +228,7 @@ async def main() -> None:
                 instructions="You are a weather assistant.",
                 tools=[OpenMeteoTool()],
                 llm=llm,
-                execution=BeeAgentExecutionConfig(max_iterations=3),
+                execution=BeeAgentExecutionConfig(max_iterations=3, total_max_retries=10, max_retries_per_step=3),
             )
         )
         workflow.add_agent(
