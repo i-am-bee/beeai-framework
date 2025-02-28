@@ -19,7 +19,6 @@ from duckduckgo_search import DDGS
 from pydantic import BaseModel, Field
 
 from beeai_framework.emitter.emitter import Emitter
-from beeai_framework.emitter.types import EmitterInput
 from beeai_framework.tools import ToolError
 from beeai_framework.tools.search import SearchToolOutput, SearchToolResult
 from beeai_framework.tools.tool import Tool
@@ -56,10 +55,8 @@ class DuckDuckGoSearchTool(Tool[DuckDuckGoSearchToolInput]):
         self.max_results = max_results
         self.safe_search = safe_search
         self.emitter = Emitter.root().child(
-            EmitterInput(
-                namespace=["tool", "search", "duckduckgo"],
-                creator=self,
-            )
+            namespace=["tool", "search", "duckduckgo"],
+            creator=self,
         )
 
     def _run(self, input: DuckDuckGoSearchToolInput, _: Any | None = None) -> DuckDuckGoSearchToolOutput:

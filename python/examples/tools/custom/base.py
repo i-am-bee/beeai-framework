@@ -5,7 +5,6 @@ from typing import Any
 from pydantic import BaseModel, Field
 
 from beeai_framework.emitter.emitter import Emitter
-from beeai_framework.emitter.types import EmitterInput
 from beeai_framework.tools.tool import Tool
 
 
@@ -31,10 +30,8 @@ class RiddleTool(Tool[RiddleToolInput]):
     def __init__(self, options: dict[str, Any] | None = None) -> None:
         super().__init__(options)
         self.emitter = Emitter.root().child(
-            EmitterInput(
-                namespace=["tool", "example", "riddle"],
-                creator=self,
-            )
+            namespace=["tool", "example", "riddle"],
+            creator=self,
         )
 
     def _run(self, input: RiddleToolInput, _: Any | None = None) -> None:

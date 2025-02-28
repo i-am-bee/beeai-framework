@@ -19,7 +19,6 @@ import wikipediaapi
 from pydantic import BaseModel, Field
 
 from beeai_framework.emitter.emitter import Emitter
-from beeai_framework.emitter.types import EmitterInput
 from beeai_framework.tools.search import SearchToolOutput, SearchToolResult
 from beeai_framework.tools.tool import Tool
 
@@ -52,10 +51,8 @@ class WikipediaTool(Tool[WikipediaToolInput]):
     def __init__(self, options: dict[str, Any] | None = None) -> None:
         super().__init__(options)
         self.emitter = Emitter.root().child(
-            EmitterInput(
-                namespace=["tool", "search", "wikipedia"],
-                creator=self,
-            )
+            namespace=["tool", "search", "wikipedia"],
+            creator=self,
         )
 
     def get_section_titles(self, sections: wikipediaapi.WikipediaPage.sections) -> str:

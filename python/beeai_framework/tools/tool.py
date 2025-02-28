@@ -23,7 +23,6 @@ from pydantic import BaseModel, ConfigDict, ValidationError, create_model
 
 from beeai_framework.context import Run, RunContext, RunContextInput, RunInstance
 from beeai_framework.emitter.emitter import Emitter
-from beeai_framework.emitter.types import EmitterInput
 from beeai_framework.errors import FrameworkError
 from beeai_framework.retryable import Retryable, RetryableConfig, RetryableContext, RetryableInput
 from beeai_framework.tools.errors import ToolError, ToolInputValidationError
@@ -201,10 +200,8 @@ def tool(tool_function: Callable) -> Tool:
             # replace any non-alphanumeric char with _
             formatted_name = re.sub(r"\W+", "_", self.name).lower()
             self.emitter = Emitter.root().child(
-                EmitterInput(
-                    namespace=["tool", "custom", formatted_name],
-                    creator=self,
-                )
+                namespace=["tool", "custom", formatted_name],
+                creator=self,
             )
 
         def _run(self, tool_in: Any, _: dict[str, Any] | None = None) -> None:

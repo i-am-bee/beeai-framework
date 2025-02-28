@@ -23,7 +23,6 @@ import requests
 from pydantic import BaseModel, Field
 
 from beeai_framework.emitter.emitter import Emitter
-from beeai_framework.emitter.types import EmitterInput
 from beeai_framework.tools import ToolInputValidationError
 from beeai_framework.tools.tool import StringToolOutput, Tool
 from beeai_framework.utils import BeeLogger
@@ -53,10 +52,8 @@ class OpenMeteoTool(Tool[OpenMeteoToolInput]):
     def __init__(self, options: dict[str, Any] | None = None) -> None:
         super().__init__(options)
         self.emitter = Emitter.root().child(
-            EmitterInput(
-                namespace=["tool", "weather", "openmeteo"],
-                creator=self,
-            )
+            namespace=["tool", "weather", "openmeteo"],
+            creator=self,
         )
 
     def _geocode(self, input: OpenMeteoToolInput) -> dict[str, Any]:

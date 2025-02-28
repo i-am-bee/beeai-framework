@@ -5,7 +5,6 @@ import requests
 from pydantic import BaseModel, Field
 
 from beeai_framework.emitter.emitter import Emitter
-from beeai_framework.emitter.types import EmitterInput
 from beeai_framework.tools import ToolInputValidationError
 from beeai_framework.tools.tool import Tool
 
@@ -31,10 +30,8 @@ class OpenLibraryTool(Tool[OpenLibraryToolInput]):
     def __init__(self, options: dict[str, Any] | None = None) -> None:
         super().__init__(options)
         self.emitter = Emitter.root().child(
-            EmitterInput(
-                namespace=["tool", "example", "openlibrary"],
-                creator=self,
-            )
+            namespace=["tool", "example", "openlibrary"],
+            creator=self,
         )
 
     def _run(self, input: OpenLibraryToolInput, _: Any | None = None) -> OpenLibraryToolResult:
