@@ -44,6 +44,13 @@ class RunContextInput(BaseModel):
     signal: AbortSignal | None = None
 
 
+# class RunContextEventTypes(BaseModel):
+#     start: NoneType
+#     success: R
+#     error: FrameworkError
+#     finish: NoneType
+
+
 class Run(Generic[R]):
     def __init__(self, handler: Callable[[], R | Awaitable[R]], context: "RunContext") -> None:
         super().__init__()
@@ -164,7 +171,7 @@ class RunContext(RunInstance):
                 return result
             except Exception as e:
                 error = FrameworkError.ensure(e)
-                await emitter.emit("error", {"error": error})
+                await emitter.emit("error", error)
                 raise error
             finally:
                 await emitter.emit("finish", None)

@@ -2,7 +2,7 @@ import asyncio
 import sys
 
 from beeai_framework.agents.bee.agent import BeeAgent
-from beeai_framework.agents.types import BeeInput, BeeRunInput, BeeRunOutput
+from beeai_framework.agents.types import BeeInput, BeeRunInput, BeeRunOutput, BeeUpdateEvent
 from beeai_framework.backend.chat import ChatModel
 from beeai_framework.emitter.emitter import Emitter, EventMeta
 from beeai_framework.errors import FrameworkError
@@ -17,8 +17,8 @@ async def main() -> None:
         bee_input=BeeInput(llm=llm, tools=[DuckDuckGoSearchTool(), OpenMeteoTool()], memory=UnconstrainedMemory())
     )
 
-    def update_callback(data: dict, event: EventMeta) -> None:
-        print(f"Agent({data['update']['key']}) 🤖 : ", data["update"]["parsedValue"])
+    def update_callback(data: BeeUpdateEvent, event: EventMeta) -> None:
+        print(f"Agent({data.update.key}) 🤖 : ", data.update.parsedValue)
 
     def on_update(emitter: Emitter) -> None:
         emitter.on("update", update_callback)

@@ -13,7 +13,6 @@
 # limitations under the License.
 
 import json
-from collections.abc import Callable
 
 from beeai_framework.agents.runners.base import (
     BaseRunner,
@@ -35,10 +34,18 @@ from beeai_framework.agents.runners.default.prompts import (
 from beeai_framework.agents.types import (
     BeeAgentRunIteration,
     BeeAgentTemplates,
+    BeeErrorEvent,
     BeeIterationResult,
+    BeeRetryEvent,
     BeeRunInput,
+    BeeStartEvent,
+    BeeToolEvent,
+    BeeUpdate,
+    BeeUpdateEvent,
+    BeeUpdateMeta,
+    ToolEventData,
 )
-from beeai_framework.backend.chat import ChatModelInput, ChatModelOutput
+from beeai_framework.backend.chat import ChatModelInput, ChatModelOutput, NewTokenEventData
 from beeai_framework.backend.message import AssistantMessage, SystemMessage, UserMessage
 from beeai_framework.emitter.emitter import EventMeta
 from beeai_framework.errors import FrameworkError
@@ -54,6 +61,7 @@ from beeai_framework.parsers.line_prefix import (
 from beeai_framework.retryable import Retryable, RetryableConfig, RetryableContext, RetryableInput
 from beeai_framework.tools import ToolError, ToolInputValidationError
 from beeai_framework.tools.tool import StringToolOutput, Tool, ToolOutput
+from beeai_framework.utils.models import to_model
 from beeai_framework.utils.strings import create_strenum
 
 
@@ -100,10 +108,10 @@ class DefaultRunner(BaseRunner):
 
     async def llm(self, input: BeeRunnerLLMInput) -> BeeAgentRunIteration:
         async def on_retry(ctx: RetryableContext, last_error: Exception) -> None:
-            await input.emitter.emit("retry", {"meta": input.meta})
+            await input.emitter.emit("retry", BeeRetryEvent(meta=input.meta))
 
         async def on_error(error: Exception, _: RetryableContext) -> None:
-            await input.emitter.emit("error", {"error": error, "meta": input.meta})
+            await input.emitter.emit("error", BeeErrorEvent(error=error, meta=input.meta))
             self._failedAttemptsCounter.use(error)
 
             if isinstance(error, LinePrefixParserError):
@@ -114,7 +122,9 @@ class DefaultRunner(BaseRunner):
                     await self.memory.add(UserMessage(schema_error_prompt, {"tempMessage": True}))
 
         async def executor(_: RetryableContext) -> BeeAgentRunIteration:
-            await input.emitter.emit("start", {"meta": input.meta, "tools": self._input.tools, "memory": self.memory})
+            await input.emitter.emit(
+                "start", BeeStartEvent(meta=input.meta, tools=self._input.tools, memory=self.memory)
+            )
 
             parser = self.create_parser()
 
@@ -124,46 +134,44 @@ class DefaultRunner(BaseRunner):
 
                 await input.emitter.emit(
                     "update",
-                    {
-                        "data": parser.final_state,
-                        "update": {"key": data.key, "value": data.field.raw, "parsedValue": data.value.model_dump()},
-                        "meta": {**input.meta.model_dump(), "success": True},
-                        "tools": self._input.tools,
-                        "memory": self.memory,
-                    },
+                    BeeUpdateEvent(
+                        data=parser.final_state,
+                        update=BeeUpdate(key=data.key, value=data.field.raw, parsed_value=data.value.model_dump()),
+                        meta=to_model(BeeUpdateMeta, {**input.meta.model_dump(), "success": True}),
+                        tools=self._input.tools,
+                        memory=self.memory,
+                    ),
                 )
 
             async def on_partial_update(data: LinePrefixParserUpdate, event: EventMeta) -> None:
                 await input.emitter.emit(
-                    "partialUpdate",
-                    {
-                        "data": parser.final_state,
-                        "update": {"key": data.key, "value": data.delta, "parsedValue": data.value.model_dump()},
-                        "meta": {**input.meta.model_dump(), "success": True},
-                        "tools": self._input.tools,
-                        "memory": self.memory,
-                    },
+                    "partial_update",
+                    BeeUpdateEvent(
+                        data=parser.final_state,
+                        update=BeeUpdate(key=data.key, value=data.delta, parsed_value=data.value.model_dump()),
+                        meta=to_model(BeeUpdateMeta, {**input.meta.model_dump(), "success": True}),
+                        tools=self._input.tools,
+                        memory=self.memory,
+                    ),
                 )
 
             parser.emitter.on("update", on_update)
-            parser.emitter.on("partialUpdate", on_partial_update)
+            parser.emitter.on("partial_update", on_partial_update)
 
-            async def on_new_token(value: tuple[ChatModelOutput, Callable], event: EventMeta) -> None:
-                data, abort = value
-
+            async def on_new_token(data: NewTokenEventData, event: EventMeta) -> None:
                 if parser.done:
-                    abort()
+                    data.abort()
                     return
 
-                chunk = data.get_text_content()
+                chunk = data.value.get_text_content()
                 await parser.add(chunk)
 
                 if parser.partial_state.get("tool_output") is not None:
-                    abort()
+                    data.abort()
 
             output: ChatModelOutput = await self._input.llm.create(
                 ChatModelInput(messages=self.memory.messages[:], stream=True)
-            ).observe(lambda llm_emitter: llm_emitter.on("newToken", on_new_token))
+            ).observe(lambda llm_emitter: llm_emitter.on("new_token", on_new_token))
 
             await parser.end()
 
@@ -215,17 +223,17 @@ class DefaultRunner(BaseRunner):
 
         async def on_error(error: Exception, _: RetryableContext) -> None:
             await input.emitter.emit(
-                "toolError",
-                {
-                    "data": {
-                        "iteration": input.state,
-                        "tool": tool,
-                        "input": input.state.tool_input,
-                        "options": self._options,
-                        "error": FrameworkError.ensure(error),
-                    },
-                    "meta": input.meta,
-                },
+                "tool_error",
+                BeeToolEvent(
+                    data=ToolEventData(
+                        iteration=input.state,
+                        tool=tool,
+                        input=input.state.tool_input,
+                        options=self._options,
+                        error=FrameworkError.ensure(error),
+                    ),
+                    meta=input.meta,
+                ),
             )
             self._failed_attempts_counter.use(error)
 

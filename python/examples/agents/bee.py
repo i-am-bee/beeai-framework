@@ -11,7 +11,7 @@ from langchain_community.utilities import WikipediaAPIWrapper
 from pydantic import BaseModel, Field
 
 from beeai_framework.agents.bee.agent import BeeAgent
-from beeai_framework.agents.types import BeeAgentExecutionConfig, BeeInput, BeeRunInput, BeeRunOptions
+from beeai_framework.agents.types import BeeAgentExecutionConfig, BeeInput, BeeRunInput, BeeRunOptions, BeeUpdateEvent
 from beeai_framework.backend.chat import ChatModel
 from beeai_framework.emitter.emitter import Emitter, EventMeta
 from beeai_framework.emitter.types import EmitterOptions
@@ -80,7 +80,7 @@ def create_agent() -> BeeAgent:
     return agent
 
 
-def process_agent_events(data: dict[str, Any], event: EventMeta) -> None:
+def process_agent_events(data: BeeUpdateEvent, event: EventMeta) -> None:
     """Process agent events and log appropriately"""
 
     if event.name == "error":
@@ -88,7 +88,7 @@ def process_agent_events(data: dict[str, Any], event: EventMeta) -> None:
     elif event.name == "retry":
         reader.write("Agent 🤖 : ", "retrying the action...")
     elif event.name == "update":
-        reader.write(f"Agent({data['update']['key']}) 🤖 : ", data["update"]["parsedValue"])
+        reader.write(f"Agent({data.update.key}) 🤖 : ", data.update.parsedValue)
     elif event.name == "start":
         reader.write("Agent 🤖 : ", "starting new iteration")
     elif event.name == "success":

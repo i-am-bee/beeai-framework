@@ -1,10 +1,9 @@
 import asyncio
 
 from pydantic import BaseModel, Field
-from traitlets import Callable
 
 from beeai_framework.adapters.ollama.backend.chat import OllamaChatModel
-from beeai_framework.backend.chat import ChatModel, ChatModelOutput
+from beeai_framework.backend.chat import ChatModel, NewTokenEventData
 from beeai_framework.backend.message import UserMessage
 from beeai_framework.cancellation import AbortSignal
 from beeai_framework.emitter import EventMeta
@@ -84,13 +83,12 @@ async def ollama_stream_parser() -> None:
         }
     )
 
-    async def on_new_token(value: tuple[ChatModelOutput, Callable], event: EventMeta) -> None:
-        data, abort = value
-        await parser.add(data.get_text_content())
+    async def on_new_token(data: NewTokenEventData, event: EventMeta) -> None:
+        await parser.add(data.value.get_text_content())
 
     user_message = UserMessage("Produce 3 lines each starting with 'Prefix: ' followed by a sentence and a new line.")
     await llm.create({"messages": [user_message], "stream": True}).observe(
-        lambda emitter: emitter.on("newToken", on_new_token)
+        lambda emitter: emitter.on("new_token", on_new_token)
     )
     result = await parser.end()
     print(result)

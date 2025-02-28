@@ -116,6 +116,23 @@ class ChatModelOutput(BaseModel):
         return "".join([x.text for x in list(filter(lambda x: isinstance(x, AssistantMessage), self.messages))])
 
 
+class NewTokenEventData(BaseModel):
+    value: InstanceOf[ChatModelOutput]
+    abort: Callable
+
+
+class RunSuccessEventData(BaseModel):
+    value: InstanceOf[ChatModelOutput]
+
+
+# class ChatModelEventTypes(BaseModel):
+#     new_token: NewTokenEventData
+#     success: RunSuccessEventData
+#     start: ChatModelInput
+#     error: FrameworkError
+#     finish: NoneType
+
+
 class ChatModel(ABC):
     emitter: Emitter
     parameters: ChatModelParameters
@@ -226,7 +243,9 @@ IMPORTANT: You MUST answer with a JSON object that matches the JSON schema above
                     abort_controller: AbortController = AbortController()
                     async for value in self._create_stream(input, context):
                         chunks.append(value)
-                        await context.emitter.emit("newToken", (value, lambda: abort_controller.abort()))
+                        # await context.emitter.emit(
+                        #     "new_token", NewTokenEventData(value=value, abort=abort_controller.abort)
+                        # )
                         if abort_controller.signal.aborted:
                             break
 
@@ -234,11 +253,11 @@ IMPORTANT: You MUST answer with a JSON object that matches the JSON schema above
                 else:
                     result = await self._create(input, context)
 
-                await context.emitter.emit("success", {"value": result})
+                await context.emitter.emit("success", RunSuccessEventData(value=result))
                 return result
             except Exception as ex:
                 error = ChatModelError.ensure(ex)
-                await context.emitter.emit("error", {"error": error})
+                await context.emitter.emit("error", error)
                 raise error from None
             finally:
                 await context.emitter.emit("finish", None)

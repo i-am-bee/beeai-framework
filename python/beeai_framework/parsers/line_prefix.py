@@ -59,6 +59,11 @@ class LinePrefixParserNode(BaseModel):
     is_end: bool = False
 
 
+# class EventTypes(BaseModel):
+#     update: LinePrefixParserUpdate
+#     partial_update: LinePrefixParserUpdate
+
+
 Nodes = dict[str, LinePrefixParserNode]
 Customizer = Callable[[Nodes, LinePrefixParserOptions], tuple[Nodes, LinePrefixParserOptions]]
 

@@ -32,6 +32,10 @@ from beeai_framework.agents.types import (
     BeeRunInput,
     BeeRunOptions,
     BeeRunOutput,
+    BeeSuccessEvent,
+    BeeUpdate,
+    BeeUpdateEvent,
+    BeeUpdateMeta,
 )
 from beeai_framework.backend import Message
 from beeai_framework.backend.message import AssistantMessage, MessageMeta, UserMessage
@@ -131,19 +135,19 @@ class BeeAgent(BaseAgent[BeeRunOutput]):
                 )
                 iteration.state.tool_output = tool_result.output.get_text_content()
 
-                for key in ["partialUpdate", "update"]:
+                for key in ["partial_update", "update"]:
                     await iteration.emitter.emit(
                         key,
-                        {
-                            "data": iteration.state,
-                            "update": {
-                                "key": "tool_output",
-                                "value": tool_result.output,
-                                "parsedValue": tool_result.output.to_string(),
-                            },
-                            "meta": {"success": tool_result.success},  # TODO deleted meta
-                            "memory": runner.memory,
-                        },
+                        BeeUpdateEvent(
+                            data=iteration.state,
+                            update=BeeUpdate(
+                                key="tool_output",
+                                value=tool_result.output,
+                                parsed_value=tool_result.output.to_string(),
+                            ),
+                            meta=BeeUpdateMeta(success=tool_result.success),  # TODO deleted meta
+                            memory=runner.memory,
+                        ),
                     )
 
             if iteration.state.final_answer:
@@ -153,12 +157,12 @@ class BeeAgent(BaseAgent[BeeRunOutput]):
                 await runner.memory.add(final_message)
                 await iteration.emitter.emit(
                     "success",
-                    {
-                        "data": final_message,
-                        "iterations": runner.iterations,
-                        "memory": runner.memory,
-                        "meta": iteration.meta,
-                    },
+                    BeeSuccessEvent(
+                        data=final_message,
+                        iterations=runner.iterations,
+                        memory=runner.memory,
+                        meta=iteration.meta,
+                    ),
                 )
 
         if run_input.prompt is not None:

@@ -23,7 +23,13 @@ from beeai_framework.agents.runners.granite.prompts import (
     GraniteToolNotFoundErrorTemplate,
     GraniteUserPromptTemplate,
 )
-from beeai_framework.agents.types import BeeAgentTemplates, BeeInput, BeeRunInput, BeeRunOptions
+from beeai_framework.agents.types import (
+    BeeAgentTemplates,
+    BeeInput,
+    BeeRunInput,
+    BeeRunOptions,
+    BeeUpdateEvent,
+)
 from beeai_framework.backend.message import SystemMessage, ToolMessage, ToolResult
 from beeai_framework.context import RunContext
 from beeai_framework.emitter import EmitterOptions, EventMeta
@@ -37,21 +43,21 @@ class GraniteRunner(DefaultRunner):
     def __init__(self, input: BeeInput, options: BeeRunOptions, run: RunContext) -> None:
         super().__init__(input, options, run)
 
-        async def on_update(data: dict, event: EventMeta) -> None:
-            update = data.get("update")
+        async def on_update(data: BeeUpdateEvent, event: EventMeta) -> None:
+            update = data.update
             assert update is not None
-            if update.get("key") == "tool_output":
-                memory: BaseMemory = data.get("memory")
+            if update.key == "tool_output":
+                memory: BaseMemory = data.memory
                 tool_result = ToolResult(
                     type="tool-result",
-                    result=update.get("value").get_text_content(),
-                    tool_name=data.get("data").tool_name,
+                    result=update.value.get_text_content(),
+                    tool_name=data.data.tool_name,
                     tool_call_id="DUMMY_ID",
                 )
                 await memory.add(
                     ToolMessage(
                         content=tool_result.model_dump_json(),
-                        meta={"success": data.get("meta").get("success", True)},
+                        meta={"success": data.meta.success or True},
                     )
                 )
 

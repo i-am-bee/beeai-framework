@@ -1,6 +1,6 @@
 # Copyright 2025 IBM Corp.
 #
-# Licensed under the Apache License, Version 2.0 (the "License");
+# Licensed under the Apache License, Version 2.0 (the "License")
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
 #
@@ -14,16 +14,17 @@
 
 import json
 from collections.abc import Callable
-from typing import Annotated
+from typing import Annotated, Any
 
 from pydantic import BaseModel, InstanceOf
 
 from beeai_framework.backend.chat import ChatModel, ChatModelOutput
 from beeai_framework.backend.message import Message
 from beeai_framework.cancellation import AbortSignal
+from beeai_framework.errors import FrameworkError
 from beeai_framework.memory.base_memory import BaseMemory
 from beeai_framework.template import PromptTemplate
-from beeai_framework.tools.tool import Tool
+from beeai_framework.tools.tool import Tool, ToolOutput
 
 
 class BeeRunInput(BaseModel):
@@ -41,7 +42,7 @@ class BeeAgentExecutionConfig(BaseModel):
 
 
 class BeeRunOptions(BaseModel):
-    signal: AbortSignal | None = None
+    signal: InstanceOf[AbortSignal] | None = None
     execution: BeeAgentExecutionConfig | None = None
 
 
@@ -98,9 +99,75 @@ ModelKeysType = Annotated[str, lambda v: v in BeeAgentTemplates.__fields__]
 
 class BeeInput(BaseModel):
     llm: InstanceOf[ChatModel]
-    tools: list[InstanceOf[Tool]]  # TODO AnyTool?
+    tools: list[InstanceOf[Tool]]  # TODO AnyTool
     memory: InstanceOf[BaseMemory]
     meta: InstanceOf[AgentMeta] | None = None
     templates: dict[ModelKeysType, InstanceOf[BeeAgentTemplates] | BeeTemplateFactory | None] = None
     execution: BeeAgentExecutionConfig | None = None
     stream: bool | None = None
+
+
+class BeeUpdateMeta(BeeMeta):
+    success: bool
+
+
+class BeeStartEvent(BaseModel):
+    meta: BeeMeta
+    tools: list[InstanceOf[Tool]]
+    memory: InstanceOf[BaseMemory]
+
+
+class BeeErrorEvent(BaseModel):
+    error: InstanceOf[Exception]
+    meta: BeeMeta
+
+
+class BeeRetryEvent(BaseModel):
+    meta: BeeMeta
+
+
+class BeeSuccessEvent(BaseModel):
+    data: InstanceOf[Message]
+    iterations: list[BeeAgentRunIteration]
+    memory: InstanceOf[BaseMemory]
+    meta: BeeMeta
+
+
+class BeeUpdate(BaseModel):
+    key: str
+    value: Any
+    parsed_value: Any
+
+
+class BeeUpdateEvent(BaseModel):
+    data: BeeIterationResult | dict[str, Any]
+    update: BeeUpdate
+    meta: BeeUpdateMeta
+    tools: list[InstanceOf[Tool]] | None = None
+    memory: InstanceOf[BaseMemory] | None = None
+
+
+class ToolEventData(BaseModel):
+    tool: InstanceOf[Tool]
+    input: Any
+    options: BeeRunOptions
+    iteration: BeeIterationResult  # BeeIterationToolResult
+    result: InstanceOf[ToolOutput] | None = None
+    error: InstanceOf[FrameworkError] | None = None
+
+
+class BeeToolEvent(BaseModel):
+    data: ToolEventData
+    meta: BeeMeta
+
+
+# class BeeEventTypes(BaseModel):
+#     start: BeeStartEvent
+#     error: BeeErrorEvent
+#     retry: BeeRetryEvent
+#     success: BeeSuccessEvent
+#     update: BeeUpdateEvent
+#     partial_update: BeeUpdateEvent
+#     tool_start: BeeToolEvent
+#     tool_success: BeeToolEvent
+#     tool_error: BeeToolEvent
