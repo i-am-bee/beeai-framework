@@ -59,8 +59,8 @@ class AgentWorkflow:
     def __init__(self, name: str = "AgentWorkflow") -> None:
         self.workflow = Workflow(name=name, schema=Schema)
 
-    async def run(self, messages: list[Message]) -> WorkflowRun:
-        return await self.workflow.run(Schema(messages=messages))
+    def run(self, messages: list[Message]) -> WorkflowRun:
+        return self.workflow.run(Schema(messages=messages))
 
     def del_agent(self, name: str) -> "AgentWorkflow":
         self.workflow.delete_step(name)
