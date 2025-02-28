@@ -25,7 +25,6 @@ from typing_extensions import TypeVar
 from beeai_framework.cancellation import AbortSignal
 from beeai_framework.context import Run, RunContext, RunContextInput, RunInstance
 from beeai_framework.emitter.emitter import Emitter
-from beeai_framework.emitter.types import EmitterInput
 from beeai_framework.errors import FrameworkError
 from beeai_framework.utils.models import ModelLike, check_model, to_model, to_model_optional
 from beeai_framework.utils.types import MaybeAsync
@@ -90,10 +89,8 @@ class Workflow(Generic[T, K]):
         # replace any non-alphanumeric char with _
         formatted_name = re.sub(r"\W+", "_", self._name).lower()
         self.emitter = Emitter.root().child(
-            EmitterInput(
-                namespace=["workflow", formatted_name],
-                creator=self,
-            )
+            namespace=["workflow", formatted_name],
+            creator=self,
         )
 
     @property
