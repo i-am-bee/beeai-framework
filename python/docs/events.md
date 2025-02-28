@@ -6,9 +6,27 @@
 
 These events can be observed calling `agent.run`
 
-- "start": `{ "meta": BeeMeta, "tools": list[Tool], "memory": BaseMemory }`
-- "error": `{ "error": FrameworkError, "meta": BeeMeta }`
-- "retry": `{ "meta": BeeMeta }`
+- "start":
+    ```python
+    {
+        "meta": BeeMeta,
+        "tools": list[Tool],
+        "memory": BaseMemory,
+    }
+
+- "error":
+    ```python
+    {
+        "error": FrameworkError,
+        "meta": BeeMeta,
+    }
+
+- "retry":
+    ```python
+    {
+        "meta": BeeMeta,
+    }
+
 - "success":
     ```python
     {
@@ -17,6 +35,7 @@ These events can be observed calling `agent.run`
         "memory": BaseMemory,
         "meta": BeeMeta,
     }
+
 - "update" and "partialUpdate":
     ```python
     {
@@ -79,11 +98,54 @@ These events can be observed when calling `ChatModel.create` or `ChatModel.creat
 - "error": `{ "error": ChatModelError }`
 - "finish": `None`
 
+### Tool Events
+
+These events can be observed when calling `Tool.run`
+
+- "start":
+    ```python
+    {
+        "input": <ToolInput schema> | dict[str, Any],
+        "options": dict[str, Any] | None,
+    }
+
+- "success":
+    ```python
+    {
+        "output": ToolOutput,
+        "input": <ToolInput schema> | dict[str, Any],
+        "options": dict[str, Any] | None,
+    }
+
+- "error":
+    ```python
+    {
+        "error": FrameworkError,
+        "input": <ToolInput schema> | dict[str, Any],
+        "options": dict[str, Any] | None,
+    }
+
+- "retry":
+    ```python
+    {
+        "error": ToolError,
+        "input": <ToolInput schema> | dict[str, Any],
+        "options": dict[str, Any] | None,
+    }
+
+- "finish": `None`
+
 ### Workflow Events
 
 These events can be observed when calling `workflow.run`
 
-- "start": `{"run": WorkflowRun, "step": str}`
+- "start":
+    ```python
+    {
+        "run": WorkflowRun,
+        "step": str,
+    }
+
 - "success":
    ```python
     {
