@@ -78,8 +78,6 @@ class Workflow(Generic[T, K]):
 
     _RESERVED_STEP_NAMES: ClassVar = [START, SELF, PREV, NEXT, END]
 
-    emitter: Emitter
-
     def __init__(self, schema: type[T], name: str = "Workflow") -> None:
         self._name = name
         self._schema = schema
