@@ -28,14 +28,15 @@ class OllamaChatModel(LiteLLMChatModel):
         return "ollama"
 
     def __init__(self, model_id: str | None = None, settings: dict | None = None) -> None:
-        _settings = settings.copy() if settings is not None else {}
+        settings = settings.copy() if settings is not None else {}
 
-        ollama_api_base_from_env = os.getenv("OLLAMA_API_BASE")
-
-        if ollama_api_base_from_env and "base_url" not in _settings:
-            _settings["base_url"] = ollama_api_base_from_env
+        api_key = settings.get("api_key", os.getenv("OLLAMA_API_KEY") or "ollama")
+        base_url = settings.get("base_url", os.getenv("OLLAMA_API_BASE")) or "http://localhost:11434"
+        if not base_url.endswith("/v1"):
+            base_url += "/v1"
 
         super().__init__(
             model_id if model_id else os.getenv("OLLAMA_CHAT_MODEL", "llama3.1"),
-            settings={"base_url": "http://localhost:11434"} | _settings,
+            provider_id="openai",
+            settings=settings | {"api_key": api_key, "base_url": base_url},
         )
