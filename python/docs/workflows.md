@@ -205,16 +205,14 @@ The multi-agent workflow pattern enables the orchestration of specialized agents
 import asyncio
 import traceback
 
-from pydantic import ValidationError
-
 from beeai_framework.agents.bee.agent import BeeAgentExecutionConfig
 from beeai_framework.backend.chat import ChatModel
 from beeai_framework.backend.message import UserMessage
+from beeai_framework.errors import FrameworkError
 from beeai_framework.memory import UnconstrainedMemory
 from beeai_framework.tools.search.duckduckgo import DuckDuckGoSearchTool
 from beeai_framework.tools.weather.openmeteo import OpenMeteoTool
 from beeai_framework.workflows.agent import AgentFactoryInput, AgentWorkflow
-from beeai_framework.workflows.workflow import WorkflowError
 
 
 async def main() -> None:
@@ -254,9 +252,7 @@ responses which all are relevant. Ignore those where assistant do not know.""",
         response = await workflow.run(messages=memory.messages)
         print(f"result: {response.state.final_answer}")
 
-    except WorkflowError:
-        traceback.print_exc()
-    except ValidationError:
+    except FrameworkError:
         traceback.print_exc()
 
 

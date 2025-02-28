@@ -21,7 +21,7 @@ from beeai_framework.emitter.errors import EmitterError
 def assert_valid_name(name: str) -> None:
     if not name or not re.match("^[a-zA-Z0-9_]+$", name):
         raise EmitterError(
-            "Event name or a namespace part must contain only letters, numbers or underscores.",
+            f"Event name or a namespace part must contain only letters, numbers or underscores: {name}",
         )
 
 

@@ -14,13 +14,19 @@
 
 import asyncio
 import inspect
+import re
+from collections.abc import Awaitable, Callable
 from dataclasses import field
-from typing import ClassVar, Final, Generic, Literal
+from typing import Any, ClassVar, Final, Generic, Literal
 
 from pydantic import BaseModel
 from typing_extensions import TypeVar
 
-from beeai_framework.utils.models import ModelLike, check_model, to_model
+from beeai_framework.cancellation import AbortSignal
+from beeai_framework.context import Run, RunContext, RunContextInput, RunInstance
+from beeai_framework.emitter.emitter import Emitter
+from beeai_framework.errors import FrameworkError
+from beeai_framework.utils.models import ModelLike, check_model, to_model, to_model_optional
 from beeai_framework.utils.types import MaybeAsync
 from beeai_framework.workflows.errors import WorkflowError
 
@@ -46,10 +52,21 @@ class WorkflowStepDefinition(BaseModel, Generic[T, K]):
     handler: WorkflowHandler[T, K]
 
 
+class WorkflowRunContext(BaseModel, Generic[T, K]):
+    steps: list[WorkflowStepRes[T, K]] = field(default_factory=list)
+    signal: AbortSignal
+    abort: Callable[[Any], None]
+
+
 class WorkflowRun(BaseModel, Generic[T, K]):
     state: T
     result: T | None = None
     steps: list[WorkflowStepRes[T, K]] = field(default_factory=list)
+
+
+class WorkflowRunOptions(BaseModel, Generic[K]):
+    start: K | None = None
+    signal: AbortSignal | None = None
 
 
 class Workflow(Generic[T, K]):
@@ -66,6 +83,13 @@ class Workflow(Generic[T, K]):
         self._schema = schema
         self._steps: dict[K, WorkflowStepDefinition[T, K]] = {}
         self._start_step: K | None = None
+
+        # replace any non-alphanumeric char with _
+        formatted_name = re.sub(r"\W+", "_", self._name).lower()
+        self.emitter = Emitter.root().child(
+            namespace=["workflow", formatted_name],
+            creator=self,
+        )
 
     @property
     def steps(self) -> dict[K, WorkflowStepDefinition[T, K]]:
@@ -116,39 +140,73 @@ class Workflow(Generic[T, K]):
         self._start_step = name
         return self
 
-    async def run(self, state: ModelLike[T]) -> WorkflowRun[T, K]:
-        run = WorkflowRun[T, K](state=to_model(self._schema, state))
-        next = self._find_step(self.start_step or self.step_names[0]).current or Workflow.END
+    def run(self, state: ModelLike[T], options: ModelLike[WorkflowRunOptions] | None = None) -> Run[WorkflowRun[T, K]]:
+        options = to_model_optional(WorkflowRunOptions, options)
 
-        while next and next != Workflow.END:
-            step = self.steps.get(next)
-            if step is None:
-                raise WorkflowError(f"Step '{next}' was not found.")
+        async def run_workflow(context: RunContext) -> Awaitable[WorkflowRun[T, K]]:
+            run = WorkflowRun[T, K](state=to_model(self._schema, state))
+            # handlers = WorkflowRunContext(steps=run.steps, signal=context.signal, abort=lambda r: context.abort(r))
+            next = self._find_step(self.start_step or self.step_names[0]).current or Workflow.END
 
-            step_res = WorkflowStepRes[T, K](name=next, state=run.state.model_copy(deep=True))
-            run.steps.append(step_res)
+            while next and next != Workflow.END:
+                step = self.steps.get(next)
+                if step is None:
+                    raise WorkflowError(f"Step '{next}' was not found.")
 
-            if inspect.iscoroutinefunction(step.handler):
-                step_next = await step.handler(step_res.state)
-            else:
-                step_next = await asyncio.to_thread(step.handler, step_res.state)
+                await context.emitter.emit("start", {"run": run, "step": next})
 
-            check_model(step_res.state)
-            run.state = step_res.state
+                try:
+                    step_res = WorkflowStepRes[T, K](name=next, state=run.state.model_copy(deep=True))
+                    run.steps.append(step_res)
 
-            # Route to next step
-            if step_next == Workflow.START:
-                next = run.steps[0].name
-            elif step_next == Workflow.PREV:
-                next = run.steps[-2].name
-            elif step_next == Workflow.SELF:
-                next = run.steps[-1].name
-            elif step_next is None or step_next == Workflow.NEXT:
-                next = self._find_step(next).next or Workflow.END
-            else:
-                next = step_next
+                    if inspect.iscoroutinefunction(step.handler):
+                        step_next = await step.handler(step_res.state)  # , handlers)
+                    else:
+                        step_next = await asyncio.to_thread(step.handler, step_res.state)  # handlers)
 
-        return run
+                    check_model(step_res.state)
+                    run.state = step_res.state
+
+                    # Route to next step
+                    if step_next == Workflow.START:
+                        next = run.steps[0].name
+                    elif step_next == Workflow.PREV:
+                        next = run.steps[-2].name
+                    elif step_next == Workflow.SELF:
+                        next = run.steps[-1].name
+                    elif step_next is None or step_next == Workflow.NEXT:
+                        next = self._find_step(next).next or Workflow.END
+                    else:
+                        next = step_next
+
+                    await context.emitter.emit(
+                        "success",
+                        {
+                            "run": run.model_copy(),
+                            "state": run.state,
+                            "step": step,
+                            "next": next,
+                        },
+                    )
+                except Exception as e:
+                    err = FrameworkError.ensure(e)
+                    await context.emitter.emit(
+                        "error",
+                        {
+                            "run": run.model_copy(),
+                            "step": next,
+                            "error": err,
+                        },
+                    )
+                    raise err from None
+
+            return run
+
+        return RunContext.enter(
+            RunInstance(emitter=self.emitter),
+            RunContextInput(params=[state, options], signal=options.signal if options else None),
+            run_workflow,
+        )
 
     def _find_step(self, current: K) -> WorkflowState[K]:
         index = self.step_names.index(current)
