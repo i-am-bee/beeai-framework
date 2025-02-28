@@ -118,5 +118,5 @@ These events are for internal debugging
 
 These events are caught internally
 
-* "update": LinePrefixParserUpdate 
-* "partial_update": LinePrefixParserUpdate
+* "update": `LinePrefixParserUpdate`
+* "partial_update": `LinePrefixParserUpdate`
