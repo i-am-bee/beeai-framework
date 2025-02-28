@@ -18,8 +18,15 @@ Ollama is a free, open-source tool that lets you run large language models (LLMs
 
 You will need to have Ollama installed with the required model installed.
 
-⚙️ [Install Ollama](https://ollama.com/download/)
-⚙️ Install the IBM Granite 3.1 model using `ollama pull granite3.1-dense:8b`
+⚙️ Install Ollama
+
+Follow the [Official Ollama Instructions](https://ollama.com/download/)
+
+⚙️ Install the IBM Granite 3.1 model using
+
+```shell
+ollama pull granite3.1-dense:8b
+```
 
 ⚡ If you'd prefer to use watsonx to run Granite 3.1 instead of Ollama (e.g., if your machine lacks sufficient resources), refer to the [watsonx.ipynb](watsonx.ipynb) notebook, which demonstrates how to use watsonx. You can then substitute the watsonx ChatModel when working through the main series of notebooks. ⚡
 

@@ -17,6 +17,9 @@ import pathlib
 import runpy
 
 import pytest
+from dotenv import load_dotenv
+
+load_dotenv()
 
 all_examples = list(pathlib.Path(__file__, "../../../examples").resolve().rglob("*.py"))
 

@@ -21,7 +21,7 @@ from mcp.client.session import ClientSession
 from mcp.types import CallToolResult
 from mcp.types import Tool as MCPToolInfo
 
-from beeai_framework.emitter import Emitter, EmitterInput
+from beeai_framework.emitter import Emitter
 from beeai_framework.tools import Tool
 from beeai_framework.tools.tool import ToolOutput
 from beeai_framework.utils import BeeLogger
@@ -63,10 +63,8 @@ class MCPTool(Tool[MCPToolOutput]):
         self._name = tool.name
         self._description = tool.description or "No available description, use the tool based on its name and schema."
         self.emitter = Emitter.root().child(
-            EmitterInput(
-                namespace=["tool", "mcp", self._name],
-                creator=self,
-            )
+            namespace=["tool", "mcp", self._name],
+            creator=self,
         )
 
     @property

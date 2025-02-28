@@ -38,7 +38,7 @@ from beeai_framework.agents.types import (
     BeeIterationResult,
     BeeRunInput,
 )
-from beeai_framework.backend.chat import ChatModelInput, ChatModelOutput
+from beeai_framework.backend.chat import ChatModelOutput
 from beeai_framework.backend.message import AssistantMessage, SystemMessage, UserMessage
 from beeai_framework.emitter.emitter import EventMeta
 from beeai_framework.errors import FrameworkError
@@ -58,6 +58,8 @@ from beeai_framework.utils.strings import create_strenum
 
 
 class DefaultRunner(BaseRunner):
+    use_native_tool_calling: bool = False
+
     def default_templates(self) -> BeeAgentTemplates:
         return BeeAgentTemplates(
             system=SystemPromptTemplate,
@@ -81,16 +83,17 @@ class DefaultRunner(BaseRunner):
                 ),
                 "tool_name": LinePrefixParserNode(
                     prefix="Function Name: ",
-                    field=ParserField.from_type(tool_names),
+                    field=ParserField.from_type(tool_names, trim=True),
                     next=["tool_input"],
                 ),  # validate enum
                 "tool_input": LinePrefixParserNode(
                     prefix="Function Input: ",
-                    field=ParserField.from_type(dict),
+                    field=ParserField.from_type(dict, trim=True),
                     next=["tool_output"],
+                    is_end=True,
                 ),
                 "tool_output": LinePrefixParserNode(
-                    prefix="Function Input: ", field=ParserField.from_type(str), is_end=True, next=["final_answer"]
+                    prefix="Function Output: ", field=ParserField.from_type(str), is_end=True, next=["final_answer"]
                 ),
                 "final_answer": LinePrefixParserNode(
                     prefix="Final Answer: ", field=ParserField.from_type(str), is_end=True, is_start=True
@@ -104,7 +107,7 @@ class DefaultRunner(BaseRunner):
 
         async def on_error(error: Exception, _: RetryableContext) -> None:
             await input.emitter.emit("error", {"error": error, "meta": input.meta})
-            self._failedAttemptsCounter.use(error)
+            self._failed_attempts_counter.use(error)
 
             if isinstance(error, LinePrefixParserError):
                 if error.reason == LinePrefixParserError.Reason.NoDataReceived:
@@ -162,7 +165,9 @@ class DefaultRunner(BaseRunner):
                     abort()
 
             output: ChatModelOutput = await self._input.llm.create(
-                ChatModelInput(messages=self.memory.messages[:], stream=True)
+                messages=self.memory.messages[:],
+                stream=True,
+                tools=self._input.tools if self.use_native_tool_calling else None,
             ).observe(lambda llm_emitter: llm_emitter.on("newToken", on_new_token))
 
             await parser.end()
@@ -198,7 +203,7 @@ class DefaultRunner(BaseRunner):
         )
 
         if tool is None:
-            self._failedAttemptsCounter.use(
+            self._failed_attempts_counter.use(
                 Exception(f"Agent was trying to use non-existing tool '${input.state.tool_name}'")
             )
 
@@ -284,7 +289,7 @@ class DefaultRunner(BaseRunner):
         system_prompt: str = self.templates.system.render(
             SystemPromptTemplateInput(
                 tools=tool_defs,
-                tools_length=len(tool_defs),  # TODO Where do instructions come from
+                tools_length=len(tool_defs),
             )
         )
 

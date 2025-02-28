@@ -16,7 +16,6 @@ import pytest
 
 from beeai_framework.adapters.ollama.backend.chat import OllamaChatModel
 from beeai_framework.agents.bee import BeeAgent
-from beeai_framework.agents.types import BeeInput
 from beeai_framework.backend.message import UserMessage
 from beeai_framework.memory import TokenMemory, UnconstrainedMemory
 from beeai_framework.workflows.agent import AgentFactoryInput, AgentWorkflow
@@ -35,10 +34,10 @@ async def test_multi_agents_workflow_basic() -> None:
     workflow.add_agent(agent=AgentFactoryInput(name="Translator assistant", tools=[], llm=chat_model))
 
     memory = UnconstrainedMemory()
-    await memory.add(UserMessage(content="Say Hello in German."))
+    await memory.add(UserMessage(content="Translate 'Hello' to German."))
     response = await workflow.run(memory.messages)
     print(response.state)
-    assert "Hallo" in response.state.final_answer
+    assert "hallo" in response.state.final_answer.lower()
 
 
 @pytest.mark.e2e
@@ -47,15 +46,15 @@ async def test_multi_agents_workflow_creation() -> None:
     chat_model = OllamaChatModel()
 
     workflow: AgentWorkflow = AgentWorkflow()
-    workflow.add_agent(BeeAgent(BeeInput(llm=chat_model, tools=[], memory=TokenMemory(chat_model))))
-    workflow.add_agent(agent=lambda memory: BeeAgent(BeeInput(llm=chat_model, tools=[], memory=memory)))
+    workflow.add_agent(BeeAgent(llm=chat_model, tools=[], memory=TokenMemory(chat_model)))
+    workflow.add_agent(agent=lambda memory: BeeAgent(llm=chat_model, tools=[], memory=memory))
 
     assert len(workflow.workflow.step_names) == 2
 
     memory = UnconstrainedMemory()
-    await memory.add(UserMessage(content="Say Hello in Italian."))
+    await memory.add(UserMessage(content="Translate 'Good morning' to Italian."))
     response = await workflow.run(memory.messages)
-    assert "ciao" in response.state.final_answer.lower()
+    assert "buongiorno" in response.state.final_answer.lower()
 
 
 @pytest.mark.e2e
@@ -64,8 +63,8 @@ async def test_multi_agents_workflow_agent_delete() -> None:
     chat_model = OllamaChatModel()
 
     workflow: AgentWorkflow = AgentWorkflow()
-    workflow.add_agent(BeeAgent(BeeInput(llm=chat_model, tools=[], memory=UnconstrainedMemory())))
+    workflow.add_agent(BeeAgent(llm=chat_model, tools=[], memory=UnconstrainedMemory()))
     workflow.del_agent("BeeAI")
-    workflow.add_agent(BeeAgent(BeeInput(llm=chat_model, tools=[], memory=UnconstrainedMemory())))
+    workflow.add_agent(BeeAgent(llm=chat_model, tools=[], memory=UnconstrainedMemory()))
 
     assert len(workflow.workflow.step_names) == 1

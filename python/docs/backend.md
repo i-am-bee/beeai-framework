@@ -83,19 +83,19 @@ async def watsonx_from_name() -> None:
         # },
     )
     user_message = UserMessage("what states are part of New England?")
-    response = await watsonx_llm.create({"messages": [user_message]})
+    response = await watsonx_llm.create(messages=[user_message])
     print(response.get_text_content())
 
 
 async def watsonx_sync() -> None:
     user_message = UserMessage("what is the capital of Massachusetts?")
-    response = await llm.create({"messages": [user_message]})
+    response = await llm.create(messages=[user_message])
     print(response.get_text_content())
 
 
 async def watsonx_stream() -> None:
     user_message = UserMessage("How many islands make up the country of Cape Verde?")
-    response = await llm.create({"messages": [user_message], "stream": True})
+    response = await llm.create(messages=[user_message], stream=True)
     print(response.get_text_content())
 
 
@@ -103,9 +103,7 @@ async def watsonx_stream_abort() -> None:
     user_message = UserMessage("What is the smallest of the Cape Verde islands?")
 
     try:
-        response = await llm.create(
-            {"messages": [user_message], "stream": True, "abort_signal": AbortSignal.timeout(0.5)}
-        )
+        response = await llm.create(messages=[user_message], stream=True, abort_signal=AbortSignal.timeout(0.5))
 
         if response is not None:
             print(response.get_text_content())
@@ -120,12 +118,7 @@ async def watson_structure() -> None:
         answer: str = Field(description="your final answer")
 
     user_message = UserMessage("How many islands make up the country of Cape Verde?")
-    response = await llm.create_structure(
-        {
-            "schema": TestSchema,
-            "messages": [user_message],
-        }
-    )
+    response = await llm.create_structure(schema=TestSchema, messages=[user_message])
     print(response.object)
 
 
@@ -182,9 +175,9 @@ from beeai_framework.adapters.ollama.backend.chat import OllamaChatModel
 from beeai_framework.backend.message import UserMessage
 
 ollama_chat_model = OllamaChatModel("llama3.1")
-response = await llm.create({
-    "messages": [UserMessage("what states are part of New England?")]
-})
+response = await ollama_chat_model.create(
+    messages=[UserMessage("what states are part of New England?")]
+)
 
 print(response.get_text_content())
 ```
@@ -201,7 +194,7 @@ from beeai_framework.backend.message import UserMessage
 
 llm = OllamaChatModel("llama3.1")
 user_message = UserMessage("How many islands make up the country of Cape Verde?")
-response = await llm.create({"messages": [user_message], "stream": True})
+response = await llm.create(messages=[user_message], stream=True)
 ```
 
 ### Structured Generation
