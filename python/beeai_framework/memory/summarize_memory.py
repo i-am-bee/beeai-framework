@@ -60,7 +60,6 @@ Previous messages:
 Summary:""".format("\n".join([f"{msg.role}: {msg.text}" for msg in messages]))
         )
 
-        # Generate is synchronous, not async
         response = await self.model.create(messages=[prompt])
 
         return response.messages[0].get_texts()[0].get("text")

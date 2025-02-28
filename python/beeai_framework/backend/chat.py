@@ -215,6 +215,7 @@ IMPORTANT: You MUST answer with a JSON object that matches the JSON schema above
 
     def create(
         self,
+        *,
         messages: list[Message],
         tools: list[Message] | None = None,
         abort_signal: AbortSignal | None = None,
@@ -265,6 +266,7 @@ IMPORTANT: You MUST answer with a JSON object that matches the JSON schema above
 
     def create_structure(
         self,
+        *,
         schema: type[T],
         messages: list[Message],
         abort_signal: AbortSignal | None = None,
