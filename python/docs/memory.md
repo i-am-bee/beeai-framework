@@ -153,6 +153,7 @@ _Source: [/python/examples/memory/llmMemory.py](/python/examples/memory/llmMemor
 import asyncio
 
 from beeai_framework.agents.bee.agent import BeeAgent
+from beeai_framework.agents.types import BeeAgentExecutionConfig
 from beeai_framework.backend.chat import ChatModel
 from beeai_framework.backend.message import AssistantMessage, UserMessage
 from beeai_framework.memory.unconstrained_memory import UnconstrainedMemory
@@ -185,13 +186,7 @@ async def main() -> None:
 
         response = await agent.run(
             prompt=user_input,
-            options={
-                "execution": {
-                    "max_retries_per_step": 3,
-                    "total_max_retries": 10,
-                    "max_iterations": 20,
-                }
-            },
+            execution=BeeAgentExecutionConfig(max_retries_per_step=3, total_max_retries=10, max_iterations=20),
         )
         print(f"Received response: {response}")
 
@@ -224,6 +219,7 @@ async def main() -> None:
 
 if __name__ == "__main__":
     asyncio.run(main())
+
 ```
 
 _Source: [/python/examples/memory/agentMemory.py](/python/examples/memory/agentMemory.py)_

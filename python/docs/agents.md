@@ -87,14 +87,8 @@ Control how the agent runs by configuring retries, timeouts, and iteration limit
 
 ```py
 response = await agent.run(
-    prompt,
-    BeeRunOptions(
-        execution=BeeAgentExecutionConfig(
-            max_retries_per_step=3,
-            total_max_retries=10,
-            max_iterations=20
-        )
-    ),
+    prompt=prompt,
+    execution=BeeAgentExecutionConfig(max_retries_per_step=3, total_max_retries=10, max_iterations=20),
 ).observe(observer)
 ```
 
@@ -231,6 +225,7 @@ Agents can be configured to use memory to maintain conversation context and stat
 import asyncio
 
 from beeai_framework.agents.bee.agent import BeeAgent
+from beeai_framework.agents.types import BeeAgentExecutionConfig
 from beeai_framework.backend.chat import ChatModel
 from beeai_framework.backend.message import AssistantMessage, UserMessage
 from beeai_framework.memory.unconstrained_memory import UnconstrainedMemory
@@ -263,13 +258,7 @@ async def main() -> None:
 
         response = await agent.run(
             prompt=user_input,
-            options={
-                "execution": {
-                    "max_retries_per_step": 3,
-                    "total_max_retries": 10,
-                    "max_iterations": 20,
-                }
-            },
+            execution=BeeAgentExecutionConfig(max_retries_per_step=3, total_max_retries=10, max_iterations=20),
         )
         print(f"Received response: {response}")
 
