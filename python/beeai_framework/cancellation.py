@@ -56,7 +56,7 @@ class AbortSignal(BaseModel):
             callback()
 
     @classmethod
-    def timeout(cls, duration: int) -> "AbortSignal":
+    def timeout(cls, duration: float) -> "AbortSignal":
         signal = cls()
 
         loop = asyncio.get_event_loop()

@@ -12,11 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import json
 
 from pydantic import BaseModel
 
 from beeai_framework.tools.tool import ToolOutput
+from beeai_framework.utils.strings import to_json
 
 
 class SearchToolResult(BaseModel):
@@ -31,9 +31,7 @@ class SearchToolOutput(ToolOutput):
         self.results = results
 
     def get_text_content(self) -> str:
-        return "\n\n".join(
-            [json.dumps(result, default=lambda o: o.__dict__, sort_keys=True, indent=4) for result in self.results]
-        )
+        return "\n\n".join([to_json(result, indent=4) for result in self.results])
 
     def is_empty(self) -> bool:
         return len(self.results) == 0

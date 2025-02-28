@@ -20,8 +20,13 @@ from typing import Any, Generic, TypeVar
 
 from pydantic import BaseModel, ConfigDict, ValidationError, create_model
 
-from beeai_framework.tools.errors import ToolInputValidationError
+from beeai_framework.context import Run, RunContext, RunContextInput, RunInstance
+from beeai_framework.emitter.emitter import Emitter
+from beeai_framework.errors import FrameworkError
+from beeai_framework.retryable import Retryable, RetryableConfig, RetryableContext, RetryableInput
+from beeai_framework.tools.errors import ToolError, ToolInputValidationError
 from beeai_framework.utils import BeeLogger
+from beeai_framework.utils.strings import to_safe_word
 
 logger = BeeLogger(__name__)
 
@@ -56,6 +61,8 @@ class StringToolOutput(ToolOutput):
 class Tool(Generic[T], ABC):
     options: dict[str, Any]
 
+    emitter: Emitter
+
     def __init__(self, options: dict[str, Any] | None = None) -> None:
         if options is None:
             options = {}
@@ -84,7 +91,6 @@ class Tool(Generic[T], ABC):
         try:
             return self.input_schema.model_validate(input)
         except ValidationError as e:
-            logger.error(f"Validation error: {e!s}")
             raise ToolInputValidationError("Tool input validation error") from e
 
     def prompt_data(self) -> dict[str, str]:
@@ -94,8 +100,59 @@ class Tool(Generic[T], ABC):
             "input_schema": str(self.input_schema.model_json_schema(mode="serialization")),
         }
 
-    def run(self, input: T | dict[str, Any], options: dict[str, Any] | None = None) -> Any:
-        return self._run(self.validate_input(input), options)
+    def run(self, input: T | dict[str, Any], options: dict[str, Any] | None = None) -> Run[Any]:
+        async def run_tool(context: RunContext) -> Any:
+            error_propagated = False
+
+            try:
+                validated_input = self.validate_input(input)
+
+                meta = {"input": validated_input, "options": options}
+
+                async def executor(_: RetryableContext) -> Any:
+                    nonlocal error_propagated
+                    error_propagated = False
+                    await context.emitter.emit("start", meta)
+                    return self._run(validated_input, options)
+
+                async def on_error(error: Exception, _: RetryableContext) -> None:
+                    nonlocal error_propagated
+                    error_propagated = True
+                    err = FrameworkError.ensure(error)
+                    await context.emitter.emit("error", {"error": err, **meta})
+                    if err.is_fatal:
+                        raise err from None
+
+                async def on_retry(ctx: RetryableContext, last_error: Exception) -> None:
+                    err = ToolError.ensure(last_error)
+                    await context.emitter.emit("retry", {"error": err, **meta})
+
+                output = await Retryable(
+                    RetryableInput(
+                        executor=executor,
+                        on_error=on_error,
+                        on_retry=on_retry,
+                        config=RetryableConfig(
+                            max_retries=options.get("max_retries") if options else 1, signal=context.signal
+                        ),
+                    )
+                ).get()
+
+                await context.emitter.emit("success", {"output": output, **meta})
+                return output
+            except Exception as e:
+                err = ToolError.ensure(e)
+                if not error_propagated:
+                    await context.emitter.emit("error", {"error": err, "input": input, "options": options})
+                raise err from None
+            finally:
+                await context.emitter.emit("finish", None)
+
+        return RunContext.enter(
+            RunInstance(emitter=self.emitter),
+            RunContextInput(params=[input, options], signal=options.signal if options else None),
+            run_tool,
+        )
 
 
 # this method was inspired by the discussion that was had in this issue:
@@ -137,6 +194,13 @@ def tool(tool_function: Callable) -> Tool:
         name = tool_name
         description = tool_description
         input_schema = tool_input
+
+        def __init__(self, options: dict[str, Any] | None = None) -> None:
+            super().__init__(options)
+            self.emitter = Emitter.root().child(
+                namespace=["tool", "custom", to_safe_word(self.name)],
+                creator=self,
+            )
 
         def _run(self, tool_in: Any, _: dict[str, Any] | None = None) -> None:
             tool_input_dict = tool_in.model_dump()

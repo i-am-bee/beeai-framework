@@ -13,7 +13,7 @@
 # limitations under the License.
 
 from collections.abc import Callable
-from typing import Generic, TypeVar
+from typing import Any, Generic, TypeVar
 
 from pydantic import BaseModel, RootModel, field_validator
 
@@ -51,10 +51,22 @@ class ParserField(Generic[T]):
 
     @staticmethod
     def from_type(
-        target_type: type[TP], handler: Callable[[TP], TP | None] | None = None, /, default: TP | None = None
+        target_type: type[TP],
+        handler: Callable[[TP], TP | None] | None = None,
+        /,
+        default: TP | None = None,
+        trim: bool = False,
     ) -> "ParserField[RootModel[TP]]":
         class CustomModel(RootModel[target_type]):  # type: ignore
             root: target_type  # type: ignore
+
+            @field_validator("root", mode="before")
+            @classmethod
+            def validate_root_pre(cls, v: Any) -> Any:
+                if trim and type(v) is str:
+                    return v.strip()
+                else:
+                    return v
 
             @field_validator("root", mode="after")
             @classmethod

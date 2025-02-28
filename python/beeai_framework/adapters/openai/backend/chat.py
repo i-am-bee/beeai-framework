@@ -32,5 +32,6 @@ class OpenAIChatModel(LiteLLMChatModel):
 
         super().__init__(
             model_id if model_id else os.getenv("OPENAI_CHAT_MODEL", "gpt-4o"),
+            provider_id="openai",
             settings=_settings,
         )

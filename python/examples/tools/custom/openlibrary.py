@@ -4,6 +4,7 @@ from typing import Any
 import requests
 from pydantic import BaseModel, Field
 
+from beeai_framework.emitter.emitter import Emitter
 from beeai_framework.tools import ToolInputValidationError
 from beeai_framework.tools.tool import Tool
 
@@ -25,6 +26,13 @@ class OpenLibraryTool(Tool[OpenLibraryToolInput]):
     description = """Provides access to a library of books with information about book titles,
         authors, contributors, publication dates, publisher and isbn."""
     input_schema = OpenLibraryToolInput
+
+    def __init__(self, options: dict[str, Any] | None = None) -> None:
+        super().__init__(options)
+        self.emitter = Emitter.root().child(
+            namespace=["tool", "example", "openlibrary"],
+            creator=self,
+        )
 
     def _run(self, input: OpenLibraryToolInput, _: Any | None = None) -> OpenLibraryToolResult:
         key = ""
@@ -55,7 +63,7 @@ class OpenLibraryTool(Tool[OpenLibraryToolInput]):
 async def main() -> None:
     tool = OpenLibraryTool()
     input = OpenLibraryToolInput(title="It")
-    result = tool.run(input)
+    result = await tool.run(input)
     print(result)
 
 

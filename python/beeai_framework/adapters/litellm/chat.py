@@ -36,11 +36,12 @@ from beeai_framework.backend.chat import (
     ChatModelStructureOutput,
 )
 from beeai_framework.backend.errors import ChatModelError
-from beeai_framework.backend.message import AssistantMessage, Message, Role, ToolMessage
+from beeai_framework.backend.message import AssistantMessage, Message, Role, ToolMessage, ToolResult
 from beeai_framework.backend.utils import parse_broken_json
 from beeai_framework.context import RunContext
 from beeai_framework.tools.tool import Tool
 from beeai_framework.utils.custom_logger import BeeLogger
+from beeai_framework.utils.strings import to_json
 
 logger = BeeLogger(__name__)
 
@@ -59,10 +60,10 @@ class LiteLLMChatModel(ChatModel, ABC):
     def model_id(self) -> str:
         return self._model_id
 
-    def __init__(self, model_id: str, settings: dict | None = None) -> None:
+    def __init__(self, model_id: str, *, provider_id: str, settings: dict | None = None) -> None:
         self._model_id = model_id
-        llm_provider = "ollama_chat" if self.provider_id == "ollama" else self.provider_id
-        self.supported_params = get_supported_openai_params(model=self.model_id, custom_llm_provider=llm_provider) or []
+        self._litellm_provider_id = provider_id
+        self.supported_params = get_supported_openai_params(model=self.model_id, custom_llm_provider=provider_id) or []
         # drop any unsupported parameters that were passed in
         litellm.drop_params = True
         self.settings = settings or {}
@@ -141,23 +142,29 @@ class LiteLLMChatModel(ChatModel, ABC):
             # TODO: validate result matches expected schema
             return ChatModelStructureOutput(object=result)
 
-    def _get_model_name(self) -> str:
-        return f"{'ollama_chat' if self.provider_id == 'ollama' else self.provider_id}/{self.model_id}"
-
     def _transform_input(self, input: ChatModelInput) -> LiteLLMParameters:
-        messages_list = [message.to_plain() for message in input.messages]
+        messages: list[dict] = []
+        for message in input.messages:
+            if isinstance(message, ToolMessage):
+                for chunk in message.content:
+                    content = ToolResult.model_validate(chunk)
+                    messages.append(
+                        {
+                            "tool_call_id": content.tool_call_id,
+                            "role": "tool",
+                            "name": content.tool_name,
+                            "content": to_json(content.result),
+                        }
+                    )
+            else:
+                messages.append(message.to_plain())
 
-        if input.tools:
-            prepared_tools_list = [{"type": "function", "function": tool.prompt_data()} for tool in input.tools]
-        else:
-            prepared_tools_list = None
-
-        model = self._get_model_name()
+        tools = [{"type": "function", "function": tool.prompt_data()} for tool in input.tools] if input.tools else None
 
         return LiteLLMParameters(
-            model=model,
-            messages=messages_list,
-            tools=prepared_tools_list,
+            model=f"{self._litellm_provider_id}/{self.model_id}",
+            messages=messages,
+            tools=tools,
             response_format=input.response_format,
             **self.settings,
         )

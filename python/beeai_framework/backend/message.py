@@ -84,7 +84,7 @@ class Message(Generic[T]):
         return list(filter(lambda x: x.get("type") == "text", self.content))
 
     def to_plain(self) -> dict[str, Any]:
-        return {"role": self.role, "content": self.text}
+        return {"role": self.role.value, "content": self.text}
 
     @classmethod
     def of(cls, message_data: dict[str, str]) -> "Message":

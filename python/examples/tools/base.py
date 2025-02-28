@@ -5,7 +5,7 @@ from beeai_framework.tools.weather.openmeteo import OpenMeteoTool, OpenMeteoTool
 
 async def main() -> None:
     tool = OpenMeteoTool()
-    result = tool.run(
+    result = await tool.run(
         input=OpenMeteoToolInput(location_name="New York", start_date="2025-01-01", end_date="2025-01-02")
     )
     print(result.get_text_content())

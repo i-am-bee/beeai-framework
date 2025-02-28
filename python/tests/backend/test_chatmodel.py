@@ -95,7 +95,7 @@ Unit Tests
 @pytest.mark.asyncio
 @pytest.mark.unit
 async def test_chat_model_create(reverse_words_chat: ChatModel, chat_messages_list: list[Message]) -> None:
-    response = await reverse_words_chat.create({"messages": chat_messages_list})
+    response = await reverse_words_chat.create(messages=chat_messages_list)
 
     assert len(response.messages) == 1
     assert all(isinstance(message, AssistantMessage) for message in response.messages)
@@ -109,12 +109,7 @@ async def test_chat_model_structure(reverse_words_chat: ChatModel, chat_messages
         reversed: str
 
     reverse_words_chat = ReverseWordsDummyModel()
-    response = await reverse_words_chat.create_structure(
-        {
-            "schema": ReverseWordsSchema,
-            "messages": chat_messages_list,
-        }
-    )
+    response = await reverse_words_chat.create_structure(schema=ReverseWordsSchema, messages=chat_messages_list)
 
     ReverseWordsSchema.model_validate(response.object)
 
@@ -122,7 +117,7 @@ async def test_chat_model_structure(reverse_words_chat: ChatModel, chat_messages
 @pytest.mark.asyncio
 @pytest.mark.unit
 async def test_chat_model_stream(reverse_words_chat: ChatModel, chat_messages_list: list[Message]) -> None:
-    response = await reverse_words_chat.create({"messages": chat_messages_list, "stream": True})
+    response = await reverse_words_chat.create(messages=chat_messages_list, stream=True)
 
     assert len(response.messages) == 4
     assert all(isinstance(message, AssistantMessage) for message in response.messages)
@@ -133,9 +128,7 @@ async def test_chat_model_stream(reverse_words_chat: ChatModel, chat_messages_li
 @pytest.mark.unit
 async def test_chat_model_abort(reverse_words_chat: ChatModel, chat_messages_list: list[Message]) -> None:
     with pytest.raises(AbortError):
-        await reverse_words_chat.create(
-            {"messages": chat_messages_list, "stream": True, "abort_signal": AbortSignal.timeout(1)}
-        )
+        await reverse_words_chat.create(messages=chat_messages_list, stream=True, abort_signal=AbortSignal.timeout(1))
 
 
 @pytest.mark.unit
@@ -144,13 +137,13 @@ def test_chat_model_from() -> None:
     os.environ.pop("OLLAMA_API_BASE", None)
     ollama_chat_model = ChatModel.from_name("ollama:llama3.1", {"base_url": "http://somewhere:12345"})
     assert isinstance(ollama_chat_model, OllamaChatModel)
-    assert ollama_chat_model.settings["base_url"] == "http://somewhere:12345"
+    assert ollama_chat_model.settings["base_url"] == "http://somewhere:12345/v1"
 
     # Ollama with Granite model and base_url specified in env var
     os.environ["OLLAMA_API_BASE"] = "http://somewhere-else:12345"
     ollama_chat_model = ChatModel.from_name("ollama:granite3.1-dense:8b")
     assert isinstance(ollama_chat_model, OllamaChatModel)
-    assert ollama_chat_model.settings["base_url"] == "http://somewhere-else:12345"
+    assert ollama_chat_model.settings["base_url"] == "http://somewhere-else:12345/v1"
 
     # Watsonx with Granite model and settings specified in code
     os.environ.pop("WATSONX_URL", None)

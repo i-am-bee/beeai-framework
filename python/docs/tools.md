@@ -34,7 +34,7 @@ from beeai_framework.tools.weather.openmeteo import OpenMeteoTool, OpenMeteoTool
 
 async def main() -> None:
     tool = OpenMeteoTool()
-    result = tool.run(
+    result = await tool.run(
         input=OpenMeteoToolInput(location_name="New York", start_date="2025-01-01", end_date="2025-01-02")
     )
     print(result.get_text_content())
@@ -58,7 +58,7 @@ from beeai_framework.tools.weather.openmeteo import OpenMeteoTool, OpenMeteoTool
 
 async def main() -> None:
     tool = OpenMeteoTool()
-    result = tool.run(
+    result = await tool.run(
         input=OpenMeteoToolInput(
             location_name="New York", start_date="2025-01-01", end_date="2025-01-02", temperature_unit="celsius"
         )
@@ -83,11 +83,10 @@ _Source: [/python/examples/tools/advanced.py](/python/examples/tools/advanced.py
 ```py
 from beeai_framework.adapters.ollama.backend.chat import OllamaChatModel
 from beeai_framework.agents.bee import BeeAgent
-from beeai_framework.agents.types import BeeInput
 from beeai_framework.memory import UnconstrainedMemory
 from beeai_framework.tools.weather.openmeteo import OpenMeteoTool
 
-agent = BeeAgent(BeeInput(llm=OllamaChatModel("llama3.1"), tools=[OpenMeteoTool()], memory=UnconstrainedMemory()))
+agent = BeeAgent(llm=OllamaChatModel("llama3.1"), tools=[OpenMeteoTool()], memory=UnconstrainedMemory())
 
 ```
 
@@ -104,7 +103,6 @@ from urllib.parse import quote
 import requests
 
 from beeai_framework import BeeAgent, tool
-from beeai_framework.agents.types import BeeInput, BeeRunInput
 from beeai_framework.backend.chat import ChatModel
 from beeai_framework.memory.unconstrained_memory import UnconstrainedMemory
 from beeai_framework.tools.tool import StringToolOutput
@@ -145,9 +143,9 @@ async def main() -> None:
 
     chat_model = ChatModel.from_name("ollama:granite3.1-dense:8b")
 
-    agent = BeeAgent(BeeInput(llm=chat_model, tools=[basic_calculator], memory=UnconstrainedMemory()))
+    agent = BeeAgent(llm=chat_model, tools=[basic_calculator], memory=UnconstrainedMemory())
 
-    result = await agent.run(BeeRunInput(prompt="What is the square root of 36?"))
+    result = await agent.run("What is the square root of 36?")
 
     print(result.result.text)
 
@@ -166,7 +164,6 @@ _Source: [/python/examples/tools/decorator.py](/python/examples/tools/decorator.
 import asyncio
 
 from beeai_framework.agents.bee import BeeAgent
-from beeai_framework.agents.types import BeeInput, BeeRunInput
 from beeai_framework.backend.chat import ChatModel
 from beeai_framework.memory import UnconstrainedMemory
 from beeai_framework.tools.search.duckduckgo import DuckDuckGoSearchTool
@@ -174,9 +171,9 @@ from beeai_framework.tools.search.duckduckgo import DuckDuckGoSearchTool
 
 async def main() -> None:
     chat_model = ChatModel.from_name("ollama:granite3.1-dense:8b")
-    agent = BeeAgent(BeeInput(llm=chat_model, tools=[DuckDuckGoSearchTool()], memory=UnconstrainedMemory()))
+    agent = BeeAgent(llm=chat_model, tools=[DuckDuckGoSearchTool()], memory=UnconstrainedMemory())
 
-    result = await agent.run(BeeRunInput(prompt="How tall is the mount Everest?"))
+    result = await agent.run("How tall is the mount Everest?")
 
     print(result.result.text)
 
@@ -196,7 +193,6 @@ _Source: [/python/examples/tools/duckduckgo.py](/python/examples/tools/duckduckg
 import asyncio
 
 from beeai_framework.agents.bee import BeeAgent
-from beeai_framework.agents.types import BeeInput, BeeRunInput
 from beeai_framework.backend.chat import ChatModel
 from beeai_framework.memory import UnconstrainedMemory
 from beeai_framework.tools.weather.openmeteo import OpenMeteoTool
@@ -204,9 +200,9 @@ from beeai_framework.tools.weather.openmeteo import OpenMeteoTool
 
 async def main() -> None:
     llm = ChatModel.from_name("ollama:granite3.1-dense:8b")
-    agent = BeeAgent(BeeInput(llm=llm, tools=[OpenMeteoTool()], memory=UnconstrainedMemory()))
+    agent = BeeAgent(llm=llm, tools=[OpenMeteoTool()], memory=UnconstrainedMemory())
 
-    result = await agent.run(BeeRunInput(prompt="What's the current weather in London?"))
+    result = await agent.run("What's the current weather in London?")
 
     print(result.result.text)
 
@@ -235,7 +231,7 @@ from beeai_framework.tools.search.wikipedia import (
 async def main() -> None:
     wikipedia_client = WikipediaTool({"full_text": True})
     input = WikipediaToolInput(query="bee")
-    result = wikipedia_client.run(input)
+    result = await wikipedia_client.run(input)
     print(result.get_text_content())
 
 
@@ -262,6 +258,7 @@ from typing import Any
 
 from pydantic import BaseModel, Field
 
+from beeai_framework.emitter.emitter import Emitter
 from beeai_framework.tools.tool import Tool
 
 
@@ -284,6 +281,13 @@ class RiddleTool(Tool[RiddleToolInput]):
         "What goes up but never comes down?",
     )
 
+    def __init__(self, options: dict[str, Any] | None = None) -> None:
+        super().__init__(options)
+        self.emitter = Emitter.root().child(
+            namespace=["tool", "example", "riddle"],
+            creator=self,
+        )
+
     def _run(self, input: RiddleToolInput, _: Any | None = None) -> None:
         index = input.riddle_number % (len(self.data))
         riddle = self.data[index]
@@ -293,7 +297,7 @@ class RiddleTool(Tool[RiddleToolInput]):
 async def main() -> None:
     tool = RiddleTool()
     input = RiddleToolInput(riddle_number=random.randint(0, len(RiddleTool.data)))
-    result = tool.run(input)
+    result = await tool.run(input)
     print(result)
 
 
@@ -324,6 +328,7 @@ from typing import Any
 import requests
 from pydantic import BaseModel, Field
 
+from beeai_framework.emitter.emitter import Emitter
 from beeai_framework.tools import ToolInputValidationError
 from beeai_framework.tools.tool import Tool
 
@@ -345,6 +350,13 @@ class OpenLibraryTool(Tool[OpenLibraryToolInput]):
     description = """Provides access to a library of books with information about book titles,
         authors, contributors, publication dates, publisher and isbn."""
     input_schema = OpenLibraryToolInput
+
+    def __init__(self, options: dict[str, Any] | None = None) -> None:
+        super().__init__(options)
+        self.emitter = Emitter.root().child(
+            namespace=["tool", "example", "openlibrary"],
+            creator=self,
+        )
 
     def _run(self, input: OpenLibraryToolInput, _: Any | None = None) -> OpenLibraryToolResult:
         key = ""
@@ -375,7 +387,7 @@ class OpenLibraryTool(Tool[OpenLibraryToolInput]):
 async def main() -> None:
     tool = OpenLibraryTool()
     input = OpenLibraryToolInput(title="It")
-    result = tool.run(input)
+    result = await tool.run(input)
     print(result)
 
 

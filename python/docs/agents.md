@@ -87,14 +87,8 @@ Control how the agent runs by configuring retries, timeouts, and iteration limit
 
 ```py
 response = await agent.run(
-    BeeRunInput(prompt=prompt),
-    {
-        "execution": {
-            "max_retries_per_step": 3,
-            "total_max_retries": 10,
-            "max_iterations": 20,
-        }
-    },
+    prompt=prompt,
+    execution=BeeAgentExecutionConfig(max_retries_per_step=3, total_max_retries=10, max_iterations=20),
 ).observe(observer)
 ```
 
@@ -147,11 +141,9 @@ Enhance your agent's capabilities by providing it with tools to interact with ex
 
 ```py
 agent = BeeAgent(
-    bee_input=BeeInput(
-        llm=llm, 
-        tools=[DuckDuckGoSearchTool(), OpenMeteoTool()], 
-        memory=UnconstrainedMemory()
-    )
+    llm=llm,
+    tools=[DuckDuckGoSearchTool(), OpenMeteoTool()],
+    memory=UnconstrainedMemory()
 )
 ```
 
@@ -172,11 +164,9 @@ Memory allows your agent to maintain context across multiple interactions.
 
 ```python
 agent = BeeAgent(
-    bee_input=BeeInput(
-        llm=llm, 
-        tools=[DuckDuckGoSearchTool(), OpenMeteoTool()], 
-        memory=UnconstrainedMemory()
-    )
+    llm=llm,
+    tools=[DuckDuckGoSearchTool(), OpenMeteoTool()],
+    memory=UnconstrainedMemory()
 )
 ```
 
@@ -202,9 +192,7 @@ def update_callback(data: dict, event: EventMeta) -> None:
 def on_update(emitter: Emitter) -> None:
     emitter.on("update", update_callback)
 
-output: BeeRunOutput = await agent.run(
-    run_input=BeeRunInput(prompt="What's the current weather in Las Vegas?")
-).observe(on_update)
+output: BeeRunOutput = await agent.run("What's the current weather in Las Vegas?").observe(on_update)
 ```
 
 _Source: [examples/agents/simple.py](/python/examples/agents/simple.py)_
@@ -237,7 +225,7 @@ Agents can be configured to use memory to maintain conversation context and stat
 import asyncio
 
 from beeai_framework.agents.bee.agent import BeeAgent
-from beeai_framework.agents.types import BeeInput, BeeRunInput
+from beeai_framework.agents.types import BeeAgentExecutionConfig
 from beeai_framework.backend.chat import ChatModel
 from beeai_framework.backend.message import AssistantMessage, UserMessage
 from beeai_framework.memory.unconstrained_memory import UnconstrainedMemory
@@ -250,7 +238,7 @@ def create_agent() -> BeeAgent:
     llm = ChatModel.from_name("ollama:granite3.1-dense:8b")
 
     # Initialize the agent
-    agent = BeeAgent(BeeInput(llm=llm, memory=memory, tools=[]))
+    agent = BeeAgent(llm=llm, memory=memory, tools=[])
 
     return agent
 
@@ -269,16 +257,8 @@ async def main() -> None:
         agent = create_agent()
 
         response = await agent.run(
-            BeeRunInput(
-                prompt=user_input,
-                options={
-                    "execution": {
-                        "max_retries_per_step": 3,
-                        "total_max_retries": 10,
-                        "max_iterations": 20,
-                    }
-                },
-            )
+            prompt=user_input,
+            execution=BeeAgentExecutionConfig(max_retries_per_step=3, total_max_retries=10, max_iterations=20),
         )
         print(f"Received response: {response}")
 
@@ -334,16 +314,14 @@ For complex applications, you can create multi-agent workflows where specialized
 import asyncio
 import traceback
 
-from pydantic import ValidationError
-
 from beeai_framework.agents.bee.agent import BeeAgentExecutionConfig
 from beeai_framework.backend.chat import ChatModel
 from beeai_framework.backend.message import UserMessage
+from beeai_framework.errors import FrameworkError
 from beeai_framework.memory import UnconstrainedMemory
 from beeai_framework.tools.search.duckduckgo import DuckDuckGoSearchTool
 from beeai_framework.tools.weather.openmeteo import OpenMeteoTool
 from beeai_framework.workflows.agent import AgentFactoryInput, AgentWorkflow
-from beeai_framework.workflows.workflow import WorkflowError
 
 
 async def main() -> None:
@@ -357,7 +335,7 @@ async def main() -> None:
                 instructions="You are a weather assistant.",
                 tools=[OpenMeteoTool()],
                 llm=llm,
-                execution=BeeAgentExecutionConfig(max_iterations=3),
+                execution=BeeAgentExecutionConfig(max_iterations=3, total_max_retries=10, max_retries_per_step=3),
             )
         )
         workflow.add_agent(
@@ -383,9 +361,7 @@ responses which all are relevant. Ignore those where assistant do not know.""",
         response = await workflow.run(messages=memory.messages)
         print(f"result: {response.state.final_answer}")
 
-    except WorkflowError:
-        traceback.print_exc()
-    except ValidationError:
+    except FrameworkError:
         traceback.print_exc()
 
 

@@ -3,13 +3,14 @@ import sys
 import traceback
 
 from langchain_community.utilities import SearxSearchWrapper
-from pydantic import BaseModel, Field, ValidationError
+from pydantic import BaseModel, Field
 
 from beeai_framework.adapters.ollama.backend.chat import OllamaChatModel
 from beeai_framework.backend.chat import ChatModelOutput, ChatModelStructureOutput
 from beeai_framework.backend.message import UserMessage
+from beeai_framework.errors import FrameworkError
 from beeai_framework.template import PromptTemplate, PromptTemplateInput
-from beeai_framework.workflows.workflow import Workflow, WorkflowError
+from beeai_framework.workflows.workflow import Workflow
 
 
 async def main() -> None:
@@ -43,10 +44,7 @@ async def main() -> None:
         ).render(InputSchema(input=state.input))
 
         output: ChatModelStructureOutput = await llm.create_structure(
-            {
-                "schema": WebSearchQuery,
-                "messages": [UserMessage(prompt)],
-            }
+            schema=WebSearchQuery, messages=[UserMessage(prompt)]
         )
         # TODO Why is object not of type schema T?
         state.search_results = search.run(f"current weather in {output.object['search_query']}")
@@ -74,7 +72,7 @@ async def main() -> None:
             )
         )
 
-        output: ChatModelOutput = await llm.create({"messages": [UserMessage(prompt)]})
+        output: ChatModelOutput = await llm.create(messages=[UserMessage(prompt)])
         state.output = output.get_text_content()
         return Workflow.END
 
@@ -91,9 +89,7 @@ async def main() -> None:
         print("Input: ", result.state.input)
         print("Agent: ", result.state.output)
 
-    except WorkflowError:
-        traceback.print_exc()
-    except ValidationError:
+    except FrameworkError:
         traceback.print_exc()
 
 

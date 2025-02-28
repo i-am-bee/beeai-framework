@@ -22,6 +22,7 @@ from urllib.parse import urlencode
 import requests
 from pydantic import BaseModel, Field
 
+from beeai_framework.emitter.emitter import Emitter
 from beeai_framework.tools import ToolInputValidationError
 from beeai_framework.tools.tool import StringToolOutput, Tool
 from beeai_framework.utils import BeeLogger
@@ -47,6 +48,13 @@ class OpenMeteoTool(Tool[OpenMeteoToolInput]):
     name = "OpenMeteoTool"
     description = "Retrieve current, past, or future weather forecasts for a location."
     input_schema = OpenMeteoToolInput
+
+    def __init__(self, options: dict[str, Any] | None = None) -> None:
+        super().__init__(options)
+        self.emitter = Emitter.root().child(
+            namespace=["tool", "weather", "openmeteo"],
+            creator=self,
+        )
 
     def _geocode(self, input: OpenMeteoToolInput) -> dict[str, Any]:
         params = {"format": "json", "count": 1}

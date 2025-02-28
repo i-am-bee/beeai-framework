@@ -4,6 +4,7 @@ from typing import Any
 
 from pydantic import BaseModel, Field
 
+from beeai_framework.emitter.emitter import Emitter
 from beeai_framework.tools.tool import Tool
 
 
@@ -26,6 +27,13 @@ class RiddleTool(Tool[RiddleToolInput]):
         "What goes up but never comes down?",
     )
 
+    def __init__(self, options: dict[str, Any] | None = None) -> None:
+        super().__init__(options)
+        self.emitter = Emitter.root().child(
+            namespace=["tool", "example", "riddle"],
+            creator=self,
+        )
+
     def _run(self, input: RiddleToolInput, _: Any | None = None) -> None:
         index = input.riddle_number % (len(self.data))
         riddle = self.data[index]
@@ -35,7 +43,7 @@ class RiddleTool(Tool[RiddleToolInput]):
 async def main() -> None:
     tool = RiddleTool()
     input = RiddleToolInput(riddle_number=random.randint(0, len(RiddleTool.data)))
-    result = tool.run(input)
+    result = await tool.run(input)
     print(result)
 
 

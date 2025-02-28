@@ -25,7 +25,7 @@ from typing import Any, Generic, ParamSpec, TypeAlias, TypeVar
 from pydantic import BaseModel, ConfigDict, InstanceOf
 
 from beeai_framework.emitter.errors import EmitterError
-from beeai_framework.emitter.types import EmitterInput, EmitterOptions, EventTrace
+from beeai_framework.emitter.types import EmitterOptions, EventTrace
 from beeai_framework.emitter.utils import (
     assert_valid_name,
     assert_valid_namespace,
@@ -63,43 +63,45 @@ class EventMeta(BaseModel):
 
 
 class Emitter(Generic[T]):
-    def __init__(self, emitter_input: EmitterInput | None = None) -> None:
+    def __init__(
+        self,
+        group_id: str | None = None,
+        namespace: list[str] | None = None,
+        creator: object | None = None,
+        context: object | None = None,
+        trace: EventTrace | None = None,
+    ) -> None:
         super().__init__()
 
         self.listeners: set[Listener] = set()
-        self.group_id: str | None = None
-        self.namespace: list[str] = []
-        self.creator: object | None = None
-        self.context: object = {}
-        self.trace: EventTrace | None = None
+        self.group_id: str | None = group_id
+        self.namespace: list[str] = namespace or []
+        self.creator: object | None = creator
+        self.context: object = context or {}
+        self.trace: EventTrace | None = trace
         self.cleanups: list[CleanupFn] = []
-
-        if emitter_input:
-            self.group_id = emitter_input.group_id
-            self.namespace = emitter_input.namespace if emitter_input.namespace else []
-            self.creator = emitter_input.creator if emitter_input.creator else object()
-            self.context = emitter_input.context if emitter_input.context else {}
-            self.trace = emitter_input.trace
 
         assert_valid_namespace(self.namespace)
 
     @staticmethod
     @functools.cache
     def root() -> "Emitter":
-        return Emitter(EmitterInput(creator=object()))
+        return Emitter(creator=object())
 
-    def child(self, emitter_input: EmitterInput | None = None) -> "Emitter":
-        if emitter_input is None:
-            emitter_input = EmitterInput()
-
+    def child(
+        self,
+        group_id: str | None = None,
+        namespace: list[str] | None = None,
+        creator: object | None = None,
+        context: object | None = None,
+        trace: EventTrace | None = None,
+    ) -> "Emitter":
         child_emitter = Emitter(
-            EmitterInput(
-                trace=emitter_input.trace if emitter_input.trace is not None else self.trace,
-                group_id=emitter_input.group_id if emitter_input.group_id is not None else self.group_id,
-                context={**self.context, **(emitter_input.context if emitter_input.context else {})},
-                creator=emitter_input.creator if emitter_input.creator is not None else self.creator,
-                namespace=emitter_input.namespace + self.namespace if emitter_input.namespace else self.namespace[:],
-            )
+            trace=trace or self.trace,
+            group_id=group_id or self.group_id,
+            context={**self.context, **(context or {})},
+            creator=creator or self.creator,
+            namespace=namespace + self.namespace if namespace else self.namespace[:],
         )
 
         cleanup = child_emitter.pipe(self)

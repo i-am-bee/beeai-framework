@@ -1,7 +1,7 @@
 import asyncio
 
 from beeai_framework.agents.bee.agent import BeeAgent
-from beeai_framework.agents.types import BeeInput, BeeRunInput
+from beeai_framework.agents.types import BeeAgentExecutionConfig
 from beeai_framework.backend.chat import ChatModel
 from beeai_framework.backend.message import AssistantMessage, UserMessage
 from beeai_framework.memory.unconstrained_memory import UnconstrainedMemory
@@ -14,7 +14,7 @@ def create_agent() -> BeeAgent:
     llm = ChatModel.from_name("ollama:granite3.1-dense:8b")
 
     # Initialize the agent
-    agent = BeeAgent(BeeInput(llm=llm, memory=memory, tools=[]))
+    agent = BeeAgent(llm=llm, memory=memory, tools=[])
 
     return agent
 
@@ -33,16 +33,8 @@ async def main() -> None:
         agent = create_agent()
 
         response = await agent.run(
-            BeeRunInput(
-                prompt=user_input,
-                options={
-                    "execution": {
-                        "max_retries_per_step": 3,
-                        "total_max_retries": 10,
-                        "max_iterations": 20,
-                    }
-                },
-            )
+            prompt=user_input,
+            execution=BeeAgentExecutionConfig(max_retries_per_step=3, total_max_retries=10, max_iterations=20),
         )
         print(f"Received response: {response}")
 

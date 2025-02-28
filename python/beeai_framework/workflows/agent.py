@@ -26,8 +26,6 @@ from beeai_framework.agents.bee import BeeAgent
 from beeai_framework.agents.types import (
     AgentMeta,
     BeeAgentExecutionConfig,
-    BeeInput,
-    BeeRunInput,
     BeeRunOutput,
 )
 from beeai_framework.backend.chat import ChatModel
@@ -61,8 +59,8 @@ class AgentWorkflow:
     def __init__(self, name: str = "AgentWorkflow") -> None:
         self.workflow = Workflow(name=name, schema=Schema)
 
-    async def run(self, messages: list[Message]) -> WorkflowRun:
-        return await self.workflow.run(Schema(messages=messages))
+    def run(self, messages: list[Message]) -> WorkflowRun:
+        return self.workflow.run(Schema(messages=messages))
 
     def del_agent(self, name: str) -> "AgentWorkflow":
         self.workflow.delete_step(name)
@@ -93,14 +91,12 @@ class AgentWorkflow:
                 return new_config
 
             return BeeAgent(
-                bee_input=BeeInput(
-                    llm=input.llm,
-                    tools=input.tools or [],
-                    memory=memory,
-                    templates={"system": lambda template: template.fork(customizer=customizer)},
-                    meta=AgentMeta(name=input.name, description=input.instructions or "", tools=[]),
-                    execution=input.execution,
-                )
+                llm=input.llm,
+                tools=input.tools or [],
+                memory=memory,
+                templates={"system": lambda template: template.fork(customizer=customizer)},
+                meta=AgentMeta(name=input.name, description=input.instructions or "", tools=[]),
+                execution=input.execution,
             )
 
         return factory
@@ -112,7 +108,7 @@ class AgentWorkflow:
                 await memory.add(message)
 
             agent = await ensure_async(factory)(memory.as_read_only())
-            run_output: BeeRunOutput = await agent.run(run_input=BeeRunInput())
+            run_output: BeeRunOutput = await agent.run()
             state.final_answer = run_output.result.text
             state.new_messages.append(
                 AssistantMessage(f"Assistant Name: {name}\nAssistant Response: {run_output.result.text}")

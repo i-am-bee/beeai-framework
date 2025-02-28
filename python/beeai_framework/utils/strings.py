@@ -12,10 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import json
 import re
 from collections.abc import Sequence
 from enum import StrEnum
-from typing import cast
+from typing import Any, cast
 
 
 def trim_left_spaces(value: str) -> str:
@@ -41,3 +42,12 @@ def split_string(input: str, size: int = 25, overlap: int = 0) -> list[str]:
 def create_strenum(name: str, keys: Sequence[str]) -> type[StrEnum]:
     target = StrEnum(name, {value: value for value in keys})  # type: ignore[misc]
     return cast(type[StrEnum], target)
+
+
+def to_json(input: Any, *, indent: int | None = None) -> str:
+    return json.dumps(input, ensure_ascii=False, default=lambda o: o.__dict__, sort_keys=True, indent=indent)
+
+
+def to_safe_word(phrase: str) -> str:
+    # replace any non-alphanumeric char with _
+    return re.sub(r"\W+", "_", phrase).lower()

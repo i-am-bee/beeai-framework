@@ -16,28 +16,28 @@ from beeai_framework.parsers.line_prefix import LinePrefixParser, LinePrefixPars
 async def openai_from_name() -> None:
     llm = ChatModel.from_name("openai:gpt-4o-mini")
     user_message = UserMessage("what states are part of New England?")
-    response = await llm.create({"messages": [user_message]})
+    response = await llm.create(messages=[user_message])
     print(response.get_text_content())
 
 
 async def openai_granite_from_name() -> None:
     llm = ChatModel.from_name("openai:gpt-4o-mini")
     user_message = UserMessage("what states are part of New England?")
-    response = await llm.create({"messages": [user_message]})
+    response = await llm.create(messages=[user_message])
     print(response.get_text_content())
 
 
 async def openai_sync() -> None:
     llm = OpenAIChatModel("gpt-4o-mini")
     user_message = UserMessage("what is the capital of Massachusetts?")
-    response = await llm.create({"messages": [user_message]})
+    response = await llm.create(messages=[user_message])
     print(response.get_text_content())
 
 
 async def openai_stream() -> None:
     llm = OpenAIChatModel("gpt-4o-mini")
     user_message = UserMessage("How many islands make up the country of Cape Verde?")
-    response = await llm.create({"messages": [user_message], "stream": True})
+    response = await llm.create(messages=[user_message], stream=True)
     print(response.get_text_content())
 
 
@@ -46,9 +46,7 @@ async def openai_stream_abort() -> None:
     user_message = UserMessage("What is the smallest of the Cape Verde islands?")
 
     try:
-        response = await llm.create(
-            {"messages": [user_message], "stream": True, "abort_signal": AbortSignal.timeout(0.5)}
-        )
+        response = await llm.create(messages=[user_message], stream=True, abort_signal=AbortSignal.timeout(0.5))
 
         if response is not None:
             print(response.get_text_content())
@@ -89,9 +87,7 @@ async def openai_stream_parser() -> None:
         await parser.add(data.get_text_content())
 
     user_message = UserMessage("Produce 3 lines each starting with 'Prefix: ' followed by a sentence and a new line.")
-    await llm.create({"messages": [user_message], "stream": True}).observe(
-        lambda emitter: emitter.on("newToken", on_new_token)
-    )
+    await llm.create(messages=[user_message], stream=True).observe(lambda emitter: emitter.on("newToken", on_new_token))
     result = await parser.end()
     print(result)
 
