@@ -26,12 +26,12 @@ from beeai_framework.agents.runners.base import (
 from beeai_framework.agents.runners.default.runner import DefaultRunner
 from beeai_framework.agents.runners.granite.runner import GraniteRunner
 from beeai_framework.agents.types import (
+    AgentExecutionConfig,
     AgentMeta,
-    BeeAgentExecutionConfig,
+    AgentRunInput,
+    AgentRunOptions,
     BeeAgentTemplates,
     BeeInput,
-    BeeRunInput,
-    BeeRunOptions,
     BeeRunOutput,
     BeeTemplateFactory,
     ModelKeysType,
@@ -55,7 +55,7 @@ class BeeAgent(BaseAgent[BeeRunOutput]):
         memory: BaseMemory,
         meta: AgentMeta | None = None,
         templates: dict[ModelKeysType, BeeAgentTemplates | BeeTemplateFactory] | None = None,
-        execution: BeeAgentExecutionConfig | None = None,
+        execution: AgentExecutionConfig | None = None,
         stream: bool | None = None,
     ) -> None:
         self.input = BeeInput(
@@ -102,16 +102,18 @@ class BeeAgent(BaseAgent[BeeRunOutput]):
             extra_description="\n".join(extra_description) if len(tools) > 0 else None,
         )
 
-    async def _run(self, run_input: BeeRunInput, options: BeeRunOptions | None, context: RunContext) -> BeeRunOutput:
+    async def _run(
+        self, run_input: AgentRunInput, options: AgentRunOptions | None, context: RunContext
+    ) -> BeeRunOutput:
         runner = self.runner(
             self.input,
             (
                 options
                 if options
-                else BeeRunOptions(
+                else AgentRunOptions(
                     execution=self.input.execution
                     or (options.execution if options is not None else None)
-                    or BeeAgentExecutionConfig(
+                    or AgentExecutionConfig(
                         max_retries_per_step=3,
                         total_max_retries=20,
                         max_iterations=10,

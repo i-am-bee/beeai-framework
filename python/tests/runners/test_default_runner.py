@@ -18,12 +18,12 @@ import pytest
 from beeai_framework.agents.runners.base import BeeRunnerToolInput
 from beeai_framework.agents.runners.default.runner import DefaultRunner
 from beeai_framework.agents.types import (
-    BeeAgentExecutionConfig,
+    AgentExecutionConfig,
+    AgentRunInput,
+    AgentRunOptions,
     BeeInput,
     BeeIterationResult,
     BeeMeta,
-    BeeRunInput,
-    BeeRunOptions,
 )
 from beeai_framework.backend.chat import ChatModel
 from beeai_framework.memory.token_memory import TokenMemory
@@ -43,13 +43,13 @@ async def test_runner_init() -> None:
         llm=llm,
         tools=[OpenMeteoTool()],
         memory=TokenMemory(llm),
-        execution=BeeAgentExecutionConfig(max_iterations=10, max_retries_per_step=3, total_max_retries=10),
+        execution=AgentExecutionConfig(max_iterations=10, max_retries_per_step=3, total_max_retries=10),
     )
     runner = DefaultRunner(
-        input=input, options=BeeRunOptions(execution=input.execution, signal=None), run=None
+        input=input, options=AgentRunOptions(execution=input.execution, signal=None), run=None
     )  # TODO Figure out run
 
-    await runner.init(BeeRunInput(prompt="What is the current weather in White Plains?"))
+    await runner.init(AgentRunInput(prompt="What is the current weather in White Plains?"))
 
     await runner.tool(
         input=BeeRunnerToolInput(

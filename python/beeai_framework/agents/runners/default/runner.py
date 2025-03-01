@@ -33,10 +33,10 @@ from beeai_framework.agents.runners.default.prompts import (
     UserPromptTemplate,
 )
 from beeai_framework.agents.types import (
+    AgentRunInput,
     BeeAgentRunIteration,
     BeeAgentTemplates,
     BeeIterationResult,
-    BeeRunInput,
 )
 from beeai_framework.backend.chat import ChatModelOutput
 from beeai_framework.backend.message import AssistantMessage, SystemMessage, UserMessage
@@ -273,7 +273,7 @@ class DefaultRunner(BaseRunner):
             )
         ).get()
 
-    async def init_memory(self, input: BeeRunInput) -> BaseMemory:
+    async def init_memory(self, input: AgentRunInput) -> BaseMemory:
         memory = TokenMemory(
             capacity_threshold=0.85, sync_threshold=0.5, llm=self._input.llm
         )  # TODO handlers needs to be fixed

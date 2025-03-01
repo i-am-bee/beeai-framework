@@ -95,6 +95,7 @@ _Source: [/python/examples/tools/agent.py](/python/examples/tools/agent.py)_
 ### Usage with decorator
 
 <!-- embedme examples/tools/decorator.py -->
+
 ```py
 import asyncio
 import json
