@@ -100,5 +100,4 @@ if __name__ == "__main__":
     try:
         asyncio.run(main())
     except FrameworkError as e:
-        print(e.explain())
-        sys.exit(1)
+        sys.exit(e.explain())

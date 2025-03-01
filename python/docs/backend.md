@@ -53,6 +53,7 @@ The following table depicts supported providers.
 
 ```py
 import asyncio
+import sys
 
 from pydantic import BaseModel, Field
 
@@ -60,7 +61,7 @@ from beeai_framework.adapters.watsonx.backend.chat import WatsonxChatModel
 from beeai_framework.backend.chat import ChatModel
 from beeai_framework.backend.message import UserMessage
 from beeai_framework.cancellation import AbortSignal
-from beeai_framework.errors import AbortError
+from beeai_framework.errors import AbortError, FrameworkError
 
 # Setting can be passed here during initiation or pre-configured via environment variables
 llm = WatsonxChatModel(
@@ -136,7 +137,10 @@ async def main() -> None:
 
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    try:
+        asyncio.run(main())
+    except FrameworkError as e:
+        sys.exit(e.explain())
 
 ```
 

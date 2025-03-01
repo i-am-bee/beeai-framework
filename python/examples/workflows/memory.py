@@ -1,11 +1,13 @@
 import asyncio
+import sys
 import traceback
 
-from pydantic import BaseModel, InstanceOf, ValidationError
+from pydantic import BaseModel, InstanceOf
 
 from beeai_framework.backend.message import AssistantMessage, UserMessage
+from beeai_framework.errors import FrameworkError
 from beeai_framework.memory.unconstrained_memory import UnconstrainedMemory
-from beeai_framework.workflows.workflow import Workflow, WorkflowError
+from beeai_framework.workflows.workflow import Workflow
 from examples.helpers.io import ConsoleReader
 
 
@@ -37,11 +39,13 @@ async def main() -> None:
             await memory.add(AssistantMessage(content=response.state.output))
 
             reader.write("Assistant 🤖 : ", response.state.output)
-    except WorkflowError:
+    except FrameworkError as err:
         traceback.print_exc()
-    except ValidationError:
-        traceback.print_exc()
+        raise err
 
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    try:
+        asyncio.run(main())
+    except FrameworkError as e:
+        sys.exit(e.explain())

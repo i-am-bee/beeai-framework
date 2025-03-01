@@ -1,7 +1,9 @@
 import asyncio
+import sys
 
 from beeai_framework.agents.bee import BeeAgent
 from beeai_framework.backend.chat import ChatModel
+from beeai_framework.errors import FrameworkError
 from beeai_framework.memory import UnconstrainedMemory
 from beeai_framework.tools.search.duckduckgo import DuckDuckGoSearchTool
 
@@ -16,4 +18,7 @@ async def main() -> None:
 
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    try:
+        asyncio.run(main())
+    except FrameworkError as e:
+        sys.exit(e.explain())

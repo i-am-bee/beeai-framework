@@ -47,7 +47,7 @@ async def test_multi_agents_workflow_creation() -> None:
 
     workflow: AgentWorkflow = AgentWorkflow()
     workflow.add_agent(BeeAgent(llm=chat_model, tools=[], memory=TokenMemory(chat_model)))
-    workflow.add_agent(agent=lambda memory: BeeAgent(llm=chat_model, tools=[], memory=memory))
+    workflow.add_agent(agent=lambda mem: BeeAgent(llm=chat_model, tools=[], memory=mem))
 
     assert len(workflow.workflow.step_names) == 2
 

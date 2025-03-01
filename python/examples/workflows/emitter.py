@@ -1,11 +1,16 @@
 import asyncio
+import sys
+import traceback
 from typing import Literal, TypeAlias
 
-from pydantic import BaseModel, ValidationError
+from pydantic import BaseModel
 
 from beeai_framework.emitter.emitter import Emitter, EventMeta
 from beeai_framework.emitter.types import EmitterOptions
-from beeai_framework.workflows.workflow import Workflow, WorkflowError, WorkflowReservedStepName
+from beeai_framework.errors import FrameworkError
+from beeai_framework.workflows.workflow import Workflow, WorkflowReservedStepName
+
+WorkflowStep: TypeAlias = Literal["pre_process", "add_loop", "post_process"]
 
 
 def print_event(event_data: dict, event_meta: EventMeta) -> None:
@@ -40,8 +45,6 @@ async def main() -> None:
         y: int
         abs_repetitions: int | None = None
         result: int | None = None
-
-    WorkflowStep: TypeAlias = Literal["pre_process", "add_loop", "post_process"]
 
     # Observe the agent
     async def observer(emitter: Emitter) -> None:
@@ -80,11 +83,13 @@ async def main() -> None:
         response = await multiplication_workflow.run(State(x=8, y=-5)).observe(observer)
         print(f"result: {response.state.result}")
 
-    except WorkflowError as e:
-        print(e)
-    except ValidationError as e:
-        print(e)
+    except FrameworkError as err:
+        traceback.print_exc()
+        raise err
 
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    try:
+        asyncio.run(main())
+    except FrameworkError as e:
+        sys.exit(e.explain())

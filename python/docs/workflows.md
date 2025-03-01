@@ -66,11 +66,13 @@ The example below demonstrates a minimal workflow that processes steps in sequen
 
 ```py
 import asyncio
+import sys
 import traceback
 
-from pydantic import BaseModel, ValidationError
+from pydantic import BaseModel
 
-from beeai_framework.workflows.workflow import Workflow, WorkflowError
+from beeai_framework.errors import FrameworkError
+from beeai_framework.workflows.workflow import Workflow
 
 
 async def main() -> None:
@@ -86,14 +88,16 @@ async def main() -> None:
 
         await workflow.run(State(input="Hello"))
 
-    except WorkflowError:
+    except FrameworkError as err:
         traceback.print_exc()
-    except ValidationError:
-        traceback.print_exc()
+        raise err
 
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    try:
+        asyncio.run(main())
+    except FrameworkError as e:
+        sys.exit(e.explain())
 
 ```
 
@@ -107,11 +111,16 @@ This advanced example showcases a workflow that implements multiplication throug
 
 ```py
 import asyncio
+import sys
+import traceback
 from typing import Literal, TypeAlias
 
-from pydantic import BaseModel, ValidationError
+from pydantic import BaseModel
 
-from beeai_framework.workflows.workflow import Workflow, WorkflowError, WorkflowReservedStepName
+from beeai_framework.errors import FrameworkError
+from beeai_framework.workflows.workflow import Workflow, WorkflowReservedStepName
+
+WorkflowStep: TypeAlias = Literal["pre_process", "add_loop", "post_process"]
 
 
 async def main() -> None:
@@ -121,8 +130,6 @@ async def main() -> None:
         y: int
         abs_repetitions: int | None = None
         result: int | None = None
-
-    WorkflowStep: TypeAlias = Literal["pre_process", "add_loop", "post_process"]
 
     def pre_process(state: State) -> WorkflowStep:
         print("pre_process")
@@ -159,14 +166,16 @@ async def main() -> None:
         response = await multiplication_workflow.run(State(x=8, y=-5))
         print(f"result: {response.state.result}")
 
-    except WorkflowError as e:
-        print(e)
-    except ValidationError as e:
-        print(e)
+    except FrameworkError as err:
+        traceback.print_exc()
+        raise err
 
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    try:
+        asyncio.run(main())
+    except FrameworkError as e:
+        sys.exit(e.explain())
 
 ```
 
@@ -203,6 +212,7 @@ The multi-agent workflow pattern enables the orchestration of specialized agents
 
 ```py
 import asyncio
+import sys
 import traceback
 
 from beeai_framework.agents.bee.agent import BeeAgentExecutionConfig
@@ -252,12 +262,16 @@ responses which all are relevant. Ignore those where assistant do not know.""",
         response = await workflow.run(messages=memory.messages)
         print(f"result: {response.state.final_answer}")
 
-    except FrameworkError:
+    except FrameworkError as err:
         traceback.print_exc()
+        raise err
 
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    try:
+        asyncio.run(main())
+    except FrameworkError as e:
+        sys.exit(e.explain())
 
 ```
 
@@ -279,13 +293,15 @@ Integrating memory into workflows allows agents to maintain context across inter
 
 ```py
 import asyncio
+import sys
 import traceback
 
-from pydantic import BaseModel, InstanceOf, ValidationError
+from pydantic import BaseModel, InstanceOf
 
 from beeai_framework.backend.message import AssistantMessage, UserMessage
+from beeai_framework.errors import FrameworkError
 from beeai_framework.memory.unconstrained_memory import UnconstrainedMemory
-from beeai_framework.workflows.workflow import Workflow, WorkflowError
+from beeai_framework.workflows.workflow import Workflow
 from examples.helpers.io import ConsoleReader
 
 
@@ -317,14 +333,16 @@ async def main() -> None:
             await memory.add(AssistantMessage(content=response.state.output))
 
             reader.write("Assistant 🤖 : ", response.state.output)
-    except WorkflowError:
+    except FrameworkError as err:
         traceback.print_exc()
-    except ValidationError:
-        traceback.print_exc()
+        raise err
 
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    try:
+        asyncio.run(main())
+    except FrameworkError as e:
+        sys.exit(e.explain())
 
 ```
 

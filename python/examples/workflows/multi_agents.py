@@ -1,4 +1,5 @@
 import asyncio
+import sys
 import traceback
 
 from beeai_framework.agents.bee.agent import BeeAgentExecutionConfig
@@ -48,9 +49,13 @@ responses which all are relevant. Ignore those where assistant do not know.""",
         response = await workflow.run(messages=memory.messages)
         print(f"result: {response.state.final_answer}")
 
-    except FrameworkError:
+    except FrameworkError as err:
         traceback.print_exc()
+        raise err
 
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    try:
+        asyncio.run(main())
+    except FrameworkError as e:
+        sys.exit(e.explain())

@@ -1,7 +1,10 @@
 import asyncio
+import sys
+import traceback
 
 from beeai_framework.backend.chat import ChatModel
 from beeai_framework.backend.message import AssistantMessage, SystemMessage, UserMessage
+from beeai_framework.errors import FrameworkError
 from beeai_framework.memory.summarize_memory import SummarizeMemory
 
 
@@ -33,12 +36,14 @@ async def main() -> None:
         if memory.messages:
             print(f"Summary: {memory.messages[0].get_texts()[0].get('text')}")
 
-    except Exception as e:
-        print(f"An error occurred: {e!s}")
-        import traceback
-
-        print(traceback.format_exc())
+    except Exception as err:
+        print(f"An error occurred: {err!s}")
+        traceback.print_exc()
+        raise err
 
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    try:
+        asyncio.run(main())
+    except FrameworkError as e:
+        sys.exit(e.explain())

@@ -30,6 +30,7 @@ from beeai_framework.agents.types import (
 )
 from beeai_framework.backend.chat import ChatModel
 from beeai_framework.backend.message import AssistantMessage, Message
+from beeai_framework.context import Run
 from beeai_framework.memory import ReadOnlyMemory, UnconstrainedMemory
 from beeai_framework.template import PromptTemplateInput
 from beeai_framework.tools.tool import Tool
@@ -59,7 +60,7 @@ class AgentWorkflow:
     def __init__(self, name: str = "AgentWorkflow") -> None:
         self.workflow = Workflow(name=name, schema=Schema)
 
-    def run(self, messages: list[Message]) -> WorkflowRun:
+    def run(self, messages: list[Message]) -> Run[WorkflowRun]:
         return self.workflow.run(Schema(messages=messages))
 
     def del_agent(self, name: str) -> "AgentWorkflow":
@@ -83,20 +84,20 @@ class AgentWorkflow:
         name = agent.name if not callable(agent) else f"Agent{random_string}"
         return self._add(name, agent if callable(agent) else self._create_factory(agent))
 
-    def _create_factory(self, input: AgentFactoryInput) -> AgentFactory:
+    def _create_factory(self, agent_input: AgentFactoryInput) -> AgentFactory:
         def factory(memory: BaseMemory) -> BeeAgent:
             def customizer(config: PromptTemplateInput) -> PromptTemplateInput:
                 new_config = config.model_copy()
-                new_config.defaults["instructions"] = input.instructions or config.defaults.get("instructions")
+                new_config.defaults["instructions"] = agent_input.instructions or config.defaults.get("instructions")
                 return new_config
 
             return BeeAgent(
-                llm=input.llm,
-                tools=input.tools or [],
+                llm=agent_input.llm,
+                tools=agent_input.tools or [],
                 memory=memory,
                 templates={"system": lambda template: template.fork(customizer=customizer)},
-                meta=AgentMeta(name=input.name, description=input.instructions or "", tools=[]),
-                execution=input.execution,
+                meta=AgentMeta(name=agent_input.name, description=agent_input.instructions or "", tools=[]),
+                execution=agent_input.execution,
             )
 
         return factory

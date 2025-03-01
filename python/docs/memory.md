@@ -105,9 +105,11 @@ _Source: [/python/examples/memory/base.py](/python/examples/memory/base.py)_
 
 ```py
 import asyncio
+import sys
 
 from beeai_framework.adapters.ollama.backend.chat import OllamaChatModel
 from beeai_framework.backend.message import Message, Role
+from beeai_framework.errors import FrameworkError
 from beeai_framework.memory.unconstrained_memory import UnconstrainedMemory
 
 
@@ -135,7 +137,10 @@ async def main() -> None:
 
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    try:
+        asyncio.run(main())
+    except FrameworkError as e:
+        sys.exit(e.explain())
 
 ```
 
@@ -151,11 +156,14 @@ _Source: [/python/examples/memory/llmMemory.py](/python/examples/memory/llmMemor
 
 ```py
 import asyncio
+import sys
+import traceback
 
 from beeai_framework.agents.bee.agent import BeeAgent
 from beeai_framework.agents.types import BeeAgentExecutionConfig
 from beeai_framework.backend.chat import ChatModel
 from beeai_framework.backend.message import AssistantMessage, UserMessage
+from beeai_framework.errors import FrameworkError
 from beeai_framework.memory.unconstrained_memory import UnconstrainedMemory
 
 # Initialize the memory and LLM
@@ -210,15 +218,17 @@ async def main() -> None:
         else:
             print("No agent message found in memory")
 
-    except Exception as e:
-        print(f"An error occurred: {e!s}")
-        import traceback
-
-        print(traceback.format_exc())
+    except Exception as err:
+        print(f"An error occurred: {err!s}")
+        traceback.print_exc()
+        raise err
 
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    try:
+        asyncio.run(main())
+    except FrameworkError as e:
+        sys.exit(e.explain())
 
 ```
 
@@ -246,8 +256,11 @@ Unlimited in size, stores all messages without constraints.
 
 ```py
 import asyncio
+import sys
+import traceback
 
 from beeai_framework.backend import Message, Role
+from beeai_framework.errors import FrameworkError
 from beeai_framework.memory import UnconstrainedMemory
 
 
@@ -267,15 +280,18 @@ async def main() -> None:
         for msg in memory.messages:
             print(f"{msg.role}: {msg.text}")
 
-    except Exception as e:
-        print(f"An error occurred: {e!s}")
-        import traceback
-
+    except Exception as err:
+        print(f"An error occurred: {err!s}")
         print(traceback.format_exc())
+        raise err
 
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    try:
+        asyncio.run(main())
+    except FrameworkError as e:
+        sys.exit(e.explain())
+
 ```
 
 _Source: [/python/examples/memory/unconstrainedMemory.py](/python/examples/memory/unconstrainedMemory.py)_
@@ -289,8 +305,11 @@ Keeps last `k` entries in the memory. The oldest ones are deleted (unless specif
 
 ```py
 import asyncio
+import sys
+import traceback
 
 from beeai_framework.backend import Message, Role
+from beeai_framework.errors import FrameworkError
 from beeai_framework.memory.sliding_memory import SlidingMemory, SlidingMemoryConfig
 
 
@@ -319,15 +338,18 @@ async def main() -> None:
         for msg in memory.messages:
             print(f"{msg.role}: {msg.text}")
 
-    except Exception as e:
-        print(f"An error occurred: {e!s}")
-        import traceback
-
+    except Exception as err:
+        print(f"An error occurred: {err!s}")
         print(traceback.format_exc())
+        raise err
 
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    try:
+        asyncio.run(main())
+    except FrameworkError as e:
+        sys.exit(e.explain())
+
 ```
 
 _Source: [/python/examples/memory/slidingMemory.py](/python/examples/memory/slidingMemory.py)_
@@ -343,9 +365,12 @@ If overflow occurs, the oldest message will be removed.
 ```py
 import asyncio
 import math
+import sys
+import traceback
 
 from beeai_framework.adapters.ollama.backend.chat import OllamaChatModel
 from beeai_framework.backend import Message, Role
+from beeai_framework.errors import FrameworkError
 from beeai_framework.memory import TokenMemory
 
 # Initialize the LLM
@@ -392,15 +417,18 @@ async def main() -> None:
         for msg in memory.messages:
             print(f"{msg.role}: {msg.text} (hash: {hash(msg)})")
 
-    except Exception as e:
-        print(f"An error occurred: {e!s}")
-        import traceback
-
+    except Exception as err:
+        print(f"An error occurred: {err!s}")
         print(traceback.format_exc())
+        raise err
 
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    try:
+        asyncio.run(main())
+    except FrameworkError as e:
+        sys.exit(e.explain())
+
 ```
 
 _Source: [/python/examples/memory/tokenMemory.py](/python/examples/memory/tokenMemory.py)_
@@ -413,9 +441,12 @@ Only a single summarization of the conversation is preserved. Summarization is u
 
 ```py
 import asyncio
+import sys
+import traceback
 
 from beeai_framework.backend.chat import ChatModel
 from beeai_framework.backend.message import AssistantMessage, SystemMessage, UserMessage
+from beeai_framework.errors import FrameworkError
 from beeai_framework.memory.summarize_memory import SummarizeMemory
 
 
@@ -447,15 +478,17 @@ async def main() -> None:
         if memory.messages:
             print(f"Summary: {memory.messages[0].get_texts()[0].get('text')}")
 
-    except Exception as e:
-        print(f"An error occurred: {e!s}")
-        import traceback
-
-        print(traceback.format_exc())
+    except Exception as err:
+        print(f"An error occurred: {err!s}")
+        traceback.print_exc()
+        raise err
 
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    try:
+        asyncio.run(main())
+    except FrameworkError as e:
+        sys.exit(e.explain())
 
 ```
 

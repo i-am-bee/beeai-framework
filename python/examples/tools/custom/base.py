@@ -1,10 +1,12 @@
 import asyncio
 import random
+import sys
 from typing import Any
 
 from pydantic import BaseModel, Field
 
 from beeai_framework.emitter.emitter import Emitter
+from beeai_framework.errors import FrameworkError
 from beeai_framework.tools.tool import Tool
 
 
@@ -42,10 +44,13 @@ class RiddleTool(Tool[RiddleToolInput]):
 
 async def main() -> None:
     tool = RiddleTool()
-    input = RiddleToolInput(riddle_number=random.randint(0, len(RiddleTool.data)))
-    result = await tool.run(input)
+    tool_input = RiddleToolInput(riddle_number=random.randint(0, len(RiddleTool.data)))
+    result = await tool.run(tool_input)
     print(result)
 
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    try:
+        asyncio.run(main())
+    except FrameworkError as e:
+        sys.exit(e.explain())

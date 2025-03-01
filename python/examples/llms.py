@@ -25,8 +25,8 @@ Arguments
 """
 
 
-async def main(model: str) -> None:
-    chat_model = ChatModel.from_name(model)
+async def main(name: str) -> None:
+    chat_model = ChatModel.from_name(name)
     agent = BeeAgent(llm=chat_model, tools=[], memory=UnconstrainedMemory())
 
     result = await agent.run("What is the smallest of the Cabo Verde islands?")
