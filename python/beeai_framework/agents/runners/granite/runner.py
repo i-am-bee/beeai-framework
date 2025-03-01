@@ -22,7 +22,7 @@ from beeai_framework.agents.runners.granite.prompts import (
     GraniteToolNotFoundErrorTemplate,
     GraniteUserPromptTemplate,
 )
-from beeai_framework.agents.types import BeeAgentTemplates, BeeInput, BeeRunOptions
+from beeai_framework.agents.types import AgentRunOptions, BeeAgentTemplates, BeeInput
 from beeai_framework.backend.message import ToolMessage, ToolResult
 from beeai_framework.context import RunContext
 from beeai_framework.emitter import EmitterOptions, EventMeta
@@ -35,7 +35,7 @@ from beeai_framework.utils.strings import create_strenum
 class GraniteRunner(DefaultRunner):
     use_native_tool_calling: bool = True
 
-    def __init__(self, input: BeeInput, options: BeeRunOptions, run: RunContext) -> None:
+    def __init__(self, input: BeeInput, options: AgentRunOptions, run: RunContext) -> None:
         super().__init__(input, options, run)
 
         async def on_update(data: dict, event: EventMeta) -> None:

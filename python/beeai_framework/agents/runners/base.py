@@ -18,13 +18,13 @@ from dataclasses import dataclass
 
 from beeai_framework.agents import AgentError
 from beeai_framework.agents.types import (
+    AgentRunInput,
+    AgentRunOptions,
     BeeAgentRunIteration,
     BeeAgentTemplates,
     BeeInput,
     BeeIterationResult,
     BeeMeta,
-    BeeRunInput,
-    BeeRunOptions,
 )
 from beeai_framework.cancellation import AbortSignal
 from beeai_framework.context import RunContext
@@ -65,7 +65,7 @@ class BeeRunnerToolInput:
 
 
 class BaseRunner(ABC):
-    def __init__(self, input: BeeInput, options: BeeRunOptions, run: RunContext) -> None:
+    def __init__(self, input: BeeInput, options: AgentRunOptions, run: RunContext) -> None:
         self._input = input
         self._options = options
         self._memory: BaseMemory | None = None
@@ -104,7 +104,7 @@ class BaseRunner(ABC):
         self._iterations.append(iteration)
         return RunnerIteration(emitter=emitter, state=iteration.state, meta=meta, signal=self._run.signal)
 
-    async def init(self, input: BeeRunInput) -> None:
+    async def init(self, input: AgentRunInput) -> None:
         self._memory = await self.init_memory(input)
 
     @abstractmethod
@@ -120,7 +120,7 @@ class BaseRunner(ABC):
         pass
 
     @abstractmethod
-    async def init_memory(self, input: BeeRunInput) -> BaseMemory:
+    async def init_memory(self, input: AgentRunInput) -> BaseMemory:
         pass
 
     @property

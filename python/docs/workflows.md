@@ -205,7 +205,7 @@ The multi-agent workflow pattern enables the orchestration of specialized agents
 import asyncio
 import traceback
 
-from beeai_framework.agents.bee.agent import BeeAgentExecutionConfig
+from beeai_framework.agents.bee.agent import AgentExecutionConfig
 from beeai_framework.backend.chat import ChatModel
 from beeai_framework.backend.message import UserMessage
 from beeai_framework.errors import FrameworkError
@@ -226,7 +226,7 @@ async def main() -> None:
                 instructions="You are a weather assistant.",
                 tools=[OpenMeteoTool()],
                 llm=llm,
-                execution=BeeAgentExecutionConfig(max_iterations=3, total_max_retries=10, max_retries_per_step=3),
+                execution=AgentExecutionConfig(max_iterations=3, total_max_retries=10, max_retries_per_step=3),
             )
         )
         workflow.add_agent(

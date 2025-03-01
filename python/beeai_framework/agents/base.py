@@ -18,7 +18,7 @@ from typing import Generic, TypeVar
 
 from pydantic import BaseModel
 
-from beeai_framework.agents.types import AgentMeta, BeeAgentExecutionConfig, BeeRunInput, BeeRunOptions
+from beeai_framework.agents.types import AgentExecutionConfig, AgentMeta, AgentRunInput, AgentRunOptions
 from beeai_framework.cancellation import AbortSignal
 from beeai_framework.context import Run, RunContext, RunContextInput, RunInstance
 from beeai_framework.emitter import Emitter
@@ -34,11 +34,11 @@ class BaseAgent(ABC, Generic[T]):
     def run(
         self,
         prompt: str | None = None,
-        execution: BeeAgentExecutionConfig | None = None,
+        execution: AgentExecutionConfig | None = None,
         signal: AbortSignal | None = None,
     ) -> Run[T]:
-        run_input = BeeRunInput(prompt=prompt)
-        options = BeeRunOptions(execution=execution, signal=signal)
+        run_input = AgentRunInput(prompt=prompt)
+        options = AgentRunOptions(execution=execution, signal=signal)
 
         if self.is_running:
             raise RuntimeError("Agent is already running!")
@@ -58,7 +58,7 @@ class BaseAgent(ABC, Generic[T]):
         )
 
     @abstractmethod
-    async def _run(self, run_input: BeeRunInput, options: BeeRunOptions | None, context: RunContext) -> T:
+    async def _run(self, run_input: AgentRunInput, options: AgentRunOptions | None, context: RunContext) -> T:
         pass
 
     def destroy(self) -> None:
