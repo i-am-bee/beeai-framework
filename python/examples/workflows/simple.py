@@ -1,9 +1,11 @@
 import asyncio
+import sys
 import traceback
 
-from pydantic import BaseModel, ValidationError
+from pydantic import BaseModel
 
-from beeai_framework.workflows.workflow import Workflow, WorkflowError
+from beeai_framework.errors import FrameworkError
+from beeai_framework.workflows.workflow import Workflow
 
 
 async def main() -> None:
@@ -19,11 +21,13 @@ async def main() -> None:
 
         await workflow.run(State(input="Hello"))
 
-    except WorkflowError:
+    except FrameworkError as err:
         traceback.print_exc()
-    except ValidationError:
-        traceback.print_exc()
+        raise err
 
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    try:
+        asyncio.run(main())
+    except FrameworkError as e:
+        sys.exit(e.explain())

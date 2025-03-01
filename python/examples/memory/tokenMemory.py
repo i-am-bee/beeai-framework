@@ -1,8 +1,11 @@
 import asyncio
 import math
+import sys
+import traceback
 
 from beeai_framework.adapters.ollama.backend.chat import OllamaChatModel
 from beeai_framework.backend import Message, Role
+from beeai_framework.errors import FrameworkError
 from beeai_framework.memory import TokenMemory
 
 # Initialize the LLM
@@ -49,12 +52,14 @@ async def main() -> None:
         for msg in memory.messages:
             print(f"{msg.role}: {msg.text} (hash: {hash(msg)})")
 
-    except Exception as e:
-        print(f"An error occurred: {e!s}")
-        import traceback
-
+    except Exception as err:
+        print(f"An error occurred: {err!s}")
         print(traceback.format_exc())
+        raise err
 
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    try:
+        asyncio.run(main())
+    except FrameworkError as e:
+        sys.exit(e.explain())

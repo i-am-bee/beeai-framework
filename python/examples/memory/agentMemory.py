@@ -1,9 +1,12 @@
 import asyncio
+import sys
+import traceback
 
 from beeai_framework.agents.bee.agent import BeeAgent
 from beeai_framework.agents.types import BeeAgentExecutionConfig
 from beeai_framework.backend.chat import ChatModel
 from beeai_framework.backend.message import AssistantMessage, UserMessage
+from beeai_framework.errors import FrameworkError
 from beeai_framework.memory.unconstrained_memory import UnconstrainedMemory
 
 # Initialize the memory and LLM
@@ -58,12 +61,14 @@ async def main() -> None:
         else:
             print("No agent message found in memory")
 
-    except Exception as e:
-        print(f"An error occurred: {e!s}")
-        import traceback
-
-        print(traceback.format_exc())
+    except Exception as err:
+        print(f"An error occurred: {err!s}")
+        traceback.print_exc()
+        raise err
 
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    try:
+        asyncio.run(main())
+    except FrameworkError as e:
+        sys.exit(e.explain())

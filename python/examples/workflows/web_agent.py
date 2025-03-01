@@ -89,9 +89,13 @@ async def main() -> None:
         print("Input: ", result.state.input)
         print("Agent: ", result.state.output)
 
-    except FrameworkError:
+    except FrameworkError as err:
         traceback.print_exc()
+        raise err
 
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    try:
+        asyncio.run(main())
+    except FrameworkError as e:
+        sys.exit(e.explain())

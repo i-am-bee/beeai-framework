@@ -1,10 +1,12 @@
 import asyncio
+import sys
 from typing import Any
 
 import requests
 from pydantic import BaseModel, Field
 
 from beeai_framework.emitter.emitter import Emitter
+from beeai_framework.errors import FrameworkError
 from beeai_framework.tools import ToolInputValidationError
 from beeai_framework.tools.tool import Tool
 
@@ -34,10 +36,10 @@ class OpenLibraryTool(Tool[OpenLibraryToolInput]):
             creator=self,
         )
 
-    def _run(self, input: OpenLibraryToolInput, _: Any | None = None) -> OpenLibraryToolResult:
+    def _run(self, tool_input: OpenLibraryToolInput, _: Any | None = None) -> OpenLibraryToolResult:
         key = ""
         value = ""
-        input_vars = vars(input)
+        input_vars = vars(tool_input)
         for val in input_vars:
             if input_vars[val] is not None:
                 key = val
@@ -62,10 +64,13 @@ class OpenLibraryTool(Tool[OpenLibraryToolInput]):
 
 async def main() -> None:
     tool = OpenLibraryTool()
-    input = OpenLibraryToolInput(title="It")
-    result = await tool.run(input)
+    tool_input = OpenLibraryToolInput(title="It")
+    result = await tool.run(tool_input)
     print(result)
 
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    try:
+        asyncio.run(main())
+    except FrameworkError as e:
+        sys.exit(e.explain())

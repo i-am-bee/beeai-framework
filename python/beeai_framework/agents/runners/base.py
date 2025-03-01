@@ -11,8 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
-
+import math
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 
@@ -93,7 +92,7 @@ class BaseRunner(ABC):
         max_iterations = (
             self._options.execution.max_iterations
             if self._options.execution and self._options.execution.max_iterations
-            else 0
+            else math.inf
         )
 
         if meta.iteration > max_iterations:

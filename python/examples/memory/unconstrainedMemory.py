@@ -1,6 +1,9 @@
 import asyncio
+import sys
+import traceback
 
 from beeai_framework.backend import Message, Role
+from beeai_framework.errors import FrameworkError
 from beeai_framework.memory import UnconstrainedMemory
 
 
@@ -20,12 +23,14 @@ async def main() -> None:
         for msg in memory.messages:
             print(f"{msg.role}: {msg.text}")
 
-    except Exception as e:
-        print(f"An error occurred: {e!s}")
-        import traceback
-
+    except Exception as err:
+        print(f"An error occurred: {err!s}")
         print(traceback.format_exc())
+        raise err
 
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    try:
+        asyncio.run(main())
+    except FrameworkError as e:
+        sys.exit(e.explain())

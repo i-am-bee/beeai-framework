@@ -28,7 +28,9 @@ All examples can be found [here](/python/examples/tools).
 <!-- embedme examples/tools/base.py -->
 ```py
 import asyncio
+import sys
 
+from beeai_framework.errors import FrameworkError
 from beeai_framework.tools.weather.openmeteo import OpenMeteoTool, OpenMeteoToolInput
 
 
@@ -41,7 +43,10 @@ async def main() -> None:
 
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    try:
+        asyncio.run(main())
+    except FrameworkError as e:
+        sys.exit(e.explain())
 
 ```
 
@@ -52,7 +57,9 @@ _Source: [/python/examples/tools/base.py](/python/examples/tools/base.py)_
 <!-- embedme examples/tools/advanced.py -->
 ```py
 import asyncio
+import sys
 
+from beeai_framework.errors import FrameworkError
 from beeai_framework.tools.weather.openmeteo import OpenMeteoTool, OpenMeteoToolInput
 
 
@@ -67,7 +74,10 @@ async def main() -> None:
 
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    try:
+        asyncio.run(main())
+    except FrameworkError as e:
+        sys.exit(e.explain())
 
 ```
 
@@ -98,12 +108,15 @@ _Source: [/python/examples/tools/agent.py](/python/examples/tools/agent.py)_
 ```py
 import asyncio
 import json
+import sys
 from urllib.parse import quote
 
 import requests
 
 from beeai_framework import BeeAgent, tool
+from beeai_framework.agents.types import BeeAgentExecutionConfig
 from beeai_framework.backend.chat import ChatModel
+from beeai_framework.errors import FrameworkError
 from beeai_framework.memory.unconstrained_memory import UnconstrainedMemory
 from beeai_framework.tools.tool import StringToolOutput
 from beeai_framework.utils import BeeLogger
@@ -113,7 +126,7 @@ logger = BeeLogger(__name__)
 
 # defining a tool using the `tool` decorator
 @tool
-def basic_calculator(expression: str) -> int:
+def basic_calculator(expression: str) -> StringToolOutput:
     """
     A calculator tool that performs mathematical operations.
 
@@ -145,13 +158,16 @@ async def main() -> None:
 
     agent = BeeAgent(llm=chat_model, tools=[basic_calculator], memory=UnconstrainedMemory())
 
-    result = await agent.run("What is the square root of 36?")
+    result = await agent.run("What is the square root of 36?", execution=BeeAgentExecutionConfig(total_max_retries=10))
 
     print(result.result.text)
 
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    try:
+        asyncio.run(main())
+    except FrameworkError as e:
+        sys.exit(e.explain())
 
 ```
 
@@ -162,9 +178,11 @@ _Source: [/python/examples/tools/decorator.py](/python/examples/tools/decorator.
 <!-- embedme examples/tools/duckduckgo.py -->
 ```py
 import asyncio
+import sys
 
 from beeai_framework.agents.bee import BeeAgent
 from beeai_framework.backend.chat import ChatModel
+from beeai_framework.errors import FrameworkError
 from beeai_framework.memory import UnconstrainedMemory
 from beeai_framework.tools.search.duckduckgo import DuckDuckGoSearchTool
 
@@ -179,7 +197,10 @@ async def main() -> None:
 
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    try:
+        asyncio.run(main())
+    except FrameworkError as e:
+        sys.exit(e.explain())
 
 ```
 
@@ -191,9 +212,11 @@ _Source: [/python/examples/tools/duckduckgo.py](/python/examples/tools/duckduckg
 
 ```py
 import asyncio
+import sys
 
 from beeai_framework.agents.bee import BeeAgent
 from beeai_framework.backend.chat import ChatModel
+from beeai_framework.errors import FrameworkError
 from beeai_framework.memory import UnconstrainedMemory
 from beeai_framework.tools.weather.openmeteo import OpenMeteoTool
 
@@ -208,7 +231,10 @@ async def main() -> None:
 
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    try:
+        asyncio.run(main())
+    except FrameworkError as e:
+        sys.exit(e.explain())
 
 ```
 
@@ -230,8 +256,8 @@ from beeai_framework.tools.search.wikipedia import (
 
 async def main() -> None:
     wikipedia_client = WikipediaTool({"full_text": True})
-    input = WikipediaToolInput(query="bee")
-    result = await wikipedia_client.run(input)
+    tool_input = WikipediaToolInput(query="bee")
+    result = await wikipedia_client.run(tool_input)
     print(result.get_text_content())
 
 
@@ -254,11 +280,13 @@ To create a new tool it is recommended to implement the base `Tool` class.
 ```py
 import asyncio
 import random
+import sys
 from typing import Any
 
 from pydantic import BaseModel, Field
 
 from beeai_framework.emitter.emitter import Emitter
+from beeai_framework.errors import FrameworkError
 from beeai_framework.tools.tool import Tool
 
 
@@ -296,13 +324,16 @@ class RiddleTool(Tool[RiddleToolInput]):
 
 async def main() -> None:
     tool = RiddleTool()
-    input = RiddleToolInput(riddle_number=random.randint(0, len(RiddleTool.data)))
-    result = await tool.run(input)
+    tool_input = RiddleToolInput(riddle_number=random.randint(0, len(RiddleTool.data)))
+    result = await tool.run(tool_input)
     print(result)
 
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    try:
+        asyncio.run(main())
+    except FrameworkError as e:
+        sys.exit(e.explain())
 
 ```
 
@@ -323,12 +354,14 @@ If your tool is more complex, you may want to use the full power of the tool abs
 <!-- embedme examples/tools/custom/openlibrary.py -->
 ```py
 import asyncio
+import sys
 from typing import Any
 
 import requests
 from pydantic import BaseModel, Field
 
 from beeai_framework.emitter.emitter import Emitter
+from beeai_framework.errors import FrameworkError
 from beeai_framework.tools import ToolInputValidationError
 from beeai_framework.tools.tool import Tool
 
@@ -358,10 +391,10 @@ class OpenLibraryTool(Tool[OpenLibraryToolInput]):
             creator=self,
         )
 
-    def _run(self, input: OpenLibraryToolInput, _: Any | None = None) -> OpenLibraryToolResult:
+    def _run(self, tool_input: OpenLibraryToolInput, _: Any | None = None) -> OpenLibraryToolResult:
         key = ""
         value = ""
-        input_vars = vars(input)
+        input_vars = vars(tool_input)
         for val in input_vars:
             if input_vars[val] is not None:
                 key = val
@@ -386,13 +419,16 @@ class OpenLibraryTool(Tool[OpenLibraryToolInput]):
 
 async def main() -> None:
     tool = OpenLibraryTool()
-    input = OpenLibraryToolInput(title="It")
-    result = await tool.run(input)
+    tool_input = OpenLibraryToolInput(title="It")
+    result = await tool.run(tool_input)
     print(result)
 
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    try:
+        asyncio.run(main())
+    except FrameworkError as e:
+        sys.exit(e.explain())
 
 ```
 

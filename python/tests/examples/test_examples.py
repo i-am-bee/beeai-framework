@@ -23,16 +23,20 @@ load_dotenv()
 
 all_examples = list(pathlib.Path(__file__, "../../../examples").resolve().rglob("*.py"))
 
-exclude = [
-    "version.py",
-    "helpers/io.py",
-    # Searx
-    "workflows/web_agent.py",
-    # WatsonX
-    "backend/providers/watsonx.py",
-    # OpenAI
-    "backend/providers/openai_example.py",
-]
+exclude = list(
+    filter(
+        None,
+        [
+            "version.py",
+            "helpers/io.py",
+            # only test if API key is found
+            "backend/providers/watsonx.py" if os.getenv("WATSONX_API_KEY") is None else None,
+            "backend/providers/openai_example.py" if os.getenv("OPENAI_API_KEY") is None else None,
+            # requires Searx instance
+            "workflows/web_agent.py",
+        ],
+    )
+)
 
 
 def example_name(path: str) -> str:
