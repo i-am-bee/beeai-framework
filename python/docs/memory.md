@@ -37,7 +37,7 @@ BeeAI framework provides several memory implementations:
 
 ---
 
-## Core Concepts
+## Core concepts
 
 ### Messages
 
@@ -46,7 +46,7 @@ Messages are the fundamental units stored in memory, representing interactions b
 - Messages contain text content
 - Messages can be added, retrieved, and processed
 
-### Memory Types
+### Memory types
 
 Different memory strategies are available depending on your requirements:
 - **Unconstrained** - Store unlimited messages
@@ -54,7 +54,7 @@ Different memory strategies are available depending on your requirements:
 - **Token-based** - Manage a token budget to stay within model context limits
 - **Summarization** - Compress previous interactions into summaries
 
-### Integration Points
+### Integration points
 
 Memory components integrate with other parts of the framework:
 - LLMs use memory to maintain conversation context
@@ -63,9 +63,9 @@ Memory components integrate with other parts of the framework:
 
 ---
 
-## Basic Usage
+## Basic usage
 
-### Capabilities Showcase
+### Capabilities showcase
 
 <!-- embedme examples/memory/base.py -->
 
@@ -145,7 +145,7 @@ _Source: [/python/examples/memory/llmMemory.py](/python/examples/memory/llmMemor
 >
 > Memory for non-chat LLMs works exactly the same way.
 
-### Usage with Agents
+### Usage with agents
 
 <!-- embedme examples/memory/agentMemory.py -->
 
@@ -234,7 +234,7 @@ _Source: [/python/examples/memory/agentMemory.py](/python/examples/memory/agentM
 
 ---
 
-## Memory Types
+## Memory types
 
 The framework provides multiple out-of-the-box memory implementations for different use cases.
 
@@ -463,7 +463,7 @@ _Source: [python/examples/memory/summarizeMemory.py](/python/examples/memory/sum
 
 ---
 
-## Creating Custom Memory
+## Creating custom memory
 
 To create your memory implementation, you must implement the `BaseMemory` class.
 
