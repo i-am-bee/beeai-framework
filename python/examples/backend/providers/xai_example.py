@@ -109,8 +109,9 @@ async def main() -> None:
     await xai_stream()
     print("*" * 10, "xai_stream_abort")
     await xai_stream_abort()
-    print("*" * 10, "xai_structure")
-    await xai_structure()
+    # TODO #445 currently fails with xai - check openai
+    #print("*" * 10, "xai_structure")
+    #await xai_structure()
     print("*" * 10, "xai_stream_parser")
     await xai_stream_parser()
 

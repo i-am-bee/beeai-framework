@@ -31,10 +31,9 @@ class xAIChatModel(LiteLLMChatModel):
         self, model_id: str | None = None, settings: dict | None = None
     ) -> None:
         _settings = settings.copy() if settings is not None else {}
-
         super().__init__(
             # TODO: #445 update to grok3. Also do we respect
-            model_id if model_id else os.getenv("OPENAI_CHAT_MODEL", "grok-2"),
+            model_id if model_id else os.getenv("XAI_CHAT_MODEL", "grok-2"),
             provider_id="xai",
             settings=_settings,
         )
