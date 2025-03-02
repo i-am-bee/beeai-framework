@@ -25,6 +25,10 @@ This flexible event-driven mechanism providers the ability to:
 * Log and track agent interactions
 * Implement custom event handling
 
+> [!NOTE]
+>
+> Location within the framework: [beeai_framework/emitter](/python/beeai_framework/emitter).
+
 ## Basic usage
 
 The following example demonstrates how the [`Emitter`](/beeai/utils/events.py) feature works.

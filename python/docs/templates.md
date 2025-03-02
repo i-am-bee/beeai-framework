@@ -1,9 +1,5 @@
 # 📋 Prompt Templates
 
-> [!TIP]
->
-> Location within the framework: [beeai_framework/template](/python/beeai_framework/template.py).
-
 <!-- TOC -->
 ## Table of Contents
 - [Overview](#overview)
@@ -37,6 +33,10 @@ At its core, the `PromptTemplate` class:
 > [!TIP]
 >
 > Prompt Templates are fundamental building blocks in the framework and are extensively used in agent implementations.
+
+> [!NOTE]
+>
+> Location within the framework: [beeai_framework/template](/python/beeai_framework/template.py).
 
 ## Basic usage
 

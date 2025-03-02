@@ -1,9 +1,5 @@
 # 🛠️ Tools
 
-> [!TIP]
->
-> Location within the framework: [beeai_framework/tools](/python/beeai_framework/tools).
-
 <!-- TOC -->
 ## Table of Contents
 - [Overview](#overview)
@@ -30,6 +26,10 @@
 ## Overview
 
 Tools extend agent capabilities beyond text processing, enabling interaction with external systems and data sources. They act as specialized modules that extend the agent's abilities, allowing it to interact with external systems, access information, and execute actions in response to user queries.
+
+> [!NOTE]
+>
+> Location within the framework: [beeai_framework/tools](/python/beeai_framework/tools).
 
 ## Built-in tools
 

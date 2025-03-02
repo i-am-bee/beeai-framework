@@ -31,6 +31,10 @@ Backend is an umbrella module that encapsulates a unified way to work with the f
 
 BeeAI framework's backend is designed with a provider-based architecture, allowing you to switch between different AI service providers while maintaining a consistent API.
 
+> [!NOTE]
+>
+> Location within the framework: [beeai_framework/backend](/python/beeai_framework/backend).
+
 --- 
 
 ## Supported providers

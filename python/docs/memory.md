@@ -35,6 +35,10 @@ BeeAI framework provides several memory implementations:
 | [**TokenMemory**](#tokenmemory) | Manages token usage to stay within model context limits |
 | [**SummarizeMemory**](#summarizememory) | Maintains a single summarization of the conversation |
 
+> [!NOTE]
+>
+> Location within the framework: [beeai_framework/memory](/python/beeai_framework/memory).
+
 ---
 
 ## Core concepts
