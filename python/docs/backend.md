@@ -32,6 +32,8 @@ Backend is an umbrella module that encapsulates a unified way to work with the f
 
 The following table depicts supported providers.
 
+<!-- TODO: #445 Add Grok backend info>
+
 | Name             | Chat | Embedding | Dependency               | Environment Variables                                                                                                                                                 |
 | ---------------- | :--: | :-------: | ------------------------ | :-------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `Ollama`         |  ✅  |          | `ollama-ai-provider`     | OLLAMA_CHAT_MODEL<br/>OLLAMA_BASE_URL                                                                                                       |
