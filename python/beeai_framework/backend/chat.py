@@ -42,7 +42,7 @@ class ChatModelParameters(BaseModel):
     max_tokens: int | None = None
     top_p: int | None = None
     frequency_penalty: int | None = None
-    temperature: int | None = 0
+    temperature: int = 0
     top_k: int | None = None
     n: int | None = None
     presence_penalty: int | None = None
