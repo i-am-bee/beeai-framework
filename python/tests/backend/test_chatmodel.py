@@ -135,13 +135,13 @@ def test_chat_model_from(monkeypatch: pytest.MonkeyPatch) -> None:
     # Ollama with Llama model and base_url specified in code
     ollama_chat_model = ChatModel.from_name("ollama:llama3.1", {"base_url": "http://somewhere:12345"})
     assert isinstance(ollama_chat_model, OllamaChatModel)
-    assert ollama_chat_model.settings["base_url"] == "http://somewhere:12345/v1"
+    assert ollama_chat_model._settings["base_url"] == "http://somewhere:12345/v1"
 
     # Ollama with Granite model and base_url specified in env var
     monkeypatch.setenv("OLLAMA_API_BASE", "http://somewhere-else:12345")
     ollama_chat_model = ChatModel.from_name("ollama:granite3.1-dense:8b")
     assert isinstance(ollama_chat_model, OllamaChatModel)
-    assert ollama_chat_model.settings["base_url"] == "http://somewhere-else:12345/v1"
+    assert ollama_chat_model._settings["base_url"] == "http://somewhere-else:12345/v1"
 
     # Watsonx with Granite model and settings specified in code
     watsonx_chat_model = ChatModel.from_name(
@@ -153,9 +153,9 @@ def test_chat_model_from(monkeypatch: pytest.MonkeyPatch) -> None:
         },
     )
     assert isinstance(watsonx_chat_model, WatsonxChatModel)
-    assert watsonx_chat_model.settings["url"] == "http://somewhere"
-    assert watsonx_chat_model.settings["project_id"] == "proj_id_123"
-    assert watsonx_chat_model.settings["api_key"] == "api_key_123"
+    assert watsonx_chat_model._settings["url"] == "http://somewhere"
+    assert watsonx_chat_model._settings["project_id"] == "proj_id_123"
+    assert watsonx_chat_model._settings["api_key"] == "api_key_123"
 
     # Watsonx with Granite model and settings specified in env vars
     monkeypatch.setenv("WATSONX_URL", "http://somewhere-else")

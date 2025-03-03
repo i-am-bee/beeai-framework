@@ -61,13 +61,13 @@ class LiteLLMChatModel(ChatModel, ABC):
         return self._model_id
 
     def __init__(self, model_id: str, *, provider_id: str, settings: dict | None = None) -> None:
+        super().__init__()
         self._model_id = model_id
         self._litellm_provider_id = provider_id
         self.supported_params = get_supported_openai_params(model=self.model_id, custom_llm_provider=provider_id) or []
         # drop any unsupported parameters that were passed in
         litellm.drop_params = True
-        self.settings = settings or {}
-        super().__init__()
+        self._settings = settings or {}
 
     @staticmethod
     def litellm_debug(enable: bool = True) -> None:
@@ -161,7 +161,7 @@ class LiteLLMChatModel(ChatModel, ABC):
 
         tools = [{"type": "function", "function": tool.prompt_data()} for tool in input.tools] if input.tools else None
 
-        params = self.settings | ({} if self.parameters is None else self.parameters.model_dump(exclude_unset=True))
+        params = self._settings | self.parameters.model_dump(exclude_unset=True)
         return LiteLLMParameters(
             model=f"{self._litellm_provider_id}/{self.model_id}",
             messages=messages,
