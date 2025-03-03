@@ -2,6 +2,7 @@ import asyncio
 import logging
 import os
 import sys
+import traceback
 from typing import Any
 
 from dotenv import load_dotenv
@@ -100,4 +101,5 @@ if __name__ == "__main__":
     try:
         asyncio.run(main())
     except FrameworkError as e:
+        traceback.print_exc()
         sys.exit(e.explain())

@@ -8,29 +8,24 @@ from beeai_framework.memory import UnconstrainedMemory
 
 
 async def main() -> None:
-    try:
-        # Create memory instance
-        memory = UnconstrainedMemory()
+    # Create memory instance
+    memory = UnconstrainedMemory()
 
-        # Add a message
-        await memory.add(Message.of({"role": Role.USER, "text": "Hello world!"}))
+    # Add a message
+    await memory.add(Message.of({"role": Role.USER, "text": "Hello world!"}))
 
-        # Print results
-        print(f"Is Empty: {memory.is_empty()}")  # Should print: False
-        print(f"Message Count: {len(memory.messages)}")  # Should print: 1
+    # Print results
+    print(f"Is Empty: {memory.is_empty()}")  # Should print: False
+    print(f"Message Count: {len(memory.messages)}")  # Should print: 1
 
-        print("\nMessages:")
-        for msg in memory.messages:
-            print(f"{msg.role}: {msg.text}")
-
-    except Exception as err:
-        print(f"An error occurred: {err!s}")
-        print(traceback.format_exc())
-        raise err
+    print("\nMessages:")
+    for msg in memory.messages:
+        print(f"{msg.role}: {msg.text}")
 
 
 if __name__ == "__main__":
     try:
         asyncio.run(main())
     except FrameworkError as e:
+        traceback.print_exc()
         sys.exit(e.explain())

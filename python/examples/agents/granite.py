@@ -1,5 +1,6 @@
 import asyncio
 import sys
+import traceback
 
 from beeai_framework.agents.bee.agent import BeeAgent
 from beeai_framework.agents.types import BeeAgentExecutionConfig, BeeRunOutput
@@ -40,4 +41,5 @@ if __name__ == "__main__":
     try:
         asyncio.run(main())
     except FrameworkError as e:
+        traceback.print_exc()
         sys.exit(e.explain())

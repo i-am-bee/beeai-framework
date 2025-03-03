@@ -1,5 +1,6 @@
 import asyncio
 import sys
+import traceback
 
 from pydantic import BaseModel, Field
 from traitlets import Callable
@@ -112,4 +113,5 @@ if __name__ == "__main__":
     try:
         asyncio.run(main())
     except FrameworkError as e:
+        traceback.print_exc()
         sys.exit(e.explain())

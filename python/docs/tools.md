@@ -58,6 +58,7 @@ _Source: [/python/examples/tools/base.py](/python/examples/tools/base.py)_
 ```py
 import asyncio
 import sys
+import traceback
 
 from beeai_framework.errors import FrameworkError
 from beeai_framework.tools.weather.openmeteo import OpenMeteoTool, OpenMeteoToolInput
@@ -77,6 +78,7 @@ if __name__ == "__main__":
     try:
         asyncio.run(main())
     except FrameworkError as e:
+        traceback.print_exc()
         sys.exit(e.explain())
 
 ```
@@ -109,6 +111,7 @@ _Source: [/python/examples/tools/agent.py](/python/examples/tools/agent.py)_
 import asyncio
 import json
 import sys
+import traceback
 from urllib.parse import quote
 
 import requests
@@ -167,6 +170,7 @@ if __name__ == "__main__":
     try:
         asyncio.run(main())
     except FrameworkError as e:
+        traceback.print_exc()
         sys.exit(e.explain())
 
 ```
@@ -179,6 +183,7 @@ _Source: [/python/examples/tools/decorator.py](/python/examples/tools/decorator.
 ```py
 import asyncio
 import sys
+import traceback
 
 from beeai_framework.agents.bee import BeeAgent
 from beeai_framework.backend.chat import ChatModel
@@ -200,6 +205,7 @@ if __name__ == "__main__":
     try:
         asyncio.run(main())
     except FrameworkError as e:
+        traceback.print_exc()
         sys.exit(e.explain())
 
 ```
@@ -213,6 +219,7 @@ _Source: [/python/examples/tools/duckduckgo.py](/python/examples/tools/duckduckg
 ```py
 import asyncio
 import sys
+import traceback
 
 from beeai_framework.agents.bee import BeeAgent
 from beeai_framework.backend.chat import ChatModel
@@ -234,6 +241,7 @@ if __name__ == "__main__":
     try:
         asyncio.run(main())
     except FrameworkError as e:
+        traceback.print_exc()
         sys.exit(e.explain())
 
 ```
@@ -247,7 +255,10 @@ _Source: [/python/examples/tools/openmeteo.py](/python/examples/tools/openmeteo.
 
 ```py
 import asyncio
+import sys
+import traceback
 
+from beeai_framework.errors import FrameworkError
 from beeai_framework.tools.search.wikipedia import (
     WikipediaTool,
     WikipediaToolInput,
@@ -262,7 +273,11 @@ async def main() -> None:
 
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    try:
+        asyncio.run(main())
+    except FrameworkError as e:
+        traceback.print_exc()
+        sys.exit(e.explain())
 
 ```
 

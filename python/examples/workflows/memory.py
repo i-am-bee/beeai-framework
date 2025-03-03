@@ -25,27 +25,24 @@ async def main() -> None:
 
     reader = ConsoleReader()
 
-    try:
-        memory = UnconstrainedMemory()
-        workflow = Workflow(State)
-        workflow.add_step("echo", echo)
+    memory = UnconstrainedMemory()
+    workflow = Workflow(State)
+    workflow.add_step("echo", echo)
 
-        for prompt in reader:
-            # Add user message to memory
-            await memory.add(UserMessage(content=prompt))
-            # Run workflow with memory
-            response = await workflow.run(State(memory=memory))
-            # Add assistant response to memory
-            await memory.add(AssistantMessage(content=response.state.output))
+    for prompt in reader:
+        # Add user message to memory
+        await memory.add(UserMessage(content=prompt))
+        # Run workflow with memory
+        response = await workflow.run(State(memory=memory))
+        # Add assistant response to memory
+        await memory.add(AssistantMessage(content=response.state.output))
 
-            reader.write("Assistant 🤖 : ", response.state.output)
-    except FrameworkError as err:
-        traceback.print_exc()
-        raise err
+        reader.write("Assistant 🤖 : ", response.state.output)
 
 
 if __name__ == "__main__":
     try:
         asyncio.run(main())
     except FrameworkError as e:
+        traceback.print_exc()
         sys.exit(e.explain())

@@ -1,5 +1,6 @@
 import asyncio
 import sys
+import traceback
 
 from beeai_framework.agents.bee import BeeAgent
 from beeai_framework.backend.chat import ChatModel
@@ -21,4 +22,5 @@ if __name__ == "__main__":
     try:
         asyncio.run(main())
     except FrameworkError as e:
+        traceback.print_exc()
         sys.exit(e.explain())

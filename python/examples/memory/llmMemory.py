@@ -1,5 +1,6 @@
 import asyncio
 import sys
+import traceback
 
 from beeai_framework.adapters.ollama.backend.chat import OllamaChatModel
 from beeai_framework.backend.message import Message, Role
@@ -34,4 +35,5 @@ if __name__ == "__main__":
     try:
         asyncio.run(main())
     except FrameworkError as e:
+        traceback.print_exc()
         sys.exit(e.explain())

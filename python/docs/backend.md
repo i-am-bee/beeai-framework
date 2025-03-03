@@ -54,6 +54,7 @@ The following table depicts supported providers.
 ```py
 import asyncio
 import sys
+import traceback
 
 from pydantic import BaseModel, Field
 
@@ -140,6 +141,7 @@ if __name__ == "__main__":
     try:
         asyncio.run(main())
     except FrameworkError as e:
+        traceback.print_exc()
         sys.exit(e.explain())
 
 ```

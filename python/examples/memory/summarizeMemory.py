@@ -9,41 +9,36 @@ from beeai_framework.memory.summarize_memory import SummarizeMemory
 
 
 async def main() -> None:
-    try:
-        # Initialize the LLM with parameters
-        llm = ChatModel.from_name(
-            "ollama:granite3.1-dense:8b",
-            # ChatModelParameters(temperature=0\),
-        )
+    # Initialize the LLM with parameters
+    llm = ChatModel.from_name(
+        "ollama:granite3.1-dense:8b",
+        # ChatModelParameters(temperature=0\),
+    )
 
-        # Create summarize memory instance
-        memory = SummarizeMemory(llm)
+    # Create summarize memory instance
+    memory = SummarizeMemory(llm)
 
-        # Add messages
-        await memory.add_many(
-            [
-                SystemMessage("You are a guide through France."),
-                UserMessage("What is the capital?"),
-                AssistantMessage("Paris"),
-                UserMessage("What language is spoken there?"),
-            ]
-        )
+    # Add messages
+    await memory.add_many(
+        [
+            SystemMessage("You are a guide through France."),
+            UserMessage("What is the capital?"),
+            AssistantMessage("Paris"),
+            UserMessage("What language is spoken there?"),
+        ]
+    )
 
-        # Print results
-        print(f"Is Empty: {memory.is_empty()}")
-        print(f"Message Count: {len(memory.messages)}")
+    # Print results
+    print(f"Is Empty: {memory.is_empty()}")
+    print(f"Message Count: {len(memory.messages)}")
 
-        if memory.messages:
-            print(f"Summary: {memory.messages[0].get_texts()[0].get('text')}")
-
-    except Exception as err:
-        print(f"An error occurred: {err!s}")
-        traceback.print_exc()
-        raise err
+    if memory.messages:
+        print(f"Summary: {memory.messages[0].get_texts()[0].get('text')}")
 
 
 if __name__ == "__main__":
     try:
         asyncio.run(main())
     except FrameworkError as e:
+        traceback.print_exc()
         sys.exit(e.explain())
