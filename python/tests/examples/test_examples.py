@@ -32,10 +32,9 @@ exclude = list(
             # only test if API key is found
             "backend/providers/watsonx.py" if os.getenv("WATSONX_API_KEY") is None else None,
             "backend/providers/openai_example.py" if os.getenv("OPENAI_API_KEY") is None else None,
+            "backend/providers/groq.py" if os.getenv("GROQ_API_KEY") is None else None,
             # requires Searx instance
             "workflows/web_agent.py",
-            # Groq
-            "backend/providers/groq.py",
         ],
     )
 )
