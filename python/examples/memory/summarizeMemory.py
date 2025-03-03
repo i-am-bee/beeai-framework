@@ -12,7 +12,7 @@ async def main() -> None:
     # Initialize the LLM with parameters
     llm = ChatModel.from_name(
         "ollama:granite3.1-dense:8b",
-        # ChatModelParameters(temperature=0\),
+        # ChatModelParameters(temperature=0),
     )
 
     # Create summarize memory instance
