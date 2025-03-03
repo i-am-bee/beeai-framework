@@ -19,6 +19,7 @@ from datetime import UTC, datetime
 from typing import Any, Literal
 from urllib.parse import urlencode
 
+import httpx
 import requests
 from pydantic import BaseModel, Field
 
@@ -134,12 +135,14 @@ class OpenMeteoTool(Tool[OpenMeteoToolInput]):
         params["temperature_unit"] = input.temperature_unit
         return params
 
-    def _run(self, input: OpenMeteoToolInput, options: Any = None) -> None:
+    async def _run(self, input: OpenMeteoToolInput, options: Any = None) -> None:
         params = urlencode(self.get_params(input), doseq=True)
         logger.debug(f"Using OpenMeteo URL: https://api.open-meteo.com/v1/forecast?{params}")
-        response = requests.get(
-            f"https://api.open-meteo.com/v1/forecast?{params}",
-            headers={"Content-Type": "application/json", "Accept": "application/json"},
-        )
-        response.raise_for_status()
-        return StringToolOutput(json.dumps(response.json()))
+
+        async with httpx.AsyncClient() as client:
+            response = await client.get(
+                f"https://api.open-meteo.com/v1/forecast?{params}",
+                headers={"Content-Type": "application/json", "Accept": "application/json"},
+            )
+            response.raise_for_status()
+            return StringToolOutput(json.dumps(response.json()))

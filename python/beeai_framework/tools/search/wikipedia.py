@@ -61,7 +61,7 @@ class WikipediaTool(Tool[WikipediaToolInput]):
             titles.append(section.title)
         return ",".join(str(title) for title in titles)
 
-    def _run(self, input: WikipediaToolInput, _: Any | None = None) -> WikipediaToolOutput:
+    async def _run(self, input: WikipediaToolInput, _: Any | None = None) -> WikipediaToolOutput:
         page_py = self.client.page(input.query)
 
         if not page_py.exists():
