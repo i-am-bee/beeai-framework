@@ -34,7 +34,7 @@ class BeeMeta(BaseModel):
     iteration: int
 
 
-class BeeAgentExecutionConfig(BaseModel):
+class AgentExecutionConfig(BaseModel):
     total_max_retries: int | None = None
     max_retries_per_step: int | None = None
     max_iterations: int | None = None
@@ -42,7 +42,7 @@ class BeeAgentExecutionConfig(BaseModel):
 
 class BeeRunOptions(BaseModel):
     signal: AbortSignal | None = None
-    execution: BeeAgentExecutionConfig | None = None
+    execution: AgentExecutionConfig | None = None
 
 
 class BeeIterationResult(BaseModel):
@@ -102,5 +102,5 @@ class BeeInput(BaseModel):
     memory: InstanceOf[BaseMemory]
     meta: InstanceOf[AgentMeta] | None = None
     templates: dict[ModelKeysType, InstanceOf[BeeAgentTemplates] | BeeTemplateFactory] | None = None
-    execution: BeeAgentExecutionConfig | None = None
+    execution: AgentExecutionConfig | None = None
     stream: bool | None = None

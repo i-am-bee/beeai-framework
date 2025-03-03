@@ -18,7 +18,7 @@ from typing import Generic, TypeVar
 
 from pydantic import BaseModel
 
-from beeai_framework.agents.types import AgentMeta
+from beeai_framework.agents.types import AgentExecutionConfig, AgentMeta
 from beeai_framework.cancellation import AbortSignal
 from beeai_framework.context import Run, RunContext, RunContextInput, RunInstance
 from beeai_framework.emitter import Emitter
@@ -28,7 +28,6 @@ from beeai_framework.utils.models import ModelLike
 T = TypeVar("T", bound=BaseModel)
 RI = TypeVar("RI", bound=BaseModel)
 RO = TypeVar("RO", bound=BaseModel)
-C = TypeVar("C", bound=BaseModel)
 
 
 class BaseAgent(ABC, Generic[T]):
@@ -38,7 +37,7 @@ class BaseAgent(ABC, Generic[T]):
     def run(
         self,
         prompt: str | None = None,
-        execution: C | None = None,
+        execution: AgentExecutionConfig | None = None,
         signal: AbortSignal | None = None,
     ) -> Run[T]:
         if self.is_running:

@@ -93,7 +93,7 @@ Control how the agent runs by configuring retries, timeouts, and iteration limit
 ```py
 response = await agent.run(
     prompt=prompt,
-    execution=BeeAgentExecutionConfig(max_retries_per_step=3, total_max_retries=10, max_iterations=20),
+    execution=AgentExecutionConfig(max_retries_per_step=3, total_max_retries=10, max_iterations=20),
 ).observe(observer)
 ```
 
@@ -230,7 +230,7 @@ Agents can be configured to use memory to maintain conversation context and stat
 import asyncio
 
 from beeai_framework.agents.bee.agent import BeeAgent
-from beeai_framework.agents.types import BeeAgentExecutionConfig
+from beeai_framework.agents.types import AgentExecutionConfig
 from beeai_framework.backend.chat import ChatModel
 from beeai_framework.backend.message import AssistantMessage, UserMessage
 from beeai_framework.memory.unconstrained_memory import UnconstrainedMemory
@@ -263,7 +263,7 @@ async def main() -> None:
 
         response = await agent.run(
             prompt=user_input,
-            execution=BeeAgentExecutionConfig(max_retries_per_step=3, total_max_retries=10, max_iterations=20),
+            execution=AgentExecutionConfig(max_retries_per_step=3, total_max_retries=10, max_iterations=20),
         )
         print(f"Received response: {response}")
 
@@ -319,7 +319,7 @@ For complex applications, you can create multi-agent workflows where specialized
 import asyncio
 import traceback
 
-from beeai_framework.agents.bee.agent import BeeAgentExecutionConfig
+from beeai_framework.agents.bee.agent import AgentExecutionConfig
 from beeai_framework.backend.chat import ChatModel
 from beeai_framework.backend.message import UserMessage
 from beeai_framework.errors import FrameworkError
@@ -340,7 +340,7 @@ async def main() -> None:
                 instructions="You are a weather assistant.",
                 tools=[OpenMeteoTool()],
                 llm=llm,
-                execution=BeeAgentExecutionConfig(max_iterations=3, total_max_retries=10, max_retries_per_step=3),
+                execution=AgentExecutionConfig(max_iterations=3, total_max_retries=10, max_retries_per_step=3),
             )
         )
         workflow.add_agent(
