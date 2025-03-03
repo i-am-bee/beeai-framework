@@ -17,6 +17,14 @@ from pydantic import BaseModel
 from beeai_framework.template import PromptTemplate, PromptTemplateInput
 
 
+class UserEmptyPromptTemplateInput(BaseModel):
+    pass
+
+
+class ToolNoResultsTemplateInput(BaseModel):
+    pass
+
+
 class UserPromptTemplateInput(BaseModel):
     input: str
 
@@ -46,6 +54,10 @@ class ToolNotFoundErrorTemplateInput(BaseModel):
 
 
 class ToolInputErrorTemplateInput(BaseModel):
+    reason: str
+
+
+class ToolErrorTemplateInput(BaseModel):
     reason: str
 
 
@@ -149,10 +161,33 @@ Use one of the following functions: {{#trim}}{{#tools}}{{name}},{{/tools}}{{/tri
     )
 )
 
+ToolNoResultsTemplate = PromptTemplate(
+    PromptTemplateInput(
+        schema=ToolNoResultsTemplateInput,
+        template="""No results were found!""",
+    )
+)
+
+UserEmptyPromptTemplate = PromptTemplate(
+    PromptTemplateInput(
+        schema=UserEmptyPromptTemplateInput,
+        template="""Message: Empty message.""",
+    )
+)
+
+ToolErrorTemplate = PromptTemplate(
+    PromptTemplateInput(
+        schema=ToolErrorTemplateInput,
+        template="""The function has failed; the error log is shown below. If the function cannot accomplish what you want, use a different function or explain why you can't use it.
+
+{{&reason}}""",  # noqa: E501
+    )
+)
+
 ToolInputErrorTemplate = PromptTemplate(
     PromptTemplateInput(
         schema=ToolInputErrorTemplateInput,
-        template="""{{reason}}
+        template="""{{&reason}}
 
 HINT: If you're convinced that the input was correct but the function cannot process it then use a different function or say I don't know.""",  # noqa: E501
     )

@@ -107,8 +107,8 @@ class OpenMeteoTool(Tool[OpenMeteoToolInput]):
                     start = datetime.strptime(_trim_date(start_date), "%Y-%m-%d").replace(tzinfo=UTC)
                 except ValueError as e:
                     raise ToolInputValidationError(
-                        "'start_date' is incorrectly formatted, please use the correct format YYYY-MM-DD."
-                    ) from e
+                        "'start_date' is incorrectly formatted, please use the correct format YYYY-MM-DD.", cause=e
+                    )
             else:
                 start = datetime.now(UTC)
 

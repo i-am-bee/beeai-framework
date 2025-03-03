@@ -159,7 +159,21 @@ class LiteLLMChatModel(ChatModel, ABC):
             else:
                 messages.append(message.to_plain())
 
-        tools = [{"type": "function", "function": tool.prompt_data()} for tool in input.tools] if input.tools else None
+        tools = (
+            [
+                {
+                    "type": "function",
+                    "function": {
+                        "name": tool.name,
+                        "description": tool.description,
+                        "parameters": tool.input_schema.model_json_schema(mode="validation"),
+                    },
+                }
+                for tool in input.tools
+            ]
+            if input.tools
+            else None
+        )
 
         params = self._settings | self.parameters.model_dump(exclude_unset=True)
         return LiteLLMParameters(

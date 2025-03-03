@@ -12,12 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-
+from beeai_framework.agents.runners.default.prompts import ToolNoResultsTemplate, UserEmptyPromptTemplate
 from beeai_framework.agents.runners.default.runner import DefaultRunner
 from beeai_framework.agents.runners.granite.prompts import (
     GraniteAssistantPromptTemplate,
     GraniteSchemaErrorTemplate,
     GraniteSystemPromptTemplate,
+    GraniteToolErrorTemplate,
     GraniteToolInputErrorTemplate,
     GraniteToolNotFoundErrorTemplate,
     GraniteUserPromptTemplate,
@@ -95,5 +96,8 @@ class GraniteRunner(DefaultRunner):
             user=GraniteUserPromptTemplate,
             tool_not_found_error=GraniteToolNotFoundErrorTemplate,
             tool_input_error=GraniteToolInputErrorTemplate,
+            tool_error=GraniteToolErrorTemplate,
             schema_error=GraniteSchemaErrorTemplate,
+            user_empty=UserEmptyPromptTemplate,
+            tool_no_result_error=ToolNoResultsTemplate,
         )

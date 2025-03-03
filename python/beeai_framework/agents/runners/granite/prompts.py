@@ -18,6 +18,7 @@ from beeai_framework.agents.runners.default.prompts import (
     AssistantPromptTemplateInput,
     SchemaErrorTemplateInput,
     SystemPromptTemplateInput,
+    ToolErrorTemplateInput,
     ToolInputErrorTemplateInput,
     ToolNotFoundErrorTemplateInput,
     UserPromptTemplateInput,
@@ -96,9 +97,18 @@ Use one of the following tools: {{#trim}}{{#tools}}{{name}},{{/tools}}{{/trim}}
 GraniteToolInputErrorTemplate = PromptTemplate(
     PromptTemplateInput(
         schema=ToolInputErrorTemplateInput,
-        template="""{{reason}}
+        template="""{{&reason}}
 
 HINT: If you're convinced that the input was correct but the tool cannot process it then use a different tool or say I don't know.""",  # noqa: E501
+    )
+)
+
+GraniteToolErrorTemplate = PromptTemplate(
+    PromptTemplateInput(
+        schema=ToolErrorTemplateInput,
+        template="""The tool has failed; the error log is shown below. If the tool cannot accomplish what you want, use a different tool or explain why you can't use it.
+
+{{&reason}}""",  # noqa: E501
     )
 )
 

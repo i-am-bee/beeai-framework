@@ -22,7 +22,6 @@ from pydantic import BaseModel, ConfigDict, ValidationError, create_model
 
 from beeai_framework.context import Run, RunContext, RunContextInput, RunInstance
 from beeai_framework.emitter.emitter import Emitter
-from beeai_framework.errors import FrameworkError
 from beeai_framework.retryable import Retryable, RetryableConfig, RetryableContext, RetryableInput
 from beeai_framework.tools.errors import ToolError, ToolInputValidationError
 from beeai_framework.utils import BeeLogger
@@ -91,17 +90,10 @@ class Tool(Generic[T], ABC):
         try:
             return self.input_schema.model_validate(input)
         except ValidationError as e:
-            raise ToolInputValidationError("Tool input validation error") from e
+            raise ToolInputValidationError("Tool input validation error", cause=e)
 
-    def prompt_data(self) -> dict[str, str]:
-        return {
-            "name": self.name,
-            "description": self.description,
-            "input_schema": str(self.input_schema.model_json_schema(mode="serialization")),
-        }
-
-    def run(self, input: T | dict[str, Any], options: dict[str, Any] | None = None) -> Run[Any]:
-        async def run_tool(context: RunContext) -> Any:
+    def run(self, input: T | dict[str, Any], options: dict[str, Any] | None = None) -> Run[T]:
+        async def run_tool(context: RunContext) -> T:
             error_propagated = False
 
             try:
@@ -118,7 +110,7 @@ class Tool(Generic[T], ABC):
                 async def on_error(error: Exception, _: RetryableContext) -> None:
                     nonlocal error_propagated
                     error_propagated = True
-                    err = FrameworkError.ensure(error)
+                    err = ToolError.ensure(error)
                     await context.emitter.emit("error", {"error": err, **meta})
                     if err.is_fatal:
                         raise err from None
@@ -144,7 +136,7 @@ class Tool(Generic[T], ABC):
                 err = ToolError.ensure(e)
                 if not error_propagated:
                     await context.emitter.emit("error", {"error": err, "input": input, "options": options})
-                raise err from None
+                raise err
             finally:
                 await context.emitter.emit("finish", None)
 

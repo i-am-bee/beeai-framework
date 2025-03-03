@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import json
 from collections.abc import Callable
 
 from beeai_framework.agents.runners.base import (
@@ -28,8 +27,11 @@ from beeai_framework.agents.runners.default.prompts import (
     SystemPromptTemplate,
     SystemPromptTemplateInput,
     ToolDefinition,
+    ToolErrorTemplate,
     ToolInputErrorTemplate,
+    ToolNoResultsTemplate,
     ToolNotFoundErrorTemplate,
+    UserEmptyPromptTemplate,
     UserPromptTemplate,
 )
 from beeai_framework.agents.types import (
@@ -54,7 +56,7 @@ from beeai_framework.parsers.line_prefix import (
 from beeai_framework.retryable import Retryable, RetryableConfig, RetryableContext, RetryableInput
 from beeai_framework.tools import ToolError, ToolInputValidationError
 from beeai_framework.tools.tool import StringToolOutput, Tool, ToolOutput
-from beeai_framework.utils.strings import create_strenum
+from beeai_framework.utils.strings import create_strenum, to_json
 
 
 class DefaultRunner(BaseRunner):
@@ -65,7 +67,10 @@ class DefaultRunner(BaseRunner):
             system=SystemPromptTemplate,
             assistant=AssistantPromptTemplate,
             user=UserPromptTemplate,
+            user_empty=UserEmptyPromptTemplate,
             tool_not_found_error=ToolNotFoundErrorTemplate,
+            tool_no_result_error=ToolNoResultsTemplate,
+            tool_error=ToolErrorTemplate,
             tool_input_error=ToolInputErrorTemplate,
             schema_error=SchemaErrorTemplate,
         )
@@ -237,27 +242,27 @@ class DefaultRunner(BaseRunner):
         async def executor(_: RetryableContext) -> BeeRunnerToolResult:
             try:
                 tool_output: ToolOutput = await tool.run(input.state.tool_input, options={})  # TODO: pass tool options
-                return BeeRunnerToolResult(output=tool_output, success=True)
-            # TODO These error templates should be customized to help the LLM to recover
+                output = (
+                    tool_output
+                    if not tool_output.is_empty()
+                    else StringToolOutput(self.templates.tool_no_result_error.render({}))
+                )
+                return BeeRunnerToolResult(
+                    output=output,
+                    success=True,
+                )
             except ToolInputValidationError as e:
                 self._failed_attempts_counter.use(e)
                 return BeeRunnerToolResult(
                     success=False,
-                    output=StringToolOutput(self.templates.tool_input_error.render({"reason": str(e)})),
+                    output=StringToolOutput(self.templates.tool_input_error.render({"reason": e.explain()})),
                 )
-
-            except ToolError as e:
-                self._failed_attempts_counter.use(e)
-
+            except Exception as e:
+                err = ToolError.ensure(e)
+                self._failed_attempts_counter.use(err)
                 return BeeRunnerToolResult(
                     success=False,
-                    output=StringToolOutput(self.templates.tool_input_error.render({"reason": str(e)})),
-                )
-            except json.JSONDecodeError as e:
-                self._failed_attempts_counter.use(e)
-                return BeeRunnerToolResult(
-                    success=False,
-                    output=StringToolOutput(self.templates.tool_input_error.render({"reason": str(e)})),
+                    output=StringToolOutput(self.templates.tool_error.render({"reason": err.explain()})),
                 )
 
         if self._options and self._options.execution and self._options.execution.max_retries_per_step:
@@ -278,10 +283,14 @@ class DefaultRunner(BaseRunner):
             capacity_threshold=0.85, sync_threshold=0.5, llm=self._input.llm
         )  # TODO handlers needs to be fixed
 
-        tool_defs = []
-
-        for tool in self._input.tools:
-            tool_defs.append(ToolDefinition(**tool.prompt_data()))
+        tool_defs = [
+            ToolDefinition(
+                name=tool.name,
+                description=tool.description,
+                input_schema=to_json(tool.input_schema.model_json_schema(mode="validation")),
+            )
+            for tool in self._input.tools
+        ]
 
         system_prompt: str = self.templates.system.render(
             SystemPromptTemplateInput(
