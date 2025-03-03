@@ -7,6 +7,7 @@ from typing import Any
 
 from dotenv import load_dotenv
 
+from beeai_framework import Tool
 from beeai_framework.agents.bee.agent import BeeAgent
 from beeai_framework.agents.types import BeeAgentExecutionConfig
 from beeai_framework.backend.chat import ChatModel, ChatModelParameters
@@ -14,7 +15,8 @@ from beeai_framework.emitter.emitter import Emitter, EventMeta
 from beeai_framework.emitter.types import EmitterOptions
 from beeai_framework.errors import FrameworkError
 from beeai_framework.memory.token_memory import TokenMemory
-from beeai_framework.tools.search import WikipediaTool
+from beeai_framework.tools.search import DuckDuckGoSearchTool, WikipediaTool
+from beeai_framework.tools.weather.openmeteo import OpenMeteoTool
 from beeai_framework.utils.custom_logger import BeeLogger
 from examples.helpers.io import ConsoleReader
 
@@ -30,14 +32,22 @@ reader = ConsoleReader()
 def create_agent() -> BeeAgent:
     """Create and configure the agent with tools and LLM"""
 
+    # Other models to try:
+    # "llama3.1"
+    # "granite3.1-dense"
+    # "deepseek-r1"
+    # ensure the model is pulled before running
     llm = ChatModel.from_name(
         "ollama:granite3.1-dense:8b",
         ChatModelParameters(temperature=0),
     )
 
     # Configure tools
-    # tools = [OpenMeteoTool()]
-    tools = [WikipediaTool()]
+    tools: list[Tool] = [
+        WikipediaTool(),
+        OpenMeteoTool(),
+        DuckDuckGoSearchTool(),
+    ]
 
     # Add code interpreter tool if URL is configured
     code_interpreter_url = os.getenv("CODE_INTERPRETER_URL")
@@ -55,7 +65,7 @@ def process_agent_events(data: dict[str, Any], event: EventMeta) -> None:
     """Process agent events and log appropriately"""
 
     if event.name == "error":
-        reader.write("Agent 🤖 : ", "error has occurred")
+        reader.write("Agent 🤖 : ", FrameworkError.ensure(data["error"]).explain())
     elif event.name == "retry":
         reader.write("Agent 🤖 : ", "retrying the action...")
     elif event.name == "update":
