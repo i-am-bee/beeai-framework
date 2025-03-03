@@ -2,7 +2,7 @@ import asyncio
 import sys
 from typing import Any
 
-import requests
+import httpx
 from pydantic import BaseModel, Field
 
 from beeai_framework.emitter.emitter import Emitter
@@ -36,7 +36,7 @@ class OpenLibraryTool(Tool[OpenLibraryToolInput]):
             creator=self,
         )
 
-    def _run(self, tool_input: OpenLibraryToolInput, _: Any | None = None) -> OpenLibraryToolResult:
+    async def _run(self, tool_input: OpenLibraryToolInput, _: Any | None = None) -> OpenLibraryToolResult:
         key = ""
         value = ""
         input_vars = vars(tool_input)
@@ -48,17 +48,20 @@ class OpenLibraryTool(Tool[OpenLibraryToolInput]):
         else:
             raise ToolInputValidationError("All input values in OpenLibraryToolInput were empty.") from None
 
-        response = requests.get(
-            f"https://openlibrary.org/api/books?bibkeys={key}:{value}&jsmcd=data&format=json",
-            headers={"Content-Type": "application/json", "Accept": "application/json"},
-        )
+        json_output = {}
+        async with httpx.AsyncClient() as client:
+            response = await client.get(
+                f"https://openlibrary.org/api/books?bibkeys={key}:{value}&jsmcd=data&format=json",
+                headers={"Content-Type": "application/json", "Accept": "application/json"},
+            )
+            response.raise_for_status()
 
-        response.raise_for_status()
-
-        json_output = response.json()[f"{key}:{value}"]
+            json_output = response.json()[f"{key}:{value}"]
 
         return OpenLibraryToolResult(
-            preview_url=json_output["preview_url"], info_url=json_output["info_url"], bib_key=json_output["bib_key"]
+            preview_url=json_output.get("preview_url"),
+            info_url=json_output.get("info_url"),
+            bib_key=json_output.get("bib_key"),
         )
 
 
