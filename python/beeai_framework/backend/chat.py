@@ -42,7 +42,7 @@ class ChatModelParameters(BaseModel):
     max_tokens: int | None = None
     top_p: int | None = None
     frequency_penalty: int | None = None
-    temperature: int | None = None
+    temperature: int = 0
     top_k: int | None = None
     n: int | None = None
     presence_penalty: int | None = None
@@ -56,7 +56,7 @@ class ChatConfig(BaseModel):
     parameters: ChatModelParameters | Callable[[ChatModelParameters], ChatModelParameters] | None = None
 
 
-class ChatModelStructureInput(BaseModel):
+class ChatModelStructureInput(ChatModelParameters):
     input_schema: type[T] = Field(..., alias="schema")
     messages: list[InstanceOf[Message]] = Field(..., min_length=1)
     abort_signal: AbortSignal | None = None
@@ -132,6 +132,7 @@ class ChatModel(ABC):
         pass
 
     def __init__(self) -> None:
+        self.parameters = ChatModelParameters()
         self.emitter = Emitter.root().child(
             namespace=["backend", self.provider_id, "chat"],
             creator=self,
