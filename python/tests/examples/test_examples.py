@@ -34,6 +34,8 @@ exclude = list(
             "backend/providers/openai_example.py" if os.getenv("OPENAI_API_KEY") is None else None,
             # requires Searx instance
             "workflows/web_agent.py",
+            # Groq
+            "backend/providers/groq.py",
         ],
     )
 )

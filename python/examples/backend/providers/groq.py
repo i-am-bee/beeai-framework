@@ -14,35 +14,28 @@ from beeai_framework.parsers.line_prefix import LinePrefixParser, LinePrefixPars
 
 
 async def groq_from_name() -> None:
-    llm = ChatModel.from_name("groq:llama-3.1-8b-instant")
-    user_message = UserMessage("what states are part of New England?")
-    response = await llm.create(messages=[user_message])
-    print(response.get_text_content())
-
-
-async def groq_granite_from_name() -> None:
-    llm = ChatModel.from_name("groq:llama-3.1-8b-instant")
+    llm = ChatModel.from_name("groq:gemma2-9b-it")
     user_message = UserMessage("what states are part of New England?")
     response = await llm.create(messages=[user_message])
     print(response.get_text_content())
 
 
 async def groq_sync() -> None:
-    llm = GroqChatModel("llama-3.1-8b-instant")
+    llm = GroqChatModel("gemma2-9b-it")
     user_message = UserMessage("what is the capital of Massachusetts?")
     response = await llm.create(messages=[user_message])
     print(response.get_text_content())
 
 
 async def groq_stream() -> None:
-    llm = GroqChatModel("llama-3.1-8b-instant")
+    llm = GroqChatModel("gemma2-9b-it")
     user_message = UserMessage("How many islands make up the country of Cape Verde?")
     response = await llm.create(messages=[user_message], stream=True)
     print(response.get_text_content())
 
 
 async def groq_stream_abort() -> None:
-    llm = GroqChatModel("llama-3.1-8b-instant")
+    llm = GroqChatModel("gemma2-9b-it")
     user_message = UserMessage("What is the smallest of the Cape Verde islands?")
 
     try:
@@ -60,14 +53,14 @@ async def groq_structure() -> None:
     class TestSchema(BaseModel):
         answer: str = Field(description="your final answer")
 
-    llm = GroqChatModel("llama-3.1-8b-instant")
+    llm = GroqChatModel("gemma2-9b-it")
     user_message = UserMessage("How many islands make up the country of Cape Verde?")
     response = await llm.create_structure(schema=TestSchema, messages=[user_message])
     print(response.object)
 
 
 async def groq_stream_parser() -> None:
-    llm = GroqChatModel("llama-3.1-8b-instant")
+    llm = GroqChatModel("gemma2-9b-it")
 
     parser = LinePrefixParser(
         nodes={
@@ -90,8 +83,6 @@ async def groq_stream_parser() -> None:
 async def main() -> None:
     print("*" * 10, "groq_from_name")
     await groq_from_name()
-    print("*" * 10, "groq_granite_from_name")
-    await groq_granite_from_name()
     print("*" * 10, "groq_sync")
     await groq_sync()
     print("*" * 10, "groq_stream")
