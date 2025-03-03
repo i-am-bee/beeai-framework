@@ -1,29 +1,56 @@
-# Tools
+# 🛠️ Tools
 
-> [!TIP]
+<!-- TOC -->
+## Table of Contents
+- [Overview](#overview)
+- [Built-in Tools](#built-in-tools)
+- [Usage](#usage)
+  - [Basic Usage](#basic-usage)
+  - [Advanced Usage](#advanced-usage)
+  - [Using Tools with Agents](#using-tools-with-agents)
+  - [Using the Tool Decorator](#using-the-tool-decorator)
+- [Built-in Tool Examples](#built-in-tool-examples)
+  - [DuckDuckGo Search Tool](#duckduckgo-search-tool)
+  - [OpenMeteo Weather Tool](#openmeteo-weather-tool)
+  - [Wikipedia Tool](#wikipedia-tool)
+- [Creating Custom Tools](#creating-custom-tools)
+  - [Basic Custom Tool](#basic-custom-tool)
+  - [Advanced Custom Tool](#advanced-custom-tool)
+  - [Implementation Guidelines](#implementation-guidelines)
+- [Best Practices](#best-practices)
+- [Examples](#examples)
+<!-- /TOC -->
+
+---
+
+## Overview
+
+Tools extend agent capabilities beyond text processing, enabling interaction with external systems and data sources. They act as specialized modules that extend the agent's abilities, allowing it to interact with external systems, access information, and execute actions in response to user queries.
+
+> [!NOTE]
 >
-> Location within the framework `python/beeai_framework/tools`.
-
-Tools in the context of an agent refer to additional functionalities or capabilities integrated with the agent to perform specific tasks beyond text processing.
-
-These tools extend the agent's abilities, allowing it to interact with external systems, access information, and execute actions.
+> Location within the framework: [beeai_framework/tools](/python/beeai_framework/tools).
 
 ## Built-in tools
 
-| Name                                                                      | Description                                                                                                   |
-| ------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------- |
-| `DuckDuckGoTool`                                                          | Search for data on DuckDuckGo.                                                                                |
-| `OpenMeteoTool`                                                           | Retrieve current, previous, or upcoming weather for a given destination. environment.                                                            |
-| `WikipediaTool`                                                           | Search for data on Wikipedia.                                                                                 |
-| `MCPTool`                                                                 | Discover and use tools exposed by arbitrary [MCP Server](https://modelcontextprotocol.io/examples).                                                |
-| ➕ [Request](https://github.com/i-am-bee/beeai-framework/discussions)     |                                                                                              |
+Ready-to-use tools that provide immediate functionality for common agent tasks:
 
+| Tool | Description | Use Cases |
+|------|-------------|-----------|
+| `DuckDuckGoTool` | Search for data on DuckDuckGo | Web searches, fact-checking, retrieving current information |
+| `OpenMeteoTool` | Retrieve weather information for specific locations and dates | Weather forecasts, historical weather data, travel planning |
+| `WikipediaTool` | Search for data on Wikipedia | Research, educational inquiries, fact verification |
+| `MCPTool` | Discover and use tools exposed by arbitrary [MCP Server](https://modelcontextprotocol.io/examples) | Integration with external tool ecosystems |
 
-All examples can be found [here](/python/examples/tools).
+➕ [Request additional built-in tools](https://github.com/i-am-bee/beeai-framework/discussions)
+
+For detailed usage examples of each built-in tool with complete implementation code, see the [tools examples directory](/python/examples/tools).
 
 ## Usage
 
-### Basic
+### Basic usage
+
+The simplest way to use a tool is to instantiate it directly and call its `run()` method with appropriate input:
 
 <!-- embedme examples/tools/base.py -->
 ```py
@@ -47,7 +74,9 @@ if __name__ == "__main__":
 
 _Source: [/python/examples/tools/base.py](/python/examples/tools/base.py)_
 
-### Advanced
+### Advanced usage
+
+Tools often support additional configuration options to customize their behavior:
 
 <!-- embedme examples/tools/advanced.py -->
 ```py
@@ -73,11 +102,13 @@ if __name__ == "__main__":
 
 _Source: [/python/examples/tools/advanced.py](/python/examples/tools/advanced.py)_
 
-> [!TIP]
+> [!NOTE]
 >
-> COMING SOON: Caching
+> COMING SOON: Caching to improve performance and reduce API calls
 
-### Usage with agents
+### Using tools with agents
+
+The true power of tools emerges when integrating them with agents. Tools extend the agent's capabilities, allowing it to perform actions beyond text generation:
 
 <!-- embedme examples/tools/agent.py -->
 ```py
@@ -92,7 +123,9 @@ agent = BeeAgent(llm=OllamaChatModel("llama3.1"), tools=[OpenMeteoTool()], memor
 
 _Source: [/python/examples/tools/agent.py](/python/examples/tools/agent.py)_
 
-### Usage with decorator
+### Using the tool decorator
+
+For simpler tools, you can use the `tool` decorator to quickly create a tool from a function:
 
 <!-- embedme examples/tools/decorator.py -->
 ```py
@@ -157,7 +190,11 @@ if __name__ == "__main__":
 
 _Source: [/python/examples/tools/decorator.py](/python/examples/tools/decorator.py)_
 
-### Usage with duckduckgo
+## Built-in Tool Examples
+
+### DuckDuckGo Search Tool
+
+Use the DuckDuckGo tool to search the web and retrieve current information:
 
 <!-- embedme examples/tools/duckduckgo.py -->
 ```py
@@ -185,7 +222,9 @@ if __name__ == "__main__":
 
 _Source: [/python/examples/tools/duckduckgo.py](/python/examples/tools/duckduckgo.py)_
 
-### Usage with openmeteo
+### OpenMeteo Weather Tool
+
+Use the OpenMeteo tool to access current and forecasted weather data:
 
 <!-- embedme examples/tools/openmeteo.py -->
 
@@ -215,7 +254,9 @@ if __name__ == "__main__":
 _Source: [/python/examples/tools/openmeteo.py](/python/examples/tools/openmeteo.py)_
 
 
-### Usage with Wikipedia
+### Wikipedia Tool
+
+Use the Wikipedia tool to search for information from Wikipedia:
 
 <!-- embedme examples/tools/wikipedia.py -->
 
@@ -242,13 +283,19 @@ if __name__ == "__main__":
 
 _Source: [/python/examples/tools/wikipedia.py](/python/examples/tools/wikipedia.py)_
 
-## Writing a new tool
+## Creating custom tools
 
-To create a new tool it is recommended to implement the base `Tool` class.  
+Custom tools allow you to build your own specialized tools to extend agent capabilities. 
 
-- Initiate the [`Tool`](/python/beeai_framework/tools/tool.py) by passing your own handler (function) with the `name`, `description` and `input schema`.
+To create a new tool, implement the base `Tool` class. The framework provides flexible options for tool creation, from simple to complex implementations.
 
-#### Basic
+> [!NOTE]
+>
+> Initiate the [`Tool`](/python/beeai_framework/tools/tool.py) by passing your own handler (function) with the `name`, `description` and `input schema`.
+
+### Basic custom tool
+
+Here's an example of a simple custom tool that provides riddles:
 
 <!-- embedme examples/tools/custom/base.py -->
 ```py
@@ -310,15 +357,15 @@ _Source: [/python/examples/tools/custom/base.py](/python/examples/tools/custom/b
 
 > [!TIP]
 >
-> `inputSchema` can be asynchronous.
+> The input schema (`inputSchema`) processing can be asynchronous when needed for more complex validation or preprocessing.
 
 > [!TIP]
 >
-> If you want to return an array or a plain object, use `JSONToolOutput` or implement your own.
+> For structured data responses, use `JSONToolOutput` or implement your own custom output type.
 
-#### Advanced
+### Advanced custom tool
 
-If your tool is more complex, you may want to use the full power of the tool abstraction, as the following example shows.
+For more complex scenarios, you can implement tools with robust input validation, error handling, and structured outputs:
 
 <!-- embedme examples/tools/custom/openlibrary.py -->
 ```py
@@ -398,81 +445,86 @@ if __name__ == "__main__":
 
 _Source: [/python/examples/tools/custom/openlibrary.py](/python/examples/tools/custom/openlibrary.py)_
 
-#### Implementation Notes
+### Implementation guidelines
 
-- **Implement the `Tool` class:**
+When creating custom tools, follow these key requirements:
 
-  - `MyNewToolOutput` is required, must be an implementation of `ToolOutput` such as `StringToolOutput` or `JSONToolOutput`.
+**1. Implement the `Tool` class**
 
-- **Be given a unique name:**
+To create a custom tool, you need to extend the base `Tool` class and implement several required components. The output must be an implementation of the `ToolOutput` interface, such as `StringToolOutput` for text responses or `JSONToolOutput` for structured data.
 
-  Note: Convention and best practice is to set the tool's name to the name of its class
+**2. Create a descriptive name**
 
-  ```py
-  name = "MyNewTool"
-  ```
+Your tool needs a clear, descriptive name that follows naming conventions:
 
-- **Provide a natural language description of what the tool does:**
+```py
+name = "MyNewTool"
+```
 
-  ❗Important: the agent uses this description to determine when the tool should be used. It's probably the most important aspect of your tool and you should experiment with different natural language descriptions to ensure the tool is used in the correct circumstances. You can also include usage tips and guidance for the agent in the description, but
-  its advisable to keep the description succinct in order to reduce the probability of conflicting with other tools, or adversely affecting agent behavior.
+The name must only contain characters a-z, A-Z, 0-9, or one of - or _.
 
-  ```py
-  description = "Takes X action when given Y input resulting in Z output"
-  ```
+**3. Write an effective description**
 
-- **Declare an input schema:**
+The description is crucial as it determines when the agent uses your tool:
 
-  This is used to define the format of the input to your tool. The agent will formalise the natural language input(s) it has received and structure them into the fields described in the tool's input. The input schema will be created based on the MyNewToolInput class. Keep your tool input schema simple and provide schema descriptions to help the agent to interpret fields.
+```py
+description = "Takes X action when given Y input resulting in Z output"
+```
 
-  ```py
-  class OpenMeteoToolInput(BaseModel):
-      location_name: str = Field(description="The name of the location to retrieve weather information.")
-      country: str | None = Field(description="Country name.", default=None)
-      start_date: str | None = Field(
-          description="Start date for the weather forecast in the format YYYY-MM-DD (UTC)", default=None
-      )
-      end_date: str | None = Field(
-          description="End date for the weather forecast in the format YYYY-MM-DD (UTC)", default=None
-      )
-      temperature_unit: Literal["celsius", "fahrenheit"] = Field(
-          description="The unit to express temperature", default="celsius"
-      )
-  ```
-  _Source: [/python/beeai_framework/tools/weather/openmeteo.py](/python/beeai_framework/tools/weather/openmeteo.py)_
+You should experiment with different natural language descriptions to ensure the tool is used in the correct circumstances. You can also include usage tips and guidance for the agent in the description, but its advisable to keep the description succinct in order to reduce the probability of conflicting with other tools, or adversely affecting agent behavior.
 
-- **Implement the `_run()` method:**
+**4. Define a clear input schema**
 
+Create a Pydantic model that defines the expected inputs with helpful descriptions:
 
-  ```py
-  def _run(self, input: OpenMeteoToolInput, options: Any = None) -> None:
-        params = urlencode(self.get_params(input), doseq=True)
-        logger.debug(f"Using OpenMeteo URL: https://api.open-meteo.com/v1/forecast?{params}")
-        response = requests.get(
-            f"https://api.open-meteo.com/v1/forecast?{params}",
-            headers={"Content-Type": "application/json", "Accept": "application/json"},
-        )
-        response.raise_for_status()
-        return StringToolOutput(json.dumps(response.json()))
-  ```
-    _Source: [/python/beeai_framework/tools/weather/openmeteo.py](/python/beeai_framework/tools/weather/openmeteo.py)_
+```py
+class OpenMeteoToolInput(BaseModel):
+    location_name: str = Field(description="The name of the location to retrieve weather information.")
+    country: str | None = Field(description="Country name.", default=None)
+    start_date: str | None = Field(
+        description="Start date for the weather forecast in the format YYYY-MM-DD (UTC)", default=None
+    )
+    end_date: str | None = Field(
+        description="End date for the weather forecast in the format YYYY-MM-DD (UTC)", default=None
+    )
+    temperature_unit: Literal["celsius", "fahrenheit"] = Field(
+        description="The unit to express temperature", default="celsius"
+    )
+```
+_Source: [/python/beeai_framework/tools/weather/openmeteo.py](/python/beeai_framework/tools/weather/openmeteo.py)_
 
-The `name` of the tool is required and must only contain characters between
-a-z, A-Z, 0-9, or one of - or \_.
-The `inputSchema` and `description` are also both required.
+The input schema is a required field used to define the format of the input to your tool. The agent will formalise the natural language input(s) it has received and structure them into the fields described in the tool's input. The input schema will be created based on the `MyNewToolInput` class. Keep your tool input schema simple and provide schema descriptions to help the agent to interpret fields.
 
-## General Tips
+**5. Implement the `_run()` method**
 
-### Data Minimization
+This method contains the core functionality of your tool, processing the input and returning the appropriate output.
+
+```py
+def _run(self, input: OpenMeteoToolInput, options: Any = None) -> None:
+    params = urlencode(self.get_params(input), doseq=True)
+    logger.debug(f"Using OpenMeteo URL: https://api.open-meteo.com/v1/forecast?{params}")
+    response = requests.get(
+        f"https://api.open-meteo.com/v1/forecast?{params}",
+        headers={"Content-Type": "application/json", "Accept": "application/json"},
+    )
+    response.raise_for_status()
+    return StringToolOutput(json.dumps(response.json()))
+```
+
+_Source: [/python/beeai_framework/tools/weather/openmeteo.py](/python/beeai_framework/tools/weather/openmeteo.py)_
+
+## Best practices
+
+### 1. Data minimization
 
 If your tool is providing data to the agent, try to ensure that the data is relevant and free of extraneous metatdata. Preprocessing data to improve relevance and minimize unnecessary data conserves agent memory, improving overall performance.
 
-### Provide Hints
+### 2. Provide hints
 
 If your tool encounters an error that is fixable, you can return a hint to the agent; the agent will try to reuse the tool in the context of the hint. This can improve the agent's ability
 to recover from errors.
 
-### Security & Stability
+### 3. Security and stability
 
 When building tools, consider that the tool is being invoked by a somewhat unpredictable third party (the agent). You should ensure that sufficient guardrails are in place to prevent
 adverse outcomes.

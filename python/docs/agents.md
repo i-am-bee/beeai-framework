@@ -32,7 +32,12 @@ AI agents built on large language models (LLMs) provide a structured approach to
 Agents control the path to solving a problem, acting on feedback to refine their plan, a capability that improves performance and helps them accomplish sophisticated tasks.
 
 > [!TIP]
+>
 > For a deeper understanding of AI agents, read this [research article on AI agents and LLMs](https://research.ibm.com/blog/what-are-ai-agents-llm).
+
+> [!NOTE]
+>
+> Location within the framework: [beeai_framework/agents](/python/beeai_framework/agents).
 
 ---
 

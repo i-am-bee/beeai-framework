@@ -3,17 +3,18 @@
 <!-- TOC -->
 ## Table of Contents
 - [Overview](#overview)
-- [Providers](#providers)
-- [Initialization](#initialization)
+- [Supported Providers](#supported-providers) 
+- [Backend Initialization](#backend-initialization)
 - [Chat Model](#chat-model)
-  - [Initialization](#initialization)
-  - [Configuration](#configuration)
-  - [Generation](#generation)
-  - [Stream](#stream)
+  - [Chat Model Configuration](#chat-model-configuration)
+  - [Text Generation](#text-generation)
+  - [Streaming Responses](#streaming-responses)
   - [Structured Generation](#structured-generation)
   - [Tool Calling](#tool-calling)
 - [Embedding Model](#embedding-model)
-  - [Usage](#usage)
+  - [Embedding Model Configuration](#embedding-model-configuration)
+  - [Embedding Model Usage](#embedding-model-usage)
+- [Troubleshooting](#troubleshooting)
 - [Examples](#examples)
 <!-- /TOC -->
 
@@ -24,13 +25,21 @@
 Backend is an umbrella module that encapsulates a unified way to work with the following functionalities:
 
 - Chat Models via (`ChatModel` class)
-- Embedding Models via (coming soon)
+- Embedding Models (coming soon)
 - Audio Models (coming soon)
 - Image Models (coming soon)
 
-## Providers
+BeeAI framework's backend is designed with a provider-based architecture, allowing you to switch between different AI service providers while maintaining a consistent API.
 
-The following table depicts supported providers.
+> [!NOTE]
+>
+> Location within the framework: [beeai_framework/backend](/python/beeai_framework/backend).
+
+--- 
+
+## Supported providers
+
+The following table depicts supported providers. Each provider requires specific configuration through environment variables. Ensure all required variables are set before initializing a provider.
 
 | Name             | Chat | Embedding | Dependency               | Environment Variables                                                                                                                                                 |
 | ---------------- | :--: | :-------: | ------------------------ | :-------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -47,7 +56,11 @@ The following table depicts supported providers.
 >
 > If you don't see your provider raise an issue [here](https://github.com/i-am-bee/beeai-framework/discussions). Meanwhile, you can use [Ollama adapter](/python/examples/backend/providers/ollama.py).
 
-## Initialization
+---
+
+### Backend initialization
+
+The `Backend` class serves as a central entry point to access models from your chosen provider.
 
 <!-- embedme examples/backend/providers/watsonx.py -->
 
@@ -144,9 +157,13 @@ _Source: [examples/backend/providers/watsonx.py](/python/examples/backend/provid
 
 All providers examples can be found in [examples/backend/providers](/examples/backend/providers).
 
-## Chat Model
+---
 
-The `ChatModel` class represents a Chat Large Language Model and can be initiated in one of the following ways.
+## Chat model
+
+The `ChatModel` class represents a Chat Large Language Model and provides methods for text generation, streaming responses, and more. You can initialize a chat model in multiple ways:
+
+**Method 1: Using the generic factory method**
 
 ```python
 from beeai_framework.backend.chat import ChatModel
@@ -154,7 +171,7 @@ from beeai_framework.backend.chat import ChatModel
 ollama_chat_model = ChatModel.from_name("ollama:llama3.1")
 ```
 
-or you can always create the concrete provider's chat model directly
+**Method 2: Creating a specific provider model directly**
 
 ```python
 from beeai_framework.adapters.ollama.backend.chat import OllamaChatModel
@@ -162,13 +179,17 @@ from beeai_framework.adapters.ollama.backend.chat import OllamaChatModel
 ollama_chat_model = OllamaChatModel("llama3.1")
 ```
 
-### Configuration
+### Chat model configuration
+
+You can configure various parameters for your chat model:
 
 ```txt
 Coming soon
 ```
 
-### Generation
+### Text generation
+
+The most basic usage is to generate text responses:
 
 ```python
 from beeai_framework.adapters.ollama.backend.chat import OllamaChatModel
@@ -186,7 +207,9 @@ print(response.get_text_content())
 >
 > Execution parameters (those passed to `model.create({...})`) are superior to ones defined via `config`.
 
-### Stream
+### Streaming responses
+
+For applications requiring real-time responses:
 
 ```python
 from beeai_framework.adapters.ollama.backend.chat import OllamaChatModel
@@ -197,7 +220,9 @@ user_message = UserMessage("How many islands make up the country of Cape Verde?"
 response = await llm.create(messages=[user_message], stream=True)
 ```
 
-### Structured Generation
+### Structured generation
+
+Generate structured data according to a schema:
 
 ```txt
 Coming soon
@@ -205,7 +230,9 @@ Coming soon
 
 _Source: /examples/backend/structured.py_
 
-### Tool Calling
+### Tool calling
+
+Integrate external tools with your AI model:
 
 ```txt
 Coming soon
@@ -213,22 +240,61 @@ Coming soon
 
 _Source: /examples/backend/toolCalling.py_
 
-## Embedding Model
+---
 
-The `EmbedingModel` class represents an Embedding Model and can be initiated in one of the following ways.
+## Embedding model
+
+The `EmbedingModel` class provides functionality for generating vector embeddings from text.
+
+### Embedding model initialization
+
+You can initialize an embedding model in multiple ways:
+
+**Method 1: Using the generic factory method**
+
+```txt
+Coming soon
+```
+
+**Method 2: Creating a specific provider model directly**
 
 ```txt
 Coming soon
 ```
 
-or you can always create the concrete provider's embedding model directly
+### Embedding model usage
+
+Generate embeddings for one or more text strings:
 
 ```txt
 Coming soon
 ```
 
-### Usage
+---
+
+## Advanced usage
+
+If your preferred provider isn't directly supported, you can use the LangChain adapter as a bridge. 
+
+This allows you to leverage any provider that has LangChain compatibility.
 
 ```txt
 Coming soon
 ```
+
+_Source: /examples/backend/providers/langchain.py_
+
+---
+
+## Troubleshooting
+
+Common issues and their solutions:
+
+1. Authentication errors: Ensure all required environment variables are set correctly
+2. Model not found: Verify that the model ID is correct and available for the selected provider
+
+---
+
+## Examples
+
+- All backend examples can be found in [here](/python/examples/backend).
