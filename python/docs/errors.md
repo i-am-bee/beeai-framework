@@ -4,62 +4,40 @@ Error handling is a critical part of any Python application, especially when dea
 
 ## The `FrameworkError` class
 
-All errors thrown within the BeeAI Framework extend from the base FrameworkError class.
+Within the BeeAI Framework, regular Python Exceptions are used to handle common issues such as `ValueError`, `TypeError`. However, to provide a more comprehensive error handling experience, we have introduced `FrameworkError`, which is a subclass of Exception. Where additional context is needed, we can use `FrameworkError` to provide additional information about the nature of the error. This may wrap the original exception following the standard Python approach.
+
 
 Benefits of using `FrameworkError`:
 
-[//] # TODO: REVIEW -The first two are standard Python functionality - remove?
 
-- **Multiple Error Handling**: Supports handling multiple errors simultaneously, which is particularly useful in asynchronous or concurrent operations.
-- **Preserved Error Chains**: Retains the full history of errors, giving developers greater context for debugging.
-- **Consistent Structure:** All errors across the framework share a uniform structure, simplifying error tracking and management.
-- **Native Support:** Built on native Python Exceptions functionality, avoiding the need for additional dependencies while leveraging familiar mechanisms.
+- **Additional properties**: Exceptions may include additional properties to provide a more detailed view of the error.
+- **Preserved Error Chains**: Retains the full history of errors, giving developers full context for debugging.
 - **Utility Functions:** Includes methods for formatting error stack traces and explanations, making them suitable for use with LLMs and other external tools.
+- **Native Support:** Built on native Python Exceptions functionality, avoiding the need for additional dependencies while leveraging familiar mechanisms.
 
 This structure ensures that users can trace the complete error history while clearly identifying any errors originating from the BeeAI Framework.
 
-[//] # TODO: Example needs adding with embedding. Include an ensure()
-<!--
-```py
-```
-
-_Source: /examples/errors/base.py TODO
--->
 ## Specialized Error Classes
 
 The BeeAI Framework extends `FrameworkError` to create specialized error classes for different components or scenarios. This ensures that each part of the framework has clear and well-defined error types, improving debugging and error handling.
 
-Unless otherwise stated, the exceptions below are subclasses of `FrameworkError`.
+Framework error has two additional properties which help with agent processing, though ultimately the code that catches the exception will determine the appropriate action.
+
+- **is_retryable** : hints that the error is retryable.
+- **is_fatal** : hints that the error is fatal.
 
 > [!TIP]
 >
-> Casting an unknown error to a `FrameworkError` can be done by calling the `FrameworkError.ensure` static method as shown in example above
-
-[//] # TODO: REVIEW Consider better formats - table? Plus more description on parms used & better description of when used
-
-[//] # TODO: Implementation also includes UnimplementedError and ArgumentError which only occur in test case - remove?
-[//] # TODO: Does this fit better somewhere else?
+> Wrapping a standard Exception within a `FrameworkError` can be done by calling the `FrameworkError.ensure` static method. This will have no effect if the passed exception is already a `FrameworkError`.
 
 ### Aborts
 
-- `AbortError`: Raised when an operation has been aborted. 
+- `AbortError`: Raised when an operation has been aborted.
 
 ### Tools
 
 - `ToolError` : Raised when a problem is reported by a tool.
   - `ToolInputValidationError`, which extends ToolError, raised when input validation fails.
-
-[//] # TODO: Add toolError example and verify behaviour
-<!--
-```py
-```
-
-_Source: /examples/errors/tool.py TODO
-
-> [!TIP]
->
-> If you throw a `ToolError` intentionally in a custom tool, the framework will not apply any additional "wrapper" errors, preserving the original error context.
--->
 
 ### Agents
 
@@ -83,14 +61,12 @@ _Source: /examples/errors/tool.py TODO
 
 ### Parser
 
-[//] # TODO: REVIEW - Do we want to enumerate the reason codes or link?
-
 - `ParserError` : Raised when a parser fails to parse the input data. Includes additional *Reason*.
 
 ### Memory
 
 - `Resource Error` : Raised when an error occurs with processing agent memory.
-  - `ResourceFatalError` : Raised for particularly severe errors that are likely to be fatal.
+  - `ResourceFatalError` : Raised for particularly severe errors that are likely to be fatal (subclass of Resource Error).
 
 ### Emitter
 
