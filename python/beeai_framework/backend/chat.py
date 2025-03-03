@@ -132,6 +132,7 @@ class ChatModel(ABC):
         pass
 
     def __init__(self) -> None:
+        self.parameters = ChatModelParameters()
         self.emitter = Emitter.root().child(
             namespace=["backend", self.provider_id, "chat"],
             creator=self,
