@@ -166,6 +166,7 @@ class LiteLLMChatModel(ChatModel, ABC):
             messages=messages,
             tools=tools,
             response_format=input.response_format,
+            **self.parameters.model_dump(),
             **self.settings,
         )
 
