@@ -161,7 +161,7 @@ class LiteLLMChatModel(ChatModel, ABC):
 
         tools = [{"type": "function", "function": tool.prompt_data()} for tool in input.tools] if input.tools else None
 
-        params = {} if self.parameters is None else self.parameters.model_dump()
+        params = {} if self.parameters is None else self.parameters.model_dump(exclude_unset=True)
         return LiteLLMParameters(
             model=f"{self._litellm_provider_id}/{self.model_id}",
             messages=messages,
