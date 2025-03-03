@@ -20,6 +20,7 @@ from typing import Any, Generic, TypeVar
 
 from pydantic import BaseModel, ConfigDict, ValidationError, create_model
 
+from beeai_framework.cancellation import AbortSignal
 from beeai_framework.context import Run, RunContext, RunContextInput, RunInstance
 from beeai_framework.emitter.emitter import Emitter
 from beeai_framework.retryable import Retryable, RetryableConfig, RetryableContext, RetryableInput
@@ -30,6 +31,16 @@ from beeai_framework.utils.strings import to_safe_word
 logger = BeeLogger(__name__)
 
 T = TypeVar("T", bound=BaseModel)
+
+
+class RetryOptions(BaseModel):
+    max_retries: int | None = None
+    factor: int | None = None
+
+
+class ToolRunOptions(BaseModel):
+    retry_options: RetryOptions | None = None
+    signal: AbortSignal | None = None
 
 
 class ToolOutput(ABC):
@@ -58,14 +69,8 @@ class StringToolOutput(ToolOutput):
 
 
 class Tool(Generic[T], ABC):
-    options: dict[str, Any]
-
-    emitter: Emitter
-
     def __init__(self, options: dict[str, Any] | None = None) -> None:
-        if options is None:
-            options = {}
-        self.options = options
+        self._options: dict[str, Any] | None = options or None
 
     @property
     @abstractmethod
@@ -82,8 +87,13 @@ class Tool(Generic[T], ABC):
     def input_schema(self) -> type[T]:
         pass
 
+    @property
     @abstractmethod
-    async def _run(self, input: Any, options: dict[str, Any] | None = None) -> Any:
+    def emitter(self) -> Emitter:
+        pass
+
+    @abstractmethod
+    async def _run(self, input: Any, options: ToolRunOptions | None = None) -> Any:
         pass
 
     def validate_input(self, input: T | dict[str, Any]) -> T:
@@ -92,7 +102,7 @@ class Tool(Generic[T], ABC):
         except ValidationError as e:
             raise ToolInputValidationError("Tool input validation error", cause=e)
 
-    def run(self, input: T | dict[str, Any], options: dict[str, Any] | None = None) -> Run[T]:
+    def run(self, input: T | dict[str, Any], options: ToolRunOptions | None = None) -> Run[T]:
         async def run_tool(context: RunContext) -> T:
             error_propagated = False
 
@@ -112,7 +122,7 @@ class Tool(Generic[T], ABC):
                     error_propagated = True
                     err = ToolError.ensure(error)
                     await context.emitter.emit("error", {"error": err, **meta})
-                    if err.is_fatal:
+                    if err.is_fatal is True:
                         raise err from None
 
                 async def on_retry(ctx: RetryableContext, last_error: Exception) -> None:
@@ -125,7 +135,11 @@ class Tool(Generic[T], ABC):
                         on_error=on_error,
                         on_retry=on_retry,
                         config=RetryableConfig(
-                            max_retries=options.get("max_retries") if options else 1, signal=context.signal
+                            max_retries=(
+                                (options.retry_options.max_retries or 0) if options and options.retry_options else 0
+                            ),
+                            factor=((options.retry_options.factor or 1) if options and options.retry_options else 1),
+                            signal=context.signal,
                         ),
                     )
                 ).get()
@@ -189,12 +203,16 @@ def tool(tool_function: Callable) -> Tool:
 
         def __init__(self, options: dict[str, Any] | None = None) -> None:
             super().__init__(options)
-            self.emitter = Emitter.root().child(
+            self._emitter = Emitter.root().child(
                 namespace=["tool", "custom", to_safe_word(self.name)],
                 creator=self,
             )
 
-        async def _run(self, tool_in: Any, _: dict[str, Any] | None = None) -> None:
+        @property
+        def emitter(self) -> Emitter:
+            return self._emitter
+
+        async def _run(self, tool_in: Any, _: ToolRunOptions | None = None) -> None:
             tool_input_dict = tool_in.model_dump()
             if inspect.iscoroutinefunction(tool_function):
                 return await tool_function(**tool_input_dict)

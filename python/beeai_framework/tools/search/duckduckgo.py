@@ -54,10 +54,14 @@ class DuckDuckGoSearchTool(Tool[DuckDuckGoSearchToolInput]):
         super().__init__()
         self.max_results = max_results
         self.safe_search = safe_search
-        self.emitter = Emitter.root().child(
+        self._emitter = Emitter.root().child(
             namespace=["tool", "search", "duckduckgo"],
             creator=self,
         )
+
+    @property
+    def emitter(self) -> Emitter:
+        return self._emitter
 
     async def _run(self, input: DuckDuckGoSearchToolInput, _: Any | None = None) -> DuckDuckGoSearchToolOutput:
         try:
