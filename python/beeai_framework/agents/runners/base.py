@@ -73,7 +73,12 @@ class BaseRunner(ABC):
         self._failed_attempts_counter: RetryCounter = RetryCounter(
             error_type=AgentError,
             max_retries=(
-                options.execution.total_max_retries if options.execution and options.execution.total_max_retries else 0
+                max(
+                    options.execution.total_max_retries
+                    if options.execution and options.execution.total_max_retries
+                    else 0,
+                    1,  # we need to handle empty results from LiteLLM
+                )
             ),
         )
         self._run = run

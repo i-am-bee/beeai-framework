@@ -78,7 +78,7 @@ async def do_retry(fn: Callable[[int], Awaitable[T]], options: dict[str, Any] | 
             if options["on_failed_attempt"]:
                 await options["on_failed_attempt"](e, meta)
 
-            if remaining <= 0:
+            if remaining < 0:
                 raise e
 
             if (options.get("should_retry", lambda _: False)(e)) is False:

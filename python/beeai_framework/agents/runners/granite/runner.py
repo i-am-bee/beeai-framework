@@ -29,7 +29,7 @@ from beeai_framework.context import RunContext
 from beeai_framework.emitter import EmitterOptions, EventMeta
 from beeai_framework.memory.base_memory import BaseMemory
 from beeai_framework.parsers.field import ParserField
-from beeai_framework.parsers.line_prefix import LinePrefixParser, LinePrefixParserNode
+from beeai_framework.parsers.line_prefix import LinePrefixParser, LinePrefixParserNode, LinePrefixParserOptions
 from beeai_framework.utils.strings import create_strenum
 
 
@@ -63,7 +63,7 @@ class GraniteRunner(DefaultRunner):
         tool_names = create_strenum("ToolsEnum", [tool.name for tool in self._input.tools])
 
         return LinePrefixParser(
-            {
+            nodes={
                 "thought": LinePrefixParserNode(
                     prefix="Thought: ",
                     field=ParserField.from_type(str),
@@ -86,7 +86,15 @@ class GraniteRunner(DefaultRunner):
                 "final_answer": LinePrefixParserNode(
                     prefix="Final Answer: ", field=ParserField.from_type(str), is_end=True, is_start=True
                 ),
-            }
+            },
+            options=LinePrefixParserOptions(
+                fallback=lambda value: [
+                    {"key": "thought", "value": "I now know the final answer."},
+                    {"key": "final_answer", "value": value},
+                ]
+                if value
+                else []
+            ),
         )
 
     def default_templates(self) -> BeeAgentTemplates:

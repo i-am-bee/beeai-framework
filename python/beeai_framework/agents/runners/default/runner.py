@@ -51,6 +51,7 @@ from beeai_framework.parsers.line_prefix import (
     LinePrefixParser,
     LinePrefixParserError,
     LinePrefixParserNode,
+    LinePrefixParserOptions,
     LinePrefixParserUpdate,
 )
 from beeai_framework.retryable import Retryable, RetryableConfig, RetryableContext, RetryableInput
@@ -79,7 +80,7 @@ class DefaultRunner(BaseRunner):
         tool_names = create_strenum("ToolsEnum", [tool.name for tool in self._input.tools])
 
         return LinePrefixParser(
-            {
+            nodes={
                 "thought": LinePrefixParserNode(
                     prefix="Thought: ",
                     field=ParserField.from_type(str),
@@ -103,7 +104,15 @@ class DefaultRunner(BaseRunner):
                 "final_answer": LinePrefixParserNode(
                     prefix="Final Answer: ", field=ParserField.from_type(str), is_end=True, is_start=True
                 ),
-            }
+            },
+            options=LinePrefixParserOptions(
+                fallback=lambda value: [
+                    {"key": "thought", "value": "I now know the final answer."},
+                    {"key": "final_answer", "value": value},
+                ]
+                if value
+                else []
+            ),
         )
 
     async def llm(self, input: BeeRunnerLLMInput) -> BeeAgentRunIteration:
