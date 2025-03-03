@@ -135,7 +135,7 @@ class OpenMeteoTool(Tool[OpenMeteoToolInput]):
         params["temperature_unit"] = input.temperature_unit
         return params
 
-    async def _run(self, input: OpenMeteoToolInput, options: Any = None) -> None:
+    async def _run(self, input: OpenMeteoToolInput, options: Any = None) -> StringToolOutput:
         params = urlencode(self.get_params(input), doseq=True)
         logger.debug(f"Using OpenMeteo URL: https://api.open-meteo.com/v1/forecast?{params}")
 

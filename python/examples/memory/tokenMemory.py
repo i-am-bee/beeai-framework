@@ -1,8 +1,11 @@
 import asyncio
 import math
+import sys
+import traceback
 
 from beeai_framework.adapters.ollama.backend.chat import OllamaChatModel
 from beeai_framework.backend import Message, Role
+from beeai_framework.errors import FrameworkError
 from beeai_framework.memory import TokenMemory
 
 # Initialize the LLM
@@ -22,39 +25,36 @@ memory = TokenMemory(
 
 
 async def main() -> None:
-    try:
-        # Add system message
-        system_message = Message.of({"role": Role.SYSTEM, "text": "You are a helpful assistant."})
-        await memory.add(system_message)
-        print(f"Added system message (hash: {hash(system_message)})")
+    # Add system message
+    system_message = Message.of({"role": Role.SYSTEM, "text": "You are a helpful assistant."})
+    await memory.add(system_message)
+    print(f"Added system message (hash: {hash(system_message)})")
 
-        # Add user message
-        user_message = Message.of({"role": Role.USER, "text": "Hello world!"})
-        await memory.add(user_message)
-        print(f"Added user message (hash: {hash(user_message)})")
+    # Add user message
+    user_message = Message.of({"role": Role.USER, "text": "Hello world!"})
+    await memory.add(user_message)
+    print(f"Added user message (hash: {hash(user_message)})")
 
-        # Check initial memory state
-        print("\nInitial state:")
-        print(f"Is Dirty: {memory.is_dirty}")
-        print(f"Tokens Used: {memory.tokens_used}")
+    # Check initial memory state
+    print("\nInitial state:")
+    print(f"Is Dirty: {memory.is_dirty}")
+    print(f"Tokens Used: {memory.tokens_used}")
 
-        # Sync token counts
-        await memory.sync()
-        print("\nAfter sync:")
-        print(f"Is Dirty: {memory.is_dirty}")
-        print(f"Tokens Used: {memory.tokens_used}")
+    # Sync token counts
+    await memory.sync()
+    print("\nAfter sync:")
+    print(f"Is Dirty: {memory.is_dirty}")
+    print(f"Tokens Used: {memory.tokens_used}")
 
-        # Print all messages
-        print("\nMessages in memory:")
-        for msg in memory.messages:
-            print(f"{msg.role}: {msg.text} (hash: {hash(msg)})")
-
-    except Exception as e:
-        print(f"An error occurred: {e!s}")
-        import traceback
-
-        print(traceback.format_exc())
+    # Print all messages
+    print("\nMessages in memory:")
+    for msg in memory.messages:
+        print(f"{msg.role}: {msg.text} (hash: {hash(msg)})")
 
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    try:
+        asyncio.run(main())
+    except FrameworkError as e:
+        traceback.print_exc()
+        sys.exit(e.explain())
