@@ -19,6 +19,7 @@ from beeai_framework.agents.runners.granite.prompts import (
     GraniteSchemaErrorTemplate,
     GraniteSystemPromptTemplate,
     GraniteToolInputErrorTemplate,
+    GraniteToolNoResultTemplate,
     GraniteToolNotFoundErrorTemplate,
     GraniteUserPromptTemplate,
 )
@@ -93,6 +94,7 @@ class GraniteRunner(DefaultRunner):
             system=GraniteSystemPromptTemplate,
             assistant=GraniteAssistantPromptTemplate,
             user=GraniteUserPromptTemplate,
+            tool_no_result_error=GraniteToolNoResultTemplate,
             tool_not_found_error=GraniteToolNotFoundErrorTemplate,
             tool_input_error=GraniteToolInputErrorTemplate,
             schema_error=GraniteSchemaErrorTemplate,

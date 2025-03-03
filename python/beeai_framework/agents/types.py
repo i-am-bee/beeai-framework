@@ -80,7 +80,7 @@ class BeeAgentTemplates(BaseModel):
     # user_empty: InstanceOf[PromptTemplate]
     # tool_error: InstanceOf[PromptTemplate]
     tool_input_error: InstanceOf[PromptTemplate]
-    # tool_no_result_error: InstanceOf[PromptTemplate]
+    tool_no_result_error: InstanceOf[PromptTemplate]
     tool_not_found_error: InstanceOf[PromptTemplate]
     schema_error: InstanceOf[PromptTemplate]
 

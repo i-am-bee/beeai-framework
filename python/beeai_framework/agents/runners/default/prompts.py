@@ -41,6 +41,10 @@ class SystemPromptTemplateInput(BaseModel):
     instructions: str | None = None
 
 
+class ToolNoResultErrorTemplateInput(BaseModel):
+    pass
+
+
 class ToolNotFoundErrorTemplateInput(BaseModel):
     tools: list[ToolDefinition] | None = []
 
@@ -137,6 +141,10 @@ Prefer to use these capabilities over functions.
 {{/instructions}}
 """,  # noqa: E501
     )
+)
+
+ToolNoResultErrorTemplate = PromptTemplate(
+    PromptTemplateInput(schema=ToolNoResultErrorTemplateInput, template="No results were found!")
 )
 
 ToolNotFoundErrorTemplate = PromptTemplate(

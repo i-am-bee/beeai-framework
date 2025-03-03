@@ -19,6 +19,7 @@ from beeai_framework.agents.runners.default.prompts import (
     SchemaErrorTemplateInput,
     SystemPromptTemplateInput,
     ToolInputErrorTemplateInput,
+    ToolNoResultErrorTemplateInput,
     ToolNotFoundErrorTemplateInput,
     UserPromptTemplateInput,
 )
@@ -81,6 +82,10 @@ You do not need a tool to get the current Date and Time. Use the information ava
 {{/instructions}}
 """,  # noqa: E501
     )
+)
+
+GraniteToolNoResultTemplate = PromptTemplate(
+    PromptTemplateInput(schema=ToolNoResultErrorTemplateInput, template="No results were found!")
 )
 
 GraniteToolNotFoundErrorTemplate = PromptTemplate(

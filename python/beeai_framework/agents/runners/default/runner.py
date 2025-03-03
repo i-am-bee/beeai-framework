@@ -29,6 +29,7 @@ from beeai_framework.agents.runners.default.prompts import (
     SystemPromptTemplateInput,
     ToolDefinition,
     ToolInputErrorTemplate,
+    ToolNoResultErrorTemplate,
     ToolNotFoundErrorTemplate,
     UserPromptTemplate,
 )
@@ -65,6 +66,7 @@ class DefaultRunner(BaseRunner):
             system=SystemPromptTemplate,
             assistant=AssistantPromptTemplate,
             user=UserPromptTemplate,
+            tool_no_result_error=ToolNoResultErrorTemplate,
             tool_not_found_error=ToolNotFoundErrorTemplate,
             tool_input_error=ToolInputErrorTemplate,
             schema_error=SchemaErrorTemplate,
@@ -237,7 +239,12 @@ class DefaultRunner(BaseRunner):
         async def executor(_: RetryableContext) -> BeeRunnerToolResult:
             try:
                 tool_output: ToolOutput = await tool.run(input.state.tool_input, options={})  # TODO: pass tool options
-                return BeeRunnerToolResult(output=tool_output, success=True)
+                if tool_output.is_empty():
+                    return BeeRunnerToolResult(
+                        output=StringToolOutput(self.templates.tool_no_result_error.render({})), success=True
+                    )
+                else:
+                    return BeeRunnerToolResult(output=tool_output, success=True)
             # TODO These error templates should be customized to help the LLM to recover
             except ToolInputValidationError as e:
                 self._failed_attempts_counter.use(e)
