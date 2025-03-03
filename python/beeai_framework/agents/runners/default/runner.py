@@ -186,7 +186,13 @@ class DefaultRunner(BaseRunner):
 
             await parser.end()
 
-            await self.memory.delete_many([msg for msg in self.memory.messages if not msg.meta.get("success", True)])
+            await self.memory.delete_many(
+                [
+                    msg
+                    for msg in self.memory.messages
+                    if not msg.meta.get("success", True) or msg.meta.get("tempMessage", False)
+                ]
+            )
 
             return BeeAgentRunIteration(
                 raw=output, state=BeeIterationResult.model_validate(parser.final_state, strict=False)
@@ -202,7 +208,8 @@ class DefaultRunner(BaseRunner):
                 on_retry=on_retry,
                 on_error=on_error,
                 executor=executor,
-                config=RetryableConfig(max_retries=max_retries, signal=input.signal),
+                # we need to handle empty results from LiteLLM
+                config=RetryableConfig(max_retries=max(max_retries, 1), signal=input.signal),
             )
         ).get()
 
