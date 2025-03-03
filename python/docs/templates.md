@@ -1,88 +1,80 @@
-# Templates (Prompt Templates)
+# 📋 Prompt Templates
 
-*Disclaimer: The notes below may refer to the TypeScript version or missing files as the Python version moves toward parity in the near future. Additional Python examples coming soon. TODO*
+<!-- TOC -->
+## Table of Contents
+- [Overview](#overview)
+- [Key Features](#key-features)
+- [Basic Usage](#basic-usage)
+  - [Simple Template](#simple-template)
+  - [Template Functions](#template-functions)
+  - [Working with Objects](#working-with-objects)
+  - [Working with Arrays](#working-with-arrays)
+  - [Template Forking](#template-forking)
+  - [Default Values](#default-values)
+- [Using Templates with Agents](#using-templates-with-agents)
+- [Examples](#examples)
+<!-- /TOC -->
+
+---
+
+## Overview
+
+Templates are predefined structures used to create consistent outputs. In the context of AI applications, prompt templates provide structured guidance for language models to generate targeted responses. They include placeholders that can be filled with specific information at runtime.
+
+The Framework implements this functionality through the `PromptTemplate` class, which uses Mustache-style syntax (via the `chevron` library) for variable substitution. The implementation adds type safety and validation using Pydantic schemas.
+
+At its core, the `PromptTemplate` class:
+* Validates input data against a Pydantic model schema
+* Handles template variable substitution
+* Supports dynamic content generation through callable functions
+* Provides default values for optional fields
+* Enables template customization through forking
+
 > [!TIP]
 >
-> Location within the framework `beeai/template`.
+> Prompt Templates are fundamental building blocks in the framework and are extensively used in agent implementations.
 
-**Template** is a predefined structure or format used to create consistent documents or outputs. It often includes placeholders for specific information that can be filled in later.
-
-**Prompt template**, on the other hand, is a specific type of template used in the context of language models or AI applications.
-It consists of a structured prompt that guides the model in generating a response or output. The prompt often includes variables or placeholders for user input, which helps to elicit more relevant or targeted responses.
-
-The Framework exposes such functionality via the [`PromptTemplate TODO`]() class.
-
-> [!TIP]
+> [!NOTE]
 >
-> The Prompt Template concept is used anywhere - especially in our agents.
+> Location within the framework: [beeai_framework/template](/python/beeai_framework/template.py).
 
-## Usage
+## Basic usage
 
-### Primitives
+### Simple template
 
-```py
-```
-
-_Source: /examples/templates/primitives.py TODO
-
-### Arrays
+Create templates with basic variable substitution and type validation.
 
 ```py
-```
+from pydantic import BaseModel
 
-_Source: /examples/templates/arrays.py TODO
+from beeai_framework.template import PromptTemplate, PromptTemplateInput
 
-### Objects
 
-```py
-```
+class UserMessage(BaseModel):
+    label: str
+    input: str
 
-_Source: /examples/templates/objects.py TODO
 
-### Forking
-
-```py
-```
-
-_Source: /examples/templates/forking.py TODO
-
-### Functions
-
-```py
-```
-
-_Source: functions.py TODO
-
-### Agent Sys Prompt
-
-<!-- embedme examples/templates/agent_sys_prompt.py -->
-
-```py
-from beeai_framework.agents.runners.default.prompts import (
-    SystemPromptTemplate,
-    SystemPromptTemplateInput,
-    ToolDefinition,
-)
-from beeai_framework.tools.weather.openmeteo import OpenMeteoTool
-
-tool = OpenMeteoTool()
-
-# Render the granite system prompt
-prompt = SystemPromptTemplate.render(
-    SystemPromptTemplateInput(
-        instructions="You are a helpful AI assistant!", tools=[ToolDefinition(**tool.prompt_data())], tools_length=1
+template = PromptTemplate(
+    PromptTemplateInput(
+        schema=UserMessage,
+        template="""{{label}}: {{input}}""",
     )
 )
+
+prompt = template.render(UserMessage(label="Query", input="What interesting things happened on this day in history?"))
 
 print(prompt)
 
 ```
 
-_Source: [examples/templates/agent_sys_prompt.py](/examples/templates/agent_sys_prompt.py)_
+This example creates a simple template that formats a user message with a label and input text. The Pydantic model ensures type safety for the template variables.
 
-### Basic Functions
+_Source: /examples/templates/basic_template.py_
 
-<!-- embedme examples/templates/basic_functions.py -->
+### Template functions
+
+Add dynamic content to templates using custom functions.
 
 ```py
 import os
@@ -116,40 +108,95 @@ template = PromptTemplate(
 
 ```
 
-_Source: [examples/templates/basic_functions.py](/examples/templates/basic_functions.py)_
+This example demonstrates how to add custom functions to templates:
+* The `format_date` function returns the current date and time in a specific format
+* The `current_user` function retrieves the current user from environment variables
+* Both functions can be called directly from the template using Mustache-style syntax
 
-### Basic Template
+_Source: [examples/templates/basic_functions.py](/python/examples/templates/basic_functions.py)_
 
-<!-- embedme examples/templates/basic_template.py -->
+### Working with objects
+
+Handle complex nested data structures in templates with proper type validation.
 
 ```py
-from pydantic import BaseModel
+# Coming soon
+```
 
-from beeai_framework.template import PromptTemplate, PromptTemplateInput
+This example shows how to work with nested objects in templates. The Mustache syntax allows for iterating through the responses array and accessing properties of each object.
 
+_Source: /examples/templates/objects.py_
 
-class UserMessage(BaseModel):
-    label: str
-    input: str
+### Working with arrays
 
+Process collections of data within templates for dynamic list generation.
 
-template = PromptTemplate(
-    PromptTemplateInput(
-        schema=UserMessage,
-        template="""{{label}}: {{input}}""",
+```py
+# Coming soon
+```
+
+This example demonstrates how to iterate over arrays in templates using Mustache's section syntax.
+
+_Source: /examples/templates/arrays.py_
+
+### Template forking
+
+The fork() method allows you to create new templates based on existing ones, with customizations.
+
+Template forking is useful for:
+* Creating variations of templates while maintaining core functionality
+* Adding new fields or functionality to existing templates
+* Specializing generic templates for specific use cases
+
+```py
+# Coming soon
+```
+
+This example shows how to create a new template based on an existing one.
+
+_Source: /examples/templates/forking.py_
+
+### Default values
+
+Provide default values for template variables that can be overridden at runtime.
+
+---
+
+## Using templates with agents
+
+The framework's agents use specialized templates to structure their behavior. You can customize these templates to alter how agents operate:
+
+<!-- embedme examples/templates/agent_sys_prompt.py -->
+
+```py
+from beeai_framework.agents.runners.default.prompts import (
+    SystemPromptTemplate,
+    SystemPromptTemplateInput,
+    ToolDefinition,
+)
+from beeai_framework.tools.weather.openmeteo import OpenMeteoTool
+
+tool = OpenMeteoTool()
+
+# Render the granite system prompt
+prompt = SystemPromptTemplate.render(
+    SystemPromptTemplateInput(
+        instructions="You are a helpful AI assistant!", tools=[ToolDefinition(**tool.prompt_data())], tools_length=1
     )
 )
-
-prompt = template.render(UserMessage(label="Query", input="What interesting things happened on this day in history?"))
 
 print(prompt)
 
 ```
 
-_Source: [examples/templates/basic_template.py](/examples/templates/basic_template.py)_
+This example demonstrates how to create a system prompt for an agent with tool definitions, which enables the agent to use external tools like weather data retrieval.
 
-## Agents
+_Source: [examples/templates/agent_sys_prompt.py](/examples/templates/agent_sys_prompt.py)_
 
-The Bee Agent internally uses multiple prompt templates, and because now you know how to work with them, you can alter the agent’s behavior.
+---
 
-The internal prompt templates can be modified [here](/examples/agents/bee_advanced.py).
+# Examples
+
+- [basic_template.py](/python/examples/templates/basic_template.py) - Simple variable substitution with Pydantic validation
+- [basic_functions.py](/python/examples/templates/basic_functions.py) - Adding dynamic content with custom template functions
+- [agent_sys_prompt.py](/python/examples/templates/agent_sys_prompt.py) - Creating specialized system prompts for AI assistants with tool definitions
