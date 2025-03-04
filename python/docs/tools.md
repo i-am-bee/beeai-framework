@@ -349,7 +349,7 @@ from pydantic import BaseModel, Field
 
 from beeai_framework.emitter.emitter import Emitter
 from beeai_framework.errors import FrameworkError
-from beeai_framework.tools.tool import Tool
+from beeai_framework.tools.tool import StringToolOutput, Tool
 
 
 class RiddleToolInput(BaseModel):
@@ -373,15 +373,17 @@ class RiddleTool(Tool[RiddleToolInput]):
 
     def __init__(self, options: dict[str, Any] | None = None) -> None:
         super().__init__(options)
-        self.emitter = Emitter.root().child(
+
+    def _create_emitter(self) -> Emitter:
+        return Emitter.root().child(
             namespace=["tool", "example", "riddle"],
             creator=self,
         )
 
-    async def _run(self, input: RiddleToolInput, _: Any | None = None) -> None:
+    async def _run(self, input: RiddleToolInput, _: Any | None = None) -> StringToolOutput:
         index = input.riddle_number % (len(self.data))
         riddle = self.data[index]
-        return riddle
+        return StringToolOutput(result=riddle)
 
 
 async def main() -> None:
@@ -448,7 +450,9 @@ class OpenLibraryTool(Tool[OpenLibraryToolInput]):
 
     def __init__(self, options: dict[str, Any] | None = None) -> None:
         super().__init__(options)
-        self.emitter = Emitter.root().child(
+
+    def _create_emitter(self) -> Emitter:
+        return Emitter.root().child(
             namespace=["tool", "example", "openlibrary"],
             creator=self,
         )
@@ -476,9 +480,9 @@ class OpenLibraryTool(Tool[OpenLibraryToolInput]):
             json_output = response.json()[f"{key}:{value}"]
 
         return OpenLibraryToolResult(
-            preview_url=json_output.get("preview_url"),
-            info_url=json_output.get("info_url"),
-            bib_key=json_output.get("bib_key"),
+            preview_url=json_output.get("preview_url", ""),
+            info_url=json_output.get("info_url", ""),
+            bib_key=json_output.get("bib_key", ""),
         )
 
 
