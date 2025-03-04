@@ -19,6 +19,7 @@ from beeai_framework.backend.chat import ChatModel
 from beeai_framework.context import RunContext
 from beeai_framework.emitter import Emitter
 from beeai_framework.errors import FrameworkError
+from beeai_framework.utils.models import ModelLike, to_model, to_model_optional
 
 
 class State(BaseModel):
@@ -47,7 +48,12 @@ class CustomAgent(BaseAgent[RunOutput]):
             creator=self,
         )
 
-    async def _run(self, run_input: BeeRunInput, options: BeeRunOptions | None, context: RunContext) -> RunOutput:
+    async def _run(
+        self, run_input: ModelLike[BeeRunInput], options: ModelLike[BeeRunOptions] | None, context: RunContext
+    ) -> RunOutput:
+        run_input = to_model(BeeRunInput, run_input)
+        options = to_model_optional(BeeRunOptions, options)
+
         class CustomSchema(BaseModel):
             thought: str = Field(description="Describe your thought process before coming with a final answer")
             final_answer: str = Field(description="Here you should provide concise answer to the original question.")

@@ -9,7 +9,7 @@ from pydantic import BaseModel
 from beeai_framework import Tool, UnconstrainedMemory
 from beeai_framework.adapters.ollama.backend.chat import OllamaChatModel
 from beeai_framework.agents.bee.agent import BeeAgent
-from beeai_framework.agents.types import BeeAgentExecutionConfig, BeeAgentTemplates, BeeTemplateFactory
+from beeai_framework.agents.types import AgentExecutionConfig, BeeAgentTemplates, BeeTemplateFactory
 from beeai_framework.cancellation import AbortSignal
 from beeai_framework.emitter.emitter import Emitter, EventMeta
 from beeai_framework.emitter.types import EmitterOptions
@@ -114,7 +114,7 @@ async def main() -> None:
     for prompt in reader:
         response = await agent.run(
             prompt=prompt,
-            execution=BeeAgentExecutionConfig(max_retries_per_step=3, total_max_retries=10, max_iterations=20),
+            execution=AgentExecutionConfig(max_retries_per_step=3, total_max_retries=10, max_iterations=20),
             signal=AbortSignal.timeout(2 * 60 * 1000),
         ).observe(observer)
 
