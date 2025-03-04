@@ -2,6 +2,8 @@
 
 ## Event APIs
 
+Built-in events will always return a `dict[str, Any] | None`
+
 ### Agent Events
 
 These events can be observed calling `agent.run`
@@ -92,10 +94,28 @@ These events can be observed calling `agent.run`
 
 These events can be observed when calling `ChatModel.create` or `ChatModel.create_structure`
 
-- "newToken": `tuple[ChatModelOutput, Callable]`
-- "success": `{ "value": ChatModelOutput }`
+- "newToken":
+    ```python
+    {
+      "value": ChatModelOutput,
+      "abort": Callable[[], None],
+    }
+
+- "success":
+    ```python
+    {
+      "value": ChatModelOutput
+    }
 - "start": `ChatModelInput`
-- "error": `{ "error": ChatModelError }`
+    ```python
+    {
+      "input": ChatModelInput
+    }
+- "error":
+    ```python
+    {
+      "error": ChatModelError
+    }
 - "finish": `None`
 
 ### Tool Events
