@@ -46,6 +46,10 @@ Ready-to-use tools that provide immediate functionality for common agent tasks:
 
 For detailed usage examples of each built-in tool with complete implementation code, see the [tools examples directory](/python/examples/tools).
 
+> [!TIP]
+>
+> Would you like to use a tool from LangChain? See the [LangChain tool example](/python/examples/tools/langchain.py).
+
 ## Usage
 
 ### Basic usage
