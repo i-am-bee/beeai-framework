@@ -53,7 +53,7 @@ class OpenMeteoTool(Tool[OpenMeteoToolInput]):
     def __init__(self, options: dict[str, Any] | None = None) -> None:
         super().__init__(options)
 
-    def create_emitter(self) -> Emitter:
+    def _create_emitter(self) -> Emitter:
         return Emitter.root().child(
             namespace=["tool", "weather", "openmeteo"],
             creator=self,

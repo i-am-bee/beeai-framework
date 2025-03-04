@@ -16,6 +16,7 @@
 import inspect
 from abc import ABC, abstractmethod
 from collections.abc import Callable
+from functools import cached_property
 from typing import Any, Generic, TypeVar
 
 from pydantic import BaseModel, ConfigDict, ValidationError, create_model
@@ -71,7 +72,6 @@ class StringToolOutput(ToolOutput):
 class Tool(Generic[T], ABC):
     def __init__(self, options: dict[str, Any] | None = None) -> None:
         self.options: dict[str, Any] | None = options or None
-        self._emitter: Emitter | None = None
 
     @property
     @abstractmethod
@@ -88,14 +88,12 @@ class Tool(Generic[T], ABC):
     def input_schema(self) -> type[T]:
         pass
 
-    @property
+    @cached_property
     def emitter(self) -> Emitter:
-        if self._emitter is None:
-            self._emitter = self.create_emitter()
-        return self._emitter
+        return self._create_emitter()
 
     @abstractmethod
-    def create_emitter(self) -> Emitter:
+    def _create_emitter(self) -> Emitter:
         pass
 
     @abstractmethod
@@ -213,7 +211,7 @@ def tool(tool_function: Callable) -> Tool:
         def __init__(self, options: dict[str, Any] | None = None) -> None:
             super().__init__(options)
 
-        def create_emitter(self) -> Emitter:
+        def _create_emitter(self) -> Emitter:
             return Emitter.root().child(
                 namespace=["tool", "custom", to_safe_word(self.name)],
                 creator=self,

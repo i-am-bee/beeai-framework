@@ -74,7 +74,7 @@ class MCPTool(Tool[MCPToolOutput]):
     def input_schema(self) -> str:
         return self._tool.inputSchema
 
-    def create_emitter(self) -> Emitter:
+    def _create_emitter(self) -> Emitter:
         return Emitter.root().child(
             namespace=["tool", "mcp", self.name],
             creator=self,
