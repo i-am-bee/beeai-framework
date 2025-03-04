@@ -35,7 +35,8 @@ exclude = list(
             "backend/providers/groq.py" if os.getenv("GROQ_API_KEY") is None else None,
             "backend/providers/xai.py" if os.getenv("XAI_API_KEY") is None else None,
             # Google backend picks up environment variables/google auth credentials directly
-            "backend/providers/vertexai.py",
+            "backend/providers/vertexai.py" if os.getenv("VERTEXAI_PROJECT") is None else None,
+            "backend/providers/amazon_bedrock.py" if os.getenv("AWS_ACCESS_KEY_ID") is None else None,
             # requires Searx instance
             "workflows/searx_agent.py",
         ],
