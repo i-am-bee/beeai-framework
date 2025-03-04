@@ -185,6 +185,8 @@ def test_chat_model_from(monkeypatch: pytest.MonkeyPatch) -> None:
     xai_chat_model = ChatModel.from_name("xai:grok-2")
     assert isinstance(xai_chat_model, XAIChatModel)
 
-    monkeypatch.setenv("AWS_ACCESS_KEY_ID", "api_key_456")
+    monkeypatch.setenv("AWS_ACCESS_KEY_ID", "secret1")
+    monkeypatch.setenv("AWS_SECRET_ACCESS_KEY", "secret2")
+    monkeypatch.setenv("AWS_REGION_NAME", "region1")
     amazonbedrock_chat_model = ChatModel.from_name("amazonbedrock:meta.llama3-8b-instruct-v1:0")
     assert isinstance(amazonbedrock_chat_model, AmazonBedrockChatModel)
