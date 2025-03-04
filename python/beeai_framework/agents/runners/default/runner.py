@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import datetime
 from collections.abc import Callable
 
 from beeai_framework.agents.runners.base import (
@@ -32,7 +33,9 @@ from beeai_framework.agents.runners.default.prompts import (
     ToolNoResultsTemplate,
     ToolNotFoundErrorTemplate,
     UserEmptyPromptTemplate,
+    UserEmptyPromptTemplateInput,
     UserPromptTemplate,
+    UserPromptTemplateInput,
 )
 from beeai_framework.agents.types import (
     BeeAgentRunIteration,
@@ -315,17 +318,20 @@ class DefaultRunner(BaseRunner):
             )
         )
 
-        messages = [
-            SystemMessage(content=system_prompt),
-            *self._input.memory.messages,
-        ]
+        await memory.add_many(
+            [
+                SystemMessage(content=system_prompt),
+                *self._input.memory.messages,
+            ]
+        )
 
-        if input.prompt:
-            messages.append(UserMessage(content=input.prompt))
-
-        if len(messages) <= 1:
-            raise ValueError("At least one message must be provided.")
-
-        await memory.add_many(messages=messages)
+        if memory.is_empty() or input.prompt:
+            created_at = datetime.datetime.now(tz=datetime.UTC)
+            content = (
+                self.templates.user.render(UserPromptTemplateInput(input=input.prompt, created_at=created_at))
+                if input.prompt
+                else self.templates.user_empty.render(UserEmptyPromptTemplateInput())
+            )
+            await memory.add(UserMessage(content=content, meta={"createdAt": created_at}))
 
         return memory

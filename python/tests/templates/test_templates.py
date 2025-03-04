@@ -77,7 +77,7 @@ def test_render_function(template: PromptTemplate) -> None:
         PromptTemplateInput(
             schema=TestPromptInputSchema,
             functions={
-                "formatDate": lambda: datetime.now(ZoneInfo("US/Eastern")).strftime("%A, %B %d, %Y at %I:%M:%S %p")
+                "formatDate": lambda data: datetime.now(ZoneInfo("US/Eastern")).strftime("%A, %B %d, %Y at %I:%M:%S %p")
             },
             template="""{{task}} {{formatDate}}""",
         )

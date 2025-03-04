@@ -38,7 +38,7 @@ GraniteSystemPromptTemplate = PromptTemplate(
     PromptTemplateInput(
         schema=SystemPromptTemplateInput,
         functions={
-            "formatDate": lambda: datetime.now(tz=UTC).strftime("%A, %B %d, %Y at %I:%M:%S %p"),
+            "formatDate": lambda data: datetime.now(tz=UTC).strftime("%A, %B %d, %Y at %I:%M:%S %p"),
         },
         template="""You are an AI assistant.
 When the user sends a message figure out a solution and provide a final answer.
