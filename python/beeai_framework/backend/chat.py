@@ -262,7 +262,6 @@ IMPORTANT: You MUST answer with a JSON object that matches the JSON schema above
                 await context.emitter.emit("success", {"value": result})
                 return result
             except Exception as ex:
-                print(ex)
                 error = ChatModelError.ensure(ex)
                 await context.emitter.emit("error", {"error": error})
                 raise error
