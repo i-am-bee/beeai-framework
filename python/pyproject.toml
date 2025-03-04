@@ -196,6 +196,7 @@ shell = "TYPE=${type} ./scripts/copyright.sh"
 [tool.poe.tasks.release]
 help = "Release a new version"
 sequence = [
+    { shell = 'git fetch origin && [ "$(git rev-parse @)" = "$(git rev-parse @{u})" ] || { echo "Your branch is not up to date! Pull or push changes." && exit 1; }' },
     { shell = '[ -z "$(git status -uno --porcelain)" ] || { echo "Your index contains uncommitted changes! Commit them and try again." && exit 1; }' },
     { "ref" = "clean"},
     { "cmd" = "cz bump --increment PATCH"},
