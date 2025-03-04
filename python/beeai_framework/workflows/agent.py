@@ -24,8 +24,8 @@ from pydantic import BaseModel, ConfigDict, Field, InstanceOf
 from beeai_framework.agents.base import BaseAgent, BaseMemory
 from beeai_framework.agents.bee import BeeAgent
 from beeai_framework.agents.types import (
+    AgentExecutionConfig,
     AgentMeta,
-    BeeAgentExecutionConfig,
     BeeRunOutput,
 )
 from beeai_framework.backend.chat import ChatModel
@@ -46,7 +46,7 @@ class AgentFactoryInput(BaseModel):
     llm: ChatModel
     instructions: str | None = None
     tools: list[InstanceOf[Tool]] | None = None
-    execution: BeeAgentExecutionConfig | None = None
+    execution: AgentExecutionConfig | None = None
 
 
 class Schema(BaseModel):

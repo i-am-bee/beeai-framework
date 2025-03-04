@@ -93,7 +93,7 @@ Control how the agent runs by configuring retries, timeouts, and iteration limit
 ```py
 response = await agent.run(
     prompt=prompt,
-    execution=BeeAgentExecutionConfig(max_retries_per_step=3, total_max_retries=10, max_iterations=20),
+    execution=AgentExecutionConfig(max_retries_per_step=3, total_max_retries=10, max_iterations=20),
 ).observe(observer)
 ```
 
@@ -227,7 +227,7 @@ import sys
 import traceback
 
 from beeai_framework.agents.bee.agent import BeeAgent
-from beeai_framework.agents.types import BeeAgentExecutionConfig
+from beeai_framework.agents.types import AgentExecutionConfig
 from beeai_framework.backend.chat import ChatModel
 from beeai_framework.backend.message import AssistantMessage, UserMessage
 from beeai_framework.errors import FrameworkError
@@ -260,7 +260,7 @@ async def main() -> None:
 
     response = await agent.run(
         prompt=user_input,
-        execution=BeeAgentExecutionConfig(max_retries_per_step=3, total_max_retries=10, max_iterations=20),
+        execution=AgentExecutionConfig(max_retries_per_step=3, total_max_retries=10, max_iterations=20),
     )
     print(f"Received response: {response}")
 
@@ -315,7 +315,7 @@ import asyncio
 import sys
 import traceback
 
-from beeai_framework.agents.bee.agent import BeeAgentExecutionConfig
+from beeai_framework.agents.bee.agent import AgentExecutionConfig
 from beeai_framework.backend.chat import ChatModel
 from beeai_framework.backend.message import UserMessage
 from beeai_framework.errors import FrameworkError
@@ -335,7 +335,7 @@ async def main() -> None:
             instructions="You are a weather assistant.",
             tools=[OpenMeteoTool()],
             llm=llm,
-            execution=BeeAgentExecutionConfig(max_iterations=3, total_max_retries=10, max_retries_per_step=3),
+            execution=AgentExecutionConfig(max_iterations=3, total_max_retries=10, max_retries_per_step=3),
         )
     )
     workflow.add_agent(
