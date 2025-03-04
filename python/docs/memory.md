@@ -119,8 +119,9 @@ import asyncio
 import sys
 import traceback
 
+from beeai_framework import AssistantMessage
 from beeai_framework.adapters.ollama.backend.chat import OllamaChatModel
-from beeai_framework.backend.message import Message, Role
+from beeai_framework.backend.message import SystemMessage, UserMessage
 from beeai_framework.errors import FrameworkError
 from beeai_framework.memory.unconstrained_memory import UnconstrainedMemory
 
@@ -129,22 +130,17 @@ async def main() -> None:
     memory = UnconstrainedMemory()
     await memory.add_many(
         [
-            Message.of(
-                {
-                    "role": Role.SYSTEM,
-                    "text": "Always respond very concisely.",
-                }
-            ),
-            Message.of({"role": Role.USER, "text": "Give me the first 5 prime numbers."}),
+            SystemMessage("Always respond very concisely."),
+            UserMessage("Give me the first 5 prime numbers."),
         ]
     )
 
     llm = OllamaChatModel("llama3.1")
     response = await llm.create(messages=memory.messages)
-    await memory.add(Message.of({"role": Role.ASSISTANT, "text": response.get_text_content()}))
+    await memory.add(AssistantMessage(response.get_text_content()))
 
     print("Conversation history")
-    for message in memory:
+    for message in memory.messages:
         print(f"{message.role}: {message.text}")
 
 
@@ -267,7 +263,7 @@ import asyncio
 import sys
 import traceback
 
-from beeai_framework.backend import Message, Role
+from beeai_framework import UserMessage
 from beeai_framework.errors import FrameworkError
 from beeai_framework.memory import UnconstrainedMemory
 
@@ -277,7 +273,7 @@ async def main() -> None:
     memory = UnconstrainedMemory()
 
     # Add a message
-    await memory.add(Message.of({"role": Role.USER, "text": "Hello world!"}))
+    await memory.add(UserMessage("Hello world!"))
 
     # Print results
     print(f"Is Empty: {memory.is_empty()}")  # Should print: False
@@ -311,7 +307,7 @@ import asyncio
 import sys
 import traceback
 
-from beeai_framework.backend import Message, Role
+from beeai_framework import AssistantMessage, SystemMessage, UserMessage
 from beeai_framework.errors import FrameworkError
 from beeai_framework.memory.sliding_memory import SlidingMemory, SlidingMemoryConfig
 
@@ -326,14 +322,14 @@ async def main() -> None:
     )
 
     # Add messages
-    await memory.add(Message.of({"role": Role.SYSTEM, "text": "You are a helpful assistant."}))
+    await memory.add(SystemMessage("You are a helpful assistant."))
 
-    await memory.add(Message.of({"role": Role.USER, "text": "What is Python?"}))
+    await memory.add(UserMessage("What is Python?"))
 
-    await memory.add(Message.of({"role": Role.ASSISTANT, "text": "Python is a programming language."}))
+    await memory.add(AssistantMessage("Python is a programming language."))
 
     # Adding a fourth message should trigger sliding window
-    await memory.add(Message.of({"role": Role.USER, "text": "What about JavaScript?"}))
+    await memory.add(UserMessage("What about JavaScript?"))
 
     # Print results
     print(f"Messages in memory: {len(memory.messages)}")  # Should print 3
@@ -366,8 +362,9 @@ import math
 import sys
 import traceback
 
+from beeai_framework import SystemMessage, UserMessage
 from beeai_framework.adapters.ollama.backend.chat import OllamaChatModel
-from beeai_framework.backend import Message, Role
+from beeai_framework.backend import Role
 from beeai_framework.errors import FrameworkError
 from beeai_framework.memory import TokenMemory
 
@@ -389,12 +386,12 @@ memory = TokenMemory(
 
 async def main() -> None:
     # Add system message
-    system_message = Message.of({"role": Role.SYSTEM, "text": "You are a helpful assistant."})
+    system_message = SystemMessage("You are a helpful assistant.")
     await memory.add(system_message)
     print(f"Added system message (hash: {hash(system_message)})")
 
     # Add user message
-    user_message = Message.of({"role": Role.USER, "text": "Hello world!"})
+    user_message = UserMessage("Hello world!")
     await memory.add(user_message)
     print(f"Added user message (hash: {hash(user_message)})")
 
@@ -468,7 +465,7 @@ async def main() -> None:
     print(f"Message Count: {len(memory.messages)}")
 
     if memory.messages:
-        print(f"Summary: {memory.messages[0].get_texts()[0].get('text')}")
+        print(f"Summary: {memory.messages[0].get_texts()[0].text}")
 
 
 if __name__ == "__main__":

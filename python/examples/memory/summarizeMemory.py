@@ -33,7 +33,7 @@ async def main() -> None:
     print(f"Message Count: {len(memory.messages)}")
 
     if memory.messages:
-        print(f"Summary: {memory.messages[0].get_texts()[0].get('text')}")
+        print(f"Summary: {memory.messages[0].get_texts()[0].text}")
 
 
 if __name__ == "__main__":

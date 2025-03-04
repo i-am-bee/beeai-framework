@@ -104,7 +104,7 @@ async def test_chat_model_create(reverse_words_chat: ChatModel, chat_messages_li
 
     assert len(response.messages) == 1
     assert all(isinstance(message, AssistantMessage) for message in response.messages)
-    assert response.messages[0].get_texts()[0].get("text") == "llet em gnihtemos gnitseretni"
+    assert response.messages[0].get_texts()[0].text == "llet em gnihtemos gnitseretni"
 
 
 @pytest.mark.asyncio
@@ -126,7 +126,7 @@ async def test_chat_model_stream(reverse_words_chat: ChatModel, chat_messages_li
 
     assert len(response.messages) == 4
     assert all(isinstance(message, AssistantMessage) for message in response.messages)
-    assert "".join([m.get_texts()[0].get("text") for m in response.messages]) == "llet em gnihtemos gnitseretni"
+    assert "".join([m.get_texts()[0].text for m in response.messages]) == "llet em gnihtemos gnitseretni"
 
 
 @pytest.mark.asyncio

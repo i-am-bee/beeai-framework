@@ -24,7 +24,7 @@ from beeai_framework.agents.runners.granite.prompts import (
     GraniteUserPromptTemplate,
 )
 from beeai_framework.agents.types import BeeAgentTemplates, BeeInput, BeeRunOptions
-from beeai_framework.backend.message import ToolMessage, ToolResult
+from beeai_framework.backend.message import MessageToolResultContent, ToolMessage
 from beeai_framework.context import RunContext
 from beeai_framework.emitter import EmitterOptions, EventMeta
 from beeai_framework.memory.base_memory import BaseMemory
@@ -44,7 +44,7 @@ class GraniteRunner(DefaultRunner):
             assert update is not None
             if update.get("key") == "tool_output":
                 memory: BaseMemory = data.get("memory")
-                tool_result = ToolResult(
+                tool_result = MessageToolResultContent(
                     type="tool-result",
                     result=update.get("value").get_text_content(),
                     tool_name=data.get("data").tool_name,
@@ -52,7 +52,7 @@ class GraniteRunner(DefaultRunner):
                 )
                 await memory.add(
                     ToolMessage(
-                        content=tool_result.model_dump_json(),
+                        content=tool_result,
                         meta={"success": data.get("meta").get("success", True)},
                     )
                 )

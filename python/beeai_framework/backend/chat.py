@@ -218,11 +218,12 @@ IMPORTANT: You MUST answer with a JSON object that matches the JSON schema above
         self,
         *,
         messages: list[Message],
-        tools: list[Message] | None = None,
+        tools: list[Tool] | None = None,
         abort_signal: AbortSignal | None = None,
         stop_sequences: list[str] | None = None,
         response_format: dict[str, Any] | type[BaseModel] | None = None,
         stream: bool | None = None,
+        **kwargs: Any,
     ) -> Run[ChatModelOutput]:
         model_input = ChatModelInput(
             messages=messages,
@@ -231,6 +232,7 @@ IMPORTANT: You MUST answer with a JSON object that matches the JSON schema above
             stop_sequences=stop_sequences,
             response_format=response_format,
             stream=stream,
+            **kwargs,
         )
 
         async def run_create(context: RunContext) -> ChatModelOutput:
