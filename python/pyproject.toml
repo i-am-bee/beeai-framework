@@ -40,6 +40,7 @@ duckduckgo-search = "^7.3.2"
 json-repair = "^0.39.0"
 wikipedia-api = "^0.8.1"
 async-generator = "^1.10"
+boto3 = "^1.37.5"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^8.3.4"
