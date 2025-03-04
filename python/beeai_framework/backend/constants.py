@@ -17,8 +17,8 @@ from typing import Literal
 
 from pydantic import BaseModel
 
-ProviderName = Literal["ollama", "openai", "watsonx", "groq", "xai", "vertexai"]
-ProviderHumanName = Literal["Ollama", "OpenAI", "Watsonx", "Groq", "XAI", "VertexAI"]
+ProviderName = Literal["ollama", "openai", "watsonx", "groq", "xai", "vertexai", "amazonbedrock"]
+ProviderHumanName = Literal["Ollama", "OpenAI", "Watsonx", "Groq", "XAI", "VertexAI", "AmazonBedrock"]
 
 
 class ProviderDef(BaseModel):
@@ -40,4 +40,9 @@ BackendProviders = {
     "Groq": ProviderDef(name="Groq", module="groq", aliases=["groq"]),
     "xAI": ProviderDef(name="XAI", module="xai", aliases=["xai", "grok"]),
     "vertexAI": ProviderDef(name="VertexAI", module="vertexai", aliases=["vertexai", "google"]),
+    "AmazonBedrock": ProviderDef(
+        name="AmazonBedrock",
+        module="amazonbedrock",
+        aliases=["amazonbedrock", "amazon", "bedrock"],
+    ),
 }
