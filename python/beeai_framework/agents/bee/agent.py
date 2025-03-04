@@ -106,7 +106,7 @@ class BeeAgent(BaseAgent[BeeRunOutput]):
     async def _run(
         self, run_input: ModelLike[BeeRunInput], options: ModelLike[BeeRunOptions] | None, context: RunContext
     ) -> BeeRunOutput:
-        options = to_model(BeeRunInput, run_input)
+        run_input = to_model(BeeRunInput, run_input)
         options = to_model_optional(BeeRunOptions, options)
 
         runner = self.runner(
