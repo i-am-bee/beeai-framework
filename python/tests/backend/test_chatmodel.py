@@ -19,6 +19,7 @@ import pytest
 import pytest_asyncio
 from pydantic import BaseModel
 
+from beeai_framework.adapters.amazonbedrock.backend.chat import AmazonBedrockChatModel
 from beeai_framework.adapters.groq.backend.chat import GroqChatModel
 from beeai_framework.adapters.ollama.backend.chat import OllamaChatModel
 from beeai_framework.adapters.openai.backend.chat import OpenAIChatModel
@@ -183,3 +184,6 @@ def test_chat_model_from(monkeypatch: pytest.MonkeyPatch) -> None:
 
     xai_chat_model = ChatModel.from_name("xai:grok-2")
     assert isinstance(xai_chat_model, XAIChatModel)
+
+    amazonbedrock_chat_model = ChatModel.from_name("amazonbedrock:meta.llama3-8b-instruct-v1:0")
+    assert isinstance(amazonbedrock_chat_model, AmazonBedrockChatModel)
