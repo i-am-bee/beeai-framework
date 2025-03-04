@@ -374,7 +374,7 @@ class RiddleTool(Tool[RiddleToolInput]):
     def __init__(self, options: dict[str, Any] | None = None) -> None:
         super().__init__(options)
 
-    def create_emitter(self) -> Emitter:
+    def _create_emitter(self) -> Emitter:
         return Emitter.root().child(
             namespace=["tool", "example", "riddle"],
             creator=self,
@@ -451,7 +451,7 @@ class OpenLibraryTool(Tool[OpenLibraryToolInput]):
     def __init__(self, options: dict[str, Any] | None = None) -> None:
         super().__init__(options)
 
-    def create_emitter(self) -> Emitter:
+    def _create_emitter(self) -> Emitter:
         return Emitter.root().child(
             namespace=["tool", "example", "openlibrary"],
             creator=self,
