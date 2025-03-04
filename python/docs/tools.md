@@ -373,14 +373,12 @@ class RiddleTool(Tool[RiddleToolInput]):
 
     def __init__(self, options: dict[str, Any] | None = None) -> None:
         super().__init__(options)
-        self._emitter = Emitter.root().child(
+
+    def create_emitter(self) -> Emitter:
+        return Emitter.root().child(
             namespace=["tool", "example", "riddle"],
             creator=self,
         )
-
-    @property
-    def emitter(self) -> Emitter:
-        return self._emitter
 
     async def _run(self, input: RiddleToolInput, _: Any | None = None) -> StringToolOutput:
         index = input.riddle_number % (len(self.data))
@@ -452,14 +450,12 @@ class OpenLibraryTool(Tool[OpenLibraryToolInput]):
 
     def __init__(self, options: dict[str, Any] | None = None) -> None:
         super().__init__(options)
-        self._emitter = Emitter.root().child(
+
+    def create_emitter(self) -> Emitter:
+        return Emitter.root().child(
             namespace=["tool", "example", "openlibrary"],
             creator=self,
         )
-
-    @property
-    def emitter(self) -> Emitter:
-        return self._emitter
 
     async def _run(self, tool_input: OpenLibraryToolInput, _: Any | None = None) -> OpenLibraryToolResult:
         key = ""
@@ -484,9 +480,9 @@ class OpenLibraryTool(Tool[OpenLibraryToolInput]):
             json_output = response.json()[f"{key}:{value}"]
 
         return OpenLibraryToolResult(
-            preview_url=json_output.get("preview_url") or "",
-            info_url=json_output.get("info_url") or "",
-            bib_key=json_output.get("bib_key") or "",
+            preview_url=json_output.get("preview_url", ""),
+            info_url=json_output.get("info_url", ""),
+            bib_key=json_output.get("bib_key", ""),
         )
 
 

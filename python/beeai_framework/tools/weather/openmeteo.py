@@ -52,14 +52,12 @@ class OpenMeteoTool(Tool[OpenMeteoToolInput]):
 
     def __init__(self, options: dict[str, Any] | None = None) -> None:
         super().__init__(options)
-        self._emitter = Emitter.root().child(
+
+    def create_emitter(self) -> Emitter:
+        return Emitter.root().child(
             namespace=["tool", "weather", "openmeteo"],
             creator=self,
         )
-
-    @property
-    def emitter(self) -> Emitter:
-        return self._emitter
 
     def _geocode(self, input: OpenMeteoToolInput) -> dict[str, str]:
         params = {"format": "json", "count": 1}
@@ -94,8 +92,8 @@ class OpenMeteoTool(Tool[OpenMeteoToolInput]):
         }
 
         geocode = self._geocode(input)
-        params["latitude"] = geocode.get("latitude") or ""
-        params["longitude"] = geocode.get("longitude") or ""
+        params["latitude"] = geocode.get("latitude", "")
+        params["longitude"] = geocode.get("longitude", "")
 
         Dates = namedtuple("Dates", ["start_date", "end_date"])
 

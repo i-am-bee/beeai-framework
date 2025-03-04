@@ -48,16 +48,11 @@ class WikipediaTool(Tool[WikipediaToolInput]):
         user_agent="beeai-framework https://github.com/i-am-bee/beeai-framework", language="en"
     )
 
-    def __init__(self, options: dict[str, Any] | None = None) -> None:
-        super().__init__(options)
-        self._emitter = Emitter.root().child(
+    def create_emitter(self) -> Emitter:
+        return Emitter.root().child(
             namespace=["tool", "search", "wikipedia"],
             creator=self,
         )
-
-    @property
-    def emitter(self) -> Emitter:
-        return self._emitter
 
     def get_section_titles(self, sections: wikipediaapi.WikipediaPage.sections) -> str:
         titles = []

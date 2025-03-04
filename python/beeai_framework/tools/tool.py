@@ -70,7 +70,8 @@ class StringToolOutput(ToolOutput):
 
 class Tool(Generic[T], ABC):
     def __init__(self, options: dict[str, Any] | None = None) -> None:
-        self._options: dict[str, Any] | None = options or None
+        self.options: dict[str, Any] | None = options or None
+        self._emitter: Emitter | None = None
 
     @property
     @abstractmethod
@@ -88,8 +89,13 @@ class Tool(Generic[T], ABC):
         pass
 
     @property
-    @abstractmethod
     def emitter(self) -> Emitter:
+        if self._emitter is None:
+            self._emitter = self.create_emitter()
+        return self._emitter
+
+    @abstractmethod
+    def create_emitter(self) -> Emitter:
         pass
 
     @abstractmethod
@@ -203,14 +209,12 @@ def tool(tool_function: Callable) -> Tool:
 
         def __init__(self, options: dict[str, Any] | None = None) -> None:
             super().__init__(options)
-            self._emitter = Emitter.root().child(
+
+        def create_emitter(self) -> Emitter:
+            return Emitter.root().child(
                 namespace=["tool", "custom", to_safe_word(self.name)],
                 creator=self,
             )
-
-        @property
-        def emitter(self) -> Emitter:
-            return self._emitter
 
         async def _run(self, tool_in: Any, _: ToolRunOptions | None = None) -> None:
             tool_input_dict = tool_in.model_dump()

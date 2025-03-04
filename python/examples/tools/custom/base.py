@@ -31,14 +31,12 @@ class RiddleTool(Tool[RiddleToolInput]):
 
     def __init__(self, options: dict[str, Any] | None = None) -> None:
         super().__init__(options)
-        self._emitter = Emitter.root().child(
+
+    def create_emitter(self) -> Emitter:
+        return Emitter.root().child(
             namespace=["tool", "example", "riddle"],
             creator=self,
         )
-
-    @property
-    def emitter(self) -> Emitter:
-        return self._emitter
 
     async def _run(self, input: RiddleToolInput, _: Any | None = None) -> StringToolOutput:
         index = input.riddle_number % (len(self.data))
