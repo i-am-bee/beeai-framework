@@ -18,6 +18,7 @@ from typing import Any
 import wikipediaapi
 from pydantic import BaseModel, Field
 
+from beeai_framework.context import RunContext
 from beeai_framework.emitter.emitter import Emitter
 from beeai_framework.tools.search import SearchToolOutput, SearchToolResult
 from beeai_framework.tools.tool import Tool
@@ -60,7 +61,9 @@ class WikipediaTool(Tool[WikipediaToolInput]):
             titles.append(section.title)
         return ",".join(str(title) for title in titles)
 
-    async def _run(self, input: WikipediaToolInput, _: Any | None = None) -> WikipediaToolOutput:
+    async def _run(
+        self, input: WikipediaToolInput, options: Any | None = None, context: RunContext | None = None
+    ) -> WikipediaToolOutput:
         page_py = self.client.page(input.query)
 
         if not page_py.exists():

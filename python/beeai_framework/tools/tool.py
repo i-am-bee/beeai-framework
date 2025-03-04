@@ -97,7 +97,7 @@ class Tool(Generic[T], ABC):
         pass
 
     @abstractmethod
-    async def _run(self, input: T, options: ToolRunOptions | None = None) -> Any:
+    async def _run(self, input: Any, options: ToolRunOptions | None = None, context: RunContext | None = None) -> Any:
         pass
 
     def validate_input(self, input: T | dict[str, Any]) -> T:
@@ -119,7 +119,7 @@ class Tool(Generic[T], ABC):
                     nonlocal error_propagated
                     error_propagated = False
                     await context.emitter.emit("start", meta)
-                    return await self._run(validated_input, options)
+                    return await self._run(validated_input, options, context)
 
                 async def on_error(error: Exception, _: RetryableContext) -> None:
                     nonlocal error_propagated
@@ -217,7 +217,7 @@ def tool(tool_function: Callable) -> Tool:
                 creator=self,
             )
 
-        async def _run(self, input: T, _: ToolRunOptions | None = None) -> None:
+        async def _run(self, input: Any, _: ToolRunOptions | None = None, context: RunContext | None = None) -> None:
             tool_input_dict = input.model_dump()
             if inspect.iscoroutinefunction(tool_function):
                 return await tool_function(**tool_input_dict)

@@ -5,9 +5,10 @@ from typing import Any
 
 from pydantic import BaseModel, Field
 
+from beeai_framework.context import RunContext
 from beeai_framework.emitter.emitter import Emitter
 from beeai_framework.errors import FrameworkError
-from beeai_framework.tools.tool import StringToolOutput, Tool
+from beeai_framework.tools.tool import StringToolOutput, Tool, ToolRunOptions
 
 
 class RiddleToolInput(BaseModel):
@@ -38,7 +39,9 @@ class RiddleTool(Tool[RiddleToolInput]):
             creator=self,
         )
 
-    async def _run(self, input: RiddleToolInput, _: Any | None = None) -> StringToolOutput:
+    async def _run(
+        self, input: RiddleToolInput, options: ToolRunOptions | None = None, context: RunContext | None = None
+    ) -> None:
         index = input.riddle_number % (len(self.data))
         riddle = self.data[index]
         return StringToolOutput(result=riddle)

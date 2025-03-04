@@ -23,6 +23,7 @@ import httpx
 import requests
 from pydantic import BaseModel, Field
 
+from beeai_framework.context import RunContext
 from beeai_framework.emitter.emitter import Emitter
 from beeai_framework.tools import ToolInputValidationError
 from beeai_framework.tools.tool import StringToolOutput, Tool
@@ -137,7 +138,9 @@ class OpenMeteoTool(Tool[OpenMeteoToolInput]):
         params["temperature_unit"] = input.temperature_unit
         return params
 
-    async def _run(self, input: OpenMeteoToolInput, options: Any = None) -> StringToolOutput:
+    async def _run(
+        self, input: OpenMeteoToolInput, options: Any = None, context: RunContext | None = None
+    ) -> StringToolOutput:
         params = urlencode(self.get_params(input), doseq=True)
         logger.debug(f"Using OpenMeteo URL: https://api.open-meteo.com/v1/forecast?{params}")
 

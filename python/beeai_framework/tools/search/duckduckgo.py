@@ -18,6 +18,7 @@ from typing import Any
 from duckduckgo_search import DDGS
 from pydantic import BaseModel, Field
 
+from beeai_framework.context import RunContext
 from beeai_framework.emitter.emitter import Emitter
 from beeai_framework.tools import ToolError
 from beeai_framework.tools.search import SearchToolOutput, SearchToolResult
@@ -61,7 +62,9 @@ class DuckDuckGoSearchTool(Tool[DuckDuckGoSearchToolInput]):
             creator=self,
         )
 
-    async def _run(self, input: DuckDuckGoSearchToolInput, _: Any | None = None) -> DuckDuckGoSearchToolOutput:
+    async def _run(
+        self, input: DuckDuckGoSearchToolInput, options: Any | None = None, context: RunContext | None = None
+    ) -> DuckDuckGoSearchToolOutput:
         try:
             results = DDGS().text(input.query, max_results=self.max_results, safesearch=self.safe_search)
             search_results: list[SearchToolResult] = [

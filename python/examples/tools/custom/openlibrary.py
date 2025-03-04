@@ -5,6 +5,7 @@ from typing import Any
 import httpx
 from pydantic import BaseModel, Field
 
+from beeai_framework.context import RunContext
 from beeai_framework.emitter.emitter import Emitter
 from beeai_framework.errors import FrameworkError
 from beeai_framework.tools import ToolInputValidationError
@@ -38,7 +39,9 @@ class OpenLibraryTool(Tool[OpenLibraryToolInput]):
             creator=self,
         )
 
-    async def _run(self, tool_input: OpenLibraryToolInput, _: Any | None = None) -> OpenLibraryToolResult:
+    async def _run(
+        self, tool_input: OpenLibraryToolInput, options: Any | None = None, context: RunContext | None = None
+    ) -> OpenLibraryToolResult:
         key = ""
         value = ""
         input_vars = vars(tool_input)
