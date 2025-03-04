@@ -25,6 +25,7 @@ from beeai_framework.agents.types import (
     BeeMeta,
     BeeRunInput,
     BeeRunOptions,
+    BeeTemplateFactory,
 )
 from beeai_framework.cancellation import AbortSignal
 from beeai_framework.context import RunContext
@@ -134,7 +135,7 @@ class BaseRunner(ABC):
         templates = {}
 
         for key, default_template in self.default_templates().model_dump().items():
-            override = overrides.get(key) or default_template
+            override: PromptTemplate | BeeTemplateFactory = overrides.get(key) or default_template
             if isinstance(override, PromptTemplate):
                 templates[key] = override
                 continue

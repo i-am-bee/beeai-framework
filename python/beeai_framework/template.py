@@ -14,13 +14,13 @@
 
 
 from collections.abc import Callable
-from typing import Generic, TypedDict, TypeVar
+from typing import Any, Generic, TypedDict, TypeVar
 
 import chevron
 from pydantic import BaseModel, Field
 
 from beeai_framework.errors import FrameworkError
-from beeai_framework.utils.models import ModelLike, to_model
+from beeai_framework.utils.models import ModelLike, to_model_optional
 
 
 class Prompt(TypedDict):
@@ -41,8 +41,9 @@ class PromptTemplate(Generic[T]):
     def __init__(self, config: PromptTemplateInput) -> None:
         self._config = config
 
-    def render(self, input: ModelLike[T]) -> str:
-        data = to_model(self._config.input_schema, input).model_dump()
+    def render(self, template_input: ModelLike[T] | None = None, /, **kwargs: Any) -> str:
+        input_model = to_model_optional(self._config.input_schema, template_input)
+        data = input_model.model_dump() if input_model else kwargs
 
         if self._config.defaults:
             for key, value in self._config.defaults.items():
@@ -58,7 +59,7 @@ class PromptTemplate(Generic[T]):
 
         return chevron.render(template=self._config.template, data=data)
 
-    def fork(self, customizer: Callable[[PromptTemplateInput], "PromptTemplateInput"] | None) -> "PromptTemplate":
+    def fork(self, customizer: Callable[[PromptTemplateInput], PromptTemplateInput] | None) -> "PromptTemplate":
         new_config = customizer(self._config) if customizer else self._config
         if not isinstance(new_config, PromptTemplateInput):
             raise ValueError("Return type from customizer must be a PromptTemplateInput or nothing.")
