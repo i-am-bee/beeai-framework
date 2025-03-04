@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-
+import math
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 
@@ -73,7 +73,12 @@ class BaseRunner(ABC):
         self._failed_attempts_counter: RetryCounter = RetryCounter(
             error_type=AgentError,
             max_retries=(
-                options.execution.total_max_retries if options.execution and options.execution.total_max_retries else 0
+                max(
+                    options.execution.total_max_retries
+                    if options.execution and options.execution.total_max_retries
+                    else 0,
+                    1,  # we need to handle empty results from LiteLLM
+                )
             ),
         )
         self._run = run
@@ -93,7 +98,7 @@ class BaseRunner(ABC):
         max_iterations = (
             self._options.execution.max_iterations
             if self._options.execution and self._options.execution.max_iterations
-            else 0
+            else math.inf
         )
 
         if meta.iteration > max_iterations:

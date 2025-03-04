@@ -76,22 +76,22 @@ async def main() -> None:
         state.output = output.get_text_content()
         return Workflow.END
 
-    try:
-        # Define the structure of the workflow graph
-        workflow = Workflow(State)
-        workflow.add_step("web_search", web_search)
-        workflow.add_step("generate_output", generate_output)
+    # Define the structure of the workflow graph
+    workflow = Workflow(State)
+    workflow.add_step("web_search", web_search)
+    workflow.add_step("generate_output", generate_output)
 
-        # Execute the workflow
-        result = await workflow.run(State(input="What is the demon core?"))
+    # Execute the workflow
+    result = await workflow.run(State(input="What is the demon core?"))
 
-        print("\n*********************")
-        print("Input: ", result.state.input)
-        print("Agent: ", result.state.output)
-
-    except FrameworkError:
-        traceback.print_exc()
+    print("\n*********************")
+    print("Input: ", result.state.input)
+    print("Agent: ", result.state.output)
 
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    try:
+        asyncio.run(main())
+    except FrameworkError as e:
+        traceback.print_exc()
+        sys.exit(e.explain())

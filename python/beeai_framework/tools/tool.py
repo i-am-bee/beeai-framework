@@ -22,7 +22,6 @@ from pydantic import BaseModel, ConfigDict, ValidationError, create_model
 
 from beeai_framework.context import Run, RunContext, RunContextInput, RunInstance
 from beeai_framework.emitter.emitter import Emitter
-from beeai_framework.errors import FrameworkError
 from beeai_framework.retryable import Retryable, RetryableConfig, RetryableContext, RetryableInput
 from beeai_framework.tools.errors import ToolError, ToolInputValidationError
 from beeai_framework.utils import BeeLogger
@@ -84,24 +83,17 @@ class Tool(Generic[T], ABC):
         pass
 
     @abstractmethod
-    def _run(self, input: Any, options: dict[str, Any] | None = None) -> Any:
+    async def _run(self, input: Any, options: dict[str, Any] | None = None) -> Any:
         pass
 
     def validate_input(self, input: T | dict[str, Any]) -> T:
         try:
             return self.input_schema.model_validate(input)
         except ValidationError as e:
-            raise ToolInputValidationError("Tool input validation error") from e
+            raise ToolInputValidationError("Tool input validation error", cause=e)
 
-    def prompt_data(self) -> dict[str, str]:
-        return {
-            "name": self.name,
-            "description": self.description,
-            "input_schema": str(self.input_schema.model_json_schema(mode="serialization")),
-        }
-
-    def run(self, input: T | dict[str, Any], options: dict[str, Any] | None = None) -> Run[Any]:
-        async def run_tool(context: RunContext) -> Any:
+    def run(self, input: T | dict[str, Any], options: dict[str, Any] | None = None) -> Run[T]:
+        async def run_tool(context: RunContext) -> T:
             error_propagated = False
 
             try:
@@ -113,12 +105,12 @@ class Tool(Generic[T], ABC):
                     nonlocal error_propagated
                     error_propagated = False
                     await context.emitter.emit("start", meta)
-                    return self._run(validated_input, options)
+                    return await self._run(validated_input, options)
 
                 async def on_error(error: Exception, _: RetryableContext) -> None:
                     nonlocal error_propagated
                     error_propagated = True
-                    err = FrameworkError.ensure(error)
+                    err = ToolError.ensure(error)
                     await context.emitter.emit("error", {"error": err, **meta})
                     if err.is_fatal:
                         raise err from None
@@ -144,7 +136,7 @@ class Tool(Generic[T], ABC):
                 err = ToolError.ensure(e)
                 if not error_propagated:
                     await context.emitter.emit("error", {"error": err, "input": input, "options": options})
-                raise err from None
+                raise err
             finally:
                 await context.emitter.emit("finish", None)
 
@@ -202,9 +194,12 @@ def tool(tool_function: Callable) -> Tool:
                 creator=self,
             )
 
-        def _run(self, tool_in: Any, _: dict[str, Any] | None = None) -> None:
+        async def _run(self, tool_in: Any, _: dict[str, Any] | None = None) -> None:
             tool_input_dict = tool_in.model_dump()
-            return tool_function(**tool_input_dict)
+            if inspect.iscoroutinefunction(tool_function):
+                return await tool_function(**tool_input_dict)
+            else:
+                return tool_function(**tool_input_dict)
 
     f_tool = FunctionTool()
     return f_tool

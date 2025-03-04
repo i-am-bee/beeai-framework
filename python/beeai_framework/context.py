@@ -14,6 +14,7 @@
 
 
 import asyncio
+import contextlib
 import uuid
 from collections.abc import Awaitable, Callable, Generator
 from contextvars import ContextVar
@@ -155,6 +156,12 @@ class RunContext(RunInstance):
 
                 done, pending = await asyncio.wait([abort_task, runner_task], return_when=asyncio.FIRST_COMPLETED)
                 result = done.pop().result()
+                abort_task.cancel()
+
+                for task in pending:
+                    with contextlib.suppress(asyncio.CancelledError):
+                        await task
+
                 await emitter.emit("success", result)
                 assert result is not None
                 return result

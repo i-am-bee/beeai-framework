@@ -1,4 +1,6 @@
 import asyncio
+import sys
+import traceback
 
 from pydantic import BaseModel, Field
 from traitlets import Callable
@@ -8,7 +10,7 @@ from beeai_framework.backend.chat import ChatModel, ChatModelOutput
 from beeai_framework.backend.message import UserMessage
 from beeai_framework.cancellation import AbortSignal
 from beeai_framework.emitter import EventMeta
-from beeai_framework.errors import AbortError
+from beeai_framework.errors import AbortError, FrameworkError
 from beeai_framework.parsers.field import ParserField
 from beeai_framework.parsers.line_prefix import LinePrefixParser, LinePrefixParserNode
 
@@ -105,4 +107,8 @@ async def main() -> None:
 
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    try:
+        asyncio.run(main())
+    except FrameworkError as e:
+        traceback.print_exc()
+        sys.exit(e.explain())

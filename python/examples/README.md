@@ -50,7 +50,6 @@ This repository contains examples demonstrating the usage of the BeeAI Framework
 
 - [`basic_functions.py`](/python/examples/templates/basic_functions.py): Basic functions
 - [`basic_template.py`](/python/examples/templates/basic_template.py): Basic template
-- [`agent_sys_prompt.py`](/python/examples/templates/agent_sys_prompt.py): System Prompt
 
 ## Tools
 

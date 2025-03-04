@@ -1,5 +1,8 @@
 import asyncio
+import sys
+import traceback
 
+from beeai_framework.errors import FrameworkError
 from beeai_framework.tools.search.wikipedia import (
     WikipediaTool,
     WikipediaToolInput,
@@ -8,10 +11,14 @@ from beeai_framework.tools.search.wikipedia import (
 
 async def main() -> None:
     wikipedia_client = WikipediaTool({"full_text": True})
-    input = WikipediaToolInput(query="bee")
-    result = await wikipedia_client.run(input)
+    tool_input = WikipediaToolInput(query="bee")
+    result = await wikipedia_client.run(tool_input)
     print(result.get_text_content())
 
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    try:
+        asyncio.run(main())
+    except FrameworkError as e:
+        traceback.print_exc()
+        sys.exit(e.explain())

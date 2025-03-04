@@ -1,11 +1,15 @@
 import asyncio
 import json
+import sys
+import traceback
 from urllib.parse import quote
 
 import requests
 
 from beeai_framework import BeeAgent, tool
+from beeai_framework.agents.types import BeeAgentExecutionConfig
 from beeai_framework.backend.chat import ChatModel
+from beeai_framework.errors import FrameworkError
 from beeai_framework.memory.unconstrained_memory import UnconstrainedMemory
 from beeai_framework.tools.tool import StringToolOutput
 from beeai_framework.utils import BeeLogger
@@ -15,7 +19,7 @@ logger = BeeLogger(__name__)
 
 # defining a tool using the `tool` decorator
 @tool
-def basic_calculator(expression: str) -> int:
+def basic_calculator(expression: str) -> StringToolOutput:
     """
     A calculator tool that performs mathematical operations.
 
@@ -47,10 +51,14 @@ async def main() -> None:
 
     agent = BeeAgent(llm=chat_model, tools=[basic_calculator], memory=UnconstrainedMemory())
 
-    result = await agent.run("What is the square root of 36?")
+    result = await agent.run("What is the square root of 36?", execution=BeeAgentExecutionConfig(total_max_retries=10))
 
     print(result.result.text)
 
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    try:
+        asyncio.run(main())
+    except FrameworkError as e:
+        traceback.print_exc()
+        sys.exit(e.explain())

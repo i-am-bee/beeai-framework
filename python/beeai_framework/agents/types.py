@@ -77,10 +77,10 @@ class BeeAgentTemplates(BaseModel):
     system: InstanceOf[PromptTemplate]  # TODO proper template subtypes
     assistant: InstanceOf[PromptTemplate]
     user: InstanceOf[PromptTemplate]
-    # user_empty: InstanceOf[PromptTemplate]
-    # tool_error: InstanceOf[PromptTemplate]
+    user_empty: InstanceOf[PromptTemplate]
+    tool_error: InstanceOf[PromptTemplate]
     tool_input_error: InstanceOf[PromptTemplate]
-    # tool_no_result_error: InstanceOf[PromptTemplate]
+    tool_no_result_error: InstanceOf[PromptTemplate]
     tool_not_found_error: InstanceOf[PromptTemplate]
     schema_error: InstanceOf[PromptTemplate]
 

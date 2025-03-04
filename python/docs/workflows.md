@@ -66,11 +66,13 @@ The example below demonstrates a minimal workflow that processes steps in sequen
 
 ```py
 import asyncio
+import sys
 import traceback
 
-from pydantic import BaseModel, ValidationError
+from pydantic import BaseModel
 
-from beeai_framework.workflows.workflow import Workflow, WorkflowError
+from beeai_framework.errors import FrameworkError
+from beeai_framework.workflows.workflow import Workflow
 
 
 async def main() -> None:
@@ -78,22 +80,20 @@ async def main() -> None:
     class State(BaseModel):
         input: str
 
-    try:
-        workflow = Workflow(State)
-        workflow.add_step("first", lambda state: print("Running first step!"))
-        workflow.add_step("second", lambda state: print("Running second step!"))
-        workflow.add_step("third", lambda state: print("Running third step!"))
+    workflow = Workflow(State)
+    workflow.add_step("first", lambda state: print("Running first step!"))
+    workflow.add_step("second", lambda state: print("Running second step!"))
+    workflow.add_step("third", lambda state: print("Running third step!"))
 
-        await workflow.run(State(input="Hello"))
-
-    except WorkflowError:
-        traceback.print_exc()
-    except ValidationError:
-        traceback.print_exc()
+    await workflow.run(State(input="Hello"))
 
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    try:
+        asyncio.run(main())
+    except FrameworkError as e:
+        traceback.print_exc()
+        sys.exit(e.explain())
 
 ```
 
@@ -107,11 +107,16 @@ This advanced example showcases a workflow that implements multiplication throug
 
 ```py
 import asyncio
+import sys
+import traceback
 from typing import Literal, TypeAlias
 
-from pydantic import BaseModel, ValidationError
+from pydantic import BaseModel
 
-from beeai_framework.workflows.workflow import Workflow, WorkflowError, WorkflowReservedStepName
+from beeai_framework.errors import FrameworkError
+from beeai_framework.workflows.workflow import Workflow, WorkflowReservedStepName
+
+WorkflowStep: TypeAlias = Literal["pre_process", "add_loop", "post_process"]
 
 
 async def main() -> None:
@@ -121,8 +126,6 @@ async def main() -> None:
         y: int
         abs_repetitions: int | None = None
         result: int | None = None
-
-    WorkflowStep: TypeAlias = Literal["pre_process", "add_loop", "post_process"]
 
     def pre_process(state: State) -> WorkflowStep:
         print("pre_process")
@@ -147,26 +150,24 @@ async def main() -> None:
             state.result = result
         return Workflow.END
 
-    try:
-        multiplication_workflow = Workflow[State, WorkflowStep](name="MultiplicationWorkflow", schema=State)
-        multiplication_workflow.add_step("pre_process", pre_process)
-        multiplication_workflow.add_step("add_loop", add_loop)
-        multiplication_workflow.add_step("post_process", post_process)
+    multiplication_workflow = Workflow[State, WorkflowStep](name="MultiplicationWorkflow", schema=State)
+    multiplication_workflow.add_step("pre_process", pre_process)
+    multiplication_workflow.add_step("add_loop", add_loop)
+    multiplication_workflow.add_step("post_process", post_process)
 
-        response = await multiplication_workflow.run(State(x=8, y=5))
-        print(f"result: {response.state.result}")
+    response = await multiplication_workflow.run(State(x=8, y=5))
+    print(f"result: {response.state.result}")
 
-        response = await multiplication_workflow.run(State(x=8, y=-5))
-        print(f"result: {response.state.result}")
-
-    except WorkflowError as e:
-        print(e)
-    except ValidationError as e:
-        print(e)
+    response = await multiplication_workflow.run(State(x=8, y=-5))
+    print(f"result: {response.state.result}")
 
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    try:
+        asyncio.run(main())
+    except FrameworkError as e:
+        traceback.print_exc()
+        sys.exit(e.explain())
 
 ```
 
@@ -203,6 +204,7 @@ The multi-agent workflow pattern enables the orchestration of specialized agents
 
 ```py
 import asyncio
+import sys
 import traceback
 
 from beeai_framework.agents.bee.agent import BeeAgentExecutionConfig
@@ -218,46 +220,46 @@ from beeai_framework.workflows.agent import AgentFactoryInput, AgentWorkflow
 async def main() -> None:
     llm = ChatModel.from_name("ollama:granite3.1-dense:8b")
 
-    try:
-        workflow = AgentWorkflow(name="Smart assistant")
-        workflow.add_agent(
-            agent=AgentFactoryInput(
-                name="WeatherForecaster",
-                instructions="You are a weather assistant.",
-                tools=[OpenMeteoTool()],
-                llm=llm,
-                execution=BeeAgentExecutionConfig(max_iterations=3, total_max_retries=10, max_retries_per_step=3),
-            )
+    workflow = AgentWorkflow(name="Smart assistant")
+    workflow.add_agent(
+        agent=AgentFactoryInput(
+            name="WeatherForecaster",
+            instructions="You are a weather assistant.",
+            tools=[OpenMeteoTool()],
+            llm=llm,
+            execution=BeeAgentExecutionConfig(max_iterations=3, total_max_retries=10, max_retries_per_step=3),
         )
-        workflow.add_agent(
-            agent=AgentFactoryInput(
-                name="Researcher",
-                instructions="You are a researcher assistant.",
-                tools=[DuckDuckGoSearchTool()],
-                llm=llm,
-            )
+    )
+    workflow.add_agent(
+        agent=AgentFactoryInput(
+            name="Researcher",
+            instructions="You are a researcher assistant.",
+            tools=[DuckDuckGoSearchTool()],
+            llm=llm,
         )
-        workflow.add_agent(
-            agent=AgentFactoryInput(
-                name="Solver",
-                instructions="""Your task is to provide the most useful final answer based on the assistants'
+    )
+    workflow.add_agent(
+        agent=AgentFactoryInput(
+            name="Solver",
+            instructions="""Your task is to provide the most useful final answer based on the assistants'
 responses which all are relevant. Ignore those where assistant do not know.""",
-                llm=llm,
-            )
+            llm=llm,
         )
+    )
 
-        prompt = "What is the weather in New York?"
-        memory = UnconstrainedMemory()
-        await memory.add(UserMessage(content=prompt))
-        response = await workflow.run(messages=memory.messages)
-        print(f"result: {response.state.final_answer}")
-
-    except FrameworkError:
-        traceback.print_exc()
+    prompt = "What is the weather in New York?"
+    memory = UnconstrainedMemory()
+    await memory.add(UserMessage(content=prompt))
+    response = await workflow.run(messages=memory.messages)
+    print(f"result: {response.state.final_answer}")
 
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    try:
+        asyncio.run(main())
+    except FrameworkError as e:
+        traceback.print_exc()
+        sys.exit(e.explain())
 
 ```
 
@@ -279,13 +281,15 @@ Integrating memory into workflows allows agents to maintain context across inter
 
 ```py
 import asyncio
+import sys
 import traceback
 
-from pydantic import BaseModel, InstanceOf, ValidationError
+from pydantic import BaseModel, InstanceOf
 
 from beeai_framework.backend.message import AssistantMessage, UserMessage
+from beeai_framework.errors import FrameworkError
 from beeai_framework.memory.unconstrained_memory import UnconstrainedMemory
-from beeai_framework.workflows.workflow import Workflow, WorkflowError
+from beeai_framework.workflows.workflow import Workflow
 from examples.helpers.io import ConsoleReader
 
 
@@ -303,28 +307,27 @@ async def main() -> None:
 
     reader = ConsoleReader()
 
-    try:
-        memory = UnconstrainedMemory()
-        workflow = Workflow(State)
-        workflow.add_step("echo", echo)
+    memory = UnconstrainedMemory()
+    workflow = Workflow(State)
+    workflow.add_step("echo", echo)
 
-        for prompt in reader:
-            # Add user message to memory
-            await memory.add(UserMessage(content=prompt))
-            # Run workflow with memory
-            response = await workflow.run(State(memory=memory))
-            # Add assistant response to memory
-            await memory.add(AssistantMessage(content=response.state.output))
+    for prompt in reader:
+        # Add user message to memory
+        await memory.add(UserMessage(content=prompt))
+        # Run workflow with memory
+        response = await workflow.run(State(memory=memory))
+        # Add assistant response to memory
+        await memory.add(AssistantMessage(content=response.state.output))
 
-            reader.write("Assistant 🤖 : ", response.state.output)
-    except WorkflowError:
-        traceback.print_exc()
-    except ValidationError:
-        traceback.print_exc()
+        reader.write("Assistant 🤖 : ", response.state.output)
 
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    try:
+        asyncio.run(main())
+    except FrameworkError as e:
+        traceback.print_exc()
+        sys.exit(e.explain())
 
 ```
 

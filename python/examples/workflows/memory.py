@@ -1,11 +1,13 @@
 import asyncio
+import sys
 import traceback
 
-from pydantic import BaseModel, InstanceOf, ValidationError
+from pydantic import BaseModel, InstanceOf
 
 from beeai_framework.backend.message import AssistantMessage, UserMessage
+from beeai_framework.errors import FrameworkError
 from beeai_framework.memory.unconstrained_memory import UnconstrainedMemory
-from beeai_framework.workflows.workflow import Workflow, WorkflowError
+from beeai_framework.workflows.workflow import Workflow
 from examples.helpers.io import ConsoleReader
 
 
@@ -23,25 +25,24 @@ async def main() -> None:
 
     reader = ConsoleReader()
 
-    try:
-        memory = UnconstrainedMemory()
-        workflow = Workflow(State)
-        workflow.add_step("echo", echo)
+    memory = UnconstrainedMemory()
+    workflow = Workflow(State)
+    workflow.add_step("echo", echo)
 
-        for prompt in reader:
-            # Add user message to memory
-            await memory.add(UserMessage(content=prompt))
-            # Run workflow with memory
-            response = await workflow.run(State(memory=memory))
-            # Add assistant response to memory
-            await memory.add(AssistantMessage(content=response.state.output))
+    for prompt in reader:
+        # Add user message to memory
+        await memory.add(UserMessage(content=prompt))
+        # Run workflow with memory
+        response = await workflow.run(State(memory=memory))
+        # Add assistant response to memory
+        await memory.add(AssistantMessage(content=response.state.output))
 
-            reader.write("Assistant 🤖 : ", response.state.output)
-    except WorkflowError:
-        traceback.print_exc()
-    except ValidationError:
-        traceback.print_exc()
+        reader.write("Assistant 🤖 : ", response.state.output)
 
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    try:
+        asyncio.run(main())
+    except FrameworkError as e:
+        traceback.print_exc()
+        sys.exit(e.explain())

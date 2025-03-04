@@ -1,5 +1,8 @@
 import asyncio
+import sys
+import traceback
 
+from beeai_framework.errors import FrameworkError
 from beeai_framework.tools.weather.openmeteo import OpenMeteoTool, OpenMeteoToolInput
 
 
@@ -14,4 +17,8 @@ async def main() -> None:
 
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    try:
+        asyncio.run(main())
+    except FrameworkError as e:
+        traceback.print_exc()
+        sys.exit(e.explain())
