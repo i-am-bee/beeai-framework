@@ -173,7 +173,7 @@ import sys
 import traceback
 
 from beeai_framework.agents.bee.agent import BeeAgent
-from beeai_framework.agents.types import BeeAgentExecutionConfig
+from beeai_framework.agents.types import AgentExecutionConfig
 from beeai_framework.backend.chat import ChatModel
 from beeai_framework.backend.message import AssistantMessage, UserMessage
 from beeai_framework.errors import FrameworkError
@@ -206,7 +206,7 @@ async def main() -> None:
 
     response = await agent.run(
         prompt=user_input,
-        execution=BeeAgentExecutionConfig(max_retries_per_step=3, total_max_retries=10, max_iterations=20),
+        execution=AgentExecutionConfig(max_retries_per_step=3, total_max_retries=10, max_iterations=20),
     )
     print(f"Received response: {response}")
 

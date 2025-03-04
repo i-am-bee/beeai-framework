@@ -18,7 +18,7 @@ import pytest
 from beeai_framework.agents.runners.base import BeeRunnerToolInput
 from beeai_framework.agents.runners.default.runner import DefaultRunner
 from beeai_framework.agents.types import (
-    BeeAgentExecutionConfig,
+    AgentExecutionConfig,
     BeeInput,
     BeeIterationResult,
     BeeMeta,
@@ -43,7 +43,7 @@ async def test_runner_init() -> None:
         llm=llm,
         tools=[OpenMeteoTool()],
         memory=TokenMemory(llm),
-        execution=BeeAgentExecutionConfig(max_iterations=10, max_retries_per_step=3, total_max_retries=10),
+        execution=AgentExecutionConfig(max_iterations=10, max_retries_per_step=3, total_max_retries=10),
     )
     runner = DefaultRunner(
         input=input, options=BeeRunOptions(execution=input.execution, signal=None), run=None

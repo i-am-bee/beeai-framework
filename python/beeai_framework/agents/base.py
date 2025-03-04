@@ -18,13 +18,16 @@ from typing import Generic, TypeVar
 
 from pydantic import BaseModel
 
-from beeai_framework.agents.types import AgentMeta, BeeAgentExecutionConfig, BeeRunInput, BeeRunOptions
+from beeai_framework.agents.types import AgentExecutionConfig, AgentMeta
 from beeai_framework.cancellation import AbortSignal
 from beeai_framework.context import Run, RunContext, RunContextInput, RunInstance
 from beeai_framework.emitter import Emitter
 from beeai_framework.memory import BaseMemory
+from beeai_framework.utils.models import ModelLike
 
 T = TypeVar("T", bound=BaseModel)
+RI = TypeVar("RI", bound=BaseModel)
+RO = TypeVar("RO", bound=BaseModel)
 
 
 class BaseAgent(ABC, Generic[T]):
@@ -34,12 +37,9 @@ class BaseAgent(ABC, Generic[T]):
     def run(
         self,
         prompt: str | None = None,
-        execution: BeeAgentExecutionConfig | None = None,
+        execution: AgentExecutionConfig | None = None,
         signal: AbortSignal | None = None,
     ) -> Run[T]:
-        run_input = BeeRunInput(prompt=prompt)
-        options = BeeRunOptions(execution=execution, signal=signal)
-
         if self.is_running:
             raise RuntimeError("Agent is already running!")
 
@@ -47,18 +47,21 @@ class BaseAgent(ABC, Generic[T]):
 
         async def handler(context: RunContext) -> T:
             try:
-                return await self._run(run_input, options, context)
+                return await self._run({"prompt": prompt}, {"execution": execution, "signal": signal}, context)
             finally:
                 self.is_running = False
 
         return RunContext.enter(
             RunInstance(emitter=self.emitter),
-            RunContextInput(signal=options.signal if options else None, params=(run_input, options)),
+            RunContextInput(
+                signal=signal if signal else None,
+                params=({"prompt": prompt}, {"execution": execution, "signal": signal}),
+            ),
             handler,
         )
 
     @abstractmethod
-    async def _run(self, run_input: BeeRunInput, options: BeeRunOptions | None, context: RunContext) -> T:
+    async def _run(self, run_input: ModelLike[RI], options: ModelLike[RO] | None, context: RunContext) -> T:
         pass
 
     def destroy(self) -> None:
