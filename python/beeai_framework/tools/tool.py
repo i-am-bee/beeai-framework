@@ -83,7 +83,7 @@ class Tool(Generic[T], ABC):
         pass
 
     @abstractmethod
-    async def _run(self, input: Any, options: dict[str, Any] | None = None) -> Any:
+    async def _run(self, input: Any, options: dict[str, Any] | None = None, context: RunContext | None = None) -> Any:
         pass
 
     def validate_input(self, input: T | dict[str, Any]) -> T:
@@ -105,7 +105,7 @@ class Tool(Generic[T], ABC):
                     nonlocal error_propagated
                     error_propagated = False
                     await context.emitter.emit("start", meta)
-                    return await self._run(validated_input, options)
+                    return await self._run(validated_input, options, context)
 
                 async def on_error(error: Exception, _: RetryableContext) -> None:
                     nonlocal error_propagated
@@ -125,7 +125,7 @@ class Tool(Generic[T], ABC):
                         on_error=on_error,
                         on_retry=on_retry,
                         config=RetryableConfig(
-                            max_retries=options.get("max_retries") if options else 1, signal=context.signal
+                            max_retries=options.get("max_retries", 1) if options else 1, signal=context.signal
                         ),
                     )
                 ).get()
@@ -142,7 +142,7 @@ class Tool(Generic[T], ABC):
 
         return RunContext.enter(
             RunInstance(emitter=self.emitter),
-            RunContextInput(params=[input, options], signal=options.signal if options else None),
+            RunContextInput(params=[input, options], signal=options.get("signal") if options else None),
             run_tool,
         )
 
@@ -194,7 +194,7 @@ def tool(tool_function: Callable) -> Tool:
                 creator=self,
             )
 
-        async def _run(self, tool_in: Any, _: dict[str, Any] | None = None) -> None:
+        async def _run(self, tool_in: Any, _: dict[str, Any] | None = None, context: RunContext | None = None) -> None:
             tool_input_dict = tool_in.model_dump()
             if inspect.iscoroutinefunction(tool_function):
                 return await tool_function(**tool_input_dict)
