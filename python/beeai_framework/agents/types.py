@@ -92,7 +92,7 @@ class AgentMeta(BaseModel):
     extra_description: str | None = None
 
 
-BeeTemplateFactory = Callable[[InstanceOf[BeeAgentTemplates]], InstanceOf[BeeAgentTemplates]]
+BeeTemplateFactory = Callable[[InstanceOf[PromptTemplate]], InstanceOf[PromptTemplate]]
 ModelKeysType = Annotated[str, lambda v: v in BeeAgentTemplates.model_fields]
 
 

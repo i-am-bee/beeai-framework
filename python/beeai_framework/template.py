@@ -58,7 +58,7 @@ class PromptTemplate(Generic[T]):
 
         return chevron.render(template=self._config.template, data=data)
 
-    def fork(self, customizer: Callable[[PromptTemplateInput], "PromptTemplate"] | None) -> "PromptTemplate":
+    def fork(self, customizer: Callable[[PromptTemplateInput], "PromptTemplateInput"] | None) -> "PromptTemplate":
         new_config = customizer(self._config) if customizer else self._config
         if not isinstance(new_config, PromptTemplateInput):
             raise ValueError("Return type from customizer must be a PromptTemplateInput or nothing.")
