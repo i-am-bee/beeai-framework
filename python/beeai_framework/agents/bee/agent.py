@@ -26,8 +26,8 @@ from beeai_framework.agents.runners.base import (
 from beeai_framework.agents.runners.default.runner import DefaultRunner
 from beeai_framework.agents.runners.granite.runner import GraniteRunner
 from beeai_framework.agents.types import (
+    AgentExecutionConfig,
     AgentMeta,
-    BeeAgentExecutionConfig,
     BeeAgentTemplates,
     BeeInput,
     BeeRunInput,
@@ -43,6 +43,7 @@ from beeai_framework.context import RunContext
 from beeai_framework.emitter import Emitter
 from beeai_framework.memory import BaseMemory
 from beeai_framework.tools.tool import Tool
+from beeai_framework.utils.models import ModelLike, to_model, to_model_optional
 
 
 class BeeAgent(BaseAgent[BeeRunOutput]):
@@ -55,7 +56,7 @@ class BeeAgent(BaseAgent[BeeRunOutput]):
         memory: BaseMemory,
         meta: AgentMeta | None = None,
         templates: dict[ModelKeysType, BeeAgentTemplates | BeeTemplateFactory] | None = None,
-        execution: BeeAgentExecutionConfig | None = None,
+        execution: AgentExecutionConfig | None = None,
         stream: bool | None = None,
     ) -> None:
         self.input = BeeInput(
@@ -102,7 +103,12 @@ class BeeAgent(BaseAgent[BeeRunOutput]):
             extra_description="\n".join(extra_description) if len(tools) > 0 else None,
         )
 
-    async def _run(self, run_input: BeeRunInput, options: BeeRunOptions | None, context: RunContext) -> BeeRunOutput:
+    async def _run(
+        self, run_input: ModelLike[BeeRunInput], options: ModelLike[BeeRunOptions] | None, context: RunContext
+    ) -> BeeRunOutput:
+        run_input = to_model(BeeRunInput, run_input)
+        options = to_model_optional(BeeRunOptions, options)
+
         runner = self.runner(
             self.input,
             (
@@ -111,7 +117,7 @@ class BeeAgent(BaseAgent[BeeRunOutput]):
                 else BeeRunOptions(
                     execution=self.input.execution
                     or (options.execution if options is not None else None)
-                    or BeeAgentExecutionConfig(
+                    or AgentExecutionConfig(
                         max_retries_per_step=3,
                         total_max_retries=20,
                         max_iterations=10,

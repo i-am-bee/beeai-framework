@@ -73,7 +73,7 @@ import traceback
 
 from pydantic import ValidationError
 
-from beeai_framework.agents.bee.agent import BeeAgentExecutionConfig
+from beeai_framework.agents.bee.agent import AgentExecutionConfig
 from beeai_framework.backend.chat import ChatModel
 from beeai_framework.backend.message import UserMessage
 from beeai_framework.memory import UnconstrainedMemory
@@ -81,6 +81,7 @@ from beeai_framework.tools.search.duckduckgo import DuckDuckGoSearchTool
 from beeai_framework.tools.weather.openmeteo import OpenMeteoTool
 from beeai_framework.workflows.agent import AgentFactoryInput, AgentWorkflow
 from beeai_framework.workflows.workflow import WorkflowError
+
 
 async def main() -> None:
     llm = ChatModel.from_name("ollama:granite3.1-dense:8b")
@@ -93,7 +94,7 @@ async def main() -> None:
                 instructions="You are a weather assistant. Respond only if you can provide a useful answer.",
                 tools=[OpenMeteoTool()],
                 llm=llm,
-                execution=BeeAgentExecutionConfig(max_iterations=3),
+                execution=AgentExecutionConfig(max_iterations=3),
             )
         )
         workflow.add_agent(
