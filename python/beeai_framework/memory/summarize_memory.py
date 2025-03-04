@@ -62,7 +62,7 @@ Summary:""".format("\n".join([f"{msg.role}: {msg.text}" for msg in messages]))
 
         response = await self.model.create(messages=[prompt])
 
-        return response.messages[0].get_texts()[0].get("text")
+        return response.messages[0].get_texts()[0].text
 
     async def delete(self, message: Message) -> bool:
         """Delete a message from memory."""

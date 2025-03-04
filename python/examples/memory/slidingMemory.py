@@ -2,7 +2,7 @@ import asyncio
 import sys
 import traceback
 
-from beeai_framework.backend import Message, Role
+from beeai_framework import AssistantMessage, SystemMessage, UserMessage
 from beeai_framework.errors import FrameworkError
 from beeai_framework.memory.sliding_memory import SlidingMemory, SlidingMemoryConfig
 
@@ -17,14 +17,14 @@ async def main() -> None:
     )
 
     # Add messages
-    await memory.add(Message.of({"role": Role.SYSTEM, "text": "You are a helpful assistant."}))
+    await memory.add(SystemMessage("You are a helpful assistant."))
 
-    await memory.add(Message.of({"role": Role.USER, "text": "What is Python?"}))
+    await memory.add(UserMessage("What is Python?"))
 
-    await memory.add(Message.of({"role": Role.ASSISTANT, "text": "Python is a programming language."}))
+    await memory.add(AssistantMessage("Python is a programming language."))
 
     # Adding a fourth message should trigger sliding window
-    await memory.add(Message.of({"role": Role.USER, "text": "What about JavaScript?"}))
+    await memory.add(UserMessage("What about JavaScript?"))
 
     # Print results
     print(f"Messages in memory: {len(memory.messages)}")  # Should print 3

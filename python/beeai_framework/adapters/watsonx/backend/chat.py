@@ -46,7 +46,12 @@ class WatsonxChatModel(LiteLLMChatModel):
             if isinstance(message, ToolMessage):
                 messages_list.extend(
                     [
-                        {"role": "tool", "content": content.get("result"), "tool_call_id": content.get("tool_call_id")}
+                        {
+                            "role": "tool",
+                            "name": content.tool_name,
+                            "content": content.result,
+                            "tool_call_id": content.tool_call_id,
+                        }
                         for content in message.content
                     ]
                 )
