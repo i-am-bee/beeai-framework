@@ -1,50 +1,41 @@
 import asyncio
-import sys
-import traceback
 
 from pydantic import BaseModel, Field
 from traitlets import Callable
 
-from beeai_framework.adapters.ollama.backend.chat import OllamaChatModel
+from beeai_framework.adapters.xai.backend.chat import XAIChatModel
 from beeai_framework.backend.chat import ChatModel, ChatModelOutput
 from beeai_framework.backend.message import UserMessage
 from beeai_framework.cancellation import AbortSignal
 from beeai_framework.emitter import EventMeta
-from beeai_framework.errors import AbortError, FrameworkError
+from beeai_framework.errors import AbortError
 from beeai_framework.parsers.field import ParserField
 from beeai_framework.parsers.line_prefix import LinePrefixParser, LinePrefixParserNode
 
 
-async def ollama_from_name() -> None:
-    llm = ChatModel.from_name("ollama:llama3.1")
+async def xai_from_name() -> None:
+    llm = ChatModel.from_name("xai:grok-2")
     user_message = UserMessage("what states are part of New England?")
     response = await llm.create(messages=[user_message])
     print(response.get_text_content())
 
 
-async def ollama_granite_from_name() -> None:
-    llm = ChatModel.from_name("ollama:granite3.1-dense:8b")
-    user_message = UserMessage("what states are part of New England?")
-    response = await llm.create(messages=[user_message])
-    print(response.get_text_content())
-
-
-async def ollama_sync() -> None:
-    llm = OllamaChatModel("llama3.1")
+async def xai_sync() -> None:
+    llm = XAIChatModel("grok-2")
     user_message = UserMessage("what is the capital of Massachusetts?")
     response = await llm.create(messages=[user_message])
     print(response.get_text_content())
 
 
-async def ollama_stream() -> None:
-    llm = OllamaChatModel("llama3.1")
+async def xai_stream() -> None:
+    llm = XAIChatModel("grok-2")
     user_message = UserMessage("How many islands make up the country of Cape Verde?")
     response = await llm.create(messages=[user_message], stream=True)
     print(response.get_text_content())
 
 
-async def ollama_stream_abort() -> None:
-    llm = OllamaChatModel("llama3.1")
+async def xai_stream_abort() -> None:
+    llm = XAIChatModel("grok-2")
     user_message = UserMessage("What is the smallest of the Cape Verde islands?")
 
     try:
@@ -58,23 +49,26 @@ async def ollama_stream_abort() -> None:
         print(f"Aborted: {err}")
 
 
-async def ollama_structure() -> None:
+async def xai_structure() -> None:
     class TestSchema(BaseModel):
         answer: str = Field(description="your final answer")
 
-    llm = OllamaChatModel("llama3.1")
+    llm = XAIChatModel("grok-2")
     user_message = UserMessage("How many islands make up the country of Cape Verde?")
     response = await llm.create_structure(schema=TestSchema, messages=[user_message])
     print(response.object)
 
 
-async def ollama_stream_parser() -> None:
-    llm = OllamaChatModel("llama3.1")
+async def xai_stream_parser() -> None:
+    llm = XAIChatModel("grok-2")
 
     parser = LinePrefixParser(
         nodes={
             "test": LinePrefixParserNode(
-                prefix="Prefix: ", field=ParserField.from_type(str), is_start=True, is_end=True
+                prefix="Prefix: ",
+                field=ParserField.from_type(str),
+                is_start=True,
+                is_end=True,
             )
         }
     )
@@ -90,25 +84,19 @@ async def ollama_stream_parser() -> None:
 
 
 async def main() -> None:
-    print("*" * 10, "ollama_from_name")
-    await ollama_from_name()
-    print("*" * 10, "ollama_granite_from_name")
-    await ollama_granite_from_name()
-    print("*" * 10, "ollama_sync")
-    await ollama_sync()
-    print("*" * 10, "ollama_stream")
-    await ollama_stream()
-    print("*" * 10, "ollama_stream_abort")
-    await ollama_stream_abort()
-    print("*" * 10, "ollama_structure")
-    await ollama_structure()
-    print("*" * 10, "ollama_stream_parser")
-    await ollama_stream_parser()
+    print("*" * 10, "xai_from_name")
+    await xai_from_name()
+    print("*" * 10, "xai_granite_from_name")
+    await xai_sync()
+    print("*" * 10, "xai_stream")
+    await xai_stream()
+    print("*" * 10, "xai_stream_abort")
+    await xai_stream_abort()
+    print("*" * 10, "xai_structure")
+    await xai_structure()
+    print("*" * 10, "xai_stream_parser")
+    await xai_stream_parser()
 
 
 if __name__ == "__main__":
-    try:
-        asyncio.run(main())
-    except FrameworkError as e:
-        traceback.print_exc()
-        sys.exit(e.explain())
+    asyncio.run(main())

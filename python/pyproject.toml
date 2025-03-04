@@ -1,6 +1,6 @@
 [project]
 name = "beeai-framework"
-version="0.1.2"
+version="0.1.3"
 license = "Apache-2.0"
 readme = "README.md"
 authors = [{ name = "IBM Corp." }]
@@ -31,7 +31,7 @@ pylint = "^3.3.2"
 pydantic-settings = "^2.7"
 chevron = "^0.14.0"
 types-requests = "^2.32.0.20241016"
-litellm = "1.61.19"
+litellm = "1.61.20"
 aiofiles = "^24.1.0"
 pyventus = "^0.6.0"
 wikipedia = "^1.4.0"
@@ -196,6 +196,7 @@ shell = "TYPE=${type} ./scripts/copyright.sh"
 [tool.poe.tasks.release]
 help = "Release a new version"
 sequence = [
+    { shell = 'git fetch origin && [ "$(git rev-parse @)" = "$(git rev-parse @{u})" ] || { echo "Your branch is not up to date! Pull or push changes." && exit 1; }' },
     { shell = '[ -z "$(git status -uno --porcelain)" ] || { echo "Your index contains uncommitted changes! Commit them and try again." && exit 1; }' },
     { "ref" = "clean"},
     { "cmd" = "cz bump --increment PATCH"},

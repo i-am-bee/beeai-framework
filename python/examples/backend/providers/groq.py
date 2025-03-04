@@ -1,50 +1,41 @@
 import asyncio
-import sys
-import traceback
 
 from pydantic import BaseModel, Field
 from traitlets import Callable
 
-from beeai_framework.adapters.ollama.backend.chat import OllamaChatModel
+from beeai_framework.adapters.groq.backend.chat import GroqChatModel
 from beeai_framework.backend.chat import ChatModel, ChatModelOutput
 from beeai_framework.backend.message import UserMessage
 from beeai_framework.cancellation import AbortSignal
 from beeai_framework.emitter import EventMeta
-from beeai_framework.errors import AbortError, FrameworkError
+from beeai_framework.errors import AbortError
 from beeai_framework.parsers.field import ParserField
 from beeai_framework.parsers.line_prefix import LinePrefixParser, LinePrefixParserNode
 
 
-async def ollama_from_name() -> None:
-    llm = ChatModel.from_name("ollama:llama3.1")
+async def groq_from_name() -> None:
+    llm = ChatModel.from_name("groq:gemma2-9b-it")
     user_message = UserMessage("what states are part of New England?")
     response = await llm.create(messages=[user_message])
     print(response.get_text_content())
 
 
-async def ollama_granite_from_name() -> None:
-    llm = ChatModel.from_name("ollama:granite3.1-dense:8b")
-    user_message = UserMessage("what states are part of New England?")
-    response = await llm.create(messages=[user_message])
-    print(response.get_text_content())
-
-
-async def ollama_sync() -> None:
-    llm = OllamaChatModel("llama3.1")
+async def groq_sync() -> None:
+    llm = GroqChatModel("gemma2-9b-it")
     user_message = UserMessage("what is the capital of Massachusetts?")
     response = await llm.create(messages=[user_message])
     print(response.get_text_content())
 
 
-async def ollama_stream() -> None:
-    llm = OllamaChatModel("llama3.1")
+async def groq_stream() -> None:
+    llm = GroqChatModel("gemma2-9b-it")
     user_message = UserMessage("How many islands make up the country of Cape Verde?")
     response = await llm.create(messages=[user_message], stream=True)
     print(response.get_text_content())
 
 
-async def ollama_stream_abort() -> None:
-    llm = OllamaChatModel("llama3.1")
+async def groq_stream_abort() -> None:
+    llm = GroqChatModel("gemma2-9b-it")
     user_message = UserMessage("What is the smallest of the Cape Verde islands?")
 
     try:
@@ -58,18 +49,18 @@ async def ollama_stream_abort() -> None:
         print(f"Aborted: {err}")
 
 
-async def ollama_structure() -> None:
+async def groq_structure() -> None:
     class TestSchema(BaseModel):
         answer: str = Field(description="your final answer")
 
-    llm = OllamaChatModel("llama3.1")
+    llm = GroqChatModel("gemma2-9b-it")
     user_message = UserMessage("How many islands make up the country of Cape Verde?")
     response = await llm.create_structure(schema=TestSchema, messages=[user_message])
     print(response.object)
 
 
-async def ollama_stream_parser() -> None:
-    llm = OllamaChatModel("llama3.1")
+async def groq_stream_parser() -> None:
+    llm = GroqChatModel("gemma2-9b-it")
 
     parser = LinePrefixParser(
         nodes={
@@ -90,25 +81,19 @@ async def ollama_stream_parser() -> None:
 
 
 async def main() -> None:
-    print("*" * 10, "ollama_from_name")
-    await ollama_from_name()
-    print("*" * 10, "ollama_granite_from_name")
-    await ollama_granite_from_name()
-    print("*" * 10, "ollama_sync")
-    await ollama_sync()
-    print("*" * 10, "ollama_stream")
-    await ollama_stream()
-    print("*" * 10, "ollama_stream_abort")
-    await ollama_stream_abort()
-    print("*" * 10, "ollama_structure")
-    await ollama_structure()
-    print("*" * 10, "ollama_stream_parser")
-    await ollama_stream_parser()
+    print("*" * 10, "groq_from_name")
+    await groq_from_name()
+    print("*" * 10, "groq_sync")
+    await groq_sync()
+    print("*" * 10, "groq_stream")
+    await groq_stream()
+    print("*" * 10, "groq_stream_abort")
+    await groq_stream_abort()
+    print("*" * 10, "groq_structure")
+    await groq_structure()
+    print("*" * 10, "groq_stream_parser")
+    await groq_stream_parser()
 
 
 if __name__ == "__main__":
-    try:
-        asyncio.run(main())
-    except FrameworkError as e:
-        traceback.print_exc()
-        sys.exit(e.explain())
+    asyncio.run(main())

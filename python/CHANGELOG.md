@@ -1,3 +1,17 @@
+## python_v0.1.3 (2025-03-03)
+
+### Features
+
+- **adapters** add Groq backend support (#450)
+
+### Bug Fixes
+
+- **agents**: handle native tool calling and retries (#456)
+- disregard unset params (#459)
+- chatmodel params None (#458)
+- pass chatmodel config parameters (#457)
+- **tools**: async _run (#452)
+
 ## python_v0.1.2 (2025-02-28)
 
 ### Refactor

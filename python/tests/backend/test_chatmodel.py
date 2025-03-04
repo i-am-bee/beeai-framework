@@ -12,18 +12,18 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-
 import asyncio
-import os
 from collections.abc import AsyncGenerator
 
 import pytest
 import pytest_asyncio
 from pydantic import BaseModel
 
+from beeai_framework.adapters.groq.backend.chat import GroqChatModel
 from beeai_framework.adapters.ollama.backend.chat import OllamaChatModel
 from beeai_framework.adapters.openai.backend.chat import OpenAIChatModel
 from beeai_framework.adapters.watsonx.backend.chat import WatsonxChatModel
+from beeai_framework.adapters.xai.backend.chat import XAIChatModel
 from beeai_framework.backend.chat import (
     ChatModel,
     ChatModelInput,
@@ -31,7 +31,12 @@ from beeai_framework.backend.chat import (
     ChatModelStructureInput,
     ChatModelStructureOutput,
 )
-from beeai_framework.backend.message import AssistantMessage, CustomMessage, Message, UserMessage
+from beeai_framework.backend.message import (
+    AssistantMessage,
+    CustomMessage,
+    Message,
+    UserMessage,
+)
 from beeai_framework.cancellation import AbortSignal
 from beeai_framework.context import RunContext
 from beeai_framework.errors import AbortError
@@ -128,27 +133,27 @@ async def test_chat_model_stream(reverse_words_chat: ChatModel, chat_messages_li
 @pytest.mark.unit
 async def test_chat_model_abort(reverse_words_chat: ChatModel, chat_messages_list: list[Message]) -> None:
     with pytest.raises(AbortError):
-        await reverse_words_chat.create(messages=chat_messages_list, stream=True, abort_signal=AbortSignal.timeout(1))
+        await reverse_words_chat.create(
+            messages=chat_messages_list,
+            stream=True,
+            abort_signal=AbortSignal.timeout(1),
+        )
 
 
 @pytest.mark.unit
-def test_chat_model_from() -> None:
+def test_chat_model_from(monkeypatch: pytest.MonkeyPatch) -> None:
     # Ollama with Llama model and base_url specified in code
-    os.environ.pop("OLLAMA_API_BASE", None)
     ollama_chat_model = ChatModel.from_name("ollama:llama3.1", {"base_url": "http://somewhere:12345"})
     assert isinstance(ollama_chat_model, OllamaChatModel)
-    assert ollama_chat_model.settings["base_url"] == "http://somewhere:12345/v1"
+    assert ollama_chat_model._settings["base_url"] == "http://somewhere:12345/v1"
 
     # Ollama with Granite model and base_url specified in env var
-    os.environ["OLLAMA_API_BASE"] = "http://somewhere-else:12345"
+    monkeypatch.setenv("OLLAMA_API_BASE", "http://somewhere-else:12345")
     ollama_chat_model = ChatModel.from_name("ollama:granite3.1-dense:8b")
     assert isinstance(ollama_chat_model, OllamaChatModel)
-    assert ollama_chat_model.settings["base_url"] == "http://somewhere-else:12345/v1"
+    assert ollama_chat_model._settings["base_url"] == "http://somewhere-else:12345/v1"
 
     # Watsonx with Granite model and settings specified in code
-    os.environ.pop("WATSONX_URL", None)
-    os.environ.pop("WATSONX_PROJECT_ID", None)
-    os.environ.pop("WATSONX_API_KEY", None)
     watsonx_chat_model = ChatModel.from_name(
         "watsonx:ibm/granite-3-8b-instruct",
         {
@@ -158,16 +163,23 @@ def test_chat_model_from() -> None:
         },
     )
     assert isinstance(watsonx_chat_model, WatsonxChatModel)
-    assert watsonx_chat_model.settings["url"] == "http://somewhere"
-    assert watsonx_chat_model.settings["project_id"] == "proj_id_123"
-    assert watsonx_chat_model.settings["api_key"] == "api_key_123"
+    assert watsonx_chat_model._settings["url"] == "http://somewhere"
+    assert watsonx_chat_model._settings["project_id"] == "proj_id_123"
+    assert watsonx_chat_model._settings["api_key"] == "api_key_123"
 
     # Watsonx with Granite model and settings specified in env vars
-    os.environ["WATSONX_URL"] = "http://somewhere-else"
-    os.environ["WATSONX_PROJECT_ID"] = "proj_id_456"
-    os.environ["WATSONX_API_KEY"] = "api_key_456"
+    monkeypatch.setenv("WATSONX_URL", "http://somewhere-else")
+    monkeypatch.setenv("WATSONX_PROJECT_ID", "proj_id_456")
+    monkeypatch.setenv("WATSONX_API_KEY", "api_key_456")
+
     watsonx_chat_model = ChatModel.from_name("watsonx:ibm/granite-3-8b-instruct")
     assert isinstance(watsonx_chat_model, WatsonxChatModel)
 
     openai_chat_model = ChatModel.from_name("openai:gpt-4o")
     assert isinstance(openai_chat_model, OpenAIChatModel)
+
+    groq_chat_model = ChatModel.from_name("groq:gemma2-9b-it")
+    assert isinstance(groq_chat_model, GroqChatModel)
+
+    xai_chat_model = ChatModel.from_name("xai:grok-2")
+    assert isinstance(xai_chat_model, XAIChatModel)

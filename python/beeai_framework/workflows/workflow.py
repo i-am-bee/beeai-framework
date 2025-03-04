@@ -110,7 +110,7 @@ class Workflow(Generic[T, K]):
         return self._start_step
 
     def add_step(self, step_name: K, runnable: WorkflowHandler[T, K]) -> "Workflow[T, K]":
-        if (len(step_name.strip())) == 0:
+        if (len(str(step_name).strip())) == 0:
             raise ValueError("Step name cannot be empty!")
 
         if step_name in self.steps:
@@ -169,9 +169,9 @@ class Workflow(Generic[T, K]):
                     if step_next == Workflow.START:
                         next = run.steps[0].name
                     elif step_next == Workflow.PREV:
-                        next = run.steps[-2].name
+                        next = self._find_step(next).prev or Workflow.END
                     elif step_next == Workflow.SELF:
-                        next = run.steps[-1].name
+                        next = self._find_step(next).current
                     elif step_next is None or step_next == Workflow.NEXT:
                         next = self._find_step(next).next or Workflow.END
                     else:
