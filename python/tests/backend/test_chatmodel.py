@@ -190,12 +190,17 @@ def test_chat_model_from(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("VERTEXAI_PROJECT", "myproject")
     vertexai_chat_model = ChatModel.from_name("vertexai:gemini-2.0-flash-lite-001")
     assert isinstance(vertexai_chat_model, VertexAIChatModel)
-
+    
+    monkeypatch.setenv("VERTEXAI_PROJECT", "myproject")
+    vertexai_chat_model = ChatModel.from_name("vertexai:gemini-2.0-flash-lite-001")
+    assert isinstance(vertexai_chat_model, VertexAIChatModel)
     
     monkeypatch.setenv("VERTEXAI_PROJECT", "myproject")
     vertexai_chat_model = ChatModel.from_name("vertexai:gemini-2.0-flash-lite-001")
     assert isinstance(vertexai_chat_model, VertexAIChatModel)
 
-    monkeypatch.setenv("AWS_ACCESS_KEY_ID", "api_key_456")
+    monkeypatch.setenv("AWS_ACCESS_KEY_ID", "secret1")
+    monkeypatch.setenv("AWS_SECRET_ACCESS_KEY", "secret2")
+    monkeypatch.setenv("AWS_REGION_NAME", "region1")
     amazonbedrock_chat_model = ChatModel.from_name("amazonbedrock:meta.llama3-8b-instruct-v1:0")
     assert isinstance(amazonbedrock_chat_model, AmazonBedrockChatModel)
