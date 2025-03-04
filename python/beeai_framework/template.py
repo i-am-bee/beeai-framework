@@ -33,7 +33,7 @@ T = TypeVar("T", bound=BaseModel)
 class PromptTemplateInput(BaseModel, Generic[T]):
     input_schema: type[T] = Field(..., alias="schema")
     template: str
-    functions: dict[str, Callable[[], str]] | None = None
+    functions: dict[str, Callable[[dict], str]] | None = None
     defaults: dict[str, str] | None = {}
 
 
@@ -54,11 +54,11 @@ class PromptTemplate(Generic[T]):
             for key in self._config.functions:
                 if key in data:
                     raise PromptTemplateError(f"Function named '{key}' clashes with input data field!")
-                data[key] = self._config.functions[key]()
+                data[key] = self._config.functions[key](data)
 
         return chevron.render(template=self._config.template, data=data)
 
-    def fork(self, customizer: Callable[[PromptTemplateInput], "PromptTemplate"] | None) -> "PromptTemplate":
+    def fork(self, customizer: Callable[[PromptTemplateInput], "PromptTemplateInput"] | None) -> "PromptTemplate":
         new_config = customizer(self._config) if customizer else self._config
         if not isinstance(new_config, PromptTemplateInput):
             raise ValueError("Return type from customizer must be a PromptTemplateInput or nothing.")

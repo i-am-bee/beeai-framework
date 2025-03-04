@@ -96,7 +96,7 @@ class BeeAgent(BaseAgent[BeeRunOutput]):
             extra_description.append(f"Tool ${tool.name}': ${tool.description}.")
 
         return AgentMeta(
-            name="BeeAI",
+            name="Bee",
             tools=tools,
             description="The BeeAI framework demonstrates its ability to auto-correct and adapt in real-time, improving"
             " the overall reliability and resilience of the system.",
