@@ -2,7 +2,7 @@ import asyncio
 import sys
 import traceback
 
-from beeai_framework.backend import Message, Role
+from beeai_framework import UserMessage
 from beeai_framework.errors import FrameworkError
 from beeai_framework.memory import UnconstrainedMemory
 
@@ -12,7 +12,7 @@ async def main() -> None:
     memory = UnconstrainedMemory()
 
     # Add a message
-    await memory.add(Message.of({"role": Role.USER, "text": "Hello world!"}))
+    await memory.add(UserMessage("Hello world!"))
 
     # Print results
     print(f"Is Empty: {memory.is_empty()}")  # Should print: False
