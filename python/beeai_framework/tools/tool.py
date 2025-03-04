@@ -99,7 +99,7 @@ class Tool(Generic[T], ABC):
         pass
 
     @abstractmethod
-    async def _run(self, input: Any, options: ToolRunOptions | None = None) -> Any:
+    async def _run(self, input: T, options: ToolRunOptions | None = None) -> Any:
         pass
 
     def validate_input(self, input: T | dict[str, Any]) -> T:
@@ -169,7 +169,7 @@ class Tool(Generic[T], ABC):
 
 # this method was inspired by the discussion that was had in this issue:
 # https://github.com/pydantic/pydantic/issues/1391
-def get_input_schema(tool_function: Callable) -> BaseModel:
+def get_input_schema(tool_function: Callable) -> type[BaseModel]:
     input_model_name = tool_function.__name__
 
     args, _, _, defaults, kwonlyargs, kwonlydefaults, annotations = inspect.getfullargspec(tool_function)
@@ -202,9 +202,12 @@ def tool(tool_function: Callable) -> Tool:
     tool_description = inspect.getdoc(tool_function)
     tool_input = get_input_schema(tool_function)
 
+    if tool_description is None:
+        raise ValueError("No tool description provided.")
+
     class FunctionTool(Tool):
         name = tool_name
-        description = tool_description
+        description = tool_description or ""
         input_schema = tool_input
 
         def __init__(self, options: dict[str, Any] | None = None) -> None:
@@ -216,8 +219,8 @@ def tool(tool_function: Callable) -> Tool:
                 creator=self,
             )
 
-        async def _run(self, tool_in: Any, _: ToolRunOptions | None = None) -> None:
-            tool_input_dict = tool_in.model_dump()
+        async def _run(self, input: T, _: ToolRunOptions | None = None) -> None:
+            tool_input_dict = input.model_dump()
             if inspect.iscoroutinefunction(tool_function):
                 return await tool_function(**tool_input_dict)
             else:
