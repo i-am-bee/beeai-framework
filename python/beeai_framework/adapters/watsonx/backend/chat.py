@@ -35,3 +35,29 @@ class WatsonxChatModel(LiteLLMChatModel):
             provider_id="watsonx",
             settings=_settings,
         )
+<<<<<<< HEAD
+=======
+
+    def _transform_input(self, input: ChatModelInput) -> LiteLLMParameters:
+        params = super()._transform_input(input)
+
+        messages_list = []
+        for message in input.messages:
+            if isinstance(message, ToolMessage):
+                messages_list.extend(
+                    [
+                        {
+                            "role": "tool",
+                            "name": content.tool_name,
+                            "content": content.result,
+                            "tool_call_id": content.tool_call_id,
+                        }
+                        for content in message.content
+                    ]
+                )
+            else:
+                messages_list.append(message.to_plain())
+
+        params.messages = messages_list
+        return params
+>>>>>>> 9409f3c (fix(backend): tool calling, unify message content)

@@ -45,9 +45,15 @@ class GraniteRunner(DefaultRunner):
             assert update is not None
             if update.get("key") == "tool_output":
                 memory: BaseMemory = data.get("memory")
+<<<<<<< HEAD
                 tool_output: ToolOutput = update.get("value")
                 tool_result = MessageToolResultContent(
                     result=tool_output.get_text_content(),
+=======
+                tool_result = MessageToolResultContent(
+                    type="tool-result",
+                    result=update.get("value").get_text_content(),
+>>>>>>> 9409f3c (fix(backend): tool calling, unify message content)
                     tool_name=data.get("data").tool_name,
                     tool_call_id="DUMMY_ID",
                 )
