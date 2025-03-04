@@ -44,7 +44,7 @@ class LangChainTool(Tool):
 
     @property
     def input_schema(self) -> type[T]:
-        return self._tool.args_schema
+        return self._tool.input_schema
 
     def __init__(self, tool: StructuredTool | LangChainSimpleTool, options: dict[str, Any] | None = None) -> None:
         super().__init__(options)
