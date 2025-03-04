@@ -244,9 +244,9 @@ export class Workflow<
             if (nextStepRaw === Workflow.START) {
               next = run.steps.at(0)?.name!;
             } else if (nextStepRaw === Workflow.PREV) {
-              next = run.steps.at(-2)?.name!;
+              next = this.findStep(next).prev;
             } else if (nextStepRaw === Workflow.SELF) {
-              next = run.steps.at(-1)?.name!;
+              next = this.findStep(next).current;
             } else if (!nextStepRaw || nextStepRaw === Workflow.NEXT) {
               next = this.findStep(next).next || Workflow.END;
             } else {
