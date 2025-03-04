@@ -157,7 +157,8 @@ default = "pass"
     sequence = [
         { "ref" = "copyright ${TARGET}"},
         { "ref" = "format --fix ${TARGET}"},
-        { "ref" = "lint --fix ${TARGET}" }
+        { "ref" = "lint --fix ${TARGET}" },
+        { "ref" = "copyright --type check ${TARGET}"},
     ]
 
 [tool.poe.tasks.docs]
