@@ -35,7 +35,7 @@ class LangChainToolRunOptions(ToolRunOptions):
 T = TypeVar("T", bound=BaseModel)
 
 
-class LangChainTool(Tool):
+class LangChainTool(Tool[T, LangChainToolRunOptions]):
     @property
     def name(self) -> str:
         return self._tool.name
@@ -58,13 +58,15 @@ class LangChainTool(Tool):
         super().__init__(options)
         self._tool = tool
 
-    async def _run(self, input: T, options: LangChainToolRunOptions, context: RunContext) -> Any:
+    async def _run(
+        self, input: T, options: LangChainToolRunOptions | None = None, context: RunContext | None = None
+    ) -> Any:
         langchain_runnable_config = options.langchain_runnable_config or {} if options else {}
         args = (
             input if isinstance(input, dict) else input.model_dump(),
             {
                 **langchain_runnable_config,
-                "signal": context.signal,
+                "signal": context.signal or None if context else None,
             },
         )
         is_async = (isinstance(self._tool, StructuredTool) and self._tool.coroutine) or (

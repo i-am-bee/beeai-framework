@@ -20,11 +20,12 @@ from typing import Any, TypeVar
 from mcp.client.session import ClientSession
 from mcp.types import CallToolResult
 from mcp.types import Tool as MCPToolInfo
+from pydantic import BaseModel
 
 from beeai_framework.context import RunContext
 from beeai_framework.emitter import Emitter
 from beeai_framework.tools import Tool
-from beeai_framework.tools.tool import ToolOutput
+from beeai_framework.tools.tool import ToolOutput, ToolRunOptions
 from beeai_framework.utils import BeeLogger
 
 logger = BeeLogger(__name__)
@@ -53,7 +54,7 @@ class MCPToolOutput(ToolOutput):
         return not self.result
 
 
-class MCPTool(Tool[MCPToolOutput]):
+class MCPTool(Tool[BaseModel, ToolRunOptions]):
     """Tool implementation for Model Context Protocol."""
 
     def __init__(self, client: ClientSession, tool: MCPToolInfo, **options: int) -> None:
@@ -82,7 +83,7 @@ class MCPTool(Tool[MCPToolOutput]):
         )
 
     async def _run(
-        self, input_data: Any, options: dict | None = None, context: RunContext | None = None
+        self, input_data: Any, options: ToolRunOptions | None = None, context: RunContext | None = None
     ) -> MCPToolOutput:
         """Execute the tool with given input."""
         logger.debug(f"Executing tool {self.name} with input: {input_data}")

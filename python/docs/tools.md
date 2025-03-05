@@ -361,7 +361,7 @@ class RiddleToolInput(BaseModel):
     riddle_number: int = Field(description="Index of riddle to retrieve.")
 
 
-class RiddleTool(Tool[RiddleToolInput]):
+class RiddleTool(Tool[RiddleToolInput, ToolRunOptions]):
     name = "Riddle"
     description = "It selects a riddle to test your knowledge."
     input_schema = RiddleToolInput
@@ -385,7 +385,9 @@ class RiddleTool(Tool[RiddleToolInput]):
             creator=self,
         )
 
-    async def _run(self, input: RiddleToolInput, options: ToolRunOptions, context: RunContext) -> StringToolOutput:
+    async def _run(
+        self, input: RiddleToolInput, options: ToolRunOptions | None = None, context: RunContext | None = None
+    ) -> StringToolOutput:
         index = input.riddle_number % (len(self.data))
         riddle = self.data[index]
         return StringToolOutput(result=riddle)
@@ -433,7 +435,7 @@ from beeai_framework.context import RunContext
 from beeai_framework.emitter.emitter import Emitter
 from beeai_framework.errors import FrameworkError
 from beeai_framework.tools import ToolInputValidationError
-from beeai_framework.tools.tool import Tool
+from beeai_framework.tools.tool import Tool, ToolRunOptions
 
 
 class OpenLibraryToolInput(BaseModel):
@@ -448,7 +450,7 @@ class OpenLibraryToolResult(BaseModel):
     bib_key: str
 
 
-class OpenLibraryTool(Tool[OpenLibraryToolInput]):
+class OpenLibraryTool(Tool[OpenLibraryToolInput, ToolRunOptions]):
     name = "OpenLibrary"
     description = """Provides access to a library of books with information about book titles,
         authors, contributors, publication dates, publisher and isbn."""
@@ -464,7 +466,7 @@ class OpenLibraryTool(Tool[OpenLibraryToolInput]):
         )
 
     async def _run(
-        self, tool_input: OpenLibraryToolInput, options: dict[str, Any], context: RunContext
+        self, tool_input: OpenLibraryToolInput, options: ToolRunOptions | None = None, context: RunContext | None = None
     ) -> OpenLibraryToolResult:
         key = ""
         value = ""

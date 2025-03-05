@@ -15,7 +15,7 @@ class RiddleToolInput(BaseModel):
     riddle_number: int = Field(description="Index of riddle to retrieve.")
 
 
-class RiddleTool(Tool[RiddleToolInput]):
+class RiddleTool(Tool[RiddleToolInput, ToolRunOptions]):
     name = "Riddle"
     description = "It selects a riddle to test your knowledge."
     input_schema = RiddleToolInput
@@ -39,7 +39,9 @@ class RiddleTool(Tool[RiddleToolInput]):
             creator=self,
         )
 
-    async def _run(self, input: RiddleToolInput, options: ToolRunOptions, context: RunContext) -> StringToolOutput:
+    async def _run(
+        self, input: RiddleToolInput, options: ToolRunOptions | None = None, context: RunContext | None = None
+    ) -> StringToolOutput:
         index = input.riddle_number % (len(self.data))
         riddle = self.data[index]
         return StringToolOutput(result=riddle)
