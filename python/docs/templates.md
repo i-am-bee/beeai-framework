@@ -111,11 +111,11 @@ def main() -> None:
         created_at: str | None = None
 
     def format_meta(data: dict[str, Any]) -> str:
-        if data["author"] is None and data["created_at"] is None:
+        if data.get("author") is None and data.get("created_at") is None:
             return ""
 
-        author = data["author"] or "anonymous"
-        created_at = data["created_at"] or datetime.now(UTC).strftime("%A, %B %d, %Y at %I:%M:%S %p")
+        author = data.get("author") or "anonymous"
+        created_at = data.get("created_at") or datetime.now(UTC).strftime("%A, %B %d, %Y at %I:%M:%S %p")
 
         return f"\nThis message was created at {created_at} by {author}."
 
