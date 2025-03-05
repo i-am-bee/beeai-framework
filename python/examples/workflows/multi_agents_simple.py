@@ -1,4 +1,5 @@
 import asyncio
+import sys
 import traceback
 
 from beeai_framework.agents.types import AgentExecutionConfig
@@ -53,4 +54,8 @@ responses which all are relevant. Ignore those where assistant do not know.""",
 
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    try:
+        asyncio.run(main())
+    except FrameworkError as e:
+        traceback.print_exc()
+        sys.exit(e.explain())
