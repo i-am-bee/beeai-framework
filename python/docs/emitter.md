@@ -36,7 +36,32 @@ The following example demonstrates how the [`Emitter`](/beeai/utils/events.py) f
 <!-- embedme examples/emitter/base.py -->
 
 ```py
-# Coming soon
+import asyncio
+import json
+import sys
+import traceback
+
+from beeai_framework.emitter import Emitter
+from beeai_framework.errors import FrameworkError
+
+
+async def main() -> None:
+    # Get the root emitter or create your own
+    root = Emitter.root()
+
+    root.match("*.*", lambda data, event: print(f"Received event '{event.path}' with data {json.dumps(data)}"))
+
+    await root.emit("start", {"id": 123})
+    await root.emit("end", {"id": 123})
+
+
+if __name__ == "__main__":
+    try:
+        asyncio.run(main())
+    except FrameworkError as e:
+        traceback.print_exc()
+        sys.exit(e.explain())
+
 ```
 
 _Source: [examples/emitter/base.py](/python/examples/emitter/base.py)_
@@ -57,7 +82,46 @@ Event matching allows you to:
 <!-- embedme examples/emitter/matchers.py -->
 
 ```py
-# Coming soon
+import asyncio
+import sys
+import traceback
+
+from beeai_framework.adapters.ollama.backend.chat import OllamaChatModel
+from beeai_framework.backend.chat import ChatModel
+from beeai_framework.emitter import Emitter
+from beeai_framework.errors import FrameworkError
+
+
+async def main() -> None:
+    emitter = Emitter.root().child(namespace=["app"])
+    model = OllamaChatModel()
+
+    # Match events by a concrete name (strictly typed)
+    emitter.on("update", lambda data, event: print(data, ": on update"))
+
+    # Match all events emitted directly on the instance (not nested)
+    emitter.match("*", lambda data, event: print(data, ": match all instance"))
+
+    # Match all events (included nested)
+    Emitter.root().match("*.*", lambda data, event: print(data, ": match all nested"))
+
+    # Match events by providing a filter function
+    model.emitter.match(
+        lambda event: isinstance(event.creator, ChatModel), lambda data, event: print(data, ": match ChatModel")
+    )
+
+    await emitter.emit("update", "update")
+    await Emitter.root().emit("root", "root")
+    await model.emitter.emit("model", "model")
+
+
+if __name__ == "__main__":
+    try:
+        asyncio.run(main())
+    except FrameworkError as e:
+        traceback.print_exc()
+        sys.exit(e.explain())
+
 ```
 
 _Source: [examples/emitter/matchers.py](/python/examples/emitter/matchers.py)_
@@ -72,7 +136,53 @@ Event piping enables:
 <!-- embedme examples/emitter/piping.py -->
 
 ```py
-# Coming soon
+import asyncio
+import sys
+import traceback
+
+from beeai_framework.emitter import Emitter
+from beeai_framework.errors import FrameworkError
+
+
+async def main() -> None:
+    first: Emitter = Emitter(namespace=["app"])
+
+    first.match(
+        "*.*",
+        lambda data, event: print(
+            f"'first' has retrieved the following event '{event.path}', isDirect: {event.source == first}"
+        ),
+    )
+
+    second: Emitter = Emitter(namespace=["app", "llm"])
+
+    second.match(
+        "*.*",
+        lambda data, event: print(
+            f"'second' has retrieved the following event '{event.path}', isDirect: {event.source == second}"
+        ),
+    )
+
+    # Propagate all events from the 'second' emitter to the 'first' emitter
+    unpipe = second.pipe(first)
+
+    await first.emit("a", {})
+    await second.emit("b", {})
+
+    print("Unpipe")
+    unpipe()
+
+    await first.emit("c", {})
+    await second.emit("d", {})
+
+
+if __name__ == "__main__":
+    try:
+        asyncio.run(main())
+    except FrameworkError as e:
+        traceback.print_exc()
+        sys.exit(e.explain())
+
 ```
 
 _Source: [examples/emitter/piping.py](/python/examples/emitter/piping.py)_
@@ -90,10 +200,41 @@ Integrate emitters with agents to:
 * Log agent interactions
 * Debug agent behaviors
 
-<!-- embedme examples/emitter/agentMatchers.py -->
+<!-- embedme examples/emitter/agent_matchers.py -->
 
 ```py
-# Coming soon
+import asyncio
+import sys
+import traceback
+
+from beeai_framework import BeeAgent, UnconstrainedMemory
+from beeai_framework.adapters.ollama.backend.chat import OllamaChatModel
+from beeai_framework.errors import FrameworkError
+
+
+async def main() -> None:
+    agent = BeeAgent(
+        llm=OllamaChatModel("llama3.1"),
+        memory=UnconstrainedMemory(),
+        tools=[],
+    )
+
+    # Matching events on the instance level
+    agent.emitter.match("*.*", lambda data, event: None)
+
+    # Matching events on the execution (run) level
+    await agent.run("Hello agent!").observe(
+        lambda emitter: emitter.match("*.*", lambda data, event: print(f"RUN LOG: received event '{event.path}'"))
+    )
+
+
+if __name__ == "__main__":
+    try:
+        asyncio.run(main())
+    except FrameworkError as e:
+        traceback.print_exc()
+        sys.exit(e.explain())
+
 ```
 
 _Source: [examples/emitter/agentMatchers.py](/python/examples/emitter/agentMatchers.py)_
@@ -113,7 +254,43 @@ Advanced techniques include:
 <!-- embedme examples/emitter/advanced.py -->
 
 ```py
-# Coming soon
+import asyncio
+import sys
+import traceback
+
+from beeai_framework.emitter import Emitter
+from beeai_framework.errors import FrameworkError
+
+
+async def main() -> None:
+    # Create emitter with a type support
+    emitter = Emitter.root().child(
+        namespace=["bee", "demo"],
+        creator={},  # typically a class
+        context={},  # custom data (propagates to the event's context property)
+        group_id=None,  # optional id for grouping common events (propagates to the event's groupId property)
+        trace=None,  # data to identify what emitted what and in which context (internally used by framework components)
+    )
+
+    # Listen for "start" event
+    emitter.on("start", lambda data, event: print(f"Received '{event.name}' event with id '{data['id']}'"))
+
+    # Listen for "update" event
+    emitter.on(
+        "update", lambda data, event: print(f"Received '{event.name}' with id '{data['id']}' and data '{data['data']}'")
+    )
+
+    await emitter.emit("start", {"id": 123})
+    await emitter.emit("update", {"id": 123, "data": "Hello Bee!"})
+
+
+if __name__ == "__main__":
+    try:
+        asyncio.run(main())
+    except FrameworkError as e:
+        traceback.print_exc()
+        sys.exit(e.explain())
+
 ```
 
 _Source: [examples/emitter/advanced.py](/python/examples/emitter/advanced.py)_
