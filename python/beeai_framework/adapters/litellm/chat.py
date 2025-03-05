@@ -16,7 +16,6 @@
 import logging
 from abc import ABC
 from collections.abc import AsyncGenerator
-from typing import Any
 
 import litellm
 from litellm import (
@@ -26,7 +25,6 @@ from litellm import (
     get_supported_openai_params,
 )
 from litellm.types.utils import StreamingChoices
-from pydantic import BaseModel, ConfigDict
 
 from beeai_framework.backend.chat import (
     ChatModel,
@@ -46,15 +44,6 @@ from beeai_framework.context import RunContext
 from beeai_framework.utils.custom_logger import BeeLogger
 
 logger = BeeLogger(__name__)
-
-
-class LiteLLMParameters(BaseModel):
-    model: str
-    messages: list[dict[str, Any]]
-    tools: list[dict[str, Any]] | None = None
-    response_format: dict[str, Any] | type[BaseModel] | None = None
-
-    model_config = ConfigDict(extra="allow", arbitrary_types_allowed=True)
 
 
 class LiteLLMChatModel(ChatModel, ABC):
@@ -85,18 +74,15 @@ class LiteLLMChatModel(ChatModel, ABC):
         input: ChatModelInput,
         run: RunContext,
     ) -> ChatModelOutput:
-        litellm_input = self._transform_input(input)
-        response = await acompletion(**litellm_input.model_dump())
+        litellm_input = self._transform_input(input) | {"stream": False}
+        response = await acompletion(**litellm_input)
         response_output = self._transform_output(response)
         logger.debug(f"Inference response output:\n{response_output}")
         return response_output
 
     async def _create_stream(self, input: ChatModelInput, _: RunContext) -> AsyncGenerator[ChatModelOutput]:
-        # TODO: handle tool calling for streaming
-        litellm_input = self._transform_input(input)
-        parameters = litellm_input.model_dump()
-        parameters["stream"] = True
-        response = await acompletion(**parameters)
+        litellm_input = self._transform_input(input) | {"stream": True}
+        response = await acompletion(**litellm_input)
 
         is_empty = True
         async for chunk in response:
@@ -128,7 +114,7 @@ class LiteLLMChatModel(ChatModel, ABC):
             # TODO: validate result matches expected schema
             return ChatModelStructureOutput(object=result)
 
-    def _transform_input(self, input: ChatModelInput) -> LiteLLMParameters:
+    def _transform_input(self, input: ChatModelInput) -> dict:
         messages: list[dict] = []
         for message in input.messages:
             if isinstance(message, ToolMessage):
@@ -160,16 +146,13 @@ class LiteLLMChatModel(ChatModel, ABC):
             else None
         )
 
-        params = (
+        return (
             self._settings
-            | self.parameters.model_dump(exclude_unset=True)
-            | input.model_dump(exclude={"model", "messages", "tools"})
-        )
-        return LiteLLMParameters(
-            model=f"{self._litellm_provider_id}/{self.model_id}",
-            messages=messages,
-            tools=tools,
-            **params,
+            | self.parameters.model_dump(exclude_none=True, exclude_unset=True, include=set(self.supported_params))
+            | input.model_dump(
+                exclude_none=True, exclude_unset=True, exclude={"abort_signal", "model", "messages", "tools"}
+            )
+            | {"model": f"{self._litellm_provider_id}/{self.model_id}", "messages": messages, "tools": tools}
         )
 
     def _transform_output(self, chunk: ModelResponse | ModelResponseStream) -> ChatModelOutput:

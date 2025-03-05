@@ -1,14 +1,17 @@
 import asyncio
+import json
 import sys
 import traceback
 
 from pydantic import BaseModel, Field
 
+from beeai_framework import ToolMessage
 from beeai_framework.adapters.watsonx.backend.chat import WatsonxChatModel
 from beeai_framework.backend.chat import ChatModel
-from beeai_framework.backend.message import UserMessage
+from beeai_framework.backend.message import MessageToolResultContent, UserMessage
 from beeai_framework.cancellation import AbortSignal
 from beeai_framework.errors import AbortError, FrameworkError
+from beeai_framework.tools.weather.openmeteo import OpenMeteoTool
 
 # Setting can be passed here during initiation or pre-configured via environment variables
 llm = WatsonxChatModel(
@@ -70,6 +73,26 @@ async def watson_structure() -> None:
     print(response.object)
 
 
+async def watson_tool_calling() -> None:
+    watsonx_llm = ChatModel.from_name(
+        "watsonx:ibm/granite-3-8b-instruct",
+    )
+    user_message = UserMessage("What is the current weather in Boston?")
+    weather_tool = OpenMeteoTool()
+    response = await watsonx_llm.create(messages=[user_message], tools=[weather_tool])
+    tool_call_msg = response.get_tool_calls()[0]
+    print(tool_call_msg.model_dump())
+    tool_response = await weather_tool.run(json.loads(tool_call_msg.args))
+    tool_response_msg = ToolMessage(
+        MessageToolResultContent(
+            result=tool_response.get_text_content(), tool_name=tool_call_msg.tool_name, tool_call_id=tool_call_msg.id
+        )
+    )
+    print(tool_response_msg.to_plain())
+    final_response = await watsonx_llm.create(messages=[user_message, tool_response_msg], tools=[])
+    print(final_response.get_text_content())
+
+
 async def main() -> None:
     print("*" * 10, "watsonx_from_name")
     await watsonx_from_name()
@@ -81,6 +104,8 @@ async def main() -> None:
     await watsonx_stream_abort()
     print("*" * 10, "watson_structure")
     await watson_structure()
+    print("*" * 10, "watson_tool_calling")
+    await watson_tool_calling()
 
 
 if __name__ == "__main__":

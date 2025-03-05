@@ -21,7 +21,7 @@ from pydantic import BaseModel, ConfigDict, Field, InstanceOf
 
 from beeai_framework.backend.constants import ProviderName
 from beeai_framework.backend.errors import ChatModelError
-from beeai_framework.backend.message import AssistantMessage, Message, SystemMessage
+from beeai_framework.backend.message import AssistantMessage, Message, MessageToolCallContent, SystemMessage
 from beeai_framework.backend.utils import load_model, parse_broken_json, parse_model
 from beeai_framework.cancellation import AbortController, AbortSignal
 from beeai_framework.context import Run, RunContext, RunContextInput, RunInstance
@@ -30,6 +30,7 @@ from beeai_framework.retryable import Retryable, RetryableConfig, RetryableConte
 from beeai_framework.template import PromptTemplate, PromptTemplateInput
 from beeai_framework.tools.tool import Tool
 from beeai_framework.utils.custom_logger import BeeLogger
+from beeai_framework.utils.lists import flatten
 from beeai_framework.utils.models import ModelLike
 from beeai_framework.utils.strings import to_json
 
@@ -112,6 +113,10 @@ class ChatModelOutput(BaseModel):
             self.usage = merged_usage
         elif other.usage:
             self.usage = other.usage.model_copy()
+
+    def get_tool_calls(self) -> list[MessageToolCallContent]:
+        assistant_message = [msg for msg in self.messages if isinstance(msg, AssistantMessage)]
+        return flatten([x.get_tool_calls() for x in assistant_message])
 
     def get_text_content(self) -> str:
         return "".join([x.text for x in list(filter(lambda x: isinstance(x, AssistantMessage), self.messages))])
