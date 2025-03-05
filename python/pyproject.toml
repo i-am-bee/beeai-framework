@@ -23,9 +23,6 @@ homepage = "https://iambee.ai"
 repository = "https://github.com/i-am-bee/beeai-framework"
 documentation = "https://i-am-bee.github.io/beeai-framework/#/python/"
 
-[project.optional-dependencies]
-extensions = ["langchain-core==0.3.41", "langchain-community==0.3.19"]
-
 [tool.poetry.dependencies]
 python = ">= 3.11,<4.0"
 pydantic = "^2.10"
@@ -43,6 +40,8 @@ duckduckgo-search = "^7.3.2"
 json-repair = "^0.39.0"
 wikipedia-api = "^0.8.1"
 async-generator = "^1.10"
+langchain-core = {version = "^0.3.41", optional = true}
+langchain-community = {version = "^0.3.19", optional = true}
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^8.3.4"
