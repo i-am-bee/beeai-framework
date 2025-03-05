@@ -112,7 +112,7 @@ _Source: [/python/examples/memory/base.py](/python/examples/memory/base.py)_
 
 ### Usage with LLMs
 
-<!-- embedme examples/memory/llmMemory.py -->
+<!-- embedme examples/memory/llm_memory.py -->
 
 ```py
 import asyncio
@@ -153,7 +153,7 @@ if __name__ == "__main__":
 
 ```
 
-_Source: [/python/examples/memory/llmMemory.py](/python/examples/memory/llmMemory.py)_
+_Source: [/python/examples/memory/llm_memory.py](/python/examples/memory/llm_memory.py)_
 
 > [!TIP]
 >
@@ -161,7 +161,7 @@ _Source: [/python/examples/memory/llmMemory.py](/python/examples/memory/llmMemor
 
 ### Usage with agents
 
-<!-- embedme examples/memory/agentMemory.py -->
+<!-- embedme examples/memory/agent_memory.py -->
 
 ```py
 import asyncio
@@ -236,7 +236,7 @@ if __name__ == "__main__":
 
 ```
 
-_Source: [/python/examples/memory/agentMemory.py](/python/examples/memory/agentMemory.py)_
+_Source: [/python/examples/memory/agent_memory.py](/python/examples/memory/agent_memory.py)_
 
 > [!TIP]
 >
@@ -256,7 +256,7 @@ The framework provides multiple out-of-the-box memory implementations for differ
 
 Unlimited in size, stores all messages without constraints.
 
-<!-- embedme examples/memory/unconstrainedMemory.py -->
+<!-- embedme examples/memory/unconstrained_memory.py -->
 
 ```py
 import asyncio
@@ -293,14 +293,14 @@ if __name__ == "__main__":
 
 ```
 
-_Source: [/python/examples/memory/unconstrainedMemory.py](/python/examples/memory/unconstrainedMemory.py)_
+_Source: [/python/examples/memory/unconstrained_memory.py](/python/examples/memory/unconstrained_memory.py)_
 
 
 ### SlidingMemory
 
 Keeps last `k` entries in the memory. The oldest ones are deleted (unless specified otherwise).
 
-<!-- embedme examples/memory/slidingMemory.py -->
+<!-- embedme examples/memory/sliding_memory.py -->
 
 ```py
 import asyncio
@@ -346,7 +346,7 @@ if __name__ == "__main__":
 
 ```
 
-_Source: [/python/examples/memory/slidingMemory.py](/python/examples/memory/slidingMemory.py)_
+_Source: [/python/examples/memory/sliding_memory.py](/python/examples/memory/sliding_memory.py)_
 
 
 ### TokenMemory
@@ -354,7 +354,7 @@ _Source: [/python/examples/memory/slidingMemory.py](/python/examples/memory/slid
 Ensures that the token sum of all messages is below the given threshold.
 If overflow occurs, the oldest message will be removed.
 
-<!-- embedme examples/memory/tokenMemory.py -->
+<!-- embedme examples/memory/token_memory.py -->
 
 ```py
 import asyncio
@@ -421,13 +421,13 @@ if __name__ == "__main__":
 
 ```
 
-_Source: [/python/examples/memory/tokenMemory.py](/python/examples/memory/tokenMemory.py)_
+_Source: [/python/examples/memory/token_memory.py](/python/examples/memory/token_memory.py)_
 
 ### SummarizeMemory
 
 Only a single summarization of the conversation is preserved. Summarization is updated with every new message.
 
-<!-- embedme examples/memory/summarizeMemory.py -->
+<!-- embedme examples/memory/summarize_memory.py -->
 
 ```py
 import asyncio
@@ -477,7 +477,7 @@ if __name__ == "__main__":
 
 ```
 
-_Source: [python/examples/memory/summarizeMemory.py](/python/examples/memory/summarizeMemory.py)_
+_Source: [python/examples/memory/summarize_memory.py](/python/examples/memory/summarize_memory.py)_
 
 ---
 
@@ -526,8 +526,8 @@ _Source: [/python/examples/memory/custom.py](/python/examples/memory/custom.py)_
 
 ## Examples
 
-- [unconstrainedMemory.py](/examples/memory/unconstrainedMemory.py) - Basic memory usage
-- [slidingMemory.py](/examples/memory/slidingMemory.py) - Sliding window memory example
-- [tokenMemory.py](/examples/memory/tokenMemory.py) - Token-based memory management
-- [summarizeMemory.py](/examples/memory/summarizeMemory.py) - Summarization memory example
-- [agentMemory.py](/examples/memory/agentMemory.py) - Using memory with agents
+- [unconstrained_memory.py](/examples/memory/unconstrained_memory.py) - Basic memory usage
+- [sliding_memory.py](/examples/memory/sliding_memory.py) - Sliding window memory example
+- [token_memory.py](/examples/memory/token_memory.py) - Token-based memory management
+- [summarize_memory.py](/examples/memory/summarize_memory.py) - Summarization memory example
+- [agent_memory.py](/examples/memory/agent_memory.py) - Using memory with agents

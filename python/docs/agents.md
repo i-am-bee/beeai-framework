@@ -345,7 +345,7 @@ if __name__ == "__main__":
 
 Agents can be configured to use memory to maintain conversation context and state.
 
-<!-- embedme examples/memory/agentMemory.py -->
+<!-- embedme examples/memory/agent_memory.py -->
 
 ```py
 import asyncio
@@ -420,13 +420,13 @@ if __name__ == "__main__":
 
 ```
 
-_Source: [examples/memory/agentMemory.py](/python/examples/memory/agentMemory.py)_
+_Source: [examples/memory/agent_memory.py](/python/examples/memory/agent_memory.py)_
 
 **Memory types for different use cases:**
-- [UnconstrainedMemory](/python/examples/memory/unconstrainedMemory.py) - For unlimited storage
-- [SlidingMemory](/python/examples/memory/slidingMemory.py) - For keeping only the most recent messages
-- [TokenMemory](/python/examples/memory/tokenMemory.py) - For managing token limits
-- [SummarizeMemory](/python/examples/memory/summarizeMemory.py) - For summarizing previous conversations
+- [UnconstrainedMemory](/python/examples/memory/unconstrained_memory.py) - For unlimited storage
+- [SlidingMemory](/python/examples/memory/sliding_memory.py) - For keeping only the most recent messages
+- [TokenMemory](/python/examples/memory/token_memory.py) - For managing token limits
+- [SummarizeMemory](/python/examples/memory/summarize_memory.py) - For summarizing previous conversations
 
 ---
 
