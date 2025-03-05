@@ -14,6 +14,7 @@
 
 
 import inspect
+import json
 from abc import ABC, abstractmethod
 from collections.abc import Callable
 from functools import cached_property
@@ -67,6 +68,17 @@ class StringToolOutput(ToolOutput):
 
     def get_text_content(self) -> str:
         return self.result
+
+
+class JSONToolOutput(ToolOutput):
+    def __init__(self, result: Any) -> None:
+        self.result = result
+
+    def get_text_content(self) -> str:
+        return json.dumps(self.result, default=lambda o: o.__dict__, sort_keys=True, indent=4)
+
+    def is_empty(self) -> bool:
+        return not self.result
 
 
 class Tool(Generic[T], ABC):

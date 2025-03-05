@@ -22,6 +22,7 @@ from beeai_framework.tools.tool import (
 )
 
 __all__ = [
+    "JSONToolOutput",
     "StringToolOutput",
     "Tool",
     "ToolError",
