@@ -11,8 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
-
+import enum
 import json
 from abc import ABC, abstractmethod
 from collections.abc import Sequence
@@ -100,7 +99,7 @@ class Message(ABC, Generic[T]):
 
     def to_plain(self) -> dict[str, Any]:
         return {
-            "role": self.role if isinstance(self.role, str) else self.role.value,
+            "role": self.role.value if isinstance(self.role, enum.Enum) else self.role,
             "content": [m.model_dump() for m in self.content],
         }
 
