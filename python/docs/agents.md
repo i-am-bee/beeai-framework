@@ -418,7 +418,7 @@ import asyncio
 import sys
 import traceback
 
-from beeai_framework.agents.bee.agent import AgentExecutionConfig
+from beeai_framework.agents.types import AgentExecutionConfig
 from beeai_framework.backend.chat import ChatModel
 from beeai_framework.backend.message import UserMessage
 from beeai_framework.errors import FrameworkError
