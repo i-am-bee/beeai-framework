@@ -48,7 +48,7 @@ async def amazonbedrock_stream_abort() -> None:
         print(f"Aborted: {err}")
 
 
-# TODO: Default model does not support tool calling
+# TODO: See https://github.com/i-am-bee/beeai-framework/issues/491
 # async def amazonbedrock_structure() -> None:
 #     class TestSchema(BaseModel):
 #         answer: str = Field(description="your final answer")
@@ -89,6 +89,7 @@ async def main() -> None:
     await amazonbedrock_stream()
     print("*" * 10, "amazonbedrock_stream_abort")
     await amazonbedrock_stream_abort()
+    # TODO: Reinstate structured tests when working
     # print("*" * 10, "amazonbedrock_structure")
     # await amazonbedrock_structure()
     print("*" * 10, "amazonbedrock_stream_parser")
