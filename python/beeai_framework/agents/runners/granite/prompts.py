@@ -116,6 +116,6 @@ GraniteSchemaErrorTemplate = PromptTemplate(
     PromptTemplateInput(
         schema=SchemaErrorTemplateInput,
         template="""Error: The generated response does not adhere to the communication structure mentioned in the system prompt.
-You communicate only in instruction lines. Valid instruction lines are 'Thought' followed by either 'Function Name' + 'Function Input' + 'Function Output' or 'Final Answer'.""",  # noqa: E501
+You communicate only in instruction lines. Valid instruction lines are 'Thought' followed by 'Tool Name' and then 'Tool Input' or 'Thought' followed by 'Final Answer'.""",  # noqa: E501
     )
 )

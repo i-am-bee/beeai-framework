@@ -13,7 +13,6 @@
 # limitations under the License.
 
 
-import json
 import logging
 from abc import ABC
 from collections.abc import AsyncGenerator
@@ -26,6 +25,7 @@ from litellm import (
     acompletion,
     get_supported_openai_params,
 )
+from litellm.types.utils import StreamingChoices
 from pydantic import BaseModel, ConfigDict
 
 from beeai_framework.backend.chat import (
@@ -36,12 +36,14 @@ from beeai_framework.backend.chat import (
     ChatModelStructureOutput,
 )
 from beeai_framework.backend.errors import ChatModelError
-from beeai_framework.backend.message import AssistantMessage, Message, Role, ToolMessage, ToolResult
+from beeai_framework.backend.message import (
+    AssistantMessage,
+    MessageToolCallContent,
+    ToolMessage,
+)
 from beeai_framework.backend.utils import parse_broken_json
 from beeai_framework.context import RunContext
-from beeai_framework.tools.tool import Tool
 from beeai_framework.utils.custom_logger import BeeLogger
-from beeai_framework.utils.strings import to_json
 
 logger = BeeLogger(__name__)
 
@@ -85,22 +87,6 @@ class LiteLLMChatModel(ChatModel, ABC):
     ) -> ChatModelOutput:
         litellm_input = self._transform_input(input)
         response = await acompletion(**litellm_input.model_dump())
-        response_message = response.get("choices", [{}])[0].get("message", {})
-        response_content = response_message.get("content", "")
-        tool_calls = response_message.tool_calls
-
-        if tool_calls:
-            litellm_input.messages.append({"role": Role.ASSISTANT, "content": response_content})
-            for tool_call in tool_calls:
-                function_name = tool_call.function.name
-                function_to_call: Tool = next(filter(lambda t: t.name == function_name, input.tools or []))
-
-                function_args = json.loads(tool_call.function.arguments)
-                function_response = function_to_call.run(input=function_args)
-                litellm_input.messages.append({"role": Role.TOOL, "content": function_response})
-
-                response = await acompletion(**litellm_input.model_dump())
-
         response_output = self._transform_output(response)
         logger.debug(f"Inference response output:\n{response_output}")
         return response_output
@@ -146,14 +132,13 @@ class LiteLLMChatModel(ChatModel, ABC):
         messages: list[dict] = []
         for message in input.messages:
             if isinstance(message, ToolMessage):
-                for chunk in message.content:
-                    content = ToolResult.model_validate(chunk)
+                for content in message.content:
                     messages.append(
                         {
                             "tool_call_id": content.tool_call_id,
                             "role": "tool",
                             "name": content.tool_name,
-                            "content": to_json(content.result),
+                            "content": content.result,
                         }
                     )
             else:
@@ -188,26 +173,29 @@ class LiteLLMChatModel(ChatModel, ABC):
         )
 
     def _transform_output(self, chunk: ModelResponse | ModelResponseStream) -> ChatModelOutput:
-        choice = chunk.get("choices", [{}])[0]
-        finish_reason = choice.get("finish_reason")
-        message: Message | None = None
+        choice = chunk.choices[0]
+        finish_reason = choice.finish_reason
         usage = choice.get("usage")
+        update = choice.delta if isinstance(choice, StreamingChoices) else choice.message
 
-        if isinstance(chunk, ModelResponseStream):
-            content = choice.get("delta", {}).get("content")
-            if choice.get("tool_calls"):
-                message = ToolMessage(content)
-            elif choice.get("delta"):
-                message = AssistantMessage(content)
-            else:
-                # TODO: handle other possible types
-                raise ChatModelError(f"Unhandled event: {choice}")
-        else:
-            response_message = choice.get("message")
-            content = response_message.get("content")
-            message = AssistantMessage(content)
-
-        return ChatModelOutput(messages=[message], finish_reason=finish_reason, usage=usage)
+        return ChatModelOutput(
+            messages=[
+                AssistantMessage(
+                    [
+                        MessageToolCallContent(
+                            id=call.id or "dummy_id", tool_name=call.function.name, args=call.function.arguments
+                        )
+                        for call in update.tool_calls
+                    ]
+                )
+                if update.tool_calls
+                else AssistantMessage(update.content)
+            ]
+            if update.model_dump(exclude_none=True)
+            else [],
+            finish_reason=finish_reason,
+            usage=usage,
+        )
 
 
 LiteLLMChatModel.litellm_debug(False)

@@ -3,8 +3,9 @@ import math
 import sys
 import traceback
 
+from beeai_framework import SystemMessage, UserMessage
 from beeai_framework.adapters.ollama.backend.chat import OllamaChatModel
-from beeai_framework.backend import Message, Role
+from beeai_framework.backend import Role
 from beeai_framework.errors import FrameworkError
 from beeai_framework.memory import TokenMemory
 
@@ -26,12 +27,12 @@ memory = TokenMemory(
 
 async def main() -> None:
     # Add system message
-    system_message = Message.of({"role": Role.SYSTEM, "text": "You are a helpful assistant."})
+    system_message = SystemMessage("You are a helpful assistant.")
     await memory.add(system_message)
     print(f"Added system message (hash: {hash(system_message)})")
 
     # Add user message
-    user_message = Message.of({"role": Role.USER, "text": "Hello world!"})
+    user_message = UserMessage("Hello world!")
     await memory.add(user_message)
     print(f"Added user message (hash: {hash(user_message)})")
 

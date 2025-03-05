@@ -48,9 +48,12 @@ This repository contains examples demonstrating the usage of the BeeAI Framework
 
 ## Templates
 
-- [`basic_functions.py`](/python/examples/templates/basic_functions.py): Basic functions
-- [`basic_template.py`](/python/examples/templates/basic_template.py): Basic template
-
+- [`basic_template.py`](/python/examples/templates/basic_template.py): Simple template
+- [`functions.py`](/python/examples/templates/functions.py): Template functions
+- [`objects.py`](/python/examples/templates/objects.py): Working with objects
+- [`arrays.py`](/python/examples/templates/arrays.py): Working with arrays
+- [`forking.py`](/python/examples/templates/forking.py): Template forking
+- [`system_prompt.py`](/python/examples/templates/system_prompt.py): Using templates with agents
 ## Tools
 
 - [`decorator.py`](/python/examples/tools/decorator.py): Tool creation using decorator

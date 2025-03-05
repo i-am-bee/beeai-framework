@@ -31,7 +31,7 @@ class SearchToolOutput(ToolOutput):
         self.results = results
 
     def get_text_content(self) -> str:
-        return "\n\n".join([to_json(result, indent=4) for result in self.results])
+        return "\n\n".join([to_json(result, indent=2) for result in self.results])
 
     def is_empty(self) -> bool:
         return len(self.results) == 0

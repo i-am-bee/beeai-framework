@@ -24,12 +24,13 @@ from beeai_framework.agents.runners.granite.prompts import (
     GraniteUserPromptTemplate,
 )
 from beeai_framework.agents.types import BeeAgentTemplates, BeeInput, BeeRunOptions
-from beeai_framework.backend.message import ToolMessage, ToolResult
+from beeai_framework.backend.message import MessageToolResultContent, ToolMessage
 from beeai_framework.context import RunContext
 from beeai_framework.emitter import EmitterOptions, EventMeta
 from beeai_framework.memory.base_memory import BaseMemory
 from beeai_framework.parsers.field import ParserField
 from beeai_framework.parsers.line_prefix import LinePrefixParser, LinePrefixParserNode, LinePrefixParserOptions
+from beeai_framework.tools import ToolOutput
 from beeai_framework.utils.strings import create_strenum
 
 
@@ -44,15 +45,15 @@ class GraniteRunner(DefaultRunner):
             assert update is not None
             if update.get("key") == "tool_output":
                 memory: BaseMemory = data.get("memory")
-                tool_result = ToolResult(
-                    type="tool-result",
-                    result=update.get("value").get_text_content(),
+                tool_output: ToolOutput = update.get("value")
+                tool_result = MessageToolResultContent(
+                    result=tool_output.get_text_content(),
                     tool_name=data.get("data").tool_name,
                     tool_call_id="DUMMY_ID",
                 )
                 await memory.add(
                     ToolMessage(
-                        content=tool_result.model_dump_json(),
+                        content=tool_result,
                         meta={"success": data.get("meta").get("success", True)},
                     )
                 )
@@ -93,7 +94,7 @@ class GraniteRunner(DefaultRunner):
                     {"key": "final_answer", "value": value},
                 ]
                 if value
-                else []
+                else [],
             ),
         )
 

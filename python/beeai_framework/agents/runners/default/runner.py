@@ -15,6 +15,8 @@
 import datetime
 from typing import Any
 
+from pydantic import BaseModel
+
 from beeai_framework.agents.runners.base import (
     BaseRunner,
     BeeRunnerLLMInput,
@@ -158,7 +160,11 @@ class DefaultRunner(BaseRunner):
                     "partialUpdate",
                     {
                         "data": parser.final_state,
-                        "update": {"key": data.key, "value": data.delta, "parsedValue": data.value.model_dump()},
+                        "update": {
+                            "key": data.key,
+                            "value": data.delta,
+                            "parsedValue": data.value.model_dump() if isinstance(data.value, BaseModel) else data.value,
+                        },
                         "meta": {**input.meta.model_dump(), "success": True},
                         "tools": self._input.tools,
                         "memory": self.memory,
@@ -166,7 +172,7 @@ class DefaultRunner(BaseRunner):
                 )
 
             parser.emitter.on("update", on_update)
-            parser.emitter.on("partialUpdate", on_partial_update)
+            parser.emitter.on("partial_update", on_partial_update)
 
             async def on_new_token(data: dict[str, Any], event: EventMeta) -> None:
                 if parser.done:
@@ -176,7 +182,10 @@ class DefaultRunner(BaseRunner):
                 chunk = data["value"].get_text_content()
                 await parser.add(chunk)
 
-                if parser.partial_state.get("tool_output") is not None:
+                if parser.partial_state.get("tool_output") is not None or (
+                    parser.partial_state.get("tool_input") is not None
+                    and parser.partial_state.get("final_answer") is not None
+                ):
                     data["abort"]()
 
             output: ChatModelOutput = await self._input.llm.create(

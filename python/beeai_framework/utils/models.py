@@ -12,7 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import TypeVar, Union
+from collections.abc import Sequence
+from contextlib import suppress
+from typing import Any, TypeVar, Union
 
 from pydantic import BaseModel
 from pydantic_core import SchemaValidator
@@ -23,6 +25,19 @@ ModelLike = Union[T, dict]  # noqa: UP007
 
 def to_model(cls: type[T], obj: ModelLike[T]) -> T:
     return obj if isinstance(obj, cls) else cls.model_validate(obj, strict=False, from_attributes=True)
+
+
+def to_any_model(classes: Sequence[type[BaseModel]], obj: ModelLike[T]) -> Any:
+    if len(classes) == 1:
+        return to_model(classes[0], obj)
+
+    for cls in classes:
+        with suppress(Exception):
+            return to_model(cls, obj)
+
+    return ValueError(
+        "Failed to create a model instance from the passed object!" + "\n".join(cls.__name__ for cls in classes),
+    )
 
 
 def to_model_optional(cls: type[T], obj: ModelLike[T] | None) -> T | None:
