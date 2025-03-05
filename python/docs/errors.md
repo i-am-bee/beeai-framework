@@ -17,14 +17,38 @@ Benefits of using `FrameworkError`:
 
 This structure ensures that users can trace the complete error history while clearly identifying any errors originating from the BeeAI Framework.
 
+<!-- embedme examples/errors/base.py -->
+```py
+from beeai_framework.errors import FrameworkError
+
+error = FrameworkError("Fuction 'getUser' has failed.", is_fatal=True, is_retryable=False)
+inner_error = FrameworkError("Cannot retrieve data from the API.")
+innermost_error = ValueError("User with Given ID Does not exist!")
+
+inner_error.__cause__ = innermost_error
+error.__cause__ = inner_error
+
+print(f"Message: {error.message}")
+print(f"Meta: fatal:{FrameworkError.is_fatal(error)} retryable:{FrameworkError.is_retryable(error)}")
+print(f"Cause: {error.get_cause()}")
+print(error.explain())
+
+```
+
+_Source: /examples/errors/base.py_
+
 Framework error also has two additional properties which help with agent processing, though ultimately the code that catches the exception will determine the appropriate action.
 
-- **is_retryable** : hints that the error is retryable.
-- **is_fatal** : hints that the error is fatal.
+    is_retryable : hints that the error is retryable.
+    is_fatal : hints that the error is fatal.
 
 ## Specialized Error Classes
 
-The BeeAI Framework extends `FrameworkError` to create specialized error classes for different components or scenarios. This ensures that each part of the framework has clear and well-defined error types, improving debugging and error handling.
+The BeeAI Framework extends FrameworkError to create specialized error classes for different components. This ensures that each part of the framework has clear and well-defined error types, improving debugging and error handling.
+
+> [!TIP]
+>
+> Casting an unknown error to a `FrameworkError` can be done by calling the `FrameworkError.ensure` static method ([example](/examples/errors/cast.py)).
 
 The definitions for these classes are typically local to the module where they are raised.
 
@@ -33,6 +57,37 @@ The definitions for these classes are typically local to the module where they a
 - `AbortError`: Raised when an operation has been aborted.
 
 ### Tools
+<!-- embedme examples/errors/tool.py -->
+```py
+import asyncio
+
+from beeai_framework import tool
+from beeai_framework.tools import ToolError
+
+
+async def main() -> None:
+    @tool
+    def dummy() -> None:
+        """
+        A dummy tool.
+        """
+        raise ToolError("Dummy error.")
+
+    await dummy.run({})
+
+
+if __name__ == "__main__":
+    try:
+        asyncio.run(main())
+    except ToolError as e:
+        print("===CAUSE===")
+        print(e.get_cause())
+        print("===EXPLAIN===")
+        print(e.explain())
+
+```
+
+_Source: /examples/errors/tool.py_
 
 - `ToolError` : Raised when a problem is reported by a tool.
   - `ToolInputValidationError`, which extends ToolError, raised when input validation fails.
@@ -126,5 +181,4 @@ For example the `explain` static method will return a string that may be more us
 message: str = FrameworkError.ensure(error).explain()
 ```
 
-See the source file [errors.py](python/beeai_framework
-/errors.py) for additional methods.
+See the source file [errors.py](python/beeai_framework/errors.py) for additional methods.
