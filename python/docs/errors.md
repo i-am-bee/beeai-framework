@@ -39,12 +39,12 @@ _Source: /examples/errors/base.py_
 
 Framework error also has two additional properties which help with agent processing, though ultimately the code that catches the exception will determine the appropriate action.
 
-    is_retryable : hints that the error is retryable.
-    is_fatal : hints that the error is fatal.
+- **is_retryable** : hints that the error is retryable.
+- **is_fatal** : hints that the error is fatal.
 
 ## Specialized Error Classes
 
-The BeeAI Framework extends FrameworkError to create specialized error classes for different components. This ensures that each part of the framework has clear and well-defined error types, improving debugging and error handling.
+The BeeAI Framework extends `FrameworkError` to create specialized error classes for different components or scenarios. This ensures that each part of the framework has clear and well-defined error types, improving debugging and error handling.
 
 > [!TIP]
 >
