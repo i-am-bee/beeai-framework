@@ -1,9 +1,11 @@
 import asyncio
+import pathlib
 import random
 import sys
 import traceback
 
 import langchain
+from langchain_community.tools.file_management.list_dir import ListDirectoryTool
 from langchain_core.tools import StructuredTool
 from pydantic import BaseModel, Field
 
@@ -11,17 +13,26 @@ from beeai_framework.adapters.langchain.tools import LangChainTool
 from beeai_framework.errors import FrameworkError
 
 
-class RandomNumberToolArgsSchema(BaseModel):
-    min: int = Field(description="The minimum integer", ge=0)
-    max: int = Field(description="The maximum integer", ge=0)
+async def directory_list_tool() -> None:
+    list_dir_tool = ListDirectoryTool()
+    tool = LangChainTool(list_dir_tool)
+    dir_path = str(pathlib.Path(__file__).parent.resolve())
+    response = await tool.run(
+        {"dir_path": dir_path},  # LangChain tool input
+        {"timeout": 10 * 1000},  # LangChain run options
+    )
+    print(f"Listing contents of {dir_path}:\n{response}")
 
 
-def random_number_func(min: int, max: int) -> int:
-    """Generate a random integer between two given integers. The two given integers are inclusive."""
-    return random.randint(min, max)
+async def custom_structured_tool() -> None:
+    class RandomNumberToolArgsSchema(BaseModel):
+        min: int = Field(description="The minimum integer", ge=0)
+        max: int = Field(description="The maximum integer", ge=0)
 
+    def random_number_func(min: int, max: int) -> int:
+        """Generate a random integer between two given integers. The two given integers are inclusive."""
+        return random.randint(min, max)
 
-async def main() -> None:
     generate_random_number = StructuredTool.from_function(
         func=random_number_func,
         # coroutine=async_random_number_func, <- if you want to specify an async method instead
@@ -37,7 +48,14 @@ async def main() -> None:
         {"timeout": 10 * 1000},  # LangChain run options
     )
 
-    print(response)
+    print(f"Your random number: {response}")
+
+
+async def main() -> None:
+    print("*" * 10, "Using custom StructuredTool")
+    await custom_structured_tool()
+    print("*" * 10, "Using ListDirectoryTool")
+    await directory_list_tool()
 
 
 if __name__ == "__main__":

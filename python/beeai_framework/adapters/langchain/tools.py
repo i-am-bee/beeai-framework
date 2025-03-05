@@ -15,6 +15,7 @@
 
 from typing import Any, TypeVar
 
+from langchain_core.callbacks import AsyncCallbackManagerForToolRun
 from langchain_core.runnables import RunnableConfig
 from langchain_core.tools import StructuredTool
 from langchain_core.tools import Tool as LangChainSimpleTool
@@ -57,7 +58,10 @@ class LangChainTool(Tool):
 
     async def _run(self, input: T, options: LangChainToolRunOptions, context: RunContext) -> Any:
         args = input if isinstance(input, dict) else input.model_dump(), {**options, "signal": context.signal}
-        if self._tool.coroutine:
+        is_async = (isinstance(self._tool, StructuredTool) and self._tool.coroutine) or (
+            isinstance(args[0].get("run_manager"), AsyncCallbackManagerForToolRun)
+        )
+        if is_async:
             response = await self._tool.ainvoke(*args)
         else:
             response = self._tool.invoke(*args)
