@@ -1,3 +1,10 @@
+# To run this example, the optional packages:
+#
+#    - langchain-core
+#    - langchain-community
+#
+# need to be installed
+
 import asyncio
 import pathlib
 import random
