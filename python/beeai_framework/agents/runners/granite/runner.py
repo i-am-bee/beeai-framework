@@ -30,6 +30,7 @@ from beeai_framework.emitter import EmitterOptions, EventMeta
 from beeai_framework.memory.base_memory import BaseMemory
 from beeai_framework.parsers.field import ParserField
 from beeai_framework.parsers.line_prefix import LinePrefixParser, LinePrefixParserNode, LinePrefixParserOptions
+from beeai_framework.tools import ToolOutput
 from beeai_framework.utils.strings import create_strenum
 
 
@@ -44,9 +45,9 @@ class GraniteRunner(DefaultRunner):
             assert update is not None
             if update.get("key") == "tool_output":
                 memory: BaseMemory = data.get("memory")
+                tool_output: ToolOutput = update.get("value")
                 tool_result = MessageToolResultContent(
-                    type="tool-result",
-                    result=update.get("value").get_text_content(),
+                    result=tool_output.get_text_content(),
                     tool_name=data.get("data").tool_name,
                     tool_call_id="DUMMY_ID",
                 )
@@ -93,7 +94,7 @@ class GraniteRunner(DefaultRunner):
                     {"key": "final_answer", "value": value},
                 ]
                 if value
-                else []
+                else [],
             ),
         )
 

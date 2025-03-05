@@ -44,7 +44,6 @@ from beeai_framework.backend.message import (
 from beeai_framework.backend.utils import parse_broken_json
 from beeai_framework.context import RunContext
 from beeai_framework.utils.custom_logger import BeeLogger
-from beeai_framework.utils.strings import to_json
 
 logger = BeeLogger(__name__)
 
@@ -139,7 +138,7 @@ class LiteLLMChatModel(ChatModel, ABC):
                             "tool_call_id": content.tool_call_id,
                             "role": "tool",
                             "name": content.tool_name,
-                            "content": to_json(content.result),
+                            "content": content.result,
                         }
                     )
             else:

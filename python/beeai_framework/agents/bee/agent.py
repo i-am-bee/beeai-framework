@@ -134,6 +134,8 @@ class BeeAgent(BaseAgent[BeeRunOutput]):
             iteration: RunnerIteration = await runner.create_iteration()
 
             if iteration.state.tool_name and iteration.state.tool_input is not None:
+                iteration.state.final_answer = None
+
                 tool_result: BeeRunnerToolResult = await runner.tool(
                     input=BeeRunnerToolInput(
                         state=iteration.state,
@@ -159,7 +161,7 @@ class BeeAgent(BaseAgent[BeeRunOutput]):
                             "update": {
                                 "key": "tool_output",
                                 "value": tool_result.output,
-                                "parsedValue": tool_result.output.to_string(),
+                                "parsedValue": tool_result.output,
                             },
                             "meta": {"success": tool_result.success},  # TODO deleted meta
                             "memory": runner.memory,
@@ -167,6 +169,9 @@ class BeeAgent(BaseAgent[BeeRunOutput]):
                     )
 
             if iteration.state.final_answer:
+                iteration.state.tool_input = None
+                iteration.state.tool_output = None
+
                 final_message = AssistantMessage(
                     content=iteration.state.final_answer, meta=MessageMeta({"createdAt": datetime.now(tz=UTC)})
                 )
