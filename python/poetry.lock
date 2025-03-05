@@ -2796,6 +2796,18 @@ docs = ["myst-parser", "pydata-sphinx-theme", "sphinx"]
 test = ["argcomplete (>=3.0.3)", "mypy (>=1.7.0)", "pre-commit", "pytest (>=7.0,<8.2)", "pytest-mock", "pytest-mypy-testing"]
 
 [[package]]
+name = "types-chevron"
+version = "0.14.2.20250103"
+description = "Typing stubs for chevron"
+optional = false
+python-versions = ">=3.8"
+groups = ["dev"]
+files = [
+    {file = "types_chevron-0.14.2.20250103-py3-none-any.whl", hash = "sha256:b255b2a71d83d9c548183d4eeadea874fbaec64b09f00d3bf3f43d3731c1c255"},
+    {file = "types_chevron-0.14.2.20250103.tar.gz", hash = "sha256:9dacdc9b01bdf717bcb7930f0602b9b74add054ebf3cf38d282b7e2b64c9d076"},
+]
+
+[[package]]
 name = "types-requests"
 version = "2.32.0.20250301"
 description = "Typing stubs for requests"
@@ -3041,4 +3053,4 @@ type = ["pytest-mypy"]
 [metadata]
 lock-version = "2.1"
 python-versions = ">= 3.11,<4.0"
-content-hash = "d45c1a2803823f4e5347a18a392a3edeab97c67395a23e6b1d296c5b766d9a69"
+content-hash = "c8c10f1c371b971b8d28f51d54376ec64388a324f315fbdfe3a5456d827b4492"

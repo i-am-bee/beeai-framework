@@ -72,7 +72,7 @@ UserPromptTemplate = PromptTemplate(
         schema=UserPromptTemplateInput,
         template="Message: {{input}}{{formatCreatedAt}}",
         functions={
-            "formatCreatedAt": lambda data: f"\n\nThis message was created at {data.get('created_at').replace(microsecond=0).isoformat()}"  # noqa: E501
+            "formatCreatedAt": lambda data: f"\n\nThis message was created at {data.get('created_at').replace(microsecond=0).isoformat()}"  # type: ignore[union-attr] # noqa: E501
             if data.get("created_at")
             else ""
         },
