@@ -3,7 +3,7 @@ import sys
 import traceback
 
 from beeai_framework.agents.bee.agent import BeeAgent
-from beeai_framework.agents.types import BeeAgentExecutionConfig, BeeRunOutput
+from beeai_framework.agents.types import AgentExecutionConfig, BeeRunOutput
 from beeai_framework.backend.chat import ChatModel
 from beeai_framework.emitter import Emitter, EventMeta
 from beeai_framework.errors import FrameworkError
@@ -31,7 +31,7 @@ async def main() -> None:
         emitter.on("update", update_callback)
 
     output: BeeRunOutput = await agent.run(
-        prompt=prompt, execution=BeeAgentExecutionConfig(total_max_retries=2, max_retries_per_step=3, max_iterations=8)
+        prompt=prompt, execution=AgentExecutionConfig(total_max_retries=2, max_retries_per_step=3, max_iterations=8)
     ).observe(on_update)
 
     reader.write("Agent 🤖 : ", output.result.text)

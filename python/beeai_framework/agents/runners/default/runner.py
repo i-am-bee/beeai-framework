@@ -12,7 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from collections.abc import Callable
+import datetime
+from typing import Any
 
 from beeai_framework.agents.runners.base import (
     BaseRunner,
@@ -32,7 +33,9 @@ from beeai_framework.agents.runners.default.prompts import (
     ToolNoResultsTemplate,
     ToolNotFoundErrorTemplate,
     UserEmptyPromptTemplate,
+    UserEmptyPromptTemplateInput,
     UserPromptTemplate,
+    UserPromptTemplateInput,
 )
 from beeai_framework.agents.types import (
     BeeAgentRunIteration,
@@ -165,18 +168,16 @@ class DefaultRunner(BaseRunner):
             parser.emitter.on("update", on_update)
             parser.emitter.on("partialUpdate", on_partial_update)
 
-            async def on_new_token(value: tuple[ChatModelOutput, Callable], event: EventMeta) -> None:
-                data, abort = value
-
+            async def on_new_token(data: dict[str, Any], event: EventMeta) -> None:
                 if parser.done:
-                    abort()
+                    data["abort"]()
                     return
 
-                chunk = data.get_text_content()
+                chunk = data["value"].get_text_content()
                 await parser.add(chunk)
 
                 if parser.partial_state.get("tool_output") is not None:
-                    abort()
+                    data["abort"]()
 
             output: ChatModelOutput = await self._input.llm.create(
                 messages=self.memory.messages[:],
@@ -315,17 +316,20 @@ class DefaultRunner(BaseRunner):
             )
         )
 
-        messages = [
-            SystemMessage(content=system_prompt),
-            *self._input.memory.messages,
-        ]
+        await memory.add_many(
+            [
+                SystemMessage(content=system_prompt),
+                *self._input.memory.messages,
+            ]
+        )
 
-        if input.prompt:
-            messages.append(UserMessage(content=input.prompt))
-
-        if len(messages) <= 1:
-            raise ValueError("At least one message must be provided.")
-
-        await memory.add_many(messages=messages)
+        if memory.is_empty() or input.prompt:
+            created_at = datetime.datetime.now(tz=datetime.UTC)
+            content = (
+                self.templates.user.render(UserPromptTemplateInput(input=input.prompt, created_at=created_at))
+                if input.prompt
+                else self.templates.user_empty.render(UserEmptyPromptTemplateInput())
+            )
+            await memory.add(UserMessage(content=content, meta={"createdAt": created_at}))
 
         return memory

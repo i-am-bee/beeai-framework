@@ -60,10 +60,9 @@ class Message(Generic[T]):
     meta: MessageMeta
 
     def __init__(self, content: T | list[T] | str, meta: MessageMeta | None = None) -> None:
-        if meta and not meta.get("createdAt"):
-            meta["createdAt"] = datetime.now(tz=UTC)
-
         self.meta = meta or {}
+        if not self.meta.get("createdAt"):
+            self.meta["createdAt"] = datetime.now(tz=UTC)
 
         if isinstance(content, str):
             self.content = [self.from_string(text=content)]

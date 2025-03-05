@@ -235,14 +235,16 @@ IMPORTANT: You MUST answer with a JSON object that matches the JSON schema above
 
         async def run_create(context: RunContext) -> ChatModelOutput:
             try:
-                await context.emitter.emit("start", model_input)
+                await context.emitter.emit("start", {"input": model_input})
                 chunks: list[ChatModelOutput] = []
 
                 if model_input.stream:
                     abort_controller: AbortController = AbortController()
                     async for value in self._create_stream(model_input, context):
                         chunks.append(value)
-                        await context.emitter.emit("newToken", (value, lambda: abort_controller.abort()))
+                        await context.emitter.emit(
+                            "newToken", {"value": value, "abort": lambda: abort_controller.abort()}
+                        )
                         if abort_controller.signal.aborted:
                             break
 

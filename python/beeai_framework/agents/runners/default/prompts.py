@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import datetime
+
 from pydantic import BaseModel
 
 from beeai_framework.template import PromptTemplate, PromptTemplateInput
@@ -27,6 +29,7 @@ class ToolNoResultsTemplateInput(BaseModel):
 
 class UserPromptTemplateInput(BaseModel):
     input: str
+    created_at: datetime.datetime | None = None
 
 
 class AssistantPromptTemplateInput(BaseModel):
@@ -65,7 +68,17 @@ class SchemaErrorTemplateInput(BaseModel):
     pass
 
 
-UserPromptTemplate = PromptTemplate(PromptTemplateInput(schema=UserPromptTemplateInput, template="Message: {{input}}"))
+UserPromptTemplate = PromptTemplate(
+    PromptTemplateInput(
+        schema=UserPromptTemplateInput,
+        template="Message: {{input}}{{formatCreatedAt}}",
+        functions={
+            "formatCreatedAt": lambda data: f"\n\nThis message was created at {data.get('created_at').replace(microsecond=0).isoformat()}"  # noqa: E501
+            if data.get("created_at")
+            else ""
+        },
+    )
+)
 
 AssistantPromptTemplate = PromptTemplate(
     PromptTemplateInput(
@@ -135,7 +148,7 @@ Prefer to use these capabilities over functions.
 
 # Notes
 - If you don't know the answer, say that you don't know.
-- The current time and date in ISO format can be found in the last message.
+- The current time and date in ISO format might be found in the last message.
 - When answering the user, use friendly formats for time and date.
 - Use markdown syntax for formatting code snippets, links, JSON, tables, images, files.
 - Sometimes, things don't go as planned. Functions may not provide useful information on the first few tries. You should always try a few different approaches before declaring the problem unsolvable.

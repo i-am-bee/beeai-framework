@@ -64,7 +64,7 @@ async def test_multi_agents_workflow_agent_delete() -> None:
 
     workflow: AgentWorkflow = AgentWorkflow()
     workflow.add_agent(BeeAgent(llm=chat_model, tools=[], memory=UnconstrainedMemory()))
-    workflow.del_agent("BeeAI")
+    workflow.del_agent("Bee")
     workflow.add_agent(BeeAgent(llm=chat_model, tools=[], memory=UnconstrainedMemory()))
 
     assert len(workflow.workflow.step_names) == 1
