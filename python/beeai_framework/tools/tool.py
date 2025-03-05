@@ -97,7 +97,7 @@ class Tool(Generic[T], ABC):
         pass
 
     @abstractmethod
-    async def _run(self, input: Any, options: ToolRunOptions, context: RunContext) -> Any:
+    async def _run(self, input: T, options: dict[str, Any], context: RunContext) -> Any:
         pass
 
     def validate_input(self, input: T | dict[str, Any]) -> T:
@@ -107,20 +107,19 @@ class Tool(Generic[T], ABC):
             raise ToolInputValidationError("Tool input validation error", cause=e)
 
     def run(self, input: T | dict[str, Any], options: ToolRunOptions | None = None) -> Run[T]:
-        run_options = options or ToolRunOptions()
-
         async def run_tool(context: RunContext) -> T:
             error_propagated = False
 
             try:
                 validated_input = self.validate_input(input)
 
-                meta = {"input": validated_input, "options": run_options}
+                meta = {"input": validated_input, "options": options}
 
                 async def executor(_: RetryableContext) -> Any:
                     nonlocal error_propagated
                     error_propagated = False
                     await context.emitter.emit("start", meta)
+                    run_options = options.model_dump(exclude_unset=True) if options else {}
                     return await self._run(validated_input, run_options, context)
 
                 async def on_error(error: Exception, _: RetryableContext) -> None:
@@ -155,7 +154,7 @@ class Tool(Generic[T], ABC):
             except Exception as e:
                 err = ToolError.ensure(e)
                 if not error_propagated:
-                    await context.emitter.emit("error", {"error": err, "input": input, "options": run_options})
+                    await context.emitter.emit("error", {"error": err, "input": input, "options": options})
                 raise err
             finally:
                 await context.emitter.emit("finish", None)

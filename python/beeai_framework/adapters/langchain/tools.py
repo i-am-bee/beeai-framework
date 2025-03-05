@@ -47,14 +47,15 @@ class LangChainTool(Tool):
     def input_schema(self) -> type[T]:
         return self._tool.input_schema
 
-    def __init__(self, tool: StructuredTool | LangChainSimpleTool, options: dict[str, Any] | None = None) -> None:
-        super().__init__(options)
-
-        self._tool = tool
-        self.emitter = Emitter.root().child(
-            namespace=["tool", "langchain", to_safe_word(tool.name)],
+    def _create_emitter(self) -> Emitter:
+        return Emitter.root().child(
+            namespace=["tool", "langchain", to_safe_word(self._tool.name)],
             creator=self,
         )
+
+    def __init__(self, tool: StructuredTool | LangChainSimpleTool, options: dict[str, Any] | None = None) -> None:
+        super().__init__(options)
+        self._tool = tool
 
     async def _run(self, input: T, options: LangChainToolRunOptions, context: RunContext) -> Any:
         args = input if isinstance(input, dict) else input.model_dump(), {**options, "signal": context.signal}
