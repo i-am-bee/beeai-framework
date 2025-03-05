@@ -23,11 +23,12 @@ from pydantic import BaseModel, ConfigDict
 
 from beeai_framework.context import RunContext
 from beeai_framework.emitter.emitter import Emitter
-from beeai_framework.tools.tool import Tool
+from beeai_framework.tools.tool import Tool, ToolRunOptions
 from beeai_framework.utils.strings import to_safe_word
 
 
-class LangChainToolRunOptions(RunnableConfig):
+class LangChainToolRunOptions(ToolRunOptions):
+    langchain_runnable_config: RunnableConfig | None = None
     model_config = ConfigDict(extra="allow", arbitrary_types_allowed=True)
 
 
@@ -58,7 +59,14 @@ class LangChainTool(Tool):
         self._tool = tool
 
     async def _run(self, input: T, options: LangChainToolRunOptions, context: RunContext) -> Any:
-        args = input if isinstance(input, dict) else input.model_dump(), {**options, "signal": context.signal}
+        langchain_runnable_config = options.langchain_runnable_config or {} if options else {}
+        args = (
+            input if isinstance(input, dict) else input.model_dump(),
+            {
+                **langchain_runnable_config,
+                "signal": context.signal,
+            },
+        )
         is_async = (isinstance(self._tool, StructuredTool) and self._tool.coroutine) or (
             isinstance(args[0].get("run_manager"), AsyncCallbackManagerForToolRun)
         )
