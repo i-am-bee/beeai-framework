@@ -175,12 +175,15 @@ class LiteLLMChatModel(ChatModel, ABC):
             else None
         )
 
-        params = self._settings | self.parameters.model_dump(exclude_unset=True)
+        params = (
+            self._settings
+            | self.parameters.model_dump(exclude_unset=True)
+            | input.model_dump(exclude={"model", "messages", "tools"})
+        )
         return LiteLLMParameters(
             model=f"{self._litellm_provider_id}/{self.model_id}",
             messages=messages,
             tools=tools,
-            response_format=input.response_format,
             **params,
         )
 
