@@ -39,9 +39,7 @@ class RiddleTool(Tool[RiddleToolInput]):
             creator=self,
         )
 
-    async def _run(
-        self, input: RiddleToolInput, options: ToolRunOptions | None = None, context: RunContext | None = None
-    ) -> None:
+    async def _run(self, input: RiddleToolInput, options: ToolRunOptions, context: RunContext) -> None:
         index = input.riddle_number % (len(self.data))
         riddle = self.data[index]
         return StringToolOutput(result=riddle)

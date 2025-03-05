@@ -63,7 +63,7 @@ class DuckDuckGoSearchTool(Tool[DuckDuckGoSearchToolInput]):
         )
 
     async def _run(
-        self, input: DuckDuckGoSearchToolInput, options: Any | None = None, context: RunContext | None = None
+        self, input: DuckDuckGoSearchToolInput, options: dict[str, Any], context: RunContext
     ) -> DuckDuckGoSearchToolOutput:
         try:
             results = DDGS().text(input.query, max_results=self.max_results, safesearch=self.safe_search)

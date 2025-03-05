@@ -55,15 +55,10 @@ class LangChainTool(Tool):
             creator=self,
         )
 
-    async def _run(
-        self, input: T, options: LangChainToolRunOptions | None = None, context: RunContext | None = None
-    ) -> Any:
+    async def _run(self, input: T, options: LangChainToolRunOptions, context: RunContext) -> Any:
+        args = input if isinstance(input, dict) else input.model_dump(), {**options, "signal": context.signal}
         if self._tool.coroutine:
-            response = await self._tool.ainvoke(
-                input if isinstance(input, dict) else input.model_dump(), {**options, "signal": context.signal}
-            )
+            response = await self._tool.ainvoke(*args)
         else:
-            response = self._tool.invoke(
-                input if isinstance(input, dict) else input.model_dump(), {**options, "signal": context.signal}
-            )
+            response = self._tool.invoke(*args)
         return response
