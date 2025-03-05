@@ -15,13 +15,17 @@
  */
 
 import { createHash as _createHash, randomBytes } from "node:crypto";
+import { NotImplementedError } from "@/errors.js";
 
 export function createHash(input: string, length = 4) {
-  return _createHash("shake256", {
-    outputLength: length,
-  })
+  if (length > 32) {
+    throw new NotImplementedError("Max supported hash length is 32");
+  }
+
+  return _createHash("sha256")
     .update(input)
-    .digest("hex");
+    .digest("hex")
+    .slice(0, length * 2);
 }
 
 export function createRandomHash(length = 4) {
