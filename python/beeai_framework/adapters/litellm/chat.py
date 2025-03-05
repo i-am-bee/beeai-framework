@@ -175,11 +175,11 @@ class LiteLLMChatModel(ChatModel, ABC):
             else None
         )
 
-        params = (
-            self._settings
-            | self.parameters.model_dump(exclude_unset=True)
-            | input.model_dump(exclude={"model", "messages", "tools"})
-        )
+        supported_parameters = litellm.get_supported_openai_params(self.model_id, self._litellm_provider_id)
+        model_input_params = input.model_dump(exclude={"model", "messages", "tools"})
+        updated_input_params = {k: v for k, v in model_input_params.items() if k in supported_parameters}
+
+        params = self._settings | self.parameters.model_dump(exclude_unset=True) | updated_input_params
         return LiteLLMParameters(
             model=f"{self._litellm_provider_id}/{self.model_id}",
             messages=messages,
