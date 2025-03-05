@@ -34,7 +34,7 @@ class PromptTemplateInput(BaseModel, Generic[T]):
     input_schema: type[T] = Field(..., alias="schema")
     template: str
     functions: dict[str, Callable[[dict], str]] | None = None
-    defaults: dict[str, str] | None = {}
+    defaults: dict[str, Any] = {}
 
 
 class PromptTemplate(Generic[T]):

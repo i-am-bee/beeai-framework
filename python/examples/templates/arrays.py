@@ -1,27 +1,26 @@
 import sys
 import traceback
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from beeai_framework.errors import FrameworkError
 from beeai_framework.template import PromptTemplate, PromptTemplateInput
 
 
 def main() -> None:
-    class UserMessage(BaseModel):
-        label: str
-        input: str
+    class ColorsObject(BaseModel):
+        colors: list[str] = Field(..., min_length=1)
 
     template: PromptTemplate = PromptTemplate(
         PromptTemplateInput(
-            schema=UserMessage,
-            template="""{{label}}: {{input}}""",
+            schema=ColorsObject,
+            template="""Colors: {{#colors}}{{.}}, {{/colors}}""",
         )
     )
 
-    prompt = template.render(label="Query", input="What interesting things happened on this day in history?")
-
-    print(prompt)
+    # Colors: Green, Yellow,
+    output = template.render(colors=["Green", "Yellow"])
+    print(output)
 
 
 if __name__ == "__main__":

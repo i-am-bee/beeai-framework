@@ -106,25 +106,48 @@ _Source: [examples/agents/bee.py](/python/examples/agents/bee.py)_
 
 Customize how the agent formats prompts, including the system prompt that defines its behavior.
 
-<!-- embedme examples/templates/agent_sys_prompt.py -->
+<!-- embedme examples/templates/system_prompt.py -->
 
 ```py
+import sys
+import traceback
+
 from beeai_framework.agents.runners.default.prompts import (
     SystemPromptTemplate,
-    SystemPromptTemplateInput,
+    ToolDefinition,
 )
+from beeai_framework.errors import FrameworkError
 from beeai_framework.tools.weather.openmeteo import OpenMeteoTool
+from beeai_framework.utils.strings import to_json
 
-tool = OpenMeteoTool()
 
-# Render the granite system prompt
-prompt = SystemPromptTemplate.render(SystemPromptTemplateInput(instructions="You are a helpful AI assistant!"))
+def main() -> None:
+    tool = OpenMeteoTool()
 
-print(prompt)
+    tool_def = ToolDefinition(
+        name=tool.name,
+        description=tool.description,
+        input_schema=to_json(tool.input_schema.model_json_schema()),
+    )
+
+    # Render the granite system prompt
+    prompt = SystemPromptTemplate.render(
+        instructions="You are a helpful AI assistant!", tools=[tool_def], tools_length=1
+    )
+
+    print(prompt)
+
+
+if __name__ == "__main__":
+    try:
+        main()
+    except FrameworkError as e:
+        traceback.print_exc()
+        sys.exit(e.explain())
 
 ```
 
-_Source: [examples/templates/agent_sys_prompt.py](/python/examples/templates/agent_sys_prompt.py)_
+_Source: [examples/templates/system_prompt.py](/python/examples/templates/system_prompt.py)_
 
 The agent uses several templates that you can override:
 1. **System Prompt** - Defines the agent's behavior and capabilities
