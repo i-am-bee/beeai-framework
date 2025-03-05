@@ -245,6 +245,10 @@ help = "Extract Python files only"
 args = [{ name = "TARGET", positional = true, multiple = true }]
 shell = "printf '%s\\n' $TARGET | grep -E '\\.(py|ipynb)$' | tr '\\n' ' '"
 
+[tool.poe.tasks.typecheck]
+help = "Static Type Checker"
+cmd = "mypy . --strict --ignore-missing-imports --explicit-package-bases"
+
 [build-system]
 requires = ["poetry-core>=2.0.0,<3.0.0"]
 build-backend = "poetry.core.masonry.api"
