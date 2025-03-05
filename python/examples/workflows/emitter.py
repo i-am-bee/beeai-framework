@@ -1,4 +1,5 @@
 import asyncio
+import sys
 import traceback
 from typing import Literal, TypeAlias
 
@@ -70,22 +71,21 @@ async def main() -> None:
             state.result = result
         return Workflow.END
 
-    try:
-        multiplication_workflow = Workflow[State, WorkflowStep](name="MultiplicationWorkflow", schema=State)
-        multiplication_workflow.add_step("pre_process", pre_process)
-        multiplication_workflow.add_step("add_loop", add_loop)
-        multiplication_workflow.add_step("post_process", post_process)
+    multiplication_workflow = Workflow[State, WorkflowStep](name="MultiplicationWorkflow", schema=State)
+    multiplication_workflow.add_step("pre_process", pre_process)
+    multiplication_workflow.add_step("add_loop", add_loop)
+    multiplication_workflow.add_step("post_process", post_process)
 
-        response = await multiplication_workflow.run(State(x=8, y=5)).observe(observer)
-        print(f"result: {response.state.result}")
+    response = await multiplication_workflow.run(State(x=8, y=5)).observe(observer)
+    print(f"result: {response.state.result}")
 
-        response = await multiplication_workflow.run(State(x=8, y=-5)).observe(observer)
-        print(f"result: {response.state.result}")
-
-    except FrameworkError as err:
-        traceback.print_exc()
-        raise err
+    response = await multiplication_workflow.run(State(x=8, y=-5)).observe(observer)
+    print(f"result: {response.state.result}")
 
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    try:
+        asyncio.run(main())
+    except FrameworkError as e:
+        traceback.print_exc()
+        sys.exit(e.explain())
