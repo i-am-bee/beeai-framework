@@ -42,6 +42,7 @@ from beeai_framework.backend.message import (
 from beeai_framework.backend.utils import parse_broken_json
 from beeai_framework.context import RunContext
 from beeai_framework.utils.custom_logger import BeeLogger
+from beeai_framework.utils.dicts import exclude_keys, exclude_none, include_keys
 
 logger = BeeLogger(__name__)
 
@@ -82,6 +83,7 @@ class LiteLLMChatModel(ChatModel, ABC):
 
     async def _create_stream(self, input: ChatModelInput, _: RunContext) -> AsyncGenerator[ChatModelOutput]:
         litellm_input = self._transform_input(input) | {"stream": True}
+        print(litellm_input | {"messages": None, "tools": None})
         response = await acompletion(**litellm_input)
 
         is_empty = True
@@ -146,12 +148,21 @@ class LiteLLMChatModel(ChatModel, ABC):
             else None
         )
 
+        settings = exclude_keys(
+            self._settings | input.model_dump(exclude_unset=True),
+            {*self.supported_params, "abort_signal", "model", "messages", "tools"},
+        )
+        params = include_keys(
+            input.model_dump(exclude_none=True)  # get all parameters with default values
+            | self._settings  # get constructor overrides
+            | self.parameters.model_dump(exclude_unset=True)  # get default parameters
+            | input.model_dump(exclude_none=True, exclude_unset=True),  # get custom manually set parameters
+            set(self.supported_params),
+        )
+
         return (
-            self._settings
-            | self.parameters.model_dump(exclude_none=True, exclude_unset=True, include=set(self.supported_params))
-            | input.model_dump(
-                exclude_none=True, exclude_unset=True, exclude={"abort_signal", "model", "messages", "tools"}
-            )
+            exclude_none(settings)
+            | exclude_none(params)
             | {"model": f"{self._litellm_provider_id}/{self.model_id}", "messages": messages, "tools": tools}
         )
 
