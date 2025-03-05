@@ -48,7 +48,6 @@ class ToolDefinition(BaseModel):
 
 class SystemPromptTemplateInput(BaseModel):
     tools: list[ToolDefinition] | None = []
-    tools_length: int | None = 0
     instructions: str | None = None
 
 
@@ -91,7 +90,7 @@ SystemPromptTemplate = PromptTemplate(
     PromptTemplateInput(
         schema=SystemPromptTemplateInput,
         template="""# Available functions
-{{#tools_length}}
+{{#tools.0}}
 You can only use the following functions. Always use all required parameters.
 
 {{#tools}}
@@ -100,28 +99,28 @@ Description: {{description}}
 Input Schema: {{&input_schema}}
 
 {{/tools}}
-{{/tools_length}}
-{{^tools_length}}
+{{/tools.0}}
+{{^tools.0}}
 No functions are available.
 
-{{/tools_length}}
+{{/tools.0}}
 # Communication structure
 You communicate only in instruction lines. The format is: "Instruction: expected output". You must only use these instruction lines and must not enter empty lines or anything else between instruction lines.
-{{#tools_length}}
+{{#tools.0}}
 You must skip the instruction lines Function Name, Function Input and Function Output if no function calling is required.
-{{/tools_length}}
+{{/tools.0}}
 
 Message: User's message. You never use this instruction line.
-{{^tools_length}}
+{{^tools.0}}
 Thought: A single-line plan of how to answer the user's message. It must be immediately followed by Final Answer.
-{{/tools_length}}
-{{#tools_length}}
+{{/tools.0}}
+{{#tools.0}}
 Thought: A single-line step-by-step plan of how to answer the user's message. You can use the available functions defined above. This instruction line must be immediately followed by Function Name if one of the available functions defined above needs to be called, or by Final Answer. Do not provide the answer here.
 Function Name: Name of the function. This instruction line must be immediately followed by Function Input.
 Function Input: Function parameters in JSON format adhering to the function's input specification ie. {"arg1":"value1", "arg2":"value2"}. Empty object is a valid parameter.
 Function Output: Output of the function in JSON format.
 Thought: Continue your thinking process.
-{{/tools_length}}
+{{/tools.0}}
 Final Answer: Answer the user or ask for more information or clarification. It must always be preceded by Thought.
 
 ## Examples
@@ -131,13 +130,13 @@ Final Answer: Comment vas-tu?
 
 # Instructions
 User can only see the Final Answer, all answers must be provided there.
-{{^tools_length}}
+{{^tools.0}}
 You must always use the communication structure and instructions defined above. Do not forget that Thought must be a single-line immediately followed by Final Answer.
-{{/tools_length}}
-{{#tools_length}}
+{{/tools.0}}
+{{#tools.0}}
 You must always use the communication structure and instructions defined above. Do not forget that Thought must be a single-line immediately followed by either Function Name or Final Answer.
 Functions must be used to retrieve factual or historical information to answer the message.
-{{/tools_length}}
+{{/tools.0}}
 If the user suggests using a function that is not available, answer that the function is not available. You can suggest alternatives if appropriate.
 When the message is unclear or you need more information from the user, ask in Final Answer.
 
@@ -168,9 +167,9 @@ ToolNotFoundErrorTemplate = PromptTemplate(
     PromptTemplateInput(
         schema=ToolNotFoundErrorTemplateInput,
         template="""Function does not exist!
-{{#tools.length}}
+{{#tools.0}}
 Use one of the following functions: {{#trim}}{{#tools}}{{name}},{{/tools}}{{/trim}}
-{{/tools.length}}""",
+{{/tools.0}}""",
     )
 )
 

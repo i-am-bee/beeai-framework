@@ -312,7 +312,6 @@ class DefaultRunner(BaseRunner):
         system_prompt: str = self.templates.system.render(
             SystemPromptTemplateInput(
                 tools=tool_defs,
-                tools_length=len(tool_defs),
             )
         )
 

@@ -38,7 +38,7 @@ class PromptTemplateInput(BaseModel, Generic[T]):
 
 
 class PromptTemplate(Generic[T]):
-    def __init__(self, config: PromptTemplateInput) -> None:
+    def __init__(self, config: PromptTemplateInput[T]) -> None:
         self._config = config
 
     def render(self, template_input: ModelLike[T] | None = None, /, **kwargs: Any) -> str:
