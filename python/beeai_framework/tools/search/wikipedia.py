@@ -48,9 +48,8 @@ class WikipediaTool(Tool[WikipediaToolInput]):
         user_agent="beeai-framework https://github.com/i-am-bee/beeai-framework", language="en"
     )
 
-    def __init__(self, options: dict[str, Any] | None = None) -> None:
-        super().__init__(options)
-        self.emitter = Emitter.root().child(
+    def _create_emitter(self) -> Emitter:
+        return Emitter.root().child(
             namespace=["tool", "search", "wikipedia"],
             creator=self,
         )

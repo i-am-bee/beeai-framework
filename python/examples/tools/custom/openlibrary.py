@@ -31,7 +31,9 @@ class OpenLibraryTool(Tool[OpenLibraryToolInput]):
 
     def __init__(self, options: dict[str, Any] | None = None) -> None:
         super().__init__(options)
-        self.emitter = Emitter.root().child(
+
+    def _create_emitter(self) -> Emitter:
+        return Emitter.root().child(
             namespace=["tool", "example", "openlibrary"],
             creator=self,
         )
@@ -59,9 +61,9 @@ class OpenLibraryTool(Tool[OpenLibraryToolInput]):
             json_output = response.json()[f"{key}:{value}"]
 
         return OpenLibraryToolResult(
-            preview_url=json_output.get("preview_url"),
-            info_url=json_output.get("info_url"),
-            bib_key=json_output.get("bib_key"),
+            preview_url=json_output.get("preview_url", ""),
+            info_url=json_output.get("info_url", ""),
+            bib_key=json_output.get("bib_key", ""),
         )
 
 

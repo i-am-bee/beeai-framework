@@ -37,4 +37,4 @@ class SearchToolOutput(ToolOutput):
         return len(self.results) == 0
 
     def sources(self) -> list[str]:
-        return {result.url for result in self.results}
+        return [result.url for result in self.results]

@@ -1,5 +1,20 @@
 # Changelog
 
+## 0.1.3 (2025-03-05)
+
+### Features
+
+- **backend:** add watsonx inference parameters ([381aa95](https://github.com/i-am-bee/beeai-framework/commit/381aa9562d92bb7a47145bf45e1c747754527e68)), closes [#313](https://github.com/i-am-bee/beeai-framework/issues/313)
+- improve pre-commit hooks ([#404](https://github.com/i-am-bee/beeai-framework/issues/404)) ([2ea38b2](https://github.com/i-am-bee/beeai-framework/commit/2ea38b289fd0517fb112da8ac117ca06c7434e5f))
+- rename to beeai-framework, switch to monorepo ([5f28d70](https://github.com/i-am-bee/beeai-framework/commit/5f28d70c1fbe5dcab084d899db3a62e6c47d3a94))
+
+### Bug Fixes
+
+- **adapters:** groq adapter settings propagation ([fb6346c](https://github.com/i-am-bee/beeai-framework/commit/fb6346c33cad0b125b566da53958856f1b9ee8f9))
+- **adapters:** ollama adapter to use client settings and base url ([#327](https://github.com/i-am-bee/beeai-framework/issues/327)) ([733042e](https://github.com/i-am-bee/beeai-framework/commit/733042ed579a942af9d7d1495432041c102a96f3)), closes [#319](https://github.com/i-am-bee/beeai-framework/issues/319)
+- make createHash work in Electron. ([#479](https://github.com/i-am-bee/beeai-framework/issues/479)) ([0a980bd](https://github.com/i-am-bee/beeai-framework/commit/0a980bd78b69631ac891b21f47058fb53f0f8e5f)), closes [#478](https://github.com/i-am-bee/beeai-framework/issues/478)
+- **workflows:** handle relative steps ([#464](https://github.com/i-am-bee/beeai-framework/issues/464)) ([0ceed57](https://github.com/i-am-bee/beeai-framework/commit/0ceed572e1eebd76da5ed9175cae9c312fffa0ff)), closes [#444](https://github.com/i-am-bee/beeai-framework/issues/444)
+
 ## [0.1.2](https://github.com/i-am-bee/bee-agent-framework/compare/v0.1.1...v0.1.2) (2025-02-14)
 
 ### Features

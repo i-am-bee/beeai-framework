@@ -63,11 +63,6 @@ class MCPTool(Tool[MCPToolOutput]):
         self._name = tool.name
         self._description = tool.description or "No available description, use the tool based on its name and schema."
 
-        self.emitter = Emitter.root().child(
-            namespace=["tool", "mcp", self._name],
-            creator=self,
-        )
-
     @property
     def name(self) -> str:
         return self._name
@@ -78,6 +73,12 @@ class MCPTool(Tool[MCPToolOutput]):
 
     def input_schema(self) -> str:
         return self._tool.inputSchema
+
+    def _create_emitter(self) -> Emitter:
+        return Emitter.root().child(
+            namespace=["tool", "mcp", self.name],
+            creator=self,
+        )
 
     async def _run(self, input_data: Any, options: dict | None = None) -> MCPToolOutput:
         """Execute the tool with given input."""
