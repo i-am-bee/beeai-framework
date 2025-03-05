@@ -464,7 +464,7 @@ class OpenLibraryTool(Tool[OpenLibraryToolInput]):
         )
 
     async def _run(
-        self, tool_input: OpenLibraryToolInput, options: Any | None = None, context: RunContext | None = None
+        self, tool_input: OpenLibraryToolInput, options: dict[str, Any], context: RunContext
     ) -> OpenLibraryToolResult:
         key = ""
         value = ""
