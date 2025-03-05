@@ -126,25 +126,21 @@ import traceback
 from beeai_framework.agents.bee.agent import BeeAgent
 from beeai_framework.agents.types import BeeRunOutput
 from beeai_framework.backend.chat import ChatModel
-from beeai_framework.emitter.emitter import Emitter, EventMeta
 from beeai_framework.errors import FrameworkError
 from beeai_framework.memory.unconstrained_memory import UnconstrainedMemory
 from beeai_framework.utils import BeeLogger
 
 
 async def main() -> None:
-    llm = ChatModel.from_name("ollama:granite3.1-dense:8b")
-    agent = BeeAgent(llm=llm, tools=[], memory=UnconstrainedMemory())
     logger = BeeLogger("app", level=logging.TRACE)
 
-    def update_callback(data: dict, event: EventMeta) -> None:
-        logger.info(f"Event {event.path} triggered by {event.creator.__class__.__name__}")
-        logger.info(f"Agent({data['update']['key']} 🤖 : " + data["update"]["parsedValue"])
+    agent = BeeAgent(llm=ChatModel.from_name("ollama:granite3.1-dense:8b"), tools=[], memory=UnconstrainedMemory())
 
-    def on_update(emitter: Emitter) -> None:
-        emitter.on("update", update_callback)
-
-    output: BeeRunOutput = await agent.run("Hello!").observe(on_update)
+    output: BeeRunOutput = await agent.run("Hello!").observe(
+        lambda emitter: emitter.on(
+            "update", lambda data, event: logger.info(f"Event {event.path} triggered by {type(event.creator).__name__}")
+        )
+    )
 
     logger.info(f"Agent 🤖 : {output.result.text}")
 
