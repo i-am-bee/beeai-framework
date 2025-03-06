@@ -82,9 +82,7 @@ class MCPTool(Tool[BaseModel, ToolRunOptions]):
             creator=self,
         )
 
-    async def _run(
-        self, input_data: Any, options: ToolRunOptions | None = None, context: RunContext | None = None
-    ) -> MCPToolOutput:
+    async def _run(self, input_data: Any, options: ToolRunOptions | None, context: RunContext) -> MCPToolOutput:
         """Execute the tool with given input."""
         logger.debug(f"Executing tool {self.name} with input: {input_data}")
         result = await self.client.call_tool(name=self.name, arguments=input_data)

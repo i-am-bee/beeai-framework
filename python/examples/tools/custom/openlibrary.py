@@ -40,7 +40,7 @@ class OpenLibraryTool(Tool[OpenLibraryToolInput, ToolRunOptions]):
         )
 
     async def _run(
-        self, tool_input: OpenLibraryToolInput, options: ToolRunOptions | None = None, context: RunContext | None = None
+        self, tool_input: OpenLibraryToolInput, options: ToolRunOptions | None, context: RunContext
     ) -> OpenLibraryToolResult:
         key = ""
         value = ""

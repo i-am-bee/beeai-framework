@@ -40,7 +40,7 @@ class RiddleTool(Tool[RiddleToolInput, ToolRunOptions]):
         )
 
     async def _run(
-        self, input: RiddleToolInput, options: ToolRunOptions | None = None, context: RunContext | None = None
+        self, input: RiddleToolInput, options: ToolRunOptions | None, context: RunContext
     ) -> StringToolOutput:
         index = input.riddle_number % (len(self.data))
         riddle = self.data[index]

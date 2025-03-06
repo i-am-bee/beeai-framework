@@ -139,7 +139,7 @@ class OpenMeteoTool(Tool[OpenMeteoToolInput, ToolRunOptions]):
         return params
 
     async def _run(
-        self, input: OpenMeteoToolInput, options: ToolRunOptions | None = None, context: RunContext | None = None
+        self, input: OpenMeteoToolInput, options: ToolRunOptions | None, context: RunContext
     ) -> StringToolOutput:
         params = urlencode(self.get_params(input), doseq=True)
         logger.debug(f"Using OpenMeteo URL: https://api.open-meteo.com/v1/forecast?{params}")

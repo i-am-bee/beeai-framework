@@ -58,9 +58,7 @@ class LangChainTool(Tool[T, LangChainToolRunOptions]):
         super().__init__(options)
         self._tool = tool
 
-    async def _run(
-        self, input: T, options: LangChainToolRunOptions | None = None, context: RunContext | None = None
-    ) -> Any:
+    async def _run(self, input: T, options: LangChainToolRunOptions | None, context: RunContext) -> Any:
         langchain_runnable_config = options.langchain_runnable_config or {} if options else {}
         args = (
             input if isinstance(input, dict) else input.model_dump(),

@@ -100,7 +100,7 @@ class Tool(Generic[IN, OPT], ABC):
         pass
 
     @abstractmethod
-    async def _run(self, input: IN, options: OPT | None = None, context: RunContext | None = None) -> Any:
+    async def _run(self, input: IN, options: OPT | None, context: RunContext) -> Any:
         pass
 
     def validate_input(self, input: IN | dict[str, Any]) -> IN:
@@ -220,9 +220,7 @@ def tool(tool_function: Callable) -> Tool:
                 creator=self,
             )
 
-        async def _run(
-            self, input: Any, options: ToolRunOptions | None = None, context: RunContext | None = None
-        ) -> Any:
+        async def _run(self, input: Any, options: ToolRunOptions | None, context: RunContext) -> Any:
             tool_input_dict = input.model_dump()
             if inspect.iscoroutinefunction(tool_function):
                 return await tool_function(**tool_input_dict)

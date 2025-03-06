@@ -60,7 +60,7 @@ class WikipediaTool(Tool[WikipediaToolInput, ToolRunOptions]):
         return ",".join(str(title) for title in titles)
 
     async def _run(
-        self, input: WikipediaToolInput, options: ToolRunOptions | None = None, context: RunContext | None = None
+        self, input: WikipediaToolInput, options: ToolRunOptions | None, context: RunContext
     ) -> WikipediaToolOutput:
         page_py = self.client.page(input.query)
 
