@@ -159,7 +159,7 @@ from beeai_framework.backend.chat import ChatModel
 from beeai_framework.errors import FrameworkError
 from beeai_framework.memory.unconstrained_memory import UnconstrainedMemory
 from beeai_framework.tools.tool import StringToolOutput
-from beeai_framework.utils import BeeLogger
+from beeai_framework.logger import BeeLogger
 
 logger = BeeLogger(__name__)
 

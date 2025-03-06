@@ -17,7 +17,8 @@ import logging
 import pytest
 
 from beeai_framework.backend import Role
-from beeai_framework.utils import BeeLogger, MessageEvent
+from beeai_framework.logger import BeeLogger
+from beeai_framework.utils import MessageEvent
 
 """
 Unit Tests

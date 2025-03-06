@@ -26,7 +26,7 @@ In the BeeAI framework, the `Logger` class is an abstraction built on top of Pyt
 
 > [!NOTE]
 >
-> Location within the framework: [beeai_framework/utils](/python/beeai_framework/utils).
+> Location within the framework: [beeai_framework/logger](/python/beeai_framework/logger).
 
 ---
 
@@ -49,7 +49,7 @@ To use the logger in your application:
 ```py
 import logging
 
-from beeai_framework.utils import BeeLogger
+from beeai_framework.logger import BeeLogger
 
 # Configure logger with default log level
 logger = BeeLogger("app", level=logging.TRACE)
@@ -128,7 +128,7 @@ from beeai_framework.agents.types import BeeRunOutput
 from beeai_framework.backend.chat import ChatModel
 from beeai_framework.errors import FrameworkError
 from beeai_framework.memory.unconstrained_memory import UnconstrainedMemory
-from beeai_framework.utils import BeeLogger
+from beeai_framework.logger import BeeLogger
 
 
 async def main() -> None:

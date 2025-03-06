@@ -18,10 +18,10 @@ from pydantic import BaseModel, Field
 
 from beeai_framework.context import RunContext
 from beeai_framework.emitter.emitter import Emitter
+from beeai_framework.logger import BeeLogger
 from beeai_framework.tools import ToolError
 from beeai_framework.tools.search import SearchToolOutput, SearchToolResult
 from beeai_framework.tools.tool import Tool, ToolRunOptions
-from beeai_framework.utils import BeeLogger
 
 logger = BeeLogger(__name__)
 

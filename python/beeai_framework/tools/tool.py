@@ -24,9 +24,9 @@ from pydantic import BaseModel, ConfigDict, ValidationError, create_model
 from beeai_framework.cancellation import AbortSignal
 from beeai_framework.context import Run, RunContext, RunContextInput, RunInstance
 from beeai_framework.emitter.emitter import Emitter
+from beeai_framework.logger import BeeLogger
 from beeai_framework.retryable import Retryable, RetryableConfig, RetryableContext, RetryableInput
 from beeai_framework.tools.errors import ToolError, ToolInputValidationError
-from beeai_framework.utils import BeeLogger
 from beeai_framework.utils.strings import to_json, to_safe_word
 
 logger = BeeLogger(__name__)
