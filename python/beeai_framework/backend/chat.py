@@ -21,7 +21,7 @@ from pydantic import BaseModel, ConfigDict, Field, InstanceOf
 
 from beeai_framework.backend.constants import ProviderName
 from beeai_framework.backend.errors import ChatModelError
-from beeai_framework.backend.message import AssistantMessage, Message, SystemMessage
+from beeai_framework.backend.message import AssistantMessage, Message, MessageToolCallContent, SystemMessage
 from beeai_framework.backend.utils import load_model, parse_broken_json, parse_model
 from beeai_framework.cancellation import AbortController, AbortSignal
 from beeai_framework.context import Run, RunContext, RunContextInput, RunInstance
@@ -105,13 +105,16 @@ class ChatModelOutput(BaseModel):
         self.finish_reason = other.finish_reason
         if self.usage and other.usage:
             merged_usage = self.usage.model_copy()
-            if other.usage.get("total_tokens"):
+            if other.usage.total_tokens:
                 merged_usage.total_tokens = max(self.usage.total_tokens, other.usage.total_tokens)
                 merged_usage.prompt_tokens = max(self.usage.prompt_tokens, other.usage.prompt_tokens)
                 merged_usage.completion_tokens = max(self.usage.completion_tokens, other.usage.completion_tokens)
             self.usage = merged_usage
         elif other.usage:
             self.usage = other.usage.model_copy()
+
+    def get_tool_calls(self) -> list[MessageToolCallContent]:
+        return [i for t in [x.get_tool_calls() for x in self.messages if isinstance(x, AssistantMessage)] for i in t]
 
     def get_text_content(self) -> str:
         return "".join([x.text for x in list(filter(lambda x: isinstance(x, AssistantMessage), self.messages))])
