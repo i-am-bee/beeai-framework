@@ -132,17 +132,18 @@ Running the basic type check looks for all python files in current directory and
 ```bash
 poe type-check
 ```
+Support for dynamic flags is available via the `${POE_ARGS}`. The `${POE_ARGS}` allows passing flags like --strict or --verbose.
 
 Running with the `--strict` flag enables strict type checking mode.
 
 ```bash
-poe type-check-strict
+poe type-check --strict
 ```
 
 Running with the `--verbose` flag offers more detailed messages during type checking.
 
 ```bash
-poe type-check-verbose
+poe type-check --verbose
 ```
 
 #### Run Tests
