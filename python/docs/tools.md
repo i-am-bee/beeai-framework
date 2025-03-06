@@ -386,7 +386,7 @@ class RiddleTool(Tool[RiddleToolInput, ToolRunOptions]):
         )
 
     async def _run(
-        self, input: RiddleToolInput, options: ToolRunOptions | None = None, context: RunContext | None = None
+        self, input: RiddleToolInput, options: ToolRunOptions | None, context: RunContext
     ) -> StringToolOutput:
         index = input.riddle_number % (len(self.data))
         riddle = self.data[index]
@@ -466,7 +466,7 @@ class OpenLibraryTool(Tool[OpenLibraryToolInput, ToolRunOptions]):
         )
 
     async def _run(
-        self, tool_input: OpenLibraryToolInput, options: ToolRunOptions | None = None, context: RunContext | None = None
+        self, tool_input: OpenLibraryToolInput, options: ToolRunOptions | None, context: RunContext
     ) -> OpenLibraryToolResult:
         key = ""
         value = ""
