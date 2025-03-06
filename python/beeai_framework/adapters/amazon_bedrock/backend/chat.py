@@ -25,19 +25,25 @@ logger = BeeLogger(__name__)
 class AmazonBedrockChatModel(LiteLLMChatModel):
     @property
     def provider_id(self) -> ProviderName:
-        return "amazonbedrock"
+        return "amazon_bedrock"
 
-    def __init__(self, model_id: str | None = None, settings: dict | None = None) -> None:
+    def __init__(
+        self, model_id: str | None = None, settings: dict | None = None
+    ) -> None:
         _settings = settings.copy() if settings is not None else {}
 
-        aws_access_key_id = _settings.get("aws_access_key_id", os.getenv("AWS_ACCESS_KEY_ID"))
+        aws_access_key_id = _settings.get(
+            "aws_access_key_id", os.getenv("AWS_ACCESS_KEY_ID")
+        )
         if not aws_access_key_id:
             raise ValueError(
                 "Access key is required for Amazon Bedrock model. Specify *aws_access_key_id* "
                 + "or set AWS_ACCESS_KEY_ID environment variable"
             )
 
-        aws_secret_access_key = _settings.get("aws_secret_access_key", os.getenv("AWS_SECRET_ACCESS_KEY"))
+        aws_secret_access_key = _settings.get(
+            "aws_secret_access_key", os.getenv("AWS_SECRET_ACCESS_KEY")
+        )
         if not aws_secret_access_key:
             raise ValueError(
                 "Secret key is required for Amazon Bedrock model. Specify *aws_secret_access_key* "
@@ -52,7 +58,11 @@ class AmazonBedrockChatModel(LiteLLMChatModel):
             )
 
         super().__init__(
-            model_id if model_id else os.getenv("AWS_CHAT_MODEL", "llama-3.1-8b-instant"),
+            (
+                model_id
+                if model_id
+                else os.getenv("AWS_CHAT_MODEL", "llama-3.1-8b-instant")
+            ),
             provider_id="bedrock",
             settings=_settings
             | {

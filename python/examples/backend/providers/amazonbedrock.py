@@ -3,7 +3,7 @@ from typing import Any, Final
 
 from pydantic import BaseModel, Field
 
-from beeai_framework.adapters.amazonbedrock.backend.chat import AmazonBedrockChatModel
+from beeai_framework.adapters.amazon_bedrock.backend.chat import AmazonBedrockChatModel
 from beeai_framework.backend.chat import ChatModel
 from beeai_framework.backend.message import UserMessage
 from beeai_framework.cancellation import AbortSignal
@@ -16,28 +16,28 @@ from beeai_framework.parsers.line_prefix import LinePrefixParser, LinePrefixPars
 MODEL_NAME: Final[str] = "meta.llama3-8b-instruct-v1:0"
 
 
-async def amazonbedrock_from_name() -> None:
-    llm = ChatModel.from_name(f"amazonbedrock:{MODEL_NAME}")
+async def amazon_bedrock_from_name() -> None:
+    llm = ChatModel.from_name(f"amazon_bedrock:{MODEL_NAME}")
     user_message = UserMessage("what states are part of New England?")
     response = await llm.create(messages=[user_message])
     print(response.get_text_content())
 
 
-async def amazonbedrock_sync() -> None:
+async def amazon_bedrock_sync() -> None:
     llm = AmazonBedrockChatModel(MODEL_NAME)
     user_message = UserMessage("what is the capital of Massachusetts?")
     response = await llm.create(messages=[user_message])
     print(response.get_text_content())
 
 
-async def amazonbedrock_stream() -> None:
+async def amazon_bedrock_stream() -> None:
     llm = AmazonBedrockChatModel(MODEL_NAME)
     user_message = UserMessage("How many islands make up the country of Cape Verde?")
     response = await llm.create(messages=[user_message], stream=True)
     print(response.get_text_content())
 
 
-async def amazonbedrock_stream_abort() -> None:
+async def amazon_bedrock_stream_abort() -> None:
     llm = AmazonBedrockChatModel(MODEL_NAME)
     user_message = UserMessage("What is the smallest of the Cape Verde islands?")
 
@@ -52,7 +52,7 @@ async def amazonbedrock_stream_abort() -> None:
         print(f"Aborted: {err}")
 
 
-async def amazonbedrock_structure() -> None:
+async def amazon_bedrock_structure() -> None:
     class TestSchema(BaseModel):
         answer: str = Field(description="your final answer")
 
@@ -62,13 +62,16 @@ async def amazonbedrock_structure() -> None:
     print(response.object)
 
 
-async def amazonbedrock_stream_parser() -> None:
+async def amazon_bedrock_stream_parser() -> None:
     llm = AmazonBedrockChatModel(MODEL_NAME)
 
     parser = LinePrefixParser(
         nodes={
             "test": LinePrefixParserNode(
-                prefix="Prefix: ", field=ParserField.from_type(str), is_start=True, is_end=True
+                prefix="Prefix: ",
+                field=ParserField.from_type(str),
+                is_start=True,
+                is_end=True,
             )
         }
     )
@@ -83,19 +86,19 @@ async def amazonbedrock_stream_parser() -> None:
 
 
 async def main() -> None:
-    print("*" * 10, "amazonbedrock_from_name")
-    await amazonbedrock_from_name()
-    print("*" * 10, "amazonbedrock_sync")
-    await amazonbedrock_sync()
-    print("*" * 10, "amazonbedrock_stream")
-    await amazonbedrock_stream()
-    print("*" * 10, "amazonbedrock_stream_abort")
-    await amazonbedrock_stream_abort()
+    print("*" * 10, "amazon_bedrock_from_name")
+    await amazon_bedrock_from_name()
+    print("*" * 10, "amazon_bedrock_sync")
+    await amazon_bedrock_sync()
+    print("*" * 10, "amazon_bedrock_stream")
+    await amazon_bedrock_stream()
+    print("*" * 10, "amazon_bedrock_stream_abort")
+    await amazon_bedrock_stream_abort()
     # NOTE: Disabled by default -- see README for more information
-    # print("*" * 10, "amazonbedrock_structure")
-    # await amazonbedrock_structure()
-    print("*" * 10, "amazonbedrock_stream_parser")
-    await amazonbedrock_stream_parser()
+    # print("*" * 10, "amazon_bedrock_structure")
+    # await amazon_bedrock_structure()
+    print("*" * 10, "amazon_bedrock_stream_parser")
+    await amazon_bedrock_stream_parser()
 
 
 if __name__ == "__main__":
