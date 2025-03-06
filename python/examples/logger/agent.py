@@ -7,12 +7,12 @@ from beeai_framework.agents.react.agent import ReActAgent
 from beeai_framework.agents.react.types import ReActAgentRunOutput
 from beeai_framework.backend.chat import ChatModel
 from beeai_framework.errors import FrameworkError
-from beeai_framework.logger import BeeLogger
+from beeai_framework.logger import Logger
 from beeai_framework.memory.unconstrained_memory import UnconstrainedMemory
 
 
 async def main() -> None:
-    logger = BeeLogger("app", level=logging.TRACE)
+    logger = Logger("app", level=logging.TRACE)
 
     agent = ReActAgent(llm=ChatModel.from_name("ollama:granite3.1-dense:8b"), tools=[], memory=UnconstrainedMemory())
 

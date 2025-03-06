@@ -27,12 +27,12 @@ from pydantic import BaseModel
 from beeai_framework.cancellation import AbortController, AbortSignal, register_signals
 from beeai_framework.emitter import Emitter, EventTrace
 from beeai_framework.errors import AbortError, FrameworkError
-from beeai_framework.logger import BeeLogger
+from beeai_framework.logger import Logger
 from beeai_framework.utils.asynchronous import ensure_async
 
 R = TypeVar("R")
 
-logger = BeeLogger(__name__)
+logger = Logger(__name__)
 
 
 @dataclass

@@ -25,11 +25,11 @@ from pydantic import BaseModel, Field
 
 from beeai_framework.context import RunContext
 from beeai_framework.emitter.emitter import Emitter
-from beeai_framework.logger import BeeLogger
+from beeai_framework.logger import Logger
 from beeai_framework.tools import ToolInputValidationError
 from beeai_framework.tools.tool import StringToolOutput, Tool, ToolRunOptions
 
-logger = BeeLogger(__name__)
+logger = Logger(__name__)
 
 
 class OpenMeteoToolInput(BaseModel):

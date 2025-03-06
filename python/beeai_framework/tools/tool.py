@@ -25,12 +25,12 @@ from typing_extensions import TypeVar
 from beeai_framework.cancellation import AbortSignal
 from beeai_framework.context import Run, RunContext, RunContextInput, RunInstance
 from beeai_framework.emitter.emitter import Emitter
-from beeai_framework.logger import BeeLogger
+from beeai_framework.logger import Logger
 from beeai_framework.retryable import Retryable, RetryableConfig, RetryableContext, RetryableInput
 from beeai_framework.tools.errors import ToolError, ToolInputValidationError
 from beeai_framework.utils.strings import to_json, to_safe_word
 
-logger = BeeLogger(__name__)
+logger = Logger(__name__)
 
 IN = TypeVar("IN", bound=BaseModel)
 

@@ -21,12 +21,12 @@ from typing import Any, Generic, Self, TypeVar
 
 import aiofiles
 
-from beeai_framework.logger import BeeLogger
+from beeai_framework.logger import Logger
 from beeai_framework.memory.base_cache import BaseCache
 from beeai_framework.memory.serializer import Serializer
 from beeai_framework.memory.sliding_cache import SlidingCache
 
-logger = BeeLogger(__name__)
+logger = Logger(__name__)
 
 T = TypeVar("T")
 

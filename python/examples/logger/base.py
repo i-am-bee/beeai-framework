@@ -1,9 +1,9 @@
 import logging
 
-from beeai_framework.logger import BeeLogger
+from beeai_framework.logger import Logger
 
 # Configure logger with default log level
-logger = BeeLogger("app", level=logging.TRACE)
+logger = Logger("app", level=logging.TRACE)
 
 # Log at different levels
 logger.trace("Trace!")

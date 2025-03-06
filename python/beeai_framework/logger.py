@@ -30,7 +30,7 @@ class LoggerError(FrameworkError):
         super().__init__(message, is_fatal=True, is_retryable=False, cause=cause)
 
 
-class BeeLoggerFormatter(Formatter):
+class LoggerFormatter(Formatter):
     def format(self, record: logging.LogRecord) -> str:
         if hasattr(record, "is_event_message") and record.is_event_message:
             return logging.Formatter(
@@ -46,7 +46,7 @@ class BeeLoggerFormatter(Formatter):
             ).format(record)
 
 
-class BeeLogger(logging.Logger):
+class Logger(logging.Logger):
     if TYPE_CHECKING:
         trace = logging.Logger.debug
 
@@ -56,7 +56,7 @@ class BeeLogger(logging.Logger):
         super().__init__(name, level)
 
         console_handler = logging.StreamHandler(stream=sys.stdout)
-        console_handler.setFormatter(BeeLoggerFormatter())
+        console_handler.setFormatter(LoggerFormatter())
 
         self.addHandler(console_handler)
 

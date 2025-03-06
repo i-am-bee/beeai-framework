@@ -22,13 +22,13 @@ from pydantic import BaseModel
 
 from beeai_framework.context import RunContext
 from beeai_framework.emitter import Emitter
-from beeai_framework.logger import BeeLogger
+from beeai_framework.logger import Logger
 from beeai_framework.tools import Tool
 from beeai_framework.tools.tool import JSONToolOutput, ToolOutput, ToolRunOptions
 from beeai_framework.utils.models import JSONSchemaModel
 from beeai_framework.utils.strings import to_safe_word
 
-logger = BeeLogger(__name__)
+logger = Logger(__name__)
 
 
 class MCPTool(Tool[BaseModel, ToolRunOptions, ToolOutput]):

@@ -17,9 +17,9 @@ import os
 
 from beeai_framework.adapters.litellm.chat import LiteLLMChatModel
 from beeai_framework.backend.constants import ProviderName
-from beeai_framework.logger import BeeLogger
+from beeai_framework.logger import Logger
 
-logger = BeeLogger(__name__)
+logger = Logger(__name__)
 
 
 class GroqChatModel(LiteLLMChatModel):

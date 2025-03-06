@@ -160,11 +160,11 @@ from beeai_framework import ReActAgent, tool
 from beeai_framework.agents.types import AgentExecutionConfig
 from beeai_framework.backend.chat import ChatModel
 from beeai_framework.errors import FrameworkError
-from beeai_framework.logger import BeeLogger
+from beeai_framework.logger import Logger
 from beeai_framework.memory.unconstrained_memory import UnconstrainedMemory
 from beeai_framework.tools.tool import StringToolOutput
 
-logger = BeeLogger(__name__)
+logger = Logger(__name__)
 
 
 # defining a tool using the `tool` decorator

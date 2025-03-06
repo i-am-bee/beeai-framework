@@ -17,7 +17,7 @@ import logging
 import pytest
 
 from beeai_framework.backend import Role
-from beeai_framework.logger import BeeLogger
+from beeai_framework.logger import Logger
 from beeai_framework.utils import MessageEvent
 
 """
@@ -27,7 +27,7 @@ Unit Tests
 
 @pytest.mark.unit
 def test_redefine_logging_methods() -> None:
-    logger = BeeLogger("app", level=logging.DEBUG)
+    logger = Logger("app", level=logging.DEBUG)
     logger.add_logging_level("TEST1", 1, "test")  # adds test log level
     logger.add_logging_level("TEST2", 2, "test")  # does not redefine test log level
     logger.add_logging_level("INFO", logging.INFO)  # does not redefine info log level
@@ -36,7 +36,7 @@ def test_redefine_logging_methods() -> None:
 
 @pytest.mark.unit
 def test_log_events() -> None:
-    logger = BeeLogger("app")
+    logger = Logger("app")
     event = MessageEvent(source=Role.USER, message="Test")
     logger.log_message_events(event)
     logger.info("Test", extra={"is_event_message": False})
