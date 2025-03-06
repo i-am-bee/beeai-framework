@@ -23,7 +23,7 @@ from pydantic import BaseModel, ConfigDict
 
 from beeai_framework.context import RunContext
 from beeai_framework.emitter.emitter import Emitter
-from beeai_framework.tools.tool import Tool, ToolRunOptions
+from beeai_framework.tools.tool import StringToolOutput, Tool, ToolRunOptions
 from beeai_framework.utils.strings import to_safe_word
 
 
@@ -35,7 +35,7 @@ class LangChainToolRunOptions(ToolRunOptions):
 T = TypeVar("T", bound=BaseModel)
 
 
-class LangChainTool(Tool[T, LangChainToolRunOptions]):
+class LangChainTool(Tool[T, LangChainToolRunOptions, StringToolOutput]):
     @property
     def name(self) -> str:
         return self._tool.name
@@ -58,7 +58,7 @@ class LangChainTool(Tool[T, LangChainToolRunOptions]):
         super().__init__(options)
         self._tool = tool
 
-    async def _run(self, input: T, options: LangChainToolRunOptions | None, context: RunContext) -> Any:
+    async def _run(self, input: T, options: LangChainToolRunOptions | None, context: RunContext) -> StringToolOutput:
         langchain_runnable_config = options.langchain_runnable_config or {} if options else {}
         args = (
             input if isinstance(input, dict) else input.model_dump(),
@@ -74,4 +74,5 @@ class LangChainTool(Tool[T, LangChainToolRunOptions]):
             response = await self._tool.ainvoke(*args)
         else:
             response = self._tool.invoke(*args)
-        return response
+
+        return StringToolOutput(result=str(response))

@@ -46,7 +46,7 @@ class OpenMeteoToolInput(BaseModel):
     )
 
 
-class OpenMeteoTool(Tool[OpenMeteoToolInput, ToolRunOptions]):
+class OpenMeteoTool(Tool[OpenMeteoToolInput, ToolRunOptions, StringToolOutput]):
     name = "OpenMeteoTool"
     description = "Retrieve current, past, or future weather forecasts for a location."
     input_schema = OpenMeteoToolInput

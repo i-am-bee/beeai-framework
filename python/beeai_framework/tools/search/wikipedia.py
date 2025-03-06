@@ -37,7 +37,7 @@ class WikipediaToolOutput(SearchToolOutput):
     pass
 
 
-class WikipediaTool(Tool[WikipediaToolInput, ToolRunOptions]):
+class WikipediaTool(Tool[WikipediaToolInput, ToolRunOptions, WikipediaToolOutput]):
     name = "Wikipedia"
     description = "Search factual and historical information, including biography, \
         history, politics, geography, society, culture, science, technology, people, \

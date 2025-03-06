@@ -30,7 +30,7 @@ from beeai_framework.errors import AbortError, FrameworkError
 from beeai_framework.utils.asynchronous import ensure_async
 from beeai_framework.utils.custom_logger import BeeLogger
 
-R = TypeVar("R", bound=BaseModel)
+R = TypeVar("R")
 
 logger = BeeLogger(__name__)
 

@@ -15,7 +15,7 @@ class RiddleToolInput(BaseModel):
     riddle_number: int = Field(description="Index of riddle to retrieve.")
 
 
-class RiddleTool(Tool[RiddleToolInput, ToolRunOptions]):
+class RiddleTool(Tool[RiddleToolInput, ToolRunOptions, StringToolOutput]):
     name = "Riddle"
     description = "It selects a riddle to test your knowledge."
     input_schema = RiddleToolInput
