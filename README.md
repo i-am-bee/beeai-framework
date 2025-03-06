@@ -150,8 +150,8 @@ To stay up-to-date on our [public roadmap](https://github.com/orgs/i-am-bee/proj
 BeeAI framework is open-source and we ❤️ contributions.<br>
 
 To help build BeeAI, take a look at our:
-- [Python contribution guidelines](/python/docs/CONTRIBUTING.md)
-- [TypeScript contribution guidelines](/typescript/docs/CONTRIBUTING.md)
+- [Python contribution guidelines](/python/CONTRIBUTING.md)
+- [TypeScript contribution guidelines](/typescript/CONTRIBUTING.md)
 
 ## Bugs
 

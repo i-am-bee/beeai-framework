@@ -15,10 +15,8 @@
 
 import os
 
-from beeai_framework.adapters.litellm.chat import LiteLLMChatModel, LiteLLMParameters
-from beeai_framework.backend.chat import ChatModelInput
+from beeai_framework.adapters.litellm.chat import LiteLLMChatModel
 from beeai_framework.backend.constants import ProviderName
-from beeai_framework.backend.message import ToolMessage
 from beeai_framework.utils.custom_logger import BeeLogger
 
 logger = BeeLogger(__name__)
@@ -37,26 +35,3 @@ class WatsonxChatModel(LiteLLMChatModel):
             provider_id="watsonx",
             settings=_settings,
         )
-
-    def _transform_input(self, input: ChatModelInput) -> LiteLLMParameters:
-        params = super()._transform_input(input)
-
-        messages_list = []
-        for message in input.messages:
-            if isinstance(message, ToolMessage):
-                messages_list.extend(
-                    [
-                        {
-                            "role": "tool",
-                            "name": content.tool_name,
-                            "content": content.result,
-                            "tool_call_id": content.tool_call_id,
-                        }
-                        for content in message.content
-                    ]
-                )
-            else:
-                messages_list.append(message.to_plain())
-
-        params.messages = messages_list
-        return params

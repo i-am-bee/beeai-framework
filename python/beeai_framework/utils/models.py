@@ -52,7 +52,7 @@ def check_model(model: T) -> None:
 type_mapping = {"string": str, "integer": int, "number": float, "boolean": bool}
 
 
-def json_to_model(model_name: str, schema: dict) -> BaseModel:
+def json_to_model(model_name: str, schema: dict) -> type[BaseModel]:
     fields = {}
     for param_name, param in schema.get("properties").items():
         fields[param_name] = (

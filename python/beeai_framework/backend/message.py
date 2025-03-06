@@ -96,7 +96,7 @@ class Message(ABC, Generic[T]):
         pass
 
     def get_texts(self) -> list[MessageTextContent]:
-        return list(filter(lambda x: isinstance(x, MessageTextContent), self.content))
+        return [cont for cont in self.content if isinstance(cont, MessageTextContent)]
 
     def to_plain(self) -> dict[str, Any]:
         return {
@@ -120,7 +120,7 @@ class AssistantMessage(Message[MessageToolCallContent | MessageTextContent]):
         return MessageTextContent(text=text)
 
     def get_tool_calls(self) -> list[MessageToolCallContent]:
-        return list(filter(lambda x: isinstance(x, MessageToolCallContent), self.content))
+        return [cont for cont in self.content if isinstance(cont, MessageToolCallContent)]
 
     def _models(self) -> Sequence[type[MessageToolCallContent] | type[MessageTextContent]]:
         return [MessageToolCallContent, MessageTextContent]

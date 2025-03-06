@@ -20,9 +20,10 @@ from mcp.client.stdio import stdio_client
 from mcp.types import Tool as MCPToolInfo
 from pydantic import BaseModel
 
+from beeai_framework.context import RunContext
 from beeai_framework.emitter import Emitter
 from beeai_framework.tools import Tool
-from beeai_framework.tools.tool import JSONToolOutput
+from beeai_framework.tools.tool import JSONToolOutput, ToolRunOptions
 from beeai_framework.utils import BeeLogger
 from beeai_framework.utils.models import json_to_model
 from beeai_framework.utils.strings import to_safe_word
@@ -30,7 +31,7 @@ from beeai_framework.utils.strings import to_safe_word
 logger = BeeLogger(__name__)
 
 
-class MCPTool(Tool[BaseModel]):
+class MCPTool(Tool[BaseModel, ToolRunOptions]):
     """Tool implementation for Model Context Protocol."""
 
     def __init__(self, server_params: StdioServerParameters, tool: MCPToolInfo, **options: int) -> None:
@@ -45,10 +46,10 @@ class MCPTool(Tool[BaseModel]):
 
     @property
     def description(self) -> str:
-        return self._tool.description
+        return self._tool.description or "No available description, use the tool based on its name and schema."
 
     @property
-    def input_schema(self) -> str:
+    def input_schema(self) -> type[BaseModel]:
         return json_to_model(self.name, self._tool.inputSchema)
 
     def _create_emitter(self) -> Emitter:
@@ -57,7 +58,7 @@ class MCPTool(Tool[BaseModel]):
             creator=self,
         )
 
-    async def _run(self, input_data: Any, options: dict | None = None) -> JSONToolOutput:
+    async def _run(self, input_data: Any, options: ToolRunOptions | None, context: RunContext) -> JSONToolOutput:
         """Execute the tool with given input."""
         logger.debug(f"Executing tool {self._tool.name} with input: {input_data}")
         async with stdio_client(self._server_params) as (read, write), ClientSession(read, write) as session:

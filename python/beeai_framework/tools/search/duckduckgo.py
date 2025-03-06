@@ -13,15 +13,14 @@
 # limitations under the License.
 
 
-from typing import Any
-
 from duckduckgo_search import DDGS
 from pydantic import BaseModel, Field
 
+from beeai_framework.context import RunContext
 from beeai_framework.emitter.emitter import Emitter
 from beeai_framework.tools import ToolError
 from beeai_framework.tools.search import SearchToolOutput, SearchToolResult
-from beeai_framework.tools.tool import Tool
+from beeai_framework.tools.tool import Tool, ToolRunOptions
 from beeai_framework.utils import BeeLogger
 
 logger = BeeLogger(__name__)
@@ -45,7 +44,7 @@ class DuckDuckGoSearchToolOutput(SearchToolOutput):
     pass
 
 
-class DuckDuckGoSearchTool(Tool[DuckDuckGoSearchToolInput]):
+class DuckDuckGoSearchTool(Tool[DuckDuckGoSearchToolInput, ToolRunOptions]):
     name = "DuckDuckGo"
     description = "Search for online trends, news, current events, real-time information, or research topics."
     input_schema = DuckDuckGoSearchToolInput
@@ -61,7 +60,9 @@ class DuckDuckGoSearchTool(Tool[DuckDuckGoSearchToolInput]):
             creator=self,
         )
 
-    async def _run(self, input: DuckDuckGoSearchToolInput, _: Any | None = None) -> DuckDuckGoSearchToolOutput:
+    async def _run(
+        self, input: DuckDuckGoSearchToolInput, options: ToolRunOptions | None, context: RunContext
+    ) -> DuckDuckGoSearchToolOutput:
         try:
             results = DDGS().text(input.query, max_results=self.max_results, safesearch=self.safe_search)
             search_results: list[SearchToolResult] = [
