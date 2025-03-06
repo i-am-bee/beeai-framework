@@ -21,6 +21,7 @@ from pydantic import BaseModel
 
 from beeai_framework.adapters.amazon_bedrock.backend.chat import AmazonBedrockChatModel
 from beeai_framework.adapters.anthropic.backend.chat import AnthropicChatModel
+from beeai_framework.adapters.azure_openai.backend.chat import AzureOpenAIChatModel
 from beeai_framework.adapters.groq.backend.chat import GroqChatModel
 from beeai_framework.adapters.ollama.backend.chat import OllamaChatModel
 from beeai_framework.adapters.openai.backend.chat import OpenAIChatModel
@@ -200,3 +201,9 @@ def test_chat_model_from(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("AWS_REGION_NAME", "region1")
     amazon_bedrock_chat_model = ChatModel.from_name("amazon_bedrock:meta.llama3-8b-instruct-v1:0")
     assert isinstance(amazon_bedrock_chat_model, AmazonBedrockChatModel)
+
+    monkeypatch.setenv("AZURE_API_KEY", "secret")
+    monkeypatch.setenv("AZURE_API_BASE", "base")
+    monkeypatch.setenv("AZURE_API_VERSION", "version")
+    azure_openai_chat_model = ChatModel.from_name("azure_openai:gpt-4o")
+    assert isinstance(azure_openai_chat_model, AzureOpenAIChatModel)
