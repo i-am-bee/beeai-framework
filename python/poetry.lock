@@ -3937,8 +3937,4 @@ cffi = ["cffi (>=1.11)"]
 [metadata]
 lock-version = "2.1"
 python-versions = ">= 3.11,<4.0"
-<<<<<<< HEAD
 content-hash = "bf2741d27a736575eb5f515b79b4f49911faa454864872e1b173536305da141c"
-=======
-content-hash = "8c247a55a67e61f07e51a673f29747b743b00175bab1d89dbee73acc1cc4a819"
->>>>>>> 9409f3c (fix(backend): tool calling, unify message content)

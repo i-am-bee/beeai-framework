@@ -25,10 +25,6 @@ from litellm import (
     get_supported_openai_params,
 )
 from litellm.types.utils import StreamingChoices
-<<<<<<< HEAD
-=======
-from pydantic import BaseModel, ConfigDict
->>>>>>> 9409f3c (fix(backend): tool calling, unify message content)
 
 from beeai_framework.backend.chat import (
     ChatModel,
@@ -79,13 +75,8 @@ class LiteLLMChatModel(ChatModel, ABC):
         input: ChatModelInput,
         run: RunContext,
     ) -> ChatModelOutput:
-<<<<<<< HEAD
         litellm_input = self._transform_input(input) | {"stream": False}
         response = await acompletion(**litellm_input)
-=======
-        litellm_input = self._transform_input(input)
-        response = await acompletion(**litellm_input.model_dump())
->>>>>>> 9409f3c (fix(backend): tool calling, unify message content)
         response_output = self._transform_output(response)
         logger.debug(f"Inference response output:\n{response_output}")
         return response_output
@@ -181,7 +172,6 @@ class LiteLLMChatModel(ChatModel, ABC):
         update = choice.delta if isinstance(choice, StreamingChoices) else choice.message
 
         return ChatModelOutput(
-<<<<<<< HEAD
             messages=(
                 [
                     (
@@ -200,22 +190,6 @@ class LiteLLMChatModel(ChatModel, ABC):
                 if update.model_dump(exclude_none=True)
                 else []
             ),
-=======
-            messages=[
-                AssistantMessage(
-                    [
-                        MessageToolCallContent(
-                            id=call.id or "dummy_id", tool_name=call.function.name, args=call.function.arguments
-                        )
-                        for call in update.tool_calls
-                    ]
-                )
-                if update.tool_calls
-                else AssistantMessage(update.content)
-            ]
-            if update.model_dump(exclude_none=True)
-            else [],
->>>>>>> 9409f3c (fix(backend): tool calling, unify message content)
             finish_reason=finish_reason,
             usage=usage,
         )

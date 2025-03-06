@@ -100,11 +100,7 @@ class Message(ABC, Generic[T]):
 
     def to_plain(self) -> dict[str, Any]:
         return {
-<<<<<<< HEAD
             "role": self.role.value if isinstance(self.role, enum.Enum) else self.role,
-=======
-            "role": self.role if isinstance(self.role, str) else self.role.value,
->>>>>>> 9409f3c (fix(backend): tool calling, unify message content)
             "content": [m.model_dump() for m in self.content],
         }
 
