@@ -31,7 +31,6 @@ from beeai_framework.utils.strings import to_safe_word
 
 logger = BeeLogger(__name__)
 
-R = TypeVar("R", bound=BaseModel)
 IN = TypeVar("IN", bound=BaseModel)
 
 
@@ -101,7 +100,7 @@ class Tool(Generic[IN, OPT], ABC):
         pass
 
     @abstractmethod
-    async def _run(self, input: IN, options: OPT | None, context: RunContext) -> R:
+    async def _run(self, input: IN, options: OPT | None, context: RunContext) -> Any:
         pass
 
     def validate_input(self, input: IN | dict[str, Any]) -> IN:
@@ -110,8 +109,8 @@ class Tool(Generic[IN, OPT], ABC):
         except ValidationError as e:
             raise ToolInputValidationError("Tool input validation error", cause=e)
 
-    def run(self, input: IN | dict[str, Any], options: OPT | None = None) -> Run[R]:
-        async def run_tool(context: RunContext) -> R:
+    def run(self, input: IN | dict[str, Any], options: OPT | None = None) -> Run[IN]:
+        async def run_tool(context: RunContext) -> IN:
             error_propagated = False
 
             try:
