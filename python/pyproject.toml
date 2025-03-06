@@ -42,7 +42,6 @@ wikipedia-api = "^0.8.1"
 async-generator = "^1.10"
 langchain-core = {version = "^0.3.41", optional = true}
 langchain-community = {version = "^0.3.19", optional = true}
-boto3 = "^1.37.5"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^8.3.4"
@@ -55,6 +54,8 @@ pytest-asyncio = "^0.25.3"
 nbstripout = "^0.8.1"
 pytest-cov = "^6.0.0"
 types-chevron = "^0.14.2.20250103"
+boto3 = "^1.37.5"
+
 
 [tool.mypy]
 mypy_path = "$MYPY_CONFIG_FILE_DIR/beeai_framework"
