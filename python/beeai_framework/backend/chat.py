@@ -30,6 +30,7 @@ from beeai_framework.retryable import Retryable, RetryableConfig, RetryableConte
 from beeai_framework.template import PromptTemplate, PromptTemplateInput
 from beeai_framework.tools.tool import Tool
 from beeai_framework.utils.custom_logger import BeeLogger
+from beeai_framework.utils.lists import flatten
 from beeai_framework.utils.models import ModelLike
 from beeai_framework.utils.strings import to_json
 
@@ -114,7 +115,8 @@ class ChatModelOutput(BaseModel):
             self.usage = other.usage.model_copy()
 
     def get_tool_calls(self) -> list[MessageToolCallContent]:
-        return [i for t in [x.get_tool_calls() for x in self.messages if isinstance(x, AssistantMessage)] for i in t]
+        assistant_message = [msg for msg in self.messages if isinstance(msg, AssistantMessage)]
+        return flatten([x.get_tool_calls() for x in assistant_message])
 
     def get_text_content(self) -> str:
         return "".join([x.text for x in list(filter(lambda x: isinstance(x, AssistantMessage), self.messages))])

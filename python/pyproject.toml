@@ -40,6 +40,8 @@ duckduckgo-search = "^7.3.2"
 json-repair = "^0.39.0"
 wikipedia-api = "^0.8.1"
 async-generator = "^1.10"
+langchain-core = {version = "^0.3.41", optional = true}
+langchain-community = {version = "^0.3.19", optional = true}
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^8.3.4"

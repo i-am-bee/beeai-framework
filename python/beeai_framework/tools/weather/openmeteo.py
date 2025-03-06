@@ -23,9 +23,10 @@ import httpx
 import requests
 from pydantic import BaseModel, Field
 
+from beeai_framework.context import RunContext
 from beeai_framework.emitter.emitter import Emitter
 from beeai_framework.tools import ToolInputValidationError
-from beeai_framework.tools.tool import StringToolOutput, Tool
+from beeai_framework.tools.tool import StringToolOutput, Tool, ToolRunOptions
 from beeai_framework.utils import BeeLogger
 
 logger = BeeLogger(__name__)
@@ -45,7 +46,7 @@ class OpenMeteoToolInput(BaseModel):
     )
 
 
-class OpenMeteoTool(Tool[OpenMeteoToolInput]):
+class OpenMeteoTool(Tool[OpenMeteoToolInput, ToolRunOptions]):
     name = "OpenMeteoTool"
     description = "Retrieve current, past, or future weather forecasts for a location."
     input_schema = OpenMeteoToolInput
@@ -137,7 +138,9 @@ class OpenMeteoTool(Tool[OpenMeteoToolInput]):
         params["temperature_unit"] = input.temperature_unit
         return params
 
-    async def _run(self, input: OpenMeteoToolInput, options: Any = None) -> StringToolOutput:
+    async def _run(
+        self, input: OpenMeteoToolInput, options: ToolRunOptions | None, context: RunContext
+    ) -> StringToolOutput:
         params = urlencode(self.get_params(input), doseq=True)
         logger.debug(f"Using OpenMeteo URL: https://api.open-meteo.com/v1/forecast?{params}")
 
