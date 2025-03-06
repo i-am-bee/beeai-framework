@@ -16,6 +16,7 @@
 import logging
 import sys
 from logging import Formatter
+from typing import TYPE_CHECKING
 
 from beeai_framework.errors import FrameworkError
 from beeai_framework.utils.config import CONFIG
@@ -46,6 +47,9 @@ class BeeLoggerFormatter(Formatter):
 
 
 class BeeLogger(logging.Logger):
+    if TYPE_CHECKING:
+        trace = logging.Logger.debug
+
     def __init__(self, name: str, level: int | str = CONFIG.log_level) -> None:
         self.add_logging_level("TRACE", logging.DEBUG - 5)
 

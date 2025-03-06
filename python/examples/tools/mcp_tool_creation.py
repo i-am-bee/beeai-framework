@@ -1,6 +1,7 @@
 import asyncio
 import os
 
+from dotenv import load_dotenv
 from mcp import ClientSession, StdioServerParameters
 from mcp.client.stdio import stdio_client
 
@@ -8,6 +9,8 @@ from beeai_framework.adapters.ollama.backend.chat import OllamaChatModel
 from beeai_framework.agents.bee import BeeAgent
 from beeai_framework.memory import UnconstrainedMemory
 from beeai_framework.tools.mcp_tools import MCPTool
+
+load_dotenv()
 
 # Create server parameters for stdio connection
 server_params = StdioServerParameters(

@@ -34,8 +34,8 @@ server_params = StdioServerParameters(
     command="npx",
     args=["-y", "@modelcontextprotocol/server-slack"],
     env={
-        "SLACK_BOT_TOKEN": os.getenv("SLACK_BOT_TOKEN"),
-        "SLACK_TEAM_ID": os.getenv("SLACK_TEAM_ID"),
+        "SLACK_BOT_TOKEN": os.environ["SLACK_BOT_TOKEN"],
+        "SLACK_TEAM_ID": os.environ["SLACK_TEAM_ID"],
         "PATH": os.getenv("PATH", default=""),
     },
 )
@@ -85,10 +85,12 @@ def process_agent_events(data: dict[str, Any], event: EventMeta) -> None:
         reader.write("Agent 🤖 : ", "starting new iteration")
     elif event.name == "success":
         reader.write("Agent 🤖 : ", "success")
+    else:
+        print(event.path)
 
 
 def observer(emitter: Emitter) -> None:
-    emitter.on("*", process_agent_events, EmitterOptions(match_nested=False))
+    emitter.on("*.*", process_agent_events, EmitterOptions(match_nested=True))
 
 
 async def main() -> None:

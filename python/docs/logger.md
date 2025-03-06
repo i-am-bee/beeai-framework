@@ -45,8 +45,23 @@ In the BeeAI framework, the `Logger` class is an abstraction built on top of Pyt
 
 To use the logger in your application:
 
+<!-- embedme examples/logger/base.py -->
 ```py
-# Coming soon
+import logging
+
+from beeai_framework.utils import BeeLogger
+
+# Configure logger with default log level
+logger = BeeLogger("app", level=logging.TRACE)
+
+# Log at different levels
+logger.trace("Trace!")
+logger.debug("Debug!")
+logger.info("Info!")
+logger.warning("Warning!")
+logger.error("Error!")
+logger.fatal("Fatal!")
+
 ```
 
 _Source: examples/logger/base.py_
@@ -101,8 +116,42 @@ The logger integrates with BeeAI framework's error handling system through the `
 
 The Logger seamlessly integrates with agents in the framework. Below is an example that demonstrates how logging can be used in conjunction with agents and event emitters.
 
+<!-- embedme examples/logger/agent.py -->
 ```py
-# Coming soon
+import asyncio
+import logging
+import sys
+import traceback
+
+from beeai_framework.agents.bee.agent import BeeAgent
+from beeai_framework.agents.types import BeeRunOutput
+from beeai_framework.backend.chat import ChatModel
+from beeai_framework.errors import FrameworkError
+from beeai_framework.memory.unconstrained_memory import UnconstrainedMemory
+from beeai_framework.utils import BeeLogger
+
+
+async def main() -> None:
+    logger = BeeLogger("app", level=logging.TRACE)
+
+    agent = BeeAgent(llm=ChatModel.from_name("ollama:granite3.1-dense:8b"), tools=[], memory=UnconstrainedMemory())
+
+    output: BeeRunOutput = await agent.run("Hello!").observe(
+        lambda emitter: emitter.on(
+            "update", lambda data, event: logger.info(f"Event {event.path} triggered by {type(event.creator).__name__}")
+        )
+    )
+
+    logger.info(f"Agent 🤖 : {output.result.text}")
+
+
+if __name__ == "__main__":
+    try:
+        asyncio.run(main())
+    except FrameworkError as e:
+        traceback.print_exc()
+        sys.exit(e.explain())
+
 ```
 
 _Source: /examples/logger/agent.py_
@@ -111,4 +160,5 @@ _Source: /examples/logger/agent.py_
 
 ## Examples
 
-* Coming soon! 🎉
+- [base.py](/python/examples/logger/base.py) - Simple example showing log levels
+- [agent.py](/python/examples/logger/agent.py) - Simple example showing agent integration

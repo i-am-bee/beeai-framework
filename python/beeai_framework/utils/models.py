@@ -12,12 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from abc import ABC
 from collections.abc import Sequence
 from contextlib import suppress
 from typing import Any, TypeVar, Union
 
-from pydantic import BaseModel, Field, create_model
-from pydantic_core import SchemaValidator
+from pydantic import BaseModel, ConfigDict, Field, GetJsonSchemaHandler, create_model
+from pydantic.json_schema import JsonSchemaValue
+from pydantic_core import CoreSchema, SchemaValidator
 
 T = TypeVar("T", bound=BaseModel)
 ModelLike = Union[T, dict]  # noqa: UP007
@@ -49,15 +51,59 @@ def check_model(model: T) -> None:
     schema_validator.validate_python(model.__dict__)
 
 
-type_mapping = {"string": str, "integer": int, "number": float, "boolean": bool}
+class JSONSchemaModel(ABC, BaseModel):
+    _custom_json_schema: JsonSchemaValue
 
+    model_config = ConfigDict(
+        arbitrary_types_allowed=False, validate_default=True, json_schema_mode_override="validation"
+    )
 
-def json_to_model(model_name: str, schema: dict) -> type[BaseModel]:
-    fields = {}
-    for param_name, param in schema.get("properties").items():
-        fields[param_name] = (
-            type_mapping.get(param.get("type")),
-            Field(description=param.get("description"), default=None),
+    @classmethod
+    def __get_pydantic_json_schema__(
+        cls,
+        core_schema: CoreSchema,
+        handler: GetJsonSchemaHandler,
+        /,
+    ) -> JsonSchemaValue:
+        return cls._custom_json_schema.copy()
+
+    @classmethod
+    def create(cls, schema_name: str, schema: dict) -> type["JSONSchemaModel"]:
+        type_mapping = {
+            "string": str,
+            "integer": int,
+            "number": float,
+            "boolean": bool,
+            "object": dict,
+            "array": list,
+            "null": None,
+        }
+
+        fields: dict[str, tuple[type, Any]] = {}
+        required = set(schema.get("required", []))
+        properties = schema.get("properties", {})
+
+        for param_name, param in properties.items():
+            target_type = type_mapping.get(param.get("type"))
+            is_optional = param_name not in required
+            if is_optional:
+                target_type = target_type | type(None)
+
+            if not target_type:
+                raise ValueError(f"Unsupported type '{param.get('type')}' found in the schema.")
+
+            if target_type is dict:
+                target_type = cls.create(param_name, param)
+
+            fields[param_name] = (
+                target_type,
+                Field(description=param.get("description"), default=None if is_optional else ...),
+            )
+
+        model: type[JSONSchemaModel] = create_model(
+            schema_name,
+            **fields,
+            __base__=cls,
         )
-    model = create_model(model_name, **fields)
-    return model
+        model._custom_json_schema = schema
+        return model
