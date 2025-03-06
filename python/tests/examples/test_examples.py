@@ -27,9 +27,9 @@ exclude = list(
     filter(
         None,
         [
-            "version.py",
+            # Dont test helper code
             "helpers/io.py",
-            # only test if API key is found
+            # Only test authenticated providers if API key is found
             "backend/providers/watsonx.py" if os.getenv("WATSONX_API_KEY") is None else None,
             "backend/providers/openai_example.py" if os.getenv("OPENAI_API_KEY") is None else None,
             "backend/providers/groq.py" if os.getenv("GROQ_API_KEY") is None else None,
@@ -37,14 +37,17 @@ exclude = list(
             # Google backend picks up environment variables/google auth credentials directly
             "backend/providers/vertexai.py" if os.getenv("VERTEXAI_PROJECT") is None else None,
             "backend/providers/amazon_bedrock.py" if os.getenv("AWS_ACCESS_KEY_ID") is None else None,
-            # requires Searx instance
+            # MCP examples require Slack bot
+            "tools/mcp_agent.py" if os.getenv("SLACK_BOT_TOKEN") is None else None,
+            "tools/mcp_tool_creation.py" if os.getenv("SLACK_BOT_TOKEN") is None else None,
+            # Example requires Searx instance
             "workflows/searx_agent.py",
         ],
     )
 )
 
 
-def example_name(path: str) -> str:
+def example_name(path: pathlib.Path) -> str:
     return os.path.relpath(path, start="examples")
 
 
