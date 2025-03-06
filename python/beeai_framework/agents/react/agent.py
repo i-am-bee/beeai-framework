@@ -69,7 +69,7 @@ class ReActAgent(BaseAgent[ReActAgentRunOutput]):
         else:
             self.runner = DefaultRunner
         self.emitter = Emitter.root().child(
-            namespace=["agent", "bee"],
+            namespace=["agent", "react"],
             creator=self,
         )
 
@@ -98,7 +98,7 @@ class ReActAgent(BaseAgent[ReActAgentRunOutput]):
             extra_description.append(f"Tool ${tool.name}': ${tool.description}.")
 
         return AgentMeta(
-            name="Bee",
+            name="ReAct",
             tools=tools,
             description="The BeeAI framework demonstrates its ability to auto-correct and adapt in real-time, improving"
             " the overall reliability and resilience of the system.",
