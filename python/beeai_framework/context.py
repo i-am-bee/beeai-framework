@@ -25,7 +25,7 @@ from typing import Any, Generic, Self, TypeVar
 from pydantic import BaseModel
 
 from beeai_framework.cancellation import AbortController, AbortSignal, register_signals
-from beeai_framework.emitter import Emitter, EventTrace
+from beeai_framework.emitter import Callback, Emitter, EmitterOptions, EventTrace, Matcher
 from beeai_framework.errors import AbortError, FrameworkError
 from beeai_framework.logger import Logger
 from beeai_framework.utils.asynchronous import ensure_async
@@ -33,6 +33,8 @@ from beeai_framework.utils.asynchronous import ensure_async
 R = TypeVar("R")
 
 logger = Logger(__name__)
+
+storage: ContextVar["RunContext"] = ContextVar("storage")
 
 
 @dataclass
@@ -49,27 +51,31 @@ class Run(Generic[R]):
     def __init__(self, handler: Callable[[], R | Awaitable[R]], context: "RunContext") -> None:
         super().__init__()
         self.handler = ensure_async(handler)
-        self.tasks: list[tuple[Callable[[Any], None], Any]] = []
+        self.tasks: list[tuple[Callable, list]] = []
         self.run_context = context
 
     def __await__(self) -> Generator[Any, None, R]:
         return self._run_tasks().__await__()
 
-    def observe(self, fn: Callable[[Emitter], Any]) -> Self:
-        self.tasks.append((fn, self.run_context.emitter))
+    def observe(self, fn: Callable[[Emitter], None]) -> Self:
+        self.tasks.append((fn, [self.run_context.emitter]))
+        return self
+
+    def on(self, matcher: Matcher, callback: Callback, options: EmitterOptions | None = None) -> Self:
+        self.tasks.append((self.run_context.emitter.match, [matcher, callback, options]))
         return self
 
     def context(self, context: dict) -> Self:
-        self.tasks.append((self._set_context, context))
+        self.tasks.append((self._set_context, [context]))
         return self
 
     def middleware(self, fn: Callable[["RunContext"], None]) -> Self:
-        self.tasks.append((fn, self.run_context))
+        self.tasks.append((fn, [self.run_context]))
         return self
 
     async def _run_tasks(self) -> R:
-        for fn, param in self.tasks:
-            await ensure_async(fn)(param)
+        for fn, params in self.tasks:
+            await ensure_async(fn)(*params)
 
         self.tasks.clear()
         return await self.handler()
@@ -80,8 +86,6 @@ class Run(Generic[R]):
 
 
 class RunContext(RunInstance):
-    storage: ContextVar[Self] = ContextVar("storage", default=None)
-
     def __init__(self, *, instance: RunInstance, context_input: RunContextInput, parent: Self | None = None) -> None:
         self.instance = instance
         self.context_input = context_input
@@ -124,7 +128,7 @@ class RunContext(RunInstance):
     def enter(
         instance: RunInstance, context_input: RunContextInput, fn: Callable[["RunContext"], Awaitable[R]]
     ) -> Run[R]:
-        parent = RunContext.storage.get()
+        parent = storage.get(None)
         context = RunContext(instance=instance, context_input=context_input, parent=parent)
 
         async def handler() -> R:
@@ -134,7 +138,7 @@ class RunContext(RunInstance):
                 await emitter.emit("start", None)
 
                 async def _context_storage_run() -> R:
-                    RunContext.storage.set(context)
+                    storage.set(context)
                     return await fn(context)
 
                 async def _context_signal_aborted() -> None:
