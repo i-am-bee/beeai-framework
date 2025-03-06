@@ -17,7 +17,7 @@ import os
 
 from beeai_framework.adapters.litellm.chat import LiteLLMChatModel
 from beeai_framework.backend.constants import ProviderName
-from beeai_framework.utils.custom_logger import BeeLogger
+from beeai_framework.logger import BeeLogger
 
 logger = BeeLogger(__name__)
 

@@ -16,9 +16,9 @@ from beeai_framework.backend.chat import ChatModel, ChatModelParameters
 from beeai_framework.emitter.emitter import Emitter, EventMeta
 from beeai_framework.emitter.types import EmitterOptions
 from beeai_framework.errors import FrameworkError
+from beeai_framework.logger import BeeLogger
 from beeai_framework.memory.token_memory import TokenMemory
 from beeai_framework.tools.mcp_tools import MCPTool
-from beeai_framework.utils.custom_logger import BeeLogger
 from examples.helpers.io import ConsoleReader
 
 # Load environment variables

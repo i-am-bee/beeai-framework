@@ -26,10 +26,10 @@ from beeai_framework.backend.utils import load_model, parse_broken_json, parse_m
 from beeai_framework.cancellation import AbortController, AbortSignal
 from beeai_framework.context import Run, RunContext, RunContextInput, RunInstance
 from beeai_framework.emitter import Emitter
+from beeai_framework.logger import BeeLogger
 from beeai_framework.retryable import Retryable, RetryableConfig, RetryableContext, RetryableInput
 from beeai_framework.template import PromptTemplate, PromptTemplateInput
 from beeai_framework.tools.tool import Tool
-from beeai_framework.utils.custom_logger import BeeLogger
 from beeai_framework.utils.lists import flatten
 from beeai_framework.utils.models import ModelLike
 from beeai_framework.utils.strings import to_json

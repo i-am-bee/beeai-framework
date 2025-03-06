@@ -41,7 +41,7 @@ from beeai_framework.backend.message import (
 )
 from beeai_framework.backend.utils import parse_broken_json
 from beeai_framework.context import RunContext
-from beeai_framework.utils.custom_logger import BeeLogger
+from beeai_framework.logger import BeeLogger
 from beeai_framework.utils.dicts import exclude_keys, exclude_none, include_keys
 
 logger = BeeLogger(__name__)

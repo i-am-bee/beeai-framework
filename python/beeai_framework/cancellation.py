@@ -20,7 +20,7 @@ from typing import TypeVar
 from pydantic import BaseModel
 
 from beeai_framework.errors import AbortError
-from beeai_framework.utils.custom_logger import BeeLogger
+from beeai_framework.logger import BeeLogger
 
 logger = BeeLogger(__name__)
 

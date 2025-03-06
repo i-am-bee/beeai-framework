@@ -22,7 +22,7 @@ from pydantic import BaseModel
 
 from beeai_framework.cancellation import AbortSignal, abort_signal_handler
 from beeai_framework.errors import FrameworkError
-from beeai_framework.utils.custom_logger import BeeLogger
+from beeai_framework.logger import BeeLogger
 from beeai_framework.utils.models import ModelLike, to_model
 
 T = TypeVar("T", bound=BaseModel)
