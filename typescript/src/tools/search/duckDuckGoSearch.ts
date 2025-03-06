@@ -15,7 +15,6 @@
  */
 
 import { SearchOptions, search as rawDDGSearch, SafeSearchType } from "duck-duck-scrape";
-import { stripHtml } from "string-strip-html";
 import pThrottle, { Options as ThrottleOptions } from "p-throttle";
 import {
   SearchToolOptions,
@@ -152,6 +151,8 @@ export class DuckDuckGoSearchTool extends Tool<
         };
       },
     });
+
+    const { stripHtml } = await import("string-strip-html");
 
     return new DuckDuckGoSearchToolOutput(
       results.map((result) => ({
