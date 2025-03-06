@@ -54,7 +54,7 @@ pytest-asyncio = "^0.25.3"
 nbstripout = "^0.8.1"
 pytest-cov = "^6.0.0"
 types-chevron = "^0.14.2.20250103"
-boto3 = "^1.37.5"
+boto3 = {version = "^1.37.5", optional = true}
 
 
 [tool.mypy]

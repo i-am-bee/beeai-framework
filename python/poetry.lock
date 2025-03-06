@@ -262,7 +262,7 @@ lxml = ["lxml"]
 name = "boto3"
 version = "1.37.7"
 description = "The AWS SDK for Python"
-optional = false
+optional = true
 python-versions = ">=3.8"
 groups = ["dev"]
 files = [
@@ -282,7 +282,7 @@ crt = ["botocore[crt] (>=1.21.0,<2.0a0)"]
 name = "botocore"
 version = "1.37.7"
 description = "Low-level, data-driven core of boto 3."
-optional = false
+optional = true
 python-versions = ">=3.8"
 groups = ["dev"]
 files = [
@@ -1288,7 +1288,7 @@ files = [
 name = "jmespath"
 version = "1.0.1"
 description = "JSON Matching Expressions"
-optional = false
+optional = true
 python-versions = ">=3.7"
 groups = ["dev"]
 files = [
@@ -2721,7 +2721,7 @@ testing = ["fields", "hunter", "process-tests", "pytest-xdist", "virtualenv"]
 name = "python-dateutil"
 version = "2.9.0.post0"
 description = "Extensions to the standard Python datetime module"
-optional = false
+optional = true
 python-versions = "!=3.0.*,!=3.1.*,!=3.2.*,>=2.7"
 groups = ["dev"]
 files = [
@@ -3178,7 +3178,7 @@ files = [
 name = "s3transfer"
 version = "0.11.4"
 description = "An Amazon S3 Transfer Manager"
-optional = false
+optional = true
 python-versions = ">=3.8"
 groups = ["dev"]
 files = [
@@ -3196,7 +3196,7 @@ crt = ["botocore[crt] (>=1.37.4,<2.0a.0)"]
 name = "six"
 version = "1.17.0"
 description = "Python 2 and 3 compatibility utilities"
-optional = false
+optional = true
 python-versions = "!=3.0.*,!=3.1.*,!=3.2.*,>=2.7"
 groups = ["dev"]
 files = [
@@ -3937,4 +3937,4 @@ cffi = ["cffi (>=1.11)"]
 [metadata]
 lock-version = "2.1"
 python-versions = ">= 3.11,<4.0"
-content-hash = "781a1ffcc2f16b65872c797c9cb5300bd599a6a218648d3c099574ab0800431f"
+content-hash = "b8fbc2dfdf89be41444ce64b1b2172f6b67c1ecc19884fc19d1d79e00f3bb24b"

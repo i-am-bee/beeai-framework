@@ -190,11 +190,11 @@ def test_chat_model_from(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("VERTEXAI_PROJECT", "myproject")
     vertexai_chat_model = ChatModel.from_name("vertexai:gemini-2.0-flash-lite-001")
     assert isinstance(vertexai_chat_model, VertexAIChatModel)
-    
+
     monkeypatch.setenv("VERTEXAI_PROJECT", "myproject")
     vertexai_chat_model = ChatModel.from_name("vertexai:gemini-2.0-flash-lite-001")
     assert isinstance(vertexai_chat_model, VertexAIChatModel)
-    
+
     monkeypatch.setenv("VERTEXAI_PROJECT", "myproject")
     vertexai_chat_model = ChatModel.from_name("vertexai:gemini-2.0-flash-lite-001")
     assert isinstance(vertexai_chat_model, VertexAIChatModel)
