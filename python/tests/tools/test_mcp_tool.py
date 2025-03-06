@@ -112,7 +112,7 @@ class TestMCPTool:
     ) -> None:
         mock__run.return_value = str(call_tool_result)
         tool = MCPTool(server_params=StdioServerParameters, tool=mock_tool_info)
-        input_data = {"key": "value"}
+        input_data = {"a": 1, "b": 2}
 
         result = await tool.run(input_data)
 

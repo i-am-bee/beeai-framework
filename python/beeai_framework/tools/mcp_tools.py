@@ -25,7 +25,7 @@ from beeai_framework.emitter import Emitter
 from beeai_framework.tools import Tool
 from beeai_framework.tools.tool import JSONToolOutput, ToolRunOptions
 from beeai_framework.utils import BeeLogger
-from beeai_framework.utils.models import json_to_model
+from beeai_framework.utils.models import JSONSchemaModel
 from beeai_framework.utils.strings import to_safe_word
 
 logger = BeeLogger(__name__)
@@ -50,7 +50,7 @@ class MCPTool(Tool[BaseModel, ToolRunOptions]):
 
     @property
     def input_schema(self) -> type[BaseModel]:
-        return json_to_model(self.name, self._tool.inputSchema)
+        return JSONSchemaModel.create(self.name, self._tool.inputSchema)
 
     def _create_emitter(self) -> Emitter:
         return Emitter.root().child(
