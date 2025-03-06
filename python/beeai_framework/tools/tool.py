@@ -17,9 +17,10 @@ import inspect
 from abc import ABC, abstractmethod
 from collections.abc import Callable
 from functools import cached_property
-from typing import Any, Generic, TypeVar
+from typing import Any, Generic
 
 from pydantic import BaseModel, ConfigDict, ValidationError, create_model
+from typing_extensions import TypeVar
 
 from beeai_framework.cancellation import AbortSignal
 from beeai_framework.context import Run, RunContext, RunContextInput, RunInstance
@@ -44,7 +45,7 @@ class ToolRunOptions(BaseModel):
     signal: AbortSignal | None = None
 
 
-OPT = TypeVar("OPT", bound=ToolRunOptions)
+OPT = TypeVar("OPT", bound=ToolRunOptions, default=ToolRunOptions)
 
 
 class ToolOutput(ABC):
@@ -56,8 +57,11 @@ class ToolOutput(ABC):
     def is_empty(self) -> bool:
         pass
 
-    def to_string(self) -> str:
+    def __str__(self) -> str:
         return self.get_text_content()
+
+
+OUT = TypeVar("OUT", bound=ToolOutput, default=ToolOutput)
 
 
 class StringToolOutput(ToolOutput):
@@ -83,7 +87,7 @@ class JSONToolOutput(ToolOutput):
         return not self.result
 
 
-class Tool(Generic[IN, OPT], ABC):
+class Tool(Generic[IN, OPT, OUT], ABC):
     def __init__(self, options: dict[str, Any] | None = None) -> None:
         self.options: dict[str, Any] | None = options or None
 
@@ -111,7 +115,7 @@ class Tool(Generic[IN, OPT], ABC):
         pass
 
     @abstractmethod
-    async def _run(self, input: IN, options: OPT | None, context: RunContext) -> Any:
+    async def _run(self, input: IN, options: OPT | None, context: RunContext) -> OUT:
         pass
 
     def validate_input(self, input: IN | dict[str, Any]) -> IN:
@@ -120,8 +124,8 @@ class Tool(Generic[IN, OPT], ABC):
         except ValidationError as e:
             raise ToolInputValidationError("Tool input validation error", cause=e)
 
-    def run(self, input: IN | dict[str, Any], options: OPT | None = None) -> Run[IN]:
-        async def run_tool(context: RunContext) -> IN:
+    def run(self, input: IN | dict[str, Any], options: OPT | None = None) -> Run[OUT]:
+        async def run_tool(context: RunContext) -> OUT:
             error_propagated = False
 
             try:
@@ -217,7 +221,7 @@ def tool(tool_function: Callable) -> Tool:
     if tool_description is None:
         raise ValueError("No tool description provided.")
 
-    class FunctionTool(Tool[Any, ToolRunOptions]):
+    class FunctionTool(Tool[Any, ToolRunOptions, ToolOutput]):
         name = tool_name
         description = tool_description or ""
         input_schema = tool_input
@@ -231,12 +235,17 @@ def tool(tool_function: Callable) -> Tool:
                 creator=self,
             )
 
-        async def _run(self, input: Any, options: ToolRunOptions | None, context: RunContext) -> Any:
+        async def _run(self, input: Any, options: ToolRunOptions | None, context: RunContext) -> ToolOutput:
             tool_input_dict = input.model_dump()
             if inspect.iscoroutinefunction(tool_function):
-                return await tool_function(**tool_input_dict)
+                result = await tool_function(**tool_input_dict)
             else:
-                return tool_function(**tool_input_dict)
+                result = tool_function(**tool_input_dict)
+
+            if isinstance(result, ToolOutput):
+                return result
+            else:
+                return StringToolOutput(result=str(result))
 
     f_tool = FunctionTool()
     return f_tool

@@ -15,7 +15,7 @@
 
 import pytest
 
-from beeai_framework.tools import tool
+from beeai_framework.tools import StringToolOutput, tool
 
 """
 Unit Tests
@@ -40,8 +40,8 @@ async def test_tool_annotation() -> None:
         return query
 
     query = "Hello!"
-    result = await test_tool.run({"query": query})
-    assert result == query
+    result: StringToolOutput = await test_tool.run({"query": query})
+    assert result.get_text_content() == query
 
 
 @pytest.mark.unit
@@ -55,8 +55,8 @@ async def test_tool_annotation_no_params() -> None:
         """
         return "Hello!"
 
-    result = await test_tool.run({})
-    assert result == "Hello!"
+    result: StringToolOutput = await test_tool.run({})
+    assert result.get_text_content() == "Hello!"
 
 
 @pytest.mark.unit
@@ -67,8 +67,8 @@ async def test_tool_annotation_empty_desc() -> None:
         """"""
         return "Hello!"
 
-    result = await test_tool.run({})
-    assert result == "Hello!"
+    result: StringToolOutput = await test_tool.run({})
+    assert result.get_text_content() == "Hello!"
 
 
 @pytest.mark.unit

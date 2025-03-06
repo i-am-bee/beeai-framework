@@ -361,7 +361,7 @@ class RiddleToolInput(BaseModel):
     riddle_number: int = Field(description="Index of riddle to retrieve.")
 
 
-class RiddleTool(Tool[RiddleToolInput, ToolRunOptions]):
+class RiddleTool(Tool[RiddleToolInput, ToolRunOptions, StringToolOutput]):
     name = "Riddle"
     description = "It selects a riddle to test your knowledge."
     input_schema = RiddleToolInput
@@ -435,7 +435,7 @@ from beeai_framework.context import RunContext
 from beeai_framework.emitter.emitter import Emitter
 from beeai_framework.errors import FrameworkError
 from beeai_framework.tools import ToolInputValidationError
-from beeai_framework.tools.tool import Tool, ToolRunOptions
+from beeai_framework.tools.tool import JSONToolOutput, Tool, ToolRunOptions
 
 
 class OpenLibraryToolInput(BaseModel):
@@ -450,7 +450,7 @@ class OpenLibraryToolResult(BaseModel):
     bib_key: str
 
 
-class OpenLibraryTool(Tool[OpenLibraryToolInput, ToolRunOptions]):
+class OpenLibraryTool(Tool[OpenLibraryToolInput, ToolRunOptions, JSONToolOutput]):
     name = "OpenLibrary"
     description = """Provides access to a library of books with information about book titles,
         authors, contributors, publication dates, publisher and isbn."""
@@ -467,7 +467,7 @@ class OpenLibraryTool(Tool[OpenLibraryToolInput, ToolRunOptions]):
 
     async def _run(
         self, tool_input: OpenLibraryToolInput, options: ToolRunOptions | None, context: RunContext
-    ) -> OpenLibraryToolResult:
+    ) -> JSONToolOutput:
         key = ""
         value = ""
         input_vars = vars(tool_input)
@@ -489,10 +489,12 @@ class OpenLibraryTool(Tool[OpenLibraryToolInput, ToolRunOptions]):
 
             json_output = response.json()[f"{key}:{value}"]
 
-        return OpenLibraryToolResult(
-            preview_url=json_output.get("preview_url", ""),
-            info_url=json_output.get("info_url", ""),
-            bib_key=json_output.get("bib_key", ""),
+        return JSONToolOutput(
+            result={
+                "preview_url": json_output.get("preview_url", ""),
+                "info_url": json_output.get("info_url", ""),
+                "bib_key": json_output.get("bib_key", ""),
+            }
         )
 
 

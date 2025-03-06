@@ -44,7 +44,7 @@ class DuckDuckGoSearchToolOutput(SearchToolOutput):
     pass
 
 
-class DuckDuckGoSearchTool(Tool[DuckDuckGoSearchToolInput, ToolRunOptions]):
+class DuckDuckGoSearchTool(Tool[DuckDuckGoSearchToolInput, ToolRunOptions, DuckDuckGoSearchToolOutput]):
     name = "DuckDuckGo"
     description = "Search for online trends, news, current events, real-time information, or research topics."
     input_schema = DuckDuckGoSearchToolInput

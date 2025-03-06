@@ -19,7 +19,7 @@ import pytest
 
 from beeai_framework.emitter.emitter import Emitter, EventMeta
 from beeai_framework.emitter.types import EmitterOptions
-from beeai_framework.tools import tool
+from beeai_framework.tools import StringToolOutput, tool
 
 """
 Unit Tests
@@ -51,5 +51,5 @@ async def test_tool_emitter() -> None:
         return query
 
     query = "Hello!"
-    result = await test_tool.run({"query": query}).observe(observer)
-    assert result == query
+    result: StringToolOutput = await test_tool.run({"query": query}).observe(observer)
+    assert result.get_text_content() == query
