@@ -56,7 +56,7 @@ class ToolOutput(ABC):
     def is_empty(self) -> bool:
         pass
 
-    def to_string(self) -> str:
+    def __str__(self) -> str:
         return self.get_text_content()
 
 
@@ -220,12 +220,12 @@ def tool(tool_function: Callable) -> Tool:
                 creator=self,
             )
 
-        async def _run(self, input: Any, options: ToolRunOptions | None, context: RunContext) -> Any:
+        async def _run(self, input: Any, options: ToolRunOptions | None, context: RunContext) -> StringToolOutput:
             tool_input_dict = input.model_dump()
             if inspect.iscoroutinefunction(tool_function):
-                return await tool_function(**tool_input_dict)
+                return StringToolOutput(str(await tool_function(**tool_input_dict)))
             else:
-                return tool_function(**tool_input_dict)
+                return StringToolOutput(str(tool_function(**tool_input_dict)))
 
     f_tool = FunctionTool()
     return f_tool
