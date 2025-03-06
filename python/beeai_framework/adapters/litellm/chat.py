@@ -83,7 +83,6 @@ class LiteLLMChatModel(ChatModel, ABC):
 
     async def _create_stream(self, input: ChatModelInput, _: RunContext) -> AsyncGenerator[ChatModelOutput]:
         litellm_input = self._transform_input(input) | {"stream": True}
-        print(litellm_input | {"messages": None, "tools": None})
         response = await acompletion(**litellm_input)
 
         is_empty = True
@@ -173,20 +172,24 @@ class LiteLLMChatModel(ChatModel, ABC):
         update = choice.delta if isinstance(choice, StreamingChoices) else choice.message
 
         return ChatModelOutput(
-            messages=[
-                AssistantMessage(
-                    [
-                        MessageToolCallContent(
-                            id=call.id or "dummy_id", tool_name=call.function.name, args=call.function.arguments
+            messages=(
+                [
+                    (
+                        AssistantMessage(
+                            [
+                                MessageToolCallContent(
+                                    id=call.id or "dummy_id", tool_name=call.function.name, args=call.function.arguments
+                                )
+                                for call in update.tool_calls
+                            ]
                         )
-                        for call in update.tool_calls
-                    ]
-                )
-                if update.tool_calls
-                else AssistantMessage(update.content)
-            ]
-            if update.model_dump(exclude_none=True)
-            else [],
+                        if update.tool_calls
+                        else AssistantMessage(update.content)
+                    )
+                ]
+                if update.model_dump(exclude_none=True)
+                else []
+            ),
             finish_reason=finish_reason,
             usage=usage,
         )
