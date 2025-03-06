@@ -17,9 +17,10 @@ import inspect
 from abc import ABC, abstractmethod
 from collections.abc import Callable
 from functools import cached_property
-from typing import Any, Generic, TypeVar
+from typing import Any, Generic
 
 from pydantic import BaseModel, ConfigDict, ValidationError, create_model
+from typing_extensions import TypeVar
 
 from beeai_framework.cancellation import AbortSignal
 from beeai_framework.context import Run, RunContext, RunContextInput, RunInstance
@@ -44,7 +45,7 @@ class ToolRunOptions(BaseModel):
     signal: AbortSignal | None = None
 
 
-OPT = TypeVar("OPT", bound=ToolRunOptions)
+OPT = TypeVar("OPT", bound=ToolRunOptions, default=ToolRunOptions)
 
 
 class ToolOutput(ABC):
@@ -60,7 +61,7 @@ class ToolOutput(ABC):
         return self.get_text_content()
 
 
-OUT = TypeVar("OUT", bound=ToolOutput)
+OUT = TypeVar("OUT", bound=ToolOutput, default=ToolOutput)
 
 
 class StringToolOutput(ToolOutput):
