@@ -132,7 +132,7 @@ class Emitter(Generic[T]):
     def match(self, matcher: Matcher, callback: Callback, options: EmitterOptions | None = None) -> CleanupFn:
         def create_matcher() -> MatcherFn:
             matchers: list[MatcherFn] = []
-            match_nested = options.match_nested if options else False
+            match_nested = options.match_nested if options else None
 
             if matcher == "*":
                 match_nested = False if match_nested is None else match_nested
