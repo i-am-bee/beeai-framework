@@ -31,7 +31,7 @@ from beeai_framework.utils.strings import to_safe_word
 
 logger = BeeLogger(__name__)
 
-T = TypeVar("T", bound=BaseModel)
+IN = TypeVar("IN", bound=BaseModel)
 
 
 class RetryOptions(BaseModel):
@@ -42,6 +42,9 @@ class RetryOptions(BaseModel):
 class ToolRunOptions(BaseModel):
     retry_options: RetryOptions | None = None
     signal: AbortSignal | None = None
+
+
+OPT = TypeVar("OPT", bound=ToolRunOptions)
 
 
 class ToolOutput(ABC):
@@ -69,7 +72,7 @@ class StringToolOutput(ToolOutput):
         return self.result
 
 
-class Tool(Generic[T], ABC):
+class Tool(Generic[IN, OPT], ABC):
     def __init__(self, options: dict[str, Any] | None = None) -> None:
         self.options: dict[str, Any] | None = options or None
 
@@ -85,7 +88,7 @@ class Tool(Generic[T], ABC):
 
     @property
     @abstractmethod
-    def input_schema(self) -> type[T]:
+    def input_schema(self) -> type[IN]:
         pass
 
     @cached_property
@@ -97,17 +100,17 @@ class Tool(Generic[T], ABC):
         pass
 
     @abstractmethod
-    async def _run(self, input: T, options: ToolRunOptions | None = None) -> Any:
+    async def _run(self, input: IN, options: OPT | None, context: RunContext) -> Any:
         pass
 
-    def validate_input(self, input: T | dict[str, Any]) -> T:
+    def validate_input(self, input: IN | dict[str, Any]) -> IN:
         try:
             return self.input_schema.model_validate(input)
         except ValidationError as e:
             raise ToolInputValidationError("Tool input validation error", cause=e)
 
-    def run(self, input: T | dict[str, Any], options: ToolRunOptions | None = None) -> Run[T]:
-        async def run_tool(context: RunContext) -> T:
+    def run(self, input: IN | dict[str, Any], options: OPT | None = None) -> Run[IN]:
+        async def run_tool(context: RunContext) -> IN:
             error_propagated = False
 
             try:
@@ -119,7 +122,7 @@ class Tool(Generic[T], ABC):
                     nonlocal error_propagated
                     error_propagated = False
                     await context.emitter.emit("start", meta)
-                    return await self._run(validated_input, options)
+                    return await self._run(validated_input, options, context)
 
                 async def on_error(error: Exception, _: RetryableContext) -> None:
                     nonlocal error_propagated
@@ -203,7 +206,7 @@ def tool(tool_function: Callable) -> Tool:
     if tool_description is None:
         raise ValueError("No tool description provided.")
 
-    class FunctionTool(Tool):
+    class FunctionTool(Tool[Any, ToolRunOptions]):
         name = tool_name
         description = tool_description or ""
         input_schema = tool_input
@@ -217,7 +220,7 @@ def tool(tool_function: Callable) -> Tool:
                 creator=self,
             )
 
-        async def _run(self, input: T, _: ToolRunOptions | None = None) -> None:
+        async def _run(self, input: Any, options: ToolRunOptions | None, context: RunContext) -> Any:
             tool_input_dict = input.model_dump()
             if inspect.iscoroutinefunction(tool_function):
                 return await tool_function(**tool_input_dict)

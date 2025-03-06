@@ -104,7 +104,7 @@ class TestMCPTool:
         tool = MCPTool(client=mock_client_session, tool=mock_tool_info)
         input_data = {"key": "value"}
 
-        result = await tool._run(input_data)
+        result = await tool._run(input_data, {}, None)
 
         mock_client_session.call_tool.assert_awaited_once_with(name="test_tool", arguments=input_data)
         assert isinstance(result, MCPToolOutput)
@@ -136,7 +136,7 @@ class TestAddNumbersTool:
         tool = MCPTool(client=mock_client_session, tool=add_numbers_tool_info)
         input_data = {"a": 5, "b": 3}
 
-        result = await tool._run(input_data)
+        result = await tool._run(input_data, {}, None)
 
         mock_client_session.call_tool.assert_awaited_once_with(name="add_numbers", arguments=input_data)
         assert isinstance(result, MCPToolOutput)
