@@ -18,7 +18,7 @@ import * as R from "remeda";
 import { Serializable, SerializableClass } from "@/internals/serializable.js";
 import { AnyConstructable, ClassConstructor, NamedFunction } from "@/internals/types.js";
 import { SafeWeakMap, SafeWeakSet } from "@/internals/helpers/weakRef.js";
-import { deserializeError, serializeError } from "serialize-error";
+import { deserializeError, serializeError } from "serialize-error-cjs";
 import { Version } from "@/version.js";
 import {
   extractClassName,

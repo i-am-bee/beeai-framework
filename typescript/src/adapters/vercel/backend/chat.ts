@@ -31,6 +31,8 @@ import {
   jsonSchema,
   LanguageModelV1,
   streamText,
+  TextPart,
+  ToolCallPart,
 } from "ai";
 import { Emitter } from "@/emitter/emitter.js";
 import { AssistantMessage, Message, ToolMessage } from "@/backend/message.js";
@@ -185,9 +187,12 @@ export abstract class VercelChatModel<
   protected transformMessages(messages: (CoreAssistantMessage | CoreToolMessage)[]): Message[] {
     return messages.flatMap((msg) => {
       if (msg.role === "tool") {
-        return new ToolMessage(msg.content, msg.experimental_providerMetadata);
+        return new ToolMessage(msg.content, msg.providerOptions);
       }
-      return new AssistantMessage(msg.content, msg.experimental_providerMetadata);
+      return new AssistantMessage(
+        msg.content as TextPart | ToolCallPart | string,
+        msg.providerOptions,
+      );
     });
   }
 
