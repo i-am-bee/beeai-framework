@@ -151,7 +151,7 @@ BeeAI framework is open-source and we ❤️ contributions.<br>
 
 To help build BeeAI, take a look at our:
 - [Python contribution guidelines](/python/CONTRIBUTING.md) 
-- [TypeScript contribution guidelines](/typescript/docs/CONTRIBUTING.md)
+- [TypeScript contribution guidelines](/typescript/CONTRIBUTING.md)
 
 ## Bugs
 
