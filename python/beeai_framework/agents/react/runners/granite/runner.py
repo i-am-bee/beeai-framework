@@ -12,9 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from beeai_framework.agents.runners.default.prompts import ToolNoResultsTemplate, UserEmptyPromptTemplate
-from beeai_framework.agents.runners.default.runner import DefaultRunner
-from beeai_framework.agents.runners.granite.prompts import (
+from beeai_framework.agents.react.runners.default.prompts import ToolNoResultsTemplate, UserEmptyPromptTemplate
+from beeai_framework.agents.react.runners.default.runner import DefaultRunner
+from beeai_framework.agents.react.runners.granite.prompts import (
     GraniteAssistantPromptTemplate,
     GraniteSchemaErrorTemplate,
     GraniteSystemPromptTemplate,
@@ -23,7 +23,7 @@ from beeai_framework.agents.runners.granite.prompts import (
     GraniteToolNotFoundErrorTemplate,
     GraniteUserPromptTemplate,
 )
-from beeai_framework.agents.types import BeeAgentTemplates, BeeInput, BeeRunOptions
+from beeai_framework.agents.react.types import ReActAgentInput, ReActAgentRunOptions, ReActAgentTemplates
 from beeai_framework.backend.message import MessageToolResultContent, ToolMessage
 from beeai_framework.context import RunContext
 from beeai_framework.emitter import EmitterOptions, EventMeta
@@ -37,7 +37,7 @@ from beeai_framework.utils.strings import create_strenum
 class GraniteRunner(DefaultRunner):
     use_native_tool_calling: bool = True
 
-    def __init__(self, input: BeeInput, options: BeeRunOptions, run: RunContext) -> None:
+    def __init__(self, input: ReActAgentInput, options: ReActAgentRunOptions, run: RunContext) -> None:
         super().__init__(input, options, run)
 
         async def on_update(data: dict, event: EventMeta) -> None:
@@ -98,8 +98,8 @@ class GraniteRunner(DefaultRunner):
             ),
         )
 
-    def default_templates(self) -> BeeAgentTemplates:
-        return BeeAgentTemplates(
+    def default_templates(self) -> ReActAgentTemplates:
+        return ReActAgentTemplates(
             system=GraniteSystemPromptTemplate,
             assistant=GraniteAssistantPromptTemplate,
             user=GraniteUserPromptTemplate,

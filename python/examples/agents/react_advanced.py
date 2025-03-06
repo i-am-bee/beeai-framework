@@ -8,8 +8,9 @@ from pydantic import BaseModel
 
 from beeai_framework import Tool, UnconstrainedMemory
 from beeai_framework.adapters.ollama.backend.chat import OllamaChatModel
-from beeai_framework.agents.bee.agent import BeeAgent
-from beeai_framework.agents.types import AgentExecutionConfig, BeeAgentTemplates, BeeTemplateFactory
+from beeai_framework.agents.react.agent import ReActAgent
+from beeai_framework.agents.react.types import ReActAgentTemplateFactory, ReActAgentTemplates
+from beeai_framework.agents.types import AgentExecutionConfig
 from beeai_framework.cancellation import AbortSignal
 from beeai_framework.emitter.emitter import Emitter, EventMeta
 from beeai_framework.emitter.types import EmitterOptions
@@ -64,12 +65,12 @@ Use one of the following tools: {{#trim}}{{#tools}}{{name}},{{/tools}}{{/trim}}
     return new_config
 
 
-def create_agent() -> BeeAgent:
+def create_agent() -> ReActAgent:
     """Create and configure the agent with tools and LLM"""
 
     llm = OllamaChatModel("llama3.1")
 
-    templates: dict[str, BeeAgentTemplates | BeeTemplateFactory] = {
+    templates: dict[str, ReActAgentTemplates | ReActAgentTemplateFactory] = {
         "user": lambda template: template.fork(customizer=user_customizer),
         "system": lambda template: template.fork(customizer=system_customizer),
         "tool_no_result_error": lambda template: template.fork(customizer=no_result_customizer),
@@ -82,7 +83,7 @@ def create_agent() -> BeeAgent:
         DuckDuckGoSearchTool(),
     ]
 
-    agent = BeeAgent(llm=llm, templates=templates, tools=tools, memory=UnconstrainedMemory())
+    agent = ReActAgent(llm=llm, templates=templates, tools=tools, memory=UnconstrainedMemory())
 
     return agent
 

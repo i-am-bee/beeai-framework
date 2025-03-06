@@ -8,7 +8,7 @@ from typing import Any
 from dotenv import load_dotenv
 
 from beeai_framework import Tool
-from beeai_framework.agents.bee.agent import BeeAgent
+from beeai_framework.agents.react.agent import ReActAgent
 from beeai_framework.agents.types import AgentExecutionConfig
 from beeai_framework.backend.chat import ChatModel, ChatModelParameters
 from beeai_framework.emitter.emitter import Emitter, EventMeta
@@ -29,7 +29,7 @@ logger = BeeLogger("app", level=logging.DEBUG)
 reader = ConsoleReader()
 
 
-def create_agent() -> BeeAgent:
+def create_agent() -> ReActAgent:
     """Create and configure the agent with tools and LLM"""
 
     # Other models to try:
@@ -56,7 +56,7 @@ def create_agent() -> BeeAgent:
         pass
 
     # Create agent with memory and tools
-    agent = BeeAgent(llm=llm, tools=tools, memory=TokenMemory(llm))
+    agent = ReActAgent(llm=llm, tools=tools, memory=TokenMemory(llm))
 
     return agent
 
@@ -94,7 +94,7 @@ async def main() -> None:
             f"The code interpreter tool is enabled. Please ensure that it is running on {code_interpreter_url}",
         )
 
-    reader.write("🛠️ System: ", "Agent initialized with LangChain Wikipedia tool.")
+    reader.write("🛠️ System: ", "Agent initialized with Wikipedia tool.")
 
     # Main interaction loop with user input
     for prompt in reader:

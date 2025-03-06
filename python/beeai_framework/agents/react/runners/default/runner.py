@@ -17,13 +17,13 @@ from typing import Any
 
 from pydantic import BaseModel
 
-from beeai_framework.agents.runners.base import (
+from beeai_framework.agents.react.runners.base import (
     BaseRunner,
-    BeeRunnerLLMInput,
-    BeeRunnerToolInput,
-    BeeRunnerToolResult,
+    ReActAgentRunnerLLMInput,
+    ReActAgentRunnerToolInput,
+    ReActAgentRunnerToolResult,
 )
-from beeai_framework.agents.runners.default.prompts import (
+from beeai_framework.agents.react.runners.default.prompts import (
     AssistantPromptTemplate,
     SchemaErrorTemplate,
     SchemaErrorTemplateInput,
@@ -39,11 +39,11 @@ from beeai_framework.agents.runners.default.prompts import (
     UserPromptTemplate,
     UserPromptTemplateInput,
 )
-from beeai_framework.agents.types import (
-    BeeAgentRunIteration,
-    BeeAgentTemplates,
-    BeeIterationResult,
-    BeeRunInput,
+from beeai_framework.agents.react.types import (
+    ReActAgentIterationResult,
+    ReActAgentRunInput,
+    ReActAgentRunIteration,
+    ReActAgentTemplates,
 )
 from beeai_framework.backend.chat import ChatModelOutput
 from beeai_framework.backend.message import AssistantMessage, SystemMessage, UserMessage
@@ -68,8 +68,8 @@ from beeai_framework.utils.strings import create_strenum, to_json
 class DefaultRunner(BaseRunner):
     use_native_tool_calling: bool = False
 
-    def default_templates(self) -> BeeAgentTemplates:
-        return BeeAgentTemplates(
+    def default_templates(self) -> ReActAgentTemplates:
+        return ReActAgentTemplates(
             system=SystemPromptTemplate,
             assistant=AssistantPromptTemplate,
             user=UserPromptTemplate,
@@ -120,7 +120,7 @@ class DefaultRunner(BaseRunner):
             ),
         )
 
-    async def llm(self, input: BeeRunnerLLMInput) -> BeeAgentRunIteration:
+    async def llm(self, input: ReActAgentRunnerLLMInput) -> ReActAgentRunIteration:
         async def on_retry(ctx: RetryableContext, last_error: Exception) -> None:
             await input.emitter.emit("retry", {"meta": input.meta})
 
@@ -135,7 +135,7 @@ class DefaultRunner(BaseRunner):
                     schema_error_prompt: str = self.templates.schema_error.render(SchemaErrorTemplateInput())
                     await self.memory.add(UserMessage(schema_error_prompt, {"tempMessage": True}))
 
-        async def executor(_: RetryableContext) -> BeeAgentRunIteration:
+        async def executor(_: RetryableContext) -> ReActAgentRunIteration:
             await input.emitter.emit("start", {"meta": input.meta, "tools": self._input.tools, "memory": self.memory})
 
             parser = self.create_parser()
@@ -204,8 +204,8 @@ class DefaultRunner(BaseRunner):
                 ]
             )
 
-            return BeeAgentRunIteration(
-                raw=output, state=BeeIterationResult.model_validate(parser.final_state, strict=False)
+            return ReActAgentRunIteration(
+                raw=output, state=ReActAgentIterationResult.model_validate(parser.final_state, strict=False)
             )
 
         if self._options and self._options.execution and self._options.execution.max_retries_per_step:
@@ -223,7 +223,7 @@ class DefaultRunner(BaseRunner):
             )
         ).get()
 
-    async def tool(self, input: BeeRunnerToolInput) -> BeeRunnerToolResult:
+    async def tool(self, input: ReActAgentRunnerToolInput) -> ReActAgentRunnerToolResult:
         tool: Tool | None = next(
             (
                 tool
@@ -238,7 +238,7 @@ class DefaultRunner(BaseRunner):
                 Exception(f"Agent was trying to use non-existing tool '${input.state.tool_name}'")
             )
 
-            return BeeRunnerToolResult(
+            return ReActAgentRunnerToolResult(
                 success=False,
                 output=StringToolOutput(
                     self.templates.tool_not_found_error.render(
@@ -265,7 +265,7 @@ class DefaultRunner(BaseRunner):
             )
             self._failed_attempts_counter.use(error)
 
-        async def executor(_: RetryableContext) -> BeeRunnerToolResult:
+        async def executor(_: RetryableContext) -> ReActAgentRunnerToolResult:
             try:
                 tool_output: ToolOutput = await tool.run(input.state.tool_input, options={})  # TODO: pass tool options
                 output = (
@@ -273,20 +273,20 @@ class DefaultRunner(BaseRunner):
                     if not tool_output.is_empty()
                     else StringToolOutput(self.templates.tool_no_result_error.render({}))
                 )
-                return BeeRunnerToolResult(
+                return ReActAgentRunnerToolResult(
                     output=output,
                     success=True,
                 )
             except ToolInputValidationError as e:
                 self._failed_attempts_counter.use(e)
-                return BeeRunnerToolResult(
+                return ReActAgentRunnerToolResult(
                     success=False,
                     output=StringToolOutput(self.templates.tool_input_error.render({"reason": e.explain()})),
                 )
             except Exception as e:
                 err = ToolError.ensure(e)
                 self._failed_attempts_counter.use(err)
-                return BeeRunnerToolResult(
+                return ReActAgentRunnerToolResult(
                     success=False,
                     output=StringToolOutput(self.templates.tool_error.render({"reason": err.explain()})),
                 )
@@ -304,7 +304,7 @@ class DefaultRunner(BaseRunner):
             )
         ).get()
 
-    async def init_memory(self, input: BeeRunInput) -> BaseMemory:
+    async def init_memory(self, input: ReActAgentRunInput) -> BaseMemory:
         memory = TokenMemory(
             capacity_threshold=0.85, sync_threshold=0.5, llm=self._input.llm
         )  # TODO handlers needs to be fixed

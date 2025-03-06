@@ -22,11 +22,11 @@ from typing import Self
 from pydantic import BaseModel, ConfigDict, Field, InstanceOf
 
 from beeai_framework.agents.base import BaseAgent, BaseMemory
-from beeai_framework.agents.bee import BeeAgent
+from beeai_framework.agents.react import ReActAgent
+from beeai_framework.agents.react.types import ReActAgentRunOutput
 from beeai_framework.agents.types import (
     AgentExecutionConfig,
     AgentMeta,
-    BeeRunOutput,
 )
 from beeai_framework.backend.chat import ChatModel
 from beeai_framework.backend.message import AssistantMessage, Message
@@ -85,13 +85,13 @@ class AgentWorkflow:
         return self._add(name, agent if callable(agent) else self._create_factory(agent))
 
     def _create_factory(self, agent_input: AgentFactoryInput) -> AgentFactory:
-        def factory(memory: BaseMemory) -> BeeAgent:
+        def factory(memory: BaseMemory) -> ReActAgent:
             def customizer(config: PromptTemplateInput) -> PromptTemplateInput:
                 new_config = config.model_copy()
                 new_config.defaults["instructions"] = agent_input.instructions or config.defaults.get("instructions")
                 return new_config
 
-            return BeeAgent(
+            return ReActAgent(
                 llm=agent_input.llm,
                 tools=agent_input.tools or [],
                 memory=memory,
@@ -109,7 +109,7 @@ class AgentWorkflow:
                 await memory.add(message)
 
             agent = await ensure_async(factory)(memory.as_read_only())
-            run_output: BeeRunOutput = await agent.run()
+            run_output: ReActAgentRunOutput = await agent.run()
             state.final_answer = run_output.result.text
             state.new_messages.append(
                 AssistantMessage(f"Assistant Name: {name}\nAssistant Response: {run_output.result.text}")

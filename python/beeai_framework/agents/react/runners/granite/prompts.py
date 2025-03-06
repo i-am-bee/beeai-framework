@@ -14,7 +14,7 @@
 
 from datetime import UTC, datetime
 
-from beeai_framework.agents.runners.default.prompts import (
+from beeai_framework.agents.react.runners.default.prompts import (
     AssistantPromptTemplateInput,
     SchemaErrorTemplateInput,
     SystemPromptTemplateInput,

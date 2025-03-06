@@ -326,7 +326,7 @@ The framework's agents use specialized templates to structure their behavior. Yo
 import sys
 import traceback
 
-from beeai_framework.agents.runners.default.prompts import (
+from beeai_framework.agents.react.runners.default.prompts import (
     SystemPromptTemplate,
     ToolDefinition,
 )

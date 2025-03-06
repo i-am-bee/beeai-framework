@@ -2,13 +2,13 @@ import asyncio
 import sys
 import traceback
 
-from beeai_framework import BeeAgent, UnconstrainedMemory
+from beeai_framework import ReActAgent, UnconstrainedMemory
 from beeai_framework.adapters.ollama.backend.chat import OllamaChatModel
 from beeai_framework.errors import FrameworkError
 
 
 async def main() -> None:
-    agent = BeeAgent(
+    agent = ReActAgent(
         llm=OllamaChatModel("llama3.1"),
         memory=UnconstrainedMemory(),
         tools=[],

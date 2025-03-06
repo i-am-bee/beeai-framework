@@ -76,8 +76,8 @@ final_answer: The current weather in Las Vegas is 20.5°C with an apparent tempe
 > During execution, the agent emits partial updates as it generates each line, followed by complete updates. Updates follow a strict order: first all partial updates for "thought," then a complete "thought" update, then moving to the next component.
 
 For practical examples, see:
-- [simple.py](/python/examples/agents/simple.py) - Basic example of a Bee Agent using OpenMeteo and DuckDuckGo tools
-- [bee.py](/python/examples/agents/bee.py) - More complete example using Wikipedia integration
+- [simple.py](/python/examples/agents/simple.py) - Basic example of a ReAct Agent using OpenMeteo and DuckDuckGo tools
+- [react.py](/python/examples/agents/react.py) - More complete example using Wikipedia integration
 - [granite.py](/python/examples/agents/granite.py) - Example using the Granite model
 
 ---
@@ -97,7 +97,7 @@ response = await agent.run(
 ).observe(observer)
 ```
 
-_Source: [examples/agents/bee.py](/python/examples/agents/bee.py)_
+_Source: [examples/agents/react.py](/python/examples/agents/react.py)_
 
 > [!TIP]
 > The default is zero retries and no timeout. For complex tasks, increasing the max_iterations is recommended.
@@ -112,7 +112,7 @@ Customize how the agent formats prompts, including the system prompt that define
 import sys
 import traceback
 
-from beeai_framework.agents.runners.default.prompts import (
+from beeai_framework.agents.react.runners.default.prompts import (
     SystemPromptTemplate,
     ToolDefinition,
 )
@@ -163,7 +163,7 @@ The agent uses several templates that you can override:
 Enhance your agent's capabilities by providing it with tools to interact with external systems.
 
 ```py
-agent = BeeAgent(
+agent = ReActAgent(
     llm=llm,
     tools=[DuckDuckGoSearchTool(), OpenMeteoTool()],
     memory=UnconstrainedMemory()
@@ -186,7 +186,7 @@ _Source: [examples/agents/simple.py](/python/examples/agents/simple.py)_
 Memory allows your agent to maintain context across multiple interactions.
 
 ```python
-agent = BeeAgent(
+agent = ReActAgent(
     llm=llm,
     tools=[DuckDuckGoSearchTool(), OpenMeteoTool()],
     memory=UnconstrainedMemory()
@@ -248,7 +248,8 @@ from beeai_framework import (
     UserMessage,
 )
 from beeai_framework.adapters.ollama.backend.chat import OllamaChatModel
-from beeai_framework.agents.types import AgentMeta, BeeRunInput, BeeRunOptions
+from beeai_framework.agents.react.types import ReActAgentRunInput, ReActAgentRunOptions
+from beeai_framework.agents.types import AgentMeta
 from beeai_framework.backend.chat import ChatModel
 from beeai_framework.context import RunContext
 from beeai_framework.emitter import Emitter
@@ -266,7 +267,7 @@ class RunOutput(BaseModel):
     state: State
 
 
-class RunOptions(BeeRunOptions):
+class RunOptions(ReActAgentRunOptions):
     max_retries: int | None = None
 
 
@@ -283,10 +284,13 @@ class CustomAgent(BaseAgent[RunOutput]):
         )
 
     async def _run(
-        self, run_input: ModelLike[BeeRunInput], options: ModelLike[BeeRunOptions] | None, context: RunContext
+        self,
+        run_input: ModelLike[ReActAgentRunInput],
+        options: ModelLike[ReActAgentRunOptions] | None,
+        context: RunContext,
     ) -> RunOutput:
-        run_input = to_model(BeeRunInput, run_input)
-        options = to_model_optional(BeeRunOptions, options)
+        run_input = to_model(ReActAgentRunInput, run_input)
+        options = to_model_optional(ReActAgentRunOptions, options)
 
         class CustomSchema(BaseModel):
             thought: str = Field(description="Describe your thought process before coming with a final answer")
@@ -352,7 +356,7 @@ import asyncio
 import sys
 import traceback
 
-from beeai_framework.agents.bee.agent import BeeAgent
+from beeai_framework.agents.react.agent import ReActAgent
 from beeai_framework.agents.types import AgentExecutionConfig
 from beeai_framework.backend.chat import ChatModel
 from beeai_framework.backend.message import AssistantMessage, UserMessage
@@ -363,11 +367,11 @@ from beeai_framework.memory.unconstrained_memory import UnconstrainedMemory
 memory = UnconstrainedMemory()
 
 
-def create_agent() -> BeeAgent:
+def create_agent() -> ReActAgent:
     llm = ChatModel.from_name("ollama:granite3.1-dense:8b")
 
     # Initialize the agent
-    agent = BeeAgent(llm=llm, memory=memory, tools=[])
+    agent = ReActAgent(llm=llm, memory=memory, tools=[])
 
     return agent
 
@@ -511,6 +515,6 @@ _Source: [examples/workflows/multi_agents.py](/python/examples/workflows/multi_a
 ## Examples
 
 - [simple.py](/python/examples/agents/simple.py) - Basic agent implementation
-- [bee.py](/python/examples/agents/bee.py) - More complete implementation
+- [react.py](/python/examples/agents/react.py) - More complete implementation
 - [granite.py](/python/examples/agents/granite.py) - Using Granite model
 - [agents.ipynb](/python/examples/notebooks/agents.ipynb) - Interactive notebook examples

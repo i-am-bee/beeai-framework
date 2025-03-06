@@ -14,7 +14,7 @@
 
 
 from beeai_framework.agents import BaseAgent
-from beeai_framework.agents.bee.agent import BeeAgent
+from beeai_framework.agents.react.agent import ReActAgent
 from beeai_framework.backend import (
     AssistantMessage,
     CustomMessage,
@@ -40,13 +40,13 @@ __all__ = [
     "AssistantMessage",
     "BaseAgent",
     "BaseMemory",
-    "BeeAgent",
     "CustomMessage",
     "LoggerError",
     "Message",
     "OpenMeteoTool",
     "Prompt",
     "PromptTemplateError",
+    "ReActAgent",
     "ReadOnlyMemory",
     "Role",
     "Serializable",

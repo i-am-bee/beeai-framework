@@ -17,7 +17,7 @@ import inspect
 from abc import ABC, abstractmethod
 from collections.abc import Callable
 from functools import cached_property
-from typing import Any, Generic
+from typing import Any, Generic, TypeAlias
 
 from pydantic import BaseModel, ConfigDict, ValidationError, create_model
 from typing_extensions import TypeVar
@@ -249,3 +249,6 @@ def tool(tool_function: Callable) -> Tool:
 
     f_tool = FunctionTool()
     return f_tool
+
+
+AnyTool: TypeAlias = Tool[BaseModel, ToolRunOptions, ToolOutput]

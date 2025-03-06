@@ -15,7 +15,7 @@ This repository contains examples demonstrating the usage of the BeeAI Framework
 
 ## Agents
 
-- [`bee.py`](/python/examples/agents/bee.py): Basic Bee Agent implementation
+- [`react.py`](/python/examples/agents/react.py): Basic ReAct Agent implementation
 - [`simple.py`](/python/examples/agents/simple.py): Simple agent implementation
 
 ## Workflows

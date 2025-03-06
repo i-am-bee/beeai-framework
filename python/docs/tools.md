@@ -128,13 +128,14 @@ _Source: [/python/examples/tools/advanced.py](/python/examples/tools/advanced.py
 The true power of tools emerges when integrating them with agents. Tools extend the agent's capabilities, allowing it to perform actions beyond text generation:
 
 <!-- embedme examples/tools/agent.py -->
+
 ```py
 from beeai_framework.adapters.ollama.backend.chat import OllamaChatModel
-from beeai_framework.agents.bee import BeeAgent
+from beeai_framework.agents.react import ReActAgent
 from beeai_framework.memory import UnconstrainedMemory
 from beeai_framework.tools.weather.openmeteo import OpenMeteoTool
 
-agent = BeeAgent(llm=OllamaChatModel("llama3.1"), tools=[OpenMeteoTool()], memory=UnconstrainedMemory())
+agent = ReActAgent(llm=OllamaChatModel("llama3.1"), tools=[OpenMeteoTool()], memory=UnconstrainedMemory())
 
 ```
 
@@ -145,6 +146,7 @@ _Source: [/python/examples/tools/agent.py](/python/examples/tools/agent.py)_
 For simpler tools, you can use the `tool` decorator to quickly create a tool from a function:
 
 <!-- embedme examples/tools/decorator.py -->
+
 ```py
 import asyncio
 import json
@@ -154,7 +156,7 @@ from urllib.parse import quote
 
 import requests
 
-from beeai_framework import BeeAgent, tool
+from beeai_framework import ReActAgent, tool
 from beeai_framework.agents.types import AgentExecutionConfig
 from beeai_framework.backend.chat import ChatModel
 from beeai_framework.errors import FrameworkError
@@ -197,7 +199,7 @@ async def main() -> None:
 
     chat_model = ChatModel.from_name("ollama:granite3.1-dense:8b")
 
-    agent = BeeAgent(llm=chat_model, tools=[basic_calculator], memory=UnconstrainedMemory())
+    agent = ReActAgent(llm=chat_model, tools=[basic_calculator], memory=UnconstrainedMemory())
 
     result = await agent.run("What is the square root of 36?", execution=AgentExecutionConfig(total_max_retries=10))
 
@@ -222,12 +224,13 @@ _Source: [/python/examples/tools/decorator.py](/python/examples/tools/decorator.
 Use the DuckDuckGo tool to search the web and retrieve current information:
 
 <!-- embedme examples/tools/duckduckgo.py -->
+
 ```py
 import asyncio
 import sys
 import traceback
 
-from beeai_framework.agents.bee import BeeAgent
+from beeai_framework.agents.react import ReActAgent
 from beeai_framework.backend.chat import ChatModel
 from beeai_framework.errors import FrameworkError
 from beeai_framework.memory import UnconstrainedMemory
@@ -236,7 +239,7 @@ from beeai_framework.tools.search.duckduckgo import DuckDuckGoSearchTool
 
 async def main() -> None:
     chat_model = ChatModel.from_name("ollama:granite3.1-dense:8b")
-    agent = BeeAgent(llm=chat_model, tools=[DuckDuckGoSearchTool()], memory=UnconstrainedMemory())
+    agent = ReActAgent(llm=chat_model, tools=[DuckDuckGoSearchTool()], memory=UnconstrainedMemory())
 
     result = await agent.run("How tall is the mount Everest?")
 
@@ -265,7 +268,7 @@ import asyncio
 import sys
 import traceback
 
-from beeai_framework.agents.bee import BeeAgent
+from beeai_framework.agents.react import ReActAgent
 from beeai_framework.backend.chat import ChatModel
 from beeai_framework.errors import FrameworkError
 from beeai_framework.memory import UnconstrainedMemory
@@ -274,7 +277,7 @@ from beeai_framework.tools.weather.openmeteo import OpenMeteoTool
 
 async def main() -> None:
     llm = ChatModel.from_name("ollama:granite3.1-dense:8b")
-    agent = BeeAgent(llm=llm, tools=[OpenMeteoTool()], memory=UnconstrainedMemory())
+    agent = ReActAgent(llm=llm, tools=[OpenMeteoTool()], memory=UnconstrainedMemory())
 
     result = await agent.run("What's the current weather in London?")
 

@@ -14,7 +14,8 @@ from beeai_framework import (
     UserMessage,
 )
 from beeai_framework.adapters.ollama.backend.chat import OllamaChatModel
-from beeai_framework.agents.types import AgentMeta, BeeRunInput, BeeRunOptions
+from beeai_framework.agents.react.types import ReActAgentRunInput, ReActAgentRunOptions
+from beeai_framework.agents.types import AgentMeta
 from beeai_framework.backend.chat import ChatModel
 from beeai_framework.context import RunContext
 from beeai_framework.emitter import Emitter
@@ -32,7 +33,7 @@ class RunOutput(BaseModel):
     state: State
 
 
-class RunOptions(BeeRunOptions):
+class RunOptions(ReActAgentRunOptions):
     max_retries: int | None = None
 
 
@@ -49,10 +50,13 @@ class CustomAgent(BaseAgent[RunOutput]):
         )
 
     async def _run(
-        self, run_input: ModelLike[BeeRunInput], options: ModelLike[BeeRunOptions] | None, context: RunContext
+        self,
+        run_input: ModelLike[ReActAgentRunInput],
+        options: ModelLike[ReActAgentRunOptions] | None,
+        context: RunContext,
     ) -> RunOutput:
-        run_input = to_model(BeeRunInput, run_input)
-        options = to_model_optional(BeeRunOptions, options)
+        run_input = to_model(ReActAgentRunInput, run_input)
+        options = to_model_optional(ReActAgentRunOptions, options)
 
         class CustomSchema(BaseModel):
             thought: str = Field(description="Describe your thought process before coming with a final answer")

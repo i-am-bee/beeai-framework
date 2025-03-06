@@ -33,15 +33,15 @@ These events can be observed calling `agent.run`
     ```python
     {
         "data": Message,
-        "iterations": list[BeeAgentRunIteration],
+        "iterations": list[ReActAgentRunIteration],
         "memory": BaseMemory,
-        "meta": BeeMeta,
+        "meta": ReActAgentIterationMeta,
     }
 
 - "update" and "partialUpdate":
     ```python
     {
-        "data": BeeIterationResult | dict[str, Any],
+        "data": ReActAgentIterationResult | dict[str, Any],
         "update": {
             "key": str,
             "value": Any,
@@ -58,8 +58,8 @@ These events can be observed calling `agent.run`
         "data": {
             "tool": Tool,
             "input": Any,
-            "options": BeeRunOptions,
-            "iteration": BeeIterationResult,
+            "options": ReActAgentRunOptions,
+            "iteration": ReActAgentIterationResult,
         },
         "meta": BeeMeta,
     }
@@ -70,8 +70,8 @@ These events can be observed calling `agent.run`
         "data": {
             "tool": Tool,
             "input": Any,
-            "options": BeeRunOptions,
-            "iteration": BeeIterationResult,
+            "options": ReActAgentRunOptions,
+            "iteration": ReActAgentIterationResult,
             "result": ToolOutput,
         },
         "meta": BeeMeta,
@@ -83,8 +83,8 @@ These events can be observed calling `agent.run`
         "data": {
             "tool": Tool,
             "input": Any,
-            "options": BeeRunOptions,
-            "iteration": BeeIterationResult,
+            "options": ReActAgentRunOptions,
+            "iteration": ReActAgentIterationResult,
             "error": FrameworkError,
         },
         "meta": BeeMeta,

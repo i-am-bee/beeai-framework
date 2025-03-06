@@ -17,24 +17,26 @@ from collections.abc import Callable
 from datetime import UTC, datetime
 
 from beeai_framework.agents.base import BaseAgent
-from beeai_framework.agents.runners.base import (
+from beeai_framework.agents.react.runners.base import (
     BaseRunner,
-    BeeRunnerToolInput,
-    BeeRunnerToolResult,
-    RunnerIteration,
+    ReActAgentRunnerIteration,
+    ReActAgentRunnerToolInput,
+    ReActAgentRunnerToolResult,
 )
-from beeai_framework.agents.runners.default.runner import DefaultRunner
-from beeai_framework.agents.runners.granite.runner import GraniteRunner
+from beeai_framework.agents.react.runners.default.runner import DefaultRunner
+from beeai_framework.agents.react.runners.granite.runner import GraniteRunner
+from beeai_framework.agents.react.types import (
+    ModelKeysType,
+    ReActAgentInput,
+    ReActAgentRunInput,
+    ReActAgentRunOptions,
+    ReActAgentRunOutput,
+    ReActAgentTemplateFactory,
+    ReActAgentTemplates,
+)
 from beeai_framework.agents.types import (
     AgentExecutionConfig,
     AgentMeta,
-    BeeAgentTemplates,
-    BeeInput,
-    BeeRunInput,
-    BeeRunOptions,
-    BeeRunOutput,
-    BeeTemplateFactory,
-    ModelKeysType,
 )
 from beeai_framework.backend import Message
 from beeai_framework.backend.chat import ChatModel
@@ -46,7 +48,7 @@ from beeai_framework.tools.tool import Tool
 from beeai_framework.utils.models import ModelLike, to_model, to_model_optional
 
 
-class BeeAgent(BaseAgent[BeeRunOutput]):
+class ReActAgent(BaseAgent[ReActAgentRunOutput]):
     runner: Callable[..., BaseRunner]
 
     def __init__(
@@ -55,11 +57,11 @@ class BeeAgent(BaseAgent[BeeRunOutput]):
         tools: list[Tool],
         memory: BaseMemory,
         meta: AgentMeta | None = None,
-        templates: dict[ModelKeysType, BeeAgentTemplates | BeeTemplateFactory] | None = None,
+        templates: dict[ModelKeysType, ReActAgentTemplates | ReActAgentTemplateFactory] | None = None,
         execution: AgentExecutionConfig | None = None,
         stream: bool | None = None,
     ) -> None:
-        self.input = BeeInput(
+        self.input = ReActAgentInput(
             llm=llm, tools=tools, memory=memory, meta=meta, templates=templates, execution=execution, stream=stream
         )
         if "granite" in self.input.llm.model_id:
@@ -104,17 +106,20 @@ class BeeAgent(BaseAgent[BeeRunOutput]):
         )
 
     async def _run(
-        self, run_input: ModelLike[BeeRunInput], options: ModelLike[BeeRunOptions] | None, context: RunContext
-    ) -> BeeRunOutput:
-        run_input = to_model(BeeRunInput, run_input)
-        options = to_model_optional(BeeRunOptions, options)
+        self,
+        run_input: ModelLike[ReActAgentRunInput],
+        options: ModelLike[ReActAgentRunOptions] | None,
+        context: RunContext,
+    ) -> ReActAgentRunOutput:
+        run_input = to_model(ReActAgentRunInput, run_input)
+        options = to_model_optional(ReActAgentRunOptions, options)
 
         runner = self.runner(
             self.input,
             (
                 options
                 if options
-                else BeeRunOptions(
+                else ReActAgentRunOptions(
                     execution=self.input.execution
                     or (options.execution if options is not None else None)
                     or AgentExecutionConfig(
@@ -131,13 +136,13 @@ class BeeAgent(BaseAgent[BeeRunOutput]):
 
         final_message: Message | None = None
         while not final_message:
-            iteration: RunnerIteration = await runner.create_iteration()
+            iteration: ReActAgentRunnerIteration = await runner.create_iteration()
 
             if iteration.state.tool_name and iteration.state.tool_input is not None:
                 iteration.state.final_answer = None
 
-                tool_result: BeeRunnerToolResult = await runner.tool(
-                    input=BeeRunnerToolInput(
+                tool_result: ReActAgentRunnerToolResult = await runner.tool(
+                    input=ReActAgentRunnerToolInput(
                         state=iteration.state,
                         emitter=iteration.emitter,
                         meta=iteration.meta,
@@ -193,4 +198,4 @@ class BeeAgent(BaseAgent[BeeRunOutput]):
 
         await self.input.memory.add(final_message)
 
-        return BeeRunOutput(result=final_message, iterations=runner.iterations, memory=runner.memory)
+        return ReActAgentRunOutput(result=final_message, iterations=runner.iterations, memory=runner.memory)

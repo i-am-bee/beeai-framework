@@ -15,7 +15,7 @@
 import pytest
 
 from beeai_framework.adapters.ollama.backend.chat import OllamaChatModel
-from beeai_framework.agents.bee import BeeAgent
+from beeai_framework.agents.react import ReActAgent
 from beeai_framework.backend.message import UserMessage
 from beeai_framework.memory import TokenMemory, UnconstrainedMemory
 from beeai_framework.workflows.agent import AgentFactoryInput, AgentWorkflow
@@ -46,8 +46,8 @@ async def test_multi_agents_workflow_creation() -> None:
     chat_model = OllamaChatModel()
 
     workflow: AgentWorkflow = AgentWorkflow()
-    workflow.add_agent(BeeAgent(llm=chat_model, tools=[], memory=TokenMemory(chat_model)))
-    workflow.add_agent(agent=lambda mem: BeeAgent(llm=chat_model, tools=[], memory=mem))
+    workflow.add_agent(ReActAgent(llm=chat_model, tools=[], memory=TokenMemory(chat_model)))
+    workflow.add_agent(agent=lambda mem: ReActAgent(llm=chat_model, tools=[], memory=mem))
 
     assert len(workflow.workflow.step_names) == 2
 
@@ -63,8 +63,8 @@ async def test_multi_agents_workflow_agent_delete() -> None:
     chat_model = OllamaChatModel()
 
     workflow: AgentWorkflow = AgentWorkflow()
-    workflow.add_agent(BeeAgent(llm=chat_model, tools=[], memory=UnconstrainedMemory()))
+    workflow.add_agent(ReActAgent(llm=chat_model, tools=[], memory=UnconstrainedMemory()))
     workflow.del_agent("Bee")
-    workflow.add_agent(BeeAgent(llm=chat_model, tools=[], memory=UnconstrainedMemory()))
+    workflow.add_agent(ReActAgent(llm=chat_model, tools=[], memory=UnconstrainedMemory()))
 
     assert len(workflow.workflow.step_names) == 1

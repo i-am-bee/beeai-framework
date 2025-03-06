@@ -3,7 +3,7 @@ import sys
 
 from dotenv import load_dotenv
 
-from beeai_framework.agents.bee import BeeAgent
+from beeai_framework.agents.react import ReActAgent
 from beeai_framework.backend.chat import ChatModel
 from beeai_framework.memory.unconstrained_memory import UnconstrainedMemory
 
@@ -27,7 +27,7 @@ Arguments
 
 async def main(name: str) -> None:
     chat_model = ChatModel.from_name(name)
-    agent = BeeAgent(llm=chat_model, tools=[], memory=UnconstrainedMemory())
+    agent = ReActAgent(llm=chat_model, tools=[], memory=UnconstrainedMemory())
 
     result = await agent.run("What is the smallest of the Cabo Verde islands?")
 

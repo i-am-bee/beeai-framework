@@ -2,8 +2,9 @@ import asyncio
 import sys
 import traceback
 
-from beeai_framework.agents.bee.agent import BeeAgent
-from beeai_framework.agents.types import AgentExecutionConfig, BeeRunOutput
+from beeai_framework.agents.react.agent import ReActAgent
+from beeai_framework.agents.react.types import ReActAgentRunOutput
+from beeai_framework.agents.types import AgentExecutionConfig
 from beeai_framework.backend.chat import ChatModel
 from beeai_framework.emitter import Emitter, EventMeta
 from beeai_framework.errors import FrameworkError
@@ -16,7 +17,7 @@ from examples.helpers.io import ConsoleReader
 async def main() -> None:
     chat_model: ChatModel = ChatModel.from_name("ollama:granite3.1-dense:8b")
 
-    agent = BeeAgent(
+    agent = ReActAgent(
         llm=chat_model, tools=[OpenMeteoTool(), DuckDuckGoSearchTool(max_results=3)], memory=UnconstrainedMemory()
     )
 
@@ -30,7 +31,7 @@ async def main() -> None:
     def on_update(emitter: Emitter) -> None:
         emitter.on("update", update_callback)
 
-    output: BeeRunOutput = await agent.run(
+    output: ReActAgentRunOutput = await agent.run(
         prompt=prompt, execution=AgentExecutionConfig(total_max_retries=2, max_retries_per_step=3, max_iterations=8)
     ).observe(on_update)
 

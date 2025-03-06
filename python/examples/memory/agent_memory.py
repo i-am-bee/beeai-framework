@@ -2,7 +2,7 @@ import asyncio
 import sys
 import traceback
 
-from beeai_framework.agents.bee.agent import BeeAgent
+from beeai_framework.agents.react.agent import ReActAgent
 from beeai_framework.agents.types import AgentExecutionConfig
 from beeai_framework.backend.chat import ChatModel
 from beeai_framework.backend.message import AssistantMessage, UserMessage
@@ -13,11 +13,11 @@ from beeai_framework.memory.unconstrained_memory import UnconstrainedMemory
 memory = UnconstrainedMemory()
 
 
-def create_agent() -> BeeAgent:
+def create_agent() -> ReActAgent:
     llm = ChatModel.from_name("ollama:granite3.1-dense:8b")
 
     # Initialize the agent
-    agent = BeeAgent(llm=llm, memory=memory, tools=[])
+    agent = ReActAgent(llm=llm, memory=memory, tools=[])
 
     return agent
 

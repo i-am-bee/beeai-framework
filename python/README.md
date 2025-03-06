@@ -73,7 +73,7 @@ import traceback
 
 from pydantic import ValidationError
 
-from beeai_framework.agents.bee.agent import AgentExecutionConfig
+from beeai_framework.agents.react.agent import AgentExecutionConfig
 from beeai_framework.backend.chat import ChatModel
 from beeai_framework.backend.message import UserMessage
 from beeai_framework.memory import UnconstrainedMemory

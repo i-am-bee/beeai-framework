@@ -13,8 +13,6 @@
 # limitations under the License.
 
 
-from beeai_framework.agents.base import BaseAgent
-from beeai_framework.agents.errors import AgentError
-from beeai_framework.agents.types import AgentExecutionConfig, AgentMeta
+from beeai_framework.agents.react.agent import ReActAgent, ReActAgentInput, ReActAgentRunInput
 
-__all__ = ["AgentError", "AgentExecutionConfig", "AgentMeta", "BaseAgent"]
+__all__ = ["ReActAgent", "ReActAgentInput", "ReActAgentRunInput"]

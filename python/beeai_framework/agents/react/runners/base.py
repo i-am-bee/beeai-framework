@@ -17,15 +17,15 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass
 
 from beeai_framework.agents import AgentError
-from beeai_framework.agents.types import (
-    BeeAgentRunIteration,
-    BeeAgentTemplates,
-    BeeInput,
-    BeeIterationResult,
-    BeeMeta,
-    BeeRunInput,
-    BeeRunOptions,
-    BeeTemplateFactory,
+from beeai_framework.agents.react.types import (
+    ReActAgentInput,
+    ReActAgentIterationMeta,
+    ReActAgentIterationResult,
+    ReActAgentRunInput,
+    ReActAgentRunIteration,
+    ReActAgentRunOptions,
+    ReActAgentTemplateFactory,
+    ReActAgentTemplates,
 )
 from beeai_framework.cancellation import AbortSignal
 from beeai_framework.context import RunContext
@@ -37,40 +37,40 @@ from beeai_framework.utils.counter import RetryCounter
 
 
 @dataclass
-class BeeRunnerLLMInput:
-    meta: BeeMeta
+class ReActAgentRunnerLLMInput:
+    meta: ReActAgentIterationMeta
     signal: AbortSignal
     emitter: Emitter
 
 
 @dataclass
-class RunnerIteration:
+class ReActAgentRunnerIteration:
     emitter: Emitter
-    state: BeeIterationResult
-    meta: BeeMeta
+    state: ReActAgentIterationResult
+    meta: ReActAgentIterationMeta
     signal: AbortSignal
 
 
 @dataclass
-class BeeRunnerToolResult:
+class ReActAgentRunnerToolResult:
     output: ToolOutput
     success: bool
 
 
 @dataclass
-class BeeRunnerToolInput:
-    state: BeeIterationResult  # TODO BeeIterationToolResult
-    meta: BeeMeta
+class ReActAgentRunnerToolInput:
+    state: ReActAgentIterationResult
+    meta: ReActAgentIterationMeta
     signal: AbortSignal
     emitter: Emitter
 
 
 class BaseRunner(ABC):
-    def __init__(self, input: BeeInput, options: BeeRunOptions, run: RunContext) -> None:
+    def __init__(self, input: ReActAgentInput, options: ReActAgentRunOptions, run: RunContext) -> None:
         self._input = input
         self._options = options
         self._memory: BaseMemory | None = None
-        self._iterations: list[BeeAgentRunIteration] = []
+        self._iterations: list[ReActAgentRunIteration] = []
         self._failed_attempts_counter: RetryCounter = RetryCounter(
             error_type=AgentError,
             max_retries=(
@@ -85,7 +85,7 @@ class BaseRunner(ABC):
         self._run = run
 
     @property
-    def iterations(self) -> list[BeeAgentRunIteration]:
+    def iterations(self) -> list[ReActAgentRunIteration]:
         return self._iterations
 
     @property
@@ -94,8 +94,8 @@ class BaseRunner(ABC):
             return self._memory
         raise Exception("Memory has not been initialized.")
 
-    async def create_iteration(self) -> RunnerIteration:
-        meta: BeeMeta = BeeMeta(iteration=len(self._iterations) + 1)
+    async def create_iteration(self) -> ReActAgentRunnerIteration:
+        meta: ReActAgentIterationMeta = ReActAgentIterationMeta(iteration=len(self._iterations) + 1)
         max_iterations = (
             self._options.execution.max_iterations
             if self._options.execution and self._options.execution.max_iterations
@@ -106,40 +106,40 @@ class BaseRunner(ABC):
             raise AgentError(f"Agent was not able to resolve the task in {max_iterations} iterations.")
 
         emitter = self._run.emitter.child(group_id=f"`iteration-{meta.iteration}")
-        iteration = await self.llm(BeeRunnerLLMInput(emitter=emitter, signal=self._run.signal, meta=meta))
+        iteration = await self.llm(ReActAgentRunnerLLMInput(emitter=emitter, signal=self._run.signal, meta=meta))
         self._iterations.append(iteration)
-        return RunnerIteration(emitter=emitter, state=iteration.state, meta=meta, signal=self._run.signal)
+        return ReActAgentRunnerIteration(emitter=emitter, state=iteration.state, meta=meta, signal=self._run.signal)
 
-    async def init(self, input: BeeRunInput) -> None:
+    async def init(self, input: ReActAgentRunInput) -> None:
         self._memory = await self.init_memory(input)
 
     @abstractmethod
-    async def llm(self, input: BeeRunnerLLMInput) -> BeeAgentRunIteration:
+    async def llm(self, input: ReActAgentRunnerLLMInput) -> ReActAgentRunIteration:
         pass
 
     @abstractmethod
-    async def tool(self, input: BeeRunnerToolInput) -> BeeRunnerToolResult:
+    async def tool(self, input: ReActAgentRunnerToolInput) -> ReActAgentRunnerToolResult:
         pass
 
     @abstractmethod
-    def default_templates(self) -> BeeAgentTemplates:
+    def default_templates(self) -> ReActAgentTemplates:
         pass
 
     @abstractmethod
-    async def init_memory(self, input: BeeRunInput) -> BaseMemory:
+    async def init_memory(self, input: ReActAgentRunInput) -> BaseMemory:
         pass
 
     @property
-    def templates(self) -> BeeAgentTemplates:
+    def templates(self) -> ReActAgentTemplates:
         overrides = self._input.templates or {}
         templates = {}
 
         for key, default_template in self.default_templates().model_dump().items():
-            override: PromptTemplate | BeeTemplateFactory = overrides.get(key) or default_template
+            override: PromptTemplate | ReActAgentTemplateFactory = overrides.get(key) or default_template
             if isinstance(override, PromptTemplate):
                 templates[key] = override
                 continue
             templates[key] = override(default_template) or default_template
-        return BeeAgentTemplates(**templates)
+        return ReActAgentTemplates(**templates)
 
     # TODO: Serialization

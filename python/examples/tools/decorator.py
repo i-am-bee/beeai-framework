@@ -6,7 +6,7 @@ from urllib.parse import quote
 
 import requests
 
-from beeai_framework import BeeAgent, tool
+from beeai_framework import ReActAgent, tool
 from beeai_framework.agents.types import AgentExecutionConfig
 from beeai_framework.backend.chat import ChatModel
 from beeai_framework.errors import FrameworkError
@@ -49,7 +49,7 @@ async def main() -> None:
 
     chat_model = ChatModel.from_name("ollama:granite3.1-dense:8b")
 
-    agent = BeeAgent(llm=chat_model, tools=[basic_calculator], memory=UnconstrainedMemory())
+    agent = ReActAgent(llm=chat_model, tools=[basic_calculator], memory=UnconstrainedMemory())
 
     result = await agent.run("What is the square root of 36?", execution=AgentExecutionConfig(total_max_retries=10))
 
