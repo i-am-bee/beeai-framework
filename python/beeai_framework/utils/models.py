@@ -16,7 +16,7 @@ from collections.abc import Sequence
 from contextlib import suppress
 from typing import Any, TypeVar, Union
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field, create_model
 from pydantic_core import SchemaValidator
 
 T = TypeVar("T", bound=BaseModel)
@@ -47,3 +47,17 @@ def to_model_optional(cls: type[T], obj: ModelLike[T] | None) -> T | None:
 def check_model(model: T) -> None:
     schema_validator = SchemaValidator(schema=model.__pydantic_core_schema__)
     schema_validator.validate_python(model.__dict__)
+
+
+type_mapping = {"string": str, "integer": int, "number": float, "boolean": bool}
+
+
+def json_to_model(model_name: str, schema: dict) -> type[BaseModel]:
+    fields = {}
+    for param_name, param in schema.get("properties").items():
+        fields[param_name] = (
+            type_mapping.get(param.get("type")),
+            Field(description=param.get("description"), default=None),
+        )
+    model = create_model(model_name, **fields)
+    return model

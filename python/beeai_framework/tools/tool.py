@@ -27,7 +27,7 @@ from beeai_framework.emitter.emitter import Emitter
 from beeai_framework.retryable import Retryable, RetryableConfig, RetryableContext, RetryableInput
 from beeai_framework.tools.errors import ToolError, ToolInputValidationError
 from beeai_framework.utils import BeeLogger
-from beeai_framework.utils.strings import to_safe_word
+from beeai_framework.utils.strings import to_json, to_safe_word
 
 logger = BeeLogger(__name__)
 
@@ -70,6 +70,17 @@ class StringToolOutput(ToolOutput):
 
     def get_text_content(self) -> str:
         return self.result
+
+
+class JSONToolOutput(ToolOutput):
+    def __init__(self, result: Any) -> None:
+        self.result = result
+
+    def get_text_content(self) -> str:
+        return to_json(self.result)
+
+    def is_empty(self) -> bool:
+        return not self.result
 
 
 class Tool(Generic[IN, OPT], ABC):

@@ -106,7 +106,7 @@ class ChatModelOutput(BaseModel):
         self.finish_reason = other.finish_reason
         if self.usage and other.usage:
             merged_usage = self.usage.model_copy()
-            if other.usage.get("total_tokens"):
+            if other.usage.total_tokens:
                 merged_usage.total_tokens = max(self.usage.total_tokens, other.usage.total_tokens)
                 merged_usage.prompt_tokens = max(self.usage.prompt_tokens, other.usage.prompt_tokens)
                 merged_usage.completion_tokens = max(self.usage.completion_tokens, other.usage.completion_tokens)
