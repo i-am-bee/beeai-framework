@@ -41,7 +41,7 @@ console.log(`Hops: ${response.result.hops}`);
 console.log(`-> steps`, response.steps.map((step) => step.name).join(","));
 ```
 
-_Source: [examples/workflows/simple.ts](/examples/workflows/simple.ts)_
+_Source: [examples/workflows/simple.ts](/typescript/examples/workflows/simple.ts)_
 
 #### Nesting
 
@@ -85,7 +85,7 @@ const response = await workflow.run({ threshold: 0.5 }).observe((emitter) => {
 console.info(`Counter:`, response.result);
 ```
 
-_Source: [examples/workflows/nesting.ts](/examples/workflows/nesting.ts)_
+_Source: [examples/workflows/nesting.ts](/typescript/examples/workflows/nesting.ts)_
 
 ### Agent Delegation
 
@@ -167,7 +167,7 @@ for await (const { prompt } of reader) {
 }
 ```
 
-_Source: [examples/workflows/agent.ts](/examples/workflows/agent.ts)_
+_Source: [examples/workflows/agent.ts](/typescript/examples/workflows/agent.ts)_
 
 ### Multi-agent Content Creator
 
@@ -341,7 +341,7 @@ for await (const { prompt } of reader) {
 }
 ```
 
-_Source: [examples/workflows/contentCreator.ts](/examples/workflows/contentCreator.ts)_
+_Source: [examples/workflows/contentCreator.ts](/typescript/examples/workflows/contentCreator.ts)_
 
 ### Multi Agents Workflows
 
@@ -399,4 +399,4 @@ for await (const { prompt } of reader) {
 }
 ```
 
-_Source: [examples/workflows/multiAgents.ts](/examples/workflows/multiAgents.ts)_
+_Source: [examples/workflows/multiAgents.ts](/typescript/examples/workflows/multiAgents.ts)_

@@ -12,7 +12,7 @@ import { Version } from "beeai-framework/version";
 console.log(`Framework version is ${Version}`);
 ```
 
-_Source: [examples/version.ts](/examples/version.ts)_
+_Source: [examples/version.ts](/typescript/examples/version.ts)_
 
 > [!NOTE]
 >

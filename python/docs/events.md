@@ -1,45 +1,77 @@
-# Emitter Events API
+# 📡 Emitter Events
 
-## Event APIs
+<!-- TOC -->
+## Table of Contents
+- [Overview](#overview)
+- [Event Types](#event-types)
+    - [Agent Events](#agent-events)
+    - [ChatModel Events](#chatmodel-events)
+    - [Tool Events](#tool-events)
+    - [Workflow Events](#workflow-events)
+- [Internal Events](#internal-events)
+    - [RunContext Events](#runcontext-events)
+    - [LinePrefixParser Events](#lineprefixparser-events)
+<!-- /TOC -->
 
-Built-in events will always return a `dict[str, Any] | None`
+---
 
-### Agent Events
+## Overview
 
-These events can be observed calling `agent.run`
+BeeAI framework uses an event-driven architecture that allows you to observe and respond to various events throughout the execution lifecycle. This document outlines the standard events emitted by different components and their data structures.
 
-- "start":
-    ```python
+All events in the framework follow a consistent pattern:
+* Each event has a name (e.g., "start", "success", "error")
+* Each event contains a data payload structured as dict[str, Any] or None
+* Events can be observed by attaching listeners to the appropriate emitter
+
+> [!NOTE]
+> 
+> Location within the framework: [beeai_framework/emitter](/python/beeai_framework/emitter) and [events.md](/python/docs/events.md).
+
+---
+
+## Event types
+
+### Agent events
+
+The following events can be observed calling `agent.run`.
+
+- "start" is emitted when the agent begins execution.
+    ```py
     {
         "meta": BeeMeta,
         "tools": list[Tool],
         "memory": BaseMemory,
     }
+    ```
 
-- "error":
-    ```python
+- "error" is emitted when the agent encounters an error.
+    ```py
     {
         "error": FrameworkError,
         "meta": BeeMeta,
     }
+    ```
 
-- "retry":
-    ```python
+- "retry" is emitted when the agent is retrying an operation.
+    ```py
     {
         "meta": BeeMeta,
     }
+    ```
 
-- "success":
-    ```python
+- "success" is emitted when the agent successfully completes execution.
+    ```py
     {
         "data": Message,
         "iterations": list[ReActAgentRunIteration],
         "memory": BaseMemory,
         "meta": ReActAgentIterationMeta,
     }
+    ```
 
-- "update" and "partialUpdate":
-    ```python
+- "update" and "partialUpdate" are emitted when the agent updates its state.
+    ```py
     {
         "data": ReActAgentIterationResult | dict[str, Any],
         "update": {
@@ -51,9 +83,10 @@ These events can be observed calling `agent.run`
         "memory": BaseMemory,
         "tools": list[Tool] | None,
     }
+    ```
 
-- "toolStart":
-    ```python
+- "toolStart" is emitted when the agent begins using a tool.
+    ```py
     {
         "data": {
             "tool": Tool,
@@ -63,9 +96,10 @@ These events can be observed calling `agent.run`
         },
         "meta": BeeMeta,
     }
+    ```
 
-- "toolSuccess":
-    ```python
+- "toolSuccess" is emitted when a tool operation completes successfully.
+    ```py
     {
         "data": {
             "tool": Tool,
@@ -76,9 +110,10 @@ These events can be observed calling `agent.run`
         },
         "meta": BeeMeta,
     }
+    ```
 
-- "toolError":
-    ```python
+- "toolError" is emitted when a tool operation fails.
+    ```py
     {
         "data": {
             "tool": Tool,
@@ -89,116 +124,141 @@ These events can be observed calling `agent.run`
         },
         "meta": BeeMeta,
     }
+    ```
 
-### ChatModel Events
+### ChatModel events
 
-These events can be observed when calling `ChatModel.create` or `ChatModel.create_structure`
+The following events can be observed when calling `ChatModel.create` or `ChatModel.create_structure`.
 
-- "newToken":
-    ```python
+- "newToken" is emitted when a new token is generated during streaming.
+    ```py
     {
       "value": ChatModelOutput,
       "abort": Callable[[], None],
     }
+    ```
 
-- "success":
-    ```python
+- "success" is emitted when the model generation completes successfully.
+    ```py
     {
       "value": ChatModelOutput
     }
-- "start": `ChatModelInput`
-    ```python
+    ```
+
+- "start" is emitted when model generation begins.
+    ```py
     {
       "input": ChatModelInput
     }
-- "error":
-    ```python
+    ```
+
+- "error" is emitted when model generation encounters an error.
+    ```py
     {
       "error": ChatModelError
     }
-- "finish": `None`
+    ```
 
-### Tool Events
+- "finish" is emitted when model generation finishes (regardless of success or error).
+    ```py
+    None
+    ```
 
-These events can be observed when calling `Tool.run`
+### Tool events
 
-- "start":
-    ```python
+The following events can be observed when calling `Tool.run`.
+
+- "start" is emitted when a tool starts executing.
+    ```py
     {
         "input": <ToolInput schema> | dict[str, Any],
         "options": dict[str, Any] | None,
     }
+    ```
 
-- "success":
-    ```python
+- "success" is emitted when a tool completes execution successfully.
+    ```py
     {
         "output": ToolOutput,
         "input": <ToolInput schema> | dict[str, Any],
         "options": dict[str, Any] | None,
     }
+    ```
 
-- "error":
-    ```python
+- "error" is emitted when a tool encounters an error.
+    ```py
     {
         "error": FrameworkError,
         "input": <ToolInput schema> | dict[str, Any],
         "options": dict[str, Any] | None,
     }
+    ```
 
-- "retry":
-    ```python
+- "retry" is emitted when a tool operation is being retried.
+    ```py
     {
         "error": ToolError,
         "input": <ToolInput schema> | dict[str, Any],
         "options": dict[str, Any] | None,
     }
+    ```
 
-- "finish": `None`
+- "finish" is emitted when tool execution finishes (regardless of success or error).
+    ```py
+    None
+    ```
 
-### Workflow Events
+### Workflow events
 
-These events can be observed when calling `workflow.run`
+The following events can be observed when calling `workflow.run`.
 
-- "start":
-    ```python
+- "start" is emitted when a workflow step begins execution.
+    ```py
     {
         "run": WorkflowRun,
         "step": str,
     }
+    ```
 
-- "success":
-   ```python
+- "success" is emitted when a workflow step completes successfully.
+   ```py
     {
         "run": WorkflowRun,
         "state": <input schema type>,
         "step": str,
         "next": str,
     }
+    ```
 
-- "error":
-    ```python
+- "error" is emitted when a workflow step encounters an error.
+    ```py
     {
         "run": WorkflowRun,
         "step": str,
         "error": FrameworkError,
     }
+    ```
 
-## Internal Event APIs
+## Internal events
 
-These event *should* never surface to a user
+These events are primarily used for internal framework operations and debugging. They are not typically meant for end-users.
 
-### RunContext Events
+### RunContext events
 
-These events are for internal debugging
+The following events are for internal debugging of run contexts.
 
-* "start": `None`
-* "success": `<Run return object>`
-* "error": `FrameworkError`
-* "finish": `None`
+| Event   | Data Type            | Description                        |
+|---------|----------------------|------------------------------------|
+| `start`  | `None`               | Triggered when the run starts.    |
+| `success` | `<Run return object>` | Triggered when the run succeeds.  |
+| `error`  | `FrameworkError`     | Triggered when an error occurs.   |
+| `finish` | `None`               | Triggered when the run finishes.  |
 
-### LinePrefixParser Events
+### LinePrefixParser events
 
-These events are caught internally
+The following events are caught internally by the line prefix parser.
 
-* "update": `LinePrefixParserUpdate`
-* "partial_update": `LinePrefixParserUpdate`
+| Event           | Data Type                  | Description                     |
+|----------------|---------------------------|---------------------------------|
+| `update`       | `LinePrefixParserUpdate`   | Triggered when an update occurs. |
+| `partial_update` | `LinePrefixParserUpdate` | Triggered when a partial update occurs. |

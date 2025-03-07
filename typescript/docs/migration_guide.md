@@ -65,7 +65,7 @@ const response = await model.create({
 console.log(response.getTextContent());
 ```
 
-More examples can be found in [Backend Documentation Page](/docs/backend.md).
+More examples can be found in [Backend Documentation Page](/typescript/docs/backend.md).
 
 ### Messages
 
@@ -117,7 +117,7 @@ const b = new AssistantMessage("Hello user!");
 const c = new SystemMessage("You are a helpful assistant.");
 ```
 
-More examples can be found in [Backend Documentation Page](/docs/backend.md).
+More examples can be found in [Backend Documentation Page](/typescript/docs/backend.md).
 
 ### Serialization
 

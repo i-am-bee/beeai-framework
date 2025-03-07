@@ -1,19 +1,39 @@
-# Error Handling
+# ⚠️ Error Handling
+
+<!-- TOC -->
+## Table of Contents
+- [Overview](#overview)
+- [The FrameworkError Class](#the-frameworkerror-class)
+  - [Specialized Error Classes](#specialized-error-classes)
+- [Usage](#usage)
+  - [Basic Usage](#basic-usage)
+  - [Creating Custom Errors](#creating-custom-errors)
+  - [Wrapping Existing Errors](#wrapping-existing-errors)
+- [Examples](#examples)
+<!-- /TOC -->
+
+---
+
+## Overview
 
 Error handling is a critical part of any Python application, especially when dealing with asynchronous operations, various error types, and error propagation across multiple layers. In the BeeAI Framework, we provide a robust and consistent error-handling structure that ensures reliability and ease of debugging.
 
-## The `FrameworkError` class
+> [!NOTE]
+>
+> Location within the framework: [beeai_framework/errors.py](/python/beeai_framework/errors.py).
+
+---
+
+## The FrameworkError class
 
 Within the BeeAI Framework, regular Python Exceptions are used to handle common issues such as `ValueError`, `TypeError`. However, to provide a more comprehensive error handling experience, we have introduced `FrameworkError`, which is a subclass of Exception. Where additional context is needed, we can use `FrameworkError` to provide additional information about the nature of the error. This may wrap the original exception following the standard Python approach.
 
-
 Benefits of using `FrameworkError`:
 
-
 - **Additional properties**: Exceptions may include additional properties to provide a more detailed view of the error.
-- **Preserved Error Chains**: Retains the full history of errors, giving developers full context for debugging.
-- **Utility Functions:** Includes methods for formatting error stack traces and explanations, making them suitable for use with LLMs and other external tools.
-- **Native Support:** Built on native Python Exceptions functionality, avoiding the need for additional dependencies while leveraging familiar mechanisms.
+- **Preserved error chains**: Retains the full history of errors, giving developers full context for debugging.
+- **Utility functions:** Includes methods for formatting error stack traces and explanations, making them suitable for use with LLMs and other external tools.
+- **Native support:** Built on native Python Exceptions functionality, avoiding the need for additional dependencies while leveraging familiar mechanisms.
 
 This structure ensures that users can trace the complete error history while clearly identifying any errors originating from the BeeAI Framework.
 
@@ -36,14 +56,14 @@ print(error.explain())  # Human-readable format without stack traces (ideal for 
 
 ```
 
-_Source: /examples/errors/base.py_
+_Source: [examples/errors/base.py](/python/examples/errors/base.py)_
 
 Framework error also has two additional properties which help with agent processing, though ultimately the code that catches the exception will determine the appropriate action.
 
 - **is_retryable** : hints that the error is retryable.
 - **is_fatal** : hints that the error is fatal.
 
-## Specialized Error Classes
+### Specialized error classes
 
 The BeeAI Framework extends `FrameworkError` to create specialized error classes for different components or scenarios. This ensures that each part of the framework has clear and well-defined error types, improving debugging and error handling.
 
@@ -53,11 +73,27 @@ The BeeAI Framework extends `FrameworkError` to create specialized error classes
 
 The definitions for these classes are typically local to the module where they are raised.
 
-### Aborts
+| Error Class | Category | Description | 
+|-------------|----------|-------------|
+| `AbortError` | Aborts | Raised when an operation has been aborted |
+| `ToolError` | Tools | Raised when a problem is reported by a tool |
+| `ToolInputValidationError` | Tools | Extends ToolError, raised when input validation fails |
+| `AgentError` | Agents | Raised when problems occur in agents |
+| `PromptTemplateError` | Prompt Templates | Raised when problems occur processing prompt templates |
+| `LoggerError` | Loggers | Raised when errors occur during logging |
+| `SerializerError` | Serializers | Raised when problems occur serializing or deserializing objects |
+| `WorkflowError` | Workflow | Raised when a workflow encounters an error |
+| `ParserError` | Parser | Raised when a parser fails to parse the input data. Includes additional *Reason* |
+| `ResourceError` | Memory | Raised when an error occurs with processing agent memory |
+| `ResourceFatalError` | Memory | Extends ResourceError, raised for particularly severe errors that are likely to be fatal |
+| `EmitterError` | Emitter | Raised when a problem occurs in the emitter |
+| `BackendError` | Backend | Raised when a backend encounters an error |
+| `ChatModelError` | Backend | Extends BackendError, raised when a chat model fails to process input data |
+| `MessageError` | Backend | Raised when a message processing fails |
 
-- `AbortError`: Raised when an operation has been aborted.
+## Tools example
 
-### Tools
+example
 <!-- embedme examples/errors/tool.py -->
 ```py
 import asyncio
@@ -88,65 +124,29 @@ if __name__ == "__main__":
 
 ```
 
-_Source: /examples/errors/tool.py_
+_Source: [examples/errors/tool.py](/python/examples/errors/tool.py)_
 
-- `ToolError` : Raised when a problem is reported by a tool.
-  - `ToolInputValidationError`, which extends ToolError, raised when input validation fails.
-
-### Agents
-
-- `AgentError` : Raised when problems occur in agents.
-
-### Prompt Templates
-
-- `PromptTemplateError` : Raised when problems occur processing prompt templates.
-
-### Loggers
-
-- `LoggerError` : Raised when errors occur during logging.
-
-### Serializers
-
-- `SerializerError` : Raised when problems occur serializing or deserializing objects.
-
-### Workflow
-
-- `WorkflowError` : Raised when a workflow encounters an error.
-
-### Parser
-
-- `ParserError` : Raised when a parser fails to parse the input data. Includes additional *Reason*.
-
-### Memory
-
-- `Resource Error` : Raised when an error occurs with processing agent memory.
-  - `ResourceFatalError` : Raised for particularly severe errors that are likely to be fatal (subclass of Resource Error).
-
-### Emitter
-
-- `EmitterError` : Raised when a problem occurs in the emitter.
-
-### Backend
-
-- `BackendError` : Raised when a backend encounters an error.
-  - `ChatModelError` : Raised when a chat model fails to process input data. Subclass of BackendError.
-- `MessageError` : Raised when a message processing fails.
+---
 
 ## Usage
 
-To use Framework error, add the following import
-```python
+### Basic usage
+
+To use Framework error, add the following import:
+```py
 from beeai_framework.errors import FrameworkError
 ```
 
 Add any additional custom errors you need in your code to the import, for example
-```python
+```py
 from beeai_framework.errors import FrameworkError, ChatModelError,ToolError
 ```
 
+### Creating custom errors
+
 If you wish to create additional errors, you can extend `FrameworkError` or any of the other errors above:
 
-```python
+```py
 from beeai_framework.errors import FrameworkError
 
 class MyCustomError(FrameworkError):
@@ -154,21 +154,25 @@ class MyCustomError(FrameworkError):
         super().__init__(message, is_fatal=True, is_retryable=False, cause=cause)
 ```
 
+### Wrapping existing errors
+
 You can wrap existing errors in a `FrameworkError`, for example:
-```python
+```py
 inner_err: Exception = ValueError("Value error")
 error = FrameworkError.ensure(inner_err)
 raise(error)
 ```
+
+### Using properties and methods
 
 Framework error also has two additional properties which help with agent processing, though ultimately the code that catches the exception will determine the appropriate action.
 
 - **is_retryable** : hints that the error is retryable.
 - **is_fatal** : hints that the error is fatal.
 
-these can be accessed via:
+These can be accessed via:
 
-```python
+```py
 err = FrameworkError("error")
 isfatal: bool = FrameworkError.is_fatal(err)
 isretryable: bool = FrameworkError.is_retryable(err)
@@ -178,8 +182,17 @@ This allows use of some useful functions within the error class.
 
 For example the `explain` static method will return a string that may be more useful for an LLM to interpret:
 
-```python
+```py
 message: str = FrameworkError.ensure(error).explain()
 ```
 
-See the source file [errors.py](python/beeai_framework/errors.py) for additional methods.
+See the source file [errors.py](/python/beeai_framework/errors.py) for additional methods.
+
+---
+
+## Examples
+
+- [base.py](/python/examples/errors/base.py) - Basic usage of FrameworkError
+- [tool.py](/python/examples/errors/tool.py) - Tool error handling
+- [cast.py](/python/examples/errors/cast.py) - Converting exceptions to FrameworkError
+- [errors.py](/python/beeai_framework/errors.py) - Source file with complete error definitions
