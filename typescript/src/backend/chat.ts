@@ -182,7 +182,7 @@ export abstract class ChatModel extends Serializable {
           if (error instanceof ChatModelError) {
             throw error;
           } else {
-            throw new ChatModelError(`LLM has occurred an error.`, [error]);
+            throw new ChatModelError(`The Chat Model has encountered an error.`, [error]);
           }
         } finally {
           await run.emitter.emit("finish", null);

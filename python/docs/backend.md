@@ -50,7 +50,7 @@ The following table depicts supported providers. Each provider requires specific
 | `Amazon Bedrock` |  ✅  |         |  `boto3`| AWS_CHAT_MODEL<br>AWS_ACCESS_KEY_ID<br>AWS_SECRET_ACCESS_KEY<br>AWS_REGION_NAME |
 | `Google Vertex`  |  ✅  |         |  | VERTEXAI_CHAT_MODEL<br>VERTEXAI_PROJECT<br>GOOGLE_APPLICATION_CREDENTIALS<br>GOOGLE_APPLICATION_CREDENTIALS_JSON<br>GOOGLE_CREDENTIALS |
 | `Azure OpenAI`   |    |         | Coming soon! | AZURE_OPENAI_CHAT_MODEL<br>AZURE_OPENAI_EMBEDDING_MODEL<br>AZURE_OPENAI_API_KEY<br>AZURE_OPENAI_API_ENDPOINT<br>AZURE_OPENAI_API_RESOURCE<br>AZURE_OPENAI_API_VERSION |
-| `Anthropic`      |    |         | Coming soon! | ANTHROPIC_CHAT_MODEL<br>ANTHROPIC_EMBEDDING_MODEL<br>ANTHROPIC_API_KEY<br>ANTHROPIC_API_BASE_URL<br>ANTHROPIC_API_HEADERS |
+| `Anthropic`      |  ✅  |         |  | ANTHROPIC_CHAT_MODEL<br>ANTHROPIC_API_KEY |
 | `xAI`           |  ✅  |         | | XAI_CHAT_MODEL<br>XAI_API_KEY |
 
 

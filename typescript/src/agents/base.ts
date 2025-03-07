@@ -60,7 +60,7 @@ export abstract class BaseAgent<
           if (e instanceof AgentError) {
             throw e;
           } else {
-            throw new AgentError(`Error has occurred!`, [e]);
+            throw new AgentError(`The Agent has encountered an error.`, [e]);
           }
         } finally {
           this.isRunning = false;

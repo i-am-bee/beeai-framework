@@ -74,7 +74,7 @@ export abstract class EmbeddingModel extends Serializable {
           if (error instanceof EmbeddingModelError) {
             throw error;
           } else {
-            throw new EmbeddingModelError(`LLM has occurred an error.`, [error]);
+            throw new EmbeddingModelError(`The Embedding Model has encountered an error.`, [error]);
           }
         } finally {
           await run.emitter.emit("finish", null);

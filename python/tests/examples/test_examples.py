@@ -37,6 +37,7 @@ exclude = list(
             # Google backend picks up environment variables/google auth credentials directly
             "backend/providers/vertexai.py" if os.getenv("VERTEXAI_PROJECT") is None else None,
             "backend/providers/amazon_bedrock.py" if os.getenv("AWS_ACCESS_KEY_ID") is None else None,
+            "backend/providers/anthropic.py" if os.getenv("ANTHROPIC_API_KEY") is None else None,
             # MCP examples require Slack bot
             "tools/mcp_agent.py" if os.getenv("SLACK_BOT_TOKEN") is None else None,
             "tools/mcp_tool_creation.py" if os.getenv("SLACK_BOT_TOKEN") is None else None,

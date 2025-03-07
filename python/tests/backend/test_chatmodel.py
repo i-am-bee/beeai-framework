@@ -20,6 +20,7 @@ import pytest_asyncio
 from pydantic import BaseModel
 
 from beeai_framework.adapters.amazon_bedrock.backend.chat import AmazonBedrockChatModel
+from beeai_framework.adapters.anthropic.backend.chat import AnthropicChatModel
 from beeai_framework.adapters.groq.backend.chat import GroqChatModel
 from beeai_framework.adapters.ollama.backend.chat import OllamaChatModel
 from beeai_framework.adapters.openai.backend.chat import OpenAIChatModel
@@ -186,18 +187,13 @@ def test_chat_model_from(monkeypatch: pytest.MonkeyPatch) -> None:
     xai_chat_model = ChatModel.from_name("xai:grok-2")
     assert isinstance(xai_chat_model, XAIChatModel)
 
-    #
     monkeypatch.setenv("VERTEXAI_PROJECT", "myproject")
     vertexai_chat_model = ChatModel.from_name("vertexai:gemini-2.0-flash-lite-001")
     assert isinstance(vertexai_chat_model, VertexAIChatModel)
 
-    monkeypatch.setenv("VERTEXAI_PROJECT", "myproject")
-    vertexai_chat_model = ChatModel.from_name("vertexai:gemini-2.0-flash-lite-001")
-    assert isinstance(vertexai_chat_model, VertexAIChatModel)
-
-    monkeypatch.setenv("VERTEXAI_PROJECT", "myproject")
-    vertexai_chat_model = ChatModel.from_name("vertexai:gemini-2.0-flash-lite-001")
-    assert isinstance(vertexai_chat_model, VertexAIChatModel)
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "apikey")
+    anthropic_chat_model = ChatModel.from_name("anthropic:claude-3-haiku-20240307")
+    assert isinstance(anthropic_chat_model, AnthropicChatModel)
 
     monkeypatch.setenv("AWS_ACCESS_KEY_ID", "secret1")
     monkeypatch.setenv("AWS_SECRET_ACCESS_KEY", "secret2")

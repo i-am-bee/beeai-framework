@@ -130,7 +130,7 @@ export function createTelemetryMiddleware() {
             )?.text;
 
             if (!prompt) {
-              throw new FrameworkError("The prompt must be defined for the Agent's run", [], {
+              throw new FrameworkError("The prompt must be defined for the agent's run", [], {
                 context,
               });
             }
