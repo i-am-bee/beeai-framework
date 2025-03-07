@@ -61,7 +61,7 @@ from beeai_framework.parsers.line_prefix import (
 )
 from beeai_framework.retryable import Retryable, RetryableConfig, RetryableContext, RetryableInput
 from beeai_framework.tools import ToolError, ToolInputValidationError
-from beeai_framework.tools.tool import StringToolOutput, Tool, ToolOutput
+from beeai_framework.tools.tool import StringToolOutput, Tool, ToolOutput, ToolRunOptions
 from beeai_framework.utils.strings import create_strenum, to_json
 
 
@@ -267,7 +267,9 @@ class DefaultRunner(BaseRunner):
 
         async def executor(_: RetryableContext) -> ReActAgentRunnerToolResult:
             try:
-                tool_output: ToolOutput = await tool.run(input.state.tool_input, options={})  # TODO: pass tool options
+                tool_output: ToolOutput = await tool.run(
+                    input.state.tool_input, options=ToolRunOptions()
+                )  # TODO: pass tool options
                 output = (
                     tool_output
                     if not tool_output.is_empty()

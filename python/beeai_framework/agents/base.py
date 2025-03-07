@@ -25,12 +25,12 @@ from beeai_framework.emitter import Emitter
 from beeai_framework.memory import BaseMemory
 from beeai_framework.utils.models import ModelLike
 
-T = TypeVar("T", bound=BaseModel)
 RI = TypeVar("RI", bound=BaseModel)
 RO = TypeVar("RO", bound=BaseModel)
+OUT = TypeVar("OUT", bound=BaseModel)
 
 
-class BaseAgent(ABC, Generic[T]):
+class BaseAgent(ABC, Generic[RI, RO, OUT]):
     is_running: bool = False
     emitter: Emitter
 
@@ -39,13 +39,13 @@ class BaseAgent(ABC, Generic[T]):
         prompt: str | None = None,
         execution: AgentExecutionConfig | None = None,
         signal: AbortSignal | None = None,
-    ) -> Run[T]:
+    ) -> Run[OUT]:
         if self.is_running:
             raise RuntimeError("Agent is already running!")
 
         self.is_running = True
 
-        async def handler(context: RunContext) -> T:
+        async def handler(context: RunContext) -> OUT:
             try:
                 return await self._run({"prompt": prompt}, {"execution": execution, "signal": signal}, context)
             finally:
@@ -61,7 +61,7 @@ class BaseAgent(ABC, Generic[T]):
         )
 
     @abstractmethod
-    async def _run(self, run_input: ModelLike[RI], options: ModelLike[RO] | None, context: RunContext) -> T:
+    async def _run(self, run_input: ModelLike[RI], options: ModelLike[RO] | None, context: RunContext) -> OUT:
         pass
 
     def destroy(self) -> None:

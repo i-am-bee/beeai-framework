@@ -28,6 +28,8 @@ from beeai_framework.agents.types import (
     AgentExecutionConfig,
 )
 from beeai_framework.backend.chat import ChatModel
+from beeai_framework.cancellation import AbortSignal
+from beeai_framework.emitter import Emitter
 from beeai_framework.memory.token_memory import TokenMemory
 from beeai_framework.tools.weather.openmeteo import OpenMeteoTool
 
@@ -56,8 +58,8 @@ async def test_runner_init() -> None:
     await runner.tool(
         input=ReActAgentRunnerToolInput(
             state=ReActAgentIterationResult(tool_name="OpenMeteoTool", tool_input={"location_name": "White Plains"}),
-            emitter=None,
+            emitter=Emitter(),
             meta=ReActAgentIterationMeta(iteration=0),
-            signal=None,
+            signal=AbortSignal(),
         )
     )

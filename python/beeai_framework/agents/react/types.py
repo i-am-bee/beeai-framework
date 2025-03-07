@@ -59,7 +59,7 @@ class ReActAgentIterationResult(BaseModel):
 
 class ReActAgentRunIteration(BaseModel):
     raw: InstanceOf[ChatModelOutput]
-    state: ReActAgentIterationResult
+    state: InstanceOf[ReActAgentIterationResult]
 
 
 class ReActAgentRunOutput(BaseModel):

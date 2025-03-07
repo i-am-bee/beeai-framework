@@ -32,7 +32,6 @@ from beeai_framework.agents.react.types import (
     ReActAgentRunOptions,
     ReActAgentRunOutput,
     ReActAgentTemplateFactory,
-    ReActAgentTemplates,
 )
 from beeai_framework.agents.types import (
     AgentExecutionConfig,
@@ -44,11 +43,12 @@ from beeai_framework.backend.message import AssistantMessage, MessageMeta, UserM
 from beeai_framework.context import RunContext
 from beeai_framework.emitter import Emitter
 from beeai_framework.memory import BaseMemory
+from beeai_framework.template import PromptTemplate
 from beeai_framework.tools.tool import Tool
 from beeai_framework.utils.models import ModelLike, to_model, to_model_optional
 
 
-class ReActAgent(BaseAgent[ReActAgentRunOutput]):
+class ReActAgent(BaseAgent[ReActAgentRunInput, ReActAgentRunOptions, ReActAgentRunOutput]):
     runner: Callable[..., BaseRunner]
 
     def __init__(
@@ -57,7 +57,7 @@ class ReActAgent(BaseAgent[ReActAgentRunOutput]):
         tools: list[Tool],
         memory: BaseMemory,
         meta: AgentMeta | None = None,
-        templates: dict[ModelKeysType, ReActAgentTemplates | ReActAgentTemplateFactory] | None = None,
+        templates: dict[ModelKeysType, PromptTemplate | ReActAgentTemplateFactory] | None = None,
         execution: AgentExecutionConfig | None = None,
         stream: bool | None = None,
     ) -> None:
