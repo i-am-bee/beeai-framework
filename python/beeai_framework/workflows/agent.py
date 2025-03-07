@@ -17,7 +17,7 @@ import random
 import string
 from collections.abc import Awaitable, Callable
 from inspect import isfunction
-from typing import Self
+from typing import Any, Self
 
 from pydantic import BaseModel, ConfigDict, Field, InstanceOf
 
@@ -69,8 +69,24 @@ class AgentWorkflow:
 
     def add_agent(
         self,
-        agent: (BaseAgent | Callable[[ReadOnlyMemory], BaseAgent | asyncio.Future[BaseAgent]] | AgentFactoryInput),
+        agent: (
+            BaseAgent | Callable[[ReadOnlyMemory], BaseAgent | asyncio.Future[BaseAgent]] | AgentFactoryInput | None
+        ) = None,
+        /,
+        **kwargs: Any,
     ) -> "AgentWorkflow":
+        if agent is None or isinstance(agent, dict):
+            agent_args = kwargs.get("agent", agent or kwargs)
+            agent = (
+                (
+                    AgentFactoryInput.model_validate(agent_args, strict=False, from_attributes=True)
+                    if "name" in agent_args
+                    else ReActAgent(**agent_args)
+                )
+                if isinstance(agent_args, dict)
+                else agent_args
+            )
+
         if isinstance(agent, BaseAgent):
 
             async def factory(memory: ReadOnlyMemory) -> BaseAgent:

@@ -89,29 +89,23 @@ async def main() -> None:
     try:
         workflow = AgentWorkflow(name="Smart assistant")
         workflow.add_agent(
-            agent=AgentFactoryInput(
-                name="WeatherForecaster",
-                instructions="You are a weather assistant. Respond only if you can provide a useful answer.",
-                tools=[OpenMeteoTool()],
-                llm=llm,
-                execution=AgentExecutionConfig(max_iterations=3),
-            )
+            name="WeatherForecaster",
+            instructions="You are a weather assistant. Respond only if you can provide a useful answer.",
+            tools=[OpenMeteoTool()],
+            llm=llm,
+            execution=AgentExecutionConfig(max_iterations=3),
         )
         workflow.add_agent(
-            agent=AgentFactoryInput(
-                name="Researcher",
-                instructions="You are a researcher assistant. Respond only if you can provide a useful answer.",
-                tools=[DuckDuckGoSearchTool()],
-                llm=llm,
-            )
+            name="Researcher",
+            instructions="You are a researcher assistant. Respond only if you can provide a useful answer.",
+            tools=[DuckDuckGoSearchTool()],
+            llm=llm,
         )
         workflow.add_agent(
-            agent=AgentFactoryInput(
-                name="Solver",
-                instructions="""Your task is to provide the most useful final answer based on the assistants'
+            name="Solver",
+            instructions="""Your task is to provide the most useful final answer based on the assistants'
 responses which all are relevant. Ignore those where assistant do not know.""",
-                llm=llm,
-            )
+            llm=llm,
         )
 
         prompt = "What is the weather in New York?"
