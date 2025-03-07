@@ -30,7 +30,7 @@ export class FrameworkError extends AggregateError {
   context: Record<string, any>;
 
   constructor(
-    message = "Framework error has occurred.",
+    message = "The BeeAI Framework has encountered an error.",
     errors: Error[] = [],
     options: FrameworkErrorOptions = {},
   ) {
@@ -93,9 +93,7 @@ export class FrameworkError extends AggregateError {
   }
 
   static ensure(error: Error): FrameworkError {
-    return error instanceof FrameworkError
-      ? error
-      : new FrameworkError("Framework error has occurred.", [error]);
+    return error instanceof FrameworkError ? error : new FrameworkError(undefined, [error]);
   }
 
   static isInstanceOf(error: unknown): error is FrameworkError {
@@ -125,7 +123,7 @@ export class NotImplementedError extends FrameworkError {
 
 export class ValueError extends FrameworkError {
   constructor(
-    message = "Provided value is not supported!",
+    message = "The provided value is not supported!",
     errors: Error[] = [],
     options?: FrameworkErrorOptions,
   ) {
@@ -135,7 +133,7 @@ export class ValueError extends FrameworkError {
 
 export class AbortError extends FrameworkError {
   constructor(
-    message = "Operation has been aborted!",
+    message = "The operation has been aborted!",
     errors: Error[] = [],
     options?: FrameworkErrorOptions,
   ) {
