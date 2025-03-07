@@ -27,34 +27,35 @@ documentation = "https://i-am-bee.github.io/beeai-framework/#/python/"
 python = ">= 3.11,<4.0"
 pydantic = "^2.10"
 requests = "^2.32"
-pylint = "^3.3.2"
-pydantic-settings = "^2.7"
 chevron = "^0.14.0"
-types-requests = "^2.32.0.20241016"
-litellm = "1.62.1"
+litellm = "^1.63.2"
 aiofiles = "^24.1.0"
-pyventus = "^0.6.0"
-wikipedia = "^1.4.0"
 mcp = "^1.2.0"
 duckduckgo-search = "^7.3.2"
 json-repair = "^0.39.0"
 wikipedia-api = "^0.8.1"
-async-generator = "^1.10"
 langchain-core = {version = "^0.3.41", optional = true}
 langchain-community = {version = "^0.3.19", optional = true}
+boto3 = {version = "^1.37.5", optional = true}
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^8.3.4"
 commitizen = "^4.2.1"
 poethepoet = "^0.32.2"
 ruff = "^0.9.6"
+pydantic-settings = "^2.7"
 tox = "^4.20"
 mypy = "^1.15.0"
+pylint = "^3.3.2"
 pytest-asyncio = "^0.25.3"
 nbstripout = "^0.8.1"
 pytest-cov = "^6.0.0"
 types-chevron = "^0.14.2.20250103"
-boto3 = {version = "^1.37.5", optional = true}
+types-requests = "^2.32.0.20241016"
+
+[tool.poetry.extras]
+langchain = ["langchain-core", "langchain-community"]
+huggingface = ["datasets", "transformers"]
 
 
 [tool.mypy]
