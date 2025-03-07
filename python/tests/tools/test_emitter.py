@@ -18,7 +18,6 @@ from typing import Any
 import pytest
 
 from beeai_framework.emitter.emitter import Emitter, EventMeta
-from beeai_framework.emitter.types import EmitterOptions
 from beeai_framework.tools import StringToolOutput, tool
 
 """
@@ -34,7 +33,7 @@ async def test_tool_emitter() -> None:
 
     # Observe the agent
     async def observer(emitter: Emitter) -> None:
-        emitter.on("*.*", process_agent_events, EmitterOptions(match_nested=True))
+        emitter.on("*.*", process_agent_events)
 
     @tool
     def test_tool(query: str) -> str:

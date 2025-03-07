@@ -14,7 +14,6 @@ from beeai_framework.agents.react.agent import ReActAgent
 from beeai_framework.agents.types import AgentExecutionConfig
 from beeai_framework.backend.chat import ChatModel, ChatModelParameters
 from beeai_framework.emitter.emitter import Emitter, EventMeta
-from beeai_framework.emitter.types import EmitterOptions
 from beeai_framework.errors import FrameworkError
 from beeai_framework.logger import Logger
 from beeai_framework.memory.token_memory import TokenMemory
@@ -90,7 +89,7 @@ def process_agent_events(data: dict[str, Any], event: EventMeta) -> None:
 
 
 def observer(emitter: Emitter) -> None:
-    emitter.on("*.*", process_agent_events, EmitterOptions(match_nested=True))
+    emitter.on("*.*", process_agent_events)
 
 
 async def main() -> None:

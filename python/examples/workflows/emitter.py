@@ -6,7 +6,6 @@ from typing import Literal, TypeAlias
 from pydantic import BaseModel
 
 from beeai_framework.emitter.emitter import Emitter, EventMeta
-from beeai_framework.emitter.types import EmitterOptions
 from beeai_framework.errors import FrameworkError
 from beeai_framework.workflows.workflow import Workflow, WorkflowReservedStepName
 
@@ -48,7 +47,7 @@ async def main() -> None:
 
     # Observe the agent
     async def observer(emitter: Emitter) -> None:
-        emitter.on("*.*", print_event, EmitterOptions(match_nested=True))
+        emitter.on("*.*", print_event)
 
     def pre_process(state: State) -> WorkflowStep:
         state.abs_repetitions = abs(state.y)

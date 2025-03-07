@@ -15,8 +15,7 @@
  */
 
 import { SearchOptions, search as rawDDGSearch, SafeSearchType } from "duck-duck-scrape";
-import { stripHtml } from "string-strip-html";
-import pThrottle, { Options as ThrottleOptions } from "p-throttle";
+import { Options as ThrottleOptions } from "p-throttle";
 import {
   SearchToolOptions,
   SearchToolOutput,
@@ -83,8 +82,6 @@ export class DuckDuckGoSearchTool extends Tool<
       creator: this,
     });
 
-  protected readonly client: typeof rawDDGSearch;
-
   @Cache()
   inputSchema() {
     return z.object({
@@ -94,24 +91,25 @@ export class DuckDuckGoSearchTool extends Tool<
 
   public constructor(options: Partial<DuckDuckGoSearchToolOptions> = {}) {
     super({ ...options, maxResults: options?.maxResults ?? 15 });
-
-    this.client = this._createClient();
   }
 
   static {
     this.register();
   }
 
-  protected _createClient() {
+  @Cache({ enumerable: false })
+  protected async _createClient() {
     const { throttle } = this.options;
+    if (throttle === false) {
+      return rawDDGSearch;
+    }
 
-    return throttle === false
-      ? rawDDGSearch
-      : pThrottle({
-          ...throttle,
-          limit: throttle?.limit ?? 1,
-          interval: throttle?.interval ?? 3000,
-        })(rawDDGSearch);
+    const { default: pThrottle } = await import("p-throttle");
+    return pThrottle({
+      ...throttle,
+      limit: throttle?.limit ?? 1,
+      interval: throttle?.interval ?? 3000,
+    })(rawDDGSearch);
   }
 
   protected async _run(
@@ -120,11 +118,12 @@ export class DuckDuckGoSearchTool extends Tool<
     run: RunContext<this>,
   ) {
     const headers = new HeaderGenerator().getHeaders();
+    const client = await this._createClient();
 
     const results = await paginate({
       size: this.options.maxResults,
       handler: async ({ cursor = 0 }) => {
-        const { results: data, noResults: done } = await this.client(
+        const { results: data, noResults: done } = await client(
           input,
           {
             safeSearch: SafeSearchType.MODERATE,
@@ -153,6 +152,8 @@ export class DuckDuckGoSearchTool extends Tool<
       },
     });
 
+    const { stripHtml } = await import("string-strip-html");
+
     return new DuckDuckGoSearchToolOutput(
       results.map((result) => ({
         title: stripHtml(result.title).result,
@@ -160,10 +161,5 @@ export class DuckDuckGoSearchTool extends Tool<
         url: result.url,
       })),
     );
-  }
-
-  loadSnapshot(snapshot: ReturnType<typeof this.createSnapshot>): void {
-    super.loadSnapshot(snapshot);
-    Object.assign(this, { client: this._createClient() });
   }
 }

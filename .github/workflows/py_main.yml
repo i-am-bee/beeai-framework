@@ -34,6 +34,9 @@ jobs:
         run: poetry install --no-interaction
       - name: Code Lint
         run: poetry run poe lint
+      - name: Type check task with mypy
+        run: poetry run poe type-check --show-error-context --pretty
+        continue-on-error: true
       - name: Code Format
         run: poetry run poe format
       - name: Commits Lint

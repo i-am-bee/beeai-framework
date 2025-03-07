@@ -62,6 +62,7 @@ mypy_path = "$MYPY_CONFIG_FILE_DIR/beeai_framework"
 exclude = "^build/$"
 check_untyped_defs = true
 plugins = ["pydantic.mypy"]
+strict = true
 
 [tool.pydantic-mypy]
 init_forbid_extra = true
@@ -244,6 +245,10 @@ control.expr = "type"
 help = "Extract Python files only"
 args = [{ name = "TARGET", positional = true, multiple = true }]
 shell = "printf '%s\\n' $TARGET | grep -E '\\.(py|ipynb)$' | tr '\\n' ' '"
+
+[tool.poe.tasks.type-check]
+help = "Static Type Checker with optional flags"
+cmd = "mypy . ${POE_ARGS}"
 
 [build-system]
 requires = ["poetry-core>=2.0.0,<3.0.0"]

@@ -41,6 +41,7 @@ BeeAI Python uses the following labels to help non-maintainers find issues best 
 For development, there are some tools you will need prior cloning the code.
 
 #### Python
+
 We recommend using Python 3.11 or higher. First, ensure you have Python installed:
 
 ```bash
@@ -122,6 +123,29 @@ poe lint # poe lint --fix
 poe format # poe format --fix
 ```
 
+#### Run Static Type Checker using mypy
+
+MyPy has been integrated as a poe task in our development workflow. A set of comprehensive tasks are available for different type checking scenarios.
+
+Running the basic type check looks for all python files in current directory and subdirectories.
+
+```bash
+poe type-check
+```
+Support for dynamic flags is available via the `${POE_ARGS}`. The `${POE_ARGS}` allows passing flags like --strict or --verbose.
+
+Running with the `--strict` flag enables strict type checking mode.
+
+```bash
+poe type-check --strict
+```
+
+Running with the `--verbose` flag offers more detailed messages during type checking.
+
+```bash
+poe type-check --verbose
+```
+
 #### Run Tests
 
 Ensure your changes pass all tests:
@@ -166,7 +190,7 @@ Ref: #15
 
 #### Commit:
 
-   - commit: for convenience you can use the following command to sign-off your commit with `-s` and generate the commit.
+- commit: for convenience you can use the following command to sign-off your commit with `-s` and generate the commit.
 
 ```bash
 poe commit "<type>(<scope>): <subject>"
@@ -176,7 +200,7 @@ By following these steps, you'll be all set to contribute to our project! If you
 
 ## Updating examples and embedding
 
-Currently [embedme](https://github.com/zakhenry/embedme) is used to embed code examples directly in documentation.  Supported file types can be found [here](https://github.com/zakhenry/embedme?tab=readme-ov-file#multi-language).
+Currently [embedme](https://github.com/zakhenry/embedme) is used to embed code examples directly in documentation. Supported file types can be found [here](https://github.com/zakhenry/embedme?tab=readme-ov-file#multi-language).
 
 Once an example is edited or a new one is created and referenced running the following command will update the documentation.
 

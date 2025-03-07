@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.1.4](https://github.com/i-am-bee/beeai-framework/compare/typescript_v0.1.3...typescript_v0.1.4) (2025-03-06)
+
+### Bug Fixes
+
+- ensure cjs compatibility ([#500](https://github.com/i-am-bee/beeai-framework/issues/500)) ([1a55864](https://github.com/i-am-bee/beeai-framework/commit/1a5586488988989a444332ac3406fac1ff17378e))
+
 ## 0.1.3 (2025-03-05)
 
 ### Features

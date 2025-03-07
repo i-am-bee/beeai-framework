@@ -26,7 +26,7 @@ from pydantic import BaseModel, Field
 from beeai_framework.context import RunContext
 from beeai_framework.emitter.emitter import Emitter
 from beeai_framework.logger import Logger
-from beeai_framework.tools import ToolInputValidationError
+from beeai_framework.tools import ToolError, ToolInputValidationError
 from beeai_framework.tools.tool import StringToolOutput, Tool, ToolRunOptions
 
 logger = Logger(__name__)
@@ -75,7 +75,9 @@ class OpenMeteoTool(Tool[OpenMeteoToolInput, ToolRunOptions, StringToolOutput]):
         )
 
         response.raise_for_status()
-        results = response.json()["results"]
+        results = response.json().get("results", [])
+        if not results:
+            raise ToolError(f"Location '{input.location_name}' was not found.")
         return results[0]
 
     def get_params(self, input: OpenMeteoToolInput) -> dict[str, Any]:
