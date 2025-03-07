@@ -60,7 +60,7 @@ async def test_multi_agents_workflow_creation() -> None:
 
 @pytest.mark.e2e
 @pytest.mark.asyncio
-async def test_multi_agents_workflow_alternate_creation() -> None:
+async def test_multi_agents_workflow_creation_variations() -> None:
     chat_model = OllamaChatModel()
 
     workflow: AgentWorkflow = AgentWorkflow()
@@ -68,40 +68,22 @@ async def test_multi_agents_workflow_alternate_creation() -> None:
     # AgentFactoryInput
     workflow.add_agent(name="AgentFactoryInput_1", tools=[], llm=chat_model)
     workflow.add_agent(agent=AgentFactoryInput(name="AgentFactoryInput_2", tools=[], llm=chat_model))
-    workflow.add_agent({"name": "AgentFactoryInput_3", "tools": [], "llm": chat_model})
 
     # ReActAgent
-    workflow.add_agent(
-        llm=chat_model,
-        tools=[],
-        memory=TokenMemory(chat_model),
-        meta=AgentMeta(name="ReActAgent_1", tools=[], description="ReActAgent defined using keyword args"),
-    )
     workflow.add_agent(
         agent=ReActAgent(
             llm=chat_model,
             tools=[],
             memory=TokenMemory(chat_model),
-            meta=AgentMeta(name="ReActAgent_2", tools=[], description="ReActAgent defined using agent keyword"),
+            meta=AgentMeta(name="ReActAgent_1", tools=[], description="ReActAgent defined using agent keyword"),
         )
     )
-    workflow.add_agent(
-        {
-            "llm": chat_model,
-            "tools": [],
-            "memory": TokenMemory(chat_model),
-            "meta": AgentMeta(name="ReActAgent_3", tools=[], description="ReActAgent defined using dict"),
-        }
-    )
 
-    assert len(workflow.workflow.step_names) == 6
+    assert len(workflow.workflow.step_names) == 3
     assert set(workflow.workflow.steps.keys()) == {
         "AgentFactoryInput_1",
         "AgentFactoryInput_2",
-        "AgentFactoryInput_3",
         "ReActAgent_1",
-        "ReActAgent_2",
-        "ReActAgent_3",
     }
 
     memory = UnconstrainedMemory()

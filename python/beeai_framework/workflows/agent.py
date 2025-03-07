@@ -75,17 +75,15 @@ class AgentWorkflow:
         /,
         **kwargs: Any,
     ) -> "AgentWorkflow":
-        if agent is None or isinstance(agent, dict):
-            agent_args = kwargs.get("agent", agent or kwargs)
-            agent = (
-                (
-                    AgentFactoryInput.model_validate(agent_args, strict=False, from_attributes=True)
-                    if "name" in agent_args
-                    else ReActAgent(**agent_args)
-                )
-                if isinstance(agent_args, dict)
-                else agent_args
-            )
+        if not agent:
+            if not kwargs:
+                raise ValueError("An agent object or keyword arguments must be provided")
+            elif "agent" in kwargs:
+                agent = kwargs.get("agent")
+            else:
+                agent = AgentFactoryInput.model_validate(kwargs, strict=False, from_attributes=True)
+        elif kwargs:
+            raise ValueError("Agent object required or keyword arguments required but not both")
 
         if isinstance(agent, BaseAgent):
 
