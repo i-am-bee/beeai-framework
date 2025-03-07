@@ -74,10 +74,12 @@ class Run(Generic[R]):
         return self
 
     async def _run_tasks(self) -> R:
-        for fn, params in self.tasks:
+        tasks = self.tasks[:]
+        self.tasks.clear()
+
+        for fn, params in tasks:
             await ensure_async(fn)(*params)
 
-        self.tasks.clear()
         return await self.handler()
 
     def _set_context(self, context: dict) -> None:
