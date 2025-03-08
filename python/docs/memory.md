@@ -526,8 +526,4 @@ _Source: [/python/examples/memory/custom.py](/python/examples/memory/custom.py)_
 
 ## Examples
 
-- [unconstrained_memory.py](/examples/memory/unconstrained_memory.py) - Basic memory usage
-- [sliding_memory.py](/examples/memory/sliding_memory.py) - Sliding window memory example
-- [token_memory.py](/examples/memory/token_memory.py) - Token-based memory management
-- [summarize_memory.py](/examples/memory/summarize_memory.py) - Summarization memory example
-- [agent_memory.py](/examples/memory/agent_memory.py) - Using memory with agents
+- All memory examples can be found in [here](/python/examples/memory).

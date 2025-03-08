@@ -188,11 +188,6 @@ message: str = FrameworkError.ensure(error).explain()
 
 See the source file [errors.py](/python/beeai_framework/errors.py) for additional methods.
 
----
-
 ## Examples
 
-- [base.py](/python/examples/errors/base.py) - Basic usage of FrameworkError
-- [tool.py](/python/examples/errors/tool.py) - Tool error handling
-- [cast.py](/python/examples/errors/cast.py) - Converting exceptions to FrameworkError
-- [errors.py](/python/beeai_framework/errors.py) - Source file with complete error definitions
+- All error examples can be found in [here](/python/examples/errors).

@@ -504,7 +504,4 @@ _Source: [examples/workflows/multi_agents.py](/python/examples/workflows/multi_a
 
 ## Examples
 
-- [simple.py](/python/examples/agents/simple.py) - Basic agent implementation
-- [react.py](/python/examples/agents/react.py) - More complete implementation
-- [granite.py](/python/examples/agents/granite.py) - Using Granite model
-- [agents.ipynb](/python/examples/notebooks/agents.ipynb) - Interactive notebook examples
+- All agent examples can be found in [here](/python/examples/agents).

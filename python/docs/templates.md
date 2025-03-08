@@ -369,9 +369,6 @@ _Source: [examples/templates/system_prompt.py](/examples/templates/system_prompt
 
 # Examples
 
-- [basic_template.py](/python/examples/templates/basic_template.py) - Simple variable substitution with Pydantic validation
-- [functions.py](/python/examples/templates/functions.py) - Adding dynamic content with custom template functions
-- [objects.py](/python/examples/templates/objects.py) - Handle complex nested data structures in templates with proper type validation
-- [arrays.py](/python/examples/templates/arrays.py) - Process collections of data within templates for dynamic list generation
-- [forking.py](/python/examples/templates/forking.py) - Create new templates based on existing ones, with customizations
-- [system_prompt.py](/python/examples/templates/system_prompt.py) - Creating specialized system prompts for AI assistants with tool definitions
+## Examples
+
+- All template examples can be found in [here](/python/examples/templates).
