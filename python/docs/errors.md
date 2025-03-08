@@ -183,3 +183,8 @@ message: str = FrameworkError.ensure(error).explain()
 ```
 
 See the source file [errors.py](python/beeai_framework/errors.py) for additional methods.
+
+
+## Examples
+
+- All error examples can be found in [here](/python/examples/errors).

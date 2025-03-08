@@ -650,3 +650,7 @@ to recover from errors.
 
 When building tools, consider that the tool is being invoked by a somewhat unpredictable third party (the agent). You should ensure that sufficient guardrails are in place to prevent
 adverse outcomes.
+
+## Examples
+
+- All tool examples can be found in [here](/python/examples/tools).

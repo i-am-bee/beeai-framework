@@ -400,8 +400,4 @@ This pattern demonstrates:
 
 ## Examples
 
-- [simple.py](/python/examples/workflows/simple.py) - Basic workflow example
-- [nesting.py](/python/examples/workflows/nesting.py) - More complex workflow with loops
-- [memory.py](/python/examples/workflows/memory.py) - Using memory in workflows
-- [multi_agents.py](/python/examples/workflows/multi_agents.py) - Multi-agent workflow
-- [workflows.ipynb](/python/examples/notebooks/workflows.ipynb) - Interactive notebook examples
+- All workflow examples can be found in [here](/python/examples/workflows).

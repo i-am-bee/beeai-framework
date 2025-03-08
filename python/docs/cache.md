@@ -200,14 +200,4 @@ _Source: /examples/cache/custom.py_
 
 ## Examples
 
-- [unconstrainedCache.py](/python/examples/cache/unconstrainedCache.py) - Basic usage of unconstrained cache
-- [unconstrainedCacheFunction.py](/python/examples/cache/unconstrainedCacheFunction.py) - Caching function output and intermediate steps
-- [slidingCache.py](/python/examples/cache/slidingCache.py) - Size-limited cache implementation
-- [fileCache.py](/python/examples/cache/fileCache.py) - Persistent disk-based caching
-- [fileCacheCustomProvider.py](/python/examples/cache/fileCacheCustomProvider.py) - Custom provider for file cache
-- [llmCache.py](/python/examples/cache/llmCache.py) - Caching LLM responses
-- [toolCache.py](/python/examples/cache/toolCache.py) - Caching tool execution results
-- [decoratorCache.py](/python/examples/cache/decoratorCache.py) - Using the cache decorator
-- [decoratorCacheComplex.py](/python/examples/cache/decoratorCacheComplex.py) - Advanced decorator caching with custom key functions
-- [cacheFn.py](/python/examples/cache/cacheFn.py) - Function wrapping for dynamic caching
-- [custom.py](/python/examples/cache/custom.py) - Creating a custom cache provider
+- All cache examples can be found in [here](/python/examples/cache).
