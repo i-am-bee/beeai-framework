@@ -162,6 +162,23 @@ async def watson_tool_calling() -> None:
     print(final_response.get_text_content())
 
 
+async def watsonx_debug() -> None:
+    # Log every request
+    llm.emitter.match(
+        "*",
+        lambda data, event: print(
+            f"Time: {event.created_at.time().isoformat()}",
+            f"Event: {event.name}",
+            f"Data: {str(data)[:90]}...",
+        ),
+    )
+
+    response = await llm.create(
+        messages=[UserMessage("Hello world!")],
+    )
+    print(response.messages[0].to_plain())
+
+
 async def main() -> None:
     print("*" * 10, "watsonx_from_name")
     await watsonx_from_name()
@@ -175,6 +192,8 @@ async def main() -> None:
     await watson_structure()
     print("*" * 10, "watson_tool_calling")
     await watson_tool_calling()
+    print("*" * 10, "watsonx_debug")
+    await watsonx_debug()
 
 
 if __name__ == "__main__":
