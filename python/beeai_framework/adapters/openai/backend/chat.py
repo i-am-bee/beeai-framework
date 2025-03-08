@@ -13,6 +13,7 @@
 # limitations under the License.
 
 
+import json
 import os
 
 from beeai_framework.adapters.litellm.chat import LiteLLMChatModel
@@ -29,6 +30,21 @@ class OpenAIChatModel(LiteLLMChatModel):
 
     def __init__(self, model_id: str | None = None, settings: dict | None = None) -> None:
         _settings = settings.copy() if settings is not None else {}
+
+        # Extra headers -- ignored if invalid
+        extra_headers = None
+        extra_headers_json = _settings.get("extra_headers", os.getenv("OPENAI_EXTRA_HEADERS"))
+
+        if extra_headers_json:
+            try:
+                parsed_headers = json.loads(extra_headers_json)
+                if isinstance(parsed_headers, dict):
+                    extra_headers = parsed_headers
+            except json.JSONDecodeError:
+                pass
+
+        if extra_headers:
+            _settings["headers"] = extra_headers
 
         super().__init__(
             model_id if model_id else os.getenv("OPENAI_CHAT_MODEL", "gpt-4o"),
