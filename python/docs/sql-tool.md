@@ -1,4 +1,4 @@
 # 🛢️ SQLTool
 
 > [!NOTE]  
-> **SQLTool is not yet implemented in Python, but it's coming soon! 🚀**
+> **COMING SOON! 🚀 SQLTool is not yet implemented in Python, but is available today in [TypeScript](/typescript/docs/sqltool.md)**
