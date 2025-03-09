@@ -1,7 +1,7 @@
 # 📦 Serialization
 
 > [!NOTE]  
-> **Serialization is not yet implemented in Python, but it's coming soon! 🚀**
+> **COMING SOON! 🚀 Serialization is not yet implemented in Python, but is available today in [TypeScript](/typescript/docs/serialization.md)**
 
 <!-- TOC -->
 ## Table of Contents
