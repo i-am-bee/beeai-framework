@@ -16,9 +16,14 @@ Closes: #
 
 ### Checklist
 
+#### General
 - [ ] I have read the appropriate contributor guide: [Python](https://github.com/i-am-bee/beeai-framework/blob/main/CONTRIBUTING.md)
 / [TypeScript](https://github.com/i-am-bee/beeai-framework/blob/main/CONTRIBUTING.md)
 - [ ] I have signed off on my commit: [Python instructions](https://github.com/i-am-bee/beeai-framework/blob/main/python/CONTRIBUTING.md#developer-certificate-of-origin-dco) / [TypeScript instructions](https://github.com/i-am-bee/beeai-framework/blob/main/typescript/CONTRIBUTING.md#developer-certificate-of-origin-dco)
+- [ ] Commit messages and PR title follow [conventional commits](https://www.conventionalcommits.org/en/v1.0.0/#summary)
+- [ ] Appropriate label(s) added to PR: `Python` for Python changes, `TypeScript` for TypeScript changes
+
+#### Code quality checks
 - [ ] Linting passes: 
   - Python: `poe lint` or `poe lint --fix`
   - TypeScript: `yarn lint` or `yarn lint:fix`
@@ -26,15 +31,17 @@ Closes: #
   - Python: `poe format` or `poe format --fix`
   - TypeScript: `yarn format` or `yarn format:fix`
 - [ ] (Python) Static type checks pass: `poe type-check`
-- [ ] Unit tests passes:
+
+#### Testing
+- [ ] Unit tests pass:
   - Python: `poe test --type unit`
   - TypeScript: `yarn test:unit`
-- [ ] (Python) Integration tests passes: `poe test --type integration`
-- [ ] E2E tests passes:
+- [ ] E2E tests pass:
   - Python: `poe test --type e2e`
   - TypeScript: `yarn test:e2e`
-- [ ] (Python) Embedme embeds code examples in docs. To update after edits, run: `poe docs --type build`
+- [ ] (Python) Integration tests pass: `poe test --type integration`
 - [ ] Tests are included (for bug fixes or new features)
+
+#### Documentation
 - [ ] Documentation is updated
-- [ ] Commit messages and PR title follow [conventional commits](https://www.conventionalcommits.org/en/v1.0.0/#summary)
-- [ ] Appropriate label(s) added to PR: `Python` for Python changes, `TypeScript` for TypeScript changes.
+- [ ] (Python) Embedme embeds code examples in docs. To update after edits, run: `poe docs --type build`
