@@ -16,14 +16,22 @@ Closes: #
 
 ### Checklist
 
-<!-- For completed items, change [ ] to [x]. -->
-
-- [ ] I have read the [contributor guide](https://github.com/i-am-bee/beeai-framework/blob/main/CONTRIBUTING.md)
-- [ ] I have [signed off](https://github.com/i-am-bee/beeai-framework/blob/main/CONTRIBUTING.md#developer-certificate-of-origin-dco) on my commit
-- [ ] Linting passes: `yarn lint` or `yarn lint:fix`
-- [ ] Formatting is applied: `yarn format` or `yarn format:fix`
-- [ ] Unit tests pass: `yarn test:unit`
-- [ ] E2E tests pass: `yarn test:e2e`
-- [ ] Tests are included <!-- Bug fixes and new features should include tests -->
-- [ ] Documentation is changed or added
+- [ ] I have read the appropriate contributor guide: [Python contributors guide](https://github.com/i-am-bee/beeai-framework/blob/main/CONTRIBUTING.md)
+/ [TypeScript contributors guide](https://github.com/i-am-bee/beeai-framework/blob/main/CONTRIBUTING.md)
+- [ ] I have signed off on my commit: [Python instructions](https://github.com/i-am-bee/beeai-framework/blob/main/python/CONTRIBUTING.md#developer-certificate-of-origin-dco) / [TypeScript instructions](https://github.com/i-am-bee/beeai-framework/blob/main/typescript/CONTRIBUTING.md#developer-certificate-of-origin-dco)
+- [ ] Linting passes: 
+  - Python: `poe lint` or `poe lint --fix`
+  - TypeScript: `yarn lint` or `yarn lint:fix`
+- [ ] Formatting is applied:
+  - Python: `poe format` or `poe format --fix`
+  - TypeScript: `yarn format` or `yarn format:fix`
+- [ ] Unit tests pass:
+  - Python: `poe test --type unit`
+  - TypeScript: `yarn test:unit`
+- [ ] E2E tests pass:
+  - Python: `poe test --type e2e`
+  - TypeScript: `yarn test:e2e`
+- [ ] Tests are included (for bug fixes or new features)
+- [ ] Documentation is updated
 - [ ] Commit messages and PR title follow [conventional commits](https://www.conventionalcommits.org/en/v1.0.0/#summary)
+- [ ] Appropriate label(s) added to PR: `Python` for Python changes, `TypeScript` for TypeScript changes.
