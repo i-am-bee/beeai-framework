@@ -24,24 +24,16 @@ Closes: #
 - [ ] Appropriate label(s) added to PR: `Python` for Python changes, `TypeScript` for TypeScript changes
 
 #### Code quality checks
-- [ ] Linting passes: 
-  - Python: `poe lint` or `poe lint --fix`
-  - TypeScript: `yarn lint` or `yarn lint:fix`
-- [ ] Formatting is applied:
-  - Python: `poe format` or `poe format --fix`
-  - TypeScript: `yarn format` or `yarn format:fix`
-- [ ] (Python) Static type checks pass: `poe type-check`
+- [ ] Linting passes: Python `poe lint` or `poe lint --fix` / TypeScript `yarn lint` or `yarn lint:fix`
+- [ ] Formatting is applied: Python `poe format` or `poe format --fix` / TypeScript: `yarn format` or `yarn format:fix`
+- [ ] Static type checks pass: Python `poe type-check`
 
 #### Testing
-- [ ] Unit tests pass:
-  - Python: `poe test --type unit`
-  - TypeScript: `yarn test:unit`
-- [ ] E2E tests pass:
-  - Python: `poe test --type e2e`
-  - TypeScript: `yarn test:e2e`
-- [ ] (Python) Integration tests pass: `poe test --type integration`
+- [ ] Unit tests pass: Python `poe test --type unit` / TypeScript `yarn test:unit`
+- [ ] E2E tests pass: Python `poe test --type e2e` / TypeScript: `yarn test:e2e`
+- [ ] Integration tests pass: Python `poe test --type integration`
 - [ ] Tests are included (for bug fixes or new features)
 
 #### Documentation
 - [ ] Documentation is updated
-- [ ] (Python) Embedme embeds code examples in docs. To update after edits, run: `poe docs --type build`
+- [ ] Embedme embeds code examples in docs. To update after edits, run: Python `poe docs --type build`
