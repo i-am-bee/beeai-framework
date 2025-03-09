@@ -1,7 +1,7 @@
 # 🔌 Integrations
 
 > [!NOTE]  
-> **Integrations are not yet available in Python, but we’re working on it! 🚀**
+> **COMING SOON! 🚀 Integrations are not yet implemented in Python, but is available today in [TypeScript](/typescript/docs/integrations.md)**
 
 ## Overview
 
