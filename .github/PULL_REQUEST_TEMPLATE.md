@@ -16,8 +16,8 @@ Closes: #
 
 ### Checklist
 
-- [ ] I have read the appropriate contributor guide: [Python contributors guide](https://github.com/i-am-bee/beeai-framework/blob/main/CONTRIBUTING.md)
-/ [TypeScript contributors guide](https://github.com/i-am-bee/beeai-framework/blob/main/CONTRIBUTING.md)
+- [ ] I have read the appropriate contributor guide: [Python](https://github.com/i-am-bee/beeai-framework/blob/main/CONTRIBUTING.md)
+/ [TypeScript](https://github.com/i-am-bee/beeai-framework/blob/main/CONTRIBUTING.md)
 - [ ] I have signed off on my commit: [Python instructions](https://github.com/i-am-bee/beeai-framework/blob/main/python/CONTRIBUTING.md#developer-certificate-of-origin-dco) / [TypeScript instructions](https://github.com/i-am-bee/beeai-framework/blob/main/typescript/CONTRIBUTING.md#developer-certificate-of-origin-dco)
 - [ ] Linting passes: 
   - Python: `poe lint` or `poe lint --fix`
@@ -25,12 +25,15 @@ Closes: #
 - [ ] Formatting is applied:
   - Python: `poe format` or `poe format --fix`
   - TypeScript: `yarn format` or `yarn format:fix`
-- [ ] Unit tests pass:
+- [ ] (Python) Static type checks pass: `poe type-check`
+- [ ] Unit tests passes:
   - Python: `poe test --type unit`
   - TypeScript: `yarn test:unit`
-- [ ] E2E tests pass:
+- [ ] (Python) Integration tests passes: `poe test --type integration`
+- [ ] E2E tests passes:
   - Python: `poe test --type e2e`
   - TypeScript: `yarn test:e2e`
+- [ ] (Python) Embedme embeds code examples in docs. To update after edits, run: `poe docs --type build`
 - [ ] Tests are included (for bug fixes or new features)
 - [ ] Documentation is updated
 - [ ] Commit messages and PR title follow [conventional commits](https://www.conventionalcommits.org/en/v1.0.0/#summary)
