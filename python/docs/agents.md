@@ -196,10 +196,10 @@ agent = ReActAgent(
 _Source: [examples/agents/simple.py](/python/examples/agents/simple.py)_
 
 **Memory types for different use cases:**
-- [UnconstrainedMemory](/python/examples/memory/unconstrainedMemory.py) - For unlimited storage
-- [SlidingMemory](/python/examples/memory/slidingMemory.py) - For keeping only the most recent messages
-- [TokenMemory](/python/examples/memory/tokenMemory.py) - For managing token limits
-- [SummarizeMemory](/python/examples/memory/summarizeMemory.py) - For summarizing previous conversations
+- [UnconstrainedMemory](/python/examples/memory/unconstrained_memory.py) - For unlimited storage
+- [SlidingMemory](/python/examples/memory/sliding_memory.py) - For keeping only the most recent messages
+- [TokenMemory](/python/examples/memory/token_memory.py) - For managing token limits
+- [SummarizeMemory](/python/examples/memory/summarize_memory.py) - For summarizing previous conversations
 
 > [!TIP]
 > See the [memory documentation](/python/docs/memory.md) for more information on memory types.
@@ -504,7 +504,4 @@ _Source: [examples/workflows/multi_agents.py](/python/examples/workflows/multi_a
 
 ## Examples
 
-- [simple.py](/python/examples/agents/simple.py) - Basic agent implementation
-- [react.py](/python/examples/agents/react.py) - More complete implementation
-- [granite.py](/python/examples/agents/granite.py) - Using Granite model
-- [agents.ipynb](/python/examples/notebooks/agents.ipynb) - Interactive notebook examples
+- All agent examples can be found in [here](/python/examples/agents).

@@ -19,11 +19,6 @@ BeeAI framework provides a comprehensive set of features for building powerful A
 | [**Agents**](/python/docs/agents.md) | Create intelligent, autonomous agents using the ReAct pattern. Build agents that can reason about problems, take appropriate actions, and adapt their approach based on feedback. Includes pre-built agent architectures and customizable components. |
 | [**Workflows**](/python/docs/workflows.md) | Orchestrate complex multi-agent systems where specialized agents collaborate to solve problems. Define sequential or conditional execution flows with state management and observability. |
 | [**Backend**](/python/docs/backend.md) | Connect to various LLM providers like Ollama, watsonx.ai, and more. Offers unified interfaces for chat, embeddings, and structured outputs, making it easy to swap models without changing your code. |
-
-### Capability extensions
-
-| Feature | Description |
-|-----------|-------------|
 | [**Tools**](/python/docs/tools.md) | Extend agent capabilities with ready-to-use tools for web search, weather forecasting, knowledge retrieval, code execution, and more. Create custom tools to connect agents to any API or service. |
 | [**Memory**](/python/docs/memory.md) | Manage conversation history with different memory strategies. Choose from unconstrained memory, token-aware memory, sliding window memory, or summarization memory based on your needs. |
 | [**Templates**](/python/docs/templates.md) | Build flexible prompt templates using an enhanced Mustache syntax. Create reusable templates with variables, conditionals, and loops to generate well-structured prompts. |
@@ -144,7 +139,7 @@ python [project_name].py
 
 BeeAI framework is an open-source project and we ❤️ contributions.<br>
 
-If you'd like to help build BeeAI, take a look at our [contribution guidelines](/python/docs/CONTRIBUTING.md).
+If you'd like to help build BeeAI, take a look at our [contribution guidelines](/python/CONTRIBUTING.md).
 
 ## Bugs
 
@@ -152,7 +147,7 @@ We are using GitHub Issues to manage public bugs. We keep a close eye on this, s
 
 ## Code of conduct
 
-This project and everyone participating in it are governed by the [Code of Conduct](/python/docs/CODE_OF_CONDUCT.md). By participating, you are expected to uphold this code. Please read the [full text](./CODE_OF_CONDUCT.md) so that you can read which actions may or may not be tolerated.
+This project and everyone participating in it are governed by the [Code of Conduct](/CODE_OF_CONDUCT.md). By participating, you are expected to uphold this code. Please read the [full text](/CODE_OF_CONDUCT.md) so that you can read which actions may or may not be tolerated.
 
 ## Legal notice
 

@@ -30,11 +30,11 @@ These tools extend the agent's abilities, allowing it to interact with external 
 | `MCPTool`                                                             | Discover and use tools exposed by arbitrary [MCP Server](https://modelcontextprotocol.io/examples).           |
 | ➕ [Request](https://github.com/i-am-bee/beeai-framework/discussions) |                                                                                                               |
 
-All examples can be found [here](/examples/tools).
+All examples can be found [here](/typescript/examples/tools).
 
 > [!TIP]
 >
-> Would you like to use a tool from LangChain? See the [example](/examples/tools/langchain.ts).
+> Would you like to use a tool from LangChain? See the [example](/typescript/examples/tools/langchain.ts).
 
 ## Usage
 
@@ -54,7 +54,7 @@ const result = await tool.run({
 console.log(result.getTextContent());
 ```
 
-_Source: [examples/tools/base.ts](/examples/tools/base.ts)_
+_Source: [examples/tools/base.ts](/typescript/examples/tools/base.ts)_
 
 ### Advanced
 
@@ -87,7 +87,7 @@ console.log(result.result); // prints raw data
 console.log(result.getTextContent()); // prints data as text
 ```
 
-_Source: [examples/tools/advanced.ts](/examples/tools/advanced.ts)_
+_Source: [examples/tools/advanced.ts](/typescript/examples/tools/advanced.ts)_
 
 > [!TIP]
 >
@@ -110,15 +110,15 @@ const agent = new BeeAgent({
 });
 ```
 
-_Source: [examples/tools/agent.ts](/examples/tools/agent.ts)_
+_Source: [examples/tools/agent.ts](/typescriptexamples/tools/agent.ts)_
 
 ## Writing a new tool
 
 To create a new tool, you have the following options on how to do that:
 
-- Implement the base [`Tool`](/src/tools/base.ts) class.
-- Initiate the [`DynamicTool`](/src/tools/base.ts) by passing your own handler (function) with the `name`, `description` and `input schema`.
-- Initiate the [`CustomTool`](/src/tools/custom.ts) by passing your own Python function (code interpreter needed).
+- Implement the base [`Tool`](/typescript/src/tools/base.ts) class.
+- Initiate the [`DynamicTool`](/typescript/src/tools/base.ts) by passing your own handler (function) with the `name`, `description` and `input schema`.
+- Initiate the [`CustomTool`](/typescript/src/tools/custom.ts) by passing your own Python function (code interpreter needed).
 
 ### Implementing the `Tool` class
 
@@ -186,7 +186,7 @@ export class RiddleTool extends Tool<StringToolOutput> {
 }
 ```
 
-_Source: [examples/tools/custom/base.ts](/examples/tools/custom/base.ts)_
+_Source: [examples/tools/custom/base.ts](/typescript/examples/tools/custom/base.ts)_
 
 > [!TIP]
 >
@@ -306,7 +306,7 @@ export class OpenLibraryTool extends Tool<OpenLibraryToolOutput, ToolOptions, To
 }
 ```
 
-_Source: [examples/tools/custom/openLibrary.ts](/examples/tools/custom/openLibrary.ts)_
+_Source: [examples/tools/custom/openLibrary.ts](/typescript/examples/tools/custom/openLibrary.ts)_
 
 #### Implementation Notes
 
@@ -407,7 +407,7 @@ const tool = new DynamicTool({
 });
 ```
 
-_Source: [examples/tools/custom/dynamic.ts](/examples/tools/custom/dynamic.ts)_
+_Source: [examples/tools/custom/dynamic.ts](/typescript/examples/tools/custom/dynamic.ts)_
 
 The `name` of the tool is required and must only contain characters between
 a-z, A-Z, 0-9, or one of - or \_.
@@ -415,7 +415,7 @@ The `inputSchema` and `description` are also both required.
 
 ### Using the `CustomTool` (Python functions)
 
-If you want to use the Python function, use the [`CustomTool`](/src/tools/custom.ts).
+If you want to use the Python function, use the [`CustomTool`](/typescript/src/tools/custom.ts).
 
 <!-- embedme examples/tools/custom/python.ts -->
 
@@ -456,7 +456,7 @@ def get_riddle() -> Optional[Dict[str, str]]:
 );
 ```
 
-_Source: [examples/tools/custom/python.ts](/examples/tools/custom/python.ts)_
+_Source: [examples/tools/custom/python.ts](/typescript/examples/tools/custom/python.ts)_
 
 > [!TIP]
 >
@@ -464,7 +464,7 @@ _Source: [examples/tools/custom/python.ts](/examples/tools/custom/python.ts)_
 >
 > 1. During the creation of a `CustomTool`, either via the constructor or the factory function (`CustomTool.fromSourceCode`).
 > 2. By passing them directly as part of the options when invoking: `myTool.run({ ... }, { env: { MY_ENV: 'MY_VALUE' } })`.
-> 3. Dynamically during execution via [`Emitter`](/docs/emitter.md): `myTool.emitter.on("start", ({ options }) => { options.env.MY_ENV = 'MY_VALUE'; })`.
+> 3. Dynamically during execution via [`Emitter`](/typescript/docs/emitter.md): `myTool.emitter.on("start", ({ options }) => { options.env.MY_ENV = 'MY_VALUE'; })`.
 
 > [!IMPORTANT]
 >
@@ -524,7 +524,7 @@ try {
 }
 ```
 
-_Source: [examples/tools/mcp.ts](/examples/tools/mcp.ts)_
+_Source: [examples/tools/mcp.ts](/typescript/examples/tools/mcp.ts)_
 
 ## General Tips
 

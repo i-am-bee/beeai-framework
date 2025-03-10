@@ -6,7 +6,7 @@ An emitter is a core functionality of the framework that allows you to see what 
 
 ## Standalone usage
 
-The following examples demonstrate how [`Emitter`](/src/emitter/emitter.ts) concept works.
+The following examples demonstrate how [`Emitter`](/typescript/src/emitter/emitter.ts) concept works.
 
 ### Basic Usage
 
@@ -26,7 +26,7 @@ await root.emit("start", { id: 123 });
 await root.emit("end", { id: 123 });
 ```
 
-_Source: [examples/emitter/base.ts](/examples/emitter/base.ts)_
+_Source: [examples/emitter/base.ts](/typescript/examples/emitter/base.ts)_
 
 > [!NOTE]
 >
@@ -68,7 +68,7 @@ await emitter.emit("start", { id: 123 });
 await emitter.emit("update", { id: 123, data: "Hello Bee!" });
 ```
 
-_Source: [examples/emitter/advanced.ts](/examples/emitter/advanced.ts)_
+_Source: [examples/emitter/advanced.ts](/typescript/examples/emitter/advanced.ts)_
 
 > [!NOTE]
 >
@@ -110,7 +110,7 @@ emitter.match(
 emitter.match(/watsonx/, async (data, event) => {});
 ```
 
-_Source: [examples/emitter/matchers.ts](/examples/emitter/matchers.ts)_
+_Source: [examples/emitter/matchers.ts](/typescript/examples/emitter/matchers.ts)_
 
 ### Event Piping
 
@@ -151,7 +151,7 @@ await first.emit("c", {});
 await second.emit("d", {});
 ```
 
-_Source: [examples/emitter/piping.ts](/examples/emitter/piping.ts)_
+_Source: [examples/emitter/piping.ts](/typescript/examples/emitter/piping.ts)_
 
 ## Framework Usage
 
@@ -187,7 +187,7 @@ await agent
   });
 ```
 
-_Source: [examples/emitter/agentMatchers.ts](/examples/emitter/agentMatchers.ts)_
+_Source: [examples/emitter/agentMatchers.ts](/typescript/examples/emitter/agentMatchers.ts)_
 
 > [!IMPORTANT]
 >
@@ -195,7 +195,7 @@ _Source: [examples/emitter/agentMatchers.ts](/examples/emitter/agentMatchers.ts)
 
 > [!TIP]
 >
-> The more complex agentic example can be found [here](/examples/agents/bee.ts).
+> The more complex agentic example can be found [here](/typescript/examples/agents/bee.ts).
 
 > [!TIP]
 >

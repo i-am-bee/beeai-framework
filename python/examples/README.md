@@ -22,7 +22,6 @@ This repository contains examples demonstrating the usage of the BeeAI Framework
 
 - [`simple.py`](/python/examples/workflows/simple.py): Introduction to workflows
 - [`multi_agents.py`](/python/examples/workflows/multi_agents.py): Multi-step sequential agentic workflow.
-- [`web_agent.py`](/python/examples/workflows/web_agent.py): Web Agent
 
 ## Helpers
 
@@ -40,11 +39,11 @@ This repository contains examples demonstrating the usage of the BeeAI Framework
 
 ## Memory
 
-- [unconstrained_memory.py](/examples/memory/unconstrained_memory.py) - Basic memory usage
-- [sliding_memory.py](/examples/memory/sliding_memory.py) - Sliding window memory example
-- [token_memory.py](/examples/memory/token_memory.py) - Token-based memory management
-- [summarize_memory.py](/examples/memory/summarize_memory.py) - Summarization memory example
-- [agent_memory.py](/examples/memory/agent_memory.py) - Using memory with agents
+- [unconstrained_memory.py](/python/examples/memory/unconstrained_memory.py) - Basic memory usage
+- [sliding_memory.py](/python/examples/memory/sliding_memory.py) - Sliding window memory example
+- [token_memory.py](/python/examples/memory/token_memory.py) - Token-based memory management
+- [summarize_memory.py](/python/examples/memory/summarize_memory.py) - Summarization memory example
+- [agent_memory.py](/python/examples/memory/agent_memory.py) - Using memory with agents
 
 ## Templates
 

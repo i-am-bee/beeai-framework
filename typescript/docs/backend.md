@@ -30,7 +30,7 @@ The following table depicts supported providers.
 
 > [!TIP]
 >
-> If you don't see your provider raise an issue [here](https://github.com/i-am-bee/beeai-framework/discussions). Meanwhile, you can use [LangChain adapter](/examples/backend/providers/langchain.ts).
+> If you don't see your provider raise an issue [here](https://github.com/i-am-bee/beeai-framework/discussions). Meanwhile, you can use [LangChain adapter](/typescript/examples/backend/providers/langchain.ts).
 
 ### Initialization
 
@@ -42,7 +42,7 @@ console.log(backend.chat.modelId); // uses provider's default model or the one s
 console.log(backend.embedding.modelId); // uses provider's default model or the one specified via env
 ```
 
-All providers examples can be found in [examples/backend/providers](/examples/backend/providers).
+All providers examples can be found in [examples/backend/providers](/typescript/examples/backend/providers).
 
 ## Chat Model
 
@@ -169,7 +169,7 @@ const response = await model.createStructure({
 console.log(response.object);
 ```
 
-_Source: [examples/backend/structured.ts](/examples/backend/structured.ts)_
+_Source: [examples/backend/structured.ts](/typescript/examples/backend/structured.ts)_
 
 ### Tool Calling
 
@@ -232,7 +232,7 @@ while (true) {
 }
 ```
 
-_Source: [examples/backend/toolCalling.ts](/examples/backend/toolCalling.ts)_
+_Source: [examples/backend/toolCalling.ts](/typescript/examples/backend/toolCalling.ts)_
 
 ## Embedding Model
 

@@ -16,24 +16,29 @@ Build production-ready multi-agent systems in [Python](/python) or [TypeScript](
 
 ## Latest updates 🚀
 
-- **2025-02-19**: Launched Python library alpha. See [getting started guide](/python/docs)
-- **2025-02-07**: Introduced [Backend](/typescript/docs/backend.md) module to simplify working with AI services (chat, embedding). See [migration guide](/typescript/docs/migration_guide.md)
-- **2025-01-28**: Added support for DeepSeek R1, check out the [Competitive Analysis Workflow example](/typescript/examples/workflows/competitive-analysis)
-- **2025-01-09**:
-  - Introduced [Workflows](/typescript/docs/workflows.md), a way of building multi-agent systems
-  - Added support for [Model Context Protocol](/typescript/docs/tools.md#using-the-mcptool-class)
-- **2024-12-09**: Added support for [LLaMa 3.3](https://huggingface.co/meta-llama/Llama-3.3-70B-Instruct)
-- **2024-11-21**: Added an experimental [Streamlit agent](typescript/examples/agents/experimental/streamlit.ts)
+| Date       | Language      | Update Description                                                                 
+|------------|---------------|-------------------------------------------------------------------------------------|
+| 2025-02-19 | Python        | Launched Python library alpha. See [getting started guide](/python).               |
+| 2025-02-07 | TypeScript    | Introduced [Backend](/typescript/docs/backend.md) module to simplify working with AI services (chat, embedding). See [migration guide](/typescript/docs/migration_guide.md). |
+| 2025-01-28 | TypeScript    | Added support for DeepSeek R1, check out the [Competitive Analysis Workflow example](/typescript/examples/workflows/competitive-analysis). |
+| 2025-01-09 | TypeScript    | Introduced [Workflows](/typescript/docs/workflows.md), a way of building multi-agent systems. Added support for [Model Context Protocol](/typescript/docs/tools.md#using-the-mcptool-class). |
+| 2024-12-09 | TypeScript    | Added support for LLaMa 3.3. See [multi-agent workflow example using watsonx](/typescript/examples/workflows/multiAgents.ts) or explore [other available providers](/typescript/docs/backend.md#providers-implementations).        |
+| 2024-11-21 | TypeScript    | Added an experimental [Streamlit agent](typescript/examples/agents/experimental/streamlit.ts). |
+
 
 For a full changelog, see our [releases page](https://github.com/i-am-bee/beeai-framework/releases).
 
+---
+
 ## Why BeeAI?
 
-**🏆 Build for your use case.**  Implement simple to complex multi-agent patterns using [Workflows](/python/docs/workflows.md), start with a [ReActAgent](/python/examples/agents/bee.py), or easily [build your own agent architecture](/python/docs/agents.md#creating-your-own-agent). There is no one-size-fits-all agent architecture, you need full flexibility in orchestrating agents and defining their roles and behaviors. 
+**🏆 Build for your use case.**  Implement simple to complex multi-agent patterns using [Workflows](/python/docs/workflows.md), start with a [ReActAgent](/python/examples/agents/react.py), or easily [build your own agent architecture](/python/docs/agents.md#creating-your-own-agent). There is no one-size-fits-all agent architecture, you need full flexibility in orchestrating agents and defining their roles and behaviors. 
 
-**🔌 Seamlessly integrate with your models and tools.** Get started with any model from [Ollama](/python/examples/backend/providers/ollama.py), [Groq](/typescript/examples/backend/providers/groq.ts), [OpenAI](/typescript/examples/backend/providers/openai.ts), [watsonx.ai](/python/examples/backend/providers/watsonx.py), and [more](/python/docs/backend.md). Leverage tools from [LangChain](/typescript/examples/tools/langchain.ts), connect to any server using the [Model Context Protocol](/python/docs/tools.md#using-the-mcptool-class), or build your own [custom tools](/python/docs/tools.md#using-the-customtool-python-functions). BeeAI is designed to integrate with the systems and capabilities you need.
+**🔌 Seamlessly integrate with your models and tools.** Get started with any model from [Ollama](/python/examples/backend/providers/ollama.py), [Groq](/python/examples/backend/providers/groq.py), [OpenAI](/python/examples/backend/providers/openai_example.py), [watsonx.ai](/python/examples/backend/providers/watsonx.py), and [more](/python/backend.md#supported-providers). Leverage tools from [LangChain](/python/examples/tools/langchain.py), connect to any server using the [Model Context Protocol](/python/tools.md#mcp-tool), or build your own [custom tools](/python/tools.md#using-the-customtool-python-functions). BeeAI is designed to integrate with the systems and capabilities you need.
 
-**🚀 Scale with production-grade controls.** Optimize token usage through [memory strategies](/python/docs/memory.md), persist and restore agent state via [(de)serialization](/python/docs/serialization.md), generate structured outputs, and execute generated code in a sandboxed environment. When things go wrong, BeeAI tracks the full agent workflow through [events](/python/docs/emitter.md), collects [telemetry](/python/docs/instrumentation.md), logs diagnostic data, and handles [errors](/python/docs/errors.md) with clear, well-defined exceptions. Deploying multi-agent systems requires resource management and reliability.
+**🚀 Scale with production-grade controls.** Optimize token usage through configurable [memory strategies](/python/docs/memory.md), persist and restore agent state via [(de)serialization](/python/docs/serialization.md), generate structured outputs, and execute generated code in a sandboxed environment (coming soon). When things go wrong, the [emitter](/python/docs/emitter.md) system tracks the full agent workflow, generating detailed [events](/python/docs/events.md) for monitoring and analysis. [Telemetry](/python/docs/instrumentation.md) and [logging](/python/docs/logger.md) capabilities capture key diagnostic data. When issues arise, BeeAI handles [errors](/python/docs/errors.md) gracefully with clear, well-defined exceptions.
+
+---
 
 ## Installation
 
@@ -47,7 +52,9 @@ To install the TypeScript library:
 npm install beeai-framework
 ```
 
-For more guidance and starter examples in your desired language, head to the docs pages for [Python](/python/docs) and [TypeScript](/typescript/docs).
+For more guidance and starter examples in your desired language, head to the docs pages for [Python](/python/README.md) and [TypeScript](/typescript/README.md).
+
+---
 
 ## Quick example
 
@@ -55,65 +62,56 @@ This example demonstrates how to build a multi-agent workflow using BeeAI framew
 
 ```py
 import asyncio
+import sys
 import traceback
 
-from pydantic import ValidationError
-
-from beeai_framework.agents.bee.agent import BeeAgentExecutionConfig
+from beeai_framework.agents.types import AgentExecutionConfig
 from beeai_framework.backend.chat import ChatModel
 from beeai_framework.backend.message import UserMessage
+from beeai_framework.errors import FrameworkError
 from beeai_framework.memory import UnconstrainedMemory
 from beeai_framework.tools.search.duckduckgo import DuckDuckGoSearchTool
 from beeai_framework.tools.weather.openmeteo import OpenMeteoTool
-from beeai_framework.workflows.agent import AgentFactoryInput, AgentWorkflow
-from beeai_framework.workflows.workflow import WorkflowError
+from beeai_framework.workflows.agent import AgentWorkflow
 
 
 async def main() -> None:
-    llm = await ChatModel.from_name("ollama:granite3.1-dense:8b")
+    llm = ChatModel.from_name("ollama:granite3.1-dense:8b")
 
-    try:
-        workflow = AgentWorkflow(name="Smart assistant")
-        workflow.add_agent(
-            agent=AgentFactoryInput(
-                name="WeatherForecaster",
-                instructions="You are a weather assistant. Respond only if you can provide a useful answer.",
-                tools=[OpenMeteoTool()],
-                llm=llm,
-                execution=BeeAgentExecutionConfig(max_iterations=3),
-            )
-        )
-        workflow.add_agent(
-            agent=AgentFactoryInput(
-                name="Researcher",
-                instructions="You are a researcher assistant. Respond only if you can provide a useful answer.",
-                tools=[DuckDuckGoSearchTool()],
-                llm=llm,
-            )
-        )
-        workflow.add_agent(
-            agent=AgentFactoryInput(
-                name="Solver",
-                instructions="""Your task is to provide the most useful final answer based on the assistants'
+    workflow = AgentWorkflow(name="Smart assistant")
+    workflow.add_agent(
+        name="WeatherForecaster",
+        instructions="You are a weather assistant.",
+        tools=[OpenMeteoTool()],
+        llm=llm,
+        execution=AgentExecutionConfig(max_iterations=3, total_max_retries=10, max_retries_per_step=3),
+    )
+    workflow.add_agent(
+        name="Researcher",
+        instructions="You are a researcher assistant.",
+        tools=[DuckDuckGoSearchTool()],
+        llm=llm,
+    )
+    workflow.add_agent(
+        name="Solver",
+        instructions="""Your task is to provide the most useful final answer based on the assistants'
 responses which all are relevant. Ignore those where assistant do not know.""",
-                llm=llm,
-            )
-        )
+        llm=llm,
+    )
 
-        prompt = "What is the weather in New York?"
-        memory = UnconstrainedMemory()
-        await memory.add(UserMessage(content=prompt))
-        response = await workflow.run(messages=memory.messages)
-        print(f"result: {response.state.final_answer}")
-
-    except WorkflowError:
-        traceback.print_exc()
-    except ValidationError:
-        traceback.print_exc()
+    prompt = "What is the weather in New York?"
+    memory = UnconstrainedMemory()
+    await memory.add(UserMessage(content=prompt))
+    response = await workflow.run(messages=memory.messages)
+    print(f"result: {response.state.final_answer}")
 
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    try:
+        asyncio.run(main())
+    except FrameworkError as e:
+        traceback.print_exc()
+        sys.exit(e.explain())
 ```
 
 _Source: [python/examples/workflows/multi_agents.py](/python/examples/workflows/multi_agents.py)_
@@ -132,7 +130,9 @@ To run projects, use:
 python [project_name].py
 ```
 
-Explore more in our examples for [Python](/python/examples) and [TypeScript](/typescript/examples).
+Explore more in our examples for [Python](/python/examples/README.md) and [TypeScript](/typescript/examples/README.md).
+
+---
 
 ## Roadmap
 
@@ -144,6 +144,8 @@ Explore more in our examples for [Python](/python/examples) and [TypeScript](/ty
 - Native tool calling with supported LLM providers
 
 To stay up-to-date on our [public roadmap](https://github.com/orgs/i-am-bee/projects/1/views/2).
+
+---
 
 ## Contribution guidelines
 

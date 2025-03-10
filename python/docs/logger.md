@@ -26,7 +26,7 @@ In the BeeAI framework, the `Logger` class is an abstraction built on top of Pyt
 
 > [!NOTE]
 >
-> Location within the framework: [beeai_framework/logger](/python/beeai_framework/logger).
+> Location within the framework: [beeai_framework/logger](/python/beeai_framework/logger.py).
 
 ---
 
@@ -162,5 +162,4 @@ _Source: /examples/logger/agent.py_
 
 ## Examples
 
-- [base.py](/python/examples/logger/base.py) - Simple example showing log levels
-- [agent.py](/python/examples/logger/agent.py) - Simple example showing agent integration
+- All logger examples can be found in [here](/python/examples/logger).

@@ -1,7 +1,7 @@
 # 📦 Serialization
 
 > [!NOTE]  
-> **Serialization is not yet implemented in Python, but it's coming soon! 🚀**
+> **COMING SOON! 🚀 Serialization is not yet implemented in Python, but is available today in [TypeScript](/typescript/docs/serialization.md)**
 
 <!-- TOC -->
 ## Table of Contents
@@ -120,8 +120,4 @@ _Source: [examples/serialization/context.py](/python/examples/serialization/cont
 
 ## Examples
 
-- [base.py](/python/examples/serialization/base.py) - Base example
-- [memory.py](/python/examples/serialization/memory.py) - Example of serializing and deserializing memory components
-- [customExternal.py](/python/examples/serialization/customExternal.py) - Registering external classes with the serializer
-- [customInternal.py](/python/examples/serialization/customInternal.py) - Implementing the Serializable interface
-- [context.py](/python/examples/serialization/context.py) - Using serialization context for advanced scenarios
+- All serialization examples can be found in [here](/python/examples/serialization).

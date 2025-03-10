@@ -153,4 +153,4 @@ _- Red Hot Chili Peppers with a total revenue of \$128.77._
 
 ## Sample Agent
 
-A complete sample of an SQL agent is available [here](/examples/agents/sql.ts).
+A complete sample of an SQL agent is available [here](/typescript/examples/agents/sql.ts).
