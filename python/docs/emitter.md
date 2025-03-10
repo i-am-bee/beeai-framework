@@ -82,6 +82,7 @@ Event matching allows you to:
 
 ```py
 import asyncio
+import re
 import sys
 import traceback
 
@@ -108,6 +109,9 @@ async def main() -> None:
     model.emitter.match(
         lambda event: isinstance(event.creator, ChatModel), lambda data, event: print(data, ": match ChatModel")
     )
+
+    # Match events by regex
+    emitter.match(re.compile(r"watsonx"), lambda data, event: print(data, ": match regex"))
 
     await emitter.emit("update", "update")
     await Emitter.root().emit("root", "root")

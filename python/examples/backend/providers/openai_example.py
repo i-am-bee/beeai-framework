@@ -86,7 +86,9 @@ async def openai_stream_parser() -> None:
         await parser.add(data["value"].get_text_content())
 
     user_message = UserMessage("Produce 3 lines each starting with 'Prefix: ' followed by a sentence and a new line.")
-    await llm.create(messages=[user_message], stream=True).observe(lambda emitter: emitter.on("newToken", on_new_token))
+    await llm.create(messages=[user_message], stream=True).observe(
+        lambda emitter: emitter.on("new_token", on_new_token)
+    )
     result = await parser.end()
     print(result)
 

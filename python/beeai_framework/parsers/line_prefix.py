@@ -30,7 +30,7 @@ class LinePrefixParserUpdate(BaseModel):
     key: str
     value: Any
     delta: str
-    field: InstanceOf[ParserField]
+    field: InstanceOf[ParserField[Any]]
 
 
 class LinePrefixParserLine(BaseModel):
@@ -54,7 +54,7 @@ class LinePrefixParserOptions(BaseModel):
 class LinePrefixParserNode(BaseModel):
     prefix: str
     next: list[str] = []
-    field: InstanceOf[ParserField]
+    field: InstanceOf[ParserField[Any]]
     is_start: bool = False
     is_end: bool = False
 
@@ -79,7 +79,14 @@ class LinePrefixParser:
             options = LinePrefixParserOptions()
         self.nodes: Nodes = nodes
         self.options: LinePrefixParserOptions = options
-        self.emitter: Emitter = Emitter(creator=self, namespace=["parser", "line"])
+        self.emitter: Emitter = Emitter(
+            creator=self,
+            namespace=["parser", "line"],
+            events={
+                "update": LinePrefixParserUpdate,
+                "partial_update": LinePrefixParserUpdate,
+            },
+        )
         self.lines: list[LinePrefixParserLine] = []
         self.excluded_lines: list[LinePrefixParserLine] = []
         self.done: bool = False
@@ -249,7 +256,7 @@ class LinePrefixParser:
         if not (self.options.silent_nodes and data.key in self.options.silent_nodes):
             await self.emitter.emit("partial_update", data)
 
-    async def _emit_final_update(self, key: str, field: ParserField) -> None:
+    async def _emit_final_update(self, key: str, field: ParserField[Any]) -> None:
         if key in self.final_state:
             self.throw_with_context(f"Duplicated key '{key}'", LinePrefixParserError.Reason.AlreadyCompleted)
         try:

@@ -157,7 +157,7 @@ class DefaultRunner(BaseRunner):
 
             async def on_partial_update(data: LinePrefixParserUpdate, event: EventMeta) -> None:
                 await input.emitter.emit(
-                    "partialUpdate",
+                    "partial_update",
                     {
                         "data": parser.final_state,
                         "update": {
@@ -192,7 +192,7 @@ class DefaultRunner(BaseRunner):
                 messages=self.memory.messages[:],
                 stream=True,
                 tools=self._input.tools if self.use_native_tool_calling else None,
-            ).observe(lambda llm_emitter: llm_emitter.on("newToken", on_new_token))
+            ).observe(lambda llm_emitter: llm_emitter.on("new_token", on_new_token))
 
             await parser.end()
 
@@ -224,7 +224,7 @@ class DefaultRunner(BaseRunner):
         ).get()
 
     async def tool(self, input: ReActAgentRunnerToolInput) -> ReActAgentRunnerToolResult:
-        tool: Tool | None = next(
+        tool: Tool[Any, Any, Any] | None = next(
             (
                 tool
                 for tool in self._input.tools

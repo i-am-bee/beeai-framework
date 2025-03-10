@@ -13,7 +13,7 @@
 # limitations under the License.
 
 from collections.abc import Callable
-from typing import Annotated
+from typing import Annotated, Any
 
 from pydantic import BaseModel, InstanceOf
 
@@ -21,9 +21,10 @@ from beeai_framework.agents.types import AgentExecutionConfig, AgentMeta
 from beeai_framework.backend.chat import ChatModel, ChatModelOutput
 from beeai_framework.backend.message import Message
 from beeai_framework.cancellation import AbortSignal
+from beeai_framework.errors import FrameworkError
 from beeai_framework.memory.base_memory import BaseMemory
 from beeai_framework.template import PromptTemplate
-from beeai_framework.tools.tool import AnyTool
+from beeai_framework.tools.tool import AnyTool, Tool, ToolOutput
 from beeai_framework.utils.strings import to_json
 
 
@@ -43,11 +44,11 @@ class ReActAgentRunOptions(BaseModel):
 class ReActAgentIterationResult(BaseModel):
     thought: str | None = None
     tool_name: str | None = None
-    tool_input: dict | None = None
+    tool_input: dict[str, Any] | None = None
     tool_output: str | None = None
     final_answer: str | None = None
 
-    def to_template(self) -> dict:
+    def to_template(self) -> dict[str, str]:
         return {
             "thought": self.thought or "",
             "tool_name": self.tool_name or "",
@@ -63,24 +64,24 @@ class ReActAgentRunIteration(BaseModel):
 
 
 class ReActAgentRunOutput(BaseModel):
-    result: InstanceOf[Message]
+    result: InstanceOf[Message[Any]]
     iterations: list[ReActAgentRunIteration]
     memory: InstanceOf[BaseMemory]
 
 
 class ReActAgentTemplates(BaseModel):
-    system: InstanceOf[PromptTemplate]  # TODO proper template subtypes
-    assistant: InstanceOf[PromptTemplate]
-    user: InstanceOf[PromptTemplate]
-    user_empty: InstanceOf[PromptTemplate]
-    tool_error: InstanceOf[PromptTemplate]
-    tool_input_error: InstanceOf[PromptTemplate]
-    tool_no_result_error: InstanceOf[PromptTemplate]
-    tool_not_found_error: InstanceOf[PromptTemplate]
-    schema_error: InstanceOf[PromptTemplate]
+    system: InstanceOf[PromptTemplate[Any]]  # TODO proper template subtypes
+    assistant: InstanceOf[PromptTemplate[Any]]
+    user: InstanceOf[PromptTemplate[Any]]
+    user_empty: InstanceOf[PromptTemplate[Any]]
+    tool_error: InstanceOf[PromptTemplate[Any]]
+    tool_input_error: InstanceOf[PromptTemplate[Any]]
+    tool_no_result_error: InstanceOf[PromptTemplate[Any]]
+    tool_not_found_error: InstanceOf[PromptTemplate[Any]]
+    schema_error: InstanceOf[PromptTemplate[Any]]
 
 
-ReActAgentTemplateFactory = Callable[[InstanceOf[PromptTemplate]], InstanceOf[PromptTemplate]]
+ReActAgentTemplateFactory = Callable[[InstanceOf[PromptTemplate[Any]]], InstanceOf[PromptTemplate[Any]]]
 ModelKeysType = Annotated[str, lambda v: v in ReActAgentTemplates.model_fields]
 
 
@@ -89,6 +90,73 @@ class ReActAgentInput(BaseModel):
     tools: list[InstanceOf[AnyTool]]
     memory: InstanceOf[BaseMemory]
     meta: InstanceOf[AgentMeta] | None = None
-    templates: dict[ModelKeysType, InstanceOf[PromptTemplate] | ReActAgentTemplateFactory] | None = None
+    templates: dict[ModelKeysType, InstanceOf[PromptTemplate[Any]] | ReActAgentTemplateFactory] | None = None
     execution: AgentExecutionConfig | None = None
     stream: bool | None = None
+
+
+class ReActAgentStartEvent(BaseModel):
+    meta: ReActAgentIterationMeta
+    tools: list[InstanceOf[Tool[Any, Any, Any]]]
+    memory: InstanceOf[BaseMemory]
+
+
+class ReActAgentErrorEvent(BaseModel):
+    error: InstanceOf[FrameworkError]
+    meta: ReActAgentIterationMeta
+
+
+class ReActAgentRetryEvent(BaseModel):
+    meta: ReActAgentIterationMeta
+
+
+class ReActAgentSuccessEvent(BaseModel):
+    data: InstanceOf[Message[Any]]
+    iterations: list[ReActAgentRunIteration]
+    memory: InstanceOf[BaseMemory]
+    meta: ReActAgentIterationMeta
+
+
+class ReActAgentUpdate(BaseModel):
+    key: str
+    value: Any
+    parsed_value: Any
+
+
+class ReActAgentUpdateMeta(ReActAgentIterationMeta):
+    success: bool
+
+
+class ReActAgentUpdateEvent(BaseModel):
+    data: ReActAgentIterationResult | dict[str, Any]
+    update: ReActAgentUpdate
+    meta: ReActAgentUpdateMeta
+    tools: list[InstanceOf[Tool[Any, Any, Any]]] | None = None
+    memory: InstanceOf[BaseMemory] | None = None
+
+
+class ToolEventData(BaseModel):
+    tool: InstanceOf[Tool[Any, Any, Any]]
+    input: Any
+    options: ReActAgentRunOptions
+    iteration: ReActAgentIterationResult
+    result: InstanceOf[ToolOutput] | None = None
+    error: InstanceOf[FrameworkError] | None = None
+
+
+class ReActAgentToolEvent(BaseModel):
+    data: ToolEventData
+    meta: ReActAgentIterationMeta
+
+
+react_agent_event_types: dict[str, Any] = {
+    "start": ReActAgentStartEvent,
+    "error": ReActAgentErrorEvent,
+    "retry": ReActAgentRetryEvent,
+    "success": ReActAgentSuccessEvent,
+    "update": ReActAgentUpdateEvent,
+    "partial_update": ReActAgentUpdateEvent,
+    "tool_start": ReActAgentToolEvent,
+    "tool_success": ReActAgentToolEvent,
+    "tool_error": ReActAgentToolEvent,
+}

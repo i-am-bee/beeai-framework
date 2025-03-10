@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from typing import Any
+
 from beeai_framework.agents.react.runners.default.prompts import ToolNoResultsTemplate, UserEmptyPromptTemplate
 from beeai_framework.agents.react.runners.default.runner import DefaultRunner
 from beeai_framework.agents.react.runners.granite.prompts import (
@@ -40,7 +42,7 @@ class GraniteRunner(DefaultRunner):
     def __init__(self, input: ReActAgentInput, options: ReActAgentRunOptions, run: RunContext) -> None:
         super().__init__(input, options, run)
 
-        async def on_update(data: dict, event: EventMeta) -> None:
+        async def on_update(data: dict[str, Any], event: EventMeta) -> None:
             update = data.get("update")
             assert update is not None
             if update.get("key") == "tool_output":

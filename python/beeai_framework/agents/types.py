@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from typing import Any
 
 from pydantic import BaseModel, InstanceOf
 
@@ -27,5 +28,5 @@ class AgentExecutionConfig(BaseModel):
 class AgentMeta(BaseModel):
     name: str
     description: str
-    tools: list[InstanceOf[Tool]]
+    tools: list[InstanceOf[Tool[Any, Any, Any]]]
     extra_description: str | None = None

@@ -32,7 +32,7 @@ class AbortSignal(BaseModel):
         super().__init__()
         self._aborted = False
         self._reason: str | None = None
-        self._listeners: list[Callable] = []
+        self._listeners: list[Callable[[], None]] = []
 
     @property
     def aborted(self) -> bool:
@@ -66,7 +66,7 @@ class AbortSignal(BaseModel):
 
     def throw_if_aborted(self) -> None:
         if self._aborted:
-            raise AbortError(self._reason)
+            raise AbortError(self.reason)
 
 
 class AbortController:

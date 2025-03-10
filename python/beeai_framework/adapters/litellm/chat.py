@@ -15,6 +15,7 @@
 import logging
 from abc import ABC
 from collections.abc import AsyncGenerator
+from typing import Any
 
 import litellm
 from litellm import (
@@ -96,7 +97,7 @@ class LiteLLMChatModel(ChatModel, ABC):
             # TODO: issue https://github.com/BerriAI/litellm/issues/8868
             raise ChatModelError("Stream response is empty.")
 
-    async def _create_structure(self, input: ChatModelStructureInput, run: RunContext) -> ChatModelStructureOutput:
+    async def _create_structure(self, input: ChatModelStructureInput[Any], run: RunContext) -> ChatModelStructureOutput:
         if "response_format" not in self.supported_params:
             logger.warning(f"{self.provider_id} model {self.model_id} does not support structured data.")
             return await super()._create_structure(input, run)

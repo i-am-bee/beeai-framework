@@ -17,9 +17,10 @@ import inspect
 from abc import ABC, abstractmethod
 from collections.abc import Callable
 from functools import cached_property
+from types import NoneType
 from typing import Any, Generic, TypeAlias
 
-from pydantic import BaseModel, ConfigDict, ValidationError, create_model
+from pydantic import BaseModel, ConfigDict, InstanceOf, ValidationError, create_model
 from typing_extensions import TypeVar
 
 from beeai_framework.cancellation import AbortSignal
@@ -32,7 +33,7 @@ from beeai_framework.utils.strings import to_json, to_safe_word
 
 logger = Logger(__name__)
 
-IN = TypeVar("IN", bound=BaseModel)
+TInput = TypeVar("TInput", bound=BaseModel)
 
 
 class RetryOptions(BaseModel):
@@ -45,7 +46,7 @@ class ToolRunOptions(BaseModel):
     signal: AbortSignal | None = None
 
 
-OPT = TypeVar("OPT", bound=ToolRunOptions, default=ToolRunOptions)
+TRunOptions = TypeVar("TRunOptions", bound=ToolRunOptions, default=ToolRunOptions)
 
 
 class ToolOutput(ABC):
@@ -61,7 +62,7 @@ class ToolOutput(ABC):
         return self.get_text_content()
 
 
-OUT = TypeVar("OUT", bound=ToolOutput, default=ToolOutput)
+TOutput = TypeVar("TOutput", bound=ToolOutput, default=ToolOutput)
 
 
 class StringToolOutput(ToolOutput):
@@ -87,7 +88,24 @@ class JSONToolOutput(ToolOutput):
         return not self.result
 
 
-class Tool(Generic[IN, OPT, OUT], ABC):
+class ToolStartEvent[TInput](BaseModel):
+    input: TInput
+    options: ToolRunOptions | None = None
+
+
+class ToolSuccessEvent[TInput](BaseModel):
+    output: InstanceOf[ToolOutput]
+    input: TInput
+    options: ToolRunOptions | None = None
+
+
+class ToolErrorEvent[TInput](BaseModel):
+    error: InstanceOf[ToolError]
+    input: TInput
+    options: ToolRunOptions | None = None
+
+
+class Tool(Generic[TInput, TRunOptions, TOutput], ABC):
     def __init__(self, options: dict[str, Any] | None = None) -> None:
         self.options: dict[str, Any] | None = options or None
 
@@ -103,7 +121,7 @@ class Tool(Generic[IN, OPT, OUT], ABC):
 
     @property
     @abstractmethod
-    def input_schema(self) -> type[IN]:
+    def input_schema(self) -> type[TInput]:
         pass
 
     @cached_property
@@ -115,25 +133,32 @@ class Tool(Generic[IN, OPT, OUT], ABC):
         pass
 
     @abstractmethod
-    async def _run(self, input: IN, options: OPT | None, context: RunContext) -> OUT:
+    async def _run(self, input: TInput, options: TRunOptions | None, context: RunContext) -> TOutput:
         pass
 
-    def validate_input(self, input: IN | dict[str, Any]) -> IN:
+    def validate_input(self, input: TInput | dict[str, Any]) -> TInput:
         try:
             return self.input_schema.model_validate(input)
         except ValidationError as e:
             raise ToolInputValidationError("Tool input validation error", cause=e)
 
-    def run(self, input: IN | dict[str, Any], options: OPT | None = None) -> Run[OUT]:
-        async def run_tool(context: RunContext) -> OUT:
+    def run(self, input: TInput | dict[str, Any], options: TRunOptions | None = None) -> Run[TOutput]:
+        async def run_tool(context: RunContext) -> TOutput:
             error_propagated = False
+            context.emitter.events = {
+                "start": ToolStartEvent[TInput],
+                "success": ToolSuccessEvent[TInput],
+                "error": ToolErrorEvent[TInput],
+                "retry": ToolErrorEvent[TInput],
+                "finish": NoneType,
+            }
 
             try:
                 validated_input = self.validate_input(input)
 
                 meta = {"input": validated_input, "options": options}
 
-                async def executor(_: RetryableContext) -> Any:
+                async def executor(_: RetryableContext) -> TOutput:
                     nonlocal error_propagated
                     error_propagated = False
                     await context.emitter.emit("start", meta)

@@ -14,11 +14,11 @@
 
 import asyncio
 import inspect
-from collections.abc import Awaitable, Callable
+from collections.abc import Callable
 from dataclasses import field
 from typing import Any, ClassVar, Final, Generic, Literal
 
-from pydantic import BaseModel
+from pydantic import BaseModel, InstanceOf
 from typing_extensions import TypeVar
 
 from beeai_framework.cancellation import AbortSignal
@@ -69,6 +69,24 @@ class WorkflowRunOptions(BaseModel, Generic[K]):
     signal: AbortSignal | None = None
 
 
+class WorkflowStartEvent(BaseModel, Generic[T, K]):
+    run: WorkflowRun[T, K]
+    step: K
+
+
+class WorkflowSuccessEvent(BaseModel, Generic[T, K]):
+    run: WorkflowRun[T, K]
+    state: T
+    step: K
+    next: K
+
+
+class WorkflowErrorEvent(BaseModel, Generic[T, K]):
+    run: WorkflowRun[T, K]
+    step: K
+    error: InstanceOf[FrameworkError]
+
+
 class Workflow(Generic[T, K]):
     START: Final[Literal["__start__"]] = "__start__"
     SELF: Final[Literal["__self__"]] = "__self__"
@@ -87,6 +105,11 @@ class Workflow(Generic[T, K]):
         self.emitter = Emitter.root().child(
             namespace=["workflow", to_safe_word(self._name)],
             creator=self,
+            events={
+                "start": WorkflowStartEvent[T, K],
+                "success": WorkflowSuccessEvent[T, K],
+                "error": WorkflowErrorEvent[T, K],
+            },
         )
 
     @property
@@ -141,7 +164,7 @@ class Workflow(Generic[T, K]):
     def run(self, state: ModelLike[T], options: ModelLike[WorkflowRunOptions] | None = None) -> Run[WorkflowRun[T, K]]:
         options = to_model_optional(WorkflowRunOptions, options)
 
-        async def run_workflow(context: RunContext) -> Awaitable[WorkflowRun[T, K]]:
+        async def run_workflow(context: RunContext) -> WorkflowRun[T, K]:
             run = WorkflowRun[T, K](state=to_model(self._schema, state))
             # handlers = WorkflowRunContext(steps=run.steps, signal=context.signal, abort=lambda r: context.abort(r))
             next = self._find_step(self.start_step or self.step_names[0]).current or Workflow.END

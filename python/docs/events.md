@@ -11,7 +11,7 @@ These events can be observed calling `agent.run`
 - "start":
     ```python
     {
-        "meta": BeeMeta,
+        "meta": ReActAgentIterationMeta,
         "tools": list[Tool],
         "memory": BaseMemory,
     }
@@ -20,13 +20,13 @@ These events can be observed calling `agent.run`
     ```python
     {
         "error": FrameworkError,
-        "meta": BeeMeta,
+        "meta": ReActAgentIterationMeta,
     }
 
 - "retry":
     ```python
     {
-        "meta": BeeMeta,
+        "meta": ReActAgentIterationMeta,
     }
 
 - "success":
@@ -61,7 +61,7 @@ These events can be observed calling `agent.run`
             "options": ReActAgentRunOptions,
             "iteration": ReActAgentIterationResult,
         },
-        "meta": BeeMeta,
+        "meta": ReActAgentIterationMeta,
     }
 
 - "toolSuccess":
@@ -74,7 +74,7 @@ These events can be observed calling `agent.run`
             "iteration": ReActAgentIterationResult,
             "result": ToolOutput,
         },
-        "meta": BeeMeta,
+        "meta": ReActAgentIterationMeta,
     }
 
 - "toolError":
@@ -87,14 +87,14 @@ These events can be observed calling `agent.run`
             "iteration": ReActAgentIterationResult,
             "error": FrameworkError,
         },
-        "meta": BeeMeta,
+        "meta": ReActAgentIterationMeta,
     }
 
 ### ChatModel Events
 
 These events can be observed when calling `ChatModel.create` or `ChatModel.create_structure`
 
-- "newToken":
+- "new_token":
     ```python
     {
       "value": ChatModelOutput,

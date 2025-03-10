@@ -62,7 +62,7 @@ async def do_retry(fn: Callable[[int], Awaitable[T]], options: dict[str, Any] | 
     async def handler(attempt: int, remaining: int) -> T:
         logger.debug(f"Entering p_retry handler({attempt}, {remaining})")
         try:
-            factor = options.get("factor", 2) or 2
+            factor = options.get("factor", 2) if options else 2
 
             if attempt > 1:
                 await asyncio.sleep(factor ** (attempt - 1))
@@ -75,18 +75,21 @@ async def do_retry(fn: Callable[[int], Awaitable[T]], options: dict[str, Any] | 
             if isinstance(e, asyncio.CancelledError):
                 raise e
 
-            if options["on_failed_attempt"]:
+            if options and options["on_failed_attempt"]:
                 await options["on_failed_attempt"](e, meta)
 
             if remaining <= 0:
                 raise e
 
-            if (options.get("should_retry", lambda _: False)(e)) is False:
+            if options and (options.get("should_retry", lambda _: False)(e)) is False:
                 raise e
 
             return await handler(attempt + 1, remaining - 1)
 
-    return await abort_signal_handler(lambda: handler(1, options.get("retries", 0)), options.get("signal"))
+    return await abort_signal_handler(
+        lambda: handler(1, options.get("retries", 0) if options else 0),
+        options.get("signal") if options is not None else None,
+    )
 
 
 class Retryable(Generic[T]):
@@ -106,9 +109,9 @@ class Retryable(Generic[T]):
 
     async def get(self, config: RetryableRunConfig | None = None) -> T:
         def assert_aborted() -> None:
-            if self._config.signal and self._config.signal.throw_if_aborted:
+            if self._config.signal:
                 self._config.signal.throw_if_aborted()
-            if config and config.group_signal and config.group_signal.throw_if_aborted:
+            if config and config.group_signal:
                 config.group_signal.throw_if_aborted()
 
         last_error: Exception | None = None
@@ -117,8 +120,9 @@ class Retryable(Generic[T]):
             assert_aborted()
             ctx = self._get_context(attempt)
             if attempt > 1:
-                await self._handlers.on_retry(ctx, last_error)
-            return await self._handlers.executor(ctx)
+                await self._handlers.on_retry(ctx, last_error) if self._handlers.on_retry and last_error else None
+            value: T = await self._handlers.executor(ctx)
+            return value
 
         def _should_retry(e: FrameworkError) -> bool:
             should_retry = not (
@@ -132,7 +136,7 @@ class Retryable(Generic[T]):
         async def _on_failed_attempt(e: FrameworkError, meta: Meta) -> None:
             nonlocal last_error
             last_error = e
-            await self._handlers.on_error(e, self._get_context(meta.attempt))
+            await self._handlers.on_error(e, self._get_context(meta.attempt)) if self._handlers.on_error else None
             if not FrameworkError.is_retryable(e):
                 raise e
             assert_aborted()
@@ -148,4 +152,4 @@ class Retryable(Generic[T]):
         return await do_retry(_retry, options)
 
     def reset(self) -> None:
-        self._handlers.on_reset()
+        self._handlers.on_reset() if self._handlers.on_reset else None

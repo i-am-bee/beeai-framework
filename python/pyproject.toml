@@ -31,7 +31,7 @@ chevron = "^0.14.0"
 litellm = "^1.63.2"
 aiofiles = "^24.1.0"
 mcp = "^1.2.0"
-duckduckgo-search = "^7.3.2"
+duckduckgo-search = "^7.5.1"
 json-repair = "^0.39.0"
 wikipedia-api = "^0.8.1"
 langchain-core = {version = "^0.3.41", optional = true}
