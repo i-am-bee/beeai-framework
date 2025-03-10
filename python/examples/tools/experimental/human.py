@@ -73,8 +73,6 @@ class HumanTool(Tool[InputSchema, ToolRunOptions, JSONToolOutput]):
     async def _run(self, tool_input: InputSchema, options: ToolRunOptions | None, run: RunContext) -> JSONToolOutput:
         # Use the reader from input
         self.tool_input.reader.write("HumanTool", tool_input.message)
-
-        # Use askSingleQuestion with the signal
         user_input = self.tool_input.reader.prompt()
 
         # Return JSONToolOutput with the clarification
