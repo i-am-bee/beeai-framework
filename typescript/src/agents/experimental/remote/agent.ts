@@ -25,6 +25,7 @@ import { UnconstrainedMemory } from "@/memory/unconstrainedMemory.js";
 import { Client as MCPClient } from "@i-am-bee/acp-sdk/client/index.js";
 import { Transport } from "@i-am-bee/acp-sdk/shared/transport.js";
 import { NotificationSchema } from "@i-am-bee/acp-sdk/types.js";
+import { shallowCopy } from "@/serializer/utils.js";
 
 export interface RemoteAgentRunInput {
   prompt: any;
@@ -65,7 +66,9 @@ export class RemoteAgent extends BaseAgent<RemoteAgentRunInput, RemoteAgentRunOu
 
     const runner = await this.createRunner(context);
 
-    const finalMessage: Message = new AssistantMessage(await runner(input));
+    const output = await runner(input);
+
+    const finalMessage: Message = new AssistantMessage(output);
 
     await this.memory.add(finalMessage);
 
@@ -97,14 +100,16 @@ export class RemoteAgent extends BaseAgent<RemoteAgentRunInput, RemoteAgentRunOu
           },
         );
         await this.input.client.connect(this.input.transport);
-      } catch {
-        throw new AgentError(`Can't connect to Beeai Platform.`);
+      } catch (e) {
+        throw new AgentError(`Can't connect to Beeai Platform.`, [e], { isFatal: true });
       }
 
       const agents = await this.listAgents();
       const agent = agents.find((agent) => agent.name === this.input.agent);
       if (!agent) {
-        throw new AgentError(`Agent ${this.input.agent} is not registered in the platform`);
+        throw new AgentError(`Agent ${this.input.agent} is not registered in the platform`, [], {
+          isFatal: true,
+        });
       }
 
       const response = await this.input.client.runAgent(
@@ -113,7 +118,7 @@ export class RemoteAgent extends BaseAgent<RemoteAgentRunInput, RemoteAgentRunOu
           input: input.prompt,
         },
         {
-          timeout: 10000000,
+          timeout: 10_000_000,
           signal: context.signal,
           onprogress: () => null,
         },
@@ -139,7 +144,7 @@ export class RemoteAgent extends BaseAgent<RemoteAgentRunInput, RemoteAgentRunOu
   createSnapshot() {
     return {
       ...super.createSnapshot(),
-      input: this.input,
+      input: shallowCopy(this.input),
       emitter: this.emitter,
     };
   }

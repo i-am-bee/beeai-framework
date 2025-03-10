@@ -4,6 +4,7 @@ import { SSEClientTransport } from "@i-am-bee/acp-sdk/client/sse.js";
 import { RemoteAgent } from "beeai-framework/agents/experimental/remote/agent";
 import { createConsoleReader } from "examples/helpers/io.js";
 import { FrameworkError } from "beeai-framework/errors";
+import { parseBrokenJson } from "beeai-framework/internals/helpers/schema";
 
 const agentName = "literature-review";
 
@@ -20,7 +21,7 @@ const reader = createConsoleReader();
 
 try {
   for await (const { prompt } of reader) {
-    const result = await instance.run({ prompt: JSON.parse(prompt) }).observe((emitter) => {
+    const result = await instance.run({ prompt: parseBrokenJson(prompt) }).observe((emitter) => {
       emitter.on("update", (data) => {
         reader.write(`Agent (received progress) 🤖 : `, data.output);
       });
