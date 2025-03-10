@@ -41,6 +41,7 @@ jobs:
             .
             --verbose
             --no-progress
+            --include-fragments
             --exclude-path docs/typescript/CHANGELOG.md
             './docs/**/*.md'
             './docs/**/*.html'
