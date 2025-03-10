@@ -24,7 +24,7 @@ from beeai_framework.cancellation import AbortSignal
 from beeai_framework.errors import FrameworkError
 from beeai_framework.memory.base_memory import BaseMemory
 from beeai_framework.template import PromptTemplate
-from beeai_framework.tools.tool import AnyTool, Tool, ToolOutput
+from beeai_framework.tools.tool import AnyTool, ToolOutput
 from beeai_framework.utils.strings import to_json
 
 
@@ -97,7 +97,7 @@ class ReActAgentInput(BaseModel):
 
 class ReActAgentStartEvent(BaseModel):
     meta: ReActAgentIterationMeta
-    tools: list[InstanceOf[Tool[Any, Any, Any]]]
+    tools: list[InstanceOf[AnyTool]]
     memory: InstanceOf[BaseMemory]
 
 
@@ -131,12 +131,12 @@ class ReActAgentUpdateEvent(BaseModel):
     data: ReActAgentIterationResult | dict[str, Any]
     update: ReActAgentUpdate
     meta: ReActAgentUpdateMeta
-    tools: list[InstanceOf[Tool[Any, Any, Any]]] | None = None
+    tools: list[InstanceOf[AnyTool]] | None = None
     memory: InstanceOf[BaseMemory] | None = None
 
 
 class ToolEventData(BaseModel):
-    tool: InstanceOf[Tool[Any, Any, Any]]
+    tool: InstanceOf[AnyTool]
     input: Any
     options: ReActAgentRunOptions
     iteration: ReActAgentIterationResult

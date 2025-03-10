@@ -13,7 +13,7 @@
 # limitations under the License.
 
 
-import wikipediaapi
+import wikipediaapi  # type: ignore
 from pydantic import BaseModel, Field
 
 from beeai_framework.context import RunContext

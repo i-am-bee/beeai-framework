@@ -30,7 +30,7 @@ from beeai_framework.emitter import Emitter
 from beeai_framework.logger import Logger
 from beeai_framework.retryable import Retryable, RetryableConfig, RetryableContext, RetryableInput
 from beeai_framework.template import PromptTemplate, PromptTemplateInput
-from beeai_framework.tools.tool import Tool
+from beeai_framework.tools.tool import AnyTool
 from beeai_framework.utils.lists import flatten
 from beeai_framework.utils.models import ModelLike
 from beeai_framework.utils.strings import to_json
@@ -70,7 +70,7 @@ class ChatModelStructureOutput(BaseModel):
 
 
 class ChatModelInput(ChatModelParameters):
-    tools: list[InstanceOf[Tool[Any, Any, Any]]] | None = None
+    tools: list[InstanceOf[AnyTool]] | None = None
     abort_signal: AbortSignal | None = None
     stop_sequences: list[str] | None = None
     response_format: dict[str, Any] | type[BaseModel] | None = None
@@ -252,7 +252,7 @@ IMPORTANT: You MUST answer with a JSON object that matches the JSON schema above
         self,
         *,
         messages: list[Message[Any]],
-        tools: list[Tool[Any, Any, Any]] | None = None,
+        tools: list[AnyTool] | None = None,
         abort_signal: AbortSignal | None = None,
         stop_sequences: list[str] | None = None,
         response_format: dict[str, Any] | type[BaseModel] | None = None,

@@ -12,11 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import Any
-
 from pydantic import BaseModel, InstanceOf
 
-from beeai_framework.tools.tool import Tool
+from beeai_framework.tools.tool import AnyTool
 
 
 class AgentExecutionConfig(BaseModel):
@@ -28,5 +26,5 @@ class AgentExecutionConfig(BaseModel):
 class AgentMeta(BaseModel):
     name: str
     description: str
-    tools: list[InstanceOf[Tool[Any, Any, Any]]]
+    tools: list[InstanceOf[AnyTool]]
     extra_description: str | None = None

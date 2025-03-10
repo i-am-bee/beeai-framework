@@ -14,6 +14,7 @@
 
 
 import inspect
+import typing
 from abc import ABC, abstractmethod
 from collections.abc import Callable
 from functools import cached_property
@@ -26,6 +27,7 @@ from typing_extensions import TypeVar
 from beeai_framework.cancellation import AbortSignal
 from beeai_framework.context import Run, RunContext, RunContextInput, RunInstance
 from beeai_framework.emitter.emitter import Emitter
+from beeai_framework.errors import FrameworkError
 from beeai_framework.logger import Logger
 from beeai_framework.retryable import Retryable, RetryableConfig, RetryableContext, RetryableInput
 from beeai_framework.tools.errors import ToolError, ToolInputValidationError
@@ -169,7 +171,7 @@ class Tool(Generic[TInput, TRunOptions, TOutput], ABC):
                     error_propagated = True
                     err = ToolError.ensure(error)
                     await context.emitter.emit("error", {"error": err, **meta})
-                    if err.is_fatal is True:
+                    if FrameworkError.is_fatal(err) is True:
                         raise err from None
 
                 async def on_retry(ctx: RetryableContext, last_error: Exception) -> None:
@@ -210,6 +212,7 @@ class Tool(Generic[TInput, TRunOptions, TOutput], ABC):
 
 # this method was inspired by the discussion that was had in this issue:
 # https://github.com/pydantic/pydantic/issues/1391
+@typing.no_type_check
 def get_input_schema(tool_function: Callable) -> type[BaseModel]:
     input_model_name = tool_function.__name__
 
@@ -238,7 +241,7 @@ def get_input_schema(tool_function: Callable) -> type[BaseModel]:
     return input_model
 
 
-def tool(tool_function: Callable) -> Tool:
+def tool(tool_function: Callable[..., Any]) -> "AnyTool":
     tool_name = tool_function.__name__
     tool_description = inspect.getdoc(tool_function)
     tool_input = get_input_schema(tool_function)
@@ -276,4 +279,4 @@ def tool(tool_function: Callable) -> Tool:
     return f_tool
 
 
-AnyTool: TypeAlias = Tool[BaseModel, ToolRunOptions, ToolOutput]
+AnyTool: TypeAlias = Tool[Any, Any, Any]

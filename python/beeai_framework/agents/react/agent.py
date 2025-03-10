@@ -44,7 +44,7 @@ from beeai_framework.context import RunContext
 from beeai_framework.emitter import Emitter
 from beeai_framework.memory import BaseMemory
 from beeai_framework.template import PromptTemplate
-from beeai_framework.tools.tool import Tool
+from beeai_framework.tools.tool import AnyTool
 from beeai_framework.utils.models import ModelLike, to_model, to_model_optional
 
 
@@ -54,7 +54,7 @@ class ReActAgent(BaseAgent[ReActAgentRunInput, ReActAgentRunOptions, ReActAgentR
     def __init__(
         self,
         llm: ChatModel,
-        tools: list[Tool[Any, Any, Any]],
+        tools: list[AnyTool],
         memory: BaseMemory,
         meta: AgentMeta | None = None,
         templates: dict[ModelKeysType, PromptTemplate[Any] | ReActAgentTemplateFactory] | None = None,

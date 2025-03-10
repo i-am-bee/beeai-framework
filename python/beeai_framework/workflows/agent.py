@@ -21,7 +21,7 @@ from typing import Any, Self
 
 from pydantic import BaseModel, ConfigDict, Field, InstanceOf
 
-from beeai_framework.agents.base import BaseAgent
+from beeai_framework.agents.base import AnyAgent, BaseAgent
 from beeai_framework.agents.react import ReActAgent
 from beeai_framework.agents.react.types import ReActAgentRunOutput
 from beeai_framework.agents.types import (
@@ -33,11 +33,11 @@ from beeai_framework.backend.message import AssistantMessage, Message
 from beeai_framework.context import Run
 from beeai_framework.memory import BaseMemory, ReadOnlyMemory, UnconstrainedMemory
 from beeai_framework.template import PromptTemplateInput
-from beeai_framework.tools.tool import Tool
+from beeai_framework.tools.tool import AnyTool
 from beeai_framework.utils.asynchronous import ensure_async
 from beeai_framework.workflows.workflow import Workflow, WorkflowRun
 
-AgentFactory = Callable[[ReadOnlyMemory], BaseAgent[Any, Any, Any] | Awaitable[BaseAgent[Any, Any, Any]]]
+AgentFactory = Callable[[ReadOnlyMemory], AnyAgent | Awaitable[AnyAgent]]
 
 
 class AgentFactoryInput(BaseModel):
@@ -45,7 +45,7 @@ class AgentFactoryInput(BaseModel):
     name: str
     llm: ChatModel
     instructions: str | None = None
-    tools: list[InstanceOf[Tool[Any, Any, Any]]] | None = None
+    tools: list[InstanceOf[AnyTool]] | None = None
     execution: AgentExecutionConfig | None = None
 
 
@@ -70,10 +70,7 @@ class AgentWorkflow:
     def add_agent(
         self,
         agent: (
-            BaseAgent[Any, Any, Any]
-            | Callable[[ReadOnlyMemory], BaseAgent[Any, Any, Any] | asyncio.Future[BaseAgent[Any, Any, Any]]]
-            | AgentFactoryInput
-            | None
+            AnyAgent | Callable[[ReadOnlyMemory], AnyAgent | asyncio.Future[AnyAgent]] | AgentFactoryInput | None
         ) = None,
         /,
         **kwargs: Any,
@@ -91,10 +88,8 @@ class AgentWorkflow:
 
         if isinstance(agent, BaseAgent):
 
-            async def factory(memory: ReadOnlyMemory) -> BaseAgent[Any, Any, Any]:
-                instance: BaseAgent[Any, Any, Any] = (
-                    await ensure_async(agent)(memory.as_read_only()) if isfunction(agent) else agent
-                )
+            async def factory(memory: ReadOnlyMemory) -> AnyAgent:
+                instance: AnyAgent = await ensure_async(agent)(memory.as_read_only()) if isfunction(agent) else agent
                 instance.memory = memory
                 return instance
 

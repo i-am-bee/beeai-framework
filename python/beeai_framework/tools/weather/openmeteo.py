@@ -67,10 +67,10 @@ class OpenMeteoTool(Tool[OpenMeteoToolInput, ToolRunOptions, StringToolOutput]):
         if input.country:
             params["country"] = input.country
 
-        params = urlencode(params, doseq=True)
+        encoded_params = urlencode(params, doseq=True)
 
         response = requests.get(
-            f"https://geocoding-api.open-meteo.com/v1/search?{params}",
+            f"https://geocoding-api.open-meteo.com/v1/search?{encoded_params}",
             headers={"Content-Type": "application/json", "Accept": "application/json"},
         )
 
@@ -78,7 +78,8 @@ class OpenMeteoTool(Tool[OpenMeteoToolInput, ToolRunOptions, StringToolOutput]):
         results = response.json().get("results", [])
         if not results:
             raise ToolError(f"Location '{input.location_name}' was not found.")
-        return results[0]
+        geocode: dict[str, str] = results[0]
+        return geocode
 
     def get_params(self, input: OpenMeteoToolInput) -> dict[str, Any]:
         params = {
