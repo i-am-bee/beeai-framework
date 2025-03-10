@@ -104,5 +104,8 @@ class ChatModelOutput(BaseModel):
         assistant_message = [msg for msg in self.messages if isinstance(msg, AssistantMessage)]
         return flatten([x.get_tool_calls() for x in assistant_message])
 
+    def get_text_messages(self) -> list[AssistantMessage]:
+        return [msg for msg in self.messages if isinstance(msg, AssistantMessage) and msg.text]
+
     def get_text_content(self) -> str:
         return "".join([x.text for x in list(filter(lambda x: isinstance(x, AssistantMessage), self.messages))])

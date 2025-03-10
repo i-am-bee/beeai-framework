@@ -18,7 +18,7 @@ from abc import ABC, abstractmethod
 from collections.abc import Sequence
 from datetime import UTC, datetime
 from enum import Enum
-from typing import Any, Generic, Literal, TypeAlias, TypeVar
+from typing import Any, Generic, Literal, Self, TypeAlias, TypeVar
 
 from pydantic import BaseModel
 
@@ -87,6 +87,17 @@ class Message(ABC, Generic[T]):
             else []
         )
 
+    @classmethod
+    def from_chunks(cls, chunks: Sequence["Message[T]"]) -> Self:
+        instance: Self = cls(content=[])
+        for chunk in chunks:
+            instance.merge(chunk)
+        return instance
+
+    def merge(self, other: "Message[T]") -> None:
+        self.meta.update(other.meta)
+        self.content.extend(other.content)
+
     @property
     def text(self) -> str:
         return "".join([x.text for x in self.get_texts()])
@@ -103,6 +114,9 @@ class Message(ABC, Generic[T]):
             "role": self.role.value if isinstance(self.role, enum.Enum) else self.role,
             "content": [m.model_dump() for m in self.content],
         }
+
+    def __str__(self) -> str:
+        return json.dumps(self.to_plain())
 
     def _verify(self, content: list[Any]) -> list[T]:
         models = self._models()
@@ -121,6 +135,9 @@ class AssistantMessage(Message[MessageToolCallContent | MessageTextContent]):
 
     def get_tool_calls(self) -> list[MessageToolCallContent]:
         return [cont for cont in self.content if isinstance(cont, MessageToolCallContent)]
+
+    def get_text_messages(self) -> list[MessageTextContent]:
+        return [cont for cont in self.content if isinstance(cont, MessageTextContent)]
 
     def _models(self) -> Sequence[type[MessageToolCallContent] | type[MessageTextContent]]:
         return [MessageToolCallContent, MessageTextContent]
