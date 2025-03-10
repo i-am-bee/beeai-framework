@@ -19,11 +19,6 @@ BeeAI framework provides a comprehensive set of features for building powerful A
 | [**Agents**](/python/docs/agents.md) | Create intelligent, autonomous agents using the ReAct pattern. Build agents that can reason about problems, take appropriate actions, and adapt their approach based on feedback. Includes pre-built agent architectures and customizable components. |
 | [**Workflows**](/python/docs/workflows.md) | Orchestrate complex multi-agent systems where specialized agents collaborate to solve problems. Define sequential or conditional execution flows with state management and observability. |
 | [**Backend**](/python/docs/backend.md) | Connect to various LLM providers like Ollama, watsonx.ai, and more. Offers unified interfaces for chat, embeddings, and structured outputs, making it easy to swap models without changing your code. |
-
-### Capability extensions
-
-| Feature | Description |
-|-----------|-------------|
 | [**Tools**](/python/docs/tools.md) | Extend agent capabilities with ready-to-use tools for web search, weather forecasting, knowledge retrieval, code execution, and more. Create custom tools to connect agents to any API or service. |
 | [**Memory**](/python/docs/memory.md) | Manage conversation history with different memory strategies. Choose from unconstrained memory, token-aware memory, sliding window memory, or summarization memory based on your needs. |
 | [**Templates**](/python/docs/templates.md) | Build flexible prompt templates using an enhanced Mustache syntax. Create reusable templates with variables, conditionals, and loops to generate well-structured prompts. |
@@ -89,29 +84,23 @@ async def main() -> None:
     try:
         workflow = AgentWorkflow(name="Smart assistant")
         workflow.add_agent(
-            agent=AgentFactoryInput(
-                name="WeatherForecaster",
-                instructions="You are a weather assistant. Respond only if you can provide a useful answer.",
-                tools=[OpenMeteoTool()],
-                llm=llm,
-                execution=AgentExecutionConfig(max_iterations=3),
-            )
+            name="WeatherForecaster",
+            instructions="You are a weather assistant. Respond only if you can provide a useful answer.",
+            tools=[OpenMeteoTool()],
+            llm=llm,
+            execution=AgentExecutionConfig(max_iterations=3),
         )
         workflow.add_agent(
-            agent=AgentFactoryInput(
-                name="Researcher",
-                instructions="You are a researcher assistant. Respond only if you can provide a useful answer.",
-                tools=[DuckDuckGoSearchTool()],
-                llm=llm,
-            )
+            name="Researcher",
+            instructions="You are a researcher assistant. Respond only if you can provide a useful answer.",
+            tools=[DuckDuckGoSearchTool()],
+            llm=llm,
         )
         workflow.add_agent(
-            agent=AgentFactoryInput(
-                name="Solver",
-                instructions="""Your task is to provide the most useful final answer based on the assistants'
+            name="Solver",
+            instructions="""Your task is to provide the most useful final answer based on the assistants'
 responses which all are relevant. Ignore those where assistant do not know.""",
-                llm=llm,
-            )
+            llm=llm,
         )
 
         prompt = "What is the weather in New York?"

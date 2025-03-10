@@ -11,7 +11,7 @@ from beeai_framework import Tool
 from beeai_framework.agents.react.agent import ReActAgent
 from beeai_framework.agents.types import AgentExecutionConfig
 from beeai_framework.backend.chat import ChatModel, ChatModelParameters
-from beeai_framework.emitter.emitter import Emitter, EventMeta
+from beeai_framework.emitter.emitter import EventMeta
 from beeai_framework.emitter.types import EmitterOptions
 from beeai_framework.errors import FrameworkError
 from beeai_framework.logger import Logger
@@ -76,10 +76,6 @@ def process_agent_events(data: dict[str, Any], event: EventMeta) -> None:
         reader.write("Agent 🤖 : ", "success")
 
 
-def observer(emitter: Emitter) -> None:
-    emitter.on("*", process_agent_events, EmitterOptions(match_nested=False))
-
-
 async def main() -> None:
     """Main application loop"""
 
@@ -102,7 +98,7 @@ async def main() -> None:
         response = await agent.run(
             prompt=prompt,
             execution=AgentExecutionConfig(max_retries_per_step=3, total_max_retries=10, max_iterations=20),
-        ).observe(observer)
+        ).on("*", process_agent_events, EmitterOptions(match_nested=False))
 
         reader.write("Agent 🤖 : ", response.result.text)
 

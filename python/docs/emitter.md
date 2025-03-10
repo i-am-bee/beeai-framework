@@ -298,8 +298,4 @@ _Source: [examples/emitter/advanced.py](/python/examples/emitter/advanced.py)_
 
 ## Examples
 
-- [base.py](/python/examples/emitter/base.py) - Basic emitter implementation
-- [matchers.py](/python/examples/emitter/matchers.py) - Event matching techniques
-- [piping.py](/python/examples/emitter/piping.py) - Event piping strategies
-- [agentMatchers.py](/python/examples/emitter/agentMatchers.py) - Agent event handling
-- [advanced.py](/python/examples/emitter/advanced.py) - Advanced configuration
+- All emitter examples can be found in [here](/python/examples/emitter).

@@ -14,7 +14,8 @@
 
 import math
 from abc import ABC, abstractmethod
-from dataclasses import dataclass
+
+from pydantic import BaseModel, InstanceOf
 
 from beeai_framework.agents import AgentError
 from beeai_framework.agents.react.types import (
@@ -36,33 +37,29 @@ from beeai_framework.tools import ToolOutput
 from beeai_framework.utils.counter import RetryCounter
 
 
-@dataclass
-class ReActAgentRunnerLLMInput:
+class ReActAgentRunnerLLMInput(BaseModel):
     meta: ReActAgentIterationMeta
-    signal: AbortSignal
-    emitter: Emitter
+    signal: InstanceOf[AbortSignal]
+    emitter: InstanceOf[Emitter]
 
 
-@dataclass
-class ReActAgentRunnerIteration:
-    emitter: Emitter
-    state: ReActAgentIterationResult
+class ReActAgentRunnerIteration(BaseModel):
+    emitter: InstanceOf[Emitter]
+    state: InstanceOf[ReActAgentIterationResult]
     meta: ReActAgentIterationMeta
-    signal: AbortSignal
+    signal: InstanceOf[AbortSignal]
 
 
-@dataclass
-class ReActAgentRunnerToolResult:
-    output: ToolOutput
+class ReActAgentRunnerToolResult(BaseModel):
+    output: InstanceOf[ToolOutput]
     success: bool
 
 
-@dataclass
-class ReActAgentRunnerToolInput:
-    state: ReActAgentIterationResult
+class ReActAgentRunnerToolInput(BaseModel):
+    state: InstanceOf[ReActAgentIterationResult]
     meta: ReActAgentIterationMeta
-    signal: AbortSignal
-    emitter: Emitter
+    signal: InstanceOf[AbortSignal]
+    emitter: InstanceOf[Emitter]
 
 
 class BaseRunner(ABC):

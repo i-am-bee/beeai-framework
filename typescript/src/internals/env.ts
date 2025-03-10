@@ -33,10 +33,10 @@ export function parseEnv<T extends ZodSchema>(
   const result = schema.safeParse(value);
   if (!result.success) {
     if (value === undefined) {
-      throw new FrameworkError(`Required variable '${key}' is not set!`);
+      throw new FrameworkError(`The required variable '${key}' is not set!`);
     }
 
-    throw new FrameworkError(`Failed to parse ENV variable (${key})!`, [result.error]);
+    throw new FrameworkError(`Failed to parse the environment variable (${key})!`, [result.error]);
   }
   return result.data;
 }

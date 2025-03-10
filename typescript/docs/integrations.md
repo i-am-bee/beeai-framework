@@ -68,4 +68,4 @@ for await (const { prompt } of reader) {
 }
 ```
 
-_Source: [examples/integrations/langgraph.ts](/examples/integrations/langgraph.ts)_
+_Source: [examples/integrations/langgraph.ts](/typescript/examples/integrations/langgraph.ts)_

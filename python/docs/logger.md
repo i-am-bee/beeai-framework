@@ -162,5 +162,4 @@ _Source: /examples/logger/agent.py_
 
 ## Examples
 
-- [base.py](/python/examples/logger/base.py) - Simple example showing log levels
-- [agent.py](/python/examples/logger/agent.py) - Simple example showing agent integration
+- All logger examples can be found in [here](/python/examples/logger).

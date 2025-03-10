@@ -44,17 +44,18 @@ class GraniteRunner(DefaultRunner):
             update = data.get("update")
             assert update is not None
             if update.get("key") == "tool_output":
-                memory: BaseMemory = data.get("memory")
+                memory = data.get("memory")
+                assert isinstance(memory, BaseMemory)
                 tool_output: ToolOutput = update.get("value")
                 tool_result = MessageToolResultContent(
                     result=tool_output.get_text_content(),
-                    tool_name=data.get("data").tool_name,
+                    tool_name=data["data"].tool_name,
                     tool_call_id="DUMMY_ID",
                 )
                 await memory.add(
                     ToolMessage(
                         content=tool_result,
-                        meta={"success": data.get("meta").get("success", True)},
+                        meta={"success": data["meta"]["success"] or True},
                     )
                 )
 

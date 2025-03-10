@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-
 import logging
 from abc import ABC
 from collections.abc import AsyncGenerator
@@ -26,6 +25,7 @@ from litellm import (
 )
 from litellm.types.utils import StreamingChoices
 
+from beeai_framework.adapters.litellm._patch import _patch_litellm_cache
 from beeai_framework.backend.chat import (
     ChatModel,
     ChatModelInput,
@@ -196,3 +196,4 @@ class LiteLLMChatModel(ChatModel, ABC):
 
 
 LiteLLMChatModel.litellm_debug(False)
+_patch_litellm_cache()

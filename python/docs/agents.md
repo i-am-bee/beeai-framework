@@ -267,11 +267,7 @@ class RunOutput(BaseModel):
     state: State
 
 
-class RunOptions(ReActAgentRunOptions):
-    max_retries: int | None = None
-
-
-class CustomAgent(BaseAgent[RunOutput]):
+class CustomAgent(BaseAgent[ReActAgentRunInput, ReActAgentRunOptions, RunOutput]):
     memory: BaseMemory | None = None
 
     def __init__(self, llm: ChatModel, memory: BaseMemory) -> None:
@@ -301,7 +297,7 @@ class CustomAgent(BaseAgent[RunOutput]):
             messages=[
                 SystemMessage("You are a helpful assistant. Always use JSON format for your responses."),
                 *(self.memory.messages if self.memory is not None else []),
-                UserMessage(run_input.prompt),
+                UserMessage(run_input.prompt or ""),
             ],
             max_retries=options.execution.total_max_retries if options and options.execution else None,
             abort_signal=context.signal,
@@ -452,7 +448,7 @@ from beeai_framework.errors import FrameworkError
 from beeai_framework.memory import UnconstrainedMemory
 from beeai_framework.tools.search.duckduckgo import DuckDuckGoSearchTool
 from beeai_framework.tools.weather.openmeteo import OpenMeteoTool
-from beeai_framework.workflows.agent import AgentFactoryInput, AgentWorkflow
+from beeai_framework.workflows.agent import AgentWorkflow
 
 
 async def main() -> None:
@@ -460,29 +456,23 @@ async def main() -> None:
 
     workflow = AgentWorkflow(name="Smart assistant")
     workflow.add_agent(
-        agent=AgentFactoryInput(
-            name="WeatherForecaster",
-            instructions="You are a weather assistant.",
-            tools=[OpenMeteoTool()],
-            llm=llm,
-            execution=AgentExecutionConfig(max_iterations=3, total_max_retries=10, max_retries_per_step=3),
-        )
+        name="WeatherForecaster",
+        instructions="You are a weather assistant.",
+        tools=[OpenMeteoTool()],
+        llm=llm,
+        execution=AgentExecutionConfig(max_iterations=3, total_max_retries=10, max_retries_per_step=3),
     )
     workflow.add_agent(
-        agent=AgentFactoryInput(
-            name="Researcher",
-            instructions="You are a researcher assistant.",
-            tools=[DuckDuckGoSearchTool()],
-            llm=llm,
-        )
+        name="Researcher",
+        instructions="You are a researcher assistant.",
+        tools=[DuckDuckGoSearchTool()],
+        llm=llm,
     )
     workflow.add_agent(
-        agent=AgentFactoryInput(
-            name="Solver",
-            instructions="""Your task is to provide the most useful final answer based on the assistants'
+        name="Solver",
+        instructions="""Your task is to provide the most useful final answer based on the assistants'
 responses which all are relevant. Ignore those where assistant do not know.""",
-            llm=llm,
-        )
+        llm=llm,
     )
 
     prompt = "What is the weather in New York?"
@@ -514,7 +504,4 @@ _Source: [examples/workflows/multi_agents.py](/python/examples/workflows/multi_a
 
 ## Examples
 
-- [simple.py](/python/examples/agents/simple.py) - Basic agent implementation
-- [react.py](/python/examples/agents/react.py) - More complete implementation
-- [granite.py](/python/examples/agents/granite.py) - Using Granite model
-- [agents.ipynb](/python/examples/notebooks/agents.ipynb) - Interactive notebook examples
+- All agent examples can be found in [here](/python/examples/agents).

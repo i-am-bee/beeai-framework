@@ -33,11 +33,7 @@ class RunOutput(BaseModel):
     state: State
 
 
-class RunOptions(ReActAgentRunOptions):
-    max_retries: int | None = None
-
-
-class CustomAgent(BaseAgent[RunOutput]):
+class CustomAgent(BaseAgent[ReActAgentRunInput, ReActAgentRunOptions, RunOutput]):
     memory: BaseMemory | None = None
 
     def __init__(self, llm: ChatModel, memory: BaseMemory) -> None:
@@ -67,7 +63,7 @@ class CustomAgent(BaseAgent[RunOutput]):
             messages=[
                 SystemMessage("You are a helpful assistant. Always use JSON format for your responses."),
                 *(self.memory.messages if self.memory is not None else []),
-                UserMessage(run_input.prompt),
+                UserMessage(run_input.prompt or ""),
             ],
             max_retries=options.execution.total_max_retries if options and options.execution else None,
             abort_signal=context.signal,
