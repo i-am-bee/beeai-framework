@@ -21,11 +21,11 @@ import { AgentError, BaseAgent, BaseAgentRunOptions } from "@/agents/base.js";
 import { GetRunContext } from "@/context.js";
 import { AssistantMessage, Message, UserMessage } from "@/backend/message.js";
 import { BaseMemory } from "@/memory/base.js";
-import { UnconstrainedMemory } from "@/memory/unconstrainedMemory.js";
 import { Client as MCPClient } from "@i-am-bee/acp-sdk/client/index.js";
 import { Transport } from "@i-am-bee/acp-sdk/shared/transport.js";
 import { NotificationSchema } from "@i-am-bee/acp-sdk/types.js";
 import { shallowCopy } from "@/serializer/utils.js";
+import { NotImplementedError } from "@/errors.js";
 
 export interface RemoteAgentRunInput {
   prompt: any;
@@ -134,11 +134,11 @@ export class RemoteAgent extends BaseAgent<RemoteAgentRunInput, RemoteAgentRunOu
   }
 
   get memory() {
-    return new UnconstrainedMemory();
+    throw new NotImplementedError();
   }
 
   set memory(memory: BaseMemory) {
-    throw new AgentError("Not implemented.");
+    throw new NotImplementedError();
   }
 
   createSnapshot() {
