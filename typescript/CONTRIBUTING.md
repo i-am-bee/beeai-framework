@@ -8,7 +8,7 @@ community in this goal.
 
 If you are new to Bee contributing, we recommend you do the following before diving into the code:
 
-- Read [Bee Overview](/docs/overview.md) to understand core concepts.
+- Read [Bee Overview](/typescript/docs/overview.md) to understand core concepts.
 - Read [Code of Conduct](./CODE_OF_CONDUCT.md).
 
 ## Style and lint
@@ -68,7 +68,7 @@ yarn prepare
 ```
 
 - Type: feat, fix, chore, docs, style, refactor, perf, test, etc.
-- Scope: The area of the codebase your changes affect (optional). The allowed values are: adapters, agents, llms, tools, cache, emitter, internals, logger, memory, serializer, infra, deps, instrumentation. The latest values are listed in [package.json](/package.json)
+- Scope: The area of the codebase your changes affect (optional). The allowed values are: adapters, agents, llms, tools, cache, emitter, internals, logger, memory, serializer, infra, deps, instrumentation. The latest values are listed in [package.json](/typescript/package.json)
 - Subject: A short description of the changes (required).
 
 _Example:_

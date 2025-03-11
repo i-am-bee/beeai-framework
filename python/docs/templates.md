@@ -363,7 +363,7 @@ if __name__ == "__main__":
 
 This example demonstrates how to create a system prompt for an agent with tool definitions, which enables the agent to use external tools like weather data retrieval.
 
-_Source: [examples/templates/system_prompt.py](/examples/templates/system_prompt.py)_
+_Source: [examples/templates/system_prompt.py](/python/examples/templates/system_prompt.py)_
 
 ---
 

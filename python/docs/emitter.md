@@ -31,7 +31,7 @@ This flexible event-driven mechanism providers the ability to:
 
 ## Basic usage
 
-The following example demonstrates how the [`Emitter`](/beeai/utils/events.py) feature works.
+The following example demonstrates how the [`Emitter`](/python/beeai_framework/emitter/emitter.py) feature works.
 
 <!-- embedme examples/emitter/base.py -->
 
@@ -236,7 +236,7 @@ if __name__ == "__main__":
 
 ```
 
-_Source: [examples/emitter/agentMatchers.py](/python/examples/emitter/agentMatchers.py)_
+_Source: [examples/emitter/agentMatchers.py](/python/examples/emitter/agent_matchers.py)_
 
 > [!NOTE]
 > The observe method is also supported on [Tools](/python/docs/tools.md) and [Backend](/python/docs/backend.md).

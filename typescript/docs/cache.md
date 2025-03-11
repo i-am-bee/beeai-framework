@@ -320,7 +320,7 @@ await setTimeout(150);
 console.info(token === (await getSecret())); // false
 ```
 
-_Source: [examples/cache/cacheFn.ts](/typescriptexamples/cache/cacheFn.ts)_
+_Source: [examples/cache/cacheFn.ts](/typescript/examples/cache/cacheFn.ts)_
 
 > [!NOTE]
 >
@@ -373,4 +373,4 @@ export class CustomCache<T> extends BaseCache<T> {
 
 _Source: [examples/cache/custom.ts](/typescript/examples/cache/custom.ts)_
 
-The simplest implementation is `UnconstrainedCache`, which can be found [here](/src/cache/unconstrainedCache.ts).
+The simplest implementation is `UnconstrainedCache`, which can be found [here](/typescript/src/cache/unconstrainedCache.ts).

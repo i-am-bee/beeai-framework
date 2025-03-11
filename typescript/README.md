@@ -120,7 +120,7 @@ npm run start [project_name].ts
 
 The BeeAI Framework is an open-source project and we ❤️ contributions.<br>
 
-If you'd like to help build BeeAI, take a look at our [contribution guidelines](/typescript/docs/CONTRIBUTING.md).
+If you'd like to help build BeeAI, take a look at our [contribution guidelines](/typescript/CONTRIBUTING.md).
 
 ## Bugs
 

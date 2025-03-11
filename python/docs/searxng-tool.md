@@ -1,4 +1,4 @@
 # 🔍 SearXNGTool
 
 > [!NOTE]  
-> **SearXNGTool is not yet implemented in Python, but it's coming soon! 🚀**
+> **COMING SOON! 🚀 SearXNGTool is not yet implemented in Python, but is available today in [TypeScript](/typescript/docs/searxng-tool.md)**

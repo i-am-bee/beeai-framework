@@ -1,7 +1,7 @@
 # 🗄️ Cache
 
 > [!NOTE]  
-> **Cache is not yet implemented in Python, but it's coming soon! 🚀**
+> **COMING SOON! 🚀 Cache is not yet implemented in Python, but is available today in [TypeScript](/typescript/docs/cache.md)**
 
 <!-- TOC -->
 ## Table of Contents
@@ -200,4 +200,5 @@ _Source: /examples/cache/custom.py_
 
 ## Examples
 
-- All cache examples can be found in [here](/python/examples/cache).
+- All cache examples are coming soon in python.
+<!-- - All cache examples can be found in [here](/python/examples/cache). -->

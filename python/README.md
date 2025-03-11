@@ -139,7 +139,7 @@ python [project_name].py
 
 BeeAI framework is an open-source project and we ❤️ contributions.<br>
 
-If you'd like to help build BeeAI, take a look at our [contribution guidelines](/python/docs/CONTRIBUTING.md).
+If you'd like to help build BeeAI, take a look at our [contribution guidelines](/python/CONTRIBUTING.md).
 
 ## Bugs
 
@@ -147,7 +147,7 @@ We are using GitHub Issues to manage public bugs. We keep a close eye on this, s
 
 ## Code of conduct
 
-This project and everyone participating in it are governed by the [Code of Conduct](/python/docs/CODE_OF_CONDUCT.md). By participating, you are expected to uphold this code. Please read the [full text](./CODE_OF_CONDUCT.md) so that you can read which actions may or may not be tolerated.
+This project and everyone participating in it are governed by the [Code of Conduct](/CODE_OF_CONDUCT.md). By participating, you are expected to uphold this code. Please read the [full text](/CODE_OF_CONDUCT.md) so that you can read which actions may or may not be tolerated.
 
 ## Legal notice
 

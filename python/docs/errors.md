@@ -69,7 +69,7 @@ The BeeAI Framework extends `FrameworkError` to create specialized error classes
 
 > [!TIP]
 >
-> Casting an unknown error to a `FrameworkError` can be done by calling the `FrameworkError.ensure` static method ([example](/examples/errors/cast.py)).
+> Casting an unknown error to a `FrameworkError` can be done by calling the `FrameworkError.ensure` static method ([example](/python/examples/errors/cast.py)).
 
 The definitions for these classes are typically local to the module where they are raised.
 
