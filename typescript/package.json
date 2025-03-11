@@ -131,6 +131,14 @@
       }
     }
   },
+  "typesVersions": {
+    "*": {
+      "*": [
+        "./dist/*.d.ts",
+        "./dist/index.d.ts"
+      ]
+    }
+  },
   "files": [
     "dist/**/*"
   ],
