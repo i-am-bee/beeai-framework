@@ -21,6 +21,7 @@ const reader = createConsoleReader();
 
 try {
   for await (const { prompt } of reader) {
+    // input example: {"text": "Write a literature review on no code tools for building multi agent ai systems"}
     const result = await instance.run({ prompt: parseBrokenJson(prompt) }).observe((emitter) => {
       emitter.on("update", (data) => {
         reader.write(`Agent (received progress) 🤖 : `, data.output);

@@ -14,18 +14,18 @@
  * limitations under the License.
  */
 
-import { z } from "zod";
 import { Callback } from "@/emitter/types.js";
 import { Emitter } from "@/emitter/emitter.js";
 import { AgentError, BaseAgent, BaseAgentRunOptions } from "@/agents/base.js";
 import { GetRunContext } from "@/context.js";
 import { AssistantMessage, Message, UserMessage } from "@/backend/message.js";
 import { BaseMemory } from "@/memory/base.js";
+import { UnconstrainedMemory } from "@/memory/unconstrainedMemory.js";
 import { Client as MCPClient } from "@i-am-bee/acp-sdk/client/index.js";
 import { Transport } from "@i-am-bee/acp-sdk/shared/transport.js";
-import { NotificationSchema } from "@i-am-bee/acp-sdk/types.js";
 import { shallowCopy } from "@/serializer/utils.js";
 import { NotImplementedError } from "@/errors.js";
+import { AgentRunProgressNotificationSchema } from "@i-am-bee/acp-sdk/types.js";
 
 export interface RemoteAgentRunInput {
   prompt: any;
@@ -87,12 +87,7 @@ export class RemoteAgent extends BaseAgent<RemoteAgentRunInput, RemoteAgentRunOu
     const run = async (input: RemoteAgentRunInput): Promise<string> => {
       try {
         this.input.client.setNotificationHandler(
-          NotificationSchema.extend({
-            method: z.literal("notifications/agents/run/progress"),
-            params: z.object({
-              delta: z.any(),
-            }),
-          }),
+          AgentRunProgressNotificationSchema,
           async (notification) => {
             await context.emitter.emit("update", {
               output: JSON.stringify(notification.params.delta, null, 2),
@@ -134,7 +129,7 @@ export class RemoteAgent extends BaseAgent<RemoteAgentRunInput, RemoteAgentRunOu
   }
 
   get memory() {
-    throw new NotImplementedError();
+    return new UnconstrainedMemory();
   }
 
   set memory(memory: BaseMemory) {
