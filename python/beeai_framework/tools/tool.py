@@ -90,18 +90,18 @@ class JSONToolOutput(ToolOutput):
         return not self.result
 
 
-class ToolStartEvent[TInput](BaseModel):
+class ToolStartEvent(BaseModel, Generic[TInput]):
     input: TInput
     options: ToolRunOptions | None = None
 
 
-class ToolSuccessEvent[TInput](BaseModel):
+class ToolSuccessEvent(BaseModel, Generic[TInput]):
     output: InstanceOf[ToolOutput]
     input: TInput
     options: ToolRunOptions | None = None
 
 
-class ToolErrorEvent[TInput](BaseModel):
+class ToolErrorEvent(BaseModel, Generic[TInput]):
     error: InstanceOf[ToolError]
     input: TInput
     options: ToolRunOptions | None = None

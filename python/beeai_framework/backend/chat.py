@@ -16,7 +16,7 @@
 from abc import ABC, abstractmethod
 from collections.abc import AsyncGenerator, Callable
 from types import NoneType
-from typing import Any, Literal, Self, TypeVar
+from typing import Any, Generic, Literal, Self, TypeVar
 
 from pydantic import BaseModel, ConfigDict, Field, InstanceOf
 
@@ -58,7 +58,7 @@ class ChatConfig(BaseModel):
     parameters: ChatModelParameters | Callable[[ChatModelParameters], ChatModelParameters] | None = None
 
 
-class ChatModelStructureInput[T](ChatModelParameters):
+class ChatModelStructureInput(ChatModelParameters, Generic[T]):
     input_schema: type[T] = Field(..., alias="schema")
     messages: list[InstanceOf[Message[Any]]] = Field(..., min_length=1)
     abort_signal: AbortSignal | None = None
