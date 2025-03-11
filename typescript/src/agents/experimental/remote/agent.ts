@@ -94,7 +94,9 @@ export class RemoteAgent extends BaseAgent<RemoteAgentRunInput, RemoteAgentRunOu
             });
           },
         );
-        await this.input.client.connect(this.input.transport);
+        if (!this.input.client.transport) {
+          await this.input.client.connect(this.input.transport);
+        }
       } catch (e) {
         throw new AgentError(`Can't connect to Beeai Platform.`, [e], { isFatal: true });
       }
