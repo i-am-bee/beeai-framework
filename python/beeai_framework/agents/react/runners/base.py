@@ -19,6 +19,7 @@ from typing import Any
 from pydantic import BaseModel, InstanceOf
 
 from beeai_framework.agents import AgentError
+from beeai_framework.agents.react.events import react_agent_event_types
 from beeai_framework.agents.react.types import (
     ReActAgentInput,
     ReActAgentIterationMeta,
@@ -28,7 +29,6 @@ from beeai_framework.agents.react.types import (
     ReActAgentRunOptions,
     ReActAgentTemplateFactory,
     ReActAgentTemplates,
-    react_agent_event_types,
 )
 from beeai_framework.cancellation import AbortSignal
 from beeai_framework.context import RunContext

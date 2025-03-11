@@ -21,10 +21,9 @@ from beeai_framework.agents.types import AgentExecutionConfig, AgentMeta
 from beeai_framework.backend.chat import ChatModel, ChatModelOutput
 from beeai_framework.backend.message import AnyMessage
 from beeai_framework.cancellation import AbortSignal
-from beeai_framework.errors import FrameworkError
 from beeai_framework.memory.base_memory import BaseMemory
 from beeai_framework.template import PromptTemplate
-from beeai_framework.tools.tool import AnyTool, ToolOutput
+from beeai_framework.tools.tool import AnyTool
 from beeai_framework.utils.strings import to_json
 
 
@@ -93,70 +92,3 @@ class ReActAgentInput(BaseModel):
     templates: dict[ModelKeysType, InstanceOf[PromptTemplate[Any]] | ReActAgentTemplateFactory] | None = None
     execution: AgentExecutionConfig | None = None
     stream: bool | None = None
-
-
-class ReActAgentStartEvent(BaseModel):
-    meta: ReActAgentIterationMeta
-    tools: list[InstanceOf[AnyTool]]
-    memory: InstanceOf[BaseMemory]
-
-
-class ReActAgentErrorEvent(BaseModel):
-    error: InstanceOf[FrameworkError]
-    meta: ReActAgentIterationMeta
-
-
-class ReActAgentRetryEvent(BaseModel):
-    meta: ReActAgentIterationMeta
-
-
-class ReActAgentSuccessEvent(BaseModel):
-    data: InstanceOf[AnyMessage]
-    iterations: list[ReActAgentRunIteration]
-    memory: InstanceOf[BaseMemory]
-    meta: ReActAgentIterationMeta
-
-
-class ReActAgentUpdate(BaseModel):
-    key: str
-    value: Any
-    parsed_value: Any
-
-
-class ReActAgentUpdateMeta(ReActAgentIterationMeta):
-    success: bool
-
-
-class ReActAgentUpdateEvent(BaseModel):
-    data: ReActAgentIterationResult | dict[str, Any]
-    update: ReActAgentUpdate
-    meta: ReActAgentUpdateMeta
-    tools: list[InstanceOf[AnyTool]] | None = None
-    memory: InstanceOf[BaseMemory] | None = None
-
-
-class ToolEventData(BaseModel):
-    tool: InstanceOf[AnyTool]
-    input: Any
-    options: ReActAgentRunOptions
-    iteration: ReActAgentIterationResult
-    result: InstanceOf[ToolOutput] | None = None
-    error: InstanceOf[FrameworkError] | None = None
-
-
-class ReActAgentToolEvent(BaseModel):
-    data: ToolEventData
-    meta: ReActAgentIterationMeta
-
-
-react_agent_event_types: dict[str, Any] = {
-    "start": ReActAgentStartEvent,
-    "error": ReActAgentErrorEvent,
-    "retry": ReActAgentRetryEvent,
-    "success": ReActAgentSuccessEvent,
-    "update": ReActAgentUpdateEvent,
-    "partial_update": ReActAgentUpdateEvent,
-    "tool_start": ReActAgentToolEvent,
-    "tool_success": ReActAgentToolEvent,
-    "tool_error": ReActAgentToolEvent,
-}
