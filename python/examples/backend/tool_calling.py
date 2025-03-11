@@ -5,8 +5,9 @@ import sys
 import traceback
 
 from beeai_framework import Message, SystemMessage, Tool, ToolMessage, UserMessage
-from beeai_framework.backend.chat import ChatModel, ChatModelParameters
+from beeai_framework.backend.chat import ChatModel
 from beeai_framework.backend.message import MessageToolResultContent
+from beeai_framework.backend.types import ChatModelParameters
 from beeai_framework.errors import FrameworkError
 from beeai_framework.tools import ToolOutput
 from beeai_framework.tools.search import DuckDuckGoSearchTool

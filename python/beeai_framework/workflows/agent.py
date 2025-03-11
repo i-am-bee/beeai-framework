@@ -35,7 +35,8 @@ from beeai_framework.memory import BaseMemory, ReadOnlyMemory, UnconstrainedMemo
 from beeai_framework.template import PromptTemplateInput
 from beeai_framework.tools.tool import AnyTool
 from beeai_framework.utils.asynchronous import ensure_async
-from beeai_framework.workflows.workflow import Workflow, WorkflowRun
+from beeai_framework.workflows.types import WorkflowRun
+from beeai_framework.workflows.workflow import Workflow
 
 AgentFactory = Callable[[ReadOnlyMemory], AnyAgent | Awaitable[AnyAgent]]
 

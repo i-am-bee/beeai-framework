@@ -15,7 +15,7 @@
 
 from pydantic import BaseModel
 
-from beeai_framework.tools.tool import ToolOutput
+from beeai_framework.tools import ToolOutput
 from beeai_framework.utils.strings import to_json
 
 

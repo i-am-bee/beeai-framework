@@ -13,6 +13,7 @@
 # limitations under the License.
 
 from beeai_framework.workflows.errors import WorkflowError
-from beeai_framework.workflows.workflow import Workflow, WorkflowReservedStepName
+from beeai_framework.workflows.types import WorkflowReservedStepName
+from beeai_framework.workflows.workflow import Workflow
 
 __all__ = ["Workflow", "WorkflowError", "WorkflowReservedStepName"]

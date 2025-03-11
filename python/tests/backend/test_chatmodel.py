@@ -29,16 +29,18 @@ from beeai_framework.adapters.watsonx.backend.chat import WatsonxChatModel
 from beeai_framework.adapters.xai.backend.chat import XAIChatModel
 from beeai_framework.backend.chat import (
     ChatModel,
-    ChatModelInput,
-    ChatModelOutput,
-    ChatModelStructureInput,
-    ChatModelStructureOutput,
 )
 from beeai_framework.backend.message import (
     AssistantMessage,
     CustomMessage,
     Message,
     UserMessage,
+)
+from beeai_framework.backend.types import (
+    ChatModelInput,
+    ChatModelOutput,
+    ChatModelStructureInput,
+    ChatModelStructureOutput,
 )
 from beeai_framework.cancellation import AbortSignal
 from beeai_framework.context import RunContext

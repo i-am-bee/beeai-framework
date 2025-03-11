@@ -25,7 +25,8 @@ from beeai_framework.agents.react.types import (
 from beeai_framework.backend.message import AnyMessage
 from beeai_framework.errors import FrameworkError
 from beeai_framework.memory.base_memory import BaseMemory
-from beeai_framework.tools.tool import AnyTool, ToolOutput
+from beeai_framework.tools import ToolOutput
+from beeai_framework.tools.tool import AnyTool
 
 
 class ReActAgentStartEvent(BaseModel):

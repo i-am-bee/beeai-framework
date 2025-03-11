@@ -12,17 +12,24 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-
 from abc import ABC, abstractmethod
-from collections.abc import AsyncGenerator, Callable
-from types import NoneType
-from typing import Any, Generic, Literal, Self, TypeVar
+from collections.abc import AsyncGenerator
+from typing import Any, Literal, TypeVar
 
-from pydantic import BaseModel, ConfigDict, Field, InstanceOf
+from pydantic import BaseModel, Field
 
 from beeai_framework.backend.constants import ProviderName
 from beeai_framework.backend.errors import ChatModelError
-from beeai_framework.backend.message import AnyMessage, AssistantMessage, MessageToolCallContent, SystemMessage
+from beeai_framework.backend.events import chat_model_event_types
+from beeai_framework.backend.message import AnyMessage, SystemMessage
+from beeai_framework.backend.types import (
+    ChatConfig,
+    ChatModelInput,
+    ChatModelOutput,
+    ChatModelParameters,
+    ChatModelStructureInput,
+    ChatModelStructureOutput,
+)
 from beeai_framework.backend.utils import load_model, parse_broken_json, parse_model
 from beeai_framework.cancellation import AbortController, AbortSignal
 from beeai_framework.context import Run, RunContext, RunContextInput, RunInstance
@@ -31,114 +38,12 @@ from beeai_framework.logger import Logger
 from beeai_framework.retryable import Retryable, RetryableConfig, RetryableContext, RetryableInput
 from beeai_framework.template import PromptTemplate, PromptTemplateInput
 from beeai_framework.tools.tool import AnyTool
-from beeai_framework.utils.lists import flatten
 from beeai_framework.utils.models import ModelLike
 from beeai_framework.utils.strings import to_json
 
 T = TypeVar("T", bound=BaseModel)
 ChatModelFinishReason: Literal["stop", "length", "function_call", "content_filter", "null"]
 logger = Logger(__name__)
-
-
-class ChatModelParameters(BaseModel):
-    max_tokens: int | None = None
-    top_p: int | None = None
-    frequency_penalty: int | None = None
-    temperature: int = 0
-    top_k: int | None = None
-    n: int | None = None
-    presence_penalty: int | None = None
-    seed: int | None = None
-    stop_sequences: list[str] | None = None
-    stream: bool | None = None
-
-
-class ChatConfig(BaseModel):
-    # TODO: cache: ChatModelCache | Callable[[ChatModelCache], ChatModelCache] | None = None
-    parameters: ChatModelParameters | Callable[[ChatModelParameters], ChatModelParameters] | None = None
-
-
-class ChatModelStructureInput(ChatModelParameters, Generic[T]):
-    input_schema: type[T] = Field(..., alias="schema")
-    messages: list[InstanceOf[AnyMessage]] = Field(..., min_length=1)
-    abort_signal: AbortSignal | None = None
-    max_retries: int | None = None
-
-
-class ChatModelStructureOutput(BaseModel):
-    object: type[BaseModel] | dict[str, Any]
-
-
-class ChatModelInput(ChatModelParameters):
-    tools: list[InstanceOf[AnyTool]] | None = None
-    abort_signal: AbortSignal | None = None
-    stop_sequences: list[str] | None = None
-    response_format: dict[str, Any] | type[BaseModel] | None = None
-    # tool_choice: NoneType # TODO
-    messages: list[InstanceOf[AnyMessage]] = Field(
-        ...,
-        min_length=1,
-        frozen=True,
-    )
-
-    model_config = ConfigDict(frozen=True)
-
-
-class ChatModelUsage(BaseModel):
-    prompt_tokens: int
-    completion_tokens: int
-    total_tokens: int
-
-
-class ChatModelOutput(BaseModel):
-    messages: list[InstanceOf[AnyMessage]]
-    usage: InstanceOf[ChatModelUsage] | None = None
-    finish_reason: str | None = None
-
-    @classmethod
-    def from_chunks(cls, chunks: list[Self]) -> Self:
-        final = cls(messages=[])
-        for cur in chunks:
-            final.merge(cur)
-        return final
-
-    def merge(self, other: Self) -> None:
-        self.messages.extend(other.messages)
-        self.finish_reason = other.finish_reason
-        if self.usage and other.usage:
-            merged_usage = self.usage.model_copy()
-            if other.usage.total_tokens:
-                merged_usage.total_tokens = max(self.usage.total_tokens, other.usage.total_tokens)
-                merged_usage.prompt_tokens = max(self.usage.prompt_tokens, other.usage.prompt_tokens)
-                merged_usage.completion_tokens = max(self.usage.completion_tokens, other.usage.completion_tokens)
-            self.usage = merged_usage
-        elif other.usage:
-            self.usage = other.usage.model_copy()
-
-    def get_tool_calls(self) -> list[MessageToolCallContent]:
-        assistant_message = [msg for msg in self.messages if isinstance(msg, AssistantMessage)]
-        return flatten([x.get_tool_calls() for x in assistant_message])
-
-    def get_text_content(self) -> str:
-        return "".join([x.text for x in list(filter(lambda x: isinstance(x, AssistantMessage), self.messages))])
-
-
-class ChatModelNewTokenEvent(BaseModel):
-    value: InstanceOf[ChatModelOutput]
-    abort: Callable[[], None]
-
-
-class ChatModelSuccessEvent(BaseModel):
-    value: InstanceOf[ChatModelOutput]
-
-
-class ChatModelStartEvent(BaseModel):
-    input: InstanceOf[ChatModelInput]
-
-
-class ChatModelErrorEvent(BaseModel):
-    input: InstanceOf[ChatModelInput]
-    error: InstanceOf[ChatModelError]
 
 
 class ChatModel(ABC):
@@ -160,13 +65,7 @@ class ChatModel(ABC):
         self.emitter = Emitter.root().child(
             namespace=["backend", self.provider_id, "chat"],
             creator=self,
-            events={
-                "new_token": ChatModelNewTokenEvent,
-                "success": ChatModelSuccessEvent,
-                "start": ChatModelStartEvent,
-                "error": ChatModelErrorEvent,
-                "finish": NoneType,
-            },
+            events=chat_model_event_types,
         )
 
     @abstractmethod

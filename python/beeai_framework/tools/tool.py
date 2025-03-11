@@ -21,90 +21,24 @@ from functools import cached_property
 from types import NoneType
 from typing import Any, Generic, TypeAlias
 
-from pydantic import BaseModel, ConfigDict, InstanceOf, ValidationError, create_model
+from pydantic import BaseModel, ConfigDict, ValidationError, create_model
 from typing_extensions import TypeVar
 
-from beeai_framework.cancellation import AbortSignal
 from beeai_framework.context import Run, RunContext, RunContextInput, RunInstance
 from beeai_framework.emitter.emitter import Emitter
 from beeai_framework.errors import FrameworkError
 from beeai_framework.logger import Logger
 from beeai_framework.retryable import Retryable, RetryableConfig, RetryableContext, RetryableInput
 from beeai_framework.tools.errors import ToolError, ToolInputValidationError
-from beeai_framework.utils.strings import to_json, to_safe_word
+from beeai_framework.tools.events import ToolErrorEvent, ToolStartEvent, ToolSuccessEvent
+from beeai_framework.tools.types import StringToolOutput, ToolOutput, ToolRunOptions
+from beeai_framework.utils.strings import to_safe_word
 
 logger = Logger(__name__)
 
 TInput = TypeVar("TInput", bound=BaseModel)
-
-
-class RetryOptions(BaseModel):
-    max_retries: int | None = None
-    factor: int | None = None
-
-
-class ToolRunOptions(BaseModel):
-    retry_options: RetryOptions | None = None
-    signal: AbortSignal | None = None
-
-
 TRunOptions = TypeVar("TRunOptions", bound=ToolRunOptions, default=ToolRunOptions)
-
-
-class ToolOutput(ABC):
-    @abstractmethod
-    def get_text_content(self) -> str:
-        pass
-
-    @abstractmethod
-    def is_empty(self) -> bool:
-        pass
-
-    def __str__(self) -> str:
-        return self.get_text_content()
-
-
 TOutput = TypeVar("TOutput", bound=ToolOutput, default=ToolOutput)
-
-
-class StringToolOutput(ToolOutput):
-    def __init__(self, result: str = "") -> None:
-        super().__init__()
-        self.result = result
-
-    def is_empty(self) -> bool:
-        return len(self.result) == 0
-
-    def get_text_content(self) -> str:
-        return self.result
-
-
-class JSONToolOutput(ToolOutput):
-    def __init__(self, result: Any) -> None:
-        self.result = result
-
-    def get_text_content(self) -> str:
-        return to_json(self.result)
-
-    def is_empty(self) -> bool:
-        return not self.result
-
-
-class ToolStartEvent(BaseModel, Generic[TInput]):
-    input: TInput
-    options: ToolRunOptions | None = None
-
-
-class ToolSuccessEvent(BaseModel, Generic[TInput]):
-    output: InstanceOf[ToolOutput]
-    input: TInput
-    options: ToolRunOptions | None = None
-
-
-class ToolErrorEvent(BaseModel, Generic[TInput]):
-    error: InstanceOf[ToolError]
-    input: TInput
-    options: ToolRunOptions | None = None
 
 
 class Tool(Generic[TInput, TRunOptions, TOutput], ABC):

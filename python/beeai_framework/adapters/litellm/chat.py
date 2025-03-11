@@ -29,16 +29,18 @@ from litellm.types.utils import StreamingChoices
 from beeai_framework.adapters.litellm._patch import _patch_litellm_cache
 from beeai_framework.backend.chat import (
     ChatModel,
-    ChatModelInput,
-    ChatModelOutput,
-    ChatModelStructureInput,
-    ChatModelStructureOutput,
 )
 from beeai_framework.backend.errors import ChatModelError
 from beeai_framework.backend.message import (
     AssistantMessage,
     MessageToolCallContent,
     ToolMessage,
+)
+from beeai_framework.backend.types import (
+    ChatModelInput,
+    ChatModelOutput,
+    ChatModelStructureInput,
+    ChatModelStructureOutput,
 )
 from beeai_framework.backend.utils import parse_broken_json
 from beeai_framework.context import RunContext

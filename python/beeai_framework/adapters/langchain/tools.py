@@ -23,7 +23,8 @@ from pydantic import BaseModel, ConfigDict
 
 from beeai_framework.context import RunContext
 from beeai_framework.emitter.emitter import Emitter
-from beeai_framework.tools.tool import StringToolOutput, Tool, ToolRunOptions
+from beeai_framework.tools.tool import StringToolOutput, Tool
+from beeai_framework.tools.types import ToolRunOptions
 from beeai_framework.utils.strings import to_safe_word
 
 

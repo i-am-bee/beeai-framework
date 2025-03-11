@@ -12,7 +12,8 @@ from mcp.client.stdio import stdio_client
 from beeai_framework import Tool
 from beeai_framework.agents.react.agent import ReActAgent
 from beeai_framework.agents.types import AgentExecutionConfig
-from beeai_framework.backend.chat import ChatModel, ChatModelParameters
+from beeai_framework.backend.chat import ChatModel
+from beeai_framework.backend.types import ChatModelParameters
 from beeai_framework.emitter.emitter import Emitter, EventMeta
 from beeai_framework.errors import FrameworkError
 from beeai_framework.logger import Logger
