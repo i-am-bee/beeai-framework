@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.1.5](https://github.com/i-am-bee/beeai-framework/compare/typescript_v0.1.4...typescript_v0.1.5) (2025-03-11)
+
+### Features
+
+- improve error messages ([#519](https://github.com/i-am-bee/beeai-framework/issues/519)) ([cf4df48](https://github.com/i-am-bee/beeai-framework/commit/cf4df480c123e578506ab52887a50930c0102fab))
+
+### Bug Fixes
+
+- add typesVersions setting in package.json ([#559](https://github.com/i-am-bee/beeai-framework/issues/559)) ([c08922b](https://github.com/i-am-bee/beeai-framework/commit/c08922b86fb5434dee003785180671f656a7d9e5))
+- **backend:** handle colon symbols in model id ([#537](https://github.com/i-am-bee/beeai-framework/issues/537)) ([ff8069c](https://github.com/i-am-bee/beeai-framework/commit/ff8069c2abac7498e6bab5b45f23dcbc0a690b72))
+
 ## [0.1.4](https://github.com/i-am-bee/beeai-framework/compare/typescript_v0.1.3...typescript_v0.1.4) (2025-03-06)
 
 ### Bug Fixes

@@ -1744,6 +1744,20 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@i-am-bee/acp-sdk@npm:^0.0.4":
+  version: 0.0.4
+  resolution: "@i-am-bee/acp-sdk@npm:0.0.4"
+  dependencies:
+    "@opentelemetry/api": "npm:^1.9.0"
+    content-type: "npm:^1.0.5"
+    eventsource: "npm:^3.0.2"
+    raw-body: "npm:^3.0.0"
+    zod: "npm:^3.23.8"
+    zod-to-json-schema: "npm:^3.24.1"
+  checksum: 10c0/0fa76da72f0af6742c21d45b22568506d285e14a4f91c58dae428a70ec18bf10343a8a3f99347b63043919aa06a0d045e91209ed2b8b9169339de969eb47bd63
+  languageName: node
+  linkType: hard
+
 "@iarna/toml@npm:2.2.5":
   version: 2.2.5
   resolution: "@iarna/toml@npm:2.2.5"
@@ -5125,6 +5139,7 @@ __metadata:
     "@eslint/js": "npm:^9.16.0"
     "@eslint/markdown": "npm:^6.2.1"
     "@googleapis/customsearch": "npm:^3.2.0"
+    "@i-am-bee/acp-sdk": "npm:^0.0.4"
     "@ibm-cloud/watsonx-ai": "npm:^1.5.1"
     "@langchain/community": "npm:0.3.28"
     "@langchain/core": "npm:0.3.37"
@@ -5214,6 +5229,7 @@ __metadata:
     "@aws-sdk/client-bedrock-runtime": ^3.706.0
     "@elastic/elasticsearch": ^8.0.0
     "@googleapis/customsearch": ^3.2.0
+    "@i-am-bee/acp-sdk": ^0.0.4
     "@langchain/community": ">=0.2.28"
     "@langchain/core": ">=0.2.27"
     "@modelcontextprotocol/sdk": ^1.0.4
@@ -5237,6 +5253,8 @@ __metadata:
     "@elastic/elasticsearch":
       optional: true
     "@googleapis/customsearch":
+      optional: true
+    "@i-am-bee/acp-sdk":
       optional: true
     "@ibm-cloud/watsonx-ai":
       optional: true
@@ -7450,6 +7468,15 @@ __metadata:
   version: 3.0.0
   resolution: "eventsource-parser@npm:3.0.0"
   checksum: 10c0/74ded91ff93330bd95243bd5a8fc61c805ea1843dd7ffac8e8ac36287fff419a7eec21b2fadf50d4e554ce0506de72f47928513e3c5b886fa4613fd49ef0024f
+  languageName: node
+  linkType: hard
+
+"eventsource@npm:^3.0.2":
+  version: 3.0.5
+  resolution: "eventsource@npm:3.0.5"
+  dependencies:
+    eventsource-parser: "npm:^3.0.0"
+  checksum: 10c0/0283045a70b7ab7501fc290e60ee5ebd6e24648e0f0a6d6a1c1bbb7a421971e8140b85d6239d08c360e0a0b196205ca86b4ff7f9efe3c06877ba628136856489
   languageName: node
   linkType: hard
 
