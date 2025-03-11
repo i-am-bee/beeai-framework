@@ -19,7 +19,7 @@ from pydantic import BaseModel, InstanceOf
 
 from beeai_framework.agents.types import AgentExecutionConfig, AgentMeta
 from beeai_framework.backend.chat import ChatModel, ChatModelOutput
-from beeai_framework.backend.message import Message
+from beeai_framework.backend.message import AnyMessage
 from beeai_framework.cancellation import AbortSignal
 from beeai_framework.errors import FrameworkError
 from beeai_framework.memory.base_memory import BaseMemory
@@ -64,7 +64,7 @@ class ReActAgentRunIteration(BaseModel):
 
 
 class ReActAgentRunOutput(BaseModel):
-    result: InstanceOf[Message[Any]]
+    result: InstanceOf[AnyMessage]
     iterations: list[ReActAgentRunIteration]
     memory: InstanceOf[BaseMemory]
 
@@ -111,7 +111,7 @@ class ReActAgentRetryEvent(BaseModel):
 
 
 class ReActAgentSuccessEvent(BaseModel):
-    data: InstanceOf[Message[Any]]
+    data: InstanceOf[AnyMessage]
     iterations: list[ReActAgentRunIteration]
     memory: InstanceOf[BaseMemory]
     meta: ReActAgentIterationMeta

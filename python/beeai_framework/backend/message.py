@@ -18,7 +18,7 @@ from abc import ABC, abstractmethod
 from collections.abc import Sequence
 from datetime import UTC, datetime
 from enum import Enum
-from typing import Any, Generic, Literal, TypeVar
+from typing import Any, Generic, Literal, TypeAlias, TypeVar
 
 from pydantic import BaseModel
 
@@ -173,3 +173,6 @@ class CustomMessage(Message[MessageTextContent]):
 
     def _models(self) -> Sequence[type[MessageTextContent]]:
         return [MessageTextContent]
+
+
+AnyMessage: TypeAlias = Message[Any]

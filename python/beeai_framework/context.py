@@ -30,6 +30,7 @@ from beeai_framework.emitter import Callback, Emitter, EmitterOptions, EventTrac
 from beeai_framework.errors import AbortError, FrameworkError
 from beeai_framework.logger import Logger
 from beeai_framework.utils.asynchronous import ensure_async
+from beeai_framework.utils.dicts import exclude_keys
 
 R = TypeVar("R")
 
@@ -84,8 +85,8 @@ class Run(Generic[R]):
         return await self.handler()
 
     def _set_context(self, context: dict[str, Any]) -> None:
-        self.run_context.context = context
-        self.run_context.emitter.context = context
+        self.run_context.context.update(context)
+        self.run_context.emitter.context.update(context)
 
 
 class RunContext(RunInstance):
@@ -97,9 +98,7 @@ class RunContext(RunInstance):
         self.run_id = str(uuid.uuid4())
         self.parent_id = parent.run_id if parent else None
         self.group_id: str = parent.group_id if parent else str(uuid.uuid4())
-        self.context: dict[str, Any] = (
-            {k: v for k, v in parent.context.items() if k not in ["id", "parentId"]} if parent else {}
-        )
+        self.context: dict[str, Any] = exclude_keys(parent.context, {"id", "parent_id"}) if parent is not None else {}
 
         self.emitter = self.instance.emitter.child(
             context=self.context,

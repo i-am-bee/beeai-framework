@@ -22,7 +22,7 @@ from pydantic import BaseModel, ConfigDict, Field, InstanceOf
 
 from beeai_framework.backend.constants import ProviderName
 from beeai_framework.backend.errors import ChatModelError
-from beeai_framework.backend.message import AssistantMessage, Message, MessageToolCallContent, SystemMessage
+from beeai_framework.backend.message import AnyMessage, AssistantMessage, MessageToolCallContent, SystemMessage
 from beeai_framework.backend.utils import load_model, parse_broken_json, parse_model
 from beeai_framework.cancellation import AbortController, AbortSignal
 from beeai_framework.context import Run, RunContext, RunContextInput, RunInstance
@@ -60,7 +60,7 @@ class ChatConfig(BaseModel):
 
 class ChatModelStructureInput(ChatModelParameters, Generic[T]):
     input_schema: type[T] = Field(..., alias="schema")
-    messages: list[InstanceOf[Message[Any]]] = Field(..., min_length=1)
+    messages: list[InstanceOf[AnyMessage]] = Field(..., min_length=1)
     abort_signal: AbortSignal | None = None
     max_retries: int | None = None
 
@@ -75,7 +75,7 @@ class ChatModelInput(ChatModelParameters):
     stop_sequences: list[str] | None = None
     response_format: dict[str, Any] | type[BaseModel] | None = None
     # tool_choice: NoneType # TODO
-    messages: list[InstanceOf[Message[Any]]] = Field(
+    messages: list[InstanceOf[AnyMessage]] = Field(
         ...,
         min_length=1,
         frozen=True,
@@ -91,7 +91,7 @@ class ChatModelUsage(BaseModel):
 
 
 class ChatModelOutput(BaseModel):
-    messages: list[InstanceOf[Message[Any]]]
+    messages: list[InstanceOf[AnyMessage]]
     usage: InstanceOf[ChatModelUsage] | None = None
     finish_reason: str | None = None
 
@@ -123,20 +123,20 @@ class ChatModelOutput(BaseModel):
         return "".join([x.text for x in list(filter(lambda x: isinstance(x, AssistantMessage), self.messages))])
 
 
-class NewTokenEvent(BaseModel):
+class ChatModelNewTokenEvent(BaseModel):
     value: InstanceOf[ChatModelOutput]
     abort: Callable[[], None]
 
 
-class RunSuccessEvent(BaseModel):
+class ChatModelSuccessEvent(BaseModel):
     value: InstanceOf[ChatModelOutput]
 
 
-class RunStartEvent(BaseModel):
+class ChatModelStartEvent(BaseModel):
     input: InstanceOf[ChatModelInput]
 
 
-class RunErrorEvent(BaseModel):
+class ChatModelErrorEvent(BaseModel):
     input: InstanceOf[ChatModelInput]
     error: InstanceOf[ChatModelError]
 
@@ -161,10 +161,10 @@ class ChatModel(ABC):
             namespace=["backend", self.provider_id, "chat"],
             creator=self,
             events={
-                "new_token": NewTokenEvent,
-                "success": RunSuccessEvent,
-                "start": RunStartEvent,
-                "error": RunErrorEvent,
+                "new_token": ChatModelNewTokenEvent,
+                "success": ChatModelSuccessEvent,
+                "start": ChatModelStartEvent,
+                "error": ChatModelErrorEvent,
                 "finish": NoneType,
             },
         )
@@ -188,10 +188,10 @@ class ChatModel(ABC):
     @abstractmethod
     async def _create_structure(
         self,
-        input: ChatModelStructureInput[Any],
+        input: ChatModelStructureInput[T],
         run: RunContext,
     ) -> ChatModelStructureOutput:
-        schema = input.input_schema
+        schema: type[T] = input.input_schema
 
         json_schema = schema.model_json_schema(mode="serialization") if issubclass(schema, BaseModel) else schema
 
@@ -213,7 +213,7 @@ IMPORTANT: You MUST answer with a JSON object that matches the JSON schema above
         )
 
         input_messages = input.messages
-        messages: list[Message[Any]] = [
+        messages: list[AnyMessage] = [
             SystemMessage(system_template.render({"schema": to_json(json_schema, indent=4)})),
             *input_messages,
         ]
@@ -251,7 +251,7 @@ IMPORTANT: You MUST answer with a JSON object that matches the JSON schema above
     def create(
         self,
         *,
-        messages: list[Message[Any]],
+        messages: list[AnyMessage],
         tools: list[AnyTool] | None = None,
         abort_signal: AbortSignal | None = None,
         stop_sequences: list[str] | None = None,
@@ -307,7 +307,7 @@ IMPORTANT: You MUST answer with a JSON object that matches the JSON schema above
         self,
         *,
         schema: type[T],
-        messages: list[Message[Any]],
+        messages: list[AnyMessage],
         abort_signal: AbortSignal | None = None,
         max_retries: int | None = None,
     ) -> Run[ChatModelStructureOutput]:

@@ -164,7 +164,9 @@ class Emitter:
             if not match_nested:
 
                 def match_same_run(event: EventMeta) -> bool:
-                    return self.trace is None or event.trace is None or self.trace.run_id == event.trace.run_id
+                    return self.trace is None or (
+                        self.trace.run_id == event.trace.run_id if event.trace is not None else False
+                    )
 
                 matchers.insert(0, match_same_run)
 

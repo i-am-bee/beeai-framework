@@ -29,7 +29,7 @@ from beeai_framework.agents.types import (
     AgentMeta,
 )
 from beeai_framework.backend.chat import ChatModel
-from beeai_framework.backend.message import AssistantMessage, Message
+from beeai_framework.backend.message import AnyMessage, AssistantMessage
 from beeai_framework.context import Run
 from beeai_framework.memory import BaseMemory, ReadOnlyMemory, UnconstrainedMemory
 from beeai_framework.template import PromptTemplateInput
@@ -51,16 +51,16 @@ class AgentFactoryInput(BaseModel):
 
 class Schema(BaseModel):
     model_config = ConfigDict(arbitrary_types_allowed=True)
-    messages: list[Message[Any]] = Field(min_length=1)
+    messages: list[AnyMessage] = Field(min_length=1)
     final_answer: str | None = None
-    new_messages: list[Message[Any]] = []
+    new_messages: list[AnyMessage] = []
 
 
 class AgentWorkflow:
     def __init__(self, name: str = "AgentWorkflow") -> None:
         self.workflow = Workflow(name=name, schema=Schema)
 
-    def run(self, messages: list[Message[Any]]) -> Run[WorkflowRun[Any, Any]]:
+    def run(self, messages: list[AnyMessage]) -> Run[WorkflowRun[Any, Any]]:
         return self.workflow.run(Schema(messages=messages))
 
     def del_agent(self, name: str) -> "AgentWorkflow":

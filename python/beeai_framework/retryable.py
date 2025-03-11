@@ -59,10 +59,12 @@ class RetryableRunConfig:
 
 
 async def do_retry(fn: Callable[[int], Awaitable[T]], options: dict[str, Any] | None = None) -> T:
+    options = options or {}
+
     async def handler(attempt: int, remaining: int) -> T:
         logger.debug(f"Entering p_retry handler({attempt}, {remaining})")
         try:
-            factor = options["factor"] if options and options["factor"] is not None else 2
+            factor = options.get("factor", 2) or 2
 
             if attempt > 1:
                 await asyncio.sleep(factor ** (attempt - 1))
