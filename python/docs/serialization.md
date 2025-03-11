@@ -36,7 +36,7 @@ BeeAI framework provides robust serialization capabilities through its built-in 
 Coming soon
 ```
 
-_Source: [examples/serialization/base.py](/python/examples/serialization/base.py)_
+<!-- _Source: [examples/serialization/base.py](/python/examples/serialization/base.py)_ -->
 
 ---
 
@@ -74,7 +74,7 @@ Most BeeAI components can be serialized out of the box. Here's an example using 
 Coming soon
 ```
 
-_Source: [examples/serialization/memory.py](/python/examples/serialization/memory.py)_
+<!-- _Source: [examples/serialization/memory.py](/python/examples/serialization/memory.py)_ -->
 
 > [TIP!]
 > Most framework components are `Serializable`.
@@ -93,7 +93,7 @@ You can register external classes with the serializer:
 Coming soon
 ```
 
-_Source: [examples/serialization/customExternal.py](/python/examples/serialization/customExternal.py)_
+<!-- _Source: [examples/serialization/customExternal.py](/python/examples/serialization/customExternal.py)_ -->
 
 **2. Implement the `Serializable` Interface**
 
@@ -103,7 +103,7 @@ For deeper integration, extend the Serializable class:
 Coming soon
 ```
 
-_Source: [examples/serialization/customInternal.py](/python/examples/serialization/customInternal.py)_
+<!-- _Source: [examples/serialization/customInternal.py](/python/examples/serialization/customInternal.py)_ -->
 
 > [NOTE!]
 > Failure to register a class that the `Serializer` does not know will result in the `SerializerError` error. BeeAI framework avoids importing all potential classes automatically to prevent increased application size and unnecessary dependencies.
@@ -114,10 +114,10 @@ _Source: [examples/serialization/customInternal.py](/python/examples/serializati
 Coming soon
 ```
 
-_Source: [examples/serialization/context.py](/python/examples/serialization/context.py)_
+<!-- _Source: [examples/serialization/context.py](/python/examples/serialization/context.py)_ -->
 
 ---
 
 ## Examples
-
-- All serialization examples can be found in [here](/python/examples/serialization).
+- All serialization examples are coming soon in python.
+<!-- - All serialization examples can be found in [here](/python/examples/serialization). -->

@@ -200,4 +200,5 @@ _Source: /examples/cache/custom.py_
 
 ## Examples
 
-- All cache examples can be found in [here](/python/examples/cache).
+- All cache examples are coming soon in python.
+<!-- - All cache examples can be found in [here](/python/examples/cache). -->

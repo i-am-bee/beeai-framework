@@ -7,7 +7,7 @@ The source directory (`src`) provides numerous modules that one can use.
 | Name                                        | Description                                                                                 |
 | ------------------------------------------- | ------------------------------------------------------------------------------------------- |
 | [**agents**](./agents.md)                   | Base classes defining the common interface for agent.                                       |
-| [**backend**](/docs/backend.md)             | Functionalities that relates to AI models (chat, embedding, image, tool calling, ...)       |
+| [**backend**](./backend.md)                 | Functionalities that relates to AI models (chat, embedding, image, tool calling, ...)       |
 | [**template**](./templates.md)              | Prompt Templating system based on `Mustache` with various improvements.                     |
 | [**memory**](./memory.md)                   | Various types of memories to use with agent.                                                |
 | [**tools**](./tools.md)                     | Tools that an agent can use.                                                                |

@@ -20,7 +20,7 @@ console.info(deserialized instanceof Date); // true
 console.info(original.toISOString() === deserialized.toISOString()); // true
 ```
 
-_Source: [examples/serialization/base.ts](/examples/tools/base.ts)_
+_Source: [examples/serialization/base.ts](/typescript/examples/tools/base.ts)_
 
 > [!NOTE]
 >
@@ -28,7 +28,7 @@ _Source: [examples/serialization/base.ts](/examples/tools/base.ts)_
 
 ## Being Serializable
 
-Most parts of the framework implement the internal [`Serializable`](/src/internals/serializable.ts) class, which exposes the following methods.
+Most parts of the framework implement the internal [`Serializable`](/typescript/src/internals/serializable.ts) class, which exposes the following methods.
 
 - `createSnapshot` (returns an object that "snapshots" the current state)
 - `loadSnapshot` (applies the provided snapshot to the current instance)
@@ -53,7 +53,7 @@ const deserialized = await TokenMemory.fromSerialized(serialized);
 await deserialized.add(new AssistantMessage("Bee"));
 ```
 
-_Source: [examples/serialization/memory.ts](/examples/serialization/memory.ts)_
+_Source: [examples/serialization/memory.ts](/typescript/examples/serialization/memory.ts)_
 
 ### Serializing unknowns
 
@@ -90,7 +90,7 @@ console.info(instance);
 console.info(deserialized);
 ```
 
-_Source: [examples/serialization/customExternal.ts](/examples/serialization/customExternal.ts)_
+_Source: [examples/serialization/customExternal.ts](/typescript/examples/serialization/customExternal.ts)_
 
 or you can extend the `Serializable` class.
 
@@ -128,7 +128,7 @@ console.info(instance);
 console.info(deserialized);
 ```
 
-_Source: [examples/serialization/customInternal.ts](/examples/serialization/customInternal.ts)_
+_Source: [examples/serialization/customInternal.ts](/typescript/examples/serialization/customInternal.ts)_
 
 > [!TIP]
 >
@@ -153,7 +153,7 @@ const memory = await UnconstrainedMemory.fromSerialized(serialized, {
 console.info(memory.messages);
 ```
 
-_Source: [examples/serialization/context.ts](/examples/serialization/context.ts)_
+_Source: [examples/serialization/context.ts](/typescript/examples/serialization/context.ts)_
 
 > [!IMPORTANT]
 >
