@@ -69,7 +69,7 @@ class ReActAgentUpdateEvent(BaseModel):
     memory: InstanceOf[BaseMemory] | None = None
 
 
-class ToolEventData(BaseModel):
+class ReActAgentToolEventData(BaseModel):
     tool: InstanceOf[AnyTool]
     input: Any
     options: ReActAgentRunOptions
@@ -79,7 +79,7 @@ class ToolEventData(BaseModel):
 
 
 class ReActAgentToolEvent(BaseModel):
-    data: ToolEventData
+    data: ReActAgentToolEventData
     meta: ReActAgentIterationMeta
 
 
