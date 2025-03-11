@@ -165,7 +165,7 @@ async def main() -> None:
     response = await agent.run(
         prompt="Post to Slack the current temperature in Boston.",
         execution=AgentExecutionConfig(max_retries_per_step=3, total_max_retries=10, max_iterations=20),
-    ).observe(lambda emitter: emitter.on("*", print_events))
+    ).on("*", print_events)
 
     print("Agent 🤖 : ", response.result.text)
 
