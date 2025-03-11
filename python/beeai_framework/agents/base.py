@@ -12,58 +12,45 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-
 from abc import ABC, abstractmethod
-from typing import Generic, TypeVar
+from collections.abc import Awaitable, Callable
+from functools import wraps
+from typing import Any, Concatenate, Generic, ParamSpec, TypeVar
 
 from pydantic import BaseModel
 
-from beeai_framework.agents.types import AgentExecutionConfig, AgentMeta
+from beeai_framework.agents import AgentError
+from beeai_framework.agents.types import AgentMeta
 from beeai_framework.cancellation import AbortSignal
 from beeai_framework.context import Run, RunContext, RunContextInput, RunInstance
 from beeai_framework.emitter import Emitter
 from beeai_framework.memory import BaseMemory
-from beeai_framework.utils.models import ModelLike
+
+
+class BaseAgentRunOptions(BaseModel):
+    signal: AbortSignal | None = None
+
 
 TInput = TypeVar("TInput", bound=BaseModel)
 TOptions = TypeVar("TOptions", bound=BaseModel)
 TOutput = TypeVar("TOutput", bound=BaseModel)
+P = ParamSpec("P")
+
+
+class BaseAgentSchemaContainer(BaseModel, Generic[TInput, TOptions, TOutput]):
+    input: type[TInput]
+    output: type[TOutput]
+    options: type[TOptions]
 
 
 class BaseAgent(ABC, Generic[TInput, TOptions, TOutput]):
-    is_running: bool = False
-    emitter: Emitter
+    _run_context: RunContext | None = None
 
-    def run(
-        self,
-        prompt: str | None = None,
-        execution: AgentExecutionConfig | None = None,
-        signal: AbortSignal | None = None,
-    ) -> Run[TOutput]:
-        if self.is_running:
-            raise RuntimeError("Agent is already running!")
-
-        self.is_running = True
-
-        async def handler(context: RunContext) -> TOutput:
-            try:
-                return await self._run({"prompt": prompt}, {"execution": execution, "signal": signal}, context)
-            finally:
-                self.is_running = False
-
-        return RunContext.enter(
-            RunInstance(emitter=self.emitter),
-            RunContextInput(
-                signal=signal if signal else None,
-                params=({"prompt": prompt}, {"execution": execution, "signal": signal}),
-            ),
-            handler,
-        )
+    def __init__(self) -> None:
+        self.emitter = self._create_emitter()
 
     @abstractmethod
-    async def _run(
-        self, run_input: ModelLike[TInput], options: ModelLike[TOptions] | None, context: RunContext
-    ) -> TOutput:
+    def run(self, *args: Any, **kwargs: Any) -> Run[TOutput]:
         pass
 
     def destroy(self) -> None:
@@ -86,3 +73,44 @@ class BaseAgent(ABC, Generic[TInput, TOptions, TOutput]):
             description="",
             tools=[],
         )
+
+    @property
+    @abstractmethod
+    def _schema(self) -> BaseAgentSchemaContainer[TInput, TOptions, TOutput]:
+        pass
+
+    @abstractmethod
+    def _create_emitter(self) -> Emitter[Any]:
+        pass
+
+
+TAgent = TypeVar("TAgent", bound=BaseAgent[Any, Any, Any])
+
+
+def with_context(
+    fn: Callable[Concatenate[TAgent, P], Awaitable[TOutput]],
+) -> Callable[Concatenate[TAgent, P], Run[TOutput]]:
+    @wraps(fn)
+    def wrapper(self: TAgent, *args: P.args, **kwargs: P.kwargs) -> Run[TOutput]:
+        if self._run_context:
+            raise RuntimeError("Agent is already running!")
+
+        async def handler(context: RunContext) -> TOutput:
+            try:
+                self._run_context = context
+                return await fn(self, *args, **kwargs)
+            except Exception as e:
+                raise AgentError.ensure(e)
+            finally:
+                self._run_context = None
+
+        return RunContext.enter(
+            RunInstance(emitter=self.emitter),
+            RunContextInput(
+                signal=kwargs.get("signal"),  # type: ignore
+                params=(*args, kwargs),
+            ),
+            handler,
+        )
+
+    return wrapper  # type: ignore

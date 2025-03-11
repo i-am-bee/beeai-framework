@@ -16,7 +16,7 @@
 from collections.abc import Callable
 from datetime import UTC, datetime
 
-from beeai_framework.agents.base import BaseAgent
+from beeai_framework.agents.base import BaseAgent, with_context
 from beeai_framework.agents.react.runners.base import (
     BaseRunner,
     ReActAgentRunnerIteration,
@@ -40,12 +40,11 @@ from beeai_framework.agents.types import (
 from beeai_framework.backend import Message
 from beeai_framework.backend.chat import ChatModel
 from beeai_framework.backend.message import AssistantMessage, MessageMeta, UserMessage
-from beeai_framework.context import RunContext
+from beeai_framework.cancellation import AbortSignal
 from beeai_framework.emitter import Emitter
 from beeai_framework.memory import BaseMemory
 from beeai_framework.template import PromptTemplate
 from beeai_framework.tools.tool import Tool
-from beeai_framework.utils.models import ModelLike, to_model, to_model_optional
 
 
 class ReActAgent(BaseAgent[ReActAgentRunInput, ReActAgentRunOptions, ReActAgentRunOutput]):
@@ -105,15 +104,19 @@ class ReActAgent(BaseAgent[ReActAgentRunInput, ReActAgentRunOptions, ReActAgentR
             extra_description="\n".join(extra_description) if len(tools) > 0 else None,
         )
 
-    async def _run(
+    @with_context
+    async def run(
         self,
-        run_input: ModelLike[ReActAgentRunInput],
-        options: ModelLike[ReActAgentRunOptions] | None,
-        context: RunContext,
+        prompt: str,
+        *,
+        signal: AbortSignal | None = None,
+        execution: AgentExecutionConfig | None = None,
+        options: ReActAgentRunOptions | None,
     ) -> ReActAgentRunOutput:
-        run_input = to_model(ReActAgentRunInput, run_input)
-        options = to_model_optional(ReActAgentRunOptions, options)
+        context = self._run_context
+        assert context is not None
 
+        run_input = ReActAgentRunInput(prompt=prompt)
         runner = self.runner(
             self.input,
             (
