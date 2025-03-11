@@ -80,9 +80,17 @@ class Emitter:
         self.context: dict[Any, Any] = context or {}
         self.trace: EventTrace | None = trace
         self.cleanups: list[CleanupFn] = []
-        self.events: dict[str, type] = events or {}
+        self._events: dict[str, type] = events or {}
 
         assert_valid_namespace(self.namespace)
+
+    @property
+    def events(self) -> dict[str, type]:
+        return self._events.copy()
+
+    @events.setter
+    def events(self, new_events: dict[str, type]) -> None:
+        self._events.update(new_events)
 
     @staticmethod
     @functools.cache
