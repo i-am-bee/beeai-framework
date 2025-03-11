@@ -12,9 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import Generic, TypeVar
+from typing import Generic
 
 from pydantic import BaseModel, InstanceOf
+from typing_extensions import TypeVar
 
 from beeai_framework.errors import FrameworkError
 from beeai_framework.workflows.types import WorkflowRun

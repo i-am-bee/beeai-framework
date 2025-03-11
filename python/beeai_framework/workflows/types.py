@@ -14,9 +14,10 @@
 
 from collections.abc import Callable
 from dataclasses import field
-from typing import Any, Generic, Literal, TypeVar
+from typing import Any, Generic, Literal
 
 from pydantic import BaseModel
+from typing_extensions import TypeVar
 
 from beeai_framework.cancellation import AbortSignal
 from beeai_framework.utils.types import MaybeAsync
