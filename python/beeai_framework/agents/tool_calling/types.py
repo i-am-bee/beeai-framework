@@ -32,4 +32,5 @@ class ToolCallingAgentRunOutput(BaseModel):
 
 class ToolCallingAgentRunState(BaseModel):
     result: InstanceOf[AssistantMessage] | None = None
+    memory: InstanceOf[BaseMemory]
     iteration: int

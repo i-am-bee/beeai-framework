@@ -20,6 +20,7 @@ from pydantic import BaseModel
 
 from beeai_framework.agents import AgentError, AgentExecutionConfig
 from beeai_framework.agents.base import BaseAgent
+from beeai_framework.agents.tool_calling.events import tool_calling_agent_event_types
 from beeai_framework.agents.tool_calling.types import (
     ToolCallingAgentRunOutput,
     ToolCallingAgentRunState,
@@ -68,24 +69,23 @@ class ToolCallingAgent(BaseAgent[ToolCallingAgentRunOutput]):
         execution_config = execution or AgentExecutionConfig()
 
         async def handler(context: RunContext) -> ToolCallingAgentRunOutput:
-            memory = UnconstrainedMemory()
-            await memory.add(SystemMessage(self._templates.system.render()))
-            await memory.add_many(self.memory.messages)
+            state = ToolCallingAgentRunState(memory=UnconstrainedMemory(), result=None, iteration=0)
+            await state.memory.add(SystemMessage(self._templates.system.render()))
+            await state.memory.add_many(self.memory.messages)
             if prompt is not None:
-                await memory.add(UserMessage(prompt))
+                await state.memory.add(UserMessage(prompt))
 
-            state = ToolCallingAgentRunState(result=None, iteration=0)
             while state.result is None:
                 state.iteration += 1
                 if execution_config.max_iterations and state.iteration > execution_config.max_iterations:
                     raise AgentError(f"Agent was not able to resolve the task in {state.iteration} iterations.")
 
                 await context.emitter.emit(
-                    "start_iteration",
+                    "start",
                     {"state": state.model_dump()},
                 )
-                response = await self._llm.create(messages=memory.messages, tools=list(self._tools), stream=False)
-                await memory.add_many(response.messages)
+                response = await self._llm.create(messages=state.memory.messages, tools=list(self._tools), stream=False)
+                await state.memory.add_many(response.messages)
 
                 tool_call_messages = response.get_tool_calls()
                 for tool_call in tool_call_messages:
@@ -97,7 +97,7 @@ class ToolCallingAgent(BaseAgent[ToolCallingAgentRunOutput]):
                     tool_response = await tool.run(tool_input).context(
                         {"state": state.model_dump(), "tool_call_msg": tool_call}
                     )
-                    await memory.add(
+                    await state.memory.add(
                         ToolMessage(
                             MessageToolResultContent(
                                 result=tool_response.get_text_content(),
@@ -107,27 +107,31 @@ class ToolCallingAgent(BaseAgent[ToolCallingAgentRunOutput]):
                         )
                     )
 
+                # handle empty messages for some models
                 text_messages = response.get_text_messages()
-                await context.emitter.emit(
-                    "end_iteration",
-                    {"state": state.model_dump()},
-                )
-
                 if not tool_call_messages and not text_messages:
-                    await memory.add(AssistantMessage("\n"))  # handle empty messages for some models
+                    await state.memory.add(AssistantMessage("\n", {"tempMessage": True}))
+                else:
+                    await state.memory.delete_many(
+                        [msg for msg in state.memory.messages if msg.meta.get("tempMessage", False)]
+                    )
 
                 if text_messages:
                     state.result = AssistantMessage.from_chunks(text_messages)
 
-            await self.memory.add_many(memory.messages[1:])
-            return ToolCallingAgentRunOutput(result=state.result, memory=memory)
+                await context.emitter.emit(
+                    "success",
+                    {"state": state.model_dump()},
+                )
+
+            await self.memory.add_many(state.memory.messages[1:])
+            return ToolCallingAgentRunOutput(result=state.result, memory=state.memory)
 
         return self._to_run(handler, signal=None, run_params={"prompt": prompt, "execution": execution})
 
     def _create_emitter(self) -> Emitter:
         return Emitter.root().child(
-            namespace=["agent", "tool_calling"],
-            creator=self,
+            namespace=["agent", "tool_calling"], creator=self, events=tool_calling_agent_event_types
         )
 
     @property
