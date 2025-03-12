@@ -15,7 +15,7 @@ async def main() -> None:
     for prompt in reader:
         # Run the agent and observe events
         response = await agent.run(
-            f'{{"messages":[{{"role":"user","content":"{prompt}"}}],"config":{{"tools":["weather","wikipedia","search"]}}}}'
+            f'{{"messages":[{{"role":"user","content":"{prompt}"}}],"config":{{"tools":["weather","search"]}}}}'
         ).on(
             "update",
             lambda data, event: (

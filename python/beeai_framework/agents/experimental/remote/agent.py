@@ -69,18 +69,6 @@ class RemoteAgent(BaseAgent[RemoteAgentRunInput, RemoteAgentRunOptions, RemoteAg
         if not self.session:
             await self.connect_to_server()
 
-        # try:
-        # input = json.loads(run_input.get("prompt"))
-        # response = await self.session.run_agent(self.input.agent, input)
-
-        # output = response.output
-        # await context.emitter.emit("update", output)
-        # await self.exit_stack.aclose()
-        # final_message = AssistantMessage("output")
-        # return RemoteAgentRunOutput(result=final_message)
-        # except Exception as e:
-        #     print(e)§
-
         try:
             input = json.loads(run_input.get("prompt"))
             async for message in send_request_with_notifications(
@@ -125,9 +113,9 @@ class RemoteAgent(BaseAgent[RemoteAgentRunInput, RemoteAgentRunOptions, RemoteAg
         self,
     ) -> None:
         try:
-            stdio_transport = await self.exit_stack.enter_async_context(sse_client(url=self.input.url))
-            self.stdio, self.write = stdio_transport
-            self.session = await self.exit_stack.enter_async_context(ClientSession(self.stdio, self.write))
+            sse_transport = await self.exit_stack.enter_async_context(sse_client(url=self.input.url))
+            self.read, self.write = sse_transport
+            self.session = await self.exit_stack.enter_async_context(ClientSession(self.read, self.write))
             await self.session.initialize()
             response = await self.session.list_agents()
             agents = response.agents
