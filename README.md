@@ -23,7 +23,7 @@ Build production-ready multi-agent systems in [Python](/python) or [TypeScript](
 | 2025-01-28 | TypeScript    | Added support for DeepSeek R1, check out the [Competitive Analysis Workflow example](/typescript/examples/workflows/competitive-analysis). |
 | 2025-01-09 | TypeScript    | Introduced [Workflows](/typescript/docs/workflows.md), a way of building multi-agent systems. Added support for [Model Context Protocol](/typescript/docs/tools.md#using-the-mcptool-class). |
 | 2024-12-09 | TypeScript    | Added support for LLaMa 3.3. See [multi-agent workflow example using watsonx](/typescript/examples/workflows/multiAgents.ts) or explore [other available providers](/typescript/docs/backend.md#providers-implementations).        |
-| 2024-11-21 | TypeScript    | Added an experimental [Streamlit agent](typescript/examples/agents/experimental/streamlit.ts). |
+| 2024-11-21 | TypeScript    | Added an experimental [Streamlit agent](/typescript/examples/agents/experimental/streamlit.ts). |
 
 
 For a full changelog, see our [releases page](https://github.com/i-am-bee/beeai-framework/releases).

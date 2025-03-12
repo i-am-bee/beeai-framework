@@ -3,7 +3,7 @@
 > [!NOTE]  
 > **COMING SOON! 🚀 Serialization is not yet implemented in Python, but is available today in [TypeScript](/typescript/docs/serialization.md)**
 
-<!-- TOC -->
+<!-- TOC [Removed until content ready to avoid broken links]
 ## Table of Contents
 - [Overview](#overview)
 - [Core Concepts](#core-concepts)
@@ -17,7 +17,7 @@
     - [Serialization Context](#serialization-context)
     - [Handling Unknown Classes](#handling-unknown-classes)
 - [Examples](#examples)
-<!-- /TOC -->
+/TOC -->
 
 ---
 

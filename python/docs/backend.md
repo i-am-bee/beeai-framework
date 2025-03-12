@@ -12,7 +12,7 @@
   - [Structured Generation](#structured-generation)
   - [Tool Calling](#tool-calling)
 - [Embedding Model](#embedding-model)
-  - [Embedding Model Configuration](#embedding-model-configuration)
+  - [Embedding Model Configuration](#embedding-model-initialization)
   - [Embedding Model Usage](#embedding-model-usage)
 - [Troubleshooting](#troubleshooting)
 - [Examples](#examples)

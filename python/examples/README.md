@@ -9,9 +9,8 @@ This repository contains examples demonstrating the usage of the BeeAI Framework
 3. [Helpers](#helpers)
 4. [Backend](#backend)
 5. [Memory](#memory)
-6. [Serialization](#serialization)
-7. [Templates](#templates)
-8. [Tools](#tools)
+6. [Templates](#templates)
+7. [Tools](#tools)
 
 ## Agents
 

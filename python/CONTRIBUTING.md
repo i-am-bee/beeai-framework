@@ -6,7 +6,7 @@ BeeAI Python is an open-source project committed to bringing LLM agents to peopl
 
 If you are new to BeeAI contributing, we recommend you do the following before diving into the code:
 
-- Read [Code of Conduct](./CODE_OF_CONDUCT.md).
+- Read [Code of Conduct](/CODE_OF_CONDUCT.md).
 
 ## Style and lint
 
@@ -17,7 +17,7 @@ We use the following libs to check the Python code:
 - [Black](https://black.readthedocs.io/) - Code Formatter
 - [Ruff](https://beta.ruff.rs/docs/) - Fast Python linter
 
-Simple [scripts for Poetry](dev_tools/scripts.py) are included to help you to review your changes and commit them.
+Simple scripts for [Poetry](#poetry) are included to help you to review your changes and commit them.
 
 ## Issues and pull requests
 

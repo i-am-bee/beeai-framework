@@ -9,7 +9,7 @@ community in this goal.
 If you are new to Bee contributing, we recommend you do the following before diving into the code:
 
 - Read [Bee Overview](/typescript/docs/overview.md) to understand core concepts.
-- Read [Code of Conduct](./CODE_OF_CONDUCT.md).
+- Read [Code of Conduct](/CODE_OF_CONDUCT.md).
 
 ## Style and lint
 
