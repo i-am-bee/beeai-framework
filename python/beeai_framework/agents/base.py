@@ -95,3 +95,6 @@ class BaseAgent(ABC, Generic[TInput, TOptions, TOutput]):
             signal=signal,
             run_params=run_params,
         )
+
+
+AnyAgent = BaseAgent[Any, Any, Any]

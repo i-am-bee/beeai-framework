@@ -14,6 +14,7 @@
 
 from abc import ABC, abstractmethod
 from collections.abc import AsyncGenerator
+from functools import cached_property
 from typing import Any, Literal, TypeVar
 
 from pydantic import BaseModel, Field
@@ -47,7 +48,6 @@ logger = Logger(__name__)
 
 
 class ChatModel(ABC):
-    emitter: Emitter
     parameters: ChatModelParameters
 
     @property
@@ -62,7 +62,13 @@ class ChatModel(ABC):
 
     def __init__(self) -> None:
         self.parameters = ChatModelParameters()
-        self.emitter = Emitter.root().child(
+
+    @cached_property
+    def emitter(self) -> Emitter:
+        return self._create_emitter()
+
+    def _create_emitter(self) -> Emitter:
+        return Emitter.root().child(
             namespace=["backend", self.provider_id, "chat"],
             creator=self,
             events=chat_model_event_types,
@@ -199,7 +205,7 @@ IMPORTANT: You MUST answer with a JSON object that matches the JSON schema above
         return RunContext.enter(
             self,
             handler,
-            signal=model_input.abort_signal,
+            signal=abort_signal,
             run_params=model_input.model_dump(),
         )
 

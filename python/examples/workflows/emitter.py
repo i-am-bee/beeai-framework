@@ -34,8 +34,8 @@ def print_event(event_data: dict[str, Any], event_meta: EventMeta) -> None:
             assert isinstance(run, WorkflowRun)
             print(f"Workflow : Completed step: {run.steps[-1].name}, Result: {run.state.result}")
             print(f"Workflow : Next step: {event_data.get('next')}")
-        else:
-            print("Workflow : Result: ", event_data["result"])
+        elif isinstance(event_data, WorkflowRun):
+            print("Workflow : Result: ", event_data.result)
     elif event_meta.name == "finish":
         print("Workflow : Finished")
 

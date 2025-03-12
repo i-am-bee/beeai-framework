@@ -140,6 +140,7 @@ class Tool(Generic[TInput, TRunOptions, TOutput], ABC):
         return RunContext.enter(
             self,
             handler,
+            signal=options.signal if options else None,
             run_params={"input": input, "options": options},
         )
 

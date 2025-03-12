@@ -120,6 +120,7 @@ class ReActAgent(BaseAgent[ReActAgentRunInput, ReActAgentRunOptions, ReActAgentR
                 self.input,
                 ReActAgentRunOptions(
                     execution=self.input.execution
+                    or execution
                     or AgentExecutionConfig(
                         max_retries_per_step=3,
                         total_max_retries=20,
