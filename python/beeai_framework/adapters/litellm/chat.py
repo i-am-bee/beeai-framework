@@ -25,7 +25,7 @@ from litellm import (  # type: ignore
     get_supported_openai_params,
 )
 from litellm.types.utils import StreamingChoices
-from openai.lib._pydantic import to_strict_json_schema  # TODO: reimplement later on
+from openai.lib._pydantic import to_strict_json_schema  # TODO: look for an alternative or reimplement
 
 from beeai_framework.adapters.litellm._patch import _patch_litellm_cache
 from beeai_framework.backend.chat import (
@@ -161,6 +161,7 @@ class LiteLLMChatModel(ChatModel, ABC):
                     "function": {
                         "name": tool.name,
                         "description": tool.description,
+                        # OpenAI API requires more strict schema in order to perform well and pass the validation.
                         "parameters": to_strict_json_schema(tool.input_schema),
                     },
                 }
