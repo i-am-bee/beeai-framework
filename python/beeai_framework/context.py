@@ -18,12 +18,9 @@ import contextlib
 import uuid
 from collections.abc import Awaitable, Callable, Generator
 from contextvars import ContextVar
-from dataclasses import dataclass
 from datetime import UTC, datetime
 from types import NoneType
-from typing import Any, Generic, Self, TypeVar
-
-from pydantic import BaseModel
+from typing import Any, Generic, Protocol, Self, TypeVar
 
 from beeai_framework.cancellation import AbortController, AbortSignal, register_signals
 from beeai_framework.emitter import Callback, Emitter, EmitterOptions, EventTrace, Matcher
@@ -39,14 +36,10 @@ logger = Logger(__name__)
 storage: ContextVar["RunContext"] = ContextVar("storage")
 
 
-@dataclass
-class RunInstance:
-    emitter: Emitter
-
-
-class RunContextInput(BaseModel):
-    params: Any
-    signal: AbortSignal | None = None
+class RunInstance(Protocol):
+    @property
+    def emitter(self) -> Emitter:
+        pass
 
 
 class Run(Generic[R]):
@@ -89,12 +82,18 @@ class Run(Generic[R]):
         self.run_context.emitter.context.update(context)
 
 
-class RunContext(RunInstance):
-    def __init__(self, *, instance: RunInstance, context_input: RunContextInput, parent: Self | None = None) -> None:
+class RunContext:
+    def __init__(
+        self,
+        instance: RunInstance,
+        *,
+        parent: Self | None = None,
+        signal: AbortSignal | None,
+        run_params: dict[str, Any] | None = None,
+    ) -> None:
         self.instance = instance
-        self.context_input = context_input
         self.created_at = datetime.now(tz=UTC)
-        self.run_params = context_input.params
+        self.run_params = run_params or {}
         self.run_id = str(uuid.uuid4())
         self.parent_id = parent.run_id if parent else None
         self.group_id: str = parent.group_id if parent else str(uuid.uuid4())
@@ -116,8 +115,8 @@ class RunContext(RunInstance):
         extra_signals = []
         if parent:
             extra_signals.append(parent.signal)
-        if context_input.signal:
-            extra_signals.append(context_input.signal)
+        if signal:
+            extra_signals.append(signal)
         register_signals(self.controller, extra_signals)
 
     @property
@@ -126,14 +125,18 @@ class RunContext(RunInstance):
 
     def destroy(self) -> None:
         self.emitter.destroy()
-        self.controller.abort("Context destroyed.")
+        self.controller.abort("Context has been destroyed.")
 
     @staticmethod
     def enter(
-        instance: RunInstance, context_input: RunContextInput, fn: Callable[["RunContext"], Awaitable[R]]
+        instance: RunInstance,
+        fn: Callable[["RunContext"], Awaitable[R]],
+        *,
+        signal: AbortSignal | None = None,
+        run_params: dict[str, Any] | None = None,
     ) -> Run[R]:
         parent = storage.get(None)
-        context = RunContext(instance=instance, context_input=context_input, parent=parent)
+        context = RunContext(instance, parent=parent, signal=signal, run_params=run_params)
 
         async def handler() -> R:
             emitter = context.emitter.child(

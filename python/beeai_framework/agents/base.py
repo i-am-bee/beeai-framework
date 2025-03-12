@@ -14,7 +14,7 @@
 
 from abc import ABC, abstractmethod
 from collections.abc import Awaitable, Callable
-from functools import cached_property, wraps
+from functools import cached_property
 from typing import Any, Generic, ParamSpec, TypeVar
 
 from pydantic import BaseModel
@@ -22,7 +22,7 @@ from pydantic import BaseModel
 from beeai_framework.agents.errors import AgentError
 from beeai_framework.agents.types import AgentMeta
 from beeai_framework.cancellation import AbortSignal
-from beeai_framework.context import Run, RunContext, RunContextInput, RunInstance
+from beeai_framework.context import Run, RunContext
 from beeai_framework.emitter import Emitter
 from beeai_framework.memory import BaseMemory
 
@@ -33,7 +33,9 @@ P = ParamSpec("P")
 
 
 class BaseAgent(ABC, Generic[TInput, TOptions, TOutput]):
-    _run_context: RunContext | None = None
+    def __init__(self) -> None:
+        super().__init__()
+        self._is_running = False
 
     @abstractmethod
     def _create_emitter(self) -> Emitter:
@@ -68,38 +70,28 @@ class BaseAgent(ABC, Generic[TInput, TOptions, TOutput]):
             tools=[],
         )
 
-
-def run_context(fn: Callable[P, Awaitable[TOutput]]) -> Callable[P, Run[TOutput]]:
-    @wraps(fn)
-    def wrapper(*args: P.args, **kwargs: P.kwargs) -> Run[TOutput]:
-        self = args[0]
-        assert isinstance(self, BaseAgent)
-
-        if self._run_context:
+    def _to_run(
+        self,
+        fn: Callable[[RunContext], Awaitable[TOutput]],
+        *,
+        signal: AbortSignal | None,
+        run_params: dict[str, Any] | None = None,
+    ) -> Run[TOutput]:
+        if self._is_running:
             raise RuntimeError("Agent is already running!")
 
         async def handler(context: RunContext) -> TOutput:
             try:
-                self._run_context = context
-                return await fn(*args, **kwargs)
+                self._is_running = True
+                return await fn(context)
             except Exception as e:
                 raise AgentError.ensure(e)
             finally:
-                self._run_context = None
-
-        signal = kwargs.get("signal")
-        assert isinstance(signal, AbortSignal | None)
+                self._is_running = False
 
         return RunContext.enter(
-            RunInstance(emitter=self.emitter),
-            RunContextInput(
-                signal=signal,
-                params=(*args, kwargs),
-            ),
+            self,
             handler,
+            signal=signal,
+            run_params=run_params,
         )
-
-    return wrapper
-
-
-AnyAgent = BaseAgent[Any, Any, Any]

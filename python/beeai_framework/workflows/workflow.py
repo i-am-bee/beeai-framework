@@ -19,7 +19,7 @@ from typing import ClassVar, Final, Generic, Literal
 from pydantic import BaseModel
 from typing_extensions import TypeVar
 
-from beeai_framework.context import Run, RunContext, RunContextInput, RunInstance
+from beeai_framework.context import Run, RunContext, RunInstance
 from beeai_framework.emitter.emitter import Emitter
 from beeai_framework.errors import FrameworkError
 from beeai_framework.utils.models import ModelLike, check_model, to_model, to_model_optional

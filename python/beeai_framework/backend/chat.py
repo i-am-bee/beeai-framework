@@ -32,7 +32,7 @@ from beeai_framework.backend.types import (
 )
 from beeai_framework.backend.utils import load_model, parse_broken_json, parse_model
 from beeai_framework.cancellation import AbortController, AbortSignal
-from beeai_framework.context import Run, RunContext, RunContextInput, RunInstance
+from beeai_framework.context import Run, RunContext
 from beeai_framework.emitter import Emitter
 from beeai_framework.logger import Logger
 from beeai_framework.retryable import Retryable, RetryableConfig, RetryableContext, RetryableInput
@@ -168,7 +168,7 @@ IMPORTANT: You MUST answer with a JSON object that matches the JSON schema above
             **kwargs,
         )
 
-        async def run_create(context: RunContext) -> ChatModelOutput:
+        async def handler(context: RunContext) -> ChatModelOutput:
             try:
                 await context.emitter.emit("start", {"input": model_input})
                 chunks: list[ChatModelOutput] = []
@@ -197,9 +197,10 @@ IMPORTANT: You MUST answer with a JSON object that matches the JSON schema above
                 await context.emitter.emit("finish", None)
 
         return RunContext.enter(
-            RunInstance(emitter=self.emitter),
-            RunContextInput(params=[model_input], signal=model_input.abort_signal),
-            run_create,
+            self,
+            handler,
+            signal=model_input.abort_signal,
+            run_params=model_input.model_dump(),
         )
 
     def create_structure(
@@ -214,13 +215,14 @@ IMPORTANT: You MUST answer with a JSON object that matches the JSON schema above
             schema=schema, messages=messages, abort_signal=abort_signal, max_retries=max_retries
         )
 
-        async def run_structure(context: RunContext) -> ChatModelStructureOutput:
+        async def handler(context: RunContext) -> ChatModelStructureOutput:
             return await self._create_structure(model_input, context)
 
         return RunContext.enter(
-            RunInstance(emitter=self.emitter),
-            RunContextInput(params=[model_input], signal=model_input.abort_signal),
-            run_structure,
+            self,
+            handler,
+            signal=abort_signal,
+            run_params=model_input.model_dump(),
         )
 
     def config(self, chat_config: ChatConfig) -> None:
