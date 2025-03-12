@@ -9,7 +9,6 @@ from dotenv import load_dotenv
 from mcp import ClientSession, StdioServerParameters
 from mcp.client.stdio import stdio_client
 
-from beeai_framework import Tool
 from beeai_framework.agents.react.agent import ReActAgent
 from beeai_framework.agents.types import AgentExecutionConfig
 from beeai_framework.backend.chat import ChatModel
@@ -19,6 +18,7 @@ from beeai_framework.errors import FrameworkError
 from beeai_framework.logger import Logger
 from beeai_framework.memory.token_memory import TokenMemory
 from beeai_framework.tools.mcp_tools import MCPTool
+from beeai_framework.tools.tool import AnyTool
 from examples.helpers.io import ConsoleReader
 
 # Load environment variables
@@ -65,7 +65,7 @@ async def create_agent() -> ReActAgent:
     )
 
     # Configure tools
-    tools: list[Tool] = [await slack_tool()]
+    tools: list[AnyTool] = [await slack_tool()]
 
     # Create agent with memory and tools
     agent = ReActAgent(llm=llm, tools=tools, memory=TokenMemory(llm))

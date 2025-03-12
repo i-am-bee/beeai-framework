@@ -14,10 +14,11 @@
 
 
 from collections.abc import Iterable
+from typing import Any
 
-from beeai_framework.backend import Message, SystemMessage
+from beeai_framework.backend import SystemMessage
 from beeai_framework.backend.chat import ChatModel
-from beeai_framework.backend.message import UserMessage
+from beeai_framework.backend.message import AnyMessage, UserMessage
 from beeai_framework.memory.base_memory import BaseMemory
 
 
@@ -25,28 +26,28 @@ class SummarizeMemory(BaseMemory):
     """Memory implementation that summarizes conversations."""
 
     def __init__(self, model: ChatModel) -> None:
-        self._messages: list[Message] = []
+        self._messages: list[AnyMessage] = []
         self.model = model
 
     @property
-    def messages(self) -> list[Message]:
+    def messages(self) -> list[AnyMessage]:
         return self._messages
 
-    async def add(self, message: Message, index: int | None = None) -> None:
+    async def add(self, message: AnyMessage, index: int | None = None) -> None:
         """Add a message and trigger summarization if needed."""
         messages_to_summarize = [*self._messages, message]
-        summary = self._summarize_messages(messages_to_summarize)
+        summary = await self._summarize_messages(messages_to_summarize)
 
         self._messages = [SystemMessage(summary)]
 
-    async def add_many(self, messages: Iterable[Message], start: int | None = None) -> None:
+    async def add_many(self, messages: Iterable[AnyMessage], start: int | None = None) -> None:
         """Add multiple messages and summarize."""
         messages_to_summarize = self._messages + list(messages)
         summary = await self._summarize_messages(messages_to_summarize)
 
         self._messages = [SystemMessage(summary)]
 
-    async def _summarize_messages(self, messages: list[Message]) -> str:
+    async def _summarize_messages(self, messages: list[AnyMessage]) -> str:
         """Summarize a list of messages using the LLM."""
         if not messages:
             return ""
@@ -64,7 +65,7 @@ Summary:""".format("\n".join([f"{msg.role}: {msg.text}" for msg in messages]))
 
         return response.messages[0].get_texts()[0].text
 
-    async def delete(self, message: Message) -> bool:
+    async def delete(self, message: AnyMessage) -> bool:
         """Delete a message from memory."""
         try:
             self._messages.remove(message)
@@ -76,10 +77,10 @@ Summary:""".format("\n".join([f"{msg.role}: {msg.text}" for msg in messages]))
         """Clear all messages from memory."""
         self._messages.clear()
 
-    def create_snapshot(self) -> dict:
+    def create_snapshot(self) -> dict[str, Any]:
         """Create a serializable snapshot of current state."""
         return {"messages": self._messages.copy()}
 
-    def load_snapshot(self, state: dict) -> None:
+    def load_snapshot(self, state: dict[str, Any]) -> None:
         """Restore state from a snapshot."""
         self._messages = state["messages"].copy()

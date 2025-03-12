@@ -10,6 +10,7 @@ import pathlib
 import random
 import sys
 import traceback
+from typing import Any
 
 import langchain
 from langchain_community.tools.file_management.list_dir import ListDirectoryTool
@@ -22,7 +23,7 @@ from beeai_framework.errors import FrameworkError
 
 async def directory_list_tool() -> None:
     list_dir_tool = ListDirectoryTool()
-    tool = LangChainTool(list_dir_tool)
+    tool = LangChainTool[Any](list_dir_tool)
     dir_path = str(pathlib.Path(__file__).parent.resolve())
     response = await tool.run({"dir_path": dir_path})
     print(f"Listing contents of {dir_path}:\n{response}")
@@ -46,7 +47,7 @@ async def custom_structured_tool() -> None:
         return_direct=True,
     )
 
-    tool = LangChainTool(generate_random_number)
+    tool = LangChainTool[Any](generate_random_number)
     response = await tool.run({"min": 1, "max": 10})
 
     print(f"Your random number: {response}")

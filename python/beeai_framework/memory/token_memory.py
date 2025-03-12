@@ -17,15 +17,15 @@ from copy import copy
 from math import ceil
 from typing import Any
 
-from beeai_framework.backend import Message
+from beeai_framework.backend.message import AnyMessage
 from beeai_framework.memory.base_memory import BaseMemory
 
 
-def simple_estimate(msg: Message) -> int:
+def simple_estimate(msg: AnyMessage) -> int:
     return ceil(len(msg.text) / 4)
 
 
-async def simple_tokenize(msgs: list[Message]) -> int:
+def simple_tokenize(msgs: list[AnyMessage]) -> int:
     return sum(map(simple_estimate, msgs))
 
 
@@ -38,36 +38,36 @@ class TokenMemory(BaseMemory):
         max_tokens: int | None = None,
         sync_threshold: float = 0.25,
         capacity_threshold: float = 0.75,
-        handlers: dict | None = None,
+        handlers: dict[str, Any] | None = None,
     ) -> None:
-        self._messages: list[Message] = []
+        self._messages: list[AnyMessage] = []
         self.llm = llm
         self.max_tokens = max_tokens
         self.threshold = capacity_threshold
         self.sync_threshold = sync_threshold
-        self._tokens_by_message = {}
+        self._tokens_by_message: dict[str, Any] = {}
 
         self.handlers = {
+            "tokenize": (handlers.get("tokenize", simple_tokenize) if handlers else simple_tokenize),
             "estimate": (handlers.get("estimate", self._default_estimate) if handlers else self._default_estimate),
             "removal_selector": (
                 handlers.get("removal_selector", lambda msgs: msgs[0]) if handlers else lambda msgs: msgs[0]
             ),
-            "tokenize": (handlers.get("tokenize", simple_tokenize) if handlers else simple_tokenize),
         }
 
         if not 0 <= self.threshold <= 1:
             raise ValueError('"capacity_threshold" must be a number in range (0, 1)')
 
     @staticmethod
-    def _default_estimate(msg: Message) -> int:
+    def _default_estimate(msg: AnyMessage) -> int:
         return int((len(msg.role) + len(msg.text)) / 4)
 
-    def _get_message_key(self, message: Message) -> str:
+    def _get_message_key(self, message: AnyMessage) -> str:
         """Generate a unique key for a message."""
         return f"{message.role}:{message.text}"
 
     @property
-    def messages(self) -> list[Message]:
+    def messages(self) -> list[AnyMessage]:
         return self._messages
 
     @property
@@ -85,7 +85,7 @@ class TokenMemory(BaseMemory):
             cache = self._tokens_by_message.get(key, {})
             if cache.get("dirty", True):
                 try:
-                    result = await self.handlers["tokenize"]([msg])
+                    result = self.handlers["tokenize"]([msg])  # type: ignore
                     self._tokens_by_message[key] = {
                         "tokens_count": result,
                         "dirty": False,
@@ -93,16 +93,16 @@ class TokenMemory(BaseMemory):
                 except Exception as e:
                     print(f"Error tokenizing message: {e!s}")
                     self._tokens_by_message[key] = {
-                        "tokens_count": self.handlers["estimate"](msg),
+                        "tokens_count": self.handlers["estimate"](msg),  # type: ignore
                         "dirty": True,
                     }
 
-    async def add(self, message: Message, index: int | None = None) -> None:
+    async def add(self, message: AnyMessage, index: int | None = None) -> None:
         index = len(self._messages) if index is None else max(0, min(index, len(self._messages)))
         self._messages.insert(index, message)
 
         key = self._get_message_key(message)
-        estimated_tokens = self.handlers["estimate"](message)
+        estimated_tokens = self.handlers["estimate"](message)  # type: ignore
         self._tokens_by_message[key] = {
             "tokens_count": estimated_tokens,
             "dirty": True,
@@ -112,7 +112,7 @@ class TokenMemory(BaseMemory):
         if len(self._messages) > 0 and dirty_count / len(self._messages) >= self.sync_threshold:
             await self.sync()
 
-    async def delete(self, message: Message) -> bool:
+    async def delete(self, message: AnyMessage) -> bool:
         try:
             key = self._get_message_key(message)
             self._messages.remove(message)

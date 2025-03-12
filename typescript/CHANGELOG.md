@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.1.6](https://github.com/i-am-bee/beeai-framework/compare/typescript_v0.1.5...typescript_v0.1.6) (2025-03-12)
+
+### Features
+
+- **agents:** add remote agent ([#524](https://github.com/i-am-bee/beeai-framework/issues/524)) ([cda7c8d](https://github.com/i-am-bee/beeai-framework/commit/cda7c8d4efad7d6297701402fd3fb0dcad14a995)), closes [i-am-bee/beeai#81](https://github.com/i-am-bee/beeai/issues/81)
+
+### Bug Fixes
+
+- **backend:** handle non-object structured generation ([#577](https://github.com/i-am-bee/beeai-framework/issues/577)) ([fae7d95](https://github.com/i-am-bee/beeai-framework/commit/fae7d9501f7c1511ae0afe0ffe9864eb22abb234))
+
 ## [0.1.5](https://github.com/i-am-bee/beeai-framework/compare/typescript_v0.1.4...typescript_v0.1.5) (2025-03-11)
 
 ### Features

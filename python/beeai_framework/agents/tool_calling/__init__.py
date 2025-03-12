@@ -12,24 +12,3 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from pydantic import BaseModel, InstanceOf
-
-from beeai_framework.cancellation import AbortSignal
-from beeai_framework.tools.tool import AnyTool
-
-
-class BaseAgentRunOptions(BaseModel):
-    signal: AbortSignal | None = None
-
-
-class AgentExecutionConfig(BaseModel):
-    total_max_retries: int | None = None
-    max_retries_per_step: int | None = None
-    max_iterations: int | None = None
-
-
-class AgentMeta(BaseModel):
-    name: str
-    description: str
-    tools: list[InstanceOf[AnyTool]]
-    extra_description: str | None = None

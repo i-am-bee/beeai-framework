@@ -90,11 +90,11 @@ class SlidingCache(BaseCache[T], Generic[T]):
             return True
         return False
 
-    async def clear(self) -> None:
+    def clear(self) -> None:
         """Clear all items from the cache."""
         self._items.clear()
 
-    async def size(self) -> int:
+    def size(self) -> int:
         """Get the current number of items in the cache."""
         self._evict_expired()
         return len(self._items)

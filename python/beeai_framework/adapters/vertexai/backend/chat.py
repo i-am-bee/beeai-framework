@@ -14,6 +14,7 @@
 
 
 import os
+from typing import Any
 
 from beeai_framework.adapters.litellm.chat import LiteLLMChatModel
 from beeai_framework.backend.constants import ProviderName
@@ -27,7 +28,7 @@ class VertexAIChatModel(LiteLLMChatModel):
     def provider_id(self) -> ProviderName:
         return "vertexai"
 
-    def __init__(self, model_id: str | None = None, settings: dict | None = None) -> None:
+    def __init__(self, model_id: str | None = None, settings: dict[str, Any] | None = None) -> None:
         _settings = settings.copy() if settings is not None else {}
 
         vertexai_project = _settings.get("vertexai_project", os.getenv("VERTEXAI_PROJECT"))

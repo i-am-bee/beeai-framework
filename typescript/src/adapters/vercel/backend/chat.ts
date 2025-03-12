@@ -41,6 +41,7 @@ import { ValueError } from "@/errors.js";
 import { isEmpty, mapToObj, toCamelCase } from "remeda";
 import { FullModelName } from "@/backend/utils.js";
 import { ChatModelError } from "@/backend/errors.js";
+import { ZodArray, ZodEnum } from "zod";
 
 export abstract class VercelChatModel<
   M extends LanguageModelV1 = LanguageModelV1,
@@ -82,14 +83,22 @@ export abstract class VercelChatModel<
     { schema, ...input }: ChatModelObjectInput<T>,
     run: GetRunContext<this>,
   ): Promise<ChatModelObjectOutput<T>> {
+    const inputSchema = schema._input || schema;
+
     const response = await generateObject({
       temperature: 0,
       ...(await this.transformInput(input)),
       schema,
       abortSignal: run.signal,
       model: this.model,
-      output: "object",
       mode: "json",
+      // @ts-expect-error
+      output:
+        inputSchema instanceof ZodArray
+          ? "array"
+          : inputSchema instanceof ZodEnum
+            ? "enum"
+            : "object",
     });
 
     return { object: response.object };

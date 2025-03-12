@@ -40,15 +40,15 @@ from beeai_framework.agents.types import (
 )
 from beeai_framework.backend.chat import ChatModel
 from beeai_framework.backend.message import AssistantMessage, MessageMeta, UserMessage
-from beeai_framework.context import RunContext
+from beeai_framework.cancellation import AbortSignal
+from beeai_framework.context import Run, RunContext
 from beeai_framework.emitter import Emitter
 from beeai_framework.memory import BaseMemory
 from beeai_framework.template import PromptTemplate
 from beeai_framework.tools.tool import AnyTool
-from beeai_framework.utils.models import ModelLike, to_model, to_model_optional
 
 
-class ReActAgent(BaseAgent[ReActAgentRunInput, ReActAgentRunOptions, ReActAgentRunOutput]):
+class ReActAgent(BaseAgent[ReActAgentRunOutput]):
     runner: Callable[..., BaseRunner]
 
     def __init__(
@@ -61,6 +61,7 @@ class ReActAgent(BaseAgent[ReActAgentRunInput, ReActAgentRunOptions, ReActAgentR
         execution: AgentExecutionConfig | None = None,
         stream: bool | None = None,
     ) -> None:
+        super().__init__()
         self.input = ReActAgentInput(
             llm=llm, tools=tools, memory=memory, meta=meta, templates=templates, execution=execution, stream=stream
         )
@@ -68,7 +69,9 @@ class ReActAgent(BaseAgent[ReActAgentRunInput, ReActAgentRunOptions, ReActAgentR
             self.runner = GraniteRunner
         else:
             self.runner = DefaultRunner
-        self.emitter = Emitter.root().child(
+
+    def _create_emitter(self) -> Emitter:
+        return Emitter.root().child(
             namespace=["agent", "react"],
             creator=self,
         )
@@ -105,97 +108,102 @@ class ReActAgent(BaseAgent[ReActAgentRunInput, ReActAgentRunOptions, ReActAgentR
             extra_description="\n".join(extra_description) if len(tools) > 0 else None,
         )
 
-    async def _run(
+    def run(
         self,
-        run_input: ModelLike[ReActAgentRunInput],
-        options: ModelLike[ReActAgentRunOptions] | None,
-        context: RunContext,
-    ) -> ReActAgentRunOutput:
-        run_input = to_model(ReActAgentRunInput, run_input)
-        options = to_model_optional(ReActAgentRunOptions, options)
-
-        runner = self.runner(
-            self.input,
-            (
-                options
-                if options
-                else ReActAgentRunOptions(
+        prompt: str | None = None,
+        *,
+        signal: AbortSignal | None = None,
+        execution: AgentExecutionConfig | None = None,
+    ) -> Run[ReActAgentRunOutput]:
+        async def handler(context: RunContext) -> ReActAgentRunOutput:
+            runner = self.runner(
+                self.input,
+                ReActAgentRunOptions(
                     execution=self.input.execution
-                    or (options.execution if options is not None else None)
+                    or execution
                     or AgentExecutionConfig(
                         max_retries_per_step=3,
                         total_max_retries=20,
                         max_iterations=10,
                     ),
-                    signal=None,
-                )
-            ),
-            context,
-        )
-        await runner.init(run_input)
+                    signal=signal,
+                ),
+                context,
+            )
+            await runner.init(ReActAgentRunInput(prompt=prompt))
 
-        final_message: AssistantMessage | None = None
-        while not final_message:
-            iteration: ReActAgentRunnerIteration = await runner.create_iteration()
+            final_message: AssistantMessage | None = None
+            while not final_message:
+                iteration: ReActAgentRunnerIteration = await runner.create_iteration()
 
-            if iteration.state.tool_name and iteration.state.tool_input is not None:
-                iteration.state.final_answer = None
+                if iteration.state.tool_name and iteration.state.tool_input is not None:
+                    iteration.state.final_answer = None
 
-                tool_result: ReActAgentRunnerToolResult = await runner.tool(
-                    input=ReActAgentRunnerToolInput(
-                        state=iteration.state,
-                        emitter=iteration.emitter,
-                        meta=iteration.meta,
-                        signal=iteration.signal,
+                    tool_result: ReActAgentRunnerToolResult = await runner.tool(
+                        input=ReActAgentRunnerToolInput(
+                            state=iteration.state,
+                            emitter=iteration.emitter,
+                            meta=iteration.meta,
+                            signal=iteration.signal,
+                        )
                     )
-                )
 
-                iteration.state.tool_output = tool_result.output.get_text_content()
-                await runner.memory.add(
-                    AssistantMessage(
-                        content=runner.templates.assistant.render(iteration.state.to_template()),
-                        meta=MessageMeta({"success": tool_result.success}),
+                    iteration.state.tool_output = tool_result.output.get_text_content()
+                    await runner.memory.add(
+                        AssistantMessage(
+                            content=runner.templates.assistant.render(iteration.state.to_template()),
+                            meta=MessageMeta({"success": tool_result.success}),
+                        )
                     )
-                )
 
-                for key in ["partial_update", "update"]:
-                    await iteration.emitter.emit(
-                        key,
-                        {
-                            "data": iteration.state,
-                            "update": {
-                                "key": "tool_output",
-                                "value": tool_result.output,
-                                "parsedValue": tool_result.output,
+                    for key in ["partial_update", "update"]:
+                        await iteration.emitter.emit(
+                            key,
+                            {
+                                "data": iteration.state,
+                                "update": {
+                                    "key": "tool_output",
+                                    "value": tool_result.output,
+                                    "parsedValue": tool_result.output,
+                                },
+                                "meta": {"success": tool_result.success},  # TODO deleted meta
+                                "memory": runner.memory,
                             },
-                            "meta": {"success": tool_result.success},  # TODO deleted meta
+                        )
+
+                if iteration.state.final_answer:
+                    iteration.state.tool_input = None
+                    iteration.state.tool_output = None
+
+                    final_message = AssistantMessage(
+                        content=iteration.state.final_answer, meta=MessageMeta({"createdAt": datetime.now(tz=UTC)})
+                    )
+                    await runner.memory.add(final_message)
+                    await iteration.emitter.emit(
+                        "success",
+                        {
+                            "data": final_message,
+                            "iterations": runner.iterations,
                             "memory": runner.memory,
+                            "meta": iteration.meta,
                         },
                     )
 
-            if iteration.state.final_answer:
-                iteration.state.tool_input = None
-                iteration.state.tool_output = None
-
-                final_message = AssistantMessage(
-                    content=iteration.state.final_answer, meta=MessageMeta({"createdAt": datetime.now(tz=UTC)})
-                )
-                await runner.memory.add(final_message)
-                await iteration.emitter.emit(
-                    "success",
-                    {
-                        "data": final_message,
-                        "iterations": runner.iterations,
-                        "memory": runner.memory,
-                        "meta": iteration.meta,
-                    },
+            if prompt is not None:
+                await self.input.memory.add(
+                    UserMessage(content=prompt, meta=MessageMeta({"createdAt": context.created_at}))
                 )
 
-        if run_input.prompt is not None:
-            await self.input.memory.add(
-                UserMessage(content=run_input.prompt, meta=MessageMeta({"createdAt": context.created_at}))
-            )
+            await self.input.memory.add(final_message)
 
-        await self.input.memory.add(final_message)
+            return ReActAgentRunOutput(result=final_message, iterations=runner.iterations, memory=runner.memory)
 
-        return ReActAgentRunOutput(result=final_message, iterations=runner.iterations, memory=runner.memory)
+        return self._to_run(
+            handler,
+            signal=signal,
+            run_params={
+                "prompt": prompt,
+                "signal": signal,
+                "execution": execution,
+            },
+        )

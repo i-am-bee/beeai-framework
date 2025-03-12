@@ -121,7 +121,7 @@ export class LangChainTool<T extends LCTools.StructuredTool, TOutput = any> exte
     run: GetRunContext<this>,
   ): Promise<JSONToolOutput<TOutput>> {
     const { outputClass = JSONToolOutput } = this.options;
-    const raw = await this.tool.invoke(arg, {
+    const raw = await this.tool.invoke(arg as Record<string, any>, {
       ...options,
       signal: run.signal,
     });
