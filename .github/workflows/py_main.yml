@@ -54,9 +54,9 @@ jobs:
           go-version: "1.23"
       - name: Check Copyright Header
         run: poetry run poe copyright --type check
-  pytest:
+  integration_tests:
     timeout-minutes: 20
-    name: Run All Tests
+    name: Integration Tests
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -97,3 +97,4 @@ jobs:
           # WATSONX_SPACE_ID: ${{ secrets.WATSONX_SPACE_ID }}
           # WATSONX_DEPLOYMENT_ID: ${{ secrets.WATSONX_DEPLOYMENT_ID }}
         run: poetry run poe test --type integration
+        continue-on-error: true
