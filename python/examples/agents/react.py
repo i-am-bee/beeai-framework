@@ -9,11 +9,11 @@ from dotenv import load_dotenv
 
 from beeai_framework import Tool
 from beeai_framework.agents.react.agent import ReActAgent
-from beeai_framework.agents.react.types import ReActAgentRunOptions
+from beeai_framework.agents.types import AgentExecutionConfig
 from beeai_framework.backend.chat import ChatModel
 from beeai_framework.backend.types import ChatModelParameters
-from beeai_framework.emitter import EmitterOptions
 from beeai_framework.emitter.emitter import EventMeta
+from beeai_framework.emitter.types import EmitterOptions
 from beeai_framework.errors import FrameworkError
 from beeai_framework.logger import Logger
 from beeai_framework.memory.token_memory import TokenMemory
@@ -95,10 +95,10 @@ async def main() -> None:
 
     # Main interaction loop with user input
     for prompt in reader:
+        # Run agent with the prompt
         response = await agent.run(
             prompt=prompt,
-            options=ReActAgentRunOptions(),
-            # execution=AgentExecutionConfig(max_retries_per_step=3, total_max_retries=10, max_iterations=20),
+            execution=AgentExecutionConfig(max_retries_per_step=3, total_max_retries=10, max_iterations=20),
         ).on("*", process_agent_events, EmitterOptions(match_nested=False))
 
         reader.write("Agent 🤖 : ", response.result.text)

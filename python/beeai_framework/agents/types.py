@@ -14,7 +14,12 @@
 
 from pydantic import BaseModel, InstanceOf
 
+from beeai_framework.cancellation import AbortSignal
 from beeai_framework.tools.tool import AnyTool
+
+
+class BaseAgentRunOptions(BaseModel):
+    signal: AbortSignal | None = None
 
 
 class AgentExecutionConfig(BaseModel):

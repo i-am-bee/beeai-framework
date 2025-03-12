@@ -17,7 +17,7 @@ from collections.abc import Callable
 from datetime import UTC, datetime
 from typing import Any
 
-from beeai_framework.agents.base import BaseAgent, with_context
+from beeai_framework.agents.base import BaseAgent, run_context
 from beeai_framework.agents.react.runners.base import (
     BaseRunner,
     ReActAgentRunnerIteration,
@@ -67,7 +67,9 @@ class ReActAgent(BaseAgent[ReActAgentRunInput, ReActAgentRunOptions, ReActAgentR
             self.runner = GraniteRunner
         else:
             self.runner = DefaultRunner
-        self.emitter = Emitter.root().child(
+
+    def _create_emitter(self) -> Emitter:
+        return Emitter.root().child(
             namespace=["agent", "react"],
             creator=self,
         )
@@ -104,19 +106,20 @@ class ReActAgent(BaseAgent[ReActAgentRunInput, ReActAgentRunOptions, ReActAgentR
             extra_description="\n".join(extra_description) if len(tools) > 0 else None,
         )
 
-    @with_context
+    @run_context
     async def run(
         self,
-        prompt: str,
+        prompt: str | None = None,
         *,
         signal: AbortSignal | None = None,
         execution: AgentExecutionConfig | None = None,
-        options: ReActAgentRunOptions | None,
     ) -> ReActAgentRunOutput:
         context = self._run_context
         assert context is not None
 
         run_input = ReActAgentRunInput(prompt=prompt)
+        options = ReActAgentRunOptions(execution=execution, signal=signal)
+
         runner = self.runner(
             self.input,
             (

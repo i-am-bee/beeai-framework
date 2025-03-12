@@ -14,13 +14,11 @@ from beeai_framework import (
     UserMessage,
 )
 from beeai_framework.adapters.ollama.backend.chat import OllamaChatModel
-from beeai_framework.agents.react.types import ReActAgentRunInput, ReActAgentRunOptions
+from beeai_framework.agents.base import run_context
 from beeai_framework.agents.types import AgentMeta
 from beeai_framework.backend.chat import ChatModel
-from beeai_framework.context import RunContext
 from beeai_framework.emitter import Emitter
 from beeai_framework.errors import FrameworkError
-from beeai_framework.utils.models import ModelLike, to_model, to_model_optional
 
 
 class State(BaseModel):
@@ -28,32 +26,38 @@ class State(BaseModel):
     final_answer: str
 
 
+class RunInput(BaseModel):
+    message: InstanceOf[Message]
+
+
+class RunOptions(BaseModel):
+    max_retries: int | None = None
+
+
 class RunOutput(BaseModel):
     message: InstanceOf[Message]
     state: State
 
 
-class CustomAgent(BaseAgent[ReActAgentRunInput, ReActAgentRunOptions, RunOutput]):
+class CustomAgent(BaseAgent[RunInput, RunOptions, RunOutput]):
     memory: BaseMemory | None = None
 
     def __init__(self, llm: ChatModel, memory: BaseMemory) -> None:
         self.model = llm
         self.memory = memory
 
-        self.emitter = Emitter.root().child(
+    def _create_emitter(self) -> Emitter:
+        return Emitter.root().child(
             namespace=["agent", "custom"],
             creator=self,
         )
 
-    async def _run(
+    @run_context
+    async def run(
         self,
-        run_input: ModelLike[ReActAgentRunInput],
-        options: ModelLike[ReActAgentRunOptions] | None,
-        context: RunContext,
+        run_input: RunInput,
+        options: RunOptions | None = None,
     ) -> RunOutput:
-        run_input = to_model(ReActAgentRunInput, run_input)
-        options = to_model_optional(ReActAgentRunOptions, options)
-
         class CustomSchema(BaseModel):
             thought: str = Field(description="Describe your thought process before coming with a final answer")
             final_answer: str = Field(description="Here you should provide concise answer to the original question.")
@@ -63,10 +67,10 @@ class CustomAgent(BaseAgent[ReActAgentRunInput, ReActAgentRunOptions, RunOutput]
             messages=[
                 SystemMessage("You are a helpful assistant. Always use JSON format for your responses."),
                 *(self.memory.messages if self.memory is not None else []),
-                UserMessage(run_input.prompt or ""),
+                run_input.message,
             ],
-            max_retries=options.execution.total_max_retries if options and options.execution else None,
-            abort_signal=context.signal,
+            max_retries=options.max_retries if options else None,
+            abort_signal=self._run_context.signal if self._run_context else None,
         )
 
         result = AssistantMessage(response.object["final_answer"])
@@ -92,7 +96,7 @@ async def main() -> None:
         memory=UnconstrainedMemory(),
     )
 
-    response = await agent.run("Why is the sky blue?")
+    response = await agent.run(RunInput(message=UserMessage("Why is the sky blue?")))
     print(response.state)
 
 
