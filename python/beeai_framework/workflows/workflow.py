@@ -14,59 +14,29 @@
 
 import asyncio
 import inspect
-from collections.abc import Awaitable, Callable
-from dataclasses import field
-from typing import Any, ClassVar, Final, Generic, Literal
+from typing import ClassVar, Final, Generic, Literal
 
 from pydantic import BaseModel
 from typing_extensions import TypeVar
 
-from beeai_framework.cancellation import AbortSignal
 from beeai_framework.context import Run, RunContext, RunContextInput, RunInstance
 from beeai_framework.emitter.emitter import Emitter
 from beeai_framework.errors import FrameworkError
 from beeai_framework.utils.models import ModelLike, check_model, to_model, to_model_optional
 from beeai_framework.utils.strings import to_safe_word
-from beeai_framework.utils.types import MaybeAsync
 from beeai_framework.workflows.errors import WorkflowError
+from beeai_framework.workflows.events import WorkflowErrorEvent, WorkflowStartEvent, WorkflowSuccessEvent
+from beeai_framework.workflows.types import (
+    WorkflowHandler,
+    WorkflowRun,
+    WorkflowRunOptions,
+    WorkflowState,
+    WorkflowStepDefinition,
+    WorkflowStepRes,
+)
 
 T = TypeVar("T", bound=BaseModel)
 K = TypeVar("K", default=str)
-
-WorkflowReservedStepName = Literal["__start__", "__self__", "__prev__", "__next__", "__end__"]
-WorkflowHandler = MaybeAsync[[T], K | WorkflowReservedStepName | None]
-
-
-class WorkflowState(BaseModel, Generic[K]):
-    current: K
-    prev: K | None = None
-    next: K | None = None
-
-
-class WorkflowStepRes(BaseModel, Generic[T, K]):
-    name: K
-    state: T
-
-
-class WorkflowStepDefinition(BaseModel, Generic[T, K]):
-    handler: WorkflowHandler[T, K]
-
-
-class WorkflowRunContext(BaseModel, Generic[T, K]):
-    steps: list[WorkflowStepRes[T, K]] = field(default_factory=list)
-    signal: AbortSignal
-    abort: Callable[[Any], None]
-
-
-class WorkflowRun(BaseModel, Generic[T, K]):
-    state: T
-    result: T | None = None
-    steps: list[WorkflowStepRes[T, K]] = field(default_factory=list)
-
-
-class WorkflowRunOptions(BaseModel, Generic[K]):
-    start: K | None = None
-    signal: AbortSignal | None = None
 
 
 class Workflow(Generic[T, K]):
@@ -87,6 +57,11 @@ class Workflow(Generic[T, K]):
         self.emitter = Emitter.root().child(
             namespace=["workflow", to_safe_word(self._name)],
             creator=self,
+            events={
+                "start": WorkflowStartEvent[T, K],
+                "success": WorkflowSuccessEvent[T, K],
+                "error": WorkflowErrorEvent[T, K],
+            },
         )
 
     @property
@@ -141,7 +116,7 @@ class Workflow(Generic[T, K]):
     def run(self, state: ModelLike[T], options: ModelLike[WorkflowRunOptions] | None = None) -> Run[WorkflowRun[T, K]]:
         options = to_model_optional(WorkflowRunOptions, options)
 
-        async def run_workflow(context: RunContext) -> Awaitable[WorkflowRun[T, K]]:
+        async def run_workflow(context: RunContext) -> WorkflowRun[T, K]:
             run = WorkflowRun[T, K](state=to_model(self._schema, state))
             # handlers = WorkflowRunContext(steps=run.steps, signal=context.signal, abort=lambda r: context.abort(r))
             next = self._find_step(self.start_step or self.step_names[0]).current or Workflow.END

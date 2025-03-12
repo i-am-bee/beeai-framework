@@ -12,15 +12,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from typing import Any
 
-def exclude_keys(input: dict, keys: set[str]) -> dict:
+
+def exclude_keys(input: dict[str, Any], keys: set[str]) -> dict[str, Any]:
     return {k: input[k] for k in input.keys() - keys}
 
 
-def include_keys(input: dict, keys: set[str]) -> dict:
+def include_keys(input: dict[str, Any], keys: set[str]) -> dict[str, Any]:
     valid_keys = [k for k in input if k in keys]
     return {k: input[k] for k in valid_keys}
 
 
-def exclude_none(input: dict) -> dict:
+def exclude_none(input: dict[str, Any]) -> dict[str, Any]:
     return {k: v for k, v in input.items() if v is not None}

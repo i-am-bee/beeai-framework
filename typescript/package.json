@@ -219,6 +219,7 @@
     "@aws-sdk/client-bedrock-runtime": "^3.706.0",
     "@elastic/elasticsearch": "^8.0.0",
     "@googleapis/customsearch": "^3.2.0",
+    "@i-am-bee/acp-sdk": "^0.0.4",
     "@langchain/community": ">=0.2.28",
     "@langchain/core": ">=0.2.27",
     "@modelcontextprotocol/sdk": "^1.0.4",
@@ -250,6 +251,9 @@
       "optional": true
     },
     "@googleapis/customsearch": {
+      "optional": true
+    },
+    "@i-am-bee/acp-sdk": {
       "optional": true
     },
     "@ibm-cloud/watsonx-ai": {
@@ -290,6 +294,7 @@
     "@eslint/js": "^9.16.0",
     "@eslint/markdown": "^6.2.1",
     "@googleapis/customsearch": "^3.2.0",
+    "@i-am-bee/acp-sdk": "^0.0.4",
     "@ibm-cloud/watsonx-ai": "^1.5.1",
     "@langchain/community": "0.3.28",
     "@langchain/core": "0.3.37",

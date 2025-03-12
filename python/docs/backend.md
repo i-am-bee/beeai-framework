@@ -49,7 +49,7 @@ The following table depicts supported providers. Each provider requires specific
 | `Groq`           |  ✅  |         | | GROQ_CHAT_MODEL<br>GROQ_API_KEY |
 | `Amazon Bedrock` |  ✅  |         |  `boto3`| AWS_CHAT_MODEL<br>AWS_ACCESS_KEY_ID<br>AWS_SECRET_ACCESS_KEY<br>AWS_REGION_NAME |
 | `Google Vertex`  |  ✅  |         |  | VERTEXAI_CHAT_MODEL<br>VERTEXAI_PROJECT<br>GOOGLE_APPLICATION_CREDENTIALS<br>GOOGLE_APPLICATION_CREDENTIALS_JSON<br>GOOGLE_CREDENTIALS |
-| `Azure OpenAI`   |    |         | Coming soon! | AZURE_OPENAI_CHAT_MODEL<br>AZURE_OPENAI_EMBEDDING_MODEL<br>AZURE_OPENAI_API_KEY<br>AZURE_OPENAI_API_ENDPOINT<br>AZURE_OPENAI_API_RESOURCE<br>AZURE_OPENAI_API_VERSION |
+| `Azure OpenAI`   |  ✅  |         |  | AZURE_OPENAI_CHAT_MODEL<br>AZURE_OPENAI_API_KEY<br>AZURE_OPENAI_API_BASE<br>AZURE_OPENAI_API_VERSION<br>AZURE_AD_TOKEN<br>AZURE_API_TYPE |
 | `Anthropic`      |  ✅  |         |  | ANTHROPIC_CHAT_MODEL<br>ANTHROPIC_API_KEY |
 | `xAI`           |  ✅  |         | | XAI_CHAT_MODEL<br>XAI_API_KEY |
 
@@ -336,7 +336,6 @@ Integrate external tools with your AI model:
 
 <!-- embedme examples/backend/tool_calling.py -->
 
-
 ```py
 import asyncio
 import json
@@ -345,8 +344,9 @@ import sys
 import traceback
 
 from beeai_framework import Message, SystemMessage, Tool, ToolMessage, UserMessage
-from beeai_framework.backend.chat import ChatModel, ChatModelParameters
+from beeai_framework.backend.chat import ChatModel
 from beeai_framework.backend.message import MessageToolResultContent
+from beeai_framework.backend.types import ChatModelParameters
 from beeai_framework.errors import FrameworkError
 from beeai_framework.tools import ToolOutput
 from beeai_framework.tools.search import DuckDuckGoSearchTool

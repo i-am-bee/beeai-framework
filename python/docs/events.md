@@ -39,7 +39,7 @@ The following events can be observed calling `agent.run`.
 - "start" is emitted when the agent begins execution.
     ```py
     {
-        "meta": BeeMeta,
+        "meta": ReActAgentIterationMeta,
         "tools": list[Tool],
         "memory": BaseMemory,
     }
@@ -49,14 +49,14 @@ The following events can be observed calling `agent.run`.
     ```py
     {
         "error": FrameworkError,
-        "meta": BeeMeta,
+        "meta": ReActAgentIterationMeta,
     }
     ```
 
 - "retry" is emitted when the agent is retrying an operation.
     ```py
     {
-        "meta": BeeMeta,
+        "meta": ReActAgentIterationMeta,
     }
     ```
 
@@ -94,7 +94,7 @@ The following events can be observed calling `agent.run`.
             "options": ReActAgentRunOptions,
             "iteration": ReActAgentIterationResult,
         },
-        "meta": BeeMeta,
+        "meta": ReActAgentIterationMeta,
     }
     ```
 
@@ -108,7 +108,7 @@ The following events can be observed calling `agent.run`.
             "iteration": ReActAgentIterationResult,
             "result": ToolOutput,
         },
-        "meta": BeeMeta,
+        "meta": ReActAgentIterationMeta,
     }
     ```
 
@@ -122,7 +122,7 @@ The following events can be observed calling `agent.run`.
             "iteration": ReActAgentIterationResult,
             "error": FrameworkError,
         },
-        "meta": BeeMeta,
+        "meta": ReActAgentIterationMeta,
     }
     ```
 
@@ -130,7 +130,7 @@ The following events can be observed calling `agent.run`.
 
 The following events can be observed when calling `ChatModel.create` or `ChatModel.create_structure`.
 
-- "newToken" is emitted when a new token is generated during streaming.
+- "new_token" is emitted when a new token is generated during streaming.
     ```py
     {
       "value": ChatModelOutput,

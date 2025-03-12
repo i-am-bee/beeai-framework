@@ -114,3 +114,6 @@ def with_context(
         )
 
     return wrapper  # type: ignore
+
+
+AnyAgent = BaseAgent[Any, Any, Any]

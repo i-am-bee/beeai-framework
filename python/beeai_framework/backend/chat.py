@@ -12,16 +12,24 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-
 from abc import ABC, abstractmethod
-from collections.abc import AsyncGenerator, Callable
-from typing import Any, Literal, Self, TypeVar
+from collections.abc import AsyncGenerator
+from typing import Any, Literal, TypeVar
 
-from pydantic import BaseModel, ConfigDict, Field, InstanceOf
+from pydantic import BaseModel, Field
 
 from beeai_framework.backend.constants import ProviderName
 from beeai_framework.backend.errors import ChatModelError
-from beeai_framework.backend.message import AssistantMessage, Message, MessageToolCallContent, SystemMessage
+from beeai_framework.backend.events import chat_model_event_types
+from beeai_framework.backend.message import AnyMessage, SystemMessage
+from beeai_framework.backend.types import (
+    ChatConfig,
+    ChatModelInput,
+    ChatModelOutput,
+    ChatModelParameters,
+    ChatModelStructureInput,
+    ChatModelStructureOutput,
+)
 from beeai_framework.backend.utils import load_model, parse_broken_json, parse_model
 from beeai_framework.cancellation import AbortController, AbortSignal
 from beeai_framework.context import Run, RunContext, RunContextInput, RunInstance
@@ -29,97 +37,13 @@ from beeai_framework.emitter import Emitter
 from beeai_framework.logger import Logger
 from beeai_framework.retryable import Retryable, RetryableConfig, RetryableContext, RetryableInput
 from beeai_framework.template import PromptTemplate, PromptTemplateInput
-from beeai_framework.tools.tool import Tool
-from beeai_framework.utils.lists import flatten
+from beeai_framework.tools.tool import AnyTool
 from beeai_framework.utils.models import ModelLike
 from beeai_framework.utils.strings import to_json
 
 T = TypeVar("T", bound=BaseModel)
 ChatModelFinishReason: Literal["stop", "length", "function_call", "content_filter", "null"]
 logger = Logger(__name__)
-
-
-class ChatModelParameters(BaseModel):
-    max_tokens: int | None = None
-    top_p: int | None = None
-    frequency_penalty: int | None = None
-    temperature: int = 0
-    top_k: int | None = None
-    n: int | None = None
-    presence_penalty: int | None = None
-    seed: int | None = None
-    stop_sequences: list[str] | None = None
-    stream: bool | None = None
-
-
-class ChatConfig(BaseModel):
-    # TODO: cache: ChatModelCache | Callable[[ChatModelCache], ChatModelCache] | None = None
-    parameters: ChatModelParameters | Callable[[ChatModelParameters], ChatModelParameters] | None = None
-
-
-class ChatModelStructureInput(ChatModelParameters):
-    input_schema: type[T] = Field(..., alias="schema")
-    messages: list[InstanceOf[Message]] = Field(..., min_length=1)
-    abort_signal: AbortSignal | None = None
-    max_retries: int | None = None
-
-
-class ChatModelStructureOutput(BaseModel):
-    object: type[T] | dict[str, Any]
-
-
-class ChatModelInput(ChatModelParameters):
-    tools: list[InstanceOf[Tool]] | None = None
-    abort_signal: AbortSignal | None = None
-    stop_sequences: list[str] | None = None
-    response_format: dict[str, Any] | type[BaseModel] | None = None
-    # tool_choice: NoneType # TODO
-    messages: list[InstanceOf[Message]] = Field(
-        ...,
-        min_length=1,
-        frozen=True,
-    )
-
-    model_config = ConfigDict(frozen=True)
-
-
-class ChatModelUsage(BaseModel):
-    prompt_tokens: int
-    completion_tokens: int
-    total_tokens: int
-
-
-class ChatModelOutput(BaseModel):
-    messages: list[InstanceOf[Message]]
-    usage: InstanceOf[ChatModelUsage] | None = None
-    finish_reason: str | None = None
-
-    @classmethod
-    def from_chunks(cls, chunks: list) -> Self:
-        final = cls(messages=[])
-        for cur in chunks:
-            final.merge(cur)
-        return final
-
-    def merge(self, other: Self) -> None:
-        self.messages.extend(other.messages)
-        self.finish_reason = other.finish_reason
-        if self.usage and other.usage:
-            merged_usage = self.usage.model_copy()
-            if other.usage.total_tokens:
-                merged_usage.total_tokens = max(self.usage.total_tokens, other.usage.total_tokens)
-                merged_usage.prompt_tokens = max(self.usage.prompt_tokens, other.usage.prompt_tokens)
-                merged_usage.completion_tokens = max(self.usage.completion_tokens, other.usage.completion_tokens)
-            self.usage = merged_usage
-        elif other.usage:
-            self.usage = other.usage.model_copy()
-
-    def get_tool_calls(self) -> list[MessageToolCallContent]:
-        assistant_message = [msg for msg in self.messages if isinstance(msg, AssistantMessage)]
-        return flatten([x.get_tool_calls() for x in assistant_message])
-
-    def get_text_content(self) -> str:
-        return "".join([x.text for x in list(filter(lambda x: isinstance(x, AssistantMessage), self.messages))])
 
 
 class ChatModel(ABC):
@@ -141,6 +65,7 @@ class ChatModel(ABC):
         self.emitter = Emitter.root().child(
             namespace=["backend", self.provider_id, "chat"],
             creator=self,
+            events=chat_model_event_types,
         )
 
     @abstractmethod
@@ -162,15 +87,15 @@ class ChatModel(ABC):
     @abstractmethod
     async def _create_structure(
         self,
-        input: ChatModelStructureInput,
+        input: ChatModelStructureInput[T],
         run: RunContext,
     ) -> ChatModelStructureOutput:
-        schema = input.input_schema
+        schema: type[T] = input.input_schema
 
         json_schema = schema.model_json_schema(mode="serialization") if issubclass(schema, BaseModel) else schema
 
         class DefaultChatModelStructureSchema(BaseModel):
-            schema: str
+            input_schema: type[str] = Field(..., alias="schema")
 
         system_template = PromptTemplate(
             PromptTemplateInput(
@@ -187,7 +112,7 @@ IMPORTANT: You MUST answer with a JSON object that matches the JSON schema above
         )
 
         input_messages = input.messages
-        messages: list[Message] = [
+        messages: list[AnyMessage] = [
             SystemMessage(system_template.render({"schema": to_json(json_schema, indent=4)})),
             *input_messages,
         ]
@@ -215,15 +140,18 @@ IMPORTANT: You MUST answer with a JSON object that matches the JSON schema above
         return await Retryable(
             RetryableInput(
                 executor=executor,
-                config=RetryableConfig(max_retries=input.max_retries if input else 1, signal=run.signal),
+                config=RetryableConfig(
+                    max_retries=input.max_retries if input is not None and input.max_retries is not None else 1,
+                    signal=run.signal,
+                ),
             )
         ).get()
 
     def create(
         self,
         *,
-        messages: list[Message],
-        tools: list[Tool] | None = None,
+        messages: list[AnyMessage],
+        tools: list[AnyTool] | None = None,
         abort_signal: AbortSignal | None = None,
         stop_sequences: list[str] | None = None,
         response_format: dict[str, Any] | type[BaseModel] | None = None,
@@ -250,7 +178,7 @@ IMPORTANT: You MUST answer with a JSON object that matches the JSON schema above
                     async for value in self._create_stream(model_input, context):
                         chunks.append(value)
                         await context.emitter.emit(
-                            "newToken", {"value": value, "abort": lambda: abort_controller.abort()}
+                            "new_token", {"value": value, "abort": lambda: abort_controller.abort()}
                         )
                         if abort_controller.signal.aborted:
                             break
@@ -263,7 +191,7 @@ IMPORTANT: You MUST answer with a JSON object that matches the JSON schema above
                 return result
             except Exception as ex:
                 error = ChatModelError.ensure(ex)
-                await context.emitter.emit("error", {"error": error})
+                await context.emitter.emit("error", {"input": model_input, "error": error})
                 raise error
             finally:
                 await context.emitter.emit("finish", None)
@@ -278,11 +206,11 @@ IMPORTANT: You MUST answer with a JSON object that matches the JSON schema above
         self,
         *,
         schema: type[T],
-        messages: list[Message],
+        messages: list[AnyMessage],
         abort_signal: AbortSignal | None = None,
         max_retries: int | None = None,
-    ) -> Run:
-        model_input = ChatModelStructureInput(
+    ) -> Run[ChatModelStructureOutput]:
+        model_input = ChatModelStructureInput[T](
             schema=schema, messages=messages, abort_signal=abort_signal, max_retries=max_retries
         )
 
@@ -308,8 +236,8 @@ IMPORTANT: You MUST answer with a JSON object that matches the JSON schema above
     @staticmethod
     def from_name(name: str | ProviderName, options: ModelLike[ChatModelParameters] | None = None) -> "ChatModel":
         parsed_model = parse_model(name)
-        TargetChatModel = load_model(parsed_model.provider_id, "chat")  # noqa: N806
+        TargetChatModel = load_model(parsed_model.provider_id, "chat")  # type: ignore # noqa: N806
 
         settings = options.model_dump() if isinstance(options, ChatModelParameters) else options
 
-        return TargetChatModel(parsed_model.model_id, settings=settings or {})
+        return TargetChatModel(parsed_model.model_id, settings=settings or {})  # type: ignore

@@ -16,7 +16,7 @@
 import logging
 import sys
 from logging import Formatter
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from beeai_framework.errors import FrameworkError
 from beeai_framework.utils.config import CONFIG
@@ -102,11 +102,11 @@ class Logger(logging.Logger):
         # This method was inspired by the answers to Stack Overflow post
         # http://stackoverflow.com/q/2183233/2988730, especially
         # http://stackoverflow.com/a/13638084/2988730
-        def log_for_level(self: logging.Logger, message: str, *args: int, **kwargs: dict) -> None:  # pragma: no cover
+        def log_for_level(self: logging.Logger, message: str, *args: int, **kwargs: Any) -> None:  # pragma: no cover
             if self.isEnabledFor(level_num):
                 self._log(level_num, message, args, stacklevel=2, **kwargs)
 
-        def log_to_root(message: str, *args: int, **kwargs: dict) -> None:  # pragma: no cover
+        def log_to_root(message: str, *args: int, **kwargs: Any) -> None:  # pragma: no cover
             logging.log(level_num, message, *args, **kwargs)
 
         logging.addLevelName(level_num, level_name)

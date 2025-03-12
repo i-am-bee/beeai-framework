@@ -21,7 +21,7 @@ from typing import Any, Self
 
 from pydantic import BaseModel, ConfigDict, Field, InstanceOf
 
-from beeai_framework.agents.base import BaseAgent, BaseMemory
+from beeai_framework.agents.base import AnyAgent, BaseAgent
 from beeai_framework.agents.react import ReActAgent
 from beeai_framework.agents.react.types import ReActAgentRunOutput
 from beeai_framework.agents.types import (
@@ -29,15 +29,16 @@ from beeai_framework.agents.types import (
     AgentMeta,
 )
 from beeai_framework.backend.chat import ChatModel
-from beeai_framework.backend.message import AssistantMessage, Message
+from beeai_framework.backend.message import AnyMessage, AssistantMessage
 from beeai_framework.context import Run
-from beeai_framework.memory import ReadOnlyMemory, UnconstrainedMemory
+from beeai_framework.memory import BaseMemory, ReadOnlyMemory, UnconstrainedMemory
 from beeai_framework.template import PromptTemplateInput
-from beeai_framework.tools.tool import Tool
+from beeai_framework.tools.tool import AnyTool
 from beeai_framework.utils.asynchronous import ensure_async
-from beeai_framework.workflows.workflow import Workflow, WorkflowRun
+from beeai_framework.workflows.types import WorkflowRun
+from beeai_framework.workflows.workflow import Workflow
 
-AgentFactory = Callable[[ReadOnlyMemory], BaseAgent | Awaitable[BaseAgent]]
+AgentFactory = Callable[[ReadOnlyMemory], AnyAgent | Awaitable[AnyAgent]]
 
 
 class AgentFactoryInput(BaseModel):
@@ -45,22 +46,22 @@ class AgentFactoryInput(BaseModel):
     name: str
     llm: ChatModel
     instructions: str | None = None
-    tools: list[InstanceOf[Tool]] | None = None
+    tools: list[InstanceOf[AnyTool]] | None = None
     execution: AgentExecutionConfig | None = None
 
 
 class Schema(BaseModel):
     model_config = ConfigDict(arbitrary_types_allowed=True)
-    messages: list[Message] = Field(min_length=1)
+    messages: list[AnyMessage] = Field(min_length=1)
     final_answer: str | None = None
-    new_messages: list[Message] = []
+    new_messages: list[AnyMessage] = []
 
 
 class AgentWorkflow:
     def __init__(self, name: str = "AgentWorkflow") -> None:
         self.workflow = Workflow(name=name, schema=Schema)
 
-    def run(self, messages: list[Message]) -> Run[WorkflowRun]:
+    def run(self, messages: list[AnyMessage]) -> Run[WorkflowRun[Any, Any]]:
         return self.workflow.run(Schema(messages=messages))
 
     def del_agent(self, name: str) -> "AgentWorkflow":
@@ -70,7 +71,7 @@ class AgentWorkflow:
     def add_agent(
         self,
         agent: (
-            BaseAgent | Callable[[ReadOnlyMemory], BaseAgent | asyncio.Future[BaseAgent]] | AgentFactoryInput | None
+            AnyAgent | Callable[[ReadOnlyMemory], AnyAgent | asyncio.Future[AnyAgent]] | AgentFactoryInput | None
         ) = None,
         /,
         **kwargs: Any,
@@ -84,11 +85,12 @@ class AgentWorkflow:
                 agent = AgentFactoryInput.model_validate(kwargs, strict=False, from_attributes=True)
         elif kwargs:
             raise ValueError("Agent object required or keyword arguments required but not both")
+        assert agent is not None
 
         if isinstance(agent, BaseAgent):
 
-            async def factory(memory: ReadOnlyMemory) -> BaseAgent:
-                instance: BaseAgent = await ensure_async(agent)(memory.as_read_only()) if isfunction(agent) else agent
+            async def factory(memory: ReadOnlyMemory) -> AnyAgent:
+                instance: AnyAgent = await ensure_async(agent)(memory.as_read_only()) if isfunction(agent) else agent
                 instance.memory = memory
                 return instance
 
@@ -100,7 +102,7 @@ class AgentWorkflow:
 
     def _create_factory(self, agent_input: AgentFactoryInput) -> AgentFactory:
         def factory(memory: BaseMemory) -> ReActAgent:
-            def customizer(config: PromptTemplateInput) -> PromptTemplateInput:
+            def customizer(config: PromptTemplateInput[Any]) -> PromptTemplateInput[Any]:
                 new_config = config.model_copy()
                 new_config.defaults["instructions"] = agent_input.instructions or config.defaults.get("instructions")
                 return new_config

@@ -8,7 +8,9 @@ from pydantic import BaseModel, Field
 from beeai_framework.context import RunContext
 from beeai_framework.emitter.emitter import Emitter
 from beeai_framework.errors import FrameworkError
-from beeai_framework.tools.tool import StringToolOutput, Tool, ToolRunOptions
+from beeai_framework.tools import StringToolOutput
+from beeai_framework.tools.tool import Tool
+from beeai_framework.tools.types import ToolRunOptions
 
 
 class RiddleToolInput(BaseModel):

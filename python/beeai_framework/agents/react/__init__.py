@@ -13,6 +13,7 @@
 # limitations under the License.
 
 
-from beeai_framework.agents.react.agent import ReActAgent, ReActAgentInput, ReActAgentRunInput
+from beeai_framework.agents.react.agent import ReActAgent
+from beeai_framework.agents.react.types import ReActAgentInput, ReActAgentRunInput
 
 __all__ = ["ReActAgent", "ReActAgentInput", "ReActAgentRunInput"]

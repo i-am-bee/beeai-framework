@@ -2,7 +2,8 @@ from pydantic import BaseModel, Field, InstanceOf
 
 from beeai_framework.context import RunContext
 from beeai_framework.emitter import Emitter
-from beeai_framework.tools.tool import JSONToolOutput, Tool, ToolRunOptions
+from beeai_framework.tools.tool import Tool
+from beeai_framework.tools.types import JSONToolOutput, ToolRunOptions
 from examples.helpers.io import ConsoleReader
 
 

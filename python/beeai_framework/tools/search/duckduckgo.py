@@ -21,7 +21,8 @@ from beeai_framework.emitter.emitter import Emitter
 from beeai_framework.logger import Logger
 from beeai_framework.tools import ToolError
 from beeai_framework.tools.search import SearchToolOutput, SearchToolResult
-from beeai_framework.tools.tool import Tool, ToolRunOptions
+from beeai_framework.tools.tool import Tool
+from beeai_framework.tools.types import ToolRunOptions
 
 logger = Logger(__name__)
 

@@ -15,8 +15,7 @@
 
 import pytest
 
-from beeai_framework.tools import ToolInputValidationError
-from beeai_framework.tools.tool import StringToolOutput
+from beeai_framework.tools import StringToolOutput, ToolInputValidationError
 from beeai_framework.tools.weather.openmeteo import OpenMeteoTool, OpenMeteoToolInput
 
 """
