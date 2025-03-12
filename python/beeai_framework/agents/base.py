@@ -15,7 +15,7 @@
 from abc import ABC, abstractmethod
 from collections.abc import Awaitable, Callable
 from functools import cached_property
-from typing import Any, Generic, ParamSpec, TypeVar
+from typing import Any, Generic, TypeVar
 
 from pydantic import BaseModel
 
@@ -29,7 +29,6 @@ from beeai_framework.memory import BaseMemory
 TInput = TypeVar("TInput", bound=BaseModel)
 TOptions = TypeVar("TOptions", bound=BaseModel)
 TOutput = TypeVar("TOutput", bound=BaseModel)
-P = ParamSpec("P")
 
 
 class BaseAgent(ABC, Generic[TInput, TOptions, TOutput]):
