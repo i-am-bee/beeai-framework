@@ -14,9 +14,6 @@
 
 import json
 from collections.abc import Sequence
-from typing import TypeVar
-
-from pydantic import BaseModel
 
 from beeai_framework.agents import AgentError, AgentExecutionConfig
 from beeai_framework.agents.base import BaseAgent
@@ -40,10 +37,6 @@ from beeai_framework.memory.base_memory import BaseMemory
 from beeai_framework.memory.unconstrained_memory import UnconstrainedMemory
 from beeai_framework.tools.tool import AnyTool
 from beeai_framework.utils.models import ModelLike, to_model
-
-TInput = TypeVar("TInput", bound=BaseModel)
-TOptions = TypeVar("TOptions", bound=BaseModel)
-TOutput = TypeVar("TOutput", bound=BaseModel)
 
 __all__ = ["ToolCallingAgent"]
 
