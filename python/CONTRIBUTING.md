@@ -85,7 +85,7 @@ cd beeai-framework
 cd python
 
 # Use Poetry to install the project dependencies and activate a virtual environment
-poetry install
+poetry install --all-extras
 poetry shell
 
 # Copy .env.example to .env and fill in required values
