@@ -52,11 +52,5 @@ jobs:
           go-version: "1.23"
       - name: Check Copyright Header
         run: poetry run poe copyright --type check
-  mypy:
-    needs: main
-    timeout-minutes: 20
-    name: Run E2E Tests
-    runs-on: ubuntu-latest
-    steps:
       - name: Run E2E Tests
         run: poetry run poe test --type e2e
