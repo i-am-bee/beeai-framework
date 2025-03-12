@@ -8,7 +8,6 @@ from beeai_framework import (
     AssistantMessage,
     BaseAgent,
     BaseMemory,
-    Message,
     SystemMessage,
     UnconstrainedMemory,
     UserMessage,
@@ -17,6 +16,7 @@ from beeai_framework.adapters.ollama.backend.chat import OllamaChatModel
 from beeai_framework.agents.react.types import ReActAgentRunInput, ReActAgentRunOptions
 from beeai_framework.agents.types import AgentMeta
 from beeai_framework.backend.chat import ChatModel
+from beeai_framework.backend.message import AnyMessage
 from beeai_framework.context import RunContext
 from beeai_framework.emitter import Emitter
 from beeai_framework.errors import FrameworkError
@@ -29,7 +29,7 @@ class State(BaseModel):
 
 
 class RunOutput(BaseModel):
-    message: InstanceOf[Message]
+    message: InstanceOf[AnyMessage]
     state: State
 
 

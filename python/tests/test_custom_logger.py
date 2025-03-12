@@ -31,7 +31,7 @@ def test_redefine_logging_methods() -> None:
     logger.add_logging_level("TEST1", 1, "test")  # adds test log level
     logger.add_logging_level("TEST2", 2, "test")  # does not redefine test log level
     logger.add_logging_level("INFO", logging.INFO)  # does not redefine info log level
-    assert callable(logger.test)
+    assert callable(logger.test)  # type: ignore
 
 
 @pytest.mark.unit

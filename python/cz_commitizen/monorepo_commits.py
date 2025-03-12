@@ -12,8 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from collections.abc import Iterable
+from typing import Any
+
 from commitizen import git
-from commitizen.cz.conventional_commits import ConventionalCommitsCz
+from commitizen.cz.conventional_commits import ConventionalCommitsCz  # type: ignore
 
 __all__ = ["MonorepoCommitsCz"]
 
@@ -28,7 +31,9 @@ class MonorepoCommitsCz(ConventionalCommitsCz):
         "perf": "Performance Improvements",
     }
 
-    def changelog_message_builder_hook(self, parsed_message: dict, commit: git.GitCommit) -> dict | list | None:
+    def changelog_message_builder_hook(
+        self, parsed_message: dict[str, Any], commit: git.GitCommit
+    ) -> dict[str, Any] | Iterable[dict[str, Any]] | None:
         changed_files = git.get_filenames_in_commit(commit.rev) or []
 
         has_python_changes = any(file.startswith("python/") for file in changed_files)
@@ -45,7 +50,7 @@ class MonorepoCommitsCz(ConventionalCommitsCz):
                 question["choices"].append({"value": "chore", "name": "chore: other uncategorized changes"})
 
             if question["name"] == "scope":
-                questions[index] = {
+                questions[index] = {  # type: ignore
                     "type": "list",
                     "name": "scope",
                     "message": "What is the scope of this change?",

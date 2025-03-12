@@ -11,7 +11,7 @@ def main() -> None:
     class ColorsObject(BaseModel):
         colors: list[str] = Field(..., min_length=1)
 
-    template: PromptTemplate = PromptTemplate(
+    template: PromptTemplate[ColorsObject] = PromptTemplate(
         PromptTemplateInput(
             schema=ColorsObject,
             template="""Colors: {{#colors}}{{.}}, {{/colors}}""",

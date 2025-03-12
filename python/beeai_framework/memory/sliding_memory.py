@@ -18,7 +18,7 @@ from copy import copy
 from dataclasses import dataclass
 from typing import Any, TypedDict
 
-from beeai_framework.backend import Message
+from beeai_framework.backend.message import AnyMessage
 from beeai_framework.memory import ResourceError
 from beeai_framework.memory.base_memory import BaseMemory
 
@@ -26,7 +26,7 @@ from beeai_framework.memory.base_memory import BaseMemory
 class SlidingMemoryHandlers(TypedDict, total=False):
     """Type definition for SlidingMemory handlers."""
 
-    removal_selector: Callable[[list[Message]], Message | list[Message]]
+    removal_selector: Callable[[list[AnyMessage]], AnyMessage | list[AnyMessage]]
 
 
 @dataclass
@@ -46,7 +46,7 @@ class SlidingMemory(BaseMemory):
         Args:
             config: Configuration including window size and optional handlers
         """
-        self._messages: list[Message] = []
+        self._messages: list[AnyMessage] = []
         self.config = config
 
         # Set default handlers if not provided
@@ -58,7 +58,7 @@ class SlidingMemory(BaseMemory):
             self.config.handlers["removal_selector"] = lambda messages: [messages[0]]
 
     @property
-    def messages(self) -> list[Message]:
+    def messages(self) -> list[AnyMessage]:
         """Get list of stored messages."""
         return self._messages
 
@@ -70,7 +70,7 @@ class SlidingMemory(BaseMemory):
         """Ensure index is within the specified range."""
         return max(min_val, min(index, max_val))
 
-    async def add(self, message: Message, index: int | None = None) -> None:
+    async def add(self, message: AnyMessage, index: int | None = None) -> None:
         """Add a message to memory, managing window size.
 
         Args:
@@ -83,7 +83,9 @@ class SlidingMemory(BaseMemory):
         # Check for overflow
         if self._is_overflow():
             # Get messages to remove using removal selector
-            to_remove = self.config.handlers["removal_selector"](self._messages)
+            to_remove: AnyMessage | list[AnyMessage] = (
+                self.config.handlers["removal_selector"](self._messages) if self.config.handlers is not None else []
+            )
             if not isinstance(to_remove, list):
                 to_remove = [to_remove]
 
@@ -95,7 +97,7 @@ class SlidingMemory(BaseMemory):
                 except ValueError:
                     raise ResourceError(
                         "Cannot delete non existing message.",
-                        context={"message": msg, "messages": self._messages},
+                        # context={"message": msg, "messages": self._messages},
                     ) from ValueError
 
             # Check if we still have overflow
@@ -110,7 +112,7 @@ class SlidingMemory(BaseMemory):
         index = self._ensure_range(index, 0, len(self._messages))
         self._messages.insert(index, message)
 
-    async def delete(self, message: Message) -> bool:
+    async def delete(self, message: AnyMessage) -> bool:
         """Delete a message from memory.
 
         Args:

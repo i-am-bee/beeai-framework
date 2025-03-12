@@ -355,7 +355,7 @@ async def main() -> None:
     # State with memory
     class State(BaseModel):
         memory: InstanceOf[UnconstrainedMemory]
-        output: str | None = None
+        output: str = ""
 
     async def echo(state: State) -> str:
         # Get the last message in memory

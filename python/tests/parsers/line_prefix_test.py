@@ -48,7 +48,7 @@ def get_fallback_parser() -> LinePrefixParser:
         ),
     }
 
-    def fallback(value: str) -> list[dict]:
+    def fallback(value: str) -> list[dict[str, str]]:
         return [
             {"key": "thought", "value": "I now know the final answer."},
             {"key": "final_answer", "value": value},
@@ -97,7 +97,7 @@ async def test_handles_arbitrary_chunk_size(chunk_size: int) -> None:
     parser = LinePrefixParser(config)
 
     # Capture update events.
-    updates: dict = {"partial": {}, "final": {}}
+    updates: dict[str, dict[str, str]] = {"partial": {}, "final": {}}
 
     def on_update(data: LinePrefixParserUpdate, event: EventMeta) -> None:
         updates["final"][data.key] = data.field.raw

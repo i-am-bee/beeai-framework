@@ -90,7 +90,7 @@ class TestFrameworkError:
         inner_err = ValueError("error 2")
         err = FrameworkError("error 1")
         err.__cause__ = inner_err
-        errors = list(err.traverse())
+        errors: list[Exception] = list(err.traverse())
         assert len(errors) == 1
         assert err in errors
         assert inner_err not in errors

@@ -49,7 +49,7 @@ async def test_workflow_nav() -> None:
 
         return Workflow.END
 
-    workflow: Workflow = Workflow(schema=State)
+    workflow: Workflow[State] = Workflow(schema=State)
     workflow.add_step("first", first)
     workflow.add_step("second", second)
     response = await workflow.run(State(hops=0, seq=[]))

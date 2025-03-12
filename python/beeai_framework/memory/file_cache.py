@@ -17,9 +17,9 @@ import os
 from collections.abc import Callable
 from dataclasses import dataclass
 from functools import wraps
-from typing import Any, Generic, Self, TypeVar
+from typing import Any, Generic, TypeVar
 
-import aiofiles
+import aiofiles  # type: ignore
 
 from beeai_framework.logger import Logger
 from beeai_framework.memory.base_cache import BaseCache
@@ -31,19 +31,19 @@ logger = Logger(__name__)
 T = TypeVar("T")
 
 
-def cache() -> Callable:
+def cache() -> Callable[..., Any]:
     """Decorator to cache method results."""
 
-    def decorator(func: Callable) -> Callable:
+    def decorator(func: Callable[..., Any]) -> Callable[..., Any]:
         cache_key = f"_cache_{func.__name__}"
 
         @wraps(func)
-        async def wrapper(self: Self, *args: int, **kwargs: int) -> Any:
+        async def wrapper(self: Any, *args: int, **kwargs: int) -> Any:
             if not hasattr(self, cache_key):
                 setattr(self, cache_key, await func(self, *args, **kwargs))
             return getattr(self, cache_key)
 
-        wrapper.clear_cache = lambda self: (delattr(self, cache_key) if hasattr(self, cache_key) else None)
+        wrapper.clear_cache = lambda self: (delattr(self, cache_key) if hasattr(self, cache_key) else None)  # type: ignore
         return wrapper
 
     return decorator
@@ -127,10 +127,10 @@ class FileCache(BaseCache[T], Generic[T]):
             serialized = await provider.serialize()  # Await the serialization
             await f.write(serialized)
 
-    async def size(self) -> int:
+    async def size(self) -> int:  # type: ignore
         """Get the number of items in the cache."""
         provider = await self._get_provider()
-        return await provider.size()
+        return provider.size()  # type: ignore
 
     async def set(self, key: str, value: T) -> None:
         """Set a value in the cache."""
@@ -144,21 +144,21 @@ class FileCache(BaseCache[T], Generic[T]):
     async def get(self, key: str) -> T:
         """Get a value from the cache."""
         provider = await self._get_provider()
-        return await provider.get(key)
+        return await provider.get(key)  # type: ignore
 
     async def has(self, key: str) -> bool:
         """Check if a key exists in the cache."""
         provider = await self._get_provider()
-        return await provider.has(key)
+        return await provider.has(key)  # type: ignore
 
     async def delete(self, key: str) -> bool:
         """Delete a key from the cache."""
         provider = await self._get_provider()
         result = await provider.delete(key)
         await self._save()
-        return result
+        return result  # type: ignore
 
-    async def clear(self) -> None:
+    async def clear(self) -> None:  # type: ignore
         """Clear all items from the cache."""
         provider = await self._get_provider()
         await provider.clear()

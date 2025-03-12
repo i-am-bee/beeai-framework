@@ -165,6 +165,7 @@ default = "pass"
         { "ref" = "copyright ${TARGET}"},
         { "ref" = "format --fix ${TARGET}"},
         { "ref" = "lint --fix ${TARGET}" },
+        { "ref" = "type-check" },
         { "ref" = "copyright --type check ${TARGET}"},
     ]
 

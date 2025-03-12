@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import os
+from typing import Any
 
 from dotenv import load_dotenv
 
@@ -68,7 +69,7 @@ class AzureOpenAIChatModel(LiteLLMChatModel):
     def provider_id(self) -> ProviderName:
         return "azure_openai"
 
-    def __init__(self, model_id: str | None = None, settings: dict | None = None) -> None:
+    def __init__(self, model_id: str | None = None, settings: dict[str, Any] | None = None) -> None:
         """
         Inherits from LiteLLMChatModel, and takes all of the same parameters.
 
@@ -118,7 +119,7 @@ class AzureOpenAIChatModel(LiteLLMChatModel):
             )
 
         super().__init__(
-            model_id=(model_id or os.getenv("AZURE_OPENAI_CHAT_MODEL", "gpt-4o-mini")),
+            model_id=(model_id if model_id is not None else os.getenv("AZURE_OPENAI_CHAT_MODEL", "gpt-4o-mini")),
             provider_id="azure",  # LiteLLM uses 'azure' for Azure OpenAI
             settings=config,
         )
