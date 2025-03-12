@@ -31,7 +31,7 @@ jobs:
           python-version: "3.11"
           cache: "poetry"
       - name: Install dependencies
-        run: poetry install --no-interaction
+        run: poetry install --no-interaction --all-extras
       - name: Code Lint
         run: poetry run poe lint
       - name: Type check task with mypy
