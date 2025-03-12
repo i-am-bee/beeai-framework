@@ -17,7 +17,8 @@ from collections.abc import Callable
 from datetime import UTC, datetime
 from typing import Any
 
-from beeai_framework.agents.base import BaseAgent, run_context
+from beeai_framework.agents import AgentError
+from beeai_framework.agents.base import BaseAgent
 from beeai_framework.agents.react.runners.base import (
     BaseRunner,
     ReActAgentRunnerIteration,
@@ -41,6 +42,7 @@ from beeai_framework.agents.types import (
 from beeai_framework.backend.chat import ChatModel
 from beeai_framework.backend.message import AssistantMessage, MessageMeta, UserMessage
 from beeai_framework.cancellation import AbortSignal
+from beeai_framework.context import Run, RunContext, RunContextInput, RunInstance
 from beeai_framework.emitter import Emitter
 from beeai_framework.memory import BaseMemory
 from beeai_framework.template import PromptTemplate
@@ -106,20 +108,44 @@ class ReActAgent(BaseAgent[ReActAgentRunInput, ReActAgentRunOptions, ReActAgentR
             extra_description="\n".join(extra_description) if len(tools) > 0 else None,
         )
 
-    @run_context
-    async def run(
+    def run(
         self,
         prompt: str | None = None,
         *,
         signal: AbortSignal | None = None,
         execution: AgentExecutionConfig | None = None,
-    ) -> ReActAgentRunOutput:
-        context = self._run_context
-        assert context is not None
-
+    ) -> Run[ReActAgentRunOutput]:
         run_input = ReActAgentRunInput(prompt=prompt)
-        options = ReActAgentRunOptions(execution=execution, signal=signal)
+        options = (
+            ReActAgentRunOptions(execution=execution, signal=signal)
+            if execution is not None and signal is not None
+            else None
+        )
 
+        if self._run_context:
+            raise RuntimeError("Agent is already running!")
+
+        async def handler(context: RunContext) -> ReActAgentRunOutput:
+            try:
+                self._run_context = context
+                return await self._run(run_input, options, context)
+            except Exception as e:
+                raise AgentError.ensure(e)
+            finally:
+                self._run_context = None
+
+        return RunContext.enter(
+            RunInstance(emitter=self.emitter),
+            RunContextInput(
+                signal=signal,
+                params=(run_input, options),
+            ),
+            handler,
+        )
+
+    async def _run(
+        self, run_input: ReActAgentRunInput, options: ReActAgentRunOptions | None, context: RunContext
+    ) -> ReActAgentRunOutput:
         runner = self.runner(
             self.input,
             (
