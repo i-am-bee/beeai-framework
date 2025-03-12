@@ -20,6 +20,7 @@ from collections.abc import Awaitable, Callable, Generator
 from contextvars import ContextVar
 from dataclasses import dataclass
 from datetime import UTC, datetime
+from types import NoneType
 from typing import Any, Generic, Self, TypeVar
 
 from pydantic import BaseModel
@@ -29,6 +30,7 @@ from beeai_framework.emitter import Callback, Emitter, EmitterOptions, EventTrac
 from beeai_framework.errors import AbortError, FrameworkError
 from beeai_framework.logger import Logger
 from beeai_framework.utils.asynchronous import ensure_async
+from beeai_framework.utils.dicts import exclude_keys
 
 R = TypeVar("R")
 
@@ -51,13 +53,13 @@ class Run(Generic[R]):
     def __init__(self, handler: Callable[[], R | Awaitable[R]], context: "RunContext") -> None:
         super().__init__()
         self.handler = ensure_async(handler)
-        self.tasks: list[tuple[Callable, list]] = []
+        self.tasks: list[tuple[Callable[..., Any], list[Any]]] = []
         self.run_context = context
 
     def __await__(self) -> Generator[Any, None, R]:
         return self._run_tasks().__await__()
 
-    def observe(self, fn: Callable[[Emitter], None]) -> Self:
+    def observe(self, fn: Callable[[Emitter], Any]) -> Self:
         self.tasks.append((fn, [self.run_context.emitter]))
         return self
 
@@ -65,7 +67,7 @@ class Run(Generic[R]):
         self.tasks.append((self.run_context.emitter.match, [matcher, callback, options]))
         return self
 
-    def context(self, context: dict) -> Self:
+    def context(self, context: dict[str, Any]) -> Self:
         self.tasks.append((self._set_context, [context]))
         return self
 
@@ -82,9 +84,9 @@ class Run(Generic[R]):
 
         return await self.handler()
 
-    def _set_context(self, context: dict) -> None:
-        self.run_context.context = context
-        self.run_context.emitter.context = context
+    def _set_context(self, context: dict[str, Any]) -> None:
+        self.run_context.context.update(context)
+        self.run_context.emitter.context.update(context)
 
 
 class RunContext(RunInstance):
@@ -96,7 +98,7 @@ class RunContext(RunInstance):
         self.run_id = str(uuid.uuid4())
         self.parent_id = parent.run_id if parent else None
         self.group_id: str = parent.group_id if parent else str(uuid.uuid4())
-        self.context: dict = {k: v for k, v in parent.context.items() if k not in ["id", "parentId"]} if parent else {}
+        self.context: dict[str, Any] = exclude_keys(parent.context, {"id", "parent_id"}) if parent is not None else {}
 
         self.emitter = self.instance.emitter.child(
             context=self.context,
@@ -134,7 +136,17 @@ class RunContext(RunInstance):
         context = RunContext(instance=instance, context_input=context_input, parent=parent)
 
         async def handler() -> R:
-            emitter = context.emitter.child(namespace=["run"], creator=context, context={"internal": True})
+            emitter = context.emitter.child(
+                namespace=["run"],
+                creator=context,
+                context={"internal": True},
+                events={
+                    "start": NoneType,
+                    "success": type(any),
+                    "error": FrameworkError,
+                    "finish": NoneType,
+                },
+            )
 
             try:
                 await emitter.emit("start", None)

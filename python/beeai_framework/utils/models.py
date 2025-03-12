@@ -22,7 +22,7 @@ from pydantic.json_schema import JsonSchemaValue
 from pydantic_core import CoreSchema, SchemaValidator
 
 T = TypeVar("T", bound=BaseModel)
-ModelLike = Union[T, dict]  # noqa: UP007
+ModelLike = Union[T, dict[str, Any]]  # noqa: UP007
 
 
 def to_model(cls: type[T], obj: ModelLike[T]) -> T:
@@ -68,7 +68,7 @@ class JSONSchemaModel(ABC, BaseModel):
         return cls._custom_json_schema.copy()
 
     @classmethod
-    def create(cls, schema_name: str, schema: dict) -> type["JSONSchemaModel"]:
+    def create(cls, schema_name: str, schema: dict[str, Any]) -> type["JSONSchemaModel"]:
         type_mapping = {
             "string": str,
             "integer": int,
@@ -87,7 +87,7 @@ class JSONSchemaModel(ABC, BaseModel):
             target_type = type_mapping.get(param.get("type"))
             is_optional = param_name not in required
             if is_optional:
-                target_type = target_type | type(None)
+                target_type = target_type or type(None)
 
             if not target_type:
                 raise ValueError(f"Unsupported type '{param.get('type')}' found in the schema.")
@@ -100,7 +100,7 @@ class JSONSchemaModel(ABC, BaseModel):
                 Field(description=param.get("description"), default=None if is_optional else ...),
             )
 
-        model: type[JSONSchemaModel] = create_model(
+        model: type[JSONSchemaModel] = create_model(  # type: ignore
             schema_name,
             **fields,
             __base__=cls,

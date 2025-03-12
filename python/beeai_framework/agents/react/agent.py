@@ -15,6 +15,7 @@
 
 from collections.abc import Callable
 from datetime import UTC, datetime
+from typing import Any
 
 from beeai_framework.agents.base import BaseAgent
 from beeai_framework.agents.react.runners.base import (
@@ -37,14 +38,13 @@ from beeai_framework.agents.types import (
     AgentExecutionConfig,
     AgentMeta,
 )
-from beeai_framework.backend import Message
 from beeai_framework.backend.chat import ChatModel
 from beeai_framework.backend.message import AssistantMessage, MessageMeta, UserMessage
 from beeai_framework.context import RunContext
 from beeai_framework.emitter import Emitter
 from beeai_framework.memory import BaseMemory
 from beeai_framework.template import PromptTemplate
-from beeai_framework.tools.tool import Tool
+from beeai_framework.tools.tool import AnyTool
 from beeai_framework.utils.models import ModelLike, to_model, to_model_optional
 
 
@@ -54,10 +54,10 @@ class ReActAgent(BaseAgent[ReActAgentRunInput, ReActAgentRunOptions, ReActAgentR
     def __init__(
         self,
         llm: ChatModel,
-        tools: list[Tool],
+        tools: list[AnyTool],
         memory: BaseMemory,
         meta: AgentMeta | None = None,
-        templates: dict[ModelKeysType, PromptTemplate | ReActAgentTemplateFactory] | None = None,
+        templates: dict[ModelKeysType, PromptTemplate[Any] | ReActAgentTemplateFactory] | None = None,
         execution: AgentExecutionConfig | None = None,
         stream: bool | None = None,
     ) -> None:
@@ -134,7 +134,7 @@ class ReActAgent(BaseAgent[ReActAgentRunInput, ReActAgentRunOptions, ReActAgentR
         )
         await runner.init(run_input)
 
-        final_message: Message | None = None
+        final_message: AssistantMessage | None = None
         while not final_message:
             iteration: ReActAgentRunnerIteration = await runner.create_iteration()
 
@@ -158,7 +158,7 @@ class ReActAgent(BaseAgent[ReActAgentRunInput, ReActAgentRunOptions, ReActAgentR
                     )
                 )
 
-                for key in ["partialUpdate", "update"]:
+                for key in ["partial_update", "update"]:
                     await iteration.emitter.emit(
                         key,
                         {

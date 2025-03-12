@@ -67,7 +67,7 @@ def load_model(name: ProviderName | str, model_type: Literal["embedding", "chat"
     module = import_module(module_path)
 
     class_name = f"{provider_def.name}{model_type.capitalize()}Model"
-    return getattr(module, class_name)
+    return getattr(module, class_name)  # type: ignore
 
 
 def parse_broken_json(input: str) -> Any:

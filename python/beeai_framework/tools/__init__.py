@@ -15,11 +15,10 @@
 
 from beeai_framework.tools.errors import ToolError, ToolInputValidationError
 from beeai_framework.tools.tool import (
-    StringToolOutput,
     Tool,
-    ToolOutput,
     tool,
 )
+from beeai_framework.tools.types import JSONToolOutput, StringToolOutput, ToolOutput
 
 __all__ = [
     "JSONToolOutput",

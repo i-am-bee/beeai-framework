@@ -3,7 +3,6 @@
 <!-- TOC -->
 ## Table of Contents
 - [Overview](#overview)
-- [Key Features](#key-features)
 - [Basic Usage](#basic-usage)
   - [Simple Template](#simple-template)
   - [Template Functions](#template-functions)

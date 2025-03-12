@@ -6,8 +6,8 @@ from langchain_community.utilities import SearxSearchWrapper
 from pydantic import BaseModel, Field
 
 from beeai_framework.adapters.ollama.backend.chat import OllamaChatModel
-from beeai_framework.backend.chat import ChatModelOutput, ChatModelStructureOutput
 from beeai_framework.backend.message import UserMessage
+from beeai_framework.backend.types import ChatModelOutput, ChatModelStructureOutput
 from beeai_framework.errors import FrameworkError
 from beeai_framework.template import PromptTemplate, PromptTemplateInput
 from beeai_framework.workflows.workflow import Workflow

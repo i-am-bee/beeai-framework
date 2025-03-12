@@ -45,8 +45,8 @@ from beeai_framework.agents.react.types import (
     ReActAgentRunIteration,
     ReActAgentTemplates,
 )
-from beeai_framework.backend.chat import ChatModelOutput
 from beeai_framework.backend.message import AssistantMessage, SystemMessage, UserMessage
+from beeai_framework.backend.types import ChatModelOutput
 from beeai_framework.emitter.emitter import EventMeta
 from beeai_framework.errors import FrameworkError
 from beeai_framework.memory.base_memory import BaseMemory
@@ -60,8 +60,9 @@ from beeai_framework.parsers.line_prefix import (
     LinePrefixParserUpdate,
 )
 from beeai_framework.retryable import Retryable, RetryableConfig, RetryableContext, RetryableInput
-from beeai_framework.tools import ToolError, ToolInputValidationError
-from beeai_framework.tools.tool import StringToolOutput, Tool, ToolOutput, ToolRunOptions
+from beeai_framework.tools import StringToolOutput, ToolError, ToolInputValidationError, ToolOutput
+from beeai_framework.tools.tool import AnyTool
+from beeai_framework.tools.types import ToolRunOptions
 from beeai_framework.utils.strings import create_strenum, to_json
 
 
@@ -157,7 +158,7 @@ class DefaultRunner(BaseRunner):
 
             async def on_partial_update(data: LinePrefixParserUpdate, event: EventMeta) -> None:
                 await input.emitter.emit(
-                    "partialUpdate",
+                    "partial_update",
                     {
                         "data": parser.final_state,
                         "update": {
@@ -192,7 +193,7 @@ class DefaultRunner(BaseRunner):
                 messages=self.memory.messages[:],
                 stream=True,
                 tools=self._input.tools if self.use_native_tool_calling else None,
-            ).observe(lambda llm_emitter: llm_emitter.on("newToken", on_new_token))
+            ).observe(lambda llm_emitter: llm_emitter.on("new_token", on_new_token))
 
             await parser.end()
 
@@ -224,7 +225,7 @@ class DefaultRunner(BaseRunner):
         ).get()
 
     async def tool(self, input: ReActAgentRunnerToolInput) -> ReActAgentRunnerToolResult:
-        tool: Tool | None = next(
+        tool: AnyTool | None = next(
             (
                 tool
                 for tool in self._input.tools

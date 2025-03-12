@@ -12,15 +12,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-
 import asyncio
 import copy
 import functools
 import inspect
+import re
 import uuid
-from collections.abc import Callable
+from asyncio import Task
+from collections.abc import Callable, Coroutine
 from datetime import UTC, datetime
-from typing import Any, Generic, ParamSpec, TypeAlias, TypeVar
+from typing import Any, TypeAlias
 
 from pydantic import BaseModel, ConfigDict, InstanceOf
 
@@ -32,12 +33,9 @@ from beeai_framework.emitter.utils import (
 )
 from beeai_framework.utils.types import MaybeAsync
 
-T = TypeVar("T", bound=BaseModel)
-P = ParamSpec("P")
-
 MatcherFn: TypeAlias = Callable[["EventMeta"], bool]
-Matcher: TypeAlias = str | MatcherFn
-Callback: TypeAlias = MaybeAsync[[P, "EventMeta"], None]
+Matcher: TypeAlias = str | re.Pattern[str] | MatcherFn
+Callback: TypeAlias = MaybeAsync[[Any, "EventMeta"], None]
 CleanupFn: TypeAlias = Callable[[], None]
 
 
@@ -60,16 +58,18 @@ class EventMeta(BaseModel):
     context: object
     group_id: str | None = None
     trace: InstanceOf[EventTrace] | None = None
+    data_type: type
 
 
-class Emitter(Generic[T]):
+class Emitter:
     def __init__(
         self,
         group_id: str | None = None,
         namespace: list[str] | None = None,
         creator: object | None = None,
-        context: object | None = None,
+        context: dict[Any, Any] | None = None,
         trace: EventTrace | None = None,
+        events: dict[str, type] | None = None,
     ) -> None:
         super().__init__()
 
@@ -77,11 +77,20 @@ class Emitter(Generic[T]):
         self.group_id: str | None = group_id
         self.namespace: list[str] = namespace or []
         self.creator: object | None = creator
-        self.context: object = context or {}
+        self.context: dict[Any, Any] = context or {}
         self.trace: EventTrace | None = trace
         self.cleanups: list[CleanupFn] = []
+        self._events: dict[str, type] = events or {}
 
         assert_valid_namespace(self.namespace)
+
+    @property
+    def events(self) -> dict[str, type]:
+        return self._events.copy()
+
+    @events.setter
+    def events(self, new_events: dict[str, type]) -> None:
+        self._events.update(new_events)
 
     @staticmethod
     @functools.cache
@@ -93,8 +102,9 @@ class Emitter(Generic[T]):
         group_id: str | None = None,
         namespace: list[str] | None = None,
         creator: object | None = None,
-        context: object | None = None,
+        context: dict[Any, Any] | None = None,
         trace: EventTrace | None = None,
+        events: dict[str, type] | None = None,
     ) -> "Emitter":
         child_emitter = Emitter(
             trace=trace or self.trace,
@@ -102,6 +112,7 @@ class Emitter(Generic[T]):
             context={**self.context, **(context or {})},
             creator=creator or self.creator,
             namespace=namespace + self.namespace if namespace else self.namespace[:],
+            events=events or self.events,
         )
 
         cleanup = child_emitter.pipe(self)
@@ -140,11 +151,10 @@ class Emitter(Generic[T]):
             elif matcher == "*.*":
                 match_nested = True if match_nested is None else match_nested
                 matchers.append(lambda _: True)
-            # TODO is_valid_regex matches on all strings, not just regex patterns
-            # elif is_valid_regex(matcher):
-            #     match_nested = True if match_nested is None else match_nested
-            #     matchers.append(lambda event: bool(re.search(matcher, event.path)))
-            elif isinstance(matcher, Callable):
+            elif isinstance(matcher, re.Pattern):
+                match_nested = True if match_nested is None else match_nested
+                matchers.append(lambda event: matcher.match(event.path) is not None)
+            elif callable(matcher):
                 match_nested = False if match_nested is None else match_nested
                 matchers.append(matcher)
             elif isinstance(matcher, str):
@@ -162,7 +172,9 @@ class Emitter(Generic[T]):
             if not match_nested:
 
                 def match_same_run(event: EventMeta) -> bool:
-                    return self.trace is None or self.trace.run_id == event.trace.run_id
+                    return self.trace is None or (
+                        self.trace.run_id == event.trace.run_id if event.trace is not None else False
+                    )
 
                 matchers.insert(0, match_same_run)
 
@@ -180,7 +192,7 @@ class Emitter(Generic[T]):
         await self.invoke(value, event)
 
     async def invoke(self, data: Any, event: EventMeta) -> None:
-        executions = []
+        executions: list[Coroutine[Any, Any, Any] | Task[Any]] = []
         for listener in self.listeners:
             if not listener.match(event):
                 continue
@@ -212,4 +224,5 @@ class Emitter(Generic[T]):
             creator=self.creator,
             context={**self.context},
             trace=copy.copy(self.trace),
+            data_type=self.events.get(name) or type(Any),
         )

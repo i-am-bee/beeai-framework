@@ -14,10 +14,12 @@
 
 import math
 from abc import ABC, abstractmethod
+from typing import Any
 
 from pydantic import BaseModel, InstanceOf
 
 from beeai_framework.agents import AgentError
+from beeai_framework.agents.react.events import react_agent_event_types
 from beeai_framework.agents.react.types import (
     ReActAgentInput,
     ReActAgentIterationMeta,
@@ -102,7 +104,10 @@ class BaseRunner(ABC):
         if meta.iteration > max_iterations:
             raise AgentError(f"Agent was not able to resolve the task in {max_iterations} iterations.")
 
-        emitter = self._run.emitter.child(group_id=f"`iteration-{meta.iteration}")
+        emitter = self._run.emitter.child(
+            group_id=f"`iteration-{meta.iteration}",
+            events=react_agent_event_types,
+        )
         iteration = await self.llm(ReActAgentRunnerLLMInput(emitter=emitter, signal=self._run.signal, meta=meta))
         self._iterations.append(iteration)
         return ReActAgentRunnerIteration(emitter=emitter, state=iteration.state, meta=meta, signal=self._run.signal)
@@ -132,7 +137,7 @@ class BaseRunner(ABC):
         templates = {}
 
         for key, default_template in self.default_templates().model_dump().items():
-            override: PromptTemplate | ReActAgentTemplateFactory = overrides.get(key) or default_template
+            override: PromptTemplate[Any] | ReActAgentTemplateFactory = overrides.get(key) or default_template
             if isinstance(override, PromptTemplate):
                 templates[key] = override
                 continue

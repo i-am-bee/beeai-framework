@@ -14,7 +14,7 @@
 
 
 from abc import ABC, abstractmethod
-from typing import Generic, TypeVar
+from typing import Any, Generic, TypeVar
 
 from pydantic import BaseModel
 
@@ -86,3 +86,6 @@ class BaseAgent(ABC, Generic[TInput, TOptions, TOutput]):
             description="",
             tools=[],
         )
+
+
+AnyAgent = BaseAgent[Any, Any, Any]

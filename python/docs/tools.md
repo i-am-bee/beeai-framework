@@ -162,7 +162,7 @@ from beeai_framework.backend.chat import ChatModel
 from beeai_framework.errors import FrameworkError
 from beeai_framework.logger import Logger
 from beeai_framework.memory.unconstrained_memory import UnconstrainedMemory
-from beeai_framework.tools.tool import StringToolOutput
+from beeai_framework.tools import StringToolOutput
 
 logger = Logger(__name__)
 
@@ -395,6 +395,7 @@ To create a new tool, implement the base `Tool` class. The framework provides fl
 Here's an example of a simple custom tool that provides riddles:
 
 <!-- embedme examples/tools/custom/base.py -->
+
 ```py
 import asyncio
 import random
@@ -406,7 +407,9 @@ from pydantic import BaseModel, Field
 from beeai_framework.context import RunContext
 from beeai_framework.emitter.emitter import Emitter
 from beeai_framework.errors import FrameworkError
-from beeai_framework.tools.tool import StringToolOutput, Tool, ToolRunOptions
+from beeai_framework.tools import StringToolOutput
+from beeai_framework.tools.tool import Tool
+from beeai_framework.tools.types import ToolRunOptions
 
 
 class RiddleToolInput(BaseModel):
@@ -475,6 +478,7 @@ _Source: [/python/examples/tools/custom/base.py](/python/examples/tools/custom/b
 For more complex scenarios, you can implement tools with robust input validation, error handling, and structured outputs:
 
 <!-- embedme examples/tools/custom/openlibrary.py -->
+
 ```py
 import asyncio
 import sys
@@ -487,7 +491,8 @@ from beeai_framework.context import RunContext
 from beeai_framework.emitter.emitter import Emitter
 from beeai_framework.errors import FrameworkError
 from beeai_framework.tools import ToolInputValidationError
-from beeai_framework.tools.tool import JSONToolOutput, Tool, ToolRunOptions
+from beeai_framework.tools.tool import Tool
+from beeai_framework.tools.types import JSONToolOutput, ToolRunOptions
 
 
 class OpenLibraryToolInput(BaseModel):

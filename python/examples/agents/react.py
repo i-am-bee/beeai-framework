@@ -10,7 +10,8 @@ from dotenv import load_dotenv
 from beeai_framework import Tool
 from beeai_framework.agents.react.agent import ReActAgent
 from beeai_framework.agents.types import AgentExecutionConfig
-from beeai_framework.backend.chat import ChatModel, ChatModelParameters
+from beeai_framework.backend.chat import ChatModel
+from beeai_framework.backend.types import ChatModelParameters
 from beeai_framework.emitter.emitter import EventMeta
 from beeai_framework.emitter.types import EmitterOptions
 from beeai_framework.errors import FrameworkError

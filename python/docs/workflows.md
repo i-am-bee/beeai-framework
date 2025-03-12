@@ -114,7 +114,8 @@ from typing import Literal, TypeAlias
 from pydantic import BaseModel
 
 from beeai_framework.errors import FrameworkError
-from beeai_framework.workflows.workflow import Workflow, WorkflowReservedStepName
+from beeai_framework.workflows import WorkflowReservedStepName
+from beeai_framework.workflows.workflow import Workflow
 
 WorkflowStep: TypeAlias = Literal["pre_process", "add_loop", "post_process"]
 
@@ -199,7 +200,8 @@ from typing import Literal, TypeAlias
 from pydantic import BaseModel
 
 from beeai_framework.errors import FrameworkError
-from beeai_framework.workflows.workflow import Workflow, WorkflowReservedStepName
+from beeai_framework.workflows import WorkflowReservedStepName
+from beeai_framework.workflows.workflow import Workflow
 
 WorkflowStep: TypeAlias = Literal["pre_process", "add_loop", "post_process"]
 
@@ -253,7 +255,6 @@ if __name__ == "__main__":
     except FrameworkError as e:
         traceback.print_exc()
         sys.exit(e.explain())
-
 
 ```
 
