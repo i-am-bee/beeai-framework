@@ -46,6 +46,8 @@ jobs:
         run: poetry build
       - name: Unit Tests
         run: poetry run poe test --type unit
+      - name: E2E Tests
+        run: poetry run poe test --type e2e
       - name: Setup Go
         uses: actions/setup-go@v3
         with:
@@ -76,10 +78,11 @@ jobs:
         run: |
           ollama serve &
           ollama pull llama3.1
+          ollama pull granite3.1-dense:8b
       - name: Call ollama API
         run: |
           curl -d '{"model": "llama3.1:latest", "stream": false, "prompt":"Whatever I say, asnwer with Yes"}' http://localhost:11434/api/generate
-      - name: Run All Tests
+      - name: Run Integration Tests
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           GOOGLE_API_KEY: ${{ secrets.GOOGLE_SEARCH_API_KEY }}
@@ -93,4 +96,4 @@ jobs:
           WATSONX_REGION: ${{ secrets.WATSONX_REGION }}
           # WATSONX_SPACE_ID: ${{ secrets.WATSONX_SPACE_ID }}
           # WATSONX_DEPLOYMENT_ID: ${{ secrets.WATSONX_DEPLOYMENT_ID }}
-        run: poetry run poe test
+        run: poetry run poe test --type integration

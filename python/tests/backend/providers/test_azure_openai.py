@@ -21,6 +21,7 @@ from beeai_framework.adapters.azure_openai.backend.chat import AzureOpenAIChatMo
 class TestAzureOpenAIChatModel:
     """Unit tests for the AzureOpenAIChatModel class."""
 
+    @pytest.mark.unit
     def test_init_with_settings(self, monkeypatch: pytest.MonkeyPatch) -> None:
         """Test initialization with settings."""
         monkeypatch.delenv("AZURE_OPENAI_API_KEY", raising=False)
@@ -42,6 +43,7 @@ class TestAzureOpenAIChatModel:
         assert model.model_id == "gpt-4o"
         assert model._litellm_provider_id == "azure"
 
+    @pytest.mark.unit
     def test_init_with_env_vars(self, monkeypatch: pytest.MonkeyPatch) -> None:
         """Test initialization with environment variables."""
         monkeypatch.delenv("AZURE_OPENAI_API_KEY", raising=False)
@@ -61,6 +63,7 @@ class TestAzureOpenAIChatModel:
         assert model._settings["api_version"] == "env_api_version"
         assert model.model_id == "gpt-4o"
 
+    @pytest.mark.unit
     def test_init_with_alias_env_vars(self, monkeypatch: pytest.MonkeyPatch) -> None:
         """Test initialization with alias environment variables."""
         monkeypatch.delenv("AZURE_OPENAI_API_KEY", raising=False)
@@ -79,6 +82,7 @@ class TestAzureOpenAIChatModel:
         assert model._settings["api_base"] == "env_api_base"
         assert model._settings["api_version"] == "env_api_version"
 
+    @pytest.mark.unit
     def test_init_with_mixed_env_vars(self, monkeypatch: pytest.MonkeyPatch) -> None:
         """Test initialization with mixed environment variables."""
         monkeypatch.delenv("AZURE_OPENAI_API_KEY", raising=False)
@@ -97,6 +101,7 @@ class TestAzureOpenAIChatModel:
         assert model._settings["api_base"] == "env_api_base"
         assert model._settings["api_version"] == "env_api_version"
 
+    @pytest.mark.unit
     def test_init_with_no_config(self, monkeypatch: pytest.MonkeyPatch) -> None:
         """Test initialization with no configuration."""
         monkeypatch.delenv("AZURE_OPENAI_API_KEY", raising=False)
@@ -117,6 +122,7 @@ class TestAzureOpenAIChatModel:
         with pytest.raises(ValueError, match="API Version is required for Azure OpenAI"):
             AzureOpenAIChatModel(model_id="gpt-4o")
 
+    @pytest.mark.unit
     def test_settings_precedence(self, monkeypatch: pytest.MonkeyPatch) -> None:
         """Test precedence order: settings > env vars > alias env vars."""
         monkeypatch.delenv("AZURE_OPENAI_API_KEY", raising=False)
@@ -142,6 +148,7 @@ class TestAzureOpenAIChatModel:
         assert model._settings["api_base"] == "settings_api_base"
         assert model._settings["api_version"] == "settings_api_version"
 
+    @pytest.mark.unit
     def test_env_var_precedence(self, monkeypatch: pytest.MonkeyPatch) -> None:
         """Test precedence order for environment variables: AZURE_OPENAI > AZURE."""
         monkeypatch.delenv("AZURE_OPENAI_API_KEY", raising=False)
@@ -163,6 +170,7 @@ class TestAzureOpenAIChatModel:
         assert model._settings["api_base"] == "env_openai_api_base"
         assert model._settings["api_version"] == "env_openai_api_version"
 
+    @pytest.mark.unit
     def test_default_model_id(self, monkeypatch: pytest.MonkeyPatch) -> None:
         """Test default model ID when not provided."""
         monkeypatch.delenv("AZURE_OPENAI_API_KEY", raising=False)

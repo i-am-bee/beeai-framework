@@ -227,11 +227,11 @@ control.expr = "type"
     [[tool.poe.tasks.test.switch]]
     case = "integration"
     help = "Run Integration Tests"
-    cmd = "pytest -m 'integration' tests/integration"
+    cmd = "pytest -m 'integration'"
 
     [[tool.poe.tasks.test.switch]]
-    case = "extension"
-    help = "Run Extension Tests"
+    case = "examples"
+    help = "Run Examples Tests"
     cmd = "pytest -m 'integration'"
 
     [[tool.poe.tasks.test.switch]]
