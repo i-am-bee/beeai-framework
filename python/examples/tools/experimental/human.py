@@ -1,14 +1,27 @@
+from abc import abstractmethod
+from typing import Protocol, runtime_checkable
+
 from pydantic import BaseModel, Field, InstanceOf
 
 from beeai_framework.context import RunContext
 from beeai_framework.emitter import Emitter
 from beeai_framework.tools.tool import Tool
 from beeai_framework.tools.types import JSONToolOutput, ToolRunOptions
-from examples.helpers.io import ConsoleReader
+
+
+@runtime_checkable
+class Reader(Protocol):
+    @abstractmethod
+    def write(self, prefix: str, message: str) -> None:
+        pass
+
+    @abstractmethod
+    def ask_single_question(self, prefix: str) -> str:
+        pass
 
 
 class HumanToolInput(BaseModel):
-    reader: InstanceOf[ConsoleReader]
+    reader: InstanceOf[Reader]
     name: str | None = None
     description: str | None = None
 
@@ -74,7 +87,9 @@ class HumanTool(Tool[InputSchema, ToolRunOptions, JSONToolOutput]):
     async def _run(self, tool_input: InputSchema, options: ToolRunOptions | None, run: RunContext) -> JSONToolOutput:
         # Use the reader from input
         self.tool_input.reader.write("HumanTool", tool_input.message)
-        user_input: str = self.tool_input.reader.ask_single_question("User 👤 : ")
+
+        # Use ask_single_question
+        user_input: str = self.tool_input.reader.ask_single_question("User 👤 (clarification) : ")
 
         # Return JSONToolOutput with the clarification
         return JSONToolOutput(

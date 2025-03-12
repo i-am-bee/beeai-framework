@@ -41,10 +41,10 @@ async def main() -> None:
                 execution=AgentExecutionConfig(max_retries_per_step=3, total_max_retries=10, max_iterations=20),
             )
             .on(
-                "update",  # Show only final answers
-                lambda data, event: reader.write("Agent 🤖 : ", data["update"]["value"])
-                if data["update"]["key"] == "final_answer"
-                else None,
+                "update",
+                lambda data, event: reader.write(
+                    f"Agent({data['update']['key']}) 🤖 : ", data["update"]["parsedValue"]
+                ),
             )
             .on(
                 "error",  # Log errors
