@@ -189,7 +189,7 @@ class LiteLLMChatModel(ChatModel, ABC):
                             ]
                         )
                         if update.tool_calls
-                        else AssistantMessage(str(update.content))
+                        else AssistantMessage(update.content)  # type: ignore
                     )
                 ]
                 if update.model_dump(exclude_none=True)
