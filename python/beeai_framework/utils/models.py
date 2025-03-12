@@ -69,7 +69,7 @@ class JSONSchemaModel(ABC, BaseModel):
 
     @classmethod
     def create(cls, schema_name: str, schema: dict[str, Any]) -> type["JSONSchemaModel"]:
-        type_mapping = {
+        type_mapping: dict[str, Any] = {
             "string": str,
             "integer": int,
             "number": float,
@@ -87,7 +87,7 @@ class JSONSchemaModel(ABC, BaseModel):
             target_type = type_mapping.get(param.get("type"))
             is_optional = param_name not in required
             if is_optional:
-                target_type = target_type or type(None)
+                target_type = target_type | None if target_type else type(None)
 
             if not target_type:
                 raise ValueError(f"Unsupported type '{param.get('type')}' found in the schema.")
