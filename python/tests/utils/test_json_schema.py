@@ -13,6 +13,8 @@
 # limitations under the License.
 
 
+from typing import Any
+
 import pytest
 from pydantic import ValidationError
 
@@ -24,7 +26,7 @@ Utility functions and classes
 
 
 @pytest.fixture
-def test_json_schema() -> dict[str, list | str | dict]:
+def test_json_schema() -> dict[str, list[str] | str | Any]:
     return {
         "title": "User",
         "type": "object",
@@ -52,7 +54,7 @@ Unit Tests
 
 
 @pytest.mark.unit
-def test_json_schema_model(test_json_schema: dict[str, list | str | dict]) -> None:
+def test_json_schema_model(test_json_schema: dict[str, list[str] | str | Any]) -> None:
     model = JSONSchemaModel.create("test_schema", test_json_schema)
     assert model.model_json_schema()
 
