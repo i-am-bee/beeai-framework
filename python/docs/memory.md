@@ -490,19 +490,19 @@ To create your memory implementation, you must implement the `BaseMemory` class.
 ```py
 from typing import Any
 
-from beeai_framework.backend.message import Message
+from beeai_framework.backend.message import AnyMessage
 from beeai_framework.memory import BaseMemory
 
 
 class MyMemory(BaseMemory):
     @property
-    def messages(self) -> list[Message]:
+    def messages(self) -> list[AnyMessage]:
         raise NotImplementedError("Method not yet implemented.")
 
-    def add(self, message: Message, index: int | None = None) -> None:
+    async def add(self, message: AnyMessage, index: int | None = None) -> None:
         raise NotImplementedError("Method not yet implemented.")
 
-    def delete(self, message: Message) -> bool:
+    async def delete(self, message: AnyMessage) -> bool:
         raise NotImplementedError("Method not yet implemented.")
 
     def reset(self) -> None:

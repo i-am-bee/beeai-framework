@@ -14,6 +14,7 @@
 
 import asyncio
 from collections.abc import AsyncGenerator
+from typing import Any
 
 import pytest
 import pytest_asyncio
@@ -32,9 +33,9 @@ from beeai_framework.backend.chat import (
     ChatModel,
 )
 from beeai_framework.backend.message import (
+    AnyMessage,
     AssistantMessage,
     CustomMessage,
-    Message,
     UserMessage,
 )
 from beeai_framework.backend.types import (
@@ -56,9 +57,9 @@ class ReverseWordsDummyModel(ChatModel):
     """Dummy model that simply reverses every word in a UserMessages"""
 
     model_id = "reversed_words_model"
-    provider_id = "reversed_words_model"
+    provider_id = "ollama"
 
-    def reverse_message_words(self, messages: list[str]) -> str:
+    def reverse_message_words(self, messages: list[AnyMessage]) -> list[str]:
         reversed_words_messages = []
         for message in messages:
             if isinstance(message, UserMessage):
@@ -80,7 +81,7 @@ class ReverseWordsDummyModel(ChatModel):
             await asyncio.sleep(5)
             yield ChatModelOutput(messages=[AssistantMessage(f"{chunk} " if count != last else chunk)])
 
-    async def _create_structure(self, input: ChatModelStructureInput, run: RunContext) -> ChatModelStructureOutput:
+    async def _create_structure(self, input: ChatModelStructureInput[Any], run: RunContext) -> ChatModelStructureOutput:
         reversed_words_messages = self.reverse_message_words(input.messages)
         response_object = {"reversed": "".join(reversed_words_messages)}
         return ChatModelStructureOutput(object=response_object)
@@ -92,7 +93,7 @@ def reverse_words_chat() -> ChatModel:
 
 
 @pytest.fixture
-def chat_messages_list() -> list[Message]:
+def chat_messages_list() -> list[AnyMessage]:
     user_message = UserMessage("tell me something interesting")
     custom_message = CustomMessage(role="custom", content="this is a custom message")
     return [user_message, custom_message]
@@ -105,7 +106,7 @@ Unit Tests
 
 @pytest.mark.asyncio
 @pytest.mark.unit
-async def test_chat_model_create(reverse_words_chat: ChatModel, chat_messages_list: list[Message]) -> None:
+async def test_chat_model_create(reverse_words_chat: ChatModel, chat_messages_list: list[AnyMessage]) -> None:
     response = await reverse_words_chat.create(messages=chat_messages_list)
 
     assert len(response.messages) == 1
@@ -115,7 +116,7 @@ async def test_chat_model_create(reverse_words_chat: ChatModel, chat_messages_li
 
 @pytest.mark.asyncio
 @pytest.mark.unit
-async def test_chat_model_structure(reverse_words_chat: ChatModel, chat_messages_list: list[Message]) -> None:
+async def test_chat_model_structure(reverse_words_chat: ChatModel, chat_messages_list: list[AnyMessage]) -> None:
     class ReverseWordsSchema(BaseModel):
         reversed: str
 
@@ -127,7 +128,7 @@ async def test_chat_model_structure(reverse_words_chat: ChatModel, chat_messages
 
 @pytest.mark.asyncio
 @pytest.mark.unit
-async def test_chat_model_stream(reverse_words_chat: ChatModel, chat_messages_list: list[Message]) -> None:
+async def test_chat_model_stream(reverse_words_chat: ChatModel, chat_messages_list: list[AnyMessage]) -> None:
     response = await reverse_words_chat.create(messages=chat_messages_list, stream=True)
 
     assert len(response.messages) == 4
@@ -137,7 +138,7 @@ async def test_chat_model_stream(reverse_words_chat: ChatModel, chat_messages_li
 
 @pytest.mark.asyncio
 @pytest.mark.unit
-async def test_chat_model_abort(reverse_words_chat: ChatModel, chat_messages_list: list[Message]) -> None:
+async def test_chat_model_abort(reverse_words_chat: ChatModel, chat_messages_list: list[AnyMessage]) -> None:
     with pytest.raises(AbortError):
         await reverse_words_chat.create(
             messages=chat_messages_list,

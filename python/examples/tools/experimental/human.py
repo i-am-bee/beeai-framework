@@ -74,7 +74,7 @@ class HumanTool(Tool[InputSchema, ToolRunOptions, JSONToolOutput]):
     async def _run(self, tool_input: InputSchema, options: ToolRunOptions | None, run: RunContext) -> JSONToolOutput:
         # Use the reader from input
         self.tool_input.reader.write("HumanTool", tool_input.message)
-        user_input = self.tool_input.reader.prompt()
+        user_input: str = self.tool_input.reader.ask_single_question("User 👤 : ")
 
         # Return JSONToolOutput with the clarification
         return JSONToolOutput(

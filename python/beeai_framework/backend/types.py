@@ -51,7 +51,7 @@ class ChatModelStructureInput(ChatModelParameters, Generic[T]):
 
 
 class ChatModelStructureOutput(BaseModel):
-    object: type[BaseModel] | dict[str, Any]
+    object: dict[str, Any]  # | type[BaseModel]
 
 
 class ChatModelInput(ChatModelParameters):

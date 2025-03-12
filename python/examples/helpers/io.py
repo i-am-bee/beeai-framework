@@ -45,3 +45,7 @@ class ConsoleReader:
         for prompt in self:
             return prompt
         sys.exit()
+
+    def ask_single_question(self, query_message: str) -> str:
+        answer = input(colored(query_message, "cyan", attrs=["bold"]))
+        return answer.strip()

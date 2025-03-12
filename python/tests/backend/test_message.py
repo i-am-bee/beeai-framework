@@ -23,6 +23,7 @@ from beeai_framework.backend import (
     SystemMessage,
     UserMessage,
 )
+from beeai_framework.backend.message import MessageTextContent
 
 """
 Unit Tests
@@ -56,6 +57,7 @@ def test_assistant_message() -> None:
     content = message.content
     assert isinstance(message, AssistantMessage)
     assert len(content) == 1
+    assert isinstance(content[0], MessageTextContent)
     assert content[0].text == text
 
 

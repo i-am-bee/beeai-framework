@@ -23,10 +23,10 @@ import litellm
 __all__ = ["_patch_litellm_cache"]
 
 
-class EventLoopAwareInMemoryCache(litellm.InMemoryCache):
+class EventLoopAwareInMemoryCache(litellm.InMemoryCache):  # type: ignore
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
-        self._clients: weakref.WeakKeyDictionary = weakref.WeakKeyDictionary()
+        self._clients: weakref.WeakKeyDictionary = weakref.WeakKeyDictionary()  # type: ignore
 
     def get_cache(self, key: str, **kwargs: Any) -> Any | None:
         new_key = self._create_cache_key(key)

@@ -18,7 +18,7 @@ from collections.abc import AsyncGenerator
 from typing import Any
 
 import litellm
-from litellm import (
+from litellm import (  # type: ignore
     ModelResponse,
     ModelResponseStream,
     acompletion,
@@ -55,7 +55,7 @@ class LiteLLMChatModel(ChatModel, ABC):
     def model_id(self) -> str:
         return self._model_id
 
-    def __init__(self, model_id: str, *, provider_id: str, settings: dict | None = None) -> None:
+    def __init__(self, model_id: str, *, provider_id: str, settings: dict[str, Any] | None = None) -> None:
         super().__init__()
         self._model_id = model_id
         self._litellm_provider_id = provider_id
@@ -66,7 +66,7 @@ class LiteLLMChatModel(ChatModel, ABC):
 
     @staticmethod
     def litellm_debug(enable: bool = True) -> None:
-        litellm.set_verbose = enable
+        litellm.set_verbose = enable  # type: ignore
         litellm.suppress_debug_info = not enable
         litellm.logging = enable
 
@@ -118,8 +118,8 @@ class LiteLLMChatModel(ChatModel, ABC):
             # TODO: validate result matches expected schema
             return ChatModelStructureOutput(object=result)
 
-    def _transform_input(self, input: ChatModelInput) -> dict:
-        messages: list[dict] = []
+    def _transform_input(self, input: ChatModelInput) -> dict[str, Any]:
+        messages: list[dict[str, Any]] = []
         for message in input.messages:
             if isinstance(message, ToolMessage):
                 for content in message.content:
@@ -171,7 +171,7 @@ class LiteLLMChatModel(ChatModel, ABC):
     def _transform_output(self, chunk: ModelResponse | ModelResponseStream) -> ChatModelOutput:
         choice = chunk.choices[0]
         finish_reason = choice.finish_reason
-        usage = choice.get("usage")
+        usage = choice.get("usage")  # type: ignore
         update = choice.delta if isinstance(choice, StreamingChoices) else choice.message
 
         return ChatModelOutput(
@@ -181,13 +181,15 @@ class LiteLLMChatModel(ChatModel, ABC):
                         AssistantMessage(
                             [
                                 MessageToolCallContent(
-                                    id=call.id or "dummy_id", tool_name=call.function.name, args=call.function.arguments
+                                    id=call.id or "dummy_id",
+                                    tool_name=call.function.name or "",
+                                    args=call.function.arguments,
                                 )
                                 for call in update.tool_calls
                             ]
                         )
                         if update.tool_calls
-                        else AssistantMessage(update.content)
+                        else AssistantMessage(update.content)  # type: ignore
                     )
                 ]
                 if update.model_dump(exclude_none=True)

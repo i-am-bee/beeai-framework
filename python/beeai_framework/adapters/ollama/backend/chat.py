@@ -14,6 +14,7 @@
 
 
 import os
+from typing import Any
 
 from beeai_framework.adapters.litellm.chat import LiteLLMChatModel
 from beeai_framework.backend.constants import ProviderName
@@ -27,7 +28,7 @@ class OllamaChatModel(LiteLLMChatModel):
     def provider_id(self) -> ProviderName:
         return "ollama"
 
-    def __init__(self, model_id: str | None = None, settings: dict | None = None) -> None:
+    def __init__(self, model_id: str | None = None, settings: dict[str, Any] | None = None) -> None:
         settings = settings.copy() if settings is not None else {}
 
         api_key = settings.get("api_key", os.getenv("OLLAMA_API_KEY") or "ollama")

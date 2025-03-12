@@ -12,7 +12,7 @@ def main() -> None:
         label: str
         input: str
 
-    template: PromptTemplate = PromptTemplate(
+    template: PromptTemplate[UserMessage] = PromptTemplate(
         PromptTemplateInput(
             schema=UserMessage,
             template="""{{label}}: {{input}}""",

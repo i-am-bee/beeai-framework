@@ -52,7 +52,7 @@ async def test_workflow_basic() -> None:
         print("Running third step!", state)
         return Workflow.END
 
-    workflow: Workflow = Workflow(schema=State)
+    workflow: Workflow[State] = Workflow(schema=State)
     workflow.add_step("first", first)
     workflow.add_step("second", second)
     workflow.add_step("third", third)
@@ -92,7 +92,7 @@ async def test_workflow_validation() -> None:
         print("Running third step!", state)
         return Workflow.END
 
-    workflow: Workflow = Workflow(schema=State)
+    workflow: Workflow[State] = Workflow(schema=State)
     workflow.add_step("first", first)
     workflow.add_step("second", second)
     workflow.add_step("third", third)
@@ -119,7 +119,7 @@ async def test_workflow_step_delete() -> None:
     def third(state: State) -> None:
         print("Running third step!", state)
 
-    workflow: Workflow = Workflow(schema=State)
+    workflow: Workflow[State] = Workflow(schema=State)
     workflow.add_step("first", first)
     workflow.add_step("second", second)
     workflow.add_step("third", third)
@@ -153,7 +153,7 @@ async def test_workflow_async_steps() -> None:
     async def third(state: State) -> None:
         print("Running third step!", state)
 
-    workflow: Workflow = Workflow(schema=State)
+    workflow: Workflow[State] = Workflow(schema=State)
     workflow.add_step("first", first)
     workflow.add_step("second", second)
     workflow.add_step("third", third)

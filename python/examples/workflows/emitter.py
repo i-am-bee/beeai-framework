@@ -1,19 +1,20 @@
 import asyncio
 import sys
 import traceback
-from typing import Literal, TypeAlias
+from typing import Any, Literal, TypeAlias
 
 from pydantic import BaseModel
 
 from beeai_framework.emitter.emitter import Emitter, EventMeta
 from beeai_framework.errors import FrameworkError
 from beeai_framework.workflows import WorkflowReservedStepName
+from beeai_framework.workflows.types import WorkflowRun
 from beeai_framework.workflows.workflow import Workflow
 
 WorkflowStep: TypeAlias = Literal["pre_process", "add_loop", "post_process"]
 
 
-def print_event(event_data: dict, event_meta: EventMeta) -> None:
+def print_event(event_data: dict[str, Any], event_meta: EventMeta) -> None:
     """Process agent events and log appropriately"""
 
     if event_meta.name == "error":
@@ -30,10 +31,11 @@ def print_event(event_data: dict, event_meta: EventMeta) -> None:
     elif event_meta.name == "success":
         if isinstance(event_data, dict):
             run = event_data.get("run")
+            assert isinstance(run, WorkflowRun)
             print(f"Workflow : Completed step: {run.steps[-1].name}, Result: {run.state.result}")
             print(f"Workflow : Next step: {event_data.get('next')}")
         else:
-            print("Workflow : Result: ", event_data.result)
+            print("Workflow : Result: ", event_data["result"])
     elif event_meta.name == "finish":
         print("Workflow : Finished")
 
