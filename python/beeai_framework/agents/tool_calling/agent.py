@@ -87,9 +87,11 @@ class ToolCallingAgent(BaseAgent[ToolCallingAgentRunOutput]):
                         raise AgentError(f"Tool {tool_call.tool_name} does not exist!")
 
                     tool_input = json.loads(tool_call.args)
+                    print(tool_input)
                     tool_response = await tool.run(tool_input).context(
                         {"state": state.model_dump(), "tool_call_msg": tool_call}
                     )
+                    print(tool_response.get_text_content())
                     await state.memory.add(
                         ToolMessage(
                             MessageToolResultContent(

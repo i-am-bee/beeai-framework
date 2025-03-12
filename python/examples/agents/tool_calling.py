@@ -27,16 +27,10 @@ reader = ConsoleReader()
 def process_agent_events(data: dict[str, Any], event: EventMeta) -> None:
     """Process agent events and log appropriately"""
 
-    if event.name == "iteration":
-        reader.write("Agent 🤖 : ", FrameworkError.ensure(data["error"]).explain())
-    elif event.name == "retry":
-        reader.write("Agent 🤖 : ", "retrying the action...")
-    elif event.name == "update":
-        reader.write(f"Agent({data['update']['key']}) 🤖 : ", data["update"]["parsedValue"])
-    elif event.name == "start":
-        reader.write("Agent 🤖 : ", "starting new iteration")
+    if event.name == "start":
+        reader.write("Agent 🤖 (debug) : ", "starting new iteration")
     elif event.name == "success":
-        reader.write("Agent 🤖 : ", "success")
+        reader.write("Agent (debug) 🤖 : ", data["state"]["result"])
 
 
 async def main() -> None:
@@ -48,17 +42,13 @@ async def main() -> None:
     )
 
     # Main interaction loop with user input
-    for prompt in ["Hello agent.", "What is the weather in London?"]:
-        # Run agent with the prompt
-        reader.write("User 👤 : ", prompt)
-        response = await agent.run(prompt)
-
+    for prompt in reader:
+        response = await agent.run(prompt).on("*", process_agent_events)
         reader.write("Agent 🤖 : ", response.result.text)
 
-    print("======DONE (showing full history)=======")
+    print("======DONE (showing the full message history)=======")
+
     for msg in response.memory.messages:
-        if msg.text == "\n":
-            continue
         print(msg)
 
 
