@@ -48,7 +48,7 @@ from beeai_framework.template import PromptTemplate
 from beeai_framework.tools.tool import AnyTool
 
 
-class ReActAgent(BaseAgent[ReActAgentRunInput, ReActAgentRunOptions, ReActAgentRunOutput]):
+class ReActAgent(BaseAgent[ReActAgentRunOutput]):
     runner: Callable[..., BaseRunner]
 
     def __init__(

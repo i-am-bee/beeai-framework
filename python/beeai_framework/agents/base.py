@@ -26,12 +26,10 @@ from beeai_framework.context import Run, RunContext
 from beeai_framework.emitter import Emitter
 from beeai_framework.memory import BaseMemory
 
-TInput = TypeVar("TInput", bound=BaseModel)
-TOptions = TypeVar("TOptions", bound=BaseModel)
 TOutput = TypeVar("TOutput", bound=BaseModel)
 
 
-class BaseAgent(ABC, Generic[TInput, TOptions, TOutput]):
+class BaseAgent(ABC, Generic[TOutput]):
     def __init__(self) -> None:
         super().__init__()
         self._is_running = False
@@ -96,4 +94,4 @@ class BaseAgent(ABC, Generic[TInput, TOptions, TOutput]):
         )
 
 
-AnyAgent = BaseAgent[Any, Any, Any]
+AnyAgent = BaseAgent[Any]

@@ -264,16 +264,16 @@ class RunInput(BaseModel):
     message: InstanceOf[AnyMessage]
 
 
-class RunOptions(BaseAgentRunOptions):
+class CustomAgentRunOptions(BaseAgentRunOptions):
     max_retries: int | None = None
 
 
-class RunOutput(BaseModel):
+class CustomAgentRunOutput(BaseModel):
     message: InstanceOf[AnyMessage]
     state: State
 
 
-class CustomAgent(BaseAgent[RunInput, RunOptions, RunOutput]):
+class CustomAgent(BaseAgent[CustomAgentRunOutput]):
     memory: BaseMemory | None = None
 
     def __init__(self, llm: ChatModel, memory: BaseMemory) -> None:
@@ -290,9 +290,9 @@ class CustomAgent(BaseAgent[RunInput, RunOptions, RunOutput]):
     def run(
         self,
         run_input: RunInput,
-        options: RunOptions | None = None,
-    ) -> Run[RunOutput]:
-        async def handler(context: RunContext) -> RunOutput:
+        options: CustomAgentRunOptions | None = None,
+    ) -> Run[CustomAgentRunOutput]:
+        async def handler(context: RunContext) -> CustomAgentRunOutput:
             class CustomSchema(BaseModel):
                 thought: str = Field(description="Describe your thought process before coming with a final answer")
                 final_answer: str = Field(
@@ -313,7 +313,7 @@ class CustomAgent(BaseAgent[RunInput, RunOptions, RunOutput]):
             result = AssistantMessage(response.object["final_answer"])
             await self.memory.add(result) if self.memory else None
 
-            return RunOutput(
+            return CustomAgentRunOutput(
                 message=result,
                 state=State(thought=response.object["thought"], final_answer=response.object["final_answer"]),
             )
