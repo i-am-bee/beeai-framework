@@ -287,7 +287,7 @@
     "@ai-sdk/azure": "^1.1.2",
     "@ai-sdk/google-vertex": "^2.1.6",
     "@ai-sdk/groq": "^1.1.6",
-    "@ai-sdk/openai": "^1.1.2",
+    "@ai-sdk/openai": "^1.2.3",
     "@commitlint/cli": "^19.7.1",
     "@commitlint/config-conventional": "^19.7.1",
     "@elastic/elasticsearch": "^8.16.2",

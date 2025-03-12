@@ -106,7 +106,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@ai-sdk/openai@npm:^1.1.2":
+"@ai-sdk/openai@npm:^1.2.3":
   version: 1.2.3
   resolution: "@ai-sdk/openai@npm:1.2.3"
   dependencies:
@@ -5159,7 +5159,7 @@ __metadata:
     "@ai-sdk/azure": "npm:^1.1.2"
     "@ai-sdk/google-vertex": "npm:^2.1.6"
     "@ai-sdk/groq": "npm:^1.1.6"
-    "@ai-sdk/openai": "npm:^1.1.2"
+    "@ai-sdk/openai": "npm:^1.2.3"
     "@ai-zen/node-fetch-event-source": "npm:^2.1.4"
     "@commitlint/cli": "npm:^19.7.1"
     "@commitlint/config-conventional": "npm:^19.7.1"
