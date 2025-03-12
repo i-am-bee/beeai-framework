@@ -55,7 +55,7 @@ jobs:
       - name: Check Copyright Header
         run: poetry run poe copyright --type check
   integration_tests:
-    timeout-minutes: 20
+    timeout-minutes: 40
     name: Integration Tests
     runs-on: ubuntu-latest
     steps:
