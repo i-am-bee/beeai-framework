@@ -63,11 +63,13 @@ class LiteLLMChatModel(ChatModel, ABC):
         self.supported_params = get_supported_openai_params(model=self.model_id, custom_llm_provider=provider_id) or []
         # drop any unsupported parameters that were passed in
         litellm.drop_params = True
-        self._settings = settings or {}
+        self._settings = settings.copy() if settings is not None else {}
 
     @staticmethod
     def litellm_debug(enable: bool = True) -> None:
         litellm.set_verbose = enable  # type: ignore
+        litellm.suppress_debug_info = not enable
+
         litellm.suppress_debug_info = not enable
         litellm.logging = enable
 
