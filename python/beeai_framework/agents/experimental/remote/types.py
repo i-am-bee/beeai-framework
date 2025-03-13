@@ -15,7 +15,7 @@
 
 from pydantic import BaseModel, InstanceOf
 
-from beeai_framework.backend.message import Message
+from beeai_framework.backend.message import AnyMessage
 from beeai_framework.cancellation import AbortSignal
 
 
@@ -28,7 +28,7 @@ class RemoteAgentRunOptions(BaseModel):
 
 
 class RemoteAgentRunOutput(BaseModel):
-    result: InstanceOf[Message]
+    result: InstanceOf[AnyMessage]
 
 
 class RemoteAgentInput(BaseModel):
