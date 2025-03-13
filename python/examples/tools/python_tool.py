@@ -3,7 +3,7 @@ import sys
 import traceback
 
 from beeai_framework.adapters.ollama.backend.chat import OllamaChatModel
-from beeai_framework.agents.bee import BeeAgent
+from beeai_framework.agents.react.agent import ReActAgent
 from beeai_framework.errors import FrameworkError
 from beeai_framework.memory import UnconstrainedMemory
 from beeai_framework.tools.python import PythonTool
@@ -18,7 +18,7 @@ async def main() -> None:
             "storage": LocalPythonStorage({"interpreterWorkingDir": "./pythonTmp", "localWorkingDir": "./localTmp"}),
         }
     )
-    agent = BeeAgent(llm=llm, tools=[p], memory=UnconstrainedMemory())
+    agent = ReActAgent(llm=llm, tools=[p], memory=UnconstrainedMemory())
     result = await agent.run("What's 1 plus 1?")
     print(result.result.text)
 
