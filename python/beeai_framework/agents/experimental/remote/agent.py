@@ -13,19 +13,24 @@
 # limitations under the License.
 
 import json
+import uuid
+from collections.abc import AsyncGenerator
 from contextlib import AsyncExitStack
 
-from acp import ClientSession
+import anyio
+from acp import ClientSession, ServerNotification
 from acp.client.sse import sse_client
+from acp.shared.session import ReceiveResultT
 from acp.types import (
     AgentRunProgressNotification,
     AgentRunProgressNotificationParams,
+    ClientRequest,
+    Request,
+    RequestParams,
     RunAgentRequest,
     RunAgentRequestParams,
     RunAgentResult,
-    ServerNotification,
 )
-from beeai_sdk.utils.api import send_request_with_notifications
 
 from beeai_framework.agents.base import BaseAgent
 from beeai_framework.agents.errors import AgentError
@@ -67,12 +72,11 @@ class RemoteAgent(BaseAgent[RemoteAgentRunInput, RemoteAgentRunOptions, RemoteAg
         context: RunContext,
     ) -> RemoteAgentRunOutput:
         if not self.session:
-            await self.connect_to_server()
+            await self._connect_to_server()
 
         try:
             input = json.loads(run_input.get("prompt"))
-            async for message in send_request_with_notifications(
-                url_or_session=self.session,
+            async for message in self._send_request_with_notifications(
                 req=RunAgentRequest(
                     method="agents/run",
                     params=RunAgentRequestParams(name=self.input.agent, input=input),
@@ -109,7 +113,55 @@ class RemoteAgent(BaseAgent[RemoteAgentRunInput, RemoteAgentRunOptions, RemoteAg
             await self.exit_stack.aclose()
             self.session = None
 
-    async def connect_to_server(
+    async def _send_request_with_notifications(
+        self,
+        req: Request,
+        result_type: type[ReceiveResultT],
+    ) -> AsyncGenerator[ReceiveResultT | ServerNotification | None, None]:
+        resp: ReceiveResultT | None = None
+        async with AsyncExitStack():
+            message_writer, message_reader = anyio.create_memory_object_stream()
+
+            req = ClientRequest(req).root
+            req.params = req.params or RequestParams()
+            req.params.meta = RequestParams.Meta(progressToken=uuid.uuid4().hex)
+            req = ClientRequest(req)
+
+            async with anyio.create_task_group() as task_group:
+
+                async def request_task() -> None:
+                    nonlocal resp
+                    try:
+                        resp = await self.session.send_request(req, result_type)
+                    finally:
+                        task_group.cancel_scope.cancel()
+
+                async def read_notifications() -> None:
+                    # IMPORTANT(!) if the client does not read the notifications, agent gets blocked
+                    async for message in self.session.incoming_messages:
+                        try:
+                            if isinstance(message, Exception):
+                                raise AgentError("Remote agent error", cause=message)
+                            notification = ServerNotification.model_validate(message)
+                            await message_writer.send(notification)
+                        except ValueError:
+                            await self.emitter.emit(
+                                "warning",
+                                {
+                                    "data": f"Unable to parse message from server: {message}",
+                                },
+                            )
+
+                task_group.start_soon(read_notifications)
+                task_group.start_soon(request_task)
+
+                async for message in message_reader:
+                    yield message
+
+        if resp:
+            yield resp
+
+    async def _connect_to_server(
         self,
     ) -> None:
         try:
