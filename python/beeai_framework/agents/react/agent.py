@@ -18,6 +18,12 @@ from datetime import UTC, datetime
 from typing import Any
 
 from beeai_framework.agents.base import BaseAgent
+from beeai_framework.agents.react.events import (
+    ReActAgentSuccessEvent,
+    ReActAgentUpdate,
+    ReActAgentUpdateEvent,
+    ReActAgentUpdateMeta,
+)
 from beeai_framework.agents.react.runners.base import (
     BaseRunner,
     ReActAgentRunnerIteration,
@@ -159,16 +165,18 @@ class ReActAgent(BaseAgent[ReActAgentRunOutput]):
                     for key in ["partial_update", "update"]:
                         await iteration.emitter.emit(
                             key,
-                            {
-                                "data": iteration.state,
-                                "update": {
-                                    "key": "tool_output",
-                                    "value": tool_result.output,
-                                    "parsedValue": tool_result.output,
-                                },
-                                "meta": {"success": tool_result.success},  # TODO deleted meta
-                                "memory": runner.memory,
-                            },
+                            ReActAgentUpdateEvent(
+                                data=iteration.state,
+                                update=ReActAgentUpdate(
+                                    key="tool_output",
+                                    value=tool_result.output,
+                                    parsed_value=tool_result.output,
+                                ),
+                                meta=ReActAgentUpdateMeta(
+                                    success=tool_result.success, iteration=iteration.meta.iteration
+                                ),
+                                memory=runner.memory,
+                            ),
                         )
 
                 if iteration.state.final_answer:
@@ -181,12 +189,12 @@ class ReActAgent(BaseAgent[ReActAgentRunOutput]):
                     await runner.memory.add(final_message)
                     await iteration.emitter.emit(
                         "success",
-                        {
-                            "data": final_message,
-                            "iterations": runner.iterations,
-                            "memory": runner.memory,
-                            "meta": iteration.meta,
-                        },
+                        ReActAgentSuccessEvent(
+                            data=final_message,
+                            iterations=runner.iterations,
+                            memory=runner.memory,
+                            meta=iteration.meta,
+                        ),
                     )
 
             if prompt is not None:

@@ -17,7 +17,11 @@ from collections.abc import Sequence
 
 from beeai_framework.agents import AgentError, AgentExecutionConfig
 from beeai_framework.agents.base import BaseAgent
-from beeai_framework.agents.tool_calling.events import tool_calling_agent_event_types
+from beeai_framework.agents.tool_calling.events import (
+    ToolCallingAgentStartEvent,
+    ToolCallingAgentSuccessEvent,
+    tool_calling_agent_event_types,
+)
 from beeai_framework.agents.tool_calling.types import (
     ToolCallingAgentRunOutput,
     ToolCallingAgentRunState,
@@ -75,7 +79,7 @@ class ToolCallingAgent(BaseAgent[ToolCallingAgentRunOutput]):
 
                 await context.emitter.emit(
                     "start",
-                    {"state": state.model_dump()},
+                    ToolCallingAgentStartEvent(state=state),
                 )
                 response = await self._llm.create(messages=state.memory.messages, tools=list(self._tools), stream=False)
                 await state.memory.add_many(response.messages)
@@ -116,7 +120,7 @@ class ToolCallingAgent(BaseAgent[ToolCallingAgentRunOutput]):
 
                 await context.emitter.emit(
                     "success",
-                    {"state": state.model_dump()},
+                    ToolCallingAgentSuccessEvent(state=state),
                 )
 
             await self.memory.add_many(state.memory.messages[1:])

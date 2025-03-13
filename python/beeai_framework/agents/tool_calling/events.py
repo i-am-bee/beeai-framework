@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import Any
 
 from pydantic import BaseModel
 
@@ -27,7 +26,7 @@ class ToolCallingAgentSuccessEvent(BaseModel):
     state: ToolCallingAgentRunState
 
 
-tool_calling_agent_event_types: dict[str, Any] = {
+tool_calling_agent_event_types: dict[str, type] = {
     "start": ToolCallingAgentStartEvent,
     "success": ToolCallingAgentSuccessEvent,
 }

@@ -13,10 +13,19 @@
 # limitations under the License.
 
 import datetime
-from typing import Any
 
 from pydantic import BaseModel
 
+from beeai_framework.agents.react.events import (
+    ReActAgentErrorEvent,
+    ReActAgentRetryEvent,
+    ReActAgentStartEvent,
+    ReActAgentToolEvent,
+    ReActAgentToolEventData,
+    ReActAgentUpdate,
+    ReActAgentUpdateEvent,
+    ReActAgentUpdateMeta,
+)
 from beeai_framework.agents.react.runners.base import (
     BaseRunner,
     ReActAgentRunnerLLMInput,
@@ -45,6 +54,7 @@ from beeai_framework.agents.react.types import (
     ReActAgentRunIteration,
     ReActAgentTemplates,
 )
+from beeai_framework.backend.events import ChatModelNewTokenEvent
 from beeai_framework.backend.message import AssistantMessage, SystemMessage, UserMessage
 from beeai_framework.backend.types import ChatModelOutput
 from beeai_framework.emitter.emitter import EventMeta
@@ -123,10 +133,11 @@ class DefaultRunner(BaseRunner):
 
     async def llm(self, input: ReActAgentRunnerLLMInput) -> ReActAgentRunIteration:
         async def on_retry(ctx: RetryableContext, last_error: Exception) -> None:
-            await input.emitter.emit("retry", {"meta": input.meta})
+            await input.emitter.emit("retry", ReActAgentRetryEvent(meta=input.meta))
 
         async def on_error(error: Exception, _: RetryableContext) -> None:
-            await input.emitter.emit("error", {"error": error, "meta": input.meta})
+            error = FrameworkError.ensure(error)
+            await input.emitter.emit("error", ReActAgentErrorEvent(error=error, meta=input.meta))
             self._failed_attempts_counter.use(error)
 
             if isinstance(error, LinePrefixParserError):
@@ -137,7 +148,9 @@ class DefaultRunner(BaseRunner):
                     await self.memory.add(UserMessage(schema_error_prompt, {"tempMessage": True}))
 
         async def executor(_: RetryableContext) -> ReActAgentRunIteration:
-            await input.emitter.emit("start", {"meta": input.meta, "tools": self._input.tools, "memory": self.memory})
+            await input.emitter.emit(
+                "start", ReActAgentStartEvent(meta=input.meta, tools=self._input.tools, memory=self.memory)
+            )
 
             parser = self.create_parser()
 
@@ -147,47 +160,49 @@ class DefaultRunner(BaseRunner):
 
                 await input.emitter.emit(
                     "update",
-                    {
-                        "data": parser.final_state,
-                        "update": {"key": data.key, "value": data.field.raw, "parsedValue": data.value.model_dump()},
-                        "meta": {**input.meta.model_dump(), "success": True},
-                        "tools": self._input.tools,
-                        "memory": self.memory,
-                    },
+                    ReActAgentUpdateEvent(
+                        data=parser.final_state,
+                        update=ReActAgentUpdate(
+                            key=data.key, value=data.field.raw, parsed_value=data.value.model_dump()
+                        ),
+                        meta=ReActAgentUpdateMeta(success=True, iteration=input.meta.iteration),
+                        tools=self._input.tools,
+                        memory=self.memory,
+                    ),
                 )
 
             async def on_partial_update(data: LinePrefixParserUpdate, event: EventMeta) -> None:
                 await input.emitter.emit(
                     "partial_update",
-                    {
-                        "data": parser.final_state,
-                        "update": {
-                            "key": data.key,
-                            "value": data.delta,
-                            "parsedValue": data.value.model_dump() if isinstance(data.value, BaseModel) else data.value,
-                        },
-                        "meta": {**input.meta.model_dump(), "success": True},
-                        "tools": self._input.tools,
-                        "memory": self.memory,
-                    },
+                    ReActAgentUpdateEvent(
+                        data=parser.final_state,
+                        update=ReActAgentUpdate(
+                            key=data.key,
+                            value=data.delta,
+                            parsed_value=data.value.model_dump() if isinstance(data.value, BaseModel) else data.value,
+                        ),
+                        meta=ReActAgentUpdateMeta(success=True, iteration=input.meta.iteration),
+                        tools=self._input.tools,
+                        memory=self.memory,
+                    ),
                 )
 
             parser.emitter.on("update", on_update)
             parser.emitter.on("partial_update", on_partial_update)
 
-            async def on_new_token(data: dict[str, Any], event: EventMeta) -> None:
+            async def on_new_token(data: ChatModelNewTokenEvent, event: EventMeta) -> None:
                 if parser.done:
-                    data["abort"]()
+                    data.abort()
                     return
 
-                chunk = data["value"].get_text_content()
+                chunk = data.value.get_text_content()
                 await parser.add(chunk)
 
                 if parser.partial_state.get("tool_output") is not None or (
                     parser.partial_state.get("tool_input") is not None
                     and parser.partial_state.get("final_answer") is not None
                 ):
-                    data["abort"]()
+                    data.abort()
 
             output: ChatModelOutput = await self._input.llm.create(
                 messages=self.memory.messages[:],
@@ -253,16 +268,16 @@ class DefaultRunner(BaseRunner):
         async def on_error(error: Exception, _: RetryableContext) -> None:
             await input.emitter.emit(
                 "toolError",
-                {
-                    "data": {
-                        "iteration": input.state,
-                        "tool": tool,
-                        "input": input.state.tool_input,
-                        "options": self._options,
-                        "error": FrameworkError.ensure(error),
-                    },
-                    "meta": input.meta,
-                },
+                ReActAgentToolEvent(
+                    data=ReActAgentToolEventData(
+                        iteration=input.state,
+                        tool=tool,
+                        input=input.state.tool_input,
+                        options=self._options,
+                        error=FrameworkError.ensure(error),
+                    ),
+                    meta=input.meta,
+                ),
             )
             self._failed_attempts_counter.use(error)
 

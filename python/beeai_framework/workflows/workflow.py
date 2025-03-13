@@ -119,8 +119,10 @@ class Workflow(Generic[T, K]):
         self._start_step = name
         return self
 
-    def run(self, state: ModelLike[T], options: ModelLike[WorkflowRunOptions] | None = None) -> Run[WorkflowRun[T, K]]:
-        options = to_model_optional(WorkflowRunOptions, options)
+    def run(
+        self, state: ModelLike[T], options: ModelLike[WorkflowRunOptions[K]] | None = None
+    ) -> Run[WorkflowRun[T, K]]:
+        options = to_model_optional(WorkflowRunOptions[K], options)
 
         async def handler(context: RunContext) -> WorkflowRun[T, K]:
             run = WorkflowRun[T, K](state=to_model(self._schema, state))
@@ -132,7 +134,7 @@ class Workflow(Generic[T, K]):
                 if step is None:
                     raise WorkflowError(f"Step '{next}' was not found.")
 
-                await context.emitter.emit("start", {"run": run, "step": next})
+                await context.emitter.emit("start", WorkflowStartEvent[T, K](run=run, step=step))
 
                 try:
                     step_res = WorkflowStepRes[T, K](name=next, state=run.state.model_copy(deep=True))
@@ -160,22 +162,22 @@ class Workflow(Generic[T, K]):
 
                     await context.emitter.emit(
                         "success",
-                        {
-                            "run": run.model_copy(),
-                            "state": run.state,
-                            "step": step,
-                            "next": next,
-                        },
+                        WorkflowSuccessEvent[T, K](
+                            run=run.model_copy(),
+                            state=run.state,
+                            step=step,
+                            next=next,
+                        ),
                     )
                 except Exception as e:
                     err = FrameworkError.ensure(e)
                     await context.emitter.emit(
                         "error",
-                        {
-                            "run": run.model_copy(),
-                            "step": next,
-                            "error": err,
-                        },
+                        WorkflowErrorEvent[T, K](
+                            run=run.model_copy(),
+                            step=next,
+                            error=err,
+                        ),
                     )
                     raise err from None
 

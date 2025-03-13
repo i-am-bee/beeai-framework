@@ -72,15 +72,15 @@ async def create_agent() -> ReActAgent:
     return agent
 
 
-def process_agent_events(data: dict[str, Any], event: EventMeta) -> None:
+def process_agent_events(data: Any, event: EventMeta) -> None:
     """Process agent events and log appropriately"""
 
     if event.name == "error":
-        reader.write("Agent 🤖 : ", FrameworkError.ensure(data["error"]).explain())
+        reader.write("Agent 🤖 : ", FrameworkError.ensure(data.error).explain())
     elif event.name == "retry":
         reader.write("Agent 🤖 : ", "retrying the action...")
     elif event.name == "update":
-        reader.write(f"Agent({data['update']['key']}) 🤖 : ", data["update"]["parsedValue"])
+        reader.write(f"Agent({data.update.key}) 🤖 : ", data.update.parsedValue)
     elif event.name == "start":
         reader.write("Agent 🤖 : ", "starting new iteration")
     elif event.name == "success":

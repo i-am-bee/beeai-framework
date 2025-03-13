@@ -12,28 +12,42 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import Generic, TypeVar
+from types import NoneType
+from typing import Any
 
 from pydantic import BaseModel, InstanceOf
 
-from beeai_framework.tools import ToolError
+from beeai_framework.errors import FrameworkError
 from beeai_framework.tools.types import ToolOutput, ToolRunOptions
 
-TInput = TypeVar("TInput", bound=BaseModel)
 
-
-class ToolStartEvent(BaseModel, Generic[TInput]):
-    input: TInput
+class ToolStartEvent(BaseModel):
+    input: BaseModel | dict[str, Any]
     options: ToolRunOptions | None = None
 
 
-class ToolSuccessEvent(BaseModel, Generic[TInput]):
+class ToolSuccessEvent(BaseModel):
     output: InstanceOf[ToolOutput]
-    input: TInput
+    input: BaseModel | dict[str, Any]
     options: ToolRunOptions | None = None
 
 
-class ToolErrorEvent(BaseModel, Generic[TInput]):
-    error: InstanceOf[ToolError]
-    input: TInput
+class ToolErrorEvent(BaseModel):
+    error: InstanceOf[FrameworkError]
+    input: BaseModel | dict[str, Any]
     options: ToolRunOptions | None = None
+
+
+class ToolRetryEvent(BaseModel):
+    error: InstanceOf[FrameworkError]
+    input: BaseModel | dict[str, Any]
+    options: ToolRunOptions | None = None
+
+
+tool_event_types: dict[str, type] = {
+    "start": ToolStartEvent,
+    "success": ToolSuccessEvent,
+    "error": ToolErrorEvent,
+    "retry": ToolRetryEvent,
+    "finish": NoneType,
+}

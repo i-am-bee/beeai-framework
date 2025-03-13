@@ -209,8 +209,8 @@ _Source: [examples/agents/simple.py](/python/examples/agents/simple.py)_
 Monitor the agent's execution by observing events it emits. This allows you to track its reasoning process, handle errors, or implement custom logging.
 
 ```py
-def update_callback(data: dict, event: EventMeta) -> None:
-    print(f"Agent({data['update']['key']}) 🤖 : ", data['update']['parsedValue'])
+def update_callback(data: Any, event: EventMeta) -> None:
+    print(f"Agent({data.update.key}) 🤖 : ", data.update.parsed_value)
 
 def on_update(emitter: Emitter) -> None:
     emitter.on("update", update_callback)

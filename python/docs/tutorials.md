@@ -76,6 +76,7 @@ import asyncio
 import os
 import sys
 import traceback
+from typing import Any
 
 from dotenv import load_dotenv
 from mcp import ClientSession, StdioServerParameters
@@ -149,7 +150,7 @@ async def create_agent() -> ReActAgent:
     return agent
 
 
-def print_events(data: dict, event: EventMeta) -> None:
+def print_events(data: Any, event: EventMeta) -> None:
     """Print agent events"""
     if event.name in ["start", "retry", "update", "success", "error"]:
         print(f"\n** Event ({event.name}): {event.path} **\n{data}")
