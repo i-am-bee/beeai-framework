@@ -18,7 +18,7 @@ from pydantic import BaseModel, InstanceOf
 from typing_extensions import TypeVar
 
 from beeai_framework.errors import FrameworkError
-from beeai_framework.workflows.types import WorkflowRun, WorkflowStepDefinition
+from beeai_framework.workflows.types import WorkflowRun
 
 T = TypeVar("T", bound=BaseModel)
 K = TypeVar("K", default=str)
@@ -26,13 +26,13 @@ K = TypeVar("K", default=str)
 
 class WorkflowStartEvent(BaseModel, Generic[T, K]):
     run: WorkflowRun[T, K]
-    step: WorkflowStepDefinition[T, K]
+    step: K
 
 
 class WorkflowSuccessEvent(BaseModel, Generic[T, K]):
     run: WorkflowRun[T, K]
     state: T
-    step: WorkflowStepDefinition[T, K]
+    step: K
     next: K | Literal["__end__"]
 
 

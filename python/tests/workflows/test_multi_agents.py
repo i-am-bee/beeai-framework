@@ -15,11 +15,9 @@
 import pytest
 
 from beeai_framework.adapters.ollama.backend.chat import OllamaChatModel
-from beeai_framework.agents.react import ReActAgent
-from beeai_framework.agents.types import AgentMeta
 from beeai_framework.backend.message import UserMessage
-from beeai_framework.memory import TokenMemory, UnconstrainedMemory
-from beeai_framework.workflows.agent import AgentFactoryInput, AgentWorkflow
+from beeai_framework.memory import UnconstrainedMemory
+from beeai_framework.workflows.agent import AgentWorkflow
 
 """
 E2E Tests
@@ -32,7 +30,7 @@ async def test_multi_agents_workflow_basic() -> None:
     chat_model = OllamaChatModel()
 
     workflow: AgentWorkflow = AgentWorkflow()
-    workflow.add_agent(AgentFactoryInput(name="Translator assistant", tools=[], llm=chat_model))
+    workflow.add_agent(name="Translator assistant", tools=[], llm=chat_model)
 
     memory = UnconstrainedMemory()
     await memory.add(UserMessage(content="Translate 'Hello' to German."))
@@ -47,49 +45,14 @@ async def test_multi_agents_workflow_creation() -> None:
     chat_model = OllamaChatModel()
 
     workflow: AgentWorkflow = AgentWorkflow()
-    workflow.add_agent(ReActAgent(llm=chat_model, tools=[], memory=TokenMemory(chat_model)))
-    workflow.add_agent(lambda mem: ReActAgent(llm=chat_model, tools=[], memory=mem))
-
+    workflow.add_agent(name="AgentA", llm=chat_model, instructions="You are a translator agent.")
+    workflow.add_agent(name="AgentB", llm=chat_model, instructions="Summarize the final outcome.")
     assert len(workflow.workflow.step_names) == 2
 
     memory = UnconstrainedMemory()
     await memory.add(UserMessage(content="Translate 'Good morning' to Italian."))
     response = await workflow.run(memory.messages)
-    assert "buongiorno" in response.state.final_answer.lower()
-
-
-@pytest.mark.e2e
-@pytest.mark.asyncio
-async def test_multi_agents_workflow_creation_variations() -> None:
-    chat_model = OllamaChatModel()
-
-    workflow: AgentWorkflow = AgentWorkflow()
-
-    # AgentFactoryInput
-    workflow.add_agent(name="AgentFactoryInput_1", tools=[], llm=chat_model)
-    workflow.add_agent(agent=AgentFactoryInput(name="AgentFactoryInput_2", tools=[], llm=chat_model))
-
-    # ReActAgent
-    workflow.add_agent(
-        agent=ReActAgent(
-            llm=chat_model,
-            tools=[],
-            memory=TokenMemory(chat_model),
-            meta=AgentMeta(name="ReActAgent_1", tools=[], description="ReActAgent defined using agent keyword"),
-        )
-    )
-
-    assert len(workflow.workflow.step_names) == 3
-    assert set(workflow.workflow.steps.keys()) == {
-        "AgentFactoryInput_1",
-        "AgentFactoryInput_2",
-        "ReActAgent_1",
-    }
-
-    memory = UnconstrainedMemory()
-    await memory.add(UserMessage(content="Translate 'Good morning' to Portuguese."))
-    response = await workflow.run(memory.messages)
-    assert "bom dia" in response.state.final_answer.lower()
+    assert "buongiorno" in response.state.final_answer.lower().replace(" ", "")
 
 
 @pytest.mark.e2e
@@ -98,8 +61,8 @@ async def test_multi_agents_workflow_agent_delete() -> None:
     chat_model = OllamaChatModel()
 
     workflow: AgentWorkflow = AgentWorkflow()
-    workflow.add_agent(ReActAgent(llm=chat_model, tools=[], memory=UnconstrainedMemory()))
-    workflow.del_agent("ReAct")
-    workflow.add_agent(ReActAgent(llm=chat_model, tools=[], memory=UnconstrainedMemory()))
+    workflow.add_agent(name="AgentA", llm=chat_model, tools=[])
+    workflow.del_agent("AgentA")
+    workflow.add_agent(llm=chat_model, tools=[])
 
     assert len(workflow.workflow.step_names) == 1

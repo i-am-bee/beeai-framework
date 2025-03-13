@@ -12,57 +12,64 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import asyncio
 import random
 import string
-from collections.abc import Awaitable, Callable
-from inspect import isfunction
+from collections.abc import Awaitable, Callable, Sequence
 from typing import Any, Self
 
-from pydantic import BaseModel, ConfigDict, Field, InstanceOf
+from pydantic import BaseModel, InstanceOf
 
-from beeai_framework.agents.base import AnyAgent, BaseAgent
-from beeai_framework.agents.react import ReActAgent
-from beeai_framework.agents.react.types import ReActAgentRunOutput
+from beeai_framework.agents.base import AnyAgent
+from beeai_framework.agents.tool_calling.agent import ToolCallingAgent
+from beeai_framework.agents.tool_calling.types import ToolCallingAgentRunOutput, ToolCallingAgentTemplates
 from beeai_framework.agents.types import (
     AgentExecutionConfig,
-    AgentMeta,
 )
 from beeai_framework.backend.chat import ChatModel
-from beeai_framework.backend.message import AnyMessage, AssistantMessage
+from beeai_framework.backend.message import AnyMessage, AssistantMessage, UserMessage
 from beeai_framework.context import Run
 from beeai_framework.memory import BaseMemory, ReadOnlyMemory, UnconstrainedMemory
 from beeai_framework.template import PromptTemplateInput
 from beeai_framework.tools.tool import AnyTool
-from beeai_framework.utils.asynchronous import ensure_async
+from beeai_framework.utils.lists import remove_falsy
 from beeai_framework.workflows.types import WorkflowRun
 from beeai_framework.workflows.workflow import Workflow
 
 AgentFactory = Callable[[ReadOnlyMemory], AnyAgent | Awaitable[AnyAgent]]
 
 
-class AgentFactoryInput(BaseModel):
-    model_config = ConfigDict(arbitrary_types_allowed=True)
-    name: str
-    llm: ChatModel
-    instructions: str | None = None
-    tools: list[InstanceOf[AnyTool]] | None = None
-    execution: AgentExecutionConfig | None = None
+class AgentWorkflowInput(BaseModel):
+    prompt: str | None = None
+    context: str | None = None
+    expected_output: str | type[BaseModel] | None = None
+
+    @classmethod
+    def from_message(cls, message: AnyMessage) -> Self:
+        return cls(prompt=message.text)
+
+    def to_message(self) -> AssistantMessage:
+        text = "\n\nContext:".join(remove_falsy([self.prompt or "", self.context or ""]))
+        return AssistantMessage(text)
 
 
 class Schema(BaseModel):
-    model_config = ConfigDict(arbitrary_types_allowed=True)
-    messages: list[AnyMessage] = Field(min_length=1)
+    inputs: list[InstanceOf[AgentWorkflowInput]]
     final_answer: str | None = None
-    new_messages: list[AnyMessage] = []
+    new_messages: list[InstanceOf[AnyMessage]] = []
 
 
 class AgentWorkflow:
     def __init__(self, name: str = "AgentWorkflow") -> None:
         self.workflow = Workflow(name=name, schema=Schema)
 
-    def run(self, messages: list[AnyMessage]) -> Run[WorkflowRun[Any, Any]]:
-        return self.workflow.run(Schema(messages=messages))
+    def run(self, inputs: Sequence[AgentWorkflowInput | AnyMessage]) -> Run[WorkflowRun[Any, Any]]:
+        schema = Schema(
+            inputs=[
+                input if isinstance(input, AgentWorkflowInput) else AgentWorkflowInput.from_message(input)
+                for input in inputs
+            ],
+        )
+        return self.workflow.run(schema)
 
     def del_agent(self, name: str) -> "AgentWorkflow":
         self.workflow.delete_step(name)
@@ -70,66 +77,43 @@ class AgentWorkflow:
 
     def add_agent(
         self,
-        agent: (
-            AnyAgent | Callable[[ReadOnlyMemory], AnyAgent | asyncio.Future[AnyAgent]] | AgentFactoryInput | None
-        ) = None,
-        /,
-        **kwargs: Any,
+        *,
+        name: str | None = None,
+        role: str | None = None,
+        llm: ChatModel,
+        instructions: str | None = None,
+        tools: list[InstanceOf[AnyTool]] | None = None,
+        execution: AgentExecutionConfig | None = None,
     ) -> "AgentWorkflow":
-        if not agent:
-            if not kwargs:
-                raise ValueError("An agent object or keyword arguments must be provided")
-            elif "agent" in kwargs:
-                agent = kwargs.get("agent")
-            else:
-                agent = AgentFactoryInput.model_validate(kwargs, strict=False, from_attributes=True)
-        elif kwargs:
-            raise ValueError("Agent object required or keyword arguments required but not both")
-        assert agent is not None
-
-        if isinstance(agent, BaseAgent):
-
-            async def factory(memory: ReadOnlyMemory) -> AnyAgent:
-                instance: AnyAgent = await ensure_async(agent)(memory.as_read_only()) if isfunction(agent) else agent
-                instance.memory = memory
-                return instance
-
-            return self._add(agent.meta.name, factory)
-
-        random_string = "".join(random.choice(string.ascii_letters) for _ in range(4))
-        name = agent.name if not callable(agent) else f"Agent{random_string}"
-        return self._add(name, agent if callable(agent) else self._create_factory(agent))
-
-    def _create_factory(self, agent_input: AgentFactoryInput) -> AgentFactory:
-        def factory(memory: BaseMemory) -> ReActAgent:
+        def create_agent(memory: BaseMemory) -> ToolCallingAgent:
             def customizer(config: PromptTemplateInput[Any]) -> PromptTemplateInput[Any]:
                 new_config = config.model_copy()
-                new_config.defaults["instructions"] = agent_input.instructions or config.defaults.get("instructions")
+                new_config.defaults["instructions"] = instructions or config.defaults.get("instructions")
+                new_config.defaults["role"] = role or config.defaults.get("role")
                 return new_config
 
-            return ReActAgent(
-                llm=agent_input.llm,
-                tools=agent_input.tools or [],
+            templates = ToolCallingAgentTemplates()
+            templates.system = templates.system.fork(customizer=customizer)
+
+            return ToolCallingAgent(
+                llm=llm,
+                tools=tools,
                 memory=memory,
-                templates={"system": lambda template: template.fork(customizer=customizer)},
-                meta=AgentMeta(name=agent_input.name, description=agent_input.instructions or "", tools=[]),
-                execution=agent_input.execution,
+                templates=templates,
             )
 
-        return factory
-
-    def _add(self, name: str, factory: AgentFactory) -> Self:
         async def step(state: Schema) -> None:
             memory = UnconstrainedMemory()
-            for message in state.messages + state.new_messages:
-                await memory.add(message)
+            await memory.add_many(state.new_messages)
 
-            agent = await ensure_async(factory)(memory.as_read_only())
-            run_output: ReActAgentRunOutput = await agent.run()
+            run_input = state.inputs.pop(0).model_copy() if state.inputs else AgentWorkflowInput()
+            agent = create_agent(memory.as_read_only())
+            run_output: ToolCallingAgentRunOutput = await agent.run(**run_input.model_dump(), execution=execution)
+
             state.final_answer = run_output.result.text
-            state.new_messages.append(
-                AssistantMessage(f"Assistant Name: {name}\nAssistant Response: {run_output.result.text}")
-            )
+            if run_input.prompt:
+                state.new_messages.append(UserMessage(run_input.prompt))
+            state.new_messages.append(run_output.result)
 
-        self.workflow.add_step(name, step)
+        self.workflow.add_step(name or f"Agent{''.join(random.choice(string.ascii_letters) for _ in range(4))}", step)
         return self

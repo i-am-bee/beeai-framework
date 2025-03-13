@@ -26,7 +26,7 @@ from pydantic import BaseModel, Field
 from beeai_framework.context import RunContext
 from beeai_framework.emitter.emitter import Emitter
 from beeai_framework.logger import Logger
-from beeai_framework.tools import StringToolOutput, ToolError, ToolInputValidationError
+from beeai_framework.tools import StringToolOutput, ToolInputValidationError
 from beeai_framework.tools.tool import Tool
 from beeai_framework.tools.types import ToolRunOptions
 
@@ -78,7 +78,7 @@ class OpenMeteoTool(Tool[OpenMeteoToolInput, ToolRunOptions, StringToolOutput]):
         response.raise_for_status()
         results = response.json().get("results", [])
         if not results:
-            raise ToolError(f"Location '{input.location_name}' was not found.")
+            raise ToolInputValidationError(f"Location '{input.location_name}' was not found.")
         geocode: dict[str, str] = results[0]
         return geocode
 

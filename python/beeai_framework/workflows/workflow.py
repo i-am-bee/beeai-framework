@@ -134,7 +134,7 @@ class Workflow(Generic[T, K]):
                 if step is None:
                     raise WorkflowError(f"Step '{next}' was not found.")
 
-                await context.emitter.emit("start", WorkflowStartEvent[T, K](run=run, step=step))
+                await context.emitter.emit("start", WorkflowStartEvent[T, K](run=run, step=next))
 
                 try:
                     step_res = WorkflowStepRes[T, K](name=next, state=run.state.model_copy(deep=True))
@@ -165,7 +165,7 @@ class Workflow(Generic[T, K]):
                         WorkflowSuccessEvent[T, K](
                             run=run.model_copy(),
                             state=run.state,
-                            step=step,
+                            step=step_res.name,
                             next=next,
                         ),
                     )
@@ -180,6 +180,9 @@ class Workflow(Generic[T, K]):
                         ),
                     )
                     raise err from None
+
+            if run.state:  # TODO: add output schema
+                run.result = run.state.model_copy()
 
             return run
 
