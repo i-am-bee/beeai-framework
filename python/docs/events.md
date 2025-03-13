@@ -48,7 +48,7 @@ The following events can be observed calling `ReActAgent.run`.
 | `tool_success`                | `ReActAgentToolEvent`    | Triggered when a tool operation completes successfully.    |
 | `tool_error`                  | `ReActAgentToolEvent`    | Triggered when a tool operation fails.                     |
 
-_Source: [python/beeai_framework/agents/react/events.py](python/beeai_framework/agents/react/events.py)_
+_Source: [python/beeai_framework/agents/react/events.py](/python/beeai_framework/agents/react/events.py)_
 
 
 ### ChatModel events
@@ -63,7 +63,7 @@ The following events can be observed when calling `ChatModel.create` or `ChatMod
 | `error`      | `ChatModelErrorEvent`    | Triggered when model generation encounters an error.                       |
 | `finish`     | `None`                   | Triggered when model generation finishes (regardless of success or error). |
 
-_Source: [python/beeai_framework/backend/events.py](python/beeai_framework/backend/events.py)_
+_Source: [python/beeai_framework/backend/events.py](/python/beeai_framework/backend/events.py)_
 
 ### Tool events
 
@@ -77,7 +77,7 @@ The following events can be observed when calling `Tool.run`.
 | `retry`   | `ToolRetryEvent`   | Triggered when a tool operation is being retried.                        |
 | `finish`  | `None`             | Triggered when tool execution finishes (regardless of success or error). |
 
-_Source: [python/beeai_framework/tools/events.py](python/beeai_framework/tools/events.py)_
+_Source: [python/beeai_framework/tools/events.py](/python/beeai_framework/tools/events.py)_
 
 ### Workflow events
 
@@ -89,7 +89,7 @@ The following events can be observed when calling `Workflow.run`.
 | `success` | `WorkflowSuccessEvent` | Triggered when a workflow step completes successfully. |
 | `error`   | `WorkflowErrorEvent`   | Triggered when a workflow step encounters an error.    |
 
-_Source: [python/beeai_framework/workflows/events.py](python/beeai_framework/workflows/events.py)_
+_Source: [python/beeai_framework/workflows/events.py](/python/beeai_framework/workflows/events.py)_
 
 ### ToolCallingAgent events
 
@@ -101,7 +101,7 @@ The following events can be observed calling `ToolCallingAgent.run`.
 | `start`   | `ToolCallingAgentStartEvent`   | Triggered when the agent begins execution.                 |
 | `success` | `ToolCallingAgentSuccessEvent` | Triggered when the agent successfully completes execution. |
 
-_Source: [python/beeai_framework/agents/tool_calling/events.py](python/beeai_framework/agents/tool_calling/events.py)_
+_Source: [python/beeai_framework/agents/tool_calling/events.py](/python/beeai_framework/agents/tool_calling/events.py)_
 
 
 ## Internal events
