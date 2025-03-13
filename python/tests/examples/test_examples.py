@@ -44,6 +44,8 @@ exclude = list(
             "tools/mcp_tool_creation.py" if os.getenv("SLACK_BOT_TOKEN") is None else None,
             # Example requires Searx instance
             "workflows/searx_agent.py",
+            # Requires BeeAI platform to be running
+            "agents/experimental/remote.py",
         ],
     )
 )

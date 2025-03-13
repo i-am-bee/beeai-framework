@@ -20,7 +20,7 @@ async def main() -> None:
     emitter.match("*", lambda data, event: print(data, ": match all instance"))
 
     # Match all events (included nested)
-    Emitter.root().match("*.*", lambda data, event: print(data, ": match all nested"))
+    cleanup = Emitter.root().match("*.*", lambda data, event: print(data, ": match all nested"))
 
     # Match events by providing a filter function
     model.emitter.match(
@@ -33,6 +33,8 @@ async def main() -> None:
     await emitter.emit("update", "update")
     await Emitter.root().emit("root", "root")
     await model.emitter.emit("model", "model")
+
+    cleanup()  # You can remove a listener from an emitter by calling the cleanup function it returns
 
 
 if __name__ == "__main__":

@@ -18,7 +18,6 @@ import typing
 from abc import ABC, abstractmethod
 from collections.abc import Callable
 from functools import cached_property
-from types import NoneType
 from typing import Any, Generic, TypeAlias
 
 from pydantic import BaseModel, ConfigDict, ValidationError, create_model
@@ -30,7 +29,13 @@ from beeai_framework.errors import FrameworkError
 from beeai_framework.logger import Logger
 from beeai_framework.retryable import Retryable, RetryableConfig, RetryableContext, RetryableInput
 from beeai_framework.tools.errors import ToolError, ToolInputValidationError
-from beeai_framework.tools.events import ToolErrorEvent, ToolStartEvent, ToolSuccessEvent
+from beeai_framework.tools.events import (
+    ToolErrorEvent,
+    ToolRetryEvent,
+    ToolStartEvent,
+    ToolSuccessEvent,
+    tool_event_types,
+)
 from beeai_framework.tools.types import StringToolOutput, ToolOutput, ToolRunOptions
 from beeai_framework.utils.strings import to_safe_word
 
@@ -62,7 +67,9 @@ class Tool(Generic[TInput, TRunOptions, TOutput], ABC):
 
     @cached_property
     def emitter(self) -> Emitter:
-        return self._create_emitter()
+        emitter = self._create_emitter()
+        emitter.events = tool_event_types
+        return emitter
 
     @abstractmethod
     def _create_emitter(self) -> Emitter:
@@ -81,36 +88,27 @@ class Tool(Generic[TInput, TRunOptions, TOutput], ABC):
     def run(self, input: TInput | dict[str, Any], options: TRunOptions | None = None) -> Run[TOutput]:
         async def handler(context: RunContext) -> TOutput:
             error_propagated = False
-            context.emitter.events = {
-                "start": ToolStartEvent[TInput],
-                "success": ToolSuccessEvent[TInput],
-                "error": ToolErrorEvent[TInput],
-                "retry": ToolErrorEvent[TInput],
-                "finish": NoneType,
-            }
 
             try:
                 validated_input = self.validate_input(input)
 
-                meta = {"input": validated_input, "options": options}
-
                 async def executor(_: RetryableContext) -> TOutput:
                     nonlocal error_propagated
                     error_propagated = False
-                    await context.emitter.emit("start", meta)
+                    await context.emitter.emit("start", ToolStartEvent(input=input, options=options))
                     return await self._run(validated_input, options, context)
 
                 async def on_error(error: Exception, _: RetryableContext) -> None:
                     nonlocal error_propagated
                     error_propagated = True
                     err = ToolError.ensure(error)
-                    await context.emitter.emit("error", {"error": err, **meta})
+                    await context.emitter.emit("error", ToolErrorEvent(error=err, input=input, options=options))
                     if FrameworkError.is_fatal(err) is True:
                         raise err from None
 
                 async def on_retry(ctx: RetryableContext, last_error: Exception) -> None:
                     err = ToolError.ensure(last_error)
-                    await context.emitter.emit("retry", {"error": err, **meta})
+                    await context.emitter.emit("retry", ToolRetryEvent(error=err, input=input, options=options))
 
                 output = await Retryable(
                     RetryableInput(
@@ -127,12 +125,12 @@ class Tool(Generic[TInput, TRunOptions, TOutput], ABC):
                     )
                 ).get()
 
-                await context.emitter.emit("success", {"output": output, **meta})
+                await context.emitter.emit("success", ToolSuccessEvent(output=output, input=input, options=options))
                 return output
             except Exception as e:
                 err = ToolError.ensure(e)
                 if not error_propagated:
-                    await context.emitter.emit("error", {"error": err, "input": input, "options": options})
+                    await context.emitter.emit("error", ToolErrorEvent(error=err, input=input, options=options))
                 raise err
             finally:
                 await context.emitter.emit("finish", None)

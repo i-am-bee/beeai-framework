@@ -8,12 +8,17 @@ from beeai_framework.errors import FrameworkError
 
 
 async def main() -> None:
-    emitter: Emitter = Emitter(namespace=["base"])
+    # Get the root emitter or create your own
+    root = Emitter.root()
 
-    emitter.match("*.*", lambda data, event: print(f"Received event '{event.path}' with data {json.dumps(data)}"))
+    cleanup = root.match(
+        "*.*", lambda data, event: print(f"Received event '{event.path}' with data {json.dumps(data)}")
+    )
 
-    await emitter.emit("start", {"id": 123})
-    await emitter.emit("end", {"id": 123})
+    await root.emit("start", {"id": 123})
+    await root.emit("end", {"id": 123})
+
+    cleanup()
 
 
 if __name__ == "__main__":

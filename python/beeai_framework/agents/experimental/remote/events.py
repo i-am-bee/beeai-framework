@@ -12,14 +12,30 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import TypeVar
+from typing import Any
 
-T = TypeVar("T")
+from pydantic import BaseModel, InstanceOf
 
-
-def flatten(xss: list[list[T]]) -> list[T]:
-    return [x for xs in xss for x in xs]
+from beeai_framework.errors import FrameworkError
 
 
-def remove_falsy(xss: list[T]) -> list[T]:
-    return [x for x in xss if x]
+class RemoteAgentUpdateEvent(BaseModel):
+    key: str
+    value: dict[str, Any]
+
+
+class RemoteAgentErrorEvent(BaseModel):
+    message: str
+    error: InstanceOf[FrameworkError]
+
+
+class RemoteAgentWarningEvent(BaseModel):
+    message: str
+    data: InstanceOf[Exception]
+
+
+remote_agent_event_types: dict[str, type] = {
+    "update": RemoteAgentUpdateEvent,
+    "error": RemoteAgentErrorEvent,
+    "warning": RemoteAgentWarningEvent,
+}

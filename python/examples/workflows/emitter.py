@@ -8,13 +8,14 @@ from pydantic import BaseModel
 from beeai_framework.emitter.emitter import Emitter, EventMeta
 from beeai_framework.errors import FrameworkError
 from beeai_framework.workflows import WorkflowReservedStepName
+from beeai_framework.workflows.events import WorkflowSuccessEvent
 from beeai_framework.workflows.types import WorkflowRun
 from beeai_framework.workflows.workflow import Workflow
 
 WorkflowStep: TypeAlias = Literal["pre_process", "add_loop", "post_process"]
 
 
-def print_event(event_data: dict[str, Any], event_meta: EventMeta) -> None:
+def print_event(event_data: Any, event_meta: EventMeta) -> None:
     """Process agent events and log appropriately"""
 
     if event_meta.name == "error":
@@ -22,18 +23,17 @@ def print_event(event_data: dict[str, Any], event_meta: EventMeta) -> None:
     elif event_meta.name == "retry":
         print("Workflow : ", "retrying...")
     elif event_meta.name == "update":
-        print(f"Workflow({event_data['update']['key']}) : ", event_data["update"]["parsedValue"])
+        print(f"Workflow({event_data.update.key}) : ", event_data.update.parsedValue)
     elif event_meta.name == "start":
         if event_data:
-            print(f"Workflow : Starting step: {event_data.get('step')}")
+            print(f"Workflow : Starting step: {event_data.step}")
         else:
             print("Workflow : Starting")
     elif event_meta.name == "success":
-        if isinstance(event_data, dict):
-            run = event_data.get("run")
-            assert isinstance(run, WorkflowRun)
+        if isinstance(event_data, WorkflowSuccessEvent):
+            run = event_data.run
             print(f"Workflow : Completed step: {run.steps[-1].name}, Result: {run.state.result}")
-            print(f"Workflow : Next step: {event_data.get('next')}")
+            print(f"Workflow : Next step: {event_data.next}")
         elif isinstance(event_data, WorkflowRun):
             print("Workflow : Result: ", event_data.result)
     elif event_meta.name == "finish":

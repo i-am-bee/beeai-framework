@@ -1,3 +1,161 @@
+## python_v0.1.5 (2025-03-13)
+
+## Features
+
+- **agents** Added Tool Calling Agent (#551)
+- **workflows** Rework Agent Workflow (#554)
+- **agents** Added **Run.on()** for event callbacks (#516)
+- **adapters** Support for Azure OpenAI (#514)
+- **adapters** Support for Anthropic (#522)
+- **adapters** Support additional headers for OpenAI (#533)
+
+## Bug Fixes
+
+- **emitter** `*.*` matcher to correctly match all events and nested events (#515)
+- **tools** handle non-existing locations in OpenMeteo tool (#513)
+- **backend** LiteLLM Event Loop Closed Error (#523)
+- **tools** MCP tool error (#570)
+
+## Code Quality
+
+- Added types for emitter events (#581)
+- Added static type checking with `mypy` (#565)
+- Improved error messages across the framework (#519)
+- Reworked base agent run and run context (#562)
+- Cleaned up dependencies (#526)
+
+## Documentation
+
+- Added MCP tool tutorial (#555)
+- Fixed numerous broken links (#544, #560)
+- Added multiple examples (e.g., observability) (#560, #535)
+
+## Testing & CI
+
+- Added link checker to verify documentation links (#542, #568)
+- Addressed failing end-to-end tests (#508)
+
+## Migration Guide
+
+This guide will help you update your codebase to the latest version. It outlines breaking changes and new features which may require updates to your application.
+
+### Type Checking
+
+Static type checking with `mypy` was added to improve code quality and catch errors earlier. If you plan contributing to the project please be aware of these changes:
+
+- Mypy validation is now part of CI and will check type correctness
+- Consider running `poe type-check` locally before submitting PRs
+
+### Agent Framework Changes
+
+#### BaseAgent Generics
+
+The `BaseAgent` class now uses generics for improved type safety. If you've created custom agents that extend `BaseAgent`, you'll need to update your class definitions to specify the appropriate types:
+
+```python
+# Before
+class MyCustomAgent(BaseAgent):
+    ...
+
+# After
+class MyCustomAgent(BaseAgent[MyCustomAgentRunOutput]):
+    ...
+```
+
+> **NOTE**: See a complete example here: https://github.com/i-am-bee/beeai-framework/blob/main/python/examples/agents/custom_agent.py
+
+#### Agent Run and RunContext
+
+Agent `Run` and `RunContext` have been refactored. Take note of the changes and update that may be required:
+
+1. Check for changes in the RunContext API if you access it directly
+2. Review any custom agent implementations that override run-related methods
+
+#### Tool Calling Agent
+
+A new tool calling agent has been added. If you were calling tools, consider migrating to `ToolCallingAgent` which provides:
+
+- Standardized tool calling patterns
+- Better integration with the framework
+- Improved error handling for tool operations
+
+### Run.on Event API
+
+The new `Run.on` API provides a simpler way to listen to emitted events:
+
+```python
+# Before
+def print_events(data, event):
+    print(data)
+
+def observer(emitter: Emitter):
+    emitter.on("*", print_events)
+
+agent = ReActAgent(...)
+resppnse = agent.run(...).observe(observer)
+
+# After
+def print_events(data, event):
+    print(data)
+
+agent = ReActAgent(...)
+resppnse = agent.run(...).on("*", print_events)
+```
+
+This new API supplements the `Run.observe`. The `Run.observe` continues to be available and can be used, but you may consider migrating any existing event observers to use this more direct approach.
+
+### New Adapter Support
+
+#### Anthropic Support
+
+If you've been waiting for Anthropic model support, you can now use it in the Python framework:
+
+```python
+from beeai_framework.adapters.anthropic.backend.chat import AnthropicChatModel
+from beeai_framework.backend.message import UserMessage
+
+async def anthropic_from_name() -> None:
+    llm = AnthropicChatModel("claude-3-haiku-20240307")
+    user_message = UserMessage("what states are part of New England?")
+    response = await llm.create(messages=[user_message])
+    print(response.get_text_content())
+```
+
+#### Azure OpenAI Support
+
+Similarly, the Python framework now supports Azure OpenAI:
+
+```python
+from beeai_framework.adapters.azure_openai.backend.chat import AzureOpenAIChatModel
+from beeai_framework.backend.message import UserMessage
+
+async def azure_openai_sync() -> None:
+    llm = AzureOpenAIChatModel("gpt-4o-mini")
+    user_message = UserMessage("what is the capital of Massachusetts?")
+    response = await llm.create(messages=[user_message])
+    print(response.get_text_content())
+```
+
+### Emitter Changes
+
+The "match all nested" matcher (i.e., `*.*`) behavior has been fixed. If you were relying on this specific matching patterns, verify that your event handling still works as expected.
+
+### OpenMeteo Tool
+
+If you're using the `OpenMeteo` tool, it now handles non-existing locations more gracefully. Please revisit any error handling around location lookups in your code.
+
+### Workflow Arguments
+
+The workflow `add_agent()` method has been improved to accept keyword arguments.. Review any `workflow.add_agent(..)` you may be using to take advantage of these improvements:
+
+```python
+# Before
+workflow.add_agent(agent=AgentFactoryInput(name="Agent name", tools=[], llm=chat_model))
+
+# After
+workflow.add_agent(name="Agent name", tools=[], llm=chat_model)
+```
+
 ## python_v0.1.4 (2025-03-06)
 
 ### Refactor

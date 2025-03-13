@@ -271,45 +271,65 @@ import asyncio
 import sys
 import traceback
 
-from beeai_framework.agents.types import AgentExecutionConfig
 from beeai_framework.backend.chat import ChatModel
-from beeai_framework.backend.message import UserMessage
 from beeai_framework.errors import FrameworkError
-from beeai_framework.memory import UnconstrainedMemory
-from beeai_framework.tools.search.duckduckgo import DuckDuckGoSearchTool
+from beeai_framework.tools.search import WikipediaTool
 from beeai_framework.tools.weather.openmeteo import OpenMeteoTool
-from beeai_framework.workflows.agent import AgentWorkflow
+from beeai_framework.workflows.agent import AgentWorkflow, AgentWorkflowInput
+from examples.helpers.io import ConsoleReader
 
 
 async def main() -> None:
-    llm = ChatModel.from_name("ollama:granite3.1-dense:8b")
-
+    llm = ChatModel.from_name("ollama:llama3.1")
     workflow = AgentWorkflow(name="Smart assistant")
-    workflow.add_agent(
-        name="WeatherForecaster",
-        instructions="You are a weather assistant.",
-        tools=[OpenMeteoTool()],
-        llm=llm,
-        execution=AgentExecutionConfig(max_iterations=3, total_max_retries=10, max_retries_per_step=3),
-    )
+
     workflow.add_agent(
         name="Researcher",
-        instructions="You are a researcher assistant.",
-        tools=[DuckDuckGoSearchTool()],
-        llm=llm,
-    )
-    workflow.add_agent(
-        name="Solver",
-        instructions="""Your task is to provide the most useful final answer based on the assistants'
-responses which all are relevant. Ignore those where assistant do not know.""",
+        role="A diligent researcher.",
+        instructions="You look up and provide information about a specific topic.",
+        tools=[WikipediaTool()],
         llm=llm,
     )
 
-    prompt = "What is the weather in New York?"
-    memory = UnconstrainedMemory()
-    await memory.add(UserMessage(content=prompt))
-    response = await workflow.run(messages=memory.messages)
-    print(f"result: {response.state.final_answer}")
+    workflow.add_agent(
+        name="WeatherForecaster",
+        role="A weather reporter.",
+        instructions="You provide detailed weather reports.",
+        tools=[OpenMeteoTool()],
+        llm=llm,
+    )
+
+    workflow.add_agent(
+        name="DataSynthesizer",
+        role="A meticulous and creative data synthesizer",
+        instructions="You can combine disparate information into a final coherent summary.",
+        llm=llm,
+    )
+
+    reader = ConsoleReader()
+
+    reader.write("Assistant 🤖 : ", "What location do you want to learn about?")
+    for prompt in reader:
+        await workflow.run(
+            inputs=[
+                AgentWorkflowInput(prompt="Provide a short history of the location.", context=prompt),
+                AgentWorkflowInput(
+                    prompt="Provide a comprehensive weather summary for the location today.",
+                    expected_output="Essential weather details such as chance of rain, temperature and wind. Only report information that is available.",  # noqa: E501
+                ),
+                AgentWorkflowInput(
+                    prompt="Summarize the historical and weather data for the location.",
+                    expected_output="A paragraph that describes the history of the location, followed by the current weather conditions.",  # noqa: E501
+                ),
+            ]
+        ).on(
+            "success",
+            lambda data, event: reader.write(
+                f"-> Step '{data.step}' has been completed with the following outcome:\n",
+                data.state.final_answer,
+            ),
+        )
+        reader.write("Assistant 🤖 : ", "What location do you want to learn about?")
 
 
 if __name__ == "__main__":
@@ -329,7 +349,6 @@ This pattern demonstrates:
 - Efficient tool distribution to relevant specialists
 - Parallel processing of different aspects of a query
 - Synthesis of multiple expert perspectives into a cohesive response
-- Declarative agent configuration using the `AgentFactoryInput` pattern
 
 ### Memory in Workflows
 

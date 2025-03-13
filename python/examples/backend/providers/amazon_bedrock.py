@@ -1,10 +1,11 @@
 import asyncio
-from typing import Any, Final
+from typing import Final
 
 from pydantic import BaseModel, Field
 
 from beeai_framework.adapters.amazon_bedrock.backend.chat import AmazonBedrockChatModel
 from beeai_framework.backend.chat import ChatModel
+from beeai_framework.backend.events import ChatModelNewTokenEvent
 from beeai_framework.backend.message import UserMessage
 from beeai_framework.cancellation import AbortSignal
 from beeai_framework.emitter import EventMeta
@@ -76,8 +77,8 @@ async def amazon_bedrock_stream_parser() -> None:
         }
     )
 
-    async def on_new_token(data: dict[str, Any], event: EventMeta) -> None:
-        await parser.add(chunk=data["value"].get_text_content())
+    async def on_new_token(data: ChatModelNewTokenEvent, event: EventMeta) -> None:
+        await parser.add(chunk=data.value.get_text_content())
 
     user_message = UserMessage("Produce 3 lines each starting with 'Prefix: ' followed by a sentence and a new line.")
     await llm.create(messages=[user_message], stream=True).observe(

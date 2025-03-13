@@ -42,13 +42,13 @@ async def main() -> None:
             )
             .on(
                 "update",  # Show only final answers
-                lambda data, event: reader.write("Agent 🤖 : ", data["update"]["value"])
-                if data["update"]["key"] == "final_answer"
+                lambda data, event: reader.write("Agent 🤖 : ", data.update.value)
+                if data.update.key == "final_answer"
                 else None,
             )
             .on(
                 "error",  # Log errors
-                lambda data, event: reader.write("Agent 🤖 : ", FrameworkError.ensure(data["error"]).explain()),
+                lambda data, event: reader.write("Agent 🤖 : ", FrameworkError.ensure(data.error).explain()),
             )
             .on(
                 "retry",  # Retry notifications

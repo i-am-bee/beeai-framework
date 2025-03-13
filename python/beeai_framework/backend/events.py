@@ -14,12 +14,11 @@
 
 from collections.abc import Callable
 from types import NoneType
-from typing import Any
 
 from pydantic import BaseModel, InstanceOf
 
-from beeai_framework.backend import ChatModelError
 from beeai_framework.backend.types import ChatModelInput, ChatModelOutput
+from beeai_framework.errors import FrameworkError
 
 
 class ChatModelNewTokenEvent(BaseModel):
@@ -37,10 +36,10 @@ class ChatModelStartEvent(BaseModel):
 
 class ChatModelErrorEvent(BaseModel):
     input: InstanceOf[ChatModelInput]
-    error: InstanceOf[ChatModelError]
+    error: InstanceOf[FrameworkError]
 
 
-chat_model_event_types: dict[str, Any] = {
+chat_model_event_types: dict[str, type] = {
     "new_token": ChatModelNewTokenEvent,
     "success": ChatModelSuccessEvent,
     "start": ChatModelStartEvent,

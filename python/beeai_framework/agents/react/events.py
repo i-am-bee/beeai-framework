@@ -83,7 +83,7 @@ class ReActAgentToolEvent(BaseModel):
     meta: ReActAgentIterationMeta
 
 
-react_agent_event_types: dict[str, Any] = {
+react_agent_event_types: dict[str, type] = {
     "start": ReActAgentStartEvent,
     "error": ReActAgentErrorEvent,
     "retry": ReActAgentRetryEvent,

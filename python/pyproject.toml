@@ -1,6 +1,6 @@
 [project]
 name = "beeai-framework"
-version="0.1.4"
+version="0.1.5"
 license = "Apache-2.0"
 readme = "README.md"
 authors = [{ name = "IBM Corp." }]
@@ -37,6 +37,7 @@ wikipedia-api = "^0.8.1"
 langchain-core = {version = "^0.3.41", optional = true}
 langchain-community = {version = "^0.3.19", optional = true}
 boto3 = {version = "^1.37.5", optional = true}
+acp-sdk = "^0.0.4"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^8.3.4"
