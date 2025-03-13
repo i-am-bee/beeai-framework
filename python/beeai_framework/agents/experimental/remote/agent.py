@@ -51,20 +51,6 @@ class RemoteAgent(BaseAgent[RemoteAgentRunOutput]):
         self.input = RemoteAgentInput(agent_name=agent_name, url=url)
         self.exit_stack = AsyncExitStack()
 
-    def _create_emitter(self) -> Emitter:
-        return Emitter.root().child(
-            namespace=["agent", "remote"],
-            creator=self,
-        )
-
-    @property
-    def memory(self) -> BaseMemory:
-        raise NotImplementedError()
-
-    @memory.setter
-    def memory(self, memory: BaseMemory) -> None:
-        raise NotImplementedError()
-
     def run(
         self,
         input: str | dict[str, Any],
@@ -111,8 +97,7 @@ class RemoteAgent(BaseAgent[RemoteAgentRunOutput]):
                             )
                             return RemoteAgentRunOutput(result=AssistantMessage(json.dumps(result.output)))
 
-            # TODO: throw?
-            return RemoteAgentRunOutput(result=AssistantMessage("No response from assistant."))
+            raise AgentError("No response from assistant.")
 
         return self._to_run(
             handler,
@@ -197,3 +182,17 @@ class RemoteAgent(BaseAgent[RemoteAgentRunOutput]):
 
         except Exception as e:
             raise AgentError("Can't connect to Beeai Platform.", cause=e)
+
+    def _create_emitter(self) -> Emitter:
+        return Emitter.root().child(
+            namespace=["agent", "remote"],
+            creator=self,
+        )
+
+    @property
+    def memory(self) -> BaseMemory:
+        raise NotImplementedError()
+
+    @memory.setter
+    def memory(self, memory: BaseMemory) -> None:
+        raise NotImplementedError()
