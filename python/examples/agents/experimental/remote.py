@@ -14,15 +14,22 @@ async def main() -> None:
     agent = RemoteAgent(url="http://127.0.0.1:8333/mcp/sse", agent="chat")
     for prompt in reader:
         # Run the agent and observe events
-        response = await agent.run(
-            prompt=f'{{"messages":[{{"role":"user","content":"{prompt}"}}],"config":{{"tools":["weather","search"]}}}}'
-        ).on(
-            "update",
-            lambda data, event: (
-                reader.write("Agent 🤖 : ", data["update"]["value"]["logs"][0]["message"])
-                if "logs" in data["update"]["value"]
-                else None
-            ),
+        response = (
+            await agent.run(
+                prompt=f'{{"messages":[{{"role":"user","content":"{prompt}"}}],"config":{{"tools":["weather","search","wikipedia"]}}}}'
+            )
+            .on(
+                "update",
+                lambda data, event: (
+                    reader.write("Agent 🤖 : ", data["update"]["value"]["logs"][0]["message"])
+                    if "logs" in data["update"]["value"]
+                    else None
+                ),
+            )
+            .on(
+                "error",  # Log errors
+                lambda data, event: reader.write("Agent 🤖 : ", FrameworkError.ensure(data["error"]).explain()),
+            )
         )
 
         reader.write("Agent 🤖 : ", json.loads(response.result.text)["messages"][0]["content"])

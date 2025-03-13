@@ -16,6 +16,7 @@ import json
 import uuid
 from collections.abc import AsyncGenerator
 from contextlib import AsyncExitStack
+from typing import Any
 
 import anyio
 from acp import ClientSession, ServerNotification
@@ -73,8 +74,14 @@ class RemoteAgent(BaseAgent[RemoteAgentRunOutput]):
         async def handler(context: RunContext) -> RemoteAgentRunOutput:
             session: ClientSession = await self._connect_to_server()
 
+            def get_prompt(prompt: str) -> Any:
+                try:
+                    return json.loads(prompt)
+                except json.JSONDecodeError:
+                    return {"text": prompt}
+
             try:
-                input = json.loads(prompt)
+                input = get_prompt(prompt)
                 async for message in self._send_request_with_notifications(
                     context,
                     session,
@@ -145,6 +152,11 @@ class RemoteAgent(BaseAgent[RemoteAgentRunOutput]):
                     nonlocal resp
                     try:
                         resp = await session.send_request(final_req, result_type)
+                    except Exception as e:
+                        await context.emitter.emit(
+                            "error",
+                            {"message": "Unable to send request", "error": e},
+                        )
                     finally:
                         task_group.cancel_scope.cancel()
 
@@ -156,11 +168,12 @@ class RemoteAgent(BaseAgent[RemoteAgentRunOutput]):
                                 raise AgentError("Remote agent error", cause=message)
                             notification = ServerNotification.model_validate(message)
                             await message_writer.send(notification)
-                        except ValueError:
+                        except ValueError as e:
                             await context.emitter.emit(
                                 "warning",
                                 {
-                                    "data": f"Unable to parse message from server: {message}",
+                                    "message": f"Unable to parse message from server: {message}",
+                                    "data": e,
                                 },
                             )
 
