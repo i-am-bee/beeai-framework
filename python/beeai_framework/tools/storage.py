@@ -26,10 +26,33 @@ class PythonDownloadFile:
 
 class Input:
     def __init__(self, local_working_dir: str, interpreter_working_dir: str, ignored_files: [str]) -> None:
-        self.localWorkingDir = local_working_dir
-        self.interpreterWorkingDir = interpreter_working_dir
-        self.ignoredFiles = ignored_files
+        self._local_working_dir = local_working_dir
+        self._interpreter_working_dir = interpreter_working_dir
+        self._ignored_files = ignored_files
 
+    @property
+    def local_working_dir(self) -> str:
+        return self._local_working_dir
+
+    @property
+    def interpreter_working_dir(self) -> str:
+        return self._interpreter_working_dir
+
+    @property
+    def ignored_files(self) -> [str]:
+        return self._ignored_files
+
+    @local_working_dir.setter
+    def local_working_dir(self, v: str) -> None:
+        self._local_working_dir = v
+
+    @interpreter_working_dir.setter
+    def interpreter_working_dir(self, v:str) -> None:
+        self._interpreter_working_eir = v
+
+    @ignored_files.setter
+    def ignored_files(self, v: [str]) -> None:
+        self._ignored_files = v
 
 class PythonStorage:
     """
@@ -64,22 +87,22 @@ class PythonStorage:
 class LocalPythonStorage(PythonStorage):
     def __init__(self, input: Input) -> None:
         super().__init__()
-        self.input = {**input, "ignoredFiles": []}
+        self.input = input
 
     def init(self) -> None:
         # await os.makedirs(self.input["localWorkingDir"], exist_ok=True)
         # await os.makedirs(self.input["interpreterWorkingDir"], exist_ok=True)
-        os.makedirs(self.input.get("localWorkingDir"), exist_ok=True)
-        os.makedirs(self.input.get("interpreterWorkingDir"), exist_ok=True)
+        os.makedirs(self.input.local_working_dir, exist_ok=True)
+        os.makedirs(self.input.interpreter_working_dir, exist_ok=True)
 
     def list(self) -> [PythonFile]:
         self.init()
-        files = os.listdir(self.input.get("localWorkingDir"))
+        files = os.listdir(self.input.local_working_dir)
         return [
             {
-                "id": compute_hash(self.input.get("localWorkingDir") + "/" + file),
+                "id": compute_hash(self.input.local_working_dir + "/" + file),
                 "filename": file,
-                "pythonId": compute_hash(self.input.get("localWorkingDir") + "/" + file),
+                "pythonId": compute_hash(self.input.local_working_dir + "/" + file),
             }
             for file in files
         ]
@@ -89,8 +112,8 @@ class LocalPythonStorage(PythonStorage):
 
         for file in files:
             shutil.copyfile(
-                os.path.join(self.input.get("localWorkingDir"), file["filename"]),
-                os.path.join(self.input.get("interpreterWorkingDir"), file["pythonId"]),
+                os.path.join(self.input.local_working_dir, file["filename"]),
+                os.path.join(self.input.interpreter_working_dir, file["pythonId"]),
             )
         return files
 
@@ -99,8 +122,8 @@ class LocalPythonStorage(PythonStorage):
 
         for file in files:
             shutil.copyfile(
-                os.path.join(self.input.get("interpreterWorkingDir"), file["pythonId"]),
-                os.path.join(self.input.get("localWorkingDir"), file["filename"]),
+                os.path.join(self.input.interpreter_working_dir, file["pythonId"]),
+                os.path.join(self.input.local_working_dir, file["filename"]),
             )
         return files
 

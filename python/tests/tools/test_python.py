@@ -4,14 +4,14 @@ import traceback
 
 from beeai_framework.errors import FrameworkError
 from beeai_framework.tools.python import PythonTool
-from beeai_framework.tools.storage import LocalPythonStorage
+from beeai_framework.tools.storage import Input, LocalPythonStorage
 
 
 async def main() -> None:
     p = PythonTool(
         {
             "codeInterpreter": {"url": "http://127.0.0.1:50081"},
-            "storage": LocalPythonStorage({"interpreterWorkingDir": "./pythonTmp", "localWorkingDir": "./localTmp"}),
+            "storage": LocalPythonStorage(Input("./localTmp", "./pythonTmp", [])),
         }
     )
     result = await p.run(
