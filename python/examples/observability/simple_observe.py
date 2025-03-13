@@ -28,7 +28,7 @@ async def main() -> None:
             lambda emitter: emitter.on(
                 "start",
                 lambda data, event: print(
-                    "On start", *(message.to_plain() for message in data["input"].messages), sep="\n"
+                    "On start", *(message.to_plain() for message in data.input.messages), sep="\n"
                 ),
             )
         )
@@ -36,7 +36,7 @@ async def main() -> None:
             lambda emitter: emitter.on(
                 "new_token",
                 lambda data, event: print(
-                    "On new_token", *(message.to_plain() for message in data["value"].messages), sep="\n"
+                    "On new_token", *(message.to_plain() for message in data.value.messages), sep="\n"
                 ),
             )
         )
@@ -44,11 +44,11 @@ async def main() -> None:
             lambda emitter: emitter.on(
                 "success",
                 lambda data, event: print(
-                    "On success", *(message.to_plain() for message in data["value"].messages), sep="\n"
+                    "On success", *(message.to_plain() for message in data.value.messages), sep="\n"
                 ),
             )
         )
-        .observe(lambda emitter: emitter.on("error", lambda data, event: print(event.name, data["error"])))
+        .observe(lambda emitter: emitter.on("error", lambda data, event: print(event.name, data.error)))
         .observe(lambda emitter: emitter.on("finish", lambda data, event: print("On finish", data)))
     )
 

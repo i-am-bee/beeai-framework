@@ -26,23 +26,17 @@ async def main() -> None:
         await llm.create(messages=memory.messages, stream=True)
         .on(
             "start",
-            lambda data, event: print(
-                event.name, *(message.to_plain() for message in data["input"].messages), sep="\n"
-            ),
+            lambda data, event: print(event.name, *(message.to_plain() for message in data.input.messages), sep="\n"),
         )
         .on(
             "new_token",
-            lambda data, event: print(
-                event.name, *(message.to_plain() for message in data["value"].messages), sep="\n"
-            ),
+            lambda data, event: print(event.name, *(message.to_plain() for message in data.value.messages), sep="\n"),
         )
         .on(
             "success",
-            lambda data, event: print(
-                event.name, *(message.to_plain() for message in data["value"].messages), sep="\n"
-            ),
+            lambda data, event: print(event.name, *(message.to_plain() for message in data.value.messages), sep="\n"),
         )
-        .on("error", lambda data, event: print(event.name, data["error"]))
+        .on("error", lambda data, event: print(event.name, data.error))
         .on("finish", lambda data, event: print(event.name, data))
     )
 
