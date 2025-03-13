@@ -34,6 +34,12 @@ from acp.types import (
 
 from beeai_framework.agents.base import BaseAgent
 from beeai_framework.agents.errors import AgentError
+from beeai_framework.agents.experimental.remote.events import (
+    RemoteAgentErrorEvent,
+    RemoteAgentUpdateEvent,
+    RemoteAgentWarningEvent,
+    remote_agent_event_types,
+)
 from beeai_framework.agents.experimental.remote.types import (
     RemoteAgentInput,
     RemoteAgentRunOutput,
@@ -42,6 +48,7 @@ from beeai_framework.backend.message import AssistantMessage
 from beeai_framework.cancellation import AbortSignal
 from beeai_framework.context import Run, RunContext
 from beeai_framework.emitter import Emitter
+from beeai_framework.errors import FrameworkError
 from beeai_framework.memory import BaseMemory
 
 
@@ -76,24 +83,10 @@ class RemoteAgent(BaseAgent[RemoteAgentRunOutput]):
                         case ServerNotification(
                             root=AgentRunProgressNotification(params=AgentRunProgressNotificationParams(delta=delta))
                         ):
-                            await context.emitter.emit(
-                                "update",
-                                {
-                                    "update": {
-                                        "key": "update",
-                                        "value": delta,
-                                    }
-                                },
-                            )
+                            await context.emitter.emit("update", RemoteAgentUpdateEvent(key="update", value=delta))
                         case RunAgentResult() as result:
                             await context.emitter.emit(
-                                "update",
-                                {
-                                    "update": {
-                                        "key": "final_answer",
-                                        "value": result.output,
-                                    }
-                                },
+                                "update", RemoteAgentUpdateEvent(key="final_answer", value=result.output)
                             )
                             return RemoteAgentRunOutput(result=AssistantMessage(json.dumps(result.output)))
 
@@ -131,9 +124,10 @@ class RemoteAgent(BaseAgent[RemoteAgentRunOutput]):
                     try:
                         resp = await session.send_request(final_req, result_type)
                     except Exception as e:
+                        e = FrameworkError.ensure(e)
                         await context.emitter.emit(
                             "error",
-                            {"message": "Unable to send request", "error": e},
+                            RemoteAgentErrorEvent(message="Unable to send request", error=e),
                         )
                     finally:
                         task_group.cancel_scope.cancel()
@@ -149,10 +143,9 @@ class RemoteAgent(BaseAgent[RemoteAgentRunOutput]):
                         except ValueError as e:
                             await context.emitter.emit(
                                 "warning",
-                                {
-                                    "message": f"Unable to parse message from server: {message}",
-                                    "data": e,
-                                },
+                                RemoteAgentWarningEvent(
+                                    message=f"Unable to parse message from server: {message}", data=e
+                                ),
                             )
 
                 task_group.start_soon(read_notifications)
@@ -187,6 +180,7 @@ class RemoteAgent(BaseAgent[RemoteAgentRunOutput]):
         return Emitter.root().child(
             namespace=["agent", "remote"],
             creator=self,
+            events=remote_agent_event_types,
         )
 
     @property

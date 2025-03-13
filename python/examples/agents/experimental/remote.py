@@ -24,14 +24,14 @@ async def main() -> None:
             .on(
                 "update",
                 lambda data, event: (
-                    reader.write("Agent 🤖 (debug) : ", data["update"]["value"]["logs"][0]["message"])
-                    if "logs" in data["update"]["value"]
+                    reader.write("Agent 🤖 (debug) : ", data.value["logs"][0]["message"])
+                    if "logs" in data.value
                     else None
                 ),
             )
             .on(
                 "error",  # Log errors
-                lambda data, event: reader.write("Agent 🤖 : ", FrameworkError.ensure(data["error"]).explain()),
+                lambda data, event: reader.write("Agent 🤖 : ", data.error.explain()),
             )
         )
 
