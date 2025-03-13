@@ -4,10 +4,11 @@
 ## Table of Contents
 - [Overview](#overview)
 - [Event Types](#event-types)
-    - [Agent Events](#agent-events)
+    - [ReActAgent Events](#reactagent-events)
     - [ChatModel Events](#chatmodel-events)
     - [Tool Events](#tool-events)
     - [Workflow Events](#workflow-events)
+    - [ToolCallingAgent Events](#toolcallingagent-events)
 - [Internal Events](#internal-events)
     - [RunContext Events](#runcontext-events)
     - [LinePrefixParser Events](#lineprefixparser-events)
