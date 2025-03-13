@@ -1,5 +1,6 @@
 import sys
 import traceback
+from typing import Any
 
 from pydantic import BaseModel
 
@@ -12,14 +13,14 @@ def main() -> None:
         name: str
         objective: str
 
-    original: PromptTemplate = PromptTemplate(
+    original: PromptTemplate[OriginalSchema] = PromptTemplate(
         PromptTemplateInput(
             schema=OriginalSchema,
             template="""You are a helpful assistant called {{name}}. Your objective is to {{objective}}.""",
         )
     )
 
-    def customizer(temp_input: PromptTemplateInput) -> PromptTemplateInput:
+    def customizer(temp_input: PromptTemplateInput[Any]) -> PromptTemplateInput[Any]:
         new_temp = temp_input.model_copy()
         new_temp.template = f"""{temp_input.template} Your answers must be concise."""
         new_temp.defaults["name"] = "Bee"

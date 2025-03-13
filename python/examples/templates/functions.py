@@ -24,7 +24,7 @@ def main() -> None:
 
         return f"\nThis message was created at {created_at} by {author}."
 
-    template: PromptTemplate = PromptTemplate(
+    template: PromptTemplate[AuthorMessage] = PromptTemplate(
         PromptTemplateInput(
             schema=AuthorMessage,
             functions={

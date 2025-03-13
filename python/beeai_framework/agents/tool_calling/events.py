@@ -12,24 +12,22 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from pydantic import BaseModel, InstanceOf
+from typing import Any
 
-from beeai_framework.cancellation import AbortSignal
-from beeai_framework.tools.tool import AnyTool
+from pydantic import BaseModel
 
-
-class BaseAgentRunOptions(BaseModel):
-    signal: AbortSignal | None = None
+from beeai_framework.agents.tool_calling.types import ToolCallingAgentRunState
 
 
-class AgentExecutionConfig(BaseModel):
-    total_max_retries: int | None = None
-    max_retries_per_step: int | None = None
-    max_iterations: int | None = None
+class ToolCallingAgentStartEvent(BaseModel):
+    state: ToolCallingAgentRunState
 
 
-class AgentMeta(BaseModel):
-    name: str
-    description: str
-    tools: list[InstanceOf[AnyTool]]
-    extra_description: str | None = None
+class ToolCallingAgentSuccessEvent(BaseModel):
+    state: ToolCallingAgentRunState
+
+
+tool_calling_agent_event_types: dict[str, Any] = {
+    "start": ToolCallingAgentStartEvent,
+    "success": ToolCallingAgentSuccessEvent,
+}

@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import os
+from typing import Any
 
 from dotenv import load_dotenv
 
@@ -29,7 +30,7 @@ class AnthropicChatModel(LiteLLMChatModel):
     def provider_id(self) -> ProviderName:
         return "anthropic"
 
-    def __init__(self, model_id: str | None = None, settings: dict | None = None) -> None:
+    def __init__(self, model_id: str | None = None, settings: dict[str, Any] | None = None) -> None:
         _settings = settings.copy() if settings is not None else {}
 
         api_key = _settings.get("api_key", os.getenv("ANTHROPIC_API_KEY"))

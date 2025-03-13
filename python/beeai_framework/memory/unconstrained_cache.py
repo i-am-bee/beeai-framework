@@ -44,7 +44,7 @@ class UnconstrainedCache(BaseCache[T], Generic[T]):
             },
         )
 
-    async def get(self, key: str) -> T:
+    async def get(self, key: str) -> T | None:
         """Get a value from the cache."""
         return self._provider.get(key)
 
@@ -52,7 +52,7 @@ class UnconstrainedCache(BaseCache[T], Generic[T]):
         """Check if a key exists in the cache."""
         return key in self._provider
 
-    async def clear(self) -> None:
+    def clear(self) -> None:
         """Clear all items from the cache."""
         self._provider.clear()
 
@@ -67,7 +67,7 @@ class UnconstrainedCache(BaseCache[T], Generic[T]):
         """Set a value in the cache."""
         self._provider[key] = value
 
-    async def size(self) -> int:
+    def size(self) -> int:
         """Get the current number of items in the cache."""
         return len(self._provider)
 
@@ -115,20 +115,20 @@ if __name__ == "__main__":
             print(f"Has nonexistent: {not_exists}")
 
             # Test size
-            size = await cache.size()
+            size = cache.size()
             print(f"Cache size: {size}")
 
             print("\n2. Testing Delete Operation:")
             # Test deletion
             deleted = await cache.delete("key2")
-            size_after_delete = await cache.size()
+            size_after_delete = cache.size()
             print(f"Deleted key2: {deleted}")
             print(f"Size after delete: {size_after_delete}")
 
             print("\n3. Testing Clear Operation:")
             # Test clear
-            await cache.clear()
-            size_after_clear = await cache.size()
+            cache.clear()
+            size_after_clear = cache.size()
             print(f"Size after clear: {size_after_clear}")
 
             print("\n4. Testing Serialization:")
@@ -142,7 +142,7 @@ if __name__ == "__main__":
             print(f"Created snapshot: {snapshot}")
 
             # Create new instance from snapshot
-            restored_cache = UnconstrainedCache.from_snapshot(snapshot)
+            restored_cache = UnconstrainedCache[str].from_snapshot(snapshot)
             restored_value = await restored_cache.get("test1")
             print(f"Restored value from snapshot: {restored_value}")
 
@@ -160,7 +160,7 @@ if __name__ == "__main__":
             for i in range(1000):
                 await large_cache.set(f"key{i}", i)
 
-            large_size = await large_cache.size()
+            large_size = large_cache.size()
             sample_value = await large_cache.get("key500")
             print(f"Large cache size: {large_size}")
             print(f"Sample value (key500): {sample_value}")

@@ -48,12 +48,10 @@ To use the logger in your application:
 <!-- embedme examples/logger/base.py -->
 
 ```py
-import logging
-
 from beeai_framework.logger import Logger
 
 # Configure logger with default log level
-logger = Logger("app", level=logging.TRACE)
+logger = Logger("app", level="TRACE")
 
 # Log at different levels
 logger.trace("Trace!")
@@ -121,7 +119,6 @@ The Logger seamlessly integrates with agents in the framework. Below is an examp
 
 ```py
 import asyncio
-import logging
 import sys
 import traceback
 
@@ -134,7 +131,7 @@ from beeai_framework.memory.unconstrained_memory import UnconstrainedMemory
 
 
 async def main() -> None:
-    logger = Logger("app", level=logging.TRACE)
+    logger = Logger("app", level="TRACE")
 
     agent = ReActAgent(llm=ChatModel.from_name("ollama:granite3.1-dense:8b"), tools=[], memory=UnconstrainedMemory())
 

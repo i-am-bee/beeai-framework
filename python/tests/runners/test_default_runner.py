@@ -49,9 +49,8 @@ async def test_runner_init() -> None:
         memory=TokenMemory(llm),
         execution=AgentExecutionConfig(max_iterations=10, max_retries_per_step=3, total_max_retries=10),
     )
-    runner = DefaultRunner(
-        input=input, options=ReActAgentRunOptions(execution=input.execution, signal=None), run=None
-    )  # TODO Figure out run
+    # TODO Figure out run
+    runner = DefaultRunner(input=input, options=ReActAgentRunOptions(execution=input.execution, signal=None), run=None)  # type: ignore
 
     await runner.init(ReActAgentRunInput(prompt="What is the current weather in White Plains?"))
 

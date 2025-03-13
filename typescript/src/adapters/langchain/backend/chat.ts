@@ -141,7 +141,7 @@ export class LangChainChatModel extends ChatModel {
   ): Promise<ChatModelObjectOutput<T>> {
     const { messages, options } = this.prepareInput(input, run);
     const object = this.lcLLM
-      .withStructuredOutput(input.schema, {
+      .withStructuredOutput<any>(input.schema, {
         method: "jsonSchema",
         strict: false,
       })

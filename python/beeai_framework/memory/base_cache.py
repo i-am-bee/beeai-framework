@@ -17,10 +17,12 @@ from abc import ABC, abstractmethod
 from collections.abc import Iterator
 from typing import Any, Generic, TypeVar
 
+from beeai_framework.memory.serializer import Serializable
+
 T = TypeVar("T")
 
 
-class BaseCache(ABC, Generic[T]):
+class BaseCache(Serializable, ABC, Generic[T]):
     """Abstract base class for all Cache implementations."""
 
     def __init__(self) -> None:
@@ -108,7 +110,7 @@ class BaseCache(ABC, Generic[T]):
         """Check if memory is empty."""
         return len(self.elements) == 0
 
-    def __iter__(self) -> Iterator:
+    def __iter__(self) -> Iterator[str]:
         return iter(self.elements)
 
     @abstractmethod

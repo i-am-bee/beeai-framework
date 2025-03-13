@@ -24,7 +24,7 @@ from typing import Any, Generic, TypeAlias
 from pydantic import BaseModel, ConfigDict, ValidationError, create_model
 from typing_extensions import TypeVar
 
-from beeai_framework.context import Run, RunContext, RunContextInput, RunInstance
+from beeai_framework.context import Run, RunContext
 from beeai_framework.emitter.emitter import Emitter
 from beeai_framework.errors import FrameworkError
 from beeai_framework.logger import Logger
@@ -79,7 +79,7 @@ class Tool(Generic[TInput, TRunOptions, TOutput], ABC):
             raise ToolInputValidationError("Tool input validation error", cause=e)
 
     def run(self, input: TInput | dict[str, Any], options: TRunOptions | None = None) -> Run[TOutput]:
-        async def run_tool(context: RunContext) -> TOutput:
+        async def handler(context: RunContext) -> TOutput:
             error_propagated = False
             context.emitter.events = {
                 "start": ToolStartEvent[TInput],
@@ -138,9 +138,10 @@ class Tool(Generic[TInput, TRunOptions, TOutput], ABC):
                 await context.emitter.emit("finish", None)
 
         return RunContext.enter(
-            RunInstance(emitter=self.emitter),
-            RunContextInput(params=[input, options], signal=options.signal if options else None),
-            run_tool,
+            self,
+            handler,
+            signal=options.signal if options else None,
+            run_params={"input": input, "options": options},
         )
 
 

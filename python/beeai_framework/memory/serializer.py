@@ -23,20 +23,20 @@ from typing import Any, TypeVar
 
 from beeai_framework.memory.errors import SerializerError
 
-T = TypeVar("T")
+T = TypeVar("T", bound="Serializable")
 
 
 class SerializerFactory:
     """Factory for serializable class registration and instantiation."""
 
-    def __init__(self, cls_ref: type[Any]) -> None:
+    def __init__(self, cls_ref: type["Serializable"]) -> None:
         self.ref = cls_ref
         self.module = cls_ref.__module__
         self.name = cls_ref.__name__
-        self.to_plain = None
-        self.from_plain = None
-        self.create_empty = None
-        self.update_instance = None
+        self.to_plain: Callable[..., Any] | None = None
+        self.from_plain: Callable[..., Any] | None = None
+        self.create_empty: Callable[..., Any] | None = None
+        self.update_instance: Callable[..., Any] | None = None
 
 
 class Serializable(ABC):
@@ -71,7 +71,7 @@ class Serializer:
     _factories: dict[str, SerializerFactory] = {}  # noqa: RUF012
 
     @classmethod
-    def register_serializable(cls, target_cls: type[Any]) -> None:
+    def register_serializable(cls, target_cls: type[Serializable]) -> None:
         """Register a serializable class."""
         # Register with both module name and __main__
         names = [
@@ -86,7 +86,7 @@ class Serializer:
             cls._factories[name] = factory
 
     @classmethod
-    def register(cls, target_cls: type[Any], processors: dict[str, Callable]) -> None:
+    def register(cls, target_cls: type[Any], processors: dict[str, Callable[..., Any]]) -> None:
         """Register a class with custom processors."""
         names = [
             f"{target_cls.__module__}.{target_cls.__name__}",

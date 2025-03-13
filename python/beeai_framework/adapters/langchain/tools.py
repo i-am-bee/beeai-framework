@@ -17,14 +17,14 @@ from typing import Any, TypeVar
 
 from langchain_core.callbacks import AsyncCallbackManagerForToolRun
 from langchain_core.runnables import RunnableConfig
-from langchain_core.tools import StructuredTool
+from langchain_core.tools import BaseTool, StructuredTool
 from langchain_core.tools import Tool as LangChainSimpleTool
 from pydantic import BaseModel, ConfigDict
 
 from beeai_framework.context import RunContext
 from beeai_framework.emitter.emitter import Emitter
-from beeai_framework.tools.tool import StringToolOutput, Tool
-from beeai_framework.tools.types import ToolRunOptions
+from beeai_framework.tools.tool import Tool
+from beeai_framework.tools.types import StringToolOutput, ToolRunOptions
 from beeai_framework.utils.strings import to_safe_word
 
 
@@ -47,7 +47,7 @@ class LangChainTool(Tool[T, LangChainToolRunOptions, StringToolOutput]):
 
     @property
     def input_schema(self) -> type[T]:
-        return self._tool.input_schema
+        return self._tool.input_schema  # type: ignore
 
     def _create_emitter(self) -> Emitter:
         return Emitter.root().child(
@@ -55,7 +55,9 @@ class LangChainTool(Tool[T, LangChainToolRunOptions, StringToolOutput]):
             creator=self,
         )
 
-    def __init__(self, tool: StructuredTool | LangChainSimpleTool, options: dict[str, Any] | None = None) -> None:
+    def __init__(
+        self, tool: StructuredTool | LangChainSimpleTool | BaseTool, options: dict[str, Any] | None = None
+    ) -> None:
         super().__init__(options)
         self._tool = tool
 
@@ -72,8 +74,8 @@ class LangChainTool(Tool[T, LangChainToolRunOptions, StringToolOutput]):
             isinstance(args[0].get("run_manager"), AsyncCallbackManagerForToolRun)
         )
         if is_async:
-            response = await self._tool.ainvoke(*args)
+            response = await self._tool.ainvoke(*args)  # type: ignore
         else:
-            response = self._tool.invoke(*args)
+            response = self._tool.invoke(*args)  # type: ignore
 
         return StringToolOutput(result=str(response))

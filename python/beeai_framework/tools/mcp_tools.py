@@ -17,6 +17,7 @@ from typing import Any
 
 from mcp import ClientSession, StdioServerParameters
 from mcp.client.stdio import stdio_client
+from mcp.types import CallToolResult
 from mcp.types import Tool as MCPToolInfo
 from pydantic import BaseModel
 
@@ -63,7 +64,9 @@ class MCPTool(Tool[BaseModel, ToolRunOptions, ToolOutput]):
         logger.debug(f"Executing tool {self._tool.name} with input: {input_data}")
         async with stdio_client(self._server_params) as (read, write), ClientSession(read, write) as session:
             await session.initialize()
-            result = await session.call_tool(name=self._tool.name, arguments=input_data.model_dump())
+            result: CallToolResult = await session.call_tool(
+                name=self._tool.name, arguments=input_data.model_dump(exclude_none=True, exclude_unset=True)
+            )
             logger.debug(f"Tool result: {result}")
             return JSONToolOutput(result.content)
 

@@ -22,7 +22,7 @@ import { verifyDeserialization } from "@tests/e2e/utils.js";
 describe("Langchain Tools", () => {
   const getLangChainTool = () => {
     return createTool(
-      ({ min, max }) => {
+      async ({ min, max }): Promise<number> => {
         return Math.floor(Math.random() * (max - min + 1)) + min;
       },
       {

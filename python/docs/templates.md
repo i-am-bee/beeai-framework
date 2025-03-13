@@ -60,7 +60,7 @@ def main() -> None:
         label: str
         input: str
 
-    template: PromptTemplate = PromptTemplate(
+    template: PromptTemplate[UserMessage] = PromptTemplate(
         PromptTemplateInput(
             schema=UserMessage,
             template="""{{label}}: {{input}}""",
@@ -118,7 +118,7 @@ def main() -> None:
 
         return f"\nThis message was created at {created_at} by {author}."
 
-    template: PromptTemplate = PromptTemplate(
+    template: PromptTemplate[AuthorMessage] = PromptTemplate(
         PromptTemplateInput(
             schema=AuthorMessage,
             functions={
@@ -179,7 +179,7 @@ def main() -> None:
         expected: int
         responses: list[Response]
 
-    template: PromptTemplate = PromptTemplate(
+    template: PromptTemplate[ExpectedDuration] = PromptTemplate(
         PromptTemplateInput(
             schema=ExpectedDuration,
             template="""Expected Duration: {{expected}}ms; Retrieved: {{#responses}}{{duration}}ms {{/responses}}""",
@@ -225,7 +225,7 @@ def main() -> None:
     class ColorsObject(BaseModel):
         colors: list[str] = Field(..., min_length=1)
 
-    template: PromptTemplate = PromptTemplate(
+    template: PromptTemplate[ColorsObject] = PromptTemplate(
         PromptTemplateInput(
             schema=ColorsObject,
             template="""Colors: {{#colors}}{{.}}, {{/colors}}""",
@@ -264,6 +264,7 @@ Template forking is useful for:
 ```py
 import sys
 import traceback
+from typing import Any
 
 from pydantic import BaseModel
 
@@ -276,14 +277,14 @@ def main() -> None:
         name: str
         objective: str
 
-    original: PromptTemplate = PromptTemplate(
+    original: PromptTemplate[OriginalSchema] = PromptTemplate(
         PromptTemplateInput(
             schema=OriginalSchema,
             template="""You are a helpful assistant called {{name}}. Your objective is to {{objective}}.""",
         )
     )
 
-    def customizer(temp_input: PromptTemplateInput) -> PromptTemplateInput:
+    def customizer(temp_input: PromptTemplateInput[Any]) -> PromptTemplateInput[Any]:
         new_temp = temp_input.model_copy()
         new_temp.template = f"""{temp_input.template} Your answers must be concise."""
         new_temp.defaults["name"] = "Bee"

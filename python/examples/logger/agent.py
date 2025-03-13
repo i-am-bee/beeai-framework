@@ -1,5 +1,4 @@
 import asyncio
-import logging
 import sys
 import traceback
 
@@ -12,7 +11,7 @@ from beeai_framework.memory.unconstrained_memory import UnconstrainedMemory
 
 
 async def main() -> None:
-    logger = Logger("app", level=logging.TRACE)
+    logger = Logger("app", level="TRACE")
 
     agent = ReActAgent(llm=ChatModel.from_name("ollama:granite3.1-dense:8b"), tools=[], memory=UnconstrainedMemory())
 

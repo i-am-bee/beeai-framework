@@ -14,10 +14,10 @@
 
 
 from abc import ABC, abstractmethod
-from collections.abc import Iterable
+from collections.abc import Iterable, Iterator
 from typing import TYPE_CHECKING, Any
 
-from beeai_framework.backend import Message
+from beeai_framework.backend.message import AnyMessage
 
 if TYPE_CHECKING:
     from beeai_framework.memory.readonly_memory import ReadOnlyMemory
@@ -28,17 +28,17 @@ class BaseMemory(ABC):
 
     @property
     @abstractmethod
-    def messages(self) -> list[Message]:
+    def messages(self) -> list[AnyMessage]:
         """Return list of stored messages."""
         pass
 
     @abstractmethod
-    async def add(self, message: Message, index: int | None = None) -> None:
+    async def add(self, message: AnyMessage, index: int | None = None) -> None:
         """Add a message to memory."""
         pass
 
     @abstractmethod
-    async def delete(self, message: Message) -> bool:
+    async def delete(self, message: AnyMessage) -> bool:
         """Delete a message from memory."""
         pass
 
@@ -47,18 +47,18 @@ class BaseMemory(ABC):
         """Clear all messages from memory."""
         pass
 
-    async def add_many(self, messages: Iterable[Message], start: int | None = None) -> None:
+    async def add_many(self, messages: Iterable[AnyMessage], start: int | None = None) -> None:
         """Add multiple messages to memory."""
         for counter, msg in enumerate(messages):
             index = None if start is None else start + counter
             await self.add(msg, index)
 
-    async def delete_many(self, messages: Iterable[Message]) -> None:
+    async def delete_many(self, messages: Iterable[AnyMessage]) -> None:
         """Delete multiple messages from memory."""
         for msg in messages:
             await self.delete(msg)
 
-    async def splice(self, start: int, delete_count: int, *items: Message) -> list[Message]:
+    async def splice(self, start: int, delete_count: int, *items: AnyMessage) -> list[AnyMessage]:
         """Remove and insert messages at a specific position."""
         total = len(self.messages)
         start = max(total + start, 0) if start < 0 else start
@@ -74,7 +74,7 @@ class BaseMemory(ABC):
         """Check if memory is empty."""
         return len(self.messages) == 0
 
-    def __iter__(self) -> None:
+    def __iter__(self) -> Iterator[AnyMessage]:
         return iter(self.messages)
 
     @abstractmethod

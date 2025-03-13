@@ -15,7 +15,7 @@ def main() -> None:
         expected: int
         responses: list[Response]
 
-    template: PromptTemplate = PromptTemplate(
+    template: PromptTemplate[ExpectedDuration] = PromptTemplate(
         PromptTemplateInput(
             schema=ExpectedDuration,
             template="""Expected Duration: {{expected}}ms; Retrieved: {{#responses}}{{duration}}ms {{/responses}}""",

@@ -6,10 +6,9 @@ from typing import Any
 from dotenv import load_dotenv
 from pydantic import BaseModel
 
-from beeai_framework import Tool, UnconstrainedMemory
+from beeai_framework import UnconstrainedMemory
 from beeai_framework.adapters.ollama.backend.chat import OllamaChatModel
 from beeai_framework.agents.react.agent import ReActAgent
-from beeai_framework.agents.react.types import ReActAgentTemplateFactory, ReActAgentTemplates
 from beeai_framework.agents.types import AgentExecutionConfig
 from beeai_framework.cancellation import AbortSignal
 from beeai_framework.emitter.emitter import Emitter, EventMeta
@@ -17,6 +16,7 @@ from beeai_framework.emitter.types import EmitterOptions
 from beeai_framework.errors import FrameworkError
 from beeai_framework.template import PromptTemplateInput
 from beeai_framework.tools.search import DuckDuckGoSearchTool
+from beeai_framework.tools.tool import AnyTool
 from beeai_framework.tools.weather.openmeteo import OpenMeteoTool
 from examples.helpers.io import ConsoleReader
 
@@ -26,7 +26,7 @@ load_dotenv()
 reader = ConsoleReader()
 
 
-def user_customizer(config: PromptTemplateInput) -> PromptTemplateInput:
+def user_customizer(config: PromptTemplateInput[Any]) -> PromptTemplateInput[Any]:
     class UserSchema(BaseModel):
         input: str
 
@@ -36,20 +36,20 @@ def user_customizer(config: PromptTemplateInput) -> PromptTemplateInput:
     return new_config
 
 
-def system_customizer(config: PromptTemplateInput) -> PromptTemplateInput:
+def system_customizer(config: PromptTemplateInput[Any]) -> PromptTemplateInput[Any]:
     new_config = config.model_copy()
     new_config.defaults = new_config.defaults or {}
     new_config.defaults["instructions"] = "You are a helpful assistant that uses tools to answer questions."
     return new_config
 
 
-def no_result_customizer(config: PromptTemplateInput) -> PromptTemplateInput:
+def no_result_customizer(config: PromptTemplateInput[Any]) -> PromptTemplateInput[Any]:
     new_config = config.model_copy()
     config.template += """\nPlease reformat your input."""
     return new_config
 
 
-def not_found_customizer(config: PromptTemplateInput) -> PromptTemplateInput:
+def not_found_customizer(config: PromptTemplateInput[Any]) -> PromptTemplateInput[Any]:
     class ToolSchema(BaseModel):
         name: str
 
@@ -70,14 +70,14 @@ def create_agent() -> ReActAgent:
 
     llm = OllamaChatModel("llama3.1")
 
-    templates: dict[str, ReActAgentTemplates | ReActAgentTemplateFactory] = {
+    templates: dict[str, Any] = {
         "user": lambda template: template.fork(customizer=user_customizer),
         "system": lambda template: template.fork(customizer=system_customizer),
         "tool_no_result_error": lambda template: template.fork(customizer=no_result_customizer),
         "tool_not_found_error": lambda template: template.fork(customizer=not_found_customizer),
     }
 
-    tools: list[Tool] = [
+    tools: list[AnyTool] = [
         # WikipediaTool(),
         OpenMeteoTool(),
         DuckDuckGoSearchTool(),

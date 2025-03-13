@@ -14,6 +14,7 @@
 
 from abc import ABC, abstractmethod
 from collections.abc import AsyncGenerator
+from functools import cached_property
 from typing import Any, Literal, TypeVar
 
 from pydantic import BaseModel, Field
@@ -32,7 +33,7 @@ from beeai_framework.backend.types import (
 )
 from beeai_framework.backend.utils import load_model, parse_broken_json, parse_model
 from beeai_framework.cancellation import AbortController, AbortSignal
-from beeai_framework.context import Run, RunContext, RunContextInput, RunInstance
+from beeai_framework.context import Run, RunContext
 from beeai_framework.emitter import Emitter
 from beeai_framework.logger import Logger
 from beeai_framework.retryable import Retryable, RetryableConfig, RetryableContext, RetryableInput
@@ -47,7 +48,6 @@ logger = Logger(__name__)
 
 
 class ChatModel(ABC):
-    emitter: Emitter
     parameters: ChatModelParameters
 
     @property
@@ -62,7 +62,13 @@ class ChatModel(ABC):
 
     def __init__(self) -> None:
         self.parameters = ChatModelParameters()
-        self.emitter = Emitter.root().child(
+
+    @cached_property
+    def emitter(self) -> Emitter:
+        return self._create_emitter()
+
+    def _create_emitter(self) -> Emitter:
+        return Emitter.root().child(
             namespace=["backend", self.provider_id, "chat"],
             creator=self,
             events=chat_model_event_types,
@@ -168,7 +174,7 @@ IMPORTANT: You MUST answer with a JSON object that matches the JSON schema above
             **kwargs,
         )
 
-        async def run_create(context: RunContext) -> ChatModelOutput:
+        async def handler(context: RunContext) -> ChatModelOutput:
             try:
                 await context.emitter.emit("start", {"input": model_input})
                 chunks: list[ChatModelOutput] = []
@@ -197,9 +203,10 @@ IMPORTANT: You MUST answer with a JSON object that matches the JSON schema above
                 await context.emitter.emit("finish", None)
 
         return RunContext.enter(
-            RunInstance(emitter=self.emitter),
-            RunContextInput(params=[model_input], signal=model_input.abort_signal),
-            run_create,
+            self,
+            handler,
+            signal=abort_signal,
+            run_params=model_input.model_dump(),
         )
 
     def create_structure(
@@ -214,13 +221,14 @@ IMPORTANT: You MUST answer with a JSON object that matches the JSON schema above
             schema=schema, messages=messages, abort_signal=abort_signal, max_retries=max_retries
         )
 
-        async def run_structure(context: RunContext) -> ChatModelStructureOutput:
+        async def handler(context: RunContext) -> ChatModelStructureOutput:
             return await self._create_structure(model_input, context)
 
         return RunContext.enter(
-            RunInstance(emitter=self.emitter),
-            RunContextInput(params=[model_input], signal=model_input.abort_signal),
-            run_structure,
+            self,
+            handler,
+            signal=abort_signal,
+            run_params=model_input.model_dump(),
         )
 
     def config(self, chat_config: ChatConfig) -> None:

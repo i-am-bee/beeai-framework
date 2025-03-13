@@ -14,12 +14,13 @@
 
 import asyncio
 import inspect
+from functools import cached_property
 from typing import ClassVar, Final, Generic, Literal
 
 from pydantic import BaseModel
 from typing_extensions import TypeVar
 
-from beeai_framework.context import Run, RunContext, RunContextInput, RunInstance
+from beeai_framework.context import Run, RunContext
 from beeai_framework.emitter.emitter import Emitter
 from beeai_framework.errors import FrameworkError
 from beeai_framework.utils.models import ModelLike, check_model, to_model, to_model_optional
@@ -54,7 +55,12 @@ class Workflow(Generic[T, K]):
         self._steps: dict[K, WorkflowStepDefinition[T, K]] = {}
         self._start_step: K | None = None
 
-        self.emitter = Emitter.root().child(
+    @cached_property
+    def emitter(self) -> Emitter:
+        return self._create_emitter()
+
+    def _create_emitter(self) -> Emitter:
+        return Emitter.root().child(
             namespace=["workflow", to_safe_word(self._name)],
             creator=self,
             events={
@@ -116,7 +122,7 @@ class Workflow(Generic[T, K]):
     def run(self, state: ModelLike[T], options: ModelLike[WorkflowRunOptions] | None = None) -> Run[WorkflowRun[T, K]]:
         options = to_model_optional(WorkflowRunOptions, options)
 
-        async def run_workflow(context: RunContext) -> WorkflowRun[T, K]:
+        async def handler(context: RunContext) -> WorkflowRun[T, K]:
             run = WorkflowRun[T, K](state=to_model(self._schema, state))
             # handlers = WorkflowRunContext(steps=run.steps, signal=context.signal, abort=lambda r: context.abort(r))
             next = self._find_step(self.start_step or self.step_names[0]).current or Workflow.END
@@ -176,9 +182,10 @@ class Workflow(Generic[T, K]):
             return run
 
         return RunContext.enter(
-            RunInstance(emitter=self.emitter),
-            RunContextInput(params=[state, options], signal=options.signal if options else None),
-            run_workflow,
+            self,
+            handler,
+            signal=options.signal if options else None,
+            run_params={"state": state, "options": options},
         )
 
     def _find_step(self, current: K) -> WorkflowState[K]:

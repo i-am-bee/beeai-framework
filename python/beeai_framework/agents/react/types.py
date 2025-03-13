@@ -17,11 +17,10 @@ from typing import Annotated, Any
 
 from pydantic import BaseModel, InstanceOf
 
-from beeai_framework.agents.types import AgentExecutionConfig, AgentMeta
+from beeai_framework.agents.types import AgentExecutionConfig, AgentMeta, BaseAgentRunOptions
 from beeai_framework.backend.chat import ChatModel
 from beeai_framework.backend.message import AnyMessage
 from beeai_framework.backend.types import ChatModelOutput
-from beeai_framework.cancellation import AbortSignal
 from beeai_framework.memory.base_memory import BaseMemory
 from beeai_framework.template import PromptTemplate
 from beeai_framework.tools.tool import AnyTool
@@ -36,8 +35,7 @@ class ReActAgentIterationMeta(BaseModel):
     iteration: int
 
 
-class ReActAgentRunOptions(BaseModel):
-    signal: AbortSignal | None = None
+class ReActAgentRunOptions(BaseAgentRunOptions):
     execution: AgentExecutionConfig | None = None
 
 
