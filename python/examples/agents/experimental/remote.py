@@ -11,17 +11,20 @@ from examples.helpers.io import ConsoleReader
 async def main() -> None:
     reader = ConsoleReader()
 
-    agent = RemoteAgent(url="http://127.0.0.1:8333/mcp/sse", agent="chat")
+    agent = RemoteAgent(agent_name="chat", url="http://127.0.0.1:8333/mcp/sse")
     for prompt in reader:
         # Run the agent and observe events
         response = (
             await agent.run(
-                prompt=f'{{"messages":[{{"role":"user","content":"{prompt}"}}],"config":{{"tools":["weather","search","wikipedia"]}}}}'
+                {
+                    "messages": [{"role": "user", "content": prompt}],
+                    "config": {"tools": ["weather", "search", "wikipedia"]},
+                }
             )
             .on(
                 "update",
                 lambda data, event: (
-                    reader.write("Agent 🤖 : ", data["update"]["value"]["logs"][0]["message"])
+                    reader.write("Agent 🤖 (debug) : ", data["update"]["value"]["logs"][0]["message"])
                     if "logs" in data["update"]["value"]
                     else None
                 ),

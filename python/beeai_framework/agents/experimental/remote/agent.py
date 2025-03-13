@@ -46,9 +46,9 @@ from beeai_framework.memory import BaseMemory
 
 
 class RemoteAgent(BaseAgent[RemoteAgentRunOutput]):
-    def __init__(self, agent: str, url: str) -> None:
+    def __init__(self, agent_name: str, *, url: str) -> None:
         super().__init__()
-        self.input = RemoteAgentInput(agent=agent, url=url)
+        self.input = RemoteAgentInput(agent_name=agent_name, url=url)
         self.exit_stack = AsyncExitStack()
 
     def _create_emitter(self) -> Emitter:
@@ -67,27 +67,22 @@ class RemoteAgent(BaseAgent[RemoteAgentRunOutput]):
 
     def run(
         self,
-        prompt: str,
+        input: str | dict[str, Any],
         *,
         signal: AbortSignal | None = None,
     ) -> Run[RemoteAgentRunOutput]:
         async def handler(context: RunContext) -> RemoteAgentRunOutput:
             session: ClientSession = await self._connect_to_server()
 
-            def get_prompt(prompt: str) -> Any:
-                try:
-                    return json.loads(prompt)
-                except json.JSONDecodeError:
-                    return {"text": prompt}
-
-            try:
-                input = get_prompt(prompt)
+            async with self.exit_stack:
                 async for message in self._send_request_with_notifications(
                     context,
                     session,
                     client_req=RunAgentRequest(
                         method="agents/run",
-                        params=RunAgentRequestParams(name=self.input.agent, input=input),
+                        params=RunAgentRequestParams(
+                            name=self.input.agent_name, input={"text": input} if isinstance(input, str) else input
+                        ),
                     ),
                     result_type=RunAgentResult,
                 ):
@@ -115,17 +110,15 @@ class RemoteAgent(BaseAgent[RemoteAgentRunOutput]):
                                 },
                             )
                             return RemoteAgentRunOutput(result=AssistantMessage(json.dumps(result.output)))
-                return RemoteAgentRunOutput(result=AssistantMessage("No response from assistant."))
-            except Exception as e:
-                raise AgentError("Error during agent's run", cause=e)
-            finally:
-                await self.exit_stack.aclose()
+
+            # TODO: throw?
+            return RemoteAgentRunOutput(result=AssistantMessage("No response from assistant."))
 
         return self._to_run(
             handler,
             signal=signal,
             run_params={
-                "prompt": prompt,
+                "prompt": input,
                 "signal": signal,
             },
         )
@@ -197,9 +190,9 @@ class RemoteAgent(BaseAgent[RemoteAgentRunOutput]):
             response = await session.list_agents()
             agents = response.agents
 
-            agent = any(agent.name == self.input.agent for agent in agents)
+            agent = any(agent.name == self.input.agent_name for agent in agents)
             if not agent:
-                raise AgentError(f"Agent {self.input.agent} is not registered in the platform")
+                raise AgentError(f"Agent {self.input.agent_name} is not registered in the platform")
             return session
 
         except Exception as e:

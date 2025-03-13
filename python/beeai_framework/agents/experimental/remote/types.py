@@ -32,5 +32,5 @@ class RemoteAgentRunOutput(BaseModel):
 
 
 class RemoteAgentInput(BaseModel):
-    agent: str
+    agent_name: str
     url: str
