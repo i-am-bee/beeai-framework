@@ -31,7 +31,7 @@ async def main() -> None:
             ),
         )
         .on(
-            "newToken",
+            "new_token",
             lambda data, event: print(
                 event.name, *(message.to_plain() for message in data["value"].messages), sep="\n"
             ),

@@ -34,9 +34,9 @@ async def main() -> None:
         )
         .observe(
             lambda emitter: emitter.on(
-                "newToken",
+                "new_token",
                 lambda data, event: print(
-                    "On newToken", *(message.to_plain() for message in data["value"].messages), sep="\n"
+                    "On new_token", *(message.to_plain() for message in data["value"].messages), sep="\n"
                 ),
             )
         )
