@@ -64,55 +64,63 @@ The following example demonstrates how to build a multi-agent workflow using the
 
 ```py
 import asyncio
-import traceback
-
-from pydantic import ValidationError
-
-from beeai_framework.agents.react.agent import AgentExecutionConfig
 from beeai_framework.backend.chat import ChatModel
-from beeai_framework.backend.message import UserMessage
-from beeai_framework.memory import UnconstrainedMemory
-from beeai_framework.tools.search.duckduckgo import DuckDuckGoSearchTool
+from beeai_framework.tools.search.wikipedia import WikipediaTool
 from beeai_framework.tools.weather.openmeteo import OpenMeteoTool
-from beeai_framework.workflows.agent import AgentFactoryInput, AgentWorkflow
-from beeai_framework.workflows.workflow import WorkflowError
-
+from beeai_framework.workflows.agent import AgentWorkflow, AgentWorkflowInput
 
 async def main() -> None:
-    llm = ChatModel.from_name("ollama:granite3.1-dense:8b")
+    llm = ChatModel.from_name("ollama:llama3.1")
+    workflow = AgentWorkflow(name="Smart assistant")
 
-    try:
-        workflow = AgentWorkflow(name="Smart assistant")
-        workflow.add_agent(
-            name="WeatherForecaster",
-            instructions="You are a weather assistant. Respond only if you can provide a useful answer.",
-            tools=[OpenMeteoTool()],
-            llm=llm,
-            execution=AgentExecutionConfig(max_iterations=3),
-        )
-        workflow.add_agent(
-            name="Researcher",
-            instructions="You are a researcher assistant. Respond only if you can provide a useful answer.",
-            tools=[DuckDuckGoSearchTool()],
-            llm=llm,
-        )
-        workflow.add_agent(
-            name="Solver",
-            instructions="""Your task is to provide the most useful final answer based on the assistants'
-responses which all are relevant. Ignore those where assistant do not know.""",
-            llm=llm,
-        )
+    workflow.add_agent(
+        name="Researcher",
+        role="A diligent researcher.",
+        instructions="You look up and provide information about a specific topic.",
+        tools=[WikipediaTool()],
+        llm=llm,
+    )
 
-        prompt = "What is the weather in New York?"
-        memory = UnconstrainedMemory()
-        await memory.add(UserMessage(content=prompt))
-        response = await workflow.run(messages=memory.messages)
-        print(f"result: {response.state.final_answer}")
+    workflow.add_agent(
+        name="WeatherForecaster",
+        role="A weather reporter.",
+        instructions="You provide detailed weather reports.",
+        tools=[OpenMeteoTool()],
+        llm=llm,
+    )
 
-    except WorkflowError:
-        traceback.print_exc()
-    except ValidationError:
-        traceback.print_exc()
+    workflow.add_agent(
+        name="DataSynthesizer",
+        role="A meticulous and creative data synthesizer",
+        instructions="You can combine disparate information into a final coherent summary.",
+        llm=llm,
+    )
+
+    location = "Saint-Tropez"
+
+    response = await workflow.run(
+        inputs=[
+            AgentWorkflowInput(
+                prompt=f"Provide a short history of {location}.",
+            ),
+            AgentWorkflowInput(
+                prompt=f"Provide a comprehensive weather summary for {location} today.",
+                expected_output="Essential weather details such as chance of rain, temperature and wind. Only report information that is available.",
+            ),
+            AgentWorkflowInput(
+                prompt=f"Summarize the historical and weather data for {location}.",
+                expected_output=f"A paragraph that describes the history of {location}, followed by the current weather conditions.",
+            ),
+        ]
+    ).on(
+        "success",
+        lambda data, event: print(
+            f"\n-> Step '{data.step}' has been completed with the following outcome.\n\n{data.state.final_answer}"
+        ),
+    )
+    
+    print("==== Final Answer ====")
+    print(response.result.final_answer)
 
 
 if __name__ == "__main__":

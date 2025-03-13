@@ -16,7 +16,7 @@ async def main() -> None:
     agent = ReActAgent(llm=llm, tools=[DuckDuckGoSearchTool(), OpenMeteoTool()], memory=UnconstrainedMemory())
 
     output: ReActAgentRunOutput = await agent.run("What's the current weather in Las Vegas?").on(
-        "update", lambda data, event: print(f"Agent({data['update']['key']}) 🤖 : ", data["update"]["parsedValue"])
+        "update", lambda data, event: print(f"Agent({data.update.key}) 🤖 : ", data.update.parsed_value)
     )
 
     print("Agent 🤖 : ", output.result.text)

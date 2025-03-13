@@ -14,6 +14,7 @@
 
 from typing import Any
 
+from beeai_framework.agents.react.events import ReActAgentUpdateEvent
 from beeai_framework.agents.react.runners.default.prompts import ToolNoResultsTemplate, UserEmptyPromptTemplate
 from beeai_framework.agents.react.runners.default.runner import DefaultRunner
 from beeai_framework.agents.react.runners.granite.prompts import (
@@ -25,7 +26,12 @@ from beeai_framework.agents.react.runners.granite.prompts import (
     GraniteToolNotFoundErrorTemplate,
     GraniteUserPromptTemplate,
 )
-from beeai_framework.agents.react.types import ReActAgentInput, ReActAgentRunOptions, ReActAgentTemplates
+from beeai_framework.agents.react.types import (
+    ReActAgentInput,
+    ReActAgentIterationResult,
+    ReActAgentRunOptions,
+    ReActAgentTemplates,
+)
 from beeai_framework.backend.message import MessageToolResultContent, ToolMessage
 from beeai_framework.context import RunContext
 from beeai_framework.emitter import EmitterOptions, EventMeta
@@ -42,22 +48,25 @@ class GraniteRunner(DefaultRunner):
     def __init__(self, input: ReActAgentInput, options: ReActAgentRunOptions, run: RunContext) -> None:
         super().__init__(input, options, run)
 
-        async def on_update(data: dict[str, Any], event: EventMeta) -> None:
-            update = data.get("update")
+        async def on_update(data: ReActAgentUpdateEvent, event: EventMeta) -> None:
+            update = data.update
             assert update is not None
-            if update.get("key") == "tool_output":
-                memory = data.get("memory")
+            if update.key == "tool_output":
+                memory = data.memory
                 assert isinstance(memory, BaseMemory)
-                tool_output: ToolOutput = update.get("value")
+                tool_output: ToolOutput = update.value
+                result: dict[str, Any] = (
+                    data.data.model_dump() if isinstance(data.data, ReActAgentIterationResult) else data.data
+                )
                 tool_result = MessageToolResultContent(
                     result=tool_output.get_text_content(),
-                    tool_name=data["data"].tool_name,
+                    tool_name=result["tool_name"],
                     tool_call_id="DUMMY_ID",
                 )
                 await memory.add(
                     ToolMessage(
                         content=tool_result,
-                        meta={"success": data["meta"]["success"] or True},
+                        meta={"success": data.meta.success or True},
                     )
                 )
 

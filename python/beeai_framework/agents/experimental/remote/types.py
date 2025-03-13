@@ -12,14 +12,25 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import TypeVar
 
-T = TypeVar("T")
+from pydantic import BaseModel, InstanceOf
 
-
-def flatten(xss: list[list[T]]) -> list[T]:
-    return [x for xs in xss for x in xs]
+from beeai_framework.backend.message import AnyMessage
+from beeai_framework.cancellation import AbortSignal
 
 
-def remove_falsy(xss: list[T]) -> list[T]:
-    return [x for x in xss if x]
+class RemoteAgentRunInput(BaseModel):
+    prompt: str | None = None
+
+
+class RemoteAgentRunOptions(BaseModel):
+    signal: AbortSignal | None = None
+
+
+class RemoteAgentRunOutput(BaseModel):
+    result: InstanceOf[AnyMessage]
+
+
+class RemoteAgentInput(BaseModel):
+    agent_name: str
+    url: str

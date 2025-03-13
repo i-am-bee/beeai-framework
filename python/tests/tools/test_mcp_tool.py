@@ -22,6 +22,7 @@ from mcp import ClientSession, StdioServerParameters
 from mcp.types import CallToolResult, TextContent
 from mcp.types import Tool as MCPToolInfo
 
+from beeai_framework.tools import StringToolOutput
 from beeai_framework.tools.mcp_tools import MCPTool
 
 """
@@ -106,14 +107,14 @@ class TestMCPTool:
         mock_tool_info: MCPToolInfo,
         call_tool_result: str,
     ) -> None:
-        mock__run.return_value = str(call_tool_result)
+        mock__run.return_value = StringToolOutput(str(call_tool_result))
         tool = MCPTool(server_params=mock_server_params, tool=mock_tool_info)
         input_data = {"a": 1, "b": 2}
 
         result = await tool.run(input_data)
 
-        assert isinstance(result, str)
-        assert result == str(call_tool_result)
+        assert isinstance(result, StringToolOutput)
+        assert result.result == str(call_tool_result)
 
     @pytest.mark.asyncio
     @pytest.mark.unit
@@ -144,13 +145,13 @@ class TestAddNumbersTool:
         add_numbers_tool_info: MCPToolInfo,
         add_result: Callable[..., Any],
     ) -> None:
-        mock__run.return_value = str(add_result)
+        mock__run.return_value = StringToolOutput(str(add_result))
         tool = MCPTool(server_params=mock_server_params, tool=add_numbers_tool_info)
         input_data = {"a": 5, "b": 3}
 
         result = await tool.run(input_data)
 
-        assert isinstance(result, str)
+        assert isinstance(result, StringToolOutput)
 
     @pytest.mark.asyncio
     @pytest.mark.unit

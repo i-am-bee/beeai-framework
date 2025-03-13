@@ -188,7 +188,7 @@ class RunContext:
                 return result
             except Exception as e:
                 error = FrameworkError.ensure(e)
-                await emitter.emit("error", {"error": error})
+                await emitter.emit("error", error)
                 raise error
             finally:
                 await emitter.emit("finish", None)

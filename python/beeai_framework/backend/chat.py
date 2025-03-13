@@ -21,7 +21,13 @@ from pydantic import BaseModel, Field
 
 from beeai_framework.backend.constants import ProviderName
 from beeai_framework.backend.errors import ChatModelError
-from beeai_framework.backend.events import chat_model_event_types
+from beeai_framework.backend.events import (
+    ChatModelErrorEvent,
+    ChatModelNewTokenEvent,
+    ChatModelStartEvent,
+    ChatModelSuccessEvent,
+    chat_model_event_types,
+)
 from beeai_framework.backend.message import AnyMessage, SystemMessage
 from beeai_framework.backend.types import (
     ChatConfig,
@@ -176,7 +182,7 @@ IMPORTANT: You MUST answer with a JSON object that matches the JSON schema above
 
         async def handler(context: RunContext) -> ChatModelOutput:
             try:
-                await context.emitter.emit("start", {"input": model_input})
+                await context.emitter.emit("start", ChatModelStartEvent(input=model_input))
                 chunks: list[ChatModelOutput] = []
 
                 if model_input.stream:
@@ -184,7 +190,7 @@ IMPORTANT: You MUST answer with a JSON object that matches the JSON schema above
                     async for value in self._create_stream(model_input, context):
                         chunks.append(value)
                         await context.emitter.emit(
-                            "new_token", {"value": value, "abort": lambda: abort_controller.abort()}
+                            "new_token", ChatModelNewTokenEvent(value=value, abort=lambda: abort_controller.abort())
                         )
                         if abort_controller.signal.aborted:
                             break
@@ -193,11 +199,11 @@ IMPORTANT: You MUST answer with a JSON object that matches the JSON schema above
                 else:
                     result = await self._create(model_input, context)
 
-                await context.emitter.emit("success", {"value": result})
+                await context.emitter.emit("success", ChatModelSuccessEvent(value=result))
                 return result
             except Exception as ex:
                 error = ChatModelError.ensure(ex)
-                await context.emitter.emit("error", {"input": model_input, "error": error})
+                await context.emitter.emit("error", ChatModelErrorEvent(input=model_input, error=error))
                 raise error
             finally:
                 await context.emitter.emit("finish", None)

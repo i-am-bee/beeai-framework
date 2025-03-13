@@ -42,13 +42,11 @@ async def main() -> None:
             )
             .on(
                 "update",
-                lambda data, event: reader.write(
-                    f"Agent({data['update']['key']}) 🤖 : ", data["update"]["parsedValue"]
-                ),
+                lambda data, event: reader.write(f"Agent({data.update.key}) 🤖 : ", data.update.parsed_value),
             )
             .on(
                 "error",  # Log errors
-                lambda data, event: reader.write("Agent 🤖 : ", FrameworkError.ensure(data["error"]).explain()),
+                lambda data, event: reader.write("Agent 🤖 : ", FrameworkError.ensure(data.error).explain()),
             )
             .on(
                 "retry",  # Retry notifications

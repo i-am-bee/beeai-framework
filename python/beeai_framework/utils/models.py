@@ -15,7 +15,7 @@
 from abc import ABC
 from collections.abc import Sequence
 from contextlib import suppress
-from typing import Any, TypeVar, Union
+from typing import Any, Optional, TypeVar, Union
 
 from pydantic import BaseModel, ConfigDict, Field, GetJsonSchemaHandler, create_model
 from pydantic.json_schema import JsonSchemaValue
@@ -69,7 +69,7 @@ class JSONSchemaModel(ABC, BaseModel):
 
     @classmethod
     def create(cls, schema_name: str, schema: dict[str, Any]) -> type["JSONSchemaModel"]:
-        type_mapping = {
+        type_mapping: dict[str, Any] = {
             "string": str,
             "integer": int,
             "number": float,
@@ -87,7 +87,7 @@ class JSONSchemaModel(ABC, BaseModel):
             target_type = type_mapping.get(param.get("type"))
             is_optional = param_name not in required
             if is_optional:
-                target_type = target_type or type(None)
+                target_type = Optional[target_type] if target_type else type(None)  # noqa: UP007
 
             if not target_type:
                 raise ValueError(f"Unsupported type '{param.get('type')}' found in the schema.")

@@ -46,12 +46,17 @@ from beeai_framework.errors import FrameworkError
 
 
 async def main() -> None:
-    emitter: Emitter = Emitter(namespace=["base"])
+    # Get the root emitter or create your own
+    root = Emitter.root()
 
-    emitter.match("*.*", lambda data, event: print(f"Received event '{event.path}' with data {json.dumps(data)}"))
+    cleanup = root.match(
+        "*.*", lambda data, event: print(f"Received event '{event.path}' with data {json.dumps(data)}")
+    )
 
-    await emitter.emit("start", {"id": 123})
-    await emitter.emit("end", {"id": 123})
+    await root.emit("start", {"id": 123})
+    await root.emit("end", {"id": 123})
+
+    cleanup()
 
 
 if __name__ == "__main__":
@@ -103,7 +108,7 @@ async def main() -> None:
     emitter.match("*", lambda data, event: print(data, ": match all instance"))
 
     # Match all events (included nested)
-    Emitter.root().match("*.*", lambda data, event: print(data, ": match all nested"))
+    cleanup = Emitter.root().match("*.*", lambda data, event: print(data, ": match all nested"))
 
     # Match events by providing a filter function
     model.emitter.match(
@@ -116,6 +121,8 @@ async def main() -> None:
     await emitter.emit("update", "update")
     await Emitter.root().emit("root", "root")
     await model.emitter.emit("model", "model")
+
+    cleanup()  # You can remove a listener from an emitter by calling the cleanup function it returns
 
 
 if __name__ == "__main__":

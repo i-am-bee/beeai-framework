@@ -56,5 +56,5 @@ This repository contains examples demonstrating the usage of the BeeAI Framework
 ## Tools
 
 - [`decorator.py`](/python/examples/tools/decorator.py): Tool creation using decorator
-- [`duckduckgo.py`](/python/examples/tools/duckduckgo.py): DDG Search Tool
-- [`openmeteo.py`](/python/examples/tools/openmeteo.py): DDG Search Tool
+- [`duckduckgo.py`](/python/examples/tools/duckduckgo.py): DDG Search Tool for searching the web
+- [`openmeteo.py`](/python/examples/tools/openmeteo.py): Open-Meteo Tool for retrieving weather data
