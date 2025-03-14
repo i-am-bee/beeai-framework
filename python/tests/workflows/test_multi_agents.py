@@ -24,7 +24,7 @@ E2E Tests
 """
 
 
-@pytest.mark.integration
+@pytest.mark.e2e
 @pytest.mark.asyncio
 async def test_multi_agents_workflow_basic() -> None:
     chat_model = OllamaChatModel()
@@ -39,7 +39,7 @@ async def test_multi_agents_workflow_basic() -> None:
     assert "hallo" in response.state.final_answer.lower()
 
 
-@pytest.mark.integration
+@pytest.mark.e2e
 @pytest.mark.asyncio
 async def test_multi_agents_workflow_creation() -> None:
     chat_model = OllamaChatModel()

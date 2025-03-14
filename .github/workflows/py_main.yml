@@ -46,42 +46,9 @@ jobs:
         run: poetry build
       - name: Unit Tests
         run: poetry run poe test --type unit
-      - name: E2E Tests
-        run: poetry run poe test --type e2e
       - name: Setup Go
         uses: actions/setup-go@v3
         with:
           go-version: "1.23"
       - name: Check Copyright Header
         run: poetry run poe copyright --type check
-  integration_tests:
-    timeout-minutes: 120
-    name: Integration Tests
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-      - name: Install poetry
-        run: pipx install poetry
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.11"
-          cache: "poetry"
-      - name: Install dependencies
-        run: poetry install --no-interaction --all-extras
-      - name: Build
-        run: poetry build
-      - name: Install ollama
-        run: curl -fsSL https://ollama.com/install.sh | sh
-      - name: Run ollama
-        run: |
-          ollama serve &
-          ollama pull llama3.1
-          ollama pull granite3.1-dense:8b
-      - name: Call ollama API
-        run: |
-          curl -d '{"model": "llama3.1:latest", "stream": false, "prompt":"Whatever I say, asnwer with Yes"}' http://localhost:11434/api/generate
-      - name: Run Integration Tests
-        run: poetry run poe test --type integration
-        continue-on-error: true

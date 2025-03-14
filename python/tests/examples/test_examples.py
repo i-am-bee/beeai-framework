@@ -58,12 +58,12 @@ def example_name(path: pathlib.Path) -> str:
 examples = sorted({example for example in all_examples if example_name(example) not in exclude}, key=example_name)
 
 
-@pytest.mark.integration
+@pytest.mark.e2e
 def test_finds_examples() -> None:
     assert examples
 
 
-@pytest.mark.integration
+@pytest.mark.e2e
 @pytest.mark.parametrize("example", examples, ids=example_name)
 def test_example_execution(example: str, monkeypatch: pytest.MonkeyPatch) -> None:
     inputs = iter(["Hello world", "q"])

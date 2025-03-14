@@ -1,0 +1,44 @@
+name: Python - E2E Tests
+
+on:
+  workflow_dispatch:
+  push:
+    branches: ["main"]
+    paths:
+      - 'python/**'
+
+defaults:
+  run:
+    working-directory: python
+
+jobs:
+  test:
+    timeout-minutes: 120
+    name: Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Install poetry
+        run: pipx install poetry
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "poetry"
+      - name: Install dependencies
+        run: poetry install --no-interaction --all-extras
+      - name: Build
+        run: poetry build
+      - name: Install ollama
+        run: curl -fsSL https://ollama.com/install.sh | sh
+      - name: Run ollama
+        run: |
+          ollama serve &
+          ollama pull llama3.1
+          ollama pull granite3.1-dense:8b
+      - name: Call ollama API
+        run: |
+          curl -d '{"model": "llama3.1:latest", "stream": false, "prompt":"Whatever I say, answer with Yes"}' http://localhost:11434/api/generate
+      - name: Run e2e Tests
+        run: poetry run poe test --type e2e
