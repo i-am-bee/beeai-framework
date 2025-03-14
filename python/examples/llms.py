@@ -20,7 +20,7 @@ Arguments
   `watsonx` - requires environment variable
       - WATSONX_URL - base URL of your WatsonX instance
     and one of the following
-      - WATSONX_APIKEY: API key
+      - WATSONX_API_KEY: API key
       - WATSONX_TOKEN: auth token
 """
 

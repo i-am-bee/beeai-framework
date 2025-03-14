@@ -44,11 +44,11 @@ The following table depicts supported providers. Each provider requires specific
 | Name             | Chat | Embedding | Dependency               | Environment Variables                                                                                                                                                 |
 | ---------------- | :--: | :-------: | ------------------------ | :-------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `Ollama`         |  ✅  |          | `ollama-ai-provider`     | OLLAMA_CHAT_MODEL<br/>OLLAMA_BASE_URL                                                                                                       |
-| `OpenAI`         |  ✅  |          | `openai`     | OPENAI_CHAT_MODEL<br/>OPENAI_API_BASE<br/>OPENAI_API_KEY<br/>OPENAI_ORGANIZATION<br>OPENAI_EXTRA_HEADERS                                                                                                       |
-| `Watsonx`        |  ✅  |          | `@ibm-cloud/watsonx-ai`  | WATSONX_CHAT_MODEL<br/>WATSONX_EMBEDDING_MODEL<br>WATSONX_API_KEY<br/>WATSONX_PROJECT_ID<br/>WATSONX_SPACE_ID<br>WATSONX_VERSION<br>WATSONX_REGION                    |
+| `OpenAI`         |  ✅  |          | `openai`     | OPENAI_CHAT_MODEL<br/>OPENAI_API_BASE<br/>OPENAI_API_KEY<br/>OPENAI_ORGANIZATION<br>OPENAI_API_HEADERS                                                                                                       |
+| `Watsonx`        |  ✅  |          | `@ibm-cloud/watsonx-ai`  | WATSONX_CHAT_MODEL<br>WATSONX_API_KEY<br>WATSONX_PROJECT_ID<br>WATSONX_SPACE_ID<br>WATSONX_TOKEN<br>WATSONX_ZENAPIKEY<br>WATSONX_URL<br>WATSONX_REGION |
 | `Groq`           |  ✅  |         | | GROQ_CHAT_MODEL<br>GROQ_API_KEY |
-| `Amazon Bedrock` |  ✅  |         |  `boto3`| AWS_CHAT_MODEL<br>AWS_ACCESS_KEY_ID<br>AWS_SECRET_ACCESS_KEY<br>AWS_REGION_NAME |
-| `Google Vertex`  |  ✅  |         |  | VERTEXAI_CHAT_MODEL<br>VERTEXAI_PROJECT<br>GOOGLE_APPLICATION_CREDENTIALS<br>GOOGLE_APPLICATION_CREDENTIALS_JSON<br>GOOGLE_CREDENTIALS |
+| `Amazon Bedrock` |  ✅  |         |  `boto3`| AWS_CHAT_MODEL<br>AWS_ACCESS_KEY_ID<br>AWS_SECRET_ACCESS_KEY<br>AWS_REGION |
+| `Google Vertex`  |  ✅  |         |  | VERTEXAI_CHAT_MODEL<br>GOOGLE_VERTEX_PROJECT<br>GOOGLE_APPLICATION_CREDENTIALS<br>GOOGLE_APPLICATION_CREDENTIALS_JSON<br>GOOGLE_CREDENTIALS |
 | `Azure OpenAI`   |  ✅  |         |  | AZURE_OPENAI_CHAT_MODEL<br>AZURE_OPENAI_API_KEY<br>AZURE_OPENAI_API_BASE<br>AZURE_OPENAI_API_VERSION<br>AZURE_AD_TOKEN<br>AZURE_API_TYPE |
 | `Anthropic`      |  ✅  |         |  | ANTHROPIC_CHAT_MODEL<br>ANTHROPIC_API_KEY |
 | `xAI`           |  ✅  |         | | XAI_CHAT_MODEL<br>XAI_API_KEY |

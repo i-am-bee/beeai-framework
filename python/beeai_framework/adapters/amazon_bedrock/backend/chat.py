@@ -45,11 +45,17 @@ class AmazonBedrockChatModel(LiteLLMChatModel):
                 + "or set AWS_SECRET_ACCESS_KEY environment variable"
             )
 
-        aws_region_name = _settings.get("aws_region_name", os.getenv("AWS_REGION_NAME"))
+        # Determine region name with the specified precedence
+        aws_region_name = _settings.get("aws_region_name")
+        if not aws_region_name:
+            aws_region_name = os.getenv("AWS_REGION")
+        if not aws_region_name:
+            aws_region_name = os.getenv("AWS_REGION_NAME")
+
         if not aws_region_name:
             raise ValueError(
-                "Region is required for Amazon Bedrock model. Specify *aws_region_name* "
-                + "or set AWS_REGION_NAME environment variable"
+                "Region is required for Amazon Bedrock model. Specify *aws_region_name* in settings, "
+                + "set the AWS_REGION environment variable, or set the AWS_REGION_NAME environment variable."
             )
 
         super().__init__(

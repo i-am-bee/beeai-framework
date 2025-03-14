@@ -35,7 +35,7 @@ exclude = list(
             "backend/providers/groq.py" if os.getenv("GROQ_API_KEY") is None else None,
             "backend/providers/xai.py" if os.getenv("XAI_API_KEY") is None else None,
             # Google backend picks up environment variables/google auth credentials directly
-            "backend/providers/vertexai.py" if os.getenv("VERTEXAI_PROJECT") is None else None,
+            "backend/providers/vertexai.py" if os.getenv("GOOGLE_VERTEX_PROJECT") is None else None,
             "backend/providers/amazon_bedrock.py" if os.getenv("AWS_ACCESS_KEY_ID") is None else None,
             "backend/providers/anthropic.py" if os.getenv("ANTHROPIC_API_KEY") is None else None,
             "backend/providers/azure_openai.py" if os.getenv("AZURE_API_KEY") is None else None,

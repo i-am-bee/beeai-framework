@@ -31,12 +31,14 @@ class VertexAIChatModel(LiteLLMChatModel):
     def __init__(self, model_id: str | None = None, settings: dict[str, Any] | None = None) -> None:
         _settings = settings.copy() if settings is not None else {}
 
-        vertexai_project = _settings.get("vertexai_project", os.getenv("VERTEXAI_PROJECT"))
+        vertexai_project = _settings.get("vertexai_project", os.getenv("GOOGLE_VERTEX_PROJECT"))
         if not vertexai_project:
             raise ValueError(
                 "Project ID is required for Vertex AI model. Specify *vertexai_project* "
-                + "or set VERTEXAI_PROJECT environment variable"
+                + "or set GOOGLE_VERTEX_PROJECT environment variable"
             )
+
+        vertexai_location = _settings.get("vertexai_location", os.getenv("GOOGLE_VERTEX_LOCATION"))
 
         # Ensure standard google auth credentials are available
         # Set GOOGLE_APPLICATION_CREDENTIALS / GOOGLE_CREDENTIALS / GOOGLE_APPLICATION_CREDENTIALS_JSON
@@ -47,5 +49,6 @@ class VertexAIChatModel(LiteLLMChatModel):
             settings=_settings
             | {
                 "vertex_project": vertexai_project,
+                "vertex_location": vertexai_location,
             },
         )
