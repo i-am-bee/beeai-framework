@@ -18,6 +18,7 @@ from beeai_framework.errors import FrameworkError
 from beeai_framework.logger import Logger
 from beeai_framework.memory.token_memory import TokenMemory
 from beeai_framework.tools.mcp_tools import MCPTool
+from beeai_framework.tools.tool import AnyTool
 from examples.helpers.io import ConsoleReader
 
 # Load environment variables
@@ -55,7 +56,7 @@ async def create_agent(session: ClientSession) -> ReActAgent:
 
     # Configure tools
     slacktools = await MCPTool.from_client(session)
-    tools = filter(lambda tool: tool.name == "slack_post_message", slacktools)
+    tools: list[AnyTool] = list(filter(lambda tool: tool.name == "slack_post_message", slacktools))
 
     # Create agent with memory and tools
     agent = ReActAgent(llm=llm, tools=tools, memory=TokenMemory(llm))
