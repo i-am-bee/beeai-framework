@@ -46,12 +46,12 @@ For more complex tasks, the agent may do way more iterations.
 In the following example, we will transform the knowledge gained into code.
 
 ```ts
-import { BeeAgent } from "beeai-framework/agents/bee/agent";
+import { ReActAgent } from "beeai-framework/agents/react/agent";
 import { OllamaChatModel } from "beeai-framework/adapters/ollama/backend/chat";
 import { UnconstrainedMemory } from "beeai-framework/memory/unconstrainedMemory";
 import { OpenMeteoTool } from "beeai-framework/tools/weather/openMeteo";
 
-const agent = new BeeAgent({
+const agent = new ReActAgent({
   llm: new OllamaChatModel("llama3.1"), // for more explore 'beeai-framework/adapters'
   memory: new UnconstrainedMemory(), // for more explore 'beeai-framework/memory'
   tools: [new OpenMeteoTool()], // for more explore 'beeai-framework/tools'

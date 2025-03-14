@@ -85,7 +85,7 @@ class ToolCallingAgent(BaseAgent[ToolCallingAgentRunOutput]):
             await state.memory.add(SystemMessage(self._templates.system.render()))
             await state.memory.add_many(self.memory.messages)
 
-            if prompt is not None:
+            if prompt:
                 task_input = ToolCallingAgentTaskPromptInput(
                     prompt=prompt,
                     context=context,
@@ -149,7 +149,7 @@ class ToolCallingAgent(BaseAgent[ToolCallingAgentRunOutput]):
                         [msg for msg in state.memory.messages if msg.meta.get("tempMessage", False)]
                     )
 
-                if text_messages:
+                if text_messages and not tool_call_messages:
                     if (
                         expected_output is not None
                         and isinstance(expected_output, type)

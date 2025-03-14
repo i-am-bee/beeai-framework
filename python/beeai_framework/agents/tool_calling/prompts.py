@@ -20,6 +20,7 @@ from beeai_framework.template import PromptTemplate, PromptTemplateInput
 
 
 class ToolCallingAgentSystemPromptInput(BaseModel):
+    role: str
     instructions: str | None = None
 
 
@@ -31,8 +32,8 @@ ToolCallingAgentSystemPrompt = PromptTemplate(
         },
         defaults={"role": "A helpful AI assistant", "instructions": ""},
         template="""Assume the role of {{role}}.
-
 {{#instructions}}
+
 Your instructions are:
 {{.}}
 {{/instructions}}
@@ -42,7 +43,7 @@ You can use tools to improve your answers if available.
 
 # Best practices
 - Use markdown syntax to format code snippets, links, JSON, tables, images, and files.
-- When the message is unclear, ask for a clarification.
+- If the provided task is unclear, ask the user for clarification.
 - Do not refer to tools or tool outputs by name when responding.
 
 The current date and time is: {{formatDate}}

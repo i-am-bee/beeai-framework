@@ -1,5 +1,5 @@
 import "dotenv/config.js";
-import { BeeAgent } from "beeai-framework/agents/bee/agent";
+import { ReActAgent } from "beeai-framework/agents/react/agent";
 import { createConsoleReader } from "../../helpers/io.js"; // Use the examples console reader
 import { FrameworkError } from "beeai-framework/errors";
 import { TokenMemory } from "beeai-framework/memory/tokenMemory";
@@ -20,8 +20,8 @@ const llm = new OllamaChatModel("llama3.1");
 // Create the console reader once, share it with HumanTool
 const reader = createConsoleReader();
 
-// Initialize BeeAgent with shared reader for HumanTool
-const agent = new BeeAgent({
+// Initialize ReActAgent with shared reader for HumanTool
+const agent = new ReActAgent({
   llm,
   memory: new TokenMemory(),
   tools: [

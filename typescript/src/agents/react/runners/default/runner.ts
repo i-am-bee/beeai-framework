@@ -14,21 +14,29 @@
  * limitations under the License.
  */
 
-import { BaseRunner, BeeRunnerLLMInput, BeeRunnerToolInput } from "@/agents/bee/runners/base.js";
-import type { BeeAgentRunIteration, BeeParserInput, BeeRunInput } from "@/agents/bee/types.js";
+import {
+  BaseRunner,
+  ReActAgentRunnerLLMInput,
+  ReActAgentRunnerToolInput,
+} from "@/agents/react/runners/base.js";
+import type {
+  ReActAgentRunIteration,
+  ReActAgentParserInput,
+  ReActAgentRunInput,
+} from "@/agents/react/types.js";
 import { Retryable } from "@/internals/helpers/retryable.js";
 import { AgentError } from "@/agents/base.js";
 import {
-  BeeAssistantPrompt,
-  BeeSchemaErrorPrompt,
-  BeeSystemPrompt,
-  BeeToolErrorPrompt,
-  BeeToolInputErrorPrompt,
-  BeeToolNoResultsPrompt,
-  BeeToolNotFoundPrompt,
-  BeeUserEmptyPrompt,
-  BeeUserPrompt,
-} from "@/agents/bee/prompts.js";
+  ReActAgentAssistantPrompt,
+  ReActAgentSchemaErrorPrompt,
+  ReActAgentSystemPrompt,
+  ReActAgentToolErrorPrompt,
+  ReActAgentToolInputErrorPrompt,
+  ReActAgentToolNoResultsPrompt,
+  ReActAgentToolNotFoundPrompt,
+  ReActAgentUserEmptyPrompt,
+  ReActAgentUserPrompt,
+} from "@/agents/react/prompts.js";
 import { AnyTool, Tool, ToolError, ToolInputValidationError, ToolOutput } from "@/tools/base.js";
 import { FrameworkError } from "@/errors.js";
 import { isTruthy, last } from "remeda";
@@ -48,15 +56,15 @@ export class DefaultRunner extends BaseRunner {
   @Cache({ enumerable: false })
   public get defaultTemplates() {
     return {
-      system: BeeSystemPrompt,
-      assistant: BeeAssistantPrompt,
-      user: BeeUserPrompt,
-      schemaError: BeeSchemaErrorPrompt,
-      toolNotFoundError: BeeToolNotFoundPrompt,
-      toolError: BeeToolErrorPrompt,
-      toolInputError: BeeToolInputErrorPrompt,
-      userEmpty: BeeUserEmptyPrompt,
-      toolNoResultError: BeeToolNoResultsPrompt,
+      system: ReActAgentSystemPrompt,
+      assistant: ReActAgentAssistantPrompt,
+      user: ReActAgentUserPrompt,
+      schemaError: ReActAgentSchemaErrorPrompt,
+      toolNotFoundError: ReActAgentToolNotFoundPrompt,
+      toolError: ReActAgentToolErrorPrompt,
+      toolInputError: ReActAgentToolInputErrorPrompt,
+      userEmpty: ReActAgentUserEmptyPrompt,
+      toolNoResultError: ReActAgentToolNoResultsPrompt,
     };
   }
 
@@ -64,7 +72,7 @@ export class DefaultRunner extends BaseRunner {
     this.register();
   }
 
-  async llm({ signal, meta, emitter }: BeeRunnerLLMInput): Promise<BeeAgentRunIteration> {
+  async llm({ signal, meta, emitter }: ReActAgentRunnerLLMInput): Promise<ReActAgentRunIteration> {
     const tempMessageKey = "tempMessage" as const;
 
     return new Retryable({
@@ -152,7 +160,7 @@ export class DefaultRunner extends BaseRunner {
     }).get();
   }
 
-  async tool({ state, signal, meta, emitter }: BeeRunnerToolInput) {
+  async tool({ state, signal, meta, emitter }: ReActAgentRunnerToolInput) {
     const tool = this.input.tools.find(
       (tool) => tool.name.trim().toUpperCase() == state.tool_name?.trim()?.toUpperCase(),
     );
@@ -268,7 +276,7 @@ export class DefaultRunner extends BaseRunner {
   protected get renderers() {
     const self = {
       user: {
-        message: ({ prompt }: BeeRunInput) =>
+        message: ({ prompt }: ReActAgentRunInput) =>
           prompt !== null || this.input.memory.isEmpty()
             ? new UserMessage(prompt || this.templates.userEmpty.render({}))
             : undefined,
@@ -307,7 +315,7 @@ export class DefaultRunner extends BaseRunner {
     return self;
   }
 
-  protected async initMemory({ prompt }: BeeRunInput): Promise<BaseMemory> {
+  protected async initMemory({ prompt }: ReActAgentRunInput): Promise<BaseMemory> {
     const { memory: history } = this.input;
 
     const prevConversation = [...history.messages, this.renderers.user.message({ prompt })]
@@ -316,8 +324,8 @@ export class DefaultRunner extends BaseRunner {
         if (message.role === Role.USER) {
           const isEmpty = !message.text.trim();
           const text = isEmpty
-            ? (this.templates?.userEmpty ?? BeeUserEmptyPrompt).render({})
-            : (this.templates?.user ?? BeeUserPrompt).render({
+            ? (this.templates?.userEmpty ?? ReActAgentUserEmptyPrompt).render({})
+            : (this.templates?.user ?? ReActAgentUserPrompt).render({
                 input: message.text,
                 meta: {
                   ...message?.meta,
@@ -361,7 +369,7 @@ export class DefaultRunner extends BaseRunner {
   }
 
   protected createParser(tools: AnyTool[]) {
-    const parser = new LinePrefixParser<BeeParserInput>(
+    const parser = new LinePrefixParser<ReActAgentParserInput>(
       {
         thought: {
           prefix: "Thought:",

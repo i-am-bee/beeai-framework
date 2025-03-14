@@ -18,7 +18,7 @@ import { PromptTemplate } from "@/template.js";
 import { z } from "zod";
 import { MessageMeta } from "@/backend/message.js";
 
-export const BeeSystemPrompt = new PromptTemplate({
+export const ReActAgentSystemPrompt = new PromptTemplate({
   schema: z.object({
     instructions: z.string().default("You are a helpful assistant."),
     tools: z.array(
@@ -102,7 +102,7 @@ Prefer to use these capabilities over functions.
 {{instructions}}`,
 });
 
-export const BeeAssistantPrompt = new PromptTemplate({
+export const ReActAgentAssistantPrompt = new PromptTemplate({
   schema: z
     .object({
       thought: z.array(z.string()),
@@ -115,7 +115,7 @@ export const BeeAssistantPrompt = new PromptTemplate({
   template: `{{#thought}}Thought: {{.}}\n{{/thought}}{{#toolName}}Function Name: {{.}}\n{{/toolName}}{{#toolInput}}Function Input: {{.}}\n{{/toolInput}}{{#toolOutput}}Function Output: {{.}}\n{{/toolOutput}}{{#finalAnswer}}Final Answer: {{.}}{{/finalAnswer}}`,
 });
 
-export const BeeUserPrompt = new PromptTemplate({
+export const ReActAgentUserPrompt = new PromptTemplate({
   schema: z
     .object({
       input: z.string(),
@@ -144,12 +144,12 @@ export const BeeUserPrompt = new PromptTemplate({
   template: `Message: {{input}}{{formatMeta}}`,
 });
 
-export const BeeUserEmptyPrompt = new PromptTemplate({
+export const ReActAgentUserEmptyPrompt = new PromptTemplate({
   schema: z.object({}).passthrough(),
   template: `Message: Empty message.`,
 });
 
-export const BeeToolErrorPrompt = new PromptTemplate({
+export const ReActAgentToolErrorPrompt = new PromptTemplate({
   schema: z
     .object({
       reason: z.string(),
@@ -160,7 +160,7 @@ export const BeeToolErrorPrompt = new PromptTemplate({
 {{reason}}`,
 });
 
-export const BeeToolInputErrorPrompt = new PromptTemplate({
+export const ReActAgentToolInputErrorPrompt = new PromptTemplate({
   schema: z
     .object({
       reason: z.string(),
@@ -171,12 +171,12 @@ export const BeeToolInputErrorPrompt = new PromptTemplate({
 HINT: If you're convinced that the input was correct but the function cannot process it then use a different function or say I don't know.`,
 });
 
-export const BeeToolNoResultsPrompt = new PromptTemplate({
+export const ReActAgentToolNoResultsPrompt = new PromptTemplate({
   schema: z.record(z.any()),
   template: `No results were found!`,
 });
 
-export const BeeToolNotFoundPrompt = new PromptTemplate({
+export const ReActAgentToolNotFoundPrompt = new PromptTemplate({
   schema: z
     .object({
       tools: z.array(z.object({ name: z.string() }).passthrough()),
@@ -188,7 +188,7 @@ Use one of the following functions: {{#trim}}{{#tools}}{{name}},{{/tools}}{{/tri
 {{/tools.length}}`,
 });
 
-export const BeeSchemaErrorPrompt = new PromptTemplate({
+export const ReActAgentSchemaErrorPrompt = new PromptTemplate({
   schema: z.object({}).passthrough(),
   template: `Error: The generated response does not adhere to the communication structure mentioned in the system prompt.
 You communicate only in instruction lines. Valid instruction lines are 'Thought' followed by either 'Function Name' + 'Function Input' + 'Function Output' or 'Final Answer'.`,

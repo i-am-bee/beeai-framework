@@ -379,6 +379,10 @@ export class ChatModelOutput extends Serializable {
       .filter(Boolean);
   }
 
+  getTextMessages(): AssistantMessage[] {
+    return this.messages.filter((r) => r instanceof AssistantMessage).filter((r) => r.text);
+  }
+
   getTextContent(): string {
     return this.messages
       .filter((r) => r instanceof AssistantMessage)

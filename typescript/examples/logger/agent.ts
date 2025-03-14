@@ -1,4 +1,4 @@
-import { BeeAgent } from "beeai-framework/agents/bee/agent";
+import { ReActAgent } from "beeai-framework/agents/react/agent";
 import { UnconstrainedMemory } from "beeai-framework/memory/unconstrainedMemory";
 import { Logger } from "beeai-framework/logger/logger";
 import { Emitter } from "beeai-framework/emitter/emitter";
@@ -19,7 +19,7 @@ Emitter.root.match("*.*", (data, event) => {
 });
 
 // Create and run an agent
-const agent = new BeeAgent({
+const agent = new ReActAgent({
   llm: new OllamaChatModel("llama3.1"),
   memory: new UnconstrainedMemory(),
   tools: [],

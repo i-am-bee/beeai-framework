@@ -15,8 +15,7 @@
 
 from typing import Any
 
-from mcp import ClientSession, StdioServerParameters
-from mcp.client.stdio import stdio_client
+from mcp import ClientSession
 from mcp.types import CallToolResult
 from mcp.types import Tool as MCPToolInfo
 from pydantic import BaseModel
@@ -35,10 +34,10 @@ logger = Logger(__name__)
 class MCPTool(Tool[BaseModel, ToolRunOptions, ToolOutput]):
     """Tool implementation for Model Context Protocol."""
 
-    def __init__(self, server_params: StdioServerParameters, tool: MCPToolInfo, **options: int) -> None:
+    def __init__(self, session: ClientSession, tool: MCPToolInfo, **options: int) -> None:
         """Initialize MCPTool with client and tool configuration."""
         super().__init__(options)
-        self._server_params = server_params
+        self._session = session
         self._tool = tool
 
     @property
@@ -62,15 +61,13 @@ class MCPTool(Tool[BaseModel, ToolRunOptions, ToolOutput]):
     async def _run(self, input_data: Any, options: ToolRunOptions | None, context: RunContext) -> JSONToolOutput:
         """Execute the tool with given input."""
         logger.debug(f"Executing tool {self._tool.name} with input: {input_data}")
-        async with stdio_client(self._server_params) as (read, write), ClientSession(read, write) as session:
-            await session.initialize()
-            result: CallToolResult = await session.call_tool(
-                name=self._tool.name, arguments=input_data.model_dump(exclude_none=True, exclude_unset=True)
-            )
-            logger.debug(f"Tool result: {result}")
-            return JSONToolOutput(result.content)
+        result: CallToolResult = await self._session.call_tool(
+            name=self._tool.name, arguments=input_data.model_dump(exclude_none=True, exclude_unset=True)
+        )
+        logger.debug(f"Tool result: {result}")
+        return JSONToolOutput(result.content)
 
     @classmethod
-    async def from_client(cls, client: ClientSession, server_params: StdioServerParameters) -> list["MCPTool"]:
-        tools_result = await client.list_tools()
-        return [MCPTool(server_params, tool) for tool in tools_result.tools]
+    async def from_client(cls, session: ClientSession) -> list["MCPTool"]:
+        tools_result = await session.list_tools()
+        return [MCPTool(session, tool) for tool in tools_result.tools]

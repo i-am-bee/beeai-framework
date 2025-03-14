@@ -14,14 +14,14 @@
  * limitations under the License.
  */
 
-import { DefaultRunner } from "@/agents/bee/runners/default/runner.js";
+import { DefaultRunner } from "@/agents/react/runners/default/runner.js";
 import { UnconstrainedMemory } from "@/memory/unconstrainedMemory.js";
 import { AssistantMessage, Role, UserMessage } from "@/backend/message.js";
 import { BaseMemory } from "@/memory/base.js";
-import { BeeUserPrompt } from "@/agents/bee/prompts.js";
+import { ReActAgentUserPrompt } from "@/agents/react/prompts.js";
 import { zip } from "remeda";
 import { RunContext } from "@/context.js";
-import { BeeAgent } from "@/agents/bee/agent.js";
+import { ReActAgent } from "@/agents/react/agent.js";
 
 vi.mock("@/memory/tokenMemory.js", async () => {
   const { UnconstrainedMemory } = await import("@/memory/unconstrainedMemory.js");
@@ -31,7 +31,7 @@ vi.mock("@/memory/tokenMemory.js", async () => {
 
 vi.mock("@/context.js");
 
-describe("Bee Agent Runner", () => {
+describe("ReAct Agent Runner", () => {
   beforeEach(() => {
     vi.useRealTimers();
   });
@@ -58,7 +58,7 @@ describe("Bee Agent Runner", () => {
           templates: {},
         },
         {},
-        new RunContext<BeeAgent, any>({} as any, {} as any),
+        new RunContext<ReActAgent, any>({} as any, {} as any),
       );
       await instance.init({ prompt });
       return instance;
@@ -75,14 +75,14 @@ describe("Bee Agent Runner", () => {
   });
 
   it.each([
-    BeeUserPrompt.fork((old) => ({
+    ReActAgentUserPrompt.fork((old) => ({
       ...old,
       functions: { ...old.functions, formatMeta: () => "" },
     })),
-    BeeUserPrompt.fork((old) => ({ ...old, template: `{{input}}` })),
-    BeeUserPrompt.fork((old) => ({ ...old, template: `User: {{input}}` })),
-    BeeUserPrompt.fork((old) => ({ ...old, template: `` })),
-  ])("Correctly formats user input", async (template: typeof BeeUserPrompt) => {
+    ReActAgentUserPrompt.fork((old) => ({ ...old, template: `{{input}}` })),
+    ReActAgentUserPrompt.fork((old) => ({ ...old, template: `User: {{input}}` })),
+    ReActAgentUserPrompt.fork((old) => ({ ...old, template: `` })),
+  ])("Correctly formats user input", async (template: typeof ReActAgentUserPrompt) => {
     const memory = new UnconstrainedMemory();
     await memory.addMany([
       new UserMessage("What is your name?"),
@@ -102,7 +102,7 @@ describe("Bee Agent Runner", () => {
         },
       },
       {},
-      new RunContext<BeeAgent, any>({} as any, {} as any),
+      new RunContext<ReActAgent, any>({} as any, {} as any),
     );
     await instance.init({ prompt });
 

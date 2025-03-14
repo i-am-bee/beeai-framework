@@ -62,7 +62,7 @@ Now, copy and paste the following code into `agent_slack.ts` module. Then, follo
 
 ```js
 import { MCPTool } from "beeai-framework/tools/mcp";
-import { BeeAgent } from "beeai-framework/agents/bee/agent";
+import { ReActAgent } from "beeai-framework/agents/react/agent";
 import { UnconstrainedMemory } from "beeai-framework/memory/unconstrainedMemory";
 import { OllamaChatModel } from "beeai-framework/adapters/ollama/backend/chat";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
@@ -101,8 +101,8 @@ try {
   // Filter for specific Slack tool
   const filteredSlackTools = slackTools.filter((tool) => tool.name === "slack_post_message");
 
-  // Create Bee agent
-  const agent = new BeeAgent({
+  // Create ReActAgent agent
+  const agent = new ReActAgent({
     // We're using LLM ran locally via Ollama
     llm: new OllamaChatModel("llama3.1"),
     // Besides the Slack tools, we also provide DDG tool for web search

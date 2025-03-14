@@ -73,9 +73,11 @@ export class WatsonxChatModel extends ChatModel {
     return this;
   }
 
-  protected async _create(input: ChatModelInput) {
-    // TODO: support abortion (https://github.com/IBM/watsonx-ai-node-sdk/issues/3)
-    const { result } = await this.client.instance.textChat(await this.prepareInput(input));
+  protected async _create(input: ChatModelInput, run: GetRunContext<any>) {
+    const { result } = await this.client.instance.textChat({
+      ...(await this.prepareInput(input)),
+      signal: run.signal,
+    });
     const { messages, finishReason, usage } = this.extractOutput(result.choices, result.usage);
     return new ChatModelOutput(messages, usage, finishReason);
   }
@@ -83,6 +85,7 @@ export class WatsonxChatModel extends ChatModel {
   async *_createStream(input: ChatModelInput, run: GetRunContext<this>) {
     const stream = await this.client.instance.textChatStream({
       ...(await this.prepareInput(input)),
+      signal: run.signal,
       returnObject: true,
     });
     for await (const raw of stream) {

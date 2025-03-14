@@ -1,5 +1,5 @@
 import "dotenv/config.js";
-import { BeeAgent } from "beeai-framework/agents/bee/agent";
+import { ReActAgent } from "beeai-framework/agents/react/agent";
 import { createConsoleReader } from "../helpers/io.js";
 import { FrameworkError } from "beeai-framework/errors";
 import { Logger } from "beeai-framework/logger/logger";
@@ -17,7 +17,7 @@ const logger = new Logger({ name: "app", level: "trace" });
 
 const llm = new OllamaChatModel("llama3.1");
 
-const agent = new BeeAgent({
+const agent = new ReActAgent({
   llm,
   memory: new UnconstrainedMemory(),
   // You can override internal templates

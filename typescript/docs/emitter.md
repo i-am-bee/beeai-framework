@@ -162,11 +162,11 @@ Typically, you consume out-of-the-box modules that use the `Emitter` concept on 
 <!-- embedme examples/emitter/agentMatchers.ts -->
 
 ```ts
-import { BeeAgent } from "beeai-framework/agents/bee/agent";
+import { ReActAgent } from "beeai-framework/agents/react/agent";
 import { UnconstrainedMemory } from "beeai-framework/memory/unconstrainedMemory";
 import { OllamaChatModel } from "beeai-framework/adapters/ollama/backend/chat";
 
-const agent = new BeeAgent({
+const agent = new ReActAgent({
   llm: new OllamaChatModel("llama3.1"),
   memory: new UnconstrainedMemory(),
   tools: [],
@@ -195,7 +195,7 @@ _Source: [examples/emitter/agentMatchers.ts](/typescript/examples/emitter/agentM
 
 > [!TIP]
 >
-> The more complex agentic example can be found [here](/typescript/examples/agents/bee.ts).
+> The more complex agentic example can be found [here](/typescript/examples/agents/react.ts).
 
 > [!TIP]
 >

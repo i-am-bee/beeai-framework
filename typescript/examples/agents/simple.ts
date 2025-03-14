@@ -1,12 +1,12 @@
 import "dotenv/config.js";
-import { BeeAgent } from "beeai-framework/agents/bee/agent";
+import { ReActAgent } from "beeai-framework/agents/react/agent";
 import { TokenMemory } from "beeai-framework/memory/tokenMemory";
 import { DuckDuckGoSearchTool } from "beeai-framework/tools/search/duckDuckGoSearch";
 import { OpenMeteoTool } from "beeai-framework/tools/weather/openMeteo";
 import { OllamaChatModel } from "beeai-framework/adapters/ollama/backend/chat";
 
 const llm = new OllamaChatModel("llama3.1");
-const agent = new BeeAgent({
+const agent = new ReActAgent({
   llm,
   memory: new TokenMemory(),
   tools: [new DuckDuckGoSearchTool(), new OpenMeteoTool()],

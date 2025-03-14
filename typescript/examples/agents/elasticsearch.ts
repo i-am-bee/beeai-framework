@@ -1,5 +1,5 @@
 import "dotenv/config.js";
-import { BeeAgent } from "beeai-framework/agents/bee/agent";
+import { ReActAgent } from "beeai-framework/agents/react/agent";
 import { OpenAIChatModel } from "beeai-framework/adapters/openai/backend/chat";
 import { ElasticSearchTool } from "beeai-framework/tools/database/elasticsearch";
 import { FrameworkError } from "beeai-framework/errors";
@@ -17,7 +17,7 @@ const elasticSearchTool = new ElasticSearchTool({
   },
 });
 
-const agent = new BeeAgent({
+const agent = new ReActAgent({
   llm,
   memory: new UnconstrainedMemory(),
   tools: [elasticSearchTool],

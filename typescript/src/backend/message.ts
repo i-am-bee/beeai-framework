@@ -110,6 +110,17 @@ export abstract class Message<
     return { role: this.role, content: shallowCopy(this.content) } as const;
   }
 
+  merge(other: Message<T, R>) {
+    Object.assign(this, other.meta);
+    this.content.push(...other.content);
+  }
+
+  static fromChunks<M2 extends Message>(this: new (...args: any[]) => M2, chunks: M2[]): M2 {
+    const instance = new this([]);
+    chunks.forEach((chunk) => instance.merge(chunk));
+    return instance;
+  }
+
   [Symbol.iterator](): Iterator<T> {
     return this.content[Symbol.iterator]();
   }

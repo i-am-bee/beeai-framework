@@ -16,20 +16,23 @@
 
 import { ToolMessage } from "@/backend/message.js";
 import type { AnyTool } from "@/tools/base.js";
-import { DefaultRunner } from "@/agents/bee/runners/default/runner.js";
-import type { BeeParserInput, BeeRunOptions } from "@/agents/bee/types.js";
-import { BeeAgent, BeeInput } from "@/agents/bee/agent.js";
+import { DefaultRunner } from "@/agents/react/runners/default/runner.js";
+import type { ReActAgentParserInput, ReActAgentRunOptions } from "@/agents/react/types.js";
+import { ReActAgent, ReActAgentInput } from "@/agents/react/agent.js";
 import type { GetRunContext } from "@/context.js";
 import {
-  GraniteBeeAssistantPrompt,
-  GraniteBeeSchemaErrorPrompt,
-  GraniteBeeSystemPrompt,
-  GraniteBeeToolErrorPrompt,
-  GraniteBeeToolInputErrorPrompt,
-  GraniteBeeToolNotFoundPrompt,
-  GraniteBeeUserPrompt,
-} from "@/agents/bee/runners/granite/prompts.js";
-import { BeeToolNoResultsPrompt, BeeUserEmptyPrompt } from "@/agents/bee/prompts.js";
+  GraniteReActAgentAssistantPrompt,
+  GraniteReActAgentSchemaErrorPrompt,
+  GraniteReActAgentSystemPrompt,
+  GraniteReActAgentToolErrorPrompt,
+  GraniteReActAgentToolInputErrorPrompt,
+  GraniteReActAgentToolNotFoundPrompt,
+  GraniteReActAgentUserPrompt,
+} from "@/agents/react/runners/granite/prompts.js";
+import {
+  ReActAgentToolNoResultsPrompt,
+  ReActAgentUserEmptyPrompt,
+} from "@/agents/react/prompts.js";
 import { Cache } from "@/cache/decoratorCache.js";
 
 export class GraniteRunner extends DefaultRunner {
@@ -38,16 +41,16 @@ export class GraniteRunner extends DefaultRunner {
   @Cache({ enumerable: false })
   public get defaultTemplates() {
     return {
-      system: GraniteBeeSystemPrompt,
-      assistant: GraniteBeeAssistantPrompt,
-      user: GraniteBeeUserPrompt,
-      schemaError: GraniteBeeSchemaErrorPrompt,
-      toolNotFoundError: GraniteBeeToolNotFoundPrompt,
-      toolError: GraniteBeeToolErrorPrompt,
-      toolInputError: GraniteBeeToolInputErrorPrompt,
-      // Note: These are from bee
-      userEmpty: BeeUserEmptyPrompt,
-      toolNoResultError: BeeToolNoResultsPrompt,
+      system: GraniteReActAgentSystemPrompt,
+      assistant: GraniteReActAgentAssistantPrompt,
+      user: GraniteReActAgentUserPrompt,
+      schemaError: GraniteReActAgentSchemaErrorPrompt,
+      toolNotFoundError: GraniteReActAgentToolNotFoundPrompt,
+      toolError: GraniteReActAgentToolErrorPrompt,
+      toolInputError: GraniteReActAgentToolInputErrorPrompt,
+      // Note: These are from ReAct
+      userEmpty: ReActAgentUserEmptyPrompt,
+      toolNoResultError: ReActAgentToolNoResultsPrompt,
     };
   }
 
@@ -55,7 +58,11 @@ export class GraniteRunner extends DefaultRunner {
     this.register();
   }
 
-  constructor(input: BeeInput, options: BeeRunOptions, run: GetRunContext<BeeAgent>) {
+  constructor(
+    input: ReActAgentInput,
+    options: ReActAgentRunOptions,
+    run: GetRunContext<ReActAgent>,
+  ) {
     super(input, options, run);
 
     run.emitter.on(
@@ -86,7 +93,7 @@ export class GraniteRunner extends DefaultRunner {
     const { parser } = super.createParser(tools);
 
     return {
-      parser: parser.fork<BeeParserInput>((nodes, options) => ({
+      parser: parser.fork<ReActAgentParserInput>((nodes, options) => ({
         options,
         nodes: {
           ...nodes,

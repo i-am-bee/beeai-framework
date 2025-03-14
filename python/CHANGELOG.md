@@ -1,3 +1,13 @@
+## python_v0.1.6 (2025-03-14)
+
+### Bug Fixes
+
+- **tools**: avoid session management in MCPTool (#589)
+
+### Features
+
+- **agents**: improve ToolCallingAgent performance (#593)
+
 ## python_v0.1.5 (2025-03-13)
 
 ## Features

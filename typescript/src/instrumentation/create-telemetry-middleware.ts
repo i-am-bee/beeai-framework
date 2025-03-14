@@ -19,7 +19,7 @@ import { createSpan } from "./helpers/create-span.js";
 import { IdNameManager } from "./helpers/id-name-manager.js";
 import { getErrorSafe } from "./helpers/get-error-safe.js";
 import { findLast, isDeepEqual, isEmpty } from "remeda";
-import type { BeeCallbacks } from "@/agents/bee/types.js";
+import type { ReActAgentCallbacks } from "@/agents/react/types.js";
 import type { InferCallbackValue } from "@/emitter/types.js";
 import { FrameworkError } from "@/errors.js";
 import { Version } from "@/version.js";
@@ -29,7 +29,7 @@ import { activeTracesMap, buildTraceTree } from "./tracer.js";
 import { traceSerializer } from "./helpers/trace-serializer.js";
 import { INSTRUMENTATION_IGNORED_KEYS } from "./config.js";
 import { createFullPath } from "@/emitter/utils.js";
-import type { BeeAgent } from "@/agents/bee/agent.js";
+import type { ReActAgent } from "@/agents/react/agent.js";
 import { instrumentationLogger } from "./logger.js";
 import { BaseAgent } from "@/agents/base.js";
 import { assertLLMWithMessagesToPromptFn } from "./helpers/utils.js";
@@ -60,7 +60,7 @@ export function createTelemetryMiddleware() {
 
     let prompt: string | undefined | null = null;
     if (instance instanceof BaseAgent) {
-      prompt = (runParams as Parameters<BeeAgent["run"]>)[0].prompt;
+      prompt = (runParams as Parameters<ReActAgent["run"]>)[0].prompt;
     }
 
     const spansMap = new Map<string, FrameworkSpan>();
@@ -74,7 +74,7 @@ export function createTelemetryMiddleware() {
     const idNameManager = new IdNameManager();
 
     const newTokenEventName: keyof ChatModelEvents = `newToken`;
-    const partialUpdateEventName: keyof BeeCallbacks = "partialUpdate";
+    const partialUpdateEventName: keyof ReActAgentCallbacks = "partialUpdate";
     const successEventName: keyof ChatModelEvents = `success`;
     const finishEventName: keyof ChatModelEvents = `finish`;
     const startEventName: keyof ChatModelEvents = `start`;
@@ -267,7 +267,7 @@ export function createTelemetryMiddleware() {
     // The generated response and message history are collected from the `success` agent's event
     emitter.match(
       (event) => event.name === successEventName && event.creator instanceof BaseAgent,
-      (data: InferCallbackValue<BeeCallbacks[typeof successEventName]>) => {
+      (data: InferCallbackValue<ReActAgentCallbacks[typeof successEventName]>) => {
         const { data: dataObject, memory } = data;
 
         generatedMessage = {

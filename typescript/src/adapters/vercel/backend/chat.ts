@@ -91,7 +91,6 @@ export abstract class VercelChatModel<
       schema,
       abortSignal: run.signal,
       model: this.model,
-      mode: "json",
       // @ts-expect-error
       output:
         inputSchema instanceof ZodArray

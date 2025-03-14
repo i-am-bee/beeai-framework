@@ -1,5 +1,5 @@
 import "dotenv/config.js";
-import { BeeAgent } from "beeai-framework/agents/bee/agent";
+import { ReActAgent } from "beeai-framework/agents/react/agent";
 import { createConsoleReader } from "../helpers/io.js";
 import { FrameworkError } from "beeai-framework/errors";
 import { TokenMemory } from "beeai-framework/memory/tokenMemory";
@@ -30,7 +30,7 @@ const codeInterpreterTmpdir =
   process.env.CODE_INTEPRETER_TMPDIR ?? "./examples/tmp/code_interpreter";
 const localTmpdir = process.env.LOCAL_TMPDIR ?? "./examples/tmp/local";
 
-const agent = new BeeAgent({
+const agent = new ReActAgent({
   llm,
   memory: new TokenMemory(),
   tools: [

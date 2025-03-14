@@ -1,32 +1,33 @@
 import "dotenv/config.js";
-import { Client as MCPClient } from "@i-am-bee/acp-sdk/client/index.js";
-import { SSEClientTransport } from "@i-am-bee/acp-sdk/client/sse.js";
 import { RemoteAgent } from "beeai-framework/agents/experimental/remote/agent";
 import { createConsoleReader } from "examples/helpers/io.js";
 import { FrameworkError } from "beeai-framework/errors";
-import { parseBrokenJson } from "beeai-framework/internals/helpers/schema";
 
-const agentName = "literature-review";
+const agentName = "chat";
 
-const instance = new RemoteAgent({
-  client: new MCPClient({
-    name: "example-remote-agent",
-    version: "1.0.0",
-  }),
-  transport: new SSEClientTransport(new URL("/mcp/sse", "http://127.0.0.1:8333")),
-  agent: agentName,
-});
+const instance = RemoteAgent.createSSEAgent("http://127.0.0.1:8333/mcp/sse", agentName);
 
 const reader = createConsoleReader();
 
 try {
   for await (const { prompt } of reader) {
-    // input example: {"text": "Write a literature review on no code tools for building multi agent ai systems"}
-    const result = await instance.run({ prompt: parseBrokenJson(prompt) }).observe((emitter) => {
-      emitter.on("update", (data) => {
-        reader.write(`Agent (received progress) 🤖 : `, data.output);
+    const result = await instance
+      .run({
+        prompt: {
+          messages: [{ role: "user", content: prompt }],
+          config: { tools: ["weather", "search", "wikipedia"] },
+        },
+      })
+      .observe((emitter) => {
+        emitter.on("update", (data) => {
+          if (JSON.parse(data.output)?.["logs"]) {
+            reader.write(
+              `Agent (received progress) 🤖 : `,
+              JSON.parse(data.output)?.["logs"]?.[0]?.["message"],
+            );
+          }
+        });
       });
-    });
 
     reader.write(`Agent (${agentName}) 🤖 : `, result.message.text);
   }

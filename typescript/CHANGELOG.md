@@ -1,5 +1,22 @@
 # Changelog
 
+## [0.1.7](https://github.com/i-am-bee/beeai-framework/compare/typescript_v0.1.6...typescript_v0.1.7) (2025-03-14)
+
+### ⚠ BREAKING CHANGES
+
+- rename BeeAgent to ReActAgent (#587)
+
+### Features
+
+- **agents:** add ToolCallingAgent ([#592](https://github.com/i-am-bee/beeai-framework/issues/592)) ([c3c3980](https://github.com/i-am-bee/beeai-framework/commit/c3c3980280bd44861262570f63847a6929cbbedc)), closes [#531](https://github.com/i-am-bee/beeai-framework/issues/531)
+- **backend:** add abort signal for Watsonx ([5e5ea68](https://github.com/i-am-bee/beeai-framework/commit/5e5ea684cc3b593f70bbe94a53af0c3537d8b7d7))
+- **backend:** update parameters for structured generation ([1247919](https://github.com/i-am-bee/beeai-framework/commit/124791989ec2122f7b1081d1434821c867cf91a3))
+- rename BeeAgent to ReActAgent ([#587](https://github.com/i-am-bee/beeai-framework/issues/587)) ([a28c904](https://github.com/i-am-bee/beeai-framework/commit/a28c9046efecaab9006839368c7114c488df9ea3)), closes [#437](https://github.com/i-am-bee/beeai-framework/issues/437)
+
+### Bug Fixes
+
+- **agents:** simplify and unify remote agent with the Python version ([#585](https://github.com/i-am-bee/beeai-framework/issues/585)) ([2d39a9d](https://github.com/i-am-bee/beeai-framework/commit/2d39a9d06ec15acfcbc5055793a818b7944868de))
+
 ## [0.1.6](https://github.com/i-am-bee/beeai-framework/compare/typescript_v0.1.5...typescript_v0.1.6) (2025-03-12)
 
 ### Features

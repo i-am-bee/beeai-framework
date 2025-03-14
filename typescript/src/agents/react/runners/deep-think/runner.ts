@@ -15,22 +15,25 @@
  */
 
 import type { AnyTool } from "@/tools/base.js";
-import { DefaultRunner } from "@/agents/bee/runners/default/runner.js";
+import { DefaultRunner } from "@/agents/react/runners/default/runner.js";
 import {
-  DeepThinkBeeAssistantPrompt,
-  DeepThinkBeeSchemaErrorPrompt,
-  DeepThinkBeeSystemPrompt,
-  DeepThinkBeeToolErrorPrompt,
-  DeepThinkBeeToolInputErrorPrompt,
-  DeepThinkBeeToolNotFoundPrompt,
-  DeepThinkBeeUserPrompt,
-} from "@/agents/bee/runners/deep-think/prompts.js";
-import { BeeToolNoResultsPrompt, BeeUserEmptyPrompt } from "@/agents/bee/prompts.js";
+  DeepThinkReActAgentAssistantPrompt,
+  DeepThinkReActAgentSchemaErrorPrompt,
+  DeepThinkReActAgentSystemPrompt,
+  DeepThinkReActAgentToolErrorPrompt,
+  DeepThinkReActAgentToolInputErrorPrompt,
+  DeepThinkReActAgentToolNotFoundPrompt,
+  DeepThinkReActAgentUserPrompt,
+} from "@/agents/react/runners/deep-think/prompts.js";
+import {
+  ReActAgentToolNoResultsPrompt,
+  ReActAgentUserEmptyPrompt,
+} from "@/agents/react/prompts.js";
 import { Cache } from "@/cache/decoratorCache.js";
 import { ZodParserField } from "@/parsers/field.js";
 import { z } from "zod";
-import { BeeInput, BeeAgent } from "@/agents/bee/agent.js";
-import { BeeRunOptions } from "@/agents/bee/types.js";
+import { ReActAgentInput, ReActAgent } from "@/agents/react/agent.js";
+import { ReActAgentRunOptions } from "@/agents/react/types.js";
 import { GetRunContext } from "@/context.js";
 import { UserMessage } from "@/backend/message.js";
 
@@ -38,16 +41,16 @@ export class DeepThinkRunner extends DefaultRunner {
   @Cache({ enumerable: false })
   public get defaultTemplates() {
     return {
-      system: DeepThinkBeeSystemPrompt,
-      assistant: DeepThinkBeeAssistantPrompt,
-      user: DeepThinkBeeUserPrompt,
-      schemaError: DeepThinkBeeSchemaErrorPrompt,
-      toolNotFoundError: DeepThinkBeeToolNotFoundPrompt,
-      toolError: DeepThinkBeeToolErrorPrompt,
-      toolInputError: DeepThinkBeeToolInputErrorPrompt,
-      // Note: These are from bee
-      userEmpty: BeeUserEmptyPrompt,
-      toolNoResultError: BeeToolNoResultsPrompt,
+      system: DeepThinkReActAgentSystemPrompt,
+      assistant: DeepThinkReActAgentAssistantPrompt,
+      user: DeepThinkReActAgentUserPrompt,
+      schemaError: DeepThinkReActAgentSchemaErrorPrompt,
+      toolNotFoundError: DeepThinkReActAgentToolNotFoundPrompt,
+      toolError: DeepThinkReActAgentToolErrorPrompt,
+      toolInputError: DeepThinkReActAgentToolInputErrorPrompt,
+      // Note: These are from ReAct
+      userEmpty: ReActAgentUserEmptyPrompt,
+      toolNoResultError: ReActAgentToolNoResultsPrompt,
     };
   }
 
@@ -55,7 +58,11 @@ export class DeepThinkRunner extends DefaultRunner {
     this.register();
   }
 
-  constructor(input: BeeInput, options: BeeRunOptions, run: GetRunContext<BeeAgent>) {
+  constructor(
+    input: ReActAgentInput,
+    options: ReActAgentRunOptions,
+    run: GetRunContext<ReActAgent>,
+  ) {
     super(input, options, run);
 
     run.emitter.on(

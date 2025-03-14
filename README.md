@@ -62,59 +62,70 @@ This example demonstrates how to build a multi-agent workflow using BeeAI framew
 
 ```py
 import asyncio
-import sys
-import traceback
-
-from beeai_framework.agents.types import AgentExecutionConfig
 from beeai_framework.backend.chat import ChatModel
-from beeai_framework.backend.message import UserMessage
-from beeai_framework.errors import FrameworkError
-from beeai_framework.memory import UnconstrainedMemory
-from beeai_framework.tools.search.duckduckgo import DuckDuckGoSearchTool
+from beeai_framework.tools.search.wikipedia import WikipediaTool
 from beeai_framework.tools.weather.openmeteo import OpenMeteoTool
-from beeai_framework.workflows.agent import AgentWorkflow
-
+from beeai_framework.workflows.agent import AgentWorkflow, AgentWorkflowInput
 
 async def main() -> None:
     llm = ChatModel.from_name("ollama:granite3.1-dense:8b")
-
     workflow = AgentWorkflow(name="Smart assistant")
-    workflow.add_agent(
-        name="WeatherForecaster",
-        instructions="You are a weather assistant.",
-        tools=[OpenMeteoTool()],
-        llm=llm,
-        execution=AgentExecutionConfig(max_iterations=3, total_max_retries=10, max_retries_per_step=3),
-    )
+
     workflow.add_agent(
         name="Researcher",
-        instructions="You are a researcher assistant.",
-        tools=[DuckDuckGoSearchTool()],
-        llm=llm,
-    )
-    workflow.add_agent(
-        name="Solver",
-        instructions="""Your task is to provide the most useful final answer based on the assistants'
-responses which all are relevant. Ignore those where assistant do not know.""",
+        role="A diligent researcher.",
+        instructions="You look up and provide information about a specific topic.",
+        tools=[WikipediaTool()],
         llm=llm,
     )
 
-    prompt = "What is the weather in New York?"
-    memory = UnconstrainedMemory()
-    await memory.add(UserMessage(content=prompt))
-    response = await workflow.run(messages=memory.messages)
-    print(f"result: {response.state.final_answer}")
+    workflow.add_agent(
+        name="WeatherForecaster",
+        role="A weather reporter.",
+        instructions="You provide detailed weather reports.",
+        tools=[OpenMeteoTool()],
+        llm=llm,
+    )
+
+    workflow.add_agent(
+        name="DataSynthesizer",
+        role="A meticulous and creative data synthesizer",
+        instructions="You can combine disparate information into a final coherent summary.",
+        llm=llm,
+    )
+
+    location = "Saint-Tropez"
+
+    response = await workflow.run(
+        inputs=[
+            AgentWorkflowInput(
+                prompt=f"Provide a short history of {location}.",
+            ),
+            AgentWorkflowInput(
+                prompt=f"Provide a comprehensive weather summary for {location} today.",
+                expected_output="Essential weather details such as chance of rain, temperature and wind. Only report information that is available.",
+            ),
+            AgentWorkflowInput(
+                prompt=f"Summarize the historical and weather data for {location}.",
+                expected_output=f"A paragraph that describes the history of {location}, followed by the current weather conditions.",
+            ),
+        ]
+    ).on(
+        "success",
+        lambda data, event: print(
+            f"\n-> Step '{data.step}' has been completed with the following outcome.\n\n{data.state.final_answer}"
+        ),
+    )
+
+    print("==== Final Answer ====")
+    print(response.result.final_answer)
 
 
 if __name__ == "__main__":
-    try:
-        asyncio.run(main())
-    except FrameworkError as e:
-        traceback.print_exc()
-        sys.exit(e.explain())
+    asyncio.run(main())
 ```
 
-_Source: [python/examples/workflows/multi_agents.py](/python/examples/workflows/multi_agents.py)_
+_Source: [python/examples/workflows/multi_agents_simple.py](/python/examples/workflows/multi_agents.py)_
 
 TypeScript version of this example can be found [here](/typescript/examples/workflows/multiAgents.ts).
 

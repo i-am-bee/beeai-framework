@@ -18,17 +18,17 @@ import { Callback } from "@/emitter/types.js";
 import { Emitter } from "@/emitter/emitter.js";
 import { AgentError, BaseAgent, BaseAgentRunOptions } from "@/agents/base.js";
 import { GetRunContext } from "@/context.js";
-import { AssistantMessage, Message, UserMessage } from "@/backend/message.js";
+import { AssistantMessage, Message } from "@/backend/message.js";
 import { BaseMemory } from "@/memory/base.js";
-import { UnconstrainedMemory } from "@/memory/unconstrainedMemory.js";
 import { Client as MCPClient } from "@i-am-bee/acp-sdk/client/index.js";
 import { Transport } from "@i-am-bee/acp-sdk/shared/transport.js";
 import { shallowCopy } from "@/serializer/utils.js";
 import { NotImplementedError } from "@/errors.js";
 import { AgentRunProgressNotificationSchema } from "@i-am-bee/acp-sdk/types.js";
+import { SSEClientTransport } from "@i-am-bee/acp-sdk/client/sse.js";
 
 export interface RemoteAgentRunInput {
-  prompt: any;
+  prompt: Record<string, unknown> | string;
 }
 
 export interface RemoteAgentRunOutput {
@@ -42,7 +42,7 @@ export interface RemoteAgentEvents {
 interface Input {
   client: MCPClient;
   transport: Transport;
-  agent: string;
+  agentName: string;
 }
 
 export class RemoteAgent extends BaseAgent<RemoteAgentRunInput, RemoteAgentRunOutput> {
@@ -60,21 +60,13 @@ export class RemoteAgent extends BaseAgent<RemoteAgentRunInput, RemoteAgentRunOu
     _options: BaseAgentRunOptions,
     context: GetRunContext<this>,
   ): Promise<RemoteAgentRunOutput> {
-    if (input.prompt !== null) {
-      await this.memory.add(new UserMessage(JSON.stringify(input.prompt, null, 2)));
-    }
-
-    const runner = await this.createRunner(context);
+    const runner = this.createRunner(context);
 
     const output = await runner(input);
 
-    const finalMessage: Message = new AssistantMessage(output);
+    const message: Message = new AssistantMessage(output);
 
-    await this.memory.add(finalMessage);
-
-    return {
-      message: finalMessage,
-    };
+    return { message };
   }
 
   protected async listAgents() {
@@ -83,8 +75,8 @@ export class RemoteAgent extends BaseAgent<RemoteAgentRunInput, RemoteAgentRunOu
     return response.agents;
   }
 
-  protected async createRunner(context: GetRunContext<this>) {
-    const run = async (input: RemoteAgentRunInput): Promise<string> => {
+  protected createRunner(context: GetRunContext<this>) {
+    return async (input: RemoteAgentRunInput): Promise<string> => {
       try {
         this.input.client.setNotificationHandler(
           AgentRunProgressNotificationSchema,
@@ -102,36 +94,37 @@ export class RemoteAgent extends BaseAgent<RemoteAgentRunInput, RemoteAgentRunOu
       }
 
       const agents = await this.listAgents();
-      const agent = agents.find((agent) => agent.name === this.input.agent);
+      const agent = agents.find((agent) => agent.name === this.input.agentName);
       if (!agent) {
-        throw new AgentError(`Agent ${this.input.agent} is not registered in the platform`, [], {
-          isFatal: true,
-        });
+        throw new AgentError(
+          `Agent ${this.input.agentName} is not registered in the platform`,
+          [],
+          {
+            isFatal: true,
+          },
+        );
       }
 
       const response = await this.input.client.runAgent(
         {
-          name: this.input.agent,
-          input: input.prompt,
+          name: this.input.agentName,
+          input: typeof input.prompt === "string" ? { text: input.prompt } : input.prompt,
         },
         {
           timeout: 10_000_000,
           signal: context.signal,
-          onprogress: () => null,
+          onprogress: () => null, // This has to be here in order for notifications to work.
         },
       );
 
-      await this.input.client.close();
       const output = JSON.stringify(response.output, null, 2);
       await context.emitter.emit("update", { output });
       return output;
     };
-
-    return run;
   }
 
   get memory() {
-    return new UnconstrainedMemory();
+    throw new NotImplementedError();
   }
 
   set memory(memory: BaseMemory) {
@@ -144,5 +137,16 @@ export class RemoteAgent extends BaseAgent<RemoteAgentRunInput, RemoteAgentRunOu
       input: shallowCopy(this.input),
       emitter: this.emitter,
     };
+  }
+
+  static createSSEAgent(url: string, agentName: string) {
+    return new RemoteAgent({
+      client: new MCPClient({
+        name: "remote-agent",
+        version: "1.0.0",
+      }),
+      transport: new SSEClientTransport(new URL(url)),
+      agentName: agentName,
+    });
   }
 }

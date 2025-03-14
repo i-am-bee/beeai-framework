@@ -4,7 +4,7 @@ import { createReactAgent as createLangGraphReactAgent } from "@langchain/langgr
 import { Workflow } from "beeai-framework/workflows/workflow";
 import { z } from "zod";
 import { createConsoleReader } from "examples/helpers/io.js";
-import { BeeAgent } from "beeai-framework/agents/bee/agent";
+import { ReActAgent } from "beeai-framework/agents/react/agent";
 import { DuckDuckGoSearchTool } from "beeai-framework/tools/search/duckDuckGoSearch";
 import { ChatOllama as LangChainOllamaChat } from "@langchain/ollama";
 import { ReadOnlyMemory } from "beeai-framework/memory/base";
@@ -18,12 +18,12 @@ const workflow = new Workflow({
 })
   .addStep("router", () => (Math.random() >= 0.5 ? "bee" : "langgraph"))
   .addStep("bee", async (state, ctx) => {
-    const beeAgent = new BeeAgent({
+    const agent = new ReActAgent({
       llm: await ChatModel.fromName("ollama:llama3.1"),
       tools: [new DuckDuckGoSearchTool()],
       memory: state.memory,
     });
-    const response = await beeAgent.run(
+    const response = await agent.run(
       { prompt: null },
       { signal: ctx.signal, execution: { maxIterations: 5 } },
     );

@@ -23,7 +23,7 @@ def print_event(event_data: Any, event_meta: EventMeta) -> None:
     elif event_meta.name == "retry":
         print("Workflow : ", "retrying...")
     elif event_meta.name == "update":
-        print(f"Workflow({event_data.update.key}) : ", event_data.update.parsedValue)
+        print(f"Workflow({event_data.update.key}) : ", event_data.update.parsed_value)
     elif event_meta.name == "start":
         if event_data:
             print(f"Workflow : Starting step: {event_data.step}")
