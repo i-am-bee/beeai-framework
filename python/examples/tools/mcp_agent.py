@@ -41,17 +41,7 @@ server_params = StdioServerParameters(
 )
 
 
-async def slack_tool() -> MCPTool:
-    async with stdio_client(server_params) as (read, write), ClientSession(read, write) as session:
-        await session.initialize()
-        # Discover Slack tools via MCP client
-        slacktools = await MCPTool.from_client(session)
-        filter_tool = filter(lambda tool: tool.name == "slack_post_message", slacktools)
-        slack = list(filter_tool)
-        return slack[0]
-
-
-async def create_agent() -> ReActAgent:
+async def create_agent(session: ClientSession) -> ReActAgent:
     """Create and configure the agent with tools and LLM"""
 
     # Other models to try:
@@ -65,7 +55,9 @@ async def create_agent() -> ReActAgent:
     )
 
     # Configure tools
-    tools: list[AnyTool] = [await slack_tool()]
+    slacktools = await MCPTool.from_client(session)
+    tools = filter(lambda tool: tool.name == "slack_post_message", slacktools)
+
 
     # Create agent with memory and tools
     agent = ReActAgent(llm=llm, tools=tools, memory=TokenMemory(llm))
@@ -96,18 +88,20 @@ def observer(emitter: Emitter) -> None:
 async def main() -> None:
     """Main application loop"""
 
-    # Create agent
-    agent = await create_agent()
+    async with stdio_client(server_params) as (read, write), ClientSession(read, write) as session:
+        await session.initialize()
+        # Create agent
+        agent = await create_agent(session)
 
-    # Main interaction loop with user input
-    for prompt in reader:
-        # Run agent with the prompt
-        response = await agent.run(
-            prompt=prompt,
-            execution=AgentExecutionConfig(max_retries_per_step=3, total_max_retries=10, max_iterations=20),
-        ).observe(observer)
+        # Main interaction loop with user input
+        for prompt in reader:
+            # Run agent with the prompt
+            response = await agent.run(
+                prompt=prompt,
+                execution=AgentExecutionConfig(max_retries_per_step=3, total_max_retries=10, max_iterations=20),
+            ).observe(observer)
 
-        reader.write("Agent 🤖 : ", response.result.text)
+            reader.write("Agent 🤖 : ", response.result.text)
 
 
 if __name__ == "__main__":
