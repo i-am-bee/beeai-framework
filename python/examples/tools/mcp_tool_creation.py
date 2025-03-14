@@ -28,7 +28,7 @@ async def slack_tool() -> MCPTool:
     async with stdio_client(server_params) as (read, write), ClientSession(read, write) as session:
         await session.initialize()
         # Discover Slack tools via MCP client
-        slacktools = await MCPTool.from_client(session, server_params)
+        slacktools = await MCPTool.from_client(session)
         filter_tool = filter(lambda tool: tool.name == "slack_post_message", slacktools)
         slack = list(filter_tool)
         return slack[0]

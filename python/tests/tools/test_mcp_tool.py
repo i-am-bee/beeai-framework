@@ -90,9 +90,9 @@ class TestMCPTool:
     @pytest.mark.asyncio
     @pytest.mark.unit
     async def test_mcp_tool_initialization(
-        self, mock_server_params: StdioServerParameters, mock_tool_info: MCPToolInfo
+        self, mock_client_session: ClientSession, mock_tool_info: MCPToolInfo
     ) -> None:
-        tool = MCPTool(server_params=mock_server_params, tool=mock_tool_info)
+        tool = MCPTool(session=mock_client_session, tool=mock_tool_info)
 
         assert tool.name == "test_tool"
         assert tool.description == "A test tool"
@@ -103,12 +103,12 @@ class TestMCPTool:
     async def test_mcp_tool_run(  # type: ignore
         self,
         mock__run,  # noqa: ANN001
-        mock_server_params: StdioServerParameters,
+        mock_client_session: ClientSession,
         mock_tool_info: MCPToolInfo,
         call_tool_result: str,
     ) -> None:
         mock__run.return_value = StringToolOutput(str(call_tool_result))
-        tool = MCPTool(server_params=mock_server_params, tool=mock_tool_info)
+        tool = MCPTool(session=mock_client_session, tool=mock_tool_info)
         input_data = {"a": 1, "b": 2}
 
         result = await tool.run(input_data)
@@ -118,14 +118,12 @@ class TestMCPTool:
 
     @pytest.mark.asyncio
     @pytest.mark.unit
-    async def test_mcp_tool_from_client(
-        self, mock_client_session: ClientSession, mock_server_params: StdioServerParameters, mock_tool_info: MCPToolInfo
-    ) -> None:
+    async def test_mcp_tool_from_client(self, mock_client_session: ClientSession, mock_tool_info: MCPToolInfo) -> None:
         tools_result = MagicMock()
         tools_result.tools = [mock_tool_info]
         mock_client_session.list_tools = AsyncMock(return_value=tools_result)  # type: ignore
 
-        tools = await MCPTool.from_client(mock_client_session, server_params=mock_server_params)
+        tools = await MCPTool.from_client(mock_client_session)
 
         mock_client_session.list_tools.assert_awaited_once()
         assert len(tools) == 1
@@ -141,12 +139,12 @@ class TestAddNumbersTool:
     async def test_add_numbers_mcp(  # type: ignore
         self,
         mock__run,  # noqa: ANN001
-        mock_server_params: StdioServerParameters,
+        mock_client_session: ClientSession,
         add_numbers_tool_info: MCPToolInfo,
         add_result: Callable[..., Any],
     ) -> None:
         mock__run.return_value = StringToolOutput(str(add_result))
-        tool = MCPTool(server_params=mock_server_params, tool=add_numbers_tool_info)
+        tool = MCPTool(session=mock_client_session, tool=add_numbers_tool_info)
         input_data = {"a": 5, "b": 3}
 
         result = await tool.run(input_data)
@@ -158,14 +156,13 @@ class TestAddNumbersTool:
     async def test_add_numbers_from_client(
         self,
         mock_client_session: ClientSession,
-        mock_server_params: StdioServerParameters,
         add_numbers_tool_info: MCPToolInfo,
     ) -> None:
         tools_result = MagicMock()
         tools_result.tools = [add_numbers_tool_info]
         mock_client_session.list_tools = AsyncMock(return_value=tools_result)  # type: ignore
 
-        tools = await MCPTool.from_client(mock_client_session, server_params=mock_server_params)
+        tools = await MCPTool.from_client(mock_client_session)
 
         mock_client_session.list_tools.assert_awaited_once()
         assert len(tools) == 1
