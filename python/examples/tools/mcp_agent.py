@@ -80,7 +80,7 @@ def process_agent_events(data: Any, event: EventMeta) -> None:
     elif event.name == "retry":
         reader.write("Agent 🤖 : ", "retrying the action...")
     elif event.name == "update":
-        reader.write(f"Agent({data.update.key}) 🤖 : ", data.update.parsedValue)
+        reader.write(f"Agent({data.update.key}) 🤖 : ", data.update.parsed_value)
     elif event.name == "start":
         reader.write("Agent 🤖 : ", "starting new iteration")
     elif event.name == "success":
