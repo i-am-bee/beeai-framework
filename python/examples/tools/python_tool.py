@@ -15,8 +15,7 @@ async def main() -> None:
     p = PythonTool(
         {
             "codeInterpreter": {"url": "http://127.0.0.1:50081"},
-            #"storage": LocalPythonStorage({"interpreterWorkingDir": "./pythonTmp", "localWorkingDir": "./localTmp"}),
-            "storage": LocalPythonStorage(Input("./pythonTmp", "./localTmp", [])),
+            "storage": LocalPythonStorage(Input("./localTmp", "./pythonTmp", [])),
         }
     )
     agent = ReActAgent(llm=llm, tools=[p], memory=UnconstrainedMemory())

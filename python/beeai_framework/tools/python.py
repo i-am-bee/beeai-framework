@@ -13,6 +13,7 @@
 # limitations under the License.
 
 
+import io
 import json
 from enum import Enum
 from typing import Any
@@ -65,24 +66,27 @@ class PythonTool(Tool[BaseModel, ToolRunOptions, StringToolOutput]):
 
     def __init__(self, options: dict[str, Any] | None = None) -> None:
         super().__init__(options)
-        self.files = self.options["storage"].list()
-        filenames = [file["filename"] for file in self.files]
-        members = {}
-        for filename in filenames:
-            members[filename.upper()] = filename
-        python_files = Enum("PythonFiles", members)
-        self.input_schema = create_model(
-            "PythonToolInput",
-            language=(Language, Field(description="Use shell for ffmpeg, pandoc, yt-dlp")),
-            code=(str, Field(description="full source code file that will be executed")),
-            inputFiles=(
+        input_files = None
+        if options and options.get("storage"):
+            self.files = options["storage"].list_files()
+            filenames = [file.filename for file in self.files]
+            members = {}
+            for filename in filenames:
+                members[filename.upper()] = filename
+                python_files = Enum("PythonFiles", members)
+            input_files = (
                 list[python_files],
                 Field(
                     description="""To access an existing file, you must specify it;
                     otherwise, the file will not be accessible.
                     IMPORTANT: If the file is not provided in the input, it will not be accessible."""
                 ),
-            ),
+            )
+        self.input_schema = create_model(
+            "PythonToolInput",
+            language=(Language, Field(description="Use shell for ffmpeg, pandoc, yt-dlp")),
+            code=(str, Field(description="full source code file that will be executed")),
+            inputFiles=input_files,
         )
 
     def _create_emitter(self) -> Emitter:
@@ -92,9 +96,9 @@ class PythonTool(Tool[BaseModel, ToolRunOptions, StringToolOutput]):
         )
 
     async def _run(self, input: Any, options: ToolRunOptions | None, context: RunContext) -> StringToolOutput:
-        async def get_source_code() -> str:
-            if self.options.get("preprocess"):
-                response = await options["preprocess"]["llm"].create(
+        async def get_source_code() -> Any:
+            if self.options and self.options.get("preprocess"):
+                response = await self.options["preprocess"]["llm"].create(
                     {
                         "messages": [UserMessage(PromptTemplate.render({input: input.code}))],
                         "abortSignal": context.signal,
@@ -103,36 +107,41 @@ class PythonTool(Tool[BaseModel, ToolRunOptions, StringToolOutput]):
                 return response.getTextContent().trim()
             return input.code
 
-        async def call_code_interpreter(url: str, body: json, files: dict) -> json:
+        async def call_code_interpreter(url: str, body: object, files: dict[str, io.BufferedReader]) -> dict[str, Any]:
             headers = {"Accept": "application/json", "Content-Type": "application/json"}
             async with httpx.AsyncClient() as client:
-                response = await client.post(url, headers=headers, data=json.dumps(body))
+                response = await client.post(url, headers=headers, data=json.dumps(body), files=files)
                 response.raise_for_status()
                 return response.json()
 
-        prefix = "/workspace/"
-        unique_files = {}
-        for file in self.files:
-            if file["filename"] in [python_file.value for python_file in input.inputFiles]:
-                unique_files[file["filename"]] = file
-        await self.options["storage"].upload(unique_files.values())
+        if self.options and self.options.get("codeInterpreter") and self.options.get("codeInterpreter").get("url"):
+            url = self.options["codeInterpreter"]["url"] + "/v1/execute"
+            prefix = "/workspace/"
+            unique_files = {}
+            if self.options and self.options.get("storage"):
+                for file in self.files:
+                    if file.filename in [python_file.value for python_file in input.inputFiles]:
+                        unique_files[file.filename] = file
+                self.options["storage"].upload(unique_files.values())
 
-        url = self.options["codeInterpreter"]["url"] + "/v1/execute"
-        files = {}
-        for file in unique_files.values():
-            files[prefix + file["filename"]] = open("localTmp/" + file["filename"], "rb")  # noqa: ASYNC230,SIM115
-        result = await call_code_interpreter(
-            url=url,
-            body={
-                "source_code": await get_source_code(),
-            },
-            files=files,
-        )
+            url = self.options["codeInterpreter"]["url"] + "/v1/execute"
+            files = {}
+            for file in unique_files.values():
+                files[prefix + file.filename] = open("localTmp/" + file.filename, "rb")  # noqa: ASYNC230,SIM115
+            result = await call_code_interpreter(
+                url=url,
+                body={
+                    "source_code": await get_source_code(),
+                },
+                files=files,
+            )
 
-        filtered_files = []
-        for file in result["files"].items():
-            if file.startswith(prefix):
-                filtered_files.append({"filename": file.path[len(prefix) :], "pythonId": str(file.pythonId)})
-        await self.options["storage"].download(filtered_files)
+            filtered_files = []
+            if result["files"]:
+                for file in result["files"].items():
+                    if file.startswith(prefix):
+                        filtered_files.append({"filename": file.path[len(prefix) :], "pythonId": str(file.pythonId)})
+                self.options["storage"].download(filtered_files)
 
-        return StringToolOutput(json.dumps(result))
+            return StringToolOutput(json.dumps(result))
+        return StringToolOutput("")
