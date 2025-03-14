@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import { BeeAgent } from "@/agents/bee/agent.js";
+import { ReActAgent } from "@/agents/react/agent.js";
 import { Workflow, WorkflowRunOptions } from "@/workflows/workflow.js";
 import { AssistantMessage, Message } from "@/backend/message.js";
 import { AnyTool } from "@/tools/base.js";
@@ -23,22 +23,22 @@ import { z } from "zod";
 import { UnconstrainedMemory } from "@/memory/unconstrainedMemory.js";
 import { BaseAgent } from "@/agents/base.js";
 import {
-  BeeAgentExecutionConfig,
-  BeeRunInput,
-  BeeRunOptions,
-  BeeRunOutput,
-} from "@/agents/bee/types.js";
+  ReActAgentExecutionConfig,
+  ReActAgentRunInput,
+  ReActAgentRunOptions,
+  ReActAgentRunOutput,
+} from "@/agents/react/types.js";
 import { isFunction, randomString } from "remeda";
 import { ChatModel } from "@/backend/chat.js";
 
-type AgentInstance = BaseAgent<BeeRunInput, BeeRunOutput, BeeRunOptions>;
+type AgentInstance = BaseAgent<ReActAgentRunInput, ReActAgentRunOutput, ReActAgentRunOptions>;
 type AgentFactory = (memory: ReadOnlyMemory) => AgentInstance | Promise<AgentInstance>;
 interface AgentFactoryInput {
   name: string;
   llm: ChatModel;
   instructions?: string;
   tools?: AnyTool[];
-  execution?: BeeAgentExecutionConfig;
+  execution?: ReActAgentExecutionConfig;
 }
 
 export class AgentWorkflow {
@@ -91,7 +91,7 @@ export class AgentWorkflow {
 
   protected _createFactory(input: AgentFactoryInput): AgentFactory {
     return (memory: BaseMemory) =>
-      new BeeAgent({
+      new ReActAgent({
         llm: input.llm,
         tools: input.tools ?? [],
         memory,

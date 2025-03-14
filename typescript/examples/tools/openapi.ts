@@ -1,5 +1,5 @@
 import "dotenv/config.js";
-import { BeeAgent } from "beeai-framework/agents/bee/agent";
+import { ReActAgent } from "beeai-framework/agents/react/agent";
 import { TokenMemory } from "beeai-framework/memory/tokenMemory";
 import { OpenAPITool } from "beeai-framework/tools/openapi";
 import * as fs from "fs";
@@ -15,7 +15,7 @@ const openApiSchema = await fs.promises.readFile(
   "utf-8",
 );
 
-const agent = new BeeAgent({
+const agent = new ReActAgent({
   llm,
   memory: new TokenMemory(),
   tools: [new OpenAPITool({ openApiSchema })],

@@ -1,7 +1,7 @@
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { MCPTool } from "beeai-framework/tools/mcp";
 import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js";
-import { BeeAgent } from "beeai-framework/agents/bee/agent";
+import { ReActAgent } from "beeai-framework/agents/react/agent";
 import { UnconstrainedMemory } from "beeai-framework/memory/unconstrainedMemory";
 import { OllamaChatModel } from "beeai-framework/adapters/ollama/backend/chat";
 
@@ -27,7 +27,7 @@ await client.connect(
 try {
   // Server usually supports several tools, use the factory for automatic discovery
   const tools = await MCPTool.fromClient(client);
-  const agent = new BeeAgent({
+  const agent = new ReActAgent({
     llm: new OllamaChatModel("llama3.1"),
     memory: new UnconstrainedMemory(),
     tools,

@@ -15,20 +15,20 @@
  */
 
 import {
-  BeeAssistantPrompt,
-  BeeSchemaErrorPrompt,
-  BeeSystemPrompt,
-  BeeToolErrorPrompt,
-  BeeToolInputErrorPrompt,
-  BeeToolNotFoundPrompt,
-  BeeUserPrompt,
-} from "@/agents/bee/prompts.js";
+  ReActAgentAssistantPrompt,
+  ReActAgentSchemaErrorPrompt,
+  ReActAgentSystemPrompt,
+  ReActAgentToolErrorPrompt,
+  ReActAgentToolInputErrorPrompt,
+  ReActAgentToolNotFoundPrompt,
+  ReActAgentUserPrompt,
+} from "@/agents/react/prompts.js";
 
-export const DeepThinkBeeAssistantPrompt = BeeAssistantPrompt.fork((config) => {
+export const DeepThinkReActAgentAssistantPrompt = ReActAgentAssistantPrompt.fork((config) => {
   config.template = `{{#thought}}<think>{{.}}</think>\n\n{{/thought}}{{#toolName}}Tool Name: {{.}}\n{{/toolName}}{{#toolInput}}Tool Input: {{.}}\n{{/toolInput}}{{#finalAnswer}}Response: {{.}}{{/finalAnswer}}`;
 });
 
-export const DeepThinkBeeSystemPrompt = BeeSystemPrompt.fork((config) => {
+export const DeepThinkReActAgentSystemPrompt = ReActAgentSystemPrompt.fork((config) => {
   config.defaults.instructions = "";
   config.functions.formatDate = function () {
     const date = this.createdAt ? new Date(this.createdAt) : new Date();
@@ -77,30 +77,32 @@ The current date and time is: {{formatDate}}
 `;
 });
 
-export const DeepThinkBeeSchemaErrorPrompt = BeeSchemaErrorPrompt.fork((config) => {
+export const DeepThinkReActAgentSchemaErrorPrompt = ReActAgentSchemaErrorPrompt.fork((config) => {
   config.template = `Error: The generated response does not adhere to the communication structure mentioned in the system prompt.
 You communicate only in instruction lines. Valid instruction lines are 'Tool Name:' and then 'Tool Input:', or 'Response:'.`;
 });
 
-export const DeepThinkBeeUserPrompt = BeeUserPrompt.fork((config) => {
+export const DeepThinkReActAgentUserPrompt = ReActAgentUserPrompt.fork((config) => {
   config.template = `{{input}}`;
 });
 
-export const DeepThinkBeeToolNotFoundPrompt = BeeToolNotFoundPrompt.fork((config) => {
+export const DeepThinkReActAgentToolNotFoundPrompt = ReActAgentToolNotFoundPrompt.fork((config) => {
   config.template = `Tool does not exist!
 {{#tools.length}}
 Use one of the following tools: {{#trim}}{{#tools}}{{name}},{{/tools}}{{/trim}}
 {{/tools.length}}`;
 });
 
-export const DeepThinkBeeToolErrorPrompt = BeeToolErrorPrompt.fork((config) => {
+export const DeepThinkReActAgentToolErrorPrompt = ReActAgentToolErrorPrompt.fork((config) => {
   config.template = `The tool has failed; the error log is shown below. If the tool cannot accomplish what you want, use a different tool or explain why you can't use it.
 
 {{reason}}`;
 });
 
-export const DeepThinkBeeToolInputErrorPrompt = BeeToolInputErrorPrompt.fork((config) => {
-  config.template = `{{reason}}
+export const DeepThinkReActAgentToolInputErrorPrompt = ReActAgentToolInputErrorPrompt.fork(
+  (config) => {
+    config.template = `{{reason}}
 
 HINT: If you're convinced that the input was correct but the tool cannot process it then use a different tool or say I don't know.`;
-});
+  },
+);

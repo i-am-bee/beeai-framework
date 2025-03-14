@@ -15,20 +15,20 @@
  */
 
 import {
-  BeeAssistantPrompt,
-  BeeSchemaErrorPrompt,
-  BeeSystemPrompt,
-  BeeToolErrorPrompt,
-  BeeToolInputErrorPrompt,
-  BeeToolNotFoundPrompt,
-  BeeUserPrompt,
-} from "@/agents/bee/prompts.js";
+  ReActAgentAssistantPrompt,
+  ReActAgentSchemaErrorPrompt,
+  ReActAgentSystemPrompt,
+  ReActAgentToolErrorPrompt,
+  ReActAgentToolInputErrorPrompt,
+  ReActAgentToolNotFoundPrompt,
+  ReActAgentUserPrompt,
+} from "@/agents/react/prompts.js";
 
-export const GraniteBeeAssistantPrompt = BeeAssistantPrompt.fork((config) => {
+export const GraniteReActAgentAssistantPrompt = ReActAgentAssistantPrompt.fork((config) => {
   config.template = `{{#thought}}Thought: {{.}}\n{{/thought}}{{#toolName}}Tool Name: {{.}}\n{{/toolName}}{{#toolInput}}Tool Input: {{.}}\n{{/toolInput}}{{#finalAnswer}}Final Answer: {{.}}{{/finalAnswer}}`;
 });
 
-export const GraniteBeeSystemPrompt = BeeSystemPrompt.fork((config) => {
+export const GraniteReActAgentSystemPrompt = ReActAgentSystemPrompt.fork((config) => {
   config.defaults.instructions = "";
   config.functions.formatDate = function () {
     const date = this.createdAt ? new Date(this.createdAt) : new Date();
@@ -80,30 +80,32 @@ You do not need a tool to get the current Date and Time. Use the information ava
 `;
 });
 
-export const GraniteBeeSchemaErrorPrompt = BeeSchemaErrorPrompt.fork((config) => {
+export const GraniteReActAgentSchemaErrorPrompt = ReActAgentSchemaErrorPrompt.fork((config) => {
   config.template = `Error: The generated response does not adhere to the communication structure mentioned in the system prompt.
 You communicate only in instruction lines. Valid instruction lines are 'Thought' followed by 'Tool Name' and then 'Tool Input' or 'Thought' followed by 'Final Answer'.`;
 });
 
-export const GraniteBeeUserPrompt = BeeUserPrompt.fork((config) => {
+export const GraniteReActAgentUserPrompt = ReActAgentUserPrompt.fork((config) => {
   config.template = `{{input}}`;
 });
 
-export const GraniteBeeToolNotFoundPrompt = BeeToolNotFoundPrompt.fork((config) => {
+export const GraniteReActAgentToolNotFoundPrompt = ReActAgentToolNotFoundPrompt.fork((config) => {
   config.template = `Tool does not exist!
 {{#tools.length}}
 Use one of the following tools: {{#trim}}{{#tools}}{{name}},{{/tools}}{{/trim}}
 {{/tools.length}}`;
 });
 
-export const GraniteBeeToolErrorPrompt = BeeToolErrorPrompt.fork((config) => {
+export const GraniteReActAgentToolErrorPrompt = ReActAgentToolErrorPrompt.fork((config) => {
   config.template = `The tool has failed; the error log is shown below. If the tool cannot accomplish what you want, use a different tool or explain why you can't use it.
 
 {{reason}}`;
 });
 
-export const GraniteBeeToolInputErrorPrompt = BeeToolInputErrorPrompt.fork((config) => {
-  config.template = `{{reason}}
+export const GraniteReActAgentToolInputErrorPrompt = ReActAgentToolInputErrorPrompt.fork(
+  (config) => {
+    config.template = `{{reason}}
 
 HINT: If you're convinced that the input was correct but the tool cannot process it then use a different tool or say I don't know.`;
-});
+  },
+);

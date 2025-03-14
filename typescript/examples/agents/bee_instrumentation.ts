@@ -2,7 +2,7 @@
 /////// RUN THIS EXAMPLE VIA `yarn start:telemetry ./examples/agents/bee_instrumentation.ts` ///////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-import { BeeAgent } from "beeai-framework/agents/bee/agent";
+import { ReActAgent } from "beeai-framework/agents/react/agent";
 import { FrameworkError } from "beeai-framework/errors";
 import { TokenMemory } from "beeai-framework/memory/tokenMemory";
 import { Logger } from "beeai-framework/logger/logger";
@@ -16,7 +16,7 @@ const logger = new Logger({ name: "app", level: "trace" });
 
 const llm = new OllamaChatModel("llama3.1");
 
-const agent = new BeeAgent({
+const agent = new ReActAgent({
   llm,
   memory: new TokenMemory(),
   tools: [

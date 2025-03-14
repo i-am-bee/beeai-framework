@@ -1,7 +1,7 @@
 import "dotenv/config";
 import { z } from "zod";
 import { Workflow } from "beeai-framework/workflows/workflow";
-import { BeeAgent } from "beeai-framework/agents/bee/agent";
+import { ReActAgent } from "beeai-framework/agents/react/agent";
 import { UnconstrainedMemory } from "beeai-framework/memory/unconstrainedMemory";
 import { createConsoleReader } from "examples/helpers/io.js";
 import { Message } from "beeai-framework/backend/message";
@@ -63,7 +63,7 @@ const workflow = new Workflow({
   })
   .addStrictStep("planner", schema.required({ topic: true }), async (state) => {
     const llm = new GroqChatModel("llama-3.3-70b-versatile");
-    const agent = new BeeAgent({
+    const agent = new ReActAgent({
       llm,
       memory: new UnconstrainedMemory(),
       tools: [new GoogleSearchTool(), new LLMTool({ llm })],

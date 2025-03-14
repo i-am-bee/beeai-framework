@@ -21,48 +21,52 @@ import { AssistantMessage, Message, UserMessage } from "@/backend/message.js";
 import { AgentMeta } from "@/agents/types.js";
 import { Emitter } from "@/emitter/emitter.js";
 import {
-  BeeAgentExecutionConfig,
-  BeeAgentTemplates,
-  BeeCallbacks,
-  BeeRunInput,
-  BeeRunOptions,
-  BeeRunOutput,
-} from "@/agents/bee/types.js";
+  ReActAgentExecutionConfig,
+  ReActAgentTemplates,
+  ReActAgentCallbacks,
+  ReActAgentRunInput,
+  ReActAgentRunOptions,
+  ReActAgentRunOutput,
+} from "@/agents/react/types.js";
 import { GetRunContext } from "@/context.js";
 import { assign } from "@/internals/helpers/object.js";
 import * as R from "remeda";
-import { BaseRunner } from "@/agents/bee/runners/base.js";
-import { GraniteRunner } from "@/agents/bee/runners/granite/runner.js";
-import { DeepThinkRunner } from "@/agents/bee/runners/deep-think/runner.js";
+import { BaseRunner } from "@/agents/react/runners/base.js";
+import { GraniteRunner } from "@/agents/react/runners/granite/runner.js";
+import { DeepThinkRunner } from "@/agents/react/runners/deep-think/runner.js";
 import { ValueError } from "@/errors.js";
-import { DefaultRunner } from "@/agents/bee/runners/default/runner.js";
+import { DefaultRunner } from "@/agents/react/runners/default/runner.js";
 import { ChatModel } from "@/backend/chat.js";
 
-export type BeeTemplateFactory<K extends keyof BeeAgentTemplates> = (
-  template: BeeAgentTemplates[K],
-) => BeeAgentTemplates[K];
+export type ReActAgentTemplateFactory<K extends keyof ReActAgentTemplates> = (
+  template: ReActAgentTemplates[K],
+) => ReActAgentTemplates[K];
 
-export interface BeeInput {
+export interface ReActAgentInput {
   llm: ChatModel;
   tools: AnyTool[];
   memory: BaseMemory;
   meta?: Omit<AgentMeta, "tools">;
   templates?: Partial<{
-    [K in keyof BeeAgentTemplates]: BeeAgentTemplates[K] | BeeTemplateFactory<K>;
+    [K in keyof ReActAgentTemplates]: ReActAgentTemplates[K] | ReActAgentTemplateFactory<K>;
   }>;
-  execution?: BeeAgentExecutionConfig;
+  execution?: ReActAgentExecutionConfig;
   stream?: boolean;
 }
 
-export class BeeAgent extends BaseAgent<BeeRunInput, BeeRunOutput, BeeRunOptions> {
-  public readonly emitter = Emitter.root.child<BeeCallbacks>({
-    namespace: ["agent", "bee"],
+export class ReActAgent extends BaseAgent<
+  ReActAgentRunInput,
+  ReActAgentRunOutput,
+  ReActAgentRunOptions
+> {
+  public readonly emitter = Emitter.root.child<ReActAgentCallbacks>({
+    namespace: ["agent", "react"],
     creator: this,
   });
 
   protected runner: new (...args: ConstructorParameters<typeof BaseRunner>) => BaseRunner;
 
-  constructor(protected readonly input: BeeInput) {
+  constructor(protected readonly input: ReActAgentInput) {
     super();
 
     const duplicate = input.tools.find((a, i, arr) =>
@@ -102,7 +106,7 @@ export class BeeAgent extends BaseAgent<BeeRunInput, BeeRunOutput, BeeRunOptions
     }
 
     return {
-      name: "Bee",
+      name: "ReAct",
       tools,
       description:
         "The Bee framework demonstrates its ability to auto-correct and adapt in real-time, improving the overall reliability and resilience of the system.",
@@ -116,10 +120,10 @@ export class BeeAgent extends BaseAgent<BeeRunInput, BeeRunOutput, BeeRunOptions
   }
 
   protected async _run(
-    input: BeeRunInput,
-    options: BeeRunOptions = {},
+    input: ReActAgentRunInput,
+    options: ReActAgentRunOptions = {},
     run: GetRunContext<typeof this>,
-  ): Promise<BeeRunOutput> {
+  ): Promise<ReActAgentRunOutput> {
     const runner = new this.runner(
       this.input,
       {

@@ -1,8 +1,8 @@
 import { UnconstrainedMemory } from "beeai-framework/memory/unconstrainedMemory";
-import { BeeAgent } from "beeai-framework/agents/bee/agent";
+import { ReActAgent } from "beeai-framework/agents/react/agent";
 import { OllamaChatModel } from "beeai-framework/adapters/ollama/backend/chat";
 
-const agent = new BeeAgent({
+const agent = new ReActAgent({
   memory: new UnconstrainedMemory(),
   llm: new OllamaChatModel("llama3.1"),
   tools: [],

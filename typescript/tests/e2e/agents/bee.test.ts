@@ -17,22 +17,22 @@
 import { FrameworkError } from "@/errors.js";
 import { beforeEach, expect, vi } from "vitest";
 import { Logger } from "@/logger/logger.js";
-import { BeeAgent } from "@/agents/bee/agent.js";
+import { ReActAgent } from "@/agents/react/agent.js";
 import { UnconstrainedMemory } from "@/memory/unconstrainedMemory.js";
 import { Message } from "@/backend/message.js";
 import { createCallbackRegister } from "@tests/e2e/utils.js";
 import { omitEmptyValues } from "@/internals/helpers/object.js";
 import * as process from "node:process";
 import { createChatLLM } from "@tests/utils/llmFactory.js";
-import { BeeMeta } from "@/agents/bee/types.js";
+import { ReActAgentMeta } from "@/agents/react/types.js";
 import { GoogleSearchTool } from "@/tools/search/googleSearch.js";
 
 const googleSearchApiKey = process.env.GOOGLE_API_KEY;
 const googleSearchCseId = process.env.GOOGLE_CSE_ID;
 
-describe.runIf(Boolean(googleSearchApiKey && googleSearchCseId))("Bee Agent", () => {
+describe.runIf(Boolean(googleSearchApiKey && googleSearchCseId))("ReAct Agent", () => {
   const createAgent = () => {
-    return new BeeAgent({
+    return new ReActAgent({
       llm: createChatLLM(),
       memory: new UnconstrainedMemory(),
       tools: [
@@ -96,7 +96,7 @@ describe.runIf(Boolean(googleSearchApiKey && googleSearchCseId))("Bee Agent", ()
         )
         .observe((emitter) => {
           let lastIteration = 0;
-          emitter.match("*", (data: { meta: BeeMeta }, event) => {
+          emitter.match("*", (data: { meta: ReActAgentMeta }, event) => {
             expect(data.meta.iteration >= lastIteration);
             expect(event.groupId).toBeDefined();
             lastIteration = data.meta.iteration;

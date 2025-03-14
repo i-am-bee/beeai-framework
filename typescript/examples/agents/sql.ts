@@ -1,5 +1,5 @@
 import "dotenv/config.js";
-import { BeeAgent } from "beeai-framework/agents/bee/agent";
+import { ReActAgent } from "beeai-framework/agents/react/agent";
 import { SQLTool } from "beeai-framework/tools/database/sql";
 import { FrameworkError } from "beeai-framework/errors";
 import { UnconstrainedMemory } from "beeai-framework/memory/unconstrainedMemory";
@@ -30,7 +30,7 @@ const sqlTool = new SQLTool({
   },
 });
 
-const agent = new BeeAgent({
+const agent = new ReActAgent({
   llm,
   memory: new UnconstrainedMemory(),
   tools: [sqlTool],

@@ -1,5 +1,5 @@
 import "dotenv/config.js";
-import { BeeAgent } from "beeai-framework/agents/bee/agent";
+import { ReActAgent } from "beeai-framework/agents/react/agent";
 import { FrameworkError } from "beeai-framework/errors";
 import { TokenMemory } from "beeai-framework/memory/tokenMemory";
 import { z } from "zod";
@@ -81,7 +81,7 @@ const llm = await ChatModel.fromName("ollama:granite3.1-dense:8b", {
   maxTokens: 2048,
 });
 
-const agent = new BeeAgent({
+const agent = new ReActAgent({
   llm,
   memory: new TokenMemory(),
   tools: [await createWikipediaRetrivalTool(400, 50, 3)],

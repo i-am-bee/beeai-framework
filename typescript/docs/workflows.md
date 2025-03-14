@@ -93,7 +93,7 @@ _Source: [examples/workflows/nesting.ts](/typescript/examples/workflows/nesting.
 
 ```ts
 import "dotenv/config";
-import { BeeAgent } from "beeai-framework/agents/bee/agent";
+import { ReActAgent } from "beeai-framework/agents/react/agent";
 import { z } from "zod";
 import { Message, UserMessage } from "beeai-framework/backend/message";
 import { WikipediaTool } from "beeai-framework/tools/search/wikipedia";
@@ -111,7 +111,7 @@ const schema = z.object({
 
 const workflow = new Workflow({ schema: schema })
   .addStep("simpleAgent", async (state) => {
-    const simpleAgent = new BeeAgent({
+    const simpleAgent = new ReActAgent({
       llm: new GroqChatModel("llama-3.3-70b-versatile"),
       tools: [],
       memory: state.memory,
@@ -140,7 +140,7 @@ const workflow = new Workflow({ schema: schema })
     return critiqueResponse.score < 75 ? "complexAgent" : Workflow.END;
   })
   .addStep("complexAgent", async (state) => {
-    const complexAgent = new BeeAgent({
+    const complexAgent = new ReActAgent({
       llm: new GroqChatModel("llama-3.3-70b-versatile"),
       tools: [new WikipediaTool(), new OpenMeteoTool()],
       memory: state.memory,
@@ -177,7 +177,7 @@ _Source: [examples/workflows/agent.ts](/typescript/examples/workflows/agent.ts)_
 import "dotenv/config";
 import { z } from "zod";
 import { Workflow } from "beeai-framework/workflows/workflow";
-import { BeeAgent } from "beeai-framework/agents/bee/agent";
+import { ReActAgent } from "beeai-framework/agents/react/agent";
 import { UnconstrainedMemory } from "beeai-framework/memory/unconstrainedMemory";
 import { createConsoleReader } from "examples/helpers/io.js";
 import { Message } from "beeai-framework/backend/message";
@@ -239,7 +239,7 @@ const workflow = new Workflow({
   })
   .addStrictStep("planner", schema.required({ topic: true }), async (state) => {
     const llm = new GroqChatModel("llama-3.3-70b-versatile");
-    const agent = new BeeAgent({
+    const agent = new ReActAgent({
       llm,
       memory: new UnconstrainedMemory(),
       tools: [new GoogleSearchTool(), new LLMTool({ llm })],
