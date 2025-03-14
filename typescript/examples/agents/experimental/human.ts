@@ -20,7 +20,7 @@ const llm = new OllamaChatModel("llama3.1");
 // Create the console reader once, share it with HumanTool
 const reader = createConsoleReader();
 
-// Initialize BeeAgent with shared reader for HumanTool
+// Initialize ReActAgent with shared reader for HumanTool
 const agent = new ReActAgent({
   llm,
   memory: new TokenMemory(),

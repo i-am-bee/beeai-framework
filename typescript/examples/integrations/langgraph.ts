@@ -18,12 +18,12 @@ const workflow = new Workflow({
 })
   .addStep("router", () => (Math.random() >= 0.5 ? "bee" : "langgraph"))
   .addStep("bee", async (state, ctx) => {
-    const beeAgent = new ReActAgent({
+    const agent = new ReActAgent({
       llm: await ChatModel.fromName("ollama:llama3.1"),
       tools: [new DuckDuckGoSearchTool()],
       memory: state.memory,
     });
-    const response = await beeAgent.run(
+    const response = await agent.run(
       { prompt: null },
       { signal: ctx.signal, execution: { maxIterations: 5 } },
     );
