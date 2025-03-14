@@ -195,7 +195,7 @@ _Source: [examples/emitter/agentMatchers.ts](/typescript/examples/emitter/agentM
 
 > [!TIP]
 >
-> The more complex agentic example can be found [here](/typescript/examples/agents/bee.ts).
+> The more complex agentic example can be found [here](/typescript/examples/agents/react.ts).
 
 > [!TIP]
 >

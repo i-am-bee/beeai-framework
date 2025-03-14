@@ -55,7 +55,7 @@ _Source: [examples/errors/base.ts](/typescript/examples/errors/base.ts)_
 
 > [!TIP]
 >
-> The `explain()` method is particularly useful for returning a simplified, human-readable error message to an LLM, as used by the Bee Agent.
+> The `explain()` method is particularly useful for returning a simplified, human-readable error message to an LLM, as used by the ReAct Agent.
 
 ## Specialized Error Classes
 

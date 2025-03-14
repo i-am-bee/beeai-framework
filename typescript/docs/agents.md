@@ -46,7 +46,7 @@ For more complex tasks, the agent may do way more iterations.
 In the following example, we will transform the knowledge gained into code.
 
 ```ts
-import { BeeAgent } from "beeai-framework/agents/bee/agent";
+import { BeeAgent } from "beeai-framework/agents/react/agent";
 import { OllamaChatModel } from "beeai-framework/adapters/ollama/backend/chat";
 import { UnconstrainedMemory } from "beeai-framework/memory/unconstrainedMemory";
 import { OpenMeteoTool } from "beeai-framework/tools/weather/openMeteo";

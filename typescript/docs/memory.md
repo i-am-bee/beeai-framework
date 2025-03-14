@@ -100,7 +100,7 @@ _Source: [examples/memory/agentMemory.ts](/typescript/examples/memory/agentMemor
 
 > [!NOTE]
 >
-> Bee Agent internally uses `TokenMemory` to store intermediate steps for a given run.
+> ReAct Agent internally uses `TokenMemory` to store intermediate steps for a given run.
 
 > [!NOTE]
 >

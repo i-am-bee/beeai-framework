@@ -18,12 +18,12 @@ This repository contains examples demonstrating the usage of the BeeAI Framework
 
 ## Agents
 
-- [`bee.ts`](/typescript/examples/agents/bee.ts): Basic Bee Agent implementation
-- [`bee_advanced.ts`](/typescript/examples/agents/bee_advanced.ts): Advanced Bee Agent with custom configurations
-- [`bee_reusable.ts`](/typescript/examples/agents/bee_reusable.ts): Demonstration of serializing and reusing Bee Agents
+- [`react.ts`](/typescript/examples/agents/react.ts): Basic ReAct Agent implementation
+- [`react_advanced.ts`](/typescript/examples/agents/react_advanced.ts): Advanced ReAct Agent with custom configurations
+- [`react_reusable.ts`](/typescript/examples/agents/react_reusable.ts): Demonstration of serializing and reusing ReAct Agents
 - [`custom_agent.ts`](/typescript/examples/agents/custom_agent.ts): Example of creating a custom agent
-- [`granite_bee.ts`](/typescript/examples/agents/granite/granite_bee.ts): Basic Bee Agent using an IBM Granite LLM
-- [`granite_wiki_bee.ts`](/typescript/examples/agents/granite/granite_wiki_bee.ts): Advanced Bee Agent using an IBM Granite LLM with wikipedia retrieval
+- [`granite_react.ts`](/typescript/examples/agents/granite/granite_react.ts): Basic ReAct Agent using an IBM Granite LLM
+- [`granite_wiki_react.ts`](/typescript/examples/agents/granite/granite_wiki_react.ts): Advanced ReAct Agent using an IBM Granite LLM with wikipedia retrieval
 - [`simple.ts`](/typescript/examples/agents/simple.ts): Simple agent implementation
 - [`sql.ts`](/typescript/examples/agents/sql.ts): Agent for SQL-related tasks
 
