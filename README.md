@@ -68,7 +68,7 @@ from beeai_framework.tools.weather.openmeteo import OpenMeteoTool
 from beeai_framework.workflows.agent import AgentWorkflow, AgentWorkflowInput
 
 async def main() -> None:
-    llm = ChatModel.from_name("ollama:llama3.1")
+    llm = ChatModel.from_name("ollama:granite3.1-dense:8b")
     workflow = AgentWorkflow(name="Smart assistant")
 
     workflow.add_agent(
