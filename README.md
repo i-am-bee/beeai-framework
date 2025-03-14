@@ -125,7 +125,7 @@ if __name__ == "__main__":
     asyncio.run(main())
 ```
 
-_Source: [python/examples/workflows/multi_agents.py](/python/examples/workflows/multi_agents.py)_
+_Source: [python/examples/workflows/multi_agents_simple.py](/python/examples/workflows/multi_agents.py)_
 
 TypeScript version of this example can be found [here](/typescript/examples/workflows/multiAgents.ts).
 

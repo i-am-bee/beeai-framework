@@ -15,7 +15,7 @@ async def main() -> None:
 
     workflow.add_agent(
         name="Researcher",
-        role="A diligent researcher.",
+        role="A diligent researcher",
         instructions="You look up and provide information about a specific topic.",
         tools=[WikipediaTool()],
         llm=llm,
@@ -23,7 +23,7 @@ async def main() -> None:
 
     workflow.add_agent(
         name="WeatherForecaster",
-        role="A weather reporter.",
+        role="A weather reporter",
         instructions="You provide detailed weather reports.",
         tools=[OpenMeteoTool()],
         llm=llm,
