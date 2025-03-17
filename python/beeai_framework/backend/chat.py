@@ -203,6 +203,8 @@ IMPORTANT: You MUST answer with a JSON object that matches the JSON schema above
                 return result
             except Exception as ex:
                 error = ChatModelError.ensure(ex)
+                error.context["provider"] = self.provider_id
+                error.context["model_id"] = self.model_id
                 await context.emitter.emit("error", ChatModelErrorEvent(input=model_input, error=error))
                 raise error
             finally:

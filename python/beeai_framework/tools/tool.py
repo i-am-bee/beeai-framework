@@ -104,7 +104,7 @@ class Tool(Generic[TInput, TRunOptions, TOutput], ABC):
                     err = ToolError.ensure(error)
                     await context.emitter.emit("error", ToolErrorEvent(error=err, input=input, options=options))
                     if FrameworkError.is_fatal(err) is True:
-                        raise err from None
+                        raise err
 
                 async def on_retry(ctx: RetryableContext, last_error: Exception) -> None:
                     err = ToolError.ensure(last_error)
@@ -129,6 +129,7 @@ class Tool(Generic[TInput, TRunOptions, TOutput], ABC):
                 return output
             except Exception as e:
                 err = ToolError.ensure(e)
+                err.context["name"] = self.name
                 if not error_propagated:
                     await context.emitter.emit("error", ToolErrorEvent(error=err, input=input, options=options))
                 raise err
