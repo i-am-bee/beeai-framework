@@ -116,7 +116,7 @@ class ToolCallingAgent(BaseAgent[ToolCallingAgentRunOutput]):
                     try:
                         tool = next((tool for tool in self._tools if tool.name == tool_call.tool_name), None)
                         if not tool:
-                            raise AgentError(f"Tool {tool_call.tool_name} does not exist!")
+                            raise ToolError(f"Tool '{tool_call.tool_name}' does not exist!")
 
                         tool_input = json.loads(tool_call.args)
                         tool_response = await tool.run(tool_input).context(
