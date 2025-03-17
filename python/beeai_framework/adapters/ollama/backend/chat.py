@@ -44,7 +44,7 @@ class OllamaChatModel(LiteLLMChatModel):
             settings=settings | {"api_key": api_key, "base_url": base_url},
         )
 
-    def _format_model(self, model: type[BaseModel] | dict[str, Any]) -> dict[str, Any] | type[BaseModel]:
+    def _format_response_model(self, model: type[BaseModel] | dict[str, Any]) -> dict[str, Any]:
         if isinstance(model, dict):
             return model
 
