@@ -150,7 +150,8 @@ class LiteLLMChatModel(ChatModel, ABC):
                                 },
                             }
                             for call in message.get_tool_calls()
-                        ],
+                        ]
+                        or None,
                     }
                 )
             else:
