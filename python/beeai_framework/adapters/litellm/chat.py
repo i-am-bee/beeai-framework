@@ -25,7 +25,7 @@ from litellm import (  # type: ignore
     get_supported_openai_params,
 )
 from litellm.types.utils import StreamingChoices
-from openai.lib._pydantic import to_strict_json_schema  # TODO: look for an alternative or reimplement
+from pydantic import BaseModel
 
 from beeai_framework.adapters.litellm._patch import _patch_litellm_cache
 from beeai_framework.backend.chat import (
@@ -165,7 +165,7 @@ class LiteLLMChatModel(ChatModel, ABC):
                         "name": tool.name,
                         "description": tool.description,
                         # OpenAI API requires more strict schema in order to perform well and pass the validation.
-                        "parameters": to_strict_json_schema(tool.input_schema),
+                        "parameters": self._format_model(tool.input_schema),
                     },
                 }
                 for tool in input.tools
@@ -189,7 +189,12 @@ class LiteLLMChatModel(ChatModel, ABC):
         return (
             exclude_none(settings)
             | exclude_none(params)
-            | {"model": f"{self._litellm_provider_id}/{self.model_id}", "messages": messages, "tools": tools}
+            | {
+                "model": f"{self._litellm_provider_id}/{self.model_id}",
+                "messages": messages,
+                "tools": tools,
+                "response_format": self._format_model(input.response_format) if input.response_format else None,
+            }
         )
 
     def _transform_output(self, chunk: ModelResponse | ModelResponseStream) -> ChatModelOutput:
@@ -222,6 +227,9 @@ class LiteLLMChatModel(ChatModel, ABC):
             finish_reason=finish_reason,
             usage=usage,
         )
+
+    def _format_model(self, model: type[BaseModel] | dict[str, Any]) -> dict[str, Any] | type[BaseModel]:
+        return model
 
 
 LiteLLMChatModel.litellm_debug(False)
