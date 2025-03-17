@@ -31,7 +31,7 @@ class BaseCache(ABC, Generic[T]):
         return self._enabled
 
     @abstractmethod
-    def size(self) -> int:
+    async def size(self) -> int:
         pass
 
     @abstractmethod

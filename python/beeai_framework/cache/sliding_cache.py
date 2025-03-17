@@ -45,5 +45,5 @@ class SlidingCache(BaseCache[T]):
     async def clear(self) -> None:
         self._items.clear()
 
-    def size(self) -> int:
+    async def size(self) -> int:
         return len(self._items)

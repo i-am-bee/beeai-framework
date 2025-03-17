@@ -25,7 +25,7 @@ class NullCache(BaseCache[T]):
         super().__init__()
         self._enabled: bool = False
 
-    def size(self) -> int:
+    async def size(self) -> int:
         return 0
 
     async def set(self, _key: str, _value: T) -> None:

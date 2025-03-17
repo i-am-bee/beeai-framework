@@ -32,7 +32,7 @@ async def cache() -> UnconstrainedCache[str]:
 @pytest.mark.unit
 async def test_cache_size(cache: UnconstrainedCache[str]) -> None:
     assert cache.enabled
-    assert cache.size() == 3
+    assert await cache.size() == 3
 
 
 @pytest.mark.asyncio
@@ -41,7 +41,7 @@ async def test_cache_set(cache: UnconstrainedCache[str]) -> None:
     await cache.set("key4", "value4")
     await cache.set("key5", "value5")
 
-    assert cache.size() == 5
+    assert await cache.size() == 5
 
 
 @pytest.mark.asyncio
@@ -53,7 +53,7 @@ async def test_cache_get(cache: UnconstrainedCache[str]) -> None:
     assert value0 is None
     assert value2 == "value2"
 
-    assert cache.size() == 3
+    assert await cache.size() == 3
 
 
 @pytest.mark.asyncio
@@ -71,12 +71,12 @@ async def test_cache_delete(cache: UnconstrainedCache[str]) -> None:
 
     assert del0 is False
     assert del2 is True
-    assert cache.size() == 2
+    assert await cache.size() == 2
 
 
 @pytest.mark.asyncio
 @pytest.mark.unit
 async def test_cache_clear(cache: UnconstrainedCache[str]) -> None:
-    assert cache.size() == 3
+    assert await cache.size() == 3
     await cache.clear()
-    assert cache.size() == 0
+    assert await cache.size() == 0

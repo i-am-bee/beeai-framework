@@ -13,7 +13,7 @@
 # limitations under the License.
 
 
-import time
+import asyncio
 
 import pytest
 import pytest_asyncio
@@ -43,12 +43,12 @@ async def timed_cache() -> SlidingCache[str]:
 @pytest.mark.unit
 async def test_cache_size(sized_cache: SlidingCache[str]) -> None:
     assert sized_cache.enabled
-    assert sized_cache.size() == 3
+    assert await sized_cache.size() == 3
 
     await sized_cache.set("key4", "value4")
     await sized_cache.set("key5", "value5")
 
-    assert sized_cache.size() == 4
+    assert await sized_cache.size() == 4
 
 
 @pytest.mark.asyncio
@@ -60,7 +60,7 @@ async def test_cache_get(sized_cache: SlidingCache[str]) -> None:
     assert value5 is None
     assert value2 == "value2"
 
-    assert sized_cache.size() == 3
+    assert await sized_cache.size() == 3
 
 
 @pytest.mark.asyncio
@@ -78,25 +78,26 @@ async def test_cache_delete(sized_cache: SlidingCache[str]) -> None:
 
     assert del0 is False
     assert del2 is True
-    assert sized_cache.size() == 2
+    assert await sized_cache.size() == 2
 
     await sized_cache.set("key4", "value4")
     await sized_cache.set("key5", "value5")
     await sized_cache.set("key6", "value6")
 
-    assert sized_cache.size() == 4
+    assert await sized_cache.size() == 4
 
 
 @pytest.mark.asyncio
 @pytest.mark.unit
 async def test_cache_clear(sized_cache: SlidingCache[str]) -> None:
-    assert sized_cache.size() == 3
+    assert await sized_cache.size() == 3
     await sized_cache.clear()
-    assert sized_cache.size() == 0
+    assert await sized_cache.size() == 0
 
 
+@pytest.mark.asyncio
 @pytest.mark.unit
-def test_cache_timed(timed_cache: SlidingCache[str]) -> None:
-    assert timed_cache.size() == 3
-    time.sleep(3)
-    assert timed_cache.size() == 0
+async def test_cache_timed(timed_cache: SlidingCache[str]) -> None:
+    assert await timed_cache.size() == 3
+    await asyncio.sleep(3)
+    assert await timed_cache.size() == 0

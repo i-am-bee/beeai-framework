@@ -27,7 +27,7 @@ class UnconstrainedCache(BaseCache[T]):
         super().__init__()
         self._provider: dict[str, T] = {}
 
-    def size(self) -> int:
+    async def size(self) -> int:
         return len(self._provider)
 
     async def set(self, key: str, value: T) -> None:
