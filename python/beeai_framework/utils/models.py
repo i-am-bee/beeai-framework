@@ -15,11 +15,14 @@
 from abc import ABC
 from collections.abc import Sequence
 from contextlib import suppress
+from logging import Logger
 from typing import Any, Optional, TypeVar, Union
 
 from pydantic import BaseModel, ConfigDict, Field, GetJsonSchemaHandler, create_model
 from pydantic.json_schema import JsonSchemaValue
 from pydantic_core import CoreSchema, SchemaValidator
+
+logger = Logger(__name__)
 
 T = TypeVar("T", bound=BaseModel)
 ModelLike = Union[T, dict[str, Any]]  # noqa: UP007
@@ -84,13 +87,17 @@ class JSONSchemaModel(ABC, BaseModel):
         properties = schema.get("properties", {})
 
         for param_name, param in properties.items():
-            target_type = type_mapping.get(param.get("type"))
+            target_type: type | Any = type_mapping.get(param.get("type"))
             is_optional = param_name not in required
             if is_optional:
                 target_type = Optional[target_type] if target_type else type(None)  # noqa: UP007
 
             if not target_type:
-                raise ValueError(f"Unsupported type '{param.get('type')}' found in the schema.")
+                logger.debug(
+                    f"{JSONSchemaModel.__name__}: Can't resolve a correct type for '{param_name}' attribute."
+                    f" Using 'Any' as a fallback."
+                )
+                target_type = type
 
             if target_type is dict:
                 target_type = cls.create(param_name, param)
