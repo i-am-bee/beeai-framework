@@ -38,6 +38,8 @@ langchain-core = {version = "^0.3.41", optional = true}
 langchain-community = {version = "^0.3.19", optional = true}
 boto3 = {version = "^1.37.5", optional = true}
 acp-sdk = "^0.0.4"
+cachetools = "^5.5.2"
+types-cachetools = "^5.5.0.20240820"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^8.3.4"
