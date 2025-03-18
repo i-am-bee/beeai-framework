@@ -123,17 +123,20 @@ class FrameworkError(Exception):
         return "\n".join(output).strip()
 
     @classmethod
-    def ensure(cls, error: Exception, *, message: str | None = None) -> "FrameworkError":
+    def ensure(
+        cls, error: Exception, *, message: str | None = None, context: dict[str, Any] | None = None
+    ) -> "FrameworkError":
         if isinstance(error, FrameworkError):
+            error.context.update(context or {})
             return error
 
         if isinstance(error, CancelledError):
-            return AbortError(cause=error)
+            return AbortError(cause=error, context=context)
 
         if message:
-            return cls(cause=error, message=message)
+            return cls(cause=error, message=message, context=context)
         else:
-            return cls(cause=error)
+            return cls(cause=error, context=context)
 
 
 class AbortError(FrameworkError, CancelledError):

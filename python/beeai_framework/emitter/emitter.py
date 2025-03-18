@@ -209,7 +209,9 @@ class Emitter:
                     else:
                         return ln.callback(data, event)
                 except Exception as e:
-                    raise EmitterError.ensure(e, message="One of the provided Emitter callbacks has failed.")
+                    raise EmitterError.ensure(
+                        e, message="One of the provided Emitter callbacks has failed.", event=event
+                    )
 
             if listener.options and listener.options.is_blocking:
                 executions.append(run())
