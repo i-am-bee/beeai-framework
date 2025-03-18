@@ -42,6 +42,7 @@ from beeai_framework.backend.types import (
     ChatModelOutput,
     ChatModelStructureInput,
     ChatModelStructureOutput,
+    ChatModelUsage,
 )
 from beeai_framework.backend.utils import parse_broken_json
 from beeai_framework.context import RunContext
@@ -201,7 +202,7 @@ class LiteLLMChatModel(ChatModel, ABC):
     def _transform_output(self, chunk: ModelResponse | ModelResponseStream) -> ChatModelOutput:
         choice = chunk.choices[0]
         finish_reason = choice.finish_reason
-        usage = choice.get("usage")  # type: ignore
+        usage = chunk.get("usage")  # type: ignore
         update = choice.delta if isinstance(choice, StreamingChoices) else choice.message
 
         return ChatModelOutput(
@@ -226,7 +227,7 @@ class LiteLLMChatModel(ChatModel, ABC):
                 else []
             ),
             finish_reason=finish_reason,
-            usage=usage,
+            usage=ChatModelUsage(**usage.model_dump()) if usage else None,
         )
 
     def _format_tool_model(self, model: type[BaseModel]) -> dict[str, Any]:
