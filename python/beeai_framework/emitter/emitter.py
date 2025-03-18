@@ -123,7 +123,7 @@ class Emitter:
     def pipe(self, target: "Emitter") -> CleanupFn:
         return self.on(
             "*.*",
-            target.invoke,
+            target._invoke,
             EmitterOptions(
                 is_blocking=True,
                 once=False,
@@ -186,12 +186,14 @@ class Emitter:
         return lambda: self.listeners.remove(listener)
 
     async def emit(self, name: str, value: Any) -> None:
-        assert_valid_name(name)
+        try:
+            assert_valid_name(name)
+            event = self.create_event(name)
+            await self._invoke(value, event)
+        except Exception as e:
+            raise EmitterError.ensure(e)
 
-        event = self.create_event(name)
-        await self.invoke(value, event)
-
-    async def invoke(self, data: Any, event: EventMeta) -> None:
+    async def _invoke(self, data: Any, event: EventMeta) -> None:
         executions: list[Coroutine[Any, Any, Any] | Task[Any]] = []
         for listener in self.listeners:
             if not listener.match(event):
@@ -201,10 +203,13 @@ class Emitter:
                 self.listeners.remove(listener)
 
             async def run(ln: Listener = listener) -> Any:
-                if inspect.iscoroutinefunction(ln.callback):
-                    return await ln.callback(data, event)
-                else:
-                    return ln.callback(data, event)
+                try:
+                    if inspect.iscoroutinefunction(ln.callback):
+                        return await ln.callback(data, event)
+                    else:
+                        return ln.callback(data, event)
+                except Exception as e:
+                    raise EmitterError.ensure(e, message="One of the provided Emitter callbacks has failed.")
 
             if listener.options and listener.options.is_blocking:
                 executions.append(run())
