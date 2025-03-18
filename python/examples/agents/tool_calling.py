@@ -28,9 +28,9 @@ def process_agent_events(data: Any, event: EventMeta) -> None:
     """Process agent events and log appropriately"""
 
     if event.name == "start":
-        reader.write("Agent 🤖 (debug) : ", "starting new iteration")
+        reader.write("Agent (debug) 🤖 : ", "starting new iteration")
     elif event.name == "success":
-        reader.write("Agent (debug) 🤖 : ", data.state.result)
+        reader.write("Agent (debug) 🤖 : ", data.state.memory.messages[-1])
 
 
 async def main() -> None:

@@ -16,6 +16,8 @@
 import os
 from typing import Any
 
+from pydantic import BaseModel
+
 from beeai_framework.adapters.litellm.chat import LiteLLMChatModel
 from beeai_framework.backend.constants import ProviderName
 from beeai_framework.logger import Logger
@@ -41,3 +43,12 @@ class OllamaChatModel(LiteLLMChatModel):
             provider_id="openai",
             settings=settings | {"api_key": api_key, "base_url": base_url},
         )
+
+    def _format_response_model(self, model: type[BaseModel] | dict[str, Any]) -> dict[str, Any]:
+        if isinstance(model, dict):
+            return model
+
+        return {
+            "type": "json_schema",
+            "json_schema": {"schema": model.model_json_schema(), "name": model.__name__, "strict": True},
+        }

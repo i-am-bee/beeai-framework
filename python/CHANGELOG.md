@@ -1,3 +1,12 @@
+## python_v0.1.7 (2025-03-17)
+
+### Bug Fixes
+
+- **agents**: retry if tool does not exist in ToolCallingAgent (#600)
+- **backend**: do not use OpenAI strict response format for Ollama (#598)
+- handle compositional schemas in JSONSchemaModel (#599)
+- **backend**: do not pass empty tool calls to Watsonx (#597)
+
 ## python_v0.1.6 (2025-03-14)
 
 ### Bug Fixes
