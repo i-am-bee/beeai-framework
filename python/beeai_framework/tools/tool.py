@@ -95,20 +95,24 @@ class Tool(Generic[TInput, TRunOptions, TOutput], ABC):
                 async def executor(_: RetryableContext) -> TOutput:
                     nonlocal error_propagated
                     error_propagated = False
-                    await context.emitter.emit("start", ToolStartEvent(input=input, options=options))
+                    await context.emitter.emit("start", ToolStartEvent(input=validated_input, options=options))
                     return await self._run(validated_input, options, context)
 
                 async def on_error(error: Exception, _: RetryableContext) -> None:
                     nonlocal error_propagated
                     error_propagated = True
                     err = ToolError.ensure(error)
-                    await context.emitter.emit("error", ToolErrorEvent(error=err, input=input, options=options))
+                    await context.emitter.emit(
+                        "error", ToolErrorEvent(error=err, input=validated_input, options=options)
+                    )
                     if FrameworkError.is_fatal(err) is True:
-                        raise err from None
+                        raise err
 
                 async def on_retry(ctx: RetryableContext, last_error: Exception) -> None:
                     err = ToolError.ensure(last_error)
-                    await context.emitter.emit("retry", ToolRetryEvent(error=err, input=input, options=options))
+                    await context.emitter.emit(
+                        "retry", ToolRetryEvent(error=err, input=validated_input, options=options)
+                    )
 
                 output = await Retryable(
                     RetryableInput(
@@ -125,7 +129,9 @@ class Tool(Generic[TInput, TRunOptions, TOutput], ABC):
                     )
                 ).get()
 
-                await context.emitter.emit("success", ToolSuccessEvent(output=output, input=input, options=options))
+                await context.emitter.emit(
+                    "success", ToolSuccessEvent(output=output, input=validated_input, options=options)
+                )
                 return output
             except Exception as e:
                 err = ToolError.ensure(e)
