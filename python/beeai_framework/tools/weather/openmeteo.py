@@ -37,11 +37,11 @@ class OpenMeteoToolInput(BaseModel):
     location_name: str = Field(description="The name of the location to retrieve weather information.")
     country: str | None = Field(description="Country name.", default=None)
     start_date: str | None = Field(
-        description="Start date for the weather forecast in the format YYYY-MM-DD (UTC). Should not be null.",
+        description="Start date for the weather forecast in the format YYYY-MM-DD (UTC)",
         default=None,
     )
     end_date: str | None = Field(
-        description="End date for the weather forecast in the format YYYY-MM-DD (UTC). Should not be null.",
+        description="End date for the weather forecast in the format YYYY-MM-DD (UTC)",
         default=None,
     )
     temperature_unit: Literal["celsius", "fahrenheit"] = Field(

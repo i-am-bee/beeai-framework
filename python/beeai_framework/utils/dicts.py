@@ -26,3 +26,7 @@ def include_keys(input: dict[str, Any], keys: set[str]) -> dict[str, Any]:
 
 def exclude_none(input: dict[str, Any]) -> dict[str, Any]:
     return {k: v for k, v in input.items() if v is not None}
+
+
+def convert_null_to_none(input: dict[str, Any]) -> dict[str, Any]:
+    return {k: (lambda i: None if i == "null" else i)(v) for k, v in input.items()}

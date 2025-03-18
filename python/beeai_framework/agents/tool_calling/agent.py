@@ -45,6 +45,7 @@ from beeai_framework.memory.unconstrained_memory import UnconstrainedMemory
 from beeai_framework.tools import ToolError
 from beeai_framework.tools.tool import AnyTool
 from beeai_framework.utils.counter import RetryCounter
+from beeai_framework.utils.dicts import convert_null_to_none
 from beeai_framework.utils.models import ModelLike, to_model
 from beeai_framework.utils.strings import to_json
 
@@ -118,7 +119,7 @@ class ToolCallingAgent(BaseAgent[ToolCallingAgentRunOutput]):
                         if not tool:
                             raise ToolError(f"Tool '{tool_call.tool_name}' does not exist!")
 
-                        tool_input = json.loads(tool_call.args)
+                        tool_input = convert_null_to_none(json.loads(tool_call.args))
                         tool_response = await tool.run(tool_input).context(
                             {"state": state.model_dump(), "tool_call_msg": tool_call}
                         )
