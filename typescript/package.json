@@ -219,7 +219,7 @@
     "@aws-sdk/client-bedrock-runtime": "^3.706.0",
     "@elastic/elasticsearch": "^8.0.0",
     "@googleapis/customsearch": "^3.2.0",
-    "@i-am-bee/acp-sdk": "^0.0.4",
+    "@i-am-bee/acp-sdk": "^0.0.5",
     "@langchain/community": ">=0.2.28",
     "@langchain/core": ">=0.2.27",
     "@modelcontextprotocol/sdk": "^1.0.4",
