@@ -42,5 +42,5 @@ class EmitterError(FrameworkError):
         event: Optional["EventMeta"] = None,
     ) -> "FrameworkError":
         event_context = {"event": event.path} if event is not None else {}
-        context.update(event_context) if context is not None else None
-        return super().ensure(error, message=message, context=context)
+        event_context.update(context) if context is not None else None
+        return super().ensure(error, message=message, context=event_context)

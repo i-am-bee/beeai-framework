@@ -42,8 +42,8 @@ class ToolError(FrameworkError):
         tool: Optional["AnyTool"] = None,
     ) -> "FrameworkError":
         tool_context = {"name": tool.name} if tool is not None else {}
-        context.update(tool_context) if context is not None else None
-        return super().ensure(error, message=message, context=context)
+        tool_context.update(context) if context is not None else None
+        return super().ensure(error, message=message, context=tool_context)
 
 
 class ToolInputValidationError(ToolError):

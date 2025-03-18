@@ -53,8 +53,8 @@ class ChatModelError(BackendError):
         model: Optional["ChatModel"] = None,
     ) -> "FrameworkError":
         model_context = {"provider": model.provider_id, "model_id": model.model_id} if model is not None else {}
-        context.update(model_context) if context is not None else None
-        return super().ensure(error, message=message, context=context)
+        model_context.update(context) if context is not None else None
+        return super().ensure(error, message=message, context=model_context)
 
 
 class MessageError(FrameworkError):
