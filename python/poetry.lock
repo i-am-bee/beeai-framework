@@ -2,14 +2,14 @@
 
 [[package]]
 name = "acp-sdk"
-version = "0.0.4"
+version = "0.0.5"
 description = "Agent Communication Protocol SDK"
 optional = false
 python-versions = "<4.0,>=3.10"
 groups = ["main"]
 files = [
-    {file = "acp_sdk-0.0.4-py3-none-any.whl", hash = "sha256:46c4e4da1b6c3982153acdb763fe1b0308ef2e29a842a3b8d9322d9423c85c4e"},
-    {file = "acp_sdk-0.0.4.tar.gz", hash = "sha256:b2586a13aa9be8eaa19870a73f16c50c1eb05fff46d74d13a848b5af45267e70"},
+    {file = "acp_sdk-0.0.5-py3-none-any.whl", hash = "sha256:5f0608e0b595575efa9273f3615e7c60d7a947b30630db540ba36810b94a0683"},
+    {file = "acp_sdk-0.0.5.tar.gz", hash = "sha256:d302c2d088373bf5c5b87ee62836045842e39946664346489a9c9dae5da08cc9"},
 ]
 
 [package.dependencies]
@@ -4046,4 +4046,4 @@ langchain = ["langchain-community", "langchain-core"]
 [metadata]
 lock-version = "2.1"
 python-versions = ">= 3.11,<4.0"
-content-hash = "776be93825a927a54d03a1861f76f4434358f600aa63913f7fd5ff2430c1bc9c"
+content-hash = "ee0305ff48a2dcacfaf1773c108672dcd27f0dd484cd77807bc0ae9ebb4f8118"
