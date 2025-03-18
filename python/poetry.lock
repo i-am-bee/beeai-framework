@@ -4046,4 +4046,4 @@ langchain = ["langchain-community", "langchain-core"]
 [metadata]
 lock-version = "2.1"
 python-versions = ">= 3.11,<4.0"
-content-hash = "ee0305ff48a2dcacfaf1773c108672dcd27f0dd484cd77807bc0ae9ebb4f8118"
+content-hash = "c1805bfbc274b078db625efded35bb179092dae12fae99729405fb378aa55f72"

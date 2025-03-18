@@ -28,7 +28,6 @@ from litellm.types.utils import StreamingChoices
 from openai.lib._pydantic import to_strict_json_schema
 from pydantic import BaseModel
 
-from beeai_framework.adapters.litellm._patch import _patch_litellm_cache
 from beeai_framework.backend.chat import (
     ChatModel,
 )
@@ -239,4 +238,3 @@ class LiteLLMChatModel(ChatModel, ABC):
 
 
 LiteLLMChatModel.litellm_debug(False)
-_patch_litellm_cache()
