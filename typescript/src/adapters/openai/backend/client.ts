@@ -35,11 +35,20 @@ export class OpenAIClient extends BackendClient<OpenAIClientSettings, OpenAIProv
       }, z.record(z.string())),
     );
 
+    const baseURL = this.settings?.baseURL || getEnv("OPENAI_API_ENDPOINT");
+    let compatibility: string | undefined =
+      this.settings?.compatibility || getEnv("OPENAI_COMPATIBILITY_MODE");
+    if (baseURL && !compatibility) {
+      compatibility = "compatible";
+    } else if (!baseURL && !compatibility) {
+      compatibility = "strict";
+    }
+
     return createOpenAI({
       ...this.settings,
-      compatibility: "compatible",
+      compatibility: compatibility as "strict" | "compatible" | undefined,
       apiKey: this.settings?.apiKey || getEnv("OPENAI_API_KEY"),
-      baseURL: this.settings?.baseURL || getEnv("OPENAI_API_ENDPOINT"),
+      baseURL,
       headers: {
         ...extraHeaders,
         ...this.settings?.headers,
