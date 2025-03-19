@@ -1,49 +1,57 @@
 import "dotenv/config";
-import { UnconstrainedMemory } from "beeai-framework/memory/unconstrainedMemory";
 import { createConsoleReader } from "examples/helpers/io.js";
 import { OpenMeteoTool } from "beeai-framework/tools/weather/openMeteo";
 import { WikipediaTool } from "beeai-framework/tools/search/wikipedia";
-import { AgentWorkflow } from "beeai-framework/workflows/agent";
-import { UserMessage } from "beeai-framework/backend/message";
+import { AgentWorkflow, AgentWorkflowInput } from "beeai-framework/workflows/agent";
 import { WatsonxChatModel } from "beeai-framework/adapters/watsonx/backend/chat";
 
-const workflow = new AgentWorkflow();
+const workflow = new AgentWorkflow("Smart assistant");
 const llm = new WatsonxChatModel("meta-llama/llama-3-3-70b-instruct");
 
 workflow.addAgent({
+  name: "Researcher",
+  role: "A diligent researcher.",
+  instructions: "You are a researcher assistant. Respond only if you can provide a useful answer.",
+  tools: [new WikipediaTool()],
+  llm,
+});
+workflow.addAgent({
   name: "WeatherForecaster",
+  role: "A weather reporter.",
   instructions: "You are a weather assistant. Respond only if you can provide a useful answer.",
   tools: [new OpenMeteoTool()],
   llm,
   execution: { maxIterations: 3 },
 });
 workflow.addAgent({
-  name: "Researcher",
-  instructions: "You are a researcher assistant. Respond only if you can provide a useful answer.",
-  tools: [new WikipediaTool()],
-  llm,
-});
-workflow.addAgent({
-  name: "Solver",
-  instructions:
-    "Your task is to provide the most useful final answer based on the assistants' responses which all are relevant. Ignore those where assistant do not know.",
+  name: "DataSynthesizer",
+  role: "A meticulous and creative data synthesizer",
+  instructions: "You can combine disparate information into a final coherent summary.",
   llm,
 });
 
 const reader = createConsoleReader();
-const memory = new UnconstrainedMemory();
-
+reader.write("Assistant 🤖 : ", "What location do you want to learn about?");
 for await (const { prompt } of reader) {
-  await memory.add(new UserMessage(prompt, { createdAt: new Date() }));
-
-  const { result } = await workflow.run(memory.messages).observe((emitter) => {
-    emitter.on("success", (data) => {
-      reader.write(`-> ${data.step}`, data.state?.finalAnswer ?? "-");
+  const { result } = await workflow
+    .run([
+      new AgentWorkflowInput("Provide a short history of the location.", prompt),
+      new AgentWorkflowInput(
+        "Provide a comprehensive weather summary for the location today.",
+        undefined,
+        "Essential weather details such as chance of rain, temperature and wind. Only report information that is available.",
+      ),
+      new AgentWorkflowInput(
+        "Summarize the historical and weather data for the location.",
+        undefined,
+        "A paragraph that describes the history of the location, followed by the current weather conditions.",
+      ),
+    ])
+    .observe((emitter) => {
+      emitter.on("success", (data) => {
+        reader.write(`-> ${data.step}`, data.state?.finalAnswer ?? "-");
+      });
     });
-  });
 
-  // await memory.addMany(result.newMessages); // save intermediate steps + final answer
-  await memory.addMany(result.newMessages.slice(-1)); // save only the final answer
-
-  reader.write(`Agent 🤖`, result.finalAnswer);
+  reader.write(`Assistant 🤖`, result.finalAnswer);
 }
