@@ -13,7 +13,7 @@
 # limitations under the License.
 
 from abc import ABC, abstractmethod
-from collections.abc import AsyncGenerator
+from collections.abc import AsyncGenerator, Callable
 from functools import cached_property
 from typing import Any, Literal, TypeVar
 
@@ -30,7 +30,6 @@ from beeai_framework.backend.events import (
 )
 from beeai_framework.backend.message import AnyMessage, SystemMessage
 from beeai_framework.backend.types import (
-    ChatConfig,
     ChatModelInput,
     ChatModelOutput,
     ChatModelParameters,
@@ -237,15 +236,15 @@ IMPORTANT: You MUST answer with a JSON object that matches the JSON schema above
             run_params=model_input.model_dump(),
         )
 
-    def config(self, chat_config: ChatConfig) -> None:
+    def config(
+        self, *, parameters: ChatModelParameters | Callable[[ChatModelParameters], ChatModelParameters] | None = None
+    ) -> None:
         # TODO: uncomment when cache is supported/implemented
         # if chat_config.cache:
         #     self.cache = chat_config.cache(self.cache) if callable(chat_config.cache) else  chat_config.cache
 
-        if chat_config.parameters:
-            self.parameters = (
-                chat_config.parameters(self.parameters) if callable(chat_config.parameters) else chat_config.parameters
-            )
+        if parameters is not None:
+            self.parameters = parameters(self.parameters) if callable(parameters) else parameters
 
     @staticmethod
     def from_name(name: str | ProviderName, options: ModelLike[ChatModelParameters] | None = None) -> "ChatModel":

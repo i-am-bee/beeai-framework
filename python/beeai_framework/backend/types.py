@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from collections.abc import Callable
 from typing import Any, Generic, Self, TypeVar
 
 from pydantic import BaseModel, ConfigDict, Field, InstanceOf
@@ -36,11 +35,6 @@ class ChatModelParameters(BaseModel):
     seed: int | None = None
     stop_sequences: list[str] | None = None
     stream: bool | None = None
-
-
-class ChatConfig(BaseModel):
-    # TODO: cache: ChatModelCache | Callable[[ChatModelCache], ChatModelCache] | None = None
-    parameters: ChatModelParameters | Callable[[ChatModelParameters], ChatModelParameters] | None = None
 
 
 class ChatModelStructureInput(ChatModelParameters, Generic[T]):
