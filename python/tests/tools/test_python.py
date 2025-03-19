@@ -54,7 +54,7 @@ async def tool() -> PythonTool:
     return tool
 
 
-@pytest.mark.unit
+@pytest.mark.e2e
 @pytest.mark.asyncio
 async def test_without_file(tool: PythonTool) -> None:
     result = await tool.run(
@@ -68,7 +68,7 @@ async def test_without_file(tool: PythonTool) -> None:
     assert "2" in result.stdout
 
 
-@pytest.mark.unit
+@pytest.mark.e2e
 @pytest.mark.asyncio
 async def test_with_file(tool: PythonTool) -> None:
     result = await tool.run(
