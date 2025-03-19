@@ -2,14 +2,14 @@
 
 [[package]]
 name = "acp-sdk"
-version = "0.0.4"
+version = "0.0.5"
 description = "Agent Communication Protocol SDK"
 optional = false
 python-versions = "<4.0,>=3.10"
 groups = ["main"]
 files = [
-    {file = "acp_sdk-0.0.4-py3-none-any.whl", hash = "sha256:46c4e4da1b6c3982153acdb763fe1b0308ef2e29a842a3b8d9322d9423c85c4e"},
-    {file = "acp_sdk-0.0.4.tar.gz", hash = "sha256:b2586a13aa9be8eaa19870a73f16c50c1eb05fff46d74d13a848b5af45267e70"},
+    {file = "acp_sdk-0.0.5-py3-none-any.whl", hash = "sha256:5f0608e0b595575efa9273f3615e7c60d7a947b30630db540ba36810b94a0683"},
+    {file = "acp_sdk-0.0.5.tar.gz", hash = "sha256:d302c2d088373bf5c5b87ee62836045842e39946664346489a9c9dae5da08cc9"},
 ]
 
 [package.dependencies]
@@ -3585,7 +3585,7 @@ version = "5.5.0.20240820"
 description = "Typing stubs for cachetools"
 optional = false
 python-versions = ">=3.8"
-groups = ["main"]
+groups = ["dev"]
 files = [
     {file = "types-cachetools-5.5.0.20240820.tar.gz", hash = "sha256:b888ab5c1a48116f7799cd5004b18474cd82b5463acb5ffb2db2fc9c7b053bc0"},
     {file = "types_cachetools-5.5.0.20240820-py3-none-any.whl", hash = "sha256:efb2ed8bf27a4b9d3ed70d33849f536362603a90b8090a328acf0cd42fda82e2"},
@@ -4058,4 +4058,4 @@ langchain = ["langchain-community", "langchain-core"]
 [metadata]
 lock-version = "2.1"
 python-versions = ">= 3.11,<4.0"
-content-hash = "e641d1d549f8b3713308eed28c542666a60d1be188b0a06dea985e5220ef1228"
+content-hash = "b7ad7f94f0ca86ea68fa88deedc153a8a9f0cbdebb845436fad4db9849605bb8"

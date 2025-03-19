@@ -22,25 +22,25 @@ from beeai_framework.tools.types import ToolOutput, ToolRunOptions
 
 
 class ToolStartEvent(BaseModel):
-    input: BaseModel | dict[str, Any]
+    input: InstanceOf[BaseModel]
     options: ToolRunOptions | None = None
 
 
 class ToolSuccessEvent(BaseModel):
     output: InstanceOf[ToolOutput]
-    input: BaseModel | dict[str, Any]
+    input: InstanceOf[BaseModel]
     options: ToolRunOptions | None = None
 
 
 class ToolErrorEvent(BaseModel):
     error: InstanceOf[FrameworkError]
-    input: BaseModel | dict[str, Any]
+    input: InstanceOf[BaseModel] | dict[str, Any]
     options: ToolRunOptions | None = None
 
 
 class ToolRetryEvent(BaseModel):
     error: InstanceOf[FrameworkError]
-    input: BaseModel | dict[str, Any]
+    input: InstanceOf[BaseModel]
     options: ToolRunOptions | None = None
 
 

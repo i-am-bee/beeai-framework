@@ -53,7 +53,7 @@ class OpenAIChatModel(LiteLLMChatModel):
             settings=_settings,
         )
         self._settings["extra_headers"] = utils.parse_extra_headers(
-            self._settings.get("extra_headers"), os.getenv("OPENAI_EXTRA_HEADERS")
+            self._settings.get("extra_headers"), os.getenv("OPENAI_API_HEADERS")
         )
 
         pass

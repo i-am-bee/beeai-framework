@@ -303,6 +303,9 @@ class DefaultRunner(BaseRunner):
                 )
             except Exception as e:
                 err = ToolError.ensure(e)
+                if not FrameworkError.is_retryable(err):
+                    raise e
+
                 self._failed_attempts_counter.use(err)
                 return ReActAgentRunnerToolResult(
                     success=False,

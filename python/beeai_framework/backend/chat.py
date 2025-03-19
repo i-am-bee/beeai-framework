@@ -202,7 +202,7 @@ IMPORTANT: You MUST answer with a JSON object that matches the JSON schema above
                 await context.emitter.emit("success", ChatModelSuccessEvent(value=result))
                 return result
             except Exception as ex:
-                error = ChatModelError.ensure(ex)
+                error = ChatModelError.ensure(ex, model=self)
                 await context.emitter.emit("error", ChatModelErrorEvent(input=model_input, error=error))
                 raise error
             finally:
