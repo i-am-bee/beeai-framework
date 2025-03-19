@@ -49,12 +49,12 @@ interface AgentFactoryInput {
 export class AgentWorkflow {
   protected readonly workflow;
 
-  static readonly schema = z.object({
+  readonly schema = z.object({
     inputs: z.array(
       z.object({
         prompt: z.string().optional(),
         context: z.string().optional(),
-        expected_output: z.any(),
+        expectedOutput: z.string().or(z.custom<z.ZodSchema>()).optional(),
       }),
     ),
 
@@ -65,15 +65,12 @@ export class AgentWorkflow {
   constructor(name = "AgentWorkflow") {
     this.workflow = new Workflow({
       name,
-      schema: AgentWorkflow.schema,
-      outputSchema: AgentWorkflow.schema.required(),
+      schema: this.schema,
+      outputSchema: this.schema.required(),
     });
   }
 
-  run(
-    inputs: (z.infer<typeof AgentWorkflow.schema.shape.inputs.element> | Message)[],
-    options: WorkflowRunOptions<string> = {},
-  ) {
+  run(inputs: (ToolCallingAgentRunInput | Message)[], options: WorkflowRunOptions<string> = {}) {
     return this.workflow.run(
       {
         inputs: inputs.map((input) => (input instanceof Message ? { prompt: input.text } : input)),
@@ -131,7 +128,7 @@ export class AgentWorkflow {
       const memory = new UnconstrainedMemory();
       await memory.addMany(state.newMessages);
 
-      const runInput = state.inputs.shift() ?? {};
+      const runInput = state.inputs.shift() ?? { prompt: undefined };
       const agent = await factory(memory.asReadOnly());
       const { result } = await agent.run(runInput, { signal: ctx.signal });
       state.finalAnswer = result.text;

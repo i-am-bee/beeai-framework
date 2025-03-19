@@ -387,12 +387,12 @@ for await (const { prompt } of reader) {
       { prompt: "Provide a short history of the location.", context: prompt },
       {
         prompt: "Provide a comprehensive weather summary for the location today.",
-        expected_output:
+        expectedOutput:
           "Essential weather details such as chance of rain, temperature and wind. Only report information that is available.",
       },
       {
         prompt: "Summarize the historical and weather data for the location.",
-        expected_output:
+        expectedOutput:
           "A paragraph that describes the history of the location, followed by the current weather conditions.",
       },
     ])
