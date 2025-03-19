@@ -54,7 +54,7 @@ export class AgentWorkflow {
       z.object({
         prompt: z.string().optional(),
         context: z.string().optional(),
-        expectedOutput: z.string().or(z.custom<z.ZodSchema>()).optional(),
+        expectedOutput: z.union([z.string(), z.instanceof(z.ZodSchema)]).optional(),
       }),
     ),
 
