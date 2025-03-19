@@ -39,7 +39,7 @@ class SlidingCache(BaseCache[T]):
         return key in self._items
 
     async def delete(self, key: str) -> bool:
-        if not self.has(key):
+        if not await self.has(key):
             return False
 
         self._items.pop(key)
