@@ -24,10 +24,7 @@ export const ToolCallingAgentSystemPrompt = new PromptTemplate({
   }),
   functions: {
     formatDate: function () {
-      return new Intl.DateTimeFormat("en-US", {
-        dateStyle: "full",
-        timeStyle: "medium",
-      }).format(new Date());
+      return new Date().toISOString();
     },
   },
   defaults: { role: "A helpful AI assistant", instructions: "" },
@@ -46,7 +43,9 @@ You can use tools to improve your answers if available.
 - If the provided task is unclear, ask the user for clarification.
 - Do not refer to tools or tool outputs by name when responding.
 
+# Date and Time
 The current date and time is: {{formatDate}}
+You do not need a tool to get the current Date and Time. Use the information available here.
 `,
 });
 

@@ -3,10 +3,10 @@ import { createConsoleReader } from "examples/helpers/io.js";
 import { OpenMeteoTool } from "beeai-framework/tools/weather/openMeteo";
 import { WikipediaTool } from "beeai-framework/tools/search/wikipedia";
 import { AgentWorkflow } from "beeai-framework/workflows/agent";
-import { WatsonxChatModel } from "beeai-framework/adapters/watsonx/backend/chat";
+import { OllamaChatModel } from "beeai-framework/adapters/ollama/backend/chat";
 
 const workflow = new AgentWorkflow("Smart assistant");
-const llm = new WatsonxChatModel("meta-llama/llama-3-3-70b-instruct");
+const llm = new OllamaChatModel("llama3.1");
 
 workflow.addAgent({
   name: "Researcher",
@@ -49,7 +49,7 @@ for await (const { prompt } of reader) {
     .observe((emitter) => {
       emitter.on("success", (data) => {
         reader.write(
-          `Step ${data.step} has been completed with the following outcome:\n`,
+          `Step '${data.step}' has been completed with the following outcome:\n`,
           data.state?.finalAnswer ?? "-",
         );
       });

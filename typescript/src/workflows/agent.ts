@@ -21,11 +21,11 @@ import { BaseMemory, ReadOnlyMemory } from "@/memory/base.js";
 import { z } from "zod";
 import { UnconstrainedMemory } from "@/memory/unconstrainedMemory.js";
 import { BaseAgent } from "@/agents/base.js";
-import { ReActAgentExecutionConfig } from "@/agents/react/types.js";
 import { isFunction, randomString } from "remeda";
 import { ChatModel } from "@/backend/chat.js";
 import { ToolCallingAgent } from "@/agents/toolCalling/agent.js";
 import {
+  ToolCallingAgentExecutionConfig,
   ToolCallingAgentRunInput,
   ToolCallingAgentRunOptions,
   ToolCallingAgentRunOutput,
@@ -43,7 +43,7 @@ interface AgentFactoryInput {
   llm: ChatModel;
   instructions?: string;
   tools?: AnyTool[];
-  execution?: ReActAgentExecutionConfig;
+  execution?: ToolCallingAgentExecutionConfig;
 }
 
 export class AgentWorkflow {
