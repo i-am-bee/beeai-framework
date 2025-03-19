@@ -31,7 +31,7 @@ from beeai_framework.memory import (
     UnconstrainedMemory,
 )
 from beeai_framework.memory.serializable import Serializable
-from beeai_framework.template import Prompt, PromptTemplateError
+from beeai_framework.template import PromptTemplateError
 from beeai_framework.tools import Tool, tool
 from beeai_framework.tools.weather.openmeteo import OpenMeteoTool
 from beeai_framework.utils.errors import LoggerError
@@ -44,7 +44,6 @@ __all__ = [
     "LoggerError",
     "Message",
     "OpenMeteoTool",
-    "Prompt",
     "PromptTemplateError",
     "ReActAgent",
     "ReadOnlyMemory",

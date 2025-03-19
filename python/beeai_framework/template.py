@@ -14,18 +14,13 @@
 
 
 from collections.abc import Callable
-from typing import Any, Generic, TypedDict, TypeVar
+from typing import Any, Generic, TypeVar
 
 import chevron
 from pydantic import BaseModel, Field
 
 from beeai_framework.errors import FrameworkError
 from beeai_framework.utils.models import ModelLike, to_model_optional
-
-
-class Prompt(TypedDict):
-    prompt: str | None
-
 
 T = TypeVar("T", bound=BaseModel)
 
