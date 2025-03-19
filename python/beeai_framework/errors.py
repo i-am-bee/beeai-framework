@@ -17,6 +17,8 @@ from asyncio import CancelledError
 from collections.abc import Generator
 from typing import Any
 
+from httpx import HTTPStatusError
+
 
 def _format_error_message(e: BaseException, *, offset: int = 0, strip_traceback: bool = True) -> str:
     cls = type(e).__name__
@@ -31,6 +33,10 @@ def _format_error_message(e: BaseException, *, offset: int = 0, strip_traceback:
         except TypeError:
             # Handle serialization errors gracefully.
             formatted += f'\n{prefix}Context: "Cannot serialize context to JSON"'
+    elif isinstance(e, HTTPStatusError):
+        formatted = f"{cls}({module}): {e.response.reason_phrase} ({e.response.status_code}) for {e.response.url}"
+        formatted += f"\n{prefix}Response: {e.response.text}"
+
     if strip_traceback:
         formatted = formatted.split("\nTraceback")[0]
     return "\n".join([f"{prefix}{line}" for line in formatted.split("\n")])

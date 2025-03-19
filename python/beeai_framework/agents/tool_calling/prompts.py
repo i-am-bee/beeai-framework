@@ -27,9 +27,7 @@ class ToolCallingAgentSystemPromptInput(BaseModel):
 ToolCallingAgentSystemPrompt = PromptTemplate(
     PromptTemplateInput(
         schema=ToolCallingAgentSystemPromptInput,
-        functions={
-            "formatDate": lambda data: datetime.now(tz=UTC).strftime("%A, %B %d, %Y at %I:%M:%S %p"),
-        },
+        functions={"formatDate": lambda data: datetime.now(tz=UTC).strftime("%Y-%m-%dT%H:%M:%SZ")},
         defaults={"role": "A helpful AI assistant", "instructions": ""},
         template="""Assume the role of {{role}}.
 {{#instructions}}
@@ -46,7 +44,9 @@ You can use tools to improve your answers if available.
 - If the provided task is unclear, ask the user for clarification.
 - Do not refer to tools or tool outputs by name when responding.
 
+# Date and Time
 The current date and time is: {{formatDate}}
+You do not need a tool to get the current Date and Time. Use the information available here.
 """,
     )
 )
