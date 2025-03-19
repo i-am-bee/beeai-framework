@@ -12,44 +12,74 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import pytest
+
 import asyncio
+import pytest_asyncio
 import sys
+import os
 import traceback
 
 from beeai_framework.errors import FrameworkError
 from beeai_framework.tools.python import PythonTool
 from beeai_framework.tools.storage import Input, LocalPythonStorage
 
+code_interpreter_url = os.getenv("CODE_INTERPRETER_URL","http://localhost:50081")
 
-async def main() -> None:
-    p = PythonTool(
+@pytest_asyncio.fixture
+async def test_dir() -> str:
+    test_dir = "test_directory"
+    os.makedirs(test_dir, exist_ok=True)
+    # Create some test files
+    test_files = [
+        os.path.join(test_dir, f"file{i}.txt") for i in range(1, 4)
+    ]
+    for file in test_files:
+        with open(file, "w") as f:
+            f.write(f"Content of {file}")
+            
+    yield test_dir
+
+    # Clean up: remove the temporary directory and its contents
+    for file in test_files:
+        if os.path.exists(file):
+            os.remove(file)
+    os.rmdir(test_dir)
+
+@pytest_asyncio.fixture
+async def tool():
+    test_dir = "test_directory"
+    tool = PythonTool(
         {
-            "codeInterpreter": {"url": "http://127.0.0.1:50081"},
-            "storage": LocalPythonStorage(Input("./localTmp", "./pythonTmp", [])),
+            "codeInterpreter": {"url": code_interpreter_url},
+            "storage": LocalPythonStorage(Input(test_dir, "./pythonTmp", [])),
         }
     )
-    result = await p.run(
+    return tool
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_without_file(tool: PythonTool) -> None:
+    result = await tool.run(
         {
             "language": "python",
             "code": "print(str(1+1))",
-            "inputFiles": ["a", "c"],
+            "inputFiles": [],
         }
     )
-    print(result)
+    assert("2" in result.stdout)
 
-    result = await p.run(
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_with_file(tool: PythonTool) -> None:
+    result = await tool.run(
         {
             "language": "python",
             "code": "print(str(3+1))",
-            "inputFiles": ["a", "c"],
+            "inputFiles": ["file2", "file4"],
         }
     )
-    print(result)
+    assert("4" in result.stdout)
 
 
-if __name__ == "__main__":
-    try:
-        asyncio.run(main())
-    except FrameworkError as e:
-        traceback.print_exc()
-        sys.exit(e.explain())
+
