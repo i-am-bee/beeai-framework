@@ -11,14 +11,14 @@ const llm = new WatsonxChatModel("meta-llama/llama-3-3-70b-instruct");
 workflow.addAgent({
   name: "Researcher",
   role: "A diligent researcher.",
-  instructions: "You are a researcher assistant. Respond only if you can provide a useful answer.",
+  instructions: "You look up and provide information about a specific topic.",
   tools: [new WikipediaTool()],
   llm,
 });
 workflow.addAgent({
   name: "WeatherForecaster",
   role: "A weather reporter.",
-  instructions: "You are a weather assistant. Respond only if you can provide a useful answer.",
+  instructions: "You provide detailed weather reports.",
   tools: [new OpenMeteoTool()],
   llm,
   execution: { maxIterations: 3 },
@@ -49,9 +49,13 @@ for await (const { prompt } of reader) {
     ])
     .observe((emitter) => {
       emitter.on("success", (data) => {
-        reader.write(`-> ${data.step}`, data.state?.finalAnswer ?? "-");
+        reader.write(
+          `Step ${data.step} has been completed with the following outcome:\n`,
+          data.state?.finalAnswer ?? "-",
+        );
       });
     });
 
   reader.write(`Assistant 🤖`, result.finalAnswer);
+  reader.write("Assistant 🤖 : ", "What location do you want to learn about?");
 }
