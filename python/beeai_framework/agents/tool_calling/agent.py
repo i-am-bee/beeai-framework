@@ -134,9 +134,12 @@ class ToolCallingAgent(BaseAgent[ToolCallingAgentRunOutput]):
                     except ToolError as e:
                         global_retries_counter.use(e)
                         await state.memory.add(
-                            AssistantMessage(
-                                content=self._templates.tool_error.render({"reason": e.explain()}),
-                                meta={"tempMessage": True},
+                            ToolMessage(
+                                MessageToolResultContent(
+                                    result=self._templates.tool_error.render({"reason": e.explain()}),
+                                    tool_name=tool_call.tool_name,
+                                    tool_call_id=tool_call.id,
+                                )
                             )
                         )
 
