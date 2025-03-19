@@ -40,8 +40,11 @@ class UnconstrainedCache(BaseCache[T]):
         return key in self._provider
 
     async def delete(self, key: str) -> bool:
-        value = self._provider.pop(key, None)
-        return bool(value)
+        if not self.has(key):
+            return False
+
+        self._provider.pop(key)
+        return True
 
     async def clear(self) -> None:
         self._provider.clear()

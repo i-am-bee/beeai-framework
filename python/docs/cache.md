@@ -86,27 +86,26 @@ import traceback
 from beeai_framework.cache.unconstrained_cache import UnconstrainedCache
 from beeai_framework.errors import FrameworkError
 
-cache: UnconstrainedCache[int] = UnconstrainedCache()
-
-
-async def fibonacci(n: int) -> int:
-    cache_key = str(n)
-    cached = await cache.get(cache_key)
-    if cached:
-        return int(cached)
-
-    if n < 1:
-        result = 0
-    elif n <= 2:
-        result = 1
-    else:
-        result = await fibonacci(n - 1) + await fibonacci(n - 2)
-
-    await cache.set(cache_key, result)
-    return result
-
 
 async def main() -> None:
+    cache: UnconstrainedCache[int] = UnconstrainedCache()
+
+    async def fibonacci(n: int) -> int:
+        cache_key = str(n)
+        cached = await cache.get(cache_key)
+        if cached:
+            return int(cached)
+
+        if n < 1:
+            result = 0
+        elif n <= 2:
+            result = 1
+        else:
+            result = await fibonacci(n - 1) + await fibonacci(n - 2)
+
+        await cache.set(cache_key, result)
+        return result
+
     print(await fibonacci(10))  # 55
     print(await fibonacci(9))  # 34 (retrieved from cache)
     print(f"Cache size {await cache.size()}")  # 10
@@ -161,10 +160,10 @@ import traceback
 from beeai_framework.cache.unconstrained_cache import UnconstrainedCache
 from beeai_framework.errors import FrameworkError
 
-cache: UnconstrainedCache[int] = UnconstrainedCache()
-
 
 async def main() -> None:
+    cache: UnconstrainedCache[int] = UnconstrainedCache()
+
     await cache.set("a", 1)
     print(await cache.has("a"))  # True
     print(await cache.size())  # 1
@@ -195,13 +194,13 @@ import traceback
 from beeai_framework.cache.sliding_cache import SlidingCache
 from beeai_framework.errors import FrameworkError
 
-cache: SlidingCache[int] = SlidingCache(
-    size=3,  # (required) number of items that can be live in the cache at a single moment
-    ttl=1,  # // (optional, default is Infinity) Time in seconds after the element is removed from a cache
-)
-
 
 async def main() -> None:
+    cache: SlidingCache[int] = SlidingCache(
+        size=3,  # (required) number of items that can be live in the cache at a single moment
+        ttl=1,  # // (optional, default is Infinity) Time in seconds after the element is removed from a cache
+    )
+
     await cache.set("a", 1)
     await cache.set("b", 2)
     await cache.set("c", 3)
