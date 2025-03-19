@@ -237,7 +237,10 @@ IMPORTANT: You MUST answer with a JSON object that matches the JSON schema above
         )
 
     def config(
-        self, *, parameters: ChatModelParameters | Callable[[ChatModelParameters], ChatModelParameters] | None = None
+        self,
+        *,
+        parameters: ChatModelParameters | Callable[[ChatModelParameters], ChatModelParameters] | None = None,
+        # TODO: cache: ChatModelCache | Callable[[ChatModelCache], ChatModelCache] | None = None
     ) -> None:
         # TODO: uncomment when cache is supported/implemented
         # if chat_config.cache:
