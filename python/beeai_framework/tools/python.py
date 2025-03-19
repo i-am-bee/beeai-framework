@@ -77,20 +77,27 @@ class PythonTool(Tool[BaseModel, ToolRunOptions, PythonToolOutput]):
             for filename in filenames:
                 members[filename.upper()] = filename
                 python_files = Enum("PythonFiles", members)  # type: ignore[misc]
-            input_files = (
-                list[python_files],
-                Field(
-                    description="""To access an existing file, you must specify it;
-                    otherwise, the file will not be accessible.
-                    IMPORTANT: If the file is not provided in the input, it will not be accessible."""
-                ),
-            )
-        self.input_schema = create_model(
-            "PythonToolInput",
-            language=(Language, Field(description="Use shell for ffmpeg, pandoc, yt-dlp")),
-            code=(str, Field(description="full source code file that will be executed")),
-            inputFiles=input_files,
-        )
+            if "python_files" in locals():
+                input_files = (
+                    list[python_files],
+                    Field(
+                        description="""To access an existing file, you must specify it;
+                        otherwise, the file will not be accessible.
+                        IMPORTANT: If the file is not provided in the input, it will not be accessible."""
+                    ),
+                )
+                self.input_schema = create_model(
+                    "PythonToolInput",
+                    language=(Language, Field(description="Use shell for ffmpeg, pandoc, yt-dlp")),
+                    code=(str, Field(description="full source code file that will be executed")),
+                    inputFiles=input_files
+                    )
+            else:
+                self.input_schema = create_model(
+                    "PythonToolInput",
+                    language=(Language, Field(description="Use shell for ffmpeg, pandoc, yt-dlp")),
+                    code=(str, Field(description="full source code file that will be executed"))
+                    )
 
     def _create_emitter(self) -> Emitter:
         return Emitter.root().child(
