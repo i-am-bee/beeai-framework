@@ -15,7 +15,7 @@
  */
 
 import { Workflow, WorkflowRunOptions } from "@/workflows/workflow.js";
-import { AssistantMessage, Message, UserMessage } from "@/backend/message.js";
+import { Message, UserMessage } from "@/backend/message.js";
 import { AnyTool } from "@/tools/base.js";
 import { BaseMemory, ReadOnlyMemory } from "@/memory/base.js";
 import { z } from "zod";
@@ -46,28 +46,17 @@ interface AgentFactoryInput {
   execution?: ReActAgentExecutionConfig;
 }
 
-export class AgentWorkflowInput {
-  constructor(
-    public prompt?: string,
-    public context?: string,
-    public expected_output?: string,
-  ) {}
-
-  static fromMessage(message: Message) {
-    return new AgentWorkflowInput(message.text);
-  }
-
-  toMessage(): AssistantMessage {
-    const text = ["\n\nContext:", this.prompt || "", this.context || ""].join();
-    return new AssistantMessage(text);
-  }
-}
-
 export class AgentWorkflow {
   protected readonly workflow;
 
   static readonly schema = z.object({
-    inputs: z.array(z.instanceof(AgentWorkflowInput)),
+    inputs: z.array(
+      z.object({
+        prompt: z.string().optional(),
+        context: z.string().optional(),
+        expected_output: z.any(),
+      }),
+    ),
 
     finalAnswer: z.string().optional(),
     newMessages: z.array(z.instanceof(Message)).default([]),
@@ -81,12 +70,13 @@ export class AgentWorkflow {
     });
   }
 
-  run(inputs: (AgentWorkflowInput | Message)[], options: WorkflowRunOptions<string> = {}) {
+  run(
+    inputs: (z.infer<typeof AgentWorkflow.schema.shape.inputs.element> | Message)[],
+    options: WorkflowRunOptions<string> = {},
+  ) {
     return this.workflow.run(
       {
-        inputs: inputs.map((input) =>
-          input instanceof AgentWorkflowInput ? input : AgentWorkflowInput.fromMessage(input),
-        ),
+        inputs: inputs.map((input) => (input instanceof Message ? { prompt: input.text } : input)),
       },
       options,
     );
@@ -141,7 +131,7 @@ export class AgentWorkflow {
       const memory = new UnconstrainedMemory();
       await memory.addMany(state.newMessages);
 
-      const runInput = state.inputs.shift() ?? new AgentWorkflowInput();
+      const runInput = state.inputs.shift() ?? {};
       const agent = await factory(memory.asReadOnly());
       const { result } = await agent.run(runInput, { signal: ctx.signal });
       state.finalAnswer = result.text;
