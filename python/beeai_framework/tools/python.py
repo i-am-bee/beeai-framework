@@ -43,29 +43,29 @@ class PythonTool(Tool[BaseModel, ToolRunOptions, PythonToolOutput]):
     name = "Python"
     input_schema = BaseModel
     description = """
-    Run Python and/or shell code and return the console output. Use for isolated calculations,
-    computations, data or file manipulation but still prefer assistant's capabilities
-    (IMPORTANT: Do not use for text analysis or summarization).
-    Files provided by the user, or created in a previous run, will be accessible
-    if and only if they are specified in the input. It is necessary to always print() results.
-    The following shell commands are available:
-    Use ffmpeg to convert videos.
-    Use yt-dlp to download videos, and unless specified otherwise use `-S vcodec:h264,res,acodec:m4a`
-    for video and `-x --audio-format mp3` for audio-only.
-    Use pandoc to convert documents between formats (like MD, DOC, DOCX, PDF) -- and don't forget that
-    you can create PDFs by writing markdown and then converting.
-    In Python, the following modules are available:
-    Use numpy, pandas, scipy and sympy for working with data.
-    Use matplotlib to plot charts.
-    Use pillow (import PIL) to create and manipulate images.
-    Use moviepy for complex manipulations with videos.
-    Use PyPDF2, pikepdf, or fitz to manipulate PDFs.
-    Use pdf2image to convert PDF to images.
-    Other Python libraries are also available -- however, prefer using the ones above.
-    Prefer using qualified imports -- `import library; library.thing()` instead of `import thing from library`.
-    Do not attempt to install libraries manually -- it will not work.
-    Each invocation of Python runs in a completely fresh VM -- it will not remember anything from before.
-    Do not use this tool multiple times in a row, always write the full code you want to run in a single invocation."""
+Run Python and/or shell code and return the console output. Use for isolated calculations,
+computations, data or file manipulation but still prefer assistant's capabilities
+(IMPORTANT: Do not use for text analysis or summarization).
+Files provided by the user, or created in a previous run, will be accessible
+ if and only if they are specified in the input. It is necessary to always print() results.
+The following shell commands are available:
+Use ffmpeg to convert videos.
+Use yt-dlp to download videos, and unless specified otherwise use `-S vcodec:h264,res,acodec:m4a`
+ for video and `-x --audio-format mp3` for audio-only.
+Use pandoc to convert documents between formats (like MD, DOC, DOCX, PDF) -- and don't forget that
+ you can create PDFs by writing markdown and then converting.
+In Python, the following modules are available:
+Use numpy, pandas, scipy and sympy for working with data.
+Use matplotlib to plot charts.
+Use pillow (import PIL) to create and manipulate images.
+Use moviepy for complex manipulations with videos.
+Use PyPDF2, pikepdf, or fitz to manipulate PDFs.
+Use pdf2image to convert PDF to images.
+Other Python libraries are also available -- however, prefer using the ones above.
+Prefer using qualified imports -- `import library; library.thing()` instead of `import thing from library`.
+Do not attempt to install libraries manually -- it will not work.
+Each invocation of Python runs in a completely fresh VM -- it will not remember anything from before.
+Do not use this tool multiple times in a row, always write the full code you want to run in a single invocation."""
 
     def __init__(self, options: dict[str, Any] | None = None) -> None:
         super().__init__(options)
@@ -82,22 +82,22 @@ class PythonTool(Tool[BaseModel, ToolRunOptions, PythonToolOutput]):
                     list[python_files],
                     Field(
                         description="""To access an existing file, you must specify it;
-                        otherwise, the file will not be accessible.
-                        IMPORTANT: If the file is not provided in the input, it will not be accessible."""
+otherwise, the file will not be accessible.
+IMPORTANT: If the file is not provided in the input, it will not be accessible."""
                     ),
                 )
                 self.input_schema = create_model(
                     "PythonToolInput",
                     language=(Language, Field(description="Use shell for ffmpeg, pandoc, yt-dlp")),
                     code=(str, Field(description="full source code file that will be executed")),
-                    inputFiles=input_files
-                    )
+                    inputFiles=input_files,
+                )
             else:
                 self.input_schema = create_model(
                     "PythonToolInput",
                     language=(Language, Field(description="Use shell for ffmpeg, pandoc, yt-dlp")),
-                    code=(str, Field(description="full source code file that will be executed"))
-                    )
+                    code=(str, Field(description="full source code file that will be executed")),
+                )
 
     def _create_emitter(self) -> Emitter:
         return Emitter.root().child(
@@ -122,7 +122,6 @@ class PythonTool(Tool[BaseModel, ToolRunOptions, PythonToolOutput]):
         async def call_code_interpreter(url: str, body: dict[str, Any], files: dict[str, io.BufferedReader]) -> Any:
             headers = {"Accept": "application/json", "Content-Type": "application/json"}
             async with httpx.AsyncClient() as client:
-                # response = await client.post(url, headers=headers, data=json.dumps(body), files=files)
                 response = await client.post(url, headers=headers, data=json.dumps(body), files=files)  # type:  ignore[arg-type]
                 response.raise_for_status()
                 return response.json()

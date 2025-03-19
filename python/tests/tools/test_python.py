@@ -12,32 +12,27 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import pytest
-
-import asyncio
-import pytest_asyncio
-import sys
 import os
-import traceback
 
-from beeai_framework.errors import FrameworkError
+import pytest
+import pytest_asyncio
+
 from beeai_framework.tools.python import PythonTool
 from beeai_framework.tools.storage import Input, LocalPythonStorage
 
-code_interpreter_url = os.getenv("CODE_INTERPRETER_URL","http://localhost:50081")
+code_interpreter_url = os.getenv("CODE_INTERPRETER_URL", "http://localhost:50081")
+
 
 @pytest_asyncio.fixture
-async def test_dir() -> str:
+async def test_dir() -> str:  # type: ignore[misc]
     test_dir = "test_directory"
     os.makedirs(test_dir, exist_ok=True)
     # Create some test files
-    test_files = [
-        os.path.join(test_dir, f"file{i}.txt") for i in range(1, 4)
-    ]
+    test_files = [os.path.join(test_dir, f"file{i}.txt") for i in range(1, 4)]
     for file in test_files:
-        with open(file, "w") as f:
+        with open(file, "w") as f:  # noqa: ASYNC230
             f.write(f"Content of {file}")
-            
+
     yield test_dir
 
     # Clean up: remove the temporary directory and its contents
@@ -46,8 +41,9 @@ async def test_dir() -> str:
             os.remove(file)
     os.rmdir(test_dir)
 
+
 @pytest_asyncio.fixture
-async def tool():
+async def tool() -> PythonTool:
     test_dir = "test_directory"
     tool = PythonTool(
         {
@@ -56,6 +52,7 @@ async def tool():
         }
     )
     return tool
+
 
 @pytest.mark.unit
 @pytest.mark.asyncio
@@ -67,7 +64,9 @@ async def test_without_file(tool: PythonTool) -> None:
             "inputFiles": [],
         }
     )
-    assert("2" in result.stdout)
+    assert result.stdout
+    assert "2" in result.stdout
+
 
 @pytest.mark.unit
 @pytest.mark.asyncio
@@ -79,7 +78,5 @@ async def test_with_file(tool: PythonTool) -> None:
             "inputFiles": ["file2", "file4"],
         }
     )
-    assert("4" in result.stdout)
-
-
-
+    assert result.stdout
+    assert "4" in result.stdout
