@@ -83,11 +83,12 @@ class Tool(Generic[TInput, TRunOptions, TOutput], ABC):
         pass
 
     def _generate_key(self, input: TInput | dict[str, Any], options: TRunOptions | None = None) -> str:
-        input_str = str(input) if isinstance(input, dict) else input.model_dump_json()
+        input_dict = input if isinstance(input, dict) else input.model_dump()
         options_dict = options.model_dump() if options else {}
         options_dict.pop("signal", None)
         options_dict.pop("retry_options", None)
-        cache_key_str = f"{input_str}::{options_dict}".encode("utf-8", errors="ignore")
+        cache_key_dict = {**input_dict, **options_dict}
+        cache_key_str = str(cache_key_dict).encode("utf-8", errors="ignore")
         return str(int.from_bytes(sha512(cache_key_str).digest()))
 
     async def clear_cache(self) -> None:
