@@ -279,7 +279,7 @@ if __name__ == "__main__":
 
 ```
 
-_Source: [examples/backend/chat.py](examples/backend/chat.py)_
+_Source: [examples/backend/chat.py](/python/examples/backend/chat.py)_
 
 ### Text generation
 
