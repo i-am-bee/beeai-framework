@@ -17,6 +17,7 @@ from typing import Any, Generic, Self, TypeVar
 from pydantic import BaseModel, ConfigDict, Field, InstanceOf
 
 from beeai_framework.backend.message import AnyMessage, AssistantMessage, MessageToolCallContent
+from beeai_framework.cache.base import BaseCache
 from beeai_framework.cancellation import AbortSignal
 from beeai_framework.tools.tool import AnyTool
 from beeai_framework.utils.lists import flatten
@@ -62,6 +63,9 @@ class ChatModelInput(ChatModelParameters):
 
     model_config = ConfigDict(frozen=True)
 
+    def __str__(self) -> str:
+        return str({**self.model_dump(), **{"messages": [m.to_plain() for m in self.messages]}})
+
 
 class ChatModelUsage(BaseModel):
     prompt_tokens: int
@@ -103,3 +107,6 @@ class ChatModelOutput(BaseModel):
 
     def get_text_content(self) -> str:
         return "".join([x.text for x in list(filter(lambda x: isinstance(x, AssistantMessage), self.messages))])
+
+
+ChatModelCache = BaseCache[ChatModelOutput]

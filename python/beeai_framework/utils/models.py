@@ -15,6 +15,7 @@
 from abc import ABC
 from collections.abc import Sequence
 from contextlib import suppress
+from hashlib import sha512
 from logging import Logger
 from typing import Any, Optional, TypeVar, Union
 
@@ -52,6 +53,11 @@ def to_model_optional(cls: type[T], obj: ModelLike[T] | None) -> T | None:
 def check_model(model: T) -> None:
     schema_validator = SchemaValidator(schema=model.__pydantic_core_schema__)
     schema_validator.validate_python(model.__dict__)
+
+
+def hash_model(model: T) -> str:
+    model_str = str(model).encode("utf-8", errors="ignore")
+    return str(int.from_bytes(sha512(model_str).digest()))
 
 
 class JSONSchemaModel(ABC, BaseModel):
