@@ -6,8 +6,7 @@ from beeai_framework.adapters.ollama.backend.chat import OllamaChatModel
 from beeai_framework.agents.react.agent import ReActAgent
 from beeai_framework.errors import FrameworkError
 from beeai_framework.memory import UnconstrainedMemory
-from beeai_framework.tools.python import PythonTool
-from beeai_framework.tools.storage import Input, LocalPythonStorage
+from beeai_framework.tools.code import LocalPythonStorage, PythonTool
 
 
 async def main() -> None:
@@ -15,7 +14,7 @@ async def main() -> None:
     p = PythonTool(
         {
             "codeInterpreter": {"url": "http://127.0.0.1:50081"},
-            "storage": LocalPythonStorage(Input("./localTmp", "./pythonTmp", [])),
+            "storage": LocalPythonStorage(local_working_dir="./localTmp", interpreter_working_dir="./pythonTmp"),
         }
     )
     agent = ReActAgent(llm=llm, tools=[p], memory=UnconstrainedMemory())

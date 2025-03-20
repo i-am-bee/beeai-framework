@@ -28,8 +28,9 @@ from beeai_framework.context import RunContext
 from beeai_framework.emitter.emitter import Emitter
 from beeai_framework.logger import Logger
 from beeai_framework.template import PromptTemplate, PromptTemplateInput
-from beeai_framework.tools.output import PythonToolOutput
-from beeai_framework.tools.tool import Tool, ToolRunOptions  # type: ignore[attr-defined]
+from beeai_framework.tools.code.output import PythonToolOutput
+from beeai_framework.tools.tool import Tool
+from beeai_framework.tools.types import ToolRunOptions
 
 logger = Logger(__name__)
 

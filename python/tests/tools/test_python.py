@@ -17,8 +17,7 @@ import os
 import pytest
 import pytest_asyncio
 
-from beeai_framework.tools.python import PythonTool
-from beeai_framework.tools.storage import Input, LocalPythonStorage
+from beeai_framework.tools.code import LocalPythonStorage, PythonTool
 
 code_interpreter_url = os.getenv("CODE_INTERPRETER_URL", "http://localhost:50081")
 
@@ -48,7 +47,7 @@ async def tool() -> PythonTool:
     tool = PythonTool(
         {
             "codeInterpreter": {"url": code_interpreter_url},
-            "storage": LocalPythonStorage(Input(test_dir, "./pythonTmp", [])),
+            "storage": LocalPythonStorage(local_working_dir=test_dir, interpreter_working_dir="./pythonTmp"),
         }
     )
     return tool
