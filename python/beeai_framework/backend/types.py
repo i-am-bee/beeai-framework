@@ -63,9 +63,6 @@ class ChatModelInput(ChatModelParameters):
 
     model_config = ConfigDict(frozen=True)
 
-    def __str__(self) -> str:
-        return str({**self.model_dump(), **{"messages": [m.to_plain() for m in self.messages]}})
-
 
 class ChatModelUsage(BaseModel):
     prompt_tokens: int

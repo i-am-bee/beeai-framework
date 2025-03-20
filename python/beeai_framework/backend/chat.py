@@ -15,6 +15,7 @@
 from abc import ABC, abstractmethod
 from collections.abc import AsyncGenerator, Callable
 from functools import cached_property
+from hashlib import sha512
 from typing import Any, Literal, TypeVar
 
 from pydantic import BaseModel, Field
@@ -46,7 +47,7 @@ from beeai_framework.logger import Logger
 from beeai_framework.retryable import Retryable, RetryableConfig, RetryableContext, RetryableInput
 from beeai_framework.template import PromptTemplate, PromptTemplateInput
 from beeai_framework.tools.tool import AnyTool
-from beeai_framework.utils.models import ModelLike, hash_model
+from beeai_framework.utils.models import ModelLike
 from beeai_framework.utils.strings import to_json
 
 T = TypeVar("T", bound=BaseModel)
@@ -159,6 +160,11 @@ IMPORTANT: You MUST answer with a JSON object that matches the JSON schema above
             )
         ).get()
 
+    def _generate_key(self, input: ChatModelInput) -> str:
+        input_dict = {**input.model_dump(), **{"messages": [m.to_plain() for m in input.messages]}}
+        input_str = str(input_dict).encode("utf-8", errors="ignore")
+        return str(int.from_bytes(sha512(input_str).digest()))
+
     def create(
         self,
         *,
@@ -182,7 +188,7 @@ IMPORTANT: You MUST answer with a JSON object that matches the JSON schema above
 
         async def handler(context: RunContext) -> ChatModelOutput:
             try:
-                cache_key = hash_model(model_input)
+                cache_key = self._generate_key(model_input)
 
                 await context.emitter.emit("start", ChatModelStartEvent(input=model_input))
                 chunks: list[ChatModelOutput] = []
