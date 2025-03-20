@@ -25,7 +25,7 @@ jobs:
         with:
           fetch-depth: 0
       - name: Install poetry
-        run: pipx install poetry
+        run: pipx install poetry==2.1.1
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
@@ -35,7 +35,7 @@ jobs:
       - name: Code Lint
         run: poetry run poe lint
       - name: Type check task with mypy
-        run: poetry run poe type-check --show-error-context --pretty
+        run: poetry run poe type-check -- -- --show-error-context --pretty
       - name: Code Format
         run: poetry run poe format
       - name: Commits Lint

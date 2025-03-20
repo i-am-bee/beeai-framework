@@ -168,7 +168,7 @@ default = "pass"
         { "ref" = "copyright ${TARGET}"},
         { "ref" = "format --fix ${TARGET}"},
         { "ref" = "lint --fix ${TARGET}" },
-        { "ref" = "type-check" },
+        { "ref" = "type-check ${TARGET}" },
         { "ref" = "docs --type check"},
         { "ref" = "copyright --type check ${TARGET}"},
     ]
@@ -254,7 +254,11 @@ shell = "printf '%s\\n' $TARGET | grep -E '\\.(py|ipynb)$' | tr '\\n' ' '"
 
 [tool.poe.tasks.type-check]
 help = "Static Type Checker with optional flags"
-cmd = "mypy . ${POE_ARGS}"
+args = [
+    { name = "TARGET", positional = true, multiple = true, default = "." }
+]
+uses = { PY_FILES = "_extract_python_files $TARGET" }
+cmd = "mypy ${PY_FILES:-.} ${POE_ARGS}"
 
 [build-system]
 requires = ["poetry-core>=2.0.0,<3.0.0"]
