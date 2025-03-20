@@ -12,21 +12,21 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import Any
 
 from beeai_framework.tools import ToolOutput
+from beeai_framework.tools.code.storage import PythonFile
 
 
 class PythonToolOutput(ToolOutput):
     FILE_PREFIX = "urn:bee:file"
 
-    def __init__(self, results: dict[str, Any]) -> None:
+    def __init__(self, stdout: str, stderr: str, exit_code: int, output_files: list[PythonFile]) -> None:
         super().__init__()
 
-        self.stdout = results.get("stdout")
-        self.stderr = results.get("stderr")
-        self.exit_code = results.get("exit_code")
-        self.output_files = results.get("output_files")
+        self.stdout = stdout
+        self.stderr = stderr
+        self.exit_code = exit_code
+        self.output_files = output_files
 
     def is_empty(self) -> bool:
         return False
@@ -47,8 +47,8 @@ class PythonToolOutput(ToolOutput):
             "The following files were created or modified. The user does not see them yet. \
             To present a file to the user, send them the link below, verbatim:\n"
             + "\n".join(
-                f"{'!' if is_image(file['filename']) else ''}[ {file['filename']} ]\
-                ({PythonToolOutput.FILE_PREFIX}:{file['id']})"
+                f"{'!' if is_image(file.filename) else ''}[ {file.filename} ]\
+                ({PythonToolOutput.FILE_PREFIX}:{file.id})"
                 for file in self.output_files
             )
             if self.output_files

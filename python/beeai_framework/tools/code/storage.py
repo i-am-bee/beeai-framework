@@ -61,6 +61,18 @@ class LocalPythonStorage(PythonStorage):
         self._interpreter_working_dir = interpreter_working_dir
         self._ignored_files = ignored_files or []
 
+    @property
+    def local_working_dir(self) -> str:
+        return self._local_working_dir
+
+    @property
+    def interpreter_working_dir(self) -> str:
+        return self._interpreter_working_dir
+
+    @property
+    def ignored_files(self) -> list[str]:
+        return self._ignored_files
+
     def init(self) -> None:
         os.makedirs(self._local_working_dir, exist_ok=True)
         os.makedirs(self._interpreter_working_dir, exist_ok=True)
@@ -99,6 +111,14 @@ class LocalPythonStorage(PythonStorage):
                 os.path.join(self._local_working_dir, file.filename),
             )
         return files
+
+    def clean_up(self, rmtree: bool = False) -> None:
+        if rmtree:
+            shutil.rmtree(self._local_working_dir)
+            shutil.rmtree(self._interpreter_working_dir)
+        else:
+            os.rmdir(self._local_working_dir)
+            os.rmdir(self._interpreter_working_dir)
 
     @staticmethod
     def _compute_hash(file_path: str) -> str:

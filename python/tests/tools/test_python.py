@@ -13,6 +13,9 @@
 # limitations under the License.
 
 import os
+import shutil
+from collections.abc import Generator
+from typing import Any
 
 import pytest
 import pytest_asyncio
@@ -23,32 +26,30 @@ code_interpreter_url = os.getenv("CODE_INTERPRETER_URL", "http://localhost:50081
 
 
 @pytest_asyncio.fixture
-async def test_dir() -> str:  # type: ignore[misc]
-    test_dir = "test_directory"
-    os.makedirs(test_dir, exist_ok=True)
+def test_dirs() -> Generator[tuple[str, str], Any, None]:
+    local_dir = "local_dir"
+    interpreter_dir = "interpreter_dir"
+    os.makedirs(local_dir, exist_ok=True)
+    os.makedirs(interpreter_dir, exist_ok=True)
+
     # Create some test files
-    test_files = [os.path.join(test_dir, f"file{i}.txt") for i in range(1, 4)]
+    test_files = [os.path.join(local_dir, f"file{i}.txt") for i in range(1, 4)]
     for file in test_files:
-        with open(file, "w") as f:  # noqa: ASYNC230
+        with open(file, "w") as f:
             f.write(f"Content of {file}")
 
-    yield test_dir
+    yield local_dir, interpreter_dir
 
     # Clean up: remove the temporary directory and its contents
-    for file in test_files:
-        if os.path.exists(file):
-            os.remove(file)
-    os.rmdir(test_dir)
+    shutil.rmtree(local_dir)
+    shutil.rmtree(interpreter_dir)
 
 
 @pytest_asyncio.fixture
-async def tool() -> PythonTool:
-    test_dir = "test_directory"
+async def tool(test_dirs: tuple[str, str]) -> PythonTool:
     tool = PythonTool(
-        {
-            "codeInterpreter": {"url": code_interpreter_url},
-            "storage": LocalPythonStorage(local_working_dir=test_dir, interpreter_working_dir="./pythonTmp"),
-        }
+        code_interpreter_url=code_interpreter_url,
+        storage=LocalPythonStorage(local_working_dir=test_dirs[0], interpreter_working_dir=test_dirs[1]),
     )
     return tool
 
@@ -60,7 +61,7 @@ async def test_without_file(tool: PythonTool) -> None:
         {
             "language": "python",
             "code": "print(str(1+1))",
-            "inputFiles": [],
+            "input_files": [],
         }
     )
     assert result.stdout
@@ -74,7 +75,7 @@ async def test_with_file(tool: PythonTool) -> None:
         {
             "language": "python",
             "code": "print(str(3+1))",
-            "inputFiles": ["file2", "file4"],
+            "input_files": ["file2.txt", "file3.txt"],
         }
     )
     assert result.stdout

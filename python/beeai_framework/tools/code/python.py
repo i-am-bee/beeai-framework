@@ -12,25 +12,26 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-
-import io
 import json
 from enum import Enum
+from functools import cached_property
 from typing import Any
 
+import aiofiles  # type: ignore
 import httpx
-from pydantic import BaseModel, Field, create_model
+from pydantic import BaseModel, Field, InstanceOf, create_model
 
-from beeai_framework.agents.react.runners.default.prompts import (
-    UserPromptTemplateInput,
-)
+from beeai_framework import UserMessage
+from beeai_framework.backend.chat import ChatModel
 from beeai_framework.context import RunContext
 from beeai_framework.emitter.emitter import Emitter
 from beeai_framework.logger import Logger
-from beeai_framework.template import PromptTemplate, PromptTemplateInput
+from beeai_framework.template import PromptTemplate
 from beeai_framework.tools.code.output import PythonToolOutput
+from beeai_framework.tools.code.storage import PythonFile, PythonStorage
 from beeai_framework.tools.tool import Tool
 from beeai_framework.tools.types import ToolRunOptions
+from beeai_framework.utils.strings import create_strenum
 
 logger = Logger(__name__)
 
@@ -40,9 +41,22 @@ class Language(Enum):
     SHELL = "shell"
 
 
-class PythonTool(Tool[BaseModel, ToolRunOptions, PythonToolOutput]):
+class PythonToolTemplate(BaseModel):
+    input: str
+
+
+class PreProcess(BaseModel):
+    llm: InstanceOf[ChatModel]
+    prompt_template: InstanceOf[PromptTemplate[PythonToolTemplate]]
+
+
+class PythonToolInput(BaseModel):
+    language: Language = Field(description="Use shell for ffmpeg, pandoc, yt-dlp")
+    code: str = Field(description="full source code file that will be executed")
+
+
+class PythonTool(Tool[PythonToolInput, ToolRunOptions, PythonToolOutput]):
     name = "Python"
-    input_schema = BaseModel
     description = """
 Run Python and/or shell code and return the console output. Use for isolated calculations,
 computations, data or file manipulation but still prefer assistant's capabilities
@@ -68,37 +82,34 @@ Do not attempt to install libraries manually -- it will not work.
 Each invocation of Python runs in a completely fresh VM -- it will not remember anything from before.
 Do not use this tool multiple times in a row, always write the full code you want to run in a single invocation."""
 
-    def __init__(self, options: dict[str, Any] | None = None) -> None:
-        super().__init__(options)
-        input_files = None
-        if options and options.get("storage"):
-            self.files = options["storage"].list_files()
-            filenames = [file.filename for file in self.files]
-            members = {}
-            for filename in filenames:
-                members[filename.upper()] = filename
-                python_files = Enum("PythonFiles", members)  # type: ignore[misc]
-            if "python_files" in locals():
-                input_files = (
-                    list[python_files],
-                    Field(
-                        description="""To access an existing file, you must specify it;
+    def __init__(self, code_interpreter_url: str, storage: PythonStorage, preprocess: PreProcess | None = None) -> None:
+        super().__init__()
+        self._code_interpreter_url = code_interpreter_url
+        self._storage = storage
+        self._preprocess = preprocess
+        self.files: list[PythonFile] = []
+
+    @cached_property
+    def input_schema(self) -> type[PythonToolInput]:
+        self.files = self._storage.list_files()
+        filenames = [file.filename for file in self.files]
+        python_files = create_strenum("PythonFiles", filenames) if filenames else None
+        if python_files:
+            input_files = (
+                list[python_files],  # type: ignore
+                Field(
+                    description="""To access an existing file, you must specify it;
 otherwise, the file will not be accessible.
 IMPORTANT: If the file is not provided in the input, it will not be accessible."""
-                    ),
-                )
-                self.input_schema = create_model(
-                    "PythonToolInput",
-                    language=(Language, Field(description="Use shell for ffmpeg, pandoc, yt-dlp")),
-                    code=(str, Field(description="full source code file that will be executed")),
-                    inputFiles=input_files,
-                )
-            else:
-                self.input_schema = create_model(
-                    "PythonToolInput",
-                    language=(Language, Field(description="Use shell for ffmpeg, pandoc, yt-dlp")),
-                    code=(str, Field(description="full source code file that will be executed")),
-                )
+                ),
+            )
+            return create_model(
+                "PythonToolInput",
+                __base__=PythonToolInput,
+                input_files=input_files,
+            )
+
+        return PythonToolInput
 
     def _create_emitter(self) -> Emitter:
         return Emitter.root().child(
@@ -106,59 +117,57 @@ IMPORTANT: If the file is not provided in the input, it will not be accessible."
             creator=self,
         )
 
-    async def _run(self, input: Any, options: ToolRunOptions | None, context: RunContext) -> PythonToolOutput:
-        async def get_source_code() -> Any:
-            if self.options and self.options.get("preprocess"):
-                response = await self.options["preprocess"]["llm"].create(
-                    {
-                        "messages": PromptTemplate(
-                            PromptTemplateInput(schema=UserPromptTemplateInput, template="{{input}}")
-                        ),
-                        "abortSignal": context.signal,
-                    }
+    async def _run(
+        self, tool_input: PythonToolInput, options: ToolRunOptions | None, context: RunContext
+    ) -> PythonToolOutput:
+        async def get_source_code() -> str:
+            if self._preprocess:
+                response = await self._preprocess.llm.create(
+                    messages=[
+                        UserMessage(self._preprocess.prompt_template.render(PythonToolTemplate(input=tool_input.code)))
+                    ],
+                    abort_signal=context.signal,
                 )
-                return response.getTextContent().trim()
-            return input.code
+                return response.get_text_content()
+            return tool_input.code
 
-        async def call_code_interpreter(url: str, body: dict[str, Any], files: dict[str, io.BufferedReader]) -> Any:
+        async def call_code_interpreter(url: str, body: dict[str, Any], files: dict[str, Any]) -> Any:
             headers = {"Accept": "application/json", "Content-Type": "application/json"}
             async with httpx.AsyncClient() as client:
-                response = await client.post(url, headers=headers, data=json.dumps(body), files=files)  # type:  ignore[arg-type]
+                response = await client.post(url, headers=headers, data=json.dumps(body), files=files)  # type: ignore
                 response.raise_for_status()
                 return response.json()
 
-        if self.options and self.options.get("codeInterpreter") and self.options["codeInterpreter"].get("url"):
-            url = self.options["codeInterpreter"]["url"] + "/v1/execute"
-            prefix = "/workspace/"
-            unique_files = {}
-            if self.options and self.options.get("storage"):
-                for file in self.files:
-                    if file.filename in [python_file.value for python_file in input.inputFiles]:
-                        unique_files[file.filename] = file
-                self.options["storage"].upload(unique_files.values())
+        execute_url = self._code_interpreter_url + "/v1/execute"
+        prefix = "/workspace/"
 
-            url = self.options["codeInterpreter"]["url"] + "/v1/execute"
-            files = {}
-            for file in unique_files.values():
-                files[prefix + file.filename] = open("localTmp/" + file.filename, "rb")  # noqa: ASYNC230,SIM115
-            result = await call_code_interpreter(
-                url=url,
-                body={
-                    "source_code": await get_source_code(),
-                },
-                files=files,
-            )
+        unique_files: list[PythonFile] = []
+        for file in self.files or self._storage.list_files():
+            if file.filename in [python_file.value for python_file in tool_input.input_files or []]:  # type: ignore
+                unique_files.append(file)
+        self._storage.upload(unique_files)
 
-            filtered_files = []
-            if result["files"]:
-                for file in result["files"].items():
-                    if file.startswith(prefix):
-                        file = {"filename": file.path[len(prefix) :], "pythonId": str(file.pythonId)}
-                        for unique_file in unique_files:
-                            if file["filename"] == unique_file.filename and file["pythonId"] == unique_file.pythonId:
-                                filtered_files.append(
-                                    {"filename": file.path[len(prefix) :], "pythonId": str(file.pythonId)}
-                                )
-                self.options["storage"].download(filtered_files)
-            return PythonToolOutput(result)
-        return PythonToolOutput({})
+        files = {}
+        for file in unique_files:
+            files[prefix + file.filename] = aiofiles.open(self._storage.local_working_dir + "/" + file.filename, "rb")  # type: ignore
+
+        result = await call_code_interpreter(
+            url=execute_url,
+            body={
+                "source_code": await get_source_code(),
+            },
+            files=files,
+        )
+
+        files_output: list[PythonFile] = []
+        if result["files"]:
+            for file_path, python_id in result["files"]:
+                if file_path.startswith(prefix):
+                    filename = file_path.removeprefix(prefix)
+                    for unique_file in unique_files:
+                        if filename == unique_file.filename and python_id == unique_file.python_id:
+                            files_output.append(unique_file.model_copy())
+
+            self._storage.download(files_output)
+
+        return PythonToolOutput(result["stdout"], result["stderr"], result["exit_code"], files_output)

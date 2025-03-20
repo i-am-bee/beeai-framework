@@ -11,15 +11,17 @@ from beeai_framework.tools.code import LocalPythonStorage, PythonTool
 
 async def main() -> None:
     llm = OllamaChatModel("llama3.1")
-    p = PythonTool(
-        {
-            "codeInterpreter": {"url": "http://127.0.0.1:50081"},
-            "storage": LocalPythonStorage(local_working_dir="./localTmp", interpreter_working_dir="./pythonTmp"),
-        }
+    storage = LocalPythonStorage(local_working_dir="./localTmp", interpreter_working_dir="./pythonTmp")
+    python_tool = PythonTool(
+        code_interpreter_url="http://127.0.0.1:50081",
+        storage=storage,
     )
-    agent = ReActAgent(llm=llm, tools=[p], memory=UnconstrainedMemory())
+    agent = ReActAgent(llm=llm, tools=[python_tool], memory=UnconstrainedMemory())
     result = await agent.run("What's 1 plus 1?")
     print(result.result.text)
+
+    # delete temp dirs if empty
+    storage.clean_up()
 
 
 if __name__ == "__main__":
