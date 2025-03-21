@@ -16,6 +16,7 @@
 import inspect
 import typing
 from abc import ABC, abstractmethod
+from collections import OrderedDict
 from collections.abc import Callable
 from functools import cached_property
 from hashlib import sha512
@@ -83,11 +84,12 @@ class Tool(Generic[TInput, TRunOptions, TOutput], ABC):
         pass
 
     def _generate_key(self, input: TInput | dict[str, Any], options: TRunOptions | None = None) -> str:
-        input_dict = input if isinstance(input, dict) else input.model_dump()
-        options_dict = options.model_dump() if options else {}
+        input_dict = input if isinstance(input, dict) else input.model_dump(exclude_none=True)
+        options_dict = options.model_dump(exclude_none=True) if options else {}
         options_dict.pop("signal", None)
         options_dict.pop("retry_options", None)
         cache_key_dict = {**input_dict, **options_dict}
+        cache_key_dict = OrderedDict(sorted(cache_key_dict.items()))
         cache_key_str = str(cache_key_dict).encode("utf-8", errors="ignore")
         return str(int.from_bytes(sha512(cache_key_str).digest()))
 
@@ -114,10 +116,9 @@ class Tool(Generic[TInput, TRunOptions, TOutput], ABC):
 
                     if self.cache.enabled:
                         cache_key = self._generate_key(input, options)
-                        if await self.cache.has(cache_key):
-                            result = await self.cache.get(cache_key)
-                            if result:
-                                return result
+                        result = await self.cache.get(cache_key)
+                        if result:
+                            return result
 
                     result = await self._run(validated_input, options, context)
                     if self.cache.enabled:

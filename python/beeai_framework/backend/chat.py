@@ -13,6 +13,7 @@
 # limitations under the License.
 
 from abc import ABC, abstractmethod
+from collections import OrderedDict
 from collections.abc import AsyncGenerator, Callable
 from functools import cached_property
 from hashlib import sha512
@@ -161,7 +162,8 @@ IMPORTANT: You MUST answer with a JSON object that matches the JSON schema above
         ).get()
 
     def _generate_key(self, input: ChatModelInput) -> str:
-        input_dict = {**input.model_dump(), **{"messages": [m.to_plain() for m in input.messages]}}
+        input_dict = {**input.model_dump(exclude_none=True), **{"messages": [m.to_plain() for m in input.messages]}}
+        input_dict = OrderedDict(sorted(input_dict.items()))
         input_str = str(input_dict).encode("utf-8", errors="ignore")
         return str(int.from_bytes(sha512(input_str).digest()))
 
