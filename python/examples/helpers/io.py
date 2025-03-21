@@ -37,7 +37,7 @@ class ConsoleReader:
 
                 return prompt
         except (EOFError, KeyboardInterrupt):
-            print("Interactive session has ended.")
+            print()
             exit()
 
     def write(self, role: str, data: str) -> None:
