@@ -19,9 +19,6 @@ import { AgentMeta } from "@/agents/types.js";
 import { Serializable } from "@/internals/serializable.js";
 import { GetRunContext, RunContext } from "@/context.js";
 import { Emitter } from "@/emitter/emitter.js";
-import { createTelemetryMiddleware } from "@/instrumentation/create-telemetry-middleware.js";
-import { INSTRUMENTATION_ENABLED } from "@/instrumentation/config.js";
-import { doNothing } from "remeda";
 import { BaseMemory } from "@/memory/base.js";
 
 export class AgentError extends FrameworkError {}
@@ -66,7 +63,7 @@ export abstract class BaseAgent<
           this.isRunning = false;
         }
       },
-    ).middleware(INSTRUMENTATION_ENABLED ? createTelemetryMiddleware() : doNothing());
+    );
   }
 
   protected abstract _run(
