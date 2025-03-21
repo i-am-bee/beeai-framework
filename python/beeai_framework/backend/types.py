@@ -106,4 +106,4 @@ class ChatModelOutput(BaseModel):
         return "".join([x.text for x in list(filter(lambda x: isinstance(x, AssistantMessage), self.messages))])
 
 
-ChatModelCache = BaseCache[ChatModelOutput]
+ChatModelCache = BaseCache[list[ChatModelOutput]]

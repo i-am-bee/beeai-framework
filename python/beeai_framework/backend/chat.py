@@ -48,6 +48,7 @@ from beeai_framework.logger import Logger
 from beeai_framework.retryable import Retryable, RetryableConfig, RetryableContext, RetryableInput
 from beeai_framework.template import PromptTemplate, PromptTemplateInput
 from beeai_framework.tools.tool import AnyTool
+from beeai_framework.utils.asynchronous import to_async_generator
 from beeai_framework.utils.models import ModelLike
 from beeai_framework.utils.strings import to_json
 
@@ -69,7 +70,7 @@ class ChatModel(ABC):
 
     def __init__(self) -> None:
         self.parameters = ChatModelParameters()
-        self.cache: ChatModelCache = NullCache[ChatModelOutput]()
+        self.cache: ChatModelCache = NullCache[list[ChatModelOutput]]()
 
     @cached_property
     def emitter(self) -> Emitter:
@@ -191,34 +192,42 @@ IMPORTANT: You MUST answer with a JSON object that matches the JSON schema above
         )
 
         async def handler(context: RunContext) -> ChatModelOutput:
-            try:
-                cache_key = self._generate_key(model_input)
+            cache_key = self._generate_key(model_input)
+            cache_hit = await self.cache.get(cache_key)
 
+            try:
                 await context.emitter.emit("start", ChatModelStartEvent(input=model_input))
                 chunks: list[ChatModelOutput] = []
 
-                result = await self.cache.get(cache_key)
-                if not result:
-                    if model_input.stream:
-                        abort_controller: AbortController = AbortController()
-                        async for value in self._create_stream(model_input, context):
-                            chunks.append(value)
-                            await context.emitter.emit(
-                                "new_token", ChatModelNewTokenEvent(value=value, abort=lambda: abort_controller.abort())
-                            )
-                            if abort_controller.signal.aborted:
-                                break
+                if model_input.stream:
+                    generator = (
+                        to_async_generator(cache_hit) if cache_hit else self._create_stream(model_input, context)
+                    )
+                    abort_controller: AbortController = AbortController()
+                    async for value in generator:
+                        chunks.append(value)
+                        await context.emitter.emit(
+                            "new_token", ChatModelNewTokenEvent(value=value, abort=lambda: abort_controller.abort())
+                        )
+                        if abort_controller.signal.aborted:
+                            break
 
-                        result = ChatModelOutput.from_chunks(chunks)
+                    if not cache_hit:
+                        await self.cache.set(cache_key, chunks)
+                    result = ChatModelOutput.from_chunks(chunks)
+                else:
+                    if cache_hit:
+                        result = cache_hit[0]
                     else:
                         result = await self._create(model_input, context)
-
-                    await self.cache.set(cache_key, result)
+                        await self.cache.set(cache_key, [result])
 
                 await context.emitter.emit("success", ChatModelSuccessEvent(value=result))
                 return result
             except Exception as ex:
                 error = ChatModelError.ensure(ex, model=self)
+                if cache_hit:
+                    await self.cache.delete(cache_key)
                 await context.emitter.emit("error", ChatModelErrorEvent(input=model_input, error=error))
                 raise error
             finally:
