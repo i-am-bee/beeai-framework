@@ -208,6 +208,9 @@ _Source: [examples/backend/providers/watsonx.py](/python/examples/backend/provid
 
 All providers examples can be found in [examples/backend/providers](/python/examples/backend/providers).
 
+> [!TIP]
+> See the [events documentation](/python/docs/events.md) for more information on standard emitter events.
+
 ---
 
 ## Chat model
