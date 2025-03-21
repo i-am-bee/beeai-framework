@@ -22,9 +22,7 @@ import { Callback } from "@/emitter/types.js";
 import { FrameworkError } from "@/errors.js";
 import { Emitter } from "@/emitter/emitter.js";
 import { GetRunContext, RunContext } from "@/context.js";
-import { INSTRUMENTATION_ENABLED } from "@/instrumentation/config.js";
-import { createTelemetryMiddleware } from "@/instrumentation/create-telemetry-middleware.js";
-import { doNothing, isFunction } from "remeda";
+import { isFunction } from "remeda";
 import { ObjectHashKeyFn } from "@/cache/decoratorCache.js";
 import { Task } from "promise-based-task";
 import { NullCache } from "@/cache/nullCache.js";
@@ -188,7 +186,7 @@ export abstract class ChatModel extends Serializable {
           await run.emitter.emit("finish", null);
         }
       },
-    ).middleware(INSTRUMENTATION_ENABLED ? createTelemetryMiddleware() : doNothing());
+    );
   }
 
   createStructure<T>(input: ChatModelObjectInput<T>) {

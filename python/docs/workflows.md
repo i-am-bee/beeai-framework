@@ -350,6 +350,9 @@ This pattern demonstrates:
 - Parallel processing of different aspects of a query
 - Synthesis of multiple expert perspectives into a cohesive response
 
+> [!TIP]
+> See the [events documentation](/python/docs/events.md) for more information on standard emitter events.
+
 ### Memory in Workflows
 
 Integrating memory into workflows allows agents to maintain context across interactions, enabling conversational interfaces and stateful processing. This example demonstrates a simple conversational echo workflow with persistent memory.

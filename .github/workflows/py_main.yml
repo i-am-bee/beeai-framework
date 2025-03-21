@@ -35,7 +35,7 @@ jobs:
       - name: Code Lint
         run: poetry run poe lint
       - name: Type check task with mypy
-        run: poetry run poe type-check --show-error-context --pretty
+        run: poetry run poe type-check -- -- --show-error-context --pretty
       - name: Code Format
         run: poetry run poe format
       - name: Commits Lint

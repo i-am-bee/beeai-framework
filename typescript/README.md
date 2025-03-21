@@ -11,20 +11,27 @@ Build production-ready multi-agent systems in TypeScript. BeeAI framework is als
 
 The source directory (`src`) contains the available modules:
 
-| Name                                                       | Description                                                                                 |
-| ---------------------------------------------------------- | ------------------------------------------------------------------------------------------- |
-| [**agents**](/typescript/docs/agents.md)                   | Base classes defining the common interface for agent.                                       |
-| [**backend**](/typescript/docs/backend.md)                 | Functionalities that relates to AI models (chat, embedding, image, tool calling, ...)       |
-| [**template**](/typescript/docs/templates.md)              | Prompt Templating system based on `Mustache` with various improvements.                     |
-| [**memory**](/typescript/docs/memory.md)                   | Various types of memories to use with agent.                                                |
-| [**tools**](/typescript/docs/tools.md)                     | Tools that an agent can use.                                                                |
-| [**cache**](/typescript/docs/cache.md)                     | Preset of different caching approaches that can be used together with tools.                |
-| [**errors**](/typescript/docs/errors.md)                   | Base framework error classes used by each module.                                           |
-| [**logger**](/typescript/docs/logger.md)                   | Core component for logging all actions within the framework.                                |
-| [**serializer**](/typescript/docs/serialization.md)        | Core component for the ability to serialize/deserialize modules into the serialized format. |
-| [**version**](/typescript/docs/version.md)                 | Constants representing the framework (e.g., the latest version)                             |
-| [**emitter**](/typescript/docs/emitter.md)                 | Bringing visibility to the system by emitting events.                                       |
-| [**instrumentation**](/typescript/docs/instrumentation.md) | Integrate monitoring tools into your application.                                           |
+| Name                                                | Description                                                                                 |
+| --------------------------------------------------- | ------------------------------------------------------------------------------------------- |
+| [**agents**](/typescript/docs/agents.md)            | Base classes defining the common interface for agent.                                       |
+| [**backend**](/typescript/docs/backend.md)          | Functionalities that relates to AI models (chat, embedding, image, tool calling, ...)       |
+| [**template**](/typescript/docs/templates.md)       | Prompt Templating system based on `Mustache` with various improvements.                     |
+| [**memory**](/typescript/docs/memory.md)            | Various types of memories to use with agent.                                                |
+| [**tools**](/typescript/docs/tools.md)              | Tools that an agent can use.                                                                |
+| [**cache**](/typescript/docs/cache.md)              | Preset of different caching approaches that can be used together with tools.                |
+| [**errors**](/typescript/docs/errors.md)            | Base framework error classes used by each module.                                           |
+| [**logger**](/typescript/docs/logger.md)            | Core component for logging all actions within the framework.                                |
+| [**serializer**](/typescript/docs/serialization.md) | Core component for the ability to serialize/deserialize modules into the serialized format. |
+| [**version**](/typescript/docs/version.md)          | Constants representing the framework (e.g., the latest version)                             |
+| [**emitter**](/typescript/docs/emitter.md)          | Bringing visibility to the system by emitting events.                                       |
+
+## External modules
+
+Use these packages to extend the base BeeAI framework functionality:
+
+| Name                                                                                                                       | Description                                       |
+| -------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------- |
+| [**instrumentation**](https://github.com/Arize-ai/openinference/tree/main/js/packages/openinference-instrumentation-beeai) | Integrate monitoring tools into your application. |
 
 ## Installation
 

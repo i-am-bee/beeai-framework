@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import Any, Generic, Self, TypeVar
+from typing import Any, Generic, Literal, Self, TypeVar
 
 from pydantic import BaseModel, ConfigDict, Field, InstanceOf
 
@@ -50,10 +50,10 @@ class ChatModelStructureOutput(BaseModel):
 
 class ChatModelInput(ChatModelParameters):
     tools: list[InstanceOf[AnyTool]] | None = None
+    tool_choice: InstanceOf[AnyTool] | Literal["required"] | Literal["auto"] | Literal["none"] | None = None
     abort_signal: AbortSignal | None = None
     stop_sequences: list[str] | None = None
     response_format: dict[str, Any] | type[BaseModel] | None = None
-    # tool_choice: NoneType # TODO
     messages: list[InstanceOf[AnyMessage]] = Field(
         ...,
         min_length=1,

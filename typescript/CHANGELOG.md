@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.1.9](https://github.com/i-am-bee/beeai-framework/compare/typescript_v0.1.8...typescript_v0.1.9) (2025-03-21)
+
+### Features
+
+- **instrumentation:** remove instrumentation module and switch to openinference ([#628](https://github.com/i-am-bee/beeai-framework/issues/628)) ([#642](https://github.com/i-am-bee/beeai-framework/issues/642)) ([713677d](https://github.com/i-am-bee/beeai-framework/commit/713677dbd0010fe6444678e4363ff056724e589f))
+
 ## [0.1.8](https://github.com/i-am-bee/beeai-framework/compare/typescript_v0.1.7...typescript_v0.1.8) (2025-03-19)
 
 ### Features

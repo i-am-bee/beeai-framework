@@ -135,7 +135,7 @@ args = [
     { name = "TARGET", positional = true, multiple = true },
     { name = "fix", options = ["--fix"], type = "boolean", help = "Apply fixes instead of checking" }
 ]
-uses = { PY_FILES = "_extract_python_files $TARGET" }
+uses = { PY_FILES = "_match_files --ext py|ipynb $TARGET" }
 
     [[tool.poe.tasks.format.switch]]
         case = "True"
@@ -150,7 +150,7 @@ args = [
     { name = "TARGET", positional = true, multiple = true },
     { name = "FIX", options = ["--fix"], type = "boolean", help = "Apply fixes instead of checking" }
 ]
-uses = { PY_FILES = "_extract_python_files $TARGET" }
+uses = { PY_FILES = "_match_files --ext py|ipynb $TARGET" }
 cmd = "ruff check ${FIX:+--fix} ${PY_FILES}"
 
 [tool.poe.tasks.git]
@@ -168,7 +168,7 @@ default = "pass"
         { "ref" = "copyright ${TARGET}"},
         { "ref" = "format --fix ${TARGET}"},
         { "ref" = "lint --fix ${TARGET}" },
-        { "ref" = "type-check" },
+        { "ref" = "type-check ${TARGET}" },
         { "ref" = "docs --type check"},
         { "ref" = "copyright --type check ${TARGET}"},
     ]
@@ -247,14 +247,21 @@ control.expr = "type"
     help = "Run All Tests"
     cmd = "pytest"
 
-[tool.poe.tasks._extract_python_files]
-help = "Extract Python files only"
-args = [{ name = "TARGET", positional = true, multiple = true }]
-shell = "printf '%s\\n' $TARGET | grep -E '\\.(py|ipynb)$' | tr '\\n' ' '"
+[tool.poe.tasks._match_files]
+help = "Extract files by their extension"
+args = [
+    { name = "TARGET", positional = true, multiple = true },
+    { name = "EXTENSION", options = ["--ext"] }
+]
+shell = "printf '%s\\n' $TARGET | grep -E \"\\.(${EXTENSION})$\" | tr '\\n' ' '"
 
 [tool.poe.tasks.type-check]
 help = "Static Type Checker with optional flags"
-cmd = "mypy . ${POE_ARGS}"
+args = [
+    { name = "TARGET", positional = true, multiple = true, default = "." }
+]
+uses = { PY_FILES = "_match_files --ext py $TARGET" }
+cmd = "mypy ${PY_FILES:-.} ${POE_ARGS}"
 
 [build-system]
 requires = ["poetry-core>=2.0.0,<3.0.0"]
