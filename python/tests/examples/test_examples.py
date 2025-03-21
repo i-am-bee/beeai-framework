@@ -46,6 +46,8 @@ exclude = list(
             "workflows/searx_agent.py",
             # Requires BeeAI platform to be running
             "agents/experimental/remote.py",
+            # Requires Code Interpreter to be running
+            "tools/python_tools.py",
         ],
     )
 )
