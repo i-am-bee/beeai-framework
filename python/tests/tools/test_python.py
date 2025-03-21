@@ -71,11 +71,25 @@ async def test_without_file(tool: PythonTool) -> None:
 @pytest.mark.e2e
 @pytest.mark.asyncio
 async def test_with_file(tool: PythonTool) -> None:
+    first_result = await tool.run(
+        {
+            "language": "python",
+            "code": """
+with open('file1.txt', 'w') as f:
+    f.write("Hello, World!")
+""",
+            "input_files": [],
+        }
+    )
+
+    assert len(first_result.output_files) == 1
+    assert first_result.output_files[0].filename == "file1.txt"
+
     result = await tool.run(
         {
             "language": "python",
             "code": "print(str(3+1))",
-            "input_files": ["file2.txt", "file3.txt"],
+            "input_files": ["file1.txt"],
         }
     )
     assert result.stdout

@@ -82,7 +82,7 @@ class LocalPythonStorage(PythonStorage):
         files = os.listdir(self._local_working_dir)
         python_files = []
         for file in files:
-            python_id = self._compute_hash(self._local_working_dir + "/" + file)
+            python_id = self._compute_hash(os.path.join(self._local_working_dir, file))
             python_files.append(
                 PythonFile(
                     filename=file,
@@ -122,8 +122,6 @@ class LocalPythonStorage(PythonStorage):
 
     @staticmethod
     def _compute_hash(file_path: str) -> str:
-        hasher = hashlib.sha256()
         with open(file_path, "rb") as f:
-            for chunk in iter(lambda: f.read(4096), b""):
-                hasher.update(chunk)
-            return hasher.hexdigest()
+            digest = hashlib.file_digest(f, "sha256")
+            return digest.hexdigest()

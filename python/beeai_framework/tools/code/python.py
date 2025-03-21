@@ -12,12 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import json
 from enum import Enum
 from functools import cached_property
 from typing import Any
 
-import aiofiles  # type: ignore
 import httpx
 from pydantic import BaseModel, Field, InstanceOf, create_model
 
@@ -131,10 +129,10 @@ IMPORTANT: If the file is not provided in the input, it will not be accessible."
                 return response.get_text_content()
             return tool_input.code
 
-        async def call_code_interpreter(url: str, body: dict[str, Any], files: dict[str, Any]) -> Any:
+        async def call_code_interpreter(url: str, body: dict[str, Any]) -> Any:
             headers = {"Accept": "application/json", "Content-Type": "application/json"}
             async with httpx.AsyncClient() as client:
-                response = await client.post(url, headers=headers, data=json.dumps(body), files=files)  # type: ignore
+                response = await client.post(url, headers=headers, json=body)
                 response.raise_for_status()
                 return response.json()
 
@@ -147,26 +145,25 @@ IMPORTANT: If the file is not provided in the input, it will not be accessible."
                 unique_files.append(file)
         self._storage.upload(unique_files)
 
-        files = {}
+        files_dict = {}
         for file in unique_files:
-            files[prefix + file.filename] = aiofiles.open(self._storage.local_working_dir + "/" + file.filename, "rb")  # type: ignore
+            files_dict[prefix + file.filename] = file.python_id
 
         result = await call_code_interpreter(
             url=execute_url,
             body={
                 "source_code": await get_source_code(),
+                "files": files_dict,
             },
-            files=files,
         )
 
         files_output: list[PythonFile] = []
         if result["files"]:
-            for file_path, python_id in result["files"]:
+            for file_path, python_id in result["files"].items():
                 if file_path.startswith(prefix):
                     filename = file_path.removeprefix(prefix)
-                    for unique_file in unique_files:
-                        if filename == unique_file.filename and python_id == unique_file.python_id:
-                            files_output.append(unique_file.model_copy())
+                    if all(filename != f.filename or python_id != f.python_id for f in unique_files):
+                        files_output.append(PythonFile(filename=filename, id=python_id, python_id=python_id))
 
             self._storage.download(files_output)
 
