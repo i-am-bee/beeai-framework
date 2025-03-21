@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.1.9](https://github.com/i-am-bee/beeai-framework/compare/typescript_v0.1.8...typescript_v0.1.9) (2025-03-21)
+
+### Features
+
+- **instrumentation:** remove instrumentation module and switch to openinference ([#628](https://github.com/i-am-bee/beeai-framework/issues/628)) ([#642](https://github.com/i-am-bee/beeai-framework/issues/642)) ([713677d](https://github.com/i-am-bee/beeai-framework/commit/713677dbd0010fe6444678e4363ff056724e589f))
+
+## [0.1.8](https://github.com/i-am-bee/beeai-framework/compare/typescript_v0.1.7...typescript_v0.1.8) (2025-03-19)
+
+### Features
+
+- **backend:** auto set OpenAI strict mode ([#610](https://github.com/i-am-bee/beeai-framework/issues/610)) ([7068332](https://github.com/i-am-bee/beeai-framework/commit/7068332898e0afcc3bc8482431a6d26a44e5c7f9)), closes [#584](https://github.com/i-am-bee/beeai-framework/issues/584)
+- **instrumentation:** export modules for instrumentation ([#605](https://github.com/i-am-bee/beeai-framework/issues/605)) ([fe3ec04](https://github.com/i-am-bee/beeai-framework/commit/fe3ec04290e8e4e0f21592448f0f6c9a6da38845))
+- **workflows:** refactor multiAgent workflow ([#617](https://github.com/i-am-bee/beeai-framework/issues/617)) ([55aeedf](https://github.com/i-am-bee/beeai-framework/commit/55aeedf37716865fd8fc55985f6957bd3093988c))
+
 ## [0.1.7](https://github.com/i-am-bee/beeai-framework/compare/typescript_v0.1.6...typescript_v0.1.7) (2025-03-14)
 
 ### ⚠ BREAKING CHANGES

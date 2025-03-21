@@ -11,20 +11,27 @@ Build production-ready multi-agent systems in TypeScript. BeeAI framework is als
 
 The source directory (`src`) contains the available modules:
 
-| Name                                                       | Description                                                                                 |
-| ---------------------------------------------------------- | ------------------------------------------------------------------------------------------- |
-| [**agents**](/typescript/docs/agents.md)                   | Base classes defining the common interface for agent.                                       |
-| [**backend**](/typescript/docs/backend.md)                 | Functionalities that relates to AI models (chat, embedding, image, tool calling, ...)       |
-| [**template**](/typescript/docs/templates.md)              | Prompt Templating system based on `Mustache` with various improvements.                     |
-| [**memory**](/typescript/docs/memory.md)                   | Various types of memories to use with agent.                                                |
-| [**tools**](/typescript/docs/tools.md)                     | Tools that an agent can use.                                                                |
-| [**cache**](/typescript/docs/cache.md)                     | Preset of different caching approaches that can be used together with tools.                |
-| [**errors**](/typescript/docs/errors.md)                   | Base framework error classes used by each module.                                           |
-| [**logger**](/typescript/docs/logger.md)                   | Core component for logging all actions within the framework.                                |
-| [**serializer**](/typescript/docs/serialization.md)        | Core component for the ability to serialize/deserialize modules into the serialized format. |
-| [**version**](/typescript/docs/version.md)                 | Constants representing the framework (e.g., the latest version)                             |
-| [**emitter**](/typescript/docs/emitter.md)                 | Bringing visibility to the system by emitting events.                                       |
-| [**instrumentation**](/typescript/docs/instrumentation.md) | Integrate monitoring tools into your application.                                           |
+| Name                                                | Description                                                                                 |
+| --------------------------------------------------- | ------------------------------------------------------------------------------------------- |
+| [**agents**](/typescript/docs/agents.md)            | Base classes defining the common interface for agent.                                       |
+| [**backend**](/typescript/docs/backend.md)          | Functionalities that relates to AI models (chat, embedding, image, tool calling, ...)       |
+| [**template**](/typescript/docs/templates.md)       | Prompt Templating system based on `Mustache` with various improvements.                     |
+| [**memory**](/typescript/docs/memory.md)            | Various types of memories to use with agent.                                                |
+| [**tools**](/typescript/docs/tools.md)              | Tools that an agent can use.                                                                |
+| [**cache**](/typescript/docs/cache.md)              | Preset of different caching approaches that can be used together with tools.                |
+| [**errors**](/typescript/docs/errors.md)            | Base framework error classes used by each module.                                           |
+| [**logger**](/typescript/docs/logger.md)            | Core component for logging all actions within the framework.                                |
+| [**serializer**](/typescript/docs/serialization.md) | Core component for the ability to serialize/deserialize modules into the serialized format. |
+| [**version**](/typescript/docs/version.md)          | Constants representing the framework (e.g., the latest version)                             |
+| [**emitter**](/typescript/docs/emitter.md)          | Bringing visibility to the system by emitting events.                                       |
+
+## External modules
+
+Use these packages to extend the base BeeAI framework functionality:
+
+| Name                                                                                                                       | Description                                       |
+| -------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------- |
+| [**instrumentation**](https://github.com/Arize-ai/openinference/tree/main/js/packages/openinference-instrumentation-beeai) | Integrate monitoring tools into your application. |
 
 ## Installation
 
@@ -46,54 +53,60 @@ The following example demonstrates how to build a multi-agent workflow using the
 
 ```ts
 import "dotenv/config";
-import { UnconstrainedMemory } from "beeai-framework/memory/unconstrainedMemory";
 import { OpenMeteoTool } from "beeai-framework/tools/weather/openMeteo";
 import { WikipediaTool } from "beeai-framework/tools/search/wikipedia";
-import { AgentWorkflow } from "beeai-framework/experimental/workflows/agent";
-import { Message, Role } from "beeai-framework/llms/primitives/message";
-import { GroqChatLLM } from "beeai-framework/adapters/groq/chat";
+import { AgentWorkflow } from "beeai-framework/workflows/agent";
+import { OllamaChatModel } from "beeai-framework/adapters/ollama/backend/chat";
 
 const workflow = new AgentWorkflow();
 
 workflow.addAgent({
   name: "Researcher",
-  instructions: "You are a researcher assistant. Respond only if you can provide a useful answer.",
+  role: "A diligent researcher",
+  instructions: "You look up and provide information about a specific topic.",
   tools: [new WikipediaTool()],
-  llm: new GroqChatLLM(),
+  llm: new OllamaChatModel("llama3.1"),
 });
 
 workflow.addAgent({
   name: "WeatherForecaster",
-  instructions: "You are a weather assistant. Respond only if you can provide a useful answer.",
+  role: "A weather reporter",
+  instructions: "You provide detailed weather reports.",
   tools: [new OpenMeteoTool()],
-  llm: new GroqChatLLM(),
-  execution: { maxIterations: 3 },
+  llm: new OllamaChatModel("llama3.1"),
 });
 
 workflow.addAgent({
-  name: "Solver",
-  instructions:
-    "Your task is to provide the most useful final answer based on the assistants' responses which all are relevant. Ignore those where assistant do not know.",
-  llm: new GroqChatLLM(),
+  name: "DataSynthesizer",
+  role: "A meticulous and creative data synthesizer",
+  instructions: "You can combine disparate information into a final coherent summary.",
+  llm: new OllamaChatModel("llama3.1"),
 });
 
-const memory = new UnconstrainedMemory();
-
-await memory.add(
-  Message.of({
-    role: Role.USER,
-    text: "What is the capital of France and what is the current weather there?",
-    meta: { createdAt: new Date() },
-  }),
-);
-
-const { result } = await workflow.run(memory.messages).observe((emitter) => {
-  emitter.on("success", (data) => {
-    console.log(`-> ${data.step}`, data.response?.update?.finalAnswer ?? "-");
+const location = "Saint-Tropez";
+await workflow
+  .run([
+    {
+      prompt: `Provide a short history of ${location}.`,
+    },
+    {
+      prompt: `Provide a comprehensive weather summary for ${location} today.`,
+      expectedOutput:
+        "Essential weather details such as chance of rain, temperature and wind. Only report information that is available.",
+    },
+    {
+      prompt: `Summarize the historical and weather data for ${location}.`,
+      expectedOutput: `A paragraph that describes the history of ${location}, followed by the current weather conditions.`,
+    },
+  ])
+  .observe((emitter) => {
+    emitter.on("success", (data) => {
+      console.log(
+        `-> ${data.step} has been completed with the following outcome\n`,
+        data?.state.finalAnswer ?? "-",
+      );
+    });
   });
-});
-
-console.log(`Agent 🤖`, result.finalAnswer);
 ```
 
 ### Running the example

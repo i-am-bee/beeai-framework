@@ -42,10 +42,12 @@ from beeai_framework.backend.types import (
     ChatModelOutput,
     ChatModelStructureInput,
     ChatModelStructureOutput,
+    ChatModelUsage,
 )
 from beeai_framework.backend.utils import parse_broken_json
 from beeai_framework.context import RunContext
 from beeai_framework.logger import Logger
+from beeai_framework.tools.tool import Tool
 from beeai_framework.utils.dicts import exclude_keys, exclude_none, include_keys
 
 logger = Logger(__name__)
@@ -136,23 +138,24 @@ class LiteLLMChatModel(ChatModel, ABC):
                     )
             elif isinstance(message, AssistantMessage):
                 messages.append(
-                    {
-                        "role": "assistant",
-                        "content": [t.model_dump() for t in message.get_text_messages()] or None,
-                        "function_call": None,
-                        "tool_calls": [
-                            {
-                                "id": call.id,
-                                "type": "function",
-                                "function": {
-                                    "arguments": call.args,
-                                    "name": call.tool_name,
-                                },
-                            }
-                            for call in message.get_tool_calls()
-                        ]
-                        or None,
-                    }
+                    exclude_none(
+                        {
+                            "role": "assistant",
+                            "content": [t.model_dump() for t in message.get_text_messages()] or None,
+                            "tool_calls": [
+                                {
+                                    "id": call.id,
+                                    "type": "function",
+                                    "function": {
+                                        "arguments": call.args,
+                                        "name": call.tool_name,
+                                    },
+                                }
+                                for call in message.get_tool_calls()
+                            ]
+                            or None,
+                        }
+                    )
                 )
             else:
                 messages.append(message.to_plain())
@@ -185,6 +188,12 @@ class LiteLLMChatModel(ChatModel, ABC):
             set(self.supported_params),
         )
 
+        tool_choice = (
+            {"type": "function", "function": {"name": input.tool_choice.name}}
+            if isinstance(input.tool_choice, Tool)
+            else input.tool_choice
+        )
+
         return (
             exclude_none(settings)
             | exclude_none(params)
@@ -195,13 +204,14 @@ class LiteLLMChatModel(ChatModel, ABC):
                 "response_format": self._format_response_model(input.response_format)
                 if input.response_format
                 else None,
+                "tool_choice": tool_choice,
             }
         )
 
     def _transform_output(self, chunk: ModelResponse | ModelResponseStream) -> ChatModelOutput:
         choice = chunk.choices[0]
         finish_reason = choice.finish_reason
-        usage = choice.get("usage")  # type: ignore
+        usage = chunk.get("usage")  # type: ignore
         update = choice.delta if isinstance(choice, StreamingChoices) else choice.message
 
         return ChatModelOutput(
@@ -226,7 +236,7 @@ class LiteLLMChatModel(ChatModel, ABC):
                 else []
             ),
             finish_reason=finish_reason,
-            usage=usage,
+            usage=ChatModelUsage(**usage.model_dump()) if usage else None,
         )
 
     def _format_tool_model(self, model: type[BaseModel]) -> dict[str, Any]:

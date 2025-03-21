@@ -1,49 +1,60 @@
 import "dotenv/config";
-import { UnconstrainedMemory } from "beeai-framework/memory/unconstrainedMemory";
 import { createConsoleReader } from "examples/helpers/io.js";
 import { OpenMeteoTool } from "beeai-framework/tools/weather/openMeteo";
 import { WikipediaTool } from "beeai-framework/tools/search/wikipedia";
 import { AgentWorkflow } from "beeai-framework/workflows/agent";
-import { UserMessage } from "beeai-framework/backend/message";
-import { WatsonxChatModel } from "beeai-framework/adapters/watsonx/backend/chat";
+import { OllamaChatModel } from "beeai-framework/adapters/ollama/backend/chat";
 
-const workflow = new AgentWorkflow();
-const llm = new WatsonxChatModel("meta-llama/llama-3-3-70b-instruct");
+const workflow = new AgentWorkflow("Smart assistant");
+const llm = new OllamaChatModel("llama3.1");
 
-workflow.addAgent({
-  name: "WeatherForecaster",
-  instructions: "You are a weather assistant. Respond only if you can provide a useful answer.",
-  tools: [new OpenMeteoTool()],
-  llm,
-  execution: { maxIterations: 3 },
-});
 workflow.addAgent({
   name: "Researcher",
-  instructions: "You are a researcher assistant. Respond only if you can provide a useful answer.",
+  role: "A diligent researcher",
+  instructions: "You look up and provide information about a specific topic.",
   tools: [new WikipediaTool()],
   llm,
 });
 workflow.addAgent({
-  name: "Solver",
-  instructions:
-    "Your task is to provide the most useful final answer based on the assistants' responses which all are relevant. Ignore those where assistant do not know.",
+  name: "WeatherForecaster",
+  role: "A weather reporter",
+  instructions: "You provide detailed weather reports.",
+  tools: [new OpenMeteoTool()],
+  llm,
+});
+workflow.addAgent({
+  name: "DataSynthesizer",
+  role: "A meticulous and creative data synthesizer",
+  instructions: "You can combine disparate information into a final coherent summary.",
   llm,
 });
 
 const reader = createConsoleReader();
-const memory = new UnconstrainedMemory();
-
+reader.write("Assistant 🤖 : ", "What location do you want to learn about?");
 for await (const { prompt } of reader) {
-  await memory.add(new UserMessage(prompt, { createdAt: new Date() }));
-
-  const { result } = await workflow.run(memory.messages).observe((emitter) => {
-    emitter.on("success", (data) => {
-      reader.write(`-> ${data.step}`, data.state?.finalAnswer ?? "-");
+  const { result } = await workflow
+    .run([
+      { prompt: "Provide a short history of the location.", context: prompt },
+      {
+        prompt: "Provide a comprehensive weather summary for the location today.",
+        expectedOutput:
+          "Essential weather details such as chance of rain, temperature and wind. Only report information that is available.",
+      },
+      {
+        prompt: "Summarize the historical and weather data for the location.",
+        expectedOutput:
+          "A paragraph that describes the history of the location, followed by the current weather conditions.",
+      },
+    ])
+    .observe((emitter) => {
+      emitter.on("success", (data) => {
+        reader.write(
+          `Step '${data.step}' has been completed with the following outcome:\n`,
+          data.state?.finalAnswer ?? "-",
+        );
+      });
     });
-  });
 
-  // await memory.addMany(result.newMessages); // save intermediate steps + final answer
-  await memory.addMany(result.newMessages.slice(-1)); // save only the final answer
-
-  reader.write(`Agent 🤖`, result.finalAnswer);
+  reader.write(`Assistant 🤖`, result.finalAnswer);
+  reader.write("Assistant 🤖 : ", "What location do you want to learn about?");
 }

@@ -76,11 +76,51 @@ BeeAI framework supports several caching patterns:
 
 The simplest way to use caching is to wrap a function that produces deterministic output:
 
-```text
-Coming soon
+<!-- embedme examples/cache/unconstrained_cache_function.py -->
+
+```python
+import asyncio
+import sys
+import traceback
+
+from beeai_framework.cache.unconstrained_cache import UnconstrainedCache
+from beeai_framework.errors import FrameworkError
+
+
+async def main() -> None:
+    cache: UnconstrainedCache[int] = UnconstrainedCache()
+
+    async def fibonacci(n: int) -> int:
+        cache_key = str(n)
+        cached = await cache.get(cache_key)
+        if cached:
+            return int(cached)
+
+        if n < 1:
+            result = 0
+        elif n <= 2:
+            result = 1
+        else:
+            result = await fibonacci(n - 1) + await fibonacci(n - 2)
+
+        await cache.set(cache_key, result)
+        return result
+
+    print(await fibonacci(10))  # 55
+    print(await fibonacci(9))  # 34 (retrieved from cache)
+    print(f"Cache size {await cache.size()}")  # 10
+
+
+if __name__ == "__main__":
+    try:
+        asyncio.run(main())
+    except FrameworkError as e:
+        traceback.print_exc()
+        sys.exit(e.explain())
+
 ```
 
-_Source: examples/cache/unconstrainedCacheFunction.py_
+_Source: [examples/cache/unconstrained_cache_function.py](/python/examples/cache/unconstrained_cache_function.py)_
 
 ### Using with tools
 
@@ -110,21 +150,96 @@ _Source: examples/cache/llmCache.py_
 
 The simplest cache type with no constraints on size or entry lifetime. Good for development and smaller applications.
 
-```text
-Coming soon
+<!-- embedme examples/cache/unconstrained_cache.py -->
+
+```python
+import asyncio
+import sys
+import traceback
+
+from beeai_framework.cache.unconstrained_cache import UnconstrainedCache
+from beeai_framework.errors import FrameworkError
+
+
+async def main() -> None:
+    cache: UnconstrainedCache[int] = UnconstrainedCache()
+
+    # Save
+    await cache.set("a", 1)
+    await cache.set("b", 2)
+
+    # Read
+    result = await cache.has("a")
+    print(result)  # True
+
+    # Meta
+    print(cache.enabled)  # True
+    print(await cache.has("a"))  # True
+    print(await cache.has("b"))  # True
+    print(await cache.has("c"))  # False
+    print(await cache.size())  # 2
+
+    # Delete
+    await cache.delete("a")
+    print(await cache.has("a"))  # False
+
+    # Clear
+    await cache.clear()
+    print(await cache.size())  # 0
+
+
+if __name__ == "__main__":
+    try:
+        asyncio.run(main())
+    except FrameworkError as e:
+        traceback.print_exc()
+        sys.exit(e.explain())
+
 ```
 
-_Source: examples/cache/unconstrainedCache.py_
+_Source: [examples/cache/unconstrained_cache.py](/python/examples/cache/unconstrained_cache.py)_
 
 ### SlidingCache
 
 Maintains a maximum number of entries, removing the oldest entries when the limit is reached.
 
-```text
-Coming soon
+<!-- embedme examples/cache/sliding_cache.py -->
+
+```python
+import asyncio
+import sys
+import traceback
+
+from beeai_framework.cache.sliding_cache import SlidingCache
+from beeai_framework.errors import FrameworkError
+
+
+async def main() -> None:
+    cache: SlidingCache[int] = SlidingCache(
+        size=3,  # (required) number of items that can be live in the cache at a single moment
+        ttl=1,  # // (optional, default is Infinity) Time in seconds after the element is removed from a cache
+    )
+
+    await cache.set("a", 1)
+    await cache.set("b", 2)
+    await cache.set("c", 3)
+
+    await cache.set("d", 4)  # overflow - cache internally removes the oldest entry (key "a")
+
+    print(await cache.has("a"))  # False
+    print(await cache.size())  # 3
+
+
+if __name__ == "__main__":
+    try:
+        asyncio.run(main())
+    except FrameworkError as e:
+        traceback.print_exc()
+        sys.exit(e.explain())
+
 ```
 
-_Source: examples/cache/slidingCache.py_
+_Source: [examples/cache/sliding_cache.py](/python/examples/cache/sliding_cache.py)_
 
 ### FileCache
 
@@ -190,11 +305,39 @@ _Source: /examples/cache/cacheFn.py_
 
 You can create your own cache implementation by extending the `BaseCache` class:
 
-```text
-Coming soon
+<!-- embedme examples/cache/custom.py -->
+
+```python
+from typing import TypeVar
+
+from beeai_framework.cache.base import BaseCache
+
+T = TypeVar("T")
+
+
+class CustomCache(BaseCache[T]):
+    async def size(self) -> int:
+        raise NotImplementedError("CustomCache 'size' not yet implemented")
+
+    async def set(self, _key: str, _value: T) -> None:
+        raise NotImplementedError("CustomCache 'set' not yet implemented")
+
+    async def get(self, key: str) -> T | None:
+        raise NotImplementedError("CustomCache 'get' not yet implemented")
+
+    async def has(self, key: str) -> bool:
+        raise NotImplementedError("CustomCache 'has' not yet implemented")
+
+    async def delete(self, key: str) -> bool:
+        raise NotImplementedError("CustomCache 'delete' not yet implemented")
+
+    async def clear(self) -> None:
+        raise NotImplementedError("CustomCache 'clear' not yet implemented")
+
 ```
 
-_Source: /examples/cache/custom.py_
+_Source: [examples/cache/custom.py](/python/examples/cache/custom.py)_
+
 
 ---
 

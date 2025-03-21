@@ -44,11 +44,11 @@ The following table depicts supported providers. Each provider requires specific
 | Name             | Chat | Embedding | Dependency               | Environment Variables                                                                                                                                                 |
 | ---------------- | :--: | :-------: | ------------------------ | :-------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `Ollama`         |  ✅  |          | `ollama-ai-provider`     | OLLAMA_CHAT_MODEL<br/>OLLAMA_BASE_URL                                                                                                       |
-| `OpenAI`         |  ✅  |          | `openai`     | OPENAI_CHAT_MODEL<br/>OPENAI_API_BASE<br/>OPENAI_API_KEY<br/>OPENAI_ORGANIZATION<br>OPENAI_EXTRA_HEADERS                                                                                                       |
-| `Watsonx`        |  ✅  |          | `@ibm-cloud/watsonx-ai`  | WATSONX_CHAT_MODEL<br/>WATSONX_EMBEDDING_MODEL<br>WATSONX_API_KEY<br/>WATSONX_PROJECT_ID<br/>WATSONX_SPACE_ID<br>WATSONX_VERSION<br>WATSONX_REGION                    |
+| `OpenAI`         |  ✅  |          | `openai`     | OPENAI_CHAT_MODEL<br/>OPENAI_API_BASE<br/>OPENAI_API_KEY<br/>OPENAI_ORGANIZATION<br>OPENAI_API_HEADERS                                                                                                       |
+| `Watsonx`        |  ✅  |          | `@ibm-cloud/watsonx-ai`  | WATSONX_CHAT_MODEL<br>WATSONX_API_KEY<br>WATSONX_PROJECT_ID<br>WATSONX_SPACE_ID<br>WATSONX_TOKEN<br>WATSONX_ZENAPIKEY<br>WATSONX_URL<br>WATSONX_REGION |
 | `Groq`           |  ✅  |         | | GROQ_CHAT_MODEL<br>GROQ_API_KEY |
-| `Amazon Bedrock` |  ✅  |         |  `boto3`| AWS_CHAT_MODEL<br>AWS_ACCESS_KEY_ID<br>AWS_SECRET_ACCESS_KEY<br>AWS_REGION_NAME |
-| `Google Vertex`  |  ✅  |         |  | VERTEXAI_CHAT_MODEL<br>VERTEXAI_PROJECT<br>GOOGLE_APPLICATION_CREDENTIALS<br>GOOGLE_APPLICATION_CREDENTIALS_JSON<br>GOOGLE_CREDENTIALS |
+| `Amazon Bedrock` |  ✅  |         |  `boto3`| AWS_CHAT_MODEL<br>AWS_ACCESS_KEY_ID<br>AWS_SECRET_ACCESS_KEY<br>AWS_REGION |
+| `Google Vertex`  |  ✅  |         |  | VERTEXAI_CHAT_MODEL<br>GOOGLE_VERTEX_PROJECT<br>GOOGLE_APPLICATION_CREDENTIALS<br>GOOGLE_APPLICATION_CREDENTIALS_JSON<br>GOOGLE_CREDENTIALS |
 | `Azure OpenAI`   |  ✅  |         |  | AZURE_OPENAI_CHAT_MODEL<br>AZURE_OPENAI_API_KEY<br>AZURE_OPENAI_API_BASE<br>AZURE_OPENAI_API_VERSION<br>AZURE_AD_TOKEN<br>AZURE_API_TYPE |
 | `Anthropic`      |  ✅  |         |  | ANTHROPIC_CHAT_MODEL<br>ANTHROPIC_API_KEY |
 | `xAI`           |  ✅  |         | | XAI_CHAT_MODEL<br>XAI_API_KEY |
@@ -208,6 +208,9 @@ _Source: [examples/backend/providers/watsonx.py](/python/examples/backend/provid
 
 All providers examples can be found in [examples/backend/providers](/python/examples/backend/providers).
 
+> [!TIP]
+> See the [events documentation](/python/docs/events.md) for more information on standard emitter events.
+
 ---
 
 ## Chat model
@@ -234,9 +237,52 @@ ollama_chat_model = OllamaChatModel("llama3.1")
 
 You can configure various parameters for your chat model:
 
-```txt
-Coming soon
+<!-- embedme examples/backend/chat.py -->
+
+```python
+import asyncio
+import sys
+import traceback
+
+from beeai_framework import UserMessage
+from beeai_framework.adapters.ollama.backend.chat import OllamaChatModel
+from beeai_framework.errors import FrameworkError
+from examples.helpers.io import ConsoleReader
+
+
+async def main() -> None:
+    llm = OllamaChatModel("llama3.1")
+
+    #  Optionally one may set llm parameters
+    llm.parameters.max_tokens = 10000  # high number yields longer potential output
+    llm.parameters.top_p = 0  # higher number yields more complex vocabulary, recommend only changing p or k
+    llm.parameters.frequency_penalty = 0  # higher number yields reduction in word reptition
+    llm.parameters.temperature = 0  # higher number yields greater randomness and variation
+    llm.parameters.top_k = 0  # higher number yields more variance, recommend only changing p or k
+    llm.parameters.n = 1  # higher number yields more choices
+    llm.parameters.presence_penalty = 0  # higher number yields reduction in repetition of words
+    llm.parameters.seed = 10  # can help produce similar responses if prompt and seed are always the same
+    llm.parameters.stop_sequences = ["q", "quit", "ahhhhhhhhh"]  # stops the model on input of any of these strings
+    llm.parameters.stream = False  # determines whether or not to use streaming to receive incremental data
+
+    reader = ConsoleReader()
+
+    for prompt in reader:
+        response = await llm.create(messages=[UserMessage(prompt)])
+        reader.write("LLM 🤖 (txt) : ", response.get_text_content())
+        reader.write("LLM 🤖 (raw) : ", "\n".join([str(msg.to_plain()) for msg in response.messages]))
+
+
+if __name__ == "__main__":
+    try:
+        asyncio.run(main())
+    except FrameworkError as e:
+        traceback.print_exc()
+        sys.exit(e.explain())
+
 ```
+
+_Source: [examples/backend/chat.py](/python/examples/backend/chat.py)_
 
 ### Text generation
 

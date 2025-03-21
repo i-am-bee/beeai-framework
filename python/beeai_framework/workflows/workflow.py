@@ -179,7 +179,7 @@ class Workflow(Generic[T, K]):
                             error=err,
                         ),
                     )
-                    raise err from None
+                    raise err
 
             if run.state:  # TODO: add output schema
                 run.result = run.state.model_copy()

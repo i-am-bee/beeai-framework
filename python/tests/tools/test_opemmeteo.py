@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-
 import pytest
 
 from beeai_framework.tools import StringToolOutput, ToolInputValidationError
@@ -71,30 +70,3 @@ async def test_output(tool: OpenMeteoTool) -> None:
     result = await tool.run(input={"location_name": "White Plains"})
     assert type(result) is StringToolOutput
     assert "current" in result.get_text_content()
-
-
-@pytest.mark.e2e
-@pytest.mark.asyncio
-async def test_bad_start_date_format(tool: OpenMeteoTool) -> None:
-    with pytest.raises(ToolInputValidationError):
-        await tool.run(
-            input=OpenMeteoToolInput(location_name="White Plains", start_date="2025:01:01", end_date="2025-01-02")
-        )
-
-
-@pytest.mark.e2e
-@pytest.mark.asyncio
-async def test_bad_end_date_format(tool: OpenMeteoTool) -> None:
-    with pytest.raises(ToolInputValidationError):
-        await tool.run(
-            input=OpenMeteoToolInput(location_name="White Plains", start_date="2025-01-01", end_date="2025:01:02")
-        )
-
-
-@pytest.mark.e2e
-@pytest.mark.asyncio
-async def test_bad_dates(tool: OpenMeteoTool) -> None:
-    with pytest.raises(ToolInputValidationError):
-        await tool.run(
-            input=OpenMeteoToolInput(location_name="White Plains", start_date="2025-02-02", end_date="2025-02-01")
-        )

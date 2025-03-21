@@ -134,7 +134,7 @@ class Tool(Generic[TInput, TRunOptions, TOutput], ABC):
                 )
                 return output
             except Exception as e:
-                err = ToolError.ensure(e)
+                err = ToolError.ensure(e, tool=self)
                 if not error_propagated:
                     await context.emitter.emit("error", ToolErrorEvent(error=err, input=input, options=options))
                 raise err

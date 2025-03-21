@@ -12,11 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import Any
+from typing import TYPE_CHECKING, Any, Optional
 
 from pydantic import ValidationError
 
 from beeai_framework.errors import FrameworkError
+
+if TYPE_CHECKING:
+    from beeai_framework.tools.tool import AnyTool
 
 
 class ToolError(FrameworkError):
@@ -28,6 +31,19 @@ class ToolError(FrameworkError):
         context: dict[str, Any] | None = None,
     ) -> None:
         super().__init__(message, cause=cause, context=context)
+
+    @classmethod
+    def ensure(
+        cls,
+        error: Exception,
+        *,
+        message: str | None = None,
+        context: dict[str, Any] | None = None,
+        tool: Optional["AnyTool"] = None,
+    ) -> "FrameworkError":
+        tool_context = {"name": tool.name} if tool is not None else {}
+        tool_context.update(context) if context is not None else None
+        return super().ensure(error, message=message, context=tool_context)
 
 
 class ToolInputValidationError(ToolError):

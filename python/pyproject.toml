@@ -1,6 +1,6 @@
 [project]
 name = "beeai-framework"
-version="0.1.7"
+version="0.1.8"
 license = "Apache-2.0"
 readme = "README.md"
 authors = [{ name = "IBM Corp." }]
@@ -28,7 +28,7 @@ python = ">= 3.11,<4.0"
 pydantic = "^2.10"
 requests = "^2.32"
 chevron = "^0.14.0"
-litellm = "^1.63.11"
+litellm = "^1.63.12"
 aiofiles = "^24.1.0"
 mcp = "^1.2.0"
 duckduckgo-search = "^7.5.1"
@@ -38,6 +38,7 @@ langchain-core = {version = "^0.3.41", optional = true}
 langchain-community = {version = "^0.3.19", optional = true}
 boto3 = {version = "^1.37.5", optional = true}
 acp-sdk = "^0.0.5"
+cachetools = "^5.5.2"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^8.3.4"
@@ -53,6 +54,7 @@ nbstripout = "^0.8.1"
 pytest-cov = "^6.0.0"
 types-chevron = "^0.14.2.20250103"
 types-requests = "^2.32.0.20241016"
+types-cachetools = "^5.5.0.20240820"
 
 [tool.poetry.extras]
 langchain = ["langchain-core", "langchain-community"]
@@ -133,7 +135,7 @@ args = [
     { name = "TARGET", positional = true, multiple = true },
     { name = "fix", options = ["--fix"], type = "boolean", help = "Apply fixes instead of checking" }
 ]
-uses = { PY_FILES = "_extract_python_files $TARGET" }
+uses = { PY_FILES = "_match_files --ext py|ipynb $TARGET" }
 
     [[tool.poe.tasks.format.switch]]
         case = "True"
@@ -148,7 +150,7 @@ args = [
     { name = "TARGET", positional = true, multiple = true },
     { name = "FIX", options = ["--fix"], type = "boolean", help = "Apply fixes instead of checking" }
 ]
-uses = { PY_FILES = "_extract_python_files $TARGET" }
+uses = { PY_FILES = "_match_files --ext py|ipynb $TARGET" }
 cmd = "ruff check ${FIX:+--fix} ${PY_FILES}"
 
 [tool.poe.tasks.git]
@@ -166,7 +168,7 @@ default = "pass"
         { "ref" = "copyright ${TARGET}"},
         { "ref" = "format --fix ${TARGET}"},
         { "ref" = "lint --fix ${TARGET}" },
-        { "ref" = "type-check" },
+        { "ref" = "type-check ${TARGET}" },
         { "ref" = "docs --type check"},
         { "ref" = "copyright --type check ${TARGET}"},
     ]
@@ -245,14 +247,21 @@ control.expr = "type"
     help = "Run All Tests"
     cmd = "pytest"
 
-[tool.poe.tasks._extract_python_files]
-help = "Extract Python files only"
-args = [{ name = "TARGET", positional = true, multiple = true }]
-shell = "printf '%s\\n' $TARGET | grep -E '\\.(py|ipynb)$' | tr '\\n' ' '"
+[tool.poe.tasks._match_files]
+help = "Extract files by their extension"
+args = [
+    { name = "TARGET", positional = true, multiple = true },
+    { name = "EXTENSION", options = ["--ext"] }
+]
+shell = "printf '%s\\n' $TARGET | grep -E \"\\.(${EXTENSION})$\" | tr '\\n' ' '"
 
 [tool.poe.tasks.type-check]
 help = "Static Type Checker with optional flags"
-cmd = "mypy . ${POE_ARGS}"
+args = [
+    { name = "TARGET", positional = true, multiple = true, default = "." }
+]
+uses = { PY_FILES = "_match_files --ext py $TARGET" }
+cmd = "mypy ${PY_FILES:-.} ${POE_ARGS}"
 
 [build-system]
 requires = ["poetry-core>=2.0.0,<3.0.0"]

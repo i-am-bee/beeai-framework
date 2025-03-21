@@ -14,8 +14,7 @@
 
 
 import json
-from collections import namedtuple
-from datetime import UTC, datetime
+from datetime import UTC, date, datetime
 from typing import Any, Literal
 from urllib.parse import urlencode
 
@@ -36,10 +35,10 @@ logger = Logger(__name__)
 class OpenMeteoToolInput(BaseModel):
     location_name: str = Field(description="The name of the location to retrieve weather information.")
     country: str | None = Field(description="Country name.", default=None)
-    start_date: str | None = Field(
+    start_date: date | None = Field(
         description="Start date for the weather forecast in the format YYYY-MM-DD (UTC)", default=None
     )
-    end_date: str | None = Field(
+    end_date: date | None = Field(
         description="End date for the weather forecast in the format YYYY-MM-DD (UTC)", default=None
     )
     temperature_unit: Literal["celsius", "fahrenheit"] = Field(
@@ -99,46 +98,9 @@ class OpenMeteoTool(Tool[OpenMeteoToolInput, ToolRunOptions, StringToolOutput]):
         geocode = self._geocode(input)
         params["latitude"] = geocode.get("latitude", "")
         params["longitude"] = geocode.get("longitude", "")
-
-        Dates = namedtuple("Dates", ["start_date", "end_date"])
-
-        def _validate_and_set_dates(start_date: str | None, end_date: str | None) -> Dates:
-            # Trim date str assuming YYYY-MM-DD
-            def _trim_date(date_str: str) -> str:
-                return date_str[0:10]
-
-            start, end = None, None
-
-            if start_date:
-                try:
-                    start = datetime.strptime(_trim_date(start_date), "%Y-%m-%d").replace(tzinfo=UTC)
-                except ValueError as e:
-                    raise ToolInputValidationError(
-                        "'start_date' is incorrectly formatted, please use the correct format YYYY-MM-DD.", cause=e
-                    )
-            else:
-                start = datetime.now(UTC)
-
-            if end_date:
-                try:
-                    end = datetime.strptime(_trim_date(end_date), "%Y-%m-%d").replace(tzinfo=UTC)
-                except ValueError as e:
-                    raise ToolInputValidationError(
-                        "'end_date' is incorrectly formatted, please use the correct format YYYY-MM-DD."
-                    ) from e
-
-                if end < start:
-                    raise ToolInputValidationError("'end_date' must fall on or after 'start_date'.") from None
-
-            else:
-                end = datetime.now(UTC)
-
-            return Dates(start_date=start.strftime("%Y-%m-%d"), end_date=end.strftime("%Y-%m-%d"))
-
-        dates = _validate_and_set_dates(start_date=input.start_date, end_date=input.end_date)
-
-        params["start_date"] = dates.start_date
-        params["end_date"] = dates.end_date
+        current_date = datetime.now(tz=UTC).date()
+        params["start_date"] = str(input.start_date or current_date)
+        params["end_date"] = str(input.end_date or current_date)
         params["temperature_unit"] = input.temperature_unit
         return params
 

@@ -61,6 +61,7 @@ The simplest way to use a tool is to instantiate it directly and call its `run()
 ```py
 import asyncio
 import sys
+from datetime import date
 
 from beeai_framework.errors import FrameworkError
 from beeai_framework.tools.weather.openmeteo import OpenMeteoTool, OpenMeteoToolInput
@@ -69,7 +70,7 @@ from beeai_framework.tools.weather.openmeteo import OpenMeteoTool, OpenMeteoTool
 async def main() -> None:
     tool = OpenMeteoTool()
     result = await tool.run(
-        input=OpenMeteoToolInput(location_name="New York", start_date="2025-01-01", end_date="2025-01-02")
+        input=OpenMeteoToolInput(location_name="New York", start_date=date(2025, 1, 1), end_date=date(2025, 2, 1))
     )
     print(result.get_text_content())
 
@@ -93,6 +94,7 @@ Tools often support additional configuration options to customize their behavior
 import asyncio
 import sys
 import traceback
+from datetime import date
 
 from beeai_framework.errors import FrameworkError
 from beeai_framework.tools.weather.openmeteo import OpenMeteoTool, OpenMeteoToolInput
@@ -102,7 +104,7 @@ async def main() -> None:
     tool = OpenMeteoTool()
     result = await tool.run(
         input=OpenMeteoToolInput(
-            location_name="New York", start_date="2025-01-01", end_date="2025-01-02", temperature_unit="celsius"
+            location_name="New York", start_date=date(2025, 1, 1), end_date=date(2025, 1, 2), temperature_unit="celsius"
         )
     )
     print(result.get_text_content())

@@ -13,7 +13,7 @@
 # limitations under the License.
 
 from abc import ABC, abstractmethod
-from collections.abc import AsyncGenerator
+from collections.abc import AsyncGenerator, Callable
 from functools import cached_property
 from typing import Any, Literal, TypeVar
 
@@ -30,7 +30,6 @@ from beeai_framework.backend.events import (
 )
 from beeai_framework.backend.message import AnyMessage, SystemMessage
 from beeai_framework.backend.types import (
-    ChatConfig,
     ChatModelInput,
     ChatModelOutput,
     ChatModelParameters,
@@ -164,6 +163,7 @@ IMPORTANT: You MUST answer with a JSON object that matches the JSON schema above
         *,
         messages: list[AnyMessage],
         tools: list[AnyTool] | None = None,
+        tool_choice: AnyTool | Literal["required"] | Literal["none"] | None = None,
         abort_signal: AbortSignal | None = None,
         stop_sequences: list[str] | None = None,
         response_format: dict[str, Any] | type[BaseModel] | None = None,
@@ -177,6 +177,7 @@ IMPORTANT: You MUST answer with a JSON object that matches the JSON schema above
             stop_sequences=stop_sequences,
             response_format=response_format,
             stream=stream,
+            tool_choice=tool_choice,
             **kwargs,
         )
 
@@ -202,7 +203,7 @@ IMPORTANT: You MUST answer with a JSON object that matches the JSON schema above
                 await context.emitter.emit("success", ChatModelSuccessEvent(value=result))
                 return result
             except Exception as ex:
-                error = ChatModelError.ensure(ex)
+                error = ChatModelError.ensure(ex, model=self)
                 await context.emitter.emit("error", ChatModelErrorEvent(input=model_input, error=error))
                 raise error
             finally:
@@ -237,15 +238,18 @@ IMPORTANT: You MUST answer with a JSON object that matches the JSON schema above
             run_params=model_input.model_dump(),
         )
 
-    def config(self, chat_config: ChatConfig) -> None:
+    def config(
+        self,
+        *,
+        parameters: ChatModelParameters | Callable[[ChatModelParameters], ChatModelParameters] | None = None,
+        # TODO: cache: ChatModelCache | Callable[[ChatModelCache], ChatModelCache] | None = None
+    ) -> None:
         # TODO: uncomment when cache is supported/implemented
         # if chat_config.cache:
         #     self.cache = chat_config.cache(self.cache) if callable(chat_config.cache) else  chat_config.cache
 
-        if chat_config.parameters:
-            self.parameters = (
-                chat_config.parameters(self.parameters) if callable(chat_config.parameters) else chat_config.parameters
-            )
+        if parameters is not None:
+            self.parameters = parameters(self.parameters) if callable(parameters) else parameters
 
     @staticmethod
     def from_name(name: str | ProviderName, options: ModelLike[ChatModelParameters] | None = None) -> "ChatModel":

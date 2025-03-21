@@ -12,9 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import Any
+from typing import TYPE_CHECKING, Any, Optional
 
 from beeai_framework.errors import FrameworkError
+
+if TYPE_CHECKING:
+    from beeai_framework.backend.chat import ChatModel
 
 
 class BackendError(FrameworkError):
@@ -39,6 +42,19 @@ class ChatModelError(BackendError):
         context: dict[str, Any] | None = None,
     ) -> None:
         super().__init__(message, is_fatal=True, is_retryable=False, cause=cause, context=context)
+
+    @classmethod
+    def ensure(
+        cls,
+        error: Exception,
+        *,
+        message: str | None = None,
+        context: dict[str, Any] | None = None,
+        model: Optional["ChatModel"] = None,
+    ) -> "FrameworkError":
+        model_context = {"provider": model.provider_id, "model_id": model.model_id} if model is not None else {}
+        model_context.update(context) if context is not None else None
+        return super().ensure(error, message=message, context=model_context)
 
 
 class MessageError(FrameworkError):

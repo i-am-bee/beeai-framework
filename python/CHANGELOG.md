@@ -1,3 +1,20 @@
+## python_v0.1.8 (2025-03-19)
+
+### Bug Fixes
+
+- **adapters**: actually return usage in ChatModelOutput (#613)
+- **emitter**: propagate errors from user callbacks (#608)
+- **tools**: update events definition to pass Pydantic validation (#606)
+
+### Features
+
+- **backend**: simplify chat model configuration (#623)
+- cache implemenation & test (#602)
+- **agents**: improve ToolCallingAgent (#619)
+- **tools**: improve OpenMeteo input schema (#620)
+- improve error output with context (#601)
+- **backend**: align backend environment variable usage with typescript (#594)
+
 ## python_v0.1.7 (2025-03-17)
 
 ### Bug Fixes
