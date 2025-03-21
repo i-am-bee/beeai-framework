@@ -143,8 +143,20 @@ const response = await model
     stream: true,
   })
   .observe((emitter) => {
-    emitter.on("update", ({ value }) => {
-      console.log("token", value.getTextContent());
+    emitter.on("start", ({ input }) => {
+      console.log("Start", JSON.stringify(input.messages));
+    });
+    emitter.on("newToken", ({ value }) => {
+      console.log("token:", value.getTextContent());
+    });
+    emitter.on("error", ({ error }) => {
+      console.log("Error: ", error.explain());
+    });
+    emitter.on("success", ({ value }) => {
+      console.log("Completed with reason: ", value.finishReason);
+    });
+    emitter.on("finish", () => {
+      console.log("Finished");
     });
   });
 
