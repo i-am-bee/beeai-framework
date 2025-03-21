@@ -1,5 +1,3 @@
-import sys
-
 from pydantic import BaseModel
 from termcolor import colored
 
@@ -24,19 +22,23 @@ class ConsoleReader:
         return self
 
     def __next__(self) -> str:
-        while True:
-            prompt = input(colored(self.input, "cyan", attrs=["bold"])).strip()
+        try:
+            while True:
+                prompt = input(colored(self.input, "cyan", attrs=["bold"])).strip()
 
-            if prompt == "q":
-                raise StopIteration
+                if prompt == "q":
+                    raise StopIteration
 
-            prompt = prompt if prompt else self.fallback
+                prompt = prompt if prompt else self.fallback
 
-            if not prompt and not self.allow_empty:
-                print("Error: Empty prompt is not allowed. Please try again.")
-                continue
+                if not prompt and not self.allow_empty:
+                    print("Error: Empty prompt is not allowed. Please try again.")
+                    continue
 
-            return prompt
+                return prompt
+        except (EOFError, KeyboardInterrupt):
+            print()
+            exit()
 
     def write(self, role: str, data: str) -> None:
         print(colored(role, "red", attrs=["bold"]), data)
@@ -44,7 +46,7 @@ class ConsoleReader:
     def prompt(self) -> str | None:
         for prompt in self:
             return prompt
-        sys.exit()
+        exit()
 
     def ask_single_question(self, query_message: str) -> str:
         answer = input(colored(query_message, "cyan", attrs=["bold"]))

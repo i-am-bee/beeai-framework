@@ -252,6 +252,9 @@ _Source: [examples/emitter/agentMatchers.py](/python/examples/emitter/agent_matc
 > [!NOTE]
 > The observe method is also supported on [Tools](/python/docs/tools.md) and [Backend](/python/docs/backend.md).
 
+> [!TIP]
+> See the [events documentation](/python/docs/events.md) for more information on standard emitter events.
+
 ---
 
 ### Advanced usage

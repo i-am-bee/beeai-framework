@@ -15,7 +15,7 @@
 import random
 import string
 from collections.abc import Awaitable, Callable, Sequence
-from typing import Any, Self
+from typing import Any, Self, overload
 
 from pydantic import BaseModel, InstanceOf
 
@@ -75,8 +75,10 @@ class AgentWorkflow:
         self.workflow.delete_step(name)
         return self
 
+    @overload
     def add_agent(
         self,
+        /,
         *,
         name: str | None = None,
         role: str | None = None,
@@ -84,8 +86,30 @@ class AgentWorkflow:
         instructions: str | None = None,
         tools: list[InstanceOf[AnyTool]] | None = None,
         execution: AgentExecutionConfig | None = None,
+    ) -> "AgentWorkflow": ...
+    @overload
+    def add_agent(self, instance: ToolCallingAgent, /) -> "AgentWorkflow": ...
+    def add_agent(
+        self,
+        instance: ToolCallingAgent | None = None,
+        /,
+        *,
+        name: str | None = None,
+        role: str | None = None,
+        llm: ChatModel | None = None,
+        instructions: str | None = None,
+        tools: list[InstanceOf[AnyTool]] | None = None,
+        execution: AgentExecutionConfig | None = None,
     ) -> "AgentWorkflow":
+        if instance is None and llm is None:
+            raise ValueError("Either instance or the agent configuration must be provided!")
+
         def create_agent(memory: BaseMemory) -> ToolCallingAgent:
+            if instance is not None:
+                # TODO: use clone() once implemented
+                instance.memory = memory
+                return instance
+
             def customizer(config: PromptTemplateInput[Any]) -> PromptTemplateInput[Any]:
                 new_config = config.model_copy()
                 new_config.defaults["instructions"] = instructions or config.defaults.get("instructions")
@@ -96,7 +120,7 @@ class AgentWorkflow:
             templates.system = templates.system.fork(customizer=customizer)
 
             return ToolCallingAgent(
-                llm=llm,
+                llm=llm,  # type: ignore
                 tools=tools,
                 memory=memory,
                 templates=templates,
