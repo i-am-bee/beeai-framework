@@ -1,7 +1,7 @@
 # 📊 OpenTelemetry Instrumentation
 
 > [!NOTE]  
-> **COMING SOON! 🚀 Instrumentation is not yet implemented in Python, but is available today in [TypeScript](/typescript/docs/instrumentation.md)**
+> **COMING SOON! 🚀 Instrumentation is not yet implemented in Python, but is available today in [TypeScript](https://github.com/Arize-ai/openinference/tree/main/js/packages/openinference-instrumentation-beeai)**
 
 This document provides an overview of the OpenTelemetry instrumentation setup in beeai-framework.
 The implementation is designed to [create telemetry spans](https://opentelemetry.io/docs/languages/python/instrumentation/#creating-spans) for observability when instrumentation is enabled.
