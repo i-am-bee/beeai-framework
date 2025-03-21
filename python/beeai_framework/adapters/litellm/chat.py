@@ -137,23 +137,24 @@ class LiteLLMChatModel(ChatModel, ABC):
                     )
             elif isinstance(message, AssistantMessage):
                 messages.append(
-                    {
-                        "role": "assistant",
-                        "content": [t.model_dump() for t in message.get_text_messages()] or None,
-                        "function_call": None,
-                        "tool_calls": [
-                            {
-                                "id": call.id,
-                                "type": "function",
-                                "function": {
-                                    "arguments": call.args,
-                                    "name": call.tool_name,
-                                },
-                            }
-                            for call in message.get_tool_calls()
-                        ]
-                        or None,
-                    }
+                    exclude_none(
+                        {
+                            "role": "assistant",
+                            "content": [t.model_dump() for t in message.get_text_messages()] or None,
+                            "tool_calls": [
+                                {
+                                    "id": call.id,
+                                    "type": "function",
+                                    "function": {
+                                        "arguments": call.args,
+                                        "name": call.tool_name,
+                                    },
+                                }
+                                for call in message.get_tool_calls()
+                            ]
+                            or None,
+                        }
+                    )
                 )
             else:
                 messages.append(message.to_plain())
