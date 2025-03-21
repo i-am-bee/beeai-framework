@@ -46,6 +46,12 @@ BeeAI framework provides a comprehensive set of features for building powerful A
 > [!NOTE]
 > Instrumentation and version features are not yet implemented in Python, but they are coming soon!
 
+### Integrations
+
+| Integration | Description |
+|-----------|-------------|
+| [**BeeAI**](/python/docs/beeai.md) | BeeAI is an open platform to help you discover, run, and compose AI agents from any framework and language.|
+
 # Prerequisites
 
 ✅ Python >= 3.11
