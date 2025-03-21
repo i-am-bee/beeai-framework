@@ -47,6 +47,7 @@ from beeai_framework.backend.types import (
 from beeai_framework.backend.utils import parse_broken_json
 from beeai_framework.context import RunContext
 from beeai_framework.logger import Logger
+from beeai_framework.tools.tool import Tool
 from beeai_framework.utils.dicts import exclude_keys, exclude_none, include_keys
 
 logger = Logger(__name__)
@@ -186,6 +187,12 @@ class LiteLLMChatModel(ChatModel, ABC):
             set(self.supported_params),
         )
 
+        tool_choice = (
+            {"type": "function", "function": {"name": input.tool_choice.name}}
+            if isinstance(input.tool_choice, Tool)
+            else input.tool_choice
+        )
+
         return (
             exclude_none(settings)
             | exclude_none(params)
@@ -196,6 +203,7 @@ class LiteLLMChatModel(ChatModel, ABC):
                 "response_format": self._format_response_model(input.response_format)
                 if input.response_format
                 else None,
+                "tool_choice": tool_choice,
             }
         )
 
