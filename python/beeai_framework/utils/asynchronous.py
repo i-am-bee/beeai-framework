@@ -15,7 +15,7 @@
 import asyncio
 import functools
 import inspect
-from collections.abc import Awaitable, Callable
+from collections.abc import AsyncGenerator, Awaitable, Callable
 from typing import Any, TypeVar
 
 T = TypeVar("T")
@@ -33,3 +33,8 @@ def ensure_async(fn: Callable[..., T | Awaitable[T]]) -> Callable[..., Awaitable
         return result
 
     return wrapper
+
+
+async def to_async_generator(items: list[T]) -> AsyncGenerator[T]:
+    for item in items:
+        yield item

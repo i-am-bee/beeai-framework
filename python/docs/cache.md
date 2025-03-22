@@ -126,21 +126,89 @@ _Source: [examples/cache/unconstrained_cache_function.py](/python/examples/cache
 
 BeeAI framework's caching system seamlessly integrates with tools:
 
-```text
-Coming soon
+<!-- embedme examples/cache/tool_cache.py -->
+
+```python
+import asyncio
+import sys
+import traceback
+
+from beeai_framework.cache.sliding_cache import SlidingCache
+from beeai_framework.errors import FrameworkError
+from beeai_framework.tools.search.wikipedia import (
+    WikipediaTool,
+    WikipediaToolInput,
+)
+
+
+async def main() -> None:
+    wikipedia_client = WikipediaTool({"full_text": True, "cache": SlidingCache(size=100, ttl=5 * 60)})
+
+    print(await wikipedia_client.cache.size())  # 0
+    tool_input = WikipediaToolInput(query="United States")
+    first = await wikipedia_client.run(tool_input)
+    print(await wikipedia_client.cache.size())  # 1
+
+    # new request with the EXACTLY same input will be retrieved from the cache
+    tool_input = WikipediaToolInput(query="United States")
+    second = await wikipedia_client.run(tool_input)
+    print(first.get_text_content() == second.get_text_content())  # True
+    print(await wikipedia_client.cache.size())  # 1
+
+
+if __name__ == "__main__":
+    try:
+        asyncio.run(main())
+    except FrameworkError as e:
+        traceback.print_exc()
+        sys.exit(e.explain())
+
 ```
 
-_Source: examples/cache/toolCache.py_
+_Source: [examples/cache/tool_cache.py](/python/examples/cache/tool_cache.py)_
 
 ### Using with LLMs
 
 You can also cache LLM responses to save on API costs:
 
-```text
-Coming soon
+<!-- embedme examples/cache/llm_cache.py -->
+
+```python
+import asyncio
+import sys
+import traceback
+
+from beeai_framework.adapters.ollama.backend.chat import OllamaChatModel
+from beeai_framework.backend.message import UserMessage
+from beeai_framework.backend.types import ChatModelParameters
+from beeai_framework.cache.sliding_cache import SlidingCache
+from beeai_framework.errors import FrameworkError
+
+
+async def main() -> None:
+    llm = OllamaChatModel("llama3.1")
+    llm.config(parameters=ChatModelParameters(max_tokens=25), cache=SlidingCache(size=50))
+
+    print(await llm.cache.size())  # 0
+    first = await llm.create(messages=[UserMessage("Who is Amilcar Cabral?")])
+    print(await llm.cache.size())  # 1
+
+    # new request with the EXACTLY same input will be retrieved from the cache
+    second = await llm.create(messages=[UserMessage("Who is Amilcar Cabral?")])
+    print(first.get_text_content() == second.get_text_content())  # True
+    print(await llm.cache.size())  # 1
+
+
+if __name__ == "__main__":
+    try:
+        asyncio.run(main())
+    except FrameworkError as e:
+        traceback.print_exc()
+        sys.exit(e.explain())
+
 ```
 
-_Source: examples/cache/llmCache.py_
+_Source: [examples/cache/llm_cache.py](/python/examples/cache/llm_cache.py)_
 
 ---
 

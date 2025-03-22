@@ -13,8 +13,10 @@
 # limitations under the License.
 
 from abc import ABC, abstractmethod
+from collections import OrderedDict
 from collections.abc import AsyncGenerator, Callable
 from functools import cached_property
+from hashlib import sha512
 from typing import Any, Literal, TypeVar
 
 from pydantic import BaseModel, Field
@@ -30,6 +32,7 @@ from beeai_framework.backend.events import (
 )
 from beeai_framework.backend.message import AnyMessage, SystemMessage
 from beeai_framework.backend.types import (
+    ChatModelCache,
     ChatModelInput,
     ChatModelOutput,
     ChatModelParameters,
@@ -37,6 +40,7 @@ from beeai_framework.backend.types import (
     ChatModelStructureOutput,
 )
 from beeai_framework.backend.utils import load_model, parse_broken_json, parse_model
+from beeai_framework.cache.null_cache import NullCache
 from beeai_framework.cancellation import AbortController, AbortSignal
 from beeai_framework.context import Run, RunContext
 from beeai_framework.emitter import Emitter
@@ -44,6 +48,7 @@ from beeai_framework.logger import Logger
 from beeai_framework.retryable import Retryable, RetryableConfig, RetryableContext, RetryableInput
 from beeai_framework.template import PromptTemplate, PromptTemplateInput
 from beeai_framework.tools.tool import AnyTool
+from beeai_framework.utils.asynchronous import to_async_generator
 from beeai_framework.utils.models import ModelLike
 from beeai_framework.utils.strings import to_json
 
@@ -53,8 +58,6 @@ logger = Logger(__name__)
 
 
 class ChatModel(ABC):
-    parameters: ChatModelParameters
-
     @property
     @abstractmethod
     def model_id(self) -> str:
@@ -67,6 +70,7 @@ class ChatModel(ABC):
 
     def __init__(self) -> None:
         self.parameters = ChatModelParameters()
+        self.cache: ChatModelCache = NullCache[list[ChatModelOutput]]()
 
     @cached_property
     def emitter(self) -> Emitter:
@@ -158,6 +162,12 @@ IMPORTANT: You MUST answer with a JSON object that matches the JSON schema above
             )
         ).get()
 
+    def _generate_key(self, input: ChatModelInput) -> str:
+        input_dict = {**input.model_dump(exclude_none=True), **{"messages": [m.to_plain() for m in input.messages]}}
+        input_dict = OrderedDict(sorted(input_dict.items()))
+        input_str = str(input_dict).encode("utf-8", errors="ignore")
+        return str(int.from_bytes(sha512(input_str).digest()))
+
     def create(
         self,
         *,
@@ -182,13 +192,19 @@ IMPORTANT: You MUST answer with a JSON object that matches the JSON schema above
         )
 
         async def handler(context: RunContext) -> ChatModelOutput:
+            cache_key = self._generate_key(model_input)
+            cache_hit = await self.cache.get(cache_key)
+
             try:
                 await context.emitter.emit("start", ChatModelStartEvent(input=model_input))
                 chunks: list[ChatModelOutput] = []
 
                 if model_input.stream:
+                    generator = (
+                        to_async_generator(cache_hit) if cache_hit else self._create_stream(model_input, context)
+                    )
                     abort_controller: AbortController = AbortController()
-                    async for value in self._create_stream(model_input, context):
+                    async for value in generator:
                         chunks.append(value)
                         await context.emitter.emit(
                             "new_token", ChatModelNewTokenEvent(value=value, abort=lambda: abort_controller.abort())
@@ -196,14 +212,22 @@ IMPORTANT: You MUST answer with a JSON object that matches the JSON schema above
                         if abort_controller.signal.aborted:
                             break
 
+                    if not cache_hit:
+                        await self.cache.set(cache_key, chunks)
                     result = ChatModelOutput.from_chunks(chunks)
                 else:
-                    result = await self._create(model_input, context)
+                    if cache_hit:
+                        result = cache_hit[0]
+                    else:
+                        result = await self._create(model_input, context)
+                        await self.cache.set(cache_key, [result])
 
                 await context.emitter.emit("success", ChatModelSuccessEvent(value=result))
                 return result
             except Exception as ex:
                 error = ChatModelError.ensure(ex, model=self)
+                if cache_hit:
+                    await self.cache.delete(cache_key)
                 await context.emitter.emit("error", ChatModelErrorEvent(input=model_input, error=error))
                 raise error
             finally:
@@ -242,11 +266,10 @@ IMPORTANT: You MUST answer with a JSON object that matches the JSON schema above
         self,
         *,
         parameters: ChatModelParameters | Callable[[ChatModelParameters], ChatModelParameters] | None = None,
-        # TODO: cache: ChatModelCache | Callable[[ChatModelCache], ChatModelCache] | None = None
+        cache: ChatModelCache | Callable[[ChatModelCache], ChatModelCache] | None = None,
     ) -> None:
-        # TODO: uncomment when cache is supported/implemented
-        # if chat_config.cache:
-        #     self.cache = chat_config.cache(self.cache) if callable(chat_config.cache) else  chat_config.cache
+        if cache is not None:
+            self.cache = cache(self.cache) if callable(cache) else cache
 
         if parameters is not None:
             self.parameters = parameters(self.parameters) if callable(parameters) else parameters
