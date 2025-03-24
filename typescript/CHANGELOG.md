@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.1.10](https://github.com/i-am-bee/beeai-framework/compare/typescript_v0.1.9...typescript_v0.1.10) (2025-03-22)
+
+### Bug Fixes
+
+- **backend:** handle non-text messages ([929a16f](https://github.com/i-am-bee/beeai-framework/commit/929a16f82fd683b3456a6de63bb2e0f5cfa67ff1)), closes [#649](https://github.com/i-am-bee/beeai-framework/issues/649)
+
 ## [0.1.9](https://github.com/i-am-bee/beeai-framework/compare/typescript_v0.1.8...typescript_v0.1.9) (2025-03-21)
 
 ### Features
