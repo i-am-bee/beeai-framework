@@ -16,6 +16,7 @@
   - [Templates](templates.md)
   - [Memory](memory.md)
   - [Emitter](emitter.md)
+    - [Events](events.md)
   - [Serialization](serialization.md)
   - [Tools](tools.md)
   - [Cache](cache.md)

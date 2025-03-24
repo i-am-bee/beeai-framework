@@ -163,6 +163,7 @@ IMPORTANT: You MUST answer with a JSON object that matches the JSON schema above
         *,
         messages: list[AnyMessage],
         tools: list[AnyTool] | None = None,
+        tool_choice: AnyTool | Literal["required"] | Literal["none"] | None = None,
         abort_signal: AbortSignal | None = None,
         stop_sequences: list[str] | None = None,
         response_format: dict[str, Any] | type[BaseModel] | None = None,
@@ -176,6 +177,7 @@ IMPORTANT: You MUST answer with a JSON object that matches the JSON schema above
             stop_sequences=stop_sequences,
             response_format=response_format,
             stream=stream,
+            tool_choice=tool_choice,
             **kwargs,
         )
 

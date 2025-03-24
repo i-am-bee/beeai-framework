@@ -180,4 +180,4 @@ _Source: [examples/templates/functions.ts](/typescript/examples/templates/functi
 
 The ReAct Agent internally uses multiple prompt templates, and because now you know how to work with them, you can alter the agent’s behavior.
 
-The internal prompt templates can be modified [here](/typescript/examples/agents/bee_advanced.ts).
+The internal prompt templates can be modified [here](/typescript/examples/agents/react_advanced.ts).

@@ -223,6 +223,9 @@ _Source: [examples/agents/simple.py](/python/examples/agents/simple.py)_
 > [!TIP]
 > See the [emitter documentation](/python/docs/emitter.md) for more information on event observation.
 
+> [!TIP]
+> See the [events documentation](/python/docs/events.md) for more information on standard emitter events.
+
 ---
 
 ## Creating Your Own Agent
