@@ -32,21 +32,21 @@ class PythonStorage(ABC):
     """
 
     @abstractmethod
-    def list_files(self) -> list[PythonFile]:
+    async def list_files(self) -> list[PythonFile]:
         """
         List all files that code interpreter can use.
         """
         pass
 
     @abstractmethod
-    def upload(self, files: list[PythonFile]) -> list[PythonFile]:
+    async def upload(self, files: list[PythonFile]) -> list[PythonFile]:
         """
         Prepare subset of available files to code interpreter.
         """
         pass
 
     @abstractmethod
-    def download(self, files: list[PythonFile]) -> list[PythonFile]:
+    async def download(self, files: list[PythonFile]) -> list[PythonFile]:
         """
         Process updated/modified/deleted files from code interpreter response.
         """
@@ -77,7 +77,7 @@ class LocalPythonStorage(PythonStorage):
         os.makedirs(self._local_working_dir, exist_ok=True)
         os.makedirs(self._interpreter_working_dir, exist_ok=True)
 
-    def list_files(self) -> list[PythonFile]:
+    async def list_files(self) -> list[PythonFile]:
         self.init()
         files = os.listdir(self._local_working_dir)
         python_files = []
@@ -92,7 +92,7 @@ class LocalPythonStorage(PythonStorage):
             )
         return python_files
 
-    def upload(self, files: list[PythonFile]) -> list[PythonFile]:
+    async def upload(self, files: list[PythonFile]) -> list[PythonFile]:
         self.init()
 
         for file in files:
@@ -102,7 +102,7 @@ class LocalPythonStorage(PythonStorage):
             )
         return files
 
-    def download(self, files: list[PythonFile]) -> list[PythonFile]:
+    async def download(self, files: list[PythonFile]) -> list[PythonFile]:
         self.init()
 
         for file in files:

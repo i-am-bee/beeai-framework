@@ -16,13 +16,12 @@ import os
 import shutil
 from collections.abc import Generator
 from typing import Any
+from unittest.mock import patch
 
 import pytest
 import pytest_asyncio
 
 from beeai_framework.tools.code import LocalPythonStorage, PythonTool
-
-code_interpreter_url = os.getenv("CODE_INTERPRETER_URL", "http://localhost:50081")
 
 
 @pytest_asyncio.fixture
@@ -37,6 +36,8 @@ def test_dirs() -> Generator[tuple[str, str], Any, None]:
     for file in test_files:
         with open(file, "w") as f:
             f.write(f"Content of {file}")
+    with open(os.path.join(interpreter_dir, "dummyID"), "w") as f:
+        f.write("Hello, World!")
 
     yield local_dir, interpreter_dir
 
@@ -48,7 +49,7 @@ def test_dirs() -> Generator[tuple[str, str], Any, None]:
 @pytest_asyncio.fixture
 async def tool(test_dirs: tuple[str, str]) -> PythonTool:
     tool = PythonTool(
-        code_interpreter_url=code_interpreter_url,
+        code_interpreter_url="dummyURL",
         storage=LocalPythonStorage(local_working_dir=test_dirs[0], interpreter_working_dir=test_dirs[1]),
     )
     return tool
@@ -57,13 +58,17 @@ async def tool(test_dirs: tuple[str, str]) -> PythonTool:
 @pytest.mark.e2e
 @pytest.mark.asyncio
 async def test_without_file(tool: PythonTool) -> None:
-    result = await tool.run(
-        {
-            "language": "python",
-            "code": "print(str(1+1))",
-            "input_files": [],
-        }
-    )
+    with patch(
+        "beeai_framework.tools.code.PythonTool._call_code_interpreter",
+        return_value={"stdout": "2\n", "stderr": "", "exit_code": 0, "files": {}},
+    ):
+        result = await tool.run(
+            {
+                "language": "python",
+                "code": "print(str(1+1))",
+                "input_files": [],
+            }
+        )
     assert result.stdout
     assert "2" in result.stdout
 
@@ -71,26 +76,44 @@ async def test_without_file(tool: PythonTool) -> None:
 @pytest.mark.e2e
 @pytest.mark.asyncio
 async def test_with_file(tool: PythonTool) -> None:
-    first_result = await tool.run(
-        {
-            "language": "python",
-            "code": """
+    with patch(
+        "beeai_framework.tools.code.PythonTool._call_code_interpreter",
+        return_value={
+            "stdout": "",
+            "stderr": "",
+            "exit_code": 0,
+            "files": {"/workspace/file1.txt": "dummyID"},
+        },
+    ):
+        first_result = await tool.run(
+            {
+                "language": "python",
+                "code": """
 with open('file1.txt', 'w') as f:
     f.write("Hello, World!")
 """,
-            "input_files": [],
-        }
-    )
+                "input_files": [],
+            }
+        )
 
     assert len(first_result.output_files) == 1
     assert first_result.output_files[0].filename == "file1.txt"
 
-    result = await tool.run(
-        {
-            "language": "python",
-            "code": "print(str(3+1))",
-            "input_files": ["file1.txt"],
-        }
-    )
+    with patch(
+        "beeai_framework.tools.code.PythonTool._call_code_interpreter",
+        return_value={
+            "stdout": "4\n",
+            "stderr": "",
+            "exit_code": 0,
+            "files": {"/workspace/file1.txt": "dummyID"},
+        },
+    ):
+        result = await tool.run(
+            {
+                "language": "python",
+                "code": "print(str(3+1))",
+                "input_files": ["file1.txt"],
+            }
+        )
     assert result.stdout
     assert "4" in result.stdout

@@ -13,11 +13,10 @@
 # limitations under the License.
 
 from enum import Enum
-from functools import cached_property
 from typing import Any
 
 import httpx
-from pydantic import BaseModel, Field, InstanceOf, create_model
+from pydantic import BaseModel, Field, InstanceOf
 
 from beeai_framework import UserMessage
 from beeai_framework.backend.chat import ChatModel
@@ -29,7 +28,6 @@ from beeai_framework.tools.code.output import PythonToolOutput
 from beeai_framework.tools.code.storage import PythonFile, PythonStorage
 from beeai_framework.tools.tool import Tool
 from beeai_framework.tools.types import ToolRunOptions
-from beeai_framework.utils.strings import create_strenum
 
 logger = Logger(__name__)
 
@@ -51,10 +49,16 @@ class PreProcess(BaseModel):
 class PythonToolInput(BaseModel):
     language: Language = Field(description="Use shell for ffmpeg, pandoc, yt-dlp")
     code: str = Field(description="full source code file that will be executed")
+    input_files: list[str] = Field(
+        description="""To access an existing file, you must specify it;
+otherwise, the file will not be accessible.
+IMPORTANT: If the file is not provided in the input, it will not be accessible."""
+    )
 
 
 class PythonTool(Tool[PythonToolInput, ToolRunOptions, PythonToolOutput]):
     name = "Python"
+    input_schema = PythonToolInput
     description = """
 Run Python and/or shell code and return the console output. Use for isolated calculations,
 computations, data or file manipulation but still prefer assistant's capabilities
@@ -85,35 +89,20 @@ Do not use this tool multiple times in a row, always write the full code you wan
         self._code_interpreter_url = code_interpreter_url
         self._storage = storage
         self._preprocess = preprocess
-        self.files: list[PythonFile] = []
-
-    @cached_property
-    def input_schema(self) -> type[PythonToolInput]:
-        self.files = self._storage.list_files()
-        filenames = [file.filename for file in self.files]
-        python_files = create_strenum("PythonFiles", filenames) if filenames else None
-        if python_files:
-            input_files = (
-                list[python_files],  # type: ignore
-                Field(
-                    description="""To access an existing file, you must specify it;
-otherwise, the file will not be accessible.
-IMPORTANT: If the file is not provided in the input, it will not be accessible."""
-                ),
-            )
-            return create_model(
-                "PythonToolInput",
-                __base__=PythonToolInput,
-                input_files=input_files,
-            )
-
-        return PythonToolInput
 
     def _create_emitter(self) -> Emitter:
         return Emitter.root().child(
             namespace=["tool", "python", "code_interpreter"],
             creator=self,
         )
+
+    @staticmethod
+    async def _call_code_interpreter(url: str, body: dict[str, Any]) -> Any:
+        headers = {"Accept": "application/json", "Content-Type": "application/json"}
+        async with httpx.AsyncClient() as client:
+            response = await client.post(url, headers=headers, json=body)
+            response.raise_for_status()
+            return response.json()
 
     async def _run(
         self, tool_input: PythonToolInput, options: ToolRunOptions | None, context: RunContext
@@ -129,27 +118,24 @@ IMPORTANT: If the file is not provided in the input, it will not be accessible."
                 return response.get_text_content()
             return tool_input.code
 
-        async def call_code_interpreter(url: str, body: dict[str, Any]) -> Any:
-            headers = {"Accept": "application/json", "Content-Type": "application/json"}
-            async with httpx.AsyncClient() as client:
-                response = await client.post(url, headers=headers, json=body)
-                response.raise_for_status()
-                return response.json()
-
         execute_url = self._code_interpreter_url + "/v1/execute"
         prefix = "/workspace/"
 
+        files = await self._storage.list_files()
+        if not set(tool_input.input_files).issubset([f.filename for f in files]):
+            raise ValueError(f"Invalid input files: {tool_input.input_files}")
+
         unique_files: list[PythonFile] = []
-        for file in self.files or self._storage.list_files():
-            if file.filename in [python_file.value for python_file in tool_input.input_files or []]:  # type: ignore
+        for file in files:
+            if file.filename in tool_input.input_files or []:
                 unique_files.append(file)
-        self._storage.upload(unique_files)
+        await self._storage.upload(unique_files)
 
         files_dict = {}
         for file in unique_files:
             files_dict[prefix + file.filename] = file.python_id
 
-        result = await call_code_interpreter(
+        result = await self._call_code_interpreter(
             url=execute_url,
             body={
                 "source_code": await get_source_code(),
@@ -165,6 +151,6 @@ IMPORTANT: If the file is not provided in the input, it will not be accessible."
                     if all(filename != f.filename or python_id != f.python_id for f in unique_files):
                         files_output.append(PythonFile(filename=filename, id=python_id, python_id=python_id))
 
-            self._storage.download(files_output)
+            await self._storage.download(files_output)
 
         return PythonToolOutput(result["stdout"], result["stderr"], result["exit_code"], files_output)
