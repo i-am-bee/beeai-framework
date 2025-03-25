@@ -4,16 +4,14 @@ import traceback
 
 from beeai_framework.backend.chat import ChatModel
 from beeai_framework.errors import FrameworkError
+from beeai_framework.tools.search import DuckDuckGoSearchTool
 from beeai_framework.tools.weather.openmeteo import OpenMeteoTool
 from beeai_framework.workflows.agent import AgentWorkflow, AgentWorkflowInput
 
 
 async def main() -> None:
-    # destination = input("Enter your travel destination (e.g., Boston, MA): ")
-    # travel_dates = input("Enter your travel dates (e.g., Mar 10-17, 2025): ")
-
-    destination = "Yosemite, CA"
-    travel_dates = "Mar 15-17"
+    destination = input("Enter your travel destination (e.g., Boston, MA): ")
+    travel_dates = input("Enter your travel dates (e.g., Mar 23-25, 2025): ")
 
     llm = ChatModel.from_name("ollama:llama3.1")
 
@@ -31,6 +29,7 @@ async def main() -> None:
         name="Activity Planner",
         role="An expert in local attractions",
         instructions="You know about interesting activities and would like to share.",
+        tools=[DuckDuckGoSearchTool()],
         llm=llm,
     )
 

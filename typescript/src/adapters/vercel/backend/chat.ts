@@ -35,7 +35,13 @@ import {
   ToolCallPart,
 } from "ai";
 import { Emitter } from "@/emitter/emitter.js";
-import { AssistantMessage, Message, ToolMessage } from "@/backend/message.js";
+import {
+  AssistantMessage,
+  Message,
+  SystemMessage,
+  ToolMessage,
+  UserMessage,
+} from "@/backend/message.js";
 import { GetRunContext } from "@/context.js";
 import { ValueError } from "@/errors.js";
 import { isEmpty, mapToObj, toCamelCase } from "remeda";
@@ -179,8 +185,12 @@ export abstract class VercelChatModel<
         return { role: "assistant", content: msg.content };
       } else if (msg instanceof ToolMessage) {
         return { role: "tool", content: msg.content };
+      } else if (msg instanceof UserMessage) {
+        return { role: msg.role, content: msg.content };
+      } else if (msg instanceof SystemMessage) {
+        return { role: "user", content: msg.content };
       }
-      return { role: msg.role as "user" | "system", content: msg.text };
+      return { role: msg.role, content: msg.content } as CoreMessage;
     });
 
     return {
