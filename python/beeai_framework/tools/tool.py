@@ -79,6 +79,14 @@ class Tool(Generic[TInput, TRunOptions, TOutput], ABC):
     async def _run(self, input: TInput, options: TRunOptions | None, context: RunContext) -> TOutput:
         pass
 
+    def __getstate__(self) -> dict[str, any]:
+        return {
+            "name": self.name,
+            "description": self.description,
+            "input_schema": self.input_schema.model_json_schema(),
+            "options": self.options,
+        }
+
     def validate_input(self, input: TInput | dict[str, Any]) -> TInput:
         try:
             return self.input_schema.model_validate(input)
