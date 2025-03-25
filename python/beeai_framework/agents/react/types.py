@@ -90,4 +90,4 @@ class ReActAgentInput(BaseModel):
     meta: InstanceOf[AgentMeta] | None = None
     templates: dict[ModelKeysType, InstanceOf[PromptTemplate[Any]] | ReActAgentTemplateFactory] | None = None
     execution: AgentExecutionConfig | None = None
-    stream: bool | None = None
+    stream: bool = True

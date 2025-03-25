@@ -206,7 +206,7 @@ class DefaultRunner(BaseRunner):
 
             output: ChatModelOutput = await self._input.llm.create(
                 messages=self.memory.messages[:],
-                stream=True,
+                stream=self._input.stream,
                 tools=self._input.tools if self.use_native_tool_calling else None,
             ).observe(lambda llm_emitter: llm_emitter.on("new_token", on_new_token))
 
