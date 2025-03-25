@@ -31,6 +31,7 @@ export const BackendProviders = {
   },
   Groq: { name: "Groq", module: "groq", aliases: [] as string[] },
   Dummy: { name: "Dummy", module: "dummy", aliases: [] as string[] },
+  Anthropic: { name: "Anthropic", module: "anthropic", aliases: [] as string[] },
 } as const;
 
 export type ProviderName = (typeof BackendProviders)[keyof typeof BackendProviders]["module"];
