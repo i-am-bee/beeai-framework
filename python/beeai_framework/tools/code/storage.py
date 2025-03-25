@@ -112,14 +112,6 @@ class LocalPythonStorage(PythonStorage):
             )
         return files
 
-    def clean_up(self, rmtree: bool = False) -> None:
-        if rmtree:
-            shutil.rmtree(self._local_working_dir)
-            shutil.rmtree(self._interpreter_working_dir)
-        else:
-            os.rmdir(self._local_working_dir)
-            os.rmdir(self._interpreter_working_dir)
-
     @staticmethod
     def _compute_hash(file_path: str) -> str:
         with open(file_path, "rb") as f:

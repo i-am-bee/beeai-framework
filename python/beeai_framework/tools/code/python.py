@@ -24,6 +24,7 @@ from beeai_framework.context import RunContext
 from beeai_framework.emitter.emitter import Emitter
 from beeai_framework.logger import Logger
 from beeai_framework.template import PromptTemplate
+from beeai_framework.tools import ToolInputValidationError
 from beeai_framework.tools.code.output import PythonToolOutput
 from beeai_framework.tools.code.storage import PythonFile, PythonStorage
 from beeai_framework.tools.tool import Tool
@@ -122,18 +123,19 @@ Do not use this tool multiple times in a row, always write the full code you wan
         prefix = "/workspace/"
 
         files = await self._storage.list_files()
-        if not set(tool_input.input_files).issubset([f.filename for f in files]):
-            raise ValueError(f"Invalid input files: {tool_input.input_files}")
 
-        unique_files: list[PythonFile] = []
-        for file in files:
-            if file.filename in tool_input.input_files or []:
-                unique_files.append(file)
+        valid_filenames = [f.filename for f in files]
+        for input_file in tool_input.input_files:
+            if input_file not in valid_filenames:
+                raise ToolInputValidationError(
+                    f"Provided file does not exist: {input_file}\n"
+                    + f"Accessible files include: {', '.join(valid_filenames)}"
+                )
+
+        unique_files: list[PythonFile] = [file for file in files if file.filename in tool_input.input_files]
         await self._storage.upload(unique_files)
 
-        files_dict = {}
-        for file in unique_files:
-            files_dict[prefix + file.filename] = file.python_id
+        files_dict = {prefix + file.filename: file.python_id for file in unique_files}
 
         result = await self._call_code_interpreter(
             url=execute_url,

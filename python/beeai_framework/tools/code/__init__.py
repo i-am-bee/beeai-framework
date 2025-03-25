@@ -14,6 +14,6 @@
 
 
 from beeai_framework.tools.code.python import PythonTool
-from beeai_framework.tools.code.storage import LocalPythonStorage
+from beeai_framework.tools.code.storage import LocalPythonStorage, PythonStorage
 
-__all__ = ["LocalPythonStorage", "PythonTool"]
+__all__ = ["LocalPythonStorage", "PythonStorage", "PythonTool"]
