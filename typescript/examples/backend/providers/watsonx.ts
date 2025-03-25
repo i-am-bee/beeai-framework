@@ -53,11 +53,7 @@ async function watsonxAbort() {
       stream: true,
       abortSignal: AbortSignal.timeout(5 * 1000),
     });
-    if (response) {
-      console.info(response.getTextContent());
-    } else {
-      console.info("No response returned.");
-    }
+    console.info(response.getTextContent());
   } catch (err) {
     if (err instanceof AbortError) {
       console.error("Aborted", { err });

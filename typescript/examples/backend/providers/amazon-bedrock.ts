@@ -26,22 +26,22 @@ llm.config({
   },
 });
 
-async function openaiFromName() {
-  const openaiLLM = await ChatModel.fromName("amazon-bedrock:amazon.titan-text-lite-v1");
-  const response = await openaiLLM.create({
+async function amazonBedrockFromName() {
+  const amazonBedrockLLM = await ChatModel.fromName("amazon-bedrock:amazon.titan-text-lite-v1");
+  const response = await amazonBedrockLLM.create({
     messages: [new UserMessage("what states are part of New England?")],
   });
   console.info(response.getTextContent());
 }
 
-async function openaiSync() {
+async function amazonBedrockSync() {
   const response = await llm.create({
     messages: [new UserMessage("what is the capital of Massachusetts?")],
   });
   console.info(response.getTextContent());
 }
 
-async function openaiStream() {
+async function amazonBedrockStream() {
   const response = await llm.create({
     messages: [new UserMessage("How many islands make up the country of Cape Verde?")],
     stream: true,
@@ -49,18 +49,14 @@ async function openaiStream() {
   console.info(response.getTextContent());
 }
 
-async function openaiAbort() {
+async function amazonBedrockAbort() {
   try {
     const response = await llm.create({
       messages: [new UserMessage("What is the smallest of the Cape Verde islands?")],
       stream: true,
       abortSignal: AbortSignal.timeout(1 * 1000),
     });
-    if (response) {
-      console.info(response.getTextContent());
-    } else {
-      console.info("No response returned.");
-    }
+    console.info(response.getTextContent());
   } catch (err) {
     if (err instanceof ChatModelError) {
       console.error("Aborted", { err });
@@ -68,7 +64,7 @@ async function openaiAbort() {
   }
 }
 
-async function openaiStructure() {
+async function amazonBedrockStructure() {
   const response = await llm.createStructure({
     schema: z.object({
       answer: z.string({ description: "your final answer" }),
@@ -78,7 +74,7 @@ async function openaiStructure() {
   console.info(response.object);
 }
 
-async function openaiToolCalling() {
+async function amazonBedrockToolCalling() {
   const userMessage = new UserMessage("What is the weather in Boston?");
   const weatherTool = new OpenMeteoTool({ retryOptions: { maxRetries: 3 } });
   const response = await llm.create({ messages: [userMessage], tools: [weatherTool] });
@@ -96,7 +92,7 @@ async function openaiToolCalling() {
   console.info(finalResponse.getTextContent());
 }
 
-async function openaiDebug() {
+async function amazonBedrockDebug() {
   // Log every request
   llm.emitter.match("*", (value, event) =>
     console.debug(
@@ -112,17 +108,17 @@ async function openaiDebug() {
   console.info(response.messages[0].toPlain());
 }
 
-console.info(" openaiFromName".padStart(25, "*"));
-await openaiFromName();
-console.info(" openaiSync".padStart(25, "*"));
-await openaiSync();
-console.info(" openaiStream".padStart(25, "*"));
-await openaiStream();
-console.info(" openaiAbort".padStart(25, "*"));
-await openaiAbort();
-console.info(" openaiStructure".padStart(25, "*"));
-await openaiStructure();
-console.info(" openaiToolCalling".padStart(25, "*"));
-await openaiToolCalling();
-console.info(" openaiDebug".padStart(25, "*"));
-await openaiDebug();
+console.info(" amazonBedrockFromName".padStart(25, "*"));
+await amazonBedrockFromName();
+console.info(" amazonBedrockSync".padStart(25, "*"));
+await amazonBedrockSync();
+console.info(" amazonBedrockStream".padStart(25, "*"));
+await amazonBedrockStream();
+console.info(" amazonBedrockAbort".padStart(25, "*"));
+await amazonBedrockAbort();
+console.info(" amazonBedrockStructure".padStart(25, "*"));
+await amazonBedrockStructure();
+console.info(" amazonBedrockToolCalling".padStart(25, "*"));
+await amazonBedrockToolCalling();
+console.info(" amazonBedrockDebug".padStart(25, "*"));
+await amazonBedrockDebug();

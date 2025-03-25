@@ -51,11 +51,7 @@ async function ollamaAbort() {
       stream: true,
       abortSignal: AbortSignal.timeout(1 * 1000),
     });
-    if (response) {
-      console.info(response.getTextContent());
-    } else {
-      console.info("No response returned.");
-    }
+    console.info(response.getTextContent());
   } catch (err) {
     if (err instanceof ChatModelError) {
       console.error("Aborted", { err });
