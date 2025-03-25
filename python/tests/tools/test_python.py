@@ -59,7 +59,7 @@ async def tool(test_dirs: tuple[str, str]) -> PythonTool:
 @pytest.mark.asyncio
 async def test_without_file(tool: PythonTool) -> None:
     with patch(
-        "beeai_framework.tools.code.PythonTool._call_code_interpreter",
+        "beeai_framework.tools.code.PythonTool.call_code_interpreter",
         return_value={"stdout": "2\n", "stderr": "", "exit_code": 0, "files": {}},
     ):
         result = await tool.run(
@@ -77,7 +77,7 @@ async def test_without_file(tool: PythonTool) -> None:
 @pytest.mark.asyncio
 async def test_with_file(tool: PythonTool) -> None:
     with patch(
-        "beeai_framework.tools.code.PythonTool._call_code_interpreter",
+        "beeai_framework.tools.code.PythonTool.call_code_interpreter",
         return_value={
             "stdout": "",
             "stderr": "",
@@ -100,7 +100,7 @@ with open('file1.txt', 'w') as f:
     assert first_result.output_files[0].filename == "file1.txt"
 
     with patch(
-        "beeai_framework.tools.code.PythonTool._call_code_interpreter",
+        "beeai_framework.tools.code.PythonTool.call_code_interpreter",
         return_value={
             "stdout": "4\n",
             "stderr": "",
