@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import TypeVar
+from typing import TypeVar, overload
 
 T = TypeVar("T")
 
@@ -23,3 +23,11 @@ def flatten(xss: list[list[T]]) -> list[T]:
 
 def remove_falsy(xss: list[T]) -> list[T]:
     return [x for x in xss if x]
+
+
+@overload
+def cast_list(xss: list[T]) -> list[T]: ...
+@overload
+def cast_list(xss: T) -> list[T]: ...
+def cast_list(xss: T | list[T]) -> list[T]:
+    return xss if isinstance(xss, list) else [xss]

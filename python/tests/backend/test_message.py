@@ -84,5 +84,5 @@ def test_custom_message() -> None:
     content = message.content
     assert isinstance(message, CustomMessage)
     assert len(content) == 1
-    assert content[0].text == text
+    assert content[0].model_dump()["text"] == text
     assert message.role == "custom"

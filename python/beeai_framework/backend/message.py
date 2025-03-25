@@ -14,16 +14,17 @@
 
 import enum
 import json
-from abc import ABC, abstractmethod
+from abc import ABC
 from collections.abc import Sequence
 from datetime import UTC, datetime
 from enum import Enum
-from typing import Any, Generic, Literal, Self, TypeAlias, TypeVar
+from typing import Any, Generic, Literal, Self, TypeAlias, TypeVar, cast
 
 from litellm.types.llms.openai import ChatCompletionImageUrlObject
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
-from beeai_framework.utils.models import to_any_model
+from beeai_framework.utils.lists import cast_list
+from beeai_framework.utils.models import to_any_model, to_model
 
 T = TypeVar("T", bound=BaseModel)
 MessageMeta = dict[str, Any]
@@ -82,20 +83,11 @@ class Message(ABC, Generic[T]):
     content: list[T]
     meta: MessageMeta
 
-    def __init__(self, content: T | list[T] | str, meta: MessageMeta | None = None) -> None:
+    def __init__(self, content: list[T], meta: MessageMeta | None = None) -> None:
+        self.content = content
         self.meta = meta or {}
         if not self.meta.get("createdAt"):
             self.meta["createdAt"] = datetime.now(tz=UTC)
-
-        self.content = self._verify(
-            [self._from_string(text=content)]
-            if isinstance(content, str)
-            else content
-            if isinstance(content, list)
-            else [content]
-            if content
-            else []
-        )
 
     @classmethod
     def from_chunks(cls, chunks: Sequence["Message[T]"]) -> Self:
@@ -112,10 +104,6 @@ class Message(ABC, Generic[T]):
     def text(self) -> str:
         return "".join([x.text for x in self.get_texts()])
 
-    @abstractmethod
-    def _from_string(self, text: str) -> T:
-        pass
-
     def get_texts(self) -> list[MessageTextContent]:
         return [cont for cont in self.content if isinstance(cont, MessageTextContent)]
 
@@ -128,22 +116,25 @@ class Message(ABC, Generic[T]):
     def __str__(self) -> str:
         return json.dumps(self.to_plain())
 
-    def _verify(self, content: list[Any]) -> list[T]:
-        models = self._models()
-        return [
-            self._from_string(value) if isinstance(value, str) else to_any_model(models, value) for value in content
-        ]
 
-    @abstractmethod
-    def _models(self) -> Sequence[type[T]]:
-        pass
+AssistantMessageContent = MessageTextContent | MessageToolCallContent
 
 
-class AssistantMessage(Message[MessageToolCallContent | MessageTextContent]):
+class AssistantMessage(Message[AssistantMessageContent]):
     role = Role.ASSISTANT
 
-    def _from_string(self, text: str) -> MessageTextContent:
-        return MessageTextContent(text=text)
+    def __init__(
+        self, content: list[AssistantMessageContent] | AssistantMessageContent | str, meta: MessageMeta | None = None
+    ) -> None:
+        super().__init__(
+            [
+                MessageTextContent(text=c)
+                if isinstance(c, str)
+                else to_any_model([MessageToolCallContent, MessageTextContent], cast(AssistantMessageContent, c))
+                for c in cast_list(content)
+            ],
+            meta,
+        )
 
     def get_tool_calls(self) -> list[MessageToolCallContent]:
         return [cont for cont in self.content if isinstance(cont, MessageToolCallContent)]
@@ -151,62 +142,94 @@ class AssistantMessage(Message[MessageToolCallContent | MessageTextContent]):
     def get_text_messages(self) -> list[MessageTextContent]:
         return [cont for cont in self.content if isinstance(cont, MessageTextContent)]
 
-    def _models(self) -> Sequence[type[MessageToolCallContent] | type[MessageTextContent]]:
-        return [MessageToolCallContent, MessageTextContent]
-
 
 class ToolMessage(Message[MessageToolResultContent]):
     role = Role.TOOL
 
-    def _from_string(self, text: str) -> MessageToolResultContent:
-        return MessageToolResultContent.model_validate(json.loads(text))
+    def __init__(
+        self, content: list[MessageToolResultContent] | MessageToolResultContent | str, meta: MessageMeta | None = None
+    ) -> None:
+        super().__init__(
+            [
+                MessageToolResultContent.model_validate(json.loads(c))
+                if isinstance(c, str)
+                else to_model(MessageToolResultContent, cast(MessageToolResultContent, c))
+                for c in cast_list(content)
+            ],
+            meta,
+        )
 
     def get_tool_results(self) -> list[MessageToolResultContent]:
         return list(filter(lambda x: isinstance(x, MessageToolResultContent), self.content))
-
-    def _models(self) -> Sequence[type[MessageToolResultContent]]:
-        return [MessageToolResultContent]
 
 
 class SystemMessage(Message[MessageTextContent]):
     role = Role.SYSTEM
 
-    def _from_string(self, text: str) -> MessageTextContent:
-        return MessageTextContent(text=text)
+    def __init__(
+        self, content: list[MessageTextContent] | MessageTextContent | str, meta: MessageMeta | None = None
+    ) -> None:
+        super().__init__(
+            [
+                MessageTextContent(text=c)
+                if isinstance(c, str)
+                else to_model(MessageTextContent, cast(MessageTextContent, c))
+                for c in cast_list(content)
+            ],
+            meta,
+        )
 
-    def _models(self) -> Sequence[type[MessageTextContent]]:
-        return [MessageTextContent]
+
+UserMessageContent = MessageTextContent | MessageImageContent
 
 
-class UserMessage(Message[MessageTextContent | MessageImageContent]):
+class UserMessage(Message[UserMessageContent]):
     role = Role.USER
 
+    def __init__(
+        self, content: list[UserMessageContent] | UserMessageContent | str, meta: MessageMeta | None = None
+    ) -> None:
+        super().__init__(
+            [
+                MessageTextContent(text=c)
+                if isinstance(c, str)
+                else to_any_model([MessageToolCallContent, MessageTextContent], cast(UserMessageContent, c))
+                for c in cast_list(content)
+            ],
+            meta,
+        )
+
     @classmethod
-    def image(cls, data: MessageImageContentImageUrl | str) -> Self:
+    def from_image(cls, data: MessageImageContentImageUrl | str) -> Self:
         image_url = MessageImageContentImageUrl(url=data) if isinstance(data, str) else data
         return cls(MessageImageContent(image_url=image_url))
 
-    def _from_string(self, text: str) -> MessageTextContent:
-        return MessageTextContent(text=text)
 
-    def _models(self) -> Sequence[type[MessageTextContent | MessageImageContent]]:
-        return [MessageTextContent, MessageImageContent]
+class CustomMessageContent(BaseModel):
+    model_config = ConfigDict(extra="allow")
 
 
-class CustomMessage(Message[MessageTextContent]):
+class CustomMessage(Message[CustomMessageContent]):
     role: str
 
-    def __init__(self, role: str, content: MessageTextContent | str, meta: MessageMeta | None = None) -> None:
-        super().__init__(content, meta)
+    def __init__(
+        self,
+        role: str,
+        content: list[CustomMessageContent] | CustomMessageContent | str,
+        meta: MessageMeta | None = None,
+    ) -> None:
+        super().__init__(
+            [
+                CustomMessageContent.model_validate(MessageTextContent(text=c).model_dump())
+                if isinstance(c, str)
+                else to_model(CustomMessageContent, cast(CustomMessageContent, c))
+                for c in cast_list(content)
+            ],
+            meta,
+        )
         self.role = role
         if not self.role:
             raise ValueError("Role must be specified!")
-
-    def _from_string(self, text: str) -> MessageTextContent:
-        return MessageTextContent(text=text)
-
-    def _models(self) -> Sequence[type[MessageTextContent]]:
-        return [MessageTextContent]
 
 
 AnyMessage: TypeAlias = Message[Any]

@@ -57,7 +57,7 @@ async def watsonx_images() -> None:
     response = await image_llm.create(
         messages=[
             UserMessage("What is the dominant color in the picture?"),
-            UserMessage.image(
+            UserMessage.from_image(
                 "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAIAAACQkWg2AAAAHUlEQVR4nGI5Y6bFQApgIkn1qIZRDUNKAyAAAP//0ncBT3KcmKoAAAAASUVORK5CYII="
             ),
         ],
