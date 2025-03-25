@@ -37,6 +37,7 @@ def test_user_message() -> None:
     content = message.content
     assert isinstance(message, UserMessage)
     assert len(content) == 1
+    assert isinstance(content[0], MessageTextContent)
     assert content[0].text == text
 
 
