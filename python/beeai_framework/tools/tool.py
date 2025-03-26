@@ -23,6 +23,8 @@ from typing import Any, Generic, TypeAlias
 from pydantic import BaseModel, ConfigDict, ValidationError, create_model
 from typing_extensions import TypeVar
 
+from beeai_framework.cache.base import BaseCache
+from beeai_framework.cache.null_cache import NullCache
 from beeai_framework.context import Run, RunContext
 from beeai_framework.emitter.emitter import Emitter
 from beeai_framework.errors import FrameworkError
@@ -49,6 +51,7 @@ TOutput = TypeVar("TOutput", bound=ToolOutput, default=ToolOutput)
 class Tool(Generic[TInput, TRunOptions, TOutput], ABC):
     def __init__(self, options: dict[str, Any] | None = None) -> None:
         self.options: dict[str, Any] | None = options or None
+        self.cache = self.options.get("cache", NullCache[TOutput]()) if self.options else NullCache[TOutput]()
 
     @property
     @abstractmethod
@@ -79,6 +82,15 @@ class Tool(Generic[TInput, TRunOptions, TOutput], ABC):
     async def _run(self, input: TInput, options: TRunOptions | None, context: RunContext) -> TOutput:
         pass
 
+    def _generate_key(self, input: TInput | dict[str, Any], options: TRunOptions | None = None) -> str:
+        options_dict = options.model_dump(exclude_none=True) if options else {}
+        options_dict.pop("signal", None)
+        options_dict.pop("retry_options", None)
+        return BaseCache.generate_key(input, options_dict)
+
+    async def clear_cache(self) -> None:
+        await self.cache.clear()
+
     def validate_input(self, input: TInput | dict[str, Any]) -> TInput:
         try:
             return self.input_schema.model_validate(input)
@@ -96,7 +108,18 @@ class Tool(Generic[TInput, TRunOptions, TOutput], ABC):
                     nonlocal error_propagated
                     error_propagated = False
                     await context.emitter.emit("start", ToolStartEvent(input=validated_input, options=options))
-                    return await self._run(validated_input, options, context)
+
+                    if self.cache.enabled:
+                        cache_key = self._generate_key(input, options)
+                        result = await self.cache.get(cache_key)
+                        if result:
+                            return result
+
+                    result = await self._run(validated_input, options, context)
+                    if self.cache.enabled:
+                        await self.cache.set(cache_key, result)
+
+                    return result
 
                 async def on_error(error: Exception, _: RetryableContext) -> None:
                     nonlocal error_propagated
