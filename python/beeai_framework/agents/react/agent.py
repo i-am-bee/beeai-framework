@@ -65,7 +65,7 @@ class ReActAgent(BaseAgent[ReActAgentRunOutput]):
         meta: AgentMeta | None = None,
         templates: dict[ModelKeysType, PromptTemplate[Any] | ReActAgentTemplateFactory] | None = None,
         execution: AgentExecutionConfig | None = None,
-        stream: bool | None = None,
+        stream: bool = True,
     ) -> None:
         super().__init__()
         self.input = ReActAgentInput(

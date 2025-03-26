@@ -16,6 +16,7 @@
 import os
 from typing import Any
 
+from beeai_framework.adapters.litellm import utils
 from beeai_framework.adapters.litellm.chat import LiteLLMChatModel
 from beeai_framework.backend.constants import ProviderName
 from beeai_framework.logger import Logger
@@ -44,11 +45,14 @@ class VertexAIChatModel(LiteLLMChatModel):
         # Set GOOGLE_APPLICATION_CREDENTIALS / GOOGLE_CREDENTIALS / GOOGLE_APPLICATION_CREDENTIALS_JSON
 
         super().__init__(
-            model_id if model_id else os.getenv("VERTEXAI_CHAT_MODEL", "geminid-2.0-flash-lite-001"),
+            model_id if model_id else os.getenv("GOOGLE_VERTEX_CHAT_MODEL", "gemini-2.0-flash-lite-001"),
             provider_id="vertex_ai",
             settings=_settings
             | {
                 "vertex_project": vertexai_project,
                 "vertex_location": vertexai_location,
             },
+        )
+        self._settings["extra_headers"] = utils.parse_extra_headers(
+            self._settings.get("extra_headers"), os.getenv("GOOGLE_VERTEX_API_HEADERS")
         )

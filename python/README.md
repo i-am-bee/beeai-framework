@@ -46,7 +46,14 @@ BeeAI framework provides a comprehensive set of features for building powerful A
 > [!NOTE]
 > Instrumentation and version features are not yet implemented in Python, but they are coming soon!
 
-# Prerequisites
+## Tutorials
+
+| Topic | Description |
+|-----------|-------------|
+| [**How to Slack with Bee**](/python/docs/tutorials.md#how-to-slack-with-bee) | This tutorial will guide you through integrating the BeeAI Python Framework with the Slack API. By the end, the agent will be able to post messages to a Slack channel.|
+| [**BeeAI integration using RemoteAgent**](/python/docs/tutorials.md#beeai-integration-using-remoteagent) | BeeAI is an open platform to help you discover, run, and compose AI agents from any framework and language. In this tutorial you will learn how to integrate BeeAI agents into the framework.|
+
+## Prerequisites
 
 ✅ Python >= 3.11
 

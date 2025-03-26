@@ -22,14 +22,15 @@ async def main() -> None:
 
     reader = ConsoleReader()
 
-    prompt = reader.prompt()
+    reader.write("🛠️ System: ", "Agent initialized with DuckDuckGo and OpenMeteo tools.")
 
-    output: ReActAgentRunOutput = await agent.run(
-        prompt=prompt, execution=AgentExecutionConfig(total_max_retries=2, max_retries_per_step=3, max_iterations=8)
-    ).on(
-        "update",
-        lambda data, event: reader.write(f"Agent({data.update.key}) 🤖 : ", data.update.parsed_value),
-    )
+    for prompt in reader:
+        output: ReActAgentRunOutput = await agent.run(
+            prompt=prompt, execution=AgentExecutionConfig(total_max_retries=2, max_retries_per_step=3, max_iterations=8)
+        ).on(
+            "update",
+            lambda data, event: reader.write(f"Agent({data.update.key}) 🤖 : ", data.update.parsed_value),
+        )
 
     reader.write("Agent 🤖 : ", output.result.text)
 

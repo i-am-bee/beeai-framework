@@ -1,3 +1,15 @@
+## python_v0.1.9 (2025-03-24)
+
+### Bug Fixes
+
+- **backend**: handle empty tool calls for vLLM (#644)
+
+### Features
+
+- **workflows**: add ability to pass agent instance to AgentWorkflow (#641)
+- **backend**: add tool_choice parameter (#645)
+- **instrumentation**: remove instrumentation module and switch to openinference (#628) (#642)
+
 ## python_v0.1.8 (2025-03-19)
 
 ### Bug Fixes

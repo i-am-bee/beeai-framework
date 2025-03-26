@@ -27,7 +27,7 @@ const codeInterpreterUrl = process.env.CODE_INTERPRETER_URL;
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
 const codeInterpreterTmpdir =
-  process.env.CODE_INTEPRETER_TMPDIR ?? "./examples/tmp/code_interpreter";
+  process.env.CODE_INTERPRETER_TMPDIR ?? "./examples/tmp/code_interpreter";
 const localTmpdir = process.env.LOCAL_TMPDIR ?? "./examples/tmp/local";
 
 const agent = new ReActAgent({

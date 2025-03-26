@@ -2,6 +2,7 @@ import asyncio
 import logging
 import os
 import sys
+import tempfile
 import traceback
 from typing import Any
 
@@ -16,6 +17,7 @@ from beeai_framework.emitter.types import EmitterOptions
 from beeai_framework.errors import FrameworkError
 from beeai_framework.logger import Logger
 from beeai_framework.memory.token_memory import TokenMemory
+from beeai_framework.tools.code import LocalPythonStorage, PythonTool
 from beeai_framework.tools.search import DuckDuckGoSearchTool, WikipediaTool
 from beeai_framework.tools.tool import AnyTool
 from beeai_framework.tools.weather.openmeteo import OpenMeteoTool
@@ -53,8 +55,15 @@ def create_agent() -> ReActAgent:
     # Add code interpreter tool if URL is configured
     code_interpreter_url = os.getenv("CODE_INTERPRETER_URL")
     if code_interpreter_url:
-        # Note: Python tool implementation would go here
-        pass
+        tools.append(
+            PythonTool(
+                code_interpreter_url,
+                LocalPythonStorage(
+                    local_working_dir=tempfile.mkdtemp("code_interpreter_source"),
+                    interpreter_working_dir=os.getenv("CODE_INTERPRETER_TMPDIR", "./tmp/code_interpreter_target"),
+                ),
+            )
+        )
 
     # Create agent with memory and tools
     agent = ReActAgent(llm=llm, tools=tools, memory=TokenMemory(llm))
@@ -91,7 +100,7 @@ async def main() -> None:
             f"The code interpreter tool is enabled. Please ensure that it is running on {code_interpreter_url}",
         )
 
-    reader.write("🛠️ System: ", "Agent initialized with Wikipedia tool.")
+    reader.write("🛠️ System: ", "Agent initialized with Wikipedia, DuckDuckGo, and Weather tools.")
 
     # Main interaction loop with user input
     for prompt in reader:

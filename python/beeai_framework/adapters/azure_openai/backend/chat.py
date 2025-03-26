@@ -17,6 +17,7 @@ from typing import Any
 
 from dotenv import load_dotenv
 
+from beeai_framework.adapters.litellm import utils
 from beeai_framework.adapters.litellm.chat import LiteLLMChatModel
 from beeai_framework.backend.constants import ProviderName
 from beeai_framework.logger import Logger
@@ -122,4 +123,7 @@ class AzureOpenAIChatModel(LiteLLMChatModel):
             model_id=(model_id if model_id is not None else os.getenv("AZURE_OPENAI_CHAT_MODEL", "gpt-4o-mini")),
             provider_id="azure",  # LiteLLM uses 'azure' for Azure OpenAI
             settings=config,
+        )
+        self._settings["extra_headers"] = utils.parse_extra_headers(
+            self._settings.get("extra_headers"), os.getenv("AZURE_OPENAI_API_HEADERS")
         )

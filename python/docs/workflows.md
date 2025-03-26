@@ -1,4 +1,4 @@
-# 🔄 Workflows (experimental)
+# 🔄 Workflows
 
 <!-- TOC -->
 ## Table of Contents
