@@ -17,12 +17,23 @@ from typing import Annotated, Any
 
 from pydantic import BaseModel, InstanceOf
 
+from beeai_framework.agents.react.runners.default.prompts import (
+    AssistantPromptTemplateInput,
+    SchemaErrorTemplateInput,
+    SystemPromptTemplateInput,
+    ToolErrorTemplateInput,
+    ToolInputErrorTemplateInput,
+    ToolNoResultsTemplateInput,
+    ToolNotFoundErrorTemplateInput,
+    UserEmptyPromptTemplateInput,
+    UserPromptTemplateInput,
+)
 from beeai_framework.agents.types import AgentExecutionConfig, AgentMeta, BaseAgentRunOptions
 from beeai_framework.backend.chat import ChatModel
 from beeai_framework.backend.message import AnyMessage
 from beeai_framework.backend.types import ChatModelOutput
 from beeai_framework.memory.base_memory import BaseMemory
-from beeai_framework.template import PromptTemplate
+from beeai_framework.template import PromptTemplate, PromptTemplateInput
 from beeai_framework.tools.tool import AnyTool
 from beeai_framework.utils.strings import to_json
 
@@ -68,18 +79,18 @@ class ReActAgentRunOutput(BaseModel):
 
 
 class ReActAgentTemplates(BaseModel):
-    system: InstanceOf[PromptTemplate[Any]]  # TODO proper template subtypes
-    assistant: InstanceOf[PromptTemplate[Any]]
-    user: InstanceOf[PromptTemplate[Any]]
-    user_empty: InstanceOf[PromptTemplate[Any]]
-    tool_error: InstanceOf[PromptTemplate[Any]]
-    tool_input_error: InstanceOf[PromptTemplate[Any]]
-    tool_no_result_error: InstanceOf[PromptTemplate[Any]]
-    tool_not_found_error: InstanceOf[PromptTemplate[Any]]
-    schema_error: InstanceOf[PromptTemplate[Any]]
+    system: InstanceOf[PromptTemplate[SystemPromptTemplateInput]]
+    assistant: InstanceOf[PromptTemplate[AssistantPromptTemplateInput]]
+    user: InstanceOf[PromptTemplate[UserPromptTemplateInput]]
+    user_empty: InstanceOf[PromptTemplate[UserEmptyPromptTemplateInput]]
+    tool_error: InstanceOf[PromptTemplate[ToolErrorTemplateInput]]
+    tool_input_error: InstanceOf[PromptTemplate[ToolInputErrorTemplateInput]]
+    tool_no_result_error: InstanceOf[PromptTemplate[ToolNoResultsTemplateInput]]
+    tool_not_found_error: InstanceOf[PromptTemplate[ToolNotFoundErrorTemplateInput]]
+    schema_error: InstanceOf[PromptTemplate[SchemaErrorTemplateInput]]
 
 
-ReActAgentTemplateFactory = Callable[[InstanceOf[PromptTemplate[Any]]], InstanceOf[PromptTemplate[Any]]]
+ReActAgentTemplateInputFactory = Callable[[InstanceOf[PromptTemplateInput[Any]]], InstanceOf[PromptTemplateInput[Any]]]
 ModelKeysType = Annotated[str, lambda v: v in ReActAgentTemplates.model_fields]
 
 
@@ -88,6 +99,6 @@ class ReActAgentInput(BaseModel):
     tools: list[InstanceOf[AnyTool]]
     memory: InstanceOf[BaseMemory]
     meta: InstanceOf[AgentMeta] | None = None
-    templates: dict[ModelKeysType, InstanceOf[PromptTemplate[Any]] | ReActAgentTemplateFactory] | None = None
+    templates: dict[ModelKeysType, InstanceOf[PromptTemplateInput[Any]] | ReActAgentTemplateInputFactory] | None = None
     execution: AgentExecutionConfig | None = None
     stream: bool = True

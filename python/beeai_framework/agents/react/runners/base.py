@@ -27,14 +27,14 @@ from beeai_framework.agents.react.types import (
     ReActAgentRunInput,
     ReActAgentRunIteration,
     ReActAgentRunOptions,
-    ReActAgentTemplateFactory,
+    ReActAgentTemplateInputFactory,
     ReActAgentTemplates,
 )
 from beeai_framework.cancellation import AbortSignal
 from beeai_framework.context import RunContext
 from beeai_framework.emitter.emitter import Emitter
 from beeai_framework.memory.base_memory import BaseMemory
-from beeai_framework.template import PromptTemplate
+from beeai_framework.template import PromptTemplate, PromptTemplateInput
 from beeai_framework.tools import ToolOutput
 from beeai_framework.utils.counter import RetryCounter
 
@@ -137,11 +137,23 @@ class BaseRunner(ABC):
         templates = {}
 
         for key, default_template in self.default_templates().model_dump().items():
-            override: PromptTemplate[Any] | ReActAgentTemplateFactory = overrides.get(key) or default_template
-            if isinstance(override, PromptTemplate):
-                templates[key] = override
-                continue
-            templates[key] = override(default_template) or default_template
+            override: PromptTemplateInput[Any] | ReActAgentTemplateInputFactory | None = overrides.get(key)
+            # if isinstance(override, PromptTemplateInput):
+            #     templates[key] = PromptTemplate(override)
+            #     continue
+            # elif isinstance(override, ReActAgentTemplates):
+            #     templates[key] = default_template.fork(override)
+            #     continue
+            # else:
+            #     templates[key] = default_template
+            templates[key] = (
+                PromptTemplate(override)
+                if isinstance(override, PromptTemplateInput)
+                else default_template.fork(override)
+                if isinstance(override, ReActAgentTemplates)
+                else default_template
+            )
+
         return ReActAgentTemplates(**templates)
 
     # TODO: Serialization

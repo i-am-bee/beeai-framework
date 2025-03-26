@@ -14,7 +14,7 @@
 
 
 from collections.abc import Callable
-from typing import Any, Generic, TypeVar
+from typing import Any, Generic, TypeVar, overload
 
 import chevron
 from pydantic import BaseModel, Field
@@ -54,12 +54,42 @@ class PromptTemplate(Generic[T]):
 
         return chevron.render(template=self._config.template, data=data)
 
+    @overload
     def fork(
-        self, customizer: Callable[[PromptTemplateInput[Any]], PromptTemplateInput[Any]] | None
+        self,
+        *,
+        input_schema: type[T] | None = None,
+        template: str | None = None,
+        functions: dict[str, Callable[[dict[str, Any]], str]] | None = None,
+        defaults: dict[str, Any] | None = None,
+    ) -> "PromptTemplate[Any]": ...
+    @overload
+    def fork(
+        self,
+        customizer: Callable[[PromptTemplateInput[Any]], PromptTemplateInput[Any]] | None = None,
+    ) -> "PromptTemplate[Any]": ...
+    def fork(
+        self,
+        customizer: Callable[[PromptTemplateInput[Any]], PromptTemplateInput[Any]] | None = None,
+        *,
+        input_schema: type[T] | None = None,
+        template: str | None = None,
+        functions: dict[str, Callable[[dict[str, Any]], str]] | None = None,
+        defaults: dict[str, Any] | None = None,
     ) -> "PromptTemplate[Any]":
-        new_config = customizer(self._config) if customizer else self._config
-        if not isinstance(new_config, PromptTemplateInput):
-            raise ValueError("Return type from customizer must be a PromptTemplateInput or nothing.")
+        new_config = self._config.model_copy()
+
+        if customizer is not None:
+            new_config = customizer(self._config)
+            if not isinstance(new_config, PromptTemplateInput):
+                raise ValueError("Return type from customizer must be a PromptTemplateInput or nothing.")
+            return PromptTemplate(new_config)
+
+        new_config.input_schema = input_schema or new_config.input_schema
+        new_config.template = template or new_config.template
+        new_config.functions = functions if new_config.functions is None else new_config.functions
+        new_config.functions.update(functions or {}) if new_config.functions else None
+        new_config.defaults.update(defaults) if defaults else None
         return PromptTemplate(new_config)
 
 

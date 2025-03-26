@@ -79,12 +79,6 @@ UserPromptTemplate = PromptTemplate(
     )
 )
 
-AssistantPromptTemplate = PromptTemplate(
-    PromptTemplateInput(
-        schema=AssistantPromptTemplateInput,
-        template="{{#thought}}Thought: {{.}}\n{{/thought}}{{#tool_name}}Function Name: {{.}}\n{{/tool_name}}{{#tool_input}}Function Input: {{&.}}\n{{/tool_input}}{{#tool_output}}Function Output: {{&.}}\n{{/tool_output}}{{#final_answer}}Final Answer: {{.}}{{/final_answer}}",  # noqa: E501
-    )
-)
 
 SystemPromptTemplate = PromptTemplate(
     PromptTemplateInput(

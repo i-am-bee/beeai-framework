@@ -9,6 +9,7 @@ from pydantic import BaseModel
 from beeai_framework import UnconstrainedMemory
 from beeai_framework.adapters.ollama.backend.chat import OllamaChatModel
 from beeai_framework.agents.react.agent import ReActAgent
+from beeai_framework.agents.react.types import ModelKeysType, ReActAgentTemplateInputFactory
 from beeai_framework.agents.types import AgentExecutionConfig
 from beeai_framework.cancellation import AbortSignal
 from beeai_framework.emitter.emitter import Emitter, EventMeta
@@ -70,11 +71,11 @@ def create_agent() -> ReActAgent:
 
     llm = OllamaChatModel("llama3.1")
 
-    templates: dict[str, Any] = {
-        "user": lambda template: template.fork(customizer=user_customizer),
-        "system": lambda template: template.fork(customizer=system_customizer),
-        "tool_no_result_error": lambda template: template.fork(customizer=no_result_customizer),
-        "tool_not_found_error": lambda template: template.fork(customizer=not_found_customizer),
+    templates: dict[ModelKeysType, PromptTemplateInput[Any] | ReActAgentTemplateInputFactory] = {
+        "user": user_customizer,
+        "system": system_customizer,
+        "tool_no_result_error": no_result_customizer,
+        "tool_not_found_error": not_found_customizer,
     }
 
     tools: list[AnyTool] = [

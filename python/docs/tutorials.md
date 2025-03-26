@@ -146,7 +146,7 @@ async def create_agent() -> ReActAgent:
         llm=llm,
         tools=[slack, weather],
         memory=TokenMemory(llm),
-        templates={"system": lambda template: template.fork(customizer=system_message_customizer)}
+        templates={"system": system_message_customizer}
     )
     return agent
 
