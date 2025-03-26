@@ -46,7 +46,10 @@ async def slack_tool() -> MCPTool:
 def system_message_customizer(config: PromptTemplateInput) -> PromptTemplateInput:
     new_config = config.model_copy()
     new_config.defaults = new_config.defaults or {}
-    new_config.defaults["instructions"] = 'You are a helpful assistant. When prompted to post to Slack, send messages to the #bee-playground channel.'
+    new_config.defaults["instructions"] = (
+        "You are a helpful assistant. When prompted to post to Slack, "
+        "send messages to the #bee-playground channel."
+    )
     return new_config
 
 
