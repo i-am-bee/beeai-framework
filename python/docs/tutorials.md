@@ -80,7 +80,8 @@ from mcp.client.stdio import stdio_client
 
 from beeai_framework.agents.react.agent import ReActAgent
 from beeai_framework.agents.types import AgentExecutionConfig
-from beeai_framework.backend.chat import ChatModel, ChatModelParameters
+from beeai_framework.backend.chat import ChatModel
+from beeai_framework.backend.types import ChatModelParameters
 from beeai_framework.emitter.emitter import EventMeta
 from beeai_framework.errors import FrameworkError
 from beeai_framework.memory.token_memory import TokenMemory
@@ -107,18 +108,17 @@ async def slack_tool() -> MCPTool:
     async with stdio_client(server_params) as (read, write), ClientSession(read, write) as session:
         await session.initialize()
         # Discover Slack tools via MCP client
-        slacktools = await MCPTool.from_client(session, server_params)
+        slacktools = await MCPTool.from_client(session)
         filter_tool = filter(lambda tool: tool.name == "slack_post_message", slacktools)
         slack = list(filter_tool)
         return slack[0]
 
 
-def system_message_customizer(config: PromptTemplateInput) -> PromptTemplateInput:
+def system_message_customizer(config: PromptTemplateInput[Any]) -> PromptTemplateInput[Any]:
     new_config = config.model_copy()
     new_config.defaults = new_config.defaults or {}
     new_config.defaults["instructions"] = (
-        "You are a helpful assistant. When prompted to post to Slack, "
-        "send messages to the #bee-playground channel."
+        "You are a helpful assistant. When prompted to post to Slack, send messages to the #bee-playground channel."
     )
     return new_config
 
@@ -144,7 +144,7 @@ async def create_agent() -> ReActAgent:
         llm=llm,
         tools=[slack, weather],
         memory=TokenMemory(llm),
-        templates={"system": lambda template: template.fork(customizer=system_message_customizer)}
+        templates={"system": lambda template: template.fork(customizer=system_message_customizer)},
     )
     return agent
 
@@ -176,6 +176,7 @@ if __name__ == "__main__":
     except FrameworkError as e:
         traceback.print_exc()
         sys.exit(e.explain())
+
 ```
 
 _Source: [examples/tools/mcp_slack_agent.py](/python/examples/tools/mcp_slack_agent.py)_
