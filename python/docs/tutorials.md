@@ -41,23 +41,23 @@ Once you've completed these prerequisites, you'll be ready to implement your Sla
 To configure the Slack API integration:
 
 1. Create a Slack app
-- Visit [https://api.slack.com/apps](https://api.slack.com/apps) and click "Create New App" > "From scratch"
-- Name your app (e.g., `Bee`) and select a workspace to develop your app in
+    - Visit [https://api.slack.com/apps](https://api.slack.com/apps) and click "Create New App" > "From scratch"
+    - Name your app (e.g., `Bee`) and select a workspace to develop your app in
 
 2. Configure bot permissions
-- Navigate to `OAuth & Permissions` in the sidebar
-- Under "Bot Token Scopes", add the `chat:write` scope
-- Click "Install to [Workspace]" and authorize the app
+    - Navigate to `OAuth & Permissions` in the sidebar
+    - Under "Bot Token Scopes", add the `chat:write` scope
+    - Click "Install to [Workspace]" and authorize the app
 
 3. Gather credentials
-- Copy the "Bot User OAuth Token" and add it to your `.env` file as `SLACK_BOT_TOKEN=xoxb-your-token`
-- Get your Slack Team ID from your workspace URL `(https://app.slack.com/client/TXXXXXXX/...)`
-    - Tip: Visit `https://<your-workspace>.slack.com`, after redirect, your URL will change to `https://app.slack.com/client/TXXXXXXX/CXXXXXXX`, pick the segment starting with `TXXXXXXX`
-- Add the Team ID to your `.env` file as `SLACK_TEAM_ID=TXXXXXXX`
+    - Copy the "Bot User OAuth Token" and add it to your `.env` file as `SLACK_BOT_TOKEN=xoxb-your-token`
+    - Get your Slack Team ID from your workspace URL `(https://app.slack.com/client/TXXXXXXX/...)`
+        - Tip: Visit `https://<your-workspace>.slack.com`, after redirect, your URL will change to `https://app.slack.com/client/TXXXXXXX/CXXXXXXX`, pick the segment starting with `TXXXXXXX`
+    - Add the Team ID to your `.env` file as `SLACK_TEAM_ID=TXXXXXXX`
 
 4. Create a channel
-- Create a public channel named `bee-playground` in your Slack workspace
-- Invite your bot to the channel by typing `/invite @Bee` in the channel
+    - Create a public channel named `bee-playground` in your Slack workspace
+    - Invite your bot to the channel by typing `/invite @Bee` in the channel
 
 ### Implementing the Slack agent
 
