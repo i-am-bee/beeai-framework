@@ -13,10 +13,8 @@
 # limitations under the License.
 
 from abc import ABC, abstractmethod
-from collections import OrderedDict
 from collections.abc import AsyncGenerator, Callable
 from functools import cached_property
-from hashlib import sha512
 from typing import Any, Literal, TypeVar
 
 from pydantic import BaseModel, Field
@@ -40,6 +38,7 @@ from beeai_framework.backend.types import (
     ChatModelStructureOutput,
 )
 from beeai_framework.backend.utils import load_model, parse_broken_json, parse_model
+from beeai_framework.cache.base import BaseCache
 from beeai_framework.cache.null_cache import NullCache
 from beeai_framework.cancellation import AbortController, AbortSignal
 from beeai_framework.context import Run, RunContext
@@ -162,12 +161,6 @@ IMPORTANT: You MUST answer with a JSON object that matches the JSON schema above
             )
         ).get()
 
-    def _generate_key(self, input: ChatModelInput) -> str:
-        input_dict = {**input.model_dump(exclude_none=True), **{"messages": [m.to_plain() for m in input.messages]}}
-        input_dict = OrderedDict(sorted(input_dict.items()))
-        input_str = str(input_dict).encode("utf-8", errors="ignore")
-        return str(int.from_bytes(sha512(input_str).digest()))
-
     def create(
         self,
         *,
@@ -192,7 +185,7 @@ IMPORTANT: You MUST answer with a JSON object that matches the JSON schema above
         )
 
         async def handler(context: RunContext) -> ChatModelOutput:
-            cache_key = self._generate_key(model_input)
+            cache_key = BaseCache.generate_key(model_input, {"messages": [m.to_plain() for m in model_input.messages]})
             cache_hit = await self.cache.get(cache_key)
 
             try:

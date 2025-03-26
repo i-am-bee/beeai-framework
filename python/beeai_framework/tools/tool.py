@@ -16,15 +16,14 @@
 import inspect
 import typing
 from abc import ABC, abstractmethod
-from collections import OrderedDict
 from collections.abc import Callable
 from functools import cached_property
-from hashlib import sha512
 from typing import Any, Generic, TypeAlias
 
 from pydantic import BaseModel, ConfigDict, ValidationError, create_model
 from typing_extensions import TypeVar
 
+from beeai_framework.cache.base import BaseCache
 from beeai_framework.cache.null_cache import NullCache
 from beeai_framework.context import Run, RunContext
 from beeai_framework.emitter.emitter import Emitter
@@ -84,14 +83,10 @@ class Tool(Generic[TInput, TRunOptions, TOutput], ABC):
         pass
 
     def _generate_key(self, input: TInput | dict[str, Any], options: TRunOptions | None = None) -> str:
-        input_dict = input if isinstance(input, dict) else input.model_dump(exclude_none=True)
         options_dict = options.model_dump(exclude_none=True) if options else {}
         options_dict.pop("signal", None)
         options_dict.pop("retry_options", None)
-        cache_key_dict = {**input_dict, **options_dict}
-        cache_key_dict = OrderedDict(sorted(cache_key_dict.items()))
-        cache_key_str = str(cache_key_dict).encode("utf-8", errors="ignore")
-        return str(int.from_bytes(sha512(cache_key_str).digest()))
+        return BaseCache.generate_key(input, options_dict)
 
     async def clear_cache(self) -> None:
         await self.cache.clear()
