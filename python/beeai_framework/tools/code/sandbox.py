@@ -26,15 +26,15 @@ from beeai_framework.tools.types import StringToolOutput, ToolRunOptions
 from beeai_framework.utils.models import JSONSchemaModel
 
 
-class CustomToolCreateError(FrameworkError):
+class SandboxToolCreateError(FrameworkError):
     pass
 
 
-class CustomToolExecuteError(FrameworkError):
+class SandboxToolExecuteError(FrameworkError):
     pass
 
 
-class CustomToolOptions(ToolRunOptions):
+class SandboxToolOptions(ToolRunOptions):
     code_interpreter_url: str
     source_code: str
     name: str
@@ -43,8 +43,8 @@ class CustomToolOptions(ToolRunOptions):
     env: dict[str, Any]
 
 
-class SandboxTool(Tool[BaseModel, CustomToolOptions, StringToolOutput]):
-    def __init__(self, options: CustomToolOptions) -> None:
+class SandboxTool(Tool[BaseModel, SandboxToolOptions, StringToolOutput]):
+    def __init__(self, options: SandboxToolOptions) -> None:
         super().__init__()
         self._options = options
 
@@ -67,7 +67,7 @@ class SandboxTool(Tool[BaseModel, CustomToolOptions, StringToolOutput]):
         return JSONSchemaModel.create(self.name, self._options.input_schema)
 
     async def _run(
-        self, tool_input: BaseModel | dict[str, Any], options: CustomToolOptions | None, context: RunContext
+        self, tool_input: BaseModel | dict[str, Any], options: SandboxToolOptions | None, context: RunContext
     ) -> StringToolOutput:
         try:
             result = await PythonTool.call_code_interpreter(
@@ -82,11 +82,11 @@ class SandboxTool(Tool[BaseModel, CustomToolOptions, StringToolOutput]):
             )
 
             if result.get("stderr"):
-                raise CustomToolExecuteError(result["stderr"])
+                raise SandboxToolExecuteError(result["stderr"])
 
             return StringToolOutput(result["tool_output_json"])
         except Exception as err:
-            raise CustomToolExecuteError.ensure(err)
+            raise SandboxToolExecuteError.ensure(err)
 
     @classmethod
     async def from_source_code(cls, url: str, env: dict[str, Any], source_code: str) -> Self:
@@ -96,10 +96,10 @@ class SandboxTool(Tool[BaseModel, CustomToolOptions, StringToolOutput]):
             )
 
             if result.get("error_messages"):
-                raise CustomToolCreateError(result["error_messages"].join("\n"))
+                raise SandboxToolCreateError(result["error_messages"].join("\n"))
 
             return cls(
-                CustomToolOptions(
+                SandboxToolOptions(
                     code_interpreter_url=url,
                     source_code=source_code,
                     name=result["tool_name"],
@@ -109,4 +109,4 @@ class SandboxTool(Tool[BaseModel, CustomToolOptions, StringToolOutput]):
                 )
             )
         except Exception as err:
-            raise CustomToolCreateError.ensure(err)
+            raise SandboxToolCreateError.ensure(err)
