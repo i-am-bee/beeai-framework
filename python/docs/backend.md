@@ -47,10 +47,10 @@ The following table depicts supported providers. Each provider requires specific
 | `OpenAI`         |  ✅  |          | `openai`     | OPENAI_CHAT_MODEL<br/>OPENAI_API_BASE<br/>OPENAI_API_KEY<br/>OPENAI_ORGANIZATION<br>OPENAI_API_HEADERS                                                                                                       |
 | `Watsonx`        |  ✅  |          | `@ibm-cloud/watsonx-ai`  | WATSONX_CHAT_MODEL<br>WATSONX_API_KEY<br>WATSONX_PROJECT_ID<br>WATSONX_SPACE_ID<br>WATSONX_TOKEN<br>WATSONX_ZENAPIKEY<br>WATSONX_URL<br>WATSONX_REGION |
 | `Groq`           |  ✅  |         | | GROQ_CHAT_MODEL<br>GROQ_API_KEY |
-| `Amazon Bedrock` |  ✅  |         |  `boto3`| AWS_CHAT_MODEL<br>AWS_ACCESS_KEY_ID<br>AWS_SECRET_ACCESS_KEY<br>AWS_REGION |
-| `Google Vertex`  |  ✅  |         |  | VERTEXAI_CHAT_MODEL<br>GOOGLE_VERTEX_PROJECT<br>GOOGLE_APPLICATION_CREDENTIALS<br>GOOGLE_APPLICATION_CREDENTIALS_JSON<br>GOOGLE_CREDENTIALS |
-| `Azure OpenAI`   |  ✅  |         |  | AZURE_OPENAI_CHAT_MODEL<br>AZURE_OPENAI_API_KEY<br>AZURE_OPENAI_API_BASE<br>AZURE_OPENAI_API_VERSION<br>AZURE_AD_TOKEN<br>AZURE_API_TYPE |
-| `Anthropic`      |  ✅  |         |  | ANTHROPIC_CHAT_MODEL<br>ANTHROPIC_API_KEY |
+| `Amazon Bedrock` |  ✅  |         |  `boto3`| AWS_CHAT_MODEL<br>AWS_ACCESS_KEY_ID<br>AWS_SECRET_ACCESS_KEY<br>AWS_REGION<br>AWS_API_HEADERS |
+| `Google Vertex`  |  ✅  |         |  | GOOGLE_VERTEX_CHAT_MODEL<br>GOOGLE_VERTEX_PROJECT<br>GOOGLE_APPLICATION_CREDENTIALS<br>GOOGLE_APPLICATION_CREDENTIALS_JSON<br>GOOGLE_CREDENTIALS<br>GOOGLE_VERTEX_API_HEADERS |
+| `Azure OpenAI`   |  ✅  |         |  | AZURE_OPENAI_CHAT_MODEL<br>AZURE_OPENAI_API_KEY<br>AZURE_OPENAI_API_BASE<br>AZURE_OPENAI_API_VERSION<br>AZURE_AD_TOKEN<br>AZURE_API_TYPE<br>AZURE_API_HEADERS |
+| `Anthropic`      |  ✅  |         |  | ANTHROPIC_CHAT_MODEL<br>ANTHROPIC_API_KEY<br>ANTHROPIC_API_HEADERS |
 | `xAI`           |  ✅  |         | | XAI_CHAT_MODEL<br>XAI_API_KEY |
 
 > [!TIP]
@@ -118,6 +118,21 @@ async def watsonx_stream() -> None:
     print(response.get_text_content())
 
 
+async def watsonx_images() -> None:
+    image_llm = ChatModel.from_name(
+        "watsonx:meta-llama/llama-3-2-11b-vision-instruct",
+    )
+    response = await image_llm.create(
+        messages=[
+            UserMessage("What is the dominant color in the picture?"),
+            UserMessage.from_image(
+                "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAIAAACQkWg2AAAAHUlEQVR4nGI5Y6bFQApgIkn1qIZRDUNKAyAAAP//0ncBT3KcmKoAAAAASUVORK5CYII="
+            ),
+        ],
+    )
+    print(response.get_text_content())
+
+
 async def watsonx_stream_abort() -> None:
     user_message = UserMessage("What is the smallest of the Cape Verde islands?")
 
@@ -181,6 +196,8 @@ async def watsonx_debug() -> None:
 async def main() -> None:
     print("*" * 10, "watsonx_from_name")
     await watsonx_from_name()
+    print("*" * 10, "watsonx_images")
+    await watsonx_images()
     print("*" * 10, "watsonx_sync")
     await watsonx_sync()
     print("*" * 10, "watsonx_stream")

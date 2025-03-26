@@ -50,6 +50,21 @@ async def watsonx_stream() -> None:
     print(response.get_text_content())
 
 
+async def watsonx_images() -> None:
+    image_llm = ChatModel.from_name(
+        "watsonx:meta-llama/llama-3-2-11b-vision-instruct",
+    )
+    response = await image_llm.create(
+        messages=[
+            UserMessage("What is the dominant color in the picture?"),
+            UserMessage.from_image(
+                "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAIAAACQkWg2AAAAHUlEQVR4nGI5Y6bFQApgIkn1qIZRDUNKAyAAAP//0ncBT3KcmKoAAAAASUVORK5CYII="
+            ),
+        ],
+    )
+    print(response.get_text_content())
+
+
 async def watsonx_stream_abort() -> None:
     user_message = UserMessage("What is the smallest of the Cape Verde islands?")
 
@@ -113,6 +128,8 @@ async def watsonx_debug() -> None:
 async def main() -> None:
     print("*" * 10, "watsonx_from_name")
     await watsonx_from_name()
+    print("*" * 10, "watsonx_images")
+    await watsonx_images()
     print("*" * 10, "watsonx_sync")
     await watsonx_sync()
     print("*" * 10, "watsonx_stream")

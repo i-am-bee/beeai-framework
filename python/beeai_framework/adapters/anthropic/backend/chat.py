@@ -17,6 +17,7 @@ from typing import Any
 
 from dotenv import load_dotenv
 
+from beeai_framework.adapters.litellm import utils
 from beeai_framework.adapters.litellm.chat import LiteLLMChatModel
 from beeai_framework.backend.constants import ProviderName
 from beeai_framework.logger import Logger
@@ -44,4 +45,7 @@ class AnthropicChatModel(LiteLLMChatModel):
             (model_id if model_id else os.getenv("ANTHROPIC_CHAT_MODEL", "claude-3-haiku-20240307")),
             provider_id="anthropic",
             settings=_settings | {"api_key": api_key},
+        )
+        self._settings["extra_headers"] = utils.parse_extra_headers(
+            self._settings.get("extra_headers"), os.getenv("ANTHROPIC_API_HEADERS")
         )

@@ -16,6 +16,7 @@
 import os
 from typing import Any
 
+from beeai_framework.adapters.litellm import utils
 from beeai_framework.adapters.litellm.chat import LiteLLMChatModel
 from beeai_framework.backend.constants import ProviderName
 from beeai_framework.logger import Logger
@@ -67,4 +68,7 @@ class AmazonBedrockChatModel(LiteLLMChatModel):
                 "aws_secret_access_key": aws_secret_access_key,
                 "aws_region_name": aws_region_name,
             },
+        )
+        self._settings["extra_headers"] = utils.parse_extra_headers(
+            self._settings.get("extra_headers"), os.getenv("AWS_API_HEADERS")
         )
