@@ -42,6 +42,7 @@ exclude = list(
             # MCP examples require Slack bot
             "tools/mcp_agent.py" if os.getenv("SLACK_BOT_TOKEN") is None else None,
             "tools/mcp_tool_creation.py" if os.getenv("SLACK_BOT_TOKEN") is None else None,
+            "tools/mcp_slack_agent.py" if os.getenv("SLACK_BOT_TOKEN") is None else None,
             # Example requires Searx instance
             "workflows/searx_agent.py",
             # Requires BeeAI platform to be running
