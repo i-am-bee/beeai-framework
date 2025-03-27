@@ -14,6 +14,8 @@
   - [OpenMeteo Weather Tool](#openmeteo-weather-tool)
   - [Wikipedia Tool](#wikipedia-tool)
   - [MCP Tool](#mcp-tool)
+  - [Python Tool](#python-tool)
+  - [Sandbox Tool](#sandbox-tool)
 - [Creating Custom Tools](#creating-custom-tools)
   - [Basic Custom Tool](#basic-custom-tool)
   - [Advanced Custom Tool](#advanced-custom-tool)
@@ -36,14 +38,14 @@ Tools extend agent capabilities beyond text processing, enabling interaction wit
 
 Ready-to-use tools that provide immediate functionality for common agent tasks:
 
-| Tool             | Description                                                                                        | Use Cases                                                   |
-|------------------|----------------------------------------------------------------------------------------------------|-------------------------------------------------------------|
-| `DuckDuckGoTool` | Search for data on DuckDuckGo                                                                      | Web searches, fact-checking, retrieving current information |
-| `OpenMeteoTool`  | Retrieve weather information for specific locations and dates                                      | Weather forecasts, historical weather data, travel planning |
-| `WikipediaTool`  | Search for data on Wikipedia                                                                       | Research, educational inquiries, fact verification          |
-| `MCPTool`        | Discover and use tools exposed by arbitrary [MCP Server](https://modelcontextprotocol.io/examples) | Integration with external tool ecosystems                   |
-| `PythonTool`     | Run arbitrary Python code in the remote environment.                                               |                                                             |
-| `SandboxTool`    | Run your own Python function in the remote environment.                                            |                                                             |
+| Tool             | Description                                                                                        |
+|------------------|----------------------------------------------------------------------------------------------------|
+| `DuckDuckGoTool` | Search for data on DuckDuckGo                                                                      |
+| `OpenMeteoTool`  | Retrieve weather information for specific locations and dates                                      | 
+| `WikipediaTool`  | Search for data on Wikipedia                                                                       | 
+| `MCPTool`        | Discover and use tools exposed by arbitrary [MCP Server](https://modelcontextprotocol.io/examples) | 
+| `PythonTool`     | Run arbitrary Python code in the remote environment.                                               |  
+| `SandboxTool`    | Run your own Python function in the remote environment.                                            |        
 
 ➕ [Request additional built-in tools](https://github.com/i-am-bee/beeai-framework/discussions)
 
@@ -221,7 +223,7 @@ if __name__ == "__main__":
 
 _Source: [/python/examples/tools/decorator.py](/python/examples/tools/decorator.py)_
 
-## Built-in Tool Examples
+## Built-in tool examples
 
 ### DuckDuckGo Search Tool
 
@@ -299,7 +301,6 @@ if __name__ == "__main__":
 
 _Source: [/python/examples/tools/openmeteo.py](/python/examples/tools/openmeteo.py)_
 
-
 ### Wikipedia Tool
 
 Use the Wikipedia tool to search for information from Wikipedia:
@@ -336,9 +337,119 @@ if __name__ == "__main__":
 
 _Source: [/python/examples/tools/wikipedia.py](/python/examples/tools/wikipedia.py)_
 
-### Using the `SandboxTool` (Python functions)
+### MCP Tool
 
-If you want to use the Python function, use the [`SandboxTool`](/python/src/tools/code/sandbox.ts).
+The MCPTool allows you to instantiate tools given a connection to MCP server with tools capability.
+
+<!-- embedme examples/tools/mcp_tool_creation.py -->
+
+```py
+import asyncio
+import os
+
+from dotenv import load_dotenv
+from mcp import ClientSession, StdioServerParameters
+from mcp.client.stdio import stdio_client
+
+from beeai_framework.adapters.ollama.backend.chat import OllamaChatModel
+from beeai_framework.agents.react import ReActAgent
+from beeai_framework.memory import UnconstrainedMemory
+from beeai_framework.tools.mcp_tools import MCPTool
+
+load_dotenv()
+
+# Create server parameters for stdio connection
+server_params = StdioServerParameters(
+    command="npx",
+    args=["-y", "@modelcontextprotocol/server-slack"],
+    env={
+        "SLACK_BOT_TOKEN": os.environ["SLACK_BOT_TOKEN"],
+        "SLACK_TEAM_ID": os.environ["SLACK_TEAM_ID"],
+        "PATH": os.getenv("PATH", default=""),
+    },
+)
+
+
+async def slack_tool() -> MCPTool:
+    async with stdio_client(server_params) as (read, write), ClientSession(read, write) as session:
+        await session.initialize()
+        # Discover Slack tools via MCP client
+        slacktools = await MCPTool.from_client(session)
+        filter_tool = filter(lambda tool: tool.name == "slack_post_message", slacktools)
+        slack = list(filter_tool)
+        return slack[0]
+
+
+agent = ReActAgent(llm=OllamaChatModel("llama3.1"), tools=[asyncio.run(slack_tool())], memory=UnconstrainedMemory())
+
+```
+
+_Source: [/python/examples/tools/mcp_tool_creation.py](/python/examples/tools/mcp_tool_creation.py)_
+
+### Python Tool
+
+The PythonTool facilitates executing Python code in a controlled environment. It acts as a tool for AI agents, allowing them to run code, store results, and retrieve outputs as part of their reasoning and execution process.
+
+Key components:
+1. `LocalPythonStorage` is responsible for managing the working directories where Python code is stored and executed.
+    - `local_working_dir` is the directory where the source code is temporarily stored.
+    - `interpreter_working_dir` is the directory where the Python interpreter executes the code, configured through the `CODE_INTERPRETER_TMPDIR` environment variable.
+2. `PythonTool` is an execution wrapper that interacts with an external Python interpreter via a specified URL.
+    - `code_interpreter_url` defines the endpoint for the code execution service, defaulting to `http://127.0.0.1:50081`.
+    - `storage` is an instance of `LocalPythonStorage` that manages temporary execution directories.
+
+<!-- embedme examples/tools/python_tool.py -->
+
+```py
+import asyncio
+import os
+import sys
+import tempfile
+import traceback
+
+from dotenv import load_dotenv
+
+from beeai_framework.adapters.ollama.backend.chat import OllamaChatModel
+from beeai_framework.agents.react.agent import ReActAgent
+from beeai_framework.errors import FrameworkError
+from beeai_framework.memory import UnconstrainedMemory
+from beeai_framework.tools.code import LocalPythonStorage, PythonTool
+
+# Load environment variables
+load_dotenv()
+
+
+async def main() -> None:
+    llm = OllamaChatModel("llama3.1")
+    storage = LocalPythonStorage(
+        local_working_dir=tempfile.mkdtemp("code_interpreter_source"),
+        interpreter_working_dir=os.getenv("CODE_INTERPRETER_TMPDIR", "./tmp/code_interpreter_target"),
+    )
+    python_tool = PythonTool(
+        code_interpreter_url=os.getenv("CODE_INTERPRETER_URL", "http://127.0.0.1:50081"),
+        storage=storage,
+    )
+    agent = ReActAgent(llm=llm, tools=[python_tool], memory=UnconstrainedMemory())
+    result = await agent.run("Calculate 5036 * 12856 and save the result to answer.txt")
+    print(result.result.text)
+
+    result = await agent.run("Read the content of answer.txt?")
+    print(result.result.text)
+
+
+if __name__ == "__main__":
+    try:
+        asyncio.run(main())
+    except FrameworkError as e:
+        traceback.print_exc()
+        sys.exit(e.explain())
+```
+
+_Source: [examples/tools/python_tool.py](/python/examples/tools/python_tool.py)_
+
+### Sandbox Tool
+
+The Sandbox Tool is a secure code execution environment provided by BeeAI framework. It allows developers to run untrusted code in a controlled and isolated environment, ensuring safety while executing dynamic code.
 
 <!-- embedme examples/tools/custom/sandbox.py -->
 
@@ -402,7 +513,7 @@ if __name__ == "__main__":
 
 ```
 
-_Source: [examples/tools/custom/sandbox.py](/typescript/examples/tools/custom/sandbox.py)_
+_Source: [examples/tools/custom/sandbox.py](/python/examples/tools/custom/sandbox.py)_
 
 > [!TIP]
 >
@@ -416,54 +527,7 @@ _Source: [examples/tools/custom/sandbox.py](/typescript/examples/tools/custom/sa
 > Sandbox tools are executed within the code interpreter, but they cannot access any files.
 > Only `PythonTool` does.
 
-### MCP Tool
-
-The MCPTool allows you to instantiate tools given a connection to MCP server with tools capability.
-
-<!-- embedme examples/tools/mcp_tool_creation.py -->
-
-```py
-import asyncio
-import os
-
-from dotenv import load_dotenv
-from mcp import ClientSession, StdioServerParameters
-from mcp.client.stdio import stdio_client
-
-from beeai_framework.adapters.ollama.backend.chat import OllamaChatModel
-from beeai_framework.agents.react import ReActAgent
-from beeai_framework.memory import UnconstrainedMemory
-from beeai_framework.tools.mcp_tools import MCPTool
-
-load_dotenv()
-
-# Create server parameters for stdio connection
-server_params = StdioServerParameters(
-    command="npx",
-    args=["-y", "@modelcontextprotocol/server-slack"],
-    env={
-        "SLACK_BOT_TOKEN": os.environ["SLACK_BOT_TOKEN"],
-        "SLACK_TEAM_ID": os.environ["SLACK_TEAM_ID"],
-        "PATH": os.getenv("PATH", default=""),
-    },
-)
-
-
-async def slack_tool() -> MCPTool:
-    async with stdio_client(server_params) as (read, write), ClientSession(read, write) as session:
-        await session.initialize()
-        # Discover Slack tools via MCP client
-        slacktools = await MCPTool.from_client(session)
-        filter_tool = filter(lambda tool: tool.name == "slack_post_message", slacktools)
-        slack = list(filter_tool)
-        return slack[0]
-
-
-agent = ReActAgent(llm=OllamaChatModel("llama3.1"), tools=[asyncio.run(slack_tool())], memory=UnconstrainedMemory())
-
-```
-
-_Source: [/python/examples/tools/mcp_tool_creation.py](/python/examples/tools/mcp_tool_creation.py)_
+---
 
 ## Creating custom tools
 
