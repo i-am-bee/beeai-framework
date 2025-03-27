@@ -388,15 +388,26 @@ _Source: [/python/examples/tools/mcp_tool_creation.py](/python/examples/tools/mc
 
 ### Python Tool
 
-The PythonTool facilitates executing Python code in a controlled environment. It acts as a tool for AI agents, allowing them to run code, store results, and retrieve outputs as part of their reasoning and execution process.
+Python Tool allows AI agents to execute Python code within a controlled environment, securely store results, and retrieve outputs to enhance their reasoning and execution processes.
+
+This enables agents to:
+- Perform calculations and data analysis
+- Create and modify files
+- Process and transform user data
+- Generate visualizations and reports
+- And more
+
+> [!NOTE]
+> This tool requires [BeeAI Code Interpreter](https://github.com/i-am-bee/bee-code-interpreter) to use. 
+> Get started quickly with (beeai-framework-py-starter)[https://github.com/i-am-bee/beeai-framework-py-starter].
 
 Key components:
-1. `LocalPythonStorage` is responsible for managing the working directories where Python code is stored and executed.
-    - `local_working_dir` is the directory where the source code is temporarily stored.
-    - `interpreter_working_dir` is the directory where the Python interpreter executes the code, configured through the `CODE_INTERPRETER_TMPDIR` environment variable.
-2. `PythonTool` is an execution wrapper that interacts with an external Python interpreter via a specified URL.
-    - `code_interpreter_url` defines the endpoint for the code execution service, defaulting to `http://127.0.0.1:50081`.
-    - `storage` is an instance of `LocalPythonStorage` that manages temporary execution directories.
+- `LocalPythonStorage` – Handles where Python code is stored and run.
+  - `local_working_dir` – A temporary folder where the code is saved before running.
+  - `interpreter_working_dir` – The folder where the code actually runs, set by the CODE_INTERPRETER_TMPDIR setting.
+- `PythonTool` – Connects to an external Python interpreter to run code.
+  - `code_interpreter_url` – The web address where the code gets executed (default: `http://127.0.0.1:50081`).
+  - `storage` – Controls where the code is stored. By default, it saves files locally using `LocalPythonStorage`. You can set up a different storage option, like cloud storage, if needed.
 
 <!-- embedme examples/tools/python_tool.py -->
 
