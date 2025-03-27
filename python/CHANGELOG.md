@@ -1,3 +1,18 @@
+## python_v0.1.10 (2025-03-26)
+
+### Bug Fixes
+
+- **agents**: respect the stream parameter in the ReActAgent (#666)
+
+### Features
+
+- **tools**: add SandboxTool (#669)
+- adding cache to ChatModel and Tool (#627)
+- **adapters**: Add support for extra headers to more backend providers (#661)
+- **backend**: add support for images (#664)
+- **agents**: Granite sample now loops for chat (#663)
+- **tools**: Add code interpreter (#583)
+
 ## python_v0.1.9 (2025-03-24)
 
 ### Bug Fixes

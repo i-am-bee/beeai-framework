@@ -36,12 +36,14 @@ Tools extend agent capabilities beyond text processing, enabling interaction wit
 
 Ready-to-use tools that provide immediate functionality for common agent tasks:
 
-| Tool | Description | Use Cases |
-|------|-------------|-----------|
-| `DuckDuckGoTool` | Search for data on DuckDuckGo | Web searches, fact-checking, retrieving current information |
-| `OpenMeteoTool` | Retrieve weather information for specific locations and dates | Weather forecasts, historical weather data, travel planning |
-| `WikipediaTool` | Search for data on Wikipedia | Research, educational inquiries, fact verification |
-| `MCPTool` | Discover and use tools exposed by arbitrary [MCP Server](https://modelcontextprotocol.io/examples) | Integration with external tool ecosystems |
+| Tool             | Description                                                                                        | Use Cases                                                   |
+|------------------|----------------------------------------------------------------------------------------------------|-------------------------------------------------------------|
+| `DuckDuckGoTool` | Search for data on DuckDuckGo                                                                      | Web searches, fact-checking, retrieving current information |
+| `OpenMeteoTool`  | Retrieve weather information for specific locations and dates                                      | Weather forecasts, historical weather data, travel planning |
+| `WikipediaTool`  | Search for data on Wikipedia                                                                       | Research, educational inquiries, fact verification          |
+| `MCPTool`        | Discover and use tools exposed by arbitrary [MCP Server](https://modelcontextprotocol.io/examples) | Integration with external tool ecosystems                   |
+| `PythonTool`     | Run arbitrary Python code in the remote environment.                                               |                                                             |
+| `SandboxTool`    | Run your own Python function in the remote environment.                                            |                                                             |
 
 ➕ [Request additional built-in tools](https://github.com/i-am-bee/beeai-framework/discussions)
 
@@ -333,6 +335,87 @@ if __name__ == "__main__":
 ```
 
 _Source: [/python/examples/tools/wikipedia.py](/python/examples/tools/wikipedia.py)_
+
+### Using the `SandboxTool` (Python functions)
+
+If you want to use the Python function, use the [`SandboxTool`](/python/src/tools/code/sandbox.ts).
+
+<!-- embedme examples/tools/custom/sandbox.py -->
+
+```py
+import asyncio
+import os
+import sys
+import traceback
+
+from dotenv import load_dotenv
+
+from beeai_framework.errors import FrameworkError
+from beeai_framework.tools.code.sandbox import SandboxTool
+
+load_dotenv()
+
+
+async def main() -> None:
+    sandbox_tool = await SandboxTool.from_source_code(
+        url=os.getenv("CODE_INTERPRETER_URL", "http://127.0.0.1:50081"),
+        env={"API_URL": "https://riddles-api.vercel.app/random"},
+        source_code="""
+import requests
+import os
+from typing import Optional, Union, Dict
+
+def get_riddle() -> Optional[Dict[str, str]]:
+    '''
+    Fetches a random riddle from the Riddles API.
+
+    This function retrieves a random riddle and its answer. It does not accept any input parameters.
+
+    Returns:
+        Optional[Dict[str, str]]: A dictionary containing:
+            - 'riddle' (str): The riddle question.
+            - 'answer' (str): The answer to the riddle.
+        Returns None if the request fails.
+    '''
+    url = os.environ.get('API_URL')
+
+    try:
+        response = requests.get(url)
+        response.raise_for_status()
+        return response.json()
+    except Exception as e:
+        return None
+""",
+    )
+
+    result = await sandbox_tool.run({})
+
+    print(result.get_text_content())
+
+
+if __name__ == "__main__":
+    try:
+        asyncio.run(main())
+    except FrameworkError as e:
+        traceback.print_exc()
+        sys.exit(e.explain())
+
+```
+
+_Source: [examples/tools/custom/sandbox.py](/typescript/examples/tools/custom/sandbox.py)_
+
+> [!TIP]
+>
+> Environmental variables can be overridden (or defined) in the following ways:
+>
+> 1. During the creation of a `SandboxTool`, either via the constructor or the factory function (`SandboxTool.from_source_code`).
+> 2. By passing them directly as part of the options when invoking: `my_tool.run(..., env={ "MY_ENV": "MY_VALUE" })`.
+<!-- 3. Dynamically during execution via [`Emitter`](/python/docs/emitter.md): `my_tool.emitter.on("start", lambda data, event: (data.options.env.update({"MY_ENV": "MY_VALUE"})))`. -->
+
+> [!IMPORTANT]
+>
+> Sandbox tools are executed within the code interpreter, but they cannot access any files.
+> Only `PythonTool` does.
 
 ### MCP Tool
 

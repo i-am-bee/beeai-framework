@@ -24,7 +24,7 @@ from beeai_framework.context import RunContext
 from beeai_framework.emitter.emitter import Emitter
 from beeai_framework.logger import Logger
 from beeai_framework.template import PromptTemplate
-from beeai_framework.tools import ToolInputValidationError
+from beeai_framework.tools import ToolError, ToolInputValidationError
 from beeai_framework.tools.code.output import PythonToolOutput
 from beeai_framework.tools.code.storage import PythonFile, PythonStorage
 from beeai_framework.tools.tool import Tool
@@ -97,14 +97,6 @@ Do not use this tool multiple times in a row, always write the full code you wan
             creator=self,
         )
 
-    @staticmethod
-    async def _call_code_interpreter(url: str, body: dict[str, Any]) -> Any:
-        headers = {"Accept": "application/json", "Content-Type": "application/json"}
-        async with httpx.AsyncClient() as client:
-            response = await client.post(url, headers=headers, json=body)
-            response.raise_for_status()
-            return response.json()
-
     async def _run(
         self, tool_input: PythonToolInput, options: ToolRunOptions | None, context: RunContext
     ) -> PythonToolOutput:
@@ -137,7 +129,7 @@ Do not use this tool multiple times in a row, always write the full code you wan
 
         files_dict = {prefix + file.filename: file.python_id for file in unique_files}
 
-        result = await self._call_code_interpreter(
+        result = await self.call_code_interpreter(
             url=execute_url,
             body={
                 "source_code": await get_source_code(),
@@ -156,3 +148,27 @@ Do not use this tool multiple times in a row, always write the full code you wan
             await self._storage.download(files_output)
 
         return PythonToolOutput(result["stdout"], result["stderr"], result["exit_code"], files_output)
+
+    @staticmethod
+    async def call_code_interpreter(url: str, body: dict[str, Any]) -> Any:
+        try:
+            async with httpx.AsyncClient() as client:
+                response = await client.post(
+                    url, headers={"Accept": "application/json", "Content-Type": "application/json"}, json=body
+                )
+                response.raise_for_status()
+                return response.json()
+        except httpx.HTTPStatusError as err:
+            raise ToolError.ensure(
+                err, message=f"Request to bee-code-interpreter has failed with HTTP status code {response.status_code}."
+            )
+        except httpx.HTTPError as err:
+            raise ToolError(
+                (
+                    "Request to code interpreter has failed -- "
+                    "ensure that CODE_INTERPRETER_URL points to the correct HTTP endpoint (default port: 50081)."
+                ),
+                cause=err,
+            )
+        except Exception as err:
+            raise ToolError.ensure(err, message="Request to bee-code-interpreter has failed.")
