@@ -8,11 +8,13 @@ from beeai_framework.errors import FrameworkError
 from beeai_framework.tools.search.wikipedia import WikipediaTool
 from beeai_framework.tools.weather.openmeteo import OpenMeteoTool
 from beeai_framework.workflows.agent import AgentWorkflow, AgentWorkflowInput
+from examples.helpers.io import ConsoleReader
 
 
 async def main() -> None:
     llm = ChatModel.from_name("ollama:llama3.1")
     workflow = AgentWorkflow(name="Smart assistant")
+    reader = ConsoleReader()
 
     workflow.add_agent(
         name="Researcher",
@@ -59,15 +61,19 @@ async def main() -> None:
             # Event Matcher -> match agent's 'success' events
             lambda event: isinstance(event.creator, ChatModel) and event.name == "success",
             # log data to the console
-            lambda data, event: print(
-                "Got update from the agent.", [message.content[0] for message in data.value.messages], "\n"
+            lambda data, event: reader.write(
+                "Updated message content: "
+                + " ".join([str(message.content[0]) for message in data.value.messages])
+                + "\n",
+                data,
             ),
             EmitterOptions(match_nested=True),
         )
         .on(
             "success",
-            lambda data, event: print(
-                f"\n-> Step '{data.step}' has been completed with the following outcome.\n\n{data.state.final_answer}\n"
+            lambda data, event: reader.write(
+                f"\n->Step '{data.step}' has been completed with the following outcome.\n\n{data.state.final_answer}\n",
+                data,
             ),
         )
     )

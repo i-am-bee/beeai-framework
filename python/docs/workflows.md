@@ -329,15 +329,18 @@ async def main() -> None:
                 # Event Matcher -> match agent's 'success' events
                 lambda event: isinstance(event.creator, ChatModel) and event.name == "success",
                 # log data to the console
-                lambda data, event: print(
-                    "Got update from the agent.", [message.content[0] for message in data.value.messages], "\n"
+                lambda data, event: reader.write(
+                    "Updated message content: "
+                    + "".join(str([message.content[0] for message in data.value.messages]))
+                    + "\n",
+                    data,
                 ),
                 EmitterOptions(match_nested=True),
             )
             .on(
                 "success",
                 lambda data, event: reader.write(
-                    f"-> Step '{data.step}' has been completed with the following outcome:\n",
+                    f"->Step '{data.step}' has been completed with the following outcome:\n",
                     data.state.final_answer,
                 ),
             )
