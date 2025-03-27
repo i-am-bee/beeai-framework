@@ -27,6 +27,7 @@ from beeai_framework.utils.lists import cast_list
 from beeai_framework.utils.models import to_any_model, to_model
 
 T = TypeVar("T", bound=BaseModel)
+T2 = TypeVar("T2")
 MessageMeta = dict[str, Any]
 
 
@@ -106,6 +107,9 @@ class Message(ABC, Generic[T]):
 
     def get_texts(self) -> list[MessageTextContent]:
         return [cont for cont in self.content if isinstance(cont, MessageTextContent)]
+
+    def get_by_type(self, tp: type[T2]) -> list[T2]:
+        return [cont for cont in self.content if isinstance(cont, tp)]
 
     def to_plain(self) -> dict[str, Any]:
         return {

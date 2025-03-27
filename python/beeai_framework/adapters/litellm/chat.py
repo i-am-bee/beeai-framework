@@ -199,15 +199,17 @@ class LiteLLMChatModel(ChatModel, ABC):
         return (
             exclude_none(settings)
             | exclude_none(params)
-            | {
-                "model": f"{self._litellm_provider_id}/{self.model_id}",
-                "messages": messages,
-                "tools": tools,
-                "response_format": self._format_response_model(input.response_format)
-                if input.response_format
-                else None,
-                "tool_choice": tool_choice,
-            }
+            | exclude_none(
+                {
+                    "model": f"{self._litellm_provider_id}/{self.model_id}",
+                    "messages": messages,
+                    "tools": tools,
+                    "response_format": self._format_response_model(input.response_format)
+                    if input.response_format
+                    else None,
+                    "tool_choice": tool_choice,
+                }
+            )
         )
 
     def _transform_output(self, chunk: ModelResponse | ModelResponseStream) -> ChatModelOutput:

@@ -12,9 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-
 import os
-from typing import Any
+from typing import Any, ClassVar
 
 from pydantic import BaseModel
 
@@ -26,6 +25,8 @@ logger = Logger(__name__)
 
 
 class OllamaChatModel(LiteLLMChatModel):
+    tool_choice_support: ClassVar[set[str]] = set()
+
     @property
     def provider_id(self) -> ProviderName:
         return "ollama"
@@ -45,10 +46,11 @@ class OllamaChatModel(LiteLLMChatModel):
         )
 
     def _format_response_model(self, model: type[BaseModel] | dict[str, Any]) -> dict[str, Any]:
-        if isinstance(model, dict):
-            return model
-
         return {
             "type": "json_schema",
-            "json_schema": {"schema": model.model_json_schema(), "name": model.__name__, "strict": True},
+            "json_schema": {
+                "schema": model.model_json_schema() if isinstance(model, BaseModel) else model,
+                "name": model.__name__ if isinstance(model, BaseModel) else "schema",
+                "strict": True,
+            },
         }

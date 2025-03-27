@@ -12,10 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import json
 from abc import ABC, abstractmethod
 from collections.abc import AsyncGenerator, Callable
 from functools import cached_property
-from typing import Any, Literal, TypeVar
+from typing import Any, ClassVar, Literal, TypeVar
 
 from pydantic import BaseModel, Field
 
@@ -28,7 +29,7 @@ from beeai_framework.backend.events import (
     ChatModelSuccessEvent,
     chat_model_event_types,
 )
-from beeai_framework.backend.message import AnyMessage, SystemMessage
+from beeai_framework.backend.message import AnyMessage, MessageToolCallContent, SystemMessage
 from beeai_framework.backend.types import (
     ChatModelCache,
     ChatModelInput,
@@ -37,7 +38,7 @@ from beeai_framework.backend.types import (
     ChatModelStructureInput,
     ChatModelStructureOutput,
 )
-from beeai_framework.backend.utils import load_model, parse_broken_json, parse_model
+from beeai_framework.backend.utils import generate_tool_union_schema, load_model, parse_broken_json, parse_model
 from beeai_framework.cache.base import BaseCache
 from beeai_framework.cache.null_cache import NullCache
 from beeai_framework.cancellation import AbortController, AbortSignal
@@ -46,17 +47,21 @@ from beeai_framework.emitter import Emitter
 from beeai_framework.logger import Logger
 from beeai_framework.retryable import Retryable, RetryableConfig, RetryableContext, RetryableInput
 from beeai_framework.template import PromptTemplate, PromptTemplateInput
-from beeai_framework.tools.tool import AnyTool
+from beeai_framework.tools.tool import AnyTool, Tool
 from beeai_framework.utils.asynchronous import to_async_generator
 from beeai_framework.utils.models import ModelLike
-from beeai_framework.utils.strings import to_json
+from beeai_framework.utils.strings import generate_random_string, to_json
 
 T = TypeVar("T", bound=BaseModel)
+TTool = TypeVar("TTool", bound=AnyTool)
 ChatModelFinishReason: Literal["stop", "length", "function_call", "content_filter", "null"]
 logger = Logger(__name__)
 
 
 class ChatModel(ABC):
+    force_tool_calling_via_structured_generation: ClassVar[bool] = False
+    tool_choice_support: ClassVar[set[str]] = {"required", "none", "single", "auto"}
+
     @property
     @abstractmethod
     def model_id(self) -> str:
@@ -104,9 +109,11 @@ class ChatModel(ABC):
         input: ChatModelStructureInput[T],
         run: RunContext,
     ) -> ChatModelStructureOutput:
-        schema: type[T] = input.input_schema
-
-        json_schema = schema.model_json_schema(mode="serialization") if issubclass(schema, BaseModel) else schema
+        json_schema: dict[str, Any] = (
+            input.input_schema
+            if isinstance(input.input_schema, dict)
+            else input.input_schema.model_json_schema(mode="serialization")
+        )
 
         class DefaultChatModelStructureSchema(BaseModel):
             input_schema: type[str] = Field(..., alias="schema")
@@ -166,21 +173,42 @@ IMPORTANT: You MUST answer with a JSON object that matches the JSON schema above
         *,
         messages: list[AnyMessage],
         tools: list[AnyTool] | None = None,
-        tool_choice: AnyTool | Literal["required"] | Literal["none"] | None = None,
+        tool_choice: AnyTool | Literal["required"] | Literal["none"] | Literal["auto"] | None = None,
         abort_signal: AbortSignal | None = None,
         stop_sequences: list[str] | None = None,
         response_format: dict[str, Any] | type[BaseModel] | None = None,
         stream: bool | None = None,
         **kwargs: Any,
     ) -> Run[ChatModelOutput]:
+        tool_choice_supported = not tool_choice or (
+            "single" in self.tool_choice_support
+            if isinstance(tool_choice, Tool)
+            else tool_choice in self.tool_choice_support
+        )
+        tool_calling_via_structured_generation = not tool_choice_supported or kwargs.pop(
+            "force_tool_calling_via_structured_generation", self.force_tool_calling_via_structured_generation
+        )
+
+        if (
+            not tool_calling_via_structured_generation
+            or response_format
+            or tool_choice in [None, "auto", "none"]
+            or not tools
+        ):
+            tool_calling_via_structured_generation = False
+
         model_input = ChatModelInput(
             messages=messages,
-            tools=tools or [],
+            tools=tools,
+            tool_choice=tool_choice,
             abort_signal=abort_signal,
             stop_sequences=stop_sequences,
-            response_format=response_format,
+            response_format=generate_tool_union_schema(
+                tools if tool_choice == "required" else [t for t in tools if t is tool_choice]
+            )
+            if tool_calling_via_structured_generation and tools
+            else response_format,
             stream=stream,
-            tool_choice=tool_choice,
             **kwargs,
         )
 
@@ -210,10 +238,25 @@ IMPORTANT: You MUST answer with a JSON object that matches the JSON schema above
                     result = ChatModelOutput.from_chunks(chunks)
                 else:
                     if cache_hit:
-                        result = cache_hit[0]
+                        result = cache_hit[0].model_copy()
                     else:
                         result = await self._create(model_input, context)
                         await self.cache.set(cache_key, [result])
+
+                if tool_calling_via_structured_generation and not result.get_tool_calls():
+                    msg = result.messages[-1]
+                    tool_call: dict[str, Any] = parse_broken_json(msg.text)
+                    if not tool_call:
+                        raise ChatModelError(f"Failed to produce a valid tool call. Generated output: '{msg.text}'")
+
+                    msg.content.clear()
+                    msg.content.append(
+                        MessageToolCallContent(
+                            id=generate_random_string(8),
+                            tool_name=tool_call["name"],
+                            args=json.dumps(tool_call["parameters"]),
+                        )
+                    )
 
                 await context.emitter.emit("success", ChatModelSuccessEvent(value=result))
                 return result
@@ -236,7 +279,7 @@ IMPORTANT: You MUST answer with a JSON object that matches the JSON schema above
     def create_structure(
         self,
         *,
-        schema: type[T],
+        schema: type[T] | dict[str, Any],
         messages: list[AnyMessage],
         abort_signal: AbortSignal | None = None,
         max_retries: int | None = None,
@@ -268,10 +311,12 @@ IMPORTANT: You MUST answer with a JSON object that matches the JSON schema above
             self.parameters = parameters(self.parameters) if callable(parameters) else parameters
 
     @staticmethod
-    def from_name(name: str | ProviderName, options: ModelLike[ChatModelParameters] | None = None) -> "ChatModel":
+    def from_name(
+        name: str | ProviderName, options: ModelLike[ChatModelParameters] | None = None, **kwargs: Any
+    ) -> "ChatModel":
         parsed_model = parse_model(name)
         TargetChatModel = load_model(parsed_model.provider_id, "chat")  # type: ignore # noqa: N806
 
         settings = options.model_dump() if isinstance(options, ChatModelParameters) else options
 
-        return TargetChatModel(parsed_model.model_id, settings=settings or {})  # type: ignore
+        return TargetChatModel(parsed_model.model_id, settings=settings or {}, **kwargs)  # type: ignore

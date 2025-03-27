@@ -39,7 +39,7 @@ class ChatModelParameters(BaseModel):
 
 
 class ChatModelStructureInput(ChatModelParameters, Generic[T]):
-    input_schema: type[T] = Field(..., alias="schema")
+    input_schema: type[T] | dict[str, Any] = Field(..., alias="schema")
     messages: list[InstanceOf[AnyMessage]] = Field(..., min_length=1)
     abort_signal: AbortSignal | None = None
     max_retries: int | None = None
@@ -50,6 +50,8 @@ class ChatModelStructureOutput(BaseModel):
 
 
 class ChatModelInput(ChatModelParameters):
+    model_config = ConfigDict(frozen=True)
+
     tools: list[InstanceOf[AnyTool]] | None = None
     tool_choice: InstanceOf[AnyTool] | Literal["required"] | Literal["auto"] | Literal["none"] | None = None
     abort_signal: AbortSignal | None = None
@@ -60,8 +62,6 @@ class ChatModelInput(ChatModelParameters):
         min_length=1,
         frozen=True,
     )
-
-    model_config = ConfigDict(frozen=True)
 
 
 class ChatModelUsage(BaseModel):

@@ -14,7 +14,7 @@
 
 
 import os
-from typing import Any
+from typing import Any, ClassVar
 
 from beeai_framework.adapters.litellm.chat import LiteLLMChatModel
 from beeai_framework.backend.constants import ProviderName
@@ -24,6 +24,8 @@ logger = Logger(__name__)
 
 
 class WatsonxChatModel(LiteLLMChatModel):
+    tool_choice_support: ClassVar[set[str]] = {"none", "single", "auto"}
+
     @property
     def provider_id(self) -> ProviderName:
         return "watsonx"
