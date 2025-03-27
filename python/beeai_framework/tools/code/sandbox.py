@@ -67,7 +67,7 @@ class SandboxTool(Tool[BaseModel, SandboxToolOptions, StringToolOutput]):
         return JSONSchemaModel.create(self.name, self._options.input_schema)
 
     async def _run(
-        self, tool_input: BaseModel | dict[str, Any], options: ToolRunOptions | None, context: RunContext
+        self, tool_input: BaseModel | dict[str, Any], options: SandboxToolOptions | None, context: RunContext
     ) -> StringToolOutput:
         try:
             result = await PythonTool.call_code_interpreter(
@@ -77,7 +77,7 @@ class SandboxTool(Tool[BaseModel, SandboxToolOptions, StringToolOutput]):
                     "tool_input_json": tool_input.model_dump_json()
                     if isinstance(tool_input, BaseModel)
                     else json.dumps(tool_input),
-                    "env": {**self._options.env},
+                    "env": {**self._options.env, **(options.env if options else {})},
                 },
             )
 
