@@ -8,7 +8,6 @@ from dotenv import load_dotenv
 
 from beeai_framework import UnconstrainedMemory
 from beeai_framework.agents.tool_calling.agent import ToolCallingAgent
-from beeai_framework.agents.tool_calling.prompts import ToolCallingAgentTaskPrompt
 from beeai_framework.backend.chat import ChatModel
 from beeai_framework.emitter.emitter import EventMeta
 from beeai_framework.errors import FrameworkError
@@ -39,12 +38,7 @@ async def main() -> None:
 
     # Create agent
     agent = ToolCallingAgent(
-        llm=ChatModel.from_name("ollama:llama3.1"),
-        memory=UnconstrainedMemory(),
-        tools=[OpenMeteoTool()],
-        templates={
-            "task": ToolCallingAgentTaskPrompt.fork(defaults={"expected_output": "The answer should be in spanish"})
-        },
+        llm=ChatModel.from_name("ollama:llama3.1"), memory=UnconstrainedMemory(), tools=[OpenMeteoTool()]
     )
 
     # Main interaction loop with user input

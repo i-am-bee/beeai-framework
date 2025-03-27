@@ -9,7 +9,6 @@ from pydantic import BaseModel
 from beeai_framework import UnconstrainedMemory
 from beeai_framework.adapters.ollama.backend.chat import OllamaChatModel
 from beeai_framework.agents.react.agent import ReActAgent
-from beeai_framework.agents.react.types import ModelKeysType, ReActAgentTemplateInputFactory
 from beeai_framework.agents.types import AgentExecutionConfig
 from beeai_framework.cancellation import AbortSignal
 from beeai_framework.emitter.emitter import Emitter, EventMeta
@@ -34,13 +33,6 @@ def user_customizer(config: PromptTemplateInput[Any]) -> PromptTemplateInput[Any
     new_config = config.model_copy()
     new_config.input_schema = UserSchema
     new_config.template = """User: {{input}}"""
-    return new_config
-
-
-def system_customizer(config: PromptTemplateInput[Any]) -> PromptTemplateInput[Any]:
-    new_config = config.model_copy()
-    new_config.defaults = new_config.defaults or {}
-    new_config.defaults["instructions"] = "You are a helpful assistant that uses tools to answer questions."
     return new_config
 
 
@@ -71,11 +63,13 @@ def create_agent() -> ReActAgent:
 
     llm = OllamaChatModel("llama3.1")
 
-    templates: dict[ModelKeysType, PromptTemplateInput[Any] | ReActAgentTemplateInputFactory] = {
-        "user": user_customizer,
-        "system": system_customizer,
-        "tool_no_result_error": no_result_customizer,
-        "tool_not_found_error": not_found_customizer,
+    templates: dict[str, Any] = {
+        "user": lambda template: template.fork(customizer=user_customizer),
+        "system": lambda template: template.update(
+            defaults={"instructions": "You are a helpful assistant that uses tools to answer questions."}
+        ),
+        "tool_no_result_error": lambda template: template.fork(customizer=no_result_customizer),
+        "tool_not_found_error": lambda template: template.fork(customizer=not_found_customizer),
     }
 
     tools: list[AnyTool] = [

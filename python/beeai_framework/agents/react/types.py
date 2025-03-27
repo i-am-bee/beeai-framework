@@ -33,7 +33,7 @@ from beeai_framework.backend.chat import ChatModel
 from beeai_framework.backend.message import AnyMessage
 from beeai_framework.backend.types import ChatModelOutput
 from beeai_framework.memory.base_memory import BaseMemory
-from beeai_framework.template import PromptTemplate, PromptTemplateInput
+from beeai_framework.template import PromptTemplate
 from beeai_framework.tools.tool import AnyTool
 from beeai_framework.utils.strings import to_json
 
@@ -90,7 +90,7 @@ class ReActAgentTemplates(BaseModel):
     schema_error: InstanceOf[PromptTemplate[SchemaErrorTemplateInput]]
 
 
-ReActAgentTemplateInputFactory = Callable[[InstanceOf[PromptTemplateInput[Any]]], InstanceOf[PromptTemplateInput[Any]]]
+ReActAgentTemplateFactory = Callable[[InstanceOf[PromptTemplate[Any]]], InstanceOf[PromptTemplate[Any]]]
 ModelKeysType = Annotated[str, lambda v: v in ReActAgentTemplates.model_fields]
 
 
@@ -99,6 +99,6 @@ class ReActAgentInput(BaseModel):
     tools: list[InstanceOf[AnyTool]]
     memory: InstanceOf[BaseMemory]
     meta: InstanceOf[AgentMeta] | None = None
-    templates: dict[ModelKeysType, InstanceOf[PromptTemplateInput[Any]] | ReActAgentTemplateInputFactory] | None = None
+    templates: dict[ModelKeysType, InstanceOf[PromptTemplate[Any]] | ReActAgentTemplateFactory] | None = None
     execution: AgentExecutionConfig | None = None
     stream: bool = True

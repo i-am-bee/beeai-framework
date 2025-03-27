@@ -38,7 +38,7 @@ from beeai_framework.agents.react.types import (
     ReActAgentRunInput,
     ReActAgentRunOptions,
     ReActAgentRunOutput,
-    ReActAgentTemplateInputFactory,
+    ReActAgentTemplateFactory,
 )
 from beeai_framework.agents.types import (
     AgentExecutionConfig,
@@ -50,7 +50,7 @@ from beeai_framework.cancellation import AbortSignal
 from beeai_framework.context import Run, RunContext
 from beeai_framework.emitter import Emitter
 from beeai_framework.memory import BaseMemory
-from beeai_framework.template import PromptTemplateInput
+from beeai_framework.template import PromptTemplate
 from beeai_framework.tools.tool import AnyTool
 
 
@@ -63,7 +63,7 @@ class ReActAgent(BaseAgent[ReActAgentRunOutput]):
         tools: list[AnyTool],
         memory: BaseMemory,
         meta: AgentMeta | None = None,
-        templates: dict[ModelKeysType, PromptTemplateInput[Any] | ReActAgentTemplateInputFactory] | None = None,
+        templates: dict[ModelKeysType, PromptTemplate[Any] | ReActAgentTemplateFactory] | None = None,
         execution: AgentExecutionConfig | None = None,
         stream: bool = True,
     ) -> None:
