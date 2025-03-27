@@ -21,7 +21,7 @@ from collections.abc import Callable
 from datetime import UTC, datetime
 from typing import Any, TypeVar
 
-from beeai_framework.memory.errors import SerializerError
+from beeai_framework.serializer.errors import SerializerError
 
 T = TypeVar("T", bound="Serializable")
 

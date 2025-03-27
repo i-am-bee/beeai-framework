@@ -30,7 +30,7 @@ from beeai_framework.memory import (
     TokenMemory,
     UnconstrainedMemory,
 )
-from beeai_framework.memory.serializable import Serializable
+from beeai_framework.serializer.serializable import Serializable
 from beeai_framework.template import PromptTemplateError
 from beeai_framework.tools import Tool, tool
 from beeai_framework.tools.weather.openmeteo import OpenMeteoTool

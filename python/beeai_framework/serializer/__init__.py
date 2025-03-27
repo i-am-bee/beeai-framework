@@ -13,17 +13,12 @@
 # limitations under the License.
 
 
-from beeai_framework.memory.base_memory import BaseMemory
-from beeai_framework.memory.errors import ResourceError, ResourceFatalError
-from beeai_framework.memory.readonly_memory import ReadOnlyMemory
-from beeai_framework.memory.token_memory import TokenMemory
-from beeai_framework.memory.unconstrained_memory import UnconstrainedMemory
+from beeai_framework.serializer.errors import SerializerError
+from beeai_framework.serializer.serializable import Serializable
+from beeai_framework.serializer.serializer import Serializer
 
 __all__ = [
-    "BaseMemory",
-    "ReadOnlyMemory",
-    "ResourceError",
-    "ResourceFatalError",
-    "TokenMemory",
-    "UnconstrainedMemory",
+    "Serializable",
+    "Serializer",
+    "SerializerError",
 ]
