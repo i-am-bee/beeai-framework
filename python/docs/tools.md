@@ -410,7 +410,6 @@ _Source: [examples/tools/custom/sandbox.py](/typescript/examples/tools/custom/sa
 >
 > 1. During the creation of a `SandboxTool`, either via the constructor or the factory function (`SandboxTool.from_source_code`).
 > 2. By passing them directly as part of the options when invoking: `my_tool.run(..., env={ "MY_ENV": "MY_VALUE" })`.
-<!-- 3. Dynamically during execution via [`Emitter`](/python/docs/emitter.md): `my_tool.emitter.on("start", lambda data, event: (data.options.env.update({"MY_ENV": "MY_VALUE"})))`. -->
 
 > [!IMPORTANT]
 >
