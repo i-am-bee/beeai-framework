@@ -46,7 +46,9 @@ All providers examples can be found in [examples/backend/providers](/typescript/
 
 ## Chat Model
 
-The `ChatModel` class represents a Chat Large Language Model and can be initiated in one of the following ways.
+The `ChatModel` class represents a Chat Large Language Model and provides methods for text generation, streaming responses, and more. You can initialize a chat model in multiple ways:
+
+**Method 1: Using the generic factory method**
 
 ```ts
 import { ChatModel } from "beeai-framework/backend/core";
@@ -56,7 +58,7 @@ console.log(model.providerId); // ollama
 console.log(model.modelId); // llama3.1
 ```
 
-or you can always create the concrete provider's chat model directly
+**Method 2: Creating a specific provider model directly**
 
 ```ts
 import { OpenAIChatModel } from "beeai-framework/adapters/openai/chat";
@@ -80,24 +82,28 @@ const model = new OpenAIChatModel(
 );
 ```
 
-### Configuration
+### Chat model configuration
+
+You can configure various parameters for your chat model:
 
 ```ts
 import { ChatModel, UserMessage } from "beeai-framework/backend/core";
 import { SlidingCache } from "beeai-framework/cache/slidingCache";
 
 const model = await ChatModel.fromName("watsonx:ibm/granite-3-8b-instruct");
+
+// Optionally one may set llm parameters
 model.config({
   parameters: {
-    maxTokens: 300,
-    temperature: 0.15,
-    topP: 1,
-    frequencyPenalty: 1.1,
-    topK: 1,
-    n: 1,
-    presencePenalty: 1,
-    seed: 7777,
-    stopSequences: ["\n\n"],
+    maxTokens: 300, // high number yields longer potential output
+    temperature: 0.15, // higher number yields greater randomness and variation
+    topP: 1, // higher number yields more complex vocabulary, recommend only changing p or k
+    frequencyPenalty: 1.1, // higher number yields reduction in word reptition
+    topK: 1, // higher number yields more variance, recommend only changing p or k
+    n: 1, // higher number yields more choices
+    presencePenalty: 1, // higher number yields reduction in repetition of words
+    seed: 7777, // can help produce similar responses if prompt and seed are always the same
+    stopSequences: ["\n\n"], // stops the model on input of any of these strings
   },
   cache: new SlidingCache({
     size: 25,
@@ -105,7 +111,9 @@ model.config({
 });
 ```
 
-### Generation
+### Text generation
+
+The most basic usage is to generate text responses:
 
 ```ts
 import { ChatModel, UserMessage } from "beeai-framework/backend/core";
@@ -121,7 +129,9 @@ console.log(response.getTextContent());
 >
 > Execution parameters (those passed to `model.create({...})`) are superior to ones defined via `config`.
 
-### Stream
+### Streaming responses
+
+For applications requiring real-time responses:
 
 ```ts
 import { ChatModel, UserMessage } from "beeai-framework/backend/core";
@@ -133,8 +143,20 @@ const response = await model
     stream: true,
   })
   .observe((emitter) => {
-    emitter.on("update", ({ value }) => {
-      console.log("token", value.getTextContent());
+    emitter.on("start", ({ input }) => {
+      console.log("Start", JSON.stringify(input.messages));
+    });
+    emitter.on("newToken", ({ value }) => {
+      console.log("token:", value.getTextContent());
+    });
+    emitter.on("error", ({ error }) => {
+      console.log("Error: ", error.explain());
+    });
+    emitter.on("success", ({ value }) => {
+      console.log("Completed with reason: ", value.finishReason);
+    });
+    emitter.on("finish", () => {
+      console.log("Finished");
     });
   });
 
@@ -143,6 +165,8 @@ console.log("Token Usage:", response.usage);
 ```
 
 ### Structured Generation
+
+Generate structured data according to a schema:
 
 <!-- embedme examples/backend/structured.ts -->
 
