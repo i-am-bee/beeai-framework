@@ -91,7 +91,7 @@ class ReActAgentTemplates(BaseModel):
 
 
 ReActAgentTemplateFactory = Callable[[InstanceOf[PromptTemplate[Any]]], InstanceOf[PromptTemplate[Any]]]
-ModelKeysType = Annotated[str, lambda v: v in ReActAgentTemplates.model_fields]
+ReActAgentTemplatesKeys = Annotated[str, lambda v: v in ReActAgentTemplates.model_fields]
 
 
 class ReActAgentInput(BaseModel):
@@ -99,6 +99,6 @@ class ReActAgentInput(BaseModel):
     tools: list[InstanceOf[AnyTool]]
     memory: InstanceOf[BaseMemory]
     meta: InstanceOf[AgentMeta] | None = None
-    templates: dict[ModelKeysType, InstanceOf[PromptTemplate[Any]] | ReActAgentTemplateFactory] | None = None
+    templates: dict[ReActAgentTemplatesKeys, InstanceOf[PromptTemplate[Any]] | ReActAgentTemplateFactory] | None = None
     execution: AgentExecutionConfig | None = None
     stream: bool = True

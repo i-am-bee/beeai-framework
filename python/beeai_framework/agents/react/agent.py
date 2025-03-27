@@ -33,12 +33,12 @@ from beeai_framework.agents.react.runners.base import (
 from beeai_framework.agents.react.runners.default.runner import DefaultRunner
 from beeai_framework.agents.react.runners.granite.runner import GraniteRunner
 from beeai_framework.agents.react.types import (
-    ModelKeysType,
     ReActAgentInput,
     ReActAgentRunInput,
     ReActAgentRunOptions,
     ReActAgentRunOutput,
     ReActAgentTemplateFactory,
+    ReActAgentTemplatesKeys,
 )
 from beeai_framework.agents.types import (
     AgentExecutionConfig,
@@ -63,7 +63,7 @@ class ReActAgent(BaseAgent[ReActAgentRunOutput]):
         tools: list[AnyTool],
         memory: BaseMemory,
         meta: AgentMeta | None = None,
-        templates: dict[ModelKeysType, PromptTemplate[Any] | ReActAgentTemplateFactory] | None = None,
+        templates: dict[ReActAgentTemplatesKeys, PromptTemplate[Any] | ReActAgentTemplateFactory] | None = None,
         execution: AgentExecutionConfig | None = None,
         stream: bool = True,
     ) -> None:
