@@ -21,7 +21,7 @@ from pydantic import BaseModel, InstanceOf
 
 from beeai_framework.agents.base import AnyAgent
 from beeai_framework.agents.tool_calling.agent import ToolCallingAgent
-from beeai_framework.agents.tool_calling.types import ToolCallingAgentRunOutput, ToolCallingAgentTemplates
+from beeai_framework.agents.tool_calling.types import ToolCallingAgentRunOutput
 from beeai_framework.agents.types import (
     AgentExecutionConfig,
 )
@@ -29,8 +29,8 @@ from beeai_framework.backend.chat import ChatModel
 from beeai_framework.backend.message import AnyMessage, AssistantMessage, UserMessage
 from beeai_framework.context import Run
 from beeai_framework.memory import BaseMemory, ReadOnlyMemory, UnconstrainedMemory
-from beeai_framework.template import PromptTemplateInput
 from beeai_framework.tools.tool import AnyTool
+from beeai_framework.utils.dicts import exclude_none
 from beeai_framework.utils.lists import remove_falsy
 from beeai_framework.workflows.types import WorkflowRun
 from beeai_framework.workflows.workflow import Workflow
@@ -110,20 +110,15 @@ class AgentWorkflow:
                 instance.memory = memory
                 return instance
 
-            def customizer(config: PromptTemplateInput[Any]) -> PromptTemplateInput[Any]:
-                new_config = config.model_copy()
-                new_config.defaults["instructions"] = instructions or config.defaults.get("instructions")
-                new_config.defaults["role"] = role or config.defaults.get("role")
-                return new_config
-
-            templates = ToolCallingAgentTemplates()
-            templates.system = templates.system.fork(customizer=customizer)
-
             return ToolCallingAgent(
                 llm=llm,  # type: ignore
                 tools=tools,
                 memory=memory,
-                templates=templates,
+                templates={
+                    "system": lambda template: template.update(
+                        defaults=exclude_none({"instructions": instructions, "role": role})
+                    )
+                },
             )
 
         async def step(state: Schema) -> None:
