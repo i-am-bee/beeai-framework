@@ -398,13 +398,13 @@ This enables agents to:
 - And more
 
 > [!NOTE]
-> This tool requires [BeeAI Code Interpreter](https://github.com/i-am-bee/bee-code-interpreter) to use. 
-> Get started quickly with (beeai-framework-py-starter)[https://github.com/i-am-bee/beeai-framework-py-starter].
+> This tool requires [beeai-code-interpreter](https://github.com/i-am-bee/bee-code-interpreter) to use. 
+> Get started quickly with [beeai-framework-py-starter](https://github.com/i-am-bee/beeai-framework-py-starter).
 
 Key components:
 - `LocalPythonStorage` – Handles where Python code is stored and run.
   - `local_working_dir` – A temporary folder where the code is saved before running.
-  - `interpreter_working_dir` – The folder where the code actually runs, set by the CODE_INTERPRETER_TMPDIR setting.
+  - `interpreter_working_dir` – The folder where the code actually runs, set by the `CODE_INTERPRETER_TMPDIR` setting.
 - `PythonTool` – Connects to an external Python interpreter to run code.
   - `code_interpreter_url` – The web address where the code gets executed (default: `http://127.0.0.1:50081`).
   - `storage` – Controls where the code is stored. By default, it saves files locally using `LocalPythonStorage`. You can set up a different storage option, like cloud storage, if needed.
@@ -460,7 +460,11 @@ _Source: [examples/tools/python_tool.py](/python/examples/tools/python_tool.py)_
 
 ### Sandbox Tool
 
-The Sandbox Tool is a secure code execution environment provided by BeeAI framework. It allows developers to run untrusted code in a controlled and isolated environment, ensuring safety while executing dynamic code.
+Sandbox Tool is a secure code execution environment provided by BeeAI framework. It allows developers to run untrusted code in a controlled and isolated environment, ensuring safety while executing dynamic code.
+
+> [!NOTE]
+> This tool requires [beeai-code-interpreter](https://github.com/i-am-bee/bee-code-interpreter) to use. 
+> Get started quickly with [beeai-framework-py-starter](https://github.com/i-am-bee/beeai-framework-py-starter).
 
 <!-- embedme examples/tools/custom/sandbox.py -->
 
