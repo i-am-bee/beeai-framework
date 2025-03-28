@@ -473,6 +473,7 @@ if __name__ == "__main__":
         traceback.print_exc()
         sys.exit(e.explain())
 ```
+</details> 
 
 _Source: [examples/tools/python_tool.py](/python/examples/tools/python_tool.py)_
 
@@ -547,6 +548,7 @@ if __name__ == "__main__":
         sys.exit(e.explain())
 
 ```
+</details> 
 
 _Source: [examples/tools/custom/sandbox.py](/python/examples/tools/custom/sandbox.py)_
 
@@ -559,7 +561,7 @@ _Source: [examples/tools/custom/sandbox.py](/python/examples/tools/custom/sandbo
 
 > [!IMPORTANT]
 >
-> Sandbox tools are executed within BeeAI code interpreter, but they cannot access any files.
+> Sandbox tools are executed within [beeai-code-interpreter](https://github.com/i-am-bee/bee-code-interpreter), but they cannot access any files.
 > Only `PythonTool` can access files.
 
 ---
@@ -648,7 +650,8 @@ if __name__ == "__main__":
         sys.exit(e.explain())
 
 ```
-
+</details> 
+  
 _Source: [/python/examples/tools/custom/base.py](/python/examples/tools/custom/base.py)_
 
 > [!TIP]
@@ -757,7 +760,8 @@ if __name__ == "__main__":
         sys.exit(e.explain())
 
 ```
-
+</details> 
+  
 _Source: [/python/examples/tools/custom/openlibrary.py](/python/examples/tools/custom/openlibrary.py)_
 
 ### Implementation guidelines
@@ -828,6 +832,8 @@ def _run(self, input: OpenMeteoToolInput, options: Any = None) -> None:
 
 _Source: [/python/beeai_framework/tools/weather/openmeteo.py](/python/beeai_framework/tools/weather/openmeteo.py)_
 
+---
+
 ## Best practices
 
 ### 1. Data minimization
@@ -843,6 +849,8 @@ to recover from errors.
 
 When building tools, consider that the tool is being invoked by a somewhat unpredictable third party (the agent). You should ensure that sufficient guardrails are in place to prevent
 adverse outcomes.
+
+---
 
 ## Examples
 
