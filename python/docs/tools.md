@@ -44,8 +44,8 @@ Ready-to-use tools that provide immediate functionality for common agent tasks:
 | `OpenMeteoTool`  | Retrieve weather information for specific locations and dates                                      | 
 | `WikipediaTool`  | Search for data on Wikipedia                                                                       | 
 | `MCPTool`        | Discover and use tools exposed by arbitrary [MCP Server](https://modelcontextprotocol.io/examples) | 
-| `PythonTool`     | Run arbitrary Python code in the remote environment.                                               |  
-| `SandboxTool`    | Run your own Python function in the remote environment.                                            |        
+| `PythonTool`     | Run arbitrary Python code in a sandboxed environment                                               |  
+| `SandboxTool`    | Run custom Python functions in a sandboxed environment                                             |        
 
 ➕ [Request additional built-in tools](https://github.com/i-am-bee/beeai-framework/discussions)
 
@@ -62,6 +62,7 @@ For detailed usage examples of each built-in tool with complete implementation c
 The simplest way to use a tool is to instantiate it directly and call its `run()` method with appropriate input:
 
 <!-- embedme examples/tools/base.py -->
+
 ```py
 import asyncio
 import sys
@@ -225,10 +226,12 @@ _Source: [/python/examples/tools/decorator.py](/python/examples/tools/decorator.
 
 ## Built-in tool examples
 
-### DuckDuckGo Search Tool
+### DuckDuckGo search tool
 
-Use the DuckDuckGo tool to search the web and retrieve current information:
+Use the DuckDuckGo search tool to retrieve real-time search results from across the internet, including news, current events, or content from specific websites or domains.
 
+<details> 
+<Summary>🌟 CLICK HERE to expand the DuckDuckGo Search Tool example</Summary>
 <!-- embedme examples/tools/duckduckgo.py -->
 
 ```py
@@ -260,13 +263,16 @@ if __name__ == "__main__":
         sys.exit(e.explain())
 
 ```
+</details>
 
 _Source: [/python/examples/tools/duckduckgo.py](/python/examples/tools/duckduckgo.py)_
 
-### OpenMeteo Weather Tool
+### OpenMeteo weather tool
 
-Use the OpenMeteo tool to access current and forecasted weather data:
+Use the OpenMeteo tool to retrieve real-time weather forecasts including detailed information on temperature, wind speed, and precipitation. Access forecasts predicting weather up to 16 days in the future and archived forecasts for weather up to 30 days in the past. Ideal for obtaining up-to-date weather predictions and recent historical weather trends.
 
+<details> 
+<Summary>🌟 CLICK HERE to expand the OpenMeteo Weather Tool example</Summary>
 <!-- embedme examples/tools/openmeteo.py -->
 
 ```py
@@ -298,13 +304,16 @@ if __name__ == "__main__":
         sys.exit(e.explain())
 
 ```
+</details>
 
 _Source: [/python/examples/tools/openmeteo.py](/python/examples/tools/openmeteo.py)_
 
-### Wikipedia Tool
+### Wikipedia tool
 
-Use the Wikipedia tool to search for information from Wikipedia:
+Use the Wikipedia tool to retrieve detailed information from Wikipedia.org on a wide range of topics, including famous individuals, locations, organizations, and historical events. Ideal for obtaining comprehensive overviews or specific details on well-documented subjects. May not be suitable for lesser-known or more recent topics. The information is subject to community edits which can be inaccurate.
 
+<details> 
+<Summary>🌟 CLICK HERE to expand the Wikipedia tool example</Summary>
 <!-- embedme examples/tools/wikipedia.py -->
 
 ```py
@@ -334,13 +343,19 @@ if __name__ == "__main__":
         sys.exit(e.explain())
 
 ```
+</details>
 
 _Source: [/python/examples/tools/wikipedia.py](/python/examples/tools/wikipedia.py)_
 
-### MCP Tool
+### MCP tool
 
-The MCPTool allows you to instantiate tools given a connection to MCP server with tools capability.
+Leverage the Model Context Protocol (MCP) to define, initialize, and utilize tools on compatible MCP servers. These servers expose executable functionalities, enabling AI models to perform tasks such as computations, API calls, or system operations.
 
+> [!TIP]
+> Check out the [MCP Slack integration tutorial](/python/docs/tutorials.md#slack-integration)
+
+<details> 
+<Summary>🌟 CLICK HERE to expand the MCP tool example</Summary>
 <!-- embedme examples/tools/mcp_tool_creation.py -->
 
 ```py
@@ -383,12 +398,13 @@ async def slack_tool() -> MCPTool:
 agent = ReActAgent(llm=OllamaChatModel("llama3.1"), tools=[asyncio.run(slack_tool())], memory=UnconstrainedMemory())
 
 ```
+</details>
 
 _Source: [/python/examples/tools/mcp_tool_creation.py](/python/examples/tools/mcp_tool_creation.py)_
 
-### Python Tool
+### Python tool
 
-Python Tool allows AI agents to execute Python code within a controlled environment, securely store results, and retrieve outputs to enhance their reasoning and execution processes.
+The Python tool allows AI agents to execute Python code within a secure, sandboxed environment. This tool enables access to files that are either provided by the user or created during execution.
 
 This enables agents to:
 - Perform calculations and data analysis
@@ -409,6 +425,8 @@ Key components:
   - `code_interpreter_url` – The web address where the code gets executed (default: `http://127.0.0.1:50081`).
   - `storage` – Controls where the code is stored. By default, it saves files locally using `LocalPythonStorage`. You can set up a different storage option, like cloud storage, if needed.
 
+<details> 
+<Summary>🌟 CLICK HERE to expand the Python tool example</Summary>
 <!-- embedme examples/tools/python_tool.py -->
 
 ```py
@@ -458,14 +476,16 @@ if __name__ == "__main__":
 
 _Source: [examples/tools/python_tool.py](/python/examples/tools/python_tool.py)_
 
-### Sandbox Tool
+### Sandbox tool
 
-Sandbox Tool is a secure code execution environment provided by BeeAI framework. It allows developers to run untrusted code in a controlled and isolated environment, ensuring safety while executing dynamic code.
+The Sandbox tool provides a way to define and run custom Python functions in a secure, sandboxed environment. It's ideal when you need to encapsulate specific functionality that can be called by the agent.
 
 > [!NOTE]
 > This tool requires [beeai-code-interpreter](https://github.com/i-am-bee/bee-code-interpreter) to use. 
 > Get started quickly with [beeai-framework-py-starter](https://github.com/i-am-bee/beeai-framework-py-starter).
 
+<details> 
+<Summary>🌟 CLICK HERE to expand the Sandbox tool example</Summary>
 <!-- embedme examples/tools/custom/sandbox.py -->
 
 ```py
@@ -539,8 +559,8 @@ _Source: [examples/tools/custom/sandbox.py](/python/examples/tools/custom/sandbo
 
 > [!IMPORTANT]
 >
-> Sandbox tools are executed within the code interpreter, but they cannot access any files.
-> Only `PythonTool` does.
+> Sandbox tools are executed within BeeAI code interpreter, but they cannot access any files.
+> Only `PythonTool` can access files.
 
 ---
 
@@ -558,6 +578,8 @@ To create a new tool, implement the base `Tool` class. The framework provides fl
 
 Here's an example of a simple custom tool that provides riddles:
 
+<details> 
+<Summary>🌟 CLICK HERE to expand the basic custom tool example</Summary>
 <!-- embedme examples/tools/custom/base.py -->
 
 ```py
@@ -641,6 +663,8 @@ _Source: [/python/examples/tools/custom/base.py](/python/examples/tools/custom/b
 
 For more complex scenarios, you can implement tools with robust input validation, error handling, and structured outputs:
 
+<details> 
+<Summary>🌟 CLICK HERE to expand the advanced custom tool example</Summary>
 <!-- embedme examples/tools/custom/openlibrary.py -->
 
 ```py
