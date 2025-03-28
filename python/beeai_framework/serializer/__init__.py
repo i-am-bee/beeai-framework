@@ -13,12 +13,8 @@
 # limitations under the License.
 
 
-from beeai_framework.serializer.errors import SerializerError
 from beeai_framework.serializer.serializable import Serializable
-from beeai_framework.serializer.serializer import Serializer
 
 __all__ = [
     "Serializable",
-    "Serializer",
-    "SerializerError",
 ]

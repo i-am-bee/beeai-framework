@@ -15,96 +15,37 @@
 
 from abc import ABC, abstractmethod
 from copy import deepcopy
-from typing import Any, ClassVar, TypeVar
+from typing import Any, TypeVar
+
+from pydantic import BaseModel
 
 T = TypeVar("T", bound="Serializable")
 
 
 class Serializable(ABC):
-    """Base class for all serializable objects."""
-
-    _registered_classes: ClassVar[dict[str, type["Serializable"]]] = {}
-
-    def __init_subclass__(cls, **kwargs: int) -> None:
-        """Automatically register subclasses when they're created."""
-        super().__init_subclass__(**kwargs)
-        cls._registered_classes[cls.__name__] = cls
+    """Base class for serializable objects."""
 
     @classmethod
-    def register(cls, aliases: list[str] | None = None) -> None:
-        """Register the class and any aliases for serialization."""
-        cls._registered_classes[cls.__name__] = cls
-        if aliases:
-            for alias in aliases:
-                if alias in cls._registered_classes and cls._registered_classes[alias] != cls:
-                    raise ValueError(f"Alias '{alias}' already registered to a different class")
-                cls._registered_classes[alias] = cls
+    async def from_snapshot(cls: type[T], snapshot: dict[str, Any]) -> T:
+        """Create instance from snapshot."""
+        if issubclass(cls, BaseModel):
+            return cls(**dict(snapshot))
+        else:
+            instance = cls()
+            await instance.load_snapshot(snapshot)
+            return instance
 
-    @classmethod
-    def from_serialized(cls: type[T], data: dict[str, Any]) -> T:
-        """Create an instance from serialized data."""
-        instance = cls.__new__(cls)
-        Serializable.__init__(instance)
-        instance.load_snapshot(data)
-        return instance
-
-    @classmethod
-    def from_snapshot(cls: type[T], data: dict[str, Any]) -> T:
-        """Create an instance from a snapshot."""
-        instance = cls.__new__(cls)
-        Serializable.__init__(instance)
-        instance.load_snapshot(data)
-        return instance
-
-    def serialize(self) -> dict[str, Any]:
-        """Serialize the object to a dictionary."""
-        return {"__class": self.__class__.__name__, "__value": self.create_snapshot()}
-
-    @abstractmethod
-    def create_snapshot(self) -> dict[str, Any]:
-        """Create a serializable snapshot of the object's state."""
-        raise NotImplementedError
-
-    @abstractmethod
-    def load_snapshot(self, state: dict[str, Any]) -> None:
-        """Load object state from a snapshot."""
-        raise NotImplementedError
-
-    def clone(self: T) -> T:
+    async def clone(self: T) -> T:
         """Create a deep copy of the object."""
-        snapshot = self.create_snapshot()
-        return type(self).from_snapshot(deepcopy(snapshot))
+        snapshot: dict[str, Any] = await self.create_snapshot()
+        return await type(self).from_snapshot(deepcopy(snapshot))
 
+    @abstractmethod
+    async def create_snapshot(self) -> dict[str, Any]:
+        """Create serializable snapshot."""
+        pass
 
-# Example of how to use the base class:
-class ExampleSerializable(Serializable):
-    def __init__(self, data: str) -> None:
-        super().__init__()
-        self.data = data
-
-    @classmethod
-    def register(cls, aliases: list[str] | None = None) -> None:
-        """Register with custom aliases."""
-        super().register(aliases)
-
-    def create_snapshot(self) -> dict[str, Any]:
-        return {"data": self.data}
-
-    def load_snapshot(self, state: dict[str, Any]) -> None:
-        self.data = state["data"]
-
-
-# Usage example:
-if __name__ == "__main__":
-    # Register the class with an alias
-    ExampleSerializable.register(aliases=["Example", "ExampleClass"])
-
-    # Create and serialize an instance
-    obj = ExampleSerializable("test data")
-    serialized = obj.serialize()
-
-    # Create new instance from serialized data
-    new_obj = ExampleSerializable.from_serialized(serialized["__value"])
-
-    # Create a clone
-    cloned = obj.clone()
+    @abstractmethod
+    async def load_snapshot(self, snapshot: dict[str, Any]) -> None:
+        """Restore from snapshot."""
+        pass

@@ -12,3 +12,85 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+
+from typing import Any
+
+import pytest
+from pydantic import BaseModel
+
+from beeai_framework.serializer.serializable import Serializable
+
+"""
+Utility functions and classes
+"""
+
+
+class DefaultUser(Serializable):
+    def __init__(self, name: str = "", age: int = 0, email: str | None = None) -> None:
+        self.name = name
+        self.age = age
+        self.email = email
+
+    async def create_snapshot(self) -> dict[str, Any]:
+        return {"name": self.name, "age": self.age, "email": self.email}
+
+    async def load_snapshot(self, snapshot: dict[str, Any]) -> None:
+        self.name = snapshot["name"]
+        self.age = snapshot["age"]
+        self.email = snapshot.get("email")
+
+
+class BaseModelUser(BaseModel, Serializable):
+    name: str
+    age: int
+    email: str | None = None
+
+    async def create_snapshot(self) -> dict[str, Any]:
+        return self.model_dump()
+
+    async def load_snapshot(self, snapshot: dict[str, Any]) -> None:
+        self.name = snapshot.get("name", "")
+        self.age = snapshot.get("age", 0)
+        self.email = snapshot.get("email")
+
+
+@pytest.fixture
+def default_user() -> DefaultUser:
+    return DefaultUser("John Doe", 42)
+
+
+@pytest.fixture
+def base_model_user() -> BaseModelUser:
+    return BaseModelUser(name="John Doe", age=42)
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_clone(default_user: DefaultUser) -> None:
+    cloned_user = await default_user.clone()
+
+    assert cloned_user.name == default_user.name
+    assert cloned_user.age == default_user.age
+    assert cloned_user.email == default_user.email
+
+    cloned_user.name = "Jane Doe"
+    cloned_user.email = "jane.doe@domain.com"
+
+    assert cloned_user.name != default_user.name
+    assert cloned_user.email != default_user.email
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_clone_basemodel(base_model_user: BaseModelUser) -> None:
+    cloned_user = await base_model_user.clone()
+
+    assert cloned_user.name == base_model_user.name
+    assert cloned_user.age == base_model_user.age
+    assert cloned_user.email == base_model_user.email
+
+    cloned_user.name = "Jane Doe"
+    cloned_user.email = "jane.doe@domain.com"
+
+    assert cloned_user.name != base_model_user.name
+    assert cloned_user.email != base_model_user.email
