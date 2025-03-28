@@ -1,18 +1,22 @@
 import asyncio
+import json
 import sys
 import traceback
+from datetime import UTC, datetime
 
 from pydantic import BaseModel, Field
 
+from beeai_framework import SystemMessage
 from beeai_framework.adapters.ollama.backend.chat import OllamaChatModel
 from beeai_framework.backend.chat import ChatModel
 from beeai_framework.backend.events import ChatModelNewTokenEvent
-from beeai_framework.backend.message import UserMessage
+from beeai_framework.backend.message import AnyMessage, MessageToolResultContent, ToolMessage, UserMessage
 from beeai_framework.cancellation import AbortSignal
 from beeai_framework.emitter import EventMeta
 from beeai_framework.errors import AbortError, FrameworkError
 from beeai_framework.parsers.field import ParserField
 from beeai_framework.parsers.line_prefix import LinePrefixParser, LinePrefixParserNode
+from beeai_framework.tools.weather.openmeteo import OpenMeteoTool
 
 
 async def ollama_from_name() -> None:
@@ -90,6 +94,32 @@ async def ollama_stream_parser() -> None:
     print(result)
 
 
+async def ollama_tool_calling() -> None:
+    llm = OllamaChatModel("llama3.1")
+    weather_tool = OpenMeteoTool()
+    messages: list[AnyMessage] = [
+        SystemMessage(
+            f"""You are a helpful assistant that uses tools to provide answers.
+Current date is {datetime.now(tz=UTC).date()!s}
+"""
+        ),
+        UserMessage("What is the current weather in Berlin?"),
+    ]
+    response = await llm.create(messages=messages, tools=[weather_tool], tool_choice="required")
+    messages.extend(response.messages)
+    tool_call_msg = response.get_tool_calls()[0]
+    print(tool_call_msg.model_dump())
+    tool_response = await weather_tool.run(json.loads(tool_call_msg.args))
+    tool_response_msg = ToolMessage(
+        MessageToolResultContent(
+            result=tool_response.get_text_content(), tool_name=tool_call_msg.tool_name, tool_call_id=tool_call_msg.id
+        )
+    )
+    print(tool_response_msg.to_plain())
+    final_response = await llm.create(messages=[*messages, tool_response_msg], tools=[])
+    print(final_response.get_text_content())
+
+
 async def main() -> None:
     print("*" * 10, "ollama_from_name")
     await ollama_from_name()
@@ -105,6 +135,8 @@ async def main() -> None:
     await ollama_structure()
     print("*" * 10, "ollama_stream_parser")
     await ollama_stream_parser()
+    print("*" * 10, "ollama_tool_calling")
+    await ollama_tool_calling()
 
 
 if __name__ == "__main__":

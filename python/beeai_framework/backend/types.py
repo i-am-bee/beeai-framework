@@ -23,6 +23,7 @@ from beeai_framework.tools.tool import AnyTool
 from beeai_framework.utils.lists import flatten
 
 T = TypeVar("T", bound=BaseModel)
+ChatModelToolChoice = AnyTool | Literal["required"] | Literal["none"] | Literal["auto"]
 
 
 class ChatModelParameters(BaseModel):

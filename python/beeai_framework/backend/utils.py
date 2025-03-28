@@ -27,7 +27,8 @@ from beeai_framework.backend.constants import (
     ProviderName,
 )
 from beeai_framework.backend.errors import BackendError
-from beeai_framework.tools.tool import AnyTool
+from beeai_framework.backend.types import ChatModelToolChoice
+from beeai_framework.tools.tool import AnyTool, Tool
 
 T = TypeVar("T")
 
@@ -77,7 +78,20 @@ def parse_broken_json(input: str) -> Any:
     return json_repair.loads(input)
 
 
+def inline_schema_refs(schema: dict[str, Any]) -> dict[str, Any]:
+    if schema.get("$defs") is not None:
+        schema = jsonref.replace_refs(
+            schema, base_uri="", load_on_repr=True, merge_props=True, proxies=False, lazy_load=False
+        )
+        schema.pop("$defs", None)
+
+    return schema
+
+
 def generate_tool_union_schema(tools: list[AnyTool]) -> dict[str, Any]:
+    if not tools:
+        raise ValueError("No tools provided!")
+
     tool_schemas = [
         create_model(  # type: ignore
             tool.name,
@@ -91,14 +105,30 @@ def generate_tool_union_schema(tools: list[AnyTool]) -> dict[str, Any]:
         for tool in tools
     ]
 
-    class AvailableTools(RootModel[Union[*tool_schemas]]):  # type: ignore
-        pass
+    if len(tool_schemas) == 1:
+        schema = tool_schemas[0].model_json_schema()
+    else:
 
-    schema = AvailableTools.model_json_schema()
-    if schema.get("$defs") is not None:
-        schema = jsonref.replace_refs(
-            schema, base_uri="", load_on_repr=True, merge_props=True, proxies=False, lazy_load=False
-        )
-        schema.pop("$defs", None)
+        class AvailableTools(RootModel[Union[*tool_schemas]]):  # type: ignore
+            pass
 
-    return schema
+        schema = AvailableTools.model_json_schema()
+
+    return inline_schema_refs(schema)
+
+
+def filter_tools_by_tool_choice(tools: list[AnyTool], value: ChatModelToolChoice | None) -> list[AnyTool]:
+    if value == "none":
+        return []
+
+    if value == "required" or value == "auto" or value is None:
+        return tools
+
+    if isinstance(value, Tool):
+        tool = [tool for tool in tools if tool is value]
+        if not tool:
+            raise ValueError("Invalid tool choice provided! Tool was not found.")
+
+        return tool
+
+    raise RuntimeError(f"Unknown tool choice: {value}")

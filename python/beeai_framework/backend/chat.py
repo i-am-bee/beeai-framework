@@ -18,7 +18,8 @@ from collections.abc import AsyncGenerator, Callable
 from functools import cached_property
 from typing import Any, ClassVar, Literal, TypeVar
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field, InstanceOf, TypeAdapter
+from typing_extensions import TypedDict, Unpack
 
 from beeai_framework.backend.constants import ProviderName
 from beeai_framework.backend.errors import ChatModelError
@@ -37,9 +38,15 @@ from beeai_framework.backend.types import (
     ChatModelParameters,
     ChatModelStructureInput,
     ChatModelStructureOutput,
+    ChatModelToolChoice,
 )
-from beeai_framework.backend.utils import generate_tool_union_schema, load_model, parse_broken_json, parse_model
-from beeai_framework.cache.base import BaseCache
+from beeai_framework.backend.utils import (
+    filter_tools_by_tool_choice,
+    generate_tool_union_schema,
+    load_model,
+    parse_broken_json,
+    parse_model,
+)
 from beeai_framework.cache.null_cache import NullCache
 from beeai_framework.cancellation import AbortController, AbortSignal
 from beeai_framework.context import Run, RunContext
@@ -58,9 +65,22 @@ ChatModelFinishReason: Literal["stop", "length", "function_call", "content_filte
 logger = Logger(__name__)
 
 
+class ChatModelKwargs(TypedDict, total=False):
+    tool_call_fallback_via_response_format: bool
+    model_supports_tool_calling: bool
+    parameters: InstanceOf[ChatModelParameters]
+    cache: InstanceOf[ChatModelCache]
+
+    __pydantic_config__ = ConfigDict(extra="forbid")  # type: ignore
+
+
+_ChatModelKwargsAdapter = TypeAdapter(ChatModelKwargs)
+
+
 class ChatModel(ABC):
-    force_tool_calling_via_structured_generation: ClassVar[bool] = False
     tool_choice_support: ClassVar[set[str]] = {"required", "none", "single", "auto"}
+    tool_call_fallback_via_response_format: bool
+    model_supports_tool_calling: bool
 
     @property
     @abstractmethod
@@ -72,9 +92,12 @@ class ChatModel(ABC):
     def provider_id(self) -> ProviderName:
         pass
 
-    def __init__(self) -> None:
-        self.parameters = ChatModelParameters()
-        self.cache: ChatModelCache = NullCache[list[ChatModelOutput]]()
+    def __init__(self, **kwargs: Unpack[ChatModelKwargs]) -> None:
+        kwargs = _ChatModelKwargsAdapter.validate_python(kwargs)
+        self.parameters = kwargs.get("parameters", ChatModelParameters())
+        self.cache = kwargs.get("cache", NullCache[list[ChatModelOutput]]())
+        self.tool_call_fallback_via_response_format = kwargs.get("tool_call_fallback_via_response_format", True)
+        self.model_supports_tool_calling = kwargs.get("model_supports_tool_calling", True)
 
     @cached_property
     def emitter(self) -> Emitter:
@@ -173,47 +196,36 @@ IMPORTANT: You MUST answer with a JSON object that matches the JSON schema above
         *,
         messages: list[AnyMessage],
         tools: list[AnyTool] | None = None,
-        tool_choice: AnyTool | Literal["required"] | Literal["none"] | Literal["auto"] | None = None,
+        tool_choice: ChatModelToolChoice | None = None,
         abort_signal: AbortSignal | None = None,
         stop_sequences: list[str] | None = None,
         response_format: dict[str, Any] | type[BaseModel] | None = None,
         stream: bool | None = None,
         **kwargs: Any,
     ) -> Run[ChatModelOutput]:
-        tool_choice_supported = not tool_choice or (
-            "single" in self.tool_choice_support
-            if isinstance(tool_choice, Tool)
-            else tool_choice in self.tool_choice_support
+        force_tool_call_via_response_format = self._force_tool_call_via_response_format(
+            tool_choice=tool_choice,
+            tools=tools or [],
+            has_custom_response_format=bool(response_format),
         )
-        tool_calling_via_structured_generation = not tool_choice_supported or kwargs.pop(
-            "force_tool_calling_via_structured_generation", self.force_tool_calling_via_structured_generation
-        )
-
-        if (
-            not tool_calling_via_structured_generation
-            or response_format
-            or tool_choice in [None, "auto", "none"]
-            or not tools
-        ):
-            tool_calling_via_structured_generation = False
 
         model_input = ChatModelInput(
             messages=messages,
-            tools=tools,
+            tools=tools if self.model_supports_tool_calling else None,
             tool_choice=tool_choice,
             abort_signal=abort_signal,
             stop_sequences=stop_sequences,
-            response_format=generate_tool_union_schema(
-                tools if tool_choice == "required" else [t for t in tools if t is tool_choice]
-            )
-            if tool_calling_via_structured_generation and tools
-            else response_format,
+            response_format=(
+                generate_tool_union_schema(filter_tools_by_tool_choice(tools, tool_choice))
+                if force_tool_call_via_response_format and tools
+                else response_format
+            ),
             stream=stream,
             **kwargs,
         )
 
         async def handler(context: RunContext) -> ChatModelOutput:
-            cache_key = BaseCache.generate_key(model_input, {"messages": [m.to_plain() for m in model_input.messages]})
+            cache_key = self.cache.generate_key(model_input, {"messages": [m.to_plain() for m in model_input.messages]})
             cache_hit = await self.cache.get(cache_key)
 
             try:
@@ -243,20 +255,19 @@ IMPORTANT: You MUST answer with a JSON object that matches the JSON schema above
                         result = await self._create(model_input, context)
                         await self.cache.set(cache_key, [result])
 
-                if tool_calling_via_structured_generation and not result.get_tool_calls():
+                if force_tool_call_via_response_format and not result.get_tool_calls():
                     msg = result.messages[-1]
                     tool_call: dict[str, Any] = parse_broken_json(msg.text)
                     if not tool_call:
                         raise ChatModelError(f"Failed to produce a valid tool call. Generated output: '{msg.text}'")
 
-                    msg.content.clear()
-                    msg.content.append(
-                        MessageToolCallContent(
-                            id=generate_random_string(8),
-                            tool_name=tool_call["name"],
-                            args=json.dumps(tool_call["parameters"]),
-                        )
+                    tool_call_content = MessageToolCallContent(
+                        id=f"call_{generate_random_string(8).lower()}",
+                        tool_name=tool_call["name"],
+                        args=json.dumps(tool_call["parameters"]),
                     )
+                    msg.content.clear()
+                    msg.content.append(tool_call_content)
 
                 await context.emitter.emit("success", ChatModelSuccessEvent(value=result))
                 return result
@@ -320,3 +331,28 @@ IMPORTANT: You MUST answer with a JSON object that matches the JSON schema above
         settings = options.model_dump() if isinstance(options, ChatModelParameters) else options
 
         return TargetChatModel(parsed_model.model_id, settings=settings or {}, **kwargs)  # type: ignore
+
+    def _force_tool_call_via_response_format(
+        self,
+        *,
+        tool_choice: ChatModelToolChoice | None,
+        tools: list[AnyTool],
+        has_custom_response_format: bool,
+    ) -> bool:
+        if (
+            not tools
+            or tool_choice == "none"
+            or tool_choice == "auto"
+            or tool_choice is None
+            or has_custom_response_format
+            or not self.tool_call_fallback_via_response_format
+        ):
+            return False
+
+        tool_choice_supported = not tool_choice or (
+            "single" in self.tool_choice_support
+            if isinstance(tool_choice, Tool)
+            else tool_choice in self.tool_choice_support
+        )
+
+        return not self.model_supports_tool_calling or not tool_choice_supported
