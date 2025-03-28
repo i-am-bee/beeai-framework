@@ -14,6 +14,7 @@
 
 import json
 from collections.abc import Sequence
+from typing import Any
 
 from pydantic import BaseModel
 
@@ -28,7 +29,9 @@ from beeai_framework.agents.tool_calling.prompts import ToolCallingAgentTaskProm
 from beeai_framework.agents.tool_calling.types import (
     ToolCallingAgentRunOutput,
     ToolCallingAgentRunState,
+    ToolCallingAgentTemplateFactory,
     ToolCallingAgentTemplates,
+    ToolCallingAgentTemplatesKeys,
 )
 from beeai_framework.backend.chat import ChatModel
 from beeai_framework.backend.message import (
@@ -42,10 +45,10 @@ from beeai_framework.context import Run, RunContext
 from beeai_framework.emitter import Emitter
 from beeai_framework.memory.base_memory import BaseMemory
 from beeai_framework.memory.unconstrained_memory import UnconstrainedMemory
+from beeai_framework.template import PromptTemplate
 from beeai_framework.tools import ToolError
 from beeai_framework.tools.tool import AnyTool
 from beeai_framework.utils.counter import RetryCounter
-from beeai_framework.utils.models import ModelLike, to_model
 from beeai_framework.utils.strings import to_json
 
 __all__ = ["ToolCallingAgent"]
@@ -58,13 +61,14 @@ class ToolCallingAgent(BaseAgent[ToolCallingAgentRunOutput]):
         llm: ChatModel,
         memory: BaseMemory | None = None,
         tools: Sequence[AnyTool] | None = None,
-        templates: ModelLike[ToolCallingAgentTemplates] | None = None,
+        templates: dict[ToolCallingAgentTemplatesKeys, PromptTemplate[Any] | ToolCallingAgentTemplateFactory]
+        | None = None,
     ) -> None:
         super().__init__()
         self._llm = llm
         self._memory = memory or UnconstrainedMemory()
         self._tools = tools or []
-        self._templates = to_model(ToolCallingAgentTemplates, templates or {})
+        self._templates = self._generate_templates(templates)
 
     def run(
         self,
@@ -192,3 +196,22 @@ class ToolCallingAgent(BaseAgent[ToolCallingAgentRunOutput]):
     @memory.setter
     def memory(self, memory: BaseMemory) -> None:
         self._memory = memory
+
+    @staticmethod
+    def _generate_templates(
+        overrides: dict[ToolCallingAgentTemplatesKeys, PromptTemplate[Any] | ToolCallingAgentTemplateFactory]
+        | None = None,
+    ) -> ToolCallingAgentTemplates:
+        templates = ToolCallingAgentTemplates()
+        if overrides is None:
+            return templates
+
+        for name, _info in templates.model_fields.items():
+            override: PromptTemplate[Any] | ToolCallingAgentTemplateFactory | None = overrides.get(name)
+            if override is None:
+                continue
+            elif isinstance(override, PromptTemplate):
+                setattr(templates, name, override)
+            else:
+                setattr(templates, name, override(getattr(templates, name)))
+        return templates

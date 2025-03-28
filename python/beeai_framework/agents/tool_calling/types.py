@@ -12,6 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from collections.abc import Callable
+from typing import Annotated, Any
+
 from pydantic import BaseModel, Field, InstanceOf
 
 from beeai_framework import AssistantMessage, BaseMemory
@@ -36,6 +39,10 @@ class ToolCallingAgentTemplates(BaseModel):
     tool_error: InstanceOf[PromptTemplate[ToolCallingAgentToolErrorPromptInput]] = Field(
         default_factory=lambda: ToolCallingAgentToolErrorPrompt.fork(None),
     )
+
+
+ToolCallingAgentTemplateFactory = Callable[[InstanceOf[PromptTemplate[Any]]], InstanceOf[PromptTemplate[Any]]]
+ToolCallingAgentTemplatesKeys = Annotated[str, lambda v: v in ToolCallingAgentTemplates.model_fields]
 
 
 class ToolCallingAgentRunOutput(BaseModel):

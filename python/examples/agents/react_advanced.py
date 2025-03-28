@@ -36,13 +36,6 @@ def user_customizer(config: PromptTemplateInput[Any]) -> PromptTemplateInput[Any
     return new_config
 
 
-def system_customizer(config: PromptTemplateInput[Any]) -> PromptTemplateInput[Any]:
-    new_config = config.model_copy()
-    new_config.defaults = new_config.defaults or {}
-    new_config.defaults["instructions"] = "You are a helpful assistant that uses tools to answer questions."
-    return new_config
-
-
 def no_result_customizer(config: PromptTemplateInput[Any]) -> PromptTemplateInput[Any]:
     new_config = config.model_copy()
     config.template += """\nPlease reformat your input."""
@@ -72,7 +65,9 @@ def create_agent() -> ReActAgent:
 
     templates: dict[str, Any] = {
         "user": lambda template: template.fork(customizer=user_customizer),
-        "system": lambda template: template.fork(customizer=system_customizer),
+        "system": lambda template: template.update(
+            defaults={"instructions": "You are a helpful assistant that uses tools to answer questions."}
+        ),
         "tool_no_result_error": lambda template: template.fork(customizer=no_result_customizer),
         "tool_not_found_error": lambda template: template.fork(customizer=not_found_customizer),
     }

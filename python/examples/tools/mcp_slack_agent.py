@@ -15,7 +15,6 @@ from beeai_framework.backend.types import ChatModelParameters
 from beeai_framework.emitter.emitter import EventMeta
 from beeai_framework.errors import FrameworkError
 from beeai_framework.memory.token_memory import TokenMemory
-from beeai_framework.template import PromptTemplateInput
 from beeai_framework.tools.mcp_tools import MCPTool
 from beeai_framework.tools.weather.openmeteo import OpenMeteoTool
 
@@ -44,15 +43,6 @@ async def slack_tool() -> MCPTool:
         return slack[0]
 
 
-def system_message_customizer(config: PromptTemplateInput[Any]) -> PromptTemplateInput[Any]:
-    new_config = config.model_copy()
-    new_config.defaults = new_config.defaults or {}
-    new_config.defaults["instructions"] = (
-        "You are a helpful assistant. When prompted to post to Slack, send messages to the #bee-playground channel."
-    )
-    return new_config
-
-
 async def create_agent() -> ReActAgent:
     """Create and configure the agent with tools and LLM"""
 
@@ -74,7 +64,14 @@ async def create_agent() -> ReActAgent:
         llm=llm,
         tools=[slack, weather],
         memory=TokenMemory(llm),
-        templates={"system": lambda template: template.fork(customizer=system_message_customizer)},
+        templates={
+            "system": lambda template: template.update(
+                defaults={
+                    "instructions": """
+You are a helpful assistant. When prompted to post to Slack, send messages to the #bee-playground channel."""
+                }
+            )
+        },
     )
     return agent
 
