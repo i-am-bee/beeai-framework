@@ -14,6 +14,8 @@
 
 from pydantic import BaseModel, InstanceOf
 
+from beeai_framework.backend.constants import ProviderName
+from beeai_framework.backend.types import ChatModelParameters
 from beeai_framework.cancellation import AbortSignal
 from beeai_framework.tools.tool import AnyTool
 
@@ -33,3 +35,10 @@ class AgentMeta(BaseModel):
     description: str
     tools: list[InstanceOf[AnyTool]]
     extra_description: str | None = None
+
+
+class AgentMetaDetail(AgentMeta):
+    llm_provider_id: ProviderName
+    llm_model_id: str
+    llm_parameters: ChatModelParameters
+    instructions: str | None = None

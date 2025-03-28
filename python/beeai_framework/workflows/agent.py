@@ -24,6 +24,7 @@ from beeai_framework.agents.tool_calling.agent import ToolCallingAgent
 from beeai_framework.agents.tool_calling.types import ToolCallingAgentRunOutput
 from beeai_framework.agents.types import (
     AgentExecutionConfig,
+    AgentMetaDetail,
 )
 from beeai_framework.backend.chat import ChatModel
 from beeai_framework.backend.message import AnyMessage, AssistantMessage, UserMessage
@@ -104,6 +105,19 @@ class AgentWorkflow:
         if instance is None and llm is None:
             raise ValueError("Either instance or the agent configuration must be provided!")
 
+        # Stash agent metadata that is otherwise lost in the closures
+        # below.  This is helpful for jsonpickling a workflow and
+        # other debugging tasks.
+        agent_metadata = AgentMetaDetail(
+            name=name,
+            description=role,
+            tools=tools if tools is not None else [],
+            instructions=instructions,
+            llm_provider_id=llm.provider_id,
+            llm_model_id=llm.model_id,
+            llm_parameters=llm.parameters,
+        )
+
         def create_agent(memory: BaseMemory) -> ToolCallingAgent:
             if instance is not None:
                 # TODO: use clone() once implemented
@@ -134,5 +148,7 @@ class AgentWorkflow:
                 state.new_messages.append(UserMessage(run_input.prompt))
             state.new_messages.append(run_output.result)
 
-        self.workflow.add_step(name or f"Agent{''.join(random.choice(string.ascii_letters) for _ in range(4))}", step)
+        self.workflow.add_step(
+            name or f"Agent{''.join(random.choice(string.ascii_letters) for _ in range(4))}", step, agent_metadata
+        )
         return self
