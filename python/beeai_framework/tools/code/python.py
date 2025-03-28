@@ -160,7 +160,7 @@ Do not use this tool multiple times in a row, always write the full code you wan
                 return response.json()
         except httpx.HTTPStatusError as err:
             raise ToolError.ensure(
-                err, message=f"Request to bee-code-interpreter has failed with HTTP status code {response.status_code}."
+                err, message=f"Request to code interpreter has failed with HTTP status code {response.status_code}."
             )
         except httpx.HTTPError as err:
             raise ToolError(
@@ -171,4 +171,4 @@ Do not use this tool multiple times in a row, always write the full code you wan
                 cause=err,
             )
         except Exception as err:
-            raise ToolError.ensure(err, message="Request to bee-code-interpreter has failed.")
+            raise ToolError.ensure(err, message="Request to code interpreter has failed.")

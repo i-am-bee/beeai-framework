@@ -14,7 +14,7 @@
 
 
 from collections.abc import Callable
-from typing import Any, Generic, TypeVar
+from typing import Any, Generic, Self, TypeVar
 
 import chevron
 from pydantic import BaseModel, Field
@@ -28,7 +28,7 @@ T = TypeVar("T", bound=BaseModel)
 class PromptTemplateInput(BaseModel, Generic[T]):
     input_schema: type[T] = Field(..., alias="schema")
     template: str
-    functions: dict[str, Callable[[dict[str, Any]], str]] | None = None
+    functions: dict[str, Callable[[dict[str, Any]], str]] = {}
     defaults: dict[str, Any] = {}
 
 
@@ -46,11 +46,10 @@ class PromptTemplate(Generic[T]):
                     data.update({key: value})
 
         # Apply function derived data
-        if self._config.functions:
-            for key in self._config.functions:
-                if key in data:
-                    raise PromptTemplateError(f"Function named '{key}' clashes with input data field!")
-                data[key] = self._config.functions[key](data)
+        for key in self._config.functions:
+            if key in data:
+                raise PromptTemplateError(f"Function named '{key}' clashes with input data field!")
+            data[key] = self._config.functions[key](data)
 
         return chevron.render(template=self._config.template, data=data)
 
@@ -61,6 +60,16 @@ class PromptTemplate(Generic[T]):
         if not isinstance(new_config, PromptTemplateInput):
             raise ValueError("Return type from customizer must be a PromptTemplateInput or nothing.")
         return PromptTemplate(new_config)
+
+    def update(
+        self,
+        *,
+        functions: dict[str, Callable[[dict[str, Any]], str]] | None = None,
+        defaults: dict[str, Any] | None = None,
+    ) -> Self:
+        self._config.functions.update(functions or {})
+        self._config.defaults.update(defaults or {})
+        return self
 
 
 class PromptTemplateError(FrameworkError):

@@ -206,17 +206,17 @@ export async function callCodeInterpreter({
   }).catch((error) => {
     if (error.cause.name == "HTTPParserError") {
       throw new ToolError(
-        "Request to bee-code-interpreter has failed -- ensure that CODE_INTERPRETER_URL points to the new HTTP endpoint (default port: 50081).",
+        "Request to code interpreter has failed -- ensure that CODE_INTERPRETER_URL points to the new HTTP endpoint (default port: 50081).",
         [error],
       );
     } else {
-      throw new ToolError("Request to bee-code-interpreter has failed.", [error]);
+      throw new ToolError("Request to code interpreter has failed.", [error]);
     }
   });
 
   if (!response?.ok && response.status > 400) {
     throw new ToolError(
-      `Request to bee-code-interpreter has failed with HTTP status code ${response.status}.`,
+      `Request to code interpreter has failed with HTTP status code ${response.status}.`,
       [new Error(await response.text())],
     );
   }

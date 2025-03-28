@@ -67,7 +67,7 @@ describe("CustomTool", () => {
     await expect(
       CustomTool.fromSourceCode({ url: "http://localhost" }, "source code"),
     ).rejects.toThrow(
-      "Request to bee-code-interpreter has failed -- ensure that CODE_INTERPRETER_URL points to the new HTTP endpoint",
+      "Request to code interpreter has failed -- ensure that CODE_INTERPRETER_URL points to the new HTTP endpoint",
     );
   });
 
@@ -163,6 +163,6 @@ describe("CustomTool", () => {
 
     await expect(
       CustomTool.fromSourceCode({ url: "http://localhost" }, "source code"),
-    ).rejects.toThrow("Request to bee-code-interpreter has failed with HTTP status code 500");
+    ).rejects.toThrow("Request to code interpreter has failed with HTTP status code 500");
   });
 });
