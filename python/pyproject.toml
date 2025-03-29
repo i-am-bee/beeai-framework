@@ -43,8 +43,9 @@ jsonref = "^1.1.0"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^8.3.4"
+pytest-xdist = "^3.6.1"
 commitizen = "^4.2.1"
-poethepoet = "^0.32.2"
+poethepoet = "^0.33.1"
 ruff = "^0.9.6"
 pydantic-settings = "^2.7"
 tox = "^4.20"
@@ -221,32 +222,33 @@ sequence = [
 ]
 
 [tool.poe.tasks.test]
-args = ["type"]
+args = ["type", { name = "num_workers", options = ["-n"], default = "${TEST_NUM_WORKERS}" }]
 control.expr = "type"
+
 
     [[tool.poe.tasks.test.switch]]
     case = "unit"
     help = "Run Unit Tests"
-    cmd = "pytest -m 'unit'"
+    cmd = "pytest -m 'unit' -n ${num_workers:-auto}"
 
     [[tool.poe.tasks.test.switch]]
     case = "integration"
     help = "Run Integration Tests"
-    cmd = "pytest -m 'integration' tests/integration"
+    cmd = "pytest -m 'integration' tests/integration -n ${num_workers:-auto}"
 
     [[tool.poe.tasks.test.switch]]
     case = "extension"
     help = "Run Extension Tests"
-    cmd = "pytest -m 'integration'"
+    cmd = "pytest -m 'integration' -n ${num_workers:-auto}"
 
     [[tool.poe.tasks.test.switch]]
     case = "e2e"
     help = "Run E2E Tests"
-    cmd = "pytest -m 'e2e'"
+    cmd = "pytest -m 'e2e' -n ${num_workers:-auto}"
 
     [[tool.poe.tasks.test.switch]]
     help = "Run All Tests"
-    cmd = "pytest"
+    cmd = "pytest -n ${num_workers:-auto}"
 
 [tool.poe.tasks._match_files]
 help = "Extract files by their extension"
