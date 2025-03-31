@@ -38,6 +38,9 @@ For a full changelog, see our [releases page](https://github.com/i-am-bee/beeai-
 
 **🚀 Scale with production-grade controls.** Optimize token usage through configurable [memory strategies](/python/docs/memory.md), persist and restore agent state via [(de)serialization](/python/docs/serialization.md), generate structured outputs, and execute generated code in a sandboxed environment (coming soon). When things go wrong, the [emitter](/python/docs/emitter.md) system tracks the full agent workflow, generating detailed [events](/python/docs/events.md) for monitoring and analysis. [Telemetry](/python/docs/instrumentation.md) and [logging](/python/docs/logger.md) capabilities capture key diagnostic data. When issues arise, BeeAI handles [errors](/python/docs/errors.md) gracefully with clear, well-defined exceptions.
 
+> [!TIP]
+> Get started quickly with the [beeai-framework-py-starter](https://github.com/i-am-bee/beeai-framework-py-starter) template.
+
 ---
 
 ## Installation

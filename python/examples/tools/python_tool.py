@@ -20,6 +20,7 @@ async def main() -> None:
     llm = OllamaChatModel("llama3.1")
     storage = LocalPythonStorage(
         local_working_dir=tempfile.mkdtemp("code_interpreter_source"),
+        # CODE_INTERPRETER_TMPDIR should point to where code interpreter stores it's files
         interpreter_working_dir=os.getenv("CODE_INTERPRETER_TMPDIR", "./tmp/code_interpreter_target"),
     )
     python_tool = PythonTool(
@@ -27,10 +28,14 @@ async def main() -> None:
         storage=storage,
     )
     agent = ReActAgent(llm=llm, tools=[python_tool], memory=UnconstrainedMemory())
-    result = await agent.run("Calculate 5036 * 12856 and save the result to answer.txt")
+    result = await agent.run("Calculate 5036 * 12856 and save the result to answer.txt").on(
+        "update", lambda data, event: print(f"Agent 🤖 ({data.update.key}) : ", data.update.parsed_value)
+    )
     print(result.result.text)
 
-    result = await agent.run("Read the content of answer.txt?")
+    result = await agent.run("Read the content of answer.txt?").on(
+        "update", lambda data, event: print(f"Agent 🤖 ({data.update.key}) : ", data.update.parsed_value)
+    )
     print(result.result.text)
 
 

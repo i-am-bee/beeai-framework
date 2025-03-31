@@ -52,6 +52,9 @@ E2E Tests
 @pytest.mark.e2e
 @pytest.mark.asyncio
 async def test_output(tool: DuckDuckGoSearchTool) -> None:
-    result = await tool.run(input=DuckDuckGoSearchToolInput(query="What is the area of the Poland?"))
+    result = await tool.run(
+        input=DuckDuckGoSearchToolInput(query="What is the highest mountain of the Czech Republic?")
+    )
     assert type(result) is DuckDuckGoSearchToolOutput
-    assert "322,575" in result.get_text_content()
+    print(result.get_text_content())
+    assert "Sněžka" in result.get_text_content()

@@ -13,7 +13,9 @@
 # limitations under the License.
 
 import json
+import random
 import re
+import string
 from collections.abc import Sequence
 from enum import StrEnum
 from typing import Any, cast
@@ -51,3 +53,7 @@ def to_json(input: Any, *, indent: int | None = None) -> str:
 def to_safe_word(phrase: str) -> str:
     # replace any non-alphanumeric char with _
     return re.sub(r"\W+", "_", phrase).lower()
+
+
+def generate_random_string(length: int) -> str:
+    return "".join(random.choices(string.ascii_uppercase + string.digits, k=length))

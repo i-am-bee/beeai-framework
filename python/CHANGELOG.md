@@ -1,3 +1,19 @@
+## python_v0.1.11 (2025-03-28)
+
+### Refactor
+
+- **examples**: improve python_tool.py example readability (#696)
+- **agents**: rework agent templates API (#681)
+
+### Bug Fixes
+
+- **templates**: resolve Pydantic deprecation warning (#698)
+- **tools**: SandboxTool fails when run by an agent (#684)
+
+### Features
+
+- **backend**: add fallback to structured decoding for environments lacking tool calling support
+
 ## python_v0.1.10 (2025-03-26)
 
 ### Bug Fixes

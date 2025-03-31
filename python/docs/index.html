@@ -9,17 +9,15 @@
     <link rel="stylesheet" href="//cdn.jsdelivr.net/npm/docsify@4/lib/themes/vue.css" />
     <link
       rel="stylesheet"
-      href="//cdn.jsdelivr.net/npm/docsify@4/lib/themes/dark.css"
-      media="(prefers-color-scheme: dark)"
+      title="docsify-darklight-theme"
+      href="//cdn.jsdelivr.net/npm/docsify-darklight-theme@latest/dist/style.min.css"
     />
     <style>
       aside.sidebar {
         padding-top: 0;
       }
-      @media (prefers-color-scheme: dark) {
-        .app-name-link img {
-          filter: invert(1);
-        }
+      .app-name-link img {
+        filter: invert(var(--docs-logo-color-invert));
       }
     </style>
   </head>
@@ -55,6 +53,15 @@
       window.$docsify = {
         "name": "Bee Py",
         "basePath": basePath,
+        "darklightTheme": {
+          "defaultTheme": 'dark',
+          "light": {
+            'docs-logo-color-invert': 0,
+          },
+          "dark": {
+            'docs-logo-color-invert': 1,
+          }
+        },
         "repo": "i-am-bee/beeai-framework",
         "logo": "/assets/docs_logo.svg",
         "loadSidebar": true,
@@ -87,6 +94,7 @@
       };
     </script>
     <script src="//cdn.jsdelivr.net/npm/docsify@4"></script>
+    <script src="//cdn.jsdelivr.net/npm/docsify-darklight-theme@latest/dist/index.min.js"></script>
     <script src="https://unpkg.com/docsify-plugin-flexible-alerts"></script>
     <script src="https://unpkg.com/docsify-copy-code@3"></script>
     <script src="//cdn.jsdelivr.net/npm/prismjs@1/components/prism-bash.min.js"></script>

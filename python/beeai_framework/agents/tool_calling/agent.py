@@ -206,7 +206,7 @@ class ToolCallingAgent(BaseAgent[ToolCallingAgentRunOutput]):
         if overrides is None:
             return templates
 
-        for name, _info in templates.model_fields.items():
+        for name, _info in ToolCallingAgentTemplates.model_fields.items():
             override: PromptTemplate[Any] | ToolCallingAgentTemplateFactory | None = overrides.get(name)
             if override is None:
                 continue
