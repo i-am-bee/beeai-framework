@@ -13,7 +13,7 @@
 # limitations under the License.
 
 
-from typing import TypeVar
+from typing import Any, TypeVar
 
 from cachetools import Cache, LRUCache, TTLCache
 
@@ -50,3 +50,10 @@ class SlidingCache(BaseCache[T]):
 
     async def size(self) -> int:
         return len(self._items)
+
+    async def create_snapshot(self) -> dict[str, Any]:
+        return {"enabled": self._enabled, "items": self._items}
+
+    async def load_snapshot(self, snapshot: dict[str, Any]) -> None:
+        self._enabled = snapshot["enabled"]
+        self._items = snapshot["items"]

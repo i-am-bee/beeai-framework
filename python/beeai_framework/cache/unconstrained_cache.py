@@ -13,7 +13,7 @@
 # limitations under the License.
 
 
-from typing import TypeVar
+from typing import Any, TypeVar
 
 from beeai_framework.cache.base import BaseCache
 
@@ -48,3 +48,10 @@ class UnconstrainedCache(BaseCache[T]):
 
     async def clear(self) -> None:
         self._provider.clear()
+
+    async def create_snapshot(self) -> dict[str, Any]:
+        return {"enabled": self._enabled, "provider": self._provider}
+
+    async def load_snapshot(self, snapshot: dict[str, Any]) -> None:
+        self._enabled = snapshot["enabled"]
+        self._provider = snapshot["provider"]
