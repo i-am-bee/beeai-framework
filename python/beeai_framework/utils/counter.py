@@ -12,10 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from typing import Any
+
 from beeai_framework.errors import FrameworkError
+from beeai_framework.serializer.serializable import Serializable
 
 
-class RetryCounter:
+class RetryCounter(Serializable):
     def __init__(self, error_type: type[BaseException], max_retries: int = 0) -> None:
         if not issubclass(error_type, FrameworkError):
             raise ValueError("error_type must be a subclass of FrameworkError")
@@ -41,3 +44,19 @@ class RetryCounter:
                 f"Maximal amount of global retries ({self._max_retries}) has been reached.", cause=self._lastError
             )
             raise self._finalError
+
+    async def create_snapshot(self) -> dict[str, Any]:
+        return {
+            "remaining": self.remaining,
+            "max_retries": self._max_retries,
+            "last_error": self._lastError,
+            "final_error": self._finalError,
+            "error_class": self._error_class,
+        }
+
+    async def load_snapshot(self, snapshot: dict[str, Any]) -> None:
+        self.remaining = snapshot["remaining"]
+        self._max_retries = snapshot["max_retries"]
+        self._lastError = snapshot["last_error"]
+        self._finalError = snapshot["final_error"]
+        self._error_class = snapshot["error_class"]

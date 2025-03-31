@@ -16,6 +16,7 @@ import enum
 import json
 from abc import ABC
 from collections.abc import Sequence
+from copy import copy
 from datetime import UTC, datetime
 from enum import Enum
 from typing import Any, Generic, Literal, Self, TypeAlias, TypeVar, cast
@@ -23,6 +24,7 @@ from typing import Any, Generic, Literal, Self, TypeAlias, TypeVar, cast
 from litellm.types.llms.openai import ChatCompletionImageUrlObject
 from pydantic import BaseModel, ConfigDict
 
+from beeai_framework.serializer.serializable import Serializable
 from beeai_framework.utils.lists import cast_list
 from beeai_framework.utils.models import to_any_model, to_model
 
@@ -78,7 +80,7 @@ class MessageInput(BaseModel):
     meta: MessageMeta | None = None
 
 
-class Message(ABC, Generic[T]):
+class Message(Serializable, ABC, Generic[T]):
     role: Role | str
     content: list[T]
     meta: MessageMeta
@@ -115,6 +117,14 @@ class Message(ABC, Generic[T]):
 
     def __str__(self) -> str:
         return json.dumps(self.to_plain())
+
+    async def create_snapshot(self) -> dict[str, Any]:
+        return {"content": copy(self.content), "meta": copy(self.meta), "role": self.role}
+
+    async def load_snapshot(self, snapshot: dict[str, Any]) -> None:
+        self.content = snapshot["content"]
+        self.meta = snapshot["meta"]
+        self.role = snapshot["role"]
 
 
 AssistantMessageContent = MessageTextContent | MessageToolCallContent

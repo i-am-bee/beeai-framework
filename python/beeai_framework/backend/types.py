@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from copy import copy
 from typing import Any, Generic, Literal, Self, TypeVar
 
 from pydantic import BaseModel, ConfigDict, Field, InstanceOf
@@ -104,6 +105,18 @@ class ChatModelOutput(BaseModel):
 
     def get_text_content(self) -> str:
         return "".join([x.text for x in list(filter(lambda x: isinstance(x, AssistantMessage), self.messages))])
+
+    async def create_snapshot(self) -> dict[str, Any]:
+        return {
+            "messages": copy(self.messages),
+            "usage": self.usage.model_dump() if self.usage else None,
+            "finish_reason": self.finish_reason,
+        }
+
+    async def load_snapshot(self, snapshot: dict[str, Any]) -> None:
+        self.messages = snapshot["messages"]
+        self.usage = ChatModelUsage(**snapshot["usage"]) if snapshot.get("usage") else None
+        self.finish_reason = snapshot["finish_reason"]
 
 
 ChatModelCache = BaseCache[list[ChatModelOutput]]

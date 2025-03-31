@@ -20,6 +20,7 @@ import chevron
 from pydantic import BaseModel, Field
 
 from beeai_framework.errors import FrameworkError
+from beeai_framework.serializer.serializable import Serializable
 from beeai_framework.utils.models import ModelLike, to_model_optional
 
 T = TypeVar("T", bound=BaseModel)
@@ -32,7 +33,7 @@ class PromptTemplateInput(BaseModel, Generic[T]):
     defaults: dict[str, Any] = {}
 
 
-class PromptTemplate(Generic[T]):
+class PromptTemplate(Generic[T], Serializable):
     def __init__(self, config: PromptTemplateInput[T]) -> None:
         self._config = config
 
@@ -70,6 +71,12 @@ class PromptTemplate(Generic[T]):
         self._config.functions.update(functions or {})
         self._config.defaults.update(defaults or {})
         return self
+
+    async def create_snapshot(self) -> dict[str, Any]:
+        return {"config": self._config}
+
+    async def load_snapshot(self, snapshot: dict[str, Any]) -> None:
+        self._config = snapshot["config"]
 
 
 class PromptTemplateError(FrameworkError):

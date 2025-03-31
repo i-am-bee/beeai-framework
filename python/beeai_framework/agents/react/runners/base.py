@@ -34,6 +34,7 @@ from beeai_framework.cancellation import AbortSignal
 from beeai_framework.context import RunContext
 from beeai_framework.emitter.emitter import Emitter
 from beeai_framework.memory.base_memory import BaseMemory
+from beeai_framework.serializer.serializable import Serializable
 from beeai_framework.template import PromptTemplate
 from beeai_framework.tools import ToolOutput
 from beeai_framework.utils.counter import RetryCounter
@@ -64,7 +65,7 @@ class ReActAgentRunnerToolInput(BaseModel):
     emitter: InstanceOf[Emitter]
 
 
-class BaseRunner(ABC):
+class BaseRunner(Serializable, ABC):
     def __init__(self, input: ReActAgentInput, options: ReActAgentRunOptions, run: RunContext) -> None:
         self._input = input
         self._options = options
@@ -144,4 +145,16 @@ class BaseRunner(ABC):
             templates[key] = override(default_template) or default_template
         return ReActAgentTemplates(**templates)
 
-    # TODO: Serialization
+    async def create_snapshot(self) -> dict[str, Any]:
+        return {
+            "input": self._input.model_dump(),
+            "options": self._options.model_dump(),
+            "memory": self._memory,
+            "failed_attempts_counter": self._failed_attempts_counter,
+        }
+
+    async def load_snapshot(self, snapshot: dict[str, Any]) -> None:
+        self._input = ReActAgentInput(**snapshot["input"])
+        self.options = ReActAgentRunOptions(**snapshot["input"])
+        self._memory = snapshot["memory"]
+        self._failed_attempts_counter = snapshot["failed_attempts_counter"]

@@ -21,6 +21,7 @@ from pydantic import BaseModel, InstanceOf, ValidationError
 from beeai_framework.emitter import Emitter
 from beeai_framework.errors import FrameworkError
 from beeai_framework.parsers.field import ParserField
+from beeai_framework.serializer.serializable import Serializable
 from beeai_framework.utils.strings import trim_left_spaces
 
 NEW_LINE_CHARACTER = "\n"
@@ -73,7 +74,7 @@ def _lines_to_string(lines: list["LinePrefixParserLine"]) -> str:
     return result
 
 
-class LinePrefixParser:
+class LinePrefixParser(Serializable):
     def __init__(self, nodes: Nodes, options: LinePrefixParserOptions | None = None) -> None:
         if options is None:
             options = LinePrefixParserOptions()
@@ -293,6 +294,24 @@ class LinePrefixParser:
                 return LinePrefixParserExtractedLine(key=key, value=value, partial=partial)
 
         return None
+
+    async def create_snapshot(self) -> dict[str, Any]:
+        return {
+            "nodes": self.nodes.copy(),
+            "lines": self.lines.copy(),
+            "emitter": self.emitter,
+            "done": self.done,
+            "last_node_key": self.last_node_key,
+            "options": self.options.model_dump(),
+        }
+
+    async def load_snapshot(self, snapshot: dict[str, Any]) -> None:
+        self.nodes = snapshot["nodes"]
+        self.lines = snapshot["lines"]
+        self.emitter = snapshot["emitter"]
+        self.done = snapshot["done"]
+        self.last_node_key = snapshot["last_node_key"]
+        self.options = LinePrefixParserOptions(**snapshot["options"])
 
 
 class LinePrefixParserError(FrameworkError):

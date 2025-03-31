@@ -18,6 +18,7 @@ import contextlib
 import uuid
 from collections.abc import Awaitable, Callable, Generator
 from contextvars import ContextVar
+from copy import copy
 from datetime import UTC, datetime
 from types import NoneType
 from typing import Any, Generic, Protocol, Self, TypeVar
@@ -26,6 +27,7 @@ from beeai_framework.cancellation import AbortController, AbortSignal, register_
 from beeai_framework.emitter import Callback, Emitter, EmitterOptions, EventTrace, Matcher
 from beeai_framework.errors import AbortError, FrameworkError
 from beeai_framework.logger import Logger
+from beeai_framework.serializer.serializable import Serializable
 from beeai_framework.utils.asynchronous import ensure_async
 from beeai_framework.utils.dicts import exclude_keys
 
@@ -82,7 +84,7 @@ class Run(Generic[R]):
         self.run_context.emitter.context.update(context)
 
 
-class RunContext:
+class RunContext(Serializable):
     def __init__(
         self,
         instance: RunInstance,
@@ -195,3 +197,25 @@ class RunContext:
                 context.destroy()
 
         return Run(handler, context)
+
+    async def create_snapshot(self) -> dict[str, Any]:
+        return {
+            "controller": self.controller,
+            "run_id": self.run_id,
+            "group_id": self.group_id,
+            "parent_id": self.parent_id,
+            "emitter": self.emitter,
+            "context": copy(self.context),
+            "run_params": copy(self.run_params),
+            "created_at": datetime.fromtimestamp(self.created_at.timestamp(), tz=UTC),
+        }
+
+    async def load_snapshot(self, snapshot: dict[str, Any]) -> None:
+        self.controller = snapshot["controller"]
+        self.run_id = snapshot["run_id"]
+        self.group_id = snapshot["group_id"]
+        self.parent_id = snapshot["parent_id"]
+        self.emmitter = snapshot["emitter"]
+        self.context = snapshot["context"]
+        self.run_params = snapshot["run_params"]
+        self.created_at = snapshot["created_at"]

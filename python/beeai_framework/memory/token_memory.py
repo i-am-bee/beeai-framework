@@ -125,12 +125,20 @@ class TokenMemory(BaseMemory):
         self._messages.clear()
         self._tokens_by_message.clear()
 
-    def create_snapshot(self) -> dict[str, Any]:
+    async def create_snapshot(self) -> dict[str, Any]:
         return {
-            "messages": copy(self._messages),
-            "token_counts": copy(self._tokens_by_message),
+            "threshold": self.threshold,
+            "sync_threshold": self.sync_threshold,
+            "messages": self._messages.copy(),
+            "handlers": self.handlers.copy(),
+            "max_tokens": self.max_tokens,
+            "tokens_by_messages": copy(self._tokens_by_message),
         }
 
-    def load_snapshot(self, state: dict[str, Any]) -> None:
-        self._messages = copy(state["messages"])
-        self._tokens_by_message = copy(state["token_counts"])
+    async def load_snapshot(self, snapshot: dict[str, Any]) -> None:
+        self.threshold = snapshot["threshold"]
+        self.sync_threshold = snapshot["sync_threshold"]
+        self._messages = snapshot["messages"]
+        self.handlers = snapshot["handlers"]
+        self.max_tokens = snapshot["max_tokens"]
+        self._tokens_by_message = snapshot["tokens_by_messages"]

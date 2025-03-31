@@ -15,7 +15,7 @@
 import asyncio
 import inspect
 from functools import cached_property
-from typing import ClassVar, Final, Generic, Literal
+from typing import Any, ClassVar, Final, Generic, Literal
 
 from pydantic import BaseModel
 from typing_extensions import TypeVar
@@ -23,6 +23,7 @@ from typing_extensions import TypeVar
 from beeai_framework.context import Run, RunContext
 from beeai_framework.emitter.emitter import Emitter
 from beeai_framework.errors import FrameworkError
+from beeai_framework.serializer.serializable import Serializable
 from beeai_framework.utils.models import ModelLike, check_model, to_model, to_model_optional
 from beeai_framework.utils.strings import to_safe_word
 from beeai_framework.workflows.errors import WorkflowError
@@ -40,7 +41,7 @@ T = TypeVar("T", bound=BaseModel)
 K = TypeVar("K", default=str)
 
 
-class Workflow(Generic[T, K]):
+class Workflow(Generic[T, K], Serializable):
     START: Final[Literal["__start__"]] = "__start__"
     SELF: Final[Literal["__self__"]] = "__self__"
     PREV: Final[Literal["__prev__"]] = "__prev__"
@@ -200,3 +201,11 @@ class Workflow(Generic[T, K]):
             current=self.step_names[index],
             next=self.step_names[index + 1] if 0 <= index + 1 < len(self.step_names) else None,
         )
+
+    async def create_snapshot(self) -> dict[str, Any]:
+        return {"name": self._name, "steps": self._steps.copy(), "start_step": self._start_step}
+
+    async def load_snapshot(self, snapshot: dict[str, Any]) -> None:
+        self._name = snapshot["name"]
+        self._steps = snapshot["steps"]
+        self._start_step = snapshot["start_step"]

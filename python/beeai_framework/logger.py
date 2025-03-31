@@ -19,6 +19,7 @@ from logging import Formatter
 from typing import TYPE_CHECKING, Any
 
 from beeai_framework.errors import FrameworkError
+from beeai_framework.serializer.serializable import Serializable
 from beeai_framework.utils.config import CONFIG
 from beeai_framework.utils.events import MessageEvent
 
@@ -52,7 +53,7 @@ class LoggerFormatter(Formatter):
             ).format(record)
 
 
-class Logger(logging.Logger):
+class Logger(logging.Logger, Serializable):
     if TYPE_CHECKING:
         trace = logging.Logger.debug
 
@@ -128,3 +129,9 @@ class Logger(logging.Logger):
             f" {str.capitalize(source)}{state}{icon}: {event.message}",
             extra={"is_event_message": True},
         )
+
+    async def create_snapshot(self) -> dict[str, Any]:
+        return {"level": self.level}
+
+    async def load_snapshot(self, snapshot: dict[str, Any]) -> None:
+        self.setLevel(snapshot["level"])

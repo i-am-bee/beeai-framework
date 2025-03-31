@@ -18,12 +18,13 @@ from typing import Any, Generic, TypeVar
 from pydantic import BaseModel, RootModel, field_validator
 
 from beeai_framework.backend.utils import parse_broken_json
+from beeai_framework.serializer.serializable import Serializable
 
 T = TypeVar("T", bound=BaseModel)
 TP = TypeVar("TP")
 
 
-class ParserField(Generic[T]):
+class ParserField(Generic[T], Serializable):
     def __init__(self, schema: type[T], default: T | None = None, *, as_json: bool = True) -> None:
         self.schema = schema
         self.raw = ""
@@ -81,3 +82,9 @@ class ParserField(Generic[T]):
         return ParserField(
             CustomModel, as_json=as_json, default=CustomModel.model_validate(default) if default is not None else None
         )
+
+    async def create_snapshot(self) -> dict[str, Any]:
+        return {"raw": self.raw}
+
+    async def load_snapshot(self, snapshot: dict[str, Any]) -> None:
+        self.raw = snapshot["raw"]

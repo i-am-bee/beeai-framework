@@ -45,6 +45,7 @@ from beeai_framework.context import Run, RunContext
 from beeai_framework.emitter import Emitter
 from beeai_framework.logger import Logger
 from beeai_framework.retryable import Retryable, RetryableConfig, RetryableContext, RetryableInput
+from beeai_framework.serializer.serializable import Serializable
 from beeai_framework.template import PromptTemplate, PromptTemplateInput
 from beeai_framework.tools.tool import AnyTool
 from beeai_framework.utils.asynchronous import to_async_generator
@@ -56,7 +57,7 @@ ChatModelFinishReason: Literal["stop", "length", "function_call", "content_filte
 logger = Logger(__name__)
 
 
-class ChatModel(ABC):
+class ChatModel(Serializable, ABC):
     @property
     @abstractmethod
     def model_id(self) -> str:
@@ -275,3 +276,6 @@ IMPORTANT: You MUST answer with a JSON object that matches the JSON schema above
         settings = options.model_dump() if isinstance(options, ChatModelParameters) else options
 
         return TargetChatModel(parsed_model.model_id, settings=settings or {})  # type: ignore
+
+    async def create_snapshot(self) -> dict[str, Any]:
+        return {"cache": self.cache, "emitter": self.emitter, "parameters": self.parameters.model_dump()}

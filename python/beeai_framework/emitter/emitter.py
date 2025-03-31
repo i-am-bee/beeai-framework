@@ -233,3 +233,23 @@ class Emitter:
             trace=copy.copy(self.trace),
             data_type=self.events.get(name) or type(Any),
         )
+
+    async def create_snapshot(self) -> dict[str, Any]:
+        return {
+            "group_id": self.group_id,
+            "namespace": self.namespace.copy(),
+            "creator": self.creator,
+            "context": self.context.copy(),
+            "trace": self.trace.model_dump() if self.trace else None,
+            "listeners": self.listeners.copy(),
+            "cleanups": self.cleanups.copy(),
+        }
+
+    async def load_snapshot(self, snapshot: dict[str, Any]) -> None:
+        self.group_id = snapshot["group_id"]
+        self.namespace = snapshot["namespace"]
+        self.creator = snapshot["creator"]
+        self.context = snapshot["context"]
+        self.trace = EventTrace(**snapshot["trace"]) if snapshot.get("trace") else None
+        self.listeners = snapshot["listeners"]
+        self.cleanups = snapshot["cleanups"]

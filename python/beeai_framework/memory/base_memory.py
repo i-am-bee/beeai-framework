@@ -18,12 +18,13 @@ from collections.abc import Iterable, Iterator
 from typing import TYPE_CHECKING, Any
 
 from beeai_framework.backend.message import AnyMessage
+from beeai_framework.serializer.serializable import Serializable
 
 if TYPE_CHECKING:
     from beeai_framework.memory.readonly_memory import ReadOnlyMemory
 
 
-class BaseMemory(ABC):
+class BaseMemory(Serializable, ABC):
     """Abstract base class for all memory implementations."""
 
     @property
@@ -78,13 +79,11 @@ class BaseMemory(ABC):
         return iter(self.messages)
 
     @abstractmethod
-    def create_snapshot(self) -> Any:
-        """Create a serializable snapshot of current state."""
+    async def create_snapshot(self) -> dict[str, Any]:
         pass
 
     @abstractmethod
-    def load_snapshot(self, state: Any) -> None:
-        """Restore state from a snapshot."""
+    async def load_snapshot(self, snapshot: dict[str, Any]) -> None:
         pass
 
     def as_read_only(self) -> "ReadOnlyMemory":

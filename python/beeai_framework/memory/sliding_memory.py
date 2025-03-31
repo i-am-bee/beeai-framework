@@ -131,14 +131,12 @@ class SlidingMemory(BaseMemory):
         """Clear all messages from memory."""
         self._messages.clear()
 
-    def create_snapshot(self) -> dict[str, Any]:
-        """Create a serializable snapshot of current state."""
+    async def create_snapshot(self) -> dict[str, Any]:
         return {
             "config": {"size": self.config.size, "handlers": self.config.handlers},
-            "messages": copy(self._messages),
+            "messages": self._messages.copy(),
         }
 
-    def load_snapshot(self, state: dict[str, Any]) -> None:
-        """Restore state from a snapshot."""
-        self.config = SlidingMemoryConfig(size=state["config"]["size"], handlers=state["config"]["handlers"])
-        self._messages = copy(state["messages"])
+    async def load_snapshot(self, snapshot: dict[str, Any]) -> None:
+        self.config = SlidingMemoryConfig(size=snapshot["config"]["size"], handlers=snapshot["config"]["handlers"])
+        self._messages = copy(snapshot["messages"])

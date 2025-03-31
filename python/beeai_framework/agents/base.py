@@ -25,11 +25,12 @@ from beeai_framework.cancellation import AbortSignal
 from beeai_framework.context import Run, RunContext
 from beeai_framework.emitter import Emitter
 from beeai_framework.memory import BaseMemory
+from beeai_framework.serializer.serializable import Serializable
 
 TOutput = TypeVar("TOutput", bound=BaseModel)
 
 
-class BaseAgent(ABC, Generic[TOutput]):
+class BaseAgent(Serializable, ABC, Generic[TOutput]):
     def __init__(self) -> None:
         super().__init__()
         self._is_running = False
@@ -92,6 +93,13 @@ class BaseAgent(ABC, Generic[TOutput]):
             signal=signal,
             run_params=run_params,
         )
+
+    async def create_snapshot(self) -> dict[str, Any]:
+        return {"is_running": False, "emitter": self.emitter}
+
+    async def load_snapshot(self, snapshot: dict[str, Any]) -> None:
+        self._is_running = snapshot["is_running"]
+        self.emitter = snapshot["emitter"]
 
 
 AnyAgent = BaseAgent[Any]

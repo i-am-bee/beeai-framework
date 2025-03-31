@@ -20,10 +20,12 @@ from typing import Any, Generic, TypeVar
 
 from pydantic import BaseModel
 
+from beeai_framework.serializer.serializable import Serializable
+
 T = TypeVar("T")
 
 
-class BaseCache(ABC, Generic[T]):
+class BaseCache(Serializable, ABC, Generic[T]):
     """Abstract base class for all Cache implementations."""
 
     def __init__(self) -> None:
