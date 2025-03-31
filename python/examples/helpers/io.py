@@ -1,3 +1,5 @@
+import sys
+
 from pydantic import BaseModel
 from termcolor import colored
 
@@ -25,6 +27,8 @@ class ConsoleReader:
         try:
             while True:
                 prompt = input(colored(self.input, "cyan", attrs=["bold"])).strip()
+                if not sys.stdin.isatty():
+                    print(prompt)
 
                 if prompt == "q":
                     raise StopIteration
