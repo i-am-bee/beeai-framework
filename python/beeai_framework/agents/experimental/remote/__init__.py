@@ -12,19 +12,18 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from beeai_framework.agents.tool_calling.agent import ToolCallingAgent
-from beeai_framework.agents.tool_calling.events import ToolCallingAgentStartEvent, ToolCallingAgentSuccessEvent
-from beeai_framework.agents.tool_calling.types import (
-    ToolCallingAgentRunOutput,
-    ToolCallingAgentTemplateFactory,
-    ToolCallingAgentTemplatesKeys,
+from beeai_framework.agents.experimental.remote.agent import RemoteAgent
+from beeai_framework.agents.experimental.remote.events import (
+    RemoteAgentErrorEvent,
+    RemoteAgentUpdateEvent,
+    RemoteAgentWarningEvent,
 )
+from beeai_framework.agents.experimental.remote.types import RemoteAgentRunOutput
 
 __all__ = [
-    "ToolCallingAgent",
-    "ToolCallingAgentRunOutput",
-    "ToolCallingAgentStartEvent",
-    "ToolCallingAgentSuccessEvent",
-    "ToolCallingAgentTemplateFactory",
-    "ToolCallingAgentTemplatesKeys",
+    "RemoteAgent",
+    "RemoteAgentErrorEvent",
+    "RemoteAgentRunOutput",
+    "RemoteAgentUpdateEvent",
+    "RemoteAgentWarningEvent",
 ]

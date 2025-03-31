@@ -113,7 +113,7 @@ class BaseRunner(ABC):
         return ReActAgentRunnerIteration(emitter=emitter, state=iteration.state, meta=meta, signal=self._run.signal)
 
     async def init(self, input: ReActAgentRunInput) -> None:
-        self._memory = await self.init_memory(input)
+        self._memory = await self._init_memory(input)
 
     @abstractmethod
     async def llm(self, input: ReActAgentRunnerLLMInput) -> ReActAgentRunIteration:
@@ -128,7 +128,7 @@ class BaseRunner(ABC):
         pass
 
     @abstractmethod
-    async def init_memory(self, input: ReActAgentRunInput) -> BaseMemory:
+    async def _init_memory(self, input: ReActAgentRunInput) -> BaseMemory:
         pass
 
     @property

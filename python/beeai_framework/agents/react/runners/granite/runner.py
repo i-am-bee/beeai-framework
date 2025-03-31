@@ -43,7 +43,7 @@ from beeai_framework.utils.strings import create_strenum
 
 
 class GraniteRunner(DefaultRunner):
-    use_native_tool_calling: bool = True
+    _use_native_tool_calling: bool = True
 
     def __init__(self, input: ReActAgentInput, options: ReActAgentRunOptions, run: RunContext) -> None:
         super().__init__(input, options, run)
@@ -72,7 +72,7 @@ class GraniteRunner(DefaultRunner):
 
         run.emitter.on("update", on_update, EmitterOptions(is_blocking=True))
 
-    def create_parser(self) -> LinePrefixParser:
+    def _create_parser(self) -> LinePrefixParser:
         tool_names = create_strenum("ToolsEnum", [tool.name for tool in self._input.tools])
 
         return LinePrefixParser(
