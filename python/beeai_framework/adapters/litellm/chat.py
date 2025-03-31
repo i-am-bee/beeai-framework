@@ -27,13 +27,16 @@ from litellm import (  # type: ignore
 from litellm.types.utils import StreamingChoices
 from openai.lib._pydantic import to_strict_json_schema
 from pydantic import BaseModel
+from typing_extensions import Unpack
 
 from beeai_framework.backend.chat import (
     ChatModel,
+    ChatModelKwargs,
 )
 from beeai_framework.backend.errors import ChatModelError
 from beeai_framework.backend.message import (
     AssistantMessage,
+    MessageTextContent,
     MessageToolCallContent,
     ToolMessage,
 )
@@ -49,6 +52,7 @@ from beeai_framework.context import RunContext
 from beeai_framework.logger import Logger
 from beeai_framework.tools.tool import Tool
 from beeai_framework.utils.dicts import exclude_keys, exclude_none, include_keys
+from beeai_framework.utils.strings import to_json
 
 logger = Logger(__name__)
 
@@ -58,8 +62,15 @@ class LiteLLMChatModel(ChatModel, ABC):
     def model_id(self) -> str:
         return self._model_id
 
-    def __init__(self, model_id: str, *, provider_id: str, settings: dict[str, Any] | None = None) -> None:
-        super().__init__()
+    def __init__(
+        self,
+        model_id: str,
+        *,
+        provider_id: str,
+        settings: dict[str, Any] | None = None,
+        **kwargs: Unpack[ChatModelKwargs],
+    ) -> None:
+        super().__init__(**kwargs)
         self._model_id = model_id
         self._litellm_provider_id = provider_id
         self.supported_params = get_supported_openai_params(model=self.model_id, custom_llm_provider=provider_id) or []
@@ -130,53 +141,69 @@ class LiteLLMChatModel(ChatModel, ABC):
         for message in input.messages:
             if isinstance(message, ToolMessage):
                 for content in message.content:
-                    messages.append(
+                    new_msg = (
                         {
                             "tool_call_id": content.tool_call_id,
                             "role": "tool",
                             "name": content.tool_name,
                             "content": content.result,
                         }
-                    )
-            elif isinstance(message, AssistantMessage):
-                messages.append(
-                    exclude_none(
-                        {
+                        if self.model_supports_tool_calling
+                        else {
                             "role": "assistant",
-                            "content": [t.model_dump() for t in message.get_text_messages()] or None,
-                            "tool_calls": [
-                                {
-                                    "id": call.id,
-                                    "type": "function",
-                                    "function": {
-                                        "arguments": call.args,
-                                        "name": call.tool_name,
-                                    },
-                                }
-                                for call in message.get_tool_calls()
-                            ]
-                            or None,
+                            "content": to_json(
+                                {"tool_call_id": content.tool_call_id, "result": content.result}, indent=2
+                            ),
                         }
                     )
+                    messages.append(new_msg)
+
+            elif isinstance(message, AssistantMessage):
+                msg_text_content = [t.model_dump() for t in message.get_text_messages()]
+                msg_tool_calls = [
+                    {
+                        "id": call.id,
+                        "type": "function",
+                        "function": {
+                            "arguments": call.args,
+                            "name": call.tool_name,
+                        },
+                    }
+                    for call in message.get_tool_calls()
+                ]
+
+                new_msg = (
+                    {
+                        "role": "assistant",
+                        "content": msg_text_content or None,
+                        "tool_calls": msg_tool_calls or None,
+                    }
+                    if self.model_supports_tool_calling
+                    else {
+                        "role": "assistant",
+                        "content": [
+                            *msg_text_content,
+                            *[MessageTextContent(text=to_json(t, indent=2)).model_dump() for t in msg_tool_calls],
+                        ]
+                        or None,
+                    }
                 )
+
+                messages.append(exclude_none(new_msg))
             else:
                 messages.append(message.to_plain())
 
-        tools = (
-            [
-                {
-                    "type": "function",
-                    "function": {
-                        "name": tool.name,
-                        "description": tool.description,
-                        "parameters": self._format_tool_model(tool.input_schema),
-                    },
-                }
-                for tool in input.tools
-            ]
-            if input.tools
-            else None
-        )
+        tools = [
+            {
+                "type": "function",
+                "function": {
+                    "name": tool.name,
+                    "description": tool.description,
+                    "parameters": self._format_tool_model(tool.input_schema),
+                },
+            }
+            for tool in input.tools or []
+        ]
 
         settings = exclude_keys(
             self._settings | input.model_dump(exclude_unset=True),
@@ -196,17 +223,17 @@ class LiteLLMChatModel(ChatModel, ABC):
             else input.tool_choice
         )
 
-        return (
+        return exclude_none(
             exclude_none(settings)
             | exclude_none(params)
             | {
                 "model": f"{self._litellm_provider_id}/{self.model_id}",
                 "messages": messages,
-                "tools": tools,
+                "tools": tools if tools else None,
                 "response_format": self._format_response_model(input.response_format)
                 if input.response_format
                 else None,
-                "tool_choice": tool_choice,
+                "tool_choice": tool_choice if tools else None,
             }
         )
 
