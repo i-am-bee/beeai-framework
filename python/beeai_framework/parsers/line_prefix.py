@@ -77,8 +77,8 @@ class LinePrefixParser:
     def __init__(self, nodes: Nodes, options: LinePrefixParserOptions | None = None) -> None:
         if options is None:
             options = LinePrefixParserOptions()
-        self.nodes: Nodes = nodes
-        self.options: LinePrefixParserOptions = options
+        self._nodes: Nodes = nodes
+        self._options: LinePrefixParserOptions = options
         self.emitter: Emitter = Emitter(
             creator=self,
             namespace=["parser", "line"],
@@ -87,10 +87,10 @@ class LinePrefixParser:
                 "partial_update": LinePrefixParserUpdate,
             },
         )
-        self.lines: list[LinePrefixParserLine] = []
-        self.excluded_lines: list[LinePrefixParserLine] = []
-        self.done: bool = False
-        self.last_node_key: str | None = None
+        self._lines: list[LinePrefixParserLine] = []
+        self._excluded_lines: list[LinePrefixParserLine] = []
+        self._done: bool = False
+        self._last_node_key: str | None = None
 
         # final_state will contain the final parsed values.
         self.final_state: dict[str, Any] = {}
@@ -99,41 +99,45 @@ class LinePrefixParser:
 
         has_start_node = False
         has_end_node = False
-        for key, node in self.nodes.items():
+        for key, node in self._nodes.items():
             has_start_node = has_start_node or node.is_start
             has_end_node = has_end_node or node.is_end
             for next_key in node.next:
                 if key == next_key:
                     raise ValueError(f"Node '{key}' cannot point to itself.")
-                if next_key not in self.nodes:
+                if next_key not in self._nodes:
                     raise ValueError(f"Node '{key}' contains a transition to non-existing node '{next_key}'.")
         if not has_start_node:
             raise ValueError("At least one start node must be provided!")
         if not has_end_node:
             raise ValueError("At least one end node must be provided!")
 
+    @property
+    def done(self) -> bool:
+        return self._done
+
     def fork(self, customizer: Customizer) -> "LinePrefixParser":
-        new_nodes, new_options = customizer(self.nodes, self.options)
+        new_nodes, new_options = customizer(self._nodes, self._options)
         return LinePrefixParser(new_nodes, new_options)
 
     async def add(self, chunk: str) -> None:
-        if not chunk or self.done:
+        if not chunk or self._done:
             return
 
         parts = chunk.split(NEW_LINE_CHARACTER)
         for i, value in enumerate(parts):
             if i == 0:
-                if not self.lines:
-                    self.lines.append(LinePrefixParserLine(value=value, new_line=False))
+                if not self._lines:
+                    self._lines.append(LinePrefixParserLine(value=value, new_line=False))
                 else:
-                    self.lines[-1].value += value
+                    self._lines[-1].value += value
             else:
-                self.lines.append(LinePrefixParserLine(value=value, new_line=(len(parts) > 1)))
+                self._lines.append(LinePrefixParserLine(value=value, new_line=(len(parts) > 1)))
 
-        while self.lines:
-            line = self.lines[0]
-            is_last_line = len(self.lines) == 1
-            last_node = self.nodes[self.last_node_key] if self.last_node_key else None
+        while self._lines:
+            line = self._lines[0]
+            is_last_line = len(self._lines) == 1
+            last_node = self._nodes[self._last_node_key] if self._last_node_key else None
             is_termination_node = last_node and last_node.is_end and (len(last_node.next) == 0)
             parsed_line: LinePrefixParserExtractedLine | None = None
             if not (is_termination_node or (last_node and not line.new_line)):
@@ -142,62 +146,62 @@ class LinePrefixParser:
             if is_last_line and ((parsed_line is not None and parsed_line.partial) or not line.value):
                 break
 
-            self.lines.pop(0)
+            self._lines.pop(0)
 
             if parsed_line and not parsed_line.partial:
                 assert parsed_line is not None
                 if last_node:
                     if parsed_line.key not in last_node.next:
-                        if parsed_line.key in self.final_state and self.options.end_on_repeat and last_node.is_end:
+                        if parsed_line.key in self.final_state and self._options.end_on_repeat and last_node.is_end:
                             await self.end()
                             return
-                        self.throw_with_context(
-                            f"Transition from '{self.last_node_key}' to '{parsed_line.key}' does not exist!",
+                        self._throw_with_context(
+                            f"Transition from '{self._last_node_key}' to '{parsed_line.key}' does not exist!",
                             LinePrefixParserError.Reason.InvalidTransition,
                             extra={"line": line},
                         )
 
-                    assert self.last_node_key is not None
-                    await self._emit_final_update(self.last_node_key, last_node.field)
-                elif not self.nodes[parsed_line.key].is_start:
-                    if not self.options.wait_for_start_node:
-                        self.throw_with_context(
+                    assert self._last_node_key is not None
+                    await self._emit_final_update(self._last_node_key, last_node.field)
+                elif not self._nodes[parsed_line.key].is_start:
+                    if not self._options.wait_for_start_node:
+                        self._throw_with_context(
                             f'Parsed text line corresponds to a node "{parsed_line.key}" which is not a start node!',
                             LinePrefixParserError.Reason.NotStartNode,
                             extra={"line": line},
                         )
-                    self.excluded_lines.append(line)
+                    self._excluded_lines.append(line)
                     continue
 
-                node = self.nodes[parsed_line.key]
+                node = self._nodes[parsed_line.key]
                 node.field.write(parsed_line.value)
                 await self._emit_partial_update(
                     LinePrefixParserUpdate(
                         key=parsed_line.key, value=parsed_line.value, delta=parsed_line.value, field=node.field
                     )
                 )
-                self.last_node_key = parsed_line.key
-            elif self.last_node_key:
-                if not self.nodes[self.last_node_key].field.raw:
+                self._last_node_key = parsed_line.key
+            elif self._last_node_key:
+                if not self._nodes[self._last_node_key].field.raw:
                     line.value = trim_left_spaces(line.value)
                 if line.new_line:
                     line.value = NEW_LINE_CHARACTER + line.value
-                node = self.nodes[self.last_node_key]
+                node = self._nodes[self._last_node_key]
                 node.field.write(line.value)
                 await self._emit_partial_update(
                     LinePrefixParserUpdate(
-                        key=self.last_node_key, value=node.field.get_partial(), delta=line.value, field=node.field
+                        key=self._last_node_key, value=node.field.get_partial(), delta=line.value, field=node.field
                     )
                 )
             else:
-                self.excluded_lines.append(line)
+                self._excluded_lines.append(line)
 
-    def throw_with_context(self, message: str, reason: str, extra: dict[str, Any] | None = None) -> NoReturn:
+    def _throw_with_context(self, message: str, reason: str, extra: dict[str, Any] | None = None) -> NoReturn:
         extra = extra or {}
-        context_lines = self.lines + ([extra["line"]] if "line" in extra else [])
+        context_lines = self._lines + ([extra["line"]] if "line" in extra else [])
         context = {
             "lines": _lines_to_string(context_lines),
-            "excludedLines": _lines_to_string(self.excluded_lines),
+            "excludedLines": _lines_to_string(self._excluded_lines),
             "finalState": self.final_state,
             "partialState": self.partial_state,
         }
@@ -205,74 +209,74 @@ class LinePrefixParser:
         raise LinePrefixParserError(full_message, reason=reason, context=context)
 
     async def end(self) -> dict[str, Any]:
-        if self.done:
+        if self._done:
             return self.final_state
 
-        if not self.last_node_key and self.options.fallback:
-            stash = _lines_to_string(self.excluded_lines + self.lines)
-            self.excluded_lines.clear()
-            self.lines.clear()
-            fallback_nodes = self.options.fallback(stash)
+        if not self._last_node_key and self._options.fallback:
+            stash = _lines_to_string(self._excluded_lines + self._lines)
+            self._excluded_lines.clear()
+            self._lines.clear()
+            fallback_nodes = self._options.fallback(stash)
             fallback_text = NEW_LINE_CHARACTER.join(
-                [self.nodes[node["key"]].prefix + node["value"] for node in fallback_nodes]
+                [self._nodes[node["key"]].prefix + node["value"] for node in fallback_nodes]
             )
             await self.add(fallback_text)
 
-        self.done = True
+        self._done = True
 
-        if not self.last_node_key:
-            self.throw_with_context("Nothing valid has been parsed yet!", LinePrefixParserError.Reason.NoDataReceived)
+        if not self._last_node_key:
+            self._throw_with_context("Nothing valid has been parsed yet!", LinePrefixParserError.Reason.NoDataReceived)
 
-        stash = _lines_to_string(self.lines)
-        self.lines.clear()
-        field = self.nodes[self.last_node_key].field
+        stash = _lines_to_string(self._lines)
+        self._lines.clear()
+        field = self._nodes[self._last_node_key].field
         if stash:
             field.write(stash)
             await self._emit_partial_update(
-                LinePrefixParserUpdate(key=self.last_node_key, value=field.get_partial(), delta=stash, field=field)
+                LinePrefixParserUpdate(key=self._last_node_key, value=field.get_partial(), delta=stash, field=field)
             )
-        await self._emit_final_update(self.last_node_key, field)
-        current_node = self.nodes[self.last_node_key]
+        await self._emit_final_update(self._last_node_key, field)
+        current_node = self._nodes[self._last_node_key]
         if not current_node.is_end:
-            self.throw_with_context(
-                f"Node '{self.last_node_key}' is not an end node.",
+            self._throw_with_context(
+                f"Node '{self._last_node_key}' is not an end node.",
                 LinePrefixParserError.Reason.NotEndNode,
             )
 
-        for node in self.nodes.values():
+        for node in self._nodes.values():
             node.field.end()
 
         return self.final_state
 
     async def _emit_partial_update(self, data: LinePrefixParserUpdate) -> None:
         if data.key in self.final_state:
-            self.throw_with_context(
+            self._throw_with_context(
                 f"Cannot update partial event for completed key '{data.key}'",
                 LinePrefixParserError.Reason.AlreadyCompleted,
             )
         if data.key not in self.partial_state:
             self.partial_state[data.key] = ""
         self.partial_state[data.key] += data.delta
-        if not (self.options.silent_nodes and data.key in self.options.silent_nodes):
+        if not (self._options.silent_nodes and data.key in self._options.silent_nodes):
             await self.emitter.emit("partial_update", data)
 
     async def _emit_final_update(self, key: str, field: ParserField[Any]) -> None:
         if key in self.final_state:
-            self.throw_with_context(f"Duplicated key '{key}'", LinePrefixParserError.Reason.AlreadyCompleted)
+            self._throw_with_context(f"Duplicated key '{key}'", LinePrefixParserError.Reason.AlreadyCompleted)
         try:
             value = field.get()
             self.final_state[key] = value.model_dump()
-            if not (self.options.silent_nodes and key in self.options.silent_nodes):
+            if not (self._options.silent_nodes and key in self._options.silent_nodes):
                 await self.emitter.emit("update", LinePrefixParserUpdate(key=key, value=value, field=field, delta=""))
         except ValidationError:
-            self.throw_with_context(
+            self._throw_with_context(
                 f"Value for '{key}' cannot be retrieved because its value does not adhere to the appropriate schema.",
                 LinePrefixParserError.Reason.InvalidSchema,
             )
 
     @property
     def _normalized_nodes(self) -> list[tuple[str, dict[str, Any]]]:
-        sorted_nodes = sorted(self.nodes.items(), key=lambda item: len(item[1].prefix))
+        sorted_nodes = sorted(self._nodes.items(), key=lambda item: len(item[1].prefix))
         return [(key, {"lowerCasePrefix": node.prefix.lower(), "ref": node}) for key, node in sorted_nodes]
 
     def _extract_line(self, line: str) -> LinePrefixParserExtractedLine | None:
