@@ -60,7 +60,11 @@ class Schema(BaseModel):
 
 class AgentWorkflow:
     def __init__(self, name: str = "AgentWorkflow") -> None:
-        self.workflow = Workflow(name=name, schema=Schema)
+        self._workflow = Workflow(name=name, schema=Schema)
+
+    @property
+    def workflow(self) -> Workflow[Schema]:
+        return self._workflow
 
     def run(self, inputs: Sequence[AgentWorkflowInput | AnyMessage]) -> Run[WorkflowRun[Any, Any]]:
         schema = Schema(
