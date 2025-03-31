@@ -182,7 +182,7 @@ All content in these repositories including code has been provided by IBM under 
 
 ## Maintainers
 
-For information about maintainers, see [MAINTAINERS.md](MAINTAINERS.md).
+For information about maintainers, see [MAINTAINERS.md](https://github.com/i-am-bee/beeai-framework/blob/main/MAINTAINERS.md).
 
 ## Contributors
 
