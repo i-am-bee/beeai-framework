@@ -18,22 +18,7 @@ import sys
 from logging import Formatter
 from typing import TYPE_CHECKING, Any
 
-from beeai_framework.errors import FrameworkError
 from beeai_framework.utils.config import CONFIG
-from beeai_framework.utils.events import MessageEvent
-
-
-class LoggerError(FrameworkError):
-    """Raised for errors caused by logging."""
-
-    def __init__(
-        self,
-        message: str = "Logger error",
-        *,
-        cause: Exception | None = None,
-        context: dict[str, Any] | None = None,
-    ) -> None:
-        super().__init__(message, is_fatal=True, is_retryable=False, cause=cause, context=context)
 
 
 class LoggerFormatter(Formatter):
@@ -119,12 +104,3 @@ class Logger(logging.Logger):
         setattr(logging, level_name, level_num)
         setattr(logging.getLoggerClass(), method_name, log_for_level)
         setattr(logging, method_name, log_to_root)
-
-    def log_message_events(self, event: MessageEvent) -> None:
-        source = str.lower(event.source)
-        state = f" ({event.state})" if event.state else ""
-        icon = " 👤" if source == str.lower("user") else " 🤖"
-        self.info(
-            f" {str.capitalize(source)}{state}{icon}: {event.message}",
-            extra={"is_event_message": True},
-        )

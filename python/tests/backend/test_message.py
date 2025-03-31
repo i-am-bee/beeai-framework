@@ -16,14 +16,13 @@ import json
 
 import pytest
 
-from beeai_framework import ToolMessage
 from beeai_framework.backend import (
     AssistantMessage,
     CustomMessage,
     SystemMessage,
     UserMessage,
 )
-from beeai_framework.backend.message import MessageTextContent
+from beeai_framework.backend.message import MessageTextContent, ToolMessage
 
 """
 Unit Tests

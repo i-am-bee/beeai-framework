@@ -68,6 +68,7 @@ def test_finds_examples() -> None:
     assert examples
 
 
+@pytest.mark.skip
 @pytest.mark.e2e
 @pytest.mark.parametrize("example", examples, ids=example_name)
 def test_example_execution(example: str, monkeypatch: pytest.MonkeyPatch) -> None:

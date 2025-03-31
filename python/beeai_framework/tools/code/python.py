@@ -18,7 +18,7 @@ from typing import Any
 import httpx
 from pydantic import BaseModel, Field, InstanceOf
 
-from beeai_framework import UserMessage
+from beeai_framework.backend import UserMessage
 from beeai_framework.backend.chat import ChatModel
 from beeai_framework.context import RunContext
 from beeai_framework.emitter.emitter import Emitter

@@ -46,31 +46,31 @@ class Run(Generic[R]):
     def __init__(self, handler: Callable[[], R | Awaitable[R]], context: "RunContext") -> None:
         super().__init__()
         self.handler = ensure_async(handler)
-        self.tasks: list[tuple[Callable[..., Any], list[Any]]] = []
-        self.run_context = context
+        self._tasks: list[tuple[Callable[..., Any], list[Any]]] = []
+        self._run_context = context
 
     def __await__(self) -> Generator[Any, None, R]:
         return self._run_tasks().__await__()
 
     def observe(self, fn: Callable[[Emitter], Any]) -> Self:
-        self.tasks.append((fn, [self.run_context.emitter]))
+        self._tasks.append((fn, [self._run_context.emitter]))
         return self
 
     def on(self, matcher: Matcher, callback: Callback, options: EmitterOptions | None = None) -> Self:
-        self.tasks.append((self.run_context.emitter.match, [matcher, callback, options]))
+        self._tasks.append((self._run_context.emitter.match, [matcher, callback, options]))
         return self
 
     def context(self, context: dict[str, Any]) -> Self:
-        self.tasks.append((self._set_context, [context]))
+        self._tasks.append((self._set_context, [context]))
         return self
 
     def middleware(self, fn: Callable[["RunContext"], None]) -> Self:
-        self.tasks.append((fn, [self.run_context]))
+        self._tasks.append((fn, [self._run_context]))
         return self
 
     async def _run_tasks(self) -> R:
-        tasks = self.tasks[:]
-        self.tasks.clear()
+        tasks = self._tasks[:]
+        self._tasks.clear()
 
         for fn, params in tasks:
             await ensure_async(fn)(*params)
@@ -78,8 +78,8 @@ class Run(Generic[R]):
         return await self.handler()
 
     def _set_context(self, context: dict[str, Any]) -> None:
-        self.run_context.context.update(context)
-        self.run_context.emitter.context.update(context)
+        self._run_context.context.update(context)
+        self._run_context.emitter.context.update(context)
 
 
 class RunContext:
@@ -91,15 +91,15 @@ class RunContext:
         signal: AbortSignal | None,
         run_params: dict[str, Any] | None = None,
     ) -> None:
-        self.instance = instance
-        self.created_at = datetime.now(tz=UTC)
-        self.run_params = run_params or {}
-        self.run_id = str(uuid.uuid4())
-        self.parent_id = parent.run_id if parent else None
-        self.group_id: str = parent.group_id if parent else str(uuid.uuid4())
-        self.context: dict[str, Any] = exclude_keys(parent.context, {"id", "parent_id"}) if parent is not None else {}
+        self._instance = instance
+        self._created_at = datetime.now(tz=UTC)
+        self._run_params = run_params or {}
+        self._run_id = str(uuid.uuid4())
+        self._parent_id = parent.run_id if parent else None
+        self._group_id: str = parent.group_id if parent else str(uuid.uuid4())
+        self._context: dict[str, Any] = exclude_keys(parent.context, {"id", "parent_id"}) if parent is not None else {}
 
-        self.emitter = self.instance.emitter.child(
+        self._emitter = self.instance.emitter.child(
             context=self.context,
             trace=EventTrace(
                 id=self.group_id,
@@ -109,23 +109,55 @@ class RunContext:
         )
 
         if parent:
-            self.emitter.pipe(parent.emitter)
+            self._emitter.pipe(parent.emitter)
 
-        self.controller = AbortController()
+        self._controller = AbortController()
         extra_signals = []
         if parent:
             extra_signals.append(parent.signal)
         if signal:
             extra_signals.append(signal)
-        register_signals(self.controller, extra_signals)
+        register_signals(self._controller, extra_signals)
+
+    @property
+    def instance(self) -> RunInstance:
+        return self._instance
+
+    @property
+    def created_at(self) -> datetime:
+        return self._created_at
+
+    @property
+    def run_params(self) -> dict[str, Any]:
+        return self._run_params
+
+    @property
+    def run_id(self) -> str:
+        return self._run_id
+
+    @property
+    def parent_id(self) -> str | None:
+        return self._parent_id
+
+    @property
+    def group_id(self) -> str:
+        return self._group_id
+
+    @property
+    def context(self) -> dict[str, Any]:
+        return self._context
+
+    @property
+    def emitter(self) -> Emitter:
+        return self._emitter
 
     @property
     def signal(self) -> AbortSignal:
-        return self.controller.signal
+        return self._controller.signal
 
     def destroy(self) -> None:
         self.emitter.destroy()
-        self.controller.abort("Context has been destroyed.")
+        self._controller.abort("Context has been destroyed.")
 
     @staticmethod
     def enter(

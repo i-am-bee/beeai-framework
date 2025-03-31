@@ -14,6 +14,7 @@
 
 
 from beeai_framework.utils.config import CONFIG
-from beeai_framework.utils.events import MessageEvent
+from beeai_framework.utils.models import JSONSchemaModel, ModelLike
+from beeai_framework.utils.types import MaybeAsync
 
-__all__ = ["CONFIG", "MessageEvent"]
+__all__ = ["CONFIG", "JSONSchemaModel", "MaybeAsync", "ModelLike"]
