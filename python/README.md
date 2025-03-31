@@ -1,12 +1,21 @@
+<div align="center">
+  <h1>
+    BeeAI Framework for Python
+    <img align="center" alt="Project Status: Alpha" src="https://img.shields.io/badge/Status-Alpha-red">
+  </h1>
 
-# BeeAI Framework for Python <img align="cener" alt="Project Status: Alpha" src="https://img.shields.io/badge/Status-Alpha-red">
+  <h3>Build production-ready multi-agent systems. Also available in <a href="https://github.com/i-am-bee/beeai-framework/tree/main/typescript">TypeScript</a>.</h3>
 
-[![License](https://img.shields.io/badge/License-Apache%202.0-EA7826?style=flat)](https://github.com/i-am-bee/beeai-framework?tab=Apache-2.0-1-ov-file#readme)
-[![Bluesky](https://img.shields.io/badge/Bluesky-0285FF?style=flat&logo=bluesky&logoColor=white)](https://bsky.app/profile/beeaiagents.bsky.social)
-[![Discord](https://img.shields.io/discord/1309202615556378705?style=social&logo=discord&logoColor=black&label=Discord&labelColor=7289da&color=black)](https://discord.com/invite/NradeA6ZNF)
-[![GitHub Repo stars](https://img.shields.io/github/stars/I-am-bee/beeai-framework)](https://github.com/i-am-bee/beeai-framework)
+</div>
 
-Build production-ready multi-agent systems in Python. BeeAI framework is also available in [TypeScript](https://github.com/i-am-bee/beeai-framework/tree/main/typescript).
+<div align="center">
+
+[![Apache 2.0](https://img.shields.io/badge/Apache%202.0-License-EA7826?style=social&logo=apache)](https://github.com/i-am-bee/beeai-framework?tab=Apache-2.0-1-ov-file#readme)
+[![Follow on Bluesky](https://img.shields.io/badge/Follow%20on%20Bluesky-0285FF?style=social&logo=bluesky)](https://bsky.app/profile/beeaiagents.bsky.social)
+[![Join our Discord](https://img.shields.io/badge/Join%20our%20Discord-7289DA?style=social&logo=discord)](https://discord.com/invite/NradeA6ZNF)
+[![LF AI & Data](https://img.shields.io/badge/LF%20AI%20%26%20Data-0094ff?style=social&logo=linuxfoundation)](https://lfaidata.foundation/projects/)
+
+</div>
 
 ## Key features
 
