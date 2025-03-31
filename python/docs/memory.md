@@ -508,10 +508,10 @@ class MyMemory(BaseMemory):
     def reset(self) -> None:
         raise NotImplementedError("Method not yet implemented.")
 
-    def create_snapshot(self) -> Any:
+    def create_snapshot(self) -> dict[str, Any]:  # type: ignore [override]
         raise NotImplementedError("Method not yet implemented.")
 
-    def load_snapshot(self, state: Any) -> None:
+    def load_snapshot(self, state: dict[str, Any]) -> None:  # type: ignore [override]
         raise NotImplementedError("Method not yet implemented.")
 
 ```
