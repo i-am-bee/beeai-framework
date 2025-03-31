@@ -1,7 +1,8 @@
+<div align="center">
+  
+# BeeAI Framework
 
-<h1 align="left">BeeAI Framework </h1>
-
-<div align="left">
+### Build production-ready multi-agent systems in <a href="https://github.com/i-am-bee/beeai-framework/tree/main/python">Python</a> or <a href="https://github.com/i-am-bee/beeai-framework/tree/main/typescript">TypeScript</a>.
 
 [![Python library](https://img.shields.io/badge/Python-306998?style=social&logo=python)](https://github.com/i-am-bee/beeai-framework/tree/main/python)
 [![Typescript library](https://img.shields.io/badge/TypeScript-2f7bb6?style=social&logo=typescript)](https://github.com/i-am-bee/beeai-framework/tree/main/typescript)
@@ -12,9 +13,7 @@
 
 </div>
 
-Build production-ready multi-agent systems in [Python](/python) or [TypeScript](/typescript).
-
-## Latest updates 🚀
+## Latest updates
 
 | Date       | Language      | Update Description                                                                 
 |------------|---------------|-------------------------------------------------------------------------------------|
@@ -188,3 +187,7 @@ Special thanks to our contributors for helping us improve BeeAI framework.
 <a href="https://github.com/i-am-bee/beeai-framework/graphs/contributors">
   <img alt="Contributors list" src="https://contrib.rocks/image?repo=i-am-bee/beeai-framework" />
 </a>
+
+---
+
+Developed by contributors to the BeeAI project, this initiative is part of the [Linux Foundation AI & Data program](https://lfaidata.foundation/projects/). Its development follows open, collaborative, and community-driven practices.
