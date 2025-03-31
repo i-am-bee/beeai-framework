@@ -1,14 +1,8 @@
 <div align="center">
-  <h1>
-    BeeAI Framework for Python
-    <img align="center" alt="Project Status: Alpha" src="https://img.shields.io/badge/Status-Alpha-red">
-  </h1>
+  
+# BeeAI Framework for Python <img align="center" alt="Project Status: Alpha" src="https://img.shields.io/badge/Status-Alpha-red">
 
-  <h3>Build production-ready multi-agent systems. Also available in <a href="https://github.com/i-am-bee/beeai-framework/tree/main/typescript">TypeScript</a>.</h3>
-
-</div>
-
-<div align="center">
+### Build production-ready multi-agent systems. Also available in <a href="https://github.com/i-am-bee/beeai-framework/tree/main/typescript">TypeScript</a>.
 
 [![Apache 2.0](https://img.shields.io/badge/Apache%202.0-License-EA7826?style=social&logo=apache)](https://github.com/i-am-bee/beeai-framework?tab=Apache-2.0-1-ov-file#readme)
 [![Follow on Bluesky](https://img.shields.io/badge/Follow%20on%20Bluesky-0285FF?style=social&logo=bluesky)](https://bsky.app/profile/beeaiagents.bsky.social)
@@ -184,3 +178,7 @@ Special thanks to our contributors for helping us improve BeeAI framework.
 <a href="https://github.com/i-am-bee/beeai-framework/graphs/contributors">
   <img alt="Contributors list" src="https://contrib.rocks/image?repo=i-am-bee/beeai-framework" />
 </a>
+
+---
+
+Developed by contributors to the BeeAI project, this initiative is part of the [Linux Foundation AI & Data program](https://lfaidata.foundation/projects/). Its development follows open, collaborative, and community-driven practices.
