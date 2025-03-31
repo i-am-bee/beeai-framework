@@ -27,7 +27,7 @@ class SummarizeMemory(BaseMemory):
 
     def __init__(self, model: ChatModel) -> None:
         self._messages: list[AnyMessage] = []
-        self.model = model
+        self._model = model
 
     @property
     def messages(self) -> list[AnyMessage]:
@@ -61,7 +61,7 @@ Previous messages:
 Summary:""".format("\n".join([f"{msg.role}: {msg.text}" for msg in messages]))
         )
 
-        response = await self.model.create(messages=[prompt])
+        response = await self._model.create(messages=[prompt])
 
         return response.messages[0].get_texts()[0].text
 

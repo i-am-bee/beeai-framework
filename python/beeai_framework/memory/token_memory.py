@@ -42,12 +42,12 @@ class TokenMemory(BaseMemory):
     ) -> None:
         self._messages: list[AnyMessage] = []
         self.llm = llm
-        self.max_tokens = max_tokens
-        self.threshold = capacity_threshold
-        self.sync_threshold = sync_threshold
+        self._max_tokens = max_tokens
+        self._threshold = capacity_threshold
+        self._sync_threshold = sync_threshold
         self._tokens_by_message: dict[str, Any] = {}
 
-        self.handlers = {
+        self._handlers = {
             "tokenize": (handlers.get("tokenize", simple_tokenize) if handlers else simple_tokenize),
             "estimate": (handlers.get("estimate", self._default_estimate) if handlers else self._default_estimate),
             "removal_selector": (
@@ -55,7 +55,7 @@ class TokenMemory(BaseMemory):
             ),
         }
 
-        if not 0 <= self.threshold <= 1:
+        if not 0 <= self._threshold <= 1:
             raise ValueError('"capacity_threshold" must be a number in range (0, 1)')
 
     @staticmethod
@@ -69,6 +69,10 @@ class TokenMemory(BaseMemory):
     @property
     def messages(self) -> list[AnyMessage]:
         return self._messages
+
+    @property
+    def handlers(self) -> dict[str, Any]:
+        return self._handlers
 
     @property
     def tokens_used(self) -> int:
@@ -85,7 +89,7 @@ class TokenMemory(BaseMemory):
             cache = self._tokens_by_message.get(key, {})
             if cache.get("dirty", True):
                 try:
-                    result = self.handlers["tokenize"]([msg])  # type: ignore
+                    result = self.handlers["tokenize"]([msg])
                     self._tokens_by_message[key] = {
                         "tokens_count": result,
                         "dirty": False,
@@ -93,7 +97,7 @@ class TokenMemory(BaseMemory):
                 except Exception as e:
                     print(f"Error tokenizing message: {e!s}")
                     self._tokens_by_message[key] = {
-                        "tokens_count": self.handlers["estimate"](msg),  # type: ignore
+                        "tokens_count": self.handlers["estimate"](msg),
                         "dirty": True,
                     }
 
@@ -102,14 +106,14 @@ class TokenMemory(BaseMemory):
         self._messages.insert(index, message)
 
         key = self._get_message_key(message)
-        estimated_tokens = self.handlers["estimate"](message)  # type: ignore
+        estimated_tokens = self.handlers["estimate"](message)
         self._tokens_by_message[key] = {
             "tokens_count": estimated_tokens,
             "dirty": True,
         }
 
         dirty_count = sum(1 for info in self._tokens_by_message.values() if info.get("dirty", True))
-        if len(self._messages) > 0 and dirty_count / len(self._messages) >= self.sync_threshold:
+        if len(self._messages) > 0 and dirty_count / len(self._messages) >= self._sync_threshold:
             await self.sync()
 
     async def delete(self, message: AnyMessage) -> bool:

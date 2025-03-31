@@ -22,7 +22,11 @@ class ReadOnlyMemory(BaseMemory):
     """Read-only wrapper for a memory instance."""
 
     def __init__(self, source: BaseMemory) -> None:
-        self.source = source
+        self._source = source
+
+    @property
+    def source(self) -> BaseMemory:
+        return self._source
 
     @property
     def messages(self) -> list[AnyMessage]:
@@ -41,7 +45,7 @@ class ReadOnlyMemory(BaseMemory):
         return {"source": self.source}
 
     def load_snapshot(self, state: dict[str, Any]) -> None:
-        self.source = state["source"]
+        self._source = state["source"]
 
     def as_read_only(self) -> "ReadOnlyMemory":
         """Return self since already read-only."""
