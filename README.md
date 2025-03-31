@@ -2,7 +2,7 @@
   
 # BeeAI Framework
 
-### Build production-ready multi-agent systems in <a href="https://github.com/i-am-bee/beeai-framework/tree/main/python">Python</a> or <a href="https://github.com/i-am-bee/beeai-framework/tree/main/typescript">TypeScript</a>.
+**Build production-ready multi-agent systems in <a href="https://github.com/i-am-bee/beeai-framework/tree/main/python">Python</a> or <a href="https://github.com/i-am-bee/beeai-framework/tree/main/typescript">TypeScript</a>.**
 
 [![Python library](https://img.shields.io/badge/Python-306998?style=social&logo=python)](https://github.com/i-am-bee/beeai-framework/tree/main/python)
 [![Typescript library](https://img.shields.io/badge/TypeScript-2f7bb6?style=social&logo=typescript)](https://github.com/i-am-bee/beeai-framework/tree/main/typescript)
