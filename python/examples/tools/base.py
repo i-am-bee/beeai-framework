@@ -3,7 +3,7 @@ import sys
 from datetime import date
 
 from beeai_framework.errors import FrameworkError
-from beeai_framework.tools.weather.openmeteo import OpenMeteoTool, OpenMeteoToolInput
+from beeai_framework.tools.weather import OpenMeteoTool, OpenMeteoToolInput
 
 
 async def main() -> None:

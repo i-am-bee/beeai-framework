@@ -70,8 +70,9 @@ from beeai_framework.parsers.line_prefix import (
     LinePrefixParserUpdate,
 )
 from beeai_framework.retryable import Retryable, RetryableConfig, RetryableContext, RetryableInput
-from beeai_framework.tools import StringToolOutput, ToolError, ToolInputValidationError, ToolOutput
+from beeai_framework.tools.errors import ToolError, ToolInputValidationError
 from beeai_framework.tools.tool import AnyTool
+from beeai_framework.tools.types import StringToolOutput, ToolOutput
 from beeai_framework.utils.strings import create_strenum, to_json
 
 

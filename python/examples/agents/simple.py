@@ -2,13 +2,12 @@ import asyncio
 import sys
 import traceback
 
-from beeai_framework.agents.react.agent import ReActAgent
-from beeai_framework.agents.react.types import ReActAgentRunOutput
-from beeai_framework.backend.chat import ChatModel
+from beeai_framework.agents.react import ReActAgent, ReActAgentRunOutput
+from beeai_framework.backend import ChatModel
 from beeai_framework.errors import FrameworkError
-from beeai_framework.memory.unconstrained_memory import UnconstrainedMemory
-from beeai_framework.tools.search.duckduckgo import DuckDuckGoSearchTool
-from beeai_framework.tools.weather.openmeteo import OpenMeteoTool
+from beeai_framework.memory import UnconstrainedMemory
+from beeai_framework.tools.search import DuckDuckGoSearchTool
+from beeai_framework.tools.weather import OpenMeteoTool
 
 
 async def main() -> None:

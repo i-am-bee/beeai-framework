@@ -19,10 +19,11 @@ import pytest
 from beeai_framework.backend import (
     AssistantMessage,
     CustomMessage,
+    MessageTextContent,
     SystemMessage,
+    ToolMessage,
     UserMessage,
 )
-from beeai_framework.backend.message import MessageTextContent, ToolMessage
 
 """
 Unit Tests

@@ -4,10 +4,10 @@ import traceback
 
 from pydantic import BaseModel, InstanceOf
 
-from beeai_framework.backend.message import AssistantMessage, UserMessage
+from beeai_framework.backend import AssistantMessage, UserMessage
 from beeai_framework.errors import FrameworkError
-from beeai_framework.memory.unconstrained_memory import UnconstrainedMemory
-from beeai_framework.workflows.workflow import Workflow
+from beeai_framework.memory import UnconstrainedMemory
+from beeai_framework.workflows import Workflow
 from examples.helpers.io import ConsoleReader
 
 

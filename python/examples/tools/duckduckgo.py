@@ -3,10 +3,10 @@ import sys
 import traceback
 
 from beeai_framework.agents.react import ReActAgent
-from beeai_framework.backend.chat import ChatModel
+from beeai_framework.backend import ChatModel
 from beeai_framework.errors import FrameworkError
 from beeai_framework.memory import UnconstrainedMemory
-from beeai_framework.tools.search.duckduckgo import DuckDuckGoSearchTool
+from beeai_framework.tools.search import DuckDuckGoSearchTool
 
 
 async def main() -> None:

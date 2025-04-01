@@ -18,10 +18,10 @@ from typing import Any, Self
 from pydantic import BaseModel
 
 from beeai_framework.context import RunContext
-from beeai_framework.emitter import Emitter
+from beeai_framework.emitter.emitter import Emitter
 from beeai_framework.errors import FrameworkError
-from beeai_framework.tools import Tool
 from beeai_framework.tools.code.python import PythonTool
+from beeai_framework.tools.tool import Tool
 from beeai_framework.tools.types import StringToolOutput, ToolRunOptions
 from beeai_framework.utils.models import JSONSchemaModel
 

@@ -5,8 +5,7 @@ import traceback
 
 from pydantic import BaseModel, Field
 
-from beeai_framework import UserMessage
-from beeai_framework.backend.chat import ChatModel
+from beeai_framework.backend import ChatModel, UserMessage
 from beeai_framework.errors import FrameworkError
 
 

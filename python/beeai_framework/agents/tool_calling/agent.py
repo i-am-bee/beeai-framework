@@ -18,8 +18,8 @@ from typing import Any
 
 from pydantic import BaseModel
 
-from beeai_framework.agents import AgentError, AgentExecutionConfig
 from beeai_framework.agents.base import BaseAgent
+from beeai_framework.agents.errors import AgentError
 from beeai_framework.agents.tool_calling.events import (
     ToolCallingAgentStartEvent,
     ToolCallingAgentSuccessEvent,
@@ -33,6 +33,7 @@ from beeai_framework.agents.tool_calling.types import (
     ToolCallingAgentTemplates,
     ToolCallingAgentTemplatesKeys,
 )
+from beeai_framework.agents.types import AgentExecutionConfig
 from beeai_framework.backend.chat import ChatModel
 from beeai_framework.backend.message import (
     AssistantMessage,
@@ -42,11 +43,11 @@ from beeai_framework.backend.message import (
     UserMessage,
 )
 from beeai_framework.context import Run, RunContext
-from beeai_framework.emitter import Emitter
+from beeai_framework.emitter.emitter import Emitter
 from beeai_framework.memory.base_memory import BaseMemory
 from beeai_framework.memory.unconstrained_memory import UnconstrainedMemory
 from beeai_framework.template import PromptTemplate
-from beeai_framework.tools import ToolError
+from beeai_framework.tools.errors import ToolError
 from beeai_framework.tools.tool import AnyTool
 from beeai_framework.utils.counter import RetryCounter
 from beeai_framework.utils.strings import to_json

@@ -23,7 +23,8 @@ from types import NoneType
 from typing import Any, Generic, Protocol, Self, TypeVar
 
 from beeai_framework.cancellation import AbortController, AbortSignal, register_signals
-from beeai_framework.emitter import Callback, Emitter, EmitterOptions, EventTrace, Matcher
+from beeai_framework.emitter.emitter import Callback, Emitter, Matcher
+from beeai_framework.emitter.types import EmitterOptions, EventTrace
 from beeai_framework.errors import AbortError, FrameworkError
 from beeai_framework.logger import Logger
 from beeai_framework.utils.asynchronous import ensure_async
@@ -227,3 +228,6 @@ class RunContext:
                 context.destroy()
 
         return Run(handler, context)
+
+
+__all__ = ["Run", "RunContext"]

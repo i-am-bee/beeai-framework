@@ -17,7 +17,7 @@ from typing import TYPE_CHECKING, Any, Optional
 from beeai_framework.errors import FrameworkError
 
 if TYPE_CHECKING:
-    from beeai_framework.emitter import EventMeta
+    from beeai_framework.emitter.emitter import EventMeta
 
 
 class EmitterError(FrameworkError):

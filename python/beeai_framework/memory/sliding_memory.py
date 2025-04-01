@@ -19,8 +19,8 @@ from dataclasses import dataclass
 from typing import Any, TypedDict
 
 from beeai_framework.backend.message import AnyMessage
-from beeai_framework.memory import ResourceError
 from beeai_framework.memory.base_memory import BaseMemory
+from beeai_framework.memory.errors import ResourceError
 
 
 class SlidingMemoryHandlers(TypedDict, total=False):

@@ -28,7 +28,9 @@ from beeai_framework.agents.types import (
 from beeai_framework.backend.chat import ChatModel
 from beeai_framework.backend.message import AnyMessage, AssistantMessage, UserMessage
 from beeai_framework.context import Run
-from beeai_framework.memory import BaseMemory, ReadOnlyMemory, UnconstrainedMemory
+from beeai_framework.memory.base_memory import BaseMemory
+from beeai_framework.memory.readonly_memory import ReadOnlyMemory
+from beeai_framework.memory.unconstrained_memory import UnconstrainedMemory
 from beeai_framework.tools.tool import AnyTool
 from beeai_framework.utils.dicts import exclude_none
 from beeai_framework.utils.lists import remove_falsy

@@ -16,9 +16,8 @@
 from collections.abc import Iterable
 from typing import Any
 
-from beeai_framework.backend import SystemMessage
 from beeai_framework.backend.chat import ChatModel
-from beeai_framework.backend.message import AnyMessage, UserMessage
+from beeai_framework.backend.message import AnyMessage, SystemMessage, UserMessage
 from beeai_framework.memory.base_memory import BaseMemory
 
 

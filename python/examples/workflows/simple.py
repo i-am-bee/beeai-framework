@@ -5,7 +5,7 @@ import traceback
 from pydantic import BaseModel
 
 from beeai_framework.errors import FrameworkError
-from beeai_framework.workflows.workflow import Workflow
+from beeai_framework.workflows import Workflow
 
 
 async def main() -> None:

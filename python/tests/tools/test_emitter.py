@@ -18,7 +18,7 @@ from typing import Any
 import pytest
 from pydantic import BaseModel
 
-from beeai_framework.emitter.emitter import Emitter, EventMeta
+from beeai_framework.emitter import Emitter, EventMeta
 from beeai_framework.tools import StringToolOutput, tool
 
 """

@@ -18,15 +18,15 @@ from typing import Any
 import httpx
 from pydantic import BaseModel, Field, InstanceOf
 
-from beeai_framework.backend import UserMessage
 from beeai_framework.backend.chat import ChatModel
+from beeai_framework.backend.message import UserMessage
 from beeai_framework.context import RunContext
 from beeai_framework.emitter.emitter import Emitter
 from beeai_framework.logger import Logger
 from beeai_framework.template import PromptTemplate
-from beeai_framework.tools import ToolError, ToolInputValidationError
 from beeai_framework.tools.code.output import PythonToolOutput
 from beeai_framework.tools.code.storage import PythonFile, PythonStorage
+from beeai_framework.tools.errors import ToolError, ToolInputValidationError
 from beeai_framework.tools.tool import Tool
 from beeai_framework.tools.types import ToolRunOptions
 

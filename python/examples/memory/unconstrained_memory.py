@@ -2,7 +2,7 @@ import asyncio
 import sys
 import traceback
 
-from beeai_framework import UserMessage
+from beeai_framework.backend import UserMessage
 from beeai_framework.errors import FrameworkError
 from beeai_framework.memory import UnconstrainedMemory
 

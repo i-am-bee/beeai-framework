@@ -18,7 +18,7 @@ import asyncio
 import pytest
 import pytest_asyncio
 
-from beeai_framework.cache.sliding_cache import SlidingCache
+from beeai_framework.cache import SlidingCache
 
 
 @pytest_asyncio.fixture

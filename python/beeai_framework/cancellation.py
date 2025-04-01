@@ -110,3 +110,6 @@ async def abort_signal_handler(
     finally:
         if signal:
             signal.remove_event_listener(abort_handler)
+
+
+__all__ = ["AbortSignal"]

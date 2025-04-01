@@ -15,7 +15,20 @@
 # isort: skip_file
 # manually defined import order is import here to avoid circular imports
 from beeai_framework.tools.search.base import SearchToolResult, SearchToolOutput
-from beeai_framework.tools.search.duckduckgo import DuckDuckGoSearchTool
-from beeai_framework.tools.search.wikipedia import WikipediaTool
+from beeai_framework.tools.search.duckduckgo import (
+    DuckDuckGoSearchTool,
+    DuckDuckGoSearchToolInput,
+    DuckDuckGoSearchToolOutput,
+)
+from beeai_framework.tools.search.wikipedia import WikipediaTool, WikipediaToolInput, WikipediaToolOutput
 
-__all__ = ["DuckDuckGoSearchTool", "SearchToolOutput", "SearchToolResult", "WikipediaTool"]
+__all__ = [
+    "DuckDuckGoSearchTool",
+    "DuckDuckGoSearchToolInput",
+    "DuckDuckGoSearchToolOutput",
+    "SearchToolOutput",
+    "SearchToolResult",
+    "WikipediaTool",
+    "WikipediaToolInput",
+    "WikipediaToolOutput",
+]

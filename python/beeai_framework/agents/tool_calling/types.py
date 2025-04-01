@@ -25,8 +25,8 @@ from beeai_framework.agents.tool_calling.prompts import (
     ToolCallingAgentToolErrorPrompt,
     ToolCallingAgentToolErrorPromptInput,
 )
-from beeai_framework.backend import AssistantMessage
-from beeai_framework.memory import BaseMemory
+from beeai_framework.backend.message import AssistantMessage
+from beeai_framework.memory.base_memory import BaseMemory
 from beeai_framework.template import PromptTemplate
 
 

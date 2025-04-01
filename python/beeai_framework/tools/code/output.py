@@ -13,8 +13,8 @@
 # limitations under the License.
 
 
-from beeai_framework.tools import ToolOutput
 from beeai_framework.tools.code.storage import PythonFile
+from beeai_framework.tools.types import ToolOutput
 
 
 class PythonToolOutput(ToolOutput):

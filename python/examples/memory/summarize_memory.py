@@ -2,10 +2,9 @@ import asyncio
 import sys
 import traceback
 
-from beeai_framework.backend.chat import ChatModel
-from beeai_framework.backend.message import AssistantMessage, SystemMessage, UserMessage
+from beeai_framework.backend import AssistantMessage, ChatModel, SystemMessage, UserMessage
 from beeai_framework.errors import FrameworkError
-from beeai_framework.memory.summarize_memory import SummarizeMemory
+from beeai_framework.memory import SummarizeMemory
 
 
 async def main() -> None:

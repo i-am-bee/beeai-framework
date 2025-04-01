@@ -4,14 +4,18 @@ import re
 import sys
 import traceback
 
-from beeai_framework import SystemMessage, ToolMessage, UserMessage
-from beeai_framework.backend.chat import ChatModel
-from beeai_framework.backend.message import AnyMessage, MessageToolResultContent
-from beeai_framework.backend.types import ChatModelParameters
+from beeai_framework.backend import (
+    AnyMessage,
+    ChatModel,
+    ChatModelParameters,
+    MessageToolResultContent,
+    SystemMessage,
+    ToolMessage,
+    UserMessage,
+)
 from beeai_framework.errors import FrameworkError
-from beeai_framework.tools import ToolOutput
+from beeai_framework.tools import AnyTool, ToolOutput
 from beeai_framework.tools.search import DuckDuckGoSearchTool
-from beeai_framework.tools.tool import AnyTool
 from beeai_framework.tools.weather.openmeteo import OpenMeteoTool
 
 

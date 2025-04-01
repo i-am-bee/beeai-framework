@@ -4,9 +4,9 @@ import traceback
 
 from pydantic import BaseModel
 
-from beeai_framework.agents.experimental.remote.agent import RemoteAgent
+from beeai_framework.agents.experimental.remote import RemoteAgent
 from beeai_framework.errors import FrameworkError
-from beeai_framework.workflows.workflow import Workflow
+from beeai_framework.workflows import Workflow
 from examples.helpers.io import ConsoleReader
 
 

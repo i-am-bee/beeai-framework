@@ -4,8 +4,8 @@ import sys
 from dotenv import load_dotenv
 
 from beeai_framework.agents.react import ReActAgent
-from beeai_framework.backend.chat import ChatModel
-from beeai_framework.memory.unconstrained_memory import UnconstrainedMemory
+from beeai_framework.backend import ChatModel
+from beeai_framework.memory import UnconstrainedMemory
 
 LLMS = {
     "ollama": "ollama:llama3.1",

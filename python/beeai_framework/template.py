@@ -70,3 +70,6 @@ class PromptTemplate(Generic[T]):
         self._config.functions.update(functions or {})
         self._config.defaults.update(defaults or {})
         return self
+
+
+__all__ = ["PromptTemplate", "PromptTemplateError", "PromptTemplateInput"]

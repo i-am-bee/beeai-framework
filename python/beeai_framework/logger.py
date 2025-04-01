@@ -104,3 +104,6 @@ class Logger(logging.Logger):
         setattr(logging, level_name, level_num)
         setattr(logging.getLoggerClass(), method_name, log_for_level)
         setattr(logging, method_name, log_to_root)
+
+
+__all__ = ["Logger"]

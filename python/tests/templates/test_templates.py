@@ -20,7 +20,7 @@ from zoneinfo import ZoneInfo
 import pytest
 from pydantic import BaseModel, ValidationError
 
-from beeai_framework import PromptTemplateError
+from beeai_framework.errors import PromptTemplateError
 from beeai_framework.template import (
     PromptTemplate,
     PromptTemplateInput,

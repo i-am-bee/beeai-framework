@@ -6,7 +6,7 @@ import traceback
 from dotenv import load_dotenv
 
 from beeai_framework.errors import FrameworkError
-from beeai_framework.tools.code.sandbox import SandboxTool
+from beeai_framework.tools.code import SandboxTool
 
 load_dotenv()
 
