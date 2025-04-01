@@ -20,17 +20,15 @@ import pytest
 import pytest_asyncio
 from pydantic import BaseModel
 
-from beeai_framework.adapters import (
-    AmazonBedrockChatModel,
-    AnthropicChatModel,
-    AzureOpenAIChatModel,
-    GroqChatModel,
-    OllamaChatModel,
-    OpenAIChatModel,
-    VertexAIChatModel,
-    WatsonxChatModel,
-    XAIChatModel,
-)
+from beeai_framework.adapters.amazon_bedrock import AmazonBedrockChatModel
+from beeai_framework.adapters.anthropic import AnthropicChatModel
+from beeai_framework.adapters.azure_openai import AzureOpenAIChatModel
+from beeai_framework.adapters.groq import GroqChatModel
+from beeai_framework.adapters.ollama import OllamaChatModel
+from beeai_framework.adapters.openai import OpenAIChatModel
+from beeai_framework.adapters.vertexai import VertexAIChatModel
+from beeai_framework.adapters.watsonx import WatsonxChatModel
+from beeai_framework.adapters.xai import XAIChatModel
 from beeai_framework.backend import (
     AnyMessage,
     AssistantMessage,

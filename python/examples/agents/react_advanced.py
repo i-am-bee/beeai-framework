@@ -6,7 +6,7 @@ from typing import Any
 from dotenv import load_dotenv
 from pydantic import BaseModel
 
-from beeai_framework.adapters import OllamaChatModel
+from beeai_framework.adapters.ollama import OllamaChatModel
 from beeai_framework.agents import AgentExecutionConfig
 from beeai_framework.agents.react import ReActAgent
 from beeai_framework.cancellation import AbortSignal

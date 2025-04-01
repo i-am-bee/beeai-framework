@@ -91,7 +91,7 @@ import re
 import sys
 import traceback
 
-from beeai_framework.adapters import OllamaChatModel
+from beeai_framework.adapters.ollama import OllamaChatModel
 from beeai_framework.backend import ChatModel
 from beeai_framework.emitter import Emitter
 from beeai_framework.errors import FrameworkError
@@ -217,7 +217,7 @@ import asyncio
 import sys
 import traceback
 
-from beeai_framework.adapters import OllamaChatModel
+from beeai_framework.adapters.ollama import OllamaChatModel
 from beeai_framework.agents.react import ReActAgent
 from beeai_framework.errors import FrameworkError
 from beeai_framework.memory import UnconstrainedMemory

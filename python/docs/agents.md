@@ -241,7 +241,7 @@ import traceback
 
 from pydantic import BaseModel, Field, InstanceOf
 
-from beeai_framework.adapters import OllamaChatModel
+from beeai_framework.adapters.ollama import OllamaChatModel
 from beeai_framework.agents import AgentMeta, BaseAgent, BaseAgentRunOptions
 from beeai_framework.backend import AnyMessage, AssistantMessage, ChatModel, SystemMessage, UserMessage
 from beeai_framework.context import Run, RunContext

@@ -3,7 +3,7 @@ import math
 import sys
 import traceback
 
-from beeai_framework.adapters import OllamaChatModel
+from beeai_framework.adapters.ollama import OllamaChatModel
 from beeai_framework.backend import Role, SystemMessage, UserMessage
 from beeai_framework.errors import FrameworkError
 from beeai_framework.memory import TokenMemory

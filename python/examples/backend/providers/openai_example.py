@@ -4,7 +4,7 @@ import traceback
 
 from pydantic import BaseModel, Field
 
-from beeai_framework.adapters import OpenAIChatModel
+from beeai_framework.adapters.openai import OpenAIChatModel
 from beeai_framework.backend import ChatModel, ChatModelNewTokenEvent, UserMessage
 from beeai_framework.cancellation import AbortSignal
 from beeai_framework.emitter import EventMeta

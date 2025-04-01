@@ -3,7 +3,7 @@ import re
 import sys
 import traceback
 
-from beeai_framework.adapters import OllamaChatModel
+from beeai_framework.adapters.ollama import OllamaChatModel
 from beeai_framework.backend import ChatModel
 from beeai_framework.emitter import Emitter
 from beeai_framework.errors import FrameworkError

@@ -2,7 +2,7 @@ import asyncio
 
 from pydantic import BaseModel, Field
 
-from beeai_framework.adapters import XAIChatModel
+from beeai_framework.adapters.xai import XAIChatModel
 from beeai_framework.backend import ChatModel, ChatModelNewTokenEvent, UserMessage
 from beeai_framework.cancellation import AbortSignal
 from beeai_framework.emitter import EventMeta

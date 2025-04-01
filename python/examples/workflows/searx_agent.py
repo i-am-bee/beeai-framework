@@ -5,7 +5,7 @@ import traceback
 from langchain_community.utilities import SearxSearchWrapper
 from pydantic import BaseModel, Field
 
-from beeai_framework.adapters import OllamaChatModel
+from beeai_framework.adapters.ollama import OllamaChatModel
 from beeai_framework.backend import ChatModelOutput, ChatModelStructureOutput, UserMessage
 from beeai_framework.errors import FrameworkError
 from beeai_framework.template import PromptTemplate, PromptTemplateInput

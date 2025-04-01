@@ -12,4 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from beeai_framework.adapters.langchain.tools import LangChainTool, LangChainToolRunOptions
 
+__all__ = ["LangChainTool", "LangChainToolRunOptions"]

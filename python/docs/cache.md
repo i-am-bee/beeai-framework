@@ -178,7 +178,7 @@ import asyncio
 import sys
 import traceback
 
-from beeai_framework.adapters import OllamaChatModel
+from beeai_framework.adapters.ollama import OllamaChatModel
 from beeai_framework.backend import ChatModelParameters, UserMessage
 from beeai_framework.cache import SlidingCache
 from beeai_framework.errors import FrameworkError

@@ -15,7 +15,7 @@
 
 import pytest
 
-from beeai_framework.adapters import AzureOpenAIChatModel
+from beeai_framework.adapters.azure_openai import AzureOpenAIChatModel
 
 
 class TestAzureOpenAIChatModel:

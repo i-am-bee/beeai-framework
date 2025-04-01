@@ -3,7 +3,7 @@ from typing import Final
 
 from pydantic import BaseModel, Field
 
-from beeai_framework.adapters import AmazonBedrockChatModel
+from beeai_framework.adapters.amazon_bedrock import AmazonBedrockChatModel
 from beeai_framework.backend import ChatModel, ChatModelNewTokenEvent, UserMessage
 from beeai_framework.cancellation import AbortSignal
 from beeai_framework.emitter import EventMeta

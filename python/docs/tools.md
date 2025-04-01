@@ -137,7 +137,7 @@ The true power of tools emerges when integrating them with agents. Tools extend 
 <!-- embedme examples/tools/agent.py -->
 
 ```py
-from beeai_framework.adapters import OllamaChatModel
+from beeai_framework.adapters.ollama import OllamaChatModel
 from beeai_framework.agents.react import ReActAgent
 from beeai_framework.memory import UnconstrainedMemory
 from beeai_framework.tools.weather import OpenMeteoTool
@@ -366,7 +366,7 @@ from dotenv import load_dotenv
 from mcp import ClientSession, StdioServerParameters
 from mcp.client.stdio import stdio_client
 
-from beeai_framework.adapters import OllamaChatModel
+from beeai_framework.adapters.ollama import OllamaChatModel
 from beeai_framework.agents.react import ReActAgent
 from beeai_framework.memory import UnconstrainedMemory
 from beeai_framework.tools import MCPTool
@@ -438,7 +438,7 @@ import traceback
 
 from dotenv import load_dotenv
 
-from beeai_framework.adapters import OllamaChatModel
+from beeai_framework.adapters.ollama import OllamaChatModel
 from beeai_framework.agents.react import ReActAgent
 from beeai_framework.errors import FrameworkError
 from beeai_framework.memory import UnconstrainedMemory

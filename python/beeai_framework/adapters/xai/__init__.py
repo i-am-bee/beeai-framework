@@ -12,4 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from beeai_framework.adapters.xai.backend.chat import XAIChatModel
 
+__all__ = ["XAIChatModel"]

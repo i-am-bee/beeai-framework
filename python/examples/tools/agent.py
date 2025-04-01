@@ -1,4 +1,4 @@
-from beeai_framework.adapters import OllamaChatModel
+from beeai_framework.adapters.ollama import OllamaChatModel
 from beeai_framework.agents.react import ReActAgent
 from beeai_framework.memory import UnconstrainedMemory
 from beeai_framework.tools.weather import OpenMeteoTool
