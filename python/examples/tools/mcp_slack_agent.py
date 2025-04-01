@@ -14,7 +14,7 @@ from beeai_framework.backend import ChatModel, ChatModelParameters
 from beeai_framework.emitter import EventMeta
 from beeai_framework.errors import FrameworkError
 from beeai_framework.memory import TokenMemory
-from beeai_framework.tools import MCPTool
+from beeai_framework.tools.mcp import MCPTool
 from beeai_framework.tools.weather import OpenMeteoTool
 
 # Load environment variables

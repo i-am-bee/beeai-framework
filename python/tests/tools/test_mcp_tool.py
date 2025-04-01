@@ -22,7 +22,8 @@ from mcp import ClientSession, StdioServerParameters
 from mcp.types import CallToolResult, TextContent
 from mcp.types import Tool as MCPToolInfo
 
-from beeai_framework.tools import MCPTool, StringToolOutput
+from beeai_framework.tools import StringToolOutput
+from beeai_framework.tools.mcp import MCPTool
 
 """
 Utility functions and classes

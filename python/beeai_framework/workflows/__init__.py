@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from beeai_framework.workflows.agent import AgentWorkflow, AgentWorkflowInput
 from beeai_framework.workflows.errors import WorkflowError
 from beeai_framework.workflows.events import WorkflowErrorEvent, WorkflowStartEvent, WorkflowSuccessEvent
 from beeai_framework.workflows.types import (
@@ -25,8 +24,6 @@ from beeai_framework.workflows.types import (
 from beeai_framework.workflows.workflow import Workflow
 
 __all__ = [
-    "AgentWorkflow",
-    "AgentWorkflowInput",
     "Workflow",
     "WorkflowError",
     "WorkflowErrorEvent",

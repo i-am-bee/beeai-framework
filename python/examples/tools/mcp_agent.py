@@ -16,7 +16,8 @@ from beeai_framework.emitter import Emitter, EventMeta
 from beeai_framework.errors import FrameworkError
 from beeai_framework.logger import Logger
 from beeai_framework.memory import TokenMemory
-from beeai_framework.tools import AnyTool, MCPTool
+from beeai_framework.tools import AnyTool
+from beeai_framework.tools.mcp import MCPTool
 from examples.helpers.io import ConsoleReader
 
 # Load environment variables

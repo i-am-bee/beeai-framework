@@ -15,7 +15,6 @@
 
 from beeai_framework.tools.errors import ToolError, ToolInputValidationError
 from beeai_framework.tools.events import ToolErrorEvent, ToolRetryEvent, ToolStartEvent, ToolSuccessEvent
-from beeai_framework.tools.mcp_tools import MCPTool
 from beeai_framework.tools.tool import (
     AnyTool,
     Tool,
@@ -26,7 +25,6 @@ from beeai_framework.tools.types import JSONToolOutput, StringToolOutput, ToolOu
 __all__ = [
     "AnyTool",
     "JSONToolOutput",
-    "MCPTool",
     "StringToolOutput",
     "Tool",
     "ToolError",
