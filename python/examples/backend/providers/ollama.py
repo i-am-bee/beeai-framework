@@ -16,12 +16,12 @@ from beeai_framework.backend import (
     ToolMessage,
     UserMessage,
 )
-from beeai_framework.cancellation import AbortSignal
 from beeai_framework.emitter import EventMeta
 from beeai_framework.errors import AbortError, FrameworkError
 from beeai_framework.parsers.field import ParserField
 from beeai_framework.parsers.line_prefix import LinePrefixParser, LinePrefixParserNode
 from beeai_framework.tools.weather import OpenMeteoTool
+from beeai_framework.utils import AbortSignal
 
 
 async def ollama_from_name() -> None:

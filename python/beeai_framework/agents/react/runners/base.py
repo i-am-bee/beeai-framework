@@ -18,7 +18,7 @@ from typing import Any
 
 from pydantic import BaseModel, InstanceOf
 
-from beeai_framework.agents.errors import AgentError
+from beeai_framework.agents import AgentError
 from beeai_framework.agents.react.events import react_agent_event_types
 from beeai_framework.agents.react.types import (
     ReActAgentInput,
@@ -30,12 +30,12 @@ from beeai_framework.agents.react.types import (
     ReActAgentTemplateFactory,
     ReActAgentTemplates,
 )
-from beeai_framework.cancellation import AbortSignal
 from beeai_framework.context import RunContext
 from beeai_framework.emitter.emitter import Emitter
 from beeai_framework.memory.base_memory import BaseMemory
 from beeai_framework.template import PromptTemplate
-from beeai_framework.tools.types import ToolOutput
+from beeai_framework.tools import ToolOutput
+from beeai_framework.utils import AbortSignal
 from beeai_framework.utils.counter import RetryCounter
 
 

@@ -21,7 +21,7 @@ from mcp.types import Tool as MCPToolInfo
 from pydantic import BaseModel
 
 from beeai_framework.context import RunContext
-from beeai_framework.emitter.emitter import Emitter
+from beeai_framework.emitter import Emitter
 from beeai_framework.logger import Logger
 from beeai_framework.tools.tool import Tool
 from beeai_framework.tools.types import JSONToolOutput, ToolRunOptions

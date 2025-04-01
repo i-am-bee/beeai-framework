@@ -26,10 +26,10 @@ from beeai_framework.agents.react.types import (
     ReActAgentRunOptions,
 )
 from beeai_framework.backend import ChatModel
-from beeai_framework.cancellation import AbortSignal
 from beeai_framework.emitter import Emitter
 from beeai_framework.memory import TokenMemory
 from beeai_framework.tools.weather import OpenMeteoTool
+from beeai_framework.utils import AbortSignal
 
 """
 E2E Tests

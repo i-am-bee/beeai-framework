@@ -6,11 +6,11 @@ from pydantic import BaseModel, Field
 
 from beeai_framework.adapters.openai import OpenAIChatModel
 from beeai_framework.backend import ChatModel, ChatModelNewTokenEvent, UserMessage
-from beeai_framework.cancellation import AbortSignal
 from beeai_framework.emitter import EventMeta
 from beeai_framework.errors import AbortError, FrameworkError
 from beeai_framework.parsers.field import ParserField
 from beeai_framework.parsers.line_prefix import LinePrefixParser, LinePrefixParserNode
+from beeai_framework.utils import AbortSignal
 
 
 async def openai_from_name() -> None:

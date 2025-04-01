@@ -70,14 +70,13 @@ from beeai_framework.parsers.line_prefix import (
     LinePrefixParserUpdate,
 )
 from beeai_framework.retryable import Retryable, RetryableConfig, RetryableContext, RetryableInput
-from beeai_framework.tools.errors import ToolError, ToolInputValidationError
+from beeai_framework.tools import StringToolOutput, ToolError, ToolInputValidationError, ToolOutput
 from beeai_framework.tools.tool import AnyTool
-from beeai_framework.tools.types import StringToolOutput, ToolOutput
 from beeai_framework.utils.strings import create_strenum, to_json
 
 
 class DefaultRunner(BaseRunner):
-    _use_native_tool_calling: bool = False
+    use_native_tool_calling: bool = False
 
     def default_templates(self) -> ReActAgentTemplates:
         return ReActAgentTemplates(
@@ -207,7 +206,7 @@ class DefaultRunner(BaseRunner):
             output: ChatModelOutput = await self._input.llm.create(
                 messages=self.memory.messages[:],
                 stream=self._input.stream,
-                tools=self._input.tools if self._use_native_tool_calling else None,
+                tools=self._input.tools if self.use_native_tool_calling else None,
             ).observe(lambda llm_emitter: llm_emitter.on("new_token", on_new_token))
 
             await parser.end()

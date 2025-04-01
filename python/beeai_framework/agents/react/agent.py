@@ -46,12 +46,12 @@ from beeai_framework.agents.types import (
 )
 from beeai_framework.backend.chat import ChatModel
 from beeai_framework.backend.message import AssistantMessage, MessageMeta, UserMessage
-from beeai_framework.cancellation import AbortSignal
 from beeai_framework.context import Run, RunContext
-from beeai_framework.emitter.emitter import Emitter
-from beeai_framework.memory.base_memory import BaseMemory
+from beeai_framework.emitter import Emitter
+from beeai_framework.memory import BaseMemory
 from beeai_framework.template import PromptTemplate
 from beeai_framework.tools.tool import AnyTool
+from beeai_framework.utils import AbortSignal
 
 
 class ReActAgent(BaseAgent[ReActAgentRunOutput]):

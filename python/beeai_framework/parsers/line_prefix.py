@@ -18,7 +18,7 @@ from typing import Any, NoReturn
 
 from pydantic import BaseModel, InstanceOf, ValidationError
 
-from beeai_framework.emitter.emitter import Emitter
+from beeai_framework.emitter import Emitter
 from beeai_framework.errors import FrameworkError
 from beeai_framework.parsers.field import ParserField
 from beeai_framework.utils.strings import trim_left_spaces

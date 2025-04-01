@@ -5,11 +5,11 @@ from pydantic import BaseModel, Field
 
 from beeai_framework.adapters.amazon_bedrock import AmazonBedrockChatModel
 from beeai_framework.backend import ChatModel, ChatModelNewTokenEvent, UserMessage
-from beeai_framework.cancellation import AbortSignal
 from beeai_framework.emitter import EventMeta
 from beeai_framework.errors import AbortError
 from beeai_framework.parsers.field import ParserField
 from beeai_framework.parsers.line_prefix import LinePrefixParser, LinePrefixParserNode
+from beeai_framework.utils import AbortSignal
 
 # NOTE: See README.md for additional usage notes
 MODEL_NAME: Final[str] = "meta.llama3-8b-instruct-v1:0"

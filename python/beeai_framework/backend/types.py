@@ -18,8 +18,8 @@ from pydantic import BaseModel, ConfigDict, Field, InstanceOf
 
 from beeai_framework.backend.message import AnyMessage, AssistantMessage, MessageToolCallContent
 from beeai_framework.cache.base import BaseCache
-from beeai_framework.cancellation import AbortSignal
 from beeai_framework.tools.tool import AnyTool
+from beeai_framework.utils import AbortSignal
 from beeai_framework.utils.lists import flatten
 
 T = TypeVar("T", bound=BaseModel)

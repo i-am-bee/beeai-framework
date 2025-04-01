@@ -34,17 +34,16 @@ from beeai_framework.agents.react.types import (
 )
 from beeai_framework.backend.message import MessageToolResultContent, ToolMessage
 from beeai_framework.context import RunContext
-from beeai_framework.emitter.emitter import EventMeta
-from beeai_framework.emitter.types import EmitterOptions
+from beeai_framework.emitter import EmitterOptions, EventMeta
 from beeai_framework.memory.base_memory import BaseMemory
 from beeai_framework.parsers.field import ParserField
 from beeai_framework.parsers.line_prefix import LinePrefixParser, LinePrefixParserNode, LinePrefixParserOptions
-from beeai_framework.tools.types import ToolOutput
+from beeai_framework.tools import ToolOutput
 from beeai_framework.utils.strings import create_strenum
 
 
 class GraniteRunner(DefaultRunner):
-    _use_native_tool_calling: bool = True
+    use_native_tool_calling: bool = True
 
     def __init__(self, input: ReActAgentInput, options: ReActAgentRunOptions, run: RunContext) -> None:
         super().__init__(input, options, run)

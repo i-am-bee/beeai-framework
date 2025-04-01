@@ -19,7 +19,7 @@ from typing import Any, Generic, Self, TypeVar
 import chevron
 from pydantic import BaseModel, Field
 
-from beeai_framework.errors import PromptTemplateError
+from beeai_framework.errors import FrameworkError
 from beeai_framework.utils.models import ModelLike, to_model_optional
 
 T = TypeVar("T", bound=BaseModel)
@@ -70,6 +70,19 @@ class PromptTemplate(Generic[T]):
         self._config.functions.update(functions or {})
         self._config.defaults.update(defaults or {})
         return self
+
+
+class PromptTemplateError(FrameworkError):
+    """Raised for errors caused by PromptTemplate."""
+
+    def __init__(
+        self,
+        message: str = "PromptTemplate error",
+        *,
+        cause: Exception | None = None,
+        context: dict[str, Any] | None = None,
+    ) -> None:
+        super().__init__(message, is_fatal=True, is_retryable=False, cause=cause, context=context)
 
 
 __all__ = ["PromptTemplate", "PromptTemplateError", "PromptTemplateInput"]

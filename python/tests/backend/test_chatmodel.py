@@ -39,9 +39,9 @@ from beeai_framework.backend import (
     UserMessage,
 )
 from beeai_framework.backend.types import ChatModelInput, ChatModelStructureInput
-from beeai_framework.cancellation import AbortSignal
 from beeai_framework.context import RunContext
 from beeai_framework.errors import AbortError
+from beeai_framework.utils import AbortSignal
 
 """
 Utility functions and classes

@@ -18,7 +18,21 @@ import sys
 from logging import Formatter
 from typing import TYPE_CHECKING, Any
 
+from beeai_framework.errors import FrameworkError
 from beeai_framework.utils.config import CONFIG
+
+
+class LoggerError(FrameworkError):
+    """Raised for errors caused by logging."""
+
+    def __init__(
+        self,
+        message: str = "Logger error",
+        *,
+        cause: Exception | None = None,
+        context: dict[str, Any] | None = None,
+    ) -> None:
+        super().__init__(message, is_fatal=True, is_retryable=False, cause=cause, context=context)
 
 
 class LoggerFormatter(Formatter):
@@ -106,4 +120,4 @@ class Logger(logging.Logger):
         setattr(logging, method_name, log_to_root)
 
 
-__all__ = ["Logger"]
+__all__ = ["Logger", "LoggerError"]
