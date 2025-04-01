@@ -19,6 +19,7 @@ from typing import Any, Generic, Literal
 from pydantic import BaseModel
 from typing_extensions import TypeVar
 
+from beeai_framework.agents.types import AgentMetaDetail
 from beeai_framework.cancellation import AbortSignal
 from beeai_framework.utils.types import MaybeAsync
 
@@ -47,6 +48,7 @@ class WorkflowStepRes(BaseModel, Generic[T, K]):
 
 
 class WorkflowStepDefinition(BaseModel, Generic[T, K]):
+    agent_metadata: AgentMetaDetail | None
     handler: WorkflowHandler[T, K]
 
 

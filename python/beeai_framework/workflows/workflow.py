@@ -20,6 +20,7 @@ from typing import ClassVar, Final, Generic, Literal
 from pydantic import BaseModel
 from typing_extensions import TypeVar
 
+from beeai_framework.agents.types import AgentMetaDetail
 from beeai_framework.context import Run, RunContext
 from beeai_framework.emitter.emitter import Emitter
 from beeai_framework.errors import FrameworkError
@@ -90,7 +91,9 @@ class Workflow(Generic[T, K]):
     def start_step(self) -> K | None:
         return self._start_step
 
-    def add_step(self, step_name: K, runnable: WorkflowHandler[T, K]) -> "Workflow[T, K]":
+    def add_step(
+        self, step_name: K, runnable: WorkflowHandler[T, K], agent_metadata: AgentMetaDetail | None = None
+    ) -> "Workflow[T, K]":
         if (len(str(step_name).strip())) == 0:
             raise ValueError("Step name cannot be empty!")
 
@@ -100,7 +103,7 @@ class Workflow(Generic[T, K]):
         if step_name in Workflow._RESERVED_STEP_NAMES:
             raise ValueError(f"The name '{step_name}' is reserved and cannot be used!")
 
-        self.steps[step_name] = WorkflowStepDefinition[T, K](handler=runnable)
+        self.steps[step_name] = WorkflowStepDefinition[T, K](handler=runnable, agent_metadata=agent_metadata)
 
         return self
 
