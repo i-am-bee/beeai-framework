@@ -4,10 +4,10 @@
 
 **Build production-ready multi-agent systems. Also available in <a href="https://github.com/i-am-bee/beeai-framework/tree/main/python">Python</a>.**
 
-[![Apache 2.0](https://img.shields.io/badge/Apache%202.0-License-EA7826?style=social&logo=apache)](https://github.com/i-am-bee/beeai-framework?tab=Apache-2.0-1-ov-file#readme)
-[![Follow on Bluesky](https://img.shields.io/badge/Follow%20on%20Bluesky-0285FF?style=social&logo=bluesky)](https://bsky.app/profile/beeaiagents.bsky.social)
-[![Join our Discord](https://img.shields.io/badge/Join%20our%20Discord-7289DA?style=social&logo=discord)](https://discord.com/invite/NradeA6ZNF)
-[![LF AI & Data](https://img.shields.io/badge/LF%20AI%20%26%20Data-0094ff?style=social&logo=linuxfoundation)](https://lfaidata.foundation/projects/)
+[![Apache 2.0](https://img.shields.io/badge/Apache%202.0-License-EA7826?style=plastic&logo=apache&logoColor=white)](https://github.com/i-am-bee/beeai-framework?tab=Apache-2.0-1-ov-file#readme)
+[![Follow on Bluesky](https://img.shields.io/badge/Follow%20on%20Bluesky-0285FF?style=plastic&logo=bluesky&logoColor=white)](https://bsky.app/profile/beeaiagents.bsky.social)
+[![Join our Discord](https://img.shields.io/badge/Join%20our%20Discord-7289DA?style=plastic&logo=discord&logoColor=white)](https://discord.com/invite/NradeA6ZNF)
+[![LF AI & Data](https://img.shields.io/badge/LF%20AI%20%26%20Data-0072C6?style=plastic&logo=linuxfoundation&logoColor=white)](https://lfaidata.foundation/projects/)
 
 </div>
 
