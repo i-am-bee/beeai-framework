@@ -75,30 +75,14 @@ class Emitter:
 
         self._listeners: set[Listener] = set()
         self._group_id: str | None = group_id
-        self._namespace: list[str] = namespace or []
-        self._creator: object | None = creator
-        self._context: dict[Any, Any] = context or {}
-        self._trace: EventTrace | None = trace
+        self.namespace: list[str] = namespace or []
+        self.creator: object | None = creator
+        self.context: dict[Any, Any] = context or {}
+        self.trace: EventTrace | None = trace
         self._cleanups: list[CleanupFn] = []
         self._events: dict[str, type] = events or {}
 
         assert_valid_namespace(self.namespace)
-
-    @property
-    def namespace(self) -> list[str]:
-        return self._namespace
-
-    @property
-    def creator(self) -> object | None:
-        return self._creator
-
-    @property
-    def context(self) -> dict[Any, Any]:
-        return self._context
-
-    @property
-    def trace(self) -> EventTrace | None:
-        return self._trace
 
     @property
     def events(self) -> dict[str, type]:

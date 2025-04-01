@@ -92,15 +92,15 @@ class RunContext:
         signal: AbortSignal | None,
         run_params: dict[str, Any] | None = None,
     ) -> None:
-        self._instance = instance
-        self._created_at = datetime.now(tz=UTC)
-        self._run_params = run_params or {}
-        self._run_id = str(uuid.uuid4())
-        self._parent_id = parent.run_id if parent else None
-        self._group_id: str = parent.group_id if parent else str(uuid.uuid4())
-        self._context: dict[str, Any] = exclude_keys(parent.context, {"id", "parent_id"}) if parent is not None else {}
+        self.instance = instance
+        self.created_at = datetime.now(tz=UTC)
+        self.run_params = run_params or {}
+        self.run_id = str(uuid.uuid4())
+        self.parent_id = parent.run_id if parent else None
+        self.group_id: str = parent.group_id if parent else str(uuid.uuid4())
+        self.context: dict[str, Any] = exclude_keys(parent.context, {"id", "parent_id"}) if parent is not None else {}
 
-        self._emitter = self.instance.emitter.child(
+        self.emitter = self.instance.emitter.child(
             context=self.context,
             trace=EventTrace(
                 id=self.group_id,
@@ -110,7 +110,7 @@ class RunContext:
         )
 
         if parent:
-            self._emitter.pipe(parent.emitter)
+            self.emitter.pipe(parent.emitter)
 
         self._controller = AbortController()
         extra_signals = []
@@ -119,38 +119,6 @@ class RunContext:
         if signal:
             extra_signals.append(signal)
         register_signals(self._controller, extra_signals)
-
-    @property
-    def instance(self) -> RunInstance:
-        return self._instance
-
-    @property
-    def created_at(self) -> datetime:
-        return self._created_at
-
-    @property
-    def run_params(self) -> dict[str, Any]:
-        return self._run_params
-
-    @property
-    def run_id(self) -> str:
-        return self._run_id
-
-    @property
-    def parent_id(self) -> str | None:
-        return self._parent_id
-
-    @property
-    def group_id(self) -> str:
-        return self._group_id
-
-    @property
-    def context(self) -> dict[str, Any]:
-        return self._context
-
-    @property
-    def emitter(self) -> Emitter:
-        return self._emitter
 
     @property
     def signal(self) -> AbortSignal:

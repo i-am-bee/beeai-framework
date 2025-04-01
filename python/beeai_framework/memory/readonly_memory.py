@@ -25,12 +25,8 @@ class ReadOnlyMemory(BaseMemory):
         self._source = source
 
     @property
-    def source(self) -> BaseMemory:
-        return self._source
-
-    @property
     def messages(self) -> list[AnyMessage]:
-        return self.source.messages
+        return self._source.messages
 
     async def add(self, message: AnyMessage, index: int | None = None) -> None:
         pass  # No-op for read-only memory
@@ -42,7 +38,7 @@ class ReadOnlyMemory(BaseMemory):
         pass  # No-op for read-only memory
 
     def create_snapshot(self) -> dict[str, Any]:
-        return {"source": self.source}
+        return {"source": self._source}
 
     def load_snapshot(self, state: dict[str, Any]) -> None:
         self._source = state["source"]

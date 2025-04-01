@@ -74,27 +74,15 @@ class MessageToolCallContent(BaseModel):
 
 
 class Message(ABC, Generic[T]):
-    _role: Role | str
-    _content: list[T]
-    _meta: MessageMeta
+    role: Role | str
+    content: list[T]
+    meta: MessageMeta
 
     def __init__(self, content: list[T], meta: MessageMeta | None = None) -> None:
-        self._content = content
-        self._meta = meta or {}
+        self.content = content
+        self.meta = meta or {}
         if not self.meta.get("createdAt"):
             self.meta["createdAt"] = datetime.now(tz=UTC)
-
-    @property
-    def role(self) -> Role | str:
-        return self._role
-
-    @property
-    def content(self) -> list[T]:
-        return self._content
-
-    @property
-    def meta(self) -> MessageMeta:
-        return self._meta
 
     @classmethod
     def from_chunks(cls, chunks: Sequence["Message[T]"]) -> Self:
@@ -131,7 +119,7 @@ AssistantMessageContent = MessageTextContent | MessageToolCallContent
 
 
 class AssistantMessage(Message[AssistantMessageContent]):
-    _role = Role.ASSISTANT
+    role = Role.ASSISTANT
 
     def __init__(
         self, content: list[AssistantMessageContent] | AssistantMessageContent | str, meta: MessageMeta | None = None
@@ -154,7 +142,7 @@ class AssistantMessage(Message[AssistantMessageContent]):
 
 
 class ToolMessage(Message[MessageToolResultContent]):
-    _role = Role.TOOL
+    role = Role.TOOL
 
     def __init__(
         self, content: list[MessageToolResultContent] | MessageToolResultContent | str, meta: MessageMeta | None = None
@@ -174,7 +162,7 @@ class ToolMessage(Message[MessageToolResultContent]):
 
 
 class SystemMessage(Message[MessageTextContent]):
-    _role = Role.SYSTEM
+    role = Role.SYSTEM
 
     def __init__(
         self, content: list[MessageTextContent] | MessageTextContent | str, meta: MessageMeta | None = None
@@ -194,7 +182,7 @@ UserMessageContent = MessageTextContent | MessageImageContent
 
 
 class UserMessage(Message[UserMessageContent]):
-    _role = Role.USER
+    role = Role.USER
 
     def __init__(
         self, content: list[UserMessageContent] | UserMessageContent | str, meta: MessageMeta | None = None
@@ -220,7 +208,7 @@ class CustomMessageContent(BaseModel):
 
 
 class CustomMessage(Message[CustomMessageContent]):
-    _role: str
+    role: str
 
     def __init__(
         self,
@@ -237,8 +225,8 @@ class CustomMessage(Message[CustomMessageContent]):
             ],
             meta,
         )
-        self._role = role
-        if not self._role:
+        self.role = role
+        if not self.role:
             raise ValueError("Role must be specified!")
 
 
