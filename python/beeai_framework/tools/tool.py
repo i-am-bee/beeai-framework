@@ -50,8 +50,16 @@ TOutput = TypeVar("TOutput", bound=ToolOutput, default=ToolOutput)
 
 class Tool(Generic[TInput, TRunOptions, TOutput], ABC):
     def __init__(self, options: dict[str, Any] | None = None) -> None:
-        self.options: dict[str, Any] | None = options or None
-        self.cache = self.options.get("cache", NullCache[TOutput]()) if self.options else NullCache[TOutput]()
+        self._options: dict[str, Any] | None = options or None
+        self._cache = self.options.get("cache", NullCache[TOutput]()) if self.options else NullCache[TOutput]()
+
+    @property
+    def options(self) -> dict[str, Any] | None:
+        return self._options
+
+    @property
+    def cache(self) -> BaseCache[TOutput]:
+        return self._cache
 
     @property
     @abstractmethod
@@ -91,7 +99,7 @@ class Tool(Generic[TInput, TRunOptions, TOutput], ABC):
     async def clear_cache(self) -> None:
         await self.cache.clear()
 
-    def validate_input(self, input: TInput | dict[str, Any]) -> TInput:
+    def _validate_input(self, input: TInput | dict[str, Any]) -> TInput:
         try:
             return self.input_schema.model_validate(input)
         except ValidationError as e:
@@ -102,7 +110,7 @@ class Tool(Generic[TInput, TRunOptions, TOutput], ABC):
             error_propagated = False
 
             try:
-                validated_input = self.validate_input(input)
+                validated_input = self._validate_input(input)
 
                 async def executor(_: RetryableContext) -> TOutput:
                     nonlocal error_propagated

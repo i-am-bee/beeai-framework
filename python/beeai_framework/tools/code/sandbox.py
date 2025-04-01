@@ -46,7 +46,7 @@ class SandboxToolOptions(ToolRunOptions):
 class SandboxTool(Tool[BaseModel, SandboxToolOptions, StringToolOutput]):
     def __init__(self, options: SandboxToolOptions) -> None:
         super().__init__()
-        self._options = options
+        self.__options = options
 
     def _create_emitter(self) -> Emitter:
         return Emitter.root().child(
@@ -56,28 +56,28 @@ class SandboxTool(Tool[BaseModel, SandboxToolOptions, StringToolOutput]):
 
     @property
     def name(self) -> str:
-        return self._options.name
+        return self.__options.name
 
     @property
     def description(self) -> str:
-        return self._options.description
+        return self.__options.description
 
     @property
     def input_schema(self) -> type[BaseModel]:
-        return JSONSchemaModel.create(self.name, self._options.input_schema)
+        return JSONSchemaModel.create(self.name, self.__options.input_schema)
 
     async def _run(
         self, tool_input: BaseModel | dict[str, Any], options: SandboxToolOptions | None, context: RunContext
     ) -> StringToolOutput:
         try:
             result = await PythonTool.call_code_interpreter(
-                f"{self._options.code_interpreter_url}/v1/execute-custom-tool",
+                f"{self.__options.code_interpreter_url}/v1/execute-custom-tool",
                 {
-                    "tool_source_code": self._options.source_code,
+                    "tool_source_code": self.__options.source_code,
                     "tool_input_json": tool_input.model_dump_json()
                     if isinstance(tool_input, BaseModel)
                     else json.dumps(tool_input),
-                    "env": {**self._options.env, **(options.env if options else {})},
+                    "env": {**self.__options.env, **(options.env if options else {})},
                 },
             )
 

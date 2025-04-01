@@ -23,7 +23,7 @@ from pydantic import BaseModel
 from beeai_framework.context import RunContext
 from beeai_framework.emitter import Emitter
 from beeai_framework.logger import Logger
-from beeai_framework.tools import Tool, ToolOutput
+from beeai_framework.tools.tool import Tool
 from beeai_framework.tools.types import JSONToolOutput, ToolRunOptions
 from beeai_framework.utils.models import JSONSchemaModel
 from beeai_framework.utils.strings import to_safe_word
@@ -31,7 +31,7 @@ from beeai_framework.utils.strings import to_safe_word
 logger = Logger(__name__)
 
 
-class MCPTool(Tool[BaseModel, ToolRunOptions, ToolOutput]):
+class MCPTool(Tool[BaseModel, ToolRunOptions, JSONToolOutput]):
     """Tool implementation for Model Context Protocol."""
 
     def __init__(self, session: ClientSession, tool: MCPToolInfo, **options: int) -> None:
