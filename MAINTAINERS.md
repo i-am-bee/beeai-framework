@@ -17,7 +17,7 @@ Maintainers are listed in alphabetical order by last name.
 | Lukáš Janeček | [xjacka](https://github.com/xjacka) |
 | Radek Ježek | [jezekra1](https://github.com/jezekra1) |
 | Nigel Jones | [planetf1](https://github.com/planetf1) |
-| Akihiko Kuroda | [akihikokuroda](https://github.com/Aakihikokuroda) |
+| Akihiko Kuroda | [akihikokuroda](https://github.com/akihikokuroda) |
 | Jan Pokorný | [JanPokorny](https://github.com/JanPokorny) |
 | Graham White | [grahamwhiteuk](https://github.com/grahamwhiteuk) |
 | Jenna Winkler | [jenna-winkler](https://github.com/jenna-winkler) |
