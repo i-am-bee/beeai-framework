@@ -16,7 +16,7 @@ from typing import Protocol, TypeVar, runtime_checkable
 
 T = TypeVar("T", bound="Cloneable")
 
+
 @runtime_checkable
 class Cloneable(Protocol):
-    def clone(self: T) -> T:
-        ...
+    def clone(self: T) -> T: ...
