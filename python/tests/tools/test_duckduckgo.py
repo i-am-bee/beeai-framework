@@ -16,7 +16,7 @@
 import pytest
 
 from beeai_framework.tools import ToolInputValidationError
-from beeai_framework.tools.search.duckduckgo import (
+from beeai_framework.tools.search import (
     DuckDuckGoSearchTool,
     DuckDuckGoSearchToolInput,
     DuckDuckGoSearchToolOutput,

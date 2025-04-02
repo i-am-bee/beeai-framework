@@ -12,3 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from beeai_framework.agents.tool_calling.agent import ToolCallingAgent
+from beeai_framework.agents.tool_calling.events import ToolCallingAgentStartEvent, ToolCallingAgentSuccessEvent
+from beeai_framework.agents.tool_calling.types import ToolCallingAgentRunOutput, ToolCallingAgentTemplateFactory
+
+__all__ = [
+    "ToolCallingAgent",
+    "ToolCallingAgentRunOutput",
+    "ToolCallingAgentStartEvent",
+    "ToolCallingAgentSuccessEvent",
+    "ToolCallingAgentTemplateFactory",
+]

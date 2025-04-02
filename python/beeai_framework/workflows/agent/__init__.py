@@ -12,6 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from beeai_framework.adapters.azure_openai.backend.chat import AzureOpenAIChatModel
+from beeai_framework.workflows.agent.agent import AgentWorkflow, AgentWorkflowInput
 
-__all__ = ["AzureOpenAIChatModel"]
+__all__ = ["AgentWorkflow", "AgentWorkflowInput"]

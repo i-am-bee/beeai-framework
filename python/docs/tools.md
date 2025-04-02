@@ -69,7 +69,7 @@ import sys
 from datetime import date
 
 from beeai_framework.errors import FrameworkError
-from beeai_framework.tools.weather.openmeteo import OpenMeteoTool, OpenMeteoToolInput
+from beeai_framework.tools.weather import OpenMeteoTool, OpenMeteoToolInput
 
 
 async def main() -> None:
@@ -102,7 +102,7 @@ import traceback
 from datetime import date
 
 from beeai_framework.errors import FrameworkError
-from beeai_framework.tools.weather.openmeteo import OpenMeteoTool, OpenMeteoToolInput
+from beeai_framework.tools.weather import OpenMeteoTool, OpenMeteoToolInput
 
 
 async def main() -> None:
@@ -137,10 +137,10 @@ The true power of tools emerges when integrating them with agents. Tools extend 
 <!-- embedme examples/tools/agent.py -->
 
 ```py
-from beeai_framework.adapters.ollama.backend.chat import OllamaChatModel
+from beeai_framework.adapters.ollama import OllamaChatModel
 from beeai_framework.agents.react import ReActAgent
 from beeai_framework.memory import UnconstrainedMemory
-from beeai_framework.tools.weather.openmeteo import OpenMeteoTool
+from beeai_framework.tools.weather import OpenMeteoTool
 
 agent = ReActAgent(llm=OllamaChatModel("llama3.1"), tools=[OpenMeteoTool()], memory=UnconstrainedMemory())
 
@@ -163,13 +163,13 @@ from urllib.parse import quote
 
 import requests
 
-from beeai_framework import ReActAgent, tool
-from beeai_framework.agents.types import AgentExecutionConfig
-from beeai_framework.backend.chat import ChatModel
+from beeai_framework.agents import AgentExecutionConfig
+from beeai_framework.agents.react import ReActAgent
+from beeai_framework.backend import ChatModel
 from beeai_framework.errors import FrameworkError
 from beeai_framework.logger import Logger
-from beeai_framework.memory.unconstrained_memory import UnconstrainedMemory
-from beeai_framework.tools import StringToolOutput
+from beeai_framework.memory import UnconstrainedMemory
+from beeai_framework.tools import StringToolOutput, tool
 
 logger = Logger(__name__)
 
@@ -240,10 +240,10 @@ import sys
 import traceback
 
 from beeai_framework.agents.react import ReActAgent
-from beeai_framework.backend.chat import ChatModel
+from beeai_framework.backend import ChatModel
 from beeai_framework.errors import FrameworkError
 from beeai_framework.memory import UnconstrainedMemory
-from beeai_framework.tools.search.duckduckgo import DuckDuckGoSearchTool
+from beeai_framework.tools.search import DuckDuckGoSearchTool
 
 
 async def main() -> None:
@@ -281,10 +281,10 @@ import sys
 import traceback
 
 from beeai_framework.agents.react import ReActAgent
-from beeai_framework.backend.chat import ChatModel
+from beeai_framework.backend import ChatModel
 from beeai_framework.errors import FrameworkError
 from beeai_framework.memory import UnconstrainedMemory
-from beeai_framework.tools.weather.openmeteo import OpenMeteoTool
+from beeai_framework.tools.weather import OpenMeteoTool
 
 
 async def main() -> None:
@@ -322,7 +322,7 @@ import sys
 import traceback
 
 from beeai_framework.errors import FrameworkError
-from beeai_framework.tools.search.wikipedia import (
+from beeai_framework.tools.search import (
     WikipediaTool,
     WikipediaToolInput,
 )
@@ -366,10 +366,10 @@ from dotenv import load_dotenv
 from mcp import ClientSession, StdioServerParameters
 from mcp.client.stdio import stdio_client
 
-from beeai_framework.adapters.ollama.backend.chat import OllamaChatModel
+from beeai_framework.adapters.ollama import OllamaChatModel
 from beeai_framework.agents.react import ReActAgent
 from beeai_framework.memory import UnconstrainedMemory
-from beeai_framework.tools.mcp_tools import MCPTool
+from beeai_framework.tools.mcp import MCPTool
 
 load_dotenv()
 
@@ -438,8 +438,8 @@ import traceback
 
 from dotenv import load_dotenv
 
-from beeai_framework.adapters.ollama.backend.chat import OllamaChatModel
-from beeai_framework.agents.react.agent import ReActAgent
+from beeai_framework.adapters.ollama import OllamaChatModel
+from beeai_framework.agents.react import ReActAgent
 from beeai_framework.errors import FrameworkError
 from beeai_framework.memory import UnconstrainedMemory
 from beeai_framework.tools.code import LocalPythonStorage, PythonTool
@@ -504,7 +504,7 @@ import traceback
 from dotenv import load_dotenv
 
 from beeai_framework.errors import FrameworkError
-from beeai_framework.tools.code.sandbox import SandboxTool
+from beeai_framework.tools.code import SandboxTool
 
 load_dotenv()
 
@@ -599,11 +599,9 @@ from typing import Any
 from pydantic import BaseModel, Field
 
 from beeai_framework.context import RunContext
-from beeai_framework.emitter.emitter import Emitter
+from beeai_framework.emitter import Emitter
 from beeai_framework.errors import FrameworkError
-from beeai_framework.tools import StringToolOutput
-from beeai_framework.tools.tool import Tool
-from beeai_framework.tools.types import ToolRunOptions
+from beeai_framework.tools import StringToolOutput, Tool, ToolRunOptions
 
 
 class RiddleToolInput(BaseModel):
@@ -685,11 +683,9 @@ import httpx
 from pydantic import BaseModel, Field
 
 from beeai_framework.context import RunContext
-from beeai_framework.emitter.emitter import Emitter
+from beeai_framework.emitter import Emitter
 from beeai_framework.errors import FrameworkError
-from beeai_framework.tools import ToolInputValidationError
-from beeai_framework.tools.tool import Tool
-from beeai_framework.tools.types import JSONToolOutput, ToolRunOptions
+from beeai_framework.tools import JSONToolOutput, Tool, ToolInputValidationError, ToolRunOptions
 
 
 class OpenLibraryToolInput(BaseModel):

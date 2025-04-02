@@ -20,33 +20,28 @@ import pytest
 import pytest_asyncio
 from pydantic import BaseModel
 
-from beeai_framework.adapters.amazon_bedrock.backend.chat import AmazonBedrockChatModel
-from beeai_framework.adapters.anthropic.backend.chat import AnthropicChatModel
-from beeai_framework.adapters.azure_openai.backend.chat import AzureOpenAIChatModel
-from beeai_framework.adapters.groq.backend.chat import GroqChatModel
-from beeai_framework.adapters.ollama.backend.chat import OllamaChatModel
-from beeai_framework.adapters.openai.backend.chat import OpenAIChatModel
-from beeai_framework.adapters.vertexai.backend.chat import VertexAIChatModel
-from beeai_framework.adapters.watsonx.backend.chat import WatsonxChatModel
-from beeai_framework.adapters.xai.backend.chat import XAIChatModel
-from beeai_framework.backend.chat import (
-    ChatModel,
-)
-from beeai_framework.backend.message import (
+from beeai_framework.adapters.amazon_bedrock import AmazonBedrockChatModel
+from beeai_framework.adapters.anthropic import AnthropicChatModel
+from beeai_framework.adapters.azure_openai import AzureOpenAIChatModel
+from beeai_framework.adapters.groq import GroqChatModel
+from beeai_framework.adapters.ollama import OllamaChatModel
+from beeai_framework.adapters.openai import OpenAIChatModel
+from beeai_framework.adapters.vertexai import VertexAIChatModel
+from beeai_framework.adapters.watsonx import WatsonxChatModel
+from beeai_framework.adapters.xai import XAIChatModel
+from beeai_framework.backend import (
     AnyMessage,
     AssistantMessage,
+    ChatModel,
+    ChatModelOutput,
+    ChatModelStructureOutput,
     CustomMessage,
     UserMessage,
 )
-from beeai_framework.backend.types import (
-    ChatModelInput,
-    ChatModelOutput,
-    ChatModelStructureInput,
-    ChatModelStructureOutput,
-)
-from beeai_framework.cancellation import AbortSignal
+from beeai_framework.backend.types import ChatModelInput, ChatModelStructureInput
 from beeai_framework.context import RunContext
 from beeai_framework.errors import AbortError
+from beeai_framework.utils import AbortSignal
 
 """
 Utility functions and classes

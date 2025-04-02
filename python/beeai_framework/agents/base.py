@@ -21,10 +21,10 @@ from pydantic import BaseModel
 
 from beeai_framework.agents.errors import AgentError
 from beeai_framework.agents.types import AgentMeta
-from beeai_framework.cancellation import AbortSignal
 from beeai_framework.context import Run, RunContext
 from beeai_framework.emitter import Emitter
 from beeai_framework.memory import BaseMemory
+from beeai_framework.utils import AbortSignal
 
 TOutput = TypeVar("TOutput", bound=BaseModel)
 

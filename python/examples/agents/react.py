@@ -8,19 +8,17 @@ from typing import Any
 
 from dotenv import load_dotenv
 
-from beeai_framework.agents.react.agent import ReActAgent
-from beeai_framework.agents.types import AgentExecutionConfig
-from beeai_framework.backend.chat import ChatModel
-from beeai_framework.backend.types import ChatModelParameters
-from beeai_framework.emitter.emitter import EventMeta
-from beeai_framework.emitter.types import EmitterOptions
+from beeai_framework.agents import AgentExecutionConfig
+from beeai_framework.agents.react import ReActAgent
+from beeai_framework.backend import ChatModel, ChatModelParameters
+from beeai_framework.emitter import EmitterOptions, EventMeta
 from beeai_framework.errors import FrameworkError
 from beeai_framework.logger import Logger
-from beeai_framework.memory.token_memory import TokenMemory
+from beeai_framework.memory import TokenMemory
+from beeai_framework.tools import AnyTool
 from beeai_framework.tools.code import LocalPythonStorage, PythonTool
 from beeai_framework.tools.search import DuckDuckGoSearchTool, WikipediaTool
-from beeai_framework.tools.tool import AnyTool
-from beeai_framework.tools.weather.openmeteo import OpenMeteoTool
+from beeai_framework.tools.weather import OpenMeteoTool
 from examples.helpers.io import ConsoleReader
 
 # Load environment variables

@@ -2,8 +2,8 @@ import asyncio
 import sys
 import traceback
 
-from beeai_framework import UserMessage
-from beeai_framework.adapters.ollama.backend.chat import OllamaChatModel
+from beeai_framework.adapters.ollama import OllamaChatModel
+from beeai_framework.backend import UserMessage
 from beeai_framework.errors import FrameworkError
 from examples.helpers.io import ConsoleReader
 

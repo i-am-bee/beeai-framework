@@ -12,8 +12,25 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-
 from beeai_framework.agents.react.agent import ReActAgent
-from beeai_framework.agents.react.types import ReActAgentInput, ReActAgentRunInput
+from beeai_framework.agents.react.events import (
+    ReActAgentErrorEvent,
+    ReActAgentRetryEvent,
+    ReActAgentStartEvent,
+    ReActAgentSuccessEvent,
+    ReActAgentToolEvent,
+    ReActAgentUpdateEvent,
+)
+from beeai_framework.agents.react.types import ReActAgentRunOutput, ReActAgentTemplateFactory
 
-__all__ = ["ReActAgent", "ReActAgentInput", "ReActAgentRunInput"]
+__all__ = [
+    "ReActAgent",
+    "ReActAgentErrorEvent",
+    "ReActAgentRetryEvent",
+    "ReActAgentRunOutput",
+    "ReActAgentStartEvent",
+    "ReActAgentSuccessEvent",
+    "ReActAgentTemplateFactory",
+    "ReActAgentToolEvent",
+    "ReActAgentUpdateEvent",
+]

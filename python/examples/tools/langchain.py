@@ -17,7 +17,7 @@ from langchain_community.tools.file_management.list_dir import ListDirectoryTool
 from langchain_core.tools import StructuredTool
 from pydantic import BaseModel, Field
 
-from beeai_framework.adapters.langchain.tools import LangChainTool
+from beeai_framework.adapters.langchain import LangChainTool
 from beeai_framework.errors import FrameworkError
 
 

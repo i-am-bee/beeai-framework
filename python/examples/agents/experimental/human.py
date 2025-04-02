@@ -2,11 +2,12 @@ import asyncio
 import sys
 import traceback
 
-from beeai_framework import ReActAgent, TokenMemory
-from beeai_framework.adapters.ollama.backend.chat import OllamaChatModel
+from beeai_framework.adapters.ollama import OllamaChatModel
 from beeai_framework.agents import AgentExecutionConfig
+from beeai_framework.agents.react import ReActAgent
 from beeai_framework.errors import FrameworkError
-from beeai_framework.tools.weather.openmeteo import OpenMeteoTool
+from beeai_framework.memory import TokenMemory
+from beeai_framework.tools.weather import OpenMeteoTool
 from examples.helpers.io import ConsoleReader
 from examples.tools.experimental.human import HumanTool, HumanToolInput
 

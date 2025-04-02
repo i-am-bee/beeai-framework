@@ -2,7 +2,7 @@ import asyncio
 import sys
 import traceback
 
-from beeai_framework.cache.sliding_cache import SlidingCache
+from beeai_framework.cache import SlidingCache
 from beeai_framework.errors import FrameworkError
 
 

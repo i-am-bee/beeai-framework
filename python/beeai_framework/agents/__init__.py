@@ -12,9 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-
-from beeai_framework.agents.base import BaseAgent
+from beeai_framework.agents.base import AnyAgent, BaseAgent
 from beeai_framework.agents.errors import AgentError
-from beeai_framework.agents.types import AgentExecutionConfig, AgentMeta
+from beeai_framework.agents.types import AgentExecutionConfig, AgentMeta, BaseAgentRunOptions
 
-__all__ = ["AgentError", "AgentExecutionConfig", "AgentMeta", "BaseAgent"]
+__all__ = ["AgentError", "AgentExecutionConfig", "AgentMeta", "AnyAgent", "BaseAgent", "BaseAgentRunOptions"]

@@ -78,9 +78,9 @@ import asyncio
 import sys
 import traceback
 
-from beeai_framework.backend.message import AssistantMessage, SystemMessage, UserMessage
+from beeai_framework.backend import AssistantMessage, SystemMessage, UserMessage
 from beeai_framework.errors import FrameworkError
-from beeai_framework.memory.unconstrained_memory import UnconstrainedMemory
+from beeai_framework.memory import UnconstrainedMemory
 
 
 async def main() -> None:
@@ -119,11 +119,10 @@ import asyncio
 import sys
 import traceback
 
-from beeai_framework import AssistantMessage
-from beeai_framework.adapters.ollama.backend.chat import OllamaChatModel
-from beeai_framework.backend.message import SystemMessage, UserMessage
+from beeai_framework.adapters.ollama import OllamaChatModel
+from beeai_framework.backend import AssistantMessage, SystemMessage, UserMessage
 from beeai_framework.errors import FrameworkError
-from beeai_framework.memory.unconstrained_memory import UnconstrainedMemory
+from beeai_framework.memory import UnconstrainedMemory
 
 
 async def main() -> None:
@@ -168,12 +167,11 @@ import asyncio
 import sys
 import traceback
 
-from beeai_framework.agents.react.agent import ReActAgent
-from beeai_framework.agents.types import AgentExecutionConfig
-from beeai_framework.backend.chat import ChatModel
-from beeai_framework.backend.message import AssistantMessage, UserMessage
+from beeai_framework.agents import AgentExecutionConfig
+from beeai_framework.agents.react import ReActAgent
+from beeai_framework.backend import AssistantMessage, ChatModel, UserMessage
 from beeai_framework.errors import FrameworkError
-from beeai_framework.memory.unconstrained_memory import UnconstrainedMemory
+from beeai_framework.memory import UnconstrainedMemory
 
 # Initialize the memory and LLM
 memory = UnconstrainedMemory()
@@ -263,7 +261,7 @@ import asyncio
 import sys
 import traceback
 
-from beeai_framework import UserMessage
+from beeai_framework.backend import UserMessage
 from beeai_framework.errors import FrameworkError
 from beeai_framework.memory import UnconstrainedMemory
 
@@ -307,9 +305,9 @@ import asyncio
 import sys
 import traceback
 
-from beeai_framework import AssistantMessage, SystemMessage, UserMessage
+from beeai_framework.backend import AssistantMessage, SystemMessage, UserMessage
 from beeai_framework.errors import FrameworkError
-from beeai_framework.memory.sliding_memory import SlidingMemory, SlidingMemoryConfig
+from beeai_framework.memory import SlidingMemory, SlidingMemoryConfig
 
 
 async def main() -> None:
@@ -362,9 +360,8 @@ import math
 import sys
 import traceback
 
-from beeai_framework import SystemMessage, UserMessage
-from beeai_framework.adapters.ollama.backend.chat import OllamaChatModel
-from beeai_framework.backend import Role
+from beeai_framework.adapters.ollama import OllamaChatModel
+from beeai_framework.backend import Role, SystemMessage, UserMessage
 from beeai_framework.errors import FrameworkError
 from beeai_framework.memory import TokenMemory
 
@@ -434,10 +431,9 @@ import asyncio
 import sys
 import traceback
 
-from beeai_framework.backend.chat import ChatModel
-from beeai_framework.backend.message import AssistantMessage, SystemMessage, UserMessage
+from beeai_framework.backend import AssistantMessage, ChatModel, SystemMessage, UserMessage
 from beeai_framework.errors import FrameworkError
-from beeai_framework.memory.summarize_memory import SummarizeMemory
+from beeai_framework.memory import SummarizeMemory
 
 
 async def main() -> None:
@@ -490,7 +486,7 @@ To create your memory implementation, you must implement the `BaseMemory` class.
 ```py
 from typing import Any
 
-from beeai_framework.backend.message import AnyMessage
+from beeai_framework.backend import AnyMessage
 from beeai_framework.memory import BaseMemory
 
 

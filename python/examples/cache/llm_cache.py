@@ -2,10 +2,9 @@ import asyncio
 import sys
 import traceback
 
-from beeai_framework.adapters.ollama.backend.chat import OllamaChatModel
-from beeai_framework.backend.message import UserMessage
-from beeai_framework.backend.types import ChatModelParameters
-from beeai_framework.cache.sliding_cache import SlidingCache
+from beeai_framework.adapters.ollama import OllamaChatModel
+from beeai_framework.backend import ChatModelParameters, UserMessage
+from beeai_framework.cache import SlidingCache
 from beeai_framework.errors import FrameworkError
 
 

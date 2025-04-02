@@ -12,12 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from beeai_framework.tools.mcp.mcp import MCPTool
 
-from dataclasses import dataclass
-
-
-@dataclass
-class MessageEvent:
-    source: str
-    message: str
-    state: str | None = None
+__all__ = ["MCPTool"]

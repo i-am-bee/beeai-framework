@@ -91,7 +91,7 @@ class DefaultRunner(BaseRunner):
             schema_error=SchemaErrorTemplate,
         )
 
-    def create_parser(self) -> LinePrefixParser:
+    def _create_parser(self) -> LinePrefixParser:
         tool_names = create_strenum("ToolsEnum", [tool.name for tool in self._input.tools])
 
         return LinePrefixParser(
@@ -151,7 +151,7 @@ class DefaultRunner(BaseRunner):
                 "start", ReActAgentStartEvent(meta=input.meta, tools=self._input.tools, memory=self.memory)
             )
 
-            parser = self.create_parser()
+            parser = self._create_parser()
 
             async def on_update(data: LinePrefixParserUpdate, event: EventMeta) -> None:
                 if data.key == "tool_output" and parser.done:
@@ -322,7 +322,7 @@ class DefaultRunner(BaseRunner):
             )
         ).get()
 
-    async def init_memory(self, input: ReActAgentRunInput) -> BaseMemory:
+    async def _init_memory(self, input: ReActAgentRunInput) -> BaseMemory:
         memory = TokenMemory(
             capacity_threshold=0.85, sync_threshold=0.5, llm=self._input.llm
         )  # TODO handlers needs to be fixed

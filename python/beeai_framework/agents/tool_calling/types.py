@@ -17,7 +17,6 @@ from typing import Annotated, Any
 
 from pydantic import BaseModel, Field, InstanceOf
 
-from beeai_framework import AssistantMessage, BaseMemory
 from beeai_framework.agents.tool_calling.prompts import (
     ToolCallingAgentSystemPrompt,
     ToolCallingAgentSystemPromptInput,
@@ -26,6 +25,8 @@ from beeai_framework.agents.tool_calling.prompts import (
     ToolCallingAgentToolErrorPrompt,
     ToolCallingAgentToolErrorPromptInput,
 )
+from beeai_framework.backend import AssistantMessage
+from beeai_framework.memory import BaseMemory
 from beeai_framework.template import PromptTemplate
 
 

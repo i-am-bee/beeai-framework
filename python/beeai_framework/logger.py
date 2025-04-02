@@ -20,7 +20,6 @@ from typing import TYPE_CHECKING, Any
 
 from beeai_framework.errors import FrameworkError
 from beeai_framework.utils.config import CONFIG
-from beeai_framework.utils.events import MessageEvent
 
 
 class LoggerError(FrameworkError):
@@ -120,11 +119,5 @@ class Logger(logging.Logger):
         setattr(logging.getLoggerClass(), method_name, log_for_level)
         setattr(logging, method_name, log_to_root)
 
-    def log_message_events(self, event: MessageEvent) -> None:
-        source = str.lower(event.source)
-        state = f" ({event.state})" if event.state else ""
-        icon = " 👤" if source == str.lower("user") else " 🤖"
-        self.info(
-            f" {str.capitalize(source)}{state}{icon}: {event.message}",
-            extra={"is_event_message": True},
-        )
+
+__all__ = ["Logger", "LoggerError"]

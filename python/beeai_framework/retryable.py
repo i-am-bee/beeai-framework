@@ -20,9 +20,10 @@ from typing import Any, Generic, TypeVar
 
 from pydantic import BaseModel
 
-from beeai_framework.cancellation import AbortSignal, abort_signal_handler
 from beeai_framework.errors import FrameworkError
 from beeai_framework.logger import Logger
+from beeai_framework.utils import AbortSignal
+from beeai_framework.utils.cancellation import abort_signal_handler
 from beeai_framework.utils.models import ModelLike, to_model
 
 T = TypeVar("T")

@@ -18,7 +18,6 @@ from beeai_framework.emitter.emitter import (
     CleanupFn,
     Emitter,
     EventMeta,
-    Listener,
     Matcher,
     MatcherFn,
 )
@@ -33,7 +32,6 @@ __all__ = [
     "EmitterOptions",
     "EventMeta",
     "EventTrace",
-    "Listener",
     "Matcher",
     "MatcherFn",
 ]

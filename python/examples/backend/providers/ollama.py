@@ -6,17 +6,22 @@ from datetime import UTC, datetime
 
 from pydantic import BaseModel, Field
 
-from beeai_framework import SystemMessage
-from beeai_framework.adapters.ollama.backend.chat import OllamaChatModel
-from beeai_framework.backend.chat import ChatModel
-from beeai_framework.backend.events import ChatModelNewTokenEvent
-from beeai_framework.backend.message import AnyMessage, MessageToolResultContent, ToolMessage, UserMessage
-from beeai_framework.cancellation import AbortSignal
+from beeai_framework.adapters.ollama import OllamaChatModel
+from beeai_framework.backend import (
+    AnyMessage,
+    ChatModel,
+    ChatModelNewTokenEvent,
+    MessageToolResultContent,
+    SystemMessage,
+    ToolMessage,
+    UserMessage,
+)
 from beeai_framework.emitter import EventMeta
 from beeai_framework.errors import AbortError, FrameworkError
 from beeai_framework.parsers.field import ParserField
 from beeai_framework.parsers.line_prefix import LinePrefixParser, LinePrefixParserNode
-from beeai_framework.tools.weather.openmeteo import OpenMeteoTool
+from beeai_framework.tools.weather import OpenMeteoTool
+from beeai_framework.utils import AbortSignal
 
 
 async def ollama_from_name() -> None:

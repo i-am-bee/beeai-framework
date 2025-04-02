@@ -5,12 +5,9 @@ from typing import Any, Literal, TypeAlias
 
 from pydantic import BaseModel
 
-from beeai_framework.emitter.emitter import Emitter, EventMeta
+from beeai_framework.emitter import Emitter, EventMeta
 from beeai_framework.errors import FrameworkError
-from beeai_framework.workflows import WorkflowReservedStepName
-from beeai_framework.workflows.events import WorkflowSuccessEvent
-from beeai_framework.workflows.types import WorkflowRun
-from beeai_framework.workflows.workflow import Workflow
+from beeai_framework.workflows import Workflow, WorkflowReservedStepName, WorkflowRun, WorkflowSuccessEvent
 
 WorkflowStep: TypeAlias = Literal["pre_process", "add_loop", "post_process"]
 

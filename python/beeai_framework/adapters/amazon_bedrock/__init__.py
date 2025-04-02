@@ -12,4 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from beeai_framework.adapters.amazon_bedrock.backend.chat import AmazonBedrockChatModel
 
+__all__ = ["AmazonBedrockChatModel"]

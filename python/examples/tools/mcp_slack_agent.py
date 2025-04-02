@@ -8,15 +8,14 @@ from dotenv import load_dotenv
 from mcp import ClientSession, StdioServerParameters
 from mcp.client.stdio import stdio_client
 
-from beeai_framework.agents.react.agent import ReActAgent
-from beeai_framework.agents.types import AgentExecutionConfig
-from beeai_framework.backend.chat import ChatModel
-from beeai_framework.backend.types import ChatModelParameters
-from beeai_framework.emitter.emitter import EventMeta
+from beeai_framework.agents import AgentExecutionConfig
+from beeai_framework.agents.react import ReActAgent
+from beeai_framework.backend import ChatModel, ChatModelParameters
+from beeai_framework.emitter import EventMeta
 from beeai_framework.errors import FrameworkError
-from beeai_framework.memory.token_memory import TokenMemory
-from beeai_framework.tools.mcp_tools import MCPTool
-from beeai_framework.tools.weather.openmeteo import OpenMeteoTool
+from beeai_framework.memory import TokenMemory
+from beeai_framework.tools.mcp import MCPTool
+from beeai_framework.tools.weather import OpenMeteoTool
 
 # Load environment variables
 load_dotenv()

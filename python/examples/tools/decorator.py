@@ -6,13 +6,13 @@ from urllib.parse import quote
 
 import requests
 
-from beeai_framework import ReActAgent, tool
-from beeai_framework.agents.types import AgentExecutionConfig
-from beeai_framework.backend.chat import ChatModel
+from beeai_framework.agents import AgentExecutionConfig
+from beeai_framework.agents.react import ReActAgent
+from beeai_framework.backend import ChatModel
 from beeai_framework.errors import FrameworkError
 from beeai_framework.logger import Logger
-from beeai_framework.memory.unconstrained_memory import UnconstrainedMemory
-from beeai_framework.tools import StringToolOutput
+from beeai_framework.memory import UnconstrainedMemory
+from beeai_framework.tools import StringToolOutput, tool
 
 logger = Logger(__name__)
 

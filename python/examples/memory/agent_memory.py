@@ -2,12 +2,11 @@ import asyncio
 import sys
 import traceback
 
-from beeai_framework.agents.react.agent import ReActAgent
-from beeai_framework.agents.types import AgentExecutionConfig
-from beeai_framework.backend.chat import ChatModel
-from beeai_framework.backend.message import AssistantMessage, UserMessage
+from beeai_framework.agents import AgentExecutionConfig
+from beeai_framework.agents.react import ReActAgent
+from beeai_framework.backend import AssistantMessage, ChatModel, UserMessage
 from beeai_framework.errors import FrameworkError
-from beeai_framework.memory.unconstrained_memory import UnconstrainedMemory
+from beeai_framework.memory import UnconstrainedMemory
 
 # Initialize the memory and LLM
 memory = UnconstrainedMemory()

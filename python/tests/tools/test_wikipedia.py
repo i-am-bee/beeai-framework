@@ -16,7 +16,7 @@
 import pytest
 
 from beeai_framework.tools import ToolInputValidationError
-from beeai_framework.tools.search.wikipedia import (
+from beeai_framework.tools.search import (
     WikipediaTool,
     WikipediaToolInput,
     WikipediaToolOutput,

@@ -46,16 +46,16 @@ from beeai_framework.agents.types import (
 )
 from beeai_framework.backend.chat import ChatModel
 from beeai_framework.backend.message import AssistantMessage, MessageMeta, UserMessage
-from beeai_framework.cancellation import AbortSignal
 from beeai_framework.context import Run, RunContext
 from beeai_framework.emitter import Emitter
 from beeai_framework.memory import BaseMemory
 from beeai_framework.template import PromptTemplate
 from beeai_framework.tools.tool import AnyTool
+from beeai_framework.utils import AbortSignal
 
 
 class ReActAgent(BaseAgent[ReActAgentRunOutput]):
-    runner: Callable[..., BaseRunner]
+    _runner: Callable[..., BaseRunner]
 
     def __init__(
         self,
@@ -68,13 +68,13 @@ class ReActAgent(BaseAgent[ReActAgentRunOutput]):
         stream: bool = True,
     ) -> None:
         super().__init__()
-        self.input = ReActAgentInput(
+        self._input = ReActAgentInput(
             llm=llm, tools=tools, memory=memory, meta=meta, templates=templates, execution=execution, stream=stream
         )
-        if "granite" in self.input.llm.model_id:
-            self.runner = GraniteRunner
+        if "granite" in self._input.llm.model_id:
+            self._runner = GraniteRunner
         else:
-            self.runner = DefaultRunner
+            self._runner = DefaultRunner
 
     def _create_emitter(self) -> Emitter:
         return Emitter.root().child(
@@ -84,21 +84,21 @@ class ReActAgent(BaseAgent[ReActAgentRunOutput]):
 
     @property
     def memory(self) -> BaseMemory:
-        return self.input.memory
+        return self._input.memory
 
     @memory.setter
     def memory(self, memory: BaseMemory) -> None:
-        self.input.memory = memory
+        self._input.memory = memory
 
     @property
     def meta(self) -> AgentMeta:
-        tools = self.input.tools[:]
+        tools = self._input.tools[:]
 
-        if self.input.meta:
+        if self._input.meta:
             return AgentMeta(
-                name=self.input.meta.name,
-                description=self.input.meta.description,
-                extra_description=self.input.meta.extra_description,
+                name=self._input.meta.name,
+                description=self._input.meta.description,
+                extra_description=self._input.meta.extra_description,
                 tools=tools,
             )
 
@@ -122,10 +122,10 @@ class ReActAgent(BaseAgent[ReActAgentRunOutput]):
         execution: AgentExecutionConfig | None = None,
     ) -> Run[ReActAgentRunOutput]:
         async def handler(context: RunContext) -> ReActAgentRunOutput:
-            runner = self.runner(
-                self.input,
+            runner = self._runner(
+                self._input,
                 ReActAgentRunOptions(
-                    execution=self.input.execution
+                    execution=self._input.execution
                     or execution
                     or AgentExecutionConfig(
                         max_retries_per_step=3,
@@ -198,11 +198,11 @@ class ReActAgent(BaseAgent[ReActAgentRunOutput]):
                     )
 
             if prompt is not None:
-                await self.input.memory.add(
+                await self._input.memory.add(
                     UserMessage(content=prompt, meta=MessageMeta({"createdAt": context.created_at}))
                 )
 
-            await self.input.memory.add(final_message)
+            await self._input.memory.add(final_message)
 
             return ReActAgentRunOutput(result=final_message, iterations=runner.iterations, memory=runner.memory)
 

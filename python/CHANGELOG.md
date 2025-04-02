@@ -1,3 +1,15 @@
+## python_v0.1.12 (2025-04-01)
+
+### BREAKING CHANGE
+
+- - Removed ability to import classes from beeai_framework without a path
+- Moved AbortSignal from beeai_framework.cancellation to beeai_framework.utils
+- Moved MCPTool from beeai_framework.tools.mcp_tools to beeai_framework.tools.mcp
+
+### Refactor
+
+- clarify public API (#711)
+
 ## python_v0.1.11 (2025-03-28)
 
 ### Refactor

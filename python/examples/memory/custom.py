@@ -1,6 +1,6 @@
 from typing import Any
 
-from beeai_framework.backend.message import AnyMessage
+from beeai_framework.backend import AnyMessage
 from beeai_framework.memory import BaseMemory
 
 

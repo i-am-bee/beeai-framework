@@ -72,7 +72,7 @@ import traceback
 from pydantic import BaseModel
 
 from beeai_framework.errors import FrameworkError
-from beeai_framework.workflows.workflow import Workflow
+from beeai_framework.workflows import Workflow
 
 
 async def main() -> None:
@@ -114,8 +114,7 @@ from typing import Literal, TypeAlias
 from pydantic import BaseModel
 
 from beeai_framework.errors import FrameworkError
-from beeai_framework.workflows import WorkflowReservedStepName
-from beeai_framework.workflows.workflow import Workflow
+from beeai_framework.workflows import Workflow, WorkflowReservedStepName
 
 WorkflowStep: TypeAlias = Literal["pre_process", "add_loop", "post_process"]
 
@@ -200,8 +199,7 @@ from typing import Literal, TypeAlias
 from pydantic import BaseModel
 
 from beeai_framework.errors import FrameworkError
-from beeai_framework.workflows import WorkflowReservedStepName
-from beeai_framework.workflows.workflow import Workflow
+from beeai_framework.workflows import Workflow, WorkflowReservedStepName
 
 WorkflowStep: TypeAlias = Literal["pre_process", "add_loop", "post_process"]
 
@@ -271,11 +269,11 @@ import asyncio
 import sys
 import traceback
 
-from beeai_framework.backend.chat import ChatModel
-from beeai_framework.emitter.types import EmitterOptions
+from beeai_framework.backend import ChatModel
+from beeai_framework.emitter import EmitterOptions
 from beeai_framework.errors import FrameworkError
 from beeai_framework.tools.search import WikipediaTool
-from beeai_framework.tools.weather.openmeteo import OpenMeteoTool
+from beeai_framework.tools.weather import OpenMeteoTool
 from beeai_framework.workflows.agent import AgentWorkflow, AgentWorkflowInput
 from examples.helpers.io import ConsoleReader
 
@@ -382,10 +380,10 @@ import traceback
 
 from pydantic import BaseModel, InstanceOf
 
-from beeai_framework.backend.message import AssistantMessage, UserMessage
+from beeai_framework.backend import AssistantMessage, UserMessage
 from beeai_framework.errors import FrameworkError
-from beeai_framework.memory.unconstrained_memory import UnconstrainedMemory
-from beeai_framework.workflows.workflow import Workflow
+from beeai_framework.memory import UnconstrainedMemory
+from beeai_framework.workflows import Workflow
 from examples.helpers.io import ConsoleReader
 
 

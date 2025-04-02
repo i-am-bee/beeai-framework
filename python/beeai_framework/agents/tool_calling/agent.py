@@ -51,8 +51,6 @@ from beeai_framework.tools.tool import AnyTool
 from beeai_framework.utils.counter import RetryCounter
 from beeai_framework.utils.strings import to_json
 
-__all__ = ["ToolCallingAgent"]
-
 
 class ToolCallingAgent(BaseAgent[ToolCallingAgentRunOutput]):
     def __init__(

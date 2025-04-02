@@ -12,6 +12,18 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from beeai_framework.adapters.azure_openai.backend.chat import AzureOpenAIChatModel
+from beeai_framework.agents.experimental.remote.agent import RemoteAgent
+from beeai_framework.agents.experimental.remote.events import (
+    RemoteAgentErrorEvent,
+    RemoteAgentUpdateEvent,
+    RemoteAgentWarningEvent,
+)
+from beeai_framework.agents.experimental.remote.types import RemoteAgentRunOutput
 
-__all__ = ["AzureOpenAIChatModel"]
+__all__ = [
+    "RemoteAgent",
+    "RemoteAgentErrorEvent",
+    "RemoteAgentRunOutput",
+    "RemoteAgentUpdateEvent",
+    "RemoteAgentWarningEvent",
+]
