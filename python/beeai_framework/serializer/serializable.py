@@ -14,10 +14,7 @@
 
 
 from abc import ABC, abstractmethod
-from copy import deepcopy
-from typing import Any, TypeVar
-
-from pydantic import BaseModel
+from typing import TypeVar
 
 T = TypeVar("T", bound="Serializable")
 
@@ -25,27 +22,7 @@ T = TypeVar("T", bound="Serializable")
 class Serializable(ABC):
     """Base class for serializable objects."""
 
-    @classmethod
-    async def from_snapshot(cls: type[T], snapshot: dict[str, Any]) -> T:
-        """Create instance from snapshot."""
-        if issubclass(cls, BaseModel):
-            return cls(**dict(snapshot))
-        else:
-            instance = cls()
-            await instance.load_snapshot(snapshot)
-            return instance
-
+    @abstractmethod
     async def clone(self: T) -> T:
         """Create a deep copy of the object."""
-        snapshot: dict[str, Any] = await self.create_snapshot()
-        return await type(self).from_snapshot(deepcopy(snapshot))
-
-    @abstractmethod
-    async def create_snapshot(self) -> dict[str, Any]:
-        """Create serializable snapshot."""
-        pass
-
-    @abstractmethod
-    async def load_snapshot(self, snapshot: dict[str, Any]) -> None:
-        """Restore from snapshot."""
         pass

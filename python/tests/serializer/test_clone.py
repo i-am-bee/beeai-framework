@@ -13,8 +13,6 @@
 # limitations under the License.
 
 
-from typing import Any
-
 import pytest
 from pydantic import BaseModel
 
@@ -31,13 +29,8 @@ class DefaultUser(Serializable):
         self.age = age
         self.email = email
 
-    async def create_snapshot(self) -> dict[str, Any]:
-        return {"name": self.name, "age": self.age, "email": self.email}
-
-    async def load_snapshot(self, snapshot: dict[str, Any]) -> None:
-        self.name = snapshot["name"]
-        self.age = snapshot["age"]
-        self.email = snapshot.get("email")
+    async def clone(self) -> "DefaultUser":
+        return DefaultUser(self.name, self.age, self.email)
 
 
 class BaseModelUser(BaseModel, Serializable):
@@ -45,13 +38,8 @@ class BaseModelUser(BaseModel, Serializable):
     age: int
     email: str | None = None
 
-    async def create_snapshot(self) -> dict[str, Any]:
-        return self.model_dump()
-
-    async def load_snapshot(self, snapshot: dict[str, Any]) -> None:
-        self.name = snapshot.get("name", "")
-        self.age = snapshot.get("age", 0)
-        self.email = snapshot.get("email")
+    async def clone(self) -> "BaseModelUser":
+        return BaseModelUser(**self.model_dump())
 
 
 @pytest.fixture
