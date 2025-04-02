@@ -32,6 +32,7 @@ from beeai_framework.memory.base_memory import BaseMemory
 from beeai_framework.memory.readonly_memory import ReadOnlyMemory
 from beeai_framework.memory.unconstrained_memory import UnconstrainedMemory
 from beeai_framework.tools.tool import AnyTool
+from beeai_framework.utils.cloneable import Cloneable
 from beeai_framework.utils.dicts import exclude_none
 from beeai_framework.utils.lists import remove_falsy
 from beeai_framework.workflows.types import WorkflowRun
@@ -110,11 +111,11 @@ class AgentWorkflow:
         if instance is None and llm is None:
             raise ValueError("Either instance or the agent configuration must be provided!")
 
-        def create_agent(memory: BaseMemory) -> ToolCallingAgent:
+        async def create_agent(memory: BaseMemory) -> ToolCallingAgent:
             if instance is not None:
-                # TODO: use clone() once implemented
-                instance.memory = memory
-                return instance
+                new_instance = await instance.clone() if isinstance(instance, Cloneable) else instance
+                new_instance.memory = memory
+                return new_instance
 
             return ToolCallingAgent(
                 llm=llm,  # type: ignore
@@ -132,7 +133,7 @@ class AgentWorkflow:
             await memory.add_many(state.new_messages)
 
             run_input = state.inputs.pop(0).model_copy() if state.inputs else AgentWorkflowInput()
-            agent = create_agent(memory.as_read_only())
+            agent = await create_agent(memory.as_read_only())
             run_output: ToolCallingAgentRunOutput = await agent.run(**run_input.model_dump(), execution=execution)
 
             state.final_answer = run_output.result.text

@@ -213,3 +213,8 @@ class ToolCallingAgent(BaseAgent[ToolCallingAgentRunOutput]):
             else:
                 setattr(templates, name, override(getattr(templates, name)))
         return templates
+
+    async def clone(self) -> "ToolCallingAgent":
+        return ToolCallingAgent(
+            llm=self._llm, memory=self._memory, tools=self._tools, templates=self._templates.model_dump()
+        )
