@@ -12,17 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from typing import Protocol, TypeVar, runtime_checkable
 
-from abc import ABC, abstractmethod
-from typing import TypeVar
+T = TypeVar("T", bound="Cloneable")
 
-T = TypeVar("T", bound="Serializable")
-
-
-class Serializable(ABC):
-    """Base class for serializable objects."""
-
-    @abstractmethod
-    async def clone(self: T) -> T:
-        """Create a deep copy of the object."""
-        pass
+@runtime_checkable
+class Cloneable(Protocol):
+    def clone(self: T) -> T:
+        ...

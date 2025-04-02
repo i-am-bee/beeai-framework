@@ -14,9 +14,8 @@
 
 
 from collections.abc import Callable
-from copy import copy
 from dataclasses import dataclass
-from typing import Any, TypedDict
+from typing import TypedDict
 
 from beeai_framework.backend.message import AnyMessage
 from beeai_framework.memory.base_memory import BaseMemory
@@ -135,15 +134,3 @@ class SlidingMemory(BaseMemory):
     def reset(self) -> None:
         """Clear all messages from memory."""
         self._messages.clear()
-
-    def create_snapshot(self) -> dict[str, Any]:
-        """Create a serializable snapshot of current state."""
-        return {
-            "config": {"size": self.config.size, "handlers": self.config.handlers},
-            "messages": copy(self._messages),
-        }
-
-    def load_snapshot(self, state: dict[str, Any]) -> None:
-        """Restore state from a snapshot."""
-        self._config = SlidingMemoryConfig(size=state["config"]["size"], handlers=state["config"]["handlers"])
-        self._messages = copy(state["messages"])

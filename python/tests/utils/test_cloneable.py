@@ -16,14 +16,14 @@
 import pytest
 from pydantic import BaseModel
 
-from beeai_framework.serializer.serializable import Serializable
+from beeai_framework.utils.cloneable import Cloneable
 
 """
 Utility functions and classes
 """
 
 
-class DefaultUser(Serializable):
+class DefaultUser:
     def __init__(self, name: str = "", age: int = 0, email: str | None = None) -> None:
         self.name = name
         self.age = age
@@ -33,7 +33,7 @@ class DefaultUser(Serializable):
         return DefaultUser(self.name, self.age, self.email)
 
 
-class BaseModelUser(BaseModel, Serializable):
+class BaseModelUser(BaseModel):
     name: str
     age: int
     email: str | None = None
@@ -55,8 +55,11 @@ def base_model_user() -> BaseModelUser:
 @pytest.mark.unit
 @pytest.mark.asyncio
 async def test_clone(default_user: DefaultUser) -> None:
+    assert isinstance(default_user, Cloneable)
+
     cloned_user = await default_user.clone()
 
+    assert isinstance(cloned_user, Cloneable)
     assert cloned_user.name == default_user.name
     assert cloned_user.age == default_user.age
     assert cloned_user.email == default_user.email
@@ -71,8 +74,11 @@ async def test_clone(default_user: DefaultUser) -> None:
 @pytest.mark.unit
 @pytest.mark.asyncio
 async def test_clone_basemodel(base_model_user: BaseModelUser) -> None:
+    assert isinstance(base_model_user, Cloneable)
+
     cloned_user = await base_model_user.clone()
 
+    assert isinstance(cloned_user, Cloneable)
     assert cloned_user.name == base_model_user.name
     assert cloned_user.age == base_model_user.age
     assert cloned_user.email == base_model_user.email
