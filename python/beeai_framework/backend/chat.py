@@ -16,7 +16,7 @@ import json
 from abc import ABC, abstractmethod
 from collections.abc import AsyncGenerator, Callable
 from functools import cached_property
-from typing import Any, ClassVar, Literal, TypeVar
+from typing import Any, ClassVar, Literal, Self, TypeVar
 
 from pydantic import BaseModel, ConfigDict, Field, InstanceOf, TypeAdapter
 from typing_extensions import TypedDict, Unpack
@@ -357,7 +357,7 @@ IMPORTANT: You MUST answer with a JSON object that matches the JSON schema above
 
         return not self.model_supports_tool_calling or not tool_choice_supported
 
-    async def clone(self) -> InstanceOf["ChatModel"]:
+    async def clone(self) -> Self:
         kwargs: ChatModelKwargs = {
             "parameters": ChatModelParameters(**self.parameters.model_dump())
             if self.parameters

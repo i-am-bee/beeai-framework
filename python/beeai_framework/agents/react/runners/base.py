@@ -14,7 +14,7 @@
 
 import math
 from abc import ABC, abstractmethod
-from typing import Any
+from typing import Any, Self
 
 from pydantic import BaseModel, InstanceOf
 
@@ -144,7 +144,7 @@ class BaseRunner(ABC):
             templates[key] = override(default_template) or default_template
         return ReActAgentTemplates(**templates)
 
-    async def clone(self) -> InstanceOf["BaseRunner"]:
+    async def clone(self) -> Self:
         cloned = type(self)(self._input.model_copy(), self._options.model_copy(), self._run)
         cloned._memory = self._memory
         cloned._failed_attempts_counter = await self._failed_attempts_counter.clone()

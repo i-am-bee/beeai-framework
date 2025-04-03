@@ -16,7 +16,7 @@ import logging
 import os
 from abc import ABC
 from collections.abc import AsyncGenerator
-from typing import Any
+from typing import Any, Self
 
 if not os.getenv("LITELLM_LOCAL_MODEL_COST_MAP", None):
     os.environ["LITELLM_LOCAL_MODEL_COST_MAP"] = "True"
@@ -30,7 +30,7 @@ from litellm import (  # type: ignore
 )
 from litellm.types.utils import StreamingChoices
 from openai.lib._pydantic import to_strict_json_schema
-from pydantic import BaseModel, InstanceOf
+from pydantic import BaseModel
 from typing_extensions import Unpack
 
 from beeai_framework.backend.chat import (
@@ -281,7 +281,7 @@ class LiteLLMChatModel(ChatModel, ABC):
     def _format_response_model(self, model: type[BaseModel] | dict[str, Any]) -> type[BaseModel] | dict[str, Any]:
         return model
 
-    async def clone(self) -> InstanceOf["LiteLLMChatModel"]:
+    async def clone(self) -> Self:
         kwargs: ChatModelKwargs = {
             "parameters": self.parameters.model_copy() if self.parameters else ChatModelParameters(),
             "cache": await self.cache.clone() if self.cache else NullCache[list[ChatModelOutput]](),
