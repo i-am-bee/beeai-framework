@@ -36,8 +36,8 @@ Your instructions are:
 {{.}}
 {{/instructions}}
 
-When the user sends a message, figure out a solution and provide a final answer.
-You can use tools to improve your answers if available.
+When the user sends a message, figure out a solution by leveraging tools and provide a final answer. Do not call the same tool twice with the similar inputs.
+Before you call the 'final_answer' tool, ensure that you have gathered sufficient evidence to support the final answer.
 
 # Best practices
 - Use markdown syntax to format code snippets, links, JSON, tables, images, and files.
@@ -47,7 +47,7 @@ You can use tools to improve your answers if available.
 # Date and Time
 The current date and time is: {{formatDate}}
 You do not need a tool to get the current Date and Time. Use the information available here.
-""",
+""",  # noqa: E501
     )
 )
 

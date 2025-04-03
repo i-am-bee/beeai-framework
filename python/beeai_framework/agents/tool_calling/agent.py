@@ -63,12 +63,14 @@ class ToolCallingAgent(BaseAgent[ToolCallingAgentRunOutput]):
         tools: Sequence[AnyTool] | None = None,
         templates: dict[ToolCallingAgentTemplatesKeys, PromptTemplate[Any] | ToolCallingAgentTemplateFactory]
         | None = None,
+        save_intermediate_steps: bool = True,
     ) -> None:
         super().__init__()
         self._llm = llm
         self._memory = memory or UnconstrainedMemory()
         self._tools = tools or []
         self._templates = self._generate_templates(templates)
+        self._save_intermediate_steps = save_intermediate_steps
 
     def run(
         self,
@@ -199,7 +201,10 @@ class ToolCallingAgent(BaseAgent[ToolCallingAgentRunOutput]):
                 )
 
             assert state.result is not None
-            await self.memory.add_many(state.memory.messages[1:])
+            if self._save_intermediate_steps:
+                await self.memory.add_many(state.memory.messages[1:])
+            else:
+                await self.memory.add_many(state.memory.messages[-2:])
             return ToolCallingAgentRunOutput(result=state.result, memory=state.memory)
 
         return self._to_run(handler, signal=None, run_params={"prompt": prompt, "execution": execution})
