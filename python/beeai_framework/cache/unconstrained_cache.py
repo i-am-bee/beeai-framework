@@ -13,7 +13,7 @@
 # limitations under the License.
 
 
-from typing import TypeVar
+from typing import Self, TypeVar
 
 from beeai_framework.cache.base import BaseCache
 
@@ -49,7 +49,7 @@ class UnconstrainedCache(BaseCache[T]):
     async def clear(self) -> None:
         self._provider.clear()
 
-    async def clone(self) -> "UnconstrainedCache"[T]:
-        cloned = UnconstrainedCache[T]()
+    async def clone(self) -> Self:
+        cloned = self.__class__()
         cloned._provider = self._provider
         return cloned

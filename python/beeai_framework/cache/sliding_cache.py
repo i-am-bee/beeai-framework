@@ -13,7 +13,7 @@
 # limitations under the License.
 
 
-from typing import TypeVar
+from typing import Self, TypeVar
 
 from cachetools import Cache, LRUCache, TTLCache
 
@@ -51,8 +51,8 @@ class SlidingCache(BaseCache[T]):
     async def size(self) -> int:
         return len(self._items)
 
-    async def clone(self) -> "SlidingCache"[T]:
+    async def clone(self) -> Self:
         items = self._items
-        cloned = SlidingCache[T](len(items))
+        cloned = self.__class__(len(items))
         cloned._items = items
         return cloned

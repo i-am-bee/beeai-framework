@@ -16,9 +16,9 @@
 from abc import ABC, abstractmethod
 from collections import OrderedDict
 from hashlib import sha512
-from typing import Any, Generic, TypeVar
+from typing import Any, Generic, Self, TypeVar
 
-from pydantic import BaseModel, InstanceOf
+from pydantic import BaseModel
 
 T = TypeVar("T")
 
@@ -70,6 +70,6 @@ class BaseCache(ABC, Generic[T]):
         cache_key_str = str(cache_key_dict).encode("utf-8", errors="ignore")
         return str(int.from_bytes(sha512(cache_key_str).digest()))
 
-    async def clone(self) -> InstanceOf["BaseCache"[T]]:
+    async def clone(self) -> Self:
         cloned = self.__class__()
         return cloned
