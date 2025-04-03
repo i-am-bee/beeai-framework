@@ -38,12 +38,12 @@ async def main() -> None:
 
     # Create agent
     agent = ToolCallingAgent(
-        llm=ChatModel.from_name("ollama:llama3.1"), memory=UnconstrainedMemory(), tools=[OpenMeteoTool()]
+        llm=ChatModel.from_name("ollama:granite3.1-dense:8b"), memory=UnconstrainedMemory(), tools=[OpenMeteoTool()]
     )
 
     # Main interaction loop with user input
-    for prompt in reader:
-        response = await agent.run(prompt).on("*", process_agent_events)
+    for prompt in ["What is the current weather in Las Vegas?"]:
+        response = await agent.run(prompt, expected_output="J").on("*", process_agent_events)
         reader.write("Agent 🤖 : ", response.result.text)
 
     print("======DONE (showing the full message history)=======")
