@@ -70,8 +70,7 @@ async def main() -> None:
         .on(
             "success",
             lambda data, event: reader.write(
-                f"->Step '{data.step}' has been completed with the following outcome."
-                f"\n  -> {data.state.final_answer}\n",
+                f"->Step '{data.step}' has been completed with the following outcome.\n\n{data.state.final_answer}\n\n",
                 data.model_dump(exclude={"data"}),
             ),
         )
