@@ -215,6 +215,9 @@ class ToolCallingAgent(BaseAgent[ToolCallingAgentRunOutput]):
         return templates
 
     async def clone(self) -> "ToolCallingAgent":
-        return ToolCallingAgent(
+        cloned = ToolCallingAgent(
             llm=self._llm, memory=self._memory, tools=self._tools, templates=self._templates.model_dump()
         )
+        cloned.emitter = await self.emitter.clone()
+        cloned._is_running = self._is_running
+        return cloned

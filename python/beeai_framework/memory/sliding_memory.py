@@ -134,3 +134,8 @@ class SlidingMemory(BaseMemory):
     def reset(self) -> None:
         """Clear all messages from memory."""
         self._messages.clear()
+
+    async def clone(self) -> "SlidingMemory":
+        cloned = SlidingMemory(self._config)
+        cloned._messages = self._messages.copy()
+        return cloned
