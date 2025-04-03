@@ -5,13 +5,11 @@ import traceback
 
 from pydantic import BaseModel, Field
 
-from beeai_framework import ToolMessage
-from beeai_framework.adapters.watsonx.backend.chat import WatsonxChatModel
-from beeai_framework.backend.chat import ChatModel
-from beeai_framework.backend.message import MessageToolResultContent, UserMessage
-from beeai_framework.cancellation import AbortSignal
+from beeai_framework.adapters.watsonx import WatsonxChatModel
+from beeai_framework.backend import ChatModel, MessageToolResultContent, ToolMessage, UserMessage
 from beeai_framework.errors import AbortError, FrameworkError
-from beeai_framework.tools.weather.openmeteo import OpenMeteoTool
+from beeai_framework.tools.weather import OpenMeteoTool
+from beeai_framework.utils import AbortSignal
 
 # Setting can be passed here during initiation or pre-configured via environment variables
 llm = WatsonxChatModel(

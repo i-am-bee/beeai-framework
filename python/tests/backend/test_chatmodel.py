@@ -20,33 +20,28 @@ import pytest
 import pytest_asyncio
 from pydantic import BaseModel
 
-from beeai_framework.adapters.amazon_bedrock.backend.chat import AmazonBedrockChatModel
-from beeai_framework.adapters.anthropic.backend.chat import AnthropicChatModel
-from beeai_framework.adapters.azure_openai.backend.chat import AzureOpenAIChatModel
-from beeai_framework.adapters.groq.backend.chat import GroqChatModel
-from beeai_framework.adapters.ollama.backend.chat import OllamaChatModel
-from beeai_framework.adapters.openai.backend.chat import OpenAIChatModel
-from beeai_framework.adapters.vertexai.backend.chat import VertexAIChatModel
-from beeai_framework.adapters.watsonx.backend.chat import WatsonxChatModel
-from beeai_framework.adapters.xai.backend.chat import XAIChatModel
-from beeai_framework.backend.chat import (
-    ChatModel,
-)
-from beeai_framework.backend.message import (
+from beeai_framework.adapters.amazon_bedrock import AmazonBedrockChatModel
+from beeai_framework.adapters.anthropic import AnthropicChatModel
+from beeai_framework.adapters.azure_openai import AzureOpenAIChatModel
+from beeai_framework.adapters.groq import GroqChatModel
+from beeai_framework.adapters.ollama import OllamaChatModel
+from beeai_framework.adapters.openai import OpenAIChatModel
+from beeai_framework.adapters.vertexai import VertexAIChatModel
+from beeai_framework.adapters.watsonx import WatsonxChatModel
+from beeai_framework.adapters.xai import XAIChatModel
+from beeai_framework.backend import (
     AnyMessage,
     AssistantMessage,
+    ChatModel,
+    ChatModelOutput,
+    ChatModelStructureOutput,
     CustomMessage,
     UserMessage,
 )
-from beeai_framework.backend.types import (
-    ChatModelInput,
-    ChatModelOutput,
-    ChatModelStructureInput,
-    ChatModelStructureOutput,
-)
-from beeai_framework.cancellation import AbortSignal
+from beeai_framework.backend.types import ChatModelInput, ChatModelStructureInput
 from beeai_framework.context import RunContext
 from beeai_framework.errors import AbortError
+from beeai_framework.utils import AbortSignal
 
 """
 Utility functions and classes
@@ -164,13 +159,13 @@ def test_chat_model_from(monkeypatch: pytest.MonkeyPatch) -> None:
     watsonx_chat_model = ChatModel.from_name(
         "watsonx:ibm/granite-3-8b-instruct",
         {
-            "url": "http://somewhere",
+            "api_base": "http://somewhere",
             "project_id": "proj_id_123",
             "api_key": "api_key_123",
         },
     )
     assert isinstance(watsonx_chat_model, WatsonxChatModel)
-    assert watsonx_chat_model._settings["url"] == "http://somewhere"
+    assert watsonx_chat_model._settings["api_base"] == "http://somewhere"
     assert watsonx_chat_model._settings["project_id"] == "proj_id_123"
     assert watsonx_chat_model._settings["api_key"] == "api_key_123"
 

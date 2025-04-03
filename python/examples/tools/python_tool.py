@@ -6,8 +6,8 @@ import traceback
 
 from dotenv import load_dotenv
 
-from beeai_framework.adapters.ollama.backend.chat import OllamaChatModel
-from beeai_framework.agents.react.agent import ReActAgent
+from beeai_framework.adapters.ollama import OllamaChatModel
+from beeai_framework.agents.react import ReActAgent
 from beeai_framework.errors import FrameworkError
 from beeai_framework.memory import UnconstrainedMemory
 from beeai_framework.tools.code import LocalPythonStorage, PythonTool

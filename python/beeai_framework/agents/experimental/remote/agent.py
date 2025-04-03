@@ -45,11 +45,11 @@ from beeai_framework.agents.experimental.remote.types import (
     RemoteAgentRunOutput,
 )
 from beeai_framework.backend.message import AssistantMessage
-from beeai_framework.cancellation import AbortSignal
 from beeai_framework.context import Run, RunContext
 from beeai_framework.emitter import Emitter
 from beeai_framework.errors import FrameworkError
 from beeai_framework.memory import BaseMemory
+from beeai_framework.utils import AbortSignal
 
 
 class RemoteAgent(BaseAgent[RemoteAgentRunOutput]):

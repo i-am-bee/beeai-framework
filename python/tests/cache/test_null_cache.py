@@ -16,7 +16,7 @@
 import pytest
 import pytest_asyncio
 
-from beeai_framework.cache.null_cache import NullCache
+from beeai_framework.cache import NullCache
 
 
 @pytest_asyncio.fixture

@@ -2,9 +2,9 @@ import asyncio
 import sys
 import traceback
 
-from beeai_framework.backend.message import AssistantMessage, SystemMessage, UserMessage
+from beeai_framework.backend import AssistantMessage, SystemMessage, UserMessage
 from beeai_framework.errors import FrameworkError
-from beeai_framework.memory.unconstrained_memory import UnconstrainedMemory
+from beeai_framework.memory import UnconstrainedMemory
 
 
 async def main() -> None:

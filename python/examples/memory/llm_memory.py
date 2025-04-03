@@ -2,11 +2,10 @@ import asyncio
 import sys
 import traceback
 
-from beeai_framework import AssistantMessage
-from beeai_framework.adapters.ollama.backend.chat import OllamaChatModel
-from beeai_framework.backend.message import SystemMessage, UserMessage
+from beeai_framework.adapters.ollama import OllamaChatModel
+from beeai_framework.backend import AssistantMessage, SystemMessage, UserMessage
 from beeai_framework.errors import FrameworkError
-from beeai_framework.memory.unconstrained_memory import UnconstrainedMemory
+from beeai_framework.memory import UnconstrainedMemory
 
 
 async def main() -> None:

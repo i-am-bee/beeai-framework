@@ -18,7 +18,7 @@ from typing import Any
 import pytest
 from pydantic import ValidationError
 
-from beeai_framework.utils.models import JSONSchemaModel
+from beeai_framework.utils import JSONSchemaModel
 
 """
 Utility functions and classes

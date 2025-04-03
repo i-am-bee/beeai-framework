@@ -73,13 +73,11 @@ import traceback
 
 from pydantic import BaseModel, Field
 
-from beeai_framework import ToolMessage
-from beeai_framework.adapters.watsonx.backend.chat import WatsonxChatModel
-from beeai_framework.backend.chat import ChatModel
-from beeai_framework.backend.message import MessageToolResultContent, UserMessage
-from beeai_framework.cancellation import AbortSignal
+from beeai_framework.adapters.watsonx import WatsonxChatModel
+from beeai_framework.backend import ChatModel, MessageToolResultContent, ToolMessage, UserMessage
 from beeai_framework.errors import AbortError, FrameworkError
-from beeai_framework.tools.weather.openmeteo import OpenMeteoTool
+from beeai_framework.tools.weather import OpenMeteoTool
+from beeai_framework.utils import AbortSignal
 
 # Setting can be passed here during initiation or pre-configured via environment variables
 llm = WatsonxChatModel(
@@ -261,8 +259,8 @@ import asyncio
 import sys
 import traceback
 
-from beeai_framework import UserMessage
-from beeai_framework.adapters.ollama.backend.chat import OllamaChatModel
+from beeai_framework.adapters.ollama import OllamaChatModel
+from beeai_framework.backend import UserMessage
 from beeai_framework.errors import FrameworkError
 from examples.helpers.io import ConsoleReader
 
@@ -348,8 +346,7 @@ import traceback
 
 from pydantic import BaseModel, Field
 
-from beeai_framework import UserMessage
-from beeai_framework.backend.chat import ChatModel
+from beeai_framework.backend import ChatModel, UserMessage
 from beeai_framework.errors import FrameworkError
 
 
@@ -405,14 +402,18 @@ import re
 import sys
 import traceback
 
-from beeai_framework import SystemMessage, ToolMessage, UserMessage
-from beeai_framework.backend.chat import ChatModel
-from beeai_framework.backend.message import AnyMessage, MessageToolResultContent
-from beeai_framework.backend.types import ChatModelParameters
+from beeai_framework.backend import (
+    AnyMessage,
+    ChatModel,
+    ChatModelParameters,
+    MessageToolResultContent,
+    SystemMessage,
+    ToolMessage,
+    UserMessage,
+)
 from beeai_framework.errors import FrameworkError
-from beeai_framework.tools import ToolOutput
+from beeai_framework.tools import AnyTool, ToolOutput
 from beeai_framework.tools.search import DuckDuckGoSearchTool
-from beeai_framework.tools.tool import AnyTool
 from beeai_framework.tools.weather.openmeteo import OpenMeteoTool
 
 

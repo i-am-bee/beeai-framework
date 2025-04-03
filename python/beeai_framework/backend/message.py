@@ -73,12 +73,6 @@ class MessageToolCallContent(BaseModel):
     args: str
 
 
-class MessageInput(BaseModel):
-    role: Role | str
-    text: str
-    meta: MessageMeta | None = None
-
-
 class Message(ABC, Generic[T]):
     role: Role | str
     content: list[T]

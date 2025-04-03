@@ -122,12 +122,11 @@ import asyncio
 import sys
 import traceback
 
-from beeai_framework.agents.react.agent import ReActAgent
-from beeai_framework.agents.react.types import ReActAgentRunOutput
-from beeai_framework.backend.chat import ChatModel
+from beeai_framework.agents.react import ReActAgent, ReActAgentRunOutput
+from beeai_framework.backend import ChatModel
 from beeai_framework.errors import FrameworkError
 from beeai_framework.logger import Logger
-from beeai_framework.memory.unconstrained_memory import UnconstrainedMemory
+from beeai_framework.memory import UnconstrainedMemory
 
 
 async def main() -> None:

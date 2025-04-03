@@ -1,7 +1,6 @@
 import asyncio
 
-from beeai_framework import tool
-from beeai_framework.tools import ToolError
+from beeai_framework.tools import ToolError, tool
 
 
 async def main() -> None:

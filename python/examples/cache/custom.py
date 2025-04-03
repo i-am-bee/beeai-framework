@@ -1,6 +1,6 @@
 from typing import TypeVar
 
-from beeai_framework.cache.base import BaseCache
+from beeai_framework.cache import BaseCache
 
 T = TypeVar("T")
 

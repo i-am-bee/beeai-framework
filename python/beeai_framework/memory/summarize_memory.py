@@ -16,9 +16,8 @@
 from collections.abc import Iterable
 from typing import Any
 
-from beeai_framework.backend import SystemMessage
 from beeai_framework.backend.chat import ChatModel
-from beeai_framework.backend.message import AnyMessage, UserMessage
+from beeai_framework.backend.message import AnyMessage, SystemMessage, UserMessage
 from beeai_framework.memory.base_memory import BaseMemory
 
 
@@ -27,7 +26,7 @@ class SummarizeMemory(BaseMemory):
 
     def __init__(self, model: ChatModel) -> None:
         self._messages: list[AnyMessage] = []
-        self.model = model
+        self._model = model
 
     @property
     def messages(self) -> list[AnyMessage]:
@@ -61,7 +60,7 @@ Previous messages:
 Summary:""".format("\n".join([f"{msg.role}: {msg.text}" for msg in messages]))
         )
 
-        response = await self.model.create(messages=[prompt])
+        response = await self._model.create(messages=[prompt])
 
         return response.messages[0].get_texts()[0].text
 

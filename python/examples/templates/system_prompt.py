@@ -6,7 +6,7 @@ from beeai_framework.agents.react.runners.default.prompts import (
     ToolDefinition,
 )
 from beeai_framework.errors import FrameworkError
-from beeai_framework.tools.weather.openmeteo import OpenMeteoTool
+from beeai_framework.tools.weather import OpenMeteoTool
 from beeai_framework.utils.strings import to_json
 
 

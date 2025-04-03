@@ -73,13 +73,13 @@ class Emitter:
     ) -> None:
         super().__init__()
 
-        self.listeners: set[Listener] = set()
-        self.group_id: str | None = group_id
+        self._listeners: set[Listener] = set()
+        self._group_id: str | None = group_id
         self.namespace: list[str] = namespace or []
         self.creator: object | None = creator
         self.context: dict[Any, Any] = context or {}
         self.trace: EventTrace | None = trace
-        self.cleanups: list[CleanupFn] = []
+        self._cleanups: list[CleanupFn] = []
         self._events: dict[str, type] = events or {}
 
         assert_valid_namespace(self.namespace)
@@ -108,7 +108,7 @@ class Emitter:
     ) -> "Emitter":
         child_emitter = Emitter(
             trace=trace or self.trace,
-            group_id=group_id or self.group_id,
+            group_id=group_id or self._group_id,
             context={**self.context, **(context or {})},
             creator=creator or self.creator,
             namespace=namespace + self.namespace if namespace else self.namespace[:],
@@ -116,7 +116,7 @@ class Emitter:
         )
 
         cleanup = child_emitter.pipe(self)
-        self.cleanups.append(cleanup)
+        self._cleanups.append(cleanup)
 
         return child_emitter
 
@@ -132,10 +132,10 @@ class Emitter:
         )
 
     def destroy(self) -> None:
-        self.listeners.clear()
-        for cleanup in self.cleanups:
+        self._listeners.clear()
+        for cleanup in self._cleanups:
             cleanup()
-        self.cleanups.clear()
+        self._cleanups.clear()
 
     def on(self, event: str, callback: Callback, options: EmitterOptions | None = None) -> CleanupFn:
         return self.match(event, callback, options)
@@ -181,26 +181,26 @@ class Emitter:
             return lambda event: all(match_fn(event) for match_fn in matchers)
 
         listener = Listener(match=create_matcher(), raw=matcher, callback=callback, options=options)
-        self.listeners.add(listener)
+        self._listeners.add(listener)
 
-        return lambda: self.listeners.remove(listener)
+        return lambda: self._listeners.remove(listener)
 
     async def emit(self, name: str, value: Any) -> None:
         try:
             assert_valid_name(name)
-            event = self.create_event(name)
+            event = self._create_event(name)
             await self._invoke(value, event)
         except Exception as e:
             raise EmitterError.ensure(e)
 
     async def _invoke(self, data: Any, event: EventMeta) -> None:
         executions: list[Coroutine[Any, Any, Any] | Task[Any]] = []
-        for listener in self.listeners:
+        for listener in self._listeners:
             if not listener.match(event):
                 continue
 
             if listener.options and listener.options.once:
-                self.listeners.remove(listener)
+                self._listeners.remove(listener)
 
             async def run(ln: Listener = listener) -> Any:
                 try:
@@ -220,10 +220,10 @@ class Emitter:
 
         await asyncio.gather(*executions)
 
-    def create_event(self, name: str) -> EventMeta:
+    def _create_event(self, name: str) -> EventMeta:
         return EventMeta(
             id=str(uuid.uuid4()),
-            group_id=self.group_id,
+            group_id=self._group_id,
             name=name,
             path=".".join([*self.namespace, name]),
             created_at=datetime.now(tz=UTC),

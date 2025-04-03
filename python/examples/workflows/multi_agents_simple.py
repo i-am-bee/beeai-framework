@@ -2,11 +2,11 @@ import asyncio
 import sys
 import traceback
 
-from beeai_framework.backend.chat import ChatModel
-from beeai_framework.emitter.types import EmitterOptions
+from beeai_framework.backend import ChatModel
+from beeai_framework.emitter import EmitterOptions
 from beeai_framework.errors import FrameworkError
-from beeai_framework.tools.search.wikipedia import WikipediaTool
-from beeai_framework.tools.weather.openmeteo import OpenMeteoTool
+from beeai_framework.tools.search import WikipediaTool
+from beeai_framework.tools.weather import OpenMeteoTool
 from beeai_framework.workflows.agent import AgentWorkflow, AgentWorkflowInput
 from examples.helpers.io import ConsoleReader
 

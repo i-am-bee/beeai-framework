@@ -22,11 +22,12 @@ from datetime import UTC, datetime
 from types import NoneType
 from typing import Any, Generic, Protocol, Self, TypeVar
 
-from beeai_framework.cancellation import AbortController, AbortSignal, register_signals
 from beeai_framework.emitter import Callback, Emitter, EmitterOptions, EventTrace, Matcher
 from beeai_framework.errors import AbortError, FrameworkError
 from beeai_framework.logger import Logger
+from beeai_framework.utils import AbortController, AbortSignal
 from beeai_framework.utils.asynchronous import ensure_async
+from beeai_framework.utils.cancellation import register_signals
 from beeai_framework.utils.dicts import exclude_keys
 
 R = TypeVar("R")
@@ -46,31 +47,31 @@ class Run(Generic[R]):
     def __init__(self, handler: Callable[[], R | Awaitable[R]], context: "RunContext") -> None:
         super().__init__()
         self.handler = ensure_async(handler)
-        self.tasks: list[tuple[Callable[..., Any], list[Any]]] = []
-        self.run_context = context
+        self._tasks: list[tuple[Callable[..., Any], list[Any]]] = []
+        self._run_context = context
 
     def __await__(self) -> Generator[Any, None, R]:
         return self._run_tasks().__await__()
 
     def observe(self, fn: Callable[[Emitter], Any]) -> Self:
-        self.tasks.append((fn, [self.run_context.emitter]))
+        self._tasks.append((fn, [self._run_context.emitter]))
         return self
 
     def on(self, matcher: Matcher, callback: Callback, options: EmitterOptions | None = None) -> Self:
-        self.tasks.append((self.run_context.emitter.match, [matcher, callback, options]))
+        self._tasks.append((self._run_context.emitter.match, [matcher, callback, options]))
         return self
 
     def context(self, context: dict[str, Any]) -> Self:
-        self.tasks.append((self._set_context, [context]))
+        self._tasks.append((self._set_context, [context]))
         return self
 
     def middleware(self, fn: Callable[["RunContext"], None]) -> Self:
-        self.tasks.append((fn, [self.run_context]))
+        self._tasks.append((fn, [self._run_context]))
         return self
 
     async def _run_tasks(self) -> R:
-        tasks = self.tasks[:]
-        self.tasks.clear()
+        tasks = self._tasks[:]
+        self._tasks.clear()
 
         for fn, params in tasks:
             await ensure_async(fn)(*params)
@@ -78,8 +79,8 @@ class Run(Generic[R]):
         return await self.handler()
 
     def _set_context(self, context: dict[str, Any]) -> None:
-        self.run_context.context.update(context)
-        self.run_context.emitter.context.update(context)
+        self._run_context.context.update(context)
+        self._run_context.emitter.context.update(context)
 
 
 class RunContext:
@@ -111,21 +112,21 @@ class RunContext:
         if parent:
             self.emitter.pipe(parent.emitter)
 
-        self.controller = AbortController()
+        self._controller = AbortController()
         extra_signals = []
         if parent:
             extra_signals.append(parent.signal)
         if signal:
             extra_signals.append(signal)
-        register_signals(self.controller, extra_signals)
+        register_signals(self._controller, extra_signals)
 
     @property
     def signal(self) -> AbortSignal:
-        return self.controller.signal
+        return self._controller.signal
 
     def destroy(self) -> None:
         self.emitter.destroy()
-        self.controller.abort("Context has been destroyed.")
+        self._controller.abort("Context has been destroyed.")
 
     @staticmethod
     def enter(
@@ -195,3 +196,6 @@ class RunContext:
                 context.destroy()
 
         return Run(handler, context)
+
+
+__all__ = ["Run", "RunContext"]

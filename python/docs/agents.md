@@ -117,7 +117,7 @@ from beeai_framework.agents.react.runners.default.prompts import (
     ToolDefinition,
 )
 from beeai_framework.errors import FrameworkError
-from beeai_framework.tools.weather.openmeteo import OpenMeteoTool
+from beeai_framework.tools.weather import OpenMeteoTool
 from beeai_framework.utils.strings import to_json
 
 
@@ -241,21 +241,13 @@ import traceback
 
 from pydantic import BaseModel, Field, InstanceOf
 
-from beeai_framework import (
-    AssistantMessage,
-    BaseAgent,
-    BaseMemory,
-    SystemMessage,
-    UnconstrainedMemory,
-    UserMessage,
-)
-from beeai_framework.adapters.ollama.backend.chat import OllamaChatModel
-from beeai_framework.agents.types import AgentMeta, BaseAgentRunOptions
-from beeai_framework.backend.chat import ChatModel
-from beeai_framework.backend.message import AnyMessage
+from beeai_framework.adapters.ollama import OllamaChatModel
+from beeai_framework.agents import AgentMeta, BaseAgent, BaseAgentRunOptions
+from beeai_framework.backend import AnyMessage, AssistantMessage, ChatModel, SystemMessage, UserMessage
 from beeai_framework.context import Run, RunContext
 from beeai_framework.emitter import Emitter
 from beeai_framework.errors import FrameworkError
+from beeai_framework.memory import BaseMemory, UnconstrainedMemory
 
 
 class State(BaseModel):
@@ -366,12 +358,11 @@ import asyncio
 import sys
 import traceback
 
-from beeai_framework.agents.react.agent import ReActAgent
-from beeai_framework.agents.types import AgentExecutionConfig
-from beeai_framework.backend.chat import ChatModel
-from beeai_framework.backend.message import AssistantMessage, UserMessage
+from beeai_framework.agents import AgentExecutionConfig
+from beeai_framework.agents.react import ReActAgent
+from beeai_framework.backend import AssistantMessage, ChatModel, UserMessage
 from beeai_framework.errors import FrameworkError
-from beeai_framework.memory.unconstrained_memory import UnconstrainedMemory
+from beeai_framework.memory import UnconstrainedMemory
 
 # Initialize the memory and LLM
 memory = UnconstrainedMemory()
@@ -455,11 +446,11 @@ import asyncio
 import sys
 import traceback
 
-from beeai_framework.backend.chat import ChatModel
-from beeai_framework.emitter.types import EmitterOptions
+from beeai_framework.backend import ChatModel
+from beeai_framework.emitter import EmitterOptions
 from beeai_framework.errors import FrameworkError
 from beeai_framework.tools.search import WikipediaTool
-from beeai_framework.tools.weather.openmeteo import OpenMeteoTool
+from beeai_framework.tools.weather import OpenMeteoTool
 from beeai_framework.workflows.agent import AgentWorkflow, AgentWorkflowInput
 from examples.helpers.io import ConsoleReader
 

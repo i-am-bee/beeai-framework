@@ -5,10 +5,10 @@ from dotenv import load_dotenv
 from mcp import ClientSession, StdioServerParameters
 from mcp.client.stdio import stdio_client
 
-from beeai_framework.adapters.ollama.backend.chat import OllamaChatModel
+from beeai_framework.adapters.ollama import OllamaChatModel
 from beeai_framework.agents.react import ReActAgent
 from beeai_framework.memory import UnconstrainedMemory
-from beeai_framework.tools.mcp_tools import MCPTool
+from beeai_framework.tools.mcp import MCPTool
 
 load_dotenv()
 

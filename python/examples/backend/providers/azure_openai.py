@@ -3,15 +3,13 @@ from typing import Final
 
 from pydantic import BaseModel, Field
 
-from beeai_framework.adapters.azure_openai.backend.chat import AzureOpenAIChatModel
-from beeai_framework.backend.chat import ChatModel
-from beeai_framework.backend.events import ChatModelNewTokenEvent
-from beeai_framework.backend.message import UserMessage
-from beeai_framework.cancellation import AbortSignal
+from beeai_framework.adapters.azure_openai import AzureOpenAIChatModel
+from beeai_framework.backend import ChatModel, ChatModelNewTokenEvent, UserMessage
 from beeai_framework.emitter import EventMeta
 from beeai_framework.errors import AbortError
 from beeai_framework.parsers.field import ParserField
 from beeai_framework.parsers.line_prefix import LinePrefixParser, LinePrefixParserNode
+from beeai_framework.utils import AbortSignal
 
 MODEL_NAME: Final[str] = "gpt-4o-mini"
 

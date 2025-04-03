@@ -3,7 +3,7 @@ import json
 import sys
 import traceback
 
-from beeai_framework.agents.experimental.remote.agent import RemoteAgent
+from beeai_framework.agents.experimental.remote import RemoteAgent
 from beeai_framework.errors import FrameworkError
 from examples.helpers.io import ConsoleReader
 

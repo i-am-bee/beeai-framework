@@ -2,8 +2,7 @@ import asyncio
 import sys
 import traceback
 
-from beeai_framework import SystemMessage, UserMessage
-from beeai_framework.backend.chat import ChatModel
+from beeai_framework.backend import ChatModel, SystemMessage, UserMessage
 from beeai_framework.errors import FrameworkError
 from beeai_framework.memory.unconstrained_memory import UnconstrainedMemory
 from examples.helpers.io import ConsoleReader

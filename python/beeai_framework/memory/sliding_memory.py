@@ -19,8 +19,8 @@ from dataclasses import dataclass
 from typing import Any, TypedDict
 
 from beeai_framework.backend.message import AnyMessage
-from beeai_framework.memory import ResourceError
 from beeai_framework.memory.base_memory import BaseMemory
+from beeai_framework.memory.errors import ResourceError
 
 
 class SlidingMemoryHandlers(TypedDict, total=False):
@@ -47,20 +47,25 @@ class SlidingMemory(BaseMemory):
             config: Configuration including window size and optional handlers
         """
         self._messages: list[AnyMessage] = []
-        self.config = config
+        self._config = config
 
         # Set default handlers if not provided
-        if self.config.handlers is None:
-            self.config.handlers = {}
+        if self._config.handlers is None:
+            self._config.handlers = {}
 
         # Set default removal selector if not provided
-        if "removal_selector" not in self.config.handlers:
-            self.config.handlers["removal_selector"] = lambda messages: [messages[0]]
+        if "removal_selector" not in self._config.handlers:
+            self._config.handlers["removal_selector"] = lambda messages: [messages[0]]
 
     @property
     def messages(self) -> list[AnyMessage]:
         """Get list of stored messages."""
         return self._messages
+
+    @property
+    def config(self) -> SlidingMemoryConfig:
+        """Get sliding memory configuration."""
+        return self._config
 
     def _is_overflow(self, additional_messages: int = 1) -> bool:
         """Check if adding messages would cause overflow."""
@@ -140,5 +145,5 @@ class SlidingMemory(BaseMemory):
 
     def load_snapshot(self, state: dict[str, Any]) -> None:
         """Restore state from a snapshot."""
-        self.config = SlidingMemoryConfig(size=state["config"]["size"], handlers=state["config"]["handlers"])
+        self._config = SlidingMemoryConfig(size=state["config"]["size"], handlers=state["config"]["handlers"])
         self._messages = copy(state["messages"])

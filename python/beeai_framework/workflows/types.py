@@ -19,7 +19,7 @@ from typing import Any, Generic, Literal
 from pydantic import BaseModel
 from typing_extensions import TypeVar
 
-from beeai_framework.cancellation import AbortSignal
+from beeai_framework.utils import AbortSignal
 from beeai_framework.utils.types import MaybeAsync
 
 T = TypeVar("T", bound=BaseModel)

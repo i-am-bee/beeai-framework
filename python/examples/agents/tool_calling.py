@@ -6,13 +6,13 @@ from typing import Any
 
 from dotenv import load_dotenv
 
-from beeai_framework import UnconstrainedMemory
-from beeai_framework.agents.tool_calling.agent import ToolCallingAgent
-from beeai_framework.backend.chat import ChatModel
-from beeai_framework.emitter.emitter import EventMeta
+from beeai_framework.agents.tool_calling import ToolCallingAgent
+from beeai_framework.backend import ChatModel
+from beeai_framework.emitter import EventMeta
 from beeai_framework.errors import FrameworkError
 from beeai_framework.logger import Logger
-from beeai_framework.tools.weather.openmeteo import OpenMeteoTool
+from beeai_framework.memory import UnconstrainedMemory
+from beeai_framework.tools.weather import OpenMeteoTool
 from examples.helpers.io import ConsoleReader
 
 # Load environment variables

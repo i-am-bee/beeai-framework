@@ -6,18 +6,17 @@ from typing import Any
 from dotenv import load_dotenv
 from pydantic import BaseModel
 
-from beeai_framework import UnconstrainedMemory
-from beeai_framework.adapters.ollama.backend.chat import OllamaChatModel
-from beeai_framework.agents.react.agent import ReActAgent
-from beeai_framework.agents.types import AgentExecutionConfig
-from beeai_framework.cancellation import AbortSignal
-from beeai_framework.emitter.emitter import Emitter, EventMeta
-from beeai_framework.emitter.types import EmitterOptions
+from beeai_framework.adapters.ollama import OllamaChatModel
+from beeai_framework.agents import AgentExecutionConfig
+from beeai_framework.agents.react import ReActAgent
+from beeai_framework.emitter import Emitter, EmitterOptions, EventMeta
 from beeai_framework.errors import FrameworkError
+from beeai_framework.memory import UnconstrainedMemory
 from beeai_framework.template import PromptTemplateInput
+from beeai_framework.tools import AnyTool
 from beeai_framework.tools.search import DuckDuckGoSearchTool
-from beeai_framework.tools.tool import AnyTool
-from beeai_framework.tools.weather.openmeteo import OpenMeteoTool
+from beeai_framework.tools.weather import OpenMeteoTool
+from beeai_framework.utils import AbortSignal
 from examples.helpers.io import ConsoleReader
 
 # Load environment variables

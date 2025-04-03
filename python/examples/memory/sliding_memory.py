@@ -2,9 +2,9 @@ import asyncio
 import sys
 import traceback
 
-from beeai_framework import AssistantMessage, SystemMessage, UserMessage
+from beeai_framework.backend import AssistantMessage, SystemMessage, UserMessage
 from beeai_framework.errors import FrameworkError
-from beeai_framework.memory.sliding_memory import SlidingMemory, SlidingMemoryConfig
+from beeai_framework.memory import SlidingMemory, SlidingMemoryConfig
 
 
 async def main() -> None:

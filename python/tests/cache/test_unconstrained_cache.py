@@ -16,7 +16,7 @@
 import pytest
 import pytest_asyncio
 
-from beeai_framework.cache.unconstrained_cache import UnconstrainedCache
+from beeai_framework.cache import UnconstrainedCache
 
 
 @pytest_asyncio.fixture

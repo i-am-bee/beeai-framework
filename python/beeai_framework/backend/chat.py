@@ -48,13 +48,13 @@ from beeai_framework.backend.utils import (
     parse_model,
 )
 from beeai_framework.cache.null_cache import NullCache
-from beeai_framework.cancellation import AbortController, AbortSignal
 from beeai_framework.context import Run, RunContext
 from beeai_framework.emitter import Emitter
 from beeai_framework.logger import Logger
 from beeai_framework.retryable import Retryable, RetryableConfig, RetryableContext, RetryableInput
 from beeai_framework.template import PromptTemplate, PromptTemplateInput
 from beeai_framework.tools.tool import AnyTool, Tool
+from beeai_framework.utils import AbortController, AbortSignal
 from beeai_framework.utils.asynchronous import to_async_generator
 from beeai_framework.utils.models import ModelLike
 from beeai_framework.utils.strings import generate_random_string, to_json

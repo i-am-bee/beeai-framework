@@ -15,6 +15,7 @@
 
 import pytest
 
+from beeai_framework.agents import AgentExecutionConfig
 from beeai_framework.agents.react.runners.base import ReActAgentRunnerToolInput
 from beeai_framework.agents.react.runners.default.runner import DefaultRunner
 from beeai_framework.agents.react.types import (
@@ -24,14 +25,11 @@ from beeai_framework.agents.react.types import (
     ReActAgentRunInput,
     ReActAgentRunOptions,
 )
-from beeai_framework.agents.types import (
-    AgentExecutionConfig,
-)
-from beeai_framework.backend.chat import ChatModel
-from beeai_framework.cancellation import AbortSignal
+from beeai_framework.backend import ChatModel
 from beeai_framework.emitter import Emitter
-from beeai_framework.memory.token_memory import TokenMemory
-from beeai_framework.tools.weather.openmeteo import OpenMeteoTool
+from beeai_framework.memory import TokenMemory
+from beeai_framework.tools.weather import OpenMeteoTool
+from beeai_framework.utils import AbortSignal
 
 """
 E2E Tests

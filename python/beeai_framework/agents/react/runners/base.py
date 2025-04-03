@@ -30,12 +30,12 @@ from beeai_framework.agents.react.types import (
     ReActAgentTemplateFactory,
     ReActAgentTemplates,
 )
-from beeai_framework.cancellation import AbortSignal
 from beeai_framework.context import RunContext
 from beeai_framework.emitter.emitter import Emitter
 from beeai_framework.memory.base_memory import BaseMemory
 from beeai_framework.template import PromptTemplate
 from beeai_framework.tools import ToolOutput
+from beeai_framework.utils import AbortSignal
 from beeai_framework.utils.counter import RetryCounter
 
 
@@ -113,7 +113,7 @@ class BaseRunner(ABC):
         return ReActAgentRunnerIteration(emitter=emitter, state=iteration.state, meta=meta, signal=self._run.signal)
 
     async def init(self, input: ReActAgentRunInput) -> None:
-        self._memory = await self.init_memory(input)
+        self._memory = await self._init_memory(input)
 
     @abstractmethod
     async def llm(self, input: ReActAgentRunnerLLMInput) -> ReActAgentRunIteration:
@@ -128,7 +128,7 @@ class BaseRunner(ABC):
         pass
 
     @abstractmethod
-    async def init_memory(self, input: ReActAgentRunInput) -> BaseMemory:
+    async def _init_memory(self, input: ReActAgentRunInput) -> BaseMemory:
         pass
 
     @property

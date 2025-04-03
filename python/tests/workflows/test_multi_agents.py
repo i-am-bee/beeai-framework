@@ -14,8 +14,8 @@
 
 import pytest
 
-from beeai_framework.adapters.ollama.backend.chat import OllamaChatModel
-from beeai_framework.backend.message import UserMessage
+from beeai_framework.adapters.ollama import OllamaChatModel
+from beeai_framework.backend import UserMessage
 from beeai_framework.memory import UnconstrainedMemory
 from beeai_framework.workflows.agent import AgentWorkflow
 

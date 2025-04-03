@@ -83,7 +83,7 @@ import asyncio
 import sys
 import traceback
 
-from beeai_framework.cache.unconstrained_cache import UnconstrainedCache
+from beeai_framework.cache import UnconstrainedCache
 from beeai_framework.errors import FrameworkError
 
 
@@ -133,9 +133,9 @@ import asyncio
 import sys
 import traceback
 
-from beeai_framework.cache.sliding_cache import SlidingCache
+from beeai_framework.cache import SlidingCache
 from beeai_framework.errors import FrameworkError
-from beeai_framework.tools.search.wikipedia import (
+from beeai_framework.tools.search import (
     WikipediaTool,
     WikipediaToolInput,
 )
@@ -178,10 +178,9 @@ import asyncio
 import sys
 import traceback
 
-from beeai_framework.adapters.ollama.backend.chat import OllamaChatModel
-from beeai_framework.backend.message import UserMessage
-from beeai_framework.backend.types import ChatModelParameters
-from beeai_framework.cache.sliding_cache import SlidingCache
+from beeai_framework.adapters.ollama import OllamaChatModel
+from beeai_framework.backend import ChatModelParameters, UserMessage
+from beeai_framework.cache import SlidingCache
 from beeai_framework.errors import FrameworkError
 
 
@@ -225,7 +224,7 @@ import asyncio
 import sys
 import traceback
 
-from beeai_framework.cache.unconstrained_cache import UnconstrainedCache
+from beeai_framework.cache import UnconstrainedCache
 from beeai_framework.errors import FrameworkError
 
 
@@ -278,7 +277,7 @@ import asyncio
 import sys
 import traceback
 
-from beeai_framework.cache.sliding_cache import SlidingCache
+from beeai_framework.cache import SlidingCache
 from beeai_framework.errors import FrameworkError
 
 
@@ -378,7 +377,7 @@ You can create your own cache implementation by extending the `BaseCache` class:
 ```python
 from typing import TypeVar
 
-from beeai_framework.cache.base import BaseCache
+from beeai_framework.cache import BaseCache
 
 T = TypeVar("T")
 

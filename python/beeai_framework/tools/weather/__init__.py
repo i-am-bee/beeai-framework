@@ -12,19 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import Any
+from beeai_framework.tools.weather.openmeteo import OpenMeteoTool, OpenMeteoToolInput
 
-from beeai_framework.errors import FrameworkError
-
-
-class LoggerError(FrameworkError):
-    """Raised for errors caused by logging."""
-
-    def __init__(
-        self,
-        message: str = "Logger error",
-        *,
-        cause: Exception | None = None,
-        context: dict[str, Any] | None = None,
-    ) -> None:
-        super().__init__(message, is_fatal=True, is_retryable=False, cause=cause, context=context)
+__all__ = ["OpenMeteoTool", "OpenMeteoToolInput"]
