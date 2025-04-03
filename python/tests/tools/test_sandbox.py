@@ -22,7 +22,7 @@ from beeai_framework.tools.code import SandboxTool
 from beeai_framework.tools.code.sandbox import SandboxToolCreateError, SandboxToolExecuteError
 
 
-@pytest.mark.unittest
+@pytest.mark.unit
 @pytest.mark.asyncio
 async def test_instantiate() -> None:
     with patch(
@@ -51,7 +51,7 @@ async def test_instantiate() -> None:
     }
 
 
-@pytest.mark.unittest
+@pytest.mark.unit
 @pytest.mark.asyncio
 async def test_create_error() -> None:
     with (
@@ -64,7 +64,7 @@ async def test_create_error() -> None:
         await SandboxTool.from_source_code(url="dummyURL", source_code="source code")
 
 
-@pytest.mark.unittest
+@pytest.mark.unit
 @pytest.mark.asyncio
 async def test_run() -> None:
     with patch(
@@ -92,7 +92,7 @@ async def test_run() -> None:
     assert result.get_text_content() == '{"something": "42"}'
 
 
-@pytest.mark.unittest
+@pytest.mark.unit
 @pytest.mark.asyncio
 async def test_execute_error() -> None:
     with patch(
@@ -123,7 +123,7 @@ async def test_execute_error() -> None:
         await sandbox_tool.run({"a": 42, "b": "test"})
 
 
-@pytest.mark.unittest
+@pytest.mark.unit
 @pytest.mark.asyncio
 async def test_http_error() -> None:
     with pytest.raises(ToolError):
