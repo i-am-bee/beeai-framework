@@ -89,7 +89,7 @@ class SandboxTool(Tool[BaseModel, SandboxToolOptions, StringToolOutput]):
             raise SandboxToolExecuteError.ensure(err)
 
     @classmethod
-    async def from_source_code(cls, url: str, env: dict[str, Any], source_code: str) -> Self:
+    async def from_source_code(cls, /, url: str, source_code: str, env: dict[str, Any] | None = None) -> Self:
         try:
             result = await PythonTool.call_code_interpreter(
                 f"{url}/v1/parse-custom-tool", {"tool_source_code": source_code}
@@ -105,7 +105,7 @@ class SandboxTool(Tool[BaseModel, SandboxToolOptions, StringToolOutput]):
                     name=result["tool_name"],
                     description=result["tool_description"],
                     input_schema=json.loads(result["tool_input_schema_json"]),
-                    env=env,
+                    env=env or {},
                 )
             )
         except Exception as err:
