@@ -159,13 +159,13 @@ def test_chat_model_from(monkeypatch: pytest.MonkeyPatch) -> None:
     watsonx_chat_model = ChatModel.from_name(
         "watsonx:ibm/granite-3-8b-instruct",
         {
-            "url": "http://somewhere",
+            "api_base": "http://somewhere",
             "project_id": "proj_id_123",
             "api_key": "api_key_123",
         },
     )
     assert isinstance(watsonx_chat_model, WatsonxChatModel)
-    assert watsonx_chat_model._settings["url"] == "http://somewhere"
+    assert watsonx_chat_model._settings["api_base"] == "http://somewhere"
     assert watsonx_chat_model._settings["project_id"] == "proj_id_123"
     assert watsonx_chat_model._settings["api_key"] == "api_key_123"
 
