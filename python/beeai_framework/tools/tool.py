@@ -223,14 +223,14 @@ def tool(
     name: str | None = ...,
     description: str | None = ...,
     input_schema: type[BaseModel] | None = ...,
-) -> "AnyTool": ...
+) -> AnyTool: ...
 @typing.overload
 def tool(
     *,
     name: str | None = ...,
     description: str | None = ...,
     input_schema: type[BaseModel] | None = ...,
-) -> Callable[[TFunction], "AnyTool"]: ...
+) -> Callable[[TFunction], AnyTool]: ...
 def tool(
     tool_function: TFunction | None = None,
     /,
@@ -238,8 +238,8 @@ def tool(
     name: str | None = None,
     description: str | None = None,
     input_schema: type[BaseModel] | None = None,
-) -> AnyTool | Callable[[TFunction], "AnyTool"]:
-    def create_tool(fn: TFunction) -> "AnyTool":
+) -> AnyTool | Callable[[TFunction], AnyTool]:
+    def create_tool(fn: TFunction) -> AnyTool:
         tool_name = name or fn.__name__
         tool_description = description or inspect.getdoc(fn)
         tool_input = input_schema or get_input_schema(fn)
