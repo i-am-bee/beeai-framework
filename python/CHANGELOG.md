@@ -1,3 +1,14 @@
+## python_v0.1.13 (2025-04-03)
+
+### Bug Fixes
+
+- **adapter**: use api_base instead of url in WatsonxChatModel (#720)
+
+### Features
+
+- **agents**: enforce tool usage in ToolCallingAgent (#721)
+- **backend**: disable loading of external cost map in LiteLLM by default (#723)
+
 ## python_v0.1.12 (2025-04-01)
 
 ### BREAKING CHANGE
