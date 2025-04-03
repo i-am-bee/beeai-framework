@@ -211,42 +211,71 @@ def get_input_schema(tool_function: Callable) -> type[BaseModel]:
     return input_model
 
 
-def tool(tool_function: Callable[..., Any]) -> "AnyTool":
-    tool_name = tool_function.__name__
-    tool_description = inspect.getdoc(tool_function)
-    tool_input = get_input_schema(tool_function)
-
-    if tool_description is None:
-        raise ValueError("No tool description provided.")
-
-    class FunctionTool(Tool[Any, ToolRunOptions, ToolOutput]):
-        name = tool_name
-        description = tool_description or ""
-        input_schema = tool_input
-
-        def __init__(self, options: dict[str, Any] | None = None) -> None:
-            super().__init__(options)
-
-        def _create_emitter(self) -> Emitter:
-            return Emitter.root().child(
-                namespace=["tool", "custom", to_safe_word(self.name)],
-                creator=self,
-            )
-
-        async def _run(self, input: Any, options: ToolRunOptions | None, context: RunContext) -> ToolOutput:
-            tool_input_dict = input.model_dump()
-            if inspect.iscoroutinefunction(tool_function):
-                result = await tool_function(**tool_input_dict)
-            else:
-                result = tool_function(**tool_input_dict)
-
-            if isinstance(result, ToolOutput):
-                return result
-            else:
-                return StringToolOutput(result=str(result))
-
-    f_tool = FunctionTool()
-    return f_tool
-
-
+TFunction = Callable[..., Any]
 AnyTool: TypeAlias = Tool[Any, Any, Any]
+
+
+@typing.overload
+def tool(
+    tool_function: TFunction,
+    /,
+    *,
+    name: str | None = ...,
+    description: str | None = ...,
+    input_schema: type[BaseModel] | None = ...,
+) -> AnyTool: ...
+@typing.overload
+def tool(
+    *,
+    name: str | None = ...,
+    description: str | None = ...,
+    input_schema: type[BaseModel] | None = ...,
+) -> Callable[[TFunction], AnyTool]: ...
+def tool(
+    tool_function: TFunction | None = None,
+    /,
+    *,
+    name: str | None = None,
+    description: str | None = None,
+    input_schema: type[BaseModel] | None = None,
+) -> AnyTool | Callable[[TFunction], AnyTool]:
+    def create_tool(fn: TFunction) -> AnyTool:
+        tool_name = name or fn.__name__
+        tool_description = description or inspect.getdoc(fn)
+        tool_input = input_schema or get_input_schema(fn)
+
+        if tool_description is None:
+            raise ValueError("No tool description provided.")
+
+        class FunctionTool(Tool[Any, ToolRunOptions, ToolOutput]):
+            name = tool_name
+            description = tool_description or ""
+            input_schema = tool_input
+
+            def __init__(self, options: dict[str, Any] | None = None) -> None:
+                super().__init__(options)
+
+            def _create_emitter(self) -> Emitter:
+                return Emitter.root().child(
+                    namespace=["tool", "custom", to_safe_word(self.name)],
+                    creator=self,
+                )
+
+            async def _run(self, input: Any, options: ToolRunOptions | None, context: RunContext) -> ToolOutput:
+                tool_input_dict = input.model_dump()
+                if inspect.iscoroutinefunction(fn):
+                    result = await fn(**tool_input_dict)
+                else:
+                    result = fn(**tool_input_dict)
+
+                if isinstance(result, ToolOutput):
+                    return result
+                else:
+                    return StringToolOutput(result=str(result))
+
+        return FunctionTool()
+
+    if tool_function is None:
+        return create_tool
+    else:
+        return create_tool(tool_function)

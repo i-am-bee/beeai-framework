@@ -13,9 +13,13 @@
 # limitations under the License.
 
 import logging
+import os
 from abc import ABC
 from collections.abc import AsyncGenerator
 from typing import Any
+
+if not os.getenv("LITELLM_LOCAL_MODEL_COST_MAP", None):
+    os.environ["LITELLM_LOCAL_MODEL_COST_MAP"] = "True"
 
 import litellm
 from litellm import (  # type: ignore

@@ -138,7 +138,7 @@ class AgentWorkflow:
             state.final_answer = run_output.result.text
             if run_input.prompt:
                 state.new_messages.append(UserMessage(run_input.prompt))
-            state.new_messages.append(run_output.result)
+            state.new_messages.extend(run_output.memory.messages[-2:])
 
         self.workflow.add_step(name or f"Agent{''.join(random.choice(string.ascii_letters) for _ in range(4))}", step)
         return self

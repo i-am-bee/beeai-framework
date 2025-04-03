@@ -62,18 +62,16 @@ async def main() -> None:
             lambda event: isinstance(event.creator, ChatModel) and event.name == "success",
             # log data to the console
             lambda data, event: reader.write(
-                "Updated message content: "
-                + " ".join([str(message.content[0]) for message in data.value.messages])
-                + "\n",
-                data,
+                "->Got response from the LLM",
+                "  \n->".join([str(message.content[0].model_dump()) for message in data.value.messages]),
             ),
             EmitterOptions(match_nested=True),
         )
         .on(
             "success",
             lambda data, event: reader.write(
-                f"\n->Step '{data.step}' has been completed with the following outcome.\n\n{data.state.final_answer}\n",
-                data,
+                f"->Step '{data.step}' has been completed with the following outcome.\n\n{data.state.final_answer}\n\n",
+                data.model_dump(exclude={"data"}),
             ),
         )
     )

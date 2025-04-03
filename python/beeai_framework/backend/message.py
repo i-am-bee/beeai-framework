@@ -18,10 +18,10 @@ from abc import ABC
 from collections.abc import Sequence
 from datetime import UTC, datetime
 from enum import Enum
-from typing import Any, Generic, Literal, Self, TypeAlias, TypeVar, cast
+from typing import Any, Generic, Literal, Required, Self, TypeAlias, TypeVar, cast
 
-from litellm.types.llms.openai import ChatCompletionImageUrlObject
 from pydantic import BaseModel, ConfigDict
+from typing_extensions import TypedDict
 
 from beeai_framework.utils.lists import cast_list
 from beeai_framework.utils.models import to_any_model, to_model
@@ -50,8 +50,10 @@ class MessageTextContent(BaseModel):
     text: str
 
 
-class MessageImageContentImageUrl(ChatCompletionImageUrlObject):
-    pass
+class MessageImageContentImageUrl(TypedDict, total=False):
+    url: Required[str]
+    detail: str
+    format: str
 
 
 class MessageImageContent(BaseModel):
