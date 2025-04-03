@@ -54,17 +54,17 @@ class WatsonxChatModel(LiteLLMChatModel):
                 _settings["space_id"] = watsonx_space_id
 
         # Set URL based on priority: existing setting > WATSONX_URL env > region-based > error
-        if "url" not in _settings or not _settings["url"]:
+        if "api_base" not in _settings or not _settings["api_base"]:
             watsonx_url = os.getenv("WATSONX_URL")
             if watsonx_url:
-                _settings["url"] = watsonx_url
+                _settings["api_base"] = watsonx_url
             else:
                 watsonx_region = os.getenv("WATSONX_REGION")
                 if watsonx_region:
-                    _settings["url"] = f"https://{watsonx_region}.ml.cloud.ibm.com"
+                    _settings["api_base"] = f"https://{watsonx_region}.ml.cloud.ibm.com"
                 else:
                     raise ValueError(
-                        "Watsonx URL not set. Please provide a 'url' in settings, "
+                        "Watsonx api_base not set. Please provide a 'api_base' in settings, "
                         "set the WATSONX_URL environment variable, "
                         "or set the WATSONX_REGION environment variable."
                     )
