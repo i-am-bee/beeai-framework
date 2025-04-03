@@ -1,0 +1,115 @@
+{
+  "$schema": "https://mintlify.com/docs.json",
+  "theme": "maple",
+  "name": "BeeAI Framework",
+  "colors": {
+    "primary": "#000000",
+    "light": "#c5c5c5",
+    "dark": "#000000"
+  },
+  "favicon": "/favicon.svg",
+  "navigation": {
+    "tabs": [
+      {
+        "tab": "TypeScript",
+        "groups": [
+          {
+            "group": "Getting Started",
+            "pages": [
+              "typescript/overview",
+              "typescript/examples",
+              "typescript/tutorials",
+              "typescript/migration_guide",
+              "typescript/CHANGELOG"
+            ]
+          },
+          {
+            "group": "Modules",
+            "pages": [
+              "typescript/modules/agents",
+              "typescript/modules/workflows",
+              "typescript/modules/backend",
+              "typescript/modules/templates",
+              "typescript/modules/memory",
+              "typescript/modules/emitter",
+              "typescript/modules/serialization",
+              "typescript/modules/tools",
+              "typescript/modules/cache",
+              "typescript/modules/logger",
+              "typescript/modules/version",
+              "typescript/modules/errors"
+            ]
+          },
+          {
+            "group": "Others",
+            "pages": [
+              "typescript/integrations"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "Python",
+        "groups": [
+          {
+            "group": "Getting Started",
+            "pages": [
+              "python/overview",
+              "python/examples",
+              "python/tutorials",
+              "python/CHANGELOG"
+            ]
+          },
+          {
+            "group": "Modules",
+            "pages": [
+              "python/modules/agents",
+              "python/modules/workflows",
+              "python/modules/backend",
+              "python/modules/templates",
+              "python/modules/memory",
+              "python/modules/emitter",
+              "python/modules/events",
+              "python/modules/serialization",
+              "python/modules/tools",
+              "python/modules/cache",
+              "python/modules/logger",
+              "python/modules/version",
+              "python/modules/errors"
+            ]
+          },
+          {
+            "group": "Others",
+            "pages": [
+              "python/integrations"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "logo": {
+    "light": "/logo/beeai_framework_light.svg",
+    "dark": "/logo/beeai_framework_dark.svg"
+  },
+  "navbar": {
+    "links": [
+      {
+        "label": "Discord",
+        "href": "https://discord.gg/AZFrp3UF5k"
+      }
+    ],
+    "primary": {
+      "type": "button",
+      "label": "GitHub",
+      "href": "https://github.com/i-am-bee/beeai-framework"
+    }
+  },
+  "footer": {
+    "socials": {
+      "x": "https://x.com/mintlify",
+      "github": "https://github.com/mintlify",
+      "linkedin": "https://linkedin.com/company/mintlify"
+    }
+  }
+}
