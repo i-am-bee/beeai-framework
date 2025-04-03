@@ -194,5 +194,4 @@ class RemoteAgent(BaseAgent[RemoteAgentRunOutput]):
     async def clone(self) -> "RemoteAgent":
         cloned = RemoteAgent(self.input.agent_name, url=self.input.url)
         cloned.emitter = await self.emitter.clone()
-        cloned._is_running = self._is_running
         return cloned

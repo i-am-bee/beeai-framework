@@ -145,7 +145,7 @@ class BaseRunner(ABC):
         return ReActAgentTemplates(**templates)
 
     async def clone(self) -> InstanceOf["BaseRunner"]:
-        cloned = self.__class__(self._input.model_copy(), self._options.model_copy(), self._run)
+        cloned = type(self)(self._input.model_copy(), self._options.model_copy(), self._run)
         cloned._memory = self._memory
         cloned._failed_attempts_counter = await self._failed_attempts_counter.clone()
         return cloned

@@ -219,5 +219,4 @@ class ReActAgent(BaseAgent[ReActAgentRunOutput]):
     async def clone(self) -> "ReActAgent":
         cloned = ReActAgent(**self._input.model_dump())
         cloned.emitter = await self.emitter.clone()
-        cloned._is_running = self._is_running
         return cloned
