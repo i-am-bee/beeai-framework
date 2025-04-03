@@ -13,6 +13,7 @@
 # limitations under the License.
 
 
+import dataclasses
 from collections.abc import Callable
 from dataclasses import dataclass
 from typing import TypedDict
@@ -34,6 +35,9 @@ class SlidingMemoryConfig:
 
     size: int
     handlers: SlidingMemoryHandlers | None = None
+
+    async def clone(self) -> "SlidingMemoryConfig":
+        return dataclasses.replace(self)
 
 
 class SlidingMemory(BaseMemory):
@@ -136,6 +140,6 @@ class SlidingMemory(BaseMemory):
         self._messages.clear()
 
     async def clone(self) -> "SlidingMemory":
-        cloned = SlidingMemory(self._config)
+        cloned = SlidingMemory(await self._config.clone())
         cloned._messages = self._messages.copy()
         return cloned

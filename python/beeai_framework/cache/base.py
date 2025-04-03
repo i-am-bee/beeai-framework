@@ -18,7 +18,7 @@ from collections import OrderedDict
 from hashlib import sha512
 from typing import Any, Generic, TypeVar
 
-from pydantic import BaseModel
+from pydantic import BaseModel, InstanceOf
 
 T = TypeVar("T")
 
@@ -69,3 +69,7 @@ class BaseCache(ABC, Generic[T]):
         cache_key_dict = OrderedDict(sorted(cache_key_dict.items()))
         cache_key_str = str(cache_key_dict).encode("utf-8", errors="ignore")
         return str(int.from_bytes(sha512(cache_key_str).digest()))
+
+    async def clone(self) -> InstanceOf["BaseCache"[T]]:
+        cloned = self.__class__()
+        return cloned

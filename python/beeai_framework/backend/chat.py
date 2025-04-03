@@ -356,3 +356,15 @@ IMPORTANT: You MUST answer with a JSON object that matches the JSON schema above
         )
 
         return not self.model_supports_tool_calling or not tool_choice_supported
+
+    async def clone(self) -> InstanceOf["ChatModel"]:
+        kwargs: ChatModelKwargs = {
+            "parameters": ChatModelParameters(**self.parameters.model_dump())
+            if self.parameters
+            else ChatModelParameters(),
+            "cache": await self.cache.clone() if self.cache else NullCache[list[ChatModelOutput]](),
+            "tool_call_fallback_via_response_format": self.tool_call_fallback_via_response_format,
+            "model_supports_tool_calling": self.model_supports_tool_calling,
+        }
+        cloned = self.__class__(**kwargs)
+        return cloned

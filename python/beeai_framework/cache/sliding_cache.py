@@ -50,3 +50,9 @@ class SlidingCache(BaseCache[T]):
 
     async def size(self) -> int:
         return len(self._items)
+
+    async def clone(self) -> "SlidingCache"[T]:
+        items = self._items
+        cloned = SlidingCache[T](len(items))
+        cloned._items = items
+        return cloned

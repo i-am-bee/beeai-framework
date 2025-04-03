@@ -76,6 +76,6 @@ Summary:""".format("\n".join([f"{msg.role}: {msg.text}" for msg in messages]))
         self._messages.clear()
 
     async def clone(self) -> "SummarizeMemory":
-        cloned = SummarizeMemory(self._model)
+        cloned = SummarizeMemory(await self._model.clone())
         cloned._messages = self._messages.copy()
         return cloned

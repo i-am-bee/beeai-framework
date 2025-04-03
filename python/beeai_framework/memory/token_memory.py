@@ -129,7 +129,13 @@ class TokenMemory(BaseMemory):
         self._tokens_by_message.clear()
 
     async def clone(self) -> "TokenMemory":
-        cloned = TokenMemory(self.llm, self._max_tokens, self._sync_threshold, self._threshold, self._handlers)
+        cloned = TokenMemory(
+            self.llm.clone(),
+            self._max_tokens,
+            self._sync_threshold,
+            self._threshold,
+            self._handlers.copy() if self._handlers else None,
+        )
         cloned._messages = self._messages.copy()
         cloned._tokens_by_message = self._tokens_by_message.copy()
         return cloned

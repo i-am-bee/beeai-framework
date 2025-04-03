@@ -26,7 +26,7 @@ from litellm import (  # type: ignore
 )
 from litellm.types.utils import StreamingChoices
 from openai.lib._pydantic import to_strict_json_schema
-from pydantic import BaseModel
+from pydantic import BaseModel, InstanceOf
 from typing_extensions import Unpack
 
 from beeai_framework.backend.chat import (
@@ -43,11 +43,13 @@ from beeai_framework.backend.message import (
 from beeai_framework.backend.types import (
     ChatModelInput,
     ChatModelOutput,
+    ChatModelParameters,
     ChatModelStructureInput,
     ChatModelStructureOutput,
     ChatModelUsage,
 )
 from beeai_framework.backend.utils import parse_broken_json
+from beeai_framework.cache.null_cache import NullCache
 from beeai_framework.context import RunContext
 from beeai_framework.logger import Logger
 from beeai_framework.tools.tool import Tool
@@ -274,6 +276,20 @@ class LiteLLMChatModel(ChatModel, ABC):
 
     def _format_response_model(self, model: type[BaseModel] | dict[str, Any]) -> type[BaseModel] | dict[str, Any]:
         return model
+
+    async def clone(self) -> InstanceOf["LiteLLMChatModel"]:
+        kwargs: ChatModelKwargs = {
+            "parameters": ChatModelParameters(**self.parameters.model_dump())
+            if self.parameters
+            else ChatModelParameters(),
+            "cache": await self.cache.clone() if self.cache else NullCache[list[ChatModelOutput]](),
+            "tool_call_fallback_via_response_format": self.tool_call_fallback_via_response_format,
+            "model_supports_tool_calling": self.model_supports_tool_calling,
+        }
+        cloned = self.__class__(
+            self._model_id, provider_id=self._litellm_provider_id, settings=self._settings, **kwargs
+        )
+        return cloned
 
 
 LiteLLMChatModel.litellm_debug(False)

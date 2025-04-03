@@ -48,3 +48,8 @@ class UnconstrainedCache(BaseCache[T]):
 
     async def clear(self) -> None:
         self._provider.clear()
+
+    async def clone(self) -> "UnconstrainedCache"[T]:
+        cloned = UnconstrainedCache[T]()
+        cloned._provider = self._provider
+        return cloned

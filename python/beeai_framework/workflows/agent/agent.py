@@ -32,7 +32,6 @@ from beeai_framework.memory.base_memory import BaseMemory
 from beeai_framework.memory.readonly_memory import ReadOnlyMemory
 from beeai_framework.memory.unconstrained_memory import UnconstrainedMemory
 from beeai_framework.tools.tool import AnyTool
-from beeai_framework.utils.cloneable import Cloneable
 from beeai_framework.utils.dicts import exclude_none
 from beeai_framework.utils.lists import remove_falsy
 from beeai_framework.workflows.types import WorkflowRun
@@ -113,7 +112,7 @@ class AgentWorkflow:
 
         async def create_agent(memory: BaseMemory) -> ToolCallingAgent:
             if instance is not None:
-                new_instance = await instance.clone() if isinstance(instance, Cloneable) else instance
+                new_instance = await instance.clone()
                 new_instance.memory = memory
                 return new_instance
 
