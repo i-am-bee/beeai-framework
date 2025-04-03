@@ -237,4 +237,5 @@ class Emitter:
     async def clone(self) -> "Emitter":
         cloned = Emitter(self._group_id, self.namespace, self.creator, self.context, self.trace, self._events)
         cloned._cleanups = self._cleanups
+        cloned._listeners = {listener.model_copy() for listener in self._listeners}
         return cloned
