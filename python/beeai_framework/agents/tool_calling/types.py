@@ -52,16 +52,17 @@ ToolCallingAgentTemplateFactory = Callable[[InstanceOf[PromptTemplate[Any]]], In
 ToolCallingAgentTemplatesKeys = Annotated[str, lambda v: v in ToolCallingAgentTemplates.model_fields]
 
 
-class ToolCallingAgentRunOutput(BaseModel):
-    result: InstanceOf[AssistantMessage]
-    memory: InstanceOf[BaseMemory]
-
-
 class ToolCallingAgentRunState(BaseModel):
     result: InstanceOf[AssistantMessage] | None = None
     memory: InstanceOf[BaseMemory]
     iteration: int
     steps: list["ToolCallingAgentRunStateStep"] = []
+
+
+class ToolCallingAgentRunOutput(BaseModel):
+    result: InstanceOf[AssistantMessage]
+    memory: InstanceOf[BaseMemory]
+    state: ToolCallingAgentRunState
 
 
 class ToolCallingAgentRunStateStep(BaseModel):

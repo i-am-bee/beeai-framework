@@ -164,3 +164,8 @@ cython_debug/
 
 # Visual Studio Code
 .vscode
+
+# Evaluation
+.deepeval
+.deepeval-cache.json
+.deepeval_telemetry.txt

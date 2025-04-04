@@ -57,6 +57,7 @@ pytest-cov = "^6.0.0"
 types-chevron = "^0.14.2.20250103"
 types-requests = "^2.32.0.20241016"
 types-cachetools = "^5.5.0.20240820"
+deepeval = "^2.6.6"
 
 [tool.poetry.extras]
 langchain = ["langchain-core", "langchain-community"]
@@ -69,6 +70,8 @@ exclude = "^build/$"
 check_untyped_defs = true
 plugins = ["pydantic.mypy"]
 strict = true
+ignore_missing_stubs = true
+ignore_missing_imports = true
 
 [tool.pydantic-mypy]
 init_forbid_extra = true
@@ -249,6 +252,12 @@ control.expr = "type"
     [[tool.poe.tasks.test.switch]]
     help = "Run All Tests"
     cmd = "pytest -n ${num_workers:-auto}"
+
+[tool.poe.tasks.eval]
+help = "Run evaluation"
+cwd = "."
+args = [{ name = "TARGET", positional = true, multiple = true, default="eval" }]
+shell = "deepeval test run ${TARGET}"
 
 [tool.poe.tasks._match_files]
 help = "Extract files by their extension"

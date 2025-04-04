@@ -227,7 +227,7 @@ class ToolCallingAgent(BaseAgent[ToolCallingAgentRunOutput]):
                 await self.memory.add_many(state.memory.messages[-2:])
 
             assert state.result is not None
-            return ToolCallingAgentRunOutput(result=state.result, memory=state.memory)
+            return ToolCallingAgentRunOutput(result=state.result, memory=state.memory, state=state)
 
         return self._to_run(handler, signal=None, run_params={"prompt": prompt, "execution": execution})
 
