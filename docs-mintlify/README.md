@@ -1,12 +1,6 @@
-# Mintlify Starter Kit
+# BeeAI Framework Documention
 
-Click on `Use this template` to copy the Mintlify starter kit. The starter kit contains examples including
-
-- Guide pages
-- Navigation
-- Customizations
-- API Reference pages
-- Use of popular components
+Powered by Mintlify
 
 ### Development
 
@@ -16,7 +10,7 @@ Install the [Mintlify CLI](https://www.npmjs.com/package/mintlify) to preview th
 npm i -g mintlify
 ```
 
-Run the following command at the root of your documentation (where docs.json is)
+Run the following command from the documentation directory (i.e., where docs.json is located)
 
 ```
 mintlify dev
@@ -24,7 +18,7 @@ mintlify dev
 
 ### Publishing Changes
 
-Install our Github App to auto propagate changes from your repo to your deployment. Changes will be deployed to production automatically after pushing to the default branch. Find the link to install on your dashboard. 
+Install the Mintlify Github App to auto propagate changes from the repo to the deployment. Changes will be deployed to production automatically after pushing to the default branch. Find the link to install the app in org's Mintlify dashboard. 
 
 #### Troubleshooting
 
