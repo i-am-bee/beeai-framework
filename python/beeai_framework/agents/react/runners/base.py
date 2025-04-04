@@ -105,7 +105,7 @@ class BaseRunner(ABC):
             raise AgentError(f"Agent was not able to resolve the task in {max_iterations} iterations.")
 
         emitter = self._run.emitter.child(
-            group_id=f"`iteration-{meta.iteration}",
+            group_id=f"iteration-{meta.iteration}",
             events=react_agent_event_types,
         )
         iteration = await self.llm(ReActAgentRunnerLLMInput(emitter=emitter, signal=self._run.signal, meta=meta))

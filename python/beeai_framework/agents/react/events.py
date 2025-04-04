@@ -90,7 +90,4 @@ react_agent_event_types: dict[str, type] = {
     "success": ReActAgentSuccessEvent,
     "update": ReActAgentUpdateEvent,
     "partial_update": ReActAgentUpdateEvent,
-    "tool_start": ReActAgentToolEvent,
-    "tool_success": ReActAgentToolEvent,
-    "tool_error": ReActAgentToolEvent,
 }
