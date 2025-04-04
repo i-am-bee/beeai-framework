@@ -20,8 +20,6 @@ from beeai_framework.agents.react.events import (
     ReActAgentErrorEvent,
     ReActAgentRetryEvent,
     ReActAgentStartEvent,
-    ReActAgentToolEvent,
-    ReActAgentToolEventData,
     ReActAgentUpdate,
     ReActAgentUpdateEvent,
     ReActAgentUpdateMeta,
@@ -265,19 +263,6 @@ class DefaultRunner(BaseRunner):
             )
 
         async def on_error(error: Exception, _: RetryableContext) -> None:
-            await input.emitter.emit(
-                "toolError",
-                ReActAgentToolEvent(
-                    data=ReActAgentToolEventData(
-                        iteration=input.state,
-                        tool=tool,
-                        input=input.state.tool_input,
-                        options=self._options,
-                        error=FrameworkError.ensure(error),
-                    ),
-                    meta=input.meta,
-                ),
-            )
             self._failed_attempts_counter.use(error)
 
         async def executor(_: RetryableContext) -> ReActAgentRunnerToolResult:

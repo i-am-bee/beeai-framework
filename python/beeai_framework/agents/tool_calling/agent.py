@@ -91,6 +91,7 @@ class ToolCallingAgent(BaseAgent[ToolCallingAgentRunOutput]):
             await state.memory.add(SystemMessage(self._templates.system.render()))
             await state.memory.add_many(self.memory.messages)
 
+            user_message: UserMessage | None = None
             if prompt:
                 task_input = ToolCallingAgentTaskPromptInput(
                     prompt=prompt,
@@ -202,8 +203,11 @@ class ToolCallingAgent(BaseAgent[ToolCallingAgentRunOutput]):
 
             assert state.result is not None
             if self._save_intermediate_steps:
+                self.memory.reset()
                 await self.memory.add_many(state.memory.messages[1:])
             else:
+                if user_message is not None:
+                    await self.memory.add(user_message)
                 await self.memory.add_many(state.memory.messages[-2:])
             return ToolCallingAgentRunOutput(result=state.result, memory=state.memory)
 
