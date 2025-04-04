@@ -233,3 +233,16 @@ class Emitter:
             trace=copy.copy(self.trace),
             data_type=self.events.get(name) or type(Any),
         )
+
+    async def clone(self) -> "Emitter":
+        cloned = Emitter(
+            str(self._group_id),
+            self.namespace.copy(),
+            self.creator if self.creator else None,
+            self.context.copy(),
+            self.trace.model_copy() if self.trace else None,
+            self._events.copy(),
+        )
+        cloned._cleanups = self._cleanups
+        cloned._listeners = {listener.model_copy() for listener in self._listeners}
+        return cloned

@@ -15,7 +15,7 @@
 
 from abc import ABC, abstractmethod
 from collections.abc import Iterable, Iterator
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Self
 
 from beeai_framework.backend.message import AnyMessage
 
@@ -77,16 +77,6 @@ class BaseMemory(ABC):
     def __iter__(self) -> Iterator[AnyMessage]:
         return iter(self.messages)
 
-    @abstractmethod
-    def create_snapshot(self) -> Any:
-        """Create a serializable snapshot of current state."""
-        pass
-
-    @abstractmethod
-    def load_snapshot(self, state: Any) -> None:
-        """Restore state from a snapshot."""
-        pass
-
     def as_read_only(self) -> "ReadOnlyMemory":
         """Return a read-only view of this memory."""
         from beeai_framework.memory.readonly_memory import (  # Import here to avoid circular import
@@ -94,3 +84,6 @@ class BaseMemory(ABC):
         )
 
         return ReadOnlyMemory(self)
+
+    async def clone(self) -> Self:
+        return type(self)()

@@ -18,7 +18,7 @@ import typing
 from abc import ABC, abstractmethod
 from collections.abc import Callable
 from functools import cached_property
-from typing import Any, Generic, TypeAlias
+from typing import Any, Generic, Self, TypeAlias
 
 from pydantic import BaseModel, ConfigDict, ValidationError, create_model
 from typing_extensions import TypeVar
@@ -178,6 +178,11 @@ class Tool(Generic[TInput, TRunOptions, TOutput], ABC):
             signal=options.signal if options else None,
             run_params={"input": input, "options": options},
         )
+
+    async def clone(self) -> Self:
+        cloned = type(self)(self._options.copy() if self._options else None)
+        cloned._cache = await self._cache.clone()
+        return cloned
 
 
 # this method was inspired by the discussion that was had in this issue:

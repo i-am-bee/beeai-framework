@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import Any
 
 from beeai_framework.backend.message import AnyMessage
 from beeai_framework.memory.base_memory import BaseMemory
@@ -37,12 +36,9 @@ class ReadOnlyMemory(BaseMemory):
     def reset(self) -> None:
         pass  # No-op for read-only memory
 
-    def create_snapshot(self) -> dict[str, Any]:
-        return {"source": self._source}
-
-    def load_snapshot(self, state: dict[str, Any]) -> None:
-        self._source = state["source"]
-
     def as_read_only(self) -> "ReadOnlyMemory":
         """Return self since already read-only."""
         return self
+
+    async def clone(self) -> "ReadOnlyMemory":
+        return ReadOnlyMemory(await self._source.clone())

@@ -12,23 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from beeai_framework.agents.react.agent import ReActAgent
-from beeai_framework.agents.react.events import (
-    ReActAgentErrorEvent,
-    ReActAgentRetryEvent,
-    ReActAgentStartEvent,
-    ReActAgentSuccessEvent,
-    ReActAgentUpdateEvent,
-)
-from beeai_framework.agents.react.types import ReActAgentRunOutput, ReActAgentTemplateFactory
+from typing import Protocol, TypeVar, runtime_checkable
 
-__all__ = [
-    "ReActAgent",
-    "ReActAgentErrorEvent",
-    "ReActAgentRetryEvent",
-    "ReActAgentRunOutput",
-    "ReActAgentStartEvent",
-    "ReActAgentSuccessEvent",
-    "ReActAgentTemplateFactory",
-    "ReActAgentUpdateEvent",
-]
+T = TypeVar("T", bound="Cloneable")
+
+
+@runtime_checkable
+class Cloneable(Protocol):
+    def clone(self: T) -> T: ...

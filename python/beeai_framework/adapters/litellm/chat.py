@@ -16,7 +16,7 @@ import logging
 import os
 from abc import ABC
 from collections.abc import AsyncGenerator
-from typing import Any
+from typing import Any, Self
 
 if not os.getenv("LITELLM_LOCAL_MODEL_COST_MAP", None):
     os.environ["LITELLM_LOCAL_MODEL_COST_MAP"] = "True"
@@ -47,11 +47,13 @@ from beeai_framework.backend.message import (
 from beeai_framework.backend.types import (
     ChatModelInput,
     ChatModelOutput,
+    ChatModelParameters,
     ChatModelStructureInput,
     ChatModelStructureOutput,
     ChatModelUsage,
 )
 from beeai_framework.backend.utils import parse_broken_json
+from beeai_framework.cache.null_cache import NullCache
 from beeai_framework.context import RunContext
 from beeai_framework.logger import Logger
 from beeai_framework.tools.tool import Tool
@@ -278,6 +280,16 @@ class LiteLLMChatModel(ChatModel, ABC):
 
     def _format_response_model(self, model: type[BaseModel] | dict[str, Any]) -> type[BaseModel] | dict[str, Any]:
         return model
+
+    async def clone(self) -> Self:
+        kwargs: ChatModelKwargs = {
+            "parameters": self.parameters.model_copy() if self.parameters else ChatModelParameters(),
+            "cache": await self.cache.clone() if self.cache else NullCache[list[ChatModelOutput]](),
+            "tool_call_fallback_via_response_format": self.tool_call_fallback_via_response_format,
+            "model_supports_tool_calling": self.model_supports_tool_calling,
+        }
+        cloned = type(self)(self._model_id, provider_id=self._litellm_provider_id, settings=self._settings, **kwargs)
+        return cloned
 
 
 LiteLLMChatModel.litellm_debug(False)

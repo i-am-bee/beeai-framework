@@ -14,7 +14,6 @@
 
 
 from collections.abc import Iterable
-from typing import Any
 
 from beeai_framework.backend.chat import ChatModel
 from beeai_framework.backend.message import AnyMessage, SystemMessage, UserMessage
@@ -76,10 +75,7 @@ Summary:""".format("\n".join([f"{msg.role}: {msg.text}" for msg in messages]))
         """Clear all messages from memory."""
         self._messages.clear()
 
-    def create_snapshot(self) -> dict[str, Any]:
-        """Create a serializable snapshot of current state."""
-        return {"messages": self._messages.copy()}
-
-    def load_snapshot(self, state: dict[str, Any]) -> None:
-        """Restore state from a snapshot."""
-        self._messages = state["messages"].copy()
+    async def clone(self) -> "SummarizeMemory":
+        cloned = SummarizeMemory(await self._model.clone())
+        cloned._messages = self._messages.copy()
+        return cloned
