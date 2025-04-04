@@ -56,25 +56,21 @@ Thought → Action → Observation → Thought → ...
 
 This pattern allows agents to reason about a task, take actions using tools, observe results, and continue reasoning until reaching a conclusion.
 
-Let's see how a ReActAgent approaches a simple question:
+#### Agent execution process
 
-**Input prompt:** "What is the current weather in Las Vegas?"
+Let's see how ReAct Agent approaches a simple question: `"What is the current weather in Las Vegas?"`
 
-**First iteration:**
 ```
 thought: I need to retrieve the current weather in Las Vegas. I can use the OpenMeteo function to get the current weather forecast for a location.
 tool_name: OpenMeteo
 tool_input: {"location": {"name": "Las Vegas"}, "start_date": "2024-10-17", "end_date": "2024-10-17", "temperature_unit": "celsius"}
-```
-
-**Second iteration:**
-```
+[Tool executes and returns data]
 thought: I have the current weather in Las Vegas in Celsius.
 final_answer: The current weather in Las Vegas is 20.5°C with an apparent temperature of 18.3°C.
 ```
 
 > [!NOTE]
-> During execution, the agent emits partial updates as it generates each line, followed by complete updates. Updates follow a strict order: first all partial updates for "thought," then a complete "thought" update, then moving to the next component.
+> During execution, agents emit events that provide visibility into their reasoning and actions. These events can be observed and used for logging, debugging, or custom behavior.
 
 <details>
 <summary>▶️ Click to expand ReAct Agent example</summary>
@@ -217,6 +213,19 @@ This agent offers:
 - Simplified execution: Manages tool calls and responses in a single loop
 - Flexible outputs: Supports both structured (Pydantic) & unstructured (text) responses
 
+#### Agent execution process
+
+Let's see how Tool Calling Agent approaches a simple question: `"What is the current weather in Las Vegas?"`
+
+```
+[Agent receives request]
+[Agent detects need for weather data]
+[Agent calls OpenMeteo tool with location="Las Vegas"]
+[Tool executes and returns data]
+[Agent formulates response based on tool results]
+final_answer: The current weather in Las Vegas is 20.5°C with an apparent temperature of 18.3°C.
+```
+
 <details>
 <summary>▶️ Click to expand Tool Calling Agent example</summary>
 
@@ -292,12 +301,27 @@ _Source: [examples/agents/tool_calling.py](/python/examples/agents/tool_calling.
 
 ### Remote Agent
 
-RemoteAgent enables integration with agents hosted on the BeeAI platform.
+RemoteAgent enables seamless integration with agents hosted on the [BeeAI platform](https://github.com/i-am-bee/beeai), allowing you to interact with and orchestrate agents built in any framework.
 
-This agent allows you to:
-- Connect to any agent hosted on the BeeAI platform
-- Interact with agents built in other frameworks
-- Create complex workflows by orchestrating multiple remote agents
+This agent connects to the BeeAI platform via the Model Context Protocol (MCP), providing these key capabilities:
+- **Cross-framework compatibility:** Interact with agents built in any framework hosted on the BeeAI platform
+- **Simplified integration:** Connect to specialized agents without having to implement their functionality
+- **Workflow orchestration:** Chain multiple remote agents together to create workflows
+
+Inputs are accepted in a flexible JSON format that varies based on the target agent. Common input patterns include:
+```
+# For chat-style agents
+input_data = {
+    "messages": [{"role": "user", "content": "Your query here"}],
+    "config": {"tools": ["weather", "search", "wikipedia"]}  # Optional configuration
+}
+
+# For text-based agents
+input_data = {"text": "Your query here"}
+
+# Run the agent with the appropriate input format
+response = await agent.run(input_data)
+```
 
 <details>
 <summary>▶️ Click to expand Remote Agent example</summary>
