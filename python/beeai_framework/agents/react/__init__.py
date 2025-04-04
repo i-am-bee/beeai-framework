@@ -18,7 +18,6 @@ from beeai_framework.agents.react.events import (
     ReActAgentRetryEvent,
     ReActAgentStartEvent,
     ReActAgentSuccessEvent,
-    ReActAgentToolEvent,
     ReActAgentUpdateEvent,
 )
 from beeai_framework.agents.react.types import ReActAgentRunOutput, ReActAgentTemplateFactory
@@ -31,6 +30,5 @@ __all__ = [
     "ReActAgentStartEvent",
     "ReActAgentSuccessEvent",
     "ReActAgentTemplateFactory",
-    "ReActAgentToolEvent",
     "ReActAgentUpdateEvent",
 ]
