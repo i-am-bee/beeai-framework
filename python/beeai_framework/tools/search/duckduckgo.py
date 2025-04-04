@@ -13,6 +13,8 @@
 # limitations under the License.
 
 
+from typing import Self
+
 from duckduckgo_search import DDGS
 from pydantic import BaseModel, Field
 
@@ -76,3 +78,9 @@ class DuckDuckGoSearchTool(Tool[DuckDuckGoSearchToolInput, ToolRunOptions, DuckD
 
         except Exception as e:
             raise ToolError("Error performing search:") from e
+
+    async def clone(self) -> Self:
+        cloned = await super().clone()
+        cloned.max_results = self.max_results
+        cloned.safe_search = self.safe_search
+        return cloned

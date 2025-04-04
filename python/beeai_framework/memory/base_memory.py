@@ -15,7 +15,7 @@
 
 from abc import ABC, abstractmethod
 from collections.abc import Iterable, Iterator
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Self
 
 from beeai_framework.backend.message import AnyMessage
 
@@ -84,3 +84,6 @@ class BaseMemory(ABC):
         )
 
         return ReadOnlyMemory(self)
+
+    async def clone(self) -> Self:
+        return type(self)()
