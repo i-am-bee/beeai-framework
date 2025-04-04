@@ -206,12 +206,12 @@ _Source: [examples/agents/react.py](/python/examples/agents/react.py)_
 
 ### Tool Calling Agent
 
-ToolCallingAgent leverages native function calling capabilities in modern LLMs to provide a streamlined agent experience.
+ToolCallingAgent utilizes the native function-calling capabilities of modern LLMs to deliver a streamlined and efficient agent experience.
 
-This agent offers:
-- Native tool handling: Uses LLM APIs directly instead of relying on prompt-based reasoning
-- Simplified execution: Manages tool calls and responses in a single loop
-- Flexible outputs: Supports both structured (Pydantic) & unstructured (text) responses
+Key features:
+- Native tool integration: Directly uses LLM APIs for tool invocation, avoiding prompt-based reasoning
+- Simplified execution: Handles tool calls and responses in a single loop
+- Flexible response formats: Supports both structured (Pydantic) & unstructured (text) responses
 
 #### Agent execution process
 
@@ -330,57 +330,43 @@ response = await agent.run(input_data)
 
 ```py
 import asyncio
-import logging
+import json
 import sys
 import traceback
-from typing import Any
 
-from dotenv import load_dotenv
-
-from beeai_framework.agents.tool_calling import ToolCallingAgent
-from beeai_framework.backend import ChatModel
-from beeai_framework.emitter import EventMeta
+from beeai_framework.agents.experimental.remote import RemoteAgent
 from beeai_framework.errors import FrameworkError
-from beeai_framework.logger import Logger
-from beeai_framework.memory import UnconstrainedMemory
-from beeai_framework.tools.weather import OpenMeteoTool
 from examples.helpers.io import ConsoleReader
-
-# Load environment variables
-load_dotenv()
-
-# Configure logging - using DEBUG instead of trace
-logger = Logger("app", level=logging.DEBUG)
-
-reader = ConsoleReader()
-
-
-def process_agent_events(data: Any, event: EventMeta) -> None:
-    """Process agent events and log appropriately"""
-
-    if event.name == "start":
-        reader.write("Agent (debug) 🤖 : ", "starting new iteration")
-    elif event.name == "success":
-        reader.write("Agent (debug) 🤖 : ", data.state.memory.messages[-1])
 
 
 async def main() -> None:
-    """Main application loop"""
+    reader = ConsoleReader()
 
-    # Create agent
-    agent = ToolCallingAgent(
-        llm=ChatModel.from_name("ollama:llama3.1"), memory=UnconstrainedMemory(), tools=[OpenMeteoTool()]
-    )
-
-    # Main interaction loop with user input
+    agent = RemoteAgent(agent_name="chat", url="http://127.0.0.1:8333/mcp/sse")
     for prompt in reader:
-        response = await agent.run(prompt).on("*", process_agent_events)
-        reader.write("Agent 🤖 : ", response.result.text)
+        # Run the agent and observe events
+        response = (
+            await agent.run(
+                {
+                    "messages": [{"role": "user", "content": prompt}],
+                    "config": {"tools": ["weather", "search", "wikipedia"]},
+                }
+            )
+            .on(
+                "update",
+                lambda data, event: (
+                    reader.write("Agent 🤖 (debug) : ", data.value["logs"][0]["message"])
+                    if "logs" in data.value
+                    else None
+                ),
+            )
+            .on(
+                "error",  # Log errors
+                lambda data, event: reader.write("Agent 🤖 : ", data.error.explain()),
+            )
+        )
 
-    print("======DONE (showing the full message history)=======")
-
-    for msg in response.memory.messages:
-        print(msg)
+        reader.write("Agent 🤖 : ", json.loads(response.result.text)["messages"][0]["content"])
 
 
 if __name__ == "__main__":
