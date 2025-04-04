@@ -45,9 +45,6 @@ The following events can be observed calling `ReActAgent.run`.
 | `retry`                       | `ReActAgentRetryEvent`   | Triggered when the agent is retrying an operation.         |
 | `success`                     | `ReActAgentSuccessEvent` | Triggered when the agent successfully completes execution. |
 | `update` and `partial_update` | `ReActAgentUpdateEvent`  | Triggered when the agent updates its state.                |
-| `tool_start`                  | `ReActAgentToolEvent`    | Triggered when the agent begins using a tool.              |
-| `tool_success`                | `ReActAgentToolEvent`    | Triggered when a tool operation completes successfully.    |
-| `tool_error`                  | `ReActAgentToolEvent`    | Triggered when a tool operation fails.                     |
 
 _Source: [python/beeai_framework/agents/react/events.py](/python/beeai_framework/agents/react/events.py)_
 
