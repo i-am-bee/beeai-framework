@@ -1,3 +1,4 @@
+import os
 import sys
 
 from pydantic import BaseModel
@@ -23,11 +24,11 @@ class ConsoleReader:
         print("Interactive session has started. To escape, input 'q' and submit.")
         return self
 
-    def __next__(self) -> str:
+    def __next__(self) -> str | None:
         try:
             while True:
                 prompt = input(colored(self.input, "cyan", attrs=["bold"])).strip()
-                if not sys.stdin.isatty():
+                if not sys.stdin.isatty() and "PYCHARM_HOSTED" not in os.environ:
                     print(prompt)
 
                 if prompt == "q":
@@ -42,7 +43,7 @@ class ConsoleReader:
                 return prompt
         except (EOFError, KeyboardInterrupt):
             print()
-            exit()
+            raise StopIteration
 
     def write(self, role: str, data: str) -> None:
         print(colored(role, "red", attrs=["bold"]), data)

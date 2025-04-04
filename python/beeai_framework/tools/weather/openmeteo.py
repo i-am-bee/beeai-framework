@@ -48,7 +48,7 @@ class OpenMeteoToolInput(BaseModel):
 
 class OpenMeteoTool(Tool[OpenMeteoToolInput, ToolRunOptions, StringToolOutput]):
     name = "OpenMeteoTool"
-    description = "Retrieve current, past, or future weather forecasts for a location."
+    description = "Retrieve current, past, or future weather forecasts for a concrete location."
     input_schema = OpenMeteoToolInput
 
     def __init__(self, options: dict[str, Any] | None = None) -> None:

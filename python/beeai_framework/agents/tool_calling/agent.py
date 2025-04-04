@@ -11,46 +11,46 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
-import json
 from collections.abc import Sequence
-from typing import Any
+from typing import Any, Literal
 
-from pydantic import BaseModel, Field, create_model
+from pydantic import BaseModel
 
 from beeai_framework.agents import AgentError, AgentExecutionConfig
 from beeai_framework.agents.base import BaseAgent
+from beeai_framework.agents.tool_calling.abilities import FinalAnswerAbility
 from beeai_framework.agents.tool_calling.events import (
     ToolCallingAgentStartEvent,
     ToolCallingAgentSuccessEvent,
     tool_calling_agent_event_types,
 )
-from beeai_framework.agents.tool_calling.prompts import ToolCallingAgentTaskPromptInput
+from beeai_framework.agents.tool_calling.prompts import ToolCallingAgentTaskPromptInput, ToolCallingAgentToolDefinition
 from beeai_framework.agents.tool_calling.types import (
+    AgentAbility,
     ToolCallingAgentRunOutput,
     ToolCallingAgentRunState,
     ToolCallingAgentTemplateFactory,
     ToolCallingAgentTemplates,
     ToolCallingAgentTemplatesKeys,
 )
+from beeai_framework.agents.tool_calling.utils import _run_tools, assert_tools_uniqueness
 from beeai_framework.backend.chat import ChatModel
 from beeai_framework.backend.message import (
     AssistantMessage,
-    MessageToolResultContent,
     SystemMessage,
-    ToolMessage,
     UserMessage,
 )
 from beeai_framework.context import Run, RunContext
 from beeai_framework.emitter import Emitter
+from beeai_framework.errors import FrameworkError
 from beeai_framework.memory.base_memory import BaseMemory
 from beeai_framework.memory.unconstrained_memory import UnconstrainedMemory
 from beeai_framework.template import PromptTemplate
-from beeai_framework.tools.errors import ToolError
 from beeai_framework.tools.tool import AnyTool
-from beeai_framework.tools.tool import tool as create_tool
-from beeai_framework.tools.types import StringToolOutput
 from beeai_framework.utils.counter import RetryCounter
+
+__all__ = ["ToolCallingAgent"]
+
 from beeai_framework.utils.strings import to_json
 
 
@@ -63,6 +63,7 @@ class ToolCallingAgent(BaseAgent[ToolCallingAgentRunOutput]):
         tools: Sequence[AnyTool] | None = None,
         templates: dict[ToolCallingAgentTemplatesKeys, PromptTemplate[Any] | ToolCallingAgentTemplateFactory]
         | None = None,
+        abilities: Sequence[AgentAbility | str] | None = None,
         save_intermediate_steps: bool = True,
     ) -> None:
         super().__init__()
@@ -70,6 +71,7 @@ class ToolCallingAgent(BaseAgent[ToolCallingAgentRunOutput]):
         self._memory = memory or UnconstrainedMemory()
         self._tools = tools or []
         self._templates = self._generate_templates(templates)
+        self._abilities = [AgentAbility.lookup(ab) if isinstance(ab, str) else ab for ab in (abilities or [])]
         self._save_intermediate_steps = save_intermediate_steps
 
     def run(
@@ -83,14 +85,58 @@ class ToolCallingAgent(BaseAgent[ToolCallingAgentRunOutput]):
         execution_config = execution or AgentExecutionConfig(
             max_retries_per_step=3,
             total_max_retries=20,
-            max_iterations=10,
+            max_iterations=20,
         )
 
+        def prepare_request(
+            state: ToolCallingAgentRunState,
+            final_answer_ability: FinalAnswerAbility,
+        ) -> tuple[
+            list[AnyTool],
+            list[AnyTool],
+            list[AnyTool],
+            dict[AnyTool, AgentAbility],
+            Literal["required"] | AnyTool,
+        ]:
+            tool_choice: Literal["required"] | AnyTool = "required"
+            abilities_tools: list[AnyTool] = []
+            regular_tools: list[AnyTool] = list(self._tools)
+            ability_by_tool: dict[AnyTool, AgentAbility] = {}
+            allowed_tools: list[AnyTool] = [*regular_tools]
+
+            for ability in [*self._abilities, final_answer_ability]:
+                status = ability.can_use(state=state)
+                if not status.allowed:
+                    continue
+
+                tool = ability.to_tool()
+                if status.forced:
+                    abilities_tools.clear()
+                    ability_by_tool.clear()
+                    allowed_tools.clear()
+                    # we need to update the selection of tools instead of removing them!
+
+                abilities_tools.append(tool)
+                ability_by_tool[tool] = ability
+                allowed_tools.append(tool)
+
+                if status.forced and status.prevent_stop:
+                    tool_choice = tool
+                    break
+
+            if not allowed_tools:
+                raise FrameworkError("Unknown state. Tools shouldn't not be empty.")
+            if len(allowed_tools) == 1:
+                tool_choice = allowed_tools[0]
+
+            assert_tools_uniqueness(allowed_tools)
+            return allowed_tools, regular_tools, abilities_tools, ability_by_tool, tool_choice
+
         async def handler(run_context: RunContext) -> ToolCallingAgentRunOutput:
-            state = ToolCallingAgentRunState(memory=UnconstrainedMemory(), result=None, iteration=0)
-            await state.memory.add(SystemMessage(self._templates.system.render()))
+            state = ToolCallingAgentRunState(memory=UnconstrainedMemory(), steps=[], iteration=0, result=None)
             await state.memory.add_many(self.memory.messages)
 
+            user_message: UserMessage | None = None
             if prompt:
                 task_input = ToolCallingAgentTaskPromptInput(
                     prompt=prompt,
@@ -104,37 +150,7 @@ class ToolCallingAgent(BaseAgent[ToolCallingAgentRunOutput]):
                 error_type=AgentError, max_retries=execution_config.total_max_retries or 1
             )
 
-            final_answer_schema_cls: type[BaseModel] = (
-                expected_output
-                if (
-                    expected_output is not None
-                    and isinstance(expected_output, type)
-                    and issubclass(expected_output, BaseModel)
-                )
-                else create_model(
-                    "FinalAnswer",
-                    response=(
-                        str,
-                        Field(description=expected_output or None),
-                    ),
-                )
-            )
-
-            @create_tool(
-                name="final_answer",
-                description="Sends the final answer to the user",
-                input_schema=final_answer_schema_cls,
-            )
-            def final_answer_tool(**kwargs: Any) -> StringToolOutput:
-                if final_answer_schema_cls is expected_output:
-                    dump = final_answer_schema_cls.model_validate(kwargs)
-                    state.result = AssistantMessage(to_json(dump.model_dump()))
-                else:
-                    state.result = AssistantMessage(kwargs["response"])
-
-                return StringToolOutput("Message has been sent")
-
-            tools = [*self._tools, final_answer_tool]
+            final_answer_ability = FinalAnswerAbility(state=state, expected_output=expected_output)
 
             while state.result is None:
                 state.iteration += 1
@@ -142,49 +158,51 @@ class ToolCallingAgent(BaseAgent[ToolCallingAgentRunOutput]):
                 if execution_config.max_iterations and state.iteration > execution_config.max_iterations:
                     raise AgentError(f"Agent was not able to resolve the task in {state.iteration} iterations.")
 
+                allowed_tools, regular_tools, abilities_tools, ability_by_tool, tool_choice = prepare_request(
+                    state, final_answer_ability
+                )
+
                 await run_context.emitter.emit(
                     "start",
                     ToolCallingAgentStartEvent(state=state),
                 )
+                system_message = SystemMessage(
+                    self._templates.system.render(
+                        tools=[
+                            ToolCallingAgentToolDefinition.from_tool(tool, enabled=tool in allowed_tools)
+                            for tool in regular_tools
+                        ],
+                        abilities=[
+                            ToolCallingAgentToolDefinition.from_tool(tool, enabled=tool in allowed_tools)
+                            for tool in abilities_tools
+                        ],
+                        final_answer_tool=final_answer_ability.name,
+                        final_answer_schema=to_json(
+                            final_answer_ability.input_schema.model_json_schema(), indent=2, sort_keys=False
+                        )
+                        if isinstance(expected_output, type)
+                        else expected_output,
+                    )
+                )
                 response = await self._llm.create(
-                    messages=state.memory.messages,
-                    tools=tools,
-                    tool_choice="required" if len(tools) > 1 else tools[0],
+                    messages=[
+                        system_message,
+                        *state.memory.messages,
+                    ],
+                    tools=allowed_tools,
+                    tool_choice=tool_choice,
                     stream=False,
                 )
                 await state.memory.add_many(response.messages)
 
                 tool_call_messages = response.get_tool_calls()
-                for tool_call in tool_call_messages:
-                    try:
-                        tool = next((tool for tool in tools if tool.name == tool_call.tool_name), None)
-                        if not tool:
-                            raise ToolError(f"Tool '{tool_call.tool_name}' does not exist!")
-
-                        tool_input = json.loads(tool_call.args)
-                        tool_response = await tool.run(tool_input).context(
-                            {"state": state.model_dump(), "tool_call_msg": tool_call}
-                        )
-                        await state.memory.add(
-                            ToolMessage(
-                                MessageToolResultContent(
-                                    result=tool_response.get_text_content(),
-                                    tool_name=tool_call.tool_name,
-                                    tool_call_id=tool_call.id,
-                                )
-                            )
-                        )
-                    except ToolError as e:
-                        global_retries_counter.use(e)
-                        await state.memory.add(
-                            ToolMessage(
-                                MessageToolResultContent(
-                                    result=self._templates.tool_error.render({"reason": e.explain()}),
-                                    tool_name=tool_call.tool_name,
-                                    tool_call_id=tool_call.id,
-                                )
-                            )
-                        )
+                for tool_call in await _run_tools(
+                    allowed_tools, tool_call_messages, context={"state": state.model_dump()}
+                ):
+                    state.steps.append(tool_call.to_step(state, ability_by_tool))
+                    await state.memory.add(tool_call.to_message())
+                    if tool_call.error:
+                        global_retries_counter.use(tool_call.error)
 
                 # handle empty messages for some models
                 text_messages = response.get_text_messages()
@@ -200,11 +218,15 @@ class ToolCallingAgent(BaseAgent[ToolCallingAgentRunOutput]):
                     ToolCallingAgentSuccessEvent(state=state),
                 )
 
-            assert state.result is not None
             if self._save_intermediate_steps:
-                await self.memory.add_many(state.memory.messages[1:])
+                self.memory.reset()
+                await self.memory.add_many(state.memory.messages)
             else:
+                if user_message is not None:
+                    await self.memory.add(user_message)
                 await self.memory.add_many(state.memory.messages[-2:])
+
+            assert state.result is not None
             return ToolCallingAgentRunOutput(result=state.result, memory=state.memory)
 
         return self._to_run(handler, signal=None, run_params={"prompt": prompt, "execution": execution})
