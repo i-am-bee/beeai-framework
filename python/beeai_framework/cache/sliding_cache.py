@@ -13,6 +13,7 @@
 # limitations under the License.
 
 
+from copy import copy
 from typing import Self, TypeVar
 
 from cachetools import Cache, LRUCache, TTLCache
@@ -27,6 +28,7 @@ class SlidingCache(BaseCache[T]):
 
     def __init__(self, size: int, ttl: float | None = None) -> None:
         super().__init__()
+        self._ttl = ttl
         self._items: Cache[str, T] = TTLCache(maxsize=size, ttl=ttl) if ttl else LRUCache(maxsize=size)
 
     async def set(self, key: str, value: T) -> None:
@@ -52,7 +54,6 @@ class SlidingCache(BaseCache[T]):
         return len(self._items)
 
     async def clone(self) -> Self:
-        items = self._items
-        cloned = type(self)(len(items))
-        cloned._items = items
+        cloned = type(self)(len(self._items), self._ttl)
+        cloned._items = copy(self._items)
         return cloned
