@@ -4,6 +4,7 @@ import sys
 import traceback
 
 from dotenv import load_dotenv
+from pydantic import BaseModel, Field
 
 from beeai_framework.agents.tool_calling import ToolCallingAgent, ToolCallingAgentStartEvent
 from beeai_framework.backend import ChatModel
@@ -12,7 +13,7 @@ from beeai_framework.errors import FrameworkError
 from beeai_framework.logger import Logger
 from beeai_framework.memory import UnconstrainedMemory
 from beeai_framework.tools.search import DuckDuckGoSearchTool
-from beeai_framework.tools.weather.openmeteo import OpenMeteoTool
+from beeai_framework.tools.weather import OpenMeteoTool
 from beeai_framework.utils.dicts import exclude_none
 from beeai_framework.utils.strings import to_json
 from examples.helpers.io import ConsoleReader
@@ -26,7 +27,7 @@ logger = Logger("app", level=logging.DEBUG)
 reader = ConsoleReader()
 
 
-def log_success_events(data: ToolCallingAgentStartEvent, event: EventMeta) -> None:
+def log_success_event(data: ToolCallingAgentStartEvent, event: EventMeta) -> None:
     reader.write(
         "Agent (debug) 🤖 : ",
         "\n".join(
@@ -55,18 +56,26 @@ def log_success_events(data: ToolCallingAgentStartEvent, event: EventMeta) -> No
 async def main() -> None:
     # Create agent
     agent = ToolCallingAgent(
-        llm=ChatModel.from_name("ollama:llama3.1"),
+        # llm=ChatModel.from_name("ollama:llama3.1"),
+        llm=ChatModel.from_name("ollama:granite3.1-dense:8b"),
         memory=UnconstrainedMemory(),
-        tools=[DuckDuckGoSearchTool(max_results=5), OpenMeteoTool()],
-        abilities=["reasoning_optional"],
+        tools=[DuckDuckGoSearchTool(max_results=10), OpenMeteoTool()],
+        abilities=["reasoning"],
     )
 
-    # Main interaction loop with user input
-    prompt = "How old is czech president's wife?"
+    class ExpectedOutput(BaseModel):
+        """Concise description of the island that we are looking for"""
+
+        island_name: str = Field(..., description="Full name of the island")
+        population: int = Field(..., description="Population rounded to the nearest thousand")
+        current_weather: str = Field(..., description="The current weather in the capital city.")
+
+    prompt = "The longest lived vertebrate is named after an island, what is the population of that island rounded to the nearest thousand? Also find the current weather in the capital city."  # noqa
     reader.write("User 🤖 : ", prompt)
     response = await agent.run(
         prompt,
-    ).on("success", log_success_events)
+        expected_output=ExpectedOutput,
+    ).on("success", log_success_event)
 
 
 if __name__ == "__main__":

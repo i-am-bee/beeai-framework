@@ -3,6 +3,7 @@ import json
 import sys
 import traceback
 
+from dotenv import load_dotenv
 from pydantic import BaseModel, Field
 
 from beeai_framework.adapters.watsonx import WatsonxChatModel
@@ -10,6 +11,8 @@ from beeai_framework.backend import ChatModel, MessageToolResultContent, ToolMes
 from beeai_framework.errors import AbortError, FrameworkError
 from beeai_framework.tools.weather import OpenMeteoTool
 from beeai_framework.utils import AbortSignal
+
+load_dotenv()
 
 # Setting can be passed here during initiation or pre-configured via environment variables
 llm = WatsonxChatModel(
