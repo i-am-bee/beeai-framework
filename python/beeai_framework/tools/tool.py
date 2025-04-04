@@ -180,8 +180,8 @@ class Tool(Generic[TInput, TRunOptions, TOutput], ABC):
         )
 
     async def clone(self) -> Self:
-        cloned = type(self)(self._options)
-        cloned._cache = self._cache
+        cloned = type(self)(self._options.copy() if self._options else None)
+        cloned._cache = await self._cache.clone()
         return cloned
 
 

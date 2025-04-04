@@ -45,7 +45,11 @@ class RetryCounter:
     async def clone(self) -> "RetryCounter":
         cloned = RetryCounter(self.error_type, self._max_retries)
         cloned.remaining = self.remaining
-        cloned._lastError = self._lastError
-        cloned._finalError = self._finalError
+        cloned._lastError = (
+            await self._lastError.clone() if isinstance(self._lastError, FrameworkError) else self._lastError
+        )
+        cloned._finalError = (
+            await self._finalError.clone() if isinstance(self._finalError, FrameworkError) else self._finalError
+        )
         cloned._error_class = self._error_class
         return cloned

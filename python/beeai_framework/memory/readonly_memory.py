@@ -41,4 +41,4 @@ class ReadOnlyMemory(BaseMemory):
         return self
 
     async def clone(self) -> "ReadOnlyMemory":
-        return ReadOnlyMemory(self._source)
+        return ReadOnlyMemory(await self._source.clone())

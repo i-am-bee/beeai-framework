@@ -15,7 +15,7 @@
 import json
 from asyncio import CancelledError
 from collections.abc import Generator
-from typing import Any
+from typing import Any, Self
 
 from httpx import HTTPStatusError
 
@@ -143,6 +143,16 @@ class FrameworkError(Exception):
             return cls(cause=error, message=message, context=context)
         else:
             return cls(cause=error, context=context)
+
+    async def clone(self) -> Self:
+        cloned = type(self)(
+            self.message,
+            is_fatal=self.fatal,
+            is_retryable=self.retryable,
+            cause=await self.__cause__.clone() if isinstance(self.__cause__, FrameworkError) else self.__cause__,
+            context=self.context.copy(),
+        )
+        return cloned
 
 
 class AbortError(FrameworkError, CancelledError):

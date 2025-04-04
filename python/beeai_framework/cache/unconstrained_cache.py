@@ -51,5 +51,5 @@ class UnconstrainedCache(BaseCache[T]):
 
     async def clone(self) -> Self:
         cloned = type(self)()
-        cloned._provider = self._provider
+        cloned._provider = self._provider.copy()
         return cloned
