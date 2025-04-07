@@ -37,7 +37,7 @@ wikipedia-api = "^0.8.1"
 langchain-core = {version = "^0.3.41", optional = true}
 langchain-community = {version = "^0.3.19", optional = true}
 boto3 = {version = "^1.37.5", optional = true}
-acp-sdk = "^0.0.5"
+acp-sdk = "^0.0.6"
 cachetools = "^5.5.2"
 jsonref = "^1.1.0"
 
