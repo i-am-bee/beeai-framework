@@ -20,12 +20,10 @@ from beeai_framework.agents.react.types import (
     ReActAgentIterationMeta,
     ReActAgentIterationResult,
     ReActAgentRunIteration,
-    ReActAgentRunOptions,
 )
 from beeai_framework.backend.message import AnyMessage
 from beeai_framework.errors import FrameworkError
 from beeai_framework.memory.base_memory import BaseMemory
-from beeai_framework.tools import ToolOutput
 from beeai_framework.tools.tool import AnyTool
 
 
@@ -69,20 +67,6 @@ class ReActAgentUpdateEvent(BaseModel):
     memory: InstanceOf[BaseMemory] | None = None
 
 
-class ReActAgentToolEventData(BaseModel):
-    tool: InstanceOf[AnyTool]
-    input: Any
-    options: ReActAgentRunOptions
-    iteration: ReActAgentIterationResult
-    result: InstanceOf[ToolOutput] | None = None
-    error: InstanceOf[FrameworkError] | None = None
-
-
-class ReActAgentToolEvent(BaseModel):
-    data: ReActAgentToolEventData
-    meta: ReActAgentIterationMeta
-
-
 react_agent_event_types: dict[str, type] = {
     "start": ReActAgentStartEvent,
     "error": ReActAgentErrorEvent,
@@ -90,7 +74,4 @@ react_agent_event_types: dict[str, type] = {
     "success": ReActAgentSuccessEvent,
     "update": ReActAgentUpdateEvent,
     "partial_update": ReActAgentUpdateEvent,
-    "tool_start": ReActAgentToolEvent,
-    "tool_success": ReActAgentToolEvent,
-    "tool_error": ReActAgentToolEvent,
 }

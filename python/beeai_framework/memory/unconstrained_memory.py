@@ -13,9 +13,6 @@
 # limitations under the License.
 
 
-from copy import copy
-from typing import Any
-
 from beeai_framework.backend.message import AnyMessage
 from beeai_framework.memory.base_memory import BaseMemory
 
@@ -44,8 +41,7 @@ class UnconstrainedMemory(BaseMemory):
     def reset(self) -> None:
         self._messages.clear()
 
-    def create_snapshot(self) -> dict[str, Any]:
-        return {"messages": copy(self._messages)}
-
-    def load_snapshot(self, state: dict[str, Any]) -> None:
-        self._messages = copy(state["messages"])
+    async def clone(self) -> "UnconstrainedMemory":
+        cloned = UnconstrainedMemory()
+        cloned._messages = self._messages.copy()
+        return cloned

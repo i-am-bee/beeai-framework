@@ -1,6 +1,6 @@
 <div align="center">
-  
-# BeeAI Framework
+
+<h1>BeeAI Framework</h1>
 
 **Build production-ready multi-agent systems in <a href="https://github.com/i-am-bee/beeai-framework/tree/main/python">Python</a> or <a href="https://github.com/i-am-bee/beeai-framework/tree/main/typescript">TypeScript</a>.**
 

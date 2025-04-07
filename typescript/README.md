@@ -1,6 +1,6 @@
 <div align="center">
-  
-# BeeAI Framework for TypeScript <img align="center" alt="Project Status: Alpha" src="https://img.shields.io/badge/Status-Beta-blue?style=plastic">
+
+<h1>BeeAI Framework for TypeScript <img align="center" alt="Project Status: Alpha" src="https://img.shields.io/badge/Status-Beta-blue?style=plastic"></h1>
 
 **Build production-ready multi-agent systems. Also available in <a href="https://github.com/i-am-bee/beeai-framework/tree/main/python">Python</a>.**
 

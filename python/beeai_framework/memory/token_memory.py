@@ -13,7 +13,6 @@
 # limitations under the License.
 
 
-from copy import copy
 from math import ceil
 from typing import Any
 
@@ -129,12 +128,14 @@ class TokenMemory(BaseMemory):
         self._messages.clear()
         self._tokens_by_message.clear()
 
-    def create_snapshot(self) -> dict[str, Any]:
-        return {
-            "messages": copy(self._messages),
-            "token_counts": copy(self._tokens_by_message),
-        }
-
-    def load_snapshot(self, state: dict[str, Any]) -> None:
-        self._messages = copy(state["messages"])
-        self._tokens_by_message = copy(state["token_counts"])
+    async def clone(self) -> "TokenMemory":
+        cloned = TokenMemory(
+            self.llm.clone(),
+            self._max_tokens,
+            self._sync_threshold,
+            self._threshold,
+            self._handlers.copy() if self._handlers else None,
+        )
+        cloned._messages = self._messages.copy()
+        cloned._tokens_by_message = self._tokens_by_message.copy()
+        return cloned

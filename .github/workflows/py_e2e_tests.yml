@@ -1,5 +1,9 @@
 name: Python - E2E Tests
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 on:
   workflow_dispatch:
   push:
@@ -16,6 +20,8 @@ jobs:
     timeout-minutes: 120
     name: Tests
     runs-on: ubuntu-latest
+    env:
+      TEST_NUM_WORKERS: ${{ vars.TEST_NUM_WORKERS }}
     steps:
       - uses: actions/checkout@v4
         with:

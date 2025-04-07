@@ -80,6 +80,11 @@ class AbortController:
     def abort(self, reason: str | None = None) -> None:
         self._signal._abort(reason)
 
+    async def clone(self) -> "AbortController":
+        cloned = AbortController()
+        cloned._signal = cloned._signal.model_copy()
+        return cloned
+
 
 def register_signals(controller: AbortController, signals: list[AbortSignal]) -> None:
     def register(signal: AbortSignal) -> None:

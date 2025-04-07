@@ -14,10 +14,8 @@
 
 
 from beeai_framework.memory.base_memory import BaseMemory
-from beeai_framework.memory.errors import ResourceError, ResourceFatalError, SerializerError
+from beeai_framework.memory.errors import ResourceError, ResourceFatalError
 from beeai_framework.memory.readonly_memory import ReadOnlyMemory
-from beeai_framework.memory.serializable import Serializable
-from beeai_framework.memory.serializer import Serializer
 from beeai_framework.memory.sliding_memory import SlidingMemory, SlidingMemoryConfig, SlidingMemoryHandlers
 from beeai_framework.memory.summarize_memory import SummarizeMemory
 from beeai_framework.memory.token_memory import TokenMemory
@@ -28,9 +26,6 @@ __all__ = [
     "ReadOnlyMemory",
     "ResourceError",
     "ResourceFatalError",
-    "Serializable",
-    "Serializer",
-    "SerializerError",
     "SlidingMemory",
     "SlidingMemoryConfig",
     "SlidingMemoryHandlers",

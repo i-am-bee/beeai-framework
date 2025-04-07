@@ -3,8 +3,6 @@
 
 - Getting started
 
-  - [Home](/)
-  - [Overview](overview.md)
   - [Examples](examples.md)
   - [Tutorials](tutorials.md)
   - [Migration Guide](migration_guide.md)

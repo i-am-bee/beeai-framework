@@ -43,16 +43,3 @@ class ResourceFatalError(ResourceError):
         context: dict[str, Any] | None = None,
     ) -> None:
         super().__init__(message, is_fatal=True, is_retryable=False, cause=cause, context=context)
-
-
-class SerializerError(FrameworkError):
-    """Raised for errors caused by serializer."""
-
-    def __init__(
-        self,
-        message: str = "Serializer error",
-        *,
-        cause: Exception | None = None,
-        context: dict[str, Any] | None = None,
-    ) -> None:
-        super().__init__(message, is_fatal=True, is_retryable=False, cause=cause, context=context)

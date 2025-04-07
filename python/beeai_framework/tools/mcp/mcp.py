@@ -13,7 +13,7 @@
 # limitations under the License.
 
 
-from typing import Any
+from typing import Any, Self
 
 from mcp import ClientSession
 from mcp.types import CallToolResult
@@ -71,3 +71,9 @@ class MCPTool(Tool[BaseModel, ToolRunOptions, JSONToolOutput]):
     async def from_client(cls, session: ClientSession) -> list["MCPTool"]:
         tools_result = await session.list_tools()
         return [MCPTool(session, tool) for tool in tools_result.tools]
+
+    async def clone(self) -> Self:
+        cloned = await super().clone()
+        cloned._session = self._session
+        cloned._tool = self._tool.model_copy()
+        return cloned

@@ -197,5 +197,16 @@ class RunContext:
 
         return Run(handler, context)
 
+    async def clone(self) -> "RunContext":
+        cloned = RunContext(self.instance, signal=None, run_params=self.run_params.copy())
+        cloned.run_id = self.run_id
+        cloned.parent_id = self.parent_id
+        cloned.group_id = self.group_id
+        cloned.context = self.context.copy()
+        cloned.emitter = await self.emitter.clone()
+        cloned.created_at = datetime.replace(self.created_at)
+        cloned._controller = await self._controller.clone()
+        return cloned
+
 
 __all__ = ["Run", "RunContext"]

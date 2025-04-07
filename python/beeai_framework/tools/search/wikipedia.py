@@ -25,9 +25,14 @@ from beeai_framework.tools.types import ToolRunOptions
 
 class WikipediaToolInput(BaseModel):
     query: str = Field(description="Search query, name of the Wikipedia page.")
-    full_text: bool = Field(description="If set to true will return the full text of the page.", default=False)
-    section_titles: bool = Field(description="If set to true returns section titles as the description.", default=False)
-    language: str | None = Field(description="Retrieves specified language version if available.", default=None)
+    full_text: bool = Field(
+        description="If set to true, it will return the full text of the page instead of its summary.",
+        default=False,
+    )
+    section_titles: bool = Field(
+        description="If set to true, it returns section titles as the description.", default=False
+    )
+    language: str | None = Field(description="Retrieves the specified language version if available.", default=None)
 
 
 class WikipediaToolResult(SearchToolResult):

@@ -190,3 +190,8 @@ class RemoteAgent(BaseAgent[RemoteAgentRunOutput]):
     @memory.setter
     def memory(self, memory: BaseMemory) -> None:
         raise NotImplementedError()
+
+    async def clone(self) -> "RemoteAgent":
+        cloned = RemoteAgent(self.input.agent_name, url=self.input.url)
+        cloned.emitter = await self.emitter.clone()
+        return cloned

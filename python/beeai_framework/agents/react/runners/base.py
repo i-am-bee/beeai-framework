@@ -14,7 +14,7 @@
 
 import math
 from abc import ABC, abstractmethod
-from typing import Any
+from typing import Any, Self
 
 from pydantic import BaseModel, InstanceOf
 
@@ -105,7 +105,7 @@ class BaseRunner(ABC):
             raise AgentError(f"Agent was not able to resolve the task in {max_iterations} iterations.")
 
         emitter = self._run.emitter.child(
-            group_id=f"`iteration-{meta.iteration}",
+            group_id=f"iteration-{meta.iteration}",
             events=react_agent_event_types,
         )
         iteration = await self.llm(ReActAgentRunnerLLMInput(emitter=emitter, signal=self._run.signal, meta=meta))
@@ -144,4 +144,8 @@ class BaseRunner(ABC):
             templates[key] = override(default_template) or default_template
         return ReActAgentTemplates(**templates)
 
-    # TODO: Serialization
+    async def clone(self) -> Self:
+        cloned = type(self)(self._input.model_copy(), self._options.model_copy(), await self._run.clone())
+        cloned._memory = await self._memory.clone() if self._memory else None
+        cloned._failed_attempts_counter = await self._failed_attempts_counter.clone()
+        return cloned

@@ -3,9 +3,10 @@
 <!-- TOC -->
 ## Table of Contents
 - [Overview](#overview)
-- [Implementation in BeeAI Framework](#implementation-in-beeai-framework)
+- [Agent abstractions](#agent-abstractions)
   - [ReActAgent](#react-agent)
-  - [Agent Execution Process](#agent-execution-process)
+  - [ToolCallingAgent](#tool-calling-agent)
+  - [RemoteAgent](#remote-agent)
 - [Customizing Agent Behavior](#customizing-agent-behavior)
   - [1. Setting Execution Policy](#1-setting-execution-policy)
   - [2. Overriding Prompt Templates](#2-overriding-prompt-templates)
@@ -41,11 +42,13 @@ Agents control the path to solving a problem, acting on feedback to refine their
 
 ---
 
-## Implementation in BeeAI Framework
+## Agent abstractions
+
+BeeAI framework provides multiple agent implementations for different use cases.
 
 ### ReAct Agent
 
-BeeAI framework provides a robust implementation of the `ReAct` pattern ([Reasoning and Acting](https://arxiv.org/abs/2210.03629)), which follows this general flow:
+ReActAgent implements the ReAct pattern ([Reasoning and Acting](https://arxiv.org/abs/2210.03629)), following this general flow:
 
 ```
 Thought → Action → Observation → Thought → ...
@@ -53,32 +56,334 @@ Thought → Action → Observation → Thought → ...
 
 This pattern allows agents to reason about a task, take actions using tools, observe results, and continue reasoning until reaching a conclusion.
 
-### Agent Execution Process
+#### Agent execution process
 
-Let's see how a ReActAgent approaches a simple question:
+Let's see how ReAct Agent approaches a simple question: `"What is the current weather in Las Vegas?"`
 
-**Input prompt:** "What is the current weather in Las Vegas?"
-
-**First iteration:**
 ```
 thought: I need to retrieve the current weather in Las Vegas. I can use the OpenMeteo function to get the current weather forecast for a location.
 tool_name: OpenMeteo
 tool_input: {"location": {"name": "Las Vegas"}, "start_date": "2024-10-17", "end_date": "2024-10-17", "temperature_unit": "celsius"}
-```
-
-**Second iteration:**
-```
+[Tool executes and returns data]
 thought: I have the current weather in Las Vegas in Celsius.
 final_answer: The current weather in Las Vegas is 20.5°C with an apparent temperature of 18.3°C.
 ```
 
 > [!NOTE]
-> During execution, the agent emits partial updates as it generates each line, followed by complete updates. Updates follow a strict order: first all partial updates for "thought," then a complete "thought" update, then moving to the next component.
+> During execution, agents emit events that provide visibility into their reasoning and actions. These events can be observed and used for logging, debugging, or custom behavior.
 
-For practical examples, see:
-- [simple.py](/python/examples/agents/simple.py) - Basic example of a ReAct Agent using OpenMeteo and DuckDuckGo tools
-- [react.py](/python/examples/agents/react.py) - More complete example using Wikipedia integration
-- [granite.py](/python/examples/agents/granite.py) - Example using the Granite model
+<details>
+<summary>▶️ Click to expand ReAct Agent example</summary>
+
+<!-- embedme examples/agents/react.py -->
+
+```py
+import asyncio
+import logging
+import os
+import sys
+import tempfile
+import traceback
+from typing import Any
+
+from dotenv import load_dotenv
+
+from beeai_framework.agents import AgentExecutionConfig
+from beeai_framework.agents.react import ReActAgent
+from beeai_framework.backend import ChatModel, ChatModelParameters
+from beeai_framework.emitter import EmitterOptions, EventMeta
+from beeai_framework.errors import FrameworkError
+from beeai_framework.logger import Logger
+from beeai_framework.memory import TokenMemory
+from beeai_framework.tools import AnyTool
+from beeai_framework.tools.code import LocalPythonStorage, PythonTool
+from beeai_framework.tools.search import DuckDuckGoSearchTool, WikipediaTool
+from beeai_framework.tools.weather import OpenMeteoTool
+from examples.helpers.io import ConsoleReader
+
+# Load environment variables
+load_dotenv()
+
+# Configure logging - using DEBUG instead of trace
+logger = Logger("app", level=logging.DEBUG)
+
+reader = ConsoleReader()
+
+
+def create_agent() -> ReActAgent:
+    """Create and configure the agent with tools and LLM"""
+
+    # Other models to try:
+    # "llama3.1"
+    # "granite3.1-dense"
+    # "deepseek-r1"
+    # ensure the model is pulled before running
+    llm = ChatModel.from_name(
+        "ollama:granite3.1-dense:8b",
+        ChatModelParameters(temperature=0),
+    )
+
+    # Configure tools
+    tools: list[AnyTool] = [
+        WikipediaTool(),
+        OpenMeteoTool(),
+        DuckDuckGoSearchTool(),
+    ]
+
+    # Add code interpreter tool if URL is configured
+    code_interpreter_url = os.getenv("CODE_INTERPRETER_URL")
+    if code_interpreter_url:
+        tools.append(
+            PythonTool(
+                code_interpreter_url,
+                LocalPythonStorage(
+                    local_working_dir=tempfile.mkdtemp("code_interpreter_source"),
+                    interpreter_working_dir=os.getenv("CODE_INTERPRETER_TMPDIR", "./tmp/code_interpreter_target"),
+                ),
+            )
+        )
+
+    # Create agent with memory and tools
+    agent = ReActAgent(llm=llm, tools=tools, memory=TokenMemory(llm))
+
+    return agent
+
+
+def process_agent_events(data: Any, event: EventMeta) -> None:
+    """Process agent events and log appropriately"""
+
+    if event.name == "error":
+        reader.write("Agent 🤖 : ", FrameworkError.ensure(data.error).explain())
+    elif event.name == "retry":
+        reader.write("Agent 🤖 : ", "retrying the action...")
+    elif event.name == "update":
+        reader.write(f"Agent({data.update.key}) 🤖 : ", data.update.parsed_value)
+    elif event.name == "start":
+        reader.write("Agent 🤖 : ", "starting new iteration")
+    elif event.name == "success":
+        reader.write("Agent 🤖 : ", "success")
+
+
+async def main() -> None:
+    """Main application loop"""
+
+    # Create agent
+    agent = create_agent()
+
+    # Log code interpreter status if configured
+    code_interpreter_url = os.getenv("CODE_INTERPRETER_URL")
+    if code_interpreter_url:
+        reader.write(
+            "🛠️ System: ",
+            f"The code interpreter tool is enabled. Please ensure that it is running on {code_interpreter_url}",
+        )
+
+    reader.write("🛠️ System: ", "Agent initialized with Wikipedia, DuckDuckGo, and Weather tools.")
+
+    # Main interaction loop with user input
+    for prompt in reader:
+        # Run agent with the prompt
+        response = await agent.run(
+            prompt=prompt,
+            execution=AgentExecutionConfig(max_retries_per_step=3, total_max_retries=10, max_iterations=20),
+        ).on("*", process_agent_events, EmitterOptions(match_nested=False))
+
+        reader.write("Agent 🤖 : ", response.result.text)
+
+
+if __name__ == "__main__":
+    try:
+        asyncio.run(main())
+    except FrameworkError as e:
+        traceback.print_exc()
+        sys.exit(e.explain())
+
+```
+
+_Source: [examples/agents/react.py](/python/examples/agents/react.py)_
+
+</details>
+
+### Tool Calling Agent
+
+ToolCallingAgent utilizes the native function-calling capabilities of modern LLMs to deliver a streamlined and efficient agent experience.
+
+Key features:
+- Native tool integration: Directly uses LLM APIs for tool invocation, avoiding prompt-based reasoning
+- Simplified execution: Handles tool calls and responses in a single loop
+- Flexible response formats: Supports both structured (Pydantic) & unstructured (text) responses
+
+#### Agent execution process
+
+Let's see how Tool Calling Agent approaches a simple question: `"What is the current weather in Las Vegas?"`
+
+```
+[Agent receives request]
+[Agent detects need for weather data]
+[Agent calls OpenMeteo tool with location="Las Vegas"]
+[Tool executes and returns data]
+[Agent formulates response based on tool results]
+final_answer: The current weather in Las Vegas is 20.5°C with an apparent temperature of 18.3°C.
+```
+
+<details>
+<summary>▶️ Click to expand Tool Calling Agent example</summary>
+
+<!-- embedme examples/agents/tool_calling.py -->
+
+```py
+import asyncio
+import logging
+import sys
+import traceback
+from typing import Any
+
+from dotenv import load_dotenv
+
+from beeai_framework.agents.tool_calling import ToolCallingAgent
+from beeai_framework.backend import ChatModel
+from beeai_framework.emitter import EventMeta
+from beeai_framework.errors import FrameworkError
+from beeai_framework.logger import Logger
+from beeai_framework.memory import UnconstrainedMemory
+from beeai_framework.tools.weather import OpenMeteoTool
+from examples.helpers.io import ConsoleReader
+
+# Load environment variables
+load_dotenv()
+
+# Configure logging - using DEBUG instead of trace
+logger = Logger("app", level=logging.DEBUG)
+
+reader = ConsoleReader()
+
+
+def process_agent_events(data: Any, event: EventMeta) -> None:
+    """Process agent events and log appropriately"""
+
+    if event.name == "start":
+        reader.write("Agent (debug) 🤖 : ", "starting new iteration")
+    elif event.name == "success":
+        reader.write("Agent (debug) 🤖 : ", data.state.memory.messages[-1])
+
+
+async def main() -> None:
+    """Main application loop"""
+
+    # Create agent
+    agent = ToolCallingAgent(
+        llm=ChatModel.from_name("ollama:llama3.1"), memory=UnconstrainedMemory(), tools=[OpenMeteoTool()]
+    )
+
+    # Main interaction loop with user input
+    for prompt in reader:
+        response = await agent.run(prompt).on("*", process_agent_events)
+        reader.write("Agent 🤖 : ", response.result.text)
+
+    print("======DONE (showing the full message history)=======")
+
+    for msg in response.memory.messages:
+        print(msg)
+
+
+if __name__ == "__main__":
+    try:
+        asyncio.run(main())
+    except FrameworkError as e:
+        traceback.print_exc()
+        sys.exit(e.explain())
+
+```
+
+_Source: [examples/agents/tool_calling.py](/python/examples/agents/tool_calling.py)_
+
+</details>
+
+### Remote Agent
+
+RemoteAgent enables seamless integration with agents hosted on the [BeeAI platform](https://github.com/i-am-bee/beeai), allowing you to interact with and orchestrate agents built in any framework.
+
+This agent connects to the BeeAI platform via the Model Context Protocol (MCP), providing these key capabilities:
+- **Cross-framework compatibility:** Interact with agents built in any framework hosted on the BeeAI platform
+- **Simplified integration:** Connect to specialized agents without having to implement their functionality
+- **Workflow orchestration:** Chain multiple remote agents together to create workflows
+
+Inputs are accepted in a flexible JSON format that varies based on the target agent. Common input patterns include:
+```
+# For chat-style agents
+input_data = {
+    "messages": [{"role": "user", "content": "Your query here"}],
+    "config": {"tools": ["weather", "search", "wikipedia"]}  # Optional configuration
+}
+
+# For text-based agents
+input_data = {"text": "Your query here"}
+
+# Run the agent with the appropriate input format
+response = await agent.run(input_data)
+```
+
+<details>
+<summary>▶️ Click to expand Remote Agent example</summary>
+
+<!-- embedme examples/agents/experimental/remote.py -->
+
+```py
+import asyncio
+import json
+import sys
+import traceback
+
+from beeai_framework.agents.experimental.remote import RemoteAgent
+from beeai_framework.errors import FrameworkError
+from examples.helpers.io import ConsoleReader
+
+
+async def main() -> None:
+    reader = ConsoleReader()
+
+    agent = RemoteAgent(agent_name="chat", url="http://127.0.0.1:8333/mcp/sse")
+    for prompt in reader:
+        # Run the agent and observe events
+        response = (
+            await agent.run(
+                {
+                    "messages": [{"role": "user", "content": prompt}],
+                    "config": {"tools": ["weather", "search", "wikipedia"]},
+                }
+            )
+            .on(
+                "update",
+                lambda data, event: (
+                    reader.write("Agent 🤖 (debug) : ", data.value["logs"][0]["message"])
+                    if "logs" in data.value
+                    else None
+                ),
+            )
+            .on(
+                "error",  # Log errors
+                lambda data, event: reader.write("Agent 🤖 : ", data.error.explain()),
+            )
+        )
+
+        reader.write("Agent 🤖 : ", json.loads(response.result.text)["messages"][0]["content"])
+
+
+if __name__ == "__main__":
+    try:
+        asyncio.run(main())
+    except FrameworkError as e:
+        traceback.print_exc()
+        sys.exit(e.explain())
+
+```
+
+_Source: [examples/agents/experimental/remote.py](/python/examples/agents/experimental/remote.py)_
+
+</details>
+
+> [!TIP]
+> Check out our [RemoteAgent tutorial](https://github.com/i-am-bee/beeai-framework/blob/main/python/docs/tutorials.md#beeai-platform-integration)
 
 ---
 
@@ -505,18 +810,17 @@ async def main() -> None:
                 lambda event: isinstance(event.creator, ChatModel) and event.name == "success",
                 # log data to the console
                 lambda data, event: reader.write(
-                    "Updated message content: "
-                    + "".join(str([message.content[0] for message in data.value.messages]))
-                    + "\n",
-                    data,
+                    "->Got response from the LLM",
+                    "  \n->".join([str(message.content[0].model_dump()) for message in data.value.messages]),
                 ),
                 EmitterOptions(match_nested=True),
             )
             .on(
                 "success",
                 lambda data, event: reader.write(
-                    f"->Step '{data.step}' has been completed with the following outcome:\n",
-                    data.state.final_answer,
+                    f"->Step '{data.step}' has been completed with the following outcome."
+                    f"\n\n{data.state.final_answer}\n\n",
+                    data.model_dump(exclude={"data"}),
                 ),
             )
         )
