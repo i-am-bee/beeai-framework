@@ -9,7 +9,7 @@
 **Prompt template**, on the other hand, is a specific type of template used in the context of language models or AI applications.
 It consists of a structured prompt that guides the model in generating a response or output. The prompt often includes variables or placeholders for user input, which helps to elicit more relevant or targeted responses.
 
-The Framework exposes such functionality via the [`PromptTemplate`](/typescript/src/template.ts) class, which is based on the well-known [`Mustache.js`](https://github.com/janl/mustache.js) template system, which is supported almost in every programming language.
+The Framework exposes such functionality via the [`PromptTemplate`](https://github.com/i-am-bee/beeai-framework/blob/main/typescript/src/template.ts) class, which is based on the well-known [`Mustache.js`](https://github.com/janl/mustache.js) template system, which is supported almost in every programming language.
 In addition, the framework provides type safety and validation against appropriate [`code](https://zod.dev/) schema, as you can see in the following examples.
 
 > [!TIP]
@@ -39,7 +39,7 @@ const output = greetTemplate.render({
 console.log(output); // Hello Alex!
 ```
 
-_Source: [examples/templates/primitives.ts](/typescript/examples/templates/primitives.ts)_
+_Source: [examples/templates/primitives.ts](https://github.com/i-am-bee/beeai-framework/blob/main/typescript/examples/templates/primitives.ts)_
 
 ### Arrays
 
@@ -62,7 +62,7 @@ const output = template.render({
 console.log(output); // Colors: Green,Yellow
 ```
 
-_Source: [examples/templates/arrays.ts](/typescript/examples/templates/arrays.ts)_
+_Source: [examples/templates/arrays.ts](https://github.com/i-am-bee/beeai-framework/blob/main/typescript/examples/templates/arrays.ts)_
 
 ### Objects
 
@@ -90,7 +90,7 @@ const output = template.render({
 console.log(output); // Expected Duration: 5ms; Retrieved: 3ms 5ms 6ms
 ```
 
-_Source: [examples/templates/objects.ts](/typescript/examples/templates/objects.ts)_
+_Source: [examples/templates/objects.ts](https://github.com/i-am-bee/beeai-framework/blob/main/typescript/examples/templates/objects.ts)_
 
 ### Forking
 
@@ -123,7 +123,7 @@ const output = modified.render({
 console.log(output); // You are a helpful assistant called Bee. Your objective is to fulfill the user needs. Your answers must be concise.
 ```
 
-_Source: [examples/templates/forking.ts](/typescript/examples/templates/forking.ts)_
+_Source: [examples/templates/forking.ts](https://github.com/i-am-bee/beeai-framework/blob/main/typescript/examples/templates/forking.ts)_
 
 ### Functions
 
@@ -174,10 +174,10 @@ console.log(
 );
 ```
 
-_Source: [examples/templates/functions.ts](/typescript/examples/templates/functions.ts)_
+_Source: [examples/templates/functions.ts](https://github.com/i-am-bee/beeai-framework/blob/main/typescript/examples/templates/functions.ts)_
 
 ## Agents
 
 The ReAct Agent internally uses multiple prompt templates, and because now you know how to work with them, you can alter the agent’s behavior.
 
-The internal prompt templates can be modified [here](/typescript/examples/agents/react_advanced.ts).
+The internal prompt templates can be modified [here](https://github.com/i-am-bee/beeai-framework/blob/main/typescript/examples/agents/react_advanced.ts).

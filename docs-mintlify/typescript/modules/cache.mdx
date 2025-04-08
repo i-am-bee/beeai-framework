@@ -41,7 +41,7 @@ await cache.clear();
 console.log(await cache.size()); // 0
 ```
 
-_Source: [examples/cache/unconstrainedCache.ts](/typescript/examples/cache/unconstrainedCache.ts)_
+_Source: [examples/cache/unconstrainedCache.ts](https://github.com/i-am-bee/beeai-framework/blob/main/typescript/examples/cache/unconstrainedCache.ts)_
 
 ### Caching function output + intermediate steps
 
@@ -69,7 +69,7 @@ console.info(await fibonacci(9)); // 34 (retrieved from cache)
 console.info(`Cache size ${await cache.size()}`); // 10
 ```
 
-_Source: [examples/cache/unconstrainedCacheFunction.ts](/typescript/examples/cache/unconstrainedCacheFunction.ts)_
+_Source: [examples/cache/unconstrainedCacheFunction.ts](https://github.com/i-am-bee/beeai-framework/blob/main/typescript/examples/cache/unconstrainedCacheFunction.ts)_
 
 ### Usage with tools
 
@@ -92,7 +92,7 @@ const response = await ddg.run({
 // upcoming requests with the EXACTLY same input will be retrieved from the cache
 ```
 
-_Source: [examples/cache/toolCache.ts](/typescript/examples/cache/toolCache.ts)_
+_Source: [examples/cache/toolCache.ts](https://github.com/i-am-bee/beeai-framework/blob/main/typescript/examples/cache/toolCache.ts)_
 
 > [!IMPORTANT]
 >
@@ -130,7 +130,7 @@ console.info(first.getTextContent() === second.getTextContent()); // true
 console.info(await llm.cache.size()); // 1
 ```
 
-_Source: [examples/cache/llmCache.ts](/typescript/examples/cache/llmCache.ts)_
+_Source: [examples/cache/llmCache.ts](https://github.com/i-am-bee/beeai-framework/blob/main/typescript/examples/cache/llmCache.ts)_
 
 ## Cache types
 
@@ -172,7 +172,7 @@ console.log(await cache.has("a")); // false
 console.log(await cache.size()); // 3
 ```
 
-_Source: [examples/cache/slidingCache.ts](/typescript/examples/cache/slidingCache.ts)_
+_Source: [examples/cache/slidingCache.ts](https://github.com/i-am-bee/beeai-framework/blob/main/typescript/examples/cache/slidingCache.ts)_
 
 ### FileCache
 
@@ -192,7 +192,7 @@ console.log(`Saving cache to "${cache.source}"`);
 await cache.set("abc", { firstName: "John", lastName: "Doe" });
 ```
 
-_Source: [examples/cache/fileCache.ts](/typescript/examples/cache/fileCache.ts)_
+_Source: [examples/cache/fileCache.ts](https://github.com/i-am-bee/beeai-framework/blob/main/typescript/examples/cache/fileCache.ts)_
 
 > [!NOTE]
 >
@@ -221,7 +221,7 @@ console.log(`Saving cache to "${fileCache.source}"`);
 console.log(await fileCache.get("a")); // 1
 ```
 
-_Source: [examples/cache/fileCacheCustomProvider.ts](/typescript/examples/cache/fileCacheCustomProvider.ts)_
+_Source: [examples/cache/fileCacheCustomProvider.ts](https://github.com/i-am-bee/beeai-framework/blob/main/typescript/examples/cache/fileCacheCustomProvider.ts)_
 
 ### NullCache
 
@@ -250,7 +250,7 @@ console.info(a === b); // true
 console.info(a === generator.get(6)); // false
 ```
 
-_Source: [examples/cache/decoratorCache.ts](/typescript/examples/cache/decoratorCache.ts)_
+_Source: [examples/cache/decoratorCache.ts](https://github.com/i-am-bee/beeai-framework/blob/main/typescript/examples/cache/decoratorCache.ts)_
 
 **Complex example**
 
@@ -282,7 +282,7 @@ service.reset();
 console.info(a === service.id); // false
 ```
 
-_Source: [examples/cache/decoratorCacheComplex.ts](/typescript/examples/cache/decoratorCacheComplex.ts)_
+_Source: [examples/cache/decoratorCacheComplex.ts](https://github.com/i-am-bee/beeai-framework/blob/main/typescript/examples/cache/decoratorCacheComplex.ts)_
 
 > [!NOTE]
 >
@@ -320,7 +320,7 @@ await setTimeout(150);
 console.info(token === (await getSecret())); // false
 ```
 
-_Source: [examples/cache/cacheFn.ts](/typescript/examples/cache/cacheFn.ts)_
+_Source: [examples/cache/cacheFn.ts](https://github.com/i-am-bee/beeai-framework/blob/main/typescript/examples/cache/cacheFn.ts)_
 
 > [!NOTE]
 >
@@ -371,6 +371,6 @@ export class CustomCache<T> extends BaseCache<T> {
 }
 ```
 
-_Source: [examples/cache/custom.ts](/typescript/examples/cache/custom.ts)_
+_Source: [examples/cache/custom.ts](https://github.com/i-am-bee/beeai-framework/blob/main/typescript/examples/cache/custom.ts)_
 
-The simplest implementation is `UnconstrainedCache`, which can be found [here](/typescript/src/cache/unconstrainedCache.ts).
+The simplest implementation is `UnconstrainedCache`, which can be found [here](https://github.com/i-am-bee/beeai-framework/blob/main/typescript/src/cache/unconstrainedCache.ts).

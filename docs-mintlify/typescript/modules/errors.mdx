@@ -8,7 +8,7 @@ Error handling is a critical part of any JavaScript application, especially when
 
 ## The `FrameworkError` class
 
-All errors thrown within the BeeAI Framework extend from the base [FrameworkError](/typescript/src/errors.ts) class, which itself extends Node.js's native [AggregateError](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/AggregateError).
+All errors thrown within the BeeAI Framework extend from the base [FrameworkError](https://github.com/i-am-bee/beeai-framework/blob/main/typescript/src/errors.ts) class, which itself extends Node.js's native [AggregateError](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/AggregateError).
 
 Benefits of using `FrameworkError`:
 
@@ -47,7 +47,7 @@ console.log(error.dump()); // Full error dump, including sub-errors
 console.log(error.getCause()); // Retrieve the initial cause of the error
 ```
 
-_Source: [examples/errors/base.ts](/typescript/examples/errors/base.ts)_
+_Source: [examples/errors/base.ts](https://github.com/i-am-bee/beeai-framework/blob/main/typescript/examples/errors/base.ts)_
 
 > [!NOTE]
 >
@@ -63,7 +63,7 @@ The BeeAI Framework extends FrameworkError to create specialized error classes f
 
 > [!TIP]
 >
-> Casting an unknown error to a `FrameworkError` can be done by calling the `FrameworkError.ensure` static method ([example](/typescript/examples/errors/cast.ts)).
+> Casting an unknown error to a `FrameworkError` can be done by calling the `FrameworkError.ensure` static method ([example](https://github.com/i-am-bee/beeai-framework/blob/main/typescript/examples/errors/cast.ts)).
 
 ### Tools
 
@@ -98,7 +98,7 @@ try {
 }
 ```
 
-_Source: [examples/errors/tool.ts](/typescript/examples/errors/tool.ts)_
+_Source: [examples/errors/tool.ts](https://github.com/i-am-bee/beeai-framework/blob/main/typescript/examples/errors/tool.ts)_
 
 > [!TIP]
 >

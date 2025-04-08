@@ -76,9 +76,9 @@ final_answer: The current weather in Las Vegas is 20.5°C with an apparent tempe
 > During execution, the agent emits partial updates as it generates each line, followed by complete updates. Updates follow a strict order: first all partial updates for "thought," then a complete "thought" update, then moving to the next component.
 
 For practical examples, see:
-- [simple.py](/python/examples/agents/simple.py) - Basic example of a ReAct Agent using OpenMeteo and DuckDuckGo tools
-- [react.py](/python/examples/agents/react.py) - More complete example using Wikipedia integration
-- [granite.py](/python/examples/agents/granite.py) - Example using the Granite model
+- [simple.py](https://github.com/i-am-bee/beeai-framework/blob/main/python/examples/agents/simple.py) - Basic example of a ReAct Agent using OpenMeteo and DuckDuckGo tools
+- [react.py](https://github.com/i-am-bee/beeai-framework/blob/main/python/examples/agents/react.py) - More complete example using Wikipedia integration
+- [granite.py](https://github.com/i-am-bee/beeai-framework/blob/main/python/examples/agents/granite.py) - Example using the Granite model
 
 ---
 
@@ -97,7 +97,7 @@ response = await agent.run(
 ).observe(observer)
 ```
 
-_Source: [examples/agents/react.py](/python/examples/agents/react.py)_
+_Source: [examples/agents/react.py](https://github.com/i-am-bee/beeai-framework/blob/main/python/examples/agents/react.py)_
 
 > [!TIP]
 > The default is zero retries and no timeout. For complex tasks, increasing the max_iterations is recommended.
@@ -147,7 +147,7 @@ if __name__ == "__main__":
 
 ```
 
-_Source: [examples/templates/system_prompt.py](/python/examples/templates/system_prompt.py)_
+_Source: [examples/templates/system_prompt.py](https://github.com/i-am-bee/beeai-framework/blob/main/python/examples/templates/system_prompt.py)_
 
 The agent uses several templates that you can override:
 1. **System Prompt** - Defines the agent's behavior and capabilities
@@ -170,7 +170,7 @@ agent = ReActAgent(
 )
 ```
 
-_Source: [examples/agents/simple.py](/python/examples/agents/simple.py)_
+_Source: [examples/agents/simple.py](https://github.com/i-am-bee/beeai-framework/blob/main/python/examples/agents/simple.py)_
 
 **Available tools include:**
 - Search tools (`DuckDuckGoSearchTool`)
@@ -193,13 +193,13 @@ agent = ReActAgent(
 )
 ```
 
-_Source: [examples/agents/simple.py](/python/examples/agents/simple.py)_
+_Source: [examples/agents/simple.py](https://github.com/i-am-bee/beeai-framework/blob/main/python/examples/agents/simple.py)_
 
 **Memory types for different use cases:**
-- [UnconstrainedMemory](/python/examples/memory/unconstrained_memory.py) - For unlimited storage
-- [SlidingMemory](/python/examples/memory/sliding_memory.py) - For keeping only the most recent messages
-- [TokenMemory](/python/examples/memory/token_memory.py) - For managing token limits
-- [SummarizeMemory](/python/examples/memory/summarize_memory.py) - For summarizing previous conversations
+- [UnconstrainedMemory](https://github.com/i-am-bee/beeai-framework/blob/main/python/examples/memory/unconstrained_memory.py) - For unlimited storage
+- [SlidingMemory](https://github.com/i-am-bee/beeai-framework/blob/main/python/examples/memory/sliding_memory.py) - For keeping only the most recent messages
+- [TokenMemory](https://github.com/i-am-bee/beeai-framework/blob/main/python/examples/memory/token_memory.py) - For managing token limits
+- [SummarizeMemory](https://github.com/i-am-bee/beeai-framework/blob/main/python/examples/memory/summarize_memory.py) - For summarizing previous conversations
 
 > [!TIP]
 > See the [memory documentation](/python/docs/memory.md) for more information on memory types.
@@ -218,7 +218,7 @@ def on_update(emitter: Emitter) -> None:
 output: BeeRunOutput = await agent.run("What's the current weather in Las Vegas?").observe(on_update)
 ```
 
-_Source: [examples/agents/simple.py](/python/examples/agents/simple.py)_
+_Source: [examples/agents/simple.py](https://github.com/i-am-bee/beeai-framework/blob/main/python/examples/agents/simple.py)_
 
 > [!TIP]
 > See the [emitter documentation](/python/docs/emitter.md) for more information on event observation.
@@ -425,13 +425,13 @@ if __name__ == "__main__":
 
 ```
 
-_Source: [examples/memory/agent_memory.py](/python/examples/memory/agent_memory.py)_
+_Source: [examples/memory/agent_memory.py](https://github.com/i-am-bee/beeai-framework/blob/main/python/examples/memory/agent_memory.py)_
 
 **Memory types for different use cases:**
-- [UnconstrainedMemory](/python/examples/memory/unconstrained_memory.py) - For unlimited storage
-- [SlidingMemory](/python/examples/memory/sliding_memory.py) - For keeping only the most recent messages
-- [TokenMemory](/python/examples/memory/token_memory.py) - For managing token limits
-- [SummarizeMemory](/python/examples/memory/summarize_memory.py) - For summarizing previous conversations
+- [UnconstrainedMemory](https://github.com/i-am-bee/beeai-framework/blob/main/python/examples/memory/unconstrained_memory.py) - For unlimited storage
+- [SlidingMemory](https://github.com/i-am-bee/beeai-framework/blob/main/python/examples/memory/sliding_memory.py) - For keeping only the most recent messages
+- [TokenMemory](https://github.com/i-am-bee/beeai-framework/blob/main/python/examples/memory/token_memory.py) - For managing token limits
+- [SummarizeMemory](https://github.com/i-am-bee/beeai-framework/blob/main/python/examples/memory/summarize_memory.py) - For summarizing previous conversations
 
 ---
 
@@ -532,11 +532,11 @@ if __name__ == "__main__":
 
 ```
 
-_Source: [examples/workflows/multi_agents.py](/python/examples/workflows/multi_agents.py)_
+_Source: [examples/workflows/multi_agents.py](https://github.com/i-am-bee/beeai-framework/blob/main/python/examples/workflows/multi_agents.py)_
 
 **Example Workflow Patterns:**
-- [multi_agents.py](/python/examples/workflows/multi_agents.py) - Multiple specialized agents working together
-- [memory.py](/python/examples/workflows/memory.py) - Memory-aware workflow for conversation
+- [multi_agents.py](https://github.com/i-am-bee/beeai-framework/blob/main/python/examples/workflows/multi_agents.py) - Multiple specialized agents working together
+- [memory.py](https://github.com/i-am-bee/beeai-framework/blob/main/python/examples/workflows/memory.py) - Memory-aware workflow for conversation
 
 > [!TIP]
 > See the [workflows documentation](/python/docs/workflows.md) for more information.

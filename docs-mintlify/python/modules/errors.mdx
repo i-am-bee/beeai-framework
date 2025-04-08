@@ -20,7 +20,7 @@ Error handling is a critical part of any Python application, especially when dea
 
 > [!NOTE]
 >
-> Location within the framework: [beeai_framework/errors.py](/python/beeai_framework/errors.py).
+> Location within the framework: [beeai_framework/errors.py](https://github.com/i-am-bee/beeai-framework/blob/main/python/beeai_framework/errors.py).
 
 ---
 
@@ -72,7 +72,7 @@ print(str(error))  # Human-readable format (for debug)
 
 ```
 
-_Source: [examples/errors/base.py](/python/examples/errors/base.py)_
+_Source: [examples/errors/base.py](https://github.com/i-am-bee/beeai-framework/blob/main/python/examples/errors/base.py)_
 
 Framework error also has two additional properties which help with agent processing, though ultimately the code that catches the exception will determine the appropriate action.
 
@@ -85,7 +85,7 @@ The BeeAI Framework extends `FrameworkError` to create specialized error classes
 
 > [!TIP]
 >
-> Casting an unknown error to a `FrameworkError` can be done by calling the `FrameworkError.ensure` static method ([example](/python/examples/errors/cast.py)).
+> Casting an unknown error to a `FrameworkError` can be done by calling the `FrameworkError.ensure` static method ([example](https://github.com/i-am-bee/beeai-framework/blob/main/python/examples/errors/cast.py)).
 
 The definitions for these classes are typically local to the module where they are raised.
 
@@ -139,7 +139,7 @@ if __name__ == "__main__":
 
 ```
 
-_Source: [examples/errors/tool.py](/python/examples/errors/tool.py)_
+_Source: [examples/errors/tool.py](https://github.com/i-am-bee/beeai-framework/blob/main/python/examples/errors/tool.py)_
 
 ---
 
@@ -202,7 +202,7 @@ For example the `explain` static method will return a string that may be more us
 message: str = FrameworkError.ensure(error).explain()
 ```
 
-See the source file [errors.py](/python/beeai_framework/errors.py) for additional methods.
+See the source file [errors.py](https://github.com/i-am-bee/beeai-framework/blob/main/python/beeai_framework/errors.py) for additional methods.
 
 ## Examples
 

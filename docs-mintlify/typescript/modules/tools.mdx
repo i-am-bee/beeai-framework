@@ -34,7 +34,7 @@ All examples can be found [here](/typescript/examples/tools).
 
 > [!TIP]
 >
-> Would you like to use a tool from LangChain? See the [example](/typescript/examples/tools/langchain.ts).
+> Would you like to use a tool from LangChain? See the [example](https://github.com/i-am-bee/beeai-framework/blob/main/typescript/examples/tools/langchain.ts).
 
 ## Usage
 
@@ -54,7 +54,7 @@ const result = await tool.run({
 console.log(result.getTextContent());
 ```
 
-_Source: [examples/tools/base.ts](/typescript/examples/tools/base.ts)_
+_Source: [examples/tools/base.ts](https://github.com/i-am-bee/beeai-framework/blob/main/typescript/examples/tools/base.ts)_
 
 ### Advanced
 
@@ -87,7 +87,7 @@ console.log(result.result); // prints raw data
 console.log(result.getTextContent()); // prints data as text
 ```
 
-_Source: [examples/tools/advanced.ts](/typescript/examples/tools/advanced.ts)_
+_Source: [examples/tools/advanced.ts](https://github.com/i-am-bee/beeai-framework/blob/main/typescript/examples/tools/advanced.ts)_
 
 > [!TIP]
 >
@@ -110,15 +110,15 @@ const agent = new ReActAgent({
 });
 ```
 
-_Source: [examples/tools/agent.ts](/typescript/examples/tools/agent.ts)_
+_Source: [examples/tools/agent.ts](https://github.com/i-am-bee/beeai-framework/blob/main/typescript/examples/tools/agent.ts)_
 
 ## Writing a new tool
 
 To create a new tool, you have the following options on how to do that:
 
-- Implement the base [`Tool`](/typescript/src/tools/base.ts) class.
-- Initiate the [`DynamicTool`](/typescript/src/tools/base.ts) by passing your own handler (function) with the `name`, `description` and `input schema`.
-- Initiate the [`CustomTool`](/typescript/src/tools/custom.ts) by passing your own Python function (code interpreter needed).
+- Implement the base [`Tool`](https://github.com/i-am-bee/beeai-framework/blob/main/typescript/src/tools/base.ts) class.
+- Initiate the [`DynamicTool`](https://github.com/i-am-bee/beeai-framework/blob/main/typescript/src/tools/base.ts) by passing your own handler (function) with the `name`, `description` and `input schema`.
+- Initiate the [`CustomTool`](https://github.com/i-am-bee/beeai-framework/blob/main/typescript/src/tools/custom.ts) by passing your own Python function (code interpreter needed).
 
 ### Implementing the `Tool` class
 
@@ -186,7 +186,7 @@ export class RiddleTool extends Tool<StringToolOutput> {
 }
 ```
 
-_Source: [examples/tools/custom/base.ts](/typescript/examples/tools/custom/base.ts)_
+_Source: [examples/tools/custom/base.ts](https://github.com/i-am-bee/beeai-framework/blob/main/typescript/examples/tools/custom/base.ts)_
 
 > [!TIP]
 >
@@ -306,7 +306,7 @@ export class OpenLibraryTool extends Tool<OpenLibraryToolOutput, ToolOptions, To
 }
 ```
 
-_Source: [examples/tools/custom/openLibrary.ts](/typescript/examples/tools/custom/openLibrary.ts)_
+_Source: [examples/tools/custom/openLibrary.ts](https://github.com/i-am-bee/beeai-framework/blob/main/typescript/examples/tools/custom/openLibrary.ts)_
 
 #### Implementation Notes
 
@@ -337,7 +337,7 @@ _Source: [examples/tools/custom/openLibrary.ts](/typescript/examples/tools/custo
 
 - **Declare an input schema:**
 
-  This is used to define the format of the input to your tool. The agent will formalise the natural language input(s) it has received and structure them into the fields described in the tool's input. The input schema can be specified using [Zod](https://github.com/colinhacks/zod) (recommended) or JSONSchema. It must be a function (either sync or async). Zod effects (e.g. `z.object().transform(...)`) are not supported. The return value of `inputSchema` must always be an object and pass validation by the `validateSchema()` function defined in [schema.ts](/typescript/src/internals/helpers/schema.ts). Keep your tool input schema simple and provide schema descriptions to help the agent to interpret fields.
+  This is used to define the format of the input to your tool. The agent will formalise the natural language input(s) it has received and structure them into the fields described in the tool's input. The input schema can be specified using [Zod](https://github.com/colinhacks/zod) (recommended) or JSONSchema. It must be a function (either sync or async). Zod effects (e.g. `z.object().transform(...)`) are not supported. The return value of `inputSchema` must always be an object and pass validation by the `validateSchema()` function defined in [schema.ts](https://github.com/i-am-bee/beeai-framework/blob/main/typescript/src/internals/helpers/schema.ts). Keep your tool input schema simple and provide schema descriptions to help the agent to interpret fields.
 
   {/* eslint-skip */}
 
@@ -407,7 +407,7 @@ const tool = new DynamicTool({
 });
 ```
 
-_Source: [examples/tools/custom/dynamic.ts](/typescript/examples/tools/custom/dynamic.ts)_
+_Source: [examples/tools/custom/dynamic.ts](https://github.com/i-am-bee/beeai-framework/blob/main/typescript/examples/tools/custom/dynamic.ts)_
 
 The `name` of the tool is required and must only contain characters between
 a-z, A-Z, 0-9, or one of - or \_.
@@ -415,7 +415,7 @@ The `inputSchema` and `description` are also both required.
 
 ### Using the `CustomTool` (Python functions)
 
-If you want to use the Python function, use the [`CustomTool`](/typescript/src/tools/custom.ts).
+If you want to use the Python function, use the [`CustomTool`](https://github.com/i-am-bee/beeai-framework/blob/main/typescript/src/tools/custom.ts).
 
 {/* embedme examples/tools/custom/python.ts */}
 
@@ -456,7 +456,7 @@ def get_riddle() -> Optional[Dict[str, str]]:
 );
 ```
 
-_Source: [examples/tools/custom/python.ts](/typescript/examples/tools/custom/python.ts)_
+_Source: [examples/tools/custom/python.ts](https://github.com/i-am-bee/beeai-framework/blob/main/typescript/examples/tools/custom/python.ts)_
 
 > [!TIP]
 >
@@ -524,7 +524,7 @@ try {
 }
 ```
 
-_Source: [examples/tools/mcp.ts](/typescript/examples/tools/mcp.ts)_
+_Source: [examples/tools/mcp.ts](https://github.com/i-am-bee/beeai-framework/blob/main/typescript/examples/tools/mcp.ts)_
 
 ## General Tips
 

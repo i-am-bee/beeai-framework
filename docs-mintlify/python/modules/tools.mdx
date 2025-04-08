@@ -53,7 +53,7 @@ For detailed usage examples of each built-in tool with complete implementation c
 
 > [!TIP]
 >
-> Would you like to use a tool from LangChain? See the [LangChain tool example](/python/examples/tools/langchain.py).
+> Would you like to use a tool from LangChain? See the [LangChain tool example](https://github.com/i-am-bee/beeai-framework/blob/main/python/examples/tools/langchain.py).
 
 ## Usage
 
@@ -88,7 +88,7 @@ if __name__ == "__main__":
 
 ```
 
-_Source: [/python/examples/tools/base.py](/python/examples/tools/base.py)_
+_Source: [/python/examples/tools/base.py](https://github.com/i-am-bee/beeai-framework/blob/main/python/examples/tools/base.py)_
 
 ### Advanced usage
 
@@ -124,7 +124,7 @@ if __name__ == "__main__":
 
 ```
 
-_Source: [/python/examples/tools/advanced.py](/python/examples/tools/advanced.py)_
+_Source: [/python/examples/tools/advanced.py](https://github.com/i-am-bee/beeai-framework/blob/main/python/examples/tools/advanced.py)_
 
 > [!NOTE]
 >
@@ -146,7 +146,7 @@ agent = ReActAgent(llm=OllamaChatModel("llama3.1"), tools=[OpenMeteoTool()], mem
 
 ```
 
-_Source: [/python/examples/tools/agent.py](/python/examples/tools/agent.py)_
+_Source: [/python/examples/tools/agent.py](https://github.com/i-am-bee/beeai-framework/blob/main/python/examples/tools/agent.py)_
 
 ### Using the tool decorator
 
@@ -222,7 +222,7 @@ if __name__ == "__main__":
 
 ```
 
-_Source: [/python/examples/tools/decorator.py](/python/examples/tools/decorator.py)_
+_Source: [/python/examples/tools/decorator.py](https://github.com/i-am-bee/beeai-framework/blob/main/python/examples/tools/decorator.py)_
 
 ## Built-in tool examples
 
@@ -265,7 +265,7 @@ if __name__ == "__main__":
 ```
 </details>
 
-_Source: [/python/examples/tools/duckduckgo.py](/python/examples/tools/duckduckgo.py)_
+_Source: [/python/examples/tools/duckduckgo.py](https://github.com/i-am-bee/beeai-framework/blob/main/python/examples/tools/duckduckgo.py)_
 
 ### OpenMeteo weather tool
 
@@ -306,7 +306,7 @@ if __name__ == "__main__":
 ```
 </details>
 
-_Source: [/python/examples/tools/openmeteo.py](/python/examples/tools/openmeteo.py)_
+_Source: [/python/examples/tools/openmeteo.py](https://github.com/i-am-bee/beeai-framework/blob/main/python/examples/tools/openmeteo.py)_
 
 ### Wikipedia tool
 
@@ -345,7 +345,7 @@ if __name__ == "__main__":
 ```
 </details>
 
-_Source: [/python/examples/tools/wikipedia.py](/python/examples/tools/wikipedia.py)_
+_Source: [/python/examples/tools/wikipedia.py](https://github.com/i-am-bee/beeai-framework/blob/main/python/examples/tools/wikipedia.py)_
 
 ### MCP tool
 
@@ -400,7 +400,7 @@ agent = ReActAgent(llm=OllamaChatModel("llama3.1"), tools=[asyncio.run(slack_too
 ```
 </details>
 
-_Source: [/python/examples/tools/mcp_tool_creation.py](/python/examples/tools/mcp_tool_creation.py)_
+_Source: [/python/examples/tools/mcp_tool_creation.py](https://github.com/i-am-bee/beeai-framework/blob/main/python/examples/tools/mcp_tool_creation.py)_
 
 ### Python tool
 
@@ -481,7 +481,7 @@ if __name__ == "__main__":
 ```
 </details> 
 
-_Source: [examples/tools/python_tool.py](/python/examples/tools/python_tool.py)_
+_Source: [examples/tools/python_tool.py](https://github.com/i-am-bee/beeai-framework/blob/main/python/examples/tools/python_tool.py)_
 
 ### Sandbox tool
 
@@ -556,7 +556,7 @@ if __name__ == "__main__":
 ```
 </details> 
 
-_Source: [examples/tools/custom/sandbox.py](/python/examples/tools/custom/sandbox.py)_
+_Source: [examples/tools/custom/sandbox.py](https://github.com/i-am-bee/beeai-framework/blob/main/python/examples/tools/custom/sandbox.py)_
 
 > [!TIP]
 >
@@ -580,7 +580,7 @@ To create a new tool, implement the base `Tool` class. The framework provides fl
 
 > [!NOTE]
 >
-> Initiate the [`Tool`](/python/beeai_framework/tools/tool.py) by passing your own handler (function) with the `name`, `description` and `input schema`.
+> Initiate the [`Tool`](https://github.com/i-am-bee/beeai-framework/blob/main/python/beeai_framework/tools/tool.py) by passing your own handler (function) with the `name`, `description` and `input schema`.
 
 ### Basic custom tool
 
@@ -656,7 +656,7 @@ if __name__ == "__main__":
 ```
 </details> 
   
-_Source: [/python/examples/tools/custom/base.py](/python/examples/tools/custom/base.py)_
+_Source: [/python/examples/tools/custom/base.py](https://github.com/i-am-bee/beeai-framework/blob/main/python/examples/tools/custom/base.py)_
 
 > [!TIP]
 >
@@ -764,7 +764,7 @@ if __name__ == "__main__":
 ```
 </details> 
   
-_Source: [/python/examples/tools/custom/openlibrary.py](/python/examples/tools/custom/openlibrary.py)_
+_Source: [/python/examples/tools/custom/openlibrary.py](https://github.com/i-am-bee/beeai-framework/blob/main/python/examples/tools/custom/openlibrary.py)_
 
 ### Implementation guidelines
 
@@ -812,7 +812,7 @@ class OpenMeteoToolInput(BaseModel):
         description="The unit to express temperature", default="celsius"
     )
 ```
-_Source: [/python/beeai_framework/tools/weather/openmeteo.py](/python/beeai_framework/tools/weather/openmeteo.py)_
+_Source: [/python/beeai_framework/tools/weather/openmeteo.py](https://github.com/i-am-bee/beeai-framework/blob/main/python/beeai_framework/tools/weather/openmeteo.py)_
 
 The input schema is a required field used to define the format of the input to your tool. The agent will formalise the natural language input(s) it has received and structure them into the fields described in the tool's input. The input schema will be created based on the `MyNewToolInput` class. Keep your tool input schema simple and provide schema descriptions to help the agent to interpret fields.
 
@@ -832,7 +832,7 @@ def _run(self, input: OpenMeteoToolInput, options: Any = None) -> None:
     return StringToolOutput(json.dumps(response.json()))
 ```
 
-_Source: [/python/beeai_framework/tools/weather/openmeteo.py](/python/beeai_framework/tools/weather/openmeteo.py)_
+_Source: [/python/beeai_framework/tools/weather/openmeteo.py](https://github.com/i-am-bee/beeai-framework/blob/main/python/beeai_framework/tools/weather/openmeteo.py)_
 
 ---
 
