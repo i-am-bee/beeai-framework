@@ -464,7 +464,7 @@ _Source: [examples/tools/custom/python.ts](https://github.com/i-am-bee/beeai-fra
 >
 > 1. During the creation of a `CustomTool`, either via the constructor or the factory function (`CustomTool.fromSourceCode`).
 > 2. By passing them directly as part of the options when invoking: `myTool.run({ ... }, { env: { MY_ENV: 'MY_VALUE' } })`.
-> 3. Dynamically during execution via [`Emitter`](/typescript/modules/emitter.md): `myTool.emitter.on("start", ({ options }) => { options.env.MY_ENV = 'MY_VALUE'; })`.
+> 3. Dynamically during execution via [`Emitter`](/typescript/modules/emitter.mdx): `myTool.emitter.on("start", ({ options }) => { options.env.MY_ENV = 'MY_VALUE'; })`.
 
 > [!IMPORTANT]
 >
