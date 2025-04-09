@@ -53,7 +53,7 @@ For detailed usage examples of each built-in tool with complete implementation c
 
 > [!TIP]
 >
-> Would you like to use a tool from LangChain? See the [LangChain tool example](/python/examples/tools/langchain.py).
+> Would you like to use a tool from LangChain? See the [LangChain tool example](/python/examples/tools/langchain_tool.py).
 
 ## Usage
 
