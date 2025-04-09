@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from beeai_framework.tools.search.base import SearchToolOutput, SearchToolResult
 
-__all__ = ["SearchToolOutput", "SearchToolResult"]
+from beeai_framework.tools.search.wikipedia.wikipedia import WikipediaTool, WikipediaToolInput, WikipediaToolOutput
+
+__all__ = ["WikipediaTool", "WikipediaToolInput", "WikipediaToolOutput"]

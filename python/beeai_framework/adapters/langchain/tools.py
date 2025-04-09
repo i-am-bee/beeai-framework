@@ -15,10 +15,14 @@
 
 from typing import Any, TypeVar
 
-from langchain_core.callbacks import AsyncCallbackManagerForToolRun
-from langchain_core.runnables import RunnableConfig
-from langchain_core.tools import BaseTool, StructuredTool
-from langchain_core.tools import Tool as LangChainSimpleTool
+try:
+    from langchain_core.callbacks import AsyncCallbackManagerForToolRun
+    from langchain_core.runnables import RunnableConfig
+    from langchain_core.tools import BaseTool, StructuredTool
+    from langchain_core.tools import Tool as LangChainSimpleTool
+except ModuleNotFoundError as e:
+    raise ModuleNotFoundError("Optional module [langchain] not installed.") from e
+
 from pydantic import BaseModel, ConfigDict
 
 from beeai_framework.context import RunContext

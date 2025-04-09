@@ -15,8 +15,10 @@
 
 import pytest
 
+pytest.importorskip("wikipediaapi", reason="Optional module [wikipedia] not installed.")
+
 from beeai_framework.tools import ToolInputValidationError
-from beeai_framework.tools.search import (
+from beeai_framework.tools.search.wikipedia import (
     WikipediaTool,
     WikipediaToolInput,
     WikipediaToolOutput,

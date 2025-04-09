@@ -13,7 +13,11 @@
 # limitations under the License.
 
 
-import wikipediaapi  # type: ignore
+try:
+    import wikipediaapi  # type: ignore
+except ModuleNotFoundError as e:
+    raise ModuleNotFoundError("Optional module [wikipedia] not installed.") from e
+
 from pydantic import BaseModel, Field
 
 from beeai_framework.context import RunContext
