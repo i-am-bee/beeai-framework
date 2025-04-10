@@ -22,14 +22,8 @@ from pydantic import BaseModel, InstanceOf
 from beeai_framework.context import RunContext
 from beeai_framework.emitter import Emitter
 from beeai_framework.tools import StringToolOutput, Tool, ToolError, ToolRunOptions
+from beeai_framework.utils import JSONSchemaModel
 from beeai_framework.utils.strings import to_safe_word
-
-
-class OpenAPIToolInput(BaseModel):
-    path: str
-    parameters: dict[str, Any] | None = None
-    body: dict[str, Any] | None = None
-    method: str
 
 
 class OpenAPIToolOutput(StringToolOutput):
@@ -49,7 +43,7 @@ class AfterFetchEvent(BaseModel):
     url: str
 
 
-class OpenAPITool(Tool[OpenAPIToolInput, ToolRunOptions, OpenAPIToolOutput]):
+class OpenAPITool(Tool[BaseModel, ToolRunOptions, OpenAPIToolOutput]):
     def __init__(
         self,
         open_api_schema: dict[str, Any],
@@ -98,26 +92,83 @@ class OpenAPITool(Tool[OpenAPIToolInput, ToolRunOptions, OpenAPIToolOutput]):
         return self._description
 
     @property
-    def input_schema(self) -> type[OpenAPIToolInput]:
-        return OpenAPIToolInput
+    def input_schema(self) -> type[BaseModel]:
+        def get_referenced_object(json: dict[str, Any], ref_path: str) -> dict[str, Any] | None:
+            path_segments = ref_path.split("/")
+            current_object = json
+            for segment in path_segments:
+                if segment == "#":
+                    continue
+                current_object = current_object[segment]
+            return current_object
+
+        schema = {
+            "type": "object",
+            "required": ["path", "method"],
+            "oneOf": [],
+        }
+
+        for path, path_spec in self.open_api_schema.get("paths", {}).items():
+            for method, method_spec in path_spec.items():
+                properties = {
+                    "path": {
+                        "const": path,
+                        "description": (
+                            "Do not replace variables in path, instead of, put them to the parameters object."
+                        ),
+                    },
+                    "method": {
+                        "const": method,
+                        "description": method_spec.get("summary", method_spec.get("description")),
+                    },
+                }
+
+                if method_spec.get("requestBody", {}).get("content", {}).get("application/json", {}).get("schema"):
+                    properties["body"] = method_spec["requestBody"]["content"]["application/json"]["schema"]
+
+                if method_spec.get("parameters"):
+                    parameters = {
+                        "type": "object",
+                        "additionalProperties": False,
+                        "required": [p["name"] for p in method_spec["parameters"] if p.get("required")],
+                        "properties": {},
+                    }
+
+                    for p in method_spec["parameters"]:
+                        if "$ref" not in p:
+                            parameters["properties"][p["name"]] = {**p.get("schema", {}), "description": p["name"]}  # type: ignore
+                        else:
+                            ref_obj = get_referenced_object(self.open_api_schema, p["$ref"])
+                            if ref_obj and "name" in ref_obj and "schema" in ref_obj:
+                                parameters["properties"][ref_obj["name"]] = {  # type: ignore
+                                    **ref_obj["schema"],
+                                    "description": ref_obj["name"],
+                                }
+
+                    properties["parameters"] = parameters
+
+                schema["oneOf"].append({"additionalProperties": False, "properties": properties})  # type: ignore
+
+        return JSONSchemaModel.create("OpenAPIToolInput", schema)
 
     async def _run(
-        self, tool_input: OpenAPIToolInput, options: ToolRunOptions | None, context: RunContext
+        self, tool_input: BaseModel, options: ToolRunOptions | None, context: RunContext
     ) -> OpenAPIToolOutput:
-        parsed_url = urlparse(urljoin(self.url, tool_input.path or ""))
+        input_dict = tool_input.model_dump()
+        parsed_url = urlparse(urljoin(self.url, input_dict.get("path", "")))
         search_params = parse_qs(parsed_url.query)
-        search_params.update(tool_input.parameters or {})
+        search_params.update(input_dict.get("parameters", {}))
         new_params = urlencode(search_params, doseq=True)
         url = urlunparse(parsed_url._replace(query=new_params))
 
-        await self.emitter.emit("before_fetch", {"input": tool_input.model_dump()})
+        await self.emitter.emit("before_fetch", {"input": input_dict})
         try:
             async with httpx.AsyncClient() as client:
                 response = await client.request(
-                    method=tool_input.method,
+                    method=input_dict["method"],
                     url=str(url),
                     headers={"Accept": "application/json"}.update(self.headers),
-                    data=tool_input.body,
+                    data=input_dict.get("body"),
                 )
                 output = OpenAPIToolOutput(response.status_code, response.text)
                 await self.emitter.emit("after_fetch", {"url": url, "data": output})
