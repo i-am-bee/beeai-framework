@@ -3788,6 +3788,18 @@ docs = ["myst-parser", "pydata-sphinx-theme", "sphinx"]
 test = ["argcomplete (>=3.0.3)", "mypy (>=1.7.0)", "pre-commit", "pytest (>=7.0,<8.2)", "pytest-mock", "pytest-mypy-testing"]
 
 [[package]]
+name = "types-aiofiles"
+version = "24.1.0.20250326"
+description = "Typing stubs for aiofiles"
+optional = false
+python-versions = ">=3.9"
+groups = ["dev"]
+files = [
+    {file = "types_aiofiles-24.1.0.20250326-py3-none-any.whl", hash = "sha256:dfb58c9aa18bd449e80fb5d7f49dc3dd20d31de920a46223a61798ee4a521a70"},
+    {file = "types_aiofiles-24.1.0.20250326.tar.gz", hash = "sha256:c4bbe432fd043911ba83fb635456f5cc54f6d05fda2aadf6bef12a84f07a6efe"},
+]
+
+[[package]]
 name = "types-cachetools"
 version = "5.5.0.20240820"
 description = "Typing stubs for cachetools"
@@ -4415,4 +4427,4 @@ langchain = ["langchain-community", "langchain-core", "langchain-ollama", "langg
 [metadata]
 lock-version = "2.1"
 python-versions = ">= 3.11,<4.0"
-content-hash = "0f595fdef758384d99dfd8140ba99420c8b7d9a329f36cfbfe924d0e48ab5eb6"
+content-hash = "b2b23d7705d4f9d30aa58ecb5ed79a5dcf544efbee47a6e3246829914ff1eeac"
