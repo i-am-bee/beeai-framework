@@ -15,13 +15,13 @@
 import os
 from typing import Any, ClassVar
 
-from pydantic import BaseModel
 from typing_extensions import Unpack
 
 from beeai_framework.adapters.litellm.chat import LiteLLMChatModel
 from beeai_framework.backend.chat import ChatModelKwargs
 from beeai_framework.backend.constants import ProviderName
 from beeai_framework.logger import Logger
+from beeai_framework.utils.dicts import exclude_keys
 
 logger = Logger(__name__)
 
@@ -47,15 +47,15 @@ class OllamaChatModel(LiteLLMChatModel):
             model_id if model_id else os.getenv("OLLAMA_CHAT_MODEL", "llama3.1"),
             provider_id="openai",
             settings=settings | {"api_key": api_key, "base_url": base_url},
-            **kwargs,
+            **exclude_keys({**kwargs}, {"provider_id"}),
         )
 
-    def _format_response_model(self, model: type[BaseModel] | dict[str, Any]) -> dict[str, Any]:
-        return {
-            "type": "json_schema",
-            "json_schema": {
-                "schema": model if isinstance(model, dict) else model.model_json_schema(),
-                "name": "schema" if isinstance(model, dict) else model.__name__,
-                "strict": True,
-            },
-        }
+    # def _format_response_model(self, model: type[BaseModel] | dict[str, Any]) -> dict[str, Any]:
+    #    return {
+    #        "type": "json_schema",
+    #        "json_schema": {
+    #            "schema": model if isinstance(model, dict) else model.model_json_schema(),
+    #            "name": "schema" if isinstance(model, dict) else model.__name__,
+    #            "strict": True,
+    #        },
+    #    }

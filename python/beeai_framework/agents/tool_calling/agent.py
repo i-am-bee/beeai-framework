@@ -16,7 +16,7 @@ from typing import Any, Literal
 
 from pydantic import BaseModel
 
-from beeai_framework.agents import AgentError, AgentExecutionConfig
+from beeai_framework.agents import AgentError, AgentExecutionConfig, AgentMeta
 from beeai_framework.agents.base import BaseAgent
 from beeai_framework.agents.tool_calling.abilities import FinalAnswerAbility
 from beeai_framework.agents.tool_calling.events import (
@@ -51,6 +51,7 @@ from beeai_framework.utils.counter import RetryCounter
 
 __all__ = ["ToolCallingAgent"]
 
+from beeai_framework.utils.dicts import exclude_none
 from beeai_framework.utils.strings import to_json
 
 
@@ -63,16 +64,30 @@ class ToolCallingAgent(BaseAgent[ToolCallingAgentRunOutput]):
         tools: Sequence[AnyTool] | None = None,
         templates: dict[ToolCallingAgentTemplatesKeys, PromptTemplate[Any] | ToolCallingAgentTemplateFactory]
         | None = None,
-        abilities: Sequence[AgentAbility | str] | None = None,
+        abilities: Sequence[AgentAbility[Any] | str] | None = None,
         save_intermediate_steps: bool = True,
+        name: str | None = None,
+        description: str | None = None,
+        role: str | None = None,
+        instructions: str | None = None,
     ) -> None:
         super().__init__()
         self._llm = llm
         self._memory = memory or UnconstrainedMemory()
         self._tools = tools or []
         self._templates = self._generate_templates(templates)
+        if role or instructions:
+            self._templates.system.update(
+                defaults=exclude_none(
+                    {
+                        "role": role,
+                        "instructions": instructions,
+                    }
+                )
+            )
         self._abilities = [AgentAbility.lookup(ab) if isinstance(ab, str) else ab for ab in (abilities or [])]
         self._save_intermediate_steps = save_intermediate_steps
+        self._meta = AgentMeta(name=name or "", description=description or "")
 
     def run(
         self,
@@ -150,7 +165,7 @@ class ToolCallingAgent(BaseAgent[ToolCallingAgentRunOutput]):
                 error_type=AgentError, max_retries=execution_config.total_max_retries or 1
             )
 
-            final_answer_ability = FinalAnswerAbility(state=state, expected_output=expected_output)
+            final_answer_ability = FinalAnswerAbility(state=state, expected_output=expected_output, double_check=False)
 
             while state.result is None:
                 state.iteration += 1
@@ -272,3 +287,14 @@ class ToolCallingAgent(BaseAgent[ToolCallingAgentRunOutput]):
         )
         cloned.emitter = await self.emitter.clone()
         return cloned
+
+    @property
+    def meta(self) -> AgentMeta:
+        parent = super().meta
+
+        return AgentMeta(
+            name=self._meta.name or parent.name,
+            description=self._meta.description or parent.description,
+            extra_description=self._meta.extra_description or parent.extra_description,
+            tools=list(self._tools),
+        )

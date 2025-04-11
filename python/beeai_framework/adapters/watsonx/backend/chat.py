@@ -14,9 +14,10 @@
 
 
 import os
-from typing import Any, ClassVar
+from typing import Any, ClassVar, Unpack
 
 from beeai_framework.adapters.litellm.chat import LiteLLMChatModel
+from beeai_framework.backend.chat import ChatModelKwargs
 from beeai_framework.backend.constants import ProviderName
 from beeai_framework.logger import Logger
 
@@ -44,7 +45,9 @@ class WatsonxChatModel(LiteLLMChatModel):
 
     # https://docs.litellm.ai/docs/providers/watsonx
 
-    def __init__(self, model_id: str | None = None, settings: dict[str, Any] | None = None) -> None:
+    def __init__(
+        self, model_id: str | None = None, settings: dict[str, Any] | None = None, **kwargs: Unpack[ChatModelKwargs]
+    ) -> None:
         _settings = settings.copy() if settings is not None else {}
 
         # Set space_id only if not already in settings
@@ -69,8 +72,10 @@ class WatsonxChatModel(LiteLLMChatModel):
                         "or set the WATSONX_REGION environment variable."
                     )
 
+        kwargs.pop("provider_id", None)
         super().__init__(
             model_id if model_id else os.getenv("WATSONX_CHAT_MODEL", "ibm/granite-3-8b-instruct"),
             provider_id="watsonx",
             settings=_settings,
+            **kwargs,
         )

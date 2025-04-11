@@ -31,6 +31,9 @@ class SearchToolOutput(ToolOutput):
         self.results = results
 
     def get_text_content(self) -> str:
+        if not self.results:
+            return "No results were found for a given query"
+
         return to_json(self.results)
 
     def is_empty(self) -> bool:

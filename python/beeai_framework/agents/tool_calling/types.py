@@ -29,6 +29,7 @@ from beeai_framework.agents.tool_calling.prompts import (
     ToolCallingAgentToolErrorPromptInput,
 )
 from beeai_framework.backend import AssistantMessage, MessageToolCallContent, MessageToolResultContent, ToolMessage
+from beeai_framework.context import RunContext
 from beeai_framework.errors import FrameworkError
 from beeai_framework.memory import BaseMemory
 from beeai_framework.template import PromptTemplate
@@ -95,7 +96,7 @@ class AgentAbility(ABC, Generic[TAbilityInput]):
     state: dict[str, Any]
 
     @abstractmethod
-    async def handler(self, input: TAbilityInput) -> Any: ...
+    async def handler(self, input: TAbilityInput, context: RunContext) -> Any: ...
 
     @abstractmethod
     def check(self, state: ToolCallingAgentRunState) -> AgentAbilityState: ...
@@ -125,10 +126,15 @@ class AgentAbility(ABC, Generic[TAbilityInput]):
         return response if isinstance(response, AgentAbilityState) else AgentAbilityState(allowed=response)
 
     def to_tool(self) -> AnyTool:
-        @create_tool(name=self.name, description=self.description, input_schema=self.input_schema)
-        async def handler(**kwargs: Any) -> Any:
+        @create_tool(
+            name=self.name,
+            description=self.description,
+            input_schema=self.input_schema,
+            with_context=True,
+        )
+        async def handler(context: RunContext, **kwargs: Any) -> Any:
             input = self.input_schema.model_validate(kwargs)
-            return await self.handler(input)
+            return await self.handler(input, context=context)
 
         return handler
 
@@ -150,7 +156,7 @@ class DynamicAgentAbility(AgentAbility[TAbilityInput]):
         self._handler = handler
         self._check = check
 
-    async def handler(self, input: TAbilityInput) -> Any:
+    async def handler(self, input: TAbilityInput, context: RunContext) -> Any:
         if not self._handler:
             return None
 

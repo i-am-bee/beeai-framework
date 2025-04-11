@@ -11,8 +11,8 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 from functools import cached_property
+from typing import TYPE_CHECKING
 
 from pydantic import BaseModel, Field, create_model
 
@@ -22,18 +22,24 @@ from beeai_framework.agents.tool_calling.types import (
     ToolCallingAgentRunState,
 )
 from beeai_framework.backend import AssistantMessage
+from beeai_framework.context import RunContext
+from beeai_framework.memory import BaseMemory
 from beeai_framework.tools import StringToolOutput
+
+if TYPE_CHECKING:
+    from beeai_framework.agents.tool_calling.agent import ToolCallingAgent
 
 
 class FinalAnswerAbility(AgentAbility[BaseModel]):
     def __init__(
-        self, expected_output: str | type[BaseModel] | None, state: ToolCallingAgentRunState
+        self, expected_output: str | type[BaseModel] | None, state: ToolCallingAgentRunState, double_check: bool = False
     ) -> None:  # TODO: propagate state with tool context..
         super().__init__()
         self.name = "FinalAnswer"
         self.description = "Sends the final answer to the user"
         self._expected_output = expected_output
         self._state = state
+        self._needs_revision = double_check
 
     @property
     def input_schema(self) -> type[BaseModel]:
@@ -53,7 +59,7 @@ class FinalAnswerAbility(AgentAbility[BaseModel]):
             )
         )
 
-    async def handler(self, obj: BaseModel) -> StringToolOutput:
+    async def handler(self, obj: BaseModel, context: RunContext) -> StringToolOutput:
         if self.input_schema is self._expected_output:
             self._state.result = AssistantMessage(obj.model_dump_json())
         else:
@@ -90,8 +96,42 @@ class ReasoningAbility(AgentAbility[BaseModel]):
                 allowed=True, forced=self.force, hidden=False, prevent_stop=self.force and not last_step
             )
 
-    async def handler(self, obj: BaseModel) -> StringToolOutput:
-        return StringToolOutput("The observation seems reasonable. Ensure your adhere to it in your following steps.")
+    async def handler(self, obj: BaseModel, context: RunContext) -> StringToolOutput:
+        return StringToolOutput(
+            "The observation seems reasonable. Remember that progress is made one step at a time. Stay determined and keep moving forward."
+        )
+
+
+class HandoffSchema(BaseModel):
+    prompt: str = Field(description="Clearly defined task for the agent to work on based on his abilities.")
+
+
+class HandoffAbility(AgentAbility[HandoffSchema]):
+    """Delegates a task to an expert agent"""
+
+    def __init__(self, target: "ToolCallingAgent", *, name: str | None = None, description: str | None = None) -> None:
+        self._target = target
+
+        self.name = name or target.meta.name
+        self.description = description or target.meta.description
+        # self.description += "(context must contain only verified information)"
+
+        super().__init__()
+
+    def check(self, states: ToolCallingAgentRunState) -> AgentAbilityState:
+        return AgentAbilityState(allowed=True, forced=False, hidden=False, prevent_stop=False)
+
+    async def handler(self, obj: HandoffSchema, context: RunContext) -> StringToolOutput:
+        memory: BaseMemory = context.context["state"]["memory"]
+
+        target = await self._target.clone()
+        await target.memory.add_many(memory.messages[1:])
+        response = await target.run(prompt=obj.prompt)
+        return StringToolOutput(response.result.text)
+
+    @cached_property
+    def input_schema(self) -> type[HandoffSchema]:
+        return HandoffSchema
 
 
 AgentAbility.register("reasoning", lambda: ReasoningAbility(force=True))

@@ -114,7 +114,14 @@ def generate_tool_union_schema(tools: list[AnyTool]) -> dict[str, Any]:
 
         schema = AvailableTools.model_json_schema()
 
-    return inline_schema_refs(schema)
+    return {
+        "type": "json_schema",
+        "json_schema": {
+            "name": "ToolCall",
+            "strict": True,
+            "schema": inline_schema_refs(schema),
+        },
+    }
 
 
 def filter_tools_by_tool_choice(tools: list[AnyTool], value: ChatModelToolChoice | None) -> list[AnyTool]:

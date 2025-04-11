@@ -1,3 +1,5 @@
+import logging
+
 import pytest
 from deepeval import assert_test
 from deepeval.dataset import EvaluationDataset
@@ -25,11 +27,7 @@ def agent() -> ToolCallingAgent:
 
 dataset = EvaluationDataset(
     test_cases=[
-        LLMTestCase(
-            input=input,
-            actual_output="",
-            expected_output="Hello. How can I help you?",
-        )
+        LLMTestCase(input=input, actual_output="", expected_output="Hello. How can I help you?", expected_tools=[])
         for input in ["Hello agent!", "Hello world!", "asdads", "trertrte", "", "Hello", "what can you do?"]
     ]
 )
@@ -38,6 +36,8 @@ dataset = EvaluationDataset(
 @pytest.mark.parametrize("test_case", dataset)
 @pytest.mark.asyncio
 async def test_greeting(agent: ToolCallingAgent, test_case: LLMTestCase) -> None:
+    logging.disable(logging.FATAL)
     await invoke_agent(agent, test_case)
-    answer_relevancy_metric = AnswerRelevancyMetric(threshold=0.5)
-    assert_test(test_case, [answer_relevancy_metric])
+    print(test_case.actual_output)
+    answer_relevancy_metric = AnswerRelevancyMetric(threshold=0.8)
+    assert_test(test_case, [answer_relevancy_metric], run_async=True)
