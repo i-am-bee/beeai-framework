@@ -16,7 +16,9 @@
 try:
     import wikipediaapi  # type: ignore
 except ModuleNotFoundError as e:
-    raise ModuleNotFoundError("Optional module [wikipedia] not installed.") from e
+    raise ModuleNotFoundError(
+        "Optional module [wikipedia] not found.\nRun 'pip install beeai-framework[wikipedia]' to install."
+    ) from e
 
 from pydantic import BaseModel, Field
 
