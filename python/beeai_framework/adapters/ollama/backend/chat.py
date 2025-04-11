@@ -51,6 +51,9 @@ class OllamaChatModel(LiteLLMChatModel):
         )
 
     def _format_response_model(self, model: type[BaseModel] | dict[str, Any]) -> dict[str, Any]:
+        if isinstance(model, dict) and model.get("type") in ["json_schema", "json_object"]:
+            return model
+
         return {
             "type": "json_schema",
             "json_schema": {
