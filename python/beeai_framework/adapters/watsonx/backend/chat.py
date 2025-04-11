@@ -24,7 +24,7 @@ logger = Logger(__name__)
 
 
 class WatsonxChatModel(LiteLLMChatModel):
-    tool_choice_support: ClassVar[set[str]] = {"none", "single", "auto"}
+    tool_choice_support: ClassVar[set[str]] = {"none", "single", "required", "auto"}
 
     @property
     def provider_id(self) -> ProviderName:
