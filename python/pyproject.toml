@@ -30,10 +30,10 @@ requests = "^2.32"
 chevron = "^0.14.0"
 litellm = "^1.63.14"
 aiofiles = "^24.1.0"
-mcp = "^1.2.0"
-duckduckgo-search = "^7.5.1"
 json-repair = "^0.39.0"
-wikipedia-api = "^0.8.1"
+mcp = {version = "^1.2.0", optional = true}
+duckduckgo-search = {version = "^7.5.1", optional = true}
+wikipedia-api = {version = "^0.8.1", optional = true}
 langchain-core = {version = "^0.3.41", optional = true}
 langchain-community = {version = "^0.3.19", optional = true}
 langgraph = {version = "^0.3.27", optional = true}
@@ -63,6 +63,10 @@ types-cachetools = "^5.5.0.20240820"
 [tool.poetry.extras]
 langchain = ["langchain-core", "langchain-community", "langgraph", "langchain-ollama"]
 huggingface = ["datasets", "transformers"]
+search = ["duckduckgo-search", "wikipedia-api"]
+duckduckgo = ["duckduckgo-search"]
+wikipedia = ["wikipedia-api"]
+mcp = ["mcp"]
 
 
 [tool.mypy]

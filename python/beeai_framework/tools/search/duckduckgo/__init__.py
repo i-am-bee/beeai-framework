@@ -12,6 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from beeai_framework.tools.search.base import SearchToolOutput, SearchToolResult
+from beeai_framework.tools.search.duckduckgo.duckduckgo import (
+    DuckDuckGoSearchTool,
+    DuckDuckGoSearchToolInput,
+    DuckDuckGoSearchToolOutput,
+)
 
-__all__ = ["SearchToolOutput", "SearchToolResult"]
+__all__ = ["DuckDuckGoSearchTool", "DuckDuckGoSearchToolInput", "DuckDuckGoSearchToolOutput"]

@@ -15,7 +15,13 @@
 
 from typing import Self
 
-from duckduckgo_search import DDGS
+try:
+    from duckduckgo_search import DDGS
+except ModuleNotFoundError as e:
+    raise ModuleNotFoundError(
+        "Optional module [duckduckgo] not found.\nRun 'pip install beeai-framework[duckduckgo]' to install."
+    ) from e
+
 from pydantic import BaseModel, Field
 
 from beeai_framework.context import RunContext

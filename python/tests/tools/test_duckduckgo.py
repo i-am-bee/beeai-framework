@@ -15,8 +15,10 @@
 
 import pytest
 
+pytest.importorskip("duckduckgo_search", reason="Optional module [duckduckgo] not installed.")
+
 from beeai_framework.tools import ToolInputValidationError
-from beeai_framework.tools.search import (
+from beeai_framework.tools.search.duckduckgo import (
     DuckDuckGoSearchTool,
     DuckDuckGoSearchToolInput,
     DuckDuckGoSearchToolOutput,

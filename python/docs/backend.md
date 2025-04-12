@@ -413,7 +413,7 @@ from beeai_framework.backend import (
 )
 from beeai_framework.errors import FrameworkError
 from beeai_framework.tools import AnyTool, ToolOutput
-from beeai_framework.tools.search import DuckDuckGoSearchTool
+from beeai_framework.tools.search.duckduckgo import DuckDuckGoSearchTool
 from beeai_framework.tools.weather.openmeteo import OpenMeteoTool
 
 

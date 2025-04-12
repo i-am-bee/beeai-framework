@@ -97,7 +97,8 @@ from beeai_framework.logger import Logger
 from beeai_framework.memory import TokenMemory
 from beeai_framework.tools import AnyTool
 from beeai_framework.tools.code import LocalPythonStorage, PythonTool
-from beeai_framework.tools.search import DuckDuckGoSearchTool, WikipediaTool
+from beeai_framework.tools.search.duckduckgo import DuckDuckGoSearchTool
+from beeai_framework.tools.search.wikipedia import WikipediaTool
 from beeai_framework.tools.weather import OpenMeteoTool
 from examples.helpers.io import ConsoleReader
 
@@ -754,7 +755,7 @@ import traceback
 from beeai_framework.backend import ChatModel
 from beeai_framework.emitter import EmitterOptions
 from beeai_framework.errors import FrameworkError
-from beeai_framework.tools.search import WikipediaTool
+from beeai_framework.tools.search.wikipedia import WikipediaTool
 from beeai_framework.tools.weather import OpenMeteoTool
 from beeai_framework.workflows.agent import AgentWorkflow, AgentWorkflowInput
 from examples.helpers.io import ConsoleReader
