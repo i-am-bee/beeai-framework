@@ -39,6 +39,8 @@ if [[ -z "$AUTHOR" ]]; then
   exit 1
 fi
 
+AUTHOR="© $AUTHOR"
+
 # Check if 'nwa' command is not available and 'brew' is available
 if ! command -v nwa &> /dev/null && command -v brew &> /dev/null; then
   echo "Installing 'nwa' via 'brew' (https://github.com/B1NARY-GR0UP/nwa)"

@@ -81,7 +81,8 @@ export default tseslint.config(
           applyDefaultIgnorePatterns: false,
           afterBlockComment: true,
           beforeBlockComment: false,
-          ignorePattern: /^(?![\s\S]*Copyright \d+ IBM Corp.)[\s\S]+$/u.source,
+          ignorePattern: /^(?![\s\S]*Copyright \d+ © BeeAI a Series of LF Projects, LLC)[\s\S]+$/u
+            .source,
         },
       ],
       "@typescript-eslint/class-literal-property-style": "off",

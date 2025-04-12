@@ -21,7 +21,7 @@ else
   TARGETS=("${@/#$PWD\//}")
 fi
 
-AUTHOR="IBM Corp."
+AUTHOR="© BeeAI a Series of LF Projects, LLC"
 
 # Check if 'nwa' command is not available and 'brew' is available
 if ! command -v nwa &> /dev/null && command -v brew &> /dev/null; then
