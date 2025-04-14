@@ -6,7 +6,7 @@ import traceback
 
 import aiofiles
 
-from beeai_framework.agents.react import ReActAgent
+from beeai_framework.agents.tool_calling import ToolCallingAgent
 from beeai_framework.backend import ChatModel
 from beeai_framework.errors import FrameworkError
 from beeai_framework.memory import UnconstrainedMemory
@@ -19,7 +19,7 @@ async def main() -> None:
     async with aiofiles.open(os.path.join(current_dir, "assets/github_openapi.json")) as file:
         open_api_schema = json.loads(await file.read())
 
-    agent = ReActAgent(llm=llm, tools=[OpenAPITool(open_api_schema)], memory=UnconstrainedMemory())
+    agent = ToolCallingAgent(llm=llm, tools=[OpenAPITool(open_api_schema)], memory=UnconstrainedMemory())
 
     response = await agent.run("How many repositories are in 'i-am-bee' org?").on(
         "update", lambda data, event: print(f"Agent ({data.update.key}) 🤖 : ", data.update.value)

@@ -16,7 +16,7 @@ from abc import ABC
 from collections.abc import Sequence
 from contextlib import suppress
 from logging import Logger
-from typing import Any, Optional, TypeVar, Union
+from typing import Any, Literal, Optional, TypeVar, Union
 
 from pydantic import BaseModel, ConfigDict, Field, GetJsonSchemaHandler, create_model
 from pydantic.json_schema import JsonSchemaValue
@@ -92,6 +92,8 @@ class JSONSchemaModel(ABC, BaseModel):
             if is_optional:
                 target_type = Optional[target_type] if target_type else type(None)  # noqa: UP007
 
+            if isinstance(param.get("const"), str):
+                target_type = Literal[param["const"]]
             if not target_type:
                 logger.debug(
                     f"{JSONSchemaModel.__name__}: Can't resolve a correct type for '{param_name}' attribute."
@@ -104,7 +106,10 @@ class JSONSchemaModel(ABC, BaseModel):
 
             fields[param_name] = (
                 target_type,
-                Field(description=param.get("description"), default=None if is_optional else ...),
+                Field(
+                    description=param.get("description"),
+                    default=None if is_optional else param["const"] if param.get("const") else ...,
+                ),
             )
 
         model: type[JSONSchemaModel] = create_model(  # type: ignore

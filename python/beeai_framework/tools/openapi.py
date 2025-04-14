@@ -13,11 +13,11 @@
 # limitations under the License.
 
 
-from typing import Any
+from typing import Any, Union
 from urllib.parse import parse_qs, urlencode, urljoin, urlparse, urlunparse
 
 import httpx
-from pydantic import BaseModel, InstanceOf
+from pydantic import BaseModel, Field, InstanceOf, RootModel
 
 from beeai_framework.context import RunContext
 from beeai_framework.emitter import Emitter
@@ -102,11 +102,7 @@ class OpenAPITool(Tool[BaseModel, ToolRunOptions, OpenAPIToolOutput]):
                 current_object = current_object[segment]
             return current_object
 
-        schema = {
-            "type": "object",
-            "required": ["path", "method"],
-            "oneOf": [],
-        }
+        schemas: list[dict[str, Any]] = []
 
         for path, path_spec in self.open_api_schema.get("paths", {}).items():
             for method, method_spec in path_spec.items():
@@ -147,9 +143,27 @@ class OpenAPITool(Tool[BaseModel, ToolRunOptions, OpenAPIToolOutput]):
 
                     properties["parameters"] = parameters
 
-                schema["oneOf"].append({"additionalProperties": False, "properties": properties})  # type: ignore
+                schemas.append(
+                    {
+                        "type": "object",
+                        "required": ["path", "method"],
+                        "additionalProperties": False,
+                        "properties": properties,
+                    }
+                )
 
-        return JSONSchemaModel.create("OpenAPIToolInput", schema)
+        schema_models = [
+            JSONSchemaModel.create(
+                f"OpenAPIToolInput{to_safe_word(schema['properties']['method']['const'])}{to_safe_word(schema['properties']['path']['const'])}",
+                schema,
+            )
+            for schema in schemas
+        ]
+
+        class OpenAPIToolInput(RootModel[Union[*schema_models]]):  # type: ignore
+            root: Union[*schema_models] = Field(description="Union of valid input schemas")  # type: ignore
+
+        return OpenAPIToolInput
 
     async def _run(
         self, tool_input: BaseModel, options: ToolRunOptions | None, context: RunContext
