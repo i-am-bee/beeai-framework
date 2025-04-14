@@ -175,7 +175,7 @@ class OpenAPITool(Tool[BaseModel, ToolRunOptions, OpenAPIToolOutput]):
         new_params = urlencode(search_params, doseq=True)
         url = urlunparse(parsed_url._replace(query=new_params))
 
-        await self.emitter.emit("before_fetch", {"input": input_dict})
+        await self.emitter.emit("before_fetch", BeforeFetchEvent(url=str(url), input=input_dict))
         try:
             async with httpx.AsyncClient() as client:
                 response = await client.request(
@@ -185,7 +185,7 @@ class OpenAPITool(Tool[BaseModel, ToolRunOptions, OpenAPIToolOutput]):
                     data=input_dict.get("body"),
                 )
                 output = OpenAPIToolOutput(response.status_code, response.text)
-                await self.emitter.emit("after_fetch", {"url": url, "data": output})
+                await self.emitter.emit("after_fetch", AfterFetchEvent(url=str(url), data=output))
                 return output
         except httpx.HTTPError as err:
             raise ToolError(f"Request to {url} has failed.", cause=err)

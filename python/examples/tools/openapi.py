@@ -3,14 +3,16 @@ import json
 import os
 import sys
 import traceback
+from typing import Any
 
 import aiofiles
 
 from beeai_framework.agents.tool_calling import ToolCallingAgent
 from beeai_framework.backend import ChatModel
+from beeai_framework.emitter import EventMeta
 from beeai_framework.errors import FrameworkError
 from beeai_framework.memory import UnconstrainedMemory
-from beeai_framework.tools.openapi import OpenAPITool
+from beeai_framework.tools.openapi import AfterFetchEvent, BeforeFetchEvent, OpenAPITool
 
 
 async def main() -> None:
@@ -19,11 +21,19 @@ async def main() -> None:
     async with aiofiles.open(os.path.join(current_dir, "assets/github_openapi.json")) as file:
         open_api_schema = json.loads(await file.read())
 
-    agent = ToolCallingAgent(llm=llm, tools=[OpenAPITool(open_api_schema)], memory=UnconstrainedMemory())
+    api_tool = OpenAPITool(open_api_schema)
 
-    response = await agent.run("How many repositories are in 'i-am-bee' org?").on(
-        "update", lambda data, event: print(f"Agent ({data.update.key}) 🤖 : ", data.update.value)
-    )
+    def print_fetch_event(data: Any, event: EventMeta) -> None:
+        if isinstance(data, BeforeFetchEvent):
+            print(f"Agent ({event.name}) 🤖 : ", data.input)
+        elif isinstance(data, AfterFetchEvent):
+            print(f"Agent ({event.name}) 🤖 : ", data.data)
+
+    api_tool.emitter.on("*", print_fetch_event)
+
+    agent = ToolCallingAgent(llm=llm, tools=[api_tool], memory=UnconstrainedMemory())
+
+    response = await agent.run("How many repositories are in 'i-am-bee' org?")
 
     print("Agent 🤖 : ", response.result.text)
 
