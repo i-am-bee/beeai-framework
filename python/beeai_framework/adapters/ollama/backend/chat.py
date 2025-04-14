@@ -43,7 +43,6 @@ class OllamaChatModel(LiteLLMChatModel):
         if not base_url.endswith("/v1"):
             base_url += "/v1"
 
-        kwargs.pop("provider_id", None)  # type: ignore [typeddict-item]
         super().__init__(
             model_id if model_id else os.getenv("OLLAMA_CHAT_MODEL", "llama3.1"),
             provider_id="openai",
