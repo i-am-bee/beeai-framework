@@ -1,4 +1,4 @@
-# Copyright 2025 IBM Corp.
+# Copyright 2025 © BeeAI a Series of LF Projects, LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -15,8 +15,10 @@
 
 import pytest
 
+pytest.importorskip("wikipediaapi", reason="Optional module [wikipedia] not installed.")
+
 from beeai_framework.tools import ToolInputValidationError
-from beeai_framework.tools.search import (
+from beeai_framework.tools.search.wikipedia import (
     WikipediaTool,
     WikipediaToolInput,
     WikipediaToolOutput,

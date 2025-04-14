@@ -1,4 +1,4 @@
-# Copyright 2025 IBM Corp.
+# Copyright 2025 © BeeAI a Series of LF Projects, LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -15,9 +15,15 @@
 
 from typing import Any, Self
 
-from mcp import ClientSession
-from mcp.types import CallToolResult
-from mcp.types import Tool as MCPToolInfo
+try:
+    from mcp import ClientSession
+    from mcp.types import CallToolResult
+    from mcp.types import Tool as MCPToolInfo
+except ModuleNotFoundError as e:
+    raise ModuleNotFoundError(
+        "Optional module [mcp] not found.\nRun 'pip install beeai-framework[mcp]' to install."
+    ) from e
+
 from pydantic import BaseModel
 
 from beeai_framework.context import RunContext

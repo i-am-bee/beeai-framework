@@ -1,4 +1,4 @@
-# Copyright 2025 IBM Corp.
+# Copyright 2025 © BeeAI a Series of LF Projects, LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -13,7 +13,13 @@
 # limitations under the License.
 
 
-import wikipediaapi  # type: ignore
+try:
+    import wikipediaapi  # type: ignore
+except ModuleNotFoundError as e:
+    raise ModuleNotFoundError(
+        "Optional module [wikipedia] not found.\nRun 'pip install beeai-framework[wikipedia]' to install."
+    ) from e
+
 from pydantic import BaseModel, Field
 
 from beeai_framework.context import RunContext

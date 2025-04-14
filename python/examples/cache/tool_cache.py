@@ -4,7 +4,7 @@ import traceback
 
 from beeai_framework.cache import SlidingCache
 from beeai_framework.errors import FrameworkError
-from beeai_framework.tools.search import (
+from beeai_framework.tools.search.wikipedia import (
     WikipediaTool,
     WikipediaToolInput,
 )

@@ -1,5 +1,5 @@
 #!/bin/bash
-# Copyright 2025 IBM Corp.
+# Copyright 2025 © BeeAI a Series of LF Projects, LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -21,7 +21,7 @@ else
   TARGETS=("${@/#$PWD\//}")
 fi
 
-AUTHOR="IBM Corp."
+AUTHOR="© BeeAI a Series of LF Projects, LLC"
 
 # Check if 'nwa' command is not available and 'brew' is available
 if ! command -v nwa &> /dev/null && command -v brew &> /dev/null; then

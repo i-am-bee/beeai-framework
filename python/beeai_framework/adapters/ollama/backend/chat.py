@@ -1,4 +1,4 @@
-# Copyright 2025 IBM Corp.
+# Copyright 2025 © BeeAI a Series of LF Projects, LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -51,6 +51,9 @@ class OllamaChatModel(LiteLLMChatModel):
         )
 
     def _format_response_model(self, model: type[BaseModel] | dict[str, Any]) -> dict[str, Any]:
+        if isinstance(model, dict) and model.get("type") in ["json_schema", "json_object"]:
+            return model
+
         return {
             "type": "json_schema",
             "json_schema": {

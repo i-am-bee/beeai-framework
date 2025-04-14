@@ -1,4 +1,4 @@
-# Copyright 2025 IBM Corp.
+# Copyright 2025 © BeeAI a Series of LF Projects, LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -15,7 +15,13 @@
 
 from typing import Self
 
-from duckduckgo_search import DDGS
+try:
+    from duckduckgo_search import DDGS
+except ModuleNotFoundError as e:
+    raise ModuleNotFoundError(
+        "Optional module [duckduckgo] not found.\nRun 'pip install beeai-framework[duckduckgo]' to install."
+    ) from e
+
 from pydantic import BaseModel, Field
 
 from beeai_framework.context import RunContext

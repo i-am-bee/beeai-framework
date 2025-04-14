@@ -1,4 +1,4 @@
-# Copyright 2025 IBM Corp.
+# Copyright 2025 © BeeAI a Series of LF Projects, LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -15,10 +15,16 @@
 
 from typing import Any, TypeVar
 
-from langchain_core.callbacks import AsyncCallbackManagerForToolRun
-from langchain_core.runnables import RunnableConfig
-from langchain_core.tools import BaseTool, StructuredTool
-from langchain_core.tools import Tool as LangChainSimpleTool
+try:
+    from langchain_core.callbacks import AsyncCallbackManagerForToolRun
+    from langchain_core.runnables import RunnableConfig
+    from langchain_core.tools import BaseTool, StructuredTool
+    from langchain_core.tools import Tool as LangChainSimpleTool
+except ModuleNotFoundError as e:
+    raise ModuleNotFoundError(
+        "Optional module [langchain] not found.\nRun 'pip install beeai-framework[langchain]' to install."
+    ) from e
+
 from pydantic import BaseModel, ConfigDict
 
 from beeai_framework.context import RunContext

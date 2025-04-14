@@ -3,7 +3,7 @@
   "version": "0.1.10",
   "license": "Apache-2.0",
   "description": "BeeAI Framework - LLM Agent Framework",
-  "author": "IBM Corp.",
+  "author": "BeeAI a Series of LF Projects, LLC",
   "contributors": [
     "Tomas Dvorak <tomas.dvorak@ibm.com>"
   ],

@@ -1,4 +1,4 @@
-# Copyright 2025 IBM Corp.
+# Copyright 2025 © BeeAI a Series of LF Projects, LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,23 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# isort: skip_file
-# manually defined import order is import here to avoid circular imports
-from beeai_framework.tools.search.base import SearchToolResult, SearchToolOutput
-from beeai_framework.tools.search.duckduckgo import (
-    DuckDuckGoSearchTool,
-    DuckDuckGoSearchToolInput,
-    DuckDuckGoSearchToolOutput,
-)
-from beeai_framework.tools.search.wikipedia import WikipediaTool, WikipediaToolInput, WikipediaToolOutput
+from beeai_framework.tools.search.base import SearchToolOutput, SearchToolResult
 
-__all__ = [
-    "DuckDuckGoSearchTool",
-    "DuckDuckGoSearchToolInput",
-    "DuckDuckGoSearchToolOutput",
-    "SearchToolOutput",
-    "SearchToolResult",
-    "WikipediaTool",
-    "WikipediaToolInput",
-    "WikipediaToolOutput",
-]
+__all__ = ["SearchToolOutput", "SearchToolResult"]

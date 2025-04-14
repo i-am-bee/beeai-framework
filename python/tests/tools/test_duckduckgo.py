@@ -1,4 +1,4 @@
-# Copyright 2025 IBM Corp.
+# Copyright 2025 © BeeAI a Series of LF Projects, LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -15,8 +15,10 @@
 
 import pytest
 
+pytest.importorskip("duckduckgo_search", reason="Optional module [duckduckgo] not installed.")
+
 from beeai_framework.tools import ToolInputValidationError
-from beeai_framework.tools.search import (
+from beeai_framework.tools.search.duckduckgo import (
     DuckDuckGoSearchTool,
     DuckDuckGoSearchToolInput,
     DuckDuckGoSearchToolOutput,
