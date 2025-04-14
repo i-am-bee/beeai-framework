@@ -1,3 +1,10 @@
+## python_v0.1.15 (2025-04-14)
+
+### Bug Fixes
+
+- **adapters**: update tool_choice list in Watsonx (#759)
+- **adapters**: handle tool structured fallback in Watsonx
+
 ## python_v0.1.14 (2025-04-04)
 
 ### Bug Fixes
