@@ -1,6 +1,6 @@
 from typing import Any, TypeVar
 
-from deepeval.test_case import LLMTestCase, ToolCall
+from deepeval.test_case import ConversationalTestCase, LLMTestCase, ToolCall
 from pydantic import BaseModel
 
 from beeai_framework.agents.tool_calling import ToolCallingAgent
@@ -55,3 +55,14 @@ async def invoke_agent(agent: ToolCallingAgent, test_case: LLMTestCase) -> None:
             for step in response.state.steps
             if not step.ability
         ]
+
+
+def to_conversation_test_case(agent: ToolCallingAgent, turns: list[LLMTestCase]) -> ConversationalTestCase:
+    return ConversationalTestCase(
+        turns=turns,
+        chatbot_role=agent.meta.description or "",
+        name="conversation",
+        additional_metadata={
+            "agent_name": agent.meta.name,
+        },
+    )

@@ -55,13 +55,13 @@ async def create_dataset(
         dataset.save_as(file_type="json", directory=str(cache_dir.absolute()), include_test_cases=True)
 
     for case in dataset.test_cases:
-        case.name = f"{name}\n{case.input[0:128].strip()}"
+        case.name = f"{name} - {case.input[0:128].strip()}"
 
     return dataset
 
 
 def create_dataset_sync(
-    *, name: str, agent_factory: Callable[[], ToolCallingAgent], goldens: list[Golden], cache: bool
+    *, name: str, agent_factory: Callable[[], ToolCallingAgent], goldens: list[Golden], cache: bool | None = None
 ) -> EvaluationDataset:
     loop = asyncio.new_event_loop()
     dataset = loop.run_until_complete(
@@ -69,7 +69,7 @@ def create_dataset_sync(
             name=name,
             agent_factory=agent_factory,
             goldens=goldens,
-            cache=cache,
+            cache=str(os.getenv("EVAL_CACHE_DATASET")).lower() == "true" if cache is None else cache,
         )
     )
     return dataset
