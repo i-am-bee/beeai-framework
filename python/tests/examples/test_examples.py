@@ -51,6 +51,8 @@ exclude = list(
             # Requires Code Interpreter to be running
             "tools/python_tool.py" if os.getenv("CODE_INTERPRETER_URL") is None else None,
             "tools/custom/sandbox.py" if os.getenv("CODE_INTERPRETER_URL") is None else None,
+            # Requires custom prompt
+            "workflows/travel_advisor.py",
         ],
     )
 )
