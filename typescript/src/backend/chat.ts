@@ -22,33 +22,35 @@ import { Callback } from "@/emitter/types.js";
 import { FrameworkError } from "@/errors.js";
 import { Emitter } from "@/emitter/emitter.js";
 import { GetRunContext, RunContext } from "@/context.js";
-import { isFunction } from "remeda";
+import { isEmpty, isFunction, randomString } from "remeda";
 import { ObjectHashKeyFn } from "@/cache/decoratorCache.js";
 import { Task } from "promise-based-task";
 import { NullCache } from "@/cache/nullCache.js";
 import { BaseCache } from "@/cache/base.js";
-import { FullModelName, loadModel, parseModel } from "@/backend/utils.js";
-import { ProviderName } from "@/backend/constants.js";
-import { AnyTool } from "@/tools/base.js";
-import { AssistantMessage, Message, SystemMessage, UserMessage } from "@/backend/message.js";
 import {
-  JSONSchema7,
-  LanguageModelV1FunctionTool,
-  LanguageModelV1ProviderDefinedTool,
-  LanguageModelV1ToolChoice,
-} from "@ai-sdk/provider";
+  filterToolsByToolChoice,
+  FullModelName,
+  generateToolUnionSchema,
+  loadModel,
+  parseModel,
+} from "@/backend/utils.js";
+import { ProviderName } from "@/backend/constants.js";
+import { AnyTool, Tool } from "@/tools/base.js";
+import { AssistantMessage, Message, SystemMessage, UserMessage } from "@/backend/message.js";
+
 import { ChatModelError } from "@/backend/errors.js";
-import { z, ZodType } from "zod";
+import { z, ZodSchema, ZodType } from "zod";
 import {
   createSchemaValidator,
   parseBrokenJson,
   toJsonSchema,
 } from "@/internals/helpers/schema.js";
 import { Retryable } from "@/internals/helpers/retryable.js";
-import type { ValidateFunction } from "ajv";
+import { SchemaObject, ValidateFunction } from "ajv";
 import { PromptTemplate } from "@/template.js";
 import { toAsyncGenerator } from "@/internals/helpers/promise.js";
 import { Serializer } from "@/serializer/serializer.js";
+import { Logger } from "@/logger/logger.js";
 
 export interface ChatModelParameters {
   maxTokens?: number;
@@ -62,8 +64,15 @@ export interface ChatModelParameters {
   stopSequences?: string[];
 }
 
+interface ResponseObjectJson {
+  type: "object-json";
+  schema?: SchemaObject;
+  name?: string;
+  description?: string;
+}
+
 export interface ChatModelObjectInput<T> extends ChatModelParameters {
-  schema: z.ZodSchema<T>;
+  schema: z.ZodSchema<T> | ResponseObjectJson;
   systemPromptTemplate?: PromptTemplate<ZodType<{ schema: string }>>;
   messages: Message[];
   abortSignal?: AbortSignal;
@@ -72,29 +81,17 @@ export interface ChatModelObjectInput<T> extends ChatModelParameters {
 
 export interface ChatModelObjectOutput<T> {
   object: T;
+  output: ChatModelOutput;
 }
+
+export type ChatModelToolChoice = "auto" | "none" | "required" | AnyTool;
 
 export interface ChatModelInput extends ChatModelParameters {
   tools?: AnyTool[];
   abortSignal?: AbortSignal;
   stopSequences?: string[];
-  responseFormat?:
-    | {
-        type: "regular";
-        tools?: (LanguageModelV1FunctionTool | LanguageModelV1ProviderDefinedTool)[];
-        toolChoice?: LanguageModelV1ToolChoice;
-      }
-    | {
-        type: "object-json";
-        schema?: JSONSchema7;
-        name?: string;
-        description?: string;
-      }
-    | {
-        type: "object-tool";
-        tool: LanguageModelV1FunctionTool;
-      };
-  toolChoice?: never; // TODO
+  responseFormat?: ZodSchema | ResponseObjectJson;
+  toolChoice?: ChatModelToolChoice;
   messages: Message[];
 }
 
@@ -132,10 +129,24 @@ export interface ChatConfig {
   parameters?: ChatModelParameters | ConfigFn<ChatModelParameters>;
 }
 
+export type ChatModelToolChoiceSupport = "required" | "none" | "single" | "auto";
+
 export abstract class ChatModel extends Serializable {
   public abstract readonly emitter: Emitter<ChatModelEvents>;
   public cache: ChatModelCache = new NullCache();
   public parameters: ChatModelParameters = {};
+  protected readonly logger = Logger.root.child({
+    name: this.constructor.name,
+  });
+
+  public readonly toolChoiceSupport: ChatModelToolChoiceSupport[] = [
+    "required",
+    "none",
+    "single",
+    "auto",
+  ];
+  public toolCallFallbackViaResponseFormat = true;
+  public readonly modelSupportsToolCalling: boolean = true;
 
   abstract get modelId(): string;
   abstract get providerId(): string;
@@ -147,6 +158,25 @@ export abstract class ChatModel extends Serializable {
       this,
       { params: [input] as const, signal: input?.abortSignal },
       async (run) => {
+        if (!this.modelSupportsToolCalling) {
+          input.tools = [];
+        }
+
+        const forceToolCallViaResponseFormat = this.shouldForceToolCallViaResponseFormat(input);
+        if (forceToolCallViaResponseFormat && input.tools && !isEmpty(input.tools)) {
+          input.responseFormat = await generateToolUnionSchema(
+            filterToolsByToolChoice(input.tools, input.toolChoice),
+          );
+          input.toolChoice = undefined;
+        }
+
+        if (!this.isToolChoiceSupported(input.toolChoice)) {
+          this.logger.warn(
+            `The following tool choice value '${input.toolChoice}' is not supported. Ignoring.`,
+          );
+          input.toolChoice = undefined;
+        }
+
         const cacheEntry = await this.createCacheAccessor(input);
 
         try {
@@ -173,6 +203,29 @@ export abstract class ChatModel extends Serializable {
 
           cacheEntry.resolve(chunks);
           const result = ChatModelOutput.fromChunks(chunks);
+
+          if (forceToolCallViaResponseFormat && isEmpty(result.getToolCalls())) {
+            const lastMsg = result.messages.at(-1)!;
+            const toolCall = parseBrokenJson(lastMsg.text);
+            if (!toolCall) {
+              throw new ChatModelError(
+                `Failed to produce a valid tool call. Generate output: ${lastMsg.text}`,
+                [],
+                {
+                  isFatal: true,
+                  isRetryable: false,
+                },
+              );
+            }
+            lastMsg.content.length = 0;
+            lastMsg.content.push({
+              type: "tool-call",
+              toolCallId: `call_${randomString(8).toLowerCase()}`,
+              toolName: toolCall.name, // todo: add types
+              args: toolCall.parameters,
+            });
+          }
+
           await run.emitter.emit("success", { value: result });
           return result;
         } catch (error) {
@@ -291,7 +344,10 @@ Validation Errors: {{errors}}`,
           });
         }
 
-        return { object };
+        return {
+          object,
+          output: response,
+        };
       },
       config: {
         signal: run.signal,
@@ -301,7 +357,15 @@ Validation Errors: {{errors}}`,
   }
 
   createSnapshot() {
-    return { cache: this.cache, emitter: this.emitter, parameters: shallowCopy(this.parameters) };
+    return {
+      cache: this.cache,
+      emitter: this.emitter,
+      parameters: shallowCopy(this.parameters),
+      logger: this.logger,
+      toolChoiceSupport: this.toolChoiceSupport.slice(),
+      toolCallFallbackViaResponseFormat: this.toolCallFallbackViaResponseFormat,
+      modelSupportsToolCalling: this.modelSupportsToolCalling,
+    };
   }
 
   destroy() {
@@ -341,6 +405,35 @@ Validation Errors: {{errors}}`,
         }
       },
     };
+  }
+
+  protected shouldForceToolCallViaResponseFormat({
+    tools = [],
+    toolChoice,
+    responseFormat,
+  }: ChatModelInput) {
+    if (
+      isEmpty(tools) ||
+      !toolChoice ||
+      toolChoice === "none" ||
+      toolChoice === "auto" ||
+      !this.toolCallFallbackViaResponseFormat ||
+      Boolean(responseFormat)
+    ) {
+      return false;
+    }
+
+    const toolChoiceSupported = this.isToolChoiceSupported(toolChoice);
+    return !this.modelSupportsToolCalling || !toolChoiceSupported;
+  }
+
+  protected isToolChoiceSupported(choice?: ChatModelToolChoice): boolean {
+    return (
+      !choice ||
+      (choice instanceof Tool
+        ? this.toolChoiceSupport.includes("single")
+        : this.toolChoiceSupport.includes(choice))
+    );
   }
 }
 

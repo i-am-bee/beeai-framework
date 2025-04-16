@@ -76,7 +76,11 @@ async function openaiStructure() {
 async function openaiToolCalling() {
   const userMessage = new UserMessage("What is the weather in Boston?");
   const weatherTool = new OpenMeteoTool({ retryOptions: { maxRetries: 3 } });
-  const response = await llm.create({ messages: [userMessage], tools: [weatherTool] });
+  const response = await llm.create({
+    messages: [userMessage],
+    tools: [weatherTool],
+    toolChoice: weatherTool,
+  });
   const toolCallMsg = response.getToolCalls()[0];
   console.debug(JSON.stringify(toolCallMsg));
   const toolResponse = await weatherTool.run(toolCallMsg.args as any);
@@ -87,7 +91,10 @@ async function openaiToolCalling() {
     toolCallId: toolCallMsg.toolCallId,
   });
   console.info(toolResponseMsg.toPlain());
-  const finalResponse = await llm.create({ messages: [userMessage, toolResponseMsg], tools: [] });
+  const finalResponse = await llm.create({
+    messages: [userMessage, ...response.messages, toolResponseMsg],
+    tools: [],
+  });
   console.info(finalResponse.getTextContent());
 }
 

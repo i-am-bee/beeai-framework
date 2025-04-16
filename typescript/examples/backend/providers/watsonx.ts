@@ -17,14 +17,13 @@ const llm = new WatsonxChatModel(
 
 llm.config({
   parameters: {
-    topK: 1,
     temperature: 0,
     topP: 1,
   },
 });
 
 async function watsonxFromName() {
-  const watsonxLLM = await ChatModel.fromName("watsonx:meta-llama/llama-3-1-70b-instruct");
+  const watsonxLLM = await ChatModel.fromName("watsonx:meta-llama/llama-3-1-8b-instruct");
   const response = await watsonxLLM.create({
     messages: [new UserMessage("what states are part of New England?")],
   });
@@ -72,9 +71,14 @@ async function watsonxStructure() {
 }
 
 async function watsonxToolCalling() {
-  const userMessage = new UserMessage("What is the weather in Boston?");
+  const currentDate = new Date().toISOString();
+  const userMessage = new UserMessage(`What is the current weather (${currentDate}) in Boston?`);
   const weatherTool = new OpenMeteoTool({ retryOptions: { maxRetries: 3 } });
-  const response = await llm.create({ messages: [userMessage], tools: [weatherTool] });
+  const response = await llm.create({
+    messages: [userMessage],
+    tools: [weatherTool],
+    toolChoice: weatherTool,
+  });
   const toolCallMsg = response.getToolCalls()[0];
   console.debug(JSON.stringify(toolCallMsg));
   const toolResponse = await weatherTool.run(toolCallMsg.args as any);
@@ -85,7 +89,10 @@ async function watsonxToolCalling() {
     toolCallId: toolCallMsg.toolCallId,
   });
   console.info(toolResponseMsg.toPlain());
-  const finalResponse = await llm.create({ messages: [userMessage, toolResponseMsg], tools: [] });
+  const finalResponse = await llm.create({
+    messages: [userMessage, ...response.messages, toolResponseMsg],
+    tools: [],
+  });
   console.info(finalResponse.getTextContent());
 }
 

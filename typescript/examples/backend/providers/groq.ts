@@ -86,7 +86,10 @@ async function groqToolCalling() {
     toolCallId: toolCallMsg.toolCallId,
   });
   console.info(toolResponseMsg.toPlain());
-  const finalResponse = await llm.create({ messages: [userMessage, toolResponseMsg], tools: [] });
+  const finalResponse = await llm.create({
+    messages: [userMessage, ...response.messages, toolResponseMsg],
+    tools: [],
+  });
   console.info(finalResponse.getTextContent());
 }
 

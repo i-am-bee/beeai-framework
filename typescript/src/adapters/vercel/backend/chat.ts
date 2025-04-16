@@ -33,6 +33,7 @@ import {
   streamText,
   TextPart,
   ToolCallPart,
+  ToolChoice,
 } from "ai";
 import { Emitter } from "@/emitter/emitter.js";
 import {
@@ -47,7 +48,8 @@ import { ValueError } from "@/errors.js";
 import { isEmpty, mapToObj, toCamelCase } from "remeda";
 import { FullModelName } from "@/backend/utils.js";
 import { ChatModelError } from "@/backend/errors.js";
-import { ZodArray, ZodEnum } from "zod";
+import { z, ZodArray, ZodEnum, ZodSchema } from "zod";
+import { Tool } from "@/tools/base.js";
 
 export abstract class VercelChatModel<
   M extends LanguageModelV1 = LanguageModelV1,
@@ -75,7 +77,19 @@ export abstract class VercelChatModel<
     return toCamelCase(provider);
   }
 
-  protected async _create(input: ChatModelInput, _run: GetRunContext<this>) {
+  protected async _create(input: ChatModelInput, run: GetRunContext<this>) {
+    const responseFormat = input.responseFormat;
+    if (responseFormat && (responseFormat instanceof ZodSchema || responseFormat.schema)) {
+      const { output } = await this._createStructure(
+        {
+          ...input,
+          schema: responseFormat,
+        },
+        run,
+      );
+      return output;
+    }
+
     const {
       finishReason,
       usage,
@@ -89,24 +103,35 @@ export abstract class VercelChatModel<
     { schema, ...input }: ChatModelObjectInput<T>,
     run: GetRunContext<this>,
   ): Promise<ChatModelObjectOutput<T>> {
-    const inputSchema = schema._input || schema;
-
-    const response = await generateObject({
+    const response = await generateObject<T>({
       temperature: 0,
       ...(await this.transformInput(input)),
-      schema,
       abortSignal: run.signal,
       model: this.model,
-      // @ts-expect-error
-      output:
-        inputSchema instanceof ZodArray
-          ? "array"
-          : inputSchema instanceof ZodEnum
-            ? "enum"
-            : "object",
+      ...(schema instanceof ZodSchema
+        ? {
+            schema,
+            output: ((schema._input || schema) instanceof ZodArray
+              ? "array"
+              : (schema._input || schema) instanceof ZodEnum
+                ? "enum"
+                : "object") as any,
+          }
+        : {
+            schema: schema.schema ? jsonSchema<T>(schema.schema) : z.any(),
+            schemaName: schema.name,
+            schemaDescription: schema.description,
+          }),
     });
 
-    return { object: response.object };
+    return {
+      object: response.object,
+      output: new ChatModelOutput(
+        [new AssistantMessage(JSON.stringify(response.object, null, 2))],
+        response.usage,
+        response.finishReason,
+      ),
+    };
   }
 
   async *_createStream(input: ChatModelInput, run: GetRunContext<this>) {
@@ -193,9 +218,28 @@ export abstract class VercelChatModel<
       return { role: msg.role, content: msg.content } as CoreMessage;
     });
 
+    let toolChoice: ToolChoice<Record<string, any>> | undefined;
+    if (input.toolChoice && input.toolChoice instanceof Tool) {
+      if (this.toolChoiceSupport.includes("single")) {
+        toolChoice = {
+          type: "tool",
+          toolName: input.toolChoice.name,
+        };
+      } else {
+        this.logger.warn(`The single tool choice is not supported.`);
+      }
+    } else if (input.toolChoice) {
+      if (this.toolChoiceSupport.includes(input.toolChoice)) {
+        toolChoice = input.toolChoice;
+      } else {
+        this.logger.warn(`The following tool choice value '${input.toolChoice}' is not supported.`);
+      }
+    }
+
     return {
       ...this.parameters,
       ...input,
+      toolChoice,
       model: this.model,
       tools: mapToObj(tools, ({ name, ...tool }) => [name, tool]),
       messages,

@@ -1,9 +1,10 @@
 import "dotenv/config.js";
-import { UserMessage } from "beeai-framework/backend/message";
+import { ToolMessage, UserMessage } from "beeai-framework/backend/message";
 import { ChatModel } from "beeai-framework/backend/chat";
 import { z } from "zod";
 import { OllamaChatModel } from "beeai-framework/adapters/ollama/backend/chat";
 import { ChatModelError } from "beeai-framework/backend/errors";
+import { OpenMeteoTool } from "beeai-framework/tools/weather/openMeteo";
 
 const llm = new OllamaChatModel(
   "llama3.1",
@@ -69,6 +70,31 @@ async function ollamaStructure() {
   console.info(response.object);
 }
 
+async function ollamaToolCalling() {
+  const userMessage = new UserMessage("What is the weather in Boston?");
+  const weatherTool = new OpenMeteoTool({ retryOptions: { maxRetries: 3 } });
+  const response = await llm.create({
+    messages: [userMessage],
+    tools: [weatherTool],
+    toolChoice: weatherTool,
+  });
+  const toolCallMsg = response.getToolCalls()[0];
+  console.debug(JSON.stringify(toolCallMsg));
+  const toolResponse = await weatherTool.run(toolCallMsg.args as any);
+  const toolResponseMsg = new ToolMessage({
+    type: "tool-result",
+    result: toolResponse.getTextContent(),
+    toolName: toolCallMsg.toolName,
+    toolCallId: toolCallMsg.toolCallId,
+  });
+  console.info(toolResponseMsg.toPlain());
+  const finalResponse = await llm.create({
+    messages: [userMessage, ...response.messages, toolResponseMsg],
+    tools: [],
+  });
+  console.info(finalResponse.getTextContent());
+}
+
 async function ollamaDebug() {
   // Log every request
   llm.emitter.match("*", (value, event) =>
@@ -95,5 +121,7 @@ console.info(" ollamaAbort".padStart(25, "*"));
 await ollamaAbort();
 console.info(" ollamaStructure".padStart(25, "*"));
 await ollamaStructure();
+console.info(" ollamaToolCalling".padStart(25, "*"));
+await ollamaToolCalling();
 console.info(" ollamaDebug".padStart(25, "*"));
 await ollamaDebug();

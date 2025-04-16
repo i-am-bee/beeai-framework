@@ -21,6 +21,7 @@ import {
   ChatModelInput,
   ChatModelOutput,
   ChatModelParameters,
+  ChatModelToolChoiceSupport,
 } from "@/backend/chat.js";
 import { WatsonxClient, WatsonxClientSettings } from "@/adapters/watsonx/backend/client.js";
 import { findLast, isEmpty, isTruthy } from "remeda";
@@ -40,6 +41,7 @@ import Type = WatsonxAiMlVml_v1.TextChatResponseFormat.Constants.Type;
 import { parseBrokenJson } from "@/internals/helpers/schema.js";
 import { getEnv } from "@/internals/env.js";
 import { NotImplementedError } from "@/errors.js";
+import { Tool } from "@/tools/base.js";
 
 export class WatsonxChatModel extends ChatModel {
   protected readonly client: WatsonxClient;
@@ -47,6 +49,7 @@ export class WatsonxChatModel extends ChatModel {
     namespace: ["backend", "watsonx", "chat"],
     creator: this,
   });
+  public readonly toolChoiceSupport: ChatModelToolChoiceSupport[] = ["none", "single"];
 
   get providerId() {
     return "watsonx";
@@ -158,6 +161,21 @@ export class WatsonxChatModel extends ChatModel {
       })),
     );
 
+    const toolConfig: Pick<TextChatParams, "toolChoice" | "toolChoiceOption"> = {
+      toolChoice: undefined,
+      toolChoiceOption: undefined,
+    };
+    if (input.toolChoice) {
+      if (input.toolChoice instanceof Tool) {
+        toolConfig.toolChoice = {
+          type: "function",
+          function: { name: input.toolChoice.name },
+        };
+      } else if (this.toolChoiceSupport.includes(input.toolChoice)) {
+        toolConfig.toolChoiceOption = input.toolChoice;
+      }
+    }
+
     return {
       modelId: this.modelId,
       messages: input.messages.flatMap((message): TextChatMessages[] => {
@@ -195,7 +213,7 @@ export class WatsonxChatModel extends ChatModel {
       projectId: this.client.projectId,
       tools: isEmpty(tools) ? undefined : tools,
       responseFormat: undefined,
-      ...(input.responseFormat?.type === "object-json" && {
+      ...(input.responseFormat && {
         responseFormat: { type: Type.JSON_OBJECT },
       }),
       topP: input.topP,
@@ -204,9 +222,9 @@ export class WatsonxChatModel extends ChatModel {
       n: input.n,
       maxTokens: input.maxTokens,
       presencePenalty: input.presencePenalty,
-      toolChoice: input.toolChoice,
       stop: input.stopSequences,
       seed: input.seed,
+      ...toolConfig,
     };
   }
 
