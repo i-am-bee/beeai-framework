@@ -38,7 +38,7 @@ import {
   LanguageModelV1ToolChoice,
 } from "@ai-sdk/provider";
 import { ChatModelError } from "@/backend/errors.js";
-import { z } from "zod";
+import { z, ZodType } from "zod";
 import {
   createSchemaValidator,
   parseBrokenJson,
@@ -64,6 +64,7 @@ export interface ChatModelParameters {
 
 export interface ChatModelObjectInput<T> extends ChatModelParameters {
   schema: z.ZodSchema<T>;
+  systemPromptTemplate?: PromptTemplate<ZodType<{ schema: string }>>;
   messages: Message[];
   abortSignal?: AbortSignal;
   maxRetries?: number;
@@ -230,18 +231,20 @@ export abstract class ChatModel extends Serializable {
     const { schema, ...options } = input;
     const jsonSchema = toJsonSchema(schema);
 
-    const systemTemplate = new PromptTemplate({
-      schema: z.object({
-        schema: z.string().min(1),
-      }),
-      template: `You are a helpful assistant that generates only valid JSON adhering to the following JSON Schema.
+    const systemTemplate =
+      input.systemPromptTemplate ??
+      new PromptTemplate({
+        schema: z.object({
+          schema: z.string().min(1),
+        }),
+        template: `You are a helpful assistant that generates only valid JSON adhering to the following JSON Schema.
 
 \`\`\`
 {{schema}}
 \`\`\`
 
 IMPORTANT: You MUST answer with a JSON object that matches the JSON schema above.`,
-    });
+      });
 
     const messages: Message[] = [
       new SystemMessage(systemTemplate.render({ schema: JSON.stringify(jsonSchema, null, 2) })),

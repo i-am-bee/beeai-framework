@@ -282,13 +282,11 @@ class LiteLLMChatModel(ChatModel, ABC):
         return model
 
     async def clone(self) -> Self:
-        kwargs: ChatModelKwargs = {
-            "parameters": self.parameters.model_copy() if self.parameters else ChatModelParameters(),
-            "cache": await self.cache.clone() if self.cache else NullCache[list[ChatModelOutput]](),
-            "tool_call_fallback_via_response_format": self.tool_call_fallback_via_response_format,
-            "model_supports_tool_calling": self.model_supports_tool_calling,
-        }
-        cloned = type(self)(self._model_id, provider_id=self._litellm_provider_id, settings=self._settings, **kwargs)
+        cloned = type(self)(self._model_id, settings=self._settings.copy())  # type: ignore
+        cloned.parameters = self.parameters.model_copy() if self.parameters else ChatModelParameters()
+        cloned.cache = await self.cache.clone() if self.cache else NullCache[list[ChatModelOutput]]()
+        cloned.tool_call_fallback_via_response_format = self.tool_call_fallback_via_response_format
+        cloned.model_supports_tool_calling = self.model_supports_tool_calling
         return cloned
 
 
