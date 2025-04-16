@@ -140,14 +140,15 @@ export class LangChainChatModel extends ChatModel {
     run: RunContext<this>,
   ): Promise<ChatModelObjectOutput<T>> {
     const { messages, options } = this.prepareInput(input, run);
-    const object = this.lcLLM
+    const { raw, parsed } = await this.lcLLM
       .withStructuredOutput<any>(input.schema, {
         method: "jsonSchema",
         strict: false,
+        includeRaw: true,
       })
       .invoke(messages, options);
 
-    return { object: object as T };
+    return { object: parsed as T, output: this.prepareOutput(raw as AIMessageChunk) };
   }
 
   createSnapshot() {
