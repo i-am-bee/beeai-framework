@@ -24,7 +24,7 @@ export function createConsoleReader({
       rl.write(
         [role && R.piped(picocolors.red, picocolors.bold)(role), stripAnsi(data ?? "")]
           .filter(Boolean)
-          .join(" ")
+          .join("")
           .concat("\n"),
       );
     },

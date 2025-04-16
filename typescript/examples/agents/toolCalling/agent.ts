@@ -29,26 +29,24 @@ const reader = createConsoleReader();
 
 try {
   for await (const { prompt } of reader) {
+    let messagesCount = agent.memory.messages.length + 1;
+
     const response = await agent.run({ prompt }).observe((emitter) => {
-      // emitter.on("start", () => {
-      //   reader.write(`Agent 🤖 : `, "starting new iteration");
-      // });
-      emitter.on("start", ({ state }) => {
-        reader.write(`Agent (debug) 🤖 : `, `starting iteration number (${state.iteration})`);
-      });
       emitter.on("success", async ({ state }) => {
-        //for (const msg of state.memory.messages) {
-        //  console.info(msg.role, msg.content);
-        //}
+        const newMessages = state.memory.messages.slice(messagesCount);
+        messagesCount += newMessages.length;
+
         reader.write(
-          `Agent (debug) 🤖 : `,
-          `iteration number ${state.iteration} has been completed`,
+          `Agent (${newMessages.length} new messages) 🤖 :\n`,
+          newMessages.map((msg) => `-> ${JSON.stringify(msg.toPlain())}`).join("\n"),
         );
       });
 
       // To observe all events (uncomment following block)
       // emitter.match("*.*", async (data: unknown, event) => {
       //   logger.trace(event, `Received event "${event.path}"`);
+      // }, {
+      //   matchNested: true
       // });
 
       // To get raw LLM input (uncomment following block)

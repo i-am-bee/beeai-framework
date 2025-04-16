@@ -15,7 +15,7 @@
  */
 
 import { AgentError, BaseAgent } from "@/agents/base.js";
-import { AnyTool, ToolError, ToolOutput } from "@/tools/base.js";
+import { AnyTool, DynamicTool, StringToolOutput, ToolError, ToolOutput } from "@/tools/base.js";
 import { BaseMemory } from "@/memory/base.js";
 import { AgentMeta } from "@/agents/types.js";
 import { Emitter } from "@/emitter/emitter.js";
@@ -42,7 +42,7 @@ import {
   ToolCallingAgentSystemPrompt,
   ToolCallingAgentTaskPrompt,
 } from "@/agents/toolCalling/prompts.js";
-import { ZodSchema } from "zod";
+import { z, ZodSchema } from "zod";
 
 export type ToolCallingAgentTemplateFactory<K extends keyof ToolCallingAgentTemplates> = (
   template: ToolCallingAgentTemplates[K],
@@ -59,6 +59,7 @@ export interface ToolCallingAgentInput {
       | ToolCallingAgentTemplateFactory<K>;
   }>;
   execution?: ToolCallingAgentExecutionConfig;
+  saveIntermediateSteps?: boolean;
 }
 
 export class ToolCallingAgent extends BaseAgent<
@@ -73,6 +74,7 @@ export class ToolCallingAgent extends BaseAgent<
 
   constructor(public readonly input: ToolCallingAgentInput) {
     super();
+    this.input.saveIntermediateSteps = this.input.saveIntermediateSteps ?? true;
   }
 
   static {
@@ -106,6 +108,7 @@ export class ToolCallingAgent extends BaseAgent<
         }),
       ),
     );
+    await state.memory.addMany(this.memory.messages);
 
     if (input.prompt) {
       const userMessage = new UserMessage(
@@ -120,6 +123,27 @@ export class ToolCallingAgent extends BaseAgent<
 
     const globalRetriesCounter = new RetryCounter(execution.totalMaxRetries || 1, AgentError);
 
+    const usePlainResponse = !input.expectedOutput || !(input.expectedOutput instanceof ZodSchema);
+    const finalAnswerToolSchema = usePlainResponse
+      ? z.object({
+          response: z.string().describe(String(input.expectedOutput ?? "")),
+        })
+      : (input.expectedOutput as ZodSchema);
+
+    const finalAnswerTool = new DynamicTool({
+      name: "final_answer",
+      description: "Sends the final answer to the user",
+      inputSchema: finalAnswerToolSchema,
+      handler: async (input) => {
+        const result = usePlainResponse ? input.response : JSON.stringify(input.response);
+        state.result = new AssistantMessage(result);
+        return new StringToolOutput("Message has been sent");
+      },
+    });
+
+    const tools = [...this.input.tools, finalAnswerTool];
+    let forceFinalAnswer = false;
+
     while (!state.result) {
       state.iteration++;
       if (state.iteration > (execution.totalMaxRetries ?? Infinity)) {
@@ -131,7 +155,8 @@ export class ToolCallingAgent extends BaseAgent<
       await run.emitter.emit("start", { state });
       const response = await this.input.llm.create({
         messages: state.memory.messages.slice(),
-        tools: this.input.tools,
+        tools,
+        toolChoice: forceFinalAnswer ? finalAnswerTool : tools.length > 1 ? "required" : tools[0],
         stream: false,
       });
       await state.memory.addMany(response.messages);
@@ -139,7 +164,7 @@ export class ToolCallingAgent extends BaseAgent<
       const toolCallMessages = response.getToolCalls();
       for (const toolCall of toolCallMessages) {
         try {
-          const tool = this.input.tools.find((tool) => tool.name === toolCall.toolName);
+          const tool = tools.find((tool) => tool.name === toolCall.toolName);
           if (!tool) {
             throw new AgentError(`Tool ${toolCall.toolName} does not exist!`);
           }
@@ -186,22 +211,22 @@ export class ToolCallingAgent extends BaseAgent<
         );
       }
 
+      // Fallback for providers that do not support structured outputs
       if (!isEmpty(textMessages) && isEmpty(toolCallMessages)) {
-        if (input.expectedOutput && input.expectedOutput instanceof ZodSchema) {
-          const structured = await this.input.llm.createStructure({
-            schema: input.expectedOutput,
-            messages: state.memory.messages.slice(),
-          });
-          state.result = new AssistantMessage(JSON.stringify(structured, null, 4));
-        } else {
-          state.result = AssistantMessage.fromChunks(textMessages);
-        }
+        forceFinalAnswer = true;
+        tools.length = 0;
+        tools.push(finalAnswerTool);
       }
 
       await run.emitter.emit("success", { state });
     }
 
-    await this.memory.addMany(state.memory.messages.slice(1));
+    if (this.input.saveIntermediateSteps) {
+      this.memory.reset();
+      await this.memory.addMany(state.memory.messages.slice(1));
+    } else {
+      await this.memory.addMany(state.memory.messages.slice(-2));
+    }
     return { memory: state.memory, result: state.result };
   }
 
