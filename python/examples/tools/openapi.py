@@ -1,11 +1,11 @@
 import asyncio
-import json
 import os
 import sys
 import traceback
 from typing import Any
 
 import aiofiles
+import yaml
 
 from beeai_framework.agents.tool_calling import ToolCallingAgent
 from beeai_framework.backend import ChatModel
@@ -19,7 +19,7 @@ async def main() -> None:
     llm = ChatModel.from_name("ollama:llama3.1")
     current_dir = os.path.dirname(__file__)
     async with aiofiles.open(os.path.join(current_dir, "assets/github_openapi.json")) as file:
-        open_api_schema = json.loads(await file.read())
+        open_api_schema = yaml.safe_load(await file.read())
 
     api_tool = OpenAPITool(open_api_schema)
 

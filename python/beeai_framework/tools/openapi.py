@@ -160,6 +160,9 @@ class OpenAPITool(Tool[BaseModel, ToolRunOptions, OpenAPIToolOutput]):
             for schema in schemas
         ]
 
+        if len(schema_models) == 1:
+            return schema_models[0]
+
         class OpenAPIToolInput(RootModel[Union[*schema_models]]):  # type: ignore
             root: Union[*schema_models] = Field(description="Union of valid input schemas")  # type: ignore
 
