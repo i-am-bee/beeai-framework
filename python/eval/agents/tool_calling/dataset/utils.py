@@ -52,7 +52,8 @@ async def create_dataset(
         for test_case in await asyncio.gather(*[process_golden(golden) for golden in goldens], return_exceptions=False):
             dataset.add_test_case(test_case)
 
-        dataset.save_as(file_type="json", directory=str(cache_dir.absolute()), include_test_cases=True)
+        if cache:
+            dataset.save_as(file_type="json", directory=str(cache_dir.absolute()), include_test_cases=True)
 
     for case in dataset.test_cases:
         case.name = f"{name} - {case.input[0:128].strip()}"

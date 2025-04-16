@@ -20,7 +20,7 @@ def create_agent() -> ToolCallingAgent:
         llm=ChatModel.from_name("ollama:granite3.2"),
         tools=[DuckDuckGoSearchTool(), OpenMeteoTool()],
         memory=UnconstrainedMemory(),
-        abilities=["reasoning"],
+        # abilities=["reasoning"],
         save_intermediate_steps=True,
     )
 
@@ -37,10 +37,10 @@ def greeting_dataset() -> EvaluationDataset:
                 expected_tools=[],
             )
             for input, output in [
-                # ("Hello agent!", "Hello. How can I help you?"),
-                # ("Hello", "Hello. How can I help you?"),
-                # ("Hola", "Hola. ¿En qué puedo ayudarte?"),
-                # ("Bonjour", "Bonjour. Comment puis-je vous aider?"),
+                ("Hello agent!", "Hello. How can I help you?"),
+                ("Hello", "Hello. How can I help you?"),
+                ("Hola", "Hola. ¿En qué puedo ayudarte?"),
+                ("Bonjour", "Bonjour. Comment puis-je vous aider?"),
                 ("Hallo", "Hallo. Wie kann ich Ihnen helfen?"),
             ]
         ],
@@ -50,14 +50,16 @@ def greeting_dataset() -> EvaluationDataset:
 @pytest.mark.parametrize("test_case", greeting_dataset())
 @pytest.mark.asyncio
 async def test_greeting(test_case: LLMTestCase) -> None:
-    # answer_relevancy_metric = ContextualRelevancyMetric(
-    #    threshold=0.75, include_reason=True, model=DeepEvalLLM.from_name("ollama:llama3.1")
-    # )
     correctness_metric = GEval(
         name="Correctness",
-        criteria="The response must be a greeting in the same language as the input language.",
-        evaluation_params=[LLMTestCaseParams.INPUT, LLMTestCaseParams.ACTUAL_OUTPUT, LLMTestCaseParams.EXPECTED_OUTPUT],
+        criteria="""The assistant's response should include a greeting and an offer to help.
+The response must be in the same language as the input. No tools should be used, except for reasoning.""",
+        evaluation_params=[
+            LLMTestCaseParams.INPUT,
+            LLMTestCaseParams.ACTUAL_OUTPUT,
+            LLMTestCaseParams.EXPECTED_OUTPUT,
+            LLMTestCaseParams.TOOLS_CALLED,
+        ],
     )
 
     assert_test(test_case, [correctness_metric])
-    # assert_test(to_conversation_test_case(agent=create_agent(), turns=[test_case]), [answer_relevancy_metric])

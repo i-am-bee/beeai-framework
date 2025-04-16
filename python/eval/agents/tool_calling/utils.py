@@ -39,6 +39,7 @@ def tool_to_tool_call(
 
 async def invoke_agent(agent: ToolCallingAgent, test_case: LLMTestCase) -> None:
     response = await agent.run(prompt=test_case.input)
+    test_case.tools_called = []
     test_case.actual_output = response.result.text
     for index, step in enumerate(response.state.steps):
         if not step.tool or step.ability:
