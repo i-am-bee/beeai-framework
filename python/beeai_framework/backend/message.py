@@ -179,6 +179,12 @@ class SystemMessage(Message[MessageTextContent]):
             meta,
         )
 
+    def to_plain(self) -> dict[str, Any]:
+        return {
+            "role": self.role.value,
+            "content": "\n".join([m.text for m in self.content]),
+        }
+
 
 UserMessageContent = MessageTextContent | MessageImageContent
 
