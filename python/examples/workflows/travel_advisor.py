@@ -10,8 +10,13 @@ from beeai_framework.workflows.agent import AgentWorkflow, AgentWorkflowInput
 
 
 async def main() -> None:
-    destination = input("Enter your travel destination (e.g., Boston, MA): ")
-    travel_dates = input("Enter your travel dates (e.g., Mar 23-25, 2025): ")
+    destination = ""
+    while not destination:
+        destination = input("Enter your travel destination (e.g., Boston, MA): ").strip()
+
+    travel_dates = ""
+    while not travel_dates:
+        travel_dates = input("Enter your travel dates (e.g., Mar 23-25, 2025): ").strip()
 
     llm = ChatModel.from_name("ollama:llama3.1")
 
@@ -43,15 +48,15 @@ async def main() -> None:
     response = await workflow.run(
         inputs=[
             AgentWorkflowInput(
-                prompt=f"Provide a comprehensive weather summary for {destination} from {travel_dates}.",
+                prompt=f"Provide a comprehensive weather summary for '{destination}' from '{travel_dates}'.",
                 expected_output="Essential weather details such as chance of rain, temperature and wind. Only report information that is available.",  # noqa: E501
             ),
             AgentWorkflowInput(
-                prompt=f"Search for a set of activities close to {destination} from {travel_dates} that are appropriate in light of the weather conditions.",  # noqa: E501
+                prompt=f"Search for a set of activities close to '{destination}' from '{travel_dates}' that are appropriate in light of the weather conditions.",  # noqa: E501
                 expected_output="A list of activities including location and description that are weather appropriate.",
             ),
             AgentWorkflowInput(
-                prompt=f"Consider the weather report and recommended activities for the trip to {destination} from {travel_dates} and provide a coherent summary.",  # noqa: E501
+                prompt=f"Consider the weather report and recommended activities for the trip to '{destination}' from '{travel_dates}' and provide a coherent summary.",  # noqa: E501
                 expected_output="A summary of the trip that the traveler could take with them. Break it down by day including weather, location and helpful tips.",  # noqa: E501
             ),
         ]

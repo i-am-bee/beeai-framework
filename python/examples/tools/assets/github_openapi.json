@@ -1,0 +1,320 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "version": "1.1.4",
+    "title": "GitHub v3 REST API",
+    "description": "GitHub's v3 REST API.",
+    "license": {
+      "name": "MIT",
+      "url": "https://spdx.org/licenses/MIT"
+    },
+    "termsOfService": "https://docs.github.com/articles/github-terms-of-service",
+    "contact": {
+      "name": "Support",
+      "url": "https://support.github.com/contact?tags=dotcom-rest-api"
+    },
+    "x-github-plan": "api.github.com"
+  },
+  "servers": [
+    {
+      "url": "https://api.github.com"
+    }
+  ],
+  "externalDocs": {
+    "description": "GitHub v3 REST API",
+    "url": "https://docs.github.com/rest/"
+  },
+  "paths": {
+    "/orgs/{org}": {
+      "get": {
+        "summary": "Get an organization",
+        "description": "Gets information about an organization.\n\nWhen the value of `two_factor_requirement_enabled` is `true`, the organization requires all members, billing managers, and outside collaborators to enable [two-factor authentication](https://docs.github.com/articles/securing-your-account-with-two-factor-authentication-2fa/).\n\nTo see the full details about an organization, the authenticated user must be an organization owner.\n\nOAuth app tokens and personal access tokens (classic) need the `admin:org` scope to see the full details about an organization.\n\nTo see information about an organization's GitHub plan, GitHub Apps need the `Organization plan` permission.",
+        "tags": ["orgs"],
+        "operationId": "orgs/get",
+        "externalDocs": {
+          "description": "API method documentation",
+          "url": "https://docs.github.com/rest/orgs/orgs#get-an-organization"
+        },
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/org"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/organization-full"
+                },
+                "examples": {
+                  "default-response": {
+                    "$ref": "#/components/examples/organization-full"
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "$ref": "#/components/responses/not_found"
+          }
+        },
+        "x-github": {
+          "githubCloudOnly": false,
+          "enabledForGitHubApps": true,
+          "category": "orgs",
+          "subcategory": "orgs"
+        }
+      }
+    },
+    "/organizations": {
+      "get": {
+        "summary": "List organizations",
+        "description": "Lists all organizations, in the order that they were created.\n\n> [!NOTE]\n> Pagination is powered exclusively by the `since` parameter. Use the [Link header](https://docs.github.com/rest/guides/using-pagination-in-the-rest-api#using-link-headers) to get the URL for the next page of organizations.",
+        "tags": ["orgs"],
+        "operationId": "orgs/list",
+        "externalDocs": {
+          "description": "API method documentation",
+          "url": "https://docs.github.com/rest/orgs/orgs#list-organizations"
+        },
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/since-org"
+          },
+          {
+            "$ref": "#/components/parameters/per-page"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/organization-simple"
+                  }
+                },
+                "examples": {
+                  "default": {
+                    "$ref": "#/components/examples/organization-simple-items"
+                  }
+                }
+              }
+            },
+            "headers": {
+              "Link": {
+                "example": "<https://api.github.com/organizations?since=135>; rel=\"next\"",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "304": {
+            "$ref": "#/components/responses/not_modified"
+          }
+        },
+        "x-github": {
+          "githubCloudOnly": false,
+          "enabledForGitHubApps": true,
+          "category": "orgs",
+          "subcategory": "orgs"
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "organization-full": {
+        "title": "Organization Full",
+        "description": "Organization Full",
+        "type": "object",
+        "properties": {
+          "login": {
+            "type": "string",
+            "examples": ["github"]
+          },
+          "id": {
+            "type": "integer",
+            "examples": [1]
+          },
+          "node_id": {
+            "type": "string",
+            "examples": ["MDEyOk9yZ2FuaXphdGlvbjE="]
+          },
+          "url": {
+            "type": "string",
+            "format": "uri",
+            "examples": ["https://api.github.com/orgs/github"]
+          }
+        }
+      },
+      "organization-simple": {
+        "title": "Organization Simple",
+        "description": "A GitHub organization.",
+        "type": "object",
+        "properties": {
+          "login": {
+            "type": "string",
+            "examples": ["github"]
+          },
+          "id": {
+            "type": "integer",
+            "examples": [1]
+          },
+          "node_id": {
+            "type": "string",
+            "examples": ["MDEyOk9yZ2FuaXphdGlvbjE="]
+          },
+          "url": {
+            "type": "string",
+            "format": "uri",
+            "examples": ["https://api.github.com/orgs/github"]
+          },
+          "repos_url": {
+            "type": "string",
+            "format": "uri",
+            "examples": ["https://api.github.com/orgs/github/repos"]
+          },
+          "events_url": {
+            "type": "string",
+            "format": "uri",
+            "examples": ["https://api.github.com/orgs/github/events"]
+          },
+          "hooks_url": {
+            "type": "string",
+            "examples": ["https://api.github.com/orgs/github/hooks"]
+          },
+          "issues_url": {
+            "type": "string",
+            "examples": ["https://api.github.com/orgs/github/issues"]
+          },
+          "members_url": {
+            "type": "string",
+            "examples": ["https://api.github.com/orgs/github/members{/member}"]
+          },
+          "public_members_url": {
+            "type": "string",
+            "examples": ["https://api.github.com/orgs/github/public_members{/member}"]
+          },
+          "avatar_url": {
+            "type": "string",
+            "examples": ["https://github.com/images/error/octocat_happy.gif"]
+          },
+          "description": {
+            "type": ["string", "null"],
+            "examples": ["A great organization"]
+          }
+        },
+        "required": [
+          "login",
+          "url",
+          "id",
+          "node_id",
+          "repos_url",
+          "events_url",
+          "hooks_url",
+          "issues_url",
+          "members_url",
+          "public_members_url",
+          "avatar_url",
+          "description"
+        ]
+      },
+      "basic-error": {
+        "title": "Basic Error",
+        "description": "Basic Error",
+        "type": "object",
+        "properties": {
+          "message": {
+            "type": "string"
+          },
+          "documentation_url": {
+            "type": "string"
+          },
+          "url": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "examples": {
+      "organization-full": {
+        "value": {
+          "login": "github",
+          "id": 1,
+          "node_id": "MDEyOk9yZ2FuaXphdGlvbjE=",
+          "url": "https://api.github.com/orgs/github"
+        }
+      },
+      "organization-simple-items": {
+        "value": [
+          {
+            "login": "github",
+            "id": 1,
+            "node_id": "MDEyOk9yZ2FuaXphdGlvbjE=",
+            "url": "https://api.github.com/orgs/github",
+            "repos_url": "https://api.github.com/orgs/github/repos",
+            "events_url": "https://api.github.com/orgs/github/events",
+            "hooks_url": "https://api.github.com/orgs/github/hooks",
+            "issues_url": "https://api.github.com/orgs/github/issues",
+            "members_url": "https://api.github.com/orgs/github/members{/member}",
+            "public_members_url": "https://api.github.com/orgs/github/public_members{/member}",
+            "avatar_url": "https://github.com/images/error/octocat_happy.gif",
+            "description": "A great organization"
+          }
+        ]
+      }
+    },
+    "parameters": {
+      "org": {
+        "name": "org",
+        "description": "The organization name. The name is not case sensitive.",
+        "in": "path",
+        "required": true,
+        "schema": {
+          "type": "string"
+        }
+      },
+      "since-org": {
+        "name": "since",
+        "description": "An organization ID. Only return organizations with an ID greater than this ID.",
+        "in": "query",
+        "required": false,
+        "schema": {
+          "type": "integer"
+        }
+      },
+      "per-page": {
+        "name": "per_page",
+        "description": "The number of results per page (max 100). For more information, see \"[Using pagination in the REST API](https://docs.github.com/rest/using-the-rest-api/using-pagination-in-the-rest-api).\"",
+        "in": "query",
+        "schema": {
+          "type": "integer",
+          "default": 30
+        }
+      }
+    },
+    "responses": {
+      "not_modified": {
+        "description": "Not modified"
+      },
+      "not_found": {
+        "description": "Resource not found",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/basic-error"
+            }
+          }
+        }
+      }
+    }
+  }
+}

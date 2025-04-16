@@ -3792,6 +3792,18 @@ docs = ["myst-parser", "pydata-sphinx-theme", "sphinx"]
 test = ["argcomplete (>=3.0.3)", "mypy (>=1.7.0)", "pre-commit", "pytest (>=7.0,<8.2)", "pytest-mock", "pytest-mypy-testing"]
 
 [[package]]
+name = "types-aiofiles"
+version = "24.1.0.20250326"
+description = "Typing stubs for aiofiles"
+optional = false
+python-versions = ">=3.9"
+groups = ["dev"]
+files = [
+    {file = "types_aiofiles-24.1.0.20250326-py3-none-any.whl", hash = "sha256:dfb58c9aa18bd449e80fb5d7f49dc3dd20d31de920a46223a61798ee4a521a70"},
+    {file = "types_aiofiles-24.1.0.20250326.tar.gz", hash = "sha256:c4bbe432fd043911ba83fb635456f5cc54f6d05fda2aadf6bef12a84f07a6efe"},
+]
+
+[[package]]
 name = "types-cachetools"
 version = "5.5.0.20240820"
 description = "Typing stubs for cachetools"
@@ -3813,6 +3825,18 @@ groups = ["dev"]
 files = [
     {file = "types_chevron-0.14.2.20250103-py3-none-any.whl", hash = "sha256:b255b2a71d83d9c548183d4eeadea874fbaec64b09f00d3bf3f43d3731c1c255"},
     {file = "types_chevron-0.14.2.20250103.tar.gz", hash = "sha256:9dacdc9b01bdf717bcb7930f0602b9b74add054ebf3cf38d282b7e2b64c9d076"},
+]
+
+[[package]]
+name = "types-pyyaml"
+version = "6.0.12.20250402"
+description = "Typing stubs for PyYAML"
+optional = false
+python-versions = ">=3.9"
+groups = ["dev"]
+files = [
+    {file = "types_pyyaml-6.0.12.20250402-py3-none-any.whl", hash = "sha256:652348fa9e7a203d4b0d21066dfb00760d3cbd5a15ebb7cf8d33c88a49546681"},
+    {file = "types_pyyaml-6.0.12.20250402.tar.gz", hash = "sha256:d7c13c3e6d335b6af4b0122a01ff1d270aba84ab96d1a1a1063ecba3e13ec075"},
 ]
 
 [[package]]
@@ -4424,4 +4448,4 @@ wikipedia = ["wikipedia-api"]
 [metadata]
 lock-version = "2.1"
 python-versions = ">= 3.11,<4.0"
-content-hash = "df93c3ad15020e42be02692783d943cf621ccc133430c9bd200b15778900340d"
+content-hash = "0df17498b181c40073e13bf2143b0f82e75742cc57272c56828dce7b7dfba96f"

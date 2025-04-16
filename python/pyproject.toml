@@ -59,6 +59,8 @@ pytest-cov = "^6.0.0"
 types-chevron = "^0.14.2.20250103"
 types-requests = "^2.32.0.20241016"
 types-cachetools = "^5.5.0.20240820"
+types-aiofiles = "^24.1.0.20250326"
+types-PyYAML = "^6.0.12.20250402"
 
 [tool.poetry.extras]
 langchain = ["langchain-core", "langchain-community", "langgraph", "langchain-ollama"]
