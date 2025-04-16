@@ -60,7 +60,7 @@ async def main() -> None:
                 expected_output="A list of activities including location and description that are weather appropriate.",
             ),
             AgentWorkflowInput(
-                prompt=f"Consider the weather report and recommended activities for the trip to '{destination}' from {travel_dates} and provide a coherent summary.",  # noqa: E501
+                prompt=f"Consider the weather report and recommended activities for the trip to '{destination}' from '{travel_dates}' and provide a coherent summary.",  # noqa: E501
                 expected_output="A summary of the trip that the traveler could take with them. Break it down by day including weather, location and helpful tips.",  # noqa: E501
             ),
         ]
