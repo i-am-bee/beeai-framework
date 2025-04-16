@@ -2,15 +2,11 @@ import asyncio
 import sys
 import traceback
 
-from dotenv import load_dotenv
-
 from beeai_framework.backend import ChatModel
 from beeai_framework.errors import FrameworkError
 from beeai_framework.tools.search.duckduckgo import DuckDuckGoSearchTool
 from beeai_framework.tools.weather import OpenMeteoTool
 from beeai_framework.workflows.agent import AgentWorkflow, AgentWorkflowInput
-
-load_dotenv()
 
 
 async def main() -> None:
