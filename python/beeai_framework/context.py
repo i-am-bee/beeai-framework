@@ -194,6 +194,7 @@ class RunContext:
             finally:
                 await emitter.emit("finish", None)
                 context.destroy()
+                emitter.destroy()
 
         return Run(handler, context)
 
