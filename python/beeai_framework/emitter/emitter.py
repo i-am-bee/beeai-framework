@@ -55,7 +55,7 @@ class EventMeta(BaseModel):
     created_at: datetime
     source: InstanceOf["Emitter"]
     creator: object
-    context: object
+    context: dict[str, Any]
     group_id: str | None = None
     trace: InstanceOf[EventTrace] | None = None
     data_type: type
