@@ -9,11 +9,11 @@ from mcp import ClientSession, StdioServerParameters
 from mcp.client.stdio import stdio_client
 
 from beeai_framework.agents import AgentExecutionConfig
-from beeai_framework.agents.react import ReActAgent
+from beeai_framework.agents.tool_calling import ToolCallingAgent
 from beeai_framework.backend import ChatModel, ChatModelParameters
 from beeai_framework.emitter import EventMeta
 from beeai_framework.errors import FrameworkError
-from beeai_framework.memory import TokenMemory
+from beeai_framework.memory import UnconstrainedMemory
 from beeai_framework.tools.mcp import MCPTool
 from beeai_framework.tools.weather import OpenMeteoTool
 
@@ -32,17 +32,15 @@ server_params = StdioServerParameters(
 )
 
 
-async def slack_tool() -> MCPTool:
-    async with stdio_client(server_params) as (read, write), ClientSession(read, write) as session:
-        await session.initialize()
-        # Discover Slack tools via MCP client
-        slacktools = await MCPTool.from_client(session)
-        filter_tool = filter(lambda tool: tool.name == "slack_post_message", slacktools)
-        slack = list(filter_tool)
-        return slack[0]
+async def slack_tool(session: ClientSession) -> MCPTool:
+    # Discover Slack tools via MCP client
+    slacktools = await MCPTool.from_client(session)
+    filter_tool = filter(lambda tool: tool.name == "slack_post_message", slacktools)
+    slack = list(filter_tool)
+    return slack[0]
 
 
-async def create_agent() -> ReActAgent:
+async def create_agent(session: ClientSession) -> ToolCallingAgent:
     """Create and configure the agent with tools and LLM"""
 
     # Other models to try:
@@ -50,24 +48,23 @@ async def create_agent() -> ReActAgent:
     # "deepseek-r1"
     # ensure the model is pulled before running
     llm = ChatModel.from_name(
-        "ollama:granite3.1-dense:8b",
+        "ollama:llama3.1",
         ChatModelParameters(temperature=0),
     )
 
     # Configure tools
-    slack = await slack_tool()
+    slack = await slack_tool(session)
     weather = OpenMeteoTool()
 
     # Create agent with memory and tools and custom system prompt template
-    agent = ReActAgent(
+    agent = ToolCallingAgent(
         llm=llm,
         tools=[slack, weather],
-        memory=TokenMemory(llm),
+        memory=UnconstrainedMemory(),
         templates={
             "system": lambda template: template.update(
                 defaults={
-                    "instructions": """
-You are a helpful assistant. When prompted to post to Slack, send messages to the #bee-playground channel."""
+                    "instructions": """IMPORTANT: When the user mentions Slack, you must interact with the Slack tool before sending the final answer.""",  # noqa: E501
                 }
             )
         },
@@ -84,16 +81,19 @@ def print_events(data: Any, event: EventMeta) -> None:
 async def main() -> None:
     """Main application loop"""
 
-    # Create agent
-    agent = await create_agent()
+    async with stdio_client(server_params) as (read, write), ClientSession(read, write) as session:
+        await session.initialize()
 
-    # Run agent with the prompt
-    response = await agent.run(
-        prompt="Post to Slack the current temperature in Boston.",
-        execution=AgentExecutionConfig(max_retries_per_step=3, total_max_retries=10, max_iterations=20),
-    ).on("*", print_events)
+        # Create agent
+        agent = await create_agent(session)
 
-    print("Agent 🤖 : ", response.result.text)
+        # Run agent with the prompt
+        response = await agent.run(
+            prompt="Post the current temperature in Prague to the '#bee-playground-xxx' Slack channel.",
+            execution=AgentExecutionConfig(max_retries_per_step=3, total_max_retries=10, max_iterations=20),
+        ).on("*", print_events)
+
+        print("Agent 🤖 : ", response.result.text)
 
 
 if __name__ == "__main__":
