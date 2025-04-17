@@ -156,8 +156,10 @@ class RunContext:
                 await emitter.emit("start", None)
 
                 async def _context_storage_run() -> R:
-                    storage.set(context)
-                    return await fn(context)
+                    storage_token = storage.set(context)
+                    response = await fn(context)
+                    storage.reset(storage_token)
+                    return response
 
                 async def _context_signal_aborted() -> None:
                     cancel_future = asyncio.get_event_loop().create_future()
@@ -194,6 +196,7 @@ class RunContext:
             finally:
                 await emitter.emit("finish", None)
                 context.destroy()
+                emitter.destroy()
 
         return Run(handler, context)
 
