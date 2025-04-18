@@ -172,3 +172,6 @@ def find_first_pair(
         index += 1
 
     return None
+
+def to_snake_case(name: str) -> str:
+    return re.sub(r"(?<!^)(?=[A-Z])", "_", name).lower()

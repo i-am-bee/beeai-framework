@@ -18,12 +18,15 @@ from collections.abc import Iterable, Iterator
 from typing import TYPE_CHECKING, Any, Self
 
 from beeai_framework.backend.message import AnyMessage
+from beeai_framework.plugins.plugin import Plugin
+from beeai_framework.plugins.types import Pluggable
+from beeai_framework.plugins.utils import plugin
 
 if TYPE_CHECKING:
     from beeai_framework.memory.readonly_memory import ReadOnlyMemory
 
 
-class BaseMemory(ABC):
+class BaseMemory(ABC, Pluggable):
     """Abstract base class for all memory implementations."""
 
     @property
@@ -93,3 +96,6 @@ class BaseMemory(ABC):
             "name": type(self).__name__,
             "messages": self.messages,
         }
+
+    def as_plugin(self) -> Plugin[Any, Any]:
+        return plugin(self.add, name=f"{self.__class__.__name__}", description="Memory plugin")

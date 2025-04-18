@@ -12,8 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import inspect
+import typing
 from abc import ABC
-from collections.abc import Sequence
+from collections.abc import Callable, Sequence
 from contextlib import suppress
 from logging import Logger
 from typing import Any, Literal, Optional, TypeVar, Union
@@ -21,6 +23,8 @@ from typing import Any, Literal, Optional, TypeVar, Union
 from pydantic import BaseModel, ConfigDict, Field, GetJsonSchemaHandler, create_model
 from pydantic.json_schema import JsonSchemaValue
 from pydantic_core import CoreSchema, SchemaValidator
+
+from beeai_framework.utils.dicts import exclude_keys
 
 logger = Logger(__name__)
 
@@ -128,3 +132,45 @@ def update_model(target: T, *, sources: list[T | None | bool], exclude_unset: bo
 
         for k, v in source.model_dump(exclude_unset=exclude_unset, exclude_defaults=True).items():
             setattr(target, k, v)
+
+class AnyModel(BaseModel):
+    model_config = ConfigDict(extra="allow", arbitrary_types_allowed=True)
+
+
+@typing.no_type_check
+def get_input_schema(fn: Callable, /, *, excluded: set[str] | None = None) -> type[BaseModel]:
+    excluded = excluded or set()
+    assert excluded is not None
+
+    input_model_name = fn.__name__
+
+    args, _, _, defaults, kwonlyargs, kwonlydefaults, annotations = inspect.getfullargspec(fn)
+    defaults = defaults or []
+    args = args or []
+
+    non_default_args = len(args) - len(defaults)
+    try:
+        defaults = (...,) * non_default_args + defaults
+    except TypeError:
+        defaults = [
+            ...,
+        ] * non_default_args + defaults
+
+    keyword_only_params = {
+        param: (Any, Field(kwonlydefaults[param])) if param in kwonlydefaults else Any for param in kwonlyargs
+    }
+    params = {
+        param: (annotations.get(param, Any), Field(default)) for param, default in zip(args, defaults, strict=False)
+    }
+
+    input_model = create_model(
+        input_model_name,
+        **exclude_keys(params, excluded),
+        **exclude_keys(keyword_only_params, excluded),
+        __config__=ConfigDict(
+            extra="allow",
+            arbitrary_types_allowed=True,
+        ),
+    )
+
+    return input_model

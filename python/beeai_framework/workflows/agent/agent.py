@@ -28,14 +28,18 @@ from beeai_framework.agents.types import (
     AgentMeta,
 )
 from beeai_framework.backend.chat import ChatModel
-from beeai_framework.backend.message import AnyMessage, AssistantMessage, UserMessage
+from beeai_framework.backend.message import AnyMessage, AssistantMessage, Message, UserMessage
 from beeai_framework.context import Run
 from beeai_framework.memory.base_memory import BaseMemory
 from beeai_framework.memory.readonly_memory import ReadOnlyMemory
 from beeai_framework.memory.unconstrained_memory import UnconstrainedMemory
+from beeai_framework.plugins.plugin import Plugin
+from beeai_framework.plugins.types import Pluggable
+from beeai_framework.plugins.utils import plugin
 from beeai_framework.tools.tool import AnyTool
 from beeai_framework.utils.dicts import exclude_none
 from beeai_framework.utils.lists import remove_falsy
+from beeai_framework.utils.models import to_model
 from beeai_framework.workflows.types import WorkflowRun
 from beeai_framework.workflows.workflow import Workflow
 
@@ -56,6 +60,9 @@ class AgentWorkflowInput(BaseModel):
         return AssistantMessage(text)
 
 
+AgentWorkflowOutput = WorkflowRun[Any, Any]
+
+
 class Schema(BaseModel):
     inputs: list[InstanceOf[AgentWorkflowInput]]
     current_input: InstanceOf[AgentWorkflowInput] | None = None
@@ -63,7 +70,7 @@ class Schema(BaseModel):
     new_messages: list[InstanceOf[AnyMessage]] = []
 
 
-class AgentWorkflow:
+class AgentWorkflow(Pluggable[Any, AgentWorkflowOutput]):
     def __init__(self, name: str = "AgentWorkflow") -> None:
         self._workflow = Workflow(name=name, schema=Schema)
 
@@ -74,7 +81,9 @@ class AgentWorkflow:
     def run(self, inputs: Sequence[AgentWorkflowInput | AnyMessage]) -> Run[WorkflowRun[Any, Any]]:
         schema = Schema(
             inputs=[
-                input if isinstance(input, AgentWorkflowInput) else AgentWorkflowInput.from_message(input)
+                to_model(AgentWorkflowInput, input)
+                if not isinstance(input, Message)
+                else AgentWorkflowInput.from_message(input)
                 for input in inputs
             ],
         )
@@ -164,3 +173,16 @@ class AgentWorkflow:
 
         self.workflow.add_step(name or f"Agent{''.join(random.choice(string.ascii_letters) for _ in range(4))}", step)
         return self
+
+    def as_plugin(self) -> Plugin[AgentWorkflowInput, AgentWorkflowOutput]:
+        @plugin(
+            name=self.workflow.name,
+            description="AgentWorkflow",  # TODO
+            output_schema=AgentWorkflowOutput,
+            emitter=self._workflow.emitter.child(namespace=["plugin"], reverse=True),
+        )
+        async def connector(inputs: Sequence[AgentWorkflowInput | AnyMessage]) -> AgentWorkflowOutput:
+            print(inputs)
+            return await self.run(inputs=inputs)
+
+        return connector

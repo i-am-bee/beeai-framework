@@ -51,6 +51,9 @@ from beeai_framework.cache.null_cache import NullCache
 from beeai_framework.context import Run, RunContext
 from beeai_framework.emitter import Emitter
 from beeai_framework.logger import Logger
+from beeai_framework.plugins.plugin import Plugin
+from beeai_framework.plugins.types import Pluggable
+from beeai_framework.plugins.utils import plugin
 from beeai_framework.retryable import Retryable, RetryableConfig, RetryableContext, RetryableInput
 from beeai_framework.template import PromptTemplate, PromptTemplateInput
 from beeai_framework.tools.tool import AnyTool, Tool
@@ -81,7 +84,9 @@ class ChatModelKwargs(TypedDict, total=False):
 _ChatModelKwargsAdapter = TypeAdapter(ChatModelKwargs)
 
 
-class ChatModel(ABC):
+class ChatModel(ABC, Pluggable[ChatModelInput, ChatModelOutput]):
+    parameters: ChatModelParameters
+    cache: ChatModelCache
     tool_choice_support: ClassVar[set[str]] = {"required", "none", "single", "auto"}
     tool_call_fallback_via_response_format: bool
     model_supports_tool_calling: bool
@@ -400,3 +405,17 @@ IMPORTANT: You MUST answer with a JSON object that matches the JSON schema above
     @classmethod
     def get_default_parameters(cls) -> ChatModelParameters:
         return ChatModelParameters(temperature=0)
+
+    def as_plugin(self) -> Plugin[ChatModelInput, ChatModelOutput]:
+        @plugin(
+            name=f"{self.provider_id}:{self.model_id}",
+            description=f"${self.provider_id} Chat Model",
+            input_schema=ChatModelInput,
+            output_schema=ChatModelOutput,
+            emitter=self.emitter.child(namespace=["plugin"], reverse=True),
+        )
+        async def connector(**kwargs: Any) -> ChatModelOutput:
+            input: ChatModelInput = ChatModelInput.model_validate(kwargs)
+            return await self.create(**input.model_dump())
+
+        return connector

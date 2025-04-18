@@ -12,16 +12,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from typing import ClassVar
 
 from beeai_framework.tools import ToolOutput
 from beeai_framework.tools.code.storage import PythonFile
 
 
-class PythonToolOutput(ToolOutput):
-    FILE_PREFIX = "urn:bee:file"
+class PythonToolOutput(ToolOutput[str]):
+    FILE_PREFIX: ClassVar[str] = "urn:bee:file"
 
     def __init__(self, stdout: str, stderr: str, exit_code: int, output_files: list[PythonFile]) -> None:
-        super().__init__()
+        super().__init__(result=stdout or stderr)
 
         self.stdout = stdout
         self.stderr = stderr
