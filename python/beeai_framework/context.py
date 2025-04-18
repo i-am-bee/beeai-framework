@@ -16,13 +16,14 @@
 import asyncio
 import contextlib
 import uuid
-from collections.abc import Awaitable, Callable, Generator
+from asyncio import Queue
+from collections.abc import AsyncGenerator, Awaitable, Callable, Generator
 from contextvars import ContextVar
 from datetime import UTC, datetime
 from types import NoneType
 from typing import Any, Generic, Protocol, Self, TypeVar
 
-from beeai_framework.emitter import Callback, Emitter, EmitterOptions, EventTrace, Matcher
+from beeai_framework.emitter import Callback, Emitter, EmitterOptions, EventMeta, EventTrace, Matcher
 from beeai_framework.errors import AbortError, FrameworkError
 from beeai_framework.logger import Logger
 from beeai_framework.utils import AbortController, AbortSignal
@@ -49,9 +50,36 @@ class Run(Generic[R]):
         self.handler = ensure_async(handler)
         self._tasks: list[tuple[Callable[..., Any], list[Any]]] = []
         self._run_context = context
+        self._events = Queue[tuple[Any, EventMeta] | None]()
+
+        async def add_to_queue(data: Any, event: EventMeta) -> None:
+            await self._events.put((data, event))
+
+        self._run_context.emitter.match(
+            "*", add_to_queue, EmitterOptions(persistent=True, is_blocking=True, match_nested=False)
+        )
 
     def __await__(self) -> Generator[Any, None, R]:
         return self._run_tasks().__await__()
+
+    async def __aiter__(self) -> AsyncGenerator[Any, None]:
+        async def run() -> None:
+            await self
+
+        task = asyncio.create_task(run())
+
+        while True:
+            try:
+                item = await self._events.get()
+                if item is not None:
+                    yield item
+                self._events.task_done()
+                if item is None:
+                    break
+            except asyncio.CancelledError:
+                task.cancel()
+
+        await task
 
     def observe(self, fn: Callable[[Emitter], Any]) -> Self:
         self._tasks.append((fn, [self._run_context.emitter]))
@@ -76,7 +104,10 @@ class Run(Generic[R]):
         for fn, params in tasks:
             await ensure_async(fn)(*params)
 
-        return await self.handler()
+        try:
+            return await self.handler()
+        finally:
+            await self._events.put(None)
 
     def _set_context(self, context: dict[str, Any]) -> None:
         self._run_context.context.update(context)
