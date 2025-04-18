@@ -4,7 +4,7 @@
 name = "acp-sdk"
 version = "0.0.6"
 description = "Agent Communication Protocol SDK"
-optional = false
+optional = true
 python-versions = "<4.0,>=3.10"
 groups = ["main"]
 files = [
@@ -683,7 +683,7 @@ files = [
 name = "deprecated"
 version = "1.2.18"
 description = "Python @deprecated decorator to deprecate old python classes, functions or methods."
-optional = false
+optional = true
 python-versions = "!=3.0.*,!=3.1.*,!=3.2.*,!=3.3.*,>=2.7"
 groups = ["main"]
 files = [
@@ -1098,7 +1098,7 @@ zstd = ["zstandard (>=0.18.0)"]
 name = "httpx-sse"
 version = "0.4.0"
 description = "Consume Server-Sent Event (SSE) messages with HTTPX."
-optional = false
+optional = true
 python-versions = ">=3.8"
 groups = ["main"]
 files = [
@@ -2298,7 +2298,7 @@ voice-helpers = ["numpy (>=2.0.2)", "sounddevice (>=0.5.1)"]
 name = "opentelemetry-api"
 version = "1.31.1"
 description = "OpenTelemetry Python API"
-optional = false
+optional = true
 python-versions = ">=3.8"
 groups = ["main"]
 files = [
@@ -3426,7 +3426,7 @@ crt = ["botocore[crt] (>=1.37.4,<2.0a.0)"]
 name = "setuptools"
 version = "75.8.0"
 description = "Easily download, build, install, upgrade, and uninstall Python packages"
-optional = false
+optional = true
 python-versions = ">=3.9"
 groups = ["main"]
 files = [
@@ -3568,7 +3568,7 @@ sqlcipher = ["sqlcipher3_binary"]
 name = "sse-starlette"
 version = "2.2.1"
 description = "SSE plugin for Starlette"
-optional = false
+optional = true
 python-versions = ">=3.9"
 groups = ["main"]
 files = [
@@ -3588,7 +3588,7 @@ uvicorn = ["uvicorn (>=0.34.0)"]
 name = "starlette"
 version = "0.46.1"
 description = "The little ASGI library that shines."
-optional = false
+optional = true
 python-versions = ">=3.9"
 groups = ["main"]
 files = [
@@ -3920,7 +3920,7 @@ zstd = ["zstandard (>=0.18.0)"]
 name = "uvicorn"
 version = "0.34.0"
 description = "The lightning-fast ASGI server."
-optional = false
+optional = true
 python-versions = ">=3.9"
 groups = ["main"]
 files = [
@@ -3987,7 +3987,7 @@ requests = "*"
 name = "wrapt"
 version = "1.17.2"
 description = "Module for decorators, wrappers and monkey patching."
-optional = false
+optional = true
 python-versions = ">=3.8"
 groups = ["main"]
 files = [
@@ -4438,6 +4438,7 @@ cffi = {version = ">=1.11", markers = "platform_python_implementation == \"PyPy\
 cffi = ["cffi (>=1.11)"]
 
 [extras]
+acp = []
 duckduckgo = ["duckduckgo-search"]
 huggingface = []
 langchain = ["langchain-community", "langchain-core", "langchain-ollama", "langgraph"]
@@ -4448,4 +4449,4 @@ wikipedia = ["wikipedia-api"]
 [metadata]
 lock-version = "2.1"
 python-versions = ">= 3.11,<4.0"
-content-hash = "0df17498b181c40073e13bf2143b0f82e75742cc57272c56828dce7b7dfba96f"
+content-hash = "1d8f8925ecbe6ee02e5a26a885914d99cd4c56fa8eb3c7b3fcb78c1c81a640c9"

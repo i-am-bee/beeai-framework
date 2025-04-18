@@ -19,18 +19,24 @@ from contextlib import AsyncExitStack
 from typing import Any
 
 import anyio
-from acp import ClientSession, ServerNotification
-from acp.client.sse import sse_client
-from acp.shared.session import ReceiveResultT
-from acp.types import (
-    AgentRunProgressNotification,
-    AgentRunProgressNotificationParams,
-    ClientRequest,
-    RequestParams,
-    RunAgentRequest,
-    RunAgentRequestParams,
-    RunAgentResult,
-)
+
+try:
+    from acp import ClientSession, ServerNotification
+    from acp.client.sse import sse_client
+    from acp.shared.session import ReceiveResultT
+    from acp.types import (
+        AgentRunProgressNotification,
+        AgentRunProgressNotificationParams,
+        ClientRequest,
+        RequestParams,
+        RunAgentRequest,
+        RunAgentRequestParams,
+        RunAgentResult,
+    )
+except ModuleNotFoundError as e:
+    raise ModuleNotFoundError(
+        "Optional module [acp] not found.\nRun 'pip install beeai-framework[acp]' to install."
+    ) from e
 
 from beeai_framework.agents.base import BaseAgent
 from beeai_framework.agents.errors import AgentError

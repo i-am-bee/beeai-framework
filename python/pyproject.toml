@@ -39,7 +39,7 @@ langchain-community = {version = "^0.3.19", optional = true}
 langgraph = {version = "^0.3.27", optional = true}
 langchain-ollama={version = "^0.3.1", optional = true}
 boto3 = {version = "^1.37.5", optional = true}
-acp-sdk = "^0.0.6"
+acp-sdk = {version = "~0.0.6", optional = true}
 cachetools = "^5.5.2"
 jsonref = "^1.1.0"
 
@@ -69,6 +69,7 @@ search = ["duckduckgo-search", "wikipedia-api"]
 duckduckgo = ["duckduckgo-search"]
 wikipedia = ["wikipedia-api"]
 mcp = ["mcp"]
+acp = ["acp"]
 
 
 [tool.mypy]
