@@ -228,6 +228,7 @@ def tool(
     name: str | None = ...,
     description: str | None = ...,
     input_schema: type[BaseModel] | None = ...,
+    with_context: bool = False,
 ) -> AnyTool: ...
 @typing.overload
 def tool(
@@ -235,6 +236,7 @@ def tool(
     name: str | None = ...,
     description: str | None = ...,
     input_schema: type[BaseModel] | None = ...,
+    with_context: bool = False,
 ) -> Callable[[TFunction], AnyTool]: ...
 def tool(
     tool_function: TFunction | None = None,
@@ -243,6 +245,7 @@ def tool(
     name: str | None = None,
     description: str | None = None,
     input_schema: type[BaseModel] | None = None,
+    with_context: bool = False,
 ) -> AnyTool | Callable[[TFunction], AnyTool]:
     def create_tool(fn: TFunction) -> AnyTool:
         tool_name = name or fn.__name__
@@ -268,6 +271,9 @@ def tool(
 
             async def _run(self, input: Any, options: ToolRunOptions | None, context: RunContext) -> ToolOutput:
                 tool_input_dict = input.model_dump()
+                if with_context:
+                    tool_input_dict["context"] = context
+
                 if inspect.iscoroutinefunction(fn):
                     result = await fn(**tool_input_dict)
                 else:

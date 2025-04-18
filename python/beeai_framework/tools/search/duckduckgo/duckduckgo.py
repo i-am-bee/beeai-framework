@@ -55,7 +55,7 @@ class DuckDuckGoSearchToolOutput(SearchToolOutput):
 
 class DuckDuckGoSearchTool(Tool[DuckDuckGoSearchToolInput, ToolRunOptions, DuckDuckGoSearchToolOutput]):
     name = "DuckDuckGo"
-    description = "Search for online trends, news, current events, real-time information, or research topics."
+    description = "Search for online trends, news, current events, real-time information or topics."
     input_schema = DuckDuckGoSearchToolInput
 
     def __init__(self, max_results: int = 10, safe_search: str = DuckDuckGoSearchType.STRICT) -> None:

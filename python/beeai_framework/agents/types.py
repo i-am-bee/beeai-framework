@@ -31,5 +31,5 @@ class AgentExecutionConfig(BaseModel):
 class AgentMeta(BaseModel):
     name: str
     description: str
-    tools: list[InstanceOf[AnyTool]]
+    tools: list[InstanceOf[AnyTool]] = []
     extra_description: str | None = None

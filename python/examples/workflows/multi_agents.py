@@ -18,7 +18,7 @@ async def main() -> None:
     workflow.add_agent(
         name="Researcher",
         role="A diligent researcher.",
-        instructions="You look up and provide information about a specific topic.",
+        instructions="You look up and provide detailed research for a given topic.",
         tools=[WikipediaTool()],
         llm=llm,
     )

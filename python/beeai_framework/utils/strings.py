@@ -50,6 +50,10 @@ def to_json(input: Any, *, indent: int | None = None, sort_keys: bool = True) ->
     return json.dumps(input, ensure_ascii=False, default=lambda o: o.__dict__, sort_keys=sort_keys, indent=indent)
 
 
+def from_json(input: str) -> Any:
+    return json.loads(input)
+
+
 def to_safe_word(phrase: str) -> str:
     # replace any non-alphanumeric char with _
     return re.sub(r"\W+", "_", phrase).lower()

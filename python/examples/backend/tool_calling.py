@@ -20,7 +20,7 @@ from beeai_framework.tools.weather.openmeteo import OpenMeteoTool
 
 
 async def main() -> None:
-    model = ChatModel.from_name("ollama:llama3.1", ChatModelParameters(temperature=0))
+    model = ChatModel.from_name("ollama:granite3.1-dense:8b", ChatModelParameters(temperature=0))
     tools: list[AnyTool] = [DuckDuckGoSearchTool(), OpenMeteoTool()]
     messages: list[AnyMessage] = [
         SystemMessage("You are a helpful assistant. Use tools to provide a correct answer."),
