@@ -71,7 +71,7 @@ class MCPTool(Tool[BaseModel, ToolRunOptions, JSONToolOutput]):
             name=self._tool.name, arguments=input_data.model_dump(exclude_none=True, exclude_unset=True)
         )
         logger.debug(f"Tool result: {result}")
-        return JSONToolOutput(result.content)
+        return JSONToolOutput(result.content)  # type: ignore
 
     @classmethod
     async def from_client(cls, session: ClientSession) -> list["MCPTool"]:

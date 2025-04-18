@@ -77,7 +77,7 @@ class WikipediaTool(Tool[WikipediaToolInput, ToolRunOptions, WikipediaToolOutput
         page_py = self.client.page(input.query)
 
         if not page_py.exists():
-            return WikipediaToolOutput([])
+            return WikipediaToolOutput([])  # type: ignore
 
         if input.language is not None and input.language in page_py.langlinks:
             page_py = page_py.langlinks[input.language]
@@ -89,7 +89,7 @@ class WikipediaTool(Tool[WikipediaToolInput, ToolRunOptions, WikipediaToolOutput
         else:
             description_output = page_py.summary
 
-        return WikipediaToolOutput(
+        return WikipediaToolOutput(  # type: ignore
             [
                 WikipediaToolResult(
                     title=page_py.title or input.query,

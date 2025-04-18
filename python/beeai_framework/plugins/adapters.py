@@ -12,28 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from typing import TypeVar
 
 from pydantic import BaseModel
 
-from beeai_framework.tools import ToolOutput
-from beeai_framework.utils.strings import to_json
-
-
-class SearchToolResult(BaseModel):
-    title: str
-    description: str
-    url: str
-
-
-class SearchToolOutput(ToolOutput[list[SearchToolResult]]):
-    def __init__(self, results: list[SearchToolResult]) -> None:
-        super().__init__(results)
-
-    def get_text_content(self) -> str:
-        return to_json(self.result)
-
-    def is_empty(self) -> bool:
-        return len(self.result) == 0
-
-    def sources(self) -> list[str]:
-        return [result.url for result in self.result]
+TInput = TypeVar("TInput", bound=BaseModel)
+TOutput = TypeVar("TOutput", bound=BaseModel, covariant=True)

@@ -57,3 +57,7 @@ def to_safe_word(phrase: str) -> str:
 
 def generate_random_string(length: int) -> str:
     return "".join(random.choices(string.ascii_uppercase + string.digits, k=length))
+
+
+def to_snake_case(name: str) -> str:
+    return re.sub(r"(?<!^)(?=[A-Z])", "_", name).lower()

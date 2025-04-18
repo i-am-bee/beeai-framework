@@ -91,7 +91,7 @@ class HumanTool(Tool[InputSchema, ToolRunOptions, JSONToolOutput]):
         user_input: str = self.tool_input.reader.ask_single_question("User 👤 (clarification) : ")
 
         # Return JSONToolOutput with the clarification
-        return JSONToolOutput(
+        return JSONToolOutput(  # type: ignore
             {
                 "clarification": user_input.strip(),
             }

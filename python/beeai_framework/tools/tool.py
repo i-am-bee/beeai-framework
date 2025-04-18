@@ -20,7 +20,7 @@ from collections.abc import Callable
 from functools import cached_property
 from typing import Any, Generic, Self, TypeAlias
 
-from pydantic import BaseModel, ConfigDict, ValidationError, create_model
+from pydantic import BaseModel, ValidationError
 from typing_extensions import TypeVar
 
 from beeai_framework.cache.base import BaseCache
@@ -29,6 +29,9 @@ from beeai_framework.context import Run, RunContext
 from beeai_framework.emitter.emitter import Emitter
 from beeai_framework.errors import FrameworkError
 from beeai_framework.logger import Logger
+from beeai_framework.plugins.plugin import Plugin
+from beeai_framework.plugins.types import Pluggable
+from beeai_framework.plugins.utils import plugin
 from beeai_framework.retryable import Retryable, RetryableConfig, RetryableContext, RetryableInput
 from beeai_framework.tools.errors import ToolError, ToolInputValidationError
 from beeai_framework.tools.events import (
@@ -38,7 +41,8 @@ from beeai_framework.tools.events import (
     ToolSuccessEvent,
     tool_event_types,
 )
-from beeai_framework.tools.types import StringToolOutput, ToolOutput, ToolRunOptions
+from beeai_framework.tools.types import JSONToolOutput, StringToolOutput, ToolOutput, ToolRunOptions
+from beeai_framework.utils.models import get_input_schema
 from beeai_framework.utils.strings import to_safe_word
 
 logger = Logger(__name__)
@@ -48,7 +52,7 @@ TRunOptions = TypeVar("TRunOptions", bound=ToolRunOptions, default=ToolRunOption
 TOutput = TypeVar("TOutput", bound=ToolOutput, default=ToolOutput)
 
 
-class Tool(Generic[TInput, TRunOptions, TOutput], ABC):
+class Tool(Pluggable[TInput, JSONToolOutput], ABC, Generic[TInput, TRunOptions, TOutput]):
     def __init__(self, options: dict[str, Any] | None = None) -> None:
         self._options: dict[str, Any] | None = options or None
         self._cache = self.options.get("cache", NullCache[TOutput]()) if self.options else NullCache[TOutput]()
@@ -89,6 +93,21 @@ class Tool(Generic[TInput, TRunOptions, TOutput], ABC):
     @abstractmethod
     async def _run(self, input: TInput, options: TRunOptions | None, context: RunContext) -> TOutput:
         pass
+
+    def as_plugin(self) -> Plugin[TInput, JSONToolOutput]:
+        @plugin(
+            name=self.name,
+            description=self.description,
+            input_schema=self.input_schema,
+            output_schema=JSONToolOutput,
+            emitter=self.emitter.child(namespace=["plugin"], reverse=True),
+        )
+        async def connector(**kwargs: Any) -> JSONToolOutput:
+            input = self.input_schema.model_validate(kwargs)
+            output: TOutput = await self.run(input)
+            return JSONToolOutput(result=output.result) if not isinstance(output, JSONToolOutput) else output
+
+        return connector
 
     def _generate_key(self, input: TInput | dict[str, Any], options: TRunOptions | None = None) -> str:
         options_dict = options.model_dump(exclude_none=True) if options else {}
@@ -187,33 +206,6 @@ class Tool(Generic[TInput, TRunOptions, TOutput], ABC):
 
 # this method was inspired by the discussion that was had in this issue:
 # https://github.com/pydantic/pydantic/issues/1391
-@typing.no_type_check
-def get_input_schema(tool_function: Callable) -> type[BaseModel]:
-    input_model_name = tool_function.__name__
-
-    args, _, _, defaults, kwonlyargs, kwonlydefaults, annotations = inspect.getfullargspec(tool_function)
-    defaults = defaults or []
-    args = args or []
-
-    non_default_args = len(args) - len(defaults)
-    try:
-        defaults = (...,) * non_default_args + defaults
-    except TypeError:
-        defaults = [
-            ...,
-        ] * non_default_args + defaults
-
-    keyword_only_params = {param: kwonlydefaults.get(param, Any) for param in kwonlyargs}
-    params = {param: (annotations.get(param, Any), default) for param, default in zip(args, defaults, strict=False)}
-
-    input_model = create_model(
-        input_model_name,
-        **params,
-        **keyword_only_params,
-        __config__=ConfigDict(extra="allow", arbitrary_types_allowed=True),
-    )
-
-    return input_model
 
 
 TFunction = Callable[..., Any]
@@ -253,6 +245,8 @@ def tool(
             raise ValueError("No tool description provided.")
 
         class FunctionTool(Tool[Any, ToolRunOptions, ToolOutput]):
+            _auto_register: typing.ClassVar[bool] = False
+
             name = tool_name
             description = tool_description or ""
             input_schema = tool_input

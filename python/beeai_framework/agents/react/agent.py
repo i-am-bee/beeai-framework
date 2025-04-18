@@ -15,6 +15,7 @@
 
 from collections.abc import Callable
 from datetime import UTC, datetime
+from functools import cached_property
 from typing import Any
 
 from beeai_framework.agents.base import BaseAgent
@@ -81,6 +82,10 @@ class ReActAgent(BaseAgent[ReActAgentRunOutput]):
             namespace=["agent", "react"],
             creator=self,
         )
+
+    @cached_property
+    def output_schema(self) -> type[ReActAgentRunOutput]:
+        return ReActAgentRunOutput
 
     @property
     def memory(self) -> BaseMemory:

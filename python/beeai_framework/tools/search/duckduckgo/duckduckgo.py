@@ -80,7 +80,7 @@ class DuckDuckGoSearchTool(Tool[DuckDuckGoSearchToolInput, ToolRunOptions, DuckD
                 )
                 for result in results
             ]
-            return DuckDuckGoSearchToolOutput(search_results)
+            return DuckDuckGoSearchToolOutput(search_results)  # type: ignore
 
         except Exception as e:
             raise ToolError("Error performing search:") from e

@@ -15,7 +15,7 @@
 import asyncio
 import inspect
 from functools import cached_property
-from typing import ClassVar, Final, Generic, Literal
+from typing import Any, ClassVar, Final, Generic, Literal
 
 from pydantic import BaseModel
 from typing_extensions import TypeVar
@@ -23,6 +23,9 @@ from typing_extensions import TypeVar
 from beeai_framework.context import Run, RunContext
 from beeai_framework.emitter.emitter import Emitter
 from beeai_framework.errors import FrameworkError
+from beeai_framework.plugins.plugin import Plugin
+from beeai_framework.plugins.types import Pluggable
+from beeai_framework.plugins.utils import plugin
 from beeai_framework.utils.models import ModelLike, check_model, to_model, to_model_optional
 from beeai_framework.utils.strings import to_safe_word
 from beeai_framework.workflows.errors import WorkflowError
@@ -40,7 +43,12 @@ T = TypeVar("T", bound=BaseModel)
 K = TypeVar("K", default=str)
 
 
-class Workflow(Generic[T, K]):
+class WorkflowInput(BaseModel, Generic[T, K]):
+    state: ModelLike[T]
+    options: ModelLike[WorkflowRunOptions[K]] | None = None
+
+
+class Workflow(Generic[T, K], Pluggable[WorkflowInput[T, K], WorkflowRun[T, K]]):
     START: Final[Literal["__start__"]] = "__start__"
     SELF: Final[Literal["__self__"]] = "__self__"
     PREV: Final[Literal["__prev__"]] = "__prev__"
@@ -200,3 +208,17 @@ class Workflow(Generic[T, K]):
             current=self.step_names[index],
             next=self.step_names[index + 1] if 0 <= index + 1 < len(self.step_names) else None,
         )
+
+    def as_plugin(self) -> Plugin[WorkflowInput[T, K], WorkflowRun[T, K]]:
+        @plugin(
+            name=self.name,
+            description="Workflow",  # TODO
+            input_schema=WorkflowInput[T, K],
+            output_schema=WorkflowRun[T, K],
+            emitter=self.emitter.child(namespace=["plugin"], reverse=True),
+        )
+        async def connector(**kwargs: Any) -> WorkflowRun[T, K]:
+            input = WorkflowInput[T, K].model_validate(kwargs)
+            return await self.run(**input.model_dump())
+
+        return connector

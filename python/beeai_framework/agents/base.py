@@ -24,12 +24,16 @@ from beeai_framework.agents.types import AgentMeta
 from beeai_framework.context import Run, RunContext
 from beeai_framework.emitter import Emitter
 from beeai_framework.memory import BaseMemory
+from beeai_framework.plugins.plugin import Plugin
+from beeai_framework.plugins.types import Pluggable
+from beeai_framework.plugins.utils import plugin
 from beeai_framework.utils import AbortSignal
+from beeai_framework.utils.models import AnyModel, get_input_schema, to_model
 
 TOutput = TypeVar("TOutput", bound=BaseModel)
 
 
-class BaseAgent(ABC, Generic[TOutput]):
+class BaseAgent(ABC, Generic[TOutput], Pluggable[Any, TOutput]):
     def __init__(self) -> None:
         super().__init__()
         self._is_running = False
@@ -42,9 +46,27 @@ class BaseAgent(ABC, Generic[TOutput]):
     def emitter(self) -> Emitter:
         return self._create_emitter()
 
+    @property
+    def output_schema(self) -> type[TOutput]:
+        return AnyModel  # type: ignore
+
     @abstractmethod
     def run(self, *args: Any, **kwargs: Any) -> Run[TOutput]:
         pass
+
+    def as_plugin(self) -> Plugin[Any, TOutput]:
+        @plugin(
+            name=self.meta.name,
+            description=self.meta.description,
+            input_schema=get_input_schema(self.run, excluded={"self"}),
+            output_schema=self.output_schema,
+            emitter=self.emitter.child(namespace=["plugin"], reverse=False),
+        )
+        async def connector(**kwargs: Any) -> TOutput:
+            output: TOutput = await self.run(**kwargs)
+            return to_model(self.output_schema, output.model_dump())
+
+        return connector
 
     def destroy(self) -> None:
         self.emitter.destroy()
@@ -63,7 +85,7 @@ class BaseAgent(ABC, Generic[TOutput]):
     def meta(self) -> AgentMeta:
         return AgentMeta(
             name=self.__class__.__name__,
-            description="",
+            description=self.__class__.__name__,
             tools=[],
         )
 

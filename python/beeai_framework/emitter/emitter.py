@@ -105,6 +105,8 @@ class Emitter:
         context: dict[Any, Any] | None = None,
         trace: EventTrace | None = None,
         events: dict[str, type] | None = None,
+        *,
+        reverse: bool = False,
     ) -> "Emitter":
         child_emitter = Emitter(
             trace=trace or self.trace,
@@ -115,8 +117,11 @@ class Emitter:
             events=events or self.events,
         )
 
-        cleanup = child_emitter.pipe(self)
-        self._cleanups.append(cleanup)
+        if reverse:
+            self.pipe(child_emitter)
+        else:
+            cleanup = child_emitter.pipe(self)
+            self._cleanups.append(cleanup)
 
         return child_emitter
 

@@ -12,6 +12,7 @@ from beeai_framework.emitter import EventMeta
 from beeai_framework.errors import FrameworkError
 from beeai_framework.logger import Logger
 from beeai_framework.memory import UnconstrainedMemory
+from beeai_framework.tools.search.duckduckgo import DuckDuckGoSearchTool
 from beeai_framework.tools.weather import OpenMeteoTool
 from examples.helpers.io import ConsoleReader
 
@@ -38,7 +39,9 @@ async def main() -> None:
 
     # Create agent
     agent = ToolCallingAgent(
-        llm=ChatModel.from_name("ollama:llama3.1"), memory=UnconstrainedMemory(), tools=[OpenMeteoTool()]
+        llm=ChatModel.from_name("ollama:llama3.1"),
+        memory=UnconstrainedMemory(),
+        tools=[OpenMeteoTool(), DuckDuckGoSearchTool()],
     )
 
     # Main interaction loop with user input
