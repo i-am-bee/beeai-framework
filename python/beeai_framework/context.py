@@ -62,7 +62,7 @@ class Run(Generic[R]):
     def __await__(self) -> Generator[Any, None, R]:
         return self._run_tasks().__await__()
 
-    async def __aiter__(self) -> AsyncGenerator[Any, None]:
+    async def __aiter__(self) -> AsyncGenerator[tuple[Any, EventMeta], None]:
         async def run() -> None:
             await self
 
