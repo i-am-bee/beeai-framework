@@ -11,6 +11,7 @@ from beeai_framework.memory import UnconstrainedMemory
 from beeai_framework.tools.search.duckduckgo import DuckDuckGoSearchTool
 from beeai_framework.tools.weather.openmeteo import OpenMeteoTool
 from eval.agents.tool_calling.dataset.utils import create_dataset_sync
+from eval.agents.tool_calling.model import DeepEvalLLM
 
 load_dotenv()
 
@@ -60,6 +61,7 @@ The response must be in the same language as the input. No tools should be used,
             LLMTestCaseParams.EXPECTED_OUTPUT,
             LLMTestCaseParams.TOOLS_CALLED,
         ],
+        model=DeepEvalLLM.from_name("ollama:llama3.1"),
     )
 
     assert_test(test_case, [correctness_metric])
