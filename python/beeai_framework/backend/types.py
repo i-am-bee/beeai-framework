@@ -108,3 +108,19 @@ class ChatModelOutput(BaseModel):
 
 
 ChatModelCache = BaseCache[list[ChatModelOutput]]
+
+
+class EmbeddingModelUsage(BaseModel):
+    tokens: float | None = None
+
+
+class EmbeddingModelInput(BaseModel):
+    values: list[str]
+    abort_signal: AbortSignal | None = None
+    max_retries: int | None = None
+
+
+class EmbeddingModelOutput(BaseModel):
+    values: list[str]
+    embeddings: list[list[float]]
+    usage: InstanceOf[EmbeddingModelUsage]

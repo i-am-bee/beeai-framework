@@ -17,7 +17,7 @@ from types import NoneType
 
 from pydantic import BaseModel, InstanceOf
 
-from beeai_framework.backend.types import ChatModelInput, ChatModelOutput
+from beeai_framework.backend.types import ChatModelInput, ChatModelOutput, EmbeddingModelInput, EmbeddingModelOutput
 from beeai_framework.errors import FrameworkError
 
 
@@ -44,5 +44,26 @@ chat_model_event_types: dict[str, type] = {
     "success": ChatModelSuccessEvent,
     "start": ChatModelStartEvent,
     "error": ChatModelErrorEvent,
+    "finish": NoneType,
+}
+
+
+class EmbeddingModelSuccessEvent(BaseModel):
+    value: InstanceOf[EmbeddingModelOutput]
+
+
+class EmbeddingModelStartEvent(BaseModel):
+    input: InstanceOf[EmbeddingModelInput]
+
+
+class EmbeddingModelErrorEvent(BaseModel):
+    input: InstanceOf[EmbeddingModelInput]
+    error: InstanceOf[FrameworkError]
+
+
+embedding_model_event_types: dict[str, type] = {
+    "success": EmbeddingModelSuccessEvent,
+    "start": EmbeddingModelStartEvent,
+    "error": EmbeddingModelErrorEvent,
     "finish": NoneType,
 }

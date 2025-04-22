@@ -18,10 +18,10 @@ from typing import Literal
 from pydantic import BaseModel
 
 ProviderName = Literal[
-    "ollama", "openai", "watsonx", "groq", "xai", "vertexai", "amazon_bedrock", "anthropic", "azure_openai"
+    "ollama", "openai", "watsonx", "groq", "xai", "vertexai", "amazon_bedrock", "anthropic", "azure_openai", "dummy"
 ]
 ProviderHumanName = Literal[
-    "Ollama", "OpenAI", "Watsonx", "Groq", "XAI", "VertexAI", "AmazonBedrock", "Anthropic", "AzureOpenAI"
+    "Ollama", "OpenAI", "Watsonx", "Groq", "XAI", "VertexAI", "AmazonBedrock", "Anthropic", "AzureOpenAI", "Dummy"
 ]
 
 
@@ -55,4 +55,5 @@ BackendProviders = {
         module="azure_openai",
         aliases=["azure_openai", "azure"],
     ),
+    "Dummy": ProviderDef(name="Dummy", module="dummy", aliases=[]),
 }
