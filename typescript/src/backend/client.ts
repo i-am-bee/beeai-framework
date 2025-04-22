@@ -23,7 +23,7 @@ export abstract class BackendClient<P, T> extends Serializable {
 
   constructor(settings: P) {
     super();
-    this.settings = settings;
+    this.settings = settings ?? ({} as P);
     this.instance = this.create();
   }
 

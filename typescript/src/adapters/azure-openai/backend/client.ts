@@ -24,13 +24,13 @@ export class AzureOpenAIClient extends BackendClient<
   AzureOpenAIClientSettings,
   AzureOpenAIProvider
 > {
-  protected create(options?: AzureOpenAIClientSettings): AzureOpenAIProvider {
+  protected create(): AzureOpenAIProvider {
     return createAzure({
-      ...options,
-      apiKey: options?.apiKey || getEnv("AZURE_OPENAI_API_KEY"),
-      baseURL: options?.baseURL || getEnv("AZURE_OPENAI_API_ENDPOINT"),
-      resourceName: options?.resourceName || getEnv("AZURE_OPENAI_API_RESOURCE"),
-      apiVersion: options?.apiVersion || getEnv("AZURE_OPENAI_API_VERSION"),
+      ...this.settings,
+      apiKey: this.settings.apiKey || getEnv("AZURE_OPENAI_API_KEY"),
+      baseURL: this.settings.baseURL || getEnv("AZURE_OPENAI_API_ENDPOINT"),
+      resourceName: this.settings.resourceName || getEnv("AZURE_OPENAI_API_RESOURCE"),
+      apiVersion: this.settings.apiVersion || getEnv("AZURE_OPENAI_API_VERSION"),
     });
   }
 }

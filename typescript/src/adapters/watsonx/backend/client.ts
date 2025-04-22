@@ -60,7 +60,7 @@ export class WatsonxClient extends BackendClient<WatsonxClientSettings, WatsonXA
       authenticator:
         this.settings?.authenticator ||
         new IamAuthenticator({
-          apikey: getEnv("WATSONX_API_KEY", this.settings?.apiKey ?? ""),
+          apikey: this.settings?.apiKey || getEnv("WATSONX_API_KEY", ""),
           url: "https://iam.cloud.ibm.com",
         }),
     });
