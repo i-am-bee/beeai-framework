@@ -23,7 +23,7 @@ class OpenLibraryToolResult(BaseModel):
     bib_key: str
 
 
-class OpenLibraryTool(Tool[OpenLibraryToolInput, ToolRunOptions, JSONToolOutput]):
+class OpenLibraryTool(Tool[OpenLibraryToolInput, ToolRunOptions, JSONToolOutput[OpenLibraryToolResult]]):
     name = "OpenLibrary"
     description = """Provides access to a library of books with information about book titles,
         authors, contributors, publication dates, publisher and isbn."""
@@ -74,8 +74,9 @@ class OpenLibraryTool(Tool[OpenLibraryToolInput, ToolRunOptions, JSONToolOutput]
 async def main() -> None:
     tool = OpenLibraryTool()
     tool_input = OpenLibraryToolInput(title="It")
-    result = await tool.run(tool_input)
-    print(result)
+    response = await tool.run(tool_input)
+    print(response.result)  # instance of OpenLibraryToolResult
+    # print(response.get_text_content())  # result formatted as text
 
 
 if __name__ == "__main__":

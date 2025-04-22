@@ -25,11 +25,15 @@ class HumanToolInput(BaseModel):
     description: str | None = None
 
 
+class HumanToolOutput(BaseModel):
+    clarification: str
+
+
 class InputSchema(BaseModel):
     message: str = Field(min_length=1)
 
 
-class HumanTool(Tool[InputSchema, ToolRunOptions, JSONToolOutput]):
+class HumanTool(Tool[InputSchema, ToolRunOptions, JSONToolOutput[HumanToolOutput]]):
     name = "HumanTool"
     description = """
     This tool is used whenever the user's input is unclear, ambiguous, or incomplete.
@@ -83,7 +87,9 @@ class HumanTool(Tool[InputSchema, ToolRunOptions, JSONToolOutput]):
     def input_schema(self) -> type[InputSchema]:
         return InputSchema
 
-    async def _run(self, tool_input: InputSchema, options: ToolRunOptions | None, run: RunContext) -> JSONToolOutput:
+    async def _run(
+        self, tool_input: InputSchema, options: ToolRunOptions | None, run: RunContext
+    ) -> JSONToolOutput[HumanToolOutput]:
         # Use the reader from input
         self.tool_input.reader.write("HumanTool", tool_input.message)
 
@@ -91,8 +97,4 @@ class HumanTool(Tool[InputSchema, ToolRunOptions, JSONToolOutput]):
         user_input: str = self.tool_input.reader.ask_single_question("User 👤 (clarification) : ")
 
         # Return JSONToolOutput with the clarification
-        return JSONToolOutput(
-            {
-                "clarification": user_input.strip(),
-            }
-        )
+        return JSONToolOutput(HumanToolOutput(clarification=user_input.strip()))

@@ -13,9 +13,10 @@
 # limitations under the License.
 
 from abc import ABC, abstractmethod
-from typing import Any
+from typing import Any, Generic
 
 from pydantic import BaseModel
+from typing_extensions import TypeVar
 
 from beeai_framework.utils import AbortSignal
 from beeai_framework.utils.strings import to_json
@@ -31,7 +32,15 @@ class ToolRunOptions(BaseModel):
     signal: AbortSignal | None = None
 
 
-class ToolOutput(ABC):
+T = TypeVar("T", default=Any)
+
+
+class ToolOutput(ABC, BaseModel, Generic[T]):
+    result: T
+
+    def __init__(self, result: T, **kwargs: Any) -> None:
+        super().__init__(result=result, **kwargs)
+
     @abstractmethod
     def get_text_content(self) -> str:
         pass
@@ -44,10 +53,9 @@ class ToolOutput(ABC):
         return self.get_text_content()
 
 
-class StringToolOutput(ToolOutput):
+class StringToolOutput(ToolOutput[str]):
     def __init__(self, result: str = "") -> None:
-        super().__init__()
-        self.result = result
+        super().__init__(result)
 
     def is_empty(self) -> bool:
         return len(self.result) == 0
@@ -56,9 +64,9 @@ class StringToolOutput(ToolOutput):
         return self.result
 
 
-class JSONToolOutput(ToolOutput):
-    def __init__(self, result: Any) -> None:
-        self.result = result
+class JSONToolOutput(ToolOutput[T]):
+    def __init__(self, result: T, **kwargs: Any) -> None:
+        super().__init__(result=result, **kwargs)
 
     def get_text_content(self) -> str:
         return to_json(self.result)
