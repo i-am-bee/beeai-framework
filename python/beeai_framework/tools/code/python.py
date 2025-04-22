@@ -16,7 +16,7 @@ from enum import Enum
 from typing import Any
 
 import httpx
-from pydantic import BaseModel, Field, InstanceOf
+from pydantic import BaseModel, Field, InstanceOf, RootModel
 
 from beeai_framework.backend.chat import ChatModel
 from beeai_framework.backend.message import UserMessage
@@ -60,6 +60,7 @@ IMPORTANT: If the file is not provided in the input, it will not be accessible."
 class PythonTool(Tool[PythonToolInput, ToolRunOptions, PythonToolOutput]):
     name = "Python"
     input_schema = PythonToolInput
+    output_schema = RootModel[str]
     description = """
 Run Python and/or shell code and return the console output. Use for isolated calculations,
 computations, data or file manipulation but still prefer assistant's capabilities

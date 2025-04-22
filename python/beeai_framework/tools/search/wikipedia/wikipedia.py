@@ -55,6 +55,7 @@ class WikipediaTool(Tool[WikipediaToolInput, ToolRunOptions, WikipediaToolOutput
         history, politics, geography, society, culture, science, technology, people, \
         animal species, mathematics, and other subjects."
     input_schema = WikipediaToolInput
+    output_schema = list[SearchToolResult]
     client = wikipediaapi.Wikipedia(
         user_agent="beeai-framework https://github.com/i-am-bee/beeai-framework", language="en"
     )

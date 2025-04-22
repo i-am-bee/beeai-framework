@@ -19,7 +19,7 @@ from urllib.parse import urlencode
 
 import httpx
 import requests
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, RootModel
 
 from beeai_framework.context import RunContext
 from beeai_framework.emitter.emitter import Emitter
@@ -50,6 +50,7 @@ class OpenMeteoTool(Tool[OpenMeteoToolInput, ToolRunOptions, JSONToolOutput[dict
     name = "OpenMeteoTool"
     description = "Retrieve current, past, or future weather forecasts for a location."
     input_schema = OpenMeteoToolInput
+    output_schema = RootModel[str]
 
     def __init__(self, options: dict[str, Any] | None = None) -> None:
         super().__init__(options)

@@ -44,7 +44,7 @@ class AfterFetchEvent(BaseModel):
     url: str
 
 
-class OpenAPITool(Tool[BaseModel, ToolRunOptions, OpenAPIToolOutput]):
+class OpenAPITool(Tool[BaseModel, ToolRunOptions, OpenAPIToolOutput, RootModel[str]]):
     def __init__(
         self,
         open_api_schema: dict[str, Any],
@@ -91,6 +91,10 @@ class OpenAPITool(Tool[BaseModel, ToolRunOptions, OpenAPIToolOutput]):
     @property
     def description(self) -> str:
         return self._description
+
+    @property
+    def output_schema(self) -> type[RootModel[str]]:
+        return RootModel[str]
 
     @property
     def input_schema(self) -> type[BaseModel]:
