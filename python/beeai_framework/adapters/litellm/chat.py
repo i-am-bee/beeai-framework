@@ -16,6 +16,7 @@ import logging
 import os
 from abc import ABC
 from collections.abc import AsyncGenerator
+from itertools import chain
 from typing import Any, Self
 
 if not os.getenv("LITELLM_LOCAL_MODEL_COST_MAP", None):
@@ -292,44 +293,36 @@ class LiteLLMChatModel(ChatModel, ABC):
         name: str,
         value: Any | None = None,
         *,
-        constructor_name: str | None = None,
+        display_name: str | None = None,
         aliases: list[str] | None = None,
         envs: list[str],
         fallback: str | None = None,
-        allow_none: bool = False,
+        allow_empty: bool = False,
     ) -> None:
-        def reset_aliases() -> None:
-            for alias in aliases or []:
-                self._settings[alias] = None
+        aliases = aliases or []
+        assert aliases is not None
 
-        if value is not None:
-            self._settings[name] = value
+        value = value or self._settings.get(name)
+        if not value:
+            value = next(
+                chain(
+                    (self._settings[alias] for alias in aliases if self._settings.get(alias)),
+                    (os.environ[env] for env in envs if os.environ.get(env)),
+                ),
+                fallback,
+            )
 
-        if self._settings.get(name):
-            reset_aliases()
-            return None
+        for alias in aliases:
+            self._settings[alias] = None
 
-        for env in envs:
-            value = os.environ.get(env)
-            if value:
-                reset_aliases()
-                self._settings[name] = value
-                return None
+        if not value and not allow_empty:
+            raise ValueError(
+                f"Setting {display_name or name} is required for {type(self).__name__}. "
+                f"Either pass the {display_name or name} explicitly or set one of the "
+                f"following environment variables: {', '.join(envs)}."
+            )
 
-        if fallback:
-            reset_aliases()
-            self._settings[name] = fallback
-            return None
-
-        if allow_none:
-            reset_aliases()
-            return None
-
-        raise ValueError(
-            f"Setting {constructor_name or name} is required for {type(self).__name__}. "
-            f"Either pass the {constructor_name or name} explicitly or set one of the following "
-            f"environment variables {','.join(envs)}"
-        )
+        self._settings[name] = value
 
 
 LiteLLMChatModel.litellm_debug(False)

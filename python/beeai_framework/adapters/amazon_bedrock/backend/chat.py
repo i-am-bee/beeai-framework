@@ -47,16 +47,16 @@ class AmazonBedrockChatModel(LiteLLMChatModel):
         )
 
         self._assert_setting_value(
-            "aws_access_key_id", access_key_id, constructor_name="access_key_id", envs=["AWS_ACCESS_KEY_ID"]
+            "aws_access_key_id", access_key_id, display_name="access_key_id", envs=["AWS_ACCESS_KEY_ID"]
         )
         self._assert_setting_value(
             "aws_secret_access_key",
             secret_access_key,
-            constructor_name="secret_access_key",
+            display_name="secret_access_key",
             envs=["AWS_SECRET_ACCESS_KEY"],
         )
         self._assert_setting_value(
-            "aws_region_name", region, envs=["AWS_REGION", "AWS_REGION_NAME"], constructor_name="region"
+            "aws_region_name", region, envs=["AWS_REGION", "AWS_REGION_NAME"], display_name="region"
         )
 
         self._settings["extra_headers"] = utils.parse_extra_headers(

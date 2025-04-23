@@ -49,7 +49,7 @@ class WatsonxChatModel(LiteLLMChatModel):
             **kwargs,
         )
 
-        self._assert_setting_value("space_id", space_id, envs=["WATSONX_SPACE_ID"], allow_none=True)
+        self._assert_setting_value("space_id", space_id, envs=["WATSONX_SPACE_ID"], allow_empty=True)
         if not self._settings.get("space_id"):
             self._assert_setting_value("project_id", project_id, envs=["WATSONX_PROJECT_ID"])
 

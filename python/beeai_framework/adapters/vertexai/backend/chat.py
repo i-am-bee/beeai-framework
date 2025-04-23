@@ -45,11 +45,9 @@ class VertexAIChatModel(LiteLLMChatModel):
             **kwargs,
         )
 
+        self._assert_setting_value("vertexai_project", project, display_name="project", envs=["GOOGLE_VERTEX_PROJECT"])
         self._assert_setting_value(
-            "vertexai_project", project, constructor_name="project", envs=["GOOGLE_VERTEX_PROJECT"]
-        )
-        self._assert_setting_value(
-            "vertexai_location", location, constructor_name="location", envs=["GOOGLE_VERTEX_LOCATION"]
+            "vertexai_location", location, display_name="location", envs=["GOOGLE_VERTEX_LOCATION"]
         )
         self._settings["extra_headers"] = utils.parse_extra_headers(
             self._settings.get("extra_headers"), os.getenv("GOOGLE_VERTEX_API_HEADERS")
