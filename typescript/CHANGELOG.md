@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.1.12](https://github.com/i-am-bee/beeai-framework/compare/typescript_v0.1.11...typescript_v0.1.12) (2025-04-23)
+
+### Bug Fixes
+
+- **backend:** correctly propagate settings to LLM backends ([#786](https://github.com/i-am-bee/beeai-framework/issues/786)) ([6b51ebc](https://github.com/i-am-bee/beeai-framework/commit/6b51ebc7c765f75acad2e12a77f3362260900453))
+
 ## [0.1.11](https://github.com/i-am-bee/beeai-framework/compare/typescript_v0.1.10...typescript_v0.1.11) (2025-04-16)
 
 ### Features

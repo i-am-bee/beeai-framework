@@ -32,13 +32,13 @@ class TestAzureOpenAIChatModel:
         monkeypatch.delenv("AZURE_API_VERSION", raising=False)
         settings = {
             "api_key": "test_api_key",
-            "api_base": "test_api_base",
+            "base_url": "test_api_base",
             "api_version": "test_api_version",
         }
         model = AzureOpenAIChatModel(model_id="gpt-4o", settings=settings)
 
         assert model._settings["api_key"] == "test_api_key"
-        assert model._settings["api_base"] == "test_api_base"
+        assert model._settings["base_url"] == "test_api_base"
         assert model._settings["api_version"] == "test_api_version"
         assert model.model_id == "gpt-4o"
         assert model._litellm_provider_id == "azure"
@@ -59,7 +59,7 @@ class TestAzureOpenAIChatModel:
         model = AzureOpenAIChatModel(model_id="gpt-4o")
 
         assert model._settings["api_key"] == "env_api_key"
-        assert model._settings["api_base"] == "env_api_base"
+        assert model._settings["base_url"] == "env_api_base"
         assert model._settings["api_version"] == "env_api_version"
         assert model.model_id == "gpt-4o"
 
@@ -79,7 +79,7 @@ class TestAzureOpenAIChatModel:
         model = AzureOpenAIChatModel(model_id="gpt-4o")
 
         assert model._settings["api_key"] == "env_api_key"
-        assert model._settings["api_base"] == "env_api_base"
+        assert model._settings["base_url"] == "env_api_base"
         assert model._settings["api_version"] == "env_api_version"
 
     @pytest.mark.unit
@@ -98,7 +98,7 @@ class TestAzureOpenAIChatModel:
         model = AzureOpenAIChatModel(model_id="gpt-4o")
 
         assert model._settings["api_key"] == "env_openai_api_key"
-        assert model._settings["api_base"] == "env_api_base"
+        assert model._settings["base_url"] == "env_api_base"
         assert model._settings["api_version"] == "env_api_version"
 
     @pytest.mark.unit
@@ -111,15 +111,15 @@ class TestAzureOpenAIChatModel:
         monkeypatch.delenv("AZURE_OPENAI_API_VERSION", raising=False)
         monkeypatch.delenv("AZURE_API_VERSION", raising=False)
 
-        with pytest.raises(ValueError, match="Access key is required for Azure OpenAI"):
+        with pytest.raises(ValueError, match="Setting api_key is required for AzureOpenAIChatModel"):
             AzureOpenAIChatModel(model_id="gpt-4o")
         monkeypatch.setenv("AZURE_API_KEY", "env_api_key")
 
-        with pytest.raises(ValueError, match="Base URL is required for Azure OpenAI"):
+        with pytest.raises(ValueError, match="Setting base_url is required for AzureOpenAIChatModel"):
             AzureOpenAIChatModel(model_id="gpt-4o")
 
         monkeypatch.setenv("AZURE_API_BASE", "env_api_base")
-        with pytest.raises(ValueError, match="API Version is required for Azure OpenAI"):
+        with pytest.raises(ValueError, match="Setting api_version is required for AzureOpenAIChatModel"):
             AzureOpenAIChatModel(model_id="gpt-4o")
 
     @pytest.mark.unit
@@ -139,13 +139,13 @@ class TestAzureOpenAIChatModel:
         monkeypatch.setenv("AZURE_API_VERSION", "env_api_version")
         settings = {
             "api_key": "settings_api_key",
-            "api_base": "settings_api_base",
+            "base_url": "settings_api_base",
             "api_version": "settings_api_version",
         }
         model = AzureOpenAIChatModel(model_id="gpt-4o", settings=settings)
 
         assert model._settings["api_key"] == "settings_api_key"
-        assert model._settings["api_base"] == "settings_api_base"
+        assert model._settings["base_url"] == "settings_api_base"
         assert model._settings["api_version"] == "settings_api_version"
 
     @pytest.mark.unit
@@ -167,7 +167,7 @@ class TestAzureOpenAIChatModel:
         model = AzureOpenAIChatModel(model_id="gpt-4o")
 
         assert model._settings["api_key"] == "env_openai_api_key"
-        assert model._settings["api_base"] == "env_openai_api_base"
+        assert model._settings["base_url"] == "env_openai_api_base"
         assert model._settings["api_version"] == "env_openai_api_version"
 
     @pytest.mark.unit

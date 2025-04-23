@@ -14,10 +14,12 @@
 
 
 import os
-from typing import Any
+
+from typing_extensions import Unpack
 
 from beeai_framework.adapters.litellm import utils
 from beeai_framework.adapters.litellm.chat import LiteLLMChatModel
+from beeai_framework.backend.chat import ChatModelKwargs
 from beeai_framework.backend.constants import ProviderName
 from beeai_framework.logger import Logger
 
@@ -29,46 +31,34 @@ class AmazonBedrockChatModel(LiteLLMChatModel):
     def provider_id(self) -> ProviderName:
         return "amazon_bedrock"
 
-    def __init__(self, model_id: str | None = None, settings: dict[str, Any] | None = None) -> None:
-        _settings = settings.copy() if settings is not None else {}
-
-        aws_access_key_id = _settings.get("aws_access_key_id", os.getenv("AWS_ACCESS_KEY_ID"))
-        if not aws_access_key_id:
-            raise ValueError(
-                "Access key is required for Amazon Bedrock model. Specify *aws_access_key_id* "
-                + "or set AWS_ACCESS_KEY_ID environment variable"
-            )
-
-        aws_secret_access_key = _settings.get("aws_secret_access_key", os.getenv("AWS_SECRET_ACCESS_KEY"))
-        if not aws_secret_access_key:
-            raise ValueError(
-                "Secret key is required for Amazon Bedrock model. Specify *aws_secret_access_key* "
-                + "or set AWS_SECRET_ACCESS_KEY environment variable"
-            )
-
-        # Determine region name with the specified precedence
-        aws_region_name = _settings.get("aws_region_name")
-        if not aws_region_name:
-            aws_region_name = os.getenv("AWS_REGION")
-        if not aws_region_name:
-            aws_region_name = os.getenv("AWS_REGION_NAME")
-
-        if not aws_region_name:
-            raise ValueError(
-                "Region is required for Amazon Bedrock model. Specify *aws_region_name* in settings, "
-                + "set the AWS_REGION environment variable, or set the AWS_REGION_NAME environment variable."
-            )
-
+    def __init__(
+        self,
+        model_id: str | None = None,
+        *,
+        access_key_id: str | None = None,
+        secret_access_key: str | None = None,
+        region: str | None = None,
+        **kwargs: Unpack[ChatModelKwargs],
+    ) -> None:
         super().__init__(
             (model_id if model_id else os.getenv("AWS_CHAT_MODEL", "llama-3.1-8b-instant")),
             provider_id="bedrock",
-            settings=_settings
-            | {
-                "aws_access_key_id": aws_access_key_id,
-                "aws_secret_access_key": aws_secret_access_key,
-                "aws_region_name": aws_region_name,
-            },
+            **kwargs,
         )
+
+        self._assert_setting_value(
+            "aws_access_key_id", access_key_id, display_name="access_key_id", envs=["AWS_ACCESS_KEY_ID"]
+        )
+        self._assert_setting_value(
+            "aws_secret_access_key",
+            secret_access_key,
+            display_name="secret_access_key",
+            envs=["AWS_SECRET_ACCESS_KEY"],
+        )
+        self._assert_setting_value(
+            "aws_region_name", region, envs=["AWS_REGION", "AWS_REGION_NAME"], display_name="region"
+        )
+
         self._settings["extra_headers"] = utils.parse_extra_headers(
             self._settings.get("extra_headers"), os.getenv("AWS_API_HEADERS")
         )

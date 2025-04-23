@@ -34,21 +34,25 @@ class OllamaChatModel(LiteLLMChatModel):
         return "ollama"
 
     def __init__(
-        self, model_id: str | None = None, settings: dict[str, Any] | None = None, **kwargs: Unpack[ChatModelKwargs]
+        self,
+        model_id: str | None = None,
+        *,
+        api_key: str | None = None,
+        base_url: str | None = None,
+        **kwargs: Unpack[ChatModelKwargs],
     ) -> None:
-        settings = settings.copy() if settings is not None else {}
-
-        api_key = settings.get("api_key", os.getenv("OLLAMA_API_KEY") or "ollama")
-        base_url = settings.get("base_url", os.getenv("OLLAMA_API_BASE")) or "http://localhost:11434"
-        if not base_url.endswith("/v1"):
-            base_url += "/v1"
-
         super().__init__(
             model_id if model_id else os.getenv("OLLAMA_CHAT_MODEL", "llama3.1"),
             provider_id="openai",
-            settings=settings | {"api_key": api_key, "base_url": base_url},
             **kwargs,
         )
+
+        self._assert_setting_value("api_key", api_key, envs=["OLLAMA_API_KEY"], fallback="ollama")
+        self._assert_setting_value(
+            "base_url", base_url, envs=["OLLAMA_API_BASE"], fallback="http://localhost:11434", aliases=["api_base"]
+        )
+        if not self._settings["base_url"].endswith("/v1"):
+            self._settings["base_url"] += "/v1"
 
     def _format_response_model(self, model: type[BaseModel] | dict[str, Any]) -> dict[str, Any]:
         if isinstance(model, dict) and model.get("type") in ["json_schema", "json_object"]:

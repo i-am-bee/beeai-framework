@@ -1,7 +1,7 @@
 from abc import abstractmethod
 from typing import Protocol, runtime_checkable
 
-from pydantic import BaseModel, Field, InstanceOf
+from pydantic import BaseModel, Field
 
 from beeai_framework.context import RunContext
 from beeai_framework.emitter import Emitter
@@ -19,17 +19,19 @@ class Reader(Protocol):
         pass
 
 
+class HumanToolOutputResult(BaseModel):
+    clarification: str
+
+
+class HumanToolOutput(JSONToolOutput[HumanToolOutputResult]):
+    pass
+
+
 class HumanToolInput(BaseModel):
-    reader: InstanceOf[Reader]
-    name: str | None = None
-    description: str | None = None
-
-
-class InputSchema(BaseModel):
     message: str = Field(min_length=1)
 
 
-class HumanTool(Tool[InputSchema, ToolRunOptions, JSONToolOutput]):
+class HumanTool(Tool[HumanToolInput, ToolRunOptions, HumanToolOutput]):
     name = "HumanTool"
     description = """
     This tool is used whenever the user's input is unclear, ambiguous, or incomplete.
@@ -67,11 +69,11 @@ class HumanTool(Tool[InputSchema, ToolRunOptions, JSONToolOutput]):
     Note: Do NOT attempt to guess or provide incomplete responses. Always use this tool when in doubt to ensure accurate and meaningful interactions.
 """  # noqa: E501
 
-    def __init__(self, tool_input: HumanToolInput) -> None:
+    def __init__(self, *, reader: Reader, name: str | None = None, description: str | None = None) -> None:
         super().__init__()
-        self.tool_input = tool_input
-        self.name = tool_input.name or self.name
-        self.description = tool_input.description or self.description
+        self._reader = reader
+        self.name = name or self.name
+        self.description = description or self.description
 
     def _create_emitter(self) -> Emitter:
         return Emitter.root().child(
@@ -80,19 +82,18 @@ class HumanTool(Tool[InputSchema, ToolRunOptions, JSONToolOutput]):
         )
 
     @property
-    def input_schema(self) -> type[InputSchema]:
-        return InputSchema
+    def input_schema(self) -> type[HumanToolInput]:
+        return HumanToolInput
 
-    async def _run(self, tool_input: InputSchema, options: ToolRunOptions | None, run: RunContext) -> JSONToolOutput:
+    async def _run(
+        self, tool_input: HumanToolInput, options: ToolRunOptions | None, run: RunContext
+    ) -> HumanToolOutput:
         # Use the reader from input
-        self.tool_input.reader.write("HumanTool", tool_input.message)
+        self._reader.write("HumanTool", tool_input.message)
 
         # Use ask_single_question
-        user_input: str = self.tool_input.reader.ask_single_question("User 👤 (clarification) : ")
+        user_input: str = self._reader.ask_single_question("User 👤 (clarification) : ")
 
         # Return JSONToolOutput with the clarification
-        return JSONToolOutput(
-            {
-                "clarification": user_input.strip(),
-            }
-        )
+        result = HumanToolOutputResult(clarification=user_input.strip())
+        return HumanToolOutput(result)

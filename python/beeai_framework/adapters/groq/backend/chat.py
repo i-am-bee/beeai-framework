@@ -14,9 +14,11 @@
 
 
 import os
-from typing import Any
+
+from typing_extensions import Unpack
 
 from beeai_framework.adapters.litellm.chat import LiteLLMChatModel
+from beeai_framework.backend.chat import ChatModelKwargs
 from beeai_framework.backend.constants import ProviderName
 from beeai_framework.logger import Logger
 
@@ -28,13 +30,12 @@ class GroqChatModel(LiteLLMChatModel):
     def provider_id(self) -> ProviderName:
         return "groq"
 
-    def __init__(self, model_id: str | None = None, settings: dict[str, Any] | None = None) -> None:
-        _settings = settings.copy() if settings is not None else {}
-
-        api_key = _settings.get("api_key", os.getenv("GROQ_API_KEY"))
-
+    def __init__(
+        self, model_id: str | None = None, api_key: str | None = None, **kwargs: Unpack[ChatModelKwargs]
+    ) -> None:
         super().__init__(
             model_id if model_id else os.getenv("GROQ_CHAT_MODEL", "llama-3.1-8b-instant"),
             provider_id="groq",
-            settings=_settings | {"api_key": api_key},
+            **kwargs,
         )
+        self._assert_setting_value("api_key", api_key, envs=["GROQ_API_KEY"])

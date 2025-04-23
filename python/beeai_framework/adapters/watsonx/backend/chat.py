@@ -14,9 +14,12 @@
 
 
 import os
-from typing import Any, ClassVar
+from typing import ClassVar
+
+from typing_extensions import Unpack
 
 from beeai_framework.adapters.litellm.chat import LiteLLMChatModel
+from beeai_framework.backend.chat import ChatModelKwargs
 from beeai_framework.backend.constants import ProviderName
 from beeai_framework.logger import Logger
 
@@ -30,47 +33,40 @@ class WatsonxChatModel(LiteLLMChatModel):
     def provider_id(self) -> ProviderName:
         return "watsonx"
 
-    # Differs between typescript & litellm so directly set relevant property here if env specified -> litellm:
-    # Litellm docs have WATSONX_APIKEY. This does not work. It's WATSONX_API_KEY . See     https://github.com/BerriAI/litellm/issues/7595
-    # WATSONX_SPACE_ID [WATSONX_DEPLOYMENT_SPACE_ID] -> space_id
-
-    # LiteLLM uses 'url', from WATSONX_URL
-    # If set we use that (as more specific), otherwise compose from WATSONX_REGION & a constant base.
-
-    # Extra for LiteLLM - no code here - passthrough
-    # WATSONX_TOKEN (not in ts)
-    # WATSONX_ZENAPIKEY (not in ts)
-    # WATSONX_URL
-
-    # https://docs.litellm.ai/docs/providers/watsonx
-
-    def __init__(self, model_id: str | None = None, settings: dict[str, Any] | None = None) -> None:
-        _settings = settings.copy() if settings is not None else {}
-
-        # Set space_id only if not already in settings
-        if "space_id" not in _settings or not _settings["space_id"]:
-            watsonx_space_id = os.getenv("WATSONX_SPACE_ID")
-            if watsonx_space_id:
-                _settings["space_id"] = watsonx_space_id
-
-        # Set URL based on priority: existing setting > WATSONX_URL env > region-based > error
-        if "api_base" not in _settings or not _settings["api_base"]:
-            watsonx_url = os.getenv("WATSONX_URL")
-            if watsonx_url:
-                _settings["api_base"] = watsonx_url
-            else:
-                watsonx_region = os.getenv("WATSONX_REGION")
-                if watsonx_region:
-                    _settings["api_base"] = f"https://{watsonx_region}.ml.cloud.ibm.com"
-                else:
-                    raise ValueError(
-                        "Watsonx api_base not set. Please provide a 'api_base' in settings, "
-                        "set the WATSONX_URL environment variable, "
-                        "or set the WATSONX_REGION environment variable."
-                    )
-
+    def __init__(
+        self,
+        model_id: str | None = None,
+        *,
+        api_key: str | None = None,
+        project_id: str | None = None,
+        space_id: str | None = None,
+        region: str | None = None,
+        base_url: str | None = None,
+        **kwargs: Unpack[ChatModelKwargs],
+    ) -> None:
         super().__init__(
             model_id if model_id else os.getenv("WATSONX_CHAT_MODEL", "ibm/granite-3-8b-instruct"),
             provider_id="watsonx",
-            settings=_settings,
+            **kwargs,
+        )
+
+        self._assert_setting_value(
+            "space_id", space_id, envs=["WATSONX_SPACE_ID", "WATSONX_DEPLOYMENT_SPACE_ID"], allow_empty=True
+        )
+        if not self._settings.get("space_id"):
+            self._assert_setting_value("project_id", project_id, envs=["WATSONX_PROJECT_ID"])
+
+        self._assert_setting_value("region", region, envs=["WATSONX_REGION"], fallback="us-south")
+        self._assert_setting_value(
+            "base_url",
+            base_url,
+            aliases=["api_base"],
+            envs=["WATSONX_URL"],
+            fallback=f"https://{self._settings['region']}.ml.cloud.ibm.com",
+        )
+        self._assert_setting_value(
+            "api_key",
+            api_key,
+            envs=["WATSONX_API_KEY", "WATSONX_APIKEY", "WATSONX_ZENAPIKEY"],
+            allow_empty=True,
         )

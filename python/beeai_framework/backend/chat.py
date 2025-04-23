@@ -16,10 +16,10 @@ import json
 from abc import ABC, abstractmethod
 from collections.abc import AsyncGenerator, Callable
 from functools import cached_property
-from typing import Any, ClassVar, Literal, Self, TypeVar
+from typing import Any, ClassVar, Literal, Self
 
 from pydantic import BaseModel, ConfigDict, Field, InstanceOf, TypeAdapter
-from typing_extensions import TypedDict, Unpack
+from typing_extensions import TypedDict, TypeVar, Unpack
 
 from beeai_framework.backend.constants import ProviderName
 from beeai_framework.backend.errors import ChatModelError
@@ -54,9 +54,10 @@ from beeai_framework.logger import Logger
 from beeai_framework.retryable import Retryable, RetryableConfig, RetryableContext, RetryableInput
 from beeai_framework.template import PromptTemplate, PromptTemplateInput
 from beeai_framework.tools.tool import AnyTool, Tool
-from beeai_framework.utils import AbortController, AbortSignal
+from beeai_framework.utils import AbortController, AbortSignal, ModelLike
 from beeai_framework.utils.asynchronous import to_async_generator
-from beeai_framework.utils.models import ModelLike
+from beeai_framework.utils.dicts import exclude_non_annotated
+from beeai_framework.utils.models import to_model
 from beeai_framework.utils.strings import generate_random_string, to_json
 
 T = TypeVar("T", bound=BaseModel)
@@ -70,6 +71,7 @@ class ChatModelKwargs(TypedDict, total=False):
     model_supports_tool_calling: bool
     parameters: InstanceOf[ChatModelParameters]
     cache: InstanceOf[ChatModelCache]
+    settings: dict[str, Any]
 
     __pydantic_config__ = ConfigDict(extra="forbid")  # type: ignore
 
@@ -93,6 +95,9 @@ class ChatModel(ABC):
         pass
 
     def __init__(self, **kwargs: Unpack[ChatModelKwargs]) -> None:
+        self._settings = kwargs.get("settings", {})
+        self._settings.update(**exclude_non_annotated(kwargs, ChatModelKwargs))
+
         kwargs = _ChatModelKwargsAdapter.validate_python(kwargs)
         self.parameters = kwargs.get("parameters", ChatModelParameters())
         self.cache = kwargs.get("cache", NullCache[list[ChatModelOutput]]())
@@ -323,14 +328,18 @@ IMPORTANT: You MUST answer with a JSON object that matches the JSON schema above
 
     @staticmethod
     def from_name(
-        name: str | ProviderName, options: ModelLike[ChatModelParameters] | None = None, **kwargs: Any
+        name: str | ProviderName,
+        options: ModelLike[ChatModelParameters] | None = None,
+        /,
+        **kwargs: Any,
     ) -> "ChatModel":
         parsed_model = parse_model(name)
         TargetChatModel = load_model(parsed_model.provider_id, "chat")  # type: ignore # noqa: N806
-
-        settings = options.model_dump() if isinstance(options, ChatModelParameters) else options
-
-        return TargetChatModel(parsed_model.model_id, settings=settings or {}, **kwargs)  # type: ignore
+        if options and isinstance(options, ChatModelParameters):
+            kwargs["parameters"] = to_model(ChatModelParameters, options)
+        elif options:
+            kwargs.update(options)
+        return TargetChatModel(parsed_model.model_id, **kwargs)  # type: ignore
 
     def _force_tool_call_via_response_format(
         self,
@@ -358,13 +367,13 @@ IMPORTANT: You MUST answer with a JSON object that matches the JSON schema above
         return not self.model_supports_tool_calling or not tool_choice_supported
 
     async def clone(self) -> Self:
-        kwargs: ChatModelKwargs = {
-            "parameters": ChatModelParameters(**self.parameters.model_dump())
+        cloned = type(self)(
+            parameters=ChatModelParameters(**self.parameters.model_dump())
             if self.parameters
             else ChatModelParameters(),
-            "cache": await self.cache.clone() if self.cache else NullCache[list[ChatModelOutput]](),
-            "tool_call_fallback_via_response_format": self.tool_call_fallback_via_response_format,
-            "model_supports_tool_calling": self.model_supports_tool_calling,
-        }
-        cloned = type(self)(**kwargs)
+            cache=await self.cache.clone() if self.cache else NullCache[list[ChatModelOutput]](),
+            tool_call_fallback_via_response_format=self.tool_call_fallback_via_response_format,
+            model_supports_tool_calling=self.model_supports_tool_calling,
+            settings=self._settings.copy(),
+        )
         return cloned
