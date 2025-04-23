@@ -37,6 +37,7 @@ class WatsonxChatModel(LiteLLMChatModel):
         self,
         model_id: str | None = None,
         *,
+        api_key: str | None = None,
         project_id: str | None = None,
         space_id: str | None = None,
         region: str | None = None,
@@ -49,7 +50,9 @@ class WatsonxChatModel(LiteLLMChatModel):
             **kwargs,
         )
 
-        self._assert_setting_value("space_id", space_id, envs=["WATSONX_SPACE_ID"], allow_empty=True)
+        self._assert_setting_value(
+            "space_id", space_id, envs=["WATSONX_SPACE_ID", "WATSONX_DEPLOYMENT_SPACE_ID"], allow_empty=True
+        )
         if not self._settings.get("space_id"):
             self._assert_setting_value("project_id", project_id, envs=["WATSONX_PROJECT_ID"])
 
@@ -60,4 +63,10 @@ class WatsonxChatModel(LiteLLMChatModel):
             aliases=["api_base"],
             envs=["WATSONX_URL"],
             fallback=f"https://{self._settings['region']}.ml.cloud.ibm.com",
+        )
+        self._assert_setting_value(
+            "api_key",
+            api_key,
+            envs=["WATSONX_API_KEY", "WATSONX_APIKEY", "WATSONX_ZENAPIKEY"],
+            allow_empty=True,
         )
