@@ -31,7 +31,7 @@ class XAIChatModel(LiteLLMChatModel):
         return "xai"
 
     def __init__(
-        self, model_id: str | None = None, api_key: str | None = None, **kwargs: Unpack[ChatModelKwargs]
+        self, model_id: str | None = None, *, api_key: str | None = None, **kwargs: Unpack[ChatModelKwargs]
     ) -> None:
         super().__init__(model_id if model_id else os.getenv("XAI_CHAT_MODEL", "grok-2"), provider_id="xai", **kwargs)
         self._assert_setting_value("api_key", api_key, envs=["XAI_API_KEY"])

@@ -322,7 +322,7 @@ class LiteLLMChatModel(ChatModel, ABC):
                 f"following environment variables: {', '.join(envs)}."
             )
 
-        self._settings[name] = value
+        self._settings[name] = value or None
 
 
 LiteLLMChatModel.litellm_debug(False)

@@ -33,7 +33,12 @@ class AnthropicChatModel(LiteLLMChatModel):
         return "anthropic"
 
     def __init__(
-        self, model_id: str | None = None, api_key: str | None = None, **kwargs: Unpack[ChatModelKwargs]
+        self,
+        model_id: str | None = None,
+        *,
+        api_key: str | None = None,
+        base_url: str | None = None,
+        **kwargs: Unpack[ChatModelKwargs],
     ) -> None:
         super().__init__(
             (model_id if model_id else os.getenv("ANTHROPIC_CHAT_MODEL", "claude-3-haiku-20240307")),
@@ -42,6 +47,9 @@ class AnthropicChatModel(LiteLLMChatModel):
         )
 
         self._assert_setting_value("api_key", api_key, envs=["ANTHROPIC_API_KEY"])
+        self._assert_setting_value(
+            "base_url", base_url, envs=["ANTHROPIC_API_BASE"], aliases=["api_base"], allow_empty=True
+        )
         self._settings["extra_headers"] = utils.parse_extra_headers(
             self._settings.get("extra_headers"), os.getenv("ANTHROPIC_API_HEADERS")
         )
