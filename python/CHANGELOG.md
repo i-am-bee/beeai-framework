@@ -1,3 +1,14 @@
+## python_v0.1.18 (2025-04-23)
+
+### Bug Fixes
+
+- **backend**: make ChatModel temperature a float instead of int (#784)
+
+### Features
+
+- **backend**: improve settings propagation and env loading (#790)
+- **tools**: improve type hints for JSONToolOutput (#785)
+
 ## python_v0.1.17 (2025-04-18)
 
 ### Bug Fixes
