@@ -9,7 +9,7 @@ from beeai_framework.errors import FrameworkError
 from beeai_framework.memory import TokenMemory
 from beeai_framework.tools.weather import OpenMeteoTool
 from examples.helpers.io import ConsoleReader
-from examples.tools.experimental.human import HumanTool, HumanToolInput
+from examples.tools.experimental.human import HumanTool
 
 
 async def main() -> None:
@@ -26,9 +26,7 @@ async def main() -> None:
         tools=[
             OpenMeteoTool(),
             HumanTool(
-                HumanToolInput(
-                    reader=reader,
-                )
+                reader=reader,
             ),
         ],
     )

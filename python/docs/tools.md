@@ -685,7 +685,7 @@ from pydantic import BaseModel, Field
 from beeai_framework.context import RunContext
 from beeai_framework.emitter import Emitter
 from beeai_framework.errors import FrameworkError
-from beeai_framework.tools import JSONToolOutput, Tool, ToolInputValidationError, ToolRunOptions
+from beeai_framework.tools import JSONToolOutput, Tool, ToolError, ToolInputValidationError, ToolRunOptions
 
 
 class OpenLibraryToolInput(BaseModel):
@@ -700,7 +700,11 @@ class OpenLibraryToolResult(BaseModel):
     bib_key: str
 
 
-class OpenLibraryTool(Tool[OpenLibraryToolInput, ToolRunOptions, JSONToolOutput]):
+class OpenLibraryToolOutput(JSONToolOutput[OpenLibraryToolResult]):
+    pass
+
+
+class OpenLibraryTool(Tool[OpenLibraryToolInput, ToolRunOptions, OpenLibraryToolOutput]):
     name = "OpenLibrary"
     description = """Provides access to a library of books with information about book titles,
         authors, contributors, publication dates, publisher and isbn."""
@@ -717,7 +721,7 @@ class OpenLibraryTool(Tool[OpenLibraryToolInput, ToolRunOptions, JSONToolOutput]
 
     async def _run(
         self, tool_input: OpenLibraryToolInput, options: ToolRunOptions | None, context: RunContext
-    ) -> JSONToolOutput:
+    ) -> OpenLibraryToolOutput:
         key = ""
         value = ""
         input_vars = vars(tool_input)
@@ -729,7 +733,6 @@ class OpenLibraryTool(Tool[OpenLibraryToolInput, ToolRunOptions, JSONToolOutput]
         else:
             raise ToolInputValidationError("All input values in OpenLibraryToolInput were empty.") from None
 
-        json_output = {}
         async with httpx.AsyncClient() as client:
             response = await client.get(
                 f"https://openlibrary.org/api/books?bibkeys={key}:{value}&jsmcd=data&format=json",
@@ -737,15 +740,11 @@ class OpenLibraryTool(Tool[OpenLibraryToolInput, ToolRunOptions, JSONToolOutput]
             )
             response.raise_for_status()
 
-            json_output = response.json()[f"{key}:{value}"]
+            result = response.json().get(f"{key}:{value}")
+            if not result:
+                raise ToolError(f"No book found with {key}={value}.")
 
-        return JSONToolOutput(
-            result={
-                "preview_url": json_output.get("preview_url", ""),
-                "info_url": json_output.get("info_url", ""),
-                "bib_key": json_output.get("bib_key", ""),
-            }
-        )
+            return OpenLibraryToolOutput(OpenLibraryToolResult.model_validate(result))
 
 
 async def main() -> None:
