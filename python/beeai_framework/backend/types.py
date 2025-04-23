@@ -111,7 +111,7 @@ ChatModelCache = BaseCache[list[ChatModelOutput]]
 
 
 class EmbeddingModelUsage(BaseModel):
-    tokens: float | None = None
+    tokens: int | None = None
 
 
 class EmbeddingModelInput(BaseModel):

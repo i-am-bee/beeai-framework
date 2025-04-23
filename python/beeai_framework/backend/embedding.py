@@ -15,7 +15,7 @@
 
 from abc import ABC, abstractmethod
 from functools import cached_property
-from typing import Self
+from typing import Any, Self
 
 from beeai_framework.backend.constants import ProviderName
 from beeai_framework.backend.errors import EmbeddingModelError
@@ -55,7 +55,7 @@ class EmbeddingModel(ABC):
         )
 
     def create(
-        self, *, values: list[str], abort_signal: AbortSignal | None = None, max_retries: int | None = None
+        self, values: list[str], *, abort_signal: AbortSignal | None = None, max_retries: int | None = None
     ) -> Run[EmbeddingModelOutput]:
         model_input = EmbeddingModelInput(values=values, abort_signal=abort_signal, max_retries=max_retries or 0)
 
@@ -75,10 +75,10 @@ class EmbeddingModel(ABC):
         return RunContext.enter(self, handler, signal=abort_signal, run_params=model_input.model_dump())
 
     @staticmethod
-    def from_name(name: str | ProviderName) -> "EmbeddingModel":
+    def from_name(name: str | ProviderName, **kwargs: Any) -> "EmbeddingModel":
         parsed_model = parse_model(name)
         TargetChatModel: type = load_model(parsed_model.provider_id, "embedding")  # noqa: N806
-        return TargetChatModel(parsed_model.model_id)  # type: ignore
+        return TargetChatModel(parsed_model.model_id, **kwargs)  # type: ignore
 
     @abstractmethod
     async def _create(
