@@ -14,10 +14,12 @@
 
 
 import os
-from typing import Any
+
+from typing_extensions import Unpack
 
 from beeai_framework.adapters.litellm import utils
 from beeai_framework.adapters.litellm.chat import LiteLLMChatModel
+from beeai_framework.backend.chat import ChatModelKwargs
 from beeai_framework.backend.constants import ProviderName
 from beeai_framework.logger import Logger
 
@@ -34,7 +36,7 @@ class OpenAIChatModel(LiteLLMChatModel):
         """The provider ID for OpenAI."""
         return "openai"
 
-    def __init__(self, model_id: str | None = None, settings: dict[str, Any] | None = None) -> None:
+    def __init__(self, model_id: str | None = None, **kwargs: Unpack[ChatModelKwargs]) -> None:
         """
         Initializes the OpenAIChatModel.
 
@@ -45,15 +47,9 @@ class OpenAIChatModel(LiteLLMChatModel):
             settings: A dictionary of settings to configure the model.
                 These settings will take precedence over environment variables.
         """
-        _settings = settings.copy() if settings is not None else {}
-
         super().__init__(
-            model_id if model_id else os.getenv("OPENAI_CHAT_MODEL", "gpt-4o"),
-            provider_id="openai",
-            settings=_settings,
+            model_id if model_id else os.getenv("OPENAI_CHAT_MODEL", "gpt-4o"), provider_id="openai", **kwargs
         )
         self._settings["extra_headers"] = utils.parse_extra_headers(
             self._settings.get("extra_headers"), os.getenv("OPENAI_API_HEADERS")
         )
-
-        pass

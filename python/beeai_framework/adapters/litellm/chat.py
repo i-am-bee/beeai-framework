@@ -73,7 +73,6 @@ class LiteLLMChatModel(ChatModel, ABC):
         model_id: str,
         *,
         provider_id: str,
-        settings: dict[str, Any] | None = None,
         **kwargs: Unpack[ChatModelKwargs],
     ) -> None:
         super().__init__(**kwargs)
@@ -84,7 +83,6 @@ class LiteLLMChatModel(ChatModel, ABC):
         litellm.drop_params = True
         # disable LiteLLM caching in favor of our own
         litellm.disable_cache()  # type: ignore [attr-defined]
-        self._settings = settings.copy() if settings is not None else {}
 
     @staticmethod
     def litellm_debug(enable: bool = True) -> None:
@@ -288,6 +286,50 @@ class LiteLLMChatModel(ChatModel, ABC):
         cloned.tool_call_fallback_via_response_format = self.tool_call_fallback_via_response_format
         cloned.model_supports_tool_calling = self.model_supports_tool_calling
         return cloned
+
+    def _assert_setting_value(
+        self,
+        name: str,
+        value: Any | None = None,
+        *,
+        constructor_name: str | None = None,
+        aliases: list[str] | None = None,
+        envs: list[str],
+        fallback: str | None = None,
+        allow_none: bool = False,
+    ) -> None:
+        def reset_aliases() -> None:
+            for alias in aliases or []:
+                self._settings[alias] = None
+
+        if value is not None:
+            self._settings[name] = value
+
+        if self._settings.get(name):
+            reset_aliases()
+            return None
+
+        for env in envs:
+            value = os.environ.get(env)
+            if value:
+                reset_aliases()
+                self._settings[name] = value
+                return None
+
+        if fallback:
+            reset_aliases()
+            self._settings[name] = fallback
+            return None
+
+        if allow_none:
+            reset_aliases()
+            return None
+
+        raise ValueError(
+            f"Setting {constructor_name or name} is required for {type(self).__name__}. "
+            f"Either pass the {constructor_name or name} explicitly or set one of the following "
+            f"environment variables {','.join(envs)}"
+        )
 
 
 LiteLLMChatModel.litellm_debug(False)

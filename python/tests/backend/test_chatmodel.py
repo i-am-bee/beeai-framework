@@ -159,13 +159,13 @@ def test_chat_model_from(monkeypatch: pytest.MonkeyPatch) -> None:
     watsonx_chat_model = ChatModel.from_name(
         "watsonx:ibm/granite-3-8b-instruct",
         {
-            "api_base": "http://somewhere",
+            "base_url": "http://somewhere",
             "project_id": "proj_id_123",
             "api_key": "api_key_123",
         },
     )
     assert isinstance(watsonx_chat_model, WatsonxChatModel)
-    assert watsonx_chat_model._settings["api_base"] == "http://somewhere"
+    assert watsonx_chat_model._settings["base_url"] == "http://somewhere"
     assert watsonx_chat_model._settings["project_id"] == "proj_id_123"
     assert watsonx_chat_model._settings["api_key"] == "api_key_123"
 
@@ -177,17 +177,17 @@ def test_chat_model_from(monkeypatch: pytest.MonkeyPatch) -> None:
     watsonx_chat_model = ChatModel.from_name("watsonx:ibm/granite-3-8b-instruct")
     assert isinstance(watsonx_chat_model, WatsonxChatModel)
 
-    openai_chat_model = ChatModel.from_name("openai:gpt-4o")
+    openai_chat_model = ChatModel.from_name("openai:gpt-4o", api_key="test")
     assert isinstance(openai_chat_model, OpenAIChatModel)
 
-    groq_chat_model = ChatModel.from_name("groq:gemma2-9b-it")
+    groq_chat_model = ChatModel.from_name("groq:gemma2-9b-it", api_key="test")
     assert isinstance(groq_chat_model, GroqChatModel)
 
-    xai_chat_model = ChatModel.from_name("xai:grok-2")
+    xai_chat_model = ChatModel.from_name("xai:grok-2", api_key="test")
     assert isinstance(xai_chat_model, XAIChatModel)
 
     monkeypatch.setenv("GOOGLE_VERTEX_PROJECT", "myproject")
-    vertexai_chat_model = ChatModel.from_name("vertexai:gemini-2.0-flash-lite-001")
+    vertexai_chat_model = ChatModel.from_name("vertexai:gemini-2.0-flash-lite-001", vertexai_location="test")
     assert isinstance(vertexai_chat_model, VertexAIChatModel)
 
     monkeypatch.setenv("ANTHROPIC_API_KEY", "apikey")

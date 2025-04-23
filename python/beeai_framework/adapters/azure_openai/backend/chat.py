@@ -13,12 +13,13 @@
 # limitations under the License.
 
 import os
-from typing import Any
 
 from dotenv import load_dotenv
+from typing_extensions import Unpack
 
-from beeai_framework.adapters.litellm import utils
 from beeai_framework.adapters.litellm.chat import LiteLLMChatModel
+from beeai_framework.adapters.litellm.utils import parse_extra_headers
+from beeai_framework.backend.chat import ChatModelKwargs
 from beeai_framework.backend.constants import ProviderName
 from beeai_framework.logger import Logger
 
@@ -70,7 +71,15 @@ class AzureOpenAIChatModel(LiteLLMChatModel):
     def provider_id(self) -> ProviderName:
         return "azure_openai"
 
-    def __init__(self, model_id: str | None = None, settings: dict[str, Any] | None = None) -> None:
+    def __init__(
+        self,
+        model_id: str | None = None,
+        *,
+        api_key: str | None = None,
+        api_base: str | None = None,
+        api_version: str | None = None,
+        **kwargs: Unpack[ChatModelKwargs],
+    ) -> None:
         """
         Inherits from LiteLLMChatModel, and takes all of the same parameters.
 
@@ -90,40 +99,17 @@ class AzureOpenAIChatModel(LiteLLMChatModel):
             ValueError: If any of the required configurations are not found.
 
         """
-
-        # Default settings (can be overriden by `settings` or environment variables)
-        config = {
-            "api_key": os.getenv("AZURE_OPENAI_API_KEY") or os.getenv("AZURE_API_KEY"),
-            "api_base": os.getenv("AZURE_OPENAI_API_BASE") or os.getenv("AZURE_API_BASE"),
-            "api_version": os.getenv("AZURE_OPENAI_API_VERSION") or os.getenv("AZURE_API_VERSION"),
-        }
-
-        # Update default settings with those provided in `settings` if provided
-        if settings:
-            config.update(settings)
-
-        # Error checking
-        if not config["api_key"]:
-            raise ValueError(
-                "Access key is required for Azure OpenAI. Specify *api_key* in settings "
-                "or set the AZURE_OPENAI_API_KEY or AZURE_API_KEY environment variable."
-            )
-        if not config["api_base"]:
-            raise ValueError(
-                "Base URL is required for Azure OpenAI. Specify *api_base* in settings "
-                "or set the AZURE_OPENAI_API_BASE or AZURE_API_BASE environment variable."
-            )
-        if not config["api_version"]:
-            raise ValueError(
-                "API Version is required for Azure OpenAI. Specify *api_version* in settings "
-                "or set the AZURE_OPENAI_API_VERSION or AZURE_API_VERSION environment variable."
-            )
-
         super().__init__(
             model_id=(model_id if model_id is not None else os.getenv("AZURE_OPENAI_CHAT_MODEL", "gpt-4o-mini")),
             provider_id="azure",  # LiteLLM uses 'azure' for Azure OpenAI
-            settings=config,
+            **kwargs,
         )
-        self._settings["extra_headers"] = utils.parse_extra_headers(
+
+        self._assert_setting_value("api_key", api_key, envs=["AZURE_OPENAI_API_KEY", "AZURE_API_KEY"])
+        self._assert_setting_value(
+            "base_url", api_base, envs=["AZURE_OPENAI_API_BASE", "AZURE_API_BASE"], aliases=["api_base"]
+        )
+        self._assert_setting_value("api_version", api_version, envs=["AZURE_OPENAI_API_VERSION", "AZURE_API_VERSION"])
+        self._settings["extra_headers"] = parse_extra_headers(
             self._settings.get("extra_headers"), os.getenv("AZURE_OPENAI_API_HEADERS")
         )

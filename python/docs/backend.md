@@ -85,7 +85,7 @@ llm = WatsonxChatModel(
     # settings={
     #     "project_id": "WATSONX_PROJECT_ID",
     #     "api_key": "WATSONX_API_KEY",
-    #     "api_base": "WATSONX_API_URL",
+    #     "base_url": "WATSONX_API_URL",
     # },
 )
 
@@ -96,7 +96,7 @@ async def watsonx_from_name() -> None:
         # {
         #     "project_id": "WATSONX_PROJECT_ID",
         #     "api_key": "WATSONX_API_KEY",
-        #     "api_base": "WATSONX_API_URL",
+        #     "base_url": "WATSONX_API_URL",
         # },
     )
     user_message = UserMessage("what states are part of New England?")
