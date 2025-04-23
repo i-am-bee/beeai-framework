@@ -22,7 +22,7 @@ import { z } from "zod";
 export type AnthropicClientSettings = AnthropicProviderSettings;
 
 export class AnthropicClient extends BackendClient<AnthropicClientSettings, AnthropicProvider> {
-  protected create(settings?: AnthropicClientSettings): AnthropicProvider {
+  protected create(): AnthropicProvider {
     const extraHeaders = parseEnv(
       "ANTHROPIC_API_HEADERS",
       z.preprocess((value) => {
@@ -36,12 +36,12 @@ export class AnthropicClient extends BackendClient<AnthropicClientSettings, Anth
     );
 
     return createAnthropic({
-      ...settings,
-      baseURL: settings?.baseURL || getEnv("ANTHROPIC_API_BASE_URL"),
-      apiKey: getEnv("ANTHROPIC_API_KEY"),
+      ...this.settings,
+      baseURL: this.settings?.baseURL || getEnv("ANTHROPIC_API_BASE_URL"),
+      apiKey: this.settings.apiKey || getEnv("ANTHROPIC_API_KEY"),
       headers: {
         ...extraHeaders,
-        ...settings?.headers,
+        ...this.settings?.headers,
       },
     });
   }
