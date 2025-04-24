@@ -30,7 +30,7 @@ from litellm import (  # type: ignore
     get_supported_openai_params,
 )
 from litellm.types.utils import StreamingChoices
-from openai.lib._pydantic import to_strict_json_schema
+from openai.lib._pydantic import _ensure_strict_json_schema, to_strict_json_schema
 from pydantic import BaseModel
 from typing_extensions import Unpack
 
@@ -205,6 +205,7 @@ class LiteLLMChatModel(ChatModel, ABC):
                     "name": tool.name,
                     "description": tool.description,
                     "parameters": self._format_tool_model(tool.input_schema),
+                    "strict": self.use_strict_tool_schema,
                 },
             }
             for tool in input.tools or []
@@ -274,11 +275,29 @@ class LiteLLMChatModel(ChatModel, ABC):
         )
 
     def _format_tool_model(self, model: type[BaseModel]) -> dict[str, Any]:
-        # Original OpenAI API requires more strict schema in order to perform well and pass the validation.
-        return to_strict_json_schema(model)
+        return to_strict_json_schema(model) if self.use_strict_tool_schema else model.model_json_schema()
 
     def _format_response_model(self, model: type[BaseModel] | dict[str, Any]) -> type[BaseModel] | dict[str, Any]:
-        return model
+        if isinstance(model, dict) and model.get("type") in ["json_schema", "json_object"]:
+            return model
+
+        json_schema = (
+            {
+                "schema": _ensure_strict_json_schema(model, path=(), root=model)
+                if self.use_strict_tool_schema
+                else model,
+                "name": "schema",
+                "strict": self.use_strict_model_schema,
+            }
+            if isinstance(model, dict)
+            else {
+                "schema": to_strict_json_schema(model) if self.use_strict_tool_schema else model.model_json_schema(),
+                "name": model.__name__,
+                "strict": self.use_strict_model_schema,
+            }
+        )
+
+        return {"type": "json_schema", "json_schema": json_schema, "strict": self.use_strict_model_schema}
 
     async def clone(self) -> Self:
         cloned = type(self)(self._model_id, settings=self._settings.copy())  # type: ignore
@@ -286,6 +305,8 @@ class LiteLLMChatModel(ChatModel, ABC):
         cloned.cache = await self.cache.clone() if self.cache else NullCache[list[ChatModelOutput]]()
         cloned.tool_call_fallback_via_response_format = self.tool_call_fallback_via_response_format
         cloned.model_supports_tool_calling = self.model_supports_tool_calling
+        cloned.use_strict_model_schema = self.use_strict_model_schema
+        cloned.use_strict_tool_schema = self.use_strict_tool_schema
         return cloned
 
     def _assert_setting_value(
