@@ -12,27 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import json
-import uuid
-from collections.abc import AsyncGenerator
-from contextlib import AsyncExitStack
-from typing import Any
-
-import anyio
+from functools import reduce
 
 try:
-    from acp import ClientSession, ServerNotification
-    from acp.client.sse import sse_client
-    from acp.shared.session import ReceiveResultT
-    from acp.types import (
-        AgentRunProgressNotification,
-        AgentRunProgressNotificationParams,
-        ClientRequest,
-        RequestParams,
-        RunAgentRequest,
-        RunAgentRequestParams,
-        RunAgentResult,
-    )
+    from acp_sdk.client import Client
+    from acp_sdk.models import Message, MessagePart, RunCompletedEvent
 except ModuleNotFoundError as e:
     raise ModuleNotFoundError(
         "Optional module [acp] not found.\nRun 'pip install beeai-framework[acp]' to install."
@@ -41,9 +25,7 @@ except ModuleNotFoundError as e:
 from beeai_framework.agents.base import BaseAgent
 from beeai_framework.agents.errors import AgentError
 from beeai_framework.agents.experimental.remote.events import (
-    RemoteAgentErrorEvent,
     RemoteAgentUpdateEvent,
-    RemoteAgentWarningEvent,
     remote_agent_event_types,
 )
 from beeai_framework.agents.experimental.remote.types import (
@@ -53,7 +35,6 @@ from beeai_framework.agents.experimental.remote.types import (
 from beeai_framework.backend.message import AssistantMessage
 from beeai_framework.context import Run, RunContext
 from beeai_framework.emitter import Emitter
-from beeai_framework.errors import FrameworkError
 from beeai_framework.memory import BaseMemory
 from beeai_framework.utils import AbortSignal
 
@@ -62,41 +43,29 @@ class RemoteAgent(BaseAgent[RemoteAgentRunOutput]):
     def __init__(self, agent_name: str, *, url: str) -> None:
         super().__init__()
         self.input = RemoteAgentInput(agent_name=agent_name, url=url)
-        self.exit_stack = AsyncExitStack()
 
     def run(
         self,
-        input: str | dict[str, Any],
+        input: str,
         *,
         signal: AbortSignal | None = None,
     ) -> Run[RemoteAgentRunOutput]:
         async def handler(context: RunContext) -> RemoteAgentRunOutput:
-            session: ClientSession = await self._connect_to_server()
-
-            async with self.exit_stack:
-                async for message in self._send_request_with_notifications(
-                    context,
-                    session,
-                    client_req=RunAgentRequest(
-                        method="agents/run",
-                        params=RunAgentRequestParams(
-                            name=self.input.agent_name, input={"text": input} if isinstance(input, str) else input
-                        ),
-                    ),
-                    result_type=RunAgentResult,
+            async with Client(base_url=self.input.url) as client:
+                last_event = None
+                async for event in client.run_stream(
+                    agent=self.input.agent_name, inputs=[Message(parts=[MessagePart(content=input)])]
                 ):
-                    match message:
-                        case ServerNotification(
-                            root=AgentRunProgressNotification(params=AgentRunProgressNotificationParams(delta=delta))
-                        ):
-                            await context.emitter.emit("update", RemoteAgentUpdateEvent(key="update", value=delta))
-                        case RunAgentResult() as result:
-                            await context.emitter.emit(
-                                "update", RemoteAgentUpdateEvent(key="final_answer", value=result.output)
-                            )
-                            return RemoteAgentRunOutput(result=AssistantMessage(json.dumps(result.output)))
+                    last_event = event
+                    envet_dict = event.model_dump()
+                    del envet_dict["type"]
+                    await context.emitter.emit("update", RemoteAgentUpdateEvent(key=event.type, value=envet_dict))
 
-            raise AgentError("No response from assistant.")
+                if isinstance(last_event, RunCompletedEvent):
+                    response = str(reduce(lambda x, y: x + y, last_event.run.outputs))
+                    return RemoteAgentRunOutput(result=AssistantMessage(response))
+                else:
+                    return RemoteAgentRunOutput(result=AssistantMessage("No response from agent."))
 
         return self._to_run(
             handler,
@@ -107,80 +76,17 @@ class RemoteAgent(BaseAgent[RemoteAgentRunOutput]):
             },
         )
 
-    async def _send_request_with_notifications(
+    async def check_agent_exists(
         self,
-        context: RunContext,
-        session: ClientSession,
-        client_req: RunAgentRequest,
-        result_type: type[ReceiveResultT],
-    ) -> AsyncGenerator[ReceiveResultT | ServerNotification | None, None]:
-        resp: ReceiveResultT | None = None
-        async with AsyncExitStack():
-            message_writer, message_reader = anyio.create_memory_object_stream[ServerNotification]()
-
-            req_root = ClientRequest(client_req).root
-            req_root.params = client_req.params or RequestParams()
-            req_root.params.meta = RequestParams.Meta(progressToken=uuid.uuid4().hex)
-            final_req = ClientRequest(req_root)
-
-            async with anyio.create_task_group() as task_group:
-
-                async def request_task() -> None:
-                    nonlocal resp
-                    try:
-                        resp = await session.send_request(final_req, result_type)
-                    except Exception as e:
-                        e = FrameworkError.ensure(e)
-                        await context.emitter.emit(
-                            "error",
-                            RemoteAgentErrorEvent(message="Unable to send request", error=e),
-                        )
-                    finally:
-                        task_group.cancel_scope.cancel()
-
-                async def read_notifications() -> None:
-                    # IMPORTANT(!) if the client does not read the notifications, agent gets blocked
-                    async for message in session.incoming_messages:
-                        try:
-                            if isinstance(message, Exception):
-                                raise AgentError("Remote agent error", cause=message)
-                            notification = ServerNotification.model_validate(message)
-                            await message_writer.send(notification)
-                        except ValueError as e:
-                            await context.emitter.emit(
-                                "warning",
-                                RemoteAgentWarningEvent(
-                                    message=f"Unable to parse message from server: {message}", data=e
-                                ),
-                            )
-
-                task_group.start_soon(read_notifications)
-                task_group.start_soon(request_task)
-
-                async for message in message_reader:
-                    yield message
-
-        if resp:
-            yield resp
-
-    async def _connect_to_server(
-        self,
-    ) -> ClientSession:
+    ) -> None:
         try:
-            sse_transport = await self.exit_stack.enter_async_context(sse_client(url=self.input.url))
-            self.read, self.write = sse_transport
-            session: ClientSession = await self.exit_stack.enter_async_context(ClientSession(self.read, self.write))
-            await session.initialize()
-            response = await session.list_agents()
-            agents = response.agents
-
-            agent = any(agent.name == self.input.agent_name for agent in agents)
-            if not agent:
-                raise AgentError(f"Agent {self.input.agent_name} is not registered in the platform")
-            return session
-
+            async with Client(base_url=self.input.url) as client:
+                agents = [agent async for agent in client.agents()]
+                agent = any(agent.name == self.input.agent_name for agent in agents)
+                if not agent:
+                    raise AgentError(f"Agent {self.input.agent_name} does not exist.")
         except Exception as e:
-            raise AgentError("Can't connect to Beeai Platform.", cause=e)
+            raise AgentError("Can't connect to ACP agent.", cause=e)
 
     def _create_emitter(self) -> Emitter:
         return Emitter.root().child(

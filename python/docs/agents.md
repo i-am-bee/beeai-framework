@@ -331,7 +331,6 @@ response = await agent.run(input_data)
 
 ```py
 import asyncio
-import json
 import sys
 import traceback
 
@@ -343,31 +342,15 @@ from examples.helpers.io import ConsoleReader
 async def main() -> None:
     reader = ConsoleReader()
 
-    agent = RemoteAgent(agent_name="chat", url="http://127.0.0.1:8333/mcp/sse")
+    agent = RemoteAgent(agent_name="chat", url="http://127.0.0.1:8333/api/v1/acp/")
     for prompt in reader:
         # Run the agent and observe events
-        response = (
-            await agent.run(
-                {
-                    "messages": [{"role": "user", "content": prompt}],
-                    "config": {"tools": ["weather", "search", "wikipedia"]},
-                }
-            )
-            .on(
-                "update",
-                lambda data, event: (
-                    reader.write("Agent 🤖 (debug) : ", data.value["logs"][0]["message"])
-                    if "logs" in data.value
-                    else None
-                ),
-            )
-            .on(
-                "error",  # Log errors
-                lambda data, event: reader.write("Agent 🤖 : ", data.error.explain()),
-            )
+        response = await agent.run(prompt).on(
+            "update",
+            lambda data, event: (reader.write("Agent 🤖 (debug) : ", data)),
         )
 
-        reader.write("Agent 🤖 : ", json.loads(response.result.text)["messages"][0]["content"])
+        reader.write("Agent 🤖 : ", response.result.text)
 
 
 if __name__ == "__main__":
