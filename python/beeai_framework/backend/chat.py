@@ -228,7 +228,7 @@ IMPORTANT: You MUST answer with a JSON object that matches the JSON schema above
             stop_sequences=stop_sequences,
             response_format=(
                 generate_tool_union_schema(
-                    filter_tools_by_tool_choice(tools, tool_choice), strict=self.use_strict_tool_schema
+                    filter_tools_by_tool_choice(tools, tool_choice), strict=self.use_strict_model_schema
                 )
                 if force_tool_call_via_response_format and tools
                 else response_format
@@ -383,5 +383,7 @@ IMPORTANT: You MUST answer with a JSON object that matches the JSON schema above
             tool_call_fallback_via_response_format=self.tool_call_fallback_via_response_format,
             model_supports_tool_calling=self.model_supports_tool_calling,
             settings=self._settings.copy(),
+            use_strict_model_schema=self.use_strict_model_schema,
+            use_strict_tool_schema=self.use_strict_tool_schema,
         )
         return cloned

@@ -297,7 +297,7 @@ class LiteLLMChatModel(ChatModel, ABC):
             }
         )
 
-        return {"type": "json_schema", "json_schema": json_schema, "strict": self.use_strict_model_schema}
+        return {"type": "json_schema", "json_schema": json_schema}
 
     async def clone(self) -> Self:
         cloned = type(self)(self._model_id, settings=self._settings.copy())  # type: ignore
