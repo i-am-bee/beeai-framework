@@ -4,13 +4,14 @@ import traceback
 
 from beeai_framework.agents.experimental.remote import RemoteAgent
 from beeai_framework.errors import FrameworkError
+from beeai_framework.memory.unconstrained_memory import UnconstrainedMemory
 from examples.helpers.io import ConsoleReader
 
 
 async def main() -> None:
     reader = ConsoleReader()
 
-    agent = RemoteAgent(agent_name="chat", url="http://127.0.0.1:8333/api/v1/acp/")
+    agent = RemoteAgent(agent_name="chat", url="http://127.0.0.1:8333/api/v1/acp/", memory=UnconstrainedMemory())
     for prompt in reader:
         # Run the agent and observe events
         response = await agent.run(prompt).on(
