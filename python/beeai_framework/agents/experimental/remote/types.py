@@ -13,7 +13,7 @@
 # limitations under the License.
 
 
-from acp_sdk.models.models import Run
+from acp_sdk.models.models import Event
 from pydantic import BaseModel, InstanceOf
 
 from beeai_framework.backend.message import AnyMessage
@@ -21,7 +21,7 @@ from beeai_framework.backend.message import AnyMessage
 
 class RemoteAgentRunOutput(BaseModel):
     result: InstanceOf[AnyMessage]
-    native_response: Run | None = None
+    event: Event
 
 
 class RemoteAgentInput(BaseModel):

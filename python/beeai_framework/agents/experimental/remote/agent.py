@@ -34,7 +34,7 @@ from beeai_framework.agents.experimental.remote.types import (
     RemoteAgentInput,
     RemoteAgentRunOutput,
 )
-from beeai_framework.backend.message import AnyMessage, AssistantMessage
+from beeai_framework.backend.message import AnyMessage, AssistantMessage, UserMessage
 from beeai_framework.backend.message import Message as BeeAIMessage
 from beeai_framework.context import Run, RunContext
 from beeai_framework.emitter import Emitter
@@ -43,8 +43,9 @@ from beeai_framework.utils import AbortSignal
 
 
 class RemoteAgent(BaseAgent[RemoteAgentRunOutput]):
-    def __init__(self, agent_name: str, *, url: str) -> None:
+    def __init__(self, agent_name: str, *, url: str, memory: BaseMemory) -> None:
         super().__init__()
+        self._memory = memory
         self.input = RemoteAgentInput(agent_name=agent_name, url=url)
 
     def run(
@@ -55,45 +56,47 @@ class RemoteAgent(BaseAgent[RemoteAgentRunOutput]):
     ) -> Run[RemoteAgentRunOutput]:
         async def handler(context: RunContext) -> RemoteAgentRunOutput:
             async with Client(base_url=self.input.url) as client:
-
-                def convert_to_acp_message(input: str | AnyMessage | Message) -> Message:
-                    if isinstance(input, str):
-                        return Message(parts=[MessagePart(content=input)])
-                    elif isinstance(input, BeeAIMessage):
-                        return Message(parts=[MessagePart(content=input.text)])
-                    elif isinstance(input, Message):
-                        return input
-                    else:
-                        raise ValueError("Unsupported input type")
-
                 inputs = (
-                    [convert_to_acp_message(i) for i in input]
+                    [self._convert_to_acp_message(i) for i in input]
                     if isinstance(input, list)
-                    else [convert_to_acp_message(input)]
+                    else [self._convert_to_acp_message(input)]
                 )
 
                 last_event = None
                 async for event in client.run_stream(agent=self.input.agent_name, inputs=inputs):
                     last_event = event
-                    envet_dict = event.model_dump()
-                    del envet_dict["type"]
+                    envet_dict = event.model_dump(exclude={"type"})
                     await context.emitter.emit("update", RemoteAgentUpdateEvent(key=event.type, value=envet_dict))
 
-                if isinstance(last_event, RunFailedEvent) and isinstance(last_event.run.error, Error):
+                if last_event is None:
+                    raise AgentError("No event received from agent.")
+
+                if isinstance(last_event, RunFailedEvent):
+                    message = (
+                        last_event.run.error.message
+                        if isinstance(last_event.run.error, Error)
+                        else "Something went wrong with the agent communication."
+                    )
                     await context.emitter.emit(
                         "error",
-                        RemoteAgentErrorEvent(message=last_event.run.error.message),
+                        RemoteAgentErrorEvent(message=message),
                     )
-                if isinstance(last_event, RunCompletedEvent):
+                    raise AgentError(message)
+                elif isinstance(last_event, RunCompletedEvent):
                     response = str(reduce(lambda x, y: x + y, last_event.run.outputs))
-                    return RemoteAgentRunOutput(result=AssistantMessage(response), native_response=last_event.run)
-                else:
-                    return RemoteAgentRunOutput(
-                        result=AssistantMessage("No response from agent."),
-                        native_response=last_event.run
-                        if last_event is not None and hasattr(last_event, "run")
-                        else None,
+
+                    input_messages = (
+                        [self._convert_to_message(i) for i in input]
+                        if isinstance(input, list)
+                        else [self._convert_to_message(input)]
                     )
+                    assistant_message = AssistantMessage(response, meta={"event": last_event})
+                    await self.memory.add_many(input_messages)
+                    await self.memory.add(assistant_message)
+
+                    return RemoteAgentRunOutput(result=assistant_message, event=last_event)
+                else:
+                    return RemoteAgentRunOutput(result=AssistantMessage("No response from agent."), event=last_event)
 
         return self._to_run(
             handler,
@@ -125,13 +128,33 @@ class RemoteAgent(BaseAgent[RemoteAgentRunOutput]):
 
     @property
     def memory(self) -> BaseMemory:
-        raise NotImplementedError()
+        return self._memory
 
     @memory.setter
     def memory(self, memory: BaseMemory) -> None:
-        raise NotImplementedError()
+        self._memory = memory
 
     async def clone(self) -> "RemoteAgent":
-        cloned = RemoteAgent(self.input.agent_name, url=self.input.url)
+        cloned = RemoteAgent(self.input.agent_name, url=self.input.url, memory=self.memory)
         cloned.emitter = await self.emitter.clone()
         return cloned
+
+    def _convert_to_message(self, input: str | AnyMessage | Message) -> AnyMessage:
+        if isinstance(input, str):
+            return UserMessage(input)
+        elif isinstance(input, BeeAIMessage):
+            return input
+        elif isinstance(input, Message):
+            return UserMessage(str(input))
+        else:
+            raise ValueError("Unsupported input type")
+
+    def _convert_to_acp_message(self, input: str | AnyMessage | Message) -> Message:
+        if isinstance(input, str):
+            return Message(parts=[MessagePart(content=input)])
+        elif isinstance(input, BeeAIMessage):
+            return Message(parts=[MessagePart(content=input.text)])
+        elif isinstance(input, Message):
+            return input
+        else:
+            raise ValueError("Unsupported input type")
