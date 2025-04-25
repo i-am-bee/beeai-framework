@@ -111,7 +111,9 @@ ChatModelCache = BaseCache[list[ChatModelOutput]]
 
 
 class EmbeddingModelUsage(BaseModel):
-    tokens: int | None = None
+    prompt_tokens: int
+    completion_tokens: int
+    total_tokens: int
 
 
 class EmbeddingModelInput(BaseModel):
@@ -123,4 +125,4 @@ class EmbeddingModelInput(BaseModel):
 class EmbeddingModelOutput(BaseModel):
     values: list[str]
     embeddings: list[list[float]]
-    usage: InstanceOf[EmbeddingModelUsage]
+    usage: InstanceOf[EmbeddingModelUsage] | None = None
