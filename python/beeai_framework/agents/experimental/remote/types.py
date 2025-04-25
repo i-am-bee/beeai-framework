@@ -13,22 +13,15 @@
 # limitations under the License.
 
 
+from acp_sdk.models.models import Run
 from pydantic import BaseModel, InstanceOf
 
 from beeai_framework.backend.message import AnyMessage
-from beeai_framework.utils import AbortSignal
-
-
-class RemoteAgentRunInput(BaseModel):
-    prompt: str | None = None
-
-
-class RemoteAgentRunOptions(BaseModel):
-    signal: AbortSignal | None = None
 
 
 class RemoteAgentRunOutput(BaseModel):
     result: InstanceOf[AnyMessage]
+    native_response: Run | None = None
 
 
 class RemoteAgentInput(BaseModel):

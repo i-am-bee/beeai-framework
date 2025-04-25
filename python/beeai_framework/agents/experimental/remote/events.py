@@ -14,9 +14,7 @@
 
 from typing import Any
 
-from pydantic import BaseModel, InstanceOf
-
-from beeai_framework.errors import FrameworkError
+from pydantic import BaseModel
 
 
 class RemoteAgentUpdateEvent(BaseModel):
@@ -26,16 +24,6 @@ class RemoteAgentUpdateEvent(BaseModel):
 
 class RemoteAgentErrorEvent(BaseModel):
     message: str
-    error: InstanceOf[FrameworkError]
 
 
-class RemoteAgentWarningEvent(BaseModel):
-    message: str
-    data: InstanceOf[Exception]
-
-
-remote_agent_event_types: dict[str, type] = {
-    "update": RemoteAgentUpdateEvent,
-    "error": RemoteAgentErrorEvent,
-    "warning": RemoteAgentWarningEvent,
-}
+remote_agent_event_types: dict[str, type] = {"update": RemoteAgentUpdateEvent, "error": RemoteAgentErrorEvent}

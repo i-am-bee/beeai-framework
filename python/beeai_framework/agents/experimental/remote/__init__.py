@@ -16,7 +16,6 @@ from beeai_framework.agents.experimental.remote.agent import RemoteAgent
 from beeai_framework.agents.experimental.remote.events import (
     RemoteAgentErrorEvent,
     RemoteAgentUpdateEvent,
-    RemoteAgentWarningEvent,
 )
 from beeai_framework.agents.experimental.remote.types import RemoteAgentRunOutput
 
@@ -25,5 +24,4 @@ __all__ = [
     "RemoteAgentErrorEvent",
     "RemoteAgentRunOutput",
     "RemoteAgentUpdateEvent",
-    "RemoteAgentWarningEvent",
 ]
