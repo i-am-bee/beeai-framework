@@ -2,15 +2,15 @@
 
 [[package]]
 name = "acp-sdk"
-version = "0.5.0"
+version = "0.7.1"
 description = "Agent Communication Protocol SDK"
 optional = true
 python-versions = "<4.0,>=3.11"
 groups = ["main"]
 markers = "extra == \"acp\""
 files = [
-    {file = "acp_sdk-0.5.0-py3-none-any.whl", hash = "sha256:2aaaf2c599bdda948b9cd109998f919742dad091829c099df8d168e720f6b73c"},
-    {file = "acp_sdk-0.5.0.tar.gz", hash = "sha256:9697c4002d665cb8ec15f358a36f4062eb83ec58a9bd67d6595ef2448df9044e"},
+    {file = "acp_sdk-0.7.1-py3-none-any.whl", hash = "sha256:73473ecf222acf8f72296f4a3206527141484139e8ead2c4bec3472b8b25747a"},
+    {file = "acp_sdk-0.7.1.tar.gz", hash = "sha256:f521c94aa65f8001770164fe2bbad499cfa0f60d76cca2bc913cef11050f2389"},
 ]
 
 [package.dependencies]
@@ -5228,4 +5228,4 @@ wikipedia = ["wikipedia-api"]
 [metadata]
 lock-version = "2.1"
 python-versions = ">= 3.11,<4.0"
-content-hash = "b7276015208ebdbfbc005365ae64baea8d39dfd446030baec973bc4ce9264dda"
+content-hash = "69ecfea60e1ead1726412ebd5e8c9a9b78fe558bbbb7cbc02c9d854b541f01d2"

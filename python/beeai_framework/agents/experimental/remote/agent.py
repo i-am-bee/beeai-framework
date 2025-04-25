@@ -83,7 +83,7 @@ class RemoteAgent(BaseAgent[RemoteAgentRunOutput]):
                     )
                     raise AgentError(message)
                 elif isinstance(last_event, RunCompletedEvent):
-                    response = str(reduce(lambda x, y: x + y, last_event.run.outputs))
+                    response = str(reduce(lambda x, y: x + y, last_event.run.output))
 
                     input_messages = (
                         [self._convert_to_message(i) for i in input]
