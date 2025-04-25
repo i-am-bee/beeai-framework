@@ -18,11 +18,12 @@ from abc import ABC
 from collections.abc import Callable, Sequence
 from contextlib import suppress
 from logging import Logger
-from typing import Any, Literal, Optional, TypeVar, Union
+from typing import Any, Literal, Optional, Union
 
-from pydantic import BaseModel, ConfigDict, Field, GetJsonSchemaHandler, create_model
+from pydantic import BaseModel, ConfigDict, Field, GetJsonSchemaHandler, RootModel, create_model
 from pydantic.json_schema import JsonSchemaValue
 from pydantic_core import CoreSchema, SchemaValidator
+from typing_extensions import TypeVar
 
 from beeai_framework.utils.dicts import exclude_keys
 
@@ -137,6 +138,13 @@ class AnyModel(BaseModel):
     model_config = ConfigDict(extra="allow", arbitrary_types_allowed=True)
 
 
+TP = TypeVar("TP", bound=type, default=Any)
+
+
+def create_model_from_type(input: TP, *, name: str | None = None) -> type[RootModel[TP]]:
+    return create_model(name or "Schema", __base__=RootModel, root=input)
+
+
 @typing.no_type_check
 def get_input_schema(fn: Callable, /, *, excluded: set[str] | None = None) -> type[BaseModel]:
     excluded = excluded or set()
@@ -146,6 +154,7 @@ def get_input_schema(fn: Callable, /, *, excluded: set[str] | None = None) -> ty
 
     args, _, _, defaults, kwonlyargs, kwonlydefaults, annotations = inspect.getfullargspec(fn)
     defaults = defaults or []
+    kwonlydefaults = kwonlydefaults or {}
     args = args or []
 
     non_default_args = len(args) - len(defaults)
@@ -174,3 +183,16 @@ def get_input_schema(fn: Callable, /, *, excluded: set[str] | None = None) -> ty
     )
 
     return input_model
+
+
+@typing.no_type_check
+def get_output_schema(fn: Callable) -> type[BaseModel]:
+    args, _, _, defaults, kwonlyargs, kwonlydefaults, annotations = inspect.getfullargspec(fn)
+    return_type = annotations.get("return", Any)
+
+    if isinstance(return_type, type) and issubclass(return_type, BaseModel):
+        return return_type
+    else:
+        return create_model_from_type(
+            return_type if isinstance(return_type, type) else type(return_type), name=f"{fn.__name__}Output"
+        )

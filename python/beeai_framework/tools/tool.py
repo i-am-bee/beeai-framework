@@ -42,7 +42,7 @@ from beeai_framework.tools.events import (
     tool_event_types,
 )
 from beeai_framework.tools.types import StringToolOutput, ToolOutput, ToolRunOptions
-from beeai_framework.utils.models import AnyModel, get_input_schema
+from beeai_framework.utils.models import create_model_from_type, get_input_schema
 from beeai_framework.utils.strings import to_safe_word
 
 logger = Logger(__name__)
@@ -50,7 +50,7 @@ logger = Logger(__name__)
 TInput = TypeVar("TInput", bound=BaseModel)
 TRunOptions = TypeVar("TRunOptions", bound=ToolRunOptions, default=ToolRunOptions)
 TOutput = TypeVar("TOutput", bound=ToolOutput, default=ToolOutput)
-TOutputRaw = TypeVar("TOutputRaw", bound=BaseModel, default=AnyModel)
+TOutputRaw = TypeVar("TOutputRaw", bound=BaseModel, default=Any)
 
 
 class Tool(ABC, Generic[TInput, TRunOptions, TOutput, TOutputRaw], Pluggable[TInput, TOutputRaw]):
@@ -86,7 +86,7 @@ class Tool(ABC, Generic[TInput, TRunOptions, TOutput, TOutputRaw], Pluggable[TIn
 
     @property
     def output_schema(self) -> type[TOutputRaw]:
-        return AnyModel  # type: ignore
+        return create_model_from_type(Any, name=f"{type(self).__name__}Output")  # type: ignore
 
     @cached_property
     def emitter(self) -> Emitter:

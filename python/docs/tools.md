@@ -704,11 +704,12 @@ class OpenLibraryToolOutput(JSONToolOutput[OpenLibraryToolResult]):
     pass
 
 
-class OpenLibraryTool(Tool[OpenLibraryToolInput, ToolRunOptions, OpenLibraryToolOutput]):
+class OpenLibraryTool(Tool[OpenLibraryToolInput, ToolRunOptions, OpenLibraryToolOutput, OpenLibraryToolResult]):
     name = "OpenLibrary"
     description = """Provides access to a library of books with information about book titles,
         authors, contributors, publication dates, publisher and isbn."""
     input_schema = OpenLibraryToolInput
+    output_schema = OpenLibraryToolResult
 
     def __init__(self, options: dict[str, Any] | None = None) -> None:
         super().__init__(options)

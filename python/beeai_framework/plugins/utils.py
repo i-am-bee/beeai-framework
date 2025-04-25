@@ -23,7 +23,7 @@ from typing_extensions import Unpack
 from beeai_framework.context import Run, RunContext
 from beeai_framework.emitter import Emitter
 from beeai_framework.plugins.plugin import AnyPlugin, Plugin, PluginKwargs
-from beeai_framework.utils.models import ModelLike, get_input_schema, to_model
+from beeai_framework.utils.models import ModelLike, get_input_schema, get_output_schema, to_model
 from beeai_framework.utils.strings import to_safe_word
 
 TInput = TypeVar("TInput", bound=BaseModel)
@@ -66,7 +66,7 @@ def plugin(
         plugin_name = name or fn.__name__
         plugin_description = description or inspect.getdoc(fn)
         plugin_input: type[TInput] = input_schema or get_input_schema(fn)
-        plugin_output: type[TOutput] = output_schema or get_input_schema(fn)  # TODO?
+        plugin_output: type[TOutput] = output_schema or get_output_schema(fn)
 
         if plugin_description is None:
             raise ValueError("No plugin description provided.")

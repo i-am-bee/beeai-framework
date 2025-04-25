@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from beeai_framework.utils.models import create_model_from_type
 
 try:
     import wikipediaapi  # type: ignore
@@ -55,7 +56,7 @@ class WikipediaTool(Tool[WikipediaToolInput, ToolRunOptions, WikipediaToolOutput
         history, politics, geography, society, culture, science, technology, people, \
         animal species, mathematics, and other subjects."
     input_schema = WikipediaToolInput
-    output_schema = list[SearchToolResult]
+    output_schema = create_model_from_type(list[SearchToolResult])
     client = wikipediaapi.Wikipedia(
         user_agent="beeai-framework https://github.com/i-am-bee/beeai-framework", language="en"
     )

@@ -94,6 +94,8 @@ async def workflow_as_plugin() -> None:
 
 async def registry_and_autoloading() -> None:
     class PluginLoader:
+        REF_PREFIX = "$"
+
         def __init__(self, *, registry: PluggableRegistry | None = None) -> None:
             self.factories = registry or PluggableRegistry()
             self.instances = PluggableInstanceRegistry()
@@ -118,8 +120,8 @@ async def registry_and_autoloading() -> None:
             elif isinstance(input, list):
                 return [self._parse_plugin_parameters(item) for item in input]
 
-            if isinstance(input, str) and input.startswith("#"):
-                return self.instances.lookup(input[1:]).ref
+            if isinstance(input, str) and input.startswith(PluginLoader.REF_PREFIX):
+                return self.instances.lookup(input[len(PluginLoader.REF_PREFIX) :]).ref
             else:
                 return input
 
@@ -146,16 +148,16 @@ async def registry_and_autoloading() -> None:
             "plugin": "DuckDuckGoSearchTool",
             "parameters": {},
         },
-        "unconstrained_memory": {
+        "my_memory": {
             "plugin": "UnconstrainedMemory",
             "parameters": {},
         },
         "my_agent": {
             "plugin": "ToolCallingAgent",
             "parameters": {
-                "llm": "#ollama_granite31_chat_model",
-                "tools": ["#weather_tool", "#duckduckgo_search_tool"],
-                "memory": "#unconstrained_memory",
+                "llm": "$ollama_granite31_chat_model",
+                "tools": ["$weather_tool", "$duckduckgo_search_tool"],
+                "memory": "$my_memory",
                 "save_intermediate_steps": True,
             },
         },
@@ -167,28 +169,46 @@ async def registry_and_autoloading() -> None:
     # We retrieve user actions (from an external source like API / CLI)
     user_actions = [
         {
-            "plugin": "my_agent",
+            "instance": "weather_tool",
+            "input": {
+                "location_name": "Prague",
+            },
+        },
+        {
+            "instance": "duckduckgo_search_tool",
+            "input": {
+                "query": "Current time and date",
+            },
+        },
+        {
+            "instance": "my_memory",
+            "input": {
+                "message": UserMessage("Hello agent."),
+            },
+        },
+        {
+            "instance": "my_agent",
             "input": {"prompt": "Who is the president of Czech Republic?"},
         },
         {
-            "plugin": "my_agent",
+            "instance": "my_agent",
             "input": {"prompt": "How old is he?"},
         },
         {
-            "plugin": "my_agent",
+            "instance": "my_agent",
             "input": {"prompt": "What is the current weather in Prague?"},
         },
     ]
 
     for action in user_actions:
-        name, input = action["plugin"], action["input"]
+        name, input = action["instance"], action["input"]
         assert isinstance(name, str)
         assert isinstance(input, dict)
-        print(f"Running '{name}' with input {input}")
+        print(f"-> running '{name}' with the following input {input}")
 
         instance = loader.instances.lookup(name).ref
         response = await instance.as_plugin().run(input)
-        print("-> ", response.result)
+        print("<- ", response.result if hasattr(response, "result") else response.model_dump())
 
 
 if __name__ == "__main__":
