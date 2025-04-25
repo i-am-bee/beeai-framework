@@ -63,7 +63,7 @@ class RemoteAgent(BaseAgent[RemoteAgentRunOutput]):
                 )
 
                 last_event = None
-                async for event in client.run_stream(agent=self.input.agent_name, inputs=inputs):
+                async for event in client.run_stream(agent=self.input.agent_name, input=inputs):
                     last_event = event
                     envet_dict = event.model_dump(exclude={"type"})
                     await context.emitter.emit("update", RemoteAgentUpdateEvent(key=event.type, value=envet_dict))
