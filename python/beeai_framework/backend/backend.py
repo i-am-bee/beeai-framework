@@ -24,8 +24,8 @@ class Backend:
         self.embedding = embedding
 
     @staticmethod
-    def from_name(*, chat: str | ProviderName, embedding: str | ProviderName | None = None) -> "Backend":
-        return Backend(chat=ChatModel.from_name(chat), embedding=EmbeddingModel.from_name(embedding or "dummy"))
+    def from_name(*, chat: str | ProviderName, embedding: str | ProviderName) -> "Backend":
+        return Backend(chat=ChatModel.from_name(chat), embedding=EmbeddingModel.from_name(embedding))
 
     @staticmethod
     def from_provider(name: str | ProviderName) -> "Backend":
