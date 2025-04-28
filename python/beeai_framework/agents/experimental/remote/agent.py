@@ -91,7 +91,6 @@ class RemoteAgent(BaseAgent[RemoteAgentRunOutput]):
                         else [self._convert_to_message(input)]
                     )
                     assistant_message = AssistantMessage(response, meta={"event": last_event})
-                    print(input_messages)
                     await self.memory.add_many(input_messages)
                     await self.memory.add(assistant_message)
 
