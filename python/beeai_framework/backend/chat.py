@@ -69,6 +69,8 @@ logger = Logger(__name__)
 class ChatModelKwargs(TypedDict, total=False):
     tool_call_fallback_via_response_format: bool
     model_supports_tool_calling: bool
+    use_strict_tool_schema: bool
+    use_strict_model_schema: bool
     parameters: InstanceOf[ChatModelParameters]
     cache: InstanceOf[ChatModelCache]
     settings: dict[str, Any]
@@ -83,6 +85,8 @@ class ChatModel(ABC):
     tool_choice_support: ClassVar[set[str]] = {"required", "none", "single", "auto"}
     tool_call_fallback_via_response_format: bool
     model_supports_tool_calling: bool
+    use_strict_model_schema: bool
+    use_strict_tool_schema: bool
 
     @property
     @abstractmethod
@@ -103,6 +107,8 @@ class ChatModel(ABC):
         self.cache = kwargs.get("cache", NullCache[list[ChatModelOutput]]())
         self.tool_call_fallback_via_response_format = kwargs.get("tool_call_fallback_via_response_format", True)
         self.model_supports_tool_calling = kwargs.get("model_supports_tool_calling", True)
+        self.use_strict_tool_schema = kwargs.get("use_strict_tool_schema", True)
+        self.use_strict_model_schema = kwargs.get("use_strict_model_schema", False)
 
     @cached_property
     def emitter(self) -> Emitter:
@@ -221,7 +227,9 @@ IMPORTANT: You MUST answer with a JSON object that matches the JSON schema above
             abort_signal=abort_signal,
             stop_sequences=stop_sequences,
             response_format=(
-                generate_tool_union_schema(filter_tools_by_tool_choice(tools, tool_choice))
+                generate_tool_union_schema(
+                    filter_tools_by_tool_choice(tools, tool_choice), strict=self.use_strict_model_schema
+                )
                 if force_tool_call_via_response_format and tools
                 else response_format
             ),
@@ -375,5 +383,7 @@ IMPORTANT: You MUST answer with a JSON object that matches the JSON schema above
             tool_call_fallback_via_response_format=self.tool_call_fallback_via_response_format,
             model_supports_tool_calling=self.model_supports_tool_calling,
             settings=self._settings.copy(),
+            use_strict_model_schema=self.use_strict_model_schema,
+            use_strict_tool_schema=self.use_strict_tool_schema,
         )
         return cloned
