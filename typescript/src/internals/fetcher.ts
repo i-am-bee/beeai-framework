@@ -23,7 +23,7 @@ import {
 } from "@ai-zen/node-fetch-event-source";
 import { FetchEventSourceInit } from "@ai-zen/node-fetch-event-source/lib/cjs/fetch.js";
 import { emitterToGenerator } from "@/internals/helpers/promise.js";
-import { doNothing, isPlainObject } from "remeda";
+import { doNothing, isArray, isPlainObject, isTruthy } from "remeda";
 import { Callback, Emitter } from "@/emitter/emitter.js";
 import { shallowCopy } from "@/serializer/utils.js";
 
@@ -87,7 +87,7 @@ export class RestfulClient<K extends Record<string, string>> extends Serializabl
   constructor(
     protected input: {
       baseUrl: string;
-      headers: () => Promise<Headers>;
+      headers?: () => Promise<Headers>;
       paths: K;
     },
   ) {
@@ -98,7 +98,7 @@ export class RestfulClient<K extends Record<string, string>> extends Serializabl
     path: keyof K,
     init: FetchEventSourceInit,
   ): AsyncGenerator<EventSourceMessage, void, void> {
-    const { paths, baseUrl, headers } = this.input;
+    const { paths, baseUrl } = this.input;
     const emitter = this.emitter.child({
       groupId: "stream",
     });
@@ -106,11 +106,9 @@ export class RestfulClient<K extends Record<string, string>> extends Serializabl
     const input: StreamInput = {
       url: new URL(paths[path] ?? path, baseUrl).toString(),
       options: {
-        ...init,
         method: "POST",
-        headers: await headers().then((raw) =>
-          Object.assign(Object.fromEntries(raw.entries()), init?.headers),
-        ),
+        ...init,
+        headers: await this.getHeaders(init?.headers),
       },
     };
     await emitter.emit("streamStart", { input });
@@ -119,7 +117,8 @@ export class RestfulClient<K extends Record<string, string>> extends Serializabl
       fetchEventSource(input.url, {
         ...input.options,
         async onopen(response) {
-          if (response.ok && response.headers.get("content-type") === EventStreamContentType) {
+          const contentType = response.headers.get("content-type") || "";
+          if (response.ok && contentType.includes(EventStreamContentType)) {
             await emitter.emit("streamOpen", { input });
             return;
           }
@@ -160,7 +159,7 @@ export class RestfulClient<K extends Record<string, string>> extends Serializabl
       groupId: "fetch",
     });
 
-    const { paths, baseUrl, headers: getHeaders } = this.input;
+    const { paths, baseUrl } = this.input;
 
     const target = new URL(paths[path] ?? path, baseUrl);
     if (init?.searchParams) {
@@ -173,9 +172,7 @@ export class RestfulClient<K extends Record<string, string>> extends Serializabl
       url: target.toString(),
       options: {
         ...init,
-        headers: await getHeaders().then((raw) =>
-          Object.assign(Object.fromEntries(raw.entries()), init?.headers),
-        ),
+        headers: await this.getHeaders(init?.headers),
       },
     };
 
@@ -203,6 +200,18 @@ export class RestfulClient<K extends Record<string, string>> extends Serializabl
     } finally {
       await emitter.emit("fetchDone", { input: input });
     }
+  }
+
+  protected async getHeaders(extra?: HeadersInit): Promise<Record<string, string>> {
+    const final = {};
+    for (const override of [await this.input.headers?.(), extra].filter(isTruthy)) {
+      if (isArray(override) || override instanceof Headers) {
+        Object.assign(final, Object.fromEntries(override.entries()));
+      } else {
+        Object.assign(final, override);
+      }
+    }
+    return final;
   }
 
   createSnapshot() {
