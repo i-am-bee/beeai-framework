@@ -13,12 +13,16 @@
 # limitations under the License.
 
 from beeai_framework.backend.chat import ChatModel
-from beeai_framework.backend.errors import BackendError, ChatModelError, MessageError
+from beeai_framework.backend.embedding import EmbeddingModel
+from beeai_framework.backend.errors import BackendError, ChatModelError, EmbeddingModelError, MessageError
 from beeai_framework.backend.events import (
     ChatModelErrorEvent,
     ChatModelNewTokenEvent,
     ChatModelStartEvent,
     ChatModelSuccessEvent,
+    EmbeddingModelErrorEvent,
+    EmbeddingModelStartEvent,
+    EmbeddingModelSuccessEvent,
 )
 from beeai_framework.backend.message import (
     AnyMessage,
@@ -37,7 +41,12 @@ from beeai_framework.backend.message import (
     UserMessage,
     UserMessageContent,
 )
-from beeai_framework.backend.types import ChatModelOutput, ChatModelParameters, ChatModelStructureOutput
+from beeai_framework.backend.types import (
+    ChatModelOutput,
+    ChatModelParameters,
+    ChatModelStructureOutput,
+    EmbeddingModelOutput,
+)
 
 __all__ = [
     "AnyMessage",
@@ -56,6 +65,12 @@ __all__ = [
     "CustomMessage",
     "CustomMessage",
     "CustomMessageContent",
+    "EmbeddingModel",
+    "EmbeddingModelError",
+    "EmbeddingModelErrorEvent",
+    "EmbeddingModelOutput",
+    "EmbeddingModelStartEvent",
+    "EmbeddingModelSuccessEvent",
     "Message",
     "MessageError",
     "MessageImageContent",
