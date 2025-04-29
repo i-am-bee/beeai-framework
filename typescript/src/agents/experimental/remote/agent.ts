@@ -127,7 +127,7 @@ export class RemoteAgent extends BaseAgent<RemoteAgentRunInput, RemoteAgentRunOu
                   key: eventData.type,
                   value: { ...eventData, type: undefined },
                 });
-              } catch (error) {
+              } catch {
                 await context.emitter.emit("error", {
                   message: "Error parsing JSON:",
                 });
