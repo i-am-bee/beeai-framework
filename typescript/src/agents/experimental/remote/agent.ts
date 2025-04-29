@@ -23,12 +23,12 @@ import { BaseMemory } from "@/memory/base.js";
 import { shallowCopy } from "@/serializer/utils.js";
 
 export interface RemoteAgentRunInput {
-  prompt: Message | string | Message[] | string[];
+  input: Message | string | Message[] | string[];
 }
 
 export interface RemoteAgentRunOutput {
   result: Message;
-  event: any;
+  event: Record<string, any>;
 }
 
 export interface RemoteAgentEvents {
@@ -57,9 +57,9 @@ export class RemoteAgent extends BaseAgent<RemoteAgentRunInput, RemoteAgentRunOu
     _options: BaseAgentRunOptions,
     context: GetRunContext<this>,
   ): Promise<RemoteAgentRunOutput> {
-    const inputs = Array.isArray(input.prompt)
-      ? input.prompt.map(this.convertToACPMessage)
-      : [this.convertToACPMessage(input.prompt)];
+    const inputs = Array.isArray(input.input)
+      ? input.input.map(this.convertToACPMessage)
+      : [this.convertToACPMessage(input.input)];
 
     const url = new URL(this.input.url);
     url.pathname += "/runs";
@@ -154,9 +154,9 @@ export class RemoteAgent extends BaseAgent<RemoteAgentRunInput, RemoteAgentRunOu
         "",
       );
       const assistantMessage: Message = new AssistantMessage(text, { event: eventData });
-      const inputMessages = Array.isArray(input.prompt)
-        ? input.prompt.map(this.convertToMessage)
-        : [this.convertToMessage(input.prompt)];
+      const inputMessages = Array.isArray(input.input)
+        ? input.input.map(this.convertToMessage)
+        : [this.convertToMessage(input.input)];
 
       await this.memory.addMany(inputMessages);
       await this.memory.add(assistantMessage);

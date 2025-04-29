@@ -16,7 +16,7 @@ const reader = createConsoleReader();
 
 try {
   for await (const { prompt } of reader) {
-    const result = await instance.run({ prompt }).observe((emitter) => {
+    const result = await instance.run({ input: prompt }).observe((emitter) => {
       emitter.on("update", (data) => {
         reader.write(`Agent (received progress) 🤖 : `, JSON.stringify(data.value, null, 2));
       });
