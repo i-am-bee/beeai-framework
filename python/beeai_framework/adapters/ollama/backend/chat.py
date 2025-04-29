@@ -13,9 +13,8 @@
 # limitations under the License.
 
 import os
-from typing import Any, ClassVar
+from typing import ClassVar
 
-from pydantic import BaseModel
 from typing_extensions import Unpack
 
 from beeai_framework.adapters.litellm.chat import LiteLLMChatModel
@@ -53,16 +52,3 @@ class OllamaChatModel(LiteLLMChatModel):
         )
         if not self._settings["base_url"].endswith("/v1"):
             self._settings["base_url"] += "/v1"
-
-    def _format_response_model(self, model: type[BaseModel] | dict[str, Any]) -> dict[str, Any]:
-        if isinstance(model, dict) and model.get("type") in ["json_schema", "json_object"]:
-            return model
-
-        return {
-            "type": "json_schema",
-            "json_schema": {
-                "schema": model if isinstance(model, dict) else model.model_json_schema(),
-                "name": "schema" if isinstance(model, dict) else model.__name__,
-                "strict": True,
-            },
-        }

@@ -18,6 +18,7 @@ from typing import Any, Literal, TypeVar, Union
 
 import json_repair
 import jsonref  # type: ignore
+from openai.lib._pydantic import to_strict_json_schema
 from pydantic import ConfigDict, Field, RootModel, create_model
 
 from beeai_framework.backend.constants import (
@@ -88,7 +89,7 @@ def inline_schema_refs(schema: dict[str, Any]) -> dict[str, Any]:
     return schema
 
 
-def generate_tool_union_schema(tools: list[AnyTool]) -> dict[str, Any]:
+def generate_tool_union_schema(tools: list[AnyTool], *, strict: bool) -> dict[str, Any]:
     if not tools:
         raise ValueError("No tools provided!")
 
@@ -106,21 +107,21 @@ def generate_tool_union_schema(tools: list[AnyTool]) -> dict[str, Any]:
     ]
 
     if len(tool_schemas) == 1:
-        schema = tool_schemas[0].model_json_schema()
+        schema = tool_schemas[0]
     else:
 
         class AvailableTools(RootModel[Union[*tool_schemas]]):  # type: ignore
             pass
 
-        schema = AvailableTools.model_json_schema()
+        schema = AvailableTools
 
     return {
         "type": "json_schema",
         "json_schema": {
             "name": "ToolCall",
-            "strict": True,
-            "schema": inline_schema_refs(schema),
+            "schema": inline_schema_refs(to_strict_json_schema(schema) if strict else schema.model_json_schema()),
         },
+        "strict": strict,
     }
 
 
