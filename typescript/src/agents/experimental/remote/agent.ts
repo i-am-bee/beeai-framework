@@ -21,6 +21,7 @@ import { GetRunContext } from "@/context.js";
 import { AssistantMessage, Message, UserMessage } from "@/backend/message.js";
 import { BaseMemory } from "@/memory/base.js";
 import { shallowCopy } from "@/serializer/utils.js";
+import { RestfulClient } from "@/internals/fetcher.js";
 
 export interface RemoteAgentRunInput {
   input: Message | string | Message[] | string[];
@@ -47,9 +48,19 @@ export class RemoteAgent extends BaseAgent<RemoteAgentRunInput, RemoteAgentRunOu
     namespace: ["agent", "remote"],
     creator: this,
   });
+  protected client: RestfulClient<{ runs: string; agents: string }>;
 
   constructor(protected readonly input: Input) {
     super();
+    this.client = new RestfulClient({
+      baseUrl: this.input.url,
+      headers: async () =>
+        new Headers({
+          "Accept": "application/json",
+          "Content-Type": "application/json",
+        }),
+      paths: { runs: `/runs`, agents: `/agents` },
+    });
   }
 
   protected async _run(
@@ -61,14 +72,7 @@ export class RemoteAgent extends BaseAgent<RemoteAgentRunInput, RemoteAgentRunOu
       ? input.input.map(this.convertToACPMessage)
       : [this.convertToACPMessage(input.input)];
 
-    const url = new URL(this.input.url);
-    url.pathname += "/runs";
-    const response = await fetch(url, {
-      method: "POST",
-      headers: {
-        "Accept": "text/event-stream",
-        "Content-Type": "application/json",
-      },
+    const generator = this.client.stream("runs", {
       body: JSON.stringify({
         agent_name: this.input.agentName,
         input: inputs,
@@ -77,65 +81,19 @@ export class RemoteAgent extends BaseAgent<RemoteAgentRunInput, RemoteAgentRunOu
       signal: context.signal,
     });
 
-    if (!response.ok) {
-      throw new AgentError(`HTTP error! status: ${response.status}`, [], {
-        context: { message: await response.text() },
-      });
-    }
-
-    const reader = response.body?.getReader();
-    if (!reader) {
-      throw new AgentError("Agent's response is not valid");
-    }
-
-    const decoder = new TextDecoder();
-    let partialData = "";
     let eventData: any = null;
-
-    function parseSSEEvent(eventString: string) {
-      const lines = eventString.split("\n");
-      const event: any = {};
-      for (const line of lines) {
-        const [key, ...valueParts] = line.split(":");
-        if (key && valueParts && valueParts.length > 0) {
-          const value = valueParts.join(":").trim();
-          event[key.trim()] = value;
-        }
+    for await (const event of generator) {
+      try {
+        eventData = JSON.parse(event.data);
+        await context.emitter.emit("update", {
+          key: eventData.type,
+          value: { ...eventData, type: undefined },
+        });
+      } catch {
+        await context.emitter.emit("error", {
+          message: "Error parsing JSON",
+        });
       }
-      return event;
-    }
-
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) {
-        break;
-      }
-
-      partialData += decoder.decode(value, { stream: true });
-
-      const events = partialData.split("\n\n");
-      partialData = events.pop() || "";
-
-      await Promise.all(
-        events.map(async (eventString) => {
-          if (eventString.trim() !== "") {
-            const event = parseSSEEvent(eventString);
-            if (event) {
-              try {
-                eventData = JSON.parse(event.data);
-                await context.emitter.emit("update", {
-                  key: eventData.type,
-                  value: { ...eventData, type: undefined },
-                });
-              } catch {
-                await context.emitter.emit("error", {
-                  message: "Error parsing JSON:",
-                });
-              }
-            }
-          }
-        }),
-      );
     }
 
     if (!eventData) {
@@ -168,20 +126,9 @@ export class RemoteAgent extends BaseAgent<RemoteAgentRunInput, RemoteAgentRunOu
   }
 
   async checkAgentExists() {
-    const url = new URL(this.input.url);
-    url.pathname += "/agents";
     try {
-      const response = await fetch(url);
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      const data = await response.json();
-
-      const agents = data.agents;
-      const agent = agents.find((agent: any) => agent.name === this.input.agentName);
-      return !!agent;
+      const response = await this.client.fetch("agents");
+      return !!response.agents.find((agent: any) => agent.name === this.input.agentName);
     } catch (error) {
       throw new AgentError(`Error while checking agent existence: ${error.message}`, [], {
         isFatal: true,
@@ -207,9 +154,9 @@ export class RemoteAgent extends BaseAgent<RemoteAgentRunInput, RemoteAgentRunOu
 
   protected convertToACPMessage(input: string | Message): any {
     if (typeof input === "string") {
-      return { parts: [{ content: input }] };
+      return { parts: [{ content: input, role: "user" }] };
     } else if (input instanceof Message) {
-      return { parts: [{ content: input.content }] };
+      return { parts: [{ content: input.content, role: input.role }] };
     } else {
       throw new AgentError("Unsupported input type");
     }

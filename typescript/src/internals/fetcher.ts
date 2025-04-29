@@ -98,13 +98,12 @@ export class RestfulClient<K extends Record<string, string>> extends Serializabl
     path: keyof K,
     init: FetchEventSourceInit,
   ): AsyncGenerator<EventSourceMessage, void, void> {
-    const { paths, baseUrl } = this.input;
     const emitter = this.emitter.child({
       groupId: "stream",
     });
 
     const input: StreamInput = {
-      url: new URL(paths[path] ?? path, baseUrl).toString(),
+      url: this.getUrl(path).toString(),
       options: {
         method: "POST",
         ...init,
@@ -159,9 +158,7 @@ export class RestfulClient<K extends Record<string, string>> extends Serializabl
       groupId: "fetch",
     });
 
-    const { paths, baseUrl } = this.input;
-
-    const target = new URL(paths[path] ?? path, baseUrl);
+    const target = this.getUrl(path);
     if (init?.searchParams) {
       for (const [key, value] of init.searchParams) {
         target.searchParams.set(key, value);
@@ -212,6 +209,13 @@ export class RestfulClient<K extends Record<string, string>> extends Serializabl
       }
     }
     return final;
+  }
+
+  protected getUrl(path: keyof K): URL {
+    const { paths, baseUrl } = this.input;
+    const url = new URL(baseUrl);
+    url.pathname += paths[path] ?? path;
+    return url;
   }
 
   createSnapshot() {
