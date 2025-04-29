@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from beeai_framework.backend.backend import Backend
 from beeai_framework.backend.chat import ChatModel
 from beeai_framework.backend.embedding import EmbeddingModel
 from beeai_framework.backend.errors import BackendError, ChatModelError, EmbeddingModelError, MessageError
@@ -53,7 +52,6 @@ __all__ = [
     "AnyMessage",
     "AssistantMessage",
     "AssistantMessageContent",
-    "Backend",
     "BackendError",
     "ChatModel",
     "ChatModelError",
