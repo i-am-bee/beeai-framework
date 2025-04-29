@@ -61,7 +61,9 @@ export class RemoteAgent extends BaseAgent<RemoteAgentRunInput, RemoteAgentRunOu
       ? input.prompt.map(this.convertToACPMessage)
       : [this.convertToACPMessage(input.prompt)];
 
-    const response = await fetch(new URL("/runs", this.input.url), {
+    const url = new URL(this.input.url);
+    url.pathname += "/runs";
+    const response = await fetch(url, {
       method: "POST",
       headers: {
         "Accept": "text/event-stream",
@@ -166,8 +168,10 @@ export class RemoteAgent extends BaseAgent<RemoteAgentRunInput, RemoteAgentRunOu
   }
 
   async checkAgentExists() {
+    const url = new URL(this.input.url);
+    url.pathname += "/agents";
     try {
-      const response = await fetch(new URL("/agents", this.input.url));
+      const response = await fetch(url);
 
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);

@@ -7,7 +7,7 @@ import { TokenMemory } from "beeai-framework/memory/tokenMemory";
 const agentName = "chat";
 
 const instance = new RemoteAgent({
-  url: "http://127.0.0.1:8000/",
+  url: "http://127.0.0.1:8333/api/v1/acp",
   agentName,
   memory: new TokenMemory(),
 });
