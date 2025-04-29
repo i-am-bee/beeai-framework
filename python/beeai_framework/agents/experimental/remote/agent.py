@@ -151,9 +151,9 @@ class RemoteAgent(BaseAgent[RemoteAgentRunOutput]):
 
     def _convert_to_acp_message(self, input: str | AnyMessage | Message) -> Message:
         if isinstance(input, str):
-            return Message(parts=[MessagePart(content=input)])
+            return Message(parts=[MessagePart(content=input, role="user")])  # type: ignore[call-arg]
         elif isinstance(input, BeeAIMessage):
-            return Message(parts=[MessagePart(content=input.text)])
+            return Message(parts=[MessagePart(content=input.text, role=input.role)])  # type: ignore[call-arg]
         elif isinstance(input, Message):
             return input
         else:
