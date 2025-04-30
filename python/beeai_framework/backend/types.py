@@ -28,12 +28,12 @@ ChatModelToolChoice = AnyTool | Literal["required"] | Literal["none"] | Literal[
 
 class ChatModelParameters(BaseModel):
     max_tokens: int | None = None
-    top_p: int | None = None
-    frequency_penalty: int | None = None
+    top_p: float | None = None
+    frequency_penalty: float | None = None
     temperature: float = 0
     top_k: int | None = None
     n: int | None = None
-    presence_penalty: int | None = None
+    presence_penalty: float | None = None
     seed: int | None = None
     stop_sequences: list[str] | None = None
     stream: bool | None = None
