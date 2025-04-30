@@ -2,15 +2,15 @@
 
 [[package]]
 name = "acp-sdk"
-version = "0.8.0"
+version = "0.8.1"
 description = "Agent Communication Protocol SDK"
 optional = true
 python-versions = "<4.0,>=3.11"
 groups = ["main"]
 markers = "extra == \"acp\""
 files = [
-    {file = "acp_sdk-0.8.0-py3-none-any.whl", hash = "sha256:8f33ac31fefcb0a9863f22738e23fab89d5bae12cf2f21b50c022913b03fd0a7"},
-    {file = "acp_sdk-0.8.0.tar.gz", hash = "sha256:4b5bf10a2b0b5ca5697ac3706c15155d40abde3921cd32eb3e20779c29307d3e"},
+    {file = "acp_sdk-0.8.1-py3-none-any.whl", hash = "sha256:510126c9b34da86d19d58f9ce7b0ee68c6d040487064c226698d19b2bcdaa566"},
+    {file = "acp_sdk-0.8.1.tar.gz", hash = "sha256:abfe6ed8acd839c24b35a163f5c6fbe85558f235b8cc9dbb10369ff190908329"},
 ]
 
 [package.dependencies]
@@ -5228,4 +5228,4 @@ wikipedia = ["wikipedia-api"]
 [metadata]
 lock-version = "2.1"
 python-versions = ">= 3.11,<4.0"
-content-hash = "28c36532608cf61dcaa449d49112f8918be8575babf3b9bd6c5c5841353181d6"
+content-hash = "9eafbf7c1e7c41169649dd82fe737ae5ce82651b303d432ace1e219f17acc9ee"
