@@ -33,6 +33,7 @@ from beeai_framework.agents.tool_calling.types import (
     ToolCallingAgentTemplates,
     ToolCallingAgentTemplatesKeys,
 )
+from beeai_framework.agents.types import AgentMeta
 from beeai_framework.backend.chat import ChatModel
 from beeai_framework.backend.message import (
     AssistantMessage,
@@ -64,6 +65,7 @@ class ToolCallingAgent(BaseAgent[ToolCallingAgentRunOutput]):
         templates: dict[ToolCallingAgentTemplatesKeys, PromptTemplate[Any] | ToolCallingAgentTemplateFactory]
         | None = None,
         save_intermediate_steps: bool = True,
+        meta: AgentMeta | None = None,
     ) -> None:
         super().__init__()
         self._llm = llm
@@ -71,6 +73,7 @@ class ToolCallingAgent(BaseAgent[ToolCallingAgentRunOutput]):
         self._tools = tools or []
         self._templates = self._generate_templates(templates)
         self._save_intermediate_steps = save_intermediate_steps
+        self._meta = meta
 
     def run(
         self,
@@ -217,6 +220,10 @@ class ToolCallingAgent(BaseAgent[ToolCallingAgentRunOutput]):
         return Emitter.root().child(
             namespace=["agent", "tool_calling"], creator=self, events=tool_calling_agent_event_types
         )
+
+    @property
+    def meta(self) -> AgentMeta:
+        return self._meta or super().meta
 
     @property
     def memory(self) -> BaseMemory:

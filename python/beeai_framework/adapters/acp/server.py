@@ -17,7 +17,7 @@ from typing import Any
 
 from acp_sdk.models.models import AgentName, MessagePart, Metadata
 from acp_sdk.models.models import Message as AcpMessage
-from acp_sdk.server.agent import Agent as AcpAgent
+from acp_sdk.server.agent import Agent as AcpBaseAgent
 from acp_sdk.server.context import Context
 from acp_sdk.server.server import Server as AcpHttpServer
 from acp_sdk.server.types import RunYield, RunYieldResume
@@ -38,7 +38,7 @@ class AcpServerConfig(BaseModel):
     port: int = 8000
 
 
-class Agent(AcpAgent):
+class AcpAgent(AcpBaseAgent):
     """A wrapper for a BeeAI agent to be used with the ACP server."""
 
     def __init__(
@@ -91,7 +91,7 @@ class AcpServer(Server[AcpServerConfig]):
             port=config.port,
         )
 
-    def conver_to_acp_agent(self, agent: BaseAgent[Any]) -> Agent:
+    def conver_to_acp_agent(self, agent: BaseAgent[Any]) -> AcpAgent:
         """Convert a BeeAI agent to an ACP agent."""
 
         def to_framework_message(role: Role, content: str) -> Message[Any]:
@@ -124,7 +124,7 @@ class AcpServer(Server[AcpServerConfig]):
                                 case "final_answer":
                                     yield MessagePart(content=update, role="assistant")  # type: ignore[call-arg]
 
-            return Agent(fn=run, name=AgentName(agent.meta.name), description=agent.meta.description)
+            return AcpAgent(fn=run, name=AgentName(agent.meta.name), description=agent.meta.description)
 
         elif isinstance(agent, ToolCallingAgent):
 
@@ -145,6 +145,6 @@ class AcpServer(Server[AcpServerConfig]):
                             if data.state.result:
                                 yield MessagePart(content=data.state.result.text, role="assistant")  # type: ignore[call-arg]
 
-            return Agent(fn=run, name=AgentName(agent.meta.name), description=agent.meta.description)
+            return AcpAgent(fn=run, name=AgentName(agent.meta.name), description=agent.meta.description)
         else:
             raise TypeError("Unsupported agent type. Only ReActAgent and ToolCallingAgent are supported.")

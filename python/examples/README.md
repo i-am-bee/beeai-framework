@@ -11,6 +11,7 @@ This repository contains examples demonstrating the usage of the BeeAI Framework
 5. [Memory](#memory)
 6. [Templates](#templates)
 7. [Tools](#tools)
+8. [Adapters](#adapters)
 
 ## Agents
 
@@ -58,3 +59,7 @@ This repository contains examples demonstrating the usage of the BeeAI Framework
 - [`decorator.py`](/python/examples/tools/decorator.py): Tool creation using decorator
 - [`duckduckgo.py`](/python/examples/tools/duckduckgo.py): DDG Search Tool for searching the web
 - [`openmeteo.py`](/python/examples/tools/openmeteo.py): Open-Meteo Tool for retrieving weather data
+
+## Adapters
+
+- [`acp.py`](/python/examples/serve/acp.py): Expose agents as an [ACP](https://agentcommunicationprotocol.dev/how-to/wrap-existing-agent) servers
