@@ -346,3 +346,9 @@ if __name__ == "__main__":
 ```
 
 _Source: examples/workflows/remote.py_
+
+### Expose the agent to the platform
+
+The framework's agent can be easily exposed to the BeeAI platform.
+
+<!-- embedme examples/serve/acp.py -->
