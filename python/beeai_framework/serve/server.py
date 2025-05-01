@@ -17,21 +17,20 @@ from typing import Any, Generic, TypeVar
 
 from pydantic import BaseModel
 
-from beeai_framework.adapters.acp.adapter import ACPAdapter
-
 TServeConfig = TypeVar("TServeConfig", bound=BaseModel)
+TAgent = TypeVar("TAgent", bound=Any)
 
 
-class Server(Generic[TServeConfig], ABC):
+class Server(Generic[TServeConfig, TAgent], ABC):
     def __init__(self) -> None:
-        self._agents: list[ACPAdapter] = []
+        self._agents: list[TAgent] = []
 
-    def register(self, agents: list[ACPAdapter]) -> "Server[Any]":
+    def register(self, agents: list[TAgent]) -> "Server[Any, Any]":
         self._agents = agents
         return self
 
     @property
-    def agents(self) -> list[ACPAdapter]:
+    def agents(self) -> list[TAgent]:
         return self._agents
 
     @abstractmethod

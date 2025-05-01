@@ -27,7 +27,7 @@ class AcpServerConfig(BaseModel):
     port: int = 8000
 
 
-class AcpServer(Server[AcpServerConfig]):
+class AcpServer(Server[AcpServerConfig, ACPAdapter]):
     def __init__(self) -> None:
         super().__init__()
         self.server = AcpHttpServer()
