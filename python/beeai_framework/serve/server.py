@@ -35,5 +35,5 @@ class Server(Generic[TServeConfig], ABC):
         return self._agents
 
     @abstractmethod
-    def serve(self, config: TServeConfig) -> None:
+    def serve(self, *, config: TServeConfig | None = None) -> None:
         pass
