@@ -13,11 +13,16 @@
 # limitations under the License.
 
 import json
-from collections.abc import Sequence
+from collections.abc import AsyncGenerator, Sequence
 from typing import Any
 
+from acp_sdk.models.models import AgentName, MessagePart
+from acp_sdk.models.models import Message as AcpMessage
+from acp_sdk.server.context import Context
+from acp_sdk.server.types import RunYield, RunYieldResume
 from pydantic import BaseModel, Field, create_model
 
+from beeai_framework.adapters.acp.adapter import ACPAdapter, AcpAgent
 from beeai_framework.agents import AgentError, AgentExecutionConfig
 from beeai_framework.agents.base import BaseAgent
 from beeai_framework.agents.tool_calling.events import (
@@ -37,7 +42,9 @@ from beeai_framework.agents.types import AgentMeta
 from beeai_framework.backend.chat import ChatModel
 from beeai_framework.backend.message import (
     AssistantMessage,
+    Message,
     MessageToolResultContent,
+    Role,
     SystemMessage,
     ToolMessage,
     UserMessage,
@@ -55,7 +62,7 @@ from beeai_framework.utils.counter import RetryCounter
 from beeai_framework.utils.strings import to_json
 
 
-class ToolCallingAgent(BaseAgent[ToolCallingAgentRunOutput]):
+class ToolCallingAgent(BaseAgent[ToolCallingAgentRunOutput], ACPAdapter):
     def __init__(
         self,
         *,
@@ -232,6 +239,35 @@ class ToolCallingAgent(BaseAgent[ToolCallingAgentRunOutput]):
     @memory.setter
     def memory(self, memory: BaseMemory) -> None:
         self._memory = memory
+
+    def to_acp(self) -> AcpAgent:
+        def to_framework_message(role: Role, content: str) -> Message[Any]:
+            match role:
+                case Role.USER:
+                    return UserMessage(content)
+                case Role.ASSISTANT:
+                    return AssistantMessage(content)
+                case _:
+                    raise ValueError(f"Unsupported role {role}")
+
+        async def run(input: list[AcpMessage], context: Context) -> AsyncGenerator[RunYield, RunYieldResume]:
+            framework_messages = [
+                to_framework_message(Role(message.parts[0].role), str(message))  # type: ignore[attr-defined]
+                for message in input
+            ]
+            await self.memory.add_many(framework_messages)
+
+            async for data, event in self.run():
+                match event.name:
+                    case "start":
+                        yield {event.name: "starting new iteration"}
+                    case "success":
+                        message = data.state.memory.messages[-1]
+                        yield {message.role: message.content}
+                        if data.state.result:
+                            yield MessagePart(content=data.state.result.text, role="assistant")  # type: ignore[call-arg]
+
+        return AcpAgent(fn=run, name=AgentName(self.meta.name), description=self.meta.description)
 
     @staticmethod
     def _generate_templates(

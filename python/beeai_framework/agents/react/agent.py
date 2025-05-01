@@ -13,10 +13,16 @@
 # limitations under the License.
 
 
-from collections.abc import Callable
+from collections.abc import AsyncGenerator, Callable
 from datetime import UTC, datetime
 from typing import Any
 
+from acp_sdk.models.models import AgentName, MessagePart
+from acp_sdk.models.models import Message as AcpMessage
+from acp_sdk.server.context import Context
+from acp_sdk.server.types import RunYield, RunYieldResume
+
+from beeai_framework.adapters.acp.adapter import ACPAdapter, AcpAgent
 from beeai_framework.agents.base import BaseAgent
 from beeai_framework.agents.react.events import (
     ReActAgentSuccessEvent,
@@ -45,7 +51,7 @@ from beeai_framework.agents.types import (
     AgentMeta,
 )
 from beeai_framework.backend.chat import ChatModel
-from beeai_framework.backend.message import AssistantMessage, MessageMeta, UserMessage
+from beeai_framework.backend.message import AssistantMessage, Message, MessageMeta, Role, UserMessage
 from beeai_framework.context import Run, RunContext
 from beeai_framework.emitter import Emitter
 from beeai_framework.memory import BaseMemory
@@ -54,7 +60,7 @@ from beeai_framework.tools.tool import AnyTool
 from beeai_framework.utils import AbortSignal
 
 
-class ReActAgent(BaseAgent[ReActAgentRunOutput]):
+class ReActAgent(BaseAgent[ReActAgentRunOutput], ACPAdapter):
     _runner: Callable[..., BaseRunner]
 
     def __init__(
@@ -215,6 +221,37 @@ class ReActAgent(BaseAgent[ReActAgentRunOutput]):
                 "execution": execution,
             },
         )
+
+    def to_acp(self) -> AcpAgent:
+        def to_framework_message(role: Role, content: str) -> Message[Any]:
+            match role:
+                case Role.USER:
+                    return UserMessage(content)
+                case Role.ASSISTANT:
+                    return AssistantMessage(content)
+                case _:
+                    raise ValueError(f"Unsupported role {role}")
+
+        async def run(input: list[AcpMessage], context: Context) -> AsyncGenerator[RunYield, RunYieldResume]:
+            framework_messages = [
+                to_framework_message(Role(message.parts[0].role), str(message))  # type: ignore[attr-defined]
+                for message in input
+            ]
+            await self.memory.add_many(framework_messages)
+
+            async for data, event in self.run():
+                match (data, event.name):
+                    case (ReActAgentUpdateEvent(), "partial_update"):
+                        update = data.update.value
+                        if not isinstance(update, str):
+                            update = update.get_text_content()
+                        match data.update.key:
+                            case "thought" | "tool_name" | "tool_input" | "tool_output":
+                                yield {data.update.key: update}
+                            case "final_answer":
+                                yield MessagePart(content=update, role="assistant")  # type: ignore[call-arg]
+
+        return AcpAgent(fn=run, name=AgentName(self.meta.name), description=self.meta.description)
 
     async def clone(self) -> "ReActAgent":
         cloned = ReActAgent(**self._input.model_dump())
