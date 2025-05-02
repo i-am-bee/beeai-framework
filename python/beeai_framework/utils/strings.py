@@ -45,10 +45,15 @@ def create_strenum(name: str, keys: Sequence[str]) -> type[StrEnum]:
     target = StrEnum(name, {value: value for value in keys})  # type: ignore[misc]
     return cast(type[StrEnum], target)
 
+def json_default(value):
+    if isinstance(value, datetime.date):
+        return dict(year=value.year, month=value.month, day=value.day)
+    else:
+        return value.__dict__
+    
 
 def to_json(input: Any, *, indent: int | None = None, sort_keys: bool = True) -> str:
-    return json.dumps(input, ensure_ascii=False, default=lambda o: o.__dict__, sort_keys=sort_keys, indent=indent)
-
+    return json.dumps(input, ensure_ascii=False, default=json_default, sort_keys=sort_keys, indent=indent)
 
 def to_safe_word(phrase: str) -> str:
     # replace any non-alphanumeric char with _

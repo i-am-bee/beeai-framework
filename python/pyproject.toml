@@ -1,9 +1,10 @@
 [project]
-name = "beeai-framework"
-version="0.1.19"
+name = "beeai-framework-patched-fr"
+version="0.1.20"
 license = "Apache-2.0"
+description = "BeeAI Framework with bug fix for when retrieving datetime fields that don't have a dict attribute"
 readme = "README.md"
-authors = [{ name = "IBM Corp." }]
+authors = [{ name = "IBM Corp." },{ name = "Farhan Rahman", email="farhanr@ibm.com" }]
 maintainers = [
     { name = "Alex Bozarth", email = "ajbozart@us.ibm.com" },
     { name = "Akihiko Kuroda", email = "akuroda@us.ibm.com" },
