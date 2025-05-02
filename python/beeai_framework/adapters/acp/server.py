@@ -106,7 +106,7 @@ class AcpServer(Server[AcpServerConfig]):
                     return UserMessage(content)
                 case Role.ASSISTANT:
                     return AssistantMessage(content)
-                case Role.ASSISTANT:
+                case Role.SYSTEM:
                     return SystemMessage(content)
                 case _:
                     return CustomMessage(role=role, content=content)
