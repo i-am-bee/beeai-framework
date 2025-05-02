@@ -19,7 +19,7 @@ try:
     from duckduckgo_search import DDGS
 except ModuleNotFoundError as e:
     raise ModuleNotFoundError(
-        "Optional module [duckduckgo] not found.\nRun 'pip install beeai-framework[duckduckgo]' to install."
+        "Optional module [duckduckgo] not found.\nRun 'pip install \"beeai-framework[duckduckgo]\"' to install."
     ) from e
 
 from pydantic import BaseModel, Field

@@ -22,7 +22,7 @@ try:
     from langchain_core.tools import Tool as LangChainSimpleTool
 except ModuleNotFoundError as e:
     raise ModuleNotFoundError(
-        "Optional module [langchain] not found.\nRun 'pip install beeai-framework[langchain]' to install."
+        "Optional module [langchain] not found.\nRun 'pip install \"beeai-framework[langchain]\"' to install."
     ) from e
 
 from pydantic import BaseModel, ConfigDict

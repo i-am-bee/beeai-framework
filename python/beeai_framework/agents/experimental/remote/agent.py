@@ -20,7 +20,7 @@ try:
     from acp_sdk.models.errors import Error
 except ModuleNotFoundError as e:
     raise ModuleNotFoundError(
-        "Optional module [acp] not found.\nRun 'pip install beeai-framework[acp]' to install."
+        "Optional module [acp] not found.\nRun 'pip install \"beeai-framework[acp]\"' to install."
     ) from e
 
 from beeai_framework.agents.base import BaseAgent

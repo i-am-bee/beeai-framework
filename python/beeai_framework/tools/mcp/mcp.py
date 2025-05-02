@@ -21,7 +21,7 @@ try:
     from mcp.types import Tool as MCPToolInfo
 except ModuleNotFoundError as e:
     raise ModuleNotFoundError(
-        "Optional module [mcp] not found.\nRun 'pip install beeai-framework[mcp]' to install."
+        "Optional module [mcp] not found.\nRun 'pip install \"beeai-framework[mcp]\"' to install."
     ) from e
 
 from pydantic import BaseModel

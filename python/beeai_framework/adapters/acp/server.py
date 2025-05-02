@@ -26,8 +26,18 @@ from beeai_framework.agents.base import BaseAgent
 from beeai_framework.agents.react.agent import ReActAgent
 from beeai_framework.agents.react.events import ReActAgentUpdateEvent
 from beeai_framework.agents.tool_calling.agent import ToolCallingAgent
-from beeai_framework.backend.message import AssistantMessage, CustomMessage, Message, Role, SystemMessage, UserMessage
+from beeai_framework.agents.tool_calling.events import ToolCallingAgentSuccessEvent
+from beeai_framework.backend.message import (
+    AnyMessage,
+    AssistantMessage,
+    CustomMessage,
+    Message,
+    Role,
+    SystemMessage,
+    UserMessage,
+)
 from beeai_framework.serve.server import Server
+from beeai_framework.utils.lists import find_index
 from beeai_framework.utils.models import ModelLike, to_model_optional
 
 
@@ -147,15 +157,19 @@ class AcpServer(Server[AcpServerConfig]):
                 ]
                 await agent.memory.add_many(framework_messages)
 
-                async for data, event in agent.run():
-                    match event.name:
-                        case "start":
-                            yield {event.name: "starting new iteration"}
-                        case "success":
-                            message = data.state.memory.messages[-1]
-                            yield {message.role: message.content}
-                            if data.state.result:
-                                yield acp_models.MessagePart(content=data.state.result.text, role="assistant")  # type: ignore[call-arg]
+                last_msg: AnyMessage | None = None
+                async for data, _ in agent.run():
+                    messages = data.state.memory.messages
+                    if last_msg is None:
+                        last_msg = messages[-1]
+
+                    cur_index = find_index(messages, lambda msg: msg is last_msg, fallback=-1, reverse_traversal=True)  # noqa: B023
+                    for message in messages[cur_index + 1 :]:
+                        yield {"message": message.to_plain()}
+                        last_msg = message
+
+                    if isinstance(data, ToolCallingAgentSuccessEvent) and data.state.result is not None:
+                        yield acp_models.MessagePart(content=data.state.result.text, role="assistant")  # type: ignore[call-arg]
 
             return AcpAgent(fn=run, name=acp_models.AgentName(agent.meta.name), description=agent.meta.description)
         else:
