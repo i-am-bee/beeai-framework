@@ -15,8 +15,9 @@
 import random
 import string
 from collections.abc import Awaitable, Callable, Sequence
-from typing import Any, Self, overload
+from typing import Any, Generic, Self, TypeVar, overload
 
+from openai.lib._pydantic import to_strict_json_schema
 from pydantic import BaseModel, InstanceOf
 
 from beeai_framework.agents.base import AnyAgent
@@ -28,6 +29,7 @@ from beeai_framework.agents.types import (
 from beeai_framework.backend.chat import ChatModel
 from beeai_framework.backend.message import AnyMessage, AssistantMessage, UserMessage
 from beeai_framework.context import Run
+from beeai_framework.emitter import EmitterOptions, EventMeta
 from beeai_framework.memory.base_memory import BaseMemory
 from beeai_framework.memory.readonly_memory import ReadOnlyMemory
 from beeai_framework.memory.unconstrained_memory import UnconstrainedMemory
@@ -142,3 +144,31 @@ class AgentWorkflow:
 
         self.workflow.add_step(name or f"Agent{''.join(random.choice(string.ascii_letters) for _ in range(4))}", step)
         return self
+
+
+T = TypeVar("T", bound=BaseModel)
+
+
+class StructuredAgentWorkflow(AgentWorkflow, Generic[T]):
+    def __init__(self, name: str = "StructuredAgentWorkflow", *, schema: type[T], llm: ChatModel) -> None:
+        super().__init__(name)
+        self._output_schema = schema
+        self._llm = llm
+
+    def run(self, inputs: Sequence[AgentWorkflowInput | AnyMessage]) -> Run[WorkflowRun[T, Any]]:
+        run = super().run(inputs)
+
+        async def handler(data: WorkflowRun[Schema, Any], event: EventMeta) -> None:
+            response = await self._llm.create_structure(
+                messages=[*data.state.new_messages, UserMessage("Convert your findings to the following JSON schema")],
+                schema=to_strict_json_schema(self._output_schema),
+            )
+            data.result = self._output_schema(**response.object)  # type: ignore
+
+        run.on(
+            lambda event: event.path == ".".join(["run", *self._workflow.emitter.namespace, "success"]),
+            handler,
+            EmitterOptions(match_nested=True),
+        )
+
+        return run
