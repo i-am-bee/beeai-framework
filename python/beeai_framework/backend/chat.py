@@ -282,7 +282,6 @@ IMPORTANT: You MUST answer with a JSON object that matches the JSON schema above
                             f"Generated output: {msg.text}",
                         )
 
-                    print(tool_call)
                     tool_call_content = MessageToolCallContent(
                         id=f"call_{generate_random_string(8).lower()}",
                         tool_name=tool_call["name"],
