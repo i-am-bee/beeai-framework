@@ -36,7 +36,7 @@ from beeai_framework.backend.message import (
     SystemMessage,
     UserMessage,
 )
-from beeai_framework.serve.server import Server
+from beeai_framework.serve.server import AgentServer
 from beeai_framework.utils.lists import find_index
 from beeai_framework.utils.models import ModelLike, to_model_optional
 
@@ -91,7 +91,7 @@ class AcpAgent(AcpBaseAgent):
             pass
 
 
-class AcpServer(Server[AcpServerConfig]):
+class AcpAgentServer(AgentServer[AcpServerConfig]):
     def __init__(self) -> None:
         super().__init__()
         self.server = acp_server.Server()

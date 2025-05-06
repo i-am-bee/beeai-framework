@@ -12,6 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from beeai_framework.adapters.acp.server import AcpServer
+from beeai_framework.adapters.acp.server import AcpAgentServer
 
-__all__ = ["AcpServer"]
+__all__ = ["AcpAgentServer"]

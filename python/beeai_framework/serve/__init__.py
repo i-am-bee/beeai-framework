@@ -12,6 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from beeai_framework.serve.server import Server
+from beeai_framework.serve.server import AgentServer
 
-__all__ = ["Server"]
+__all__ = ["AgentServer"]

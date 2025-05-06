@@ -1,4 +1,4 @@
-from beeai_framework.adapters.acp.server import AcpServer, AcpServerConfig
+from beeai_framework.adapters.acp.server import AcpAgentServer, AcpServerConfig
 from beeai_framework.agents.tool_calling.agent import ToolCallingAgent
 from beeai_framework.agents.types import AgentMeta
 from beeai_framework.backend import ChatModel
@@ -18,7 +18,7 @@ def main() -> None:
     )
 
     # Register the agent with the ACP server and run the HTTP server
-    AcpServer().register([agent]).serve(config=AcpServerConfig(port=8001))
+    AcpAgentServer().register([agent]).serve(config=AcpServerConfig(port=8001))
 
 
 if __name__ == "__main__":

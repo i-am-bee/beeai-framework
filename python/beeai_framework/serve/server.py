@@ -22,12 +22,12 @@ from beeai_framework.agents.base import BaseAgent
 TServeConfig = TypeVar("TServeConfig", bound=BaseModel)
 
 
-class Server(Generic[TServeConfig], ABC):
+class AgentServer(Generic[TServeConfig], ABC):
     def __init__(self) -> None:
         self._agents: list[BaseAgent[Any]] = []
 
-    def register(self, agents: list[BaseAgent[Any]]) -> "Server[Any]":
-        self._agents = agents
+    def register(self, agents: list[BaseAgent[Any]] | BaseAgent[Any]) -> "AgentServer[Any]":
+        self._agents = agents if isinstance(agents, list) else [agents]
         return self
 
     @property
