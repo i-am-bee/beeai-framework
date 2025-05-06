@@ -18,6 +18,7 @@ import { createOpenAI, OpenAIProvider, OpenAIProviderSettings } from "@ai-sdk/op
 import { getEnv, parseEnv } from "@/internals/env.js";
 import { z } from "zod";
 import { BackendClient } from "@/backend/client.js";
+import { vercelFetcher } from "@/adapters/vercel/backend/utils.js";
 
 export type OpenAIClientSettings = OpenAIProviderSettings;
 
@@ -53,6 +54,7 @@ export class OpenAIClient extends BackendClient<OpenAIClientSettings, OpenAIProv
         ...extraHeaders,
         ...this.settings?.headers,
       },
+      fetch: vercelFetcher(this.settings?.fetch),
     });
   }
 }

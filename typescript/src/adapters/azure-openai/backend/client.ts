@@ -17,6 +17,7 @@
 import { AzureOpenAIProvider, AzureOpenAIProviderSettings, createAzure } from "@ai-sdk/azure";
 import { getEnv } from "@/internals/env.js";
 import { BackendClient } from "@/backend/client.js";
+import { vercelFetcher } from "@/adapters/vercel/backend/utils.js";
 
 export type AzureOpenAIClientSettings = AzureOpenAIProviderSettings;
 
@@ -31,6 +32,7 @@ export class AzureOpenAIClient extends BackendClient<
       baseURL: this.settings.baseURL || getEnv("AZURE_OPENAI_API_ENDPOINT"),
       resourceName: this.settings.resourceName || getEnv("AZURE_OPENAI_API_RESOURCE"),
       apiVersion: this.settings.apiVersion || getEnv("AZURE_OPENAI_API_VERSION"),
+      fetch: vercelFetcher(this.settings?.fetch),
     });
   }
 }

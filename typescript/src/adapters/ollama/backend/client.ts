@@ -17,6 +17,7 @@
 import { getEnv } from "@/internals/env.js";
 import { createOllama, OllamaProvider, OllamaProviderSettings } from "ollama-ai-provider";
 import { BackendClient } from "@/backend/client.js";
+import { vercelFetcher } from "@/adapters/vercel/backend/utils.js";
 
 export type OllamaClientSettings = OllamaProviderSettings;
 
@@ -25,6 +26,7 @@ export class OllamaClient extends BackendClient<OllamaClientSettings, OllamaProv
     return createOllama({
       ...(this.settings ?? {}),
       baseURL: this.settings?.baseURL ?? getEnv("OLLAMA_BASE_URL"),
+      fetch: vercelFetcher(this.settings?.fetch),
     });
   }
 }

@@ -20,6 +20,7 @@ import {
   AmazonBedrockProvider,
 } from "@ai-sdk/amazon-bedrock";
 import { BackendClient } from "@/backend/client.js";
+import { vercelFetcher } from "@/adapters/vercel/backend/utils.js";
 
 export type AmazonBedrockClientSettings = AmazonBedrockProviderSettings;
 
@@ -30,6 +31,7 @@ export class AmazonBedrockClient extends BackendClient<
   protected create(): AmazonBedrockProvider {
     return createAmazonBedrock({
       ...this.settings,
+      fetch: vercelFetcher(this.settings?.fetch),
     });
   }
 }
