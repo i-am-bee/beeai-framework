@@ -92,6 +92,7 @@ class AgentWorkflow:
         instructions: str | None = None,
         tools: list[InstanceOf[AnyTool]] | None = None,
         execution: AgentExecutionConfig | None = None,
+        save_intermediate_steps: bool = True,
     ) -> "AgentWorkflow": ...
     @overload
     def add_agent(self, instance: ToolCallingAgent, /) -> "AgentWorkflow": ...
@@ -106,6 +107,7 @@ class AgentWorkflow:
         instructions: str | None = None,
         tools: list[InstanceOf[AnyTool]] | None = None,
         execution: AgentExecutionConfig | None = None,
+        save_intermediate_steps: bool = True,
     ) -> "AgentWorkflow":
         if instance is None and llm is None:
             raise ValueError("Either instance or the agent configuration must be provided!")
@@ -120,6 +122,7 @@ class AgentWorkflow:
                 llm=llm,  # type: ignore
                 tools=tools,
                 memory=memory,
+                save_intermediate_steps=save_intermediate_steps,
                 templates={
                     "system": lambda template: template.update(
                         defaults=exclude_none({"instructions": instructions, "role": role})
