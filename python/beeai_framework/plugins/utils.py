@@ -13,10 +13,12 @@
 # limitations under the License.
 
 import inspect
+import os
 from collections.abc import Callable
 from functools import cached_property
 from typing import Any, ClassVar, TypeVar, overload
 
+import chevron
 from pydantic import BaseModel
 from typing_extensions import Unpack
 
@@ -107,3 +109,24 @@ def plugin(
         return create_plugin
     else:
         return create_plugin(fn)
+
+
+def render_env_variables(template: str | dict | list) -> str | dict | list:
+    """Renders a template with environment variables.
+    Args:
+        template: a chevron template.
+    """
+    if isinstance(template, str):
+        return chevron.render(template=template, data=os.environ)
+    elif isinstance(template, dict):
+        for key, value in template.items():
+            if isinstance(value, str|dict|list):
+                template[key] = render_env_variables(value)
+        return template
+    elif isinstance(template, list):
+        for i, value in enumerate(template):
+            if isinstance(value, str|dict|list):
+                template[i] = render_env_variables(value)
+        return template
+    return template
+

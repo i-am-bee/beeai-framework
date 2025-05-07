@@ -1,5 +1,5 @@
 import asyncio
-from typing import Any, Unpack
+from typing import Unpack
 
 from pydantic import BaseModel, InstanceOf
 
@@ -9,8 +9,8 @@ from beeai_framework.backend import AnyMessage, ChatModel, ChatModelParameters, 
 from beeai_framework.context import Run, RunContext
 from beeai_framework.emitter import Emitter, EmitterOptions
 from beeai_framework.memory import UnconstrainedMemory
+from beeai_framework.plugins.loader import PluginLoader
 from beeai_framework.plugins.plugin import Plugin, PluginKwargs
-from beeai_framework.plugins.types import PluggableInstanceRegistry, PluggableRegistry
 from beeai_framework.tools.search.duckduckgo import DuckDuckGoSearchTool
 from beeai_framework.tools.weather import OpenMeteoTool
 from beeai_framework.utils import ModelLike
@@ -93,46 +93,15 @@ async def workflow_as_plugin() -> None:
 
 
 async def registry_and_autoloading() -> None:
-    class PluginLoader:
-        REF_PREFIX = "$"
-
-        def __init__(self, *, registry: PluggableRegistry | None = None) -> None:
-            self.factories = registry or PluggableRegistry()
-            self.instances = PluggableInstanceRegistry()
-
-        def load(self, /, config: dict[str, Any]) -> None:
-            for name, options in config.items():
-                plugin_name = options["plugin"]
-                if not isinstance(plugin_name, str):
-                    raise ValueError(f"Plugin name must be a string, got {type(plugin_name)}")
-
-                plugin_parameters = options.get("parameters", {})
-                if not isinstance(plugin_parameters, dict):
-                    raise ValueError(f"Plugin parameters must be a dict, got {type(plugin_parameters)}")
-
-                plugin = self.factories.lookup(plugin_name)
-                instance = plugin.ref(**self._parse_plugin_parameters(plugin_parameters))
-                self.instances.register(instance, name=name)
-
-        def _parse_plugin_parameters(self, /, input: Any) -> Any:
-            if isinstance(input, dict):
-                return {key: self._parse_plugin_parameters(value) for key, value in input.items()}
-            elif isinstance(input, list):
-                return [self._parse_plugin_parameters(item) for item in input]
-
-            if isinstance(input, str) and input.startswith(PluginLoader.REF_PREFIX):
-                return self.instances.lookup(input[len(PluginLoader.REF_PREFIX) :]).ref
-            else:
-                return input
 
     # We start by registering the plugins we want to use
     loader = PluginLoader()
 
-    loader.factories.register(OllamaChatModel)
-    loader.factories.register(OpenMeteoTool)
-    loader.factories.register(DuckDuckGoSearchTool)
-    loader.factories.register(UnconstrainedMemory)
-    loader.factories.register(ToolCallingAgent)
+    loader.pluggable_type_factory.register(OllamaChatModel)
+    loader.pluggable_type_factory.register(OpenMeteoTool)
+    loader.pluggable_type_factory.register(DuckDuckGoSearchTool)
+    loader.pluggable_type_factory.register(UnconstrainedMemory)
+    loader.pluggable_type_factory.register(ToolCallingAgent)
 
     # We retrieve the configuration from an external source (like YAML)
     user_config = {
@@ -206,7 +175,7 @@ async def registry_and_autoloading() -> None:
         assert isinstance(input, dict)
         print(f"-> running '{name}' with the following input {input}")
 
-        instance = loader.instances.lookup(name).ref
+        instance = loader.pluggable_instances.lookup(name).ref
         response = await instance.as_plugin().run(input)
         print("<- ", response.result if hasattr(response, "result") else response.model_dump())
 
