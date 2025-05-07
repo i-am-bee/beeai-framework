@@ -13,27 +13,61 @@
 # limitations under the License.
 
 from abc import ABC, abstractmethod
-from typing import Any, Generic, TypeVar
+from collections.abc import Callable
+from typing import Any, ClassVar, Generic, Self
 
 from pydantic import BaseModel
+from typing_extensions import TypeVar
 
-from beeai_framework.agents.base import BaseAgent
+from beeai_framework.agents import BaseAgent
+from beeai_framework.agents.base import AnyAgent
 
-TServeConfig = TypeVar("TServeConfig", bound=BaseModel)
+TConfig = TypeVar("TConfig", bound=BaseModel, default=BaseModel)
+TAgent = TypeVar("TAgent", bound=object, default=Any)
+TSourceAgent = TypeVar("TSourceAgent", bound=BaseAgent[Any])
 
 
-class AgentServer(Generic[TServeConfig], ABC):
-    def __init__(self) -> None:
-        self._agents: list[BaseAgent[Any]] = []
+class AgentServer(Generic[TConfig, TAgent], ABC):
+    _factories: ClassVar[dict[type[AnyAgent], Callable[[AnyAgent], TAgent]]] = {}  # type: ignore[misc]
 
-    def register(self, agents: list[BaseAgent[Any]] | BaseAgent[Any]) -> "AgentServer[Any]":
-        self._agents = agents if isinstance(agents, list) else [agents]
+    def __init__(self, *, config: TConfig) -> None:
+        self._agents: list[AnyAgent] = []
+        self._config = config
+
+    @classmethod
+    def register_factory(
+        cls,
+        ref: type[TSourceAgent],
+        factory: Callable[[TSourceAgent], TAgent],
+        *,
+        override: bool = False,
+    ) -> None:
+        if ref not in cls._factories or override:
+            cls._factories[ref] = factory  # type: ignore
+        elif cls._factories[ref] is not factory:
+            raise ValueError(f"Factory for {ref} is already registered.")
+
+    def register(self, agents: list[AnyAgent] | AnyAgent) -> Self:
+        for agent in agents if isinstance(agents, list) else [agents]:
+            if not self.supports(agent):
+                raise ValueError(f"Agent {type(agent)} is not supported by this server.")
+            if agent not in self._agents:
+                self._agents.append(agent)
+
         return self
 
+    def deregister(self, agent: AnyAgent) -> Self:
+        self._agents.remove(agent)
+        return self
+
+    @classmethod
+    def supports(cls, agent: AnyAgent) -> bool:
+        return type(agent) in cls._factories
+
     @property
-    def agents(self) -> list[BaseAgent[Any]]:
+    def agents(self) -> list[AnyAgent]:
         return self._agents
 
     @abstractmethod
-    def serve(self, *, config: TServeConfig | None = None) -> None:
+    def serve(self) -> None:
         pass

@@ -12,6 +12,18 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from beeai_framework.adapters.acp.serve.server import AcpAgentServer
+from typing import Any
 
-__all__ = ["AcpAgentServer"]
+from beeai_framework.backend import AssistantMessage, CustomMessage, Message, Role, SystemMessage, UserMessage
+
+
+def to_framework_message(role: Role, content: str) -> Message[Any]:
+    match role:
+        case Role.USER:
+            return UserMessage(content)
+        case Role.ASSISTANT:
+            return AssistantMessage(content)
+        case Role.SYSTEM:
+            return SystemMessage(content)
+        case _:
+            return CustomMessage(role=role, content=content)
