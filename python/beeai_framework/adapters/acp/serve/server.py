@@ -12,15 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from collections.abc import AsyncGenerator, Callable
+from collections.abc import AsyncGenerator
 
 import acp_sdk.models as acp_models
 import acp_sdk.server.context as acp_context
 import acp_sdk.server.server as acp_server
 import acp_sdk.server.types as acp_types
-from acp_sdk.server.agent import Agent as AcpBaseAgent
-from pydantic import BaseModel
 
+from beeai_framework.adapters.acp.serve._agent import AcpAgent, AcpServerConfig
 from beeai_framework.adapters.acp.serve.utils import to_framework_message
 from beeai_framework.agents.react.agent import ReActAgent
 from beeai_framework.agents.react.events import ReActAgentUpdateEvent
@@ -34,56 +33,6 @@ from beeai_framework.serve.server import AgentServer
 from beeai_framework.utils.lists import find_index
 
 
-class AcpAgent(AcpBaseAgent):
-    """A wrapper for a BeeAI agent to be used with the ACP server."""
-
-    def __init__(
-        self,
-        fn: Callable[
-            [list[acp_models.Message], acp_context.Context],
-            AsyncGenerator[acp_types.RunYield, acp_types.RunYieldResume],
-        ],
-        name: str,
-        description: str | None = None,
-        metadata: acp_models.Metadata | None = None,
-    ) -> None:
-        super().__init__()
-        self.fn = fn
-        self._name = name
-        self._description = description
-        self._metadata = metadata
-
-    @property
-    def name(self) -> str:
-        return self._name
-
-    @property
-    def description(self) -> str:
-        return self._description or ""
-
-    @property
-    def metadata(self) -> acp_models.Metadata:
-        return self._metadata or acp_models.Metadata()
-
-    async def run(
-        self, input: list[acp_models.Message], context: acp_context.Context
-    ) -> AsyncGenerator[acp_types.RunYield, acp_types.RunYieldResume]:
-        try:
-            gen: AsyncGenerator[acp_types.RunYield, acp_types.RunYieldResume] = self.fn(input, context)
-            value = None
-            while True:
-                value = yield await gen.asend(value)
-        except StopAsyncIteration:
-            pass
-
-
-class AcpServerConfig(BaseModel):
-    """Configuration for the AcpServer."""
-
-    host: str = "127.0.0.1"
-    port: int = 8000
-
-
 class AcpAgentServer(AgentServer[AcpServerConfig, AcpAgent]):
     def __init__(self, *, config: AcpServerConfig | None = None) -> None:
         super().__init__(config=config or AcpServerConfig())
@@ -94,13 +43,10 @@ class AcpAgentServer(AgentServer[AcpServerConfig, AcpAgent]):
             factory = type(self)._factories[type(agent)]
             self._server.register(factory(agent))
 
-        self._server.run(
-            host=self._config.host,
-            port=self._config.port,
-        )
+        self._server.run(**self._config.model_dump(exclude_unset=True))
 
 
-def _register_react_agent(agent: ReActAgent) -> AcpAgent:
+def _react_agent_factory(agent: ReActAgent) -> AcpAgent:
     async def run(
         input: list[acp_models.Message], context: acp_context.Context
     ) -> AsyncGenerator[acp_types.RunYield, acp_types.RunYieldResume]:
@@ -125,10 +71,10 @@ def _register_react_agent(agent: ReActAgent) -> AcpAgent:
     return AcpAgent(fn=run, name=acp_models.AgentName(agent.meta.name), description=agent.meta.description)
 
 
-AcpAgentServer.register_factory(ReActAgent, _register_react_agent)
+AcpAgentServer.register_factory(ReActAgent, _react_agent_factory)
 
 
-def _register_tool_calling_agent(agent: ToolCallingAgent) -> AcpAgent:
+def _tool_calling_agent_factory(agent: ToolCallingAgent) -> AcpAgent:
     async def run(
         input: list[acp_models.Message], context: acp_context.Context
     ) -> AsyncGenerator[acp_types.RunYield, acp_types.RunYieldResume]:
@@ -155,4 +101,4 @@ def _register_tool_calling_agent(agent: ToolCallingAgent) -> AcpAgent:
     return AcpAgent(fn=run, name=acp_models.AgentName(agent.meta.name), description=agent.meta.description)
 
 
-AcpAgentServer.register_factory(ToolCallingAgent, _register_tool_calling_agent)
+AcpAgentServer.register_factory(ToolCallingAgent, _tool_calling_agent_factory)
