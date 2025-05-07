@@ -29,7 +29,17 @@ class Pluggable(Protocol[TInput, TOutput]):
     def as_plugin(self) -> Plugin[TInput, TOutput]: ...
 
 
-class PluggableRegistry(Registry[type[Pluggable]]): ...
+class PluggableInstanceRegistry(Registry[type[Pluggable]]):
+    def create(self, name: str, parameters: Any) -> Pluggable:
+        pluggable = self.lookup(name)
+        return pluggable.ref(**parameters)
+
+class PluggableRegistry(Registry[Pluggable]): ...
 
 
-class PluggableInstanceRegistry(Registry[Pluggable]): ...
+class PluginInstanceRegistry(Registry[type[Plugin]]):
+    def create(self, name: str, parameters: Any) -> Plugin:
+        plugin = self.lookup(name)
+        return plugin.ref(**parameters)
+
+class PluginRegistry(Registry[Plugin]): ...

@@ -1,0 +1,5 @@
+plugin:
+  configpaths:
+    - python/examples/plugins/models
+  plugins:
+    - SigmaComposer 

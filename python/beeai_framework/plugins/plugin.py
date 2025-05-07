@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import inspect
+import uuid
 from abc import ABC, abstractmethod
 from collections.abc import Callable
 from contextlib import suppress
@@ -30,7 +31,6 @@ from beeai_framework.utils.models import ModelLike, to_model
 TInput = TypeVar("TInput", bound=BaseModel)
 TOutput = TypeVar("TOutput", bound=BaseModel)
 
-
 class PluginKwargs(TypedDict, total=False):
     context: dict[str, Any]
     signal: AbortSignal
@@ -45,6 +45,7 @@ class Plugin(ABC, Generic[TInput, TOutput]):
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         super().__init__()
         self._is_running = False
+        self._uuid = uuid.uuid4()
 
     @property
     @abstractmethod
@@ -65,6 +66,11 @@ class Plugin(ABC, Generic[TInput, TOutput]):
     @property
     @abstractmethod
     def emitter(self) -> Emitter: ...
+
+    @property
+    def uuid(self) -> str:
+        """plugin UUID."""
+        return self._uuid.hex
 
     @abstractmethod
     def run(self, input: ModelLike[TInput], /, **kwargs: Unpack[PluginKwargs]) -> Run[TOutput]: ...
