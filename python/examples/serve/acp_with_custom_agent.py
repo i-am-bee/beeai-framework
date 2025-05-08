@@ -7,7 +7,7 @@ import acp_sdk.server.context as acp_context
 import acp_sdk.server.types as acp_types
 from pydantic import BaseModel, InstanceOf
 
-from beeai_framework.adapters.acp import AcpAgentServer, to_framework_message
+from beeai_framework.adapters.acp import AcpAgentServer, acp_msg_to_framework_msg
 from beeai_framework.adapters.acp.serve._agent import AcpAgent
 from beeai_framework.agents.base import BaseAgent
 from beeai_framework.agents.types import AgentMeta
@@ -67,7 +67,7 @@ def main() -> None:
             input: list[acp_models.Message], context: acp_context.Context
         ) -> AsyncGenerator[acp_types.RunYield, acp_types.RunYieldResume]:
             framework_messages = [
-                to_framework_message(Role(message.parts[0].role), str(message))  # type: ignore[attr-defined]
+                acp_msg_to_framework_msg(Role(message.parts[0].role), str(message))  # type: ignore[attr-defined]
                 for message in input
             ]
             response = await agent.run(framework_messages)
@@ -81,7 +81,7 @@ def main() -> None:
     # Create an instance of the EchoAgent with UnconstrainedMemory
     agent = EchoAgent(memory=UnconstrainedMemory())
     # Register the agent with the ACP server and run the HTTP server
-    AcpAgentServer().register([agent]).serve()
+    AcpAgentServer().register(agent).serve()
 
 
 if __name__ == "__main__":

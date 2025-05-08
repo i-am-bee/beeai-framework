@@ -13,14 +13,17 @@
 # limitations under the License.
 
 from collections.abc import AsyncGenerator
+from typing import Generic
 
 import acp_sdk.models as acp_models
 import acp_sdk.server.context as acp_context
 import acp_sdk.server.server as acp_server
 import acp_sdk.server.types as acp_types
+from typing_extensions import TypeVar
 
 from beeai_framework.adapters.acp.serve._agent import AcpAgent, AcpServerConfig
-from beeai_framework.adapters.acp.serve.utils import to_framework_message
+from beeai_framework.adapters.acp.serve._utils import acp_msg_to_framework_msg
+from beeai_framework.agents import AnyAgent
 from beeai_framework.agents.react.agent import ReActAgent
 from beeai_framework.agents.react.events import ReActAgentUpdateEvent
 from beeai_framework.agents.tool_calling.agent import ToolCallingAgent
@@ -29,19 +32,23 @@ from beeai_framework.backend.message import (
     AnyMessage,
     Role,
 )
-from beeai_framework.serve.server import AgentServer
+from beeai_framework.serve.server import Server
+from beeai_framework.utils import ModelLike
 from beeai_framework.utils.lists import find_index
+from beeai_framework.utils.models import to_model
+
+AnyAgentLike = TypeVar("AnyAgentLike", bound=AnyAgent, default=AnyAgent)
 
 
-class AcpAgentServer(AgentServer[AcpServerConfig, AcpAgent]):
-    def __init__(self, *, config: AcpServerConfig | None = None) -> None:
-        super().__init__(config=config or AcpServerConfig())
+class AcpAgentServer(Generic[AnyAgentLike], Server[AnyAgentLike, AcpAgent, AcpServerConfig]):
+    def __init__(self, *, config: ModelLike[AcpServerConfig] | None = None) -> None:
+        super().__init__(config=to_model(AcpServerConfig, config or {}))
         self._server = acp_server.Server()
 
     def serve(self) -> None:
-        for agent in self.agents:
-            factory = type(self)._factories[type(agent)]
-            self._server.register(factory(agent))
+        for member in self.members:
+            factory = type(self)._factories[type(member)]
+            self._server.register(factory(member))
 
         self._server.run(**self._config.model_dump(exclude_unset=True))
 
@@ -51,7 +58,7 @@ def _react_agent_factory(agent: ReActAgent) -> AcpAgent:
         input: list[acp_models.Message], context: acp_context.Context
     ) -> AsyncGenerator[acp_types.RunYield, acp_types.RunYieldResume]:
         framework_messages = [
-            to_framework_message(Role(message.parts[0].role), str(message))  # type: ignore[attr-defined]
+            acp_msg_to_framework_msg(Role(message.parts[0].role), str(message))  # type: ignore[attr-defined]
             for message in input
         ]
         await agent.memory.add_many(framework_messages)
@@ -79,7 +86,7 @@ def _tool_calling_agent_factory(agent: ToolCallingAgent) -> AcpAgent:
         input: list[acp_models.Message], context: acp_context.Context
     ) -> AsyncGenerator[acp_types.RunYield, acp_types.RunYieldResume]:
         framework_messages = [
-            to_framework_message(Role(message.parts[0].role), str(message))  # type: ignore[attr-defined]
+            acp_msg_to_framework_msg(Role(message.parts[0].role), str(message))  # type: ignore[attr-defined]
             for message in input
         ]
         await agent.memory.add_many(framework_messages)

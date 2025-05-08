@@ -17,7 +17,7 @@ from typing import Any
 from beeai_framework.backend import AssistantMessage, CustomMessage, Message, Role, SystemMessage, UserMessage
 
 
-def to_framework_message(role: Role, content: str) -> Message[Any]:
+def acp_msg_to_framework_msg(role: Role, content: str) -> Message[Any]:
     match role:
         case Role.USER:
             return UserMessage(content)
