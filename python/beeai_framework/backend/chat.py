@@ -57,7 +57,7 @@ from beeai_framework.tools.tool import AnyTool, Tool
 from beeai_framework.utils import AbortController, AbortSignal, ModelLike
 from beeai_framework.utils.asynchronous import to_async_generator
 from beeai_framework.utils.dicts import exclude_non_annotated
-from beeai_framework.utils.models import to_model
+from beeai_framework.utils.models import to_model, update_model
 from beeai_framework.utils.strings import generate_random_string, to_json
 
 T = TypeVar("T", bound=BaseModel)
@@ -103,7 +103,11 @@ class ChatModel(ABC):
         self._settings.update(**exclude_non_annotated(kwargs, ChatModelKwargs))
 
         kwargs = _ChatModelKwargsAdapter.validate_python(kwargs)
-        self.parameters = kwargs.get("parameters", ChatModelParameters())
+
+        parameters = type(self).get_default_parameters()
+        update_model(parameters, sources=[kwargs.get("parameters")])
+        self.parameters = parameters
+
         self.cache = kwargs.get("cache", NullCache[list[ChatModelOutput]]())
         self.tool_call_fallback_via_response_format = kwargs.get("tool_call_fallback_via_response_format", True)
         self.model_supports_tool_calling = kwargs.get("model_supports_tool_calling", True)
@@ -271,8 +275,12 @@ IMPORTANT: You MUST answer with a JSON object that matches the JSON schema above
                 if force_tool_call_via_response_format and not result.get_tool_calls():
                     msg = result.messages[-1]
                     tool_call: dict[str, Any] = parse_broken_json(msg.text)
-                    if not tool_call:
-                        raise ChatModelError(f"Failed to produce a valid tool call. Generated output: '{msg.text}'")
+                    if not tool_call or not tool_call.get("name") or tool_call.get("parameters") is None:
+                        raise ChatModelError(
+                            "Failed to produce a valid tool call.\n"
+                            "Try to increase max new tokens for your chat model.\n"
+                            f"Generated output: {msg.text}",
+                        )
 
                     tool_call_content = MessageToolCallContent(
                         id=f"call_{generate_random_string(8).lower()}",
@@ -347,6 +355,7 @@ IMPORTANT: You MUST answer with a JSON object that matches the JSON schema above
             kwargs["parameters"] = to_model(ChatModelParameters, options)
         elif options:
             kwargs.update(options)
+
         return TargetChatModel(parsed_model.model_id, **kwargs)  # type: ignore
 
     def _force_tool_call_via_response_format(
@@ -387,3 +396,7 @@ IMPORTANT: You MUST answer with a JSON object that matches the JSON schema above
             use_strict_tool_schema=self.use_strict_tool_schema,
         )
         return cloned
+
+    @classmethod
+    def get_default_parameters(cls) -> ChatModelParameters:
+        return ChatModelParameters(temperature=0)

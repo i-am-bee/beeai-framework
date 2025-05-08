@@ -1,3 +1,16 @@
+## python_v0.1.20 (2025-05-06)
+
+### Bug Fixes
+
+- **backend**: update types for chat model parameters (#806)
+
+### Features
+
+- **workflows**: extend AgentWorkflow state
+- **backend**: detect invalid tool calls due to the max token constraint (#820)
+- **tools**: improve schema parsing in OpenAPITool (#815)
+- **agents**: add save_intermediate_steps to AgentWorkflow
+
 ## python_v0.1.19 (2025-04-29)
 
 ### Features
