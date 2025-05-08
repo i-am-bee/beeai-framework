@@ -55,6 +55,7 @@ BeeAI framework provides a comprehensive set of features for building powerful A
 |-----------|-------------|
 | [**How to Slack with Bee**](/python/docs/tutorials.md#how-to-slack-with-bee) | This tutorial will guide you through integrating the BeeAI Python Framework with the Slack API. By the end, the agent will be able to post messages to a Slack channel.|
 | [**BeeAI integration using RemoteAgent**](/python/docs/tutorials.md#beeai-integration-using-remoteagent) | BeeAI is an open platform to help you discover, run, and compose AI agents from any framework and language. In this tutorial you will learn how to integrate BeeAI agents into the framework.|
+| [**Watsonx Developer Hub Integration**](https://github.com/IBM/watsonx-developer-hub/tree/main) | The watsonx developer hub contains examples and guides for building and deploying Gen AI applications using the watsonx APIs. Examples include how to set up and run templates for the [beeai-framework react agent](https://github.com/IBM/watsonx-developer-hub/tree/main/agents/base/beeai-framework-react-agent) as well as [beeai-framework workflows](https://github.com/IBM/watsonx-developer-hub/tree/main/agents/base/beeai-framework-workflow).|
 
 ## Prerequisites
 
