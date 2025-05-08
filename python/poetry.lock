@@ -5217,7 +5217,7 @@ cffi = {version = ">=1.11", markers = "platform_python_implementation == \"PyPy\
 cffi = ["cffi (>=1.11)"]
 
 [extras]
-acp = ["acp-sdk"]
+acp = ["acp-sdk", "uvicorn"]
 duckduckgo = ["duckduckgo-search"]
 huggingface = []
 langchain = ["langchain-community", "langchain-core", "langchain-ollama", "langgraph"]
@@ -5228,4 +5228,4 @@ wikipedia = ["wikipedia-api"]
 [metadata]
 lock-version = "2.1"
 python-versions = ">= 3.11,<4.0"
-content-hash = "9eafbf7c1e7c41169649dd82fe737ae5ce82651b303d432ace1e219f17acc9ee"
+content-hash = "03b39f3c523b0466ff42ef78e0571a143bd292ae7dcd00cc001087f54af20243"

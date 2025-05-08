@@ -43,6 +43,7 @@ pydantic = "^2.10"
 pydantic-settings = "^2.9.0"
 requests = "^2.32"
 wikipedia-api = {version = "^0.8.1", optional = true}
+uvicorn = {version = "^0.34.2", optional = true}
 
 [tool.poetry.group.dev.dependencies]
 commitizen = "^4.2.1"
@@ -70,7 +71,7 @@ search = ["duckduckgo-search", "wikipedia-api"]
 duckduckgo = ["duckduckgo-search"]
 wikipedia = ["wikipedia-api"]
 mcp = ["mcp"]
-acp = ["acp-sdk"]
+acp = ["acp-sdk", "uvicorn"]
 
 
 [tool.mypy]

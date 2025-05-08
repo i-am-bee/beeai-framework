@@ -12,15 +12,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import asyncio
 import os
 from collections.abc import AsyncGenerator, Awaitable, Callable
 from datetime import timedelta
+from typing import Any
 
 import acp_sdk.models as acp_models
 import acp_sdk.server.context as acp_context
 import acp_sdk.server.types as acp_types
-
-# import uvicorn
+import uvicorn
 from acp_sdk.server.agent import Agent as AcpBaseAgent
 from pydantic import BaseModel
 
@@ -80,21 +81,21 @@ class AcpServerConfig(BaseModel):
     port: int | None = None
     uds: str | None = None
     fd: int | None = None
-    # loop: uvicorn.config.LoopSetupType | None = None,
-    # http: type[asyncio.Protocol] | uvicorn.config.HTTPProtocolType | None = None,
-    # ws: type[asyncio.Protocol] | uvicorn.config.WSProtocolType | None = None,
+    loop: uvicorn.config.LoopSetupType | None = None
+    http: type[asyncio.Protocol] | uvicorn.config.HTTPProtocolType | None = None
+    ws: type[asyncio.Protocol] | uvicorn.config.WSProtocolType | None = None
     ws_max_size: int | None = None
     ws_max_queue: int | None = None
     ws_ping_interval: float | None = None
     ws_ping_timeout: float | None = None
     ws_per_message_deflate: bool | None = None
-    # lifespan: uvicorn.config.LifespanType | None = None,
+    lifespan: uvicorn.config.LifespanType | None = None
     env_file: str | os.PathLike[str] | None = None
-    # log_config: dict[str, Any] | str | uvicorn.config.RawConfigParser | uvicorn.config.IO[Any] | None = None,
+    log_config: dict[str, Any] | str | None = None
     log_level: str | int | None = None
     access_log: bool | None = None
     use_colors: bool | None = None
-    # interface: uvicorn.config.InterfaceType | None = None,
+    interface: uvicorn.config.InterfaceType | None = None
     reload: bool | None = None
     reload_dirs: list[str] | str | None = None
     reload_delay: float | None = None

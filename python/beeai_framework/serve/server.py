@@ -11,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
 from abc import ABC, abstractmethod
 from collections.abc import Callable, Sequence
 from typing import ClassVar, Generic, Self
@@ -43,7 +44,7 @@ class Server(Generic[TInput, TInternal, TConfig], ABC):
         elif cls._factories[ref] is not factory:
             raise ValueError(f"Factory for {ref} is already registered.")
 
-    def register(self, input: TInput) -> Self:
+    def register(self, input: TInput | Sequence[TInput]) -> Self:
         for value in input if isinstance(input, Sequence) else [input]:
             if not self.supports(value):
                 raise ValueError(f"Agent {type(value)} is not supported by this server.")
