@@ -18,6 +18,7 @@ import { createAnthropic, AnthropicProvider, AnthropicProviderSettings } from "@
 import { BackendClient } from "@/backend/client.js";
 import { getEnv, parseEnv } from "@/internals/env.js";
 import { z } from "zod";
+import { vercelFetcher } from "@/adapters/vercel/backend/utils.js";
 
 export type AnthropicClientSettings = AnthropicProviderSettings;
 
@@ -43,6 +44,7 @@ export class AnthropicClient extends BackendClient<AnthropicClientSettings, Anth
         ...extraHeaders,
         ...this.settings?.headers,
       },
+      fetch: vercelFetcher(this.settings?.fetch),
     });
   }
 }

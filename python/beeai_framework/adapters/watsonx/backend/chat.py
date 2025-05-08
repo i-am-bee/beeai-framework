@@ -19,6 +19,7 @@ from typing import ClassVar
 from typing_extensions import Unpack
 
 from beeai_framework.adapters.litellm.chat import LiteLLMChatModel
+from beeai_framework.backend import ChatModelParameters
 from beeai_framework.backend.chat import ChatModelKwargs
 from beeai_framework.backend.constants import ProviderName
 from beeai_framework.logger import Logger
@@ -69,4 +70,15 @@ class WatsonxChatModel(LiteLLMChatModel):
             api_key,
             envs=["WATSONX_API_KEY", "WATSONX_APIKEY", "WATSONX_ZENAPIKEY"],
             allow_empty=True,
+        )
+
+    @classmethod
+    def get_default_parameters(cls) -> ChatModelParameters:
+        # Source: https://cloud.ibm.com/apidocs/watsonx-ai#text-chat
+        return ChatModelParameters(
+            temperature=0,  # initially 1
+            max_tokens=4096,  # initially 1024
+            n=1,
+            frequency_penalty=0,
+            top_p=1,
         )

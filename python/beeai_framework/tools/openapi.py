@@ -19,6 +19,7 @@ from urllib.parse import parse_qs, urlencode, urljoin, urlparse, urlunparse
 import httpx
 from pydantic import BaseModel, Field, InstanceOf, RootModel
 
+from beeai_framework.backend.utils import inline_schema_refs
 from beeai_framework.context import RunContext
 from beeai_framework.emitter import Emitter
 from beeai_framework.tools import StringToolOutput, Tool, ToolError, ToolRunOptions
@@ -93,16 +94,28 @@ class OpenAPITool(Tool[BaseModel, ToolRunOptions, OpenAPIToolOutput]):
 
     @property
     def input_schema(self) -> type[BaseModel]:
-        def get_referenced_object(json: dict[str, Any], ref_path: str) -> dict[str, Any] | None:
+        def get_referenced_object(json: dict[str, Any], ref_path: str) -> dict[str, Any]:
             path_segments = ref_path.split("/")
             current_object = json
             for segment in path_segments:
                 if segment == "#":
                     continue
                 current_object = current_object[segment]
+
+            if current_object is None:
+                raise ValueError(f"Reference {ref_path} not found in OpenAPI schema.")
+
             return current_object
 
         schemas: list[dict[str, Any]] = []
+
+        def resolve_schema_refs(input: Any) -> Any:
+            if not input:
+                return input
+
+            input = input.copy()
+            input["components"] = self.open_api_schema["components"].copy()
+            return inline_schema_refs(input, force=True)
 
         for path, path_spec in self.open_api_schema.get("paths", {}).items():
             for method, method_spec in path_spec.items():
@@ -120,7 +133,10 @@ class OpenAPITool(Tool[BaseModel, ToolRunOptions, OpenAPIToolOutput]):
                 }
 
                 if method_spec.get("requestBody", {}).get("content", {}).get("application/json", {}).get("schema"):
-                    properties["body"] = method_spec["requestBody"]["content"]["application/json"]["schema"]
+                    request_body = method_spec["requestBody"]["content"]["application/json"]["schema"]
+                    if request_body.get("$ref"):
+                        request_body = get_referenced_object(self.open_api_schema, request_body["$ref"])
+                    properties["body"] = resolve_schema_refs(request_body)
 
                 if method_spec.get("parameters"):
                     parameters = {
@@ -141,7 +157,7 @@ class OpenAPITool(Tool[BaseModel, ToolRunOptions, OpenAPIToolOutput]):
                                     "description": ref_obj["name"],
                                 }
 
-                    properties["parameters"] = parameters
+                    properties["parameters"] = resolve_schema_refs(parameters)
 
                 schemas.append(
                     {

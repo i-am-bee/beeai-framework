@@ -28,6 +28,7 @@ These tools extend the agent's abilities, allowing it to interact with external 
 | `MilvusDatabaseTool`                                                  | Perform retrieval queries (search, insert, delete, manage collections) against a MilvusDatabaseTool database. |
 | `OpenAPITool`                                                         | Send requests to and receive responses from API server.                                                       |
 | `MCPTool`                                                             | Discover and use tools exposed by arbitrary [MCP Server](https://modelcontextprotocol.io/examples).           |
+| `QdrantDatabaseTool`                                                  | Perform vector search using [Qdrant](https://qdrant.tech/).                                                   |
 | ➕ [Request](https://github.com/i-am-bee/beeai-framework/discussions) |                                                                                                               |
 
 All examples can be found [here](/typescript/examples/tools).
