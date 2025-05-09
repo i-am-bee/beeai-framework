@@ -1,5 +1,5 @@
 import "dotenv/config.js";
-import { ToolMessage, UserMessage } from "beeai-framework/backend/message";
+import { CustomMessage, ToolMessage, UserMessage } from "beeai-framework/backend/message";
 import { WatsonxChatModel } from "beeai-framework/adapters/watsonx/backend/chat";
 import { ChatModel } from "beeai-framework/backend/chat";
 import { AbortError } from "beeai-framework/errors";
@@ -26,6 +26,19 @@ async function watsonxFromName() {
   const watsonxLLM = await ChatModel.fromName("watsonx:meta-llama/llama-3-1-8b-instruct");
   const response = await watsonxLLM.create({
     messages: [new UserMessage("what states are part of New England?")],
+  });
+  console.info(response.getTextContent());
+}
+
+async function watsonxCustomMessage() {
+  const watsonxLLM = await ChatModel.fromName("watsonx:ibm/granite-3-3-8b-instruct");
+  const response = await watsonxLLM.create({
+    messages: [
+      new UserMessage(
+        "A farmer has 10 cows, 5 chickens, and 2 horses. If we count all the animals' legs together, how many legs are there in total?",
+      ),
+      new CustomMessage("control", "thinking"),
+    ],
   });
   console.info(response.getTextContent());
 }
@@ -114,6 +127,8 @@ async function watsonxDebug() {
 
 console.info("watsonxFromName".padStart(25, "*"));
 await watsonxFromName();
+console.info("watsonxCustomMessage".padStart(25, "*"));
+await watsonxCustomMessage();
 console.info("watsonxSync".padStart(25, "*"));
 await watsonxSync();
 console.info("watsonxStream".padStart(25, "*"));

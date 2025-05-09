@@ -79,8 +79,8 @@ def parse_broken_json(input: str) -> Any:
     return json_repair.loads(input)
 
 
-def inline_schema_refs(schema: dict[str, Any]) -> dict[str, Any]:
-    if schema.get("$defs") is not None:
+def inline_schema_refs(schema: dict[str, Any], *, force: bool = False) -> dict[str, Any]:
+    if schema.get("$defs") is not None or force is True:
         schema = jsonref.replace_refs(
             schema, base_uri="", load_on_repr=True, merge_props=True, proxies=False, lazy_load=False
         )

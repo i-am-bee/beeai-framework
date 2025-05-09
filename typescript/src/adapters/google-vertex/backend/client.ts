@@ -21,6 +21,7 @@ import {
   GoogleVertexProviderSettings,
 } from "@ai-sdk/google-vertex";
 import { BackendClient } from "@/backend/client.js";
+import { vercelFetcher } from "@/adapters/vercel/backend/utils.js";
 
 export type GoogleVertexClientSettings = GoogleVertexProviderSettings;
 
@@ -34,6 +35,7 @@ export class GoogleVertexClient extends BackendClient<
       project: this.settings?.project || getEnv("GOOGLE_VERTEX_PROJECT"),
       baseURL: this.settings?.baseURL || getEnv("GOOGLE_VERTEX_ENDPOINT"),
       location: this.settings?.location || getEnv("GOOGLE_VERTEX_LOCATION"),
+      fetch: vercelFetcher(this.settings?.fetch),
     });
   }
 }

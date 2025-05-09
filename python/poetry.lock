@@ -2,15 +2,15 @@
 
 [[package]]
 name = "acp-sdk"
-version = "0.8.0"
+version = "0.8.4"
 description = "Agent Communication Protocol SDK"
 optional = true
 python-versions = "<4.0,>=3.11"
 groups = ["main"]
 markers = "extra == \"acp\""
 files = [
-    {file = "acp_sdk-0.8.0-py3-none-any.whl", hash = "sha256:8f33ac31fefcb0a9863f22738e23fab89d5bae12cf2f21b50c022913b03fd0a7"},
-    {file = "acp_sdk-0.8.0.tar.gz", hash = "sha256:4b5bf10a2b0b5ca5697ac3706c15155d40abde3921cd32eb3e20779c29307d3e"},
+    {file = "acp_sdk-0.8.4-py3-none-any.whl", hash = "sha256:3badf4ac8af1ffc177a5937274f9ee45f28b4073b7e1076e3d7f6ba21be03465"},
+    {file = "acp_sdk-0.8.4.tar.gz", hash = "sha256:c035c9099810c319729f9531ddd20c7a50c759e04c2cf344fb27a6b056a87f7a"},
 ]
 
 [package.dependencies]
@@ -5217,7 +5217,7 @@ cffi = {version = ">=1.11", markers = "platform_python_implementation == \"PyPy\
 cffi = ["cffi (>=1.11)"]
 
 [extras]
-acp = ["acp-sdk"]
+acp = ["acp-sdk", "uvicorn"]
 duckduckgo = ["duckduckgo-search"]
 huggingface = []
 langchain = ["langchain-community", "langchain-core", "langchain-ollama", "langgraph"]
@@ -5228,4 +5228,4 @@ wikipedia = ["wikipedia-api"]
 [metadata]
 lock-version = "2.1"
 python-versions = ">= 3.11,<4.0"
-content-hash = "28c36532608cf61dcaa449d49112f8918be8575babf3b9bd6c5c5841353181d6"
+content-hash = "5320b5d29191cbc32ae9f61e7b783d335221762ad242384359943cf4429b183c"

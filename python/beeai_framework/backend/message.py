@@ -20,7 +20,7 @@ from datetime import UTC, datetime
 from enum import Enum
 from typing import Any, Generic, Literal, Required, Self, TypeAlias, TypeVar, cast
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, field_validator
 from typing_extensions import TypedDict
 
 from beeai_framework.utils.lists import cast_list
@@ -73,6 +73,18 @@ class MessageToolCallContent(BaseModel):
     id: str
     tool_name: str
     args: str
+
+    @field_validator("args", mode="after")
+    @classmethod
+    def validate_args_json(cls, args: str) -> str:
+        try:
+            json.loads(args)
+            return args
+        except Exception:
+            raise ValueError(
+                f"The 'args' parameter for a tool (function) call {args} is the not a valid JSON!"
+                f"Try to increase max new tokens for your chat model.",
+            )
 
 
 class Message(ABC, Generic[T]):
