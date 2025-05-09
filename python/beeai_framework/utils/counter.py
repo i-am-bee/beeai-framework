@@ -11,6 +11,10 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+from collections.abc import Callable
+from typing import Generic, TypeVar
+
+from pydantic import BaseModel, ConfigDict
 
 from beeai_framework.errors import FrameworkError
 
@@ -53,3 +57,62 @@ class RetryCounter:
         )
         cloned._error_class = self._error_class
         return cloned
+
+
+T = TypeVar("T")
+
+
+class OccurrencesCounterEntry(BaseModel, Generic[T]):
+    model_config = ConfigDict(extra="allow", arbitrary_types_allowed=True)
+
+    value: T
+    distance: int
+    occurrences: int
+
+
+class OccurrencesCounter(Generic[T]):
+    def __init__(
+        self,
+        default: T | None = None,
+        *,
+        comparator: Callable[[T | None, T | None], bool] | None = None,
+        n: int = 1,
+    ) -> None:
+        self.visits = 0
+        self._default = default
+        self._n = n
+        self._comparator = comparator if comparator else lambda x, y: x == y
+        self._entries: list[OccurrencesCounterEntry[T]] = []
+
+    @property
+    def leader(self) -> OccurrencesCounterEntry[T]:
+        entry = max(self._entries, key=lambda e: e.occurrences)
+        if entry is None:
+            raise ValueError(f"{self} has no entry")
+        return entry
+
+    @property
+    def entries(self) -> list[OccurrencesCounterEntry[T]]:
+        return list(self._entries)
+
+    def update(self, value: T) -> int:
+        self.visits += 1
+
+        for entry in self.entries:
+            entry.distance += 1
+            if entry.distance > self._n:
+                self._entries.remove(entry)
+
+        for entry in self.entries:
+            if self._comparator(entry.value, value):
+                entry.occurrences += 1
+                return entry.occurrences
+
+        entry = OccurrencesCounterEntry(value=value, distance=0, occurrences=1)
+        self._entries.append(entry)
+        return entry.occurrences
+
+    def reset(self, value: T | None = None) -> None:
+        self.visits = 0
+        self._entries = []
+        self._default = value

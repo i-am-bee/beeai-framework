@@ -18,6 +18,8 @@ from typing import Annotated, Any
 from pydantic import BaseModel, Field, InstanceOf
 
 from beeai_framework.agents.tool_calling.prompts import (
+    ToolCallingAgentCycleDetectionPrompt,
+    ToolCallingAgentCycleDetectionPromptInput,
     ToolCallingAgentSystemPrompt,
     ToolCallingAgentSystemPromptInput,
     ToolCallingAgentTaskPrompt,
@@ -39,6 +41,9 @@ class ToolCallingAgentTemplates(BaseModel):
     )
     tool_error: InstanceOf[PromptTemplate[ToolCallingAgentToolErrorPromptInput]] = Field(
         default_factory=lambda: ToolCallingAgentToolErrorPrompt.fork(None),
+    )
+    cycle_detection: InstanceOf[PromptTemplate[ToolCallingAgentCycleDetectionPromptInput]] = Field(
+        default_factory=lambda: ToolCallingAgentCycleDetectionPrompt.fork(None),
     )
 
 
