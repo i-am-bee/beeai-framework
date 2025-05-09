@@ -64,3 +64,4 @@ This repository contains examples demonstrating the usage of the BeeAI Framework
 
 - [`acp.py`](/python/examples/serve/acp.py): Expose agents as an [ACP](https://agentcommunicationprotocol.dev/how-to/wrap-existing-agent) server
 - [`acp_with_custom_agent.py`](/python/examples/serve/acp_with_custom_agent.py): Implement an ACP factory and expose custom agents as an ACP server
+- [`mcp_tool.py`](/python/examples/serve/mcp_tool.py): Expose tools as [MCP](https://modelcontextprotocol.io/docs/concepts/tools) server
