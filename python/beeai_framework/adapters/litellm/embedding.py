@@ -13,7 +13,6 @@
 # limitations under the License.
 
 
-import logging
 import os
 from abc import ABC
 from itertools import chain
@@ -24,12 +23,17 @@ from litellm import aembedding
 from litellm.litellm_core_utils.get_supported_openai_params import get_supported_openai_params
 from litellm.types.utils import EmbeddingResponse
 
+from beeai_framework.adapters.litellm.utils import litellm_debug
 from beeai_framework.backend import EmbeddingModel
 from beeai_framework.backend.types import EmbeddingModelInput, EmbeddingModelOutput, EmbeddingModelUsage
 from beeai_framework.context import RunContext
 from beeai_framework.logger import Logger
 
 logger = Logger(__name__)
+
+
+class LiteLLMEmbeddingModelOutput(EmbeddingModelOutput):
+    response: Any
 
 
 class LiteLLMEmbeddingModel(EmbeddingModel, ABC):
@@ -53,17 +57,6 @@ class LiteLLMEmbeddingModel(EmbeddingModel, ABC):
     def model_id(self) -> str:
         return self._model_id
 
-    @staticmethod
-    def litellm_debug(enable: bool = True) -> None:
-        litellm.set_verbose = enable  # type: ignore [attr-defined]
-        litellm.suppress_debug_info = not enable
-
-        litellm.suppress_debug_info = not enable
-        litellm.logging = enable
-
-        logger = logging.getLogger("LiteLLM")
-        logger.setLevel(logging.DEBUG if enable else logging.CRITICAL + 1)
-
     async def _create(
         self,
         input: EmbeddingModelInput,
@@ -77,21 +70,24 @@ class LiteLLMEmbeddingModel(EmbeddingModel, ABC):
 
     def _transform_input(self, model_input: EmbeddingModelInput) -> dict[str, Any]:
         return {
-            "model": self.provider_id + "/" + self._model_id,
+            "model": f"{self.provider_id}/{self._model_id}",
             "input": model_input.values,
             **self._settings,
         }
 
-    def _transform_output(self, response: EmbeddingResponse, model_input: EmbeddingModelInput) -> EmbeddingModelOutput:
+    def _transform_output(
+        self, response: EmbeddingResponse, model_input: EmbeddingModelInput
+    ) -> LiteLLMEmbeddingModelOutput:
         embeddings: list[list[float]] = []
 
-        for embedding in response.data:
-            embeddings.append([float(point) for point in embedding.get("embedding")])
+        for result in response.data:
+            embeddings.append([float(value) for value in result.get("embedding")])
 
-        return EmbeddingModelOutput(
+        return LiteLLMEmbeddingModelOutput(
             values=model_input.values,
             embeddings=embeddings,
             usage=EmbeddingModelUsage(**response.usage.model_dump()) if response.usage else None,
+            response=response,
         )
 
     def _assert_setting_value(
@@ -131,4 +127,4 @@ class LiteLLMEmbeddingModel(EmbeddingModel, ABC):
         self._settings[name] = value or None
 
 
-LiteLLMEmbeddingModel.litellm_debug(False)
+litellm_debug(False)
