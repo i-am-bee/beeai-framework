@@ -4,7 +4,7 @@ import traceback
 
 from pydantic import BaseModel
 
-from beeai_framework.agents.experimental.remote import RemoteAgent
+from beeai_framework.adapters.acp.agents import ACPAgent
 from beeai_framework.errors import FrameworkError
 from beeai_framework.memory.unconstrained_memory import UnconstrainedMemory
 from beeai_framework.workflows import Workflow
@@ -20,7 +20,7 @@ async def main() -> None:
         output: str | None = None
 
     async def research(state: State) -> None:
-        agent = RemoteAgent(
+        agent = ACPAgent(
             agent_name="gpt-researcher", url="http://127.0.0.1:8333/api/v1/acp", memory=UnconstrainedMemory()
         )
         # Run the agent and observe events
@@ -31,7 +31,7 @@ async def main() -> None:
         state.research = response.result.text
 
     async def podcast(state: State) -> None:
-        agent = RemoteAgent(
+        agent = ACPAgent(
             agent_name="podcast-creator", url="http://127.0.0.1:8333/api/v1/acp", memory=UnconstrainedMemory()
         )
         # Run the agent and observe events

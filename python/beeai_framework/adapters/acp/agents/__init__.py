@@ -12,16 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from beeai_framework.agents.experimental.remote.agent import RemoteAgent
-from beeai_framework.agents.experimental.remote.events import (
-    RemoteAgentErrorEvent,
-    RemoteAgentUpdateEvent,
-)
-from beeai_framework.agents.experimental.remote.types import RemoteAgentRunOutput
+from beeai_framework.adapters.acp.agents.agent import ACPAgent
+from beeai_framework.adapters.acp.agents.events import ACPAgentUpdateEvent, ACPErrorEvent
+from beeai_framework.adapters.acp.agents.types import ACPAgentRunOutput
 
 __all__ = [
-    "RemoteAgent",
-    "RemoteAgentErrorEvent",
-    "RemoteAgentRunOutput",
-    "RemoteAgentUpdateEvent",
+    "ACPAgent",
+    "ACPAgentRunOutput",
+    "ACPAgentUpdateEvent",
+    "ACPErrorEvent",
 ]
