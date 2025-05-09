@@ -8,7 +8,7 @@ import acp_sdk.server.types as acp_types
 from pydantic import BaseModel, InstanceOf
 
 from beeai_framework.adapters.acp import AcpAgentServer, acp_msg_to_framework_msg
-from beeai_framework.adapters.acp.serve._agent import AcpAgent
+from beeai_framework.adapters.acp.serve.agent import AcpAgent
 from beeai_framework.agents.base import BaseAgent
 from beeai_framework.agents.types import AgentMeta
 from beeai_framework.backend.message import AnyMessage, AssistantMessage, Role

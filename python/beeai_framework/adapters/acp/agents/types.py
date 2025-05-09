@@ -12,18 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import Any
 
-from pydantic import BaseModel
+from acp_sdk.models.models import Event
+from pydantic import BaseModel, InstanceOf
 
-
-class RemoteAgentUpdateEvent(BaseModel):
-    key: str
-    value: dict[str, Any]
+from beeai_framework.backend.message import AnyMessage
 
 
-class RemoteAgentErrorEvent(BaseModel):
-    message: str
-
-
-remote_agent_event_types: dict[str, type] = {"update": RemoteAgentUpdateEvent, "error": RemoteAgentErrorEvent}
+class ACPAgentRunOutput(BaseModel):
+    result: InstanceOf[AnyMessage]
+    event: Event

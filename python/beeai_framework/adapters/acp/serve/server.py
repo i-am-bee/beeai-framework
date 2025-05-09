@@ -21,8 +21,8 @@ import acp_sdk.server.server as acp_server
 import acp_sdk.server.types as acp_types
 from typing_extensions import TypeVar
 
-from beeai_framework.adapters.acp.serve._agent import AcpAgent, AcpServerConfig
 from beeai_framework.adapters.acp.serve._utils import acp_msg_to_framework_msg
+from beeai_framework.adapters.acp.serve.agent import AcpAgent, AcpServerConfig
 from beeai_framework.agents import AnyAgent
 from beeai_framework.agents.react.agent import ReActAgent
 from beeai_framework.agents.react.events import ReActAgentUpdateEvent
