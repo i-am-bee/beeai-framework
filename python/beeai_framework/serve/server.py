@@ -58,8 +58,16 @@ class Server(Generic[TInput, TInternal, TConfig], ABC):
         return self
 
     @classmethod
+    def get_factory(cls, input: TInput) -> Callable[[TInput], TInternal]:
+        return cls._factories[type(input)]
+
+    @classmethod
     def supports(cls, input: TInput) -> bool:
-        return type(input) in cls._factories
+        try:
+            cls.get_factory(input)
+            return True
+        except Exception:
+            return False
 
     @property
     def members(self) -> list[TInput]:
