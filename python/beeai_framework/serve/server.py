@@ -28,7 +28,7 @@ class Server(Generic[TInput, TInternal, TConfig], ABC):
     _factories: ClassVar[dict[type[TInput], Callable[[TInput], TInternal]]] = {}  # type: ignore[misc]
 
     def __init__(self, *, config: TConfig) -> None:
-        self._entries: list[TInput] = []
+        self._members: list[TInput] = []
         self._config = config
 
     @classmethod
@@ -48,13 +48,13 @@ class Server(Generic[TInput, TInternal, TConfig], ABC):
         for value in input if isinstance(input, Sequence) else [input]:
             if not self.supports(value):
                 raise ValueError(f"Agent {type(value)} is not supported by this server.")
-            if value not in self._entries:
-                self._entries.append(value)
+            if value not in self._members:
+                self._members.append(value)
 
         return self
 
     def deregister(self, input: TInput) -> Self:
-        self._entries.remove(input)
+        self._members.remove(input)
         return self
 
     @classmethod
@@ -63,7 +63,7 @@ class Server(Generic[TInput, TInternal, TConfig], ABC):
 
     @property
     def members(self) -> list[TInput]:
-        return self._entries
+        return self._members
 
     @abstractmethod
     def serve(self) -> None:
