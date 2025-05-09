@@ -25,7 +25,10 @@ from beeai_framework.agents.tool_calling.events import (
     ToolCallingAgentSuccessEvent,
     tool_calling_agent_event_types,
 )
-from beeai_framework.agents.tool_calling.prompts import ToolCallingAgentTaskPromptInput
+from beeai_framework.agents.tool_calling.prompts import (
+    ToolCallingAgentCycleDetectionPromptInput,
+    ToolCallingAgentTaskPromptInput,
+)
 from beeai_framework.agents.tool_calling.types import (
     ToolCallingAgentRunOutput,
     ToolCallingAgentRunState,
@@ -33,6 +36,7 @@ from beeai_framework.agents.tool_calling.types import (
     ToolCallingAgentTemplates,
     ToolCallingAgentTemplatesKeys,
 )
+from beeai_framework.agents.tool_calling.utils import ToolCallChecker, ToolCallCheckerConfig
 from beeai_framework.agents.types import AgentMeta
 from beeai_framework.backend.chat import ChatModel
 from beeai_framework.backend.message import (
@@ -52,6 +56,7 @@ from beeai_framework.tools.tool import AnyTool
 from beeai_framework.tools.tool import tool as create_tool
 from beeai_framework.tools.types import StringToolOutput
 from beeai_framework.utils.counter import RetryCounter
+from beeai_framework.utils.models import update_model
 from beeai_framework.utils.strings import to_json
 
 
@@ -66,6 +71,7 @@ class ToolCallingAgent(BaseAgent[ToolCallingAgentRunOutput]):
         | None = None,
         save_intermediate_steps: bool = True,
         meta: AgentMeta | None = None,
+        tool_call_checker: ToolCallCheckerConfig | bool = True,
     ) -> None:
         super().__init__()
         self._llm = llm
@@ -74,6 +80,7 @@ class ToolCallingAgent(BaseAgent[ToolCallingAgentRunOutput]):
         self._templates = self._generate_templates(templates)
         self._save_intermediate_steps = save_intermediate_steps
         self._meta = meta
+        self._tool_call_checker = tool_call_checker
 
     def run(
         self,
@@ -139,6 +146,7 @@ class ToolCallingAgent(BaseAgent[ToolCallingAgentRunOutput]):
                 return StringToolOutput("Message has been sent")
 
             tools = [*self._tools, final_answer_tool]
+            tool_call_checker = self._create_tool_call_checker()
 
             while state.result is None:
                 state.iteration += 1
@@ -164,6 +172,23 @@ class ToolCallingAgent(BaseAgent[ToolCallingAgentRunOutput]):
                         tool = next((tool for tool in tools if tool.name == tool_call.tool_name), None)
                         if not tool:
                             raise ToolError(f"Tool '{tool_call.tool_name}' does not exist!")
+
+                        tool_call_checker.register(tool_call)
+                        if tool_call_checker.cycle_found:
+                            await state.memory.delete_many(response.messages)
+                            await state.memory.add(
+                                UserMessage(
+                                    self._templates.cycle_detection.render(
+                                        ToolCallingAgentCycleDetectionPromptInput(
+                                            tool_args=tool_call.args,
+                                            tool_name=tool_call.tool_name,
+                                            final_answer_tool=final_answer_tool.name,
+                                        )
+                                    ),
+                                ),
+                            )
+                            tool_call_checker.reset(tool_call)
+                            break
 
                         tool_input = json.loads(tool_call.args)
                         tool_response = await tool.run(tool_input).context(
@@ -258,6 +283,17 @@ class ToolCallingAgent(BaseAgent[ToolCallingAgentRunOutput]):
             memory=await self._memory.clone(),
             tools=[await tool.clone() for tool in self._tools],
             templates=self._templates.model_dump(),
+            tool_call_checker=self._tool_call_checker,
+            save_intermediate_steps=self._save_intermediate_steps,
+            meta=self._meta,
         )
         cloned.emitter = await self.emitter.clone()
         return cloned
+
+    def _create_tool_call_checker(self) -> ToolCallChecker:
+        config = ToolCallCheckerConfig()
+        update_model(config, sources=[self._tool_call_checker])
+
+        instance = ToolCallChecker(config)
+        instance.enabled = self._tool_call_checker is not False
+        return instance
