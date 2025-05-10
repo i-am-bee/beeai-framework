@@ -12,11 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+
+import logging
 from typing import Any
 
-from beeai_framework.logger import Logger
-
-logger = Logger(__name__)
+import litellm
 
 
 def parse_extra_headers(
@@ -56,6 +56,10 @@ def parse_extra_headers(
 
 def _parse_header_string(header_string: str) -> dict[str, str]:
     """Parses a comma-separated string of headers into a dictionary."""
+    from beeai_framework.logger import Logger
+
+    logger = Logger(__name__)
+
     headers: dict[str, str] = {}
     if not header_string:
         return headers
@@ -68,3 +72,14 @@ def _parse_header_string(header_string: str) -> dict[str, str]:
         else:
             logger.warning(f"Malformed header string detected. Will ignore it: {pair}")
     return headers
+
+
+def litellm_debug(enable: bool = True) -> None:
+    litellm.set_verbose = enable  # type: ignore
+    litellm.suppress_debug_info = not enable
+
+    litellm.suppress_debug_info = not enable
+    litellm.logging = enable
+
+    litellm_logger = logging.getLogger("LiteLLM")
+    litellm_logger.setLevel(logging.DEBUG if enable else logging.CRITICAL + 1)

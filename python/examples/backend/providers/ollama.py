@@ -7,6 +7,7 @@ from datetime import UTC, datetime
 from pydantic import BaseModel, Field
 
 from beeai_framework.adapters.ollama import OllamaChatModel
+from beeai_framework.adapters.ollama.backend.embedding import OllamaEmbeddingModel
 from beeai_framework.backend import (
     AnyMessage,
     ChatModel,
@@ -125,6 +126,15 @@ Current date is {datetime.now(tz=UTC).date()!s}
     print(final_response.get_text_content())
 
 
+async def ollama_embedding() -> None:
+    embedding_llm = OllamaEmbeddingModel()
+
+    response = await embedding_llm.create(["Text", "to", "embed"])
+
+    for row in response.embeddings:
+        print(*row)
+
+
 async def main() -> None:
     print("*" * 10, "ollama_from_name")
     await ollama_from_name()
@@ -142,6 +152,8 @@ async def main() -> None:
     await ollama_stream_parser()
     print("*" * 10, "ollama_tool_calling")
     await ollama_tool_calling()
+    print("*" * 10, "ollama_embedding")
+    await ollama_embedding()
 
 
 if __name__ == "__main__":
