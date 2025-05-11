@@ -1,3 +1,4 @@
+import os
 import sys
 
 from pydantic import BaseModel
@@ -27,7 +28,7 @@ class ConsoleReader:
         try:
             while True:
                 prompt = input(colored(self.input, "cyan", attrs=["bold"])).strip()
-                if not sys.stdin.isatty():
+                if not sys.stdin.isatty() and "PYCHARM_HOSTED" not in os.environ:
                     print(prompt)
 
                 if prompt == "q":
@@ -37,12 +38,11 @@ class ConsoleReader:
 
                 if not prompt and not self.allow_empty:
                     print("Error: Empty prompt is not allowed. Please try again.")
-                    continue
-
-                return prompt
+                else:
+                    return prompt
         except (EOFError, KeyboardInterrupt):
             print()
-            exit()
+            raise StopIteration
 
     def write(self, role: str, data: str) -> None:
         print(colored(role, "red", attrs=["bold"]), data)

@@ -31,13 +31,13 @@ from beeai_framework.tools.types import ToolRunOptions
 
 class WikipediaToolInput(BaseModel):
     query: str = Field(description="Search query, name of the Wikipedia page.")
-    full_text: bool = Field(
-        description="If set to true, it will return the full text of the page instead of its summary.",
+    summary_only: bool = Field(
+        description="If set to true, only page's summary will be provided instead of a full text.",
         default=False,
     )
-    section_titles: bool = Field(
-        description="If set to true, it returns section titles as the description.", default=False
-    )
+    # section_titles: bool = Field(
+    #    description="If set to true, it returns section titles as the description.", default=False
+    # )
     language: str | None = Field(description="Retrieves the specified language version if available.", default=None)
 
 
@@ -82,12 +82,7 @@ class WikipediaTool(Tool[WikipediaToolInput, ToolRunOptions, WikipediaToolOutput
         if input.language is not None and input.language in page_py.langlinks:
             page_py = page_py.langlinks[input.language]
 
-        if input.section_titles:
-            description_output = self.get_section_titles(page_py.sections)
-        elif input.full_text:
-            description_output = page_py.text
-        else:
-            description_output = page_py.summary
+        description_output = page_py.text if not input.summary_only else page_py.summary
 
         return WikipediaToolOutput(
             [

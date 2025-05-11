@@ -12,14 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import json
 from collections.abc import Sequence
 from typing import Any
 
-from pydantic import BaseModel, Field, create_model
+from pydantic import BaseModel
 
-from beeai_framework.agents import AgentError, AgentExecutionConfig
+from beeai_framework.agents import AgentError, AgentExecutionConfig, AgentMeta
 from beeai_framework.agents.base import BaseAgent
+from beeai_framework.agents.tool_calling.abilities import FinalAnswerAbility
 from beeai_framework.agents.tool_calling.events import (
     ToolCallingAgentStartEvent,
     ToolCallingAgentSuccessEvent,
@@ -29,7 +29,14 @@ from beeai_framework.agents.tool_calling.prompts import (
     ToolCallingAgentCycleDetectionPromptInput,
     ToolCallingAgentTaskPromptInput,
 )
+from beeai_framework.agents.tool_calling.runtime import (
+    ToolCallingAgentRegistry,
+    _create_system_message,
+    _prepare_request,
+    _run_tools,
+)
 from beeai_framework.agents.tool_calling.types import (
+    AgentAbility,
     ToolCallingAgentRunOutput,
     ToolCallingAgentRunState,
     ToolCallingAgentTemplateFactory,
@@ -37,14 +44,10 @@ from beeai_framework.agents.tool_calling.types import (
     ToolCallingAgentTemplatesKeys,
 )
 from beeai_framework.agents.tool_calling.utils import ToolCallChecker, ToolCallCheckerConfig
-from beeai_framework.agents.types import AgentMeta
 from beeai_framework.backend.chat import ChatModel
 from beeai_framework.backend.message import (
     AssistantMessage,
     MessageToolCallContent,
-    MessageToolResultContent,
-    SystemMessage,
-    ToolMessage,
     UserMessage,
 )
 from beeai_framework.backend.utils import parse_broken_json
@@ -53,11 +56,9 @@ from beeai_framework.emitter import Emitter
 from beeai_framework.memory.base_memory import BaseMemory
 from beeai_framework.memory.unconstrained_memory import UnconstrainedMemory
 from beeai_framework.template import PromptTemplate
-from beeai_framework.tools.errors import ToolError
 from beeai_framework.tools.tool import AnyTool
-from beeai_framework.tools.tool import tool as create_tool
-from beeai_framework.tools.types import StringToolOutput
 from beeai_framework.utils.counter import RetryCounter
+from beeai_framework.utils.dicts import exclude_none
 from beeai_framework.utils.models import update_model
 from beeai_framework.utils.strings import find_first_pair, generate_random_string, to_json
 
@@ -72,6 +73,11 @@ class ToolCallingAgent(BaseAgent[ToolCallingAgentRunOutput]):
         templates: dict[ToolCallingAgentTemplatesKeys, PromptTemplate[Any] | ToolCallingAgentTemplateFactory]
         | None = None,
         save_intermediate_steps: bool = True,
+        abilities: Sequence[AgentAbility[Any] | str] | None = None,
+        name: str | None = None,
+        description: str | None = None,
+        role: str | None = None,
+        instructions: str | None = None,
         meta: AgentMeta | None = None,
         tool_call_checker: ToolCallCheckerConfig | bool = True,
         final_answer_as_tool: bool = True,
@@ -82,9 +88,21 @@ class ToolCallingAgent(BaseAgent[ToolCallingAgentRunOutput]):
         self._tools = tools or []
         self._templates = self._generate_templates(templates)
         self._save_intermediate_steps = save_intermediate_steps
-        self._meta = meta
         self._tool_call_checker = tool_call_checker
         self._final_answer_as_tool = final_answer_as_tool
+        if role or instructions:
+            self._templates.system.update(
+                defaults=exclude_none(
+                    {
+                        "role": role,
+                        "instructions": instructions,
+                    }
+                )
+            )
+        self._abilities = [AgentAbility.lookup(ab) if isinstance(ab, str) else ab for ab in (abilities or [])]
+        self._meta = AgentMeta(name=name or "", description=description or "")
+        if meta:
+            update_model(self._meta, sources=[meta])
 
     def run(
         self,
@@ -94,15 +112,14 @@ class ToolCallingAgent(BaseAgent[ToolCallingAgentRunOutput]):
         expected_output: str | type[BaseModel] | None = None,
         execution: AgentExecutionConfig | None = None,
     ) -> Run[ToolCallingAgentRunOutput]:
-        execution_config = execution or AgentExecutionConfig(
+        run_config = execution or AgentExecutionConfig(
             max_retries_per_step=3,
             total_max_retries=20,
             max_iterations=10,
         )
 
-        async def handler(run_context: RunContext) -> ToolCallingAgentRunOutput:
-            state = ToolCallingAgentRunState(memory=UnconstrainedMemory(), result=None, iteration=0)
-            await state.memory.add(SystemMessage(self._templates.system.render()))
+        async def init_state() -> tuple[ToolCallingAgentRunState, UserMessage | None]:
+            state = ToolCallingAgentRunState(memory=UnconstrainedMemory(), steps=[], iteration=0, result=None)
             await state.memory.add_many(self.memory.messages)
 
             user_message: UserMessage | None = None
@@ -110,139 +127,106 @@ class ToolCallingAgent(BaseAgent[ToolCallingAgentRunOutput]):
                 task_input = ToolCallingAgentTaskPromptInput(
                     prompt=prompt,
                     context=context,
-                    expected_output=expected_output if isinstance(expected_output, str) else None,
+                    expected_output=expected_output if isinstance(expected_output, str) else None,  # TODO: validate
                 )
                 user_message = UserMessage(self._templates.task.render(task_input))
                 await state.memory.add(user_message)
 
-            global_retries_counter = RetryCounter(
-                error_type=AgentError, max_retries=execution_config.total_max_retries or 1
+            return state, user_message
+
+        async def handler(run_context: RunContext) -> ToolCallingAgentRunOutput:
+            state, user_message = await init_state()
+            registry = ToolCallingAgentRegistry(
+                tools=self._tools,
+                abilities=self._abilities,
+                final_answer=FinalAnswerAbility(state=state, expected_output=expected_output, double_check=False),
             )
-
-            final_answer_schema_cls: type[BaseModel] = (
-                expected_output
-                if (
-                    expected_output is not None
-                    and isinstance(expected_output, type)
-                    and issubclass(expected_output, BaseModel)
-                )
-                else create_model(
-                    "FinalAnswer",
-                    response=(
-                        str,
-                        Field(description=expected_output or None),
-                    ),
-                )
-            )
-
-            @create_tool(
-                name="final_answer",
-                description="Sends the final answer to the user",
-                input_schema=final_answer_schema_cls,
-            )
-            def final_answer_tool(**kwargs: Any) -> StringToolOutput:
-                if final_answer_schema_cls is expected_output:
-                    dump = final_answer_schema_cls.model_validate(kwargs)
-                    state.result = AssistantMessage(to_json(dump.model_dump()))
-                else:
-                    state.result = AssistantMessage(kwargs["response"])
-
-                return StringToolOutput("Message has been sent")
-
-            tools = [*self._tools, final_answer_tool]
-            tool_call_checker = self._create_tool_call_checker()
-            final_answer_as_tool = self._final_answer_as_tool
+            tool_call_cycle_checker = self._create_tool_call_checker()
+            tool_call_retry_counter = RetryCounter(error_type=AgentError, max_retries=run_config.total_max_retries or 1)
+            force_final_answer_as_tool = self._final_answer_as_tool
 
             while state.result is None:
                 state.iteration += 1
 
-                if execution_config.max_iterations and state.iteration > execution_config.max_iterations:
+                if run_config.max_iterations and state.iteration > run_config.max_iterations:
                     raise AgentError(f"Agent was not able to resolve the task in {state.iteration} iterations.")
 
                 await run_context.emitter.emit(
                     "start",
                     ToolCallingAgentStartEvent(state=state),
                 )
+
+                request = _prepare_request(registry, state, force_final_answer_as_tool)
                 response = await self._llm.create(
-                    messages=state.memory.messages,
-                    tools=tools,
-                    tool_choice=("required" if len(tools) > 1 else tools[0]) if final_answer_as_tool else "auto",
+                    messages=[
+                        _create_system_message(
+                            template=self._templates.system,
+                            final_answer=request.final_answer,
+                            allowed_tools=request.allowed_tools,
+                            regular_tools=request.regular_tools,
+                            ability_tools=request.abilities_tools,
+                        ),
+                        *state.memory.messages,
+                    ],
+                    tools=request.allowed_tools,
+                    tool_choice=request.tool_choice,
                     stream=False,
                 )
+                await state.memory.add_many(response.messages)
 
                 text_messages = response.get_text_messages()
                 tool_call_messages = response.get_tool_calls()
 
-                if not final_answer_as_tool and not tool_call_messages and text_messages:
+                if not force_final_answer_as_tool and not tool_call_messages and text_messages:
+                    await state.memory.delete_many(response.messages)
+
                     full_text = "".join(msg.text for msg in text_messages)
                     json_object_pair = find_first_pair(full_text, ("{", "}"))
                     final_answer_input = parse_broken_json(json_object_pair.outer) if json_object_pair else None
-                    if not final_answer_input and final_answer_schema_cls is not expected_output:
+                    if not final_answer_input and not registry.final_answer.custom_schema:
                         final_answer_input = {"response": full_text}
 
                     if not final_answer_input:
-                        tools = [final_answer_tool]
-                        final_answer_as_tool = True
+                        registry.update(abilities=[], tools=[])
+                        force_final_answer_as_tool = True
                         continue
 
                     tool_call_message = MessageToolCallContent(
                         type="tool-call",
                         id=f"call_{generate_random_string(8).lower()}",
-                        tool_name=final_answer_tool.name,
-                        args=to_json(final_answer_input),
+                        tool_name=registry.final_answer.name,
+                        args=to_json(final_answer_input, sort_keys=False),
                     )
                     tool_call_messages.append(tool_call_message)
                     await state.memory.add(AssistantMessage(tool_call_message))
-                else:
-                    await state.memory.add_many(response.messages)
 
-                for tool_call in tool_call_messages:
-                    try:
-                        tool = next((tool for tool in tools if tool.name == tool_call.tool_name), None)
-                        if not tool:
-                            raise ToolError(f"Tool '{tool_call.tool_name}' does not exist!")
-
-                        tool_call_checker.register(tool_call)
-                        if tool_call_checker.cycle_found:
-                            await state.memory.delete_many(response.messages)
-                            await state.memory.add(
-                                UserMessage(
-                                    self._templates.cycle_detection.render(
-                                        ToolCallingAgentCycleDetectionPromptInput(
-                                            tool_args=tool_call.args,
-                                            tool_name=tool_call.tool_name,
-                                            final_answer_tool=final_answer_tool.name,
-                                        )
-                                    ),
-                                ),
-                            )
-                            tool_call_checker.reset(tool_call)
-                            break
-
-                        tool_input = json.loads(tool_call.args)
-                        tool_response = await tool.run(tool_input).context(
-                            {"state": state.model_dump(), "tool_call_msg": tool_call}
-                        )
+                cycle_found = False
+                for tool_call_msg in tool_call_messages:
+                    tool_call_cycle_checker.register(tool_call_msg)
+                    if cycle_found := tool_call_cycle_checker.cycle_found:
+                        await state.memory.delete_many(response.messages)
                         await state.memory.add(
-                            ToolMessage(
-                                MessageToolResultContent(
-                                    result=tool_response.get_text_content(),
-                                    tool_name=tool_call.tool_name,
-                                    tool_call_id=tool_call.id,
+                            UserMessage(
+                                self._templates.cycle_detection.render(
+                                    ToolCallingAgentCycleDetectionPromptInput(
+                                        tool_args=tool_call_msg.args,
+                                        tool_name=tool_call_msg.tool_name,
+                                        final_answer_tool=request.final_answer.name,
+                                    )
                                 )
                             )
                         )
-                    except ToolError as e:
-                        global_retries_counter.use(e)
-                        await state.memory.add(
-                            ToolMessage(
-                                MessageToolResultContent(
-                                    result=self._templates.tool_error.render({"reason": e.explain()}),
-                                    tool_name=tool_call.tool_name,
-                                    tool_call_id=tool_call.id,
-                                )
-                            )
-                        )
+                        tool_call_cycle_checker.reset()
+                        break
+
+                if not cycle_found:
+                    for tool_call in await _run_tools(
+                        request.allowed_tools, tool_call_messages, context={"state": state.model_dump()}
+                    ):
+                        state.steps.append(tool_call.to_step(state, request.ability_by_tool))
+                        await state.memory.add(tool_call.to_message())
+                        if tool_call.error:
+                            tool_call_retry_counter.use(tool_call.error)
 
                 # handle empty messages for some models
                 if not tool_call_messages and not text_messages:
@@ -260,12 +244,13 @@ class ToolCallingAgent(BaseAgent[ToolCallingAgentRunOutput]):
             assert state.result is not None
             if self._save_intermediate_steps:
                 self.memory.reset()
-                await self.memory.add_many(state.memory.messages[1:])
+                await self.memory.add_many(state.memory.messages)
             else:
                 if user_message is not None:
                     await self.memory.add(user_message)
                 await self.memory.add_many(state.memory.messages[-2:])
-            return ToolCallingAgentRunOutput(result=state.result, memory=state.memory)
+
+            return ToolCallingAgentRunOutput(result=state.result, memory=state.memory, state=state)
 
         return self._to_run(handler, signal=None, run_params={"prompt": prompt, "execution": execution})
 
@@ -273,10 +258,6 @@ class ToolCallingAgent(BaseAgent[ToolCallingAgentRunOutput]):
         return Emitter.root().child(
             namespace=["agent", "tool_calling"], creator=self, events=tool_calling_agent_event_types
         )
-
-    @property
-    def meta(self) -> AgentMeta:
-        return self._meta or super().meta
 
     @property
     def memory(self) -> BaseMemory:
@@ -318,6 +299,17 @@ class ToolCallingAgent(BaseAgent[ToolCallingAgentRunOutput]):
         )
         cloned.emitter = await self.emitter.clone()
         return cloned
+
+    @property
+    def meta(self) -> AgentMeta:
+        parent = super().meta
+
+        return AgentMeta(
+            name=self._meta.name or parent.name,
+            description=self._meta.description or parent.description,
+            extra_description=self._meta.extra_description or parent.extra_description,
+            tools=list(self._tools),
+        )
 
     def _create_tool_call_checker(self) -> ToolCallChecker:
         config = ToolCallCheckerConfig()

@@ -167,3 +167,9 @@ cython_debug/
 
 # Local playground
 examples/playground
+
+# Evaluation
+.deepeval
+.deepeval-cache.json
+.deepeval_telemetry.txt
+eval/**/*.cache

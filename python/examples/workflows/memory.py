@@ -31,7 +31,7 @@ async def main() -> None:
 
     for prompt in reader:
         # Add user message to memory
-        await memory.add(UserMessage(content=prompt))
+        await memory.add(UserMessage(content=str(prompt)))
         # Run workflow with memory
         response = await workflow.run(State(memory=memory))
         # Add assistant response to memory

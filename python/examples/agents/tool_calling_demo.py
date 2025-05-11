@@ -9,15 +9,13 @@ from beeai_framework.agents.tool_calling import (
     ToolCallingAgent,
     ToolCallingAgentSuccessEvent,
 )
-from beeai_framework.agents.tool_calling.abilities import HandoffAbility, ReasoningAbility
+from beeai_framework.agents.tool_calling.abilities import ReasoningAbility
 from beeai_framework.backend import ChatModel
 from beeai_framework.emitter import EmitterOptions, EventMeta
 from beeai_framework.errors import FrameworkError
 from beeai_framework.logger import Logger
 from beeai_framework.memory import UnconstrainedMemory
 from beeai_framework.tools import Tool
-from beeai_framework.tools.search.duckduckgo import DuckDuckGoSearchTool
-from beeai_framework.tools.search.wikipedia import WikipediaTool
 from beeai_framework.tools.weather.openmeteo import OpenMeteoTool
 from beeai_framework.utils.strings import from_json, to_json
 from examples.helpers.io import ConsoleReader
@@ -61,43 +59,18 @@ def log_success_events(data: ToolCallingAgentSuccessEvent, event: EventMeta) -> 
 
 
 async def main() -> None:
-    research_agent = ToolCallingAgent(
-        name="ResearchAgent",
-        description="Expert for doing deep research on a given topic.",
-        llm=ChatModel.from_name("ollama:granite3.2"),
-        memory=UnconstrainedMemory(),
-        tools=[WikipediaTool(), DuckDuckGoSearchTool()],
-        abilities=["reasoning"],
-        role="A diligent researcher.",
-        instructions="You look up and provide detailed research for a given topic.",
-    )
-
-    weather_agent = ToolCallingAgent(
-        name="WeatherAgent",
-        description="Specialist at retrieving weather forecast at a given location.",
+    agent = ToolCallingAgent(
         llm=ChatModel.from_name("ollama:granite3.2"),
         memory=UnconstrainedMemory(),
         tools=[OpenMeteoTool()],
-        role="A weather forecaster.",
-        instructions="You look up and provide detailed weather forecast for a given destination.",
-    )
-
-    manager_agent = ToolCallingAgent(
-        name="ManagerAgent",
-        description="Great at delegating tasks",
-        tools=[],
-        llm=ChatModel.from_name("watsonx:meta-llama/llama-3-3-70b-instruct"),
-        memory=UnconstrainedMemory(),
-        abilities=[HandoffAbility(research_agent), HandoffAbility(weather_agent), ReasoningAbility(force=True)],
-        role="Assistant Manager",
-        instructions="Helps the user and leverages experts in the team if needed.",
+        abilities=[ReasoningAbility(force=True)],
     )
 
     # Main interaction loop with user input
     prompt = "What's the name of the current Czech president's wife, and what is the current weather in the city where she was born?"  # noqa: E501
     reader.write("🧑‍User : ", prompt)
     response = await (
-        manager_agent.run(
+        agent.run(
             prompt,
         )
         .on(

@@ -22,7 +22,7 @@ def flatten(xss: list[list[T]]) -> list[T]:
     return [x for xs in xss for x in xs]
 
 
-def remove_falsy(xss: list[T]) -> list[T]:
+def remove_falsy(xss: list[T | None]) -> list[T]:
     return [x for x in xss if x]
 
 

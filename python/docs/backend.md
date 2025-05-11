@@ -71,6 +71,7 @@ import json
 import sys
 import traceback
 
+from dotenv import load_dotenv
 from pydantic import BaseModel, Field
 
 from beeai_framework.adapters.watsonx import WatsonxChatModel
@@ -78,6 +79,8 @@ from beeai_framework.backend import ChatModel, MessageToolResultContent, ToolMes
 from beeai_framework.errors import AbortError, FrameworkError
 from beeai_framework.tools.weather import OpenMeteoTool
 from beeai_framework.utils import AbortSignal
+
+load_dotenv()
 
 # Setting can be passed here during initiation or pre-configured via environment variables
 llm = WatsonxChatModel(
@@ -283,7 +286,7 @@ async def main() -> None:
     reader = ConsoleReader()
 
     for prompt in reader:
-        response = await llm.create(messages=[UserMessage(prompt)])
+        response = await llm.create(messages=[UserMessage(str(prompt))])
         reader.write("LLM 🤖 (txt) : ", response.get_text_content())
         reader.write("LLM 🤖 (raw) : ", "\n".join([str(msg.to_plain()) for msg in response.messages]))
 
@@ -418,7 +421,7 @@ from beeai_framework.tools.weather.openmeteo import OpenMeteoTool
 
 
 async def main() -> None:
-    model = ChatModel.from_name("ollama:llama3.1", ChatModelParameters(temperature=0))
+    model = ChatModel.from_name("ollama:granite3.1-dense:8b", ChatModelParameters(temperature=0))
     tools: list[AnyTool] = [DuckDuckGoSearchTool(), OpenMeteoTool()]
     messages: list[AnyMessage] = [
         SystemMessage("You are a helpful assistant. Use tools to provide a correct answer."),

@@ -285,7 +285,7 @@ async def main() -> None:
     workflow.add_agent(
         name="Researcher",
         role="A diligent researcher.",
-        instructions="You look up and provide information about a specific topic.",
+        instructions="You look up and provide detailed research for a given topic.",
         tools=[WikipediaTool()],
         llm=llm,
     )
@@ -406,7 +406,7 @@ async def main() -> None:
 
     for prompt in reader:
         # Add user message to memory
-        await memory.add(UserMessage(content=prompt))
+        await memory.add(UserMessage(content=str(prompt)))
         # Run workflow with memory
         response = await workflow.run(State(memory=memory))
         # Add assistant response to memory

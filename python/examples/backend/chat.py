@@ -26,7 +26,7 @@ async def main() -> None:
     reader = ConsoleReader()
 
     for prompt in reader:
-        response = await llm.create(messages=[UserMessage(prompt)])
+        response = await llm.create(messages=[UserMessage(str(prompt))])
         reader.write("LLM 🤖 (txt) : ", response.get_text_content())
         reader.write("LLM 🤖 (raw) : ", "\n".join([str(msg.to_plain()) for msg in response.messages]))
 

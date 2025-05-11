@@ -109,7 +109,7 @@ def generate_tool_union_schema(tools: list[AnyTool], *, strict: bool) -> dict[st
     if len(tool_schemas) == 1:
         schema = tool_schemas[0]
     else:
-
+        # TODO: add support for multiple tool calls
         class AvailableTools(RootModel[Union[*tool_schemas]]):  # type: ignore
             pass
 

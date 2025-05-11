@@ -57,17 +57,9 @@ async def test_output(tool: WikipediaTool) -> None:
 @pytest.mark.e2e
 @pytest.mark.asyncio
 async def test_full_text_output(tool: WikipediaTool) -> None:
-    result = await tool.run(input=WikipediaToolInput(query="bee", full_text=True))
+    result = await tool.run(input=WikipediaToolInput(query="bee"))
     assert type(result) is WikipediaToolOutput
     assert "n-triscosane" in result.get_text_content()
-
-
-@pytest.mark.e2e
-@pytest.mark.asyncio
-async def test_section_titles(tool: WikipediaTool) -> None:
-    result = await tool.run(input=WikipediaToolInput(query="bee", section_titles=True))
-    assert type(result) is WikipediaToolOutput
-    assert "Characteristics" in result.get_text_content()
 
 
 @pytest.mark.e2e

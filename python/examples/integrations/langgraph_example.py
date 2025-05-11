@@ -71,7 +71,7 @@ async def main() -> None:
     reader = ConsoleReader()
 
     for prompt in reader:
-        await memory.add(UserMessage(content=prompt))
+        await memory.add(UserMessage(content=str(prompt)))
         workflow_run: WorkflowRun[Schema] = await workflow.run({"memory": memory.as_read_only()})
         result = workflow_run.result.answer if workflow_run.result else ""
         reader.write("LLM 🤖 : ", result)
