@@ -41,11 +41,13 @@ from beeai_framework.agents.types import AgentMeta
 from beeai_framework.backend.chat import ChatModel
 from beeai_framework.backend.message import (
     AssistantMessage,
+    MessageToolCallContent,
     MessageToolResultContent,
     SystemMessage,
     ToolMessage,
     UserMessage,
 )
+from beeai_framework.backend.utils import parse_broken_json
 from beeai_framework.context import Run, RunContext
 from beeai_framework.emitter import Emitter
 from beeai_framework.memory.base_memory import BaseMemory
@@ -57,7 +59,7 @@ from beeai_framework.tools.tool import tool as create_tool
 from beeai_framework.tools.types import StringToolOutput
 from beeai_framework.utils.counter import RetryCounter
 from beeai_framework.utils.models import update_model
-from beeai_framework.utils.strings import to_json
+from beeai_framework.utils.strings import find_first_pair, generate_random_string, to_json
 
 
 class ToolCallingAgent(BaseAgent[ToolCallingAgentRunOutput]):
@@ -72,6 +74,7 @@ class ToolCallingAgent(BaseAgent[ToolCallingAgentRunOutput]):
         save_intermediate_steps: bool = True,
         meta: AgentMeta | None = None,
         tool_call_checker: ToolCallCheckerConfig | bool = True,
+        final_answer_as_tool: bool = True,
     ) -> None:
         super().__init__()
         self._llm = llm
@@ -81,6 +84,7 @@ class ToolCallingAgent(BaseAgent[ToolCallingAgentRunOutput]):
         self._save_intermediate_steps = save_intermediate_steps
         self._meta = meta
         self._tool_call_checker = tool_call_checker
+        self._final_answer_as_tool = final_answer_as_tool
 
     def run(
         self,
@@ -147,6 +151,7 @@ class ToolCallingAgent(BaseAgent[ToolCallingAgentRunOutput]):
 
             tools = [*self._tools, final_answer_tool]
             tool_call_checker = self._create_tool_call_checker()
+            final_answer_as_tool = self._final_answer_as_tool
 
             while state.result is None:
                 state.iteration += 1
@@ -161,12 +166,36 @@ class ToolCallingAgent(BaseAgent[ToolCallingAgentRunOutput]):
                 response = await self._llm.create(
                     messages=state.memory.messages,
                     tools=tools,
-                    tool_choice="required" if len(tools) > 1 else tools[0],
+                    tool_choice=("required" if len(tools) > 1 else tools[0]) if final_answer_as_tool else "auto",
                     stream=False,
                 )
-                await state.memory.add_many(response.messages)
 
+                text_messages = response.get_text_messages()
                 tool_call_messages = response.get_tool_calls()
+
+                if not final_answer_as_tool and not tool_call_messages and text_messages:
+                    full_text = "".join(msg.text for msg in text_messages)
+                    json_object_pair = find_first_pair(full_text, ("{", "}"))
+                    final_answer_input = parse_broken_json(json_object_pair.outer) if json_object_pair else None
+                    if not final_answer_input and final_answer_schema_cls is not expected_output:
+                        final_answer_input = {"response": full_text}
+
+                    if not final_answer_input:
+                        tools = [final_answer_tool]
+                        final_answer_as_tool = True
+                        continue
+
+                    tool_call_message = MessageToolCallContent(
+                        type="tool-call",
+                        id=f"call_{generate_random_string(8).lower()}",
+                        tool_name=final_answer_tool.name,
+                        args=to_json(final_answer_input),
+                    )
+                    tool_call_messages.append(tool_call_message)
+                    await state.memory.add(AssistantMessage(tool_call_message))
+                else:
+                    await state.memory.add_many(response.messages)
+
                 for tool_call in tool_call_messages:
                     try:
                         tool = next((tool for tool in tools if tool.name == tool_call.tool_name), None)
@@ -216,7 +245,6 @@ class ToolCallingAgent(BaseAgent[ToolCallingAgentRunOutput]):
                         )
 
                 # handle empty messages for some models
-                text_messages = response.get_text_messages()
                 if not tool_call_messages and not text_messages:
                     await state.memory.add(AssistantMessage("\n", {"tempMessage": True}))
                 else:
@@ -286,6 +314,7 @@ class ToolCallingAgent(BaseAgent[ToolCallingAgentRunOutput]):
             tool_call_checker=self._tool_call_checker,
             save_intermediate_steps=self._save_intermediate_steps,
             meta=self._meta,
+            final_answer_as_tool=self._final_answer_as_tool,
         )
         cloned.emitter = await self.emitter.clone()
         return cloned

@@ -98,6 +98,7 @@ class AgentWorkflow:
         save_intermediate_steps: bool = True,
         meta: AgentMeta | None = None,
         tool_call_checker: ToolCallCheckerConfig | bool | None = None,
+        final_answer_as_tool: bool | None = None,
     ) -> "AgentWorkflow": ...
     @overload
     def add_agent(self, instance: ToolCallingAgent, /) -> "AgentWorkflow": ...
@@ -115,6 +116,7 @@ class AgentWorkflow:
         save_intermediate_steps: bool = True,
         meta: AgentMeta | None = None,
         tool_call_checker: ToolCallCheckerConfig | bool | None = None,
+        final_answer_as_tool: bool | None = None,
     ) -> "AgentWorkflow":
         if instance is None and llm is None:
             raise ValueError("Either instance or the agent configuration must be provided!")
@@ -131,6 +133,7 @@ class AgentWorkflow:
                 memory=memory,
                 save_intermediate_steps=save_intermediate_steps,
                 tool_call_checker=tool_call_checker if tool_call_checker is not None else True,
+                final_answer_as_tool=final_answer_as_tool if final_answer_as_tool is not None else True,
                 meta=meta
                 if meta
                 else AgentMeta(
