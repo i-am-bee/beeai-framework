@@ -22,8 +22,10 @@ from pydantic import BaseModel, InstanceOf
 from beeai_framework.agents.base import AnyAgent
 from beeai_framework.agents.tool_calling.agent import ToolCallingAgent
 from beeai_framework.agents.tool_calling.types import ToolCallingAgentRunOutput
+from beeai_framework.agents.tool_calling.utils import ToolCallCheckerConfig
 from beeai_framework.agents.types import (
     AgentExecutionConfig,
+    AgentMeta,
 )
 from beeai_framework.backend.chat import ChatModel
 from beeai_framework.backend.message import AnyMessage, AssistantMessage, UserMessage
@@ -56,6 +58,7 @@ class AgentWorkflowInput(BaseModel):
 
 class Schema(BaseModel):
     inputs: list[InstanceOf[AgentWorkflowInput]]
+    current_input: InstanceOf[AgentWorkflowInput] | None = None
     final_answer: str | None = None
     new_messages: list[InstanceOf[AnyMessage]] = []
 
@@ -93,6 +96,9 @@ class AgentWorkflow:
         tools: list[InstanceOf[AnyTool]] | None = None,
         execution: AgentExecutionConfig | None = None,
         save_intermediate_steps: bool = True,
+        meta: AgentMeta | None = None,
+        tool_call_checker: ToolCallCheckerConfig | bool | None = None,
+        final_answer_as_tool: bool | None = None,
     ) -> "AgentWorkflow": ...
     @overload
     def add_agent(self, instance: ToolCallingAgent, /) -> "AgentWorkflow": ...
@@ -108,6 +114,9 @@ class AgentWorkflow:
         tools: list[InstanceOf[AnyTool]] | None = None,
         execution: AgentExecutionConfig | None = None,
         save_intermediate_steps: bool = True,
+        meta: AgentMeta | None = None,
+        tool_call_checker: ToolCallCheckerConfig | bool | None = None,
+        final_answer_as_tool: bool | None = None,
     ) -> "AgentWorkflow":
         if instance is None and llm is None:
             raise ValueError("Either instance or the agent configuration must be provided!")
@@ -123,6 +132,15 @@ class AgentWorkflow:
                 tools=tools,
                 memory=memory,
                 save_intermediate_steps=save_intermediate_steps,
+                tool_call_checker=tool_call_checker if tool_call_checker is not None else True,
+                final_answer_as_tool=final_answer_as_tool if final_answer_as_tool is not None else True,
+                meta=meta
+                if meta
+                else AgentMeta(
+                    name=name or "ToolCallingAgent",
+                    description=role if role else instructions if instructions else "helpful agent",
+                    tools=tools or [],
+                ),
                 templates={
                     "system": lambda template: template.update(
                         defaults=exclude_none({"instructions": instructions, "role": role})
@@ -135,6 +153,7 @@ class AgentWorkflow:
             await memory.add_many(state.new_messages)
 
             run_input = state.inputs.pop(0).model_copy() if state.inputs else AgentWorkflowInput()
+            state.current_input = run_input
             agent = await create_agent(memory.as_read_only())
             run_output: ToolCallingAgentRunOutput = await agent.run(**run_input.model_dump(), execution=execution)
 

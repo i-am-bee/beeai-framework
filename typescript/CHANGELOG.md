@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.1.14](https://github.com/i-am-bee/beeai-framework/compare/typescript_v0.1.13...typescript_v0.1.14) (2025-05-06)
+
+### Features
+
+- **tools:** add Qdrant tool ([#812](https://github.com/i-am-bee/beeai-framework/issues/812)) ([42a2097](https://github.com/i-am-bee/beeai-framework/commit/42a209709aef6b2961f6698c17f9acc1ebb87298))
+
+### Bug Fixes
+
+- **backend:** handle inference calls for custom messages ([#822](https://github.com/i-am-bee/beeai-framework/issues/822)) ([a07775d](https://github.com/i-am-bee/beeai-framework/commit/a07775d50c79a8f9eea03f10fbe17702b76664ea)), closes [#821](https://github.com/i-am-bee/beeai-framework/issues/821)
+
 ## [0.1.13](https://github.com/i-am-bee/beeai-framework/compare/typescript_v0.1.12...typescript_v0.1.13) (2025-04-29)
 
 ### Features

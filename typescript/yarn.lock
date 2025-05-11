@@ -144,12 +144,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@ai-sdk/react@npm:1.2.9":
-  version: 1.2.9
-  resolution: "@ai-sdk/react@npm:1.2.9"
+"@ai-sdk/react@npm:1.2.11":
+  version: 1.2.11
+  resolution: "@ai-sdk/react@npm:1.2.11"
   dependencies:
     "@ai-sdk/provider-utils": "npm:2.2.7"
-    "@ai-sdk/ui-utils": "npm:1.2.8"
+    "@ai-sdk/ui-utils": "npm:1.2.10"
     swr: "npm:^2.2.5"
     throttleit: "npm:2.1.0"
   peerDependencies:
@@ -158,20 +158,20 @@ __metadata:
   peerDependenciesMeta:
     zod:
       optional: true
-  checksum: 10c0/4a3da30555182ad35880a6716dc54a14bb3d5e9a761a1bb6747ad6ef4b1e486f03bc5a96bd11753eef8afa159885bcae9ddf693dbcc389b3513674035c7e0947
+  checksum: 10c0/a679c217961358c261cf374d888904777a12c45c661e8fa5faba7a93f4382e06cb46b0a176a300fa7ec5b2c00f13b164d82d3d5f1457f68d0d9567659fdb527e
   languageName: node
   linkType: hard
 
-"@ai-sdk/ui-utils@npm:1.2.8":
-  version: 1.2.8
-  resolution: "@ai-sdk/ui-utils@npm:1.2.8"
+"@ai-sdk/ui-utils@npm:1.2.10":
+  version: 1.2.10
+  resolution: "@ai-sdk/ui-utils@npm:1.2.10"
   dependencies:
     "@ai-sdk/provider": "npm:1.1.3"
     "@ai-sdk/provider-utils": "npm:2.2.7"
     zod-to-json-schema: "npm:^3.24.1"
   peerDependencies:
     zod: ^3.23.8
-  checksum: 10c0/99d8e2b43034dbbc2110e4981c4ba9efc046ee3768e1022b8a64e436eadc62591f2b86020bd36da7bc02c6872f56697d191ef1ab8f45cd02cbb6852ded7a3f1d
+  checksum: 10c0/dcafcfd047130c9a1c6b26857f2bb82bcd67e7d487925a0e1d4cf60f0e01ef597c61997d102755599fa997ce13f8474bbcf1620a91f7310aceb3923a2b3916a5
   languageName: node
   linkType: hard
 
@@ -3433,14 +3433,14 @@ __metadata:
   languageName: node
   linkType: hard
 
-"ai@npm:^4.3.8":
-  version: 4.3.8
-  resolution: "ai@npm:4.3.8"
+"ai@npm:^4.3.13":
+  version: 4.3.13
+  resolution: "ai@npm:4.3.13"
   dependencies:
     "@ai-sdk/provider": "npm:1.1.3"
     "@ai-sdk/provider-utils": "npm:2.2.7"
-    "@ai-sdk/react": "npm:1.2.9"
-    "@ai-sdk/ui-utils": "npm:1.2.8"
+    "@ai-sdk/react": "npm:1.2.11"
+    "@ai-sdk/ui-utils": "npm:1.2.10"
     "@opentelemetry/api": "npm:1.9.0"
     jsondiffpatch: "npm:0.6.0"
   peerDependencies:
@@ -3449,7 +3449,7 @@ __metadata:
   peerDependenciesMeta:
     react:
       optional: true
-  checksum: 10c0/af2f3d9838ff402bd9f998eca73efb99e02931696f9b7584c8dd542858b6c997c10bf8dd72fabf36fddc1974e3a399dc568f3857d0646690ca0be59ebcb75cc4
+  checksum: 10c0/b142a4794fc6c387967b9e1d283290bda14bac69ffc9d35128c81c801dffc24a6e7e2eda1276282ce7bbc03fc6e5dd08723160ab0dd36e667eb2ccbbfa169b7a
   languageName: node
   linkType: hard
 
@@ -3801,7 +3801,7 @@ __metadata:
     "@types/object-hash": "npm:^3.0.6"
     "@types/turndown": "npm:^5.0.5"
     "@zilliz/milvus2-sdk-node": "npm:^2.5.1"
-    ai: "npm:^4.3.8"
+    ai: "npm:^4.3.13"
     ajv: "npm:^8.17.1"
     ajv-formats: "npm:^3.0.1"
     docsify-cli: "npm:^4.4.4"
@@ -3858,7 +3858,7 @@ __metadata:
     "@ai-sdk/azure": ^1.3.14
     "@ai-sdk/google-vertex": ^2.2.15
     "@ai-sdk/groq": ^1.2.8
-    "@ai-sdk/openai": ^1.3.13
+    "@ai-sdk/openai": ^1.3.21
     "@aws-sdk/client-bedrock-runtime": ^3.772.0
     "@elastic/elasticsearch": ^8.0.0
     "@googleapis/customsearch": ^3.2.0

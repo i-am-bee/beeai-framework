@@ -1,6 +1,6 @@
 {
   "name": "beeai-framework",
-  "version": "0.1.13",
+  "version": "0.1.14",
   "license": "Apache-2.0",
   "description": "BeeAI Framework - LLM Agent Framework",
   "author": "BeeAI a Series of LF Projects, LLC",
@@ -183,7 +183,7 @@
   "dependencies": {
     "@ai-zen/node-fetch-event-source": "^2.1.4",
     "@streamparser/json": "^0.0.22",
-    "ai": "^4.3.8",
+    "ai": "^4.3.13",
     "ajv": "^8.17.1",
     "ajv-formats": "^3.0.1",
     "duck-duck-scrape": "^2.2.7",
@@ -213,7 +213,7 @@
     "@ai-sdk/azure": "^1.3.14",
     "@ai-sdk/google-vertex": "^2.2.15",
     "@ai-sdk/groq": "^1.2.8",
-    "@ai-sdk/openai": "^1.3.13",
+    "@ai-sdk/openai": "^1.3.21",
     "@aws-sdk/client-bedrock-runtime": "^3.772.0",
     "@elastic/elasticsearch": "^8.0.0",
     "@googleapis/customsearch": "^3.2.0",

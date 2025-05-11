@@ -38,6 +38,7 @@ import {
 import { Emitter } from "@/emitter/emitter.js";
 import {
   AssistantMessage,
+  CustomMessage,
   Message,
   SystemMessage,
   ToolMessage,
@@ -50,6 +51,7 @@ import { FullModelName } from "@/backend/utils.js";
 import { ChatModelError } from "@/backend/errors.js";
 import { z, ZodArray, ZodEnum, ZodSchema } from "zod";
 import { Tool } from "@/tools/base.js";
+import { encodeCustomMessage } from "@/adapters/vercel/backend/utils.js";
 
 export abstract class VercelChatModel<
   M extends LanguageModelV1 = LanguageModelV1,
@@ -206,14 +208,18 @@ export abstract class VercelChatModel<
     );
 
     const messages = input.messages.map((msg): CoreMessage => {
+      if (msg instanceof CustomMessage) {
+        msg = encodeCustomMessage(msg);
+      }
+
       if (msg instanceof AssistantMessage) {
         return { role: "assistant", content: msg.content };
       } else if (msg instanceof ToolMessage) {
         return { role: "tool", content: msg.content };
       } else if (msg instanceof UserMessage) {
-        return { role: msg.role, content: msg.content };
-      } else if (msg instanceof SystemMessage) {
         return { role: "user", content: msg.content };
+      } else if (msg instanceof SystemMessage) {
+        return { role: "system", content: msg.content.map((part) => part.text).join("\n") };
       }
       return { role: msg.role, content: msg.content } as CoreMessage;
     });
