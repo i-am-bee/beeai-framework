@@ -89,3 +89,17 @@ ToolCallingAgentToolErrorPrompt = PromptTemplate(
 {{&reason}}""",  # noqa: E501
     )
 )
+
+
+class ToolCallingAgentCycleDetectionPromptInput(BaseModel):
+    tool_name: str
+    tool_args: str
+    final_answer_tool: str
+
+
+ToolCallingAgentCycleDetectionPrompt = PromptTemplate(
+    PromptTemplateInput(
+        schema=ToolCallingAgentCycleDetectionPromptInput,
+        template="""I can't see your answer. You must use the '{{final_answer_tool}}' tool to send me a message.""",
+    )
+)
