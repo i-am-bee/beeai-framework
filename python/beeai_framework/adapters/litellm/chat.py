@@ -12,12 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import logging
 import os
 from abc import ABC
 from collections.abc import AsyncGenerator
 from itertools import chain
 from typing import Any, Self
+
+from beeai_framework.adapters.litellm.utils import litellm_debug
 
 if not os.getenv("LITELLM_LOCAL_MODEL_COST_MAP", None):
     os.environ["LITELLM_LOCAL_MODEL_COST_MAP"] = "True"
@@ -84,17 +85,6 @@ class LiteLLMChatModel(ChatModel, ABC):
         litellm.drop_params = True
         # disable LiteLLM caching in favor of our own
         litellm.disable_cache()  # type: ignore [attr-defined]
-
-    @staticmethod
-    def litellm_debug(enable: bool = True) -> None:
-        litellm.set_verbose = enable  # type: ignore [attr-defined]
-        litellm.suppress_debug_info = not enable
-
-        litellm.suppress_debug_info = not enable
-        litellm.logging = enable
-
-        logger = logging.getLogger("LiteLLM")
-        logger.setLevel(logging.DEBUG if enable else logging.CRITICAL + 1)
 
     async def _create(
         self,
@@ -346,4 +336,4 @@ class LiteLLMChatModel(ChatModel, ABC):
         self._settings[name] = value or None
 
 
-LiteLLMChatModel.litellm_debug(False)
+litellm_debug(False)
