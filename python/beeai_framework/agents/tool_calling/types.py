@@ -14,7 +14,8 @@
 
 import inspect
 from abc import ABC, abstractmethod
-from collections.abc import Callable, Mapping
+from collections.abc import Callable
+from functools import cached_property
 from typing import Annotated, Any, ClassVar, Generic
 
 from pydantic import BaseModel, ConfigDict, Field, InstanceOf
@@ -37,11 +38,13 @@ from beeai_framework.backend import (
     ToolMessage,
 )
 from beeai_framework.context import RunContext
+from beeai_framework.emitter import Emitter
 from beeai_framework.errors import FrameworkError
 from beeai_framework.memory import BaseMemory
 from beeai_framework.template import PromptTemplate
-from beeai_framework.tools import Tool, ToolError, ToolOutput
+from beeai_framework.tools import AnyTool, Tool, ToolError, ToolOutput
 from beeai_framework.tools import tool as create_tool
+from beeai_framework.utils.strings import to_safe_word
 
 
 class ToolCallingAgentTemplates(BaseModel):
@@ -111,11 +114,20 @@ class AgentAbility(ABC, Generic[TAbilityInput]):
     @abstractmethod
     def check(self, state: ToolCallingAgentRunState) -> AgentAbilityState: ...
 
+    @cached_property
+    def emitter(self) -> Emitter:
+        emitter = Emitter.root().child(namespace=["ability", to_safe_word(self.name)])
+        return emitter
+
     @property
     @abstractmethod
     def input_schema(self) -> type[TAbilityInput]: ...
 
     _registered_classes: ClassVar[dict[str, AgentAbilityFactory]] = {}
+
+    def verify(self, *, tools: list[AnyTool], abilities: list["AnyAbility"]) -> None:
+        # TODO: make required to call?
+        pass
 
     @staticmethod
     def register(name: str, factory: AgentAbilityFactory) -> None:  # TODO: support cloneable?
@@ -165,13 +177,16 @@ class DynamicAgentAbility(AgentAbility[TAbilityInput]):
     def check(self, state: ToolCallingAgentRunState) -> AgentAbilityState:
         response = self._check(state) if self._check else True
         if isinstance(response, bool):
-            return AgentAbilityState(allowed=response, forced=False, hidden=False)
+            return AgentAbilityState(allowed=response, forced=False, hidden=False, prevent_stop=False)
         else:
             return response
 
     @property
     def input_schema(self) -> type[TAbilityInput]:
         return self._input_schema
+
+
+AnyAbility = AgentAbility[Any]
 
 
 def agent_ability(fn: Callable[..., Any]) -> AgentAbility[Any]:
@@ -193,19 +208,17 @@ class ToolInvocationResult(BaseModel):
     output: InstanceOf[ToolOutput]
     error: InstanceOf[ToolError] | None
 
-    def to_step(
-        self, state: ToolCallingAgentRunState, ability_by_tool: Mapping[str, AgentAbility[Any]]
-    ) -> ToolCallingAgentRunStateStep:
+    def as_step(self, state: ToolCallingAgentRunState, ability: AnyAbility | None) -> ToolCallingAgentRunStateStep:
         return ToolCallingAgentRunStateStep(
             iteration=state.iteration,
             tool=self.tool,
             input=self.input,
             output=self.output,
-            ability=ability_by_tool.get(self.tool.name) if self.tool else None,
+            ability=ability,
             error=self.error,
         )
 
-    def to_message(self) -> ToolMessage:
+    def as_message(self) -> ToolMessage:
         return ToolMessage(
             MessageToolResultContent(
                 tool_name=self.tool.name if self.tool else self.msg.tool_name,

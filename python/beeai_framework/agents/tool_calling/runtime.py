@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import asyncio
+import contextlib
 import json
 from asyncio import create_task
 from collections.abc import Sequence
@@ -23,10 +24,11 @@ from pydantic import BaseModel, ConfigDict
 from beeai_framework.agents.tool_calling.abilities import FinalAnswerAbility
 from beeai_framework.agents.tool_calling.prompts import (
     ToolCallingAgentSystemPromptInput,
-    ToolCallingAgentToolDefinition,
+    ToolTemplateDefinition,
 )
 from beeai_framework.agents.tool_calling.types import (
     AgentAbility,
+    AnyAbility,
     DynamicAgentAbility,
     ToolCallingAgentRunState,
     ToolInvocationResult,
@@ -85,7 +87,6 @@ async def _run_tools(
     )
 
 
-AnyAbility = AgentAbility[Any]
 RegistryInput = AnyAbility | AnyTool
 
 
@@ -93,14 +94,16 @@ class ToolCallingAgentRequestAbilities(BaseModel):
     model_config = ConfigDict(extra="allow", arbitrary_types_allowed=True)
 
     allowed_tools: list[AnyTool]
+    hidden_tools: list[AnyTool]
     regular_tools: list[AnyTool]
     abilities_tools: list[AnyTool]
     ability_by_tool: dict[str, AnyAbility]
     tool_choice: ChatModelToolChoice
     final_answer: FinalAnswerAbility
+    can_stop: bool
 
 
-class ToolCallingAgentRegistry:
+class ToolCallingAgentAbilitiesContainer:
     def __init__(
         self, *, tools: Sequence[AnyTool], abilities: Sequence[AnyAbility], final_answer: FinalAnswerAbility
     ) -> None:
@@ -122,6 +125,15 @@ class ToolCallingAgentRegistry:
         for ability in [*abilities, self.final_answer]:
             self._register_ability(ability)
 
+        self._verify()
+
+    def _verify(self) -> None:
+        all_tools = list(self.tools.values())
+        all_abilities = list(self.abilities.values())
+
+        for ability in self.abilities.values():
+            ability.verify(tools=all_tools, abilities=all_abilities)
+
     def _register_tool(self, tool: AnyTool) -> None:
         self.tools[tool.name] = tool
 
@@ -132,6 +144,7 @@ class ToolCallingAgentRegistry:
             handler=tool.run,
             check=lambda _: True,
         )
+        # TODO: emitter?
         self.ability_by_tool[tool] = ability
 
     def _register_ability(self, ability: AnyAbility) -> None:
@@ -142,6 +155,7 @@ class ToolCallingAgentRegistry:
             description=ability.description,
             input_schema=ability.input_schema,
             with_context=True,
+            emitter=ability.emitter.child(namespace=["tool"]),
         )
         async def tool(context: RunContext, **kwargs: Any) -> Any:
             input = ability.input_schema.model_validate(kwargs)
@@ -151,33 +165,48 @@ class ToolCallingAgentRegistry:
 
 
 def _prepare_request(
-    registry: ToolCallingAgentRegistry, state: ToolCallingAgentRunState, force_tool_call: bool
+    registry: ToolCallingAgentAbilitiesContainer, state: ToolCallingAgentRunState, force_tool_call: bool
 ) -> ToolCallingAgentRequestAbilities:
     tool_choice: Literal["required"] | AnyTool = "required"
     abilities_tools: list[AnyTool] = []
     regular_tools: list[AnyTool] = list(registry.tools.values())
     ability_by_tool: dict[str, AgentAbility] = {}
     allowed_tools: list[AnyTool] = [*regular_tools]
+    hidden_tools: list[AnyTool] = []
+
+    prevent_stop: bool = False
 
     for ability in registry.abilities.values():
         status = ability.can_use(state=state)
-        if not status.allowed:
-            continue
 
         tool = registry.tool_by_ability[ability]
         if status.forced:
-            abilities_tools.clear()
-            ability_by_tool.clear()
+            # abilities_tools.clear()
+            # ability_by_tool.clear()
             allowed_tools.clear()
             # TODO: we need to update the selection of tools instead of removing them
 
+        if status.hidden:
+            hidden_tools.append(tool)
+
         abilities_tools.append(tool)
         ability_by_tool[tool.name] = ability
+
+        if not status.allowed:
+            continue
+
         allowed_tools.append(tool)
 
-        if status.forced and status.prevent_stop:
+        if status.prevent_stop:
+            prevent_stop = True
+
+        if status.forced:
             tool_choice = tool
             break
+
+    if prevent_stop:
+        with contextlib.suppress(ValueError):
+            allowed_tools.remove(registry.tool_by_ability[registry.final_answer])
 
     if not allowed_tools:
         raise FrameworkError("Unknown state. Tools shouldn't not be empty.")
@@ -190,8 +219,10 @@ def _prepare_request(
         regular_tools=regular_tools,
         abilities_tools=abilities_tools,
         ability_by_tool=ability_by_tool,
-        tool_choice=tool_choice if isinstance(tool_choice, Tool) or force_tool_call else "auto",
+        tool_choice=tool_choice if isinstance(tool_choice, Tool) or force_tool_call or prevent_stop else "auto",
         final_answer=registry.final_answer,
+        hidden_tools=hidden_tools,
+        can_stop=not prevent_stop,
     )
 
 
@@ -199,17 +230,15 @@ def _create_system_message(
     *,
     template: PromptTemplate[ToolCallingAgentSystemPromptInput],
     final_answer: FinalAnswerAbility,
-    allowed_tools: Sequence[AnyTool],
+    hidden_tools: Sequence[AnyTool],
     regular_tools: Sequence[AnyTool],
     ability_tools: Sequence[AnyTool],
 ) -> SystemMessage:
     return SystemMessage(
         template.render(
-            tools=[
-                ToolCallingAgentToolDefinition.from_tool(tool, enabled=tool in allowed_tools) for tool in regular_tools
-            ],
+            tools=[ToolTemplateDefinition.from_tool(tool, enabled=tool not in hidden_tools) for tool in regular_tools],
             abilities=[
-                ToolCallingAgentToolDefinition.from_tool(tool, enabled=tool in allowed_tools) for tool in ability_tools
+                ToolTemplateDefinition.from_tool(tool, enabled=tool not in hidden_tools) for tool in ability_tools
             ],
             final_answer_tool=final_answer.name,
             final_answer_schema=to_json(final_answer.input_schema.model_json_schema(), indent=2, sort_keys=False)

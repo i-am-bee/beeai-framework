@@ -237,6 +237,7 @@ def tool(
     description: str | None = ...,
     input_schema: type[BaseModel] | None = ...,
     with_context: bool = False,
+    emitter: Emitter | None = None,
 ) -> Callable[[TFunction], AnyTool]: ...
 def tool(
     tool_function: TFunction | None = None,
@@ -246,6 +247,7 @@ def tool(
     description: str | None = None,
     input_schema: type[BaseModel] | None = None,
     with_context: bool = False,
+    emitter: Emitter | None = None,
 ) -> AnyTool | Callable[[TFunction], AnyTool]:
     def create_tool(fn: TFunction) -> AnyTool:
         tool_name = name or fn.__name__
@@ -263,7 +265,13 @@ def tool(
             def __init__(self, options: dict[str, Any] | None = None) -> None:
                 super().__init__(options)
 
+            def __str__(self) -> str:
+                return self.name
+
             def _create_emitter(self) -> Emitter:
+                if emitter is not None:
+                    return emitter
+
                 return Emitter.root().child(
                     namespace=["tool", "custom", to_safe_word(self.name)],
                     creator=self,

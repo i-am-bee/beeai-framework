@@ -23,7 +23,7 @@ from beeai_framework.tools import AnyTool
 from beeai_framework.utils.strings import to_json
 
 
-class ToolCallingAgentToolDefinition(BaseModel):
+class ToolTemplateDefinition(BaseModel):
     name: str
     description: str
     input_schema: str
@@ -44,8 +44,9 @@ class ToolCallingAgentSystemPromptInput(BaseModel):
     instructions: str | None = None
     final_answer_tool: str
     final_answer_schema: str | None
-    tools: list[ToolCallingAgentToolDefinition]
-    abilities: list[ToolCallingAgentToolDefinition]
+    final_answer_instructions: str | None
+    tools: list[ToolTemplateDefinition]
+    abilities: list[ToolTemplateDefinition]
 
 
 ToolCallingAgentSystemPrompt = PromptTemplate(
@@ -58,7 +59,7 @@ Assume the role of {{role}}.
 
 # Instructions
 {{#instructions}}
-{{.}}
+{{&.}}
 {{/instructions}}
 When the user sends a message, figure out a solution and provide a final answer to the user by calling the '{{final_answer_tool}}' tool.
 {{#final_answer_schema}}
@@ -73,7 +74,7 @@ IMPORTANT: The facts mentioned in the final answer must be backed by evidence pr
 
 {{#tools.0}}
 
-# Standard tools
+# Tools
 You must use a tool to retrieve factual or historical information.
 
 {{#tools}}
@@ -84,10 +85,6 @@ Is Tool Available: {{enabled}}
 {{/tools}}
 {{/tools.0}}
 {{#abilities.0}}
-
-# Special tools
-The following tools are inner tools and you should give them increased emphasis.
-
 {{#abilities}}
 Tool Name: {{name}}
 Tool Description: {{description}}

@@ -30,7 +30,7 @@ from beeai_framework.agents.tool_calling.prompts import (
     ToolCallingAgentTaskPromptInput,
 )
 from beeai_framework.agents.tool_calling.runtime import (
-    ToolCallingAgentRegistry,
+    ToolCallingAgentAbilitiesContainer,
     _create_system_message,
     _prepare_request,
     _run_tools,
@@ -78,9 +78,9 @@ class ToolCallingAgent(BaseAgent[ToolCallingAgentRunOutput]):
         description: str | None = None,
         role: str | None = None,
         instructions: str | None = None,
-        meta: AgentMeta | None = None,
         tool_call_checker: ToolCallCheckerConfig | bool = True,
         final_answer_as_tool: bool = True,
+        meta: AgentMeta | None = None,  # TODO: probably remove
     ) -> None:
         super().__init__()
         self._llm = llm
@@ -100,7 +100,7 @@ class ToolCallingAgent(BaseAgent[ToolCallingAgentRunOutput]):
                 )
             )
         self._abilities = [AgentAbility.lookup(ab) if isinstance(ab, str) else ab for ab in (abilities or [])]
-        self._meta = AgentMeta(name=name or "", description=description or "")
+        self._meta = AgentMeta(name=name or "", description=description or instructions or "")
         if meta:
             update_model(self._meta, sources=[meta])
 
@@ -136,7 +136,7 @@ class ToolCallingAgent(BaseAgent[ToolCallingAgentRunOutput]):
 
         async def handler(run_context: RunContext) -> ToolCallingAgentRunOutput:
             state, user_message = await init_state()
-            registry = ToolCallingAgentRegistry(
+            registry = ToolCallingAgentAbilitiesContainer(
                 tools=self._tools,
                 abilities=self._abilities,
                 final_answer=FinalAnswerAbility(state=state, expected_output=expected_output, double_check=False),
@@ -156,20 +156,25 @@ class ToolCallingAgent(BaseAgent[ToolCallingAgentRunOutput]):
                     ToolCallingAgentStartEvent(state=state),
                 )
 
-                request = _prepare_request(registry, state, force_final_answer_as_tool)
+                request_data = _prepare_request(registry, state, force_tool_call=force_final_answer_as_tool)
+                print("=" * 32)
+                print("allowed tools", [t.name for t in request_data.allowed_tools])
+                print("tool choice", request_data.tool_choice)
+                print("can stop", request_data.can_stop)
+                print("=" * 32)
                 response = await self._llm.create(
                     messages=[
                         _create_system_message(
                             template=self._templates.system,
-                            final_answer=request.final_answer,
-                            allowed_tools=request.allowed_tools,
-                            regular_tools=request.regular_tools,
-                            ability_tools=request.abilities_tools,
+                            final_answer=request_data.final_answer,
+                            hidden_tools=request_data.hidden_tools,
+                            regular_tools=request_data.regular_tools,
+                            ability_tools=request_data.abilities_tools,
                         ),
                         *state.memory.messages,
                     ],
-                    tools=request.allowed_tools,
-                    tool_choice=request.tool_choice,
+                    tools=request_data.allowed_tools,
+                    tool_choice=request_data.tool_choice,
                     stream=False,
                 )
                 await state.memory.add_many(response.messages)
@@ -177,7 +182,7 @@ class ToolCallingAgent(BaseAgent[ToolCallingAgentRunOutput]):
                 text_messages = response.get_text_messages()
                 tool_call_messages = response.get_tool_calls()
 
-                if not force_final_answer_as_tool and not tool_call_messages and text_messages:
+                if not tool_call_messages and text_messages and request_data.can_stop:
                     await state.memory.delete_many(response.messages)
 
                     full_text = "".join(msg.text for msg in text_messages)
@@ -200,8 +205,11 @@ class ToolCallingAgent(BaseAgent[ToolCallingAgentRunOutput]):
                     tool_call_messages.append(tool_call_message)
                     await state.memory.add(AssistantMessage(tool_call_message))
 
+                print("number of tool calls", len(tool_call_messages))
+
                 cycle_found = False
                 for tool_call_msg in tool_call_messages:
+                    print(tool_call_msg.tool_name, tool_call_msg.args)
                     tool_call_cycle_checker.register(tool_call_msg)
                     if cycle_found := tool_call_cycle_checker.cycle_found:
                         await state.memory.delete_many(response.messages)
@@ -211,7 +219,7 @@ class ToolCallingAgent(BaseAgent[ToolCallingAgentRunOutput]):
                                     ToolCallingAgentCycleDetectionPromptInput(
                                         tool_args=tool_call_msg.args,
                                         tool_name=tool_call_msg.tool_name,
-                                        final_answer_tool=request.final_answer.name,
+                                        final_answer_tool=request_data.final_answer.name,
                                     )
                                 )
                             )
@@ -221,14 +229,15 @@ class ToolCallingAgent(BaseAgent[ToolCallingAgentRunOutput]):
 
                 if not cycle_found:
                     for tool_call in await _run_tools(
-                        request.allowed_tools, tool_call_messages, context={"state": state.model_dump()}
+                        request_data.allowed_tools, tool_call_messages, context={"state": state.model_dump()}
                     ):
-                        state.steps.append(tool_call.to_step(state, request.ability_by_tool))
-                        await state.memory.add(tool_call.to_message())
+                        ability = request_data.ability_by_tool.get(tool_call.tool.name) if tool_call.tool else None
+                        state.steps.append(tool_call.as_step(state, ability))
+                        await state.memory.add(tool_call.as_message())
                         if tool_call.error:
                             tool_call_retry_counter.use(tool_call.error)
 
-                # handle empty messages for some models
+                # handle empty responses for some models
                 if not tool_call_messages and not text_messages:
                     await state.memory.add(AssistantMessage("\n", {"tempMessage": True}))
                 else:
@@ -241,7 +250,6 @@ class ToolCallingAgent(BaseAgent[ToolCallingAgentRunOutput]):
                     ToolCallingAgentSuccessEvent(state=state),
                 )
 
-            assert state.result is not None
             if self._save_intermediate_steps:
                 self.memory.reset()
                 await self.memory.add_many(state.memory.messages)

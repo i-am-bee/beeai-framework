@@ -21,7 +21,7 @@ from pydantic import BaseModel, InstanceOf
 
 from beeai_framework.agents.base import AnyAgent
 from beeai_framework.agents.tool_calling.agent import ToolCallingAgent
-from beeai_framework.agents.tool_calling.types import ToolCallingAgentRunOutput
+from beeai_framework.agents.tool_calling.types import AnyAbility, ToolCallingAgentRunOutput
 from beeai_framework.agents.tool_calling.utils import ToolCallCheckerConfig
 from beeai_framework.agents.types import (
     AgentExecutionConfig,
@@ -34,7 +34,6 @@ from beeai_framework.memory.base_memory import BaseMemory
 from beeai_framework.memory.readonly_memory import ReadOnlyMemory
 from beeai_framework.memory.unconstrained_memory import UnconstrainedMemory
 from beeai_framework.tools.tool import AnyTool
-from beeai_framework.utils.dicts import exclude_none
 from beeai_framework.utils.lists import remove_falsy
 from beeai_framework.workflows.types import WorkflowRun
 from beeai_framework.workflows.workflow import Workflow
@@ -94,6 +93,7 @@ class AgentWorkflow:
         llm: ChatModel,
         instructions: str | None = None,
         tools: list[InstanceOf[AnyTool]] | None = None,
+        abilities: list[InstanceOf[AnyAbility]] | None = None,
         execution: AgentExecutionConfig | None = None,
         save_intermediate_steps: bool = True,
         meta: AgentMeta | None = None,
@@ -112,6 +112,7 @@ class AgentWorkflow:
         llm: ChatModel | None = None,
         instructions: str | None = None,
         tools: list[InstanceOf[AnyTool]] | None = None,
+        abilities: list[InstanceOf[AnyAbility]] | None = None,
         execution: AgentExecutionConfig | None = None,
         save_intermediate_steps: bool = True,
         meta: AgentMeta | None = None,
@@ -130,22 +131,16 @@ class AgentWorkflow:
             return ToolCallingAgent(
                 llm=llm,  # type: ignore
                 tools=tools,
+                abilities=abilities,
                 memory=memory,
                 save_intermediate_steps=save_intermediate_steps,
                 tool_call_checker=tool_call_checker if tool_call_checker is not None else True,
                 final_answer_as_tool=final_answer_as_tool if final_answer_as_tool is not None else True,
-                meta=meta
-                if meta
-                else AgentMeta(
-                    name=name or "ToolCallingAgent",
-                    description=role if role else instructions if instructions else "helpful agent",
-                    tools=tools or [],
-                ),
-                templates={
-                    "system": lambda template: template.update(
-                        defaults=exclude_none({"instructions": instructions, "role": role})
-                    )
-                },
+                meta=meta,
+                name=name,
+                description=instructions,
+                instructions=instructions,
+                role=role,
             )
 
         async def step(state: Schema) -> None:
