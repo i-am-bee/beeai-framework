@@ -12,21 +12,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import Any
+from beeai_framework.adapters.beeai_platform.agents.agent import BeeaiPlatformAgent
+from beeai_framework.adapters.beeai_platform.agents.events import (
+    BeeaiPlatformAgentErrorEvent,
+    BeeaiPlatformAgentUpdateEvent,
+)
+from beeai_framework.adapters.beeai_platform.agents.types import BeeaiPlatformAgentRunOutput
 
-from pydantic import BaseModel
-
-
-class ACPAgentUpdateEvent(BaseModel):
-    key: str
-    value: dict[str, Any]
-
-
-class ACPAgentErrorEvent(BaseModel):
-    message: str
-
-
-acp_agent_event_types: dict[str, type] = {
-    "update": ACPAgentUpdateEvent,
-    "error": ACPAgentErrorEvent,
-}
+__all__ = [
+    "BeeaiPlatformAgent",
+    "BeeaiPlatformAgentErrorEvent",
+    "BeeaiPlatformAgentRunOutput",
+    "BeeaiPlatformAgentUpdateEvent",
+]

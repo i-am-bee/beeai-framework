@@ -19,16 +19,16 @@ try:
     import acp_sdk.models as acp_models
 
     from beeai_framework.adapters.acp.agents.events import (
+        ACPAgentErrorEvent,
         ACPAgentUpdateEvent,
-        ACPErrorEvent,
-        beeai_platform_agent_event_types,
+        acp_agent_event_types,
     )
     from beeai_framework.adapters.acp.agents.types import (
         ACPAgentRunOutput,
     )
 except ModuleNotFoundError as e:
     raise ModuleNotFoundError(
-        "Optional module [beeai-platform] not found.\nRun 'pip install \"beeai-framework[beeai-platform]\"' to install."
+        "Optional module [acp] not found.\nRun 'pip install \"beeai-framework[acp]\"' to install."
     ) from e
 
 from beeai_framework.agents.base import BaseAgent
@@ -80,7 +80,7 @@ class ACPAgent(BaseAgent[ACPAgentRunOutput]):
                     )
                     await context.emitter.emit(
                         "error",
-                        ACPErrorEvent(message=message),
+                        ACPAgentErrorEvent(message=message),
                     )
                     raise AgentError(message)
                 elif isinstance(last_event, acp_models.RunCompletedEvent):
@@ -123,9 +123,9 @@ class ACPAgent(BaseAgent[ACPAgentRunOutput]):
 
     def _create_emitter(self) -> Emitter:
         return Emitter.root().child(
-            namespace=["agent", "remote"],
+            namespace=["agent", "acp"],
             creator=self,
-            events=beeai_platform_agent_event_types,
+            events=acp_agent_event_types,
         )
 
     @property

@@ -13,12 +13,12 @@
 # limitations under the License.
 
 from beeai_framework.adapters.acp.agents.agent import ACPAgent
-from beeai_framework.adapters.acp.agents.events import ACPAgentUpdateEvent, ACPErrorEvent
+from beeai_framework.adapters.acp.agents.events import ACPAgentErrorEvent, ACPAgentUpdateEvent
 from beeai_framework.adapters.acp.agents.types import ACPAgentRunOutput
 
 __all__ = [
     "ACPAgent",
+    "ACPAgentErrorEvent",
     "ACPAgentRunOutput",
     "ACPAgentUpdateEvent",
-    "ACPErrorEvent",
 ]
