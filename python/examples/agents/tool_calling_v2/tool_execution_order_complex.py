@@ -1,8 +1,9 @@
 import asyncio
 
-from beeai_framework.agents.tool_calling import ToolCallingAgent
+from beeai_framework.agents.tool_calling import ToolCallingAgent, ToolCallingAgentStartEvent
 from beeai_framework.agents.tool_calling.abilities import ConditionalAbility, ReasoningAbility
 from beeai_framework.backend import ChatModel
+from beeai_framework.emitter import EventMeta
 from beeai_framework.memory import UnconstrainedMemory
 from beeai_framework.tools.search.wikipedia import WikipediaTool
 from beeai_framework.tools.weather import OpenMeteoTool
@@ -19,7 +20,17 @@ async def main() -> None:
         ],
     )
 
-    result = await agent.run(prompt="Tell me about the history of Prague and provide the current weather conditions.")
+    def on_start_request(data: ToolCallingAgentStartEvent, event: EventMeta) -> None:
+        print("")
+        print("=" * 32, "Step", data.state.iteration - 1, "=" * 32)
+        print("Allowed Tools", [t.name for t in data.request.allowed_tools])
+        print("LLM Tool Choice", data.request.tool_choice)
+        print("Can Stop?", data.request.can_stop)
+        print("")
+
+    result = await agent.run(
+        prompt="Tell me about the history of Prague and provide the current weather conditions."
+    ).on("start", on_start_request)
     print(result.result.text)
 
 

@@ -158,12 +158,6 @@ class ToolCallingAgent(BaseAgent[ToolCallingAgentRunOutput]):
                     ToolCallingAgentStartEvent(state=state, request=request),
                 )
 
-                print("")
-                print("=" * 32, "Step", state.iteration, "=" * 32)
-                print("Allowed Tools", [t.name for t in request.allowed_tools])
-                print("LLM Tool Choice", request.tool_choice)
-                print("Can Stop?", request.can_stop)
-                print("")
                 response = await self._llm.create(
                     messages=[
                         _create_system_message(
