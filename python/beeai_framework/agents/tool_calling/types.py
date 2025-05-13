@@ -97,6 +97,9 @@ class AgentAbilityState(BaseModel):
     forced: bool = Field(False, description="Must the agent use the tool?")
     hidden: bool = Field(False, description="Completely omit the tool.")
 
+    def __bool__(self) -> bool:
+        return self.allowed
+
 
 TAbilityInput = TypeVar("TAbilityInput", bound=BaseModel, default=BaseModel)
 
@@ -107,6 +110,10 @@ class AgentAbility(ABC, Generic[TAbilityInput]):
     name: str
     description: str
     state: dict[str, Any]
+    priority: int
+
+    def __init__(self, *args: Any, priority: int | None = None, **kwargs: Any) -> None:
+        self.priority = priority or 10
 
     @abstractmethod
     async def handler(self, input: TAbilityInput, context: RunContext) -> Any: ...

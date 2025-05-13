@@ -90,7 +90,7 @@ async def _run_tools(
 RegistryInput = AnyAbility | AnyTool
 
 
-class ToolCallingAgentRequestAbilities(BaseModel):
+class ToolCallingAgentRequest(BaseModel):
     model_config = ConfigDict(extra="allow", arbitrary_types_allowed=True)
 
     allowed_tools: list[AnyTool]
@@ -166,7 +166,7 @@ class ToolCallingAgentAbilitiesContainer:
 
 def _prepare_request(
     registry: ToolCallingAgentAbilitiesContainer, state: ToolCallingAgentRunState, force_tool_call: bool
-) -> ToolCallingAgentRequestAbilities:
+) -> ToolCallingAgentRequest:
     tool_choice: Literal["required"] | AnyTool = "required"
     abilities_tools: list[AnyTool] = []
     regular_tools: list[AnyTool] = list(registry.tools.values())
@@ -175,6 +175,7 @@ def _prepare_request(
     hidden_tools: list[AnyTool] = []
 
     prevent_stop: bool = False
+    forced_ability: AgentAbility | None = None
 
     for ability in registry.abilities.values():
         status = ability.can_use(state=state)
@@ -192,17 +193,16 @@ def _prepare_request(
         abilities_tools.append(tool)
         ability_by_tool[tool.name] = ability
 
+        if status.prevent_stop:
+            prevent_stop = True
+
         if not status.allowed:
             continue
 
         allowed_tools.append(tool)
-
-        if status.prevent_stop:
-            prevent_stop = True
-
-        if status.forced:
+        if status.forced and (forced_ability is None or ability.priority > forced_ability.priority):
+            forced_ability = ability
             tool_choice = tool
-            break
 
     if prevent_stop:
         with contextlib.suppress(ValueError):
@@ -214,7 +214,7 @@ def _prepare_request(
         tool_choice = allowed_tools[0]
 
     assert_tools_uniqueness(allowed_tools)
-    return ToolCallingAgentRequestAbilities(
+    return ToolCallingAgentRequest(
         allowed_tools=allowed_tools,
         regular_tools=regular_tools,
         abilities_tools=abilities_tools,

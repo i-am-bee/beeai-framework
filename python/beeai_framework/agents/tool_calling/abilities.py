@@ -83,9 +83,10 @@ class ReasoningAbility(AgentAbility[BaseModel]):
     name = "Reasoning"
     description = 'Use this tool when you want to think through a problem, clarify your assumptions, or break down complex steps before acting or responding. This is your internal "scratchpad" — a place to reason out loud in natural language.'  # noqa: E501
 
-    def __init__(self, force: bool) -> None:
+    def __init__(self, force: bool = False) -> None:
         super().__init__()
         self.force = force
+        self.priority = 5
 
     @cached_property
     def input_schema(self) -> type[BaseModel]:
@@ -97,12 +98,11 @@ class ReasoningAbility(AgentAbility[BaseModel]):
 
     def check(self, states: ToolCallingAgentRunState) -> AgentAbilityState:
         last_step = states.steps[-1] if states.steps else None
+
         if last_step and last_step.tool and last_step.tool.name == self.name and not last_step.error:
-            return AgentAbilityState(allowed=True, forced=False, hidden=False, prevent_stop=True)
+            return AgentAbilityState(allowed=True, forced=False, hidden=False, prevent_stop=False)
         else:
-            return AgentAbilityState(
-                allowed=True, forced=self.force, hidden=False, prevent_stop=self.force and not last_step
-            )
+            return AgentAbilityState(allowed=True, forced=self.force, hidden=False, prevent_stop=False)
 
     async def handler(self, obj: BaseModel, context: RunContext) -> StringToolOutput:
         return StringToolOutput(
@@ -201,42 +201,66 @@ def ability_from_tool(
     return ability
 
 
-class ToolAbility(Generic[TAbilityInput], AgentAbility[TAbilityInput]):
+ConditionalAbilityInput = str | AnyTool | AnyAbility
+
+
+class ConditionalAbility(Generic[TAbilityInput], AgentAbility[TAbilityInput]):
     def __init__(
         self,
-        tool: Tool[TAbilityInput, Any, Any],
+        source: Tool[TAbilityInput, Any, Any] | AgentAbility[TAbilityInput],
         *,
         force_at_step: int | None = None,
-        only_before: list[str | AnyTool | AnyAbility] | None = None,
-        only_after: list[str | AnyTool | AnyAbility] | None = None,
-        force_after: list[str | AnyTool | AnyAbility] | None = None,
+        only_before: list[ConditionalAbilityInput] | ConditionalAbilityInput | None = None,
+        only_after: list[ConditionalAbilityInput] | ConditionalAbilityInput | None = None,
+        force_after: list[ConditionalAbilityInput] | ConditionalAbilityInput | None = None,
+        min_invocations: int | None = None,
         max_invocations: int | None = None,
-        required: bool = False,
-        only_success_invocations: bool = True,
+        only_success_invocations: bool = True,  # TODO: auto inherit from source?
+        can_be_used_in_row: bool = True,  # TODO: auto inherit from source?
+        priority: int | None = None,  # TODO: auto inherit from source?
+        custom_checks: list[Callable[[ToolCallingAgentRunState], bool]] | None = None,
+        wrap_source: bool = True,
     ) -> None:
-        self.tool = tool
-        self.name = self.tool.name
-        self.description = self.tool.description
+        super().__init__(priority=priority)
 
-        def extract_name(target: list[str | AnyTool | AnyAbility] | None) -> set[str]:
-            return set[str](t if isinstance(t, str) else t.name for t in target or [])
+        self.source = source
+        self.name = self.source.name
+        self.description = self.source.description
+
+        def extract_name(target: list[ConditionalAbilityInput] | ConditionalAbilityInput | None) -> set[str]:
+            return set[str](
+                (t if isinstance(t, str) else t.name for t in (target if isinstance(target, list) else [target]))
+                if target is not None
+                else []
+            )
 
         self._before = extract_name(only_before)
         self._after = extract_name(only_after)
         self._force_after = extract_name(force_after)
-        self._max_invocations = max_invocations
-        self._required = required
+        self._min_invocations = min_invocations or 0
+        self._max_invocations = math.inf if max_invocations is None else max_invocations
         self._force_at_step = force_at_step
         self._only_success_invocations = only_success_invocations
+        self._can_be_used_in_row = can_be_used_in_row
+        self._custom_checks = list(custom_checks or [])
+
+        if wrap_source and isinstance(source, AgentAbility):
+            self._custom_checks.append(lambda state: bool(source.check(state)))
 
         self._check_invariant()
 
     def _check_invariant(self) -> None:
-        if self.tool.name != self.name:
-            raise ValueError(f"Tool name '{self.tool.name}' does not match ability name '{self.name}'")
+        if self.source.name != self.name:
+            raise ValueError(f"Tool name '{self.source.name}' does not match ability name '{self.name}'")
 
-        if self._required and self._max_invocations and self._max_invocations < 1:
-            raise ValueError("Required tool must have at least one invocation!")
+        if self._min_invocations < 0:
+            raise ValueError("The 'min_invocations' argument must be non negative!")
+
+        if self._max_invocations < 0:
+            raise ValueError("The 'max_invocations' argument must be non negative!")
+
+        if self._min_invocations > self._max_invocations:
+            raise ValueError("The 'min_invocations' argument must be less than or equal to 'max_invocations'!")
 
         if self.name in self._before:
             raise ValueError(f"Referencing self in 'before' is not allowed: {self.name}!")
@@ -258,18 +282,23 @@ class ToolAbility(Generic[TAbilityInput], AgentAbility[TAbilityInput]):
             raise ValueError("The 'force_at_step' argument must be non negative!")
 
     def verify(self, *, tools: list[AnyTool], abilities: list[AnyAbility]) -> None:
-        existing_names = set([t.name for t in tools] + [a.name for a in abilities])
+        existing_names = set([t.name for t in tools] + [a.name for a in abilities])  # TODO: auto-exclude final_answer?
 
         def check(attr_name: str, target: set[str]) -> None:
             diff = target - existing_names
             if diff:
                 raise ValueError(
-                    f"Following tools ({diff}) are specified in '{attr_name}' but not found for the agent instance."
+                    f"Following names ({diff}) are specified in '{attr_name}' but not found for the agent instance."
                 )
 
         check("before", self._before)
         check("after", self._after)
         check("force_after", self._force_after)
+
+        if len(existing_names - {"final_answer"}) == 1 and not self._can_be_used_in_row and self._min_invocations > 1:
+            raise ValueError(
+                "The ability can't be used in row if there is only one tool left and it is not 'final_answer'."
+            )
 
     def reset(self) -> Self:
         self._before.clear()
@@ -279,15 +308,21 @@ class ToolAbility(Generic[TAbilityInput], AgentAbility[TAbilityInput]):
 
     @property
     def input_schema(self) -> type[TAbilityInput]:
-        return self.tool.input_schema
+        return self.source.input_schema
 
     async def handler(self, input: TAbilityInput, context: RunContext) -> Any:
-        return await self.tool.run(input, ToolRunOptions(signal=context.signal))  # TODO: double check
+        if isinstance(self.source, AgentAbility):
+            return await self.source.handler(input, context)
+        else:
+            return await self.source.run(input, ToolRunOptions(signal=context.signal))  # TODO: double check
 
     def check(self, state: ToolCallingAgentRunState) -> AgentAbilityState:
         steps = (
             [step for step in state.steps if not step.error] if self._only_success_invocations else list(state.steps)
         )
+        last_step = steps[-1] if steps else None
+        last_tool_name = last_step.tool.name if last_step and last_step.tool else ""
+        invocations = sum(1 if step.tool and step.tool.name == self.source.name else 0 for step in steps)
 
         def was_called_check(target: str) -> bool:
             return any(step.tool and step.tool.name == target for step in steps)
@@ -299,22 +334,19 @@ class ToolAbility(Generic[TAbilityInput], AgentAbility[TAbilityInput]):
                     f"because it has not met all requirements."
                 )
 
-            if allowed:
-                last_step = steps[-1] if steps else None
-                last_tool_name = last_step.tool.name if last_step and last_step.tool else ""
-                forced = last_tool_name in self._force_after or self._force_at_step == len(steps)
-            else:
-                forced = False
+            forced = last_tool_name in self._force_after or self._force_at_step == len(steps) if allowed else False
 
             return AgentAbilityState(
                 allowed=allowed,
                 forced=forced,
                 hidden=False,
-                prevent_stop=(self._required and invocations == 0) or forced,
+                prevent_stop=(self._min_invocations > invocations) or forced,
             )
 
-        invocations = sum(1 if step.tool and step.tool.name == self.tool.name else 0 for step in steps)
-        if invocations >= (self._max_invocations or math.inf):
+        if not self._can_be_used_in_row and self.name == last_tool_name:
+            return resolve(False)
+
+        if invocations >= self._max_invocations:
             return resolve(False)
 
         for target in self._before:
@@ -323,6 +355,10 @@ class ToolAbility(Generic[TAbilityInput], AgentAbility[TAbilityInput]):
 
         for target in self._after:
             if not was_called_check(target):
+                return resolve(False)
+
+        for check in self._custom_checks:
+            if not check(state):
                 return resolve(False)
 
         return resolve(True)

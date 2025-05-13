@@ -130,7 +130,7 @@ class ReActAgent(BaseAgent[ReActAgentRunOutput]):
                     or AgentExecutionConfig(
                         max_retries_per_step=3,
                         total_max_retries=20,
-                        max_iterations=10,
+                        max_iterations=20,
                     ),
                     signal=signal,
                 ),

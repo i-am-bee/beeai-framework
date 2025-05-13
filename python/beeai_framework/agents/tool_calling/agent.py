@@ -151,30 +151,32 @@ class ToolCallingAgent(BaseAgent[ToolCallingAgentRunOutput]):
                 if run_config.max_iterations and state.iteration > run_config.max_iterations:
                     raise AgentError(f"Agent was not able to resolve the task in {state.iteration} iterations.")
 
+                request = _prepare_request(registry, state, force_tool_call=force_final_answer_as_tool)
+
                 await run_context.emitter.emit(
                     "start",
-                    ToolCallingAgentStartEvent(state=state),
+                    ToolCallingAgentStartEvent(state=state, request=request),
                 )
 
-                request_data = _prepare_request(registry, state, force_tool_call=force_final_answer_as_tool)
-                print("=" * 32)
-                print("allowed tools", [t.name for t in request_data.allowed_tools])
-                print("tool choice", request_data.tool_choice)
-                print("can stop", request_data.can_stop)
-                print("=" * 32)
+                print("")
+                print("=" * 32, "Step", state.iteration, "=" * 32)
+                print("Allowed Tools", [t.name for t in request.allowed_tools])
+                print("LLM Tool Choice", request.tool_choice)
+                print("Can Stop?", request.can_stop)
+                print("")
                 response = await self._llm.create(
                     messages=[
                         _create_system_message(
                             template=self._templates.system,
-                            final_answer=request_data.final_answer,
-                            hidden_tools=request_data.hidden_tools,
-                            regular_tools=request_data.regular_tools,
-                            ability_tools=request_data.abilities_tools,
+                            final_answer=request.final_answer,
+                            hidden_tools=request.hidden_tools,
+                            regular_tools=request.regular_tools,
+                            ability_tools=request.abilities_tools,
                         ),
                         *state.memory.messages,
                     ],
-                    tools=request_data.allowed_tools,
-                    tool_choice=request_data.tool_choice,
+                    tools=request.allowed_tools,
+                    tool_choice=request.tool_choice,
                     stream=False,
                 )
                 await state.memory.add_many(response.messages)
@@ -182,7 +184,7 @@ class ToolCallingAgent(BaseAgent[ToolCallingAgentRunOutput]):
                 text_messages = response.get_text_messages()
                 tool_call_messages = response.get_tool_calls()
 
-                if not tool_call_messages and text_messages and request_data.can_stop:
+                if not tool_call_messages and text_messages and request.can_stop:
                     await state.memory.delete_many(response.messages)
 
                     full_text = "".join(msg.text for msg in text_messages)
@@ -205,11 +207,9 @@ class ToolCallingAgent(BaseAgent[ToolCallingAgentRunOutput]):
                     tool_call_messages.append(tool_call_message)
                     await state.memory.add(AssistantMessage(tool_call_message))
 
-                print("number of tool calls", len(tool_call_messages))
-
                 cycle_found = False
                 for tool_call_msg in tool_call_messages:
-                    print(tool_call_msg.tool_name, tool_call_msg.args)
+                    print(tool_call_msg.tool_name, "->", tool_call_msg.args)
                     tool_call_cycle_checker.register(tool_call_msg)
                     if cycle_found := tool_call_cycle_checker.cycle_found:
                         await state.memory.delete_many(response.messages)
@@ -219,7 +219,7 @@ class ToolCallingAgent(BaseAgent[ToolCallingAgentRunOutput]):
                                     ToolCallingAgentCycleDetectionPromptInput(
                                         tool_args=tool_call_msg.args,
                                         tool_name=tool_call_msg.tool_name,
-                                        final_answer_tool=request_data.final_answer.name,
+                                        final_answer_tool=request.final_answer.name,
                                     )
                                 )
                             )
@@ -229,13 +229,16 @@ class ToolCallingAgent(BaseAgent[ToolCallingAgentRunOutput]):
 
                 if not cycle_found:
                     for tool_call in await _run_tools(
-                        request_data.allowed_tools, tool_call_messages, context={"state": state.model_dump()}
+                        request.allowed_tools, tool_call_messages, context={"state": state.model_dump()}
                     ):
-                        ability = request_data.ability_by_tool.get(tool_call.tool.name) if tool_call.tool else None
+                        ability = request.ability_by_tool.get(tool_call.tool.name) if tool_call.tool else None
                         state.steps.append(tool_call.as_step(state, ability))
                         await state.memory.add(tool_call.as_message())
                         if tool_call.error:
                             tool_call_retry_counter.use(tool_call.error)
+
+                        if tool_call.tool:
+                            print(tool_call.tool.name, "<-", "(error)" if tool_call.error else "", tool_call.output)
 
                 # handle empty responses for some models
                 if not tool_call_messages and not text_messages:

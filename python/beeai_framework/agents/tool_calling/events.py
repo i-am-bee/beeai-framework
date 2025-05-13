@@ -15,11 +15,13 @@
 
 from pydantic import BaseModel
 
+from beeai_framework.agents.tool_calling.runtime import ToolCallingAgentRequest
 from beeai_framework.agents.tool_calling.types import ToolCallingAgentRunState
 
 
 class ToolCallingAgentStartEvent(BaseModel):
     state: ToolCallingAgentRunState
+    request: ToolCallingAgentRequest
 
 
 class ToolCallingAgentSuccessEvent(BaseModel):
