@@ -13,13 +13,13 @@
 # limitations under the License.
 
 from collections.abc import Callable, Coroutine
-from typing import Any, Generic, Literal
+from typing import Any, Literal
 
 from pydantic import BaseModel, Field
-from typing_extensions import TypeVar
 
 from beeai_framework.tools.tool import AnyTool, Tool
 from beeai_framework.tools.types import ToolOutput
+from beeai_framework.utils.funcs import identity
 from beeai_framework.utils.types import MaybeAsync
 
 try:
@@ -36,8 +36,6 @@ from beeai_framework.serve.server import Server
 from beeai_framework.utils import ModelLike
 from beeai_framework.utils.models import to_model
 
-TInput = TypeVar("TInput", bound=Any, default=Any)
-
 McpServerTool = MaybeAsync[[Any], ToolOutput]
 McpServerEntry = mcp_prompts.Prompt | mcp_resources.Resource | McpServerTool
 
@@ -52,9 +50,8 @@ class McpServerConfig(BaseModel):
 
 
 class McpServer(
-    Generic[TInput],
     Server[
-        TInput,
+        Any,
         McpServerEntry,
         McpServerConfig,
     ],
@@ -70,13 +67,19 @@ class McpServer(
     def serve(self) -> None:
         for member in self.members:
             factory = type(self)._get_factory(member)
-            input = factory(member)
-            if callable(input):
-                self._server.add_tool(fn=input, name=member.name, description=member.description)
-            elif isinstance(input, mcp_prompts.Prompt):
-                self._server.add_prompt(input)
-            elif isinstance(input, mcp_resources.Resource):
-                self._server.add_resource(input)
+            entry = factory(member)
+
+            if callable(entry):
+                name, description = (
+                    [member.name, member.description]
+                    if isinstance(member, Tool)
+                    else [member.__name__, member.__doc__ or ""]
+                )
+                self._server.add_tool(fn=entry, name=name, description=description)
+            elif isinstance(entry, mcp_prompts.Prompt):
+                self._server.add_prompt(entry)
+            elif isinstance(entry, mcp_resources.Resource):
+                self._server.add_resource(entry)
             else:
                 raise ValueError(f"Input type {type(member)} is not supported by this server.")
 
@@ -84,15 +87,16 @@ class McpServer(
 
     @classmethod
     def _get_factory(
-        cls, member: TInput
+        cls, member: Any
     ) -> Callable[
-        [TInput],
+        [Any],
         McpServerEntry,
     ]:
-        if type(member) not in cls._factories and isinstance(member, Tool):
-            return _tool_factory
-        else:
-            return super()._get_factory(member)
+        return (
+            super()._get_factory(Tool)
+            if (type(member) not in cls._factories and isinstance(member, Tool) and Tool in cls._factories)
+            else super()._get_factory(member)
+        )
 
 
 def _tool_factory(
@@ -103,3 +107,8 @@ def _tool_factory(
         return result
 
     return run
+
+
+McpServer.register_factory(Tool, _tool_factory)
+McpServer.register_factory(mcp_resources.Resource, identity)
+McpServer.register_factory(mcp_prompts.Prompt, identity)
