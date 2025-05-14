@@ -90,7 +90,7 @@ class McpServer(
         McpServerEntry,
     ]:
         if type(member) not in cls._factories and isinstance(member, Tool):
-            return cls._factories.get(Tool, _tool_factory)  # type: ignore
+            return _tool_factory
         else:
             return super()._get_factory(member)
 
@@ -103,6 +103,3 @@ def _tool_factory(
         return result
 
     return run
-
-
-McpServer.register_factory(Tool, _tool_factory)  # type: ignore
