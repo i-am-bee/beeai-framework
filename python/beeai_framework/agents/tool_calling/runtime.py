@@ -27,7 +27,7 @@ from beeai_framework.agents.tool_calling.prompts import (
     ToolTemplateDefinition,
 )
 from beeai_framework.agents.tool_calling.types import (
-    AgentAbility,
+    Ability,
     AnyAbility,
     DynamicAgentAbility,
     ToolCallingAgentRunState,
@@ -170,12 +170,12 @@ def _prepare_request(
     tool_choice: Literal["required"] | AnyTool = "required"
     abilities_tools: list[AnyTool] = []
     regular_tools: list[AnyTool] = list(registry.tools.values())
-    ability_by_tool: dict[str, AgentAbility] = {}
+    ability_by_tool: dict[str, Ability] = {}
     allowed_tools: list[AnyTool] = [*regular_tools]
     hidden_tools: list[AnyTool] = []
 
     prevent_stop: bool = False
-    forced_ability: AgentAbility | None = None
+    forced_ability: Ability | None = None
 
     for ability in registry.abilities.values():
         status = ability.can_use(state=state)

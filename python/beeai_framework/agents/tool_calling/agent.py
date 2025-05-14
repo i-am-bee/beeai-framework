@@ -36,7 +36,7 @@ from beeai_framework.agents.tool_calling.runtime import (
     _run_tools,
 )
 from beeai_framework.agents.tool_calling.types import (
-    AgentAbility,
+    Ability,
     ToolCallingAgentRunOutput,
     ToolCallingAgentRunState,
     ToolCallingAgentTemplateFactory,
@@ -73,7 +73,7 @@ class ToolCallingAgent(BaseAgent[ToolCallingAgentRunOutput]):
         templates: dict[ToolCallingAgentTemplatesKeys, PromptTemplate[Any] | ToolCallingAgentTemplateFactory]
         | None = None,
         save_intermediate_steps: bool = True,
-        abilities: Sequence[AgentAbility[Any] | str] | None = None,
+        abilities: Sequence[Ability[Any] | str] | None = None,
         name: str | None = None,
         description: str | None = None,
         role: str | None = None,
@@ -99,7 +99,7 @@ class ToolCallingAgent(BaseAgent[ToolCallingAgentRunOutput]):
                     }
                 )
             )
-        self._abilities = [AgentAbility.lookup(ab) if isinstance(ab, str) else ab for ab in (abilities or [])]
+        self._abilities = [Ability.lookup(ab) if isinstance(ab, str) else ab for ab in (abilities or [])]
         self._meta = AgentMeta(name=name or "", description=description or instructions or "")
         if meta:
             update_model(self._meta, sources=[meta])

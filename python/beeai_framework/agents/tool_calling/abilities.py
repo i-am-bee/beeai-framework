@@ -19,7 +19,7 @@ from typing import TYPE_CHECKING, Any, Generic, Self
 from pydantic import BaseModel, Field, create_model
 
 from beeai_framework.agents.tool_calling.types import (
-    AgentAbility,
+    Ability,
     AgentAbilityState,
     AnyAbility,
     TAbilityInput,
@@ -36,7 +36,7 @@ if TYPE_CHECKING:
     from beeai_framework.agents.tool_calling.agent import ToolCallingAgent
 
 
-class FinalAnswerAbility(AgentAbility[BaseModel]):
+class FinalAnswerAbility(Ability[BaseModel]):
     def __init__(
         self, expected_output: str | type[BaseModel] | None, state: ToolCallingAgentRunState, double_check: bool = False
     ) -> None:  # TODO: propagate state with tool context..
@@ -79,7 +79,7 @@ class FinalAnswerAbility(AgentAbility[BaseModel]):
         return AgentAbilityState(allowed=True, forced=False, hidden=False, prevent_stop=False)
 
 
-class ReasoningAbility(AgentAbility[BaseModel]):
+class ReasoningAbility(Ability[BaseModel]):
     name = "Reasoning"
     description = 'Use this tool when you want to think through a problem, clarify your assumptions, or break down complex steps before acting or responding. This is your internal "scratchpad" — a place to reason out loud in natural language.'  # noqa: E501
 
@@ -114,7 +114,7 @@ class HandoffSchema(BaseModel):
     prompt: str = Field(description="Clearly defined task for the agent to work on based on his abilities.")
 
 
-class HandoffAbility(AgentAbility[HandoffSchema]):
+class HandoffAbility(Ability[HandoffSchema]):
     """Delegates a task to an expert agent"""
 
     def __init__(self, target: "ToolCallingAgent", *, name: str | None = None, description: str | None = None) -> None:
@@ -142,7 +142,7 @@ class HandoffAbility(AgentAbility[HandoffSchema]):
         return HandoffSchema
 
 
-class DynamicAbility(AgentAbility):
+class DynamicAbility(Ability):
     """Ensures that a tool will be available only after previous one."""
 
     def __init__(
@@ -204,10 +204,10 @@ def ability_from_tool(
 ConditionalAbilityInput = str | AnyTool | AnyAbility
 
 
-class ConditionalAbility(Generic[TAbilityInput], AgentAbility[TAbilityInput]):
+class ConditionalAbility(Generic[TAbilityInput], Ability[TAbilityInput]):
     def __init__(
         self,
-        source: Tool[TAbilityInput, Any, Any] | AgentAbility[TAbilityInput],
+        source: Tool[TAbilityInput, Any, Any] | Ability[TAbilityInput],
         *,
         force_at_step: int | None = None,
         only_before: list[ConditionalAbilityInput] | ConditionalAbilityInput | None = None,
@@ -221,11 +221,13 @@ class ConditionalAbility(Generic[TAbilityInput], AgentAbility[TAbilityInput]):
         custom_checks: list[Callable[[ToolCallingAgentRunState], bool]] | None = None,
         wrap_source: bool = True,
     ) -> None:
-        super().__init__(priority=priority)
+        super().__init__()
 
         self.source = source
         self.name = self.source.name
         self.description = self.source.description
+        if self.priority is not None:
+            self.priority = priority
 
         def extract_name(target: list[ConditionalAbilityInput] | ConditionalAbilityInput | None) -> set[str]:
             return set[str](
@@ -244,7 +246,7 @@ class ConditionalAbility(Generic[TAbilityInput], AgentAbility[TAbilityInput]):
         self._can_be_used_in_row = can_be_used_in_row
         self._custom_checks = list(custom_checks or [])
 
-        if wrap_source and isinstance(source, AgentAbility):
+        if wrap_source and isinstance(source, Ability):
             self._custom_checks.append(lambda state: bool(source.check(state)))
 
         self._check_invariant()
@@ -311,7 +313,7 @@ class ConditionalAbility(Generic[TAbilityInput], AgentAbility[TAbilityInput]):
         return self.source.input_schema
 
     async def handler(self, input: TAbilityInput, context: RunContext) -> Any:
-        if isinstance(self.source, AgentAbility):
+        if isinstance(self.source, Ability):
             return await self.source.handler(input, context)
         else:
             return await self.source.run(input, ToolRunOptions(signal=context.signal))  # TODO: double check
@@ -364,5 +366,5 @@ class ConditionalAbility(Generic[TAbilityInput], AgentAbility[TAbilityInput]):
         return resolve(True)
 
 
-AgentAbility.register("reasoning", lambda: ReasoningAbility(force=True))
-AgentAbility.register("reasoning_optional", lambda: ReasoningAbility(force=False))
+Ability.register("reasoning", lambda: ReasoningAbility(force=True))
+Ability.register("reasoning_optional", lambda: ReasoningAbility(force=False))

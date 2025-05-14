@@ -86,7 +86,7 @@ class ToolCallingAgentRunStateStep(BaseModel):
     tool: InstanceOf[Tool[Any, Any, Any]] | None
     input: dict[str, Any]
     output: InstanceOf[ToolOutput]
-    ability: InstanceOf["AgentAbility[BaseModel]"] | None
+    ability: InstanceOf["Ability[BaseModel]"] | None
     error: InstanceOf[FrameworkError] | None
     # extra: dict[str, Any]  # TODO: stored outputs from Abilities
 
@@ -103,17 +103,19 @@ class AgentAbilityState(BaseModel):
 
 TAbilityInput = TypeVar("TAbilityInput", bound=BaseModel, default=BaseModel)
 
-AgentAbilityFactory = Callable[[], "AgentAbility[Any]"]
+AgentAbilityFactory = Callable[[], "Ability[Any]"]
 
 
-class AgentAbility(ABC, Generic[TAbilityInput]):
+class Ability(ABC, Generic[TAbilityInput]):
     name: str
     description: str
     state: dict[str, Any]
     priority: int
+    disabled: bool
 
-    def __init__(self, *args: Any, priority: int | None = None, **kwargs: Any) -> None:
-        self.priority = priority or 10
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        self.priority = 10
+        self.disabled = False
 
     @abstractmethod
     async def handler(self, input: TAbilityInput, context: RunContext) -> Any: ...
@@ -138,14 +140,14 @@ class AgentAbility(ABC, Generic[TAbilityInput]):
 
     @staticmethod
     def register(name: str, factory: AgentAbilityFactory) -> None:  # TODO: support cloneable?
-        if name in AgentAbility._registered_classes:
+        if name in Ability._registered_classes:
             raise ValueError(f"Ability with name '{name}' has been already registered!")
 
-        AgentAbility._registered_classes[name] = factory
+        Ability._registered_classes[name] = factory
 
     @staticmethod
-    def lookup(name: str) -> "AgentAbility[Any]":  # TODO: add support for lookup by a signature instead
-        factory = AgentAbility._registered_classes.get(name)
+    def lookup(name: str) -> "Ability[Any]":  # TODO: add support for lookup by a signature instead
+        factory = Ability._registered_classes.get(name)
         if factory is None:
             raise ValueError(f"Ability with name '{name}' has not been registered!")
         return factory()
@@ -155,7 +157,7 @@ class AgentAbility(ABC, Generic[TAbilityInput]):
         return response if isinstance(response, AgentAbilityState) else AgentAbilityState(allowed=response)
 
 
-class DynamicAgentAbility(AgentAbility[TAbilityInput]):
+class DynamicAgentAbility(Ability[TAbilityInput]):
     def __init__(
         self,
         *,
@@ -182,6 +184,9 @@ class DynamicAgentAbility(AgentAbility[TAbilityInput]):
             return self._handler(input)
 
     def check(self, state: ToolCallingAgentRunState) -> AgentAbilityState:
+        if self.disabled:
+            return AgentAbilityState(allowed=False, hidden=True, forced=False, prevent_stop=False)
+
         response = self._check(state) if self._check else True
         if isinstance(response, bool):
             return AgentAbilityState(allowed=response, forced=False, hidden=False, prevent_stop=False)
@@ -193,10 +198,10 @@ class DynamicAgentAbility(AgentAbility[TAbilityInput]):
         return self._input_schema
 
 
-AnyAbility = AgentAbility[Any]
+AnyAbility = Ability[Any]
 
 
-def agent_ability(fn: Callable[..., Any]) -> AgentAbility[Any]:
+def agent_ability(fn: Callable[..., Any]) -> Ability[Any]:
     tool = create_tool(fn)
     return DynamicAgentAbility(
         name=tool.name,
