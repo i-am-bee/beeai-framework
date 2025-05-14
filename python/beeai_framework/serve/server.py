@@ -44,12 +44,17 @@ class Server(Generic[TInput, TInternal, TConfig], ABC):
         elif cls._factories[ref] is not factory:
             raise ValueError(f"Factory for {ref} is already registered.")
 
-    def register(self, input: TInput | Sequence[TInput]) -> Self:
-        for value in input if isinstance(input, Sequence) else [input]:
-            # check if the type has a factory registered
-            type(self)._get_factory(value)
-            if value not in self._members:
-                self._members.append(value)
+    def register(self, input: TInput) -> Self:
+        # check if the type has a factory registered
+        type(self)._get_factory(input)
+        if input not in self._members:
+            self._members.append(input)
+
+        return self
+
+    def register_many(self, input: Sequence[TInput]) -> Self:
+        for item in input:
+            self.register(item)
 
         return self
 
