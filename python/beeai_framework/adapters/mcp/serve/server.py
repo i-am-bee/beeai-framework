@@ -89,22 +89,20 @@ class McpServer(
         [TInput],
         McpServerEntry,
     ]:
-        factory = cls._factories.get(type(member))
-        if factory is None and isinstance(member, Tool):
+        if type(member) not in cls._factories and isinstance(member, Tool):
+            return cls._factories.get(Tool, _tool_factory)  # type: ignore
+        else:
+            return super()._get_factory(member)
 
-            def _tool_factory(
-                tool: AnyTool,
-            ) -> Callable[[dict[str, Any]], Coroutine[Any, Any, ToolOutput]]:
-                async def run(input: dict[str, Any]) -> ToolOutput:
-                    result: ToolOutput = await tool.run(input)
-                    return result
 
-                return run
+def _tool_factory(
+    tool: AnyTool,
+) -> Callable[[dict[str, Any]], Coroutine[Any, Any, ToolOutput]]:
+    async def run(input: dict[str, Any]) -> ToolOutput:
+        result: ToolOutput = await tool.run(input)
+        return result
 
-            factory = _tool_factory
-        if factory is None:
-            raise ValueError(
-                f"Factory for {type(member)} is not registered. "
-                "Please register a factory using the `McpServer.register_factory` method."
-            )
-        return factory
+    return run
+
+
+McpServer.register_factory(Tool, _tool_factory)  # type: ignore
