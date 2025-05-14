@@ -20,6 +20,7 @@ from typing_extensions import TypeVar
 
 from beeai_framework.tools.tool import AnyTool, Tool
 from beeai_framework.tools.types import ToolOutput
+from beeai_framework.utils.types import MaybeAsync
 
 try:
     import mcp.server.fastmcp.prompts as mcp_prompts
@@ -37,6 +38,9 @@ from beeai_framework.utils.models import to_model
 
 TInput = TypeVar("TInput", bound=Any, default=Any)
 
+McpServerTool = MaybeAsync[[Any], ToolOutput]
+McpServerEntry = mcp_prompts.Prompt | mcp_resources.Resource | McpServerTool
+
 
 class McpServerConfig(BaseModel):
     """Configuration for the McpServer."""
@@ -51,7 +55,7 @@ class McpServer(
     Generic[TInput],
     Server[
         TInput,
-        mcp_prompts.Prompt | mcp_resources.Resource | Callable[[Any], ToolOutput],
+        McpServerEntry,
         McpServerConfig,
     ],
 ):
@@ -65,7 +69,7 @@ class McpServer(
 
     def serve(self) -> None:
         for member in self.members:
-            factory = McpServer.get_factory(member)
+            factory = type(self)._get_factory(member)
             input = factory(member)
             if callable(input):
                 self._server.add_tool(fn=input, name=member.name, description=member.description)
@@ -79,11 +83,11 @@ class McpServer(
         self._server.run(transport=self._config.transport)
 
     @classmethod
-    def get_factory(
-        cls, member: Any
+    def _get_factory(
+        cls, member: TInput
     ) -> Callable[
         [TInput],
-        mcp_prompts.Prompt | mcp_resources.Resource | Callable[[Any], ToolOutput],
+        McpServerEntry,
     ]:
         factory = cls._factories.get(type(member))
         if factory is None and isinstance(member, Tool):
@@ -97,10 +101,10 @@ class McpServer(
 
                 return run
 
-            factory = _tool_factory  # type: ignore
-        assert factory is not None
+            factory = _tool_factory
+        if factory is None:
+            raise ValueError(
+                f"Factory for {type(member)} is not registered. "
+                "Please register a factory using the `McpServer.register_factory` method."
+            )
         return factory
-
-    @classmethod
-    def supports(cls, input: TInput) -> bool:
-        return isinstance(input, Tool) or super().supports(input)

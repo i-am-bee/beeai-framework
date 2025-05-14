@@ -46,8 +46,8 @@ class Server(Generic[TInput, TInternal, TConfig], ABC):
 
     def register(self, input: TInput | Sequence[TInput]) -> Self:
         for value in input if isinstance(input, Sequence) else [input]:
-            if not self.supports(value):
-                raise ValueError(f"Agent {type(value)} is not supported by this server.")
+            # check if the type has a factory registered
+            type(self)._get_factory(value)
             if value not in self._members:
                 self._members.append(value)
 
@@ -58,16 +58,11 @@ class Server(Generic[TInput, TInternal, TConfig], ABC):
         return self
 
     @classmethod
-    def get_factory(cls, input: TInput) -> Callable[[TInput], TInternal]:
-        return cls._factories[type(input)]
-
-    @classmethod
-    def supports(cls, input: TInput) -> bool:
-        try:
-            cls.get_factory(input)
-            return True
-        except Exception:
-            return False
+    def _get_factory(cls, input: TInput) -> Callable[[TInput], TInternal]:
+        factory = cls._factories.get(type(input))
+        if factory is None:
+            raise ValueError(f"No factory registered for {type(input)}.")
+        return factory
 
     @property
     def members(self) -> list[TInput]:
