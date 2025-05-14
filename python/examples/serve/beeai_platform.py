@@ -1,4 +1,4 @@
-from beeai_framework.adapters.acp import AcpAgentServer, AcpServerConfig
+from beeai_framework.adapters.beeai_platform.serve.server import BeeaiPlatformServer
 from beeai_framework.agents.tool_calling.agent import ToolCallingAgent
 from beeai_framework.agents.types import AgentMeta
 from beeai_framework.backend import ChatModel
@@ -17,10 +17,10 @@ def main() -> None:
         meta=AgentMeta(name="my_agent", description="A simple agent", tools=[]),
     )
 
-    # Register the agent with the ACP server and run the HTTP server
-    # For the ToolCallingAgent and ReActAgent, we dont need to specify AcpAgent factory method
-    # because they are already registered in the AcpAgentServer
-    AcpAgentServer(config=AcpServerConfig(port=8001)).register(agent).serve()
+    # Register the agent with the Beeai platform and run the HTTP server
+    # For the ToolCallingAgent and ReActAgent, we dont need to specify BeeaiPlatformAgent factory method
+    # because they are already registered in the BeeaiPlatformServer
+    BeeaiPlatformServer().register(agent).serve()
 
 
 if __name__ == "__main__":

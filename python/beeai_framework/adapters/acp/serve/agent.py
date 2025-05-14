@@ -74,7 +74,7 @@ class AcpServerConfig(BaseModel):
 
     configure_logger: bool | None = None
     configure_telemetry: bool | None = None
-    self_registration: bool | None = None
+    self_registration: bool | None = False
     run_limit: int | None = None
     run_ttl: timedelta | None = None
     host: str | None = None

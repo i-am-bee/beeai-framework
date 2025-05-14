@@ -42,7 +42,7 @@ AnyAgentLike = TypeVar("AnyAgentLike", bound=AnyAgent, default=AnyAgent)
 
 class AcpAgentServer(Generic[AnyAgentLike], Server[AnyAgentLike, AcpAgent, AcpServerConfig]):
     def __init__(self, *, config: ModelLike[AcpServerConfig] | None = None) -> None:
-        super().__init__(config=to_model(AcpServerConfig, config or {}))
+        super().__init__(config=to_model(AcpServerConfig, config or {"self_registration": False}))
         self._server = acp_server.Server()
 
     def serve(self) -> None:
@@ -50,7 +50,7 @@ class AcpAgentServer(Generic[AnyAgentLike], Server[AnyAgentLike, AcpAgent, AcpSe
             factory = type(self)._factories[type(member)]
             self._server.register(factory(member))
 
-        self._server.run(**self._config.model_dump(exclude_unset=True))
+        self._server.run(**self._config.model_dump(exclude_none=True))
 
 
 def _react_agent_factory(agent: ReActAgent) -> AcpAgent:
@@ -75,7 +75,11 @@ def _react_agent_factory(agent: ReActAgent) -> AcpAgent:
                         case "final_answer":
                             yield acp_models.MessagePart(content=update, role="assistant")  # type: ignore[call-arg]
 
-    return AcpAgent(fn=run, name=acp_models.AgentName(agent.meta.name), description=agent.meta.description)
+    return AcpAgent(
+        fn=run,
+        name=acp_models.AgentName(agent.meta.name),
+        description=agent.meta.description,
+    )
 
 
 AcpAgentServer.register_factory(ReActAgent, _react_agent_factory)
@@ -105,7 +109,11 @@ def _tool_calling_agent_factory(agent: ToolCallingAgent) -> AcpAgent:
             if isinstance(data, ToolCallingAgentSuccessEvent) and data.state.result is not None:
                 yield acp_models.MessagePart(content=data.state.result.text, role="assistant")  # type: ignore[call-arg]
 
-    return AcpAgent(fn=run, name=acp_models.AgentName(agent.meta.name), description=agent.meta.description)
+    return AcpAgent(
+        fn=run,
+        name=acp_models.AgentName(agent.meta.name),
+        description=agent.meta.description,
+    )
 
 
 AcpAgentServer.register_factory(ToolCallingAgent, _tool_calling_agent_factory)
