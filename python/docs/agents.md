@@ -6,12 +6,13 @@
 - [Agent Abstractions](#agent-abstractions)
   - [ReActAgent](#react-agent)
   - [ToolCallingAgent](#tool-calling-agent)
-- [Agent Providers](#agent-providers)
+- [Agent Communication Protocol (ACP) Integration](#agent-communication-protocol-integration)
   - [ACPAgent](#acp-agent)
-  - [BeeAIPlatformAgent](#beeai-platform-agent)
-- [Integration Servers](#integration-servers)
   - [ACPServer](#acp-server)
+- [BeeAI Platform Integration](#beeai-platform-integration)
+  - [BeeAIPlatformAgent](#beeai-platform-agent)
   - [BeeAIPlatformServer](#beeai-platform-server)
+- [Model Context Protocol (MCP) Integration](#model-context-protocol-integration)
   - [MCPServer](#acp-server)
 - [Customizing Agent Behavior](#customizing-agent-behavior)
   - [1. Setting Execution Policy](#1-setting-execution-policy)
@@ -45,8 +46,6 @@ Agents control the path to solving a problem, acting on feedback to refine their
 > [!NOTE]
 >
 > Location within the framework: [beeai_framework/agents](/python/beeai_framework/agents).
-
----
 
 ## Agent abstractions
 
@@ -306,7 +305,7 @@ _Source: [examples/agents/tool_calling.py](/python/examples/agents/tool_calling.
 
 </details>
 
-## Agent Providers
+## Agent Communication Protocol Integration
 
 ### ACP Agent
 
@@ -346,47 +345,6 @@ if __name__ == "__main__":
 ```
 
 _Source: [examples/agents/providers/acp.py](/python/examples/agents/providers/acp.py)_
-
-## BeeAI Platform Agent
-
-BeeaiPlatformAgent provides specialized integration with the [BeeAI Platform](https://beeai.dev/).
-
-```py
-import asyncio
-import sys
-import traceback
-
-from beeai_framework.adapters.beeai_platform.agents import BeeaiPlatformAgent
-from beeai_framework.errors import FrameworkError
-from beeai_framework.memory.unconstrained_memory import UnconstrainedMemory
-from examples.helpers.io import ConsoleReader
-
-
-async def main() -> None:
-    reader = ConsoleReader()
-
-    agent = BeeaiPlatformAgent(agent_name="chat", url="http://127.0.0.1:8333/api/v1/acp/", memory=UnconstrainedMemory())
-    for prompt in reader:
-        # Run the agent and observe events
-        response = await agent.run(prompt).on(
-            "update",
-            lambda data, event: (reader.write("Agent 🤖 (debug) : ", data)),
-        )
-
-        reader.write("Agent 🤖 : ", response.result.text)
-
-
-if __name__ == "__main__":
-    try:
-        asyncio.run(main())
-    except FrameworkError as e:
-        traceback.print_exc()
-        sys.exit(e.explain())
-```
-
-_Source: [examples/agents/providers/beeai_platform.py](/python/examples/agents/providers/beeai_platform.py)_
-
-## Integration Servers
 
 ### ACP Server
 
@@ -525,6 +483,47 @@ if __name__ == "__main__":
 
 _Source: [examples/serve/acp_with_custom_agent.py](/python/examples/serve/acp_with_custom_agent.py)_
 
+## BeeAI Platform Integration
+
+### BeeAI Platform Agent
+
+BeeaiPlatformAgent provides specialized integration with the [BeeAI Platform](https://beeai.dev/).
+
+```py
+import asyncio
+import sys
+import traceback
+
+from beeai_framework.adapters.beeai_platform.agents import BeeaiPlatformAgent
+from beeai_framework.errors import FrameworkError
+from beeai_framework.memory.unconstrained_memory import UnconstrainedMemory
+from examples.helpers.io import ConsoleReader
+
+
+async def main() -> None:
+    reader = ConsoleReader()
+
+    agent = BeeaiPlatformAgent(agent_name="chat", url="http://127.0.0.1:8333/api/v1/acp/", memory=UnconstrainedMemory())
+    for prompt in reader:
+        # Run the agent and observe events
+        response = await agent.run(prompt).on(
+            "update",
+            lambda data, event: (reader.write("Agent 🤖 (debug) : ", data)),
+        )
+
+        reader.write("Agent 🤖 : ", response.result.text)
+
+
+if __name__ == "__main__":
+    try:
+        asyncio.run(main())
+    except FrameworkError as e:
+        traceback.print_exc()
+        sys.exit(e.explain())
+```
+
+_Source: [examples/agents/providers/beeai_platform.py](/python/examples/agents/providers/beeai_platform.py)_
+
 ### BeeAI Platform Server
 
 ```py
@@ -558,6 +557,8 @@ if __name__ == "__main__":
 ```
 
 _Source: [examples/serve/beeai_platform.py](/python/examples/serve/beeai_platform.py)_
+
+## Model Context Protocol Integration
 
 ### MCP Server
 
