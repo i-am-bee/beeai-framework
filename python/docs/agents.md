@@ -526,6 +526,8 @@ _Source: [examples/agents/providers/beeai_platform.py](/python/examples/agents/p
 
 ### BeeAI Platform Server
 
+BeeAIPlatformServer is optimized for seamless integration with the [BeeAI Platform](https://beeai.dev/).
+
 ```py
 from beeai_framework.adapters.beeai_platform.serve.server import BeeaiPlatformServer
 from beeai_framework.agents.tool_calling.agent import ToolCallingAgent
