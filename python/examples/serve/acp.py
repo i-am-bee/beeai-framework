@@ -20,7 +20,9 @@ def main() -> None:
     # Register the agent with the ACP server and run the HTTP server
     # For the ToolCallingAgent and ReActAgent, we dont need to specify AcpAgent factory method
     # because they are already registered in the AcpAgentServer
-    AcpAgentServer(config=AcpServerConfig(port=8001)).register(agent, tags=["example"], ui={"type": "chat"}).serve()
+    AcpAgentServer(config=AcpServerConfig(port=8001)).register(
+        agent, tags=["example"], extra={"ui": {"type": "chat"}}
+    ).serve()
 
 
 if __name__ == "__main__":

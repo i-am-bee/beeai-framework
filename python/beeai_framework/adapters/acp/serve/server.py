@@ -14,14 +14,14 @@
 
 from collections.abc import AsyncGenerator
 from datetime import UTC, datetime
-from typing import Generic, Self, TypedDict
+from typing import Any, Generic, Self
 
 import acp_sdk.models as acp_models
 import acp_sdk.server.context as acp_context
 import acp_sdk.server.server as acp_server
 import acp_sdk.server.types as acp_types
 from acp_sdk import AnyModel, Author, Capability, Contributor, Dependency, Link
-from typing_extensions import TypeVar, Unpack, override
+from typing_extensions import TypedDict, TypeVar, Unpack, override
 
 from beeai_framework.adapters.acp.serve._agent import AcpAgent, AcpServerConfig
 from beeai_framework.adapters.acp.serve._utils import acp_msg_to_framework_msg
@@ -61,6 +61,7 @@ class AcpAgentServerMetadata(TypedDict, total=False):
     links: list[Link]
     dependencies: list[Dependency]
     recommended_models: list[str]
+    extra: dict[str, Any]
 
 
 class AcpAgentServer(Generic[AnyAgentLike], Server[AnyAgentLike, AcpAgent, AcpServerConfig]):
@@ -96,6 +97,19 @@ class AcpAgentServer(Generic[AnyAgentLike], Server[AnyAgentLike, AcpAgent, AcpSe
         return self
 
 
+def get_agent_metadata(metadata: AcpAgentServerMetadata) -> acp_models.Metadata:
+    meta: acp_models.Metadata = acp_models.Metadata.model_validate(metadata)
+    if hasattr(meta, "extra"):
+        for k, v in meta.extra.items():
+            setattr(meta, k, v)
+        del meta.extra
+    if hasattr(meta, "description"):
+        del meta.description
+    if hasattr(meta, "name"):
+        del meta.name
+    return meta
+
+
 def _react_agent_factory(agent: ReActAgent, *, metadata: AcpAgentServerMetadata | None = None) -> AcpAgent:
     if metadata is None:
         metadata = {}
@@ -125,7 +139,7 @@ def _react_agent_factory(agent: ReActAgent, *, metadata: AcpAgentServerMetadata 
         fn=run,
         name=metadata.get("name", agent.meta.name),
         description=metadata.get("description", agent.meta.description),
-        metadata=acp_models.Metadata.model_validate(metadata),
+        metadata=get_agent_metadata(metadata),
     )
 
 
@@ -163,7 +177,7 @@ def _tool_calling_agent_factory(agent: ToolCallingAgent, *, metadata: AcpAgentSe
         fn=run,
         name=metadata.get("name", agent.meta.name),
         description=metadata.get("description", agent.meta.description),
-        metadata=acp_models.Metadata.model_validate(metadata),
+        metadata=get_agent_metadata(metadata),
     )
 
 
