@@ -86,7 +86,7 @@ class AcpAgentServer(Generic[AnyAgentLike], Server[AnyAgentLike, AcpAgent, AcpSe
         if not metadata.get("natural_languages"):
             metadata["natural_languages"] = ["English"]
         if not metadata.get("framework"):
-            metadata["framework"] = "Beeai_framework"
+            metadata["framework"] = "BeeAI"
         if not metadata.get("created_at"):
             metadata["created_at"] = datetime.now(tz=UTC)
         if not metadata.get("updated_at"):
