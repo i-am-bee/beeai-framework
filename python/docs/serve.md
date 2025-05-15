@@ -19,22 +19,11 @@
 
 ## Overview
 
-AI agents built on large language models (LLMs) provide a structured approach to solving complex problems. Unlike simple LLM interactions, agents can:
-
-- 🔄 Execute multi-step reasoning processes
-- 🛠️ Utilize tools to interact with external systems
-- 📝 Remember context from previous interactions
-- 🔍 Plan and revise their approach based on feedback
-
-Agents control the path to solving a problem, acting on feedback to refine their plan, a capability that improves performance and helps them accomplish sophisticated tasks.
-
-> [!TIP]
->
-> For a deeper understanding of AI agents, read this [research article on AI agents and LLMs](https://research.ibm.com/blog/what-are-ai-agents-llm).
+Serve is a module allowing you to expose stuff from the framework.
 
 > [!NOTE]
 >
-> Location within the framework: [beeai_framework/agents](/python/beeai_framework/agents).
+> Location within the framework: [beeai_framework/serve](/python/beeai_framework/serve).
 
 ## Agent Communication Protocol Integration
 
