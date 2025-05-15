@@ -550,7 +550,7 @@ _Source: [examples/agents/providers/beeai_platform.py](/python/examples/agents/p
 BeeAIPlatformServer is optimized for seamless integration with the [BeeAI Platform](https://beeai.dev/).
 
 ```py
-from beeai_framework.adapters.beeai_platform.serve.server import BeeaiPlatformServer
+from beeai_framework.adapters.beeai_platform.serve.server import BeeAIPlatformServer
 from beeai_framework.agents.tool_calling.agent import ToolCallingAgent
 from beeai_framework.agents.types import AgentMeta
 from beeai_framework.backend import ChatModel
@@ -571,8 +571,8 @@ def main() -> None:
 
     # Register the agent with the Beeai platform and run the HTTP server
     # For the ToolCallingAgent and ReActAgent, we dont need to specify BeeaiPlatformAgent factory method
-    # because they are already registered in the BeeaiPlatformServer
-    BeeaiPlatformServer().register(agent).serve()
+    # because they are already registered in the BeeAIPlatformServer
+    BeeAIPlatformServer().register(agent).serve()
 
 
 if __name__ == "__main__":
