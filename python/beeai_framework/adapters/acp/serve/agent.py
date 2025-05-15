@@ -12,21 +12,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import asyncio
-import os
-from collections.abc import AsyncGenerator, Awaitable, Callable
-from datetime import timedelta
-from typing import Any
+from collections.abc import AsyncGenerator, Callable
 
 import acp_sdk.models as acp_models
 import acp_sdk.server.context as acp_context
 import acp_sdk.server.types as acp_types
-import uvicorn
 from acp_sdk.server.agent import Agent as ACPBaseAgent
-from pydantic import BaseModel
 
 
-class ACPAgent(ACPBaseAgent):
+class ACPServerAgent(ACPBaseAgent):
     """A wrapper for a BeeAI agent to be used with the ACP server."""
 
     def __init__(
@@ -67,60 +61,3 @@ class ACPAgent(ACPBaseAgent):
                 value = yield await gen.asend(value)
         except StopAsyncIteration:
             pass
-
-
-class ACPServerConfig(BaseModel):
-    """Configuration for the ACPServer."""
-
-    configure_logger: bool | None = None
-    configure_telemetry: bool | None = None
-    self_registration: bool | None = False
-    run_limit: int | None = None
-    run_ttl: timedelta | None = None
-    host: str | None = None
-    port: int | None = None
-    uds: str | None = None
-    fd: int | None = None
-    loop: uvicorn.config.LoopSetupType | None = None
-    http: type[asyncio.Protocol] | uvicorn.config.HTTPProtocolType | None = None
-    ws: type[asyncio.Protocol] | uvicorn.config.WSProtocolType | None = None
-    ws_max_size: int | None = None
-    ws_max_queue: int | None = None
-    ws_ping_interval: float | None = None
-    ws_ping_timeout: float | None = None
-    ws_per_message_deflate: bool | None = None
-    lifespan: uvicorn.config.LifespanType | None = None
-    env_file: str | os.PathLike[str] | None = None
-    log_config: dict[str, Any] | str | None = None
-    log_level: str | int | None = None
-    access_log: bool | None = None
-    use_colors: bool | None = None
-    interface: uvicorn.config.InterfaceType | None = None
-    reload: bool | None = None
-    reload_dirs: list[str] | str | None = None
-    reload_delay: float | None = None
-    reload_includes: list[str] | str | None = None
-    reload_excludes: list[str] | str | None = None
-    workers: int | None = None
-    proxy_headers: bool | None = None
-    server_header: bool | None = None
-    date_header: bool | None = None
-    forwarded_allow_ips: list[str] | str | None = None
-    root_path: str | None = None
-    limit_concurrency: int | None = None
-    limit_max_requests: int | None = None
-    backlog: int | None = None
-    timeout_keep_alive: int | None = None
-    timeout_notify: int | None = None
-    timeout_graceful_shutdown: int | None = None
-    callback_notify: Callable[..., Awaitable[None]] | None = None
-    ssl_keyfile: str | os.PathLike[str] | None = None
-    ssl_certfile: str | os.PathLike[str] | None = None
-    ssl_keyfile_password: str | None = None
-    ssl_version: int | None = None
-    ssl_cert_reqs: int | None = None
-    ssl_ca_certs: str | None = None
-    ssl_ciphers: str | None = None
-    headers: list[tuple[str, str]] | None = None
-    factory: bool | None = None
-    h11_max_incomplete_event_size: int | None = None

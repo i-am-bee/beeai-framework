@@ -13,7 +13,7 @@
 # limitations under the License.
 
 
-from beeai_framework.adapters.acp.serve.agent import ACPServerConfig
+from beeai_framework.adapters.acp.serve.server import ACPServerConfig
 
 
 class BeeAIPlatformServerConfig(ACPServerConfig):

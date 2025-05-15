@@ -14,6 +14,8 @@
 
 from functools import reduce
 
+from beeai_framework.utils.strings import to_safe_word
+
 try:
     import acp_sdk.client as acp_client
     import acp_sdk.models as acp_models
@@ -46,6 +48,10 @@ class ACPAgent(BaseAgent[ACPAgentRunOutput]):
         self._memory = memory
         self._url = url
         self._name = agent_name
+
+    @property
+    def name(self) -> str:
+        return self._name
 
     def run(
         self,
@@ -123,7 +129,7 @@ class ACPAgent(BaseAgent[ACPAgentRunOutput]):
 
     def _create_emitter(self) -> Emitter:
         return Emitter.root().child(
-            namespace=["agent", "acp"],
+            namespace=["acp", "agent", to_safe_word(self._name)],
             creator=self,
             events=acp_agent_event_types,
         )
@@ -137,7 +143,7 @@ class ACPAgent(BaseAgent[ACPAgentRunOutput]):
         self._memory = memory
 
     async def clone(self) -> "ACPAgent":
-        cloned = ACPAgent(self._name, url=self._url, memory=self.memory)
+        cloned = ACPAgent(self._name, url=self._url, memory=await self.memory.clone())
         cloned.emitter = await self.emitter.clone()
         return cloned
 

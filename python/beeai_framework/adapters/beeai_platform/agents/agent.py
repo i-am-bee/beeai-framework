@@ -36,6 +36,7 @@ from beeai_framework.emitter import Emitter
 from beeai_framework.emitter.emitter import EventMeta
 from beeai_framework.memory import BaseMemory
 from beeai_framework.utils import AbortSignal
+from beeai_framework.utils.strings import to_safe_word
 
 
 class BeeAIPlatformAgent(BaseAgent[BeeAIPlatformAgentRunOutput]):
@@ -87,7 +88,7 @@ class BeeAIPlatformAgent(BaseAgent[BeeAIPlatformAgentRunOutput]):
 
     def _create_emitter(self) -> Emitter:
         return Emitter.root().child(
-            namespace=["agent", "beeai_platform"],
+            namespace=["beeai_platform", "agent", to_safe_word(self._agent._name)],
             creator=self,
             events=beeai_platform_agent_event_types,
         )
@@ -101,6 +102,6 @@ class BeeAIPlatformAgent(BaseAgent[BeeAIPlatformAgentRunOutput]):
         self._agent.memory = memory
 
     async def clone(self) -> "BeeAIPlatformAgent":
-        cloned = BeeAIPlatformAgent(self._agent._name, url=self._agent._url, memory=self._agent.memory)
+        cloned = BeeAIPlatformAgent(self._agent._name, url=self._agent._url, memory=await self._agent.memory.clone())
         cloned.emitter = await self.emitter.clone()
         return cloned

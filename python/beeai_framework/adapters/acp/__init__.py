@@ -13,7 +13,6 @@
 # limitations under the License.
 
 from beeai_framework.adapters.acp.serve._utils import acp_msg_to_framework_msg
-from beeai_framework.adapters.acp.serve.agent import ACPServerConfig
-from beeai_framework.adapters.acp.serve.server import ACPServer, to_acp_agent_metadata
+from beeai_framework.adapters.acp.serve.server import ACPServer, ACPServerConfig, to_acp_agent_metadata
 
 __all__ = ["ACPServer", "ACPServerConfig", "acp_msg_to_framework_msg", "to_acp_agent_metadata"]

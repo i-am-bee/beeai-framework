@@ -8,7 +8,7 @@ import acp_sdk.server.types as acp_types
 from pydantic import BaseModel, InstanceOf
 
 from beeai_framework.adapters.acp import ACPServer, acp_msg_to_framework_msg
-from beeai_framework.adapters.acp.serve.agent import ACPAgent
+from beeai_framework.adapters.acp.serve.agent import ACPServerAgent
 from beeai_framework.adapters.acp.serve.server import to_acp_agent_metadata
 from beeai_framework.adapters.beeai_platform.serve.server import BeeAIPlatformServerMetadata
 from beeai_framework.agents.base import BaseAgent
@@ -53,7 +53,7 @@ class EchoAgent(BaseAgent[EchoAgentRunOutput]):
 
 def main() -> None:
     # Create a custom agent factory for the EchoAgent
-    def agent_factory(agent: EchoAgent, *, metadata: BeeAIPlatformServerMetadata | None = None) -> ACPAgent:
+    def agent_factory(agent: EchoAgent, *, metadata: BeeAIPlatformServerMetadata | None = None) -> ACPServerAgent:
         """Factory method to create an ACPAgent from a EchoAgent."""
         if metadata is None:
             metadata = {}
@@ -69,7 +69,7 @@ def main() -> None:
             yield acp_models.MessagePart(content=response.message.text, role="assistant")  # type: ignore[call-arg]
 
         # Create an ACPAgent instance with the run function
-        return ACPAgent(
+        return ACPServerAgent(
             fn=run,
             name=metadata.get("name", agent.meta.name),
             description=metadata.get("description", agent.meta.description),
