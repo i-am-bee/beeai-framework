@@ -11,7 +11,7 @@ def main() -> None:
     agent = ToolCallingAgent(llm=llm, tools=[DuckDuckGoSearchTool(), OpenMeteoTool()], memory=UnconstrainedMemory())
 
     # Register the agent with the Beeai platform and run the HTTP server
-    # For the ToolCallingAgent and ReActAgent, we dont need to specify BeeaiPlatformAgent factory method
+    # For the ToolCallingAgent and ReActAgent, we dont need to specify BeeAIPlatformAgent factory method
     # because they are already registered in the BeeAIPlatformServer
     BeeAIPlatformServer().register(
         agent, name="chat_agent", description="Simple chat agent", ui={"type": "chat"}

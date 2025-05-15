@@ -15,7 +15,7 @@
 
 from mcp.server.fastmcp.server import Settings
 
-from beeai_framework.adapters.mcp.serve.server import McpServer, McpServerConfig
+from beeai_framework.adapters.mcp.serve.server import MCPServer, MCPServerConfig
 from beeai_framework.tools import tool
 from beeai_framework.tools.types import StringToolOutput
 from beeai_framework.tools.weather.openmeteo import OpenMeteoTool
@@ -31,7 +31,7 @@ def reverse_tool(word: str) -> StringToolOutput:
 
 def main() -> None:
     # create a MCP server with custom config, register ReverseTool and OpenMeteoTool to the MCP server and run it
-    McpServer(config=McpServerConfig(transport="sse", settings=Settings(port=8001))).register_many(
+    MCPServer(config=MCPServerConfig(transport="sse", settings=Settings(port=8001))).register_many(
         [reverse_tool, OpenMeteoTool()]
     ).serve()
 

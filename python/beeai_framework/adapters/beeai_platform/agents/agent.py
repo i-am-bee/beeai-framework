@@ -19,12 +19,12 @@ from beeai_framework.adapters.acp.agents.events import (
     ACPAgentUpdateEvent,
 )
 from beeai_framework.adapters.beeai_platform.agents.events import (
-    BeeaiPlatformAgentErrorEvent,
-    BeeaiPlatformAgentUpdateEvent,
+    BeeAIPlatformAgentErrorEvent,
+    BeeAIPlatformAgentUpdateEvent,
     beeai_platform_agent_event_types,
 )
 from beeai_framework.adapters.beeai_platform.agents.types import (
-    BeeaiPlatformAgentRunOutput,
+    BeeAIPlatformAgentRunOutput,
 )
 from beeai_framework.agents.base import BaseAgent
 from beeai_framework.agents.errors import AgentError
@@ -38,7 +38,7 @@ from beeai_framework.memory import BaseMemory
 from beeai_framework.utils import AbortSignal
 
 
-class BeeaiPlatformAgent(BaseAgent[BeeaiPlatformAgentRunOutput]):
+class BeeAIPlatformAgent(BaseAgent[BeeAIPlatformAgentRunOutput]):
     def __init__(self, agent_name: str, *, url: str, memory: BaseMemory) -> None:
         super().__init__()
         self._agent = ACPAgent(agent_name=agent_name, url=url, memory=memory)
@@ -48,25 +48,25 @@ class BeeaiPlatformAgent(BaseAgent[BeeaiPlatformAgentRunOutput]):
         input: str | AnyMessage | list[str] | list[AnyMessage],
         *,
         signal: AbortSignal | None = None,
-    ) -> Run[BeeaiPlatformAgentRunOutput]:
-        async def handler(context: RunContext) -> BeeaiPlatformAgentRunOutput:
+    ) -> Run[BeeAIPlatformAgentRunOutput]:
+        async def handler(context: RunContext) -> BeeAIPlatformAgentRunOutput:
             async def update_event(data: ACPAgentUpdateEvent, event: EventMeta) -> None:
                 await context.emitter.emit(
                     "update",
-                    BeeaiPlatformAgentUpdateEvent(key=data.key, value=data.value),
+                    BeeAIPlatformAgentUpdateEvent(key=data.key, value=data.value),
                 )
 
             async def error_event(data: ACPAgentErrorEvent, event: EventMeta) -> None:
                 await context.emitter.emit(
                     "error",
-                    BeeaiPlatformAgentErrorEvent(message=data.message),
+                    BeeAIPlatformAgentErrorEvent(message=data.message),
                 )
 
             response = await (
                 self._agent.run(input=input, signal=signal).on("update", update_event).on("error", error_event)
             )
 
-            return BeeaiPlatformAgentRunOutput(result=response.result, event=response.event)
+            return BeeAIPlatformAgentRunOutput(result=response.result, event=response.event)
 
         return self._to_run(
             handler,
@@ -100,7 +100,7 @@ class BeeaiPlatformAgent(BaseAgent[BeeaiPlatformAgentRunOutput]):
     def memory(self, memory: BaseMemory) -> None:
         self._agent.memory = memory
 
-    async def clone(self) -> "BeeaiPlatformAgent":
-        cloned = BeeaiPlatformAgent(self._agent._name, url=self._agent._url, memory=self._agent.memory)
+    async def clone(self) -> "BeeAIPlatformAgent":
+        cloned = BeeAIPlatformAgent(self._agent._name, url=self._agent._url, memory=self._agent.memory)
         cloned.emitter = await self.emitter.clone()
         return cloned

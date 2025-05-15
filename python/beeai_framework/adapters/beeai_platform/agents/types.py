@@ -19,6 +19,6 @@ from pydantic import BaseModel, InstanceOf
 from beeai_framework.backend.message import AnyMessage
 
 
-class BeeaiPlatformAgentRunOutput(BaseModel):
+class BeeAIPlatformAgentRunOutput(BaseModel):
     result: InstanceOf[AnyMessage]
     event: Event

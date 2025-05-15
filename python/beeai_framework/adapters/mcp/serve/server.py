@@ -36,12 +36,12 @@ from beeai_framework.serve.server import Server
 from beeai_framework.utils import ModelLike
 from beeai_framework.utils.models import to_model
 
-McpServerTool = MaybeAsync[[Any], ToolOutput]
-McpServerEntry = mcp_prompts.Prompt | mcp_resources.Resource | McpServerTool
+MCPServerTool = MaybeAsync[[Any], ToolOutput]
+MCPServerEntry = mcp_prompts.Prompt | mcp_resources.Resource | MCPServerTool
 
 
-class McpServerConfig(BaseModel):
-    """Configuration for the McpServer."""
+class MCPServerConfig(BaseModel):
+    """Configuration for the MCPServer."""
 
     transport: Literal["stdio", "sse"] = "stdio"
     name: str = "MCP Server"
@@ -49,15 +49,15 @@ class McpServerConfig(BaseModel):
     settings: mcp_server.Settings[Any] = Field(default_factory=lambda: mcp_server.Settings())
 
 
-class McpServer(
+class MCPServer(
     Server[
         Any,
-        McpServerEntry,
-        McpServerConfig,
+        MCPServerEntry,
+        MCPServerConfig,
     ],
 ):
-    def __init__(self, *, config: ModelLike[McpServerConfig] | None = None) -> None:
-        super().__init__(config=to_model(McpServerConfig, config or McpServerConfig()))
+    def __init__(self, *, config: ModelLike[MCPServerConfig] | None = None) -> None:
+        super().__init__(config=to_model(MCPServerConfig, config or MCPServerConfig()))
         self._server = mcp_server.FastMCP(
             self._config.name,
             self._config.instructions,
@@ -90,7 +90,7 @@ class McpServer(
         cls, member: Any
     ) -> Callable[
         [Any],
-        McpServerEntry,
+        MCPServerEntry,
     ]:
         return (
             cls._factories.get(Tool)  # type: ignore
@@ -109,6 +109,6 @@ def _tool_factory(
     return run
 
 
-McpServer.register_factory(Tool, _tool_factory)
-McpServer.register_factory(mcp_resources.Resource, identity)
-McpServer.register_factory(mcp_prompts.Prompt, identity)
+MCPServer.register_factory(Tool, _tool_factory)
+MCPServer.register_factory(mcp_resources.Resource, identity)
+MCPServer.register_factory(mcp_prompts.Prompt, identity)

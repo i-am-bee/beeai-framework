@@ -17,16 +17,16 @@ from typing import Any
 from pydantic import BaseModel
 
 
-class BeeaiPlatformAgentUpdateEvent(BaseModel):
+class BeeAIPlatformAgentUpdateEvent(BaseModel):
     key: str
     value: dict[str, Any]
 
 
-class BeeaiPlatformAgentErrorEvent(BaseModel):
+class BeeAIPlatformAgentErrorEvent(BaseModel):
     message: str
 
 
 beeai_platform_agent_event_types: dict[str, type] = {
-    "update": BeeaiPlatformAgentUpdateEvent,
-    "error": BeeaiPlatformAgentErrorEvent,
+    "update": BeeAIPlatformAgentUpdateEvent,
+    "error": BeeAIPlatformAgentErrorEvent,
 }
