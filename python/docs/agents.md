@@ -13,7 +13,7 @@
   - [BeeAIPlatformAgent](#beeai-platform-agent)
   - [BeeAIPlatformServer](#beeai-platform-server)
 - [Model Context Protocol (MCP) Integration](#model-context-protocol-integration)
-  - [MCPServer](#acp-server)
+  - [MCPServer](#mcp-server)
 - [Customizing Agent Behavior](#customizing-agent-behavior)
   - [1. Setting Execution Policy](#1-setting-execution-policy)
   - [2. Overriding Prompt Templates](#2-overriding-prompt-templates)
