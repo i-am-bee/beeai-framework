@@ -20,6 +20,8 @@ from collections.abc import Sequence
 from enum import StrEnum
 from typing import Any, cast
 
+from pydantic import BaseModel
+
 
 def trim_left_spaces(value: str) -> str:
     """Remove all whitespace from the left side of the string."""
@@ -57,3 +59,72 @@ def to_safe_word(phrase: str) -> str:
 
 def generate_random_string(length: int) -> str:
     return "".join(random.choices(string.ascii_uppercase + string.digits, k=length))
+
+
+class FindFirstPairResult(BaseModel):
+    start: int
+    end: int
+    pair: tuple[str, str]
+    inner: str
+    outer: str
+
+
+def find_first_pair(
+    text: str,
+    pair: tuple[str, str],
+    options: dict[str, Any] | None = None,
+) -> FindFirstPairResult | None:
+    if options is None:
+        options = {}
+
+    opening, closing = pair if pair else ("", "")
+    if not pair or not opening or not closing:
+        raise ValueError('The "pair" parameter is required and must be non-empty!')
+
+    def count_shared_start_end_letters(a: str, b: str) -> int:
+        max_overlap = min(len(a), len(b))
+        for i in range(max_overlap, 0, -1):
+            if a[:i] == b[-i:]:
+                return i
+        return 0
+
+    balance: int = 0
+    start_index: int = -1
+    allow_overlap: bool = options.get("allowOverlap", False)
+    pair_overlap: int = count_shared_start_end_letters(opening, closing) if allow_overlap else 0
+
+    is_same: bool = opening == closing
+    index: int = 0
+    text_len: int = len(text)
+
+    while index < text_len:
+        if text[index : index + len(opening)] == opening and (not is_same or balance == 0):
+            if balance == 0:
+                start_index = index
+            balance += 1
+            if not allow_overlap:
+                index += len(opening) - 1
+        elif text[index : index + len(closing)] == closing:
+            if balance > 0:
+                balance -= 1
+                if balance == 0:
+                    inner_start = start_index + len(opening)
+                    inner_end = index
+                    inner_size = inner_end - inner_start
+                    if inner_size < 0:
+                        inner_end = inner_start
+                    else:
+                        inner_end += pair_overlap
+
+                    return FindFirstPairResult(
+                        start=start_index,
+                        end=index + len(closing),
+                        pair=pair,
+                        inner=text[inner_start:inner_end],
+                        outer=text[start_index : index + len(closing)],
+                    )
+            if not allow_overlap:
+                index += len(closing) - 1
+        index += 1
+
+    return None

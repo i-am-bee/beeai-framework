@@ -121,9 +121,9 @@ class JSONSchemaModel(ABC, BaseModel):
         return model
 
 
-def update_model(target: T, *, sources: list[T | None], exclude_unset: bool = True) -> None:
+def update_model(target: T, *, sources: list[T | None | bool], exclude_unset: bool = True) -> None:
     for source in sources:
-        if not source:
+        if not isinstance(source, BaseModel):
             continue
 
         for k, v in source.model_dump(exclude_unset=exclude_unset, exclude_defaults=True).items():

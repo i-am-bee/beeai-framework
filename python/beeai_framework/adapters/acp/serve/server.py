@@ -13,13 +13,15 @@
 # limitations under the License.
 
 from collections.abc import AsyncGenerator
-from typing import Generic
+from datetime import UTC, datetime
+from typing import Any, Generic, Self
 
 import acp_sdk.models as acp_models
 import acp_sdk.server.context as acp_context
 import acp_sdk.server.server as acp_server
 import acp_sdk.server.types as acp_types
-from typing_extensions import TypeVar
+from acp_sdk import AnyModel, Author, Capability, Contributor, Dependency, Link
+from typing_extensions import TypedDict, TypeVar, Unpack, override
 
 from beeai_framework.adapters.acp.serve._utils import acp_msg_to_framework_msg
 from beeai_framework.adapters.acp.serve.agent import AcpAgent, AcpServerConfig
@@ -40,20 +42,78 @@ from beeai_framework.utils.models import to_model
 AnyAgentLike = TypeVar("AnyAgentLike", bound=AnyAgent, default=AnyAgent)
 
 
+class AcpAgentServerMetadata(TypedDict, total=False):
+    name: str
+    description: str
+    annotations: AnyModel
+    documentation: str
+    license: str
+    programming_language: str
+    natural_languages: list[str]
+    framework: str
+    capabilities: list[Capability]
+    domains: list[str]
+    tags: list[str]
+    created_at: datetime
+    updated_at: datetime
+    author: Author
+    contributors: list[Contributor]
+    links: list[Link]
+    dependencies: list[Dependency]
+    recommended_models: list[str]
+    extra: dict[str, Any]
+
+
 class AcpAgentServer(Generic[AnyAgentLike], Server[AnyAgentLike, AcpAgent, AcpServerConfig]):
     def __init__(self, *, config: ModelLike[AcpServerConfig] | None = None) -> None:
         super().__init__(config=to_model(AcpServerConfig, config or {"self_registration": False}))
+        self._metadata_by_agent: dict[AnyAgentLike, AcpAgentServerMetadata] = {}
         self._server = acp_server.Server()
 
     def serve(self) -> None:
         for member in self.members:
             factory = type(self)._factories[type(member)]
-            self._server.register(factory(member))
+            config = self._metadata_by_agent.get(member, None)
+            self._server.register(factory(member, metadata=config))  # type: ignore[call-arg]
 
         self._server.run(**self._config.model_dump(exclude_none=True))
 
+    @override
+    def register(self, input: AnyAgentLike, **metadata: Unpack[AcpAgentServerMetadata]) -> Self:
+        super().register(input)
+        if not metadata.get("programming_language"):
+            metadata["programming_language"] = "Python"
+        if not metadata.get("natural_languages"):
+            metadata["natural_languages"] = ["English"]
+        if not metadata.get("framework"):
+            metadata["framework"] = "BeeAI"
+        if not metadata.get("created_at"):
+            metadata["created_at"] = datetime.now(tz=UTC)
+        if not metadata.get("updated_at"):
+            metadata["updated_at"] = datetime.now(tz=UTC)
 
-def _react_agent_factory(agent: ReActAgent) -> AcpAgent:
+        self._metadata_by_agent[input] = metadata
+
+        return self
+
+
+def to_acp_agent_metadata(metadata: AcpAgentServerMetadata) -> acp_models.Metadata:
+    copy = metadata.copy()
+    copy.pop("name", None)
+    copy.pop("description", None)
+    extra = copy.pop("extra", {})
+
+    model = acp_models.Metadata.model_validate(copy)
+    if extra:
+        for k, v in extra.items():
+            setattr(model, k, v)
+    return model
+
+
+def _react_agent_factory(agent: ReActAgent, *, metadata: AcpAgentServerMetadata | None = None) -> AcpAgent:
+    if metadata is None:
+        metadata = {}
+
     async def run(
         input: list[acp_models.Message], context: acp_context.Context
     ) -> AsyncGenerator[acp_types.RunYield, acp_types.RunYieldResume]:
@@ -77,15 +137,19 @@ def _react_agent_factory(agent: ReActAgent) -> AcpAgent:
 
     return AcpAgent(
         fn=run,
-        name=acp_models.AgentName(agent.meta.name),
-        description=agent.meta.description,
+        name=metadata.get("name", agent.meta.name),
+        description=metadata.get("description", agent.meta.description),
+        metadata=to_acp_agent_metadata(metadata),
     )
 
 
 AcpAgentServer.register_factory(ReActAgent, _react_agent_factory)
 
 
-def _tool_calling_agent_factory(agent: ToolCallingAgent) -> AcpAgent:
+def _tool_calling_agent_factory(agent: ToolCallingAgent, *, metadata: AcpAgentServerMetadata | None = None) -> AcpAgent:
+    if metadata is None:
+        metadata = {}
+
     async def run(
         input: list[acp_models.Message], context: acp_context.Context
     ) -> AsyncGenerator[acp_types.RunYield, acp_types.RunYieldResume]:
@@ -111,8 +175,9 @@ def _tool_calling_agent_factory(agent: ToolCallingAgent) -> AcpAgent:
 
     return AcpAgent(
         fn=run,
-        name=acp_models.AgentName(agent.meta.name),
-        description=agent.meta.description,
+        name=metadata.get("name", agent.meta.name),
+        description=metadata.get("description", agent.meta.description),
+        metadata=to_acp_agent_metadata(metadata),
     )
 
 
