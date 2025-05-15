@@ -3,10 +3,16 @@
 <!-- TOC -->
 ## Table of Contents
 - [Overview](#overview)
-- [Agent abstractions](#agent-abstractions)
+- [Agent Abstractions](#agent-abstractions)
   - [ReActAgent](#react-agent)
   - [ToolCallingAgent](#tool-calling-agent)
-  - [RemoteAgent](#remote-agent)
+- [Agent Providers](#agent-providers)
+  - [ACPAgent](#acp-agent)
+  - [BeeAIPlatformAgent](#beeai-platform-agent)
+- [Integration Servers](#integration-servers)
+  - [ACPServer](#acp-server)
+  - [BeeAIPlatformServer](#beeai-platform-server)
+  - [MCPServer](#acp-server)
 - [Customizing Agent Behavior](#customizing-agent-behavior)
   - [1. Setting Execution Policy](#1-setting-execution-policy)
   - [2. Overriding Prompt Templates](#2-overriding-prompt-templates)
@@ -300,34 +306,11 @@ _Source: [examples/agents/tool_calling.py](/python/examples/agents/tool_calling.
 
 </details>
 
-### Remote Agent
+## Agent Providers
 
-RemoteAgent enables seamless integration with agents hosted on the [BeeAI platform](https://github.com/i-am-bee/beeai), allowing you to interact with and orchestrate agents built in any framework.
+### ACP Agent
 
-This agent connects to the BeeAI platform via the Model Context Protocol (MCP), providing these key capabilities:
-- **Cross-framework compatibility:** Interact with agents built in any framework hosted on the BeeAI platform
-- **Simplified integration:** Connect to specialized agents without having to implement their functionality
-- **Workflow orchestration:** Chain multiple remote agents together to create workflows
-
-Inputs are accepted in a flexible JSON format that varies based on the target agent. Common input patterns include:
-```
-# For chat-style agents
-input_data = {
-    "messages": [{"role": "user", "content": "Your query here"}],
-    "config": {"tools": ["weather", "search", "wikipedia"]}  # Optional configuration
-}
-
-# For text-based agents
-input_data = {"text": "Your query here"}
-
-# Run the agent with the appropriate input format
-response = await agent.run(input_data)
-```
-
-<details>
-<summary>▶️ Click to expand Remote Agent example</summary>
-
-<!-- embedme examples/agents/providers/acp.py -->
+ACPAgent lets you easily connect with external agents using the [Agent Communication Protocol (ACP)](https://agentcommunicationprotocol.dev/). ACP is a standard for agent-to-agent communication, allowing different AI agents to interact regardless of how they’re built. This agent works with any ACP-compliant service.
 
 ```py
 import asyncio
@@ -360,17 +343,260 @@ if __name__ == "__main__":
     except FrameworkError as e:
         traceback.print_exc()
         sys.exit(e.explain())
-
 ```
 
 _Source: [examples/agents/providers/acp.py](/python/examples/agents/providers/acp.py)_
 
-</details>
+## BeeAI Platform Agent
 
-> [!TIP]
-> Check out our [RemoteAgent tutorial](https://github.com/i-am-bee/beeai-framework/blob/main/python/docs/tutorials.md#beeai-platform-integration)
+BeeaiPlatformAgent provides specialized integration with the [BeeAI Platform](https://beeai.dev/).
 
----
+```py
+import asyncio
+import sys
+import traceback
+
+from beeai_framework.adapters.beeai_platform.agents import BeeaiPlatformAgent
+from beeai_framework.errors import FrameworkError
+from beeai_framework.memory.unconstrained_memory import UnconstrainedMemory
+from examples.helpers.io import ConsoleReader
+
+
+async def main() -> None:
+    reader = ConsoleReader()
+
+    agent = BeeaiPlatformAgent(agent_name="chat", url="http://127.0.0.1:8333/api/v1/acp/", memory=UnconstrainedMemory())
+    for prompt in reader:
+        # Run the agent and observe events
+        response = await agent.run(prompt).on(
+            "update",
+            lambda data, event: (reader.write("Agent 🤖 (debug) : ", data)),
+        )
+
+        reader.write("Agent 🤖 : ", response.result.text)
+
+
+if __name__ == "__main__":
+    try:
+        asyncio.run(main())
+    except FrameworkError as e:
+        traceback.print_exc()
+        sys.exit(e.explain())
+```
+
+_Source: [examples/agents/providers/beeai_platform.py](/python/examples/agents/providers/beeai_platform.py)_
+
+## Integration Servers
+
+### ACP Server
+
+Basic example:
+
+```py
+from beeai_framework.adapters.acp import AcpAgentServer, AcpServerConfig
+from beeai_framework.agents.tool_calling.agent import ToolCallingAgent
+from beeai_framework.agents.types import AgentMeta
+from beeai_framework.backend import ChatModel
+from beeai_framework.memory import UnconstrainedMemory
+from beeai_framework.tools.search.duckduckgo import DuckDuckGoSearchTool
+from beeai_framework.tools.weather import OpenMeteoTool
+
+
+def main() -> None:
+    llm = ChatModel.from_name("ollama:granite3.1-dense:8b")
+    agent = ToolCallingAgent(
+        llm=llm,
+        tools=[DuckDuckGoSearchTool(), OpenMeteoTool()],
+        memory=UnconstrainedMemory(),
+        # specify the agent's name and other metadata
+        meta=AgentMeta(name="my_agent", description="A simple agent", tools=[]),
+    )
+
+    # Register the agent with the ACP server and run the HTTP server
+    # For the ToolCallingAgent and ReActAgent, we dont need to specify AcpAgent factory method
+    # because they are already registered in the AcpAgentServer
+    AcpAgentServer(config=AcpServerConfig(port=8001)).register(agent).serve()
+
+
+if __name__ == "__main__":
+    main()
+```
+
+_Source: [examples/serve/acp.py](/python/examples/serve/acp.py)_
+
+Custom agent example:
+
+```py
+import sys
+import traceback
+from collections.abc import AsyncGenerator
+
+import acp_sdk.models as acp_models
+import acp_sdk.server.context as acp_context
+import acp_sdk.server.types as acp_types
+from pydantic import BaseModel, InstanceOf
+
+from beeai_framework.adapters.acp import AcpAgentServer, acp_msg_to_framework_msg
+from beeai_framework.adapters.acp.serve.agent import AcpAgent
+from beeai_framework.agents.base import BaseAgent
+from beeai_framework.agents.types import AgentMeta
+from beeai_framework.backend.message import AnyMessage, AssistantMessage, Role
+from beeai_framework.context import Run, RunContext
+from beeai_framework.emitter.emitter import Emitter
+from beeai_framework.errors import FrameworkError
+from beeai_framework.memory import UnconstrainedMemory
+from beeai_framework.memory.base_memory import BaseMemory
+
+
+class EchoAgentRunOutput(BaseModel):
+    message: InstanceOf[AnyMessage]
+
+
+# This is a simple echo agent that echoes back the last message it received.
+class EchoAgent(BaseAgent[EchoAgentRunOutput]):
+    memory: BaseMemory | None = None
+
+    def __init__(self, memory: BaseMemory) -> None:
+        super().__init__()
+        self.memory = memory
+
+    def _create_emitter(self) -> Emitter:
+        return Emitter.root().child(
+            namespace=["agent", "custom"],
+            creator=self,
+        )
+
+    def run(
+        self,
+        input: list[AnyMessage] | None = None,
+    ) -> Run[EchoAgentRunOutput]:
+        async def handler(context: RunContext) -> EchoAgentRunOutput:
+            assert self.memory is not None
+            if input:
+                await self.memory.add_many(input)
+            return EchoAgentRunOutput(message=AssistantMessage(self.memory.messages[-1].text))
+
+        return self._to_run(handler, signal=None)
+
+    @property
+    def meta(self) -> AgentMeta:
+        return AgentMeta(
+            name="EchoAgent",
+            description="Simple echo agent.",
+            tools=[],
+        )
+
+
+def main() -> None:
+    # Create a custom agent factory for the EchoAgent
+    def agent_factory(agent: EchoAgent) -> AcpAgent:
+        """Factory method to create an AcpAgent from a EchoAgent."""
+
+        async def run(
+            input: list[acp_models.Message], context: acp_context.Context
+        ) -> AsyncGenerator[acp_types.RunYield, acp_types.RunYieldResume]:
+            framework_messages = [
+                acp_msg_to_framework_msg(Role(message.parts[0].role), str(message))  # type: ignore[attr-defined]
+                for message in input
+            ]
+            response = await agent.run(framework_messages)
+            yield acp_models.MessagePart(content=response.message.text, role="assistant")  # type: ignore[call-arg]
+
+        # Create an AcpAgent instance with the run function
+        return AcpAgent(fn=run, name=agent.meta.name, description=agent.meta.description)
+
+    # Register the custom agent factory with the ACP server
+    AcpAgentServer.register_factory(EchoAgent, agent_factory)
+    # Create an instance of the EchoAgent with UnconstrainedMemory
+    agent = EchoAgent(memory=UnconstrainedMemory())
+    # Register the agent with the ACP server and run the HTTP server
+    AcpAgentServer().register(agent).serve()
+
+
+if __name__ == "__main__":
+    try:
+        main()
+    except FrameworkError as e:
+        traceback.print_exc()
+        sys.exit(e.explain())
+
+# run: beeai agent run EchoAgent "Hello"
+```
+
+_Source: [examples/serve/acp_with_custom_agent.py](/python/examples/serve/acp_with_custom_agent.py)_
+
+### BeeAI Platform Server
+
+```py
+from beeai_framework.adapters.beeai_platform.serve.server import BeeaiPlatformServer
+from beeai_framework.agents.tool_calling.agent import ToolCallingAgent
+from beeai_framework.agents.types import AgentMeta
+from beeai_framework.backend import ChatModel
+from beeai_framework.memory import UnconstrainedMemory
+from beeai_framework.tools.search.duckduckgo import DuckDuckGoSearchTool
+from beeai_framework.tools.weather import OpenMeteoTool
+
+
+def main() -> None:
+    llm = ChatModel.from_name("ollama:granite3.1-dense:8b")
+    agent = ToolCallingAgent(
+        llm=llm,
+        tools=[DuckDuckGoSearchTool(), OpenMeteoTool()],
+        memory=UnconstrainedMemory(),
+        # specify the agent's name and other metadata
+        meta=AgentMeta(name="my_agent", description="A simple agent", tools=[]),
+    )
+
+    # Register the agent with the Beeai platform and run the HTTP server
+    # For the ToolCallingAgent and ReActAgent, we dont need to specify BeeaiPlatformAgent factory method
+    # because they are already registered in the BeeaiPlatformServer
+    BeeaiPlatformServer().register(agent).serve()
+
+
+if __name__ == "__main__":
+    main()
+```
+
+_Source: [examples/serve/beeai_platform.py](/python/examples/serve/beeai_platform.py)_
+
+### MCP Server
+
+McpServer allows you to expose your tools to external systems that support the Model Context Protocol (MCP) standard, enabling seamless integration with LLM tools ecosystems.
+
+```py
+import asyncio
+import sys
+import traceback
+
+from beeai_framework.adapters.beeai_platform.agents import BeeaiPlatformAgent
+from beeai_framework.errors import FrameworkError
+from beeai_framework.memory.unconstrained_memory import UnconstrainedMemory
+from examples.helpers.io import ConsoleReader
+
+
+async def main() -> None:
+    reader = ConsoleReader()
+
+    agent = BeeaiPlatformAgent(agent_name="chat", url="http://127.0.0.1:8333/api/v1/acp/", memory=UnconstrainedMemory())
+    for prompt in reader:
+        # Run the agent and observe events
+        response = await agent.run(prompt).on(
+            "update",
+            lambda data, event: (reader.write("Agent 🤖 (debug) : ", data)),
+        )
+
+        reader.write("Agent 🤖 : ", response.result.text)
+
+
+if __name__ == "__main__":
+    try:
+        asyncio.run(main())
+    except FrameworkError as e:
+        traceback.print_exc()
+        sys.exit(e.explain())
+```
+
+_Source: [examples/agents/providers/beeai_platform.py](/python/examples/agents/providers/beeai_platform.py)_
 
 ## Customizing Agent Behavior
 
