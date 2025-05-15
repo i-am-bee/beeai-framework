@@ -311,6 +311,11 @@ _Source: [examples/agents/tool_calling.py](/python/examples/agents/tool_calling.
 
 ACPAgent lets you easily connect with external agents using the [Agent Communication Protocol (ACP)](https://agentcommunicationprotocol.dev/). ACP is a standard for agent-to-agent communication, allowing different AI agents to interact regardless of how they’re built. This agent works with any ACP-compliant service.
 
+Use ACPAgent When:
+- You're connecting to your own custom ACP server
+- You're developing a multi-agent system where agents communicate via ACP
+- You're integrating with a third-party ACP-compliant service that isn't the BeeAI Platform
+
 ```py
 import asyncio
 import sys
@@ -345,6 +350,18 @@ if __name__ == "__main__":
 ```
 
 _Source: [examples/agents/providers/acp.py](/python/examples/agents/providers/acp.py)_
+
+The availability of ACP agents depends on the server you're connecting to. You can check which agents are available by using the check_agent_exists method:
+
+```py
+try:
+    await agent.check_agent_exists()
+    print("Agent exists and is available")
+except AgentError as e:
+    print(f"Agent not available: {e.message}")
+```
+
+If you need to create your own ACP server with custom agents, BeeAI framework provides the AcpServer class.
 
 ### ACP Server
 
@@ -489,6 +506,10 @@ _Source: [examples/serve/acp_with_custom_agent.py](/python/examples/serve/acp_wi
 
 BeeaiPlatformAgent provides specialized integration with the [BeeAI Platform](https://beeai.dev/).
 
+Use BeeAIPlatformAgent When:
+- You're connecting specifically to the BeeAI Platform services.
+- You want forward compatibility for the BeeAI Platform, no matter which protocol it is based on.
+
 ```py
 import asyncio
 import sys
@@ -566,6 +587,12 @@ _Source: [examples/serve/beeai_platform.py](/python/examples/serve/beeai_platfor
 
 McpServer allows you to expose your tools to external systems that support the Model Context Protocol (MCP) standard, enabling seamless integration with LLM tools ecosystems.
 
+Key benefits
+- Fast setup with minimal configuration
+- Support for multiple transport options
+- Register multiple tools on a single server
+- Custom server settings and instructions
+
 ```py
 import asyncio
 import sys
@@ -600,6 +627,61 @@ if __name__ == "__main__":
 ```
 
 _Source: [examples/serve/mcp_tool.py](/python/examples/serve/mcp_tool.py)_
+
+The MCP adapter uses the McpServerConfig class to configure the MCP server:
+
+```py
+class McpServerConfig(BaseModel):
+    """Configuration for the McpServer."""
+    transport: Literal["stdio", "sse"] = "stdio"  # Transport protocol (stdio or server-sent events)
+    name: str = "MCP Server"                     # Name of the MCP server
+    instructions: str | None = None              # Optional instructions for the server
+    settings: mcp_server.Settings[Any] = Field(default_factory=lambda: mcp_server.Settings())
+```
+
+Transport Options
+- stdio: Uses standard input/output for communication (default)
+- sse: Uses server-sent events over HTTP
+
+Creating an MCP server is easy. You instantiate the McpServer class with your configuration, register your tools, and then call serve() to start the server:
+
+```py
+from beeai_framework.adapters.mcp import McpServer, McpServerConfig
+from beeai_framework.tools.weather import OpenMeteoTool
+
+# Create an MCP server with default configuration
+server = McpServer()
+
+# Register tools
+server.register([OpenMeteoTool()])
+
+# Start serving
+server.serve()
+```
+
+You can configure the server behavior by passing a custom configuration:
+
+```py
+from beeai_framework.adapters.mcp import McpServer
+from beeai_framework.tools.weather import OpenMeteoTool
+from beeai_framework.tools.search.wikipedia import WikipediaTool
+from beeai_framework.tools.search.duckduckgo import DuckDuckGoSearchTool
+
+def main():
+    server = McpServer()
+    server.register_many([
+        OpenMeteoTool(),
+        WikipediaTool(),
+        DuckDuckGoSearchTool()
+    ])
+    server.serve()
+
+if __name__ == "__main__":
+    main()
+```
+
+> [!Tip]
+> MCPTool lets you add MCP-compatible tools to any agent, see Tools documentation to learn more.
 
 ## Customizing Agent Behavior
 
