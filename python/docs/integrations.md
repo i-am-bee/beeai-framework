@@ -2,7 +2,6 @@
 
 <!-- TOC -->
 ## Table of Contents
-- [Overview](#overview)
 - [Agent Communication Protocol (ACP) Integration](#agent-communication-protocol-integration)
   - [ACPAgent](#acp-agent)
   - [ACPServer](#acp-server)
