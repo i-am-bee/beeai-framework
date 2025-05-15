@@ -10,7 +10,7 @@
   - [BeeAIPlatformAgent](#beeai-platform-agent)
   - [BeeAIPlatformServer](#beeai-platform-server)
 - [Model Context Protocol (MCP) Integration](#model-context-protocol-integration)
-  - [MCPServer](#acp-server)
+  - [MCPServer](#mcp-server)
 - [Examples](#examples)
 <!-- /TOC -->
 
