@@ -599,7 +599,7 @@ if __name__ == "__main__":
         sys.exit(e.explain())
 ```
 
-_Source: [examples/agents/providers/beeai_platform.py](/python/examples/agents/providers/beeai_platform.py)_
+_Source: [examples/serve/mcp_tool.py](/python/examples/serve/mcp_tool.py)_
 
 ## Customizing Agent Behavior
 
