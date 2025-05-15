@@ -5,16 +5,9 @@ license = "Apache-2.0"
 readme = "README.md"
 authors = [{ name = "IBM Corp." }]
 maintainers = [
-    { name = "Alex Bozarth", email = "ajbozart@us.ibm.com" },
-    { name = "Akihiko Kuroda", email = "akuroda@us.ibm.com" },
-    { name = "Angelo Danducci", email = "angelo.danducci.ii@ibm.com" },
-    { name = "Graham White", email = "gwhite@uk.ibm.com" },
     { name = "Michael Desmond", email = "michael.desmond@gmail.com" },
-    { name = "Nigel Jones", email = "jonesn@uk.ibm.com" },
     { name = "Lukáš Janeček", email = "xjacka@gmail.com" },
-    { name = "Prattyush Mangal", email = "prattyush.mangal@ibm.com" },
-    { name = "Tomas Dvorak", email = "toomas2d@gmail.com" },
-    { name = "Va Barbosa", email = "va@us.ibm.com" },
+    { name = "Tomas Dvorak", email = "toomas2d@gmail.com" }
 ]
 requires-python = ">=3.11,<4.0"
 
