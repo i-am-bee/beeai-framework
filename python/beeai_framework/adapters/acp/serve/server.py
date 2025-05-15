@@ -92,22 +92,22 @@ class AcpAgentServer(Generic[AnyAgentLike], Server[AnyAgentLike, AcpAgent, AcpSe
         if not metadata.get("updated_at"):
             metadata["updated_at"] = datetime.now(tz=UTC)
 
-        self._metadata_by_agent.update({input: metadata})
+        self._metadata_by_agent[input] = metadata
 
         return self
 
 
-def get_agent_metadata(metadata: AcpAgentServerMetadata) -> acp_models.Metadata:
-    meta: acp_models.Metadata = acp_models.Metadata.model_validate(metadata)
-    if hasattr(meta, "extra"):
-        for k, v in meta.extra.items():
-            setattr(meta, k, v)
-        del meta.extra
-    if hasattr(meta, "description"):
-        del meta.description
-    if hasattr(meta, "name"):
-        del meta.name
-    return meta
+def to_acp_agent_metadata(metadata: AcpAgentServerMetadata) -> acp_models.Metadata:
+    copy = metadata.copy()
+    copy.pop("name", None)
+    copy.pop("description", None)
+    extra = copy.pop("extra", {})
+
+    model = acp_models.Metadata.model_validate(copy)
+    if extra:
+        for k, v in extra.items():
+            setattr(model, k, v)
+    return model
 
 
 def _react_agent_factory(agent: ReActAgent, *, metadata: AcpAgentServerMetadata | None = None) -> AcpAgent:
@@ -139,7 +139,7 @@ def _react_agent_factory(agent: ReActAgent, *, metadata: AcpAgentServerMetadata 
         fn=run,
         name=metadata.get("name", agent.meta.name),
         description=metadata.get("description", agent.meta.description),
-        metadata=get_agent_metadata(metadata),
+        metadata=to_acp_agent_metadata(metadata),
     )
 
 
@@ -177,7 +177,7 @@ def _tool_calling_agent_factory(agent: ToolCallingAgent, *, metadata: AcpAgentSe
         fn=run,
         name=metadata.get("name", agent.meta.name),
         description=metadata.get("description", agent.meta.description),
-        metadata=get_agent_metadata(metadata),
+        metadata=to_acp_agent_metadata(metadata),
     )
 
 

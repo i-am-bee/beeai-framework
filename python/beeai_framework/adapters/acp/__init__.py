@@ -14,6 +14,6 @@
 
 from beeai_framework.adapters.acp.serve._agent import AcpServerConfig
 from beeai_framework.adapters.acp.serve._utils import acp_msg_to_framework_msg
-from beeai_framework.adapters.acp.serve.server import AcpAgentServer
+from beeai_framework.adapters.acp.serve.server import AcpAgentServer, to_acp_agent_metadata
 
-__all__ = ["AcpAgentServer", "AcpServerConfig", "acp_msg_to_framework_msg"]
+__all__ = ["AcpAgentServer", "AcpServerConfig", "acp_msg_to_framework_msg", "to_acp_agent_metadata"]
