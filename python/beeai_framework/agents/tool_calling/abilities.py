@@ -226,7 +226,7 @@ class ConditionalAbility(Generic[TAbilityInput], Ability[TAbilityInput]):
         self.source = source
         self.name = self.source.name
         self.description = self.source.description
-        if self.priority is not None:
+        if priority is not None:
             self.priority = priority
 
         def extract_name(target: list[ConditionalAbilityInput] | ConditionalAbilityInput | None) -> set[str]:

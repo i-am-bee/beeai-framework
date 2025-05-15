@@ -2,7 +2,7 @@ import asyncio
 from typing import Any
 
 from beeai_framework.agents.tool_calling import ToolCallingAgent
-from beeai_framework.agents.tool_calling.abilities import ConditionalAbility, ReasoningAbility
+from beeai_framework.agents.tool_calling.abilities import ConditionalAbility
 from beeai_framework.backend import ChatModel
 from beeai_framework.memory import UnconstrainedMemory
 from beeai_framework.tools import tool
@@ -17,8 +17,8 @@ def current_user() -> dict[str, Any]:
 
 
 @tool
-def send_me_notification(message: str) -> None:
-    """Sends me a notification about the completion"""
+def send_email(content: str) -> None:
+    """Sends a summary e-mail to the author"""
 
     return None
 
@@ -27,11 +27,10 @@ async def main() -> None:
     agent = ToolCallingAgent(
         llm=ChatModel.from_name("ollama:qwen2.5:1.5b"),
         memory=UnconstrainedMemory(),
-        tools=[],
         abilities=[
-            ConditionalAbility(ReasoningAbility()),
-            ConditionalAbility(OpenMeteoTool(), force_at_step=0),
-            ConditionalAbility(send_me_notification, min_invocations=1, force_after=["send_me_notification"]),
+            ConditionalAbility(current_user, force_at_step=0, max_invocations=1),
+            ConditionalAbility(OpenMeteoTool(), min_invocations=1, can_be_used_in_row=False),
+            ConditionalAbility(send_email, only_after="OpenMeteoTool"),
         ],
     )
 

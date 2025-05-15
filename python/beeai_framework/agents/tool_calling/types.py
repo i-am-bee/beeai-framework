@@ -114,6 +114,7 @@ class Ability(ABC, Generic[TAbilityInput]):
     disabled: bool
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
+        super().__init__(*args, **kwargs)
         self.priority = 10
         self.disabled = False
 
