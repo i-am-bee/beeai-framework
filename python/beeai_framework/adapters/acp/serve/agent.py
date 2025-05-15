@@ -22,11 +22,11 @@ import acp_sdk.models as acp_models
 import acp_sdk.server.context as acp_context
 import acp_sdk.server.types as acp_types
 import uvicorn
-from acp_sdk.server.agent import Agent as AcpBaseAgent
+from acp_sdk.server.agent import Agent as ACPBaseAgent
 from pydantic import BaseModel
 
 
-class AcpAgent(AcpBaseAgent):
+class ACPAgent(ACPBaseAgent):
     """A wrapper for a BeeAI agent to be used with the ACP server."""
 
     def __init__(
@@ -69,8 +69,8 @@ class AcpAgent(AcpBaseAgent):
             pass
 
 
-class AcpServerConfig(BaseModel):
-    """Configuration for the AcpServer."""
+class ACPServerConfig(BaseModel):
+    """Configuration for the ACPServer."""
 
     configure_logger: bool | None = None
     configure_telemetry: bool | None = None

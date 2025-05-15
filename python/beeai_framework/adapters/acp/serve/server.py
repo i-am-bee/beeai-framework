@@ -24,7 +24,7 @@ from acp_sdk import AnyModel, Author, Capability, Contributor, Dependency, Link
 from typing_extensions import TypedDict, TypeVar, Unpack, override
 
 from beeai_framework.adapters.acp.serve._utils import acp_msg_to_framework_msg
-from beeai_framework.adapters.acp.serve.agent import AcpAgent, AcpServerConfig
+from beeai_framework.adapters.acp.serve.agent import ACPAgent, ACPServerConfig
 from beeai_framework.agents import AnyAgent
 from beeai_framework.agents.react.agent import ReActAgent
 from beeai_framework.agents.react.events import ReActAgentUpdateEvent
@@ -42,7 +42,7 @@ from beeai_framework.utils.models import to_model
 AnyAgentLike = TypeVar("AnyAgentLike", bound=AnyAgent, default=AnyAgent)
 
 
-class AcpAgentServerMetadata(TypedDict, total=False):
+class ACPServerMetadata(TypedDict, total=False):
     name: str
     description: str
     annotations: AnyModel
@@ -64,10 +64,10 @@ class AcpAgentServerMetadata(TypedDict, total=False):
     extra: dict[str, Any]
 
 
-class AcpAgentServer(Generic[AnyAgentLike], Server[AnyAgentLike, AcpAgent, AcpServerConfig]):
-    def __init__(self, *, config: ModelLike[AcpServerConfig] | None = None) -> None:
-        super().__init__(config=to_model(AcpServerConfig, config or {"self_registration": False}))
-        self._metadata_by_agent: dict[AnyAgentLike, AcpAgentServerMetadata] = {}
+class ACPServer(Generic[AnyAgentLike], Server[AnyAgentLike, ACPAgent, ACPServerConfig]):
+    def __init__(self, *, config: ModelLike[ACPServerConfig] | None = None) -> None:
+        super().__init__(config=to_model(ACPServerConfig, config or {"self_registration": False}))
+        self._metadata_by_agent: dict[AnyAgentLike, ACPServerMetadata] = {}
         self._server = acp_server.Server()
 
     def serve(self) -> None:
@@ -79,7 +79,7 @@ class AcpAgentServer(Generic[AnyAgentLike], Server[AnyAgentLike, AcpAgent, AcpSe
         self._server.run(**self._config.model_dump(exclude_none=True))
 
     @override
-    def register(self, input: AnyAgentLike, **metadata: Unpack[AcpAgentServerMetadata]) -> Self:
+    def register(self, input: AnyAgentLike, **metadata: Unpack[ACPServerMetadata]) -> Self:
         super().register(input)
         if not metadata.get("programming_language"):
             metadata["programming_language"] = "Python"
@@ -97,7 +97,7 @@ class AcpAgentServer(Generic[AnyAgentLike], Server[AnyAgentLike, AcpAgent, AcpSe
         return self
 
 
-def to_acp_agent_metadata(metadata: AcpAgentServerMetadata) -> acp_models.Metadata:
+def to_acp_agent_metadata(metadata: ACPServerMetadata) -> acp_models.Metadata:
     copy = metadata.copy()
     copy.pop("name", None)
     copy.pop("description", None)
@@ -110,7 +110,7 @@ def to_acp_agent_metadata(metadata: AcpAgentServerMetadata) -> acp_models.Metada
     return model
 
 
-def _react_agent_factory(agent: ReActAgent, *, metadata: AcpAgentServerMetadata | None = None) -> AcpAgent:
+def _react_agent_factory(agent: ReActAgent, *, metadata: ACPServerMetadata | None = None) -> ACPAgent:
     if metadata is None:
         metadata = {}
 
@@ -135,7 +135,7 @@ def _react_agent_factory(agent: ReActAgent, *, metadata: AcpAgentServerMetadata 
                         case "final_answer":
                             yield acp_models.MessagePart(content=update, role="assistant")  # type: ignore[call-arg]
 
-    return AcpAgent(
+    return ACPAgent(
         fn=run,
         name=metadata.get("name", agent.meta.name),
         description=metadata.get("description", agent.meta.description),
@@ -143,10 +143,10 @@ def _react_agent_factory(agent: ReActAgent, *, metadata: AcpAgentServerMetadata 
     )
 
 
-AcpAgentServer.register_factory(ReActAgent, _react_agent_factory)
+ACPServer.register_factory(ReActAgent, _react_agent_factory)
 
 
-def _tool_calling_agent_factory(agent: ToolCallingAgent, *, metadata: AcpAgentServerMetadata | None = None) -> AcpAgent:
+def _tool_calling_agent_factory(agent: ToolCallingAgent, *, metadata: ACPServerMetadata | None = None) -> ACPAgent:
     if metadata is None:
         metadata = {}
 
@@ -173,7 +173,7 @@ def _tool_calling_agent_factory(agent: ToolCallingAgent, *, metadata: AcpAgentSe
             if isinstance(data, ToolCallingAgentSuccessEvent) and data.state.result is not None:
                 yield acp_models.MessagePart(content=data.state.result.text, role="assistant")  # type: ignore[call-arg]
 
-    return AcpAgent(
+    return ACPAgent(
         fn=run,
         name=metadata.get("name", agent.meta.name),
         description=metadata.get("description", agent.meta.description),
@@ -181,4 +181,4 @@ def _tool_calling_agent_factory(agent: ToolCallingAgent, *, metadata: AcpAgentSe
     )
 
 
-AcpAgentServer.register_factory(ToolCallingAgent, _tool_calling_agent_factory)
+ACPServer.register_factory(ToolCallingAgent, _tool_calling_agent_factory)
