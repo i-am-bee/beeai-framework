@@ -14,10 +14,15 @@
 
 from collections.abc import AsyncGenerator, Callable
 
-import acp_sdk.models as acp_models
-import acp_sdk.server.context as acp_context
-import acp_sdk.server.types as acp_types
-from acp_sdk.server.agent import Agent as ACPBaseAgent
+try:
+    import acp_sdk.models as acp_models
+    import acp_sdk.server.context as acp_context
+    import acp_sdk.server.types as acp_types
+    from acp_sdk.server.agent import Agent as ACPBaseAgent
+except ModuleNotFoundError as e:
+    raise ModuleNotFoundError(
+        "Optional module [acp] not found.\nRun 'pip install \"beeai-framework[acp]\"' to install."
+    ) from e
 
 
 class ACPServerAgent(ACPBaseAgent):

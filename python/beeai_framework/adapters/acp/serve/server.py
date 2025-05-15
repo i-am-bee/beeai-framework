@@ -18,12 +18,18 @@ from collections.abc import AsyncGenerator, Awaitable, Callable
 from datetime import UTC, datetime, timedelta
 from typing import Any, Generic, Self
 
-import acp_sdk.models as acp_models
-import acp_sdk.server.context as acp_context
-import acp_sdk.server.server as acp_server
-import acp_sdk.server.types as acp_types
+try:
+    import acp_sdk.models as acp_models
+    import acp_sdk.server.context as acp_context
+    import acp_sdk.server.server as acp_server
+    import acp_sdk.server.types as acp_types
+    from acp_sdk import AnyModel, Author, Capability, Contributor, Dependency, Link
+except ModuleNotFoundError as e:
+    raise ModuleNotFoundError(
+        "Optional module [acp] not found.\nRun 'pip install \"beeai-framework[acp]\"' to install."
+    ) from e
+
 import uvicorn
-from acp_sdk import AnyModel, Author, Capability, Contributor, Dependency, Link
 from pydantic import BaseModel
 from typing_extensions import TypedDict, TypeVar, Unpack, override
 

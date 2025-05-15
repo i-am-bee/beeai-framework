@@ -72,6 +72,7 @@ duckduckgo = ["duckduckgo-search"]
 wikipedia = ["wikipedia-api"]
 mcp = ["mcp"]
 acp = ["acp-sdk", "uvicorn"]
+beeai-platform = ["acp-sdk", "uvicorn"]
 
 
 [tool.mypy]

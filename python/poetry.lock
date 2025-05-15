@@ -7,7 +7,7 @@ description = "Agent Communication Protocol SDK"
 optional = true
 python-versions = "<4.0,>=3.11"
 groups = ["main"]
-markers = "extra == \"acp\""
+markers = "extra == \"acp\" or extra == \"beeai-platform\""
 files = [
     {file = "acp_sdk-0.8.4-py3-none-any.whl", hash = "sha256:3badf4ac8af1ffc177a5937274f9ee45f28b4073b7e1076e3d7f6ba21be03465"},
     {file = "acp_sdk-0.8.4.tar.gz", hash = "sha256:c035c9099810c319729f9531ddd20c7a50c759e04c2cf344fb27a6b056a87f7a"},
@@ -224,7 +224,7 @@ description = "ASGI specs, helper code, and adapters"
 optional = true
 python-versions = ">=3.8"
 groups = ["main"]
-markers = "extra == \"acp\""
+markers = "extra == \"acp\" or extra == \"beeai-platform\""
 files = [
     {file = "asgiref-3.8.1-py3-none-any.whl", hash = "sha256:3e1e3ecc849832fe52ccf2cb6686b7a55f82bb1d6aee72a58826471390335e47"},
     {file = "asgiref-3.8.1.tar.gz", hash = "sha256:c343bd80a0bec947a9860adb4c432ffa7db769836c64238fc34bdc3fec84d590"},
@@ -562,7 +562,7 @@ files = [
     {file = "colorama-0.4.6-py2.py3-none-any.whl", hash = "sha256:4f1d9991f5acc0ca119f9d443620b77f9d6b33703e51011c16baf57afb285fc6"},
     {file = "colorama-0.4.6.tar.gz", hash = "sha256:08695f5cb7ed6e0531a20572697297273c47b8cae5a63ffc6d6ed5c201be6e44"},
 ]
-markers = {main = "extra == \"acp\" and sys_platform == \"win32\" or platform_system == \"Windows\""}
+markers = {main = "(extra == \"acp\" or extra == \"beeai-platform\") and sys_platform == \"win32\" or platform_system == \"Windows\""}
 
 [[package]]
 name = "commitizen"
@@ -700,7 +700,7 @@ description = "Python @deprecated decorator to deprecate old python classes, fun
 optional = true
 python-versions = "!=3.0.*,!=3.1.*,!=3.2.*,!=3.3.*,>=2.7"
 groups = ["main"]
-markers = "extra == \"acp\""
+markers = "extra == \"acp\" or extra == \"beeai-platform\""
 files = [
     {file = "Deprecated-1.2.18-py2.py3-none-any.whl", hash = "sha256:bd5011788200372a32418f888e326a09ff80d0214bd961147cfed01b5c018eec"},
     {file = "deprecated-1.2.18.tar.gz", hash = "sha256:422b6f6d859da6f2ef57857761bfb392480502a64c3028ca9bbe86085d72115d"},
@@ -759,7 +759,7 @@ description = "DNS toolkit"
 optional = true
 python-versions = ">=3.9"
 groups = ["main"]
-markers = "extra == \"acp\""
+markers = "extra == \"acp\" or extra == \"beeai-platform\""
 files = [
     {file = "dnspython-2.7.0-py3-none-any.whl", hash = "sha256:b4c34b7d10b51bcc3a5071e7b8dee77939f1e878477eeecc965e9835f63c6c86"},
     {file = "dnspython-2.7.0.tar.gz", hash = "sha256:ce9c432eda0dc91cf618a5cedf1a4e142651196bbcd2c80e89ed5a907e5cfaf1"},
@@ -802,7 +802,7 @@ description = "A robust email address syntax and deliverability validation libra
 optional = true
 python-versions = ">=3.8"
 groups = ["main"]
-markers = "extra == \"acp\""
+markers = "extra == \"acp\" or extra == \"beeai-platform\""
 files = [
     {file = "email_validator-2.2.0-py3-none-any.whl", hash = "sha256:561977c2d73ce3611850a06fa56b414621e0c8faa9d66f2611407d87465da631"},
     {file = "email_validator-2.2.0.tar.gz", hash = "sha256:cb690f344c617a714f22e66ae771445a1ceb46821152df8e165c5f9a364582b7"},
@@ -834,7 +834,7 @@ description = "FastAPI framework, high performance, easy to learn, fast to code,
 optional = true
 python-versions = ">=3.8"
 groups = ["main"]
-markers = "extra == \"acp\""
+markers = "extra == \"acp\" or extra == \"beeai-platform\""
 files = [
     {file = "fastapi-0.115.12-py3-none-any.whl", hash = "sha256:e94613d6c05e27be7ffebdd6ea5f388112e5e430c8f7d6494a9d1d88d43e814d"},
     {file = "fastapi-0.115.12.tar.gz", hash = "sha256:1e2c2a2646905f9e83d32f04a3f86aff4a286669c6c950ca95b5fd68c2602681"},
@@ -862,7 +862,7 @@ description = "Run and manage FastAPI apps from the command line with FastAPI CL
 optional = true
 python-versions = ">=3.8"
 groups = ["main"]
-markers = "extra == \"acp\""
+markers = "extra == \"acp\" or extra == \"beeai-platform\""
 files = [
     {file = "fastapi_cli-0.0.7-py3-none-any.whl", hash = "sha256:d549368ff584b2804336c61f192d86ddea080c11255f375959627911944804f4"},
     {file = "fastapi_cli-0.0.7.tar.gz", hash = "sha256:02b3b65956f526412515907a0793c9094abd4bfb5457b389f645b0ea6ba3605e"},
@@ -1069,7 +1069,7 @@ description = "Common protobufs used in Google APIs"
 optional = true
 python-versions = ">=3.7"
 groups = ["main"]
-markers = "extra == \"acp\""
+markers = "extra == \"acp\" or extra == \"beeai-platform\""
 files = [
     {file = "googleapis_common_protos-1.70.0-py3-none-any.whl", hash = "sha256:b8bfcca8c25a2bb253e0e0b0adaf8c00773e5e6af6fd92397576680b807e0fd8"},
     {file = "googleapis_common_protos-1.70.0.tar.gz", hash = "sha256:0e1b44e0ea153e6594f9f394fef15193a68aaaea2d843f83e2742717ca753257"},
@@ -1192,7 +1192,7 @@ description = "A collection of framework independent HTTP protocol utils."
 optional = true
 python-versions = ">=3.8.0"
 groups = ["main"]
-markers = "extra == \"acp\""
+markers = "extra == \"acp\" or extra == \"beeai-platform\""
 files = [
     {file = "httptools-0.6.4-cp310-cp310-macosx_10_9_universal2.whl", hash = "sha256:3c73ce323711a6ffb0d247dcd5a550b8babf0f757e86a52558fe5b86d6fefcc0"},
     {file = "httptools-0.6.4-cp310-cp310-macosx_11_0_arm64.whl", hash = "sha256:345c288418f0944a6fe67be8e6afa9262b18c7626c3ef3c28adc5eabc06a68da"},
@@ -1274,7 +1274,7 @@ description = "Consume Server-Sent Event (SSE) messages with HTTPX."
 optional = true
 python-versions = ">=3.8"
 groups = ["main"]
-markers = "extra == \"acp\" or extra == \"langchain\" or extra == \"mcp\""
+markers = "extra == \"acp\" or extra == \"beeai-platform\" or extra == \"langchain\" or extra == \"mcp\""
 files = [
     {file = "httpx-sse-0.4.0.tar.gz", hash = "sha256:1e81a3a3070ce322add1d3529ed42eb5f70817f45ed6ec915ab753f961139721"},
     {file = "httpx_sse-0.4.0-py3-none-any.whl", hash = "sha256:f329af6eae57eaa2bdfd962b42524764af68075ea87370a2de920af5341e318f"},
@@ -1390,7 +1390,7 @@ description = "Mixed sync-async queue to interoperate between asyncio tasks and 
 optional = true
 python-versions = ">=3.9"
 groups = ["main"]
-markers = "extra == \"acp\""
+markers = "extra == \"acp\" or extra == \"beeai-platform\""
 files = [
     {file = "janus-2.0.0-py3-none-any.whl", hash = "sha256:7e6449d34eab04cd016befbd7d8c0d8acaaaab67cb59e076a69149f9031745f9"},
     {file = "janus-2.0.0.tar.gz", hash = "sha256:0970f38e0e725400496c834a368a67ee551dc3b5ad0a257e132f5b46f2e77770"},
@@ -2037,7 +2037,7 @@ description = "Python port of markdown-it. Markdown parsing, done right!"
 optional = true
 python-versions = ">=3.8"
 groups = ["main"]
-markers = "extra == \"acp\""
+markers = "extra == \"acp\" or extra == \"beeai-platform\""
 files = [
     {file = "markdown-it-py-3.0.0.tar.gz", hash = "sha256:e3f60a94fa066dc52ec76661e37c851cb232d92f9886b15cb560aaada2df8feb"},
     {file = "markdown_it_py-3.0.0-py3-none-any.whl", hash = "sha256:355216845c60bd96232cd8d8c40e8f9765cc86f46880e43a8fd22dc1a1a8cab1"},
@@ -2195,7 +2195,7 @@ description = "Markdown URL utilities"
 optional = true
 python-versions = ">=3.7"
 groups = ["main"]
-markers = "extra == \"acp\""
+markers = "extra == \"acp\" or extra == \"beeai-platform\""
 files = [
     {file = "mdurl-0.1.2-py3-none-any.whl", hash = "sha256:84008a41e51615a49fc9966191ff91509e3c40b939176e643fd50a5c2196b8f8"},
     {file = "mdurl-0.1.2.tar.gz", hash = "sha256:bb413d29f5eea38f31dd4754dd7377d4465116fb207585f97bf925588687c1ba"},
@@ -2535,7 +2535,7 @@ description = "OpenTelemetry Python API"
 optional = true
 python-versions = ">=3.8"
 groups = ["main"]
-markers = "extra == \"acp\""
+markers = "extra == \"acp\" or extra == \"beeai-platform\""
 files = [
     {file = "opentelemetry_api-1.31.1-py3-none-any.whl", hash = "sha256:1511a3f470c9c8a32eeea68d4ea37835880c0eed09dd1a0187acc8b1301da0a1"},
     {file = "opentelemetry_api-1.31.1.tar.gz", hash = "sha256:137ad4b64215f02b3000a0292e077641c8611aab636414632a9b9068593b7e91"},
@@ -2552,7 +2552,7 @@ description = "OpenTelemetry Protobuf encoding"
 optional = true
 python-versions = ">=3.8"
 groups = ["main"]
-markers = "extra == \"acp\""
+markers = "extra == \"acp\" or extra == \"beeai-platform\""
 files = [
     {file = "opentelemetry_exporter_otlp_proto_common-1.31.1-py3-none-any.whl", hash = "sha256:7cadf89dbab12e217a33c5d757e67c76dd20ce173f8203e7370c4996f2e9efd8"},
     {file = "opentelemetry_exporter_otlp_proto_common-1.31.1.tar.gz", hash = "sha256:c748e224c01f13073a2205397ba0e415dcd3be9a0f95101ba4aace5fc730e0da"},
@@ -2568,7 +2568,7 @@ description = "OpenTelemetry Collector Protobuf over HTTP Exporter"
 optional = true
 python-versions = ">=3.8"
 groups = ["main"]
-markers = "extra == \"acp\""
+markers = "extra == \"acp\" or extra == \"beeai-platform\""
 files = [
     {file = "opentelemetry_exporter_otlp_proto_http-1.31.1-py3-none-any.whl", hash = "sha256:5dee1f051f096b13d99706a050c39b08e3f395905f29088bfe59e54218bd1cf4"},
     {file = "opentelemetry_exporter_otlp_proto_http-1.31.1.tar.gz", hash = "sha256:723bd90eb12cfb9ae24598641cb0c92ca5ba9f1762103902f6ffee3341ba048e"},
@@ -2590,7 +2590,7 @@ description = "Instrumentation Tools & Auto Instrumentation for OpenTelemetry Py
 optional = true
 python-versions = ">=3.8"
 groups = ["main"]
-markers = "extra == \"acp\""
+markers = "extra == \"acp\" or extra == \"beeai-platform\""
 files = [
     {file = "opentelemetry_instrumentation-0.52b1-py3-none-any.whl", hash = "sha256:8c0059c4379d77bbd8015c8d8476020efe873c123047ec069bb335e4b8717477"},
     {file = "opentelemetry_instrumentation-0.52b1.tar.gz", hash = "sha256:739f3bfadbbeec04dd59297479e15660a53df93c131d907bb61052e3d3c1406f"},
@@ -2609,7 +2609,7 @@ description = "ASGI instrumentation for OpenTelemetry"
 optional = true
 python-versions = ">=3.8"
 groups = ["main"]
-markers = "extra == \"acp\""
+markers = "extra == \"acp\" or extra == \"beeai-platform\""
 files = [
     {file = "opentelemetry_instrumentation_asgi-0.52b1-py3-none-any.whl", hash = "sha256:f7179f477ed665ba21871972f979f21e8534edb971232e11920c8a22f4759236"},
     {file = "opentelemetry_instrumentation_asgi-0.52b1.tar.gz", hash = "sha256:a6dbce9cb5b2c2f45ce4817ad21f44c67fd328358ad3ab911eb46f0be67f82ec"},
@@ -2632,7 +2632,7 @@ description = "OpenTelemetry FastAPI Instrumentation"
 optional = true
 python-versions = ">=3.8"
 groups = ["main"]
-markers = "extra == \"acp\""
+markers = "extra == \"acp\" or extra == \"beeai-platform\""
 files = [
     {file = "opentelemetry_instrumentation_fastapi-0.52b1-py3-none-any.whl", hash = "sha256:73c8804f053c5eb2fd2c948218bff9561f1ef65e89db326a6ab0b5bf829969f4"},
     {file = "opentelemetry_instrumentation_fastapi-0.52b1.tar.gz", hash = "sha256:d26ab15dc49e041301d5c2571605b8f5c3a6ee4a85b60940338f56c120221e98"},
@@ -2655,7 +2655,7 @@ description = "OpenTelemetry HTTPX Instrumentation"
 optional = true
 python-versions = ">=3.8"
 groups = ["main"]
-markers = "extra == \"acp\""
+markers = "extra == \"acp\" or extra == \"beeai-platform\""
 files = [
     {file = "opentelemetry_instrumentation_httpx-0.52b1-py3-none-any.whl", hash = "sha256:8476c3133dc28c7192e17f0f7a28170d2410b125551b7c450dd76eb7192cb89f"},
     {file = "opentelemetry_instrumentation_httpx-0.52b1.tar.gz", hash = "sha256:b32252f21fff7f1bd88cc42716dcf948b3f9e8fc689d3d5d479222491f443c8d"},
@@ -2678,7 +2678,7 @@ description = "OpenTelemetry Python Proto"
 optional = true
 python-versions = ">=3.8"
 groups = ["main"]
-markers = "extra == \"acp\""
+markers = "extra == \"acp\" or extra == \"beeai-platform\""
 files = [
     {file = "opentelemetry_proto-1.31.1-py3-none-any.whl", hash = "sha256:1398ffc6d850c2f1549ce355744e574c8cd7c1dba3eea900d630d52c41d07178"},
     {file = "opentelemetry_proto-1.31.1.tar.gz", hash = "sha256:d93e9c2b444e63d1064fb50ae035bcb09e5822274f1683886970d2734208e790"},
@@ -2694,7 +2694,7 @@ description = "OpenTelemetry Python SDK"
 optional = true
 python-versions = ">=3.8"
 groups = ["main"]
-markers = "extra == \"acp\""
+markers = "extra == \"acp\" or extra == \"beeai-platform\""
 files = [
     {file = "opentelemetry_sdk-1.31.1-py3-none-any.whl", hash = "sha256:882d021321f223e37afaca7b4e06c1d8bbc013f9e17ff48a7aa017460a8e7dae"},
     {file = "opentelemetry_sdk-1.31.1.tar.gz", hash = "sha256:c95f61e74b60769f8ff01ec6ffd3d29684743404603df34b20aa16a49dc8d903"},
@@ -2712,7 +2712,7 @@ description = "OpenTelemetry Semantic Conventions"
 optional = true
 python-versions = ">=3.8"
 groups = ["main"]
-markers = "extra == \"acp\""
+markers = "extra == \"acp\" or extra == \"beeai-platform\""
 files = [
     {file = "opentelemetry_semantic_conventions-0.52b1-py3-none-any.whl", hash = "sha256:72b42db327e29ca8bb1b91e8082514ddf3bbf33f32ec088feb09526ade4bc77e"},
     {file = "opentelemetry_semantic_conventions-0.52b1.tar.gz", hash = "sha256:7b3d226ecf7523c27499758a58b542b48a0ac8d12be03c0488ff8ec60c5bae5d"},
@@ -2729,7 +2729,7 @@ description = "Web util for OpenTelemetry"
 optional = true
 python-versions = ">=3.8"
 groups = ["main"]
-markers = "extra == \"acp\""
+markers = "extra == \"acp\" or extra == \"beeai-platform\""
 files = [
     {file = "opentelemetry_util_http-0.52b1-py3-none-any.whl", hash = "sha256:6a6ab6bfa23fef96f4995233e874f67602adf9d224895981b4ab9d4dde23de78"},
     {file = "opentelemetry_util_http-0.52b1.tar.gz", hash = "sha256:c03c8c23f1b75fadf548faece7ead3aecd50761c5593a2b2831b48730eee5b31"},
@@ -3095,7 +3095,7 @@ description = ""
 optional = true
 python-versions = ">=3.8"
 groups = ["main"]
-markers = "extra == \"acp\""
+markers = "extra == \"acp\" or extra == \"beeai-platform\""
 files = [
     {file = "protobuf-5.29.4-cp310-abi3-win32.whl", hash = "sha256:13eb236f8eb9ec34e63fc8b1d6efd2777d062fa6aaa68268fb67cf77f6839ad7"},
     {file = "protobuf-5.29.4-cp310-abi3-win_amd64.whl", hash = "sha256:bcefcdf3976233f8a502d265eb65ea740c989bacc6c30a58290ed0e519eb4b8d"},
@@ -3288,7 +3288,7 @@ description = "Pygments is a syntax highlighting package written in Python."
 optional = true
 python-versions = ">=3.8"
 groups = ["main"]
-markers = "extra == \"acp\""
+markers = "extra == \"acp\" or extra == \"beeai-platform\""
 files = [
     {file = "pygments-2.19.1-py3-none-any.whl", hash = "sha256:9ea1544ad55cecf4b8242fab6dd35a93bbce657034b0611ee383099054ab6d8c"},
     {file = "pygments-2.19.1.tar.gz", hash = "sha256:61c16d2a8576dc0649d9f39e089b5f02bcd27fba10d8fb4dcc28173f7a45151f"},
@@ -3461,7 +3461,7 @@ description = "A streaming multipart parser for Python"
 optional = true
 python-versions = ">=3.8"
 groups = ["main"]
-markers = "extra == \"acp\""
+markers = "extra == \"acp\" or extra == \"beeai-platform\""
 files = [
     {file = "python_multipart-0.0.20-py3-none-any.whl", hash = "sha256:8a62d3a8335e06589fe01f2a3e178cdcc632f3fbe0d492ad9ee0ec35aab1f104"},
     {file = "python_multipart-0.0.20.tar.gz", hash = "sha256:8dd0cab45b8e23064ae09147625994d090fa46f5b0d1e13af944c331a7fa9d13"},
@@ -3738,7 +3738,7 @@ description = "Render rich text, tables, progress bars, syntax highlighting, mar
 optional = true
 python-versions = ">=3.8.0"
 groups = ["main"]
-markers = "extra == \"acp\""
+markers = "extra == \"acp\" or extra == \"beeai-platform\""
 files = [
     {file = "rich-14.0.0-py3-none-any.whl", hash = "sha256:1c9491e1951aac09caffd42f448ee3d04e58923ffe14993f6e83068dc395d7e0"},
     {file = "rich-14.0.0.tar.gz", hash = "sha256:82f1bc23a6a21ebca4ae0c45af9bdbc492ed20231dcb63f297d6d1021a9d5725"},
@@ -3758,7 +3758,7 @@ description = "Rich toolkit for building command-line applications"
 optional = true
 python-versions = ">=3.8"
 groups = ["main"]
-markers = "extra == \"acp\""
+markers = "extra == \"acp\" or extra == \"beeai-platform\""
 files = [
     {file = "rich_toolkit-0.14.3-py3-none-any.whl", hash = "sha256:2ec72dcdf1bbb09b6a9286a4eddcd4d43369da3b22fe3f28e5a92143618b8ac6"},
     {file = "rich_toolkit-0.14.3.tar.gz", hash = "sha256:b72a342e52253b912681b027e94226e2deea616494420eec0b09a7219a72a0a5"},
@@ -3946,7 +3946,7 @@ description = "Tool to Detect Surrounding Shell"
 optional = true
 python-versions = ">=3.7"
 groups = ["main"]
-markers = "extra == \"acp\""
+markers = "extra == \"acp\" or extra == \"beeai-platform\""
 files = [
     {file = "shellingham-1.5.4-py2.py3-none-any.whl", hash = "sha256:7ecfff8f2fd72616f7481040475a65b2bf8af90a56c89140852d1120324e8686"},
     {file = "shellingham-1.5.4.tar.gz", hash = "sha256:8dbca0739d487e5bd35ab3ca4b36e11c4078f3a234bfce294b0a0291363404de"},
@@ -4101,7 +4101,7 @@ description = "The little ASGI library that shines."
 optional = true
 python-versions = ">=3.9"
 groups = ["main"]
-markers = "extra == \"acp\" or extra == \"mcp\""
+markers = "extra == \"acp\" or extra == \"beeai-platform\" or extra == \"mcp\""
 files = [
     {file = "starlette-0.46.2-py3-none-any.whl", hash = "sha256:595633ce89f8ffa71a015caed34a5b2dc1c0cdb3f0f1fbd1e69339cf2abeec35"},
     {file = "starlette-0.46.2.tar.gz", hash = "sha256:7f7361f34eed179294600af672f565727419830b54b7b084efe44bb82d2fccd5"},
@@ -4309,7 +4309,7 @@ description = "Typer, build great CLIs. Easy to code. Based on Python type hints
 optional = true
 python-versions = ">=3.7"
 groups = ["main"]
-markers = "extra == \"acp\""
+markers = "extra == \"acp\" or extra == \"beeai-platform\""
 files = [
     {file = "typer-0.15.2-py3-none-any.whl", hash = "sha256:46a499c6107d645a9c13f7ee46c5d5096cae6f5fc57dd11eccbbb9ae3e44ddfc"},
     {file = "typer-0.15.2.tar.gz", hash = "sha256:ab2fab47533a813c49fe1f16b1a370fd5819099c00b119e0633df65f22144ba5"},
@@ -4453,7 +4453,7 @@ description = "The lightning-fast ASGI server."
 optional = true
 python-versions = ">=3.9"
 groups = ["main"]
-markers = "extra == \"acp\" or extra == \"mcp\""
+markers = "extra == \"acp\" or extra == \"beeai-platform\" or extra == \"mcp\""
 files = [
     {file = "uvicorn-0.34.2-py3-none-any.whl", hash = "sha256:deb49af569084536d269fe0a6d67e3754f104cf03aba7c11c40f01aadf33c403"},
     {file = "uvicorn-0.34.2.tar.gz", hash = "sha256:0e929828f6186353a80b58ea719861d2629d766293b6d19baf086ba31d4f3328"},
@@ -4480,7 +4480,7 @@ description = "Fast implementation of asyncio event loop on top of libuv"
 optional = true
 python-versions = ">=3.8.0"
 groups = ["main"]
-markers = "sys_platform != \"win32\" and sys_platform != \"cygwin\" and platform_python_implementation != \"PyPy\" and extra == \"acp\""
+markers = "sys_platform != \"win32\" and sys_platform != \"cygwin\" and platform_python_implementation != \"PyPy\" and (extra == \"acp\" or extra == \"beeai-platform\")"
 files = [
     {file = "uvloop-0.21.0-cp310-cp310-macosx_10_9_universal2.whl", hash = "sha256:ec7e6b09a6fdded42403182ab6b832b71f4edaf7f37a9a0e371a01db5f0cb45f"},
     {file = "uvloop-0.21.0-cp310-cp310-macosx_10_9_x86_64.whl", hash = "sha256:196274f2adb9689a289ad7d65700d37df0c0930fd8e4e743fa4834e850d7719d"},
@@ -4554,7 +4554,7 @@ description = "Simple, modern and high performance file watching and code reload
 optional = true
 python-versions = ">=3.9"
 groups = ["main"]
-markers = "extra == \"acp\""
+markers = "extra == \"acp\" or extra == \"beeai-platform\""
 files = [
     {file = "watchfiles-1.0.5-cp310-cp310-macosx_10_12_x86_64.whl", hash = "sha256:5c40fe7dd9e5f81e0847b1ea64e1f5dd79dd61afbedb57759df06767ac719b40"},
     {file = "watchfiles-1.0.5-cp310-cp310-macosx_11_0_arm64.whl", hash = "sha256:8c0db396e6003d99bb2d7232c957b5f0b5634bbd1b24e381a5afcc880f7373fb"},
@@ -4651,7 +4651,7 @@ description = "An implementation of the WebSocket Protocol (RFC 6455 & 7692)"
 optional = true
 python-versions = ">=3.9"
 groups = ["main"]
-markers = "extra == \"acp\""
+markers = "extra == \"acp\" or extra == \"beeai-platform\""
 files = [
     {file = "websockets-15.0.1-cp310-cp310-macosx_10_9_universal2.whl", hash = "sha256:d63efaa0cd96cf0c5fe4d581521d9fa87744540d4bc999ae6e08595a1014b45b"},
     {file = "websockets-15.0.1-cp310-cp310-macosx_10_9_x86_64.whl", hash = "sha256:ac60e3b188ec7574cb761b08d50fcedf9d77f1530352db4eef1707fe9dee7205"},
@@ -4746,7 +4746,7 @@ description = "Module for decorators, wrappers and monkey patching."
 optional = true
 python-versions = ">=3.8"
 groups = ["main"]
-markers = "extra == \"acp\""
+markers = "extra == \"acp\" or extra == \"beeai-platform\""
 files = [
     {file = "wrapt-1.17.2-cp310-cp310-macosx_10_9_universal2.whl", hash = "sha256:3d57c572081fed831ad2d26fd430d565b76aa277ed1d30ff4d40670b1c0dd984"},
     {file = "wrapt-1.17.2-cp310-cp310-macosx_10_9_x86_64.whl", hash = "sha256:b5e251054542ae57ac7f3fba5d10bfff615b6c2fb09abeb37d2f1463f841ae22"},
@@ -5218,6 +5218,7 @@ cffi = ["cffi (>=1.11)"]
 
 [extras]
 acp = ["acp-sdk", "uvicorn"]
+beeai-platform = ["acp-sdk", "uvicorn"]
 duckduckgo = ["duckduckgo-search"]
 huggingface = []
 langchain = ["langchain-community", "langchain-core", "langchain-ollama", "langgraph"]
@@ -5228,4 +5229,4 @@ wikipedia = ["wikipedia-api"]
 [metadata]
 lock-version = "2.1"
 python-versions = ">= 3.11,<4.0"
-content-hash = "cb14ad7fb1e2a9ced2fe0ed60f11293489285ac4db2dc87f9f5f44d7bd8ce034"
+content-hash = "309bf0da6fa352e1c78adf96fd6b4ae7b7f360f7d4dca8a88d150d19466e2e16"

@@ -13,11 +13,17 @@
 # limitations under the License.
 
 
-from beeai_framework.adapters.acp.agents.agent import ACPAgent
-from beeai_framework.adapters.acp.agents.events import (
-    ACPAgentErrorEvent,
-    ACPAgentUpdateEvent,
-)
+try:
+    from beeai_framework.adapters.acp.agents.agent import ACPAgent
+    from beeai_framework.adapters.acp.agents.events import (
+        ACPAgentErrorEvent,
+        ACPAgentUpdateEvent,
+    )
+except ModuleNotFoundError as e:
+    raise ModuleNotFoundError(
+        "Optional module [beeai-platform] not found.\nRun 'pip install \"beeai-framework[beeai-platform]\"' to install."
+    ) from e
+
 from beeai_framework.adapters.beeai_platform.agents.events import (
     BeeAIPlatformAgentErrorEvent,
     BeeAIPlatformAgentUpdateEvent,
