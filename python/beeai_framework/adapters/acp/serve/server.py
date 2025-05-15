@@ -14,14 +14,14 @@
 
 from collections.abc import AsyncGenerator
 from datetime import UTC, datetime
-from typing import Any, Generic, Self
+from typing import Generic, Self, TypedDict
 
 import acp_sdk.models as acp_models
 import acp_sdk.server.context as acp_context
 import acp_sdk.server.server as acp_server
 import acp_sdk.server.types as acp_types
 from acp_sdk import AnyModel, Author, Capability, Contributor, Dependency, Link
-from typing_extensions import TypeVar, override
+from typing_extensions import TypeVar, Unpack, override
 
 from beeai_framework.adapters.acp.serve._agent import AcpAgent, AcpServerConfig
 from beeai_framework.adapters.acp.serve._utils import acp_msg_to_framework_msg
@@ -42,75 +42,61 @@ from beeai_framework.utils.models import to_model
 AnyAgentLike = TypeVar("AnyAgentLike", bound=AnyAgent, default=AnyAgent)
 
 
+class AcpAgentServerMetadata(TypedDict, total=False):
+    name: str
+    description: str
+    annotations: AnyModel
+    documentation: str
+    license: str
+    programming_language: str
+    natural_languages: list[str]
+    framework: str
+    capabilities: list[Capability]
+    domains: list[str]
+    tags: list[str]
+    created_at: datetime
+    updated_at: datetime
+    author: Author
+    contributors: list[Contributor]
+    links: list[Link]
+    dependencies: list[Dependency]
+    recommended_models: list[str]
+
+
 class AcpAgentServer(Generic[AnyAgentLike], Server[AnyAgentLike, AcpAgent, AcpServerConfig]):
     def __init__(self, *, config: ModelLike[AcpServerConfig] | None = None) -> None:
         super().__init__(config=to_model(AcpServerConfig, config or {}))
-        self._agent_configs: dict[AnyAgentLike, dict[str, Any]] = {}
+        self._metadata_by_agent: dict[AnyAgentLike, AcpAgentServerMetadata] = {}
         self._server = acp_server.Server()
 
     def serve(self) -> None:
         for member in self.members:
             factory = type(self)._factories[type(member)]
-            config = self._agent_configs.get(member, None)
+            config = self._metadata_by_agent.get(member, None)
             self._server.register(factory(member, metadata=config))  # type: ignore[call-arg]
 
         self._server.run(**self._config.model_dump(exclude_unset=True))
 
     @override
-    def register(
-        self,
-        input: AnyAgentLike,
-        *,
-        name: str | None = None,
-        description: str | None = None,
-        annotations: AnyModel | None = None,
-        documentation: str | None = None,
-        license: str | None = None,
-        programming_language: str | None = None,
-        natural_languages: list[str] | None = None,
-        framework: str | None = None,
-        capabilities: list[Capability] | None = None,
-        domains: list[str] | None = None,
-        tags: list[str] | None = None,
-        created_at: datetime | None = None,
-        updated_at: datetime | None = None,
-        author: Author | None = None,
-        contributors: list[Contributor] | None = None,
-        links: list[Link] | None = None,
-        dependencies: list[Dependency] | None = None,
-        recommended_models: list[str] | None = None,
-        **kwargs: dict[str, Any],
-    ) -> Self:
-        config = {
-            "name": name,
-            "description": description,
-            "annotations": annotations,
-            "documentation": documentation,
-            "license": license,
-            "programming_language": programming_language or "Python",
-            "natural_languages": natural_languages or ["English"],
-            "framework": framework or "Beeai_framework",
-            "capabilities": capabilities,
-            "domains": domains,
-            "tags": tags,
-            "created_at": created_at or datetime.now(tz=UTC),
-            "updated_at": updated_at or datetime.now(tz=UTC),
-            "author": author,
-            "contributors": contributors,
-            "links": links,
-            "dependencies": dependencies,
-            "recommended_models": recommended_models,
-            **kwargs,
-        }
-
-        config = {k: v for k, v in config.items() if v is not None}
+    def register(self, input: AnyAgentLike, **metadata: Unpack[AcpAgentServerMetadata]) -> Self:
         super().register(input)
-        self._agent_configs.update({input: config})
+        if not metadata.get("programming_language"):
+            metadata["programming_language"] = "Python"
+        if not metadata.get("natural_languages"):
+            metadata["natural_languages"] = ["English"]
+        if not metadata.get("framework"):
+            metadata["framework"] = "Beeai_framework"
+        if not metadata.get("created_at"):
+            metadata["created_at"] = datetime.now(tz=UTC)
+        if not metadata.get("updated_at"):
+            metadata["updated_at"] = datetime.now(tz=UTC)
+
+        self._metadata_by_agent.update({input: metadata})
 
         return self
 
 
-def _react_agent_factory(agent: ReActAgent, *, metadata: dict[str, Any] | None = None) -> AcpAgent:
+def _react_agent_factory(agent: ReActAgent, *, metadata: AcpAgentServerMetadata | None = None) -> AcpAgent:
     if metadata is None:
         metadata = {}
 
@@ -137,16 +123,16 @@ def _react_agent_factory(agent: ReActAgent, *, metadata: dict[str, Any] | None =
 
     return AcpAgent(
         fn=run,
-        name=acp_models.AgentName(metadata.get("name", agent.meta.name)),
+        name=metadata.get("name", agent.meta.name),
         description=metadata.get("description", agent.meta.description),
-        metadata=acp_models.Metadata(**metadata),
+        metadata=acp_models.Metadata.model_validate(metadata),
     )
 
 
 AcpAgentServer.register_factory(ReActAgent, _react_agent_factory)
 
 
-def _tool_calling_agent_factory(agent: ToolCallingAgent, *, metadata: dict[str, Any] | None = None) -> AcpAgent:
+def _tool_calling_agent_factory(agent: ToolCallingAgent, *, metadata: AcpAgentServerMetadata | None = None) -> AcpAgent:
     if metadata is None:
         metadata = {}
 
@@ -175,9 +161,9 @@ def _tool_calling_agent_factory(agent: ToolCallingAgent, *, metadata: dict[str, 
 
     return AcpAgent(
         fn=run,
-        name=acp_models.AgentName(metadata.get("name", agent.meta.name)),
+        name=metadata.get("name", agent.meta.name),
         description=metadata.get("description", agent.meta.description),
-        metadata=acp_models.Metadata(**metadata),
+        metadata=acp_models.Metadata.model_validate(metadata),
     )
 
 
