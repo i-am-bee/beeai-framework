@@ -16,7 +16,8 @@ Backend is an umbrella module that encapsulates a unified way to work with the f
 BeeAI framework's backend is designed with a provider-based architecture, allowing you to switch between different AI service providers while maintaining a consistent API.
 
 <Note>
-Location within the framework: [beeai_framework/backend](https://github.com/i-am-bee/beeai-framework/tree/python/beeai_framework/backend).
+Explore the implementation in the [Python](https://github.com/i-am-bee/beeai-framework/tree/main/python/beeai_framework/backend) or
+[TypeScript](https://github.com/i-am-bee/beeai-framework/tree/main/typescript/src/backend).
 </Note>
 
 ---
@@ -25,20 +26,22 @@ Location within the framework: [beeai_framework/backend](https://github.com/i-am
 
 The following table depicts supported providers. Each provider requires specific configuration through environment variables. Ensure all required variables are set before initializing a provider.
 
-| Name             | Chat | Embedding | Dependency               | Environment Variables                                                                                                                                                 |
-| ---------------- | :--: | :-------: | ------------------------ | :-------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `Ollama`         |  ✅  |          | `ollama-ai-provider`     | OLLAMA_CHAT_MODEL<br/>OLLAMA_BASE_URL                                                                                                       |
-| `OpenAI`         |  ✅  |          | `openai`     | OPENAI_CHAT_MODEL<br/>OPENAI_API_BASE<br/>OPENAI_API_KEY<br/>OPENAI_ORGANIZATION<br/>OPENAI_API_HEADERS                                                                                                       |
-| `Watsonx`        |  ✅  |          | `@ibm-cloud/watsonx-ai`  | WATSONX_CHAT_MODEL<br/>WATSONX_API_KEY<br/>WATSONX_PROJECT_ID<br/>WATSONX_SPACE_ID<br/>WATSONX_TOKEN<br/>WATSONX_ZENAPIKEY<br/>WATSONX_URL<br/>WATSONX_REGION |
-| `Groq`           |  ✅  |         | | GROQ_CHAT_MODEL<br/>GROQ_API_KEY |
-| `Amazon Bedrock` |  ✅  |         |  `boto3`| AWS_CHAT_MODEL<br/>AWS_ACCESS_KEY_ID<br/>AWS_SECRET_ACCESS_KEY<br/>AWS_REGION<br/>AWS_API_HEADERS |
-| `Google Vertex`  |  ✅  |         |  | GOOGLE_VERTEX_CHAT_MODEL<br/>GOOGLE_VERTEX_PROJECT<br/>GOOGLE_APPLICATION_CREDENTIALS<br/>GOOGLE_APPLICATION_CREDENTIALS_JSON<br/>GOOGLE_CREDENTIALS<br/>GOOGLE_VERTEX_API_HEADERS |
-| `Azure OpenAI`   |  ✅  |         |  | AZURE_OPENAI_CHAT_MODEL<br/>AZURE_OPENAI_API_KEY<br/>AZURE_OPENAI_API_BASE<br/>AZURE_OPENAI_API_VERSION<br/>AZURE_AD_TOKEN<br/>AZURE_API_TYPE<br/>AZURE_API_HEADERS |
-| `Anthropic`      |  ✅  |         |  | ANTHROPIC_CHAT_MODEL<br/>ANTHROPIC_API_KEY<br/>ANTHROPIC_API_HEADERS |
-| `xAI`           |  ✅  |         | | XAI_CHAT_MODEL<br/>XAI_API_KEY |
+| Name           | Chat | Embedding | Dependency           | Environment Variables                                                                                                                                                 |
+| :------------- | :--- | :-------- | :------------------- | :-------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Ollama         |  ✅  |          | ollama-ai-provider    | OLLAMA_CHAT_MODEL<br/>OLLAMA_BASE_URL                                                                                                       |
+| OpenAI         |  ✅  |          | openai                | OPENAI_CHAT_MODEL<br/>OPENAI_API_BASE<br/>OPENAI_API_KEY<br/>OPENAI_ORGANIZATION<br/>OPENAI_API_HEADERS                                                                                                       |
+| Watsonx        |  ✅  |          | @ibm-cloud/watsonx-ai | WATSONX_CHAT_MODEL<br/>WATSONX_API_KEY<br/>WATSONX_PROJECT_ID<br/>WATSONX_SPACE_ID<br/>WATSONX_TOKEN<br/>WATSONX_ZENAPIKEY<br/>WATSONX_URL<br/>WATSONX_REGION |
+| Groq           |  ✅  |          |                       | GROQ_CHAT_MODEL<br/>GROQ_API_KEY |
+| Amazon Bedrock |  ✅  |          | boto3                 | AWS_CHAT_MODEL<br/>AWS_ACCESS_KEY_ID<br/>AWS_SECRET_ACCESS_KEY<br/>AWS_REGION<br/>AWS_API_HEADERS |
+| Google Vertex  |  ✅  |          |  | GOOGLE_VERTEX_CHAT_MODEL<br/>GOOGLE_VERTEX_PROJECT<br/>GOOGLE_APPLICATION_CREDENTIALS<br/>GOOGLE_APPLICATION_CREDENTIALS_JSON<br/>GOOGLE_CREDENTIALS<br/>GOOGLE_VERTEX_API_HEADERS |
+| Azure OpenAI   |  ✅  |          |  | AZURE_OPENAI_CHAT_MODEL<br/>AZURE_OPENAI_API_KEY<br/>AZURE_OPENAI_API_BASE<br/>AZURE_OPENAI_API_VERSION<br/>AZURE_AD_TOKEN<br/>AZURE_API_TYPE<br/>AZURE_API_HEADERS |
+| Anthropic      |  ✅  |          |  | ANTHROPIC_CHAT_MODEL<br/>ANTHROPIC_API_KEY<br/>ANTHROPIC_API_HEADERS |
+| xAI            |  ✅  |          |  | XAI_CHAT_MODEL<br/>XAI_API_KEY |
 
 <Tip>
-If you don't see your provider raise an issue [here](https://github.com/i-am-bee/beeai-framework/discussions). Meanwhile, you can use [Ollama adapter](https://github.com/i-am-bee/beeai-framework/blob/main/python/examples/backend/providers/ollama.py).
+If you don't see your provider raise an issue [here](https://github.com/i-am-bee/beeai-framework/issues).
+Meanwhile, you can use the Ollama adapter in [Python](https://github.com/i-am-bee/beeai-framework/blob/main/python/examples/backend/providers/ollama.py).
+or [TypeScript](https://github.com/i-am-bee/beeai-framework/blob/main/typescript/examples/backend/providers/ollama.ts).
 </Tip>
 
 ---
@@ -47,9 +50,10 @@ If you don't see your provider raise an issue [here](https://github.com/i-am-bee
 
 The `Backend` class serves as a central entry point to access models from your chosen provider.
 
-{/* <!-- embedme python/examples/backend/providers/watsonx.py --> */}
+<CodeGroup>
 
-```py
+{/* <!-- embedme python/examples/backend/providers/watsonx.py --> */}
+```py Python [expandable]
 import asyncio
 import json
 import sys
@@ -203,12 +207,163 @@ if __name__ == "__main__":
 
 ```
 
-_Source: [python/examples/backend/providers/watsonx.py](https://github.com/i-am-bee/beeai-framework/blob/main/python/examples/backend/providers/watsonx.py)_
+{/* <!-- embedme typescript/examples/backend/providers/watsonx.ts --> */}
+```ts TypeScript [expandable]
+import "dotenv/config.js";
+import { CustomMessage, ToolMessage, UserMessage } from "beeai-framework/backend/message";
+import { WatsonxChatModel } from "beeai-framework/adapters/watsonx/backend/chat";
+import { ChatModel } from "beeai-framework/backend/chat";
+import { AbortError } from "beeai-framework/errors";
+import { z } from "zod";
+import { OpenMeteoTool } from "beeai-framework/tools/weather/openMeteo";
 
-All providers examples can be found in [examples/backend/providers](https://github.com/i-am-bee/beeai-framework/tree/main/python/examples/backend/providers).
+const llm = new WatsonxChatModel(
+  "meta-llama/llama-3-1-70b-instruct",
+  // {
+  //   apiKey: "WATSONX_API_KEY",
+  //   baseUrl: "WATSONX_BASE_URL",
+  //   projectId: "WATSONX_PROJECT_ID",
+  // }
+);
+
+llm.config({
+  parameters: {
+    temperature: 0,
+    topP: 1,
+  },
+});
+
+async function watsonxFromName() {
+  const watsonxLLM = await ChatModel.fromName("watsonx:meta-llama/llama-3-1-8b-instruct");
+  const response = await watsonxLLM.create({
+    messages: [new UserMessage("what states are part of New England?")],
+  });
+  console.info(response.getTextContent());
+}
+
+async function watsonxCustomMessage() {
+  const watsonxLLM = await ChatModel.fromName("watsonx:ibm/granite-3-3-8b-instruct");
+  const response = await watsonxLLM.create({
+    messages: [
+      new UserMessage(
+        "A farmer has 10 cows, 5 chickens, and 2 horses. If we count all the animals' legs together, how many legs are there in total?",
+      ),
+      new CustomMessage("control", "thinking"),
+    ],
+  });
+  console.info(response.getTextContent());
+}
+
+async function watsonxSync() {
+  const response = await llm.create({
+    messages: [new UserMessage("what is the capital of Massachusetts?")],
+  });
+  console.info(response.getTextContent());
+}
+
+async function watsonxStream() {
+  const response = await llm.create({
+    messages: [new UserMessage("How many islands make up the country of Cape Verde?")],
+    stream: true,
+  });
+  console.info(response.getTextContent());
+}
+
+async function watsonxAbort() {
+  try {
+    const response = await llm.create({
+      messages: [new UserMessage("What is the smallest of the Cape Verde islands?")],
+      stream: true,
+      abortSignal: AbortSignal.timeout(5 * 1000),
+    });
+    console.info(response.getTextContent());
+  } catch (err) {
+    if (err instanceof AbortError) {
+      console.error("Aborted", { err });
+    }
+  }
+}
+
+async function watsonxStructure() {
+  const response = await llm.createStructure({
+    schema: z.object({
+      answer: z.string({ description: "your final answer" }),
+    }),
+    messages: [new UserMessage("How many islands make up the country of Cape Verde?")],
+  });
+  console.info(response.object);
+}
+
+async function watsonxToolCalling() {
+  const currentDate = new Date().toISOString();
+  const userMessage = new UserMessage(`What is the current weather (${currentDate}) in Boston?`);
+  const weatherTool = new OpenMeteoTool({ retryOptions: { maxRetries: 3 } });
+  const response = await llm.create({
+    messages: [userMessage],
+    tools: [weatherTool],
+    toolChoice: weatherTool,
+  });
+  const toolCallMsg = response.getToolCalls()[0];
+  console.debug(JSON.stringify(toolCallMsg));
+  const toolResponse = await weatherTool.run(toolCallMsg.args as any);
+  const toolResponseMsg = new ToolMessage({
+    type: "tool-result",
+    result: toolResponse.getTextContent(),
+    toolName: toolCallMsg.toolName,
+    toolCallId: toolCallMsg.toolCallId,
+  });
+  console.info(toolResponseMsg.toPlain());
+  const finalResponse = await llm.create({
+    messages: [userMessage, ...response.messages, toolResponseMsg],
+    tools: [],
+  });
+  console.info(finalResponse.getTextContent());
+}
+
+async function watsonxDebug() {
+  // Log every request
+  llm.emitter.match("*", (value, event) =>
+    console.debug(
+      `Time: ${event.createdAt.toISOString()}`,
+      `Event: ${event.name}`,
+      `Data: ${value}`,
+    ),
+  );
+
+  const response = await llm.create({
+    messages: [new UserMessage("Hello world!")],
+  });
+  console.info(response.messages[0].toPlain());
+}
+
+console.info("watsonxFromName".padStart(25, "*"));
+await watsonxFromName();
+console.info("watsonxCustomMessage".padStart(25, "*"));
+await watsonxCustomMessage();
+console.info("watsonxSync".padStart(25, "*"));
+await watsonxSync();
+console.info("watsonxStream".padStart(25, "*"));
+await watsonxStream();
+console.info("watsonxAbort".padStart(25, "*"));
+await watsonxAbort();
+console.info("watsonxStructure".padStart(25, "*"));
+await watsonxStructure();
+console.info("watsonxToolCalling".padStart(25, "*"));
+await watsonxToolCalling();
+console.info("watsonxDebug".padStart(25, "*"));
+await watsonxDebug();
+
+```
+
+</CodeGroup>
+
+<Note>
+Explore the providers examples in [Python](https://github.com/i-am-bee/beeai-framework/tree/main/python/beeai_framework/backend) or
+[TypeScript](https://github.com/i-am-bee/beeai-framework/tree/main/typescript/src/backend).
+</Note>
 
 <Tip>
-See the [events documentation](/python/modules/events.mdx) for more information on standard emitter events.
+See the [events documentation](/modules/events) for more information on standard emitter events.
 </Tip>
 
 ---
@@ -219,27 +374,39 @@ The `ChatModel` class represents a Chat Large Language Model and provides method
 
 **Method 1: Using the generic factory method**
 
-```python
+<CodeGroup>
+```py Python [expandable]
 from beeai_framework.backend.chat import ChatModel
 
 ollama_chat_model = ChatModel.from_name("ollama:llama3.1")
 ```
 
+```ts TypeScript [expandable]
+Coming soon
+```
+</CodeGroup>
+
 **Method 2: Creating a specific provider model directly**
 
-```python
+<CodeGroup>
+```py Python [expandable]
 from beeai_framework.adapters.ollama.backend.chat import OllamaChatModel
 
 ollama_chat_model = OllamaChatModel("llama3.1")
 ```
+```ts Typescript [expandable]
+Coming soon
+```
+</CodeGroup>
 
 ### Chat model configuration
 
 You can configure various parameters for your chat model:
 
-{/* <!-- embedme python/examples/backend/chat.py --> */}
+<CodeGroup>
 
-```python
+{/* <!-- embedme python/examples/backend/chat.py --> */}
+```python Python
 import asyncio
 import sys
 import traceback
@@ -282,13 +449,35 @@ if __name__ == "__main__":
 
 ```
 
-_Source: [python/examples/backend/chat.py](https://github.com/i-am-bee/beeai-framework/blob/main/python/examples/backend/chat.py)_
+{/* <!-- embedme typescript/examples/backend/chat.ts --> */}
+```ts TypeScript [expandable]
+import "dotenv/config.js";
+import { createConsoleReader } from "examples/helpers/io.js";
+import { UserMessage } from "beeai-framework/backend/message";
+import { OllamaChatModel } from "beeai-framework/adapters/ollama/backend/chat";
+
+const llm = new OllamaChatModel("llama3.1");
+
+const reader = createConsoleReader();
+
+for await (const { prompt } of reader) {
+  const response = await llm.create({
+    messages: [new UserMessage(prompt)],
+  });
+  reader.write(`LLM 🤖 (txt) : `, response.getTextContent());
+  reader.write(`LLM 🤖 (raw) : `, JSON.stringify(response.messages));
+}
+
+```
+</CodeGroup>
 
 ### Text generation
 
 The most basic usage is to generate text responses:
 
-```python
+<CodeGroup>
+
+```py Python [expandable]
 from beeai_framework.adapters.ollama.backend.chat import OllamaChatModel
 from beeai_framework.backend.message import UserMessage
 
@@ -300,6 +489,12 @@ response = await ollama_chat_model.create(
 print(response.get_text_content())
 ```
 
+```ts TypeScript [expandable]
+Coming soon
+```
+</CodeGroup>
+
+
 <Note>
 Execution parameters (those passed to `model.create({...})`) are superior to ones defined via `config`.
 </Note>
@@ -308,7 +503,8 @@ Execution parameters (those passed to `model.create({...})`) are superior to one
 
 For applications requiring real-time responses:
 
-```python
+<CodeGroup>
+```py Python [expandable]
 from beeai_framework.adapters.ollama.backend.chat import OllamaChatModel
 from beeai_framework.backend.message import UserMessage
 
@@ -317,13 +513,19 @@ user_message = UserMessage("How many islands make up the country of Cape Verde?"
 response = await llm.create(messages=[user_message], stream=True)
 ```
 
+```ts TypeScript [expandable]
+Coming soon
+```
+</CodeGroup>
+
 ### Structured generation
 
 Generate structured data according to a schema:
 
-{/* <!-- embedme python/examples/backend/structured.py --> */}
+<CodeGroup>
 
-```py
+{/* <!-- embedme python/examples/backend/structured.py --> */}
+```py Python [expandable]
 import asyncio
 import json
 import sys
@@ -372,15 +574,41 @@ if __name__ == "__main__":
 
 ```
 
-_Source: /examples/backend/structured.py_
+{/* <!-- embedme typescript/examples/backend/structured.ts --> */}
+```ts TypeScript [expandable]
+import { ChatModel, UserMessage } from "beeai-framework/backend/core";
+import { z } from "zod";
+
+const model = await ChatModel.fromName("ollama:llama3.1");
+const response = await model.createStructure({
+  schema: z.union([
+    z.object({
+      firstName: z.string().min(1),
+      lastName: z.string().min(1),
+      address: z.string(),
+      age: z.number().int().min(1),
+      hobby: z.string(),
+    }),
+    z.object({
+      error: z.string(),
+    }),
+  ]),
+  messages: [new UserMessage("Generate a profile of a citizen of Europe.")],
+});
+console.log(response.object);
+
+```
+
+</CodeGroup>
 
 ### Tool calling
 
 Integrate external tools with your AI model:
 
-{/* <!-- embedme python/examples/backend/tool_calling.py --> */}
+<CodeGroup>
 
-```py
+{/* <!-- embedme python/examples/backend/tool_calling.py --> */}
+```py Python [expandable]
 import asyncio
 import json
 import re
@@ -455,7 +683,11 @@ if __name__ == "__main__":
 
 ```
 
-_Source: /examples/backend/tool_calling.py_
+```ts TypeScript [expandable]
+Coming soon
+```
+
+</CodeGroup>
 
 ---
 
@@ -514,4 +746,11 @@ Common issues and their solutions:
 
 ## Examples
 
-- All backend examples can be found in [here](https://github.com/i-am-bee/beeai-framework/tree/main/python/examples/backend).
+<CardGroup cols={2}>
+  <Card title="Python" icon="python" href="https://github.com/i-am-bee/beeai-framework/tree/main/python/examples/backend">
+    Explore reference backend implementations in Python
+  </Card>
+  <Card title="TypeScript" icon="js" href="https://github.com/i-am-bee/beeai-framework/tree/main/typescript/examples/backend">
+    Explore reference backend implementations in TypeScript
+  </Card>
+</CardGroup>

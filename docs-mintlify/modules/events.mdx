@@ -1,7 +1,7 @@
 ---
 title: "Events"
 description: ""
-icon: "event"
+icon: "bell"
 ---
 
 ## Overview
@@ -14,7 +14,7 @@ All events in the framework follow a consistent pattern:
 * Events can be observed by attaching listeners to the appropriate emitter
 
 <Note>
-Location within the framework: [beeai_framework/emitter](https://github.com/i-am-bee/beeai-framework/tree/python/beeai_framework/emitter) and [events.md](/python/modules/events.mdx).
+Explore the implementation in the [Python](https://github.com/i-am-bee/beeai-framework/tree/main/python/beeai_framework/emitter) or [TypeScript](https://github.com/i-am-bee/beeai-framework/tree/main/typescript/src/emitter).
 </Note>
 
 ---
@@ -27,7 +27,7 @@ The following events can be observed calling `ReActAgent.run`.
 
 
 | Event                         | Data Type                | Description                                                |
-|-------------------------------|--------------------------|------------------------------------------------------------|
+| :---------------------------- | :----------------------- | :--------------------------------------------------------- |
 | `start`                       | `ReActAgentStartEvent`   | Triggered when the agent begins execution.                 |
 | `error`                       | `ReActAgentErrorEvent`   | Triggered when the agent encounters an error.              |
 | `retry`                       | `ReActAgentRetryEvent`   | Triggered when the agent is retrying an operation.         |
@@ -37,48 +37,40 @@ The following events can be observed calling `ReActAgent.run`.
 | `tool_success`                | `ReActAgentToolEvent`    | Triggered when a tool operation completes successfully.    |
 | `tool_error`                  | `ReActAgentToolEvent`    | Triggered when a tool operation fails.                     |
 
-_Source: [python/beeai_framework/agents/react/events.py](https://github.com/i-am-bee/beeai-framework/blob/main/python/beeai_framework/agents/react/events.py)_
-
 
 ### ChatModel events
 
 The following events can be observed when calling `ChatModel.create` or `ChatModel.create_structure`.
 
 | Event        | Data Type                | Description                                                                |
-|--------------|--------------------------|----------------------------------------------------------------------------|
+| :----------- | :----------------------- | :------------------------------------------------------------------------- |
 | `new_token`  | `ChatModelNewTokenEvent` | Triggered when a new token is generated during streaming.                  |
 | `success`    | `ChatModelSuccessEvent`  | Triggered when the model generation completes successfully.                |
 | `start`      | `ChatModelStartEvent`    | Triggered when model generation begins.                                    |
 | `error`      | `ChatModelErrorEvent`    | Triggered when model generation encounters an error.                       |
 | `finish`     | `None`                   | Triggered when model generation finishes (regardless of success or error). |
 
-_Source: [python/beeai_framework/backend/events.py](https://github.com/i-am-bee/beeai-framework/blob/main/python/beeai_framework/backend/events.py)_
-
 ### Tool events
 
 The following events can be observed when calling `Tool.run`.
 
 | Event     | Data Type          | Description                                                              |
-|-----------|--------------------|--------------------------------------------------------------------------|
+| :-------- | :----------------- | :----------------------------------------------------------------------- |
 | `start`   | `ToolStartEvent`   | Triggered when a tool starts executing.                                  |
 | `success` | `ToolSuccessEvent` | Triggered when a tool completes execution successfully.                  |
 | `error`   | `ToolErrorEvent`   | Triggered when a tool encounters an error.                               |
 | `retry`   | `ToolRetryEvent`   | Triggered when a tool operation is being retried.                        |
 | `finish`  | `None`             | Triggered when tool execution finishes (regardless of success or error). |
 
-_Source: [python/beeai_framework/tools/events.py](https://github.com/i-am-bee/beeai-framework/blob/main/python/beeai_framework/tools/events.py)_
-
 ### Workflow events
 
 The following events can be observed when calling `Workflow.run`.
 
 | Event     | Data Type              | Description                                            |
-|-----------|------------------------|--------------------------------------------------------|
+| :-------- | :--------------------- | :----------------------------------------------------- |
 | `start`   | `WorkflowStartEvent`   | Triggered when a workflow step begins execution.       |
 | `success` | `WorkflowSuccessEvent` | Triggered when a workflow step completes successfully. |
 | `error`   | `WorkflowErrorEvent`   | Triggered when a workflow step encounters an error.    |
-
-_Source: [python/beeai_framework/workflows/events.py](https://github.com/i-am-bee/beeai-framework/blob/main/python/beeai_framework/workflows/events.py)_
 
 ### ToolCallingAgent events
 
@@ -86,12 +78,9 @@ The following events can be observed calling `ToolCallingAgent.run`.
 
 
 | Event     | Data Type                      | Description                                                |
-|-----------|--------------------------------|------------------------------------------------------------|
+| :-------- | :----------------------------- | :--------------------------------------------------------- |
 | `start`   | `ToolCallingAgentStartEvent`   | Triggered when the agent begins execution.                 |
 | `success` | `ToolCallingAgentSuccessEvent` | Triggered when the agent successfully completes execution. |
-
-_Source: [python/beeai_framework/agents/tool_calling/events.py](https://github.com/i-am-bee/beeai-framework/blob/main/python/beeai_framework/agents/tool_calling/events.py)_
-
 
 ## Internal events
 
@@ -102,7 +91,7 @@ These events are primarily used for internal framework operations and debugging.
 The following events are for internal debugging of run contexts.
 
 | Event     | Data Type             | Description                      |
-|-----------|-----------------------|----------------------------------|
+| :-------- | :-------------------- | :------------------------------- |
 | `start`   | `None`                | Triggered when the run starts.   |
 | `success` | `<Run return object>` | Triggered when the run succeeds. |
 | `error`   | `FrameworkError`      | Triggered when an error occurs.  |
@@ -113,6 +102,6 @@ The following events are for internal debugging of run contexts.
 The following events are caught internally by the line prefix parser.
 
 | Event            | Data Type                | Description                             |
-|------------------|--------------------------|-----------------------------------------|
+| :--------------- | :----------------------- | :-------------------------------------- |
 | `update`         | `LinePrefixParserUpdate` | Triggered when an update occurs.        |
 | `partial_update` | `LinePrefixParserUpdate` | Triggered when a partial update occurs. |

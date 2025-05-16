@@ -18,7 +18,8 @@ BeeAI framework provides several memory implementations:
 | [**SummarizeMemory**](#summarizememory) | Maintains a single summarization of the conversation |
 
 <Note>
-Location within the framework: [beeai_framework/memory](https://github.com/i-am-bee/beeai-framework/tree/python/beeai_framework/memory).
+Explore the implementation in [Python](https://github.com/i-am-bee/beeai-framework/tree/main/python/beeai_framework/memory) or
+[TypeScript](https://github.com/i-am-bee/beeai-framework/tree/main/typescript/src/memory).
 </Note>
 
 ---
@@ -53,9 +54,10 @@ Memory components integrate with other parts of the framework:
 
 ### Capabilities showcase
 
-{/* <!-- embedme python/examples/memory/base.py --> */}
+<CodeGroup>
 
-```py
+{/* <!-- embedme python/examples/memory/base.py --> */}
+```py Python [expandable]
 import asyncio
 import sys
 import traceback
@@ -90,13 +92,34 @@ if __name__ == "__main__":
 
 ```
 
-_Source: [/python/examples/memory/base.py](https://github.com/i-am-bee/beeai-framework/blob/main/python/examples/memory/base.py)_
+{/* <!-- embedme typescript/examples/memory/base.ts --> */}
+```ts TypeScript [expandable]
+import { UnconstrainedMemory } from "beeai-framework/memory/unconstrainedMemory";
+import { AssistantMessage, SystemMessage, UserMessage } from "beeai-framework/backend/message";
+
+const memory = new UnconstrainedMemory();
+
+// Single message
+await memory.add(new SystemMessage(`You are a helpful assistant.`));
+
+// Multiple messages
+await memory.addMany([new UserMessage(`What can you do?`), new AssistantMessage(`Everything!`)]);
+
+console.info(memory.isEmpty()); // false
+console.info(memory.messages); // prints all saved messages
+console.info(memory.asReadOnly()); // returns a NEW read only instance
+memory.reset(); // removes all messages
+
+```
+
+</CodeGroup>
 
 ### Usage with LLMs
 
-{/* <!-- embedme python/examples/memory/llm_memory.py --> */}
+<CodeGroup>
 
-```py
+{/* <!-- embedme python/examples/memory/llm_memory.py --> */}
+```py Python [expandable]
 import asyncio
 import sys
 import traceback
@@ -134,7 +157,35 @@ if __name__ == "__main__":
 
 ```
 
-_Source: [/python/examples/memory/llm_memory.py](https://github.com/i-am-bee/beeai-framework/blob/main/python/examples/memory/llm_memory.py)_
+{/* <!-- embedme typescript/examples/memory/llmMemory.ts --> */}
+```ts TypeScript [expandable]
+import { UnconstrainedMemory } from "beeai-framework/memory/unconstrainedMemory";
+import { Message } from "beeai-framework/backend/message";
+import { OllamaChatModel } from "beeai-framework/adapters/ollama/backend/chat";
+
+const memory = new UnconstrainedMemory();
+await memory.addMany([
+  Message.of({
+    role: "system",
+    text: `Always respond very concisely.`,
+  }),
+  Message.of({ role: "user", text: `Give me first 5 prime numbers.` }),
+]);
+
+// Generate response
+const llm = new OllamaChatModel("llama3.1");
+const response = await llm.create({ messages: memory.messages });
+await memory.add(Message.of({ role: "assistant", text: response.getTextContent() }));
+
+console.log(`Conversation history`);
+for (const message of memory) {
+  console.log(`${message.role}: ${message.text}`);
+}
+
+```
+
+</CodeGroup>
+
 
 <Tip>
 Memory for non-chat LLMs works exactly the same way.
@@ -142,9 +193,10 @@ Memory for non-chat LLMs works exactly the same way.
 
 ### Usage with agents
 
-{/* <!-- embedme python/examples/memory/agent_memory.py --> */}
+<CodeGroup>
 
-```py
+{/* <!-- embedme python/examples/memory/agent_memory.py --> */}
+```py Python [expandable]
 import asyncio
 import sys
 import traceback
@@ -216,7 +268,29 @@ if __name__ == "__main__":
 
 ```
 
-_Source: [/python/examples/memory/agent_memory.py](https://github.com/i-am-bee/beeai-framework/blob/main/python/examples/memory/agent_memory.py)_
+{/* <!-- embedme typescript/examples/memory/agentMemory.ts --> */}
+```ts TypeScript [expandable]
+import { UnconstrainedMemory } from "beeai-framework/memory/unconstrainedMemory";
+import { ReActAgent } from "beeai-framework/agents/react/agent";
+import { OllamaChatModel } from "beeai-framework/adapters/ollama/backend/chat";
+
+const agent = new ReActAgent({
+  memory: new UnconstrainedMemory(),
+  llm: new OllamaChatModel("llama3.1"),
+  tools: [],
+});
+await agent.run({ prompt: "Hello world!" });
+
+console.info(agent.memory.messages.length); // 2
+
+const userMessage = agent.memory.messages[0];
+console.info(`User: ${userMessage.text}`); // User: Hello world!
+
+const agentMessage = agent.memory.messages[1];
+console.info(`Agent: ${agentMessage.text}`); // Agent: Hello! It's nice to chat with you.
+
+```
+</CodeGroup>
 
 <Tip>
 If your memory already contains the user message, run the agent with `prompt: null`.
@@ -236,9 +310,9 @@ The framework provides multiple out-of-the-box memory implementations for differ
 
 Unlimited in size, stores all messages without constraints.
 
+<CodeGroup>
 {/* <!-- embedme python/examples/memory/unconstrained_memory.py --> */}
-
-```py
+```py Python [expandable]
 import asyncio
 import sys
 import traceback
@@ -273,16 +347,35 @@ if __name__ == "__main__":
 
 ```
 
-_Source: [/python/examples/memory/unconstrained_memory.py](https://github.com/i-am-bee/beeai-framework/blob/main/python/examples/memory/unconstrained_memory.py)_
+{/* <!-- embedme typescript/examples/memory/unconstrainedMemory.ts --> */}
+```ts TypeScript [expandable]
+import { UnconstrainedMemory } from "beeai-framework/memory/unconstrainedMemory";
+import { Message } from "beeai-framework/backend/message";
+
+const memory = new UnconstrainedMemory();
+await memory.add(
+  Message.of({
+    role: "user",
+    text: `Hello world!`,
+  }),
+);
+
+console.info(memory.isEmpty()); // false
+console.log(memory.messages.length); // 1
+console.log(memory.messages);
+
+```
+</CodeGroup>
 
 
 ### SlidingMemory
 
 Keeps last `k` entries in the memory. The oldest ones are deleted (unless specified otherwise).
 
-{/* <!-- embedme python/examples/memory/sliding_memory.py --> */}
+<CodeGroup>
 
-```py
+{/* <!-- embedme python/examples/memory/sliding_memory.py --> */}
+```py Python [expandable]
 import asyncio
 import sys
 import traceback
@@ -325,8 +418,51 @@ if __name__ == "__main__":
         sys.exit(e.explain())
 
 ```
+{/* <!-- embedme python/examples/memory/sliding_memory.py --> */}
+```ts TypeScript [expandable]
+import asyncio
+import sys
+import traceback
 
-_Source: [/python/examples/memory/sliding_memory.py](https://github.com/i-am-bee/beeai-framework/blob/main/python/examples/memory/sliding_memory.py)_
+from beeai_framework.backend import AssistantMessage, SystemMessage, UserMessage
+from beeai_framework.errors import FrameworkError
+from beeai_framework.memory import SlidingMemory, SlidingMemoryConfig
+
+
+async def main() -> None:
+    # Create sliding memory with size 3
+    memory = SlidingMemory(
+        SlidingMemoryConfig(
+            size=3,
+            handlers={"removal_selector": lambda messages: messages[0]},  # Remove oldest message
+        )
+    )
+
+    # Add messages
+    await memory.add(SystemMessage("You are a helpful assistant."))
+
+    await memory.add(UserMessage("What is Python?"))
+
+    await memory.add(AssistantMessage("Python is a programming language."))
+
+    # Adding a fourth message should trigger sliding window
+    await memory.add(UserMessage("What about JavaScript?"))
+
+    # Print results
+    print(f"Messages in memory: {len(memory.messages)}")  # Should print 3
+    for msg in memory.messages:
+        print(f"{msg.role}: {msg.text}")
+
+
+if __name__ == "__main__":
+    try:
+        asyncio.run(main())
+    except FrameworkError as e:
+        traceback.print_exc()
+        sys.exit(e.explain())
+
+```
+</CodeGroup>
 
 
 ### TokenMemory
@@ -334,9 +470,10 @@ _Source: [/python/examples/memory/sliding_memory.py](https://github.com/i-am-bee
 Ensures that the token sum of all messages is below the given threshold.
 If overflow occurs, the oldest message will be removed.
 
-{/* <!-- embedme python/examples/memory/token_memory.py --> */}
+<CodeGroup>
 
-```py
+{/* <!-- embedme python/examples/memory/token_memory.py --> */}
+```py Python [expandable]
 import asyncio
 import math
 import sys
@@ -399,16 +536,44 @@ if __name__ == "__main__":
         sys.exit(e.explain())
 
 ```
+{/* <!-- embedme typescript/examples/memory/tokenMemory.ts --> */}
+```ts TypeScript [expandable]
+import { TokenMemory } from "beeai-framework/memory/tokenMemory";
+import { Message } from "beeai-framework/backend/message";
 
-_Source: [/python/examples/memory/token_memory.py](https://github.com/i-am-bee/beeai-framework/blob/main/python/examples/memory/token_memory.py)_
+const memory = new TokenMemory({
+  maxTokens: undefined, // optional (default is 128k),
+  capacityThreshold: 0.75, // maxTokens*capacityThreshold = threshold where we start removing old messages
+  syncThreshold: 0.25, // maxTokens*syncThreshold = threshold where we start to use a real tokenization endpoint instead of guessing the number of tokens
+  handlers: {
+    // optional way to define which message should be deleted (default is the oldest one)
+    removalSelector: (messages) => messages.find((msg) => msg.role !== "system")!,
+
+    // optional way to estimate the number of tokens in a message before we use the actual tokenize endpoint (number of tokens < maxTokens*syncThreshold)
+    estimate: (msg) => Math.ceil((msg.role.length + msg.text.length) / 4),
+  },
+});
+
+await memory.add(Message.of({ role: "system", text: "You are a helpful assistant." }));
+await memory.add(Message.of({ role: "user", text: "Hello world!" }));
+
+console.info(memory.isDirty); // is the consumed token count estimated or retrieved via the tokenize endpoint?
+console.log(memory.tokensUsed); // number of used tokens
+console.log(memory.stats()); // prints statistics
+await memory.sync(); // calculates real token usage for all messages marked as "dirty"
+
+```
+
+</CodeGroup>
 
 ### SummarizeMemory
 
 Only a single summarization of the conversation is preserved. Summarization is updated with every new message.
 
-{/* <!-- embedme python/examples/memory/summarize_memory.py --> */}
+<CodeGroup>
 
-```py
+{/* <!-- embedme python/examples/memory/summarize_memory.py --> */}
+```py Python [expandable]
 import asyncio
 import sys
 import traceback
@@ -454,8 +619,29 @@ if __name__ == "__main__":
         sys.exit(e.explain())
 
 ```
+{/* <!-- embedme typescript/examples/memory/summarizeMemory.ts --> */}
+```ts TypeScript [expandable]
+import { Message } from "beeai-framework/backend/message";
+import { SummarizeMemory } from "beeai-framework/memory/summarizeMemory";
+import { OllamaChatModel } from "beeai-framework/adapters/ollama/backend/chat";
 
-_Source: [python/examples/memory/summarize_memory.py](https://github.com/i-am-bee/beeai-framework/blob/main/python/examples/memory/summarize_memory.py)_
+const memory = new SummarizeMemory({
+  llm: new OllamaChatModel("llama3.1"),
+});
+
+await memory.addMany([
+  Message.of({ role: "system", text: "You are a guide through France." }),
+  Message.of({ role: "user", text: "What is the capital?" }),
+  Message.of({ role: "assistant", text: "Paris" }),
+  Message.of({ role: "user", text: "What language is spoken there?" }),
+]);
+
+console.info(memory.isEmpty()); // false
+console.log(memory.messages.length); // 1
+console.log(memory.messages[0].text); // The capital city of France is Paris, ...
+
+```
+</CodeGroup>
 
 ---
 
@@ -463,9 +649,9 @@ _Source: [python/examples/memory/summarize_memory.py](https://github.com/i-am-be
 
 To create your memory implementation, you must implement the `BaseMemory` class.
 
+<CodeGroup>
 {/* <!-- embedme python/examples/memory/custom.py --> */}
-
-```py
+```py Python [expandable]
 from typing import Any
 
 from beeai_framework.backend import AnyMessage
@@ -494,7 +680,41 @@ class MyMemory(BaseMemory):
 
 ```
 
-_Source: [/python/examples/memory/custom.py](https://github.com/i-am-bee/beeai-framework/blob/main/python/examples/memory/custom.py)_
+{/* <!-- embedme typescript/examples/memory/custom.ts --> */}
+```ts TypeScript [expandable]
+import { BaseMemory } from "beeai-framework/memory/base";
+import { Message } from "beeai-framework/backend/message";
+import { NotImplementedError } from "beeai-framework/errors";
+
+export class MyMemory extends BaseMemory {
+  get messages(): readonly Message[] {
+    throw new NotImplementedError("Method not implemented.");
+  }
+
+  add(message: Message, index?: number): Promise<void> {
+    throw new NotImplementedError("Method not implemented.");
+  }
+
+  delete(message: Message): Promise<boolean> {
+    throw new NotImplementedError("Method not implemented.");
+  }
+
+  reset(): void {
+    throw new NotImplementedError("Method not implemented.");
+  }
+
+  createSnapshot(): unknown {
+    throw new NotImplementedError("Method not implemented.");
+  }
+
+  loadSnapshot(state: ReturnType<typeof this.createSnapshot>): void {
+    throw new NotImplementedError("Method not implemented.");
+  }
+}
+
+```
+
+</CodeGroup>
 
 <Tip>
 The simplest implementation is `UnconstrainedMemory`.
@@ -504,4 +724,11 @@ The simplest implementation is `UnconstrainedMemory`.
 
 ## Examples
 
-- All memory examples can be found in [here](https://github.com/i-am-bee/beeai-framework/tree/main/python/examples/memory).
+<CardGroup cols={2}>
+  <Card title="Python" icon="python" href="https://github.com/i-am-bee/beeai-framework/tree/main/python/examples/memory">
+    Explore reference memory implementations in Python
+  </Card>
+  <Card title="TypeScript" icon="js" href="https://github.com/i-am-bee/beeai-framework/tree/main/typescript/examples/memory">
+    Explore reference memory implementations in TypeScript
+  </Card>
+</CardGroup>

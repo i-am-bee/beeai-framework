@@ -22,7 +22,8 @@ Prompt Templates are fundamental building blocks in the framework and are extens
 </Tip>
 
 <Note>
-Location within the framework: [beeai_framework/template](https://github.com/i-am-bee/beeai-framework/blob/main/python/beeai_framework/template.py).
+Explore the implementation in [Python](https://github.com/i-am-bee/beeai-framework/tree/main/python/beeai_framework/template.py) or
+[TypeScript](https://github.com/i-am-bee/beeai-framework/tree/main/typescript/src/template.py).
 </Note>
 
 ## Basic usage
@@ -31,9 +32,10 @@ Location within the framework: [beeai_framework/template](https://github.com/i-a
 
 Create templates with basic variable substitution and type validation.
 
-{/* <!-- embedme python/examples/templates/basic_template.py --> */}
+<CodeGroup>
 
-```py
+{/* <!-- embedme python/examples/templates/basic_template.py --> */}
+```py Python [expandable]
 import sys
 import traceback
 
@@ -69,17 +71,21 @@ if __name__ == "__main__":
 
 ```
 
-This example creates a simple template that formats a user message with a label and input text. The Pydantic model ensures type safety for the template variables.
+```ts TypeScript [expandable]
+Coming soon
+```
+</CodeGroup>
 
-_Source: [python/examples/templates/basic_template.py](https://github.com/i-am-bee/beeai-framework/blob/main/python/examples/templates/basic_template.py)_
+This example creates a simple template that formats a user message with a label and input text. The Pydantic model ensures type safety for the template variables.
 
 ### Template functions
 
 Add dynamic content to templates using custom functions.
 
-{/* <!-- embedme python/examples/templates/functions.py --> */}
+<CodeGroup>
 
-```py
+{/* <!-- embedme python/examples/templates/functions.py --> */}
+```py Python [expandable]
 import sys
 import traceback
 from datetime import UTC, datetime
@@ -137,19 +143,67 @@ if __name__ == "__main__":
 
 ```
 
+{/* <!-- embedme typescript/examples/templates/functions.ts --> */}
+```ts TypeScript [expandable]
+import { PromptTemplate } from "beeai-framework/template";
+import { z } from "zod";
+
+const messageTemplate = new PromptTemplate({
+  schema: z
+    .object({
+      text: z.string(),
+      author: z.string().optional(),
+      createdAt: z.string().datetime().optional(),
+    })
+    .passthrough(),
+  functions: {
+    formatMeta: function () {
+      if (!this.author && !this.createdAt) {
+        return "";
+      }
+
+      const author = this.author || "anonymous";
+      const createdAt = this.createdAt || new Date().toISOString();
+
+      return `\nThis message was created at ${createdAt} by ${author}.`;
+    },
+  },
+  template: `Message: {{text}}{{formatMeta}}`,
+});
+
+// Message: Hello from 2024!
+// This message was created at 2024-01-01T00:00:00.000Z by John.
+console.log(
+  messageTemplate.render({
+    text: "Hello from 2024!",
+    author: "John",
+    createdAt: new Date("2024-01-01").toISOString(),
+  }),
+);
+
+// Message: Hello from the present!
+console.log(
+  messageTemplate.render({
+    text: "Hello from the present!",
+  }),
+);
+
+```
+
+</CodeGroup>
+
 This example demonstrates how to add custom functions to templates:
 * The `format_meta` function returns the date and author in a readable string
 * Functions can be called directly from the template using Mustache-style syntax
-
-_Source: [python/examples/templates/functions.py](https://github.com/i-am-bee/beeai-framework/blob/main/python/examples/templates/functions.py)_
 
 ### Working with objects
 
 Handle complex nested data structures in templates with proper type validation.
 
-{/* <!-- embedme python/examples/templates/objects.py --> */}
+<CodeGroup>
 
-```py
+{/* <!-- embedme python/examples/templates/objects.py --> */}
+```py Python [expandable]
 import sys
 import traceback
 
@@ -189,17 +243,41 @@ if __name__ == "__main__":
 
 ```
 
-This example shows how to work with nested objects in templates. The Mustache syntax allows for iterating through the responses array and accessing properties of each object.
+{/* <!-- embedme typescript/examples/templates/objects.ts --> */}
+```ts TypeScript [expandable]
+import { PromptTemplate } from "beeai-framework/template";
+import { z } from "zod";
 
-_Source: [python/examples/templates/objects.py](https://github.com/i-am-bee/beeai-framework/blob/main/python/examples/templates/objects.py)_
+const template = new PromptTemplate({
+  template: `Expected Duration: {{expected}}ms; Retrieved: {{#responses}}{{duration}}ms {{/responses}}`,
+  schema: z.object({
+    expected: z.number(),
+    responses: z.array(z.object({ duration: z.number() })),
+  }),
+  defaults: {
+    expected: 5,
+  },
+});
+
+const output = template.render({
+  expected: undefined, // default value will be used
+  responses: [{ duration: 3 }, { duration: 5 }, { duration: 6 }],
+});
+console.log(output); // Expected Duration: 5ms; Retrieved: 3ms 5ms 6ms
+
+```
+</CodeGroup>
+
+This example shows how to work with nested objects in templates. The Mustache syntax allows for iterating through the responses array and accessing properties of each object.
 
 ### Working with arrays
 
 Process collections of data within templates for dynamic list generation.
 
-{/* <!-- embedme python/examples/templates/arrays.py --> */}
+<CodeGroup>
 
-```py
+{/* <!-- embedme python/examples/templates/arrays.py --> */}
+```py Python [expandable]
 import sys
 import traceback
 
@@ -234,6 +312,43 @@ if __name__ == "__main__":
 
 ```
 
+{/* <!-- embedme python/examples/templates/arrays.py --> */}
+```ts TypeScript [expandable]
+import sys
+import traceback
+
+from pydantic import BaseModel, Field
+
+from beeai_framework.errors import FrameworkError
+from beeai_framework.template import PromptTemplate, PromptTemplateInput
+
+
+def main() -> None:
+    class ColorsObject(BaseModel):
+        colors: list[str] = Field(..., min_length=1)
+
+    template: PromptTemplate[ColorsObject] = PromptTemplate(
+        PromptTemplateInput(
+            schema=ColorsObject,
+            template="""Colors: {{#colors}}{{.}}, {{/colors}}""",
+        )
+    )
+
+    # Colors: Green, Yellow,
+    output = template.render(colors=["Green", "Yellow"])
+    print(output)
+
+
+if __name__ == "__main__":
+    try:
+        main()
+    except FrameworkError as e:
+        traceback.print_exc()
+        sys.exit(e.explain())
+
+```
+</CodeGroup>
+
 This example demonstrates how to iterate over arrays in templates using Mustache's section syntax.
 
 _Source: [python/examples/templates/arrays.py](https://github.com/i-am-bee/beeai-framework/blob/main/python/examples/templates/arrays.py)_
@@ -249,7 +364,7 @@ Template forking is useful for:
 
 {/* <!-- embedme python/examples/templates/forking.py --> */}
 
-```py
+```py Python [expandable]
 import sys
 import traceback
 from typing import Any
@@ -310,7 +425,7 @@ The framework's agents use specialized templates to structure their behavior. Yo
 
 {/* <!-- embedme python/examples/templates/system_prompt.py --> */}
 
-```py
+```py Python [expandable]
 import sys
 import traceback
 
@@ -355,8 +470,13 @@ _Source: [python/examples/templates/system_prompt.py](https://github.com/i-am-be
 
 ---
 
-# Examples
-
 ## Examples
 
-- All template examples can be found in [here](https://github.com/i-am-bee/beeai-framework/tree/main/python/examples/templates).
+<CardGroup cols={2}>
+  <Card title="Python" icon="python" href="https://github.com/i-am-bee/beeai-framework/tree/main/python/examples/templates">
+    Explore reference template implementations in Python
+  </Card>
+  <Card title="TypeScript" icon="js" href="https://github.com/i-am-bee/beeai-framework/tree/main/typescript/examples/templates">
+    Explore reference template implementations in TypeScript
+  </Card>
+</CardGroup>

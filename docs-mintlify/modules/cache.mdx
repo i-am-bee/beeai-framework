@@ -25,11 +25,11 @@ BeeAI framework provides a robust caching system with multiple implementations t
 
 BeeAI framework offers several cache implementations out of the box:
 
-| Type               | Description                                                       |
-|--------------------|-------------------------------------------------------------------|
-| **UnconstrainedCache** | Simple in-memory cache with no limits                            |
-| **SlidingCache**       | In-memory cache that maintains a maximum number of entries       |
-| **FileCache**          | Persistent cache that stores data on disk                        |
+| Type                   | Description                                                          |
+| :--------------------- | :------------------------------------------------------------------- |
+| **UnconstrainedCache** | Simple in-memory cache with no limits                                |
+| **SlidingCache**       | In-memory cache that maintains a maximum number of entries           |
+| **FileCache**          | Persistent cache that stores data on disk                            |
 | **NullCache**          | Special implementation that performs no caching (useful for testing) |
 
 Each cache type implements the `BaseCache` interface, making them interchangeable in your code.
@@ -38,8 +38,8 @@ Each cache type implements the `BaseCache` interface, making them interchangeabl
 
 BeeAI framework supports several caching patterns:
 
-| Usage pattern          | Description                                      |
-|------------------------|--------------------------------------------------|
+| Usage pattern           | Description                                     |
+| :---------------------- | :-----------------------------------------------|
 | **Direct caching**      | Manually store and retrieve values              |
 | **Function decoration** | Automatically cache function returns            |
 | **Tool integration**    | Cache tool execution results                    |
@@ -53,9 +53,10 @@ BeeAI framework supports several caching patterns:
 
 The simplest way to use caching is to wrap a function that produces deterministic output:
 
-{/* <!-- embedme python/examples/cache/unconstrained_cache_function.py --> */}
+<CodeGroup>
 
-```python
+{/* <!-- embedme python/examples/cache/unconstrained_cache_function.py --> */}
+```py Python [expandable]
 import asyncio
 import sys
 import traceback
@@ -96,16 +97,38 @@ if __name__ == "__main__":
         sys.exit(e.explain())
 
 ```
+{/* <!-- embedme typescript/examples/cache/unconstrainedCacheFunction.ts --> */}
+```ts TypeScript [expandable]
+import { UnconstrainedCache } from "beeai-framework/cache/unconstrainedCache";
 
-_Source: [python/examples/cache/unconstrained_cache_function.py](https://github.com/i-am-bee/beeai-framework/blob/main/python/examples/cache/unconstrained_cache_function.py)_
+const cache = new UnconstrainedCache<number>();
+
+async function fibonacci(n: number): Promise<number> {
+  const cacheKey = n.toString();
+  const cached = await cache.get(cacheKey);
+  if (cached !== undefined) {
+    return cached;
+  }
+
+  const result = n < 1 ? 0 : n <= 2 ? 1 : (await fibonacci(n - 1)) + (await fibonacci(n - 2));
+  await cache.set(cacheKey, result);
+  return result;
+}
+
+console.info(await fibonacci(10)); // 55
+console.info(await fibonacci(9)); // 34 (retrieved from cache)
+console.info(`Cache size ${await cache.size()}`); // 10
+
+```
+</CodeGroup>
 
 ### Using with tools
 
 BeeAI framework's caching system seamlessly integrates with tools:
 
+<CodeGroup>
 {/* <!-- embedme python/examples/cache/tool_cache.py --> */}
-
-```python
+```py Python [expandable]
 import asyncio
 import sys
 import traceback
@@ -142,15 +165,34 @@ if __name__ == "__main__":
 
 ```
 
-_Source: [python/examples/cache/tool_cache.py](https://github.com/i-am-bee/beeai-framework/blob/main/python/examples/cache/tool_cache.py)_
+{/* <!-- embedme typescript/examples/cache/toolCache.ts --> */}
+```ts TypeScript [expandable]
+import { SlidingCache } from "beeai-framework/cache/slidingCache";
+import { WikipediaTool } from "beeai-framework/tools/search/wikipedia";
+
+const ddg = new WikipediaTool({
+  cache: new SlidingCache({
+    size: 100, // max 100 entries
+    ttl: 5 * 60 * 1000, // 5 minutes lifespan
+  }),
+});
+
+const response = await ddg.run({
+  query: "United States",
+});
+// upcoming requests with the EXACTLY same input will be retrieved from the cache
+
+```
+</CodeGroup>
 
 ### Using with LLMs
 
 You can also cache LLM responses to save on API costs:
 
-{/* <!-- embedme python/examples/cache/llm_cache.py --> */}
+<CodeGroup>
 
-```python
+{/* <!-- embedme python/examples/cache/llm_cache.py --> */}
+```py Python [expandable]
 import asyncio
 import sys
 import traceback
@@ -184,7 +226,36 @@ if __name__ == "__main__":
 
 ```
 
-_Source: [python/examples/cache/llm_cache.py](https://github.com/i-am-bee/beeai-framework/blob/main/python/examples/cache/llm_cache.py)_
+{/* <!-- embedme typescript/examples/cache/llmCache.ts --> */}
+```ts TypeScript [expandable]
+import { SlidingCache } from "beeai-framework/cache/slidingCache";
+import { OllamaChatModel } from "beeai-framework/adapters/ollama/backend/chat";
+import { UserMessage } from "beeai-framework/backend/message";
+
+const llm = new OllamaChatModel("llama3.1");
+llm.config({
+  cache: new SlidingCache({
+    size: 50,
+  }),
+  parameters: {
+    maxTokens: 25,
+  },
+});
+
+console.info(await llm.cache.size()); // 0
+const first = await llm.create({
+  messages: [new UserMessage("Who was Alan Turing?")],
+});
+// upcoming requests with the EXACTLY same input will be retrieved from the cache
+console.info(await llm.cache.size()); // 1
+const second = await llm.create({
+  messages: [new UserMessage("Who was Alan Turing?")],
+});
+console.info(first.getTextContent() === second.getTextContent()); // true
+console.info(await llm.cache.size()); // 1
+
+```
+</CodeGroup>
 
 ---
 
@@ -194,9 +265,9 @@ _Source: [python/examples/cache/llm_cache.py](https://github.com/i-am-bee/beeai-
 
 The simplest cache type with no constraints on size or entry lifetime. Good for development and smaller applications.
 
+<CodeGroup>
 {/* <!-- embedme python/examples/cache/unconstrained_cache.py --> */}
-
-```python
+```py Python [expandable]
 import asyncio
 import sys
 import traceback
@@ -241,14 +312,46 @@ if __name__ == "__main__":
 
 ```
 
-_Source: [python/examples/cache/unconstrained_cache.py](https://github.com/i-am-bee/beeai-framework/blob/main/python/examples/cache/unconstrained_cache.py)_
+{/* <!-- embedme typescript/examples/cache/unconstrainedCache.ts --> */}
+```ts TypeScript [expandable]
+import { UnconstrainedCache } from "beeai-framework/cache/unconstrainedCache";
+
+const cache = new UnconstrainedCache();
+
+// Save
+await cache.set("a", 1);
+await cache.set("b", 2);
+
+// Read
+const result = await cache.get("a");
+console.log(result); // 1
+
+// Meta
+console.log(cache.enabled); // true
+console.log(await cache.has("a")); // true
+console.log(await cache.has("b")); // true
+console.log(await cache.has("c")); // false
+console.log(await cache.size()); // 2
+
+// Delete
+await cache.delete("a");
+console.log(await cache.has("a")); // false
+
+// Clear
+await cache.clear();
+console.log(await cache.size()); // 0
+
+```
+
+</CodeGroup>
 
 ### SlidingCache
 
 Maintains a maximum number of entries, removing the oldest entries when the limit is reached.
 
-{/* <!-- embedme python/examples/cache/sliding_cache.py --> */}
+<CodeGroup>
 
+{/* <!-- embedme python/examples/cache/sliding_cache.py --> */}
 ```python
 import asyncio
 import sys
@@ -282,8 +385,26 @@ if __name__ == "__main__":
         sys.exit(e.explain())
 
 ```
+{/* <!-- embedme typescript/examples/cache/slidingCache.ts --> */}
+```ts TypeScript [expandable]
+import { SlidingCache } from "beeai-framework/cache/slidingCache";
 
-_Source: [python/examples/cache/sliding_cache.py](https://github.com/i-am-bee/beeai-framework/blob/main/python/examples/cache/sliding_cache.py)_
+const cache = new SlidingCache<number>({
+  size: 3, // (required) number of items that can be live in the cache at a single moment
+  ttl: 1000, // (optional, default is Infinity) Time in milliseconds after the element is removed from a cache
+});
+
+await cache.set("a", 1);
+await cache.set("b", 2);
+await cache.set("c", 3);
+
+await cache.set("d", 4); // overflow - cache internally removes the oldest entry (key "a")
+console.log(await cache.has("a")); // false
+console.log(await cache.size()); // 3
+
+```
+
+</CodeGroup>
 
 ### FileCache
 
@@ -349,9 +470,10 @@ _Source: /examples/cache/cacheFn.py_
 
 You can create your own cache implementation by extending the `BaseCache` class:
 
-{/* <!-- embedme python/examples/cache/custom.py --> */}
+<CodeGroup>
 
-```python
+{/* <!-- embedme python/examples/cache/custom.py --> */}
+```py Python [expandable]
 from typing import TypeVar
 
 from beeai_framework.cache import BaseCache
@@ -379,13 +501,46 @@ class CustomCache(BaseCache[T]):
         raise NotImplementedError("CustomCache 'clear' not yet implemented")
 
 ```
+{/* <!-- embedme python/examples/cache/custom.py --> */}
+```ts TypeScript [expandable]
+from typing import TypeVar
 
-_Source: [python/examples/cache/custom.py](https://github.com/i-am-bee/beeai-framework/blob/main/python/examples/cache/custom.py)_
+from beeai_framework.cache import BaseCache
 
+T = TypeVar("T")
+
+
+class CustomCache(BaseCache[T]):
+    async def size(self) -> int:
+        raise NotImplementedError("CustomCache 'size' not yet implemented")
+
+    async def set(self, _key: str, _value: T) -> None:
+        raise NotImplementedError("CustomCache 'set' not yet implemented")
+
+    async def get(self, key: str) -> T | None:
+        raise NotImplementedError("CustomCache 'get' not yet implemented")
+
+    async def has(self, key: str) -> bool:
+        raise NotImplementedError("CustomCache 'has' not yet implemented")
+
+    async def delete(self, key: str) -> bool:
+        raise NotImplementedError("CustomCache 'delete' not yet implemented")
+
+    async def clear(self) -> None:
+        raise NotImplementedError("CustomCache 'clear' not yet implemented")
+
+```
+</CodeGroup>
 
 ---
 
 ## Examples
 
-- All cache examples are coming soon in python.
-{/* - All cache examples can be found in [here](https://github.com/i-am-bee/beeai-framework/tree/main/python/examples/cache). */}
+<CardGroup cols={2}>
+  <Card title="Python" icon="python" href="https://github.com/i-am-bee/beeai-framework/tree/main/python/examples/cache">
+    COMING SOON: Explore reference cache implementations in Python
+  </Card>
+  <Card title="TypeScript" icon="js" href="https://github.com/i-am-bee/beeai-framework/tree/main/typescript/examples/cache">
+    COMING SOON: Explore reference cache implementations in TypeScript
+  </Card>
+</CardGroup>
