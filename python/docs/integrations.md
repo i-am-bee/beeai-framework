@@ -9,6 +9,7 @@
   - [BeeAIPlatformAgent](#beeai-platform-agent)
   - [BeeAIPlatformServer](#beeai-platform-server)
 - [Model Context Protocol (MCP) Integration](#model-context-protocol-integration)
+  - [MCPTool](#mcp-tool)
   - [MCPServer](#mcp-server)
 - [Examples](#examples)
 <!-- /TOC -->
@@ -307,6 +308,10 @@ _Source: [examples/serve/beeai_platform.py](/python/examples/serve/beeai_platfor
 
 ## Model Context Protocol Integration
 
+### MCP Tool
+
+MCPTool allows you to consume external tools exposed via MCP protocol. See the [MCP tool documentation](/python/docs/tools.md#mcp-tool) for more information.
+ 
 ### MCP Server
 
 MCPServer allows you to expose your tools to external systems that support the Model Context Protocol (MCP) standard, enabling seamless integration with LLM tools ecosystems.
@@ -376,7 +381,7 @@ from beeai_framework.tools.weather import OpenMeteoTool
 server = MCPServer()
 
 # Register tools
-server.register([OpenMeteoTool()])
+server.register(OpenMeteoTool())
 
 # Start serving
 server.serve()
