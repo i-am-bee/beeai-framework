@@ -41,7 +41,7 @@ uvicorn = {version = "^0.34.2", optional = true}
 
 [tool.poetry.group.dev.dependencies]
 commitizen = "^4.2.1"
-deepeval = "^2.7.6"
+deepeval = "^2.9.2"
 mypy = "^1.15.0"
 nbstripout = "^0.8.1"
 poethepoet = "^0.33.1"
