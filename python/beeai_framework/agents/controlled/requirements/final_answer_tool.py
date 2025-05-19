@@ -14,14 +14,11 @@
 
 from pydantic import BaseModel, Field, create_model
 
-from beeai_framework.agents.ability.abilities.ability import (
-    Ability,
-    AbilityCheckResult,
-    with_run_context,
-)
-from beeai_framework.agents.ability.types import AbilityAgentRunState
+from beeai_framework.agents.controlled.types import AbilityAgentRunState
 from beeai_framework.backend import AssistantMessage
 from beeai_framework.context import RunContext
+from beeai_framework.emitter import Emitter
+from beeai_framework.tools import StringToolOutput, Tool, ToolRunOptions
 
 
 # TODO -> change to something like
@@ -29,18 +26,21 @@ from beeai_framework.context import RunContext
 #   SubmitAbility
 #   FinishAbility
 #   CompleteAbility
-class FinalAnswerAbility(Ability[BaseModel]):
+class FinalAnswerTool(Tool[BaseModel, ToolRunOptions, StringToolOutput]):
+    name = "final_answer"
+    description = "Sends the final answer to the user"
+
     def __init__(
-        self, expected_output: str | type[BaseModel] | None, state: AbilityAgentRunState, double_check: bool = False
+        self, expected_output: str | type[BaseModel] | None, state: AbilityAgentRunState
     ) -> None:  # TODO: propagate state with ability context..
         super().__init__()
-        self.name = "final_answer"
-        self.description = "Sends the final answer to the user"
         self._expected_output = expected_output
         self._state = state
-        self._needs_revision = double_check
         self.instructions = expected_output if isinstance(expected_output, str) else None
         self.custom_schema = isinstance(expected_output, type)
+
+    def _create_emitter(self) -> Emitter:
+        return Emitter.root().child(namespace=["tool", "final_answer"], context={}, creator=self)
 
     @property
     def input_schema(self) -> type[BaseModel]:
@@ -60,14 +60,10 @@ class FinalAnswerAbility(Ability[BaseModel]):
             )
         )
 
-    @with_run_context
-    async def run(self, obj: BaseModel, context: RunContext) -> str:
+    async def _run(self, input: BaseModel, options: ToolRunOptions | None, context: RunContext) -> StringToolOutput:
         if self.input_schema is self._expected_output:
-            self._state.result = AssistantMessage(obj.model_dump_json())
+            self._state.result = AssistantMessage(input.model_dump_json())
         else:
-            self._state.result = AssistantMessage(obj.response)  # type: ignore
+            self._state.result = AssistantMessage(input.response)  # type: ignore
 
-        return "Message has been sent"
-
-    def check(self, state: AbilityAgentRunState) -> AbilityCheckResult:
-        return AbilityCheckResult(allowed=True, forced=False, hidden=False, prevent_stop=False)
+        return StringToolOutput("Message has been sent")

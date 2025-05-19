@@ -15,8 +15,7 @@
 
 from pydantic import BaseModel
 
-from beeai_framework.agents.ability._utils import AbilityAgentRequest
-from beeai_framework.agents.ability.types import AbilityAgentRunState
+from beeai_framework.agents.controlled.types import AbilityAgentRequest, AbilityAgentRunState
 
 
 class AbilityAgentStartEvent(BaseModel):

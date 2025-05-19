@@ -18,17 +18,17 @@ from typing import Any
 from pydantic import BaseModel
 
 from beeai_framework.agents import AgentError, AgentExecutionConfig, AgentMeta
-from beeai_framework.agents.ability._utils import _create_system_message
-from beeai_framework.agents.ability.abilities.ability import Ability
-from beeai_framework.agents.ability.abilities.final_answer import FinalAnswerAbility
-from beeai_framework.agents.ability.abilities.tool import ToolAbility
-from beeai_framework.agents.ability.events import (
+from beeai_framework.agents.base import BaseAgent
+from beeai_framework.agents.controlled._utils import _create_system_message
+from beeai_framework.agents.controlled.events import (
     AbilityAgentStartEvent,
     AbilityAgentSuccessEvent,
     ability_agent_event_types,
 )
-from beeai_framework.agents.ability.prompts import AbilityAgentCycleDetectionPromptInput, AbilityAgentTaskPromptInput
-from beeai_framework.agents.ability.types import (
+from beeai_framework.agents.controlled.prompts import AbilityAgentCycleDetectionPromptInput, AbilityAgentTaskPromptInput
+from beeai_framework.agents.controlled.requirements.final_answer_tool import FinalAnswerTool
+from beeai_framework.agents.controlled.requirements.requirement import Requirement
+from beeai_framework.agents.controlled.types import (
     AbilityAgentRunOutput,
     AbilityAgentRunState,
     AbilityAgentRunStateStep,
@@ -36,9 +36,8 @@ from beeai_framework.agents.ability.types import (
     AbilityAgentTemplates,
     AbilityAgentTemplatesKeys,
 )
-from beeai_framework.agents.ability.utils._llm import AbilityModel
-from beeai_framework.agents.ability.utils._tool import _run_abilities
-from beeai_framework.agents.base import BaseAgent
+from beeai_framework.agents.controlled.utils._llm import RequirementsReasoner
+from beeai_framework.agents.controlled.utils._tool import _run_tools
 from beeai_framework.agents.tool_calling.utils import ToolCallChecker, ToolCallCheckerConfig
 from beeai_framework.backend.chat import ChatModel
 from beeai_framework.backend.message import (
@@ -47,18 +46,19 @@ from beeai_framework.backend.message import (
     UserMessage,
 )
 from beeai_framework.backend.utils import parse_broken_json
-from beeai_framework.context import Run, RunContext, RunMiddleware
+from beeai_framework.context import Run, RunContext
 from beeai_framework.emitter import Emitter
 from beeai_framework.memory.base_memory import BaseMemory
 from beeai_framework.memory.unconstrained_memory import UnconstrainedMemory
 from beeai_framework.memory.utils import extract_last_tool_call_pair
 from beeai_framework.template import PromptTemplate
+from beeai_framework.tools import AnyTool
 from beeai_framework.utils.counter import RetryCounter
 from beeai_framework.utils.dicts import exclude_none
 from beeai_framework.utils.models import update_model
 from beeai_framework.utils.strings import find_first_pair, generate_random_string, to_json
 
-AbilityAgentAbility = Ability[Any, AbilityAgentRunState, Any]
+AbilityAgentRequirement = Requirement[AbilityAgentRunState]
 
 
 class AbilityAgent(BaseAgent[AbilityAgentRunOutput]):
@@ -69,14 +69,14 @@ class AbilityAgent(BaseAgent[AbilityAgentRunOutput]):
         memory: BaseMemory | None = None,
         templates: dict[AbilityAgentTemplatesKeys, PromptTemplate[Any] | AbilityAgentTemplateFactory] | None = None,
         save_intermediate_steps: bool = True,
-        abilities: Sequence[AbilityAgentAbility | str] | None = None,
+        tools: Sequence[AnyTool] | None = None,
+        requirements: Sequence[AbilityAgentRequirement] | None = None,
         name: str | None = None,
         description: str | None = None,
         role: str | None = None,
         instructions: str | None = None,
         tool_call_checker: ToolCallCheckerConfig | bool = True,
         final_answer_as_tool: bool = True,
-        meta: AgentMeta | None = None,  # TODO: probably remove
     ) -> None:
         super().__init__()
         self._llm = llm
@@ -94,11 +94,9 @@ class AbilityAgent(BaseAgent[AbilityAgentRunOutput]):
                     }
                 )
             )
-        self._abilities = [Ability.lookup(ab) if isinstance(ab, str) else ab for ab in (abilities or [])]
-        self._meta = AgentMeta(name=name or "", description=description or instructions or "", tools=[])
-        self.middlewares: list[RunMiddleware] = []
-        if meta:
-            update_model(self._meta, sources=[meta])
+        self._tools = list(tools or [])
+        self._requirements = list(requirements or [])
+        self._meta = AgentMeta(name=name or "", description=description or instructions or "", tools=self._tools)
 
     def run(
         self,
@@ -131,13 +129,13 @@ class AbilityAgent(BaseAgent[AbilityAgentRunOutput]):
             return state, user_message
 
         async def handler(run_context: RunContext) -> AbilityAgentRunOutput:
-            for middleware in self.middlewares:
-                middleware.bind(run_context)
-
             state, user_message = await init_state()
-            ability_model = AbilityModel(
-                abilities=self._abilities,
-                final_answer=FinalAnswerAbility(state=state, expected_output=expected_output, double_check=False),
+
+            reasoner = RequirementsReasoner(
+                tools=self._tools,
+                requirements=self._requirements,
+                final_answer=FinalAnswerTool(expected_output, state=state),
+                context=run_context,
             )
             tool_call_cycle_checker = self._create_tool_call_checker()
             tool_call_retry_counter = RetryCounter(error_type=AgentError, max_retries=run_config.total_max_retries or 1)
@@ -149,7 +147,7 @@ class AbilityAgent(BaseAgent[AbilityAgentRunOutput]):
                 if run_config.max_iterations and state.iteration > run_config.max_iterations:
                     raise AgentError(f"Agent was not able to resolve the task in {state.iteration} iterations.")
 
-                request = ability_model.create_request(state, force_tool_call=force_final_answer_as_tool)
+                request = await reasoner.create_request(state, force_tool_call=force_final_answer_as_tool)
 
                 await run_context.emitter.emit(
                     "start",
@@ -158,14 +156,13 @@ class AbilityAgent(BaseAgent[AbilityAgentRunOutput]):
 
                 response = await self._llm.create(
                     messages=[
-                        # TODO: pass abilities instead!
                         _create_system_message(
                             template=self._templates.system,
                             request=request,
                         ),
                         *state.memory.messages,
                     ],
-                    tools=[entry.tool for entry in request.allowed],
+                    tools=request.allowed_tools,
                     tool_choice=request.tool_choice,
                     stream=False,
                 )
@@ -180,18 +177,18 @@ class AbilityAgent(BaseAgent[AbilityAgentRunOutput]):
                     full_text = "".join(msg.text for msg in text_messages)
                     json_object_pair = find_first_pair(full_text, ("{", "}"))
                     final_answer_input = parse_broken_json(json_object_pair.outer) if json_object_pair else None
-                    if not final_answer_input and not ability_model.final_answer.ability.custom_schema:
+                    if not final_answer_input and not request.final_answer.custom_schema:
                         final_answer_input = {"response": full_text}
 
                     if not final_answer_input:
-                        ability_model.update(abilities=[])
+                        reasoner.update(requirements=[])
                         force_final_answer_as_tool = True
                         continue
 
                     tool_call_message = MessageToolCallContent(
                         type="tool-call",
                         id=f"call_{generate_random_string(8).lower()}",
-                        tool_name=ability_model.final_answer.name,
+                        tool_name=reasoner.final_answer.name,
                         args=to_json(final_answer_input, sort_keys=False),
                     )
                     tool_call_messages.append(tool_call_message)
@@ -218,15 +215,17 @@ class AbilityAgent(BaseAgent[AbilityAgentRunOutput]):
 
                 if not cycle_found:
                     # task by ability
-                    for tool_call in await _run_abilities(
-                        abilities=request.allowed, messages=tool_call_messages, context={"state": state.model_dump()}
+                    for tool_call in await _run_tools(
+                        tools=request.allowed_tools,
+                        messages=tool_call_messages,
+                        context={"state": state.model_dump()},
                     ):
                         state.steps.append(
                             AbilityAgentRunStateStep(
                                 iteration=state.iteration,
                                 input=tool_call.input,
                                 output=tool_call.output,
-                                ability=tool_call.ability.ability if tool_call.ability else None,  # TODO: refactor?
+                                tool=tool_call.tool,
                                 error=tool_call.error,
                             )
                         )
@@ -293,13 +292,14 @@ class AbilityAgent(BaseAgent[AbilityAgentRunOutput]):
         cloned = AbilityAgent(
             llm=await self._llm.clone(),
             memory=await self._memory.clone(),
-            abilities=[await ability.clone() for ability in self._abilities],
+            tools=self._tools.copy(),
+            requirements=self._requirements.copy(),
             templates=self._templates.model_dump(),
             tool_call_checker=self._tool_call_checker,
             save_intermediate_steps=self._save_intermediate_steps,
-            meta=self._meta,
             final_answer_as_tool=self._final_answer_as_tool,
-            # TODO: middlewares
+            name=self._meta.name,
+            description=self._meta.description,
         )
         cloned.emitter = await self.emitter.clone()
         return cloned
@@ -312,9 +312,7 @@ class AbilityAgent(BaseAgent[AbilityAgentRunOutput]):
             name=self._meta.name or parent.name,
             description=self._meta.description or parent.description,
             extra_description=self._meta.extra_description or parent.extra_description,
-            tools=[
-                ability.tool for ability in self._abilities if isinstance(ability, ToolAbility)
-            ],  # TODO: only filter ToolAbility or convert all?
+            tools=list(self._tools),
         )
 
     def _create_tool_call_checker(self) -> ToolCallChecker:

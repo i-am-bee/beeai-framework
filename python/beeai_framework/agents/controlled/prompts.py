@@ -24,19 +24,19 @@ from beeai_framework.utils.strings import to_json
 
 
 # TODO: refactor
-class AbilityPromptTemplateDefinition(BaseModel):
+class ToolWithRequirementsPromptTemplateDefinition(BaseModel):
     name: str
     description: str
     input_schema: str
-    enabled: str
+    allowed: str
 
     @classmethod
-    def from_tool(cls, tool: AnyTool, *, enabled: bool = True) -> Self:
+    def from_tool(cls, tool: AnyTool, *, allowed: bool = True) -> Self:
         return cls(
             name=tool.name,
             description=tool.description,
             input_schema=to_json(tool.input_schema.model_json_schema(mode="validation"), indent=2, sort_keys=False),
-            enabled=str(enabled),
+            allowed=str(allowed),
         )
 
 
@@ -47,7 +47,7 @@ class AbilityAgentSystemPromptInput(BaseModel):
     final_answer_name: str  # TODO: refactor
     final_answer_schema: str | None  # TODO: refactor
     final_answer_instructions: str | None  # TODO: refactor
-    abilities: list[AbilityPromptTemplateDefinition]
+    tools: list[ToolWithRequirementsPromptTemplateDefinition]
 
 
 AbilityAgentSystemPrompt = PromptTemplate(
@@ -80,7 +80,7 @@ You must use a tool to retrieve factual or historical information.
 {{#abilities}}
 Name: {{name}}
 Description: {{description}}
-Available: {{enabled}}
+Available: {{allowed}}
 
 {{/abilities}}
 {{/abilities.0}}

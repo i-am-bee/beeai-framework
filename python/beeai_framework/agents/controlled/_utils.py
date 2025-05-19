@@ -16,17 +16,16 @@ from typing import Any
 
 from pydantic import BaseModel, InstanceOf
 
-from beeai_framework.agents.ability.abilities.ability import AnyAbility
-from beeai_framework.agents.ability.prompts import (
+from beeai_framework.agents.controlled.prompts import (
     AbilityAgentSystemPromptInput,
+    ToolWithRequirementsPromptTemplateDefinition,
 )
-from beeai_framework.agents.ability.utils._llm import AbilityAgentRequest, AbilityModelAdapter
+from beeai_framework.agents.controlled.types import AbilityAgentRequest
 from beeai_framework.backend import MessageToolCallContent, MessageToolResultContent, SystemMessage, ToolMessage
 from beeai_framework.errors import FrameworkError
 from beeai_framework.template import PromptTemplate
+from beeai_framework.tools import ToolOutput
 from beeai_framework.tools.tool import AnyTool
-
-RegistryInput = AnyAbility | AnyTool
 
 
 def _create_system_message(
@@ -34,33 +33,31 @@ def _create_system_message(
 ) -> SystemMessage:
     return SystemMessage(
         template.render(
-            abilities=[
-                entry.describe
-                for entry in request.allowed
-                # AbilityPromptTemplateDefinition.from_tool(tool, enabled=tool not in hidden_tools)
-                # for tool in ability_tools
+            tools=[
+                ToolWithRequirementsPromptTemplateDefinition.from_tool(tool, allowed=tool in request.allowed_tools)
+                for tool in request.tools
             ],
             final_answer_name=request.final_answer.name,
-            final_answer_schema=request.final_answer.describe.input_schema
-            if request.final_answer.ability.custom_schema
+            final_answer_schema=request.final_answer.input_schema
+            if request.final_answer.custom_schema
             else None,  # TODO: needed?
-            final_answer_instructions=request.final_answer.ability.instructions,  # TODO: update template!
+            final_answer_instructions=request.final_answer.instructions,  # TODO: update template!
         )
     )
 
 
 class AbilityInvocationResult(BaseModel):
     msg: InstanceOf[MessageToolCallContent]
-    ability: InstanceOf[AbilityModelAdapter] | None
+    tool: InstanceOf[AnyTool] | None
     input: dict[str, Any]
-    output: str
+    output: InstanceOf[ToolOutput]
     error: InstanceOf[FrameworkError] | None
 
     def as_message(self) -> ToolMessage:
         return ToolMessage(
             MessageToolResultContent(
-                tool_name=self.ability.name if self.ability else self.msg.tool_name,
+                tool_name=self.tool.name if self.tool else self.msg.tool_name,
                 tool_call_id=self.msg.id,
-                result=self.output,
+                result=self.output.get_text_content(),
             )
         )

@@ -196,11 +196,15 @@ class RunContext:
             output: Any | None = None
 
             try:
-                await emitter.emit("start", RunContextStartEvent(input=input))
+                start_event = RunContextStartEvent(input=input, output=output)
+                await emitter.emit("start", start_event)
 
                 async def _context_storage_run() -> R:
                     storage.set(context)
-                    return await fn(context)
+                    if start_event.output is not None:
+                        return start_event.output  # type: ignore
+                    else:
+                        return await fn(context)
 
                 async def _context_signal_aborted() -> None:
                     cancel_future = asyncio.get_event_loop().create_future()
@@ -255,6 +259,7 @@ class RunContext:
 
 class RunContextStartEvent(BaseModel):
     input: dict[str, Any]
+    output: Any
 
 
 class RunContextSuccessEvent(BaseModel):
@@ -276,4 +281,11 @@ run_context_event_types: dict[str, type] = {
 }
 
 
-__all__ = ["Run", "RunContext", "run_context_event_types"]
+__all__ = [
+    "Run",
+    "RunContext",
+    "RunContextFinishEvent",
+    "RunContextStartEvent",
+    "RunContextSuccessEvent",
+    "run_context_event_types",
+]

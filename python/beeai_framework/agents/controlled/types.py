@@ -17,8 +17,7 @@ from typing import Annotated, Any
 
 from pydantic import BaseModel, ConfigDict, Field, InstanceOf
 
-from beeai_framework.agents.ability.abilities.ability import Ability
-from beeai_framework.agents.ability.prompts import (
+from beeai_framework.agents.controlled.prompts import (
     AbilityAgentAbilityErrorPrompt,
     AbilityAgentAbilityErrorPromptInput,
     AbilityAgentCycleDetectionPrompt,
@@ -28,12 +27,15 @@ from beeai_framework.agents.ability.prompts import (
     AbilityAgentTaskPrompt,
     AbilityAgentTaskPromptInput,
 )
+from beeai_framework.agents.controlled.requirements.final_answer_tool import FinalAnswerTool
 from beeai_framework.backend import (
     AssistantMessage,
 )
+from beeai_framework.backend.types import ChatModelToolChoice
 from beeai_framework.errors import FrameworkError
 from beeai_framework.memory import BaseMemory
 from beeai_framework.template import PromptTemplate
+from beeai_framework.tools import AnyTool, Tool, ToolOutput
 
 
 class AbilityAgentTemplates(BaseModel):
@@ -59,10 +61,9 @@ class AbilityAgentRunStateStep(BaseModel):
     model_config = ConfigDict(extra="allow")
 
     iteration: int
-    # tool: InstanceOf[Tool[Any, Any, Any]] | None
+    tool: InstanceOf[Tool[Any, Any, Any]] | None
     input: dict[str, Any]
-    output: str
-    ability: InstanceOf[Ability] | None  # TODO: circular dep?
+    output: InstanceOf[ToolOutput]
     error: InstanceOf[FrameworkError] | None
     # extra: dict[str, Any]  # TODO: stored outputs from Abilities
 
@@ -78,3 +79,14 @@ class AbilityAgentRunOutput(BaseModel):
     result: InstanceOf[AssistantMessage]
     memory: InstanceOf[BaseMemory]
     state: AbilityAgentRunState
+
+
+class AbilityAgentRequest(BaseModel):
+    model_config = ConfigDict(extra="allow", arbitrary_types_allowed=True)
+
+    tools: list[AnyTool]
+    allowed_tools: list[AnyTool]
+    hidden_tools: list[AnyTool]
+    tool_choice: ChatModelToolChoice
+    final_answer: FinalAnswerTool
+    can_stop: bool
