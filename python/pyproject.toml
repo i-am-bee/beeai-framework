@@ -35,11 +35,12 @@ mcp = {version = "^1.2.0", optional = true}
 pydantic = "^2.10"
 pydantic-settings = "^2.9.0"
 requests = "^2.32"
-wikipedia-api = {version = "^0.8.1", optional = true}
 uvicorn = {version = "^0.34.2", optional = true}
+wikipedia-api = {version = "^0.8.1", optional = true}
 
 [tool.poetry.group.dev.dependencies]
 commitizen = "^4.2.1"
+deepeval = "^2.9.2"
 mypy = "^1.15.0"
 nbstripout = "^0.8.1"
 poethepoet = "^0.33.1"
@@ -74,6 +75,12 @@ exclude = ["^build/$", "^examples/playground/"]
 check_untyped_defs = true
 plugins = ["pydantic.mypy"]
 strict = true
+
+[[tool.mypy.overrides]]
+module = ["deepeval.*", "deepeval"]
+ignore_errors = true
+ignore_missing_imports = true
+disallow_untyped_defs = true
 
 [tool.pydantic-mypy]
 init_forbid_extra = true
@@ -134,6 +141,12 @@ cmd = "poetry build"
 [tool.poe.tasks.commit]
 help = "Creates a commit"
 cmd = "cz commit -- --signoff"
+
+[tool.poe.tasks.eval]
+help = "Run evaluation"
+cwd = "."
+args = [{ name = "TARGET", positional = true, multiple = true, default="eval" }]
+shell = "deepeval test run ${TARGET}"
 
 [tool.poe.tasks.format]
 help = "Run all formating tools"

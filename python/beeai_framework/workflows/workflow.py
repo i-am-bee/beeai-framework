@@ -141,9 +141,9 @@ class Workflow(Generic[T, K]):
                     run.steps.append(step_res)
 
                     if inspect.iscoroutinefunction(step.handler):
-                        step_next = await step.handler(step_res.state)  # , handlers)
+                        step_next = await step.run(step_res.state)  # , handlers)
                     else:
-                        step_next = await asyncio.to_thread(step.handler, step_res.state)  # handlers)
+                        step_next = await asyncio.to_thread(step.run, step_res.state)  # handlers)
 
                     check_model(step_res.state)
                     run.state = step_res.state

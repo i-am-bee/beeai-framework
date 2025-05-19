@@ -13,7 +13,7 @@
 # limitations under the License.
 
 from collections.abc import Callable
-from typing import TypeVar, overload
+from typing import Any, TypeVar, overload
 
 T = TypeVar("T")
 
@@ -22,7 +22,7 @@ def flatten(xss: list[list[T]]) -> list[T]:
     return [x for xs in xss for x in xs]
 
 
-def remove_falsy(xss: list[T]) -> list[T]:
+def remove_falsy(xss: list[T | None]) -> list[T]:
     return [x for x in xss if x]
 
 
@@ -50,3 +50,11 @@ def find_index(
         return fallback
 
     raise ValueError("No matching element found")
+
+
+def remove_by_reference(lst: list[Any], obj: Any) -> None:
+    for i, item in enumerate(lst):
+        if item is obj:
+            del lst[i]
+
+    raise ValueError("Object not found in list")

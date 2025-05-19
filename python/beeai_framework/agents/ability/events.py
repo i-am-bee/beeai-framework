@@ -12,11 +12,23 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import Protocol, TypeVar, runtime_checkable
 
-T = TypeVar("T", bound="Cloneable")
+from pydantic import BaseModel
+
+from beeai_framework.agents.ability._utils import AbilityAgentRequest
+from beeai_framework.agents.ability.types import AbilityAgentRunState
 
 
-@runtime_checkable
-class Cloneable(Protocol):
-    async def clone(self: T) -> T: ...
+class AbilityAgentStartEvent(BaseModel):
+    state: AbilityAgentRunState
+    request: AbilityAgentRequest
+
+
+class AbilityAgentSuccessEvent(BaseModel):
+    state: AbilityAgentRunState
+
+
+ability_agent_event_types: dict[str, type] = {
+    "start": AbilityAgentStartEvent,
+    "success": AbilityAgentSuccessEvent,
+}

@@ -33,20 +33,6 @@ from beeai_framework.emitter.utils import (
 )
 from beeai_framework.utils.types import MaybeAsync
 
-MatcherFn: TypeAlias = Callable[["EventMeta"], bool]
-Matcher: TypeAlias = str | re.Pattern[str] | MatcherFn
-Callback: TypeAlias = MaybeAsync[[Any, "EventMeta"], None]
-CleanupFn: TypeAlias = Callable[[], None]
-
-
-class Listener(BaseModel):
-    match: MatcherFn
-    raw: Matcher
-    callback: Callback
-    options: InstanceOf[EmitterOptions] | None = None
-
-    model_config = ConfigDict(frozen=True)
-
 
 class EventMeta(BaseModel):
     id: str
@@ -61,6 +47,21 @@ class EventMeta(BaseModel):
     data_type: type
 
 
+MatcherFn = Callable[[EventMeta], bool]
+Matcher = str | re.Pattern[str] | MatcherFn
+Callback: TypeAlias = MaybeAsync[[Any, EventMeta], None]
+CleanupFn: TypeAlias = Callable[[], None]
+
+
+class Listener(BaseModel):
+    match: MatcherFn
+    raw: Matcher
+    callback: Callback
+    options: InstanceOf[EmitterOptions] | None = None
+
+    model_config = ConfigDict(frozen=True)
+
+
 class Emitter:
     def __init__(
         self,
@@ -73,7 +74,7 @@ class Emitter:
     ) -> None:
         super().__init__()
 
-        self._listeners: set[Listener] = set()
+        self._listeners: list[Listener] = []
         self._group_id: str | None = group_id
         self.namespace: list[str] = namespace or []
         self.creator: object | None = creator
@@ -181,7 +182,7 @@ class Emitter:
             return lambda event: all(match_fn(event) for match_fn in matchers)
 
         listener = Listener(match=create_matcher(), raw=matcher, callback=callback, options=options)
-        self._listeners.add(listener)
+        self._listeners.append(listener)
 
         return lambda: self._listeners.remove(listener)
 
@@ -244,5 +245,5 @@ class Emitter:
             self._events.copy(),
         )
         cloned._cleanups = self._cleanups
-        cloned._listeners = {listener.model_copy() for listener in self._listeners}
+        cloned._listeners = [listener.model_copy() for listener in self._listeners]
         return cloned
