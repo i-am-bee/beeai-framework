@@ -19,6 +19,7 @@ documentation = "https://i-am-bee.github.io/beeai-framework/#/python/"
 [tool.poetry.dependencies]
 python = ">= 3.11,<4.0"
 acp-sdk = {version = "~0.8.4", optional = true}
+a2a-sdk = {version = "~0.2.1", optional = true, python = ">=3.13"}
 aiofiles = "^24.1.0"
 boto3 = {version = "^1.37.5", optional = true}
 cachetools = "^5.5.2"
@@ -66,6 +67,7 @@ wikipedia = ["wikipedia-api"]
 mcp = ["mcp"]
 acp = ["acp-sdk", "uvicorn"]
 beeai-platform = ["acp-sdk", "uvicorn"]
+a2a = ["a2a-sdk"]
 
 
 [tool.mypy]
