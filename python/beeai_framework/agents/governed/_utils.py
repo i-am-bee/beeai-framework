@@ -12,24 +12,19 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import Any
 
-from pydantic import BaseModel, InstanceOf
-
-from beeai_framework.agents.controlled.prompts import (
-    AbilityAgentSystemPromptInput,
+from beeai_framework.agents.governed.prompts import (
+    GovernedAgentSystemPromptInput,
     ToolWithRequirementsPromptTemplateDefinition,
 )
-from beeai_framework.agents.controlled.types import AbilityAgentRequest
-from beeai_framework.backend import MessageToolCallContent, MessageToolResultContent, SystemMessage, ToolMessage
-from beeai_framework.errors import FrameworkError
+from beeai_framework.agents.governed.types import GovernedAgentRequest
+from beeai_framework.backend import SystemMessage
 from beeai_framework.template import PromptTemplate
-from beeai_framework.tools import ToolOutput
-from beeai_framework.tools.tool import AnyTool
+from beeai_framework.utils.strings import to_json
 
 
 def _create_system_message(
-    *, template: PromptTemplate[AbilityAgentSystemPromptInput], request: AbilityAgentRequest
+    *, template: PromptTemplate[GovernedAgentSystemPromptInput], request: GovernedAgentRequest
 ) -> SystemMessage:
     return SystemMessage(
         template.render(
@@ -38,26 +33,11 @@ def _create_system_message(
                 for tool in request.tools
             ],
             final_answer_name=request.final_answer.name,
-            final_answer_schema=request.final_answer.input_schema
+            final_answer_schema=to_json(
+                request.final_answer.input_schema.model_json_schema(mode="validation"), indent=2
+            )
             if request.final_answer.custom_schema
             else None,  # TODO: needed?
             final_answer_instructions=request.final_answer.instructions,  # TODO: update template!
         )
     )
-
-
-class AbilityInvocationResult(BaseModel):
-    msg: InstanceOf[MessageToolCallContent]
-    tool: InstanceOf[AnyTool] | None
-    input: dict[str, Any]
-    output: InstanceOf[ToolOutput]
-    error: InstanceOf[FrameworkError] | None
-
-    def as_message(self) -> ToolMessage:
-        return ToolMessage(
-            MessageToolResultContent(
-                tool_name=self.tool.name if self.tool else self.msg.tool_name,
-                tool_call_id=self.msg.id,
-                result=self.output.get_text_content(),
-            )
-        )

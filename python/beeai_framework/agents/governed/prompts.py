@@ -40,8 +40,7 @@ class ToolWithRequirementsPromptTemplateDefinition(BaseModel):
         )
 
 
-# TODO: rename?
-class AbilityAgentSystemPromptInput(BaseModel):
+class GovernedAgentSystemPromptInput(BaseModel):
     role: str
     instructions: str | None = None
     final_answer_name: str  # TODO: refactor
@@ -50,9 +49,9 @@ class AbilityAgentSystemPromptInput(BaseModel):
     tools: list[ToolWithRequirementsPromptTemplateDefinition]
 
 
-AbilityAgentSystemPrompt = PromptTemplate(
+GovernedAgentSystemPrompt = PromptTemplate(
     PromptTemplateInput(
-        schema=AbilityAgentSystemPromptInput,
+        schema=GovernedAgentSystemPromptInput,
         functions={"formatDate": lambda data: datetime.now(tz=UTC).strftime("%Y-%m-%d")},
         defaults={"role": "a helpful AI assistant", "instructions": ""},
         template="""# Role
@@ -76,14 +75,14 @@ IMPORTANT: The facts mentioned in the final answer must be backed by evidence pr
 # Tools
 You must use a tool to retrieve factual or historical information.
 
-{{#abilities.0}}
-{{#abilities}}
+{{#tools.0}}
+{{#tools}}
 Name: {{name}}
 Description: {{description}}
 Available: {{allowed}}
 
-{{/abilities}}
-{{/abilities.0}}
+{{/tools}}
+{{/tools.0}}
 
 # Best practices
 - Use markdown syntax to format code snippets, links, JSON, tables, images, and files.
@@ -101,15 +100,15 @@ Available: {{allowed}}
 )
 
 
-class AbilityAgentTaskPromptInput(BaseModel):
+class GovernedAgentTaskPromptInput(BaseModel):
     prompt: str
     context: str | None = None
-    expected_output: str | type[BaseModel] | None = None
+    expected_output: str | None = None
 
 
-AbilityAgentTaskPrompt = PromptTemplate(
+GovernedAgentTaskPrompt = PromptTemplate(
     PromptTemplateInput(
-        schema=AbilityAgentTaskPromptInput,
+        schema=GovernedAgentTaskPromptInput,
         template="""{{#context}}This is the context that you are working with:
 {{.}}
 
@@ -125,15 +124,13 @@ Your task: {{prompt}}
 )
 
 
-# TODO: refactor rename
-class AbilityAgentAbilityErrorPromptInput(BaseModel):
+class GovernedAgentToolErrorPromptInput(BaseModel):
     reason: str
 
 
-# TODO: refactor name
-AbilityAgentAbilityErrorPrompt = PromptTemplate(
+GovernedAgentToolErrorPrompt = PromptTemplate(
     PromptTemplateInput(
-        schema=AbilityAgentAbilityErrorPromptInput,
+        schema=GovernedAgentToolErrorPromptInput,
         template="""The tool has failed; the error log is shown below. If the tool cannot accomplish what you want, use a different tool or explain why you can't use it.
 
 {{&reason}}""",  # noqa: E501
@@ -141,15 +138,15 @@ AbilityAgentAbilityErrorPrompt = PromptTemplate(
 )
 
 
-class AbilityAgentCycleDetectionPromptInput(BaseModel):
+class GovernedAgentCycleDetectionPromptInput(BaseModel):
     tool_name: str
     tool_args: str
     final_answer_name: str
 
 
-AbilityAgentCycleDetectionPrompt = PromptTemplate(
+GovernedAgentCycleDetectionPrompt = PromptTemplate(
     PromptTemplateInput(
-        schema=AbilityAgentCycleDetectionPromptInput,
+        schema=GovernedAgentCycleDetectionPromptInput,
         template="""I can't see your answer. You must use the '{{final_answer_name}}' tool to send me a message.""",
     )
 )

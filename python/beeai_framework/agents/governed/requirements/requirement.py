@@ -21,8 +21,10 @@ from typing import Any, Generic, Self
 from pydantic import BaseModel, Field
 from typing_extensions import TypeVar
 
+from beeai_framework.agents.governed.requirements._utils import MultiTargetType, _assert_targets_exist, _extract_targets
 from beeai_framework.context import Run, RunContext
 from beeai_framework.emitter import Emitter
+from beeai_framework.errors import FrameworkError
 from beeai_framework.tools import AnyTool
 from beeai_framework.utils import MaybeAsync
 from beeai_framework.utils.strings import to_safe_word
@@ -118,13 +120,13 @@ RequirementFn = MaybeAsync[[T, RunContext], list[RequirementResult]]
 def requirement(
     *,
     name: str | None = None,
-    targets: list[str] | list[AnyTool] | None = None,
+    targets: MultiTargetType | None = None,
 ) -> Callable[[RequirementFn], Requirement[T]]:
     def create_requirement(
         fn: RequirementFn,
     ) -> Requirement[Any]:
         req_name = name or fn.__name__
-        req_targets = {t if isinstance(t, str) else t.name for t in (targets or [])}
+        req_targets = _extract_targets(targets)
 
         class FunctionRequirement(Requirement[Any]):
             name = req_name or fn.__name__
@@ -138,11 +140,21 @@ def requirement(
                     return result
 
             def init(self, *, tools: list[AnyTool], ctx: RunContext) -> None:
-                existing_names = {t.name for t in tools}
-                diff = list(req_targets - existing_names)
-                if diff:
-                    raise ValueError(f"Requirement '{req_name}' requires tools: {', '.join(diff)}.")
+                _assert_targets_exist(targets=tools, allowed=req_targets)
 
         return FunctionRequirement()
 
     return create_requirement
+
+
+class RequirementError(FrameworkError):
+    def __init__(
+        self,
+        message: str = "Framework error",
+        *,
+        requirement: Requirement[Any] | None = None,
+        cause: BaseException | None = None,
+        context: dict[str, Any] | None = None,
+    ) -> None:
+        super().__init__(message, is_fatal=True, is_retryable=False, cause=cause, context=context)
+        self._requirement = requirement

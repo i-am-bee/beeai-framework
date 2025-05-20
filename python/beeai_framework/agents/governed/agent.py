@@ -19,25 +19,24 @@ from pydantic import BaseModel
 
 from beeai_framework.agents import AgentError, AgentExecutionConfig, AgentMeta
 from beeai_framework.agents.base import BaseAgent
-from beeai_framework.agents.controlled._utils import _create_system_message
-from beeai_framework.agents.controlled.events import (
-    AbilityAgentStartEvent,
-    AbilityAgentSuccessEvent,
+from beeai_framework.agents.governed._utils import _create_system_message
+from beeai_framework.agents.governed.events import (
+    GovernedAgentStartEvent,
+    GovernedAgentSuccessEvent,
     ability_agent_event_types,
 )
-from beeai_framework.agents.controlled.prompts import AbilityAgentCycleDetectionPromptInput, AbilityAgentTaskPromptInput
-from beeai_framework.agents.controlled.requirements.final_answer_tool import FinalAnswerTool
-from beeai_framework.agents.controlled.requirements.requirement import Requirement
-from beeai_framework.agents.controlled.types import (
-    AbilityAgentRunOutput,
-    AbilityAgentRunState,
-    AbilityAgentRunStateStep,
-    AbilityAgentTemplateFactory,
-    AbilityAgentTemplates,
-    AbilityAgentTemplatesKeys,
+from beeai_framework.agents.governed.prompts import GovernedAgentCycleDetectionPromptInput, GovernedAgentTaskPromptInput
+from beeai_framework.agents.governed.requirements.requirement import Requirement
+from beeai_framework.agents.governed.types import (
+    GovernedAgentRunOutput,
+    GovernedAgentRunState,
+    GovernedAgentRunStateStep,
+    GovernedAgentTemplateFactory,
+    GovernedAgentTemplates,
+    GovernedAgentTemplatesKeys,
 )
-from beeai_framework.agents.controlled.utils._llm import RequirementsReasoner
-from beeai_framework.agents.controlled.utils._tool import _run_tools
+from beeai_framework.agents.governed.utils._llm import RequirementsReasoner
+from beeai_framework.agents.governed.utils._tool import FinalAnswerTool, _run_tools
 from beeai_framework.agents.tool_calling.utils import ToolCallChecker, ToolCallCheckerConfig
 from beeai_framework.backend.chat import ChatModel
 from beeai_framework.backend.message import (
@@ -58,28 +57,28 @@ from beeai_framework.utils.dicts import exclude_none
 from beeai_framework.utils.models import update_model
 from beeai_framework.utils.strings import find_first_pair, generate_random_string, to_json
 
-AbilityAgentRequirement = Requirement[AbilityAgentRunState]
+GovernedAgentRequirement = Requirement[GovernedAgentRunState]
 
 
-class AbilityAgent(BaseAgent[AbilityAgentRunOutput]):
+class GovernedAgent(BaseAgent[GovernedAgentRunOutput]):
     def __init__(
         self,
         *,
-        llm: ChatModel,
+        model: ChatModel,
         memory: BaseMemory | None = None,
-        templates: dict[AbilityAgentTemplatesKeys, PromptTemplate[Any] | AbilityAgentTemplateFactory] | None = None,
-        save_intermediate_steps: bool = True,
         tools: Sequence[AnyTool] | None = None,
-        requirements: Sequence[AbilityAgentRequirement] | None = None,
+        requirements: Sequence[GovernedAgentRequirement] | None = None,
         name: str | None = None,
         description: str | None = None,
         role: str | None = None,
         instructions: str | None = None,
         tool_call_checker: ToolCallCheckerConfig | bool = True,
         final_answer_as_tool: bool = True,
+        save_intermediate_steps: bool = True,
+        templates: dict[GovernedAgentTemplatesKeys, PromptTemplate[Any] | GovernedAgentTemplateFactory] | None = None,
     ) -> None:
         super().__init__()
-        self._llm = llm
+        self._model = model
         self._memory = memory or UnconstrainedMemory()
         self._templates = self._generate_templates(templates)
         self._save_intermediate_steps = save_intermediate_steps
@@ -105,20 +104,20 @@ class AbilityAgent(BaseAgent[AbilityAgentRunOutput]):
         context: str | None = None,
         expected_output: str | type[BaseModel] | None = None,
         execution: AgentExecutionConfig | None = None,
-    ) -> Run[AbilityAgentRunOutput]:
+    ) -> Run[GovernedAgentRunOutput]:
         run_config = execution or AgentExecutionConfig(
             max_retries_per_step=3,
             total_max_retries=20,
             max_iterations=10,
         )
 
-        async def init_state() -> tuple[AbilityAgentRunState, UserMessage | None]:
-            state = AbilityAgentRunState(memory=UnconstrainedMemory(), steps=[], iteration=0, result=None)
+        async def init_state() -> tuple[GovernedAgentRunState, UserMessage | None]:
+            state = GovernedAgentRunState(memory=UnconstrainedMemory(), steps=[], iteration=0, result=None)
             await state.memory.add_many(self.memory.messages)
 
             user_message: UserMessage | None = None
             if prompt:
-                task_input = AbilityAgentTaskPromptInput(
+                task_input = GovernedAgentTaskPromptInput(
                     prompt=prompt,
                     context=context,
                     expected_output=expected_output if isinstance(expected_output, str) else None,  # TODO: validate
@@ -128,7 +127,7 @@ class AbilityAgent(BaseAgent[AbilityAgentRunOutput]):
 
             return state, user_message
 
-        async def handler(run_context: RunContext) -> AbilityAgentRunOutput:
+        async def handler(run_context: RunContext) -> GovernedAgentRunOutput:
             state, user_message = await init_state()
 
             reasoner = RequirementsReasoner(
@@ -151,10 +150,10 @@ class AbilityAgent(BaseAgent[AbilityAgentRunOutput]):
 
                 await run_context.emitter.emit(
                     "start",
-                    AbilityAgentStartEvent(state=state, request=request),
+                    GovernedAgentStartEvent(state=state, request=request),
                 )
 
-                response = await self._llm.create(
+                response = await self._model.create(
                     messages=[
                         _create_system_message(
                             template=self._templates.system,
@@ -202,7 +201,7 @@ class AbilityAgent(BaseAgent[AbilityAgentRunOutput]):
                         await state.memory.add(
                             UserMessage(
                                 self._templates.cycle_detection.render(
-                                    AbilityAgentCycleDetectionPromptInput(
+                                    GovernedAgentCycleDetectionPromptInput(
                                         tool_args=tool_call_msg.args,
                                         tool_name=tool_call_msg.tool_name,
                                         final_answer_name=request.final_answer.name,
@@ -214,14 +213,13 @@ class AbilityAgent(BaseAgent[AbilityAgentRunOutput]):
                         break
 
                 if not cycle_found:
-                    # task by ability
                     for tool_call in await _run_tools(
                         tools=request.allowed_tools,
                         messages=tool_call_messages,
                         context={"state": state.model_dump()},
                     ):
                         state.steps.append(
-                            AbilityAgentRunStateStep(
+                            GovernedAgentRunStateStep(
                                 iteration=state.iteration,
                                 input=tool_call.input,
                                 output=tool_call.output,
@@ -243,7 +241,7 @@ class AbilityAgent(BaseAgent[AbilityAgentRunOutput]):
 
                 await run_context.emitter.emit(
                     "success",
-                    AbilityAgentSuccessEvent(state=state),
+                    GovernedAgentSuccessEvent(state=state),
                 )
 
             if self._save_intermediate_steps:
@@ -255,7 +253,7 @@ class AbilityAgent(BaseAgent[AbilityAgentRunOutput]):
 
                 await self.memory.add_many(extract_last_tool_call_pair(state.memory) or [])
 
-            return AbilityAgentRunOutput(result=state.result, memory=state.memory, state=state)
+            return GovernedAgentRunOutput(result=state.result, memory=state.memory, state=state)
 
         return self._to_run(handler, signal=None, run_params={"prompt": prompt, "execution": execution})
 
@@ -272,14 +270,14 @@ class AbilityAgent(BaseAgent[AbilityAgentRunOutput]):
 
     @staticmethod
     def _generate_templates(
-        overrides: dict[AbilityAgentTemplatesKeys, PromptTemplate[Any] | AbilityAgentTemplateFactory] | None = None,
-    ) -> AbilityAgentTemplates:
-        templates = AbilityAgentTemplates()
+        overrides: dict[GovernedAgentTemplatesKeys, PromptTemplate[Any] | GovernedAgentTemplateFactory] | None = None,
+    ) -> GovernedAgentTemplates:
+        templates = GovernedAgentTemplates()
         if overrides is None:
             return templates
 
-        for name, _info in AbilityAgentTemplates.model_fields.items():
-            override: PromptTemplate[Any] | AbilityAgentTemplateFactory | None = overrides.get(name)
+        for name, _info in GovernedAgentTemplates.model_fields.items():
+            override: PromptTemplate[Any] | GovernedAgentTemplateFactory | None = overrides.get(name)
             if override is None:
                 continue
             elif isinstance(override, PromptTemplate):
@@ -288,9 +286,9 @@ class AbilityAgent(BaseAgent[AbilityAgentRunOutput]):
                 setattr(templates, name, override(getattr(templates, name)))
         return templates
 
-    async def clone(self) -> "AbilityAgent":
-        cloned = AbilityAgent(
-            llm=await self._llm.clone(),
+    async def clone(self) -> "GovernedAgent":
+        cloned = GovernedAgent(
+            model=await self._model.clone(),
             memory=await self._memory.clone(),
             tools=self._tools.copy(),
             requirements=self._requirements.copy(),

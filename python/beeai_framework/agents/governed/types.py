@@ -17,17 +17,17 @@ from typing import Annotated, Any
 
 from pydantic import BaseModel, ConfigDict, Field, InstanceOf
 
-from beeai_framework.agents.controlled.prompts import (
-    AbilityAgentAbilityErrorPrompt,
-    AbilityAgentAbilityErrorPromptInput,
-    AbilityAgentCycleDetectionPrompt,
-    AbilityAgentCycleDetectionPromptInput,
-    AbilityAgentSystemPrompt,
-    AbilityAgentSystemPromptInput,
-    AbilityAgentTaskPrompt,
-    AbilityAgentTaskPromptInput,
+from beeai_framework.agents.governed.prompts import (
+    GovernedAgentCycleDetectionPrompt,
+    GovernedAgentCycleDetectionPromptInput,
+    GovernedAgentSystemPrompt,
+    GovernedAgentSystemPromptInput,
+    GovernedAgentTaskPrompt,
+    GovernedAgentTaskPromptInput,
+    GovernedAgentToolErrorPrompt,
+    GovernedAgentToolErrorPromptInput,
 )
-from beeai_framework.agents.controlled.requirements.final_answer_tool import FinalAnswerTool
+from beeai_framework.agents.governed.utils._tool import FinalAnswerTool
 from beeai_framework.backend import (
     AssistantMessage,
 )
@@ -38,26 +38,26 @@ from beeai_framework.template import PromptTemplate
 from beeai_framework.tools import AnyTool, Tool, ToolOutput
 
 
-class AbilityAgentTemplates(BaseModel):
-    system: InstanceOf[PromptTemplate[AbilityAgentSystemPromptInput]] = Field(
-        default_factory=lambda: AbilityAgentSystemPrompt.fork(None),
+class GovernedAgentTemplates(BaseModel):
+    system: InstanceOf[PromptTemplate[GovernedAgentSystemPromptInput]] = Field(
+        default_factory=lambda: GovernedAgentSystemPrompt.fork(None),
     )
-    task: InstanceOf[PromptTemplate[AbilityAgentTaskPromptInput]] = Field(
-        default_factory=lambda: AbilityAgentTaskPrompt.fork(None),
+    task: InstanceOf[PromptTemplate[GovernedAgentTaskPromptInput]] = Field(
+        default_factory=lambda: GovernedAgentTaskPrompt.fork(None),
     )
-    ability_error: InstanceOf[PromptTemplate[AbilityAgentAbilityErrorPromptInput]] = Field(
-        default_factory=lambda: AbilityAgentAbilityErrorPrompt.fork(None),
+    ability_error: InstanceOf[PromptTemplate[GovernedAgentToolErrorPromptInput]] = Field(
+        default_factory=lambda: GovernedAgentToolErrorPrompt.fork(None),
     )
-    cycle_detection: InstanceOf[PromptTemplate[AbilityAgentCycleDetectionPromptInput]] = Field(
-        default_factory=lambda: AbilityAgentCycleDetectionPrompt.fork(None),
+    cycle_detection: InstanceOf[PromptTemplate[GovernedAgentCycleDetectionPromptInput]] = Field(
+        default_factory=lambda: GovernedAgentCycleDetectionPrompt.fork(None),
     )
 
 
-AbilityAgentTemplateFactory = Callable[[InstanceOf[PromptTemplate[Any]]], InstanceOf[PromptTemplate[Any]]]
-AbilityAgentTemplatesKeys = Annotated[str, lambda v: v in AbilityAgentTemplates.model_fields]
+GovernedAgentTemplateFactory = Callable[[InstanceOf[PromptTemplate[Any]]], InstanceOf[PromptTemplate[Any]]]
+GovernedAgentTemplatesKeys = Annotated[str, lambda v: v in GovernedAgentTemplates.model_fields]
 
 
-class AbilityAgentRunStateStep(BaseModel):
+class GovernedAgentRunStateStep(BaseModel):
     model_config = ConfigDict(extra="allow")
 
     iteration: int
@@ -65,23 +65,22 @@ class AbilityAgentRunStateStep(BaseModel):
     input: dict[str, Any]
     output: InstanceOf[ToolOutput]
     error: InstanceOf[FrameworkError] | None
-    # extra: dict[str, Any]  # TODO: stored outputs from Abilities
 
 
-class AbilityAgentRunState(BaseModel):
+class GovernedAgentRunState(BaseModel):
     result: InstanceOf[AssistantMessage] | None = None
     memory: InstanceOf[BaseMemory]
     iteration: int
-    steps: list[AbilityAgentRunStateStep] = []
+    steps: list[GovernedAgentRunStateStep] = []
 
 
-class AbilityAgentRunOutput(BaseModel):
+class GovernedAgentRunOutput(BaseModel):
     result: InstanceOf[AssistantMessage]
     memory: InstanceOf[BaseMemory]
-    state: AbilityAgentRunState
+    state: GovernedAgentRunState
 
 
-class AbilityAgentRequest(BaseModel):
+class GovernedAgentRequest(BaseModel):
     model_config = ConfigDict(extra="allow", arbitrary_types_allowed=True)
 
     tools: list[AnyTool]

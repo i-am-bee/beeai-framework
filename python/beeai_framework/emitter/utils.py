@@ -40,8 +40,10 @@ def create_internal_event_matcher(name: str, instance: "RunInstance", *, parent_
         if parent_run_id is not None and (not event.trace or event.trace.parent_run_id != parent_run_id):
             return False
 
-        return event.path == ".".join(["run", *instance.emitter.namespace, name]) and bool(
-            event.context.get("internal", False)
+        return (
+            event.path == ".".join(["run", *instance.emitter.namespace, name])
+            and bool(event.context.get("internal", False))
+            and event.creator.instance is instance  # type: ignore
         )
 
     return matcher

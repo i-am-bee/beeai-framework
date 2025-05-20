@@ -12,78 +12,97 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import asyncio
+from typing import Any
 
-from beeai_framework.agents.controlled.requirements.requirement import (
+from beeai_framework.agents.governed.requirements._utils import (
+    MultiTargetType,
+    _assert_all_rules_found,
+    _extract_targets,
+    _target_seen_in,
+)
+from beeai_framework.agents.governed.requirements.requirement import (
     Requirement,
     RequirementResult,
     with_run_context,
 )
-from beeai_framework.agents.controlled.types import AbilityAgentRunState
+from beeai_framework.agents.governed.types import GovernedAgentRunState
 from beeai_framework.context import RunContext, RunContextStartEvent
+from beeai_framework.emitter import EmitterOptions, EventMeta
 from beeai_framework.emitter.utils import create_internal_event_matcher
-from beeai_framework.errors import FrameworkError
 from beeai_framework.tools import AnyTool, StringToolOutput
+from beeai_framework.utils import MaybeAsync
+from beeai_framework.utils.asynchronous import ensure_async
+
+AskHandler = MaybeAsync[[AnyTool, dict[str, Any]], bool]
 
 
-class AskPermissionRequirement(Requirement[AbilityAgentRunState]):
+class AskPermissionRequirement(Requirement[GovernedAgentRunState]):
     name = "ask_permission"
     description = "Use to ask the user for a clarification"
 
     def __init__(
         self,
-        include: list[str] | None = None,
+        include: MultiTargetType | None = None,
         *,
-        exclude: list[str] | None = None,
+        handler: AskHandler | None = None,
+        exclude: MultiTargetType | None = None,
         remember_choices: bool = True,
         hide_disallowed: bool = False,
+        always_allow: bool = False,
     ) -> None:
         super().__init__()
         self.priority += 1
-        self._include = set(include or [])
-        self._exclude = set(exclude or [])
+        self._include = _extract_targets(include)
+        self._exclude = _extract_targets(exclude)
         self._state = dict[str, bool]()
         self._remember_choices = remember_choices
         self._hide_disallowed = hide_disallowed
-        # TODO: OOTB CLI reader?
+        self._always_allow = always_allow
+        self._handler = (
+            handler
+            if handler
+            else (
+                lambda tool, tool_input: input(
+                    f"The agent wants to use tool '{tool.name}'\nInput: {tool_input}\nDo you allow it? (yes/no): "
+                )
+                .strip()
+                .startswith("yes")
+            )
+        )
 
     def init(self, *, tools: list[AnyTool], ctx: RunContext) -> None:
+        _assert_all_rules_found(self._include, tools)
+        _assert_all_rules_found(self._exclude, tools)
+
         def setup_tool(tool: AnyTool) -> None:
+            async def handler(data: Any, _: EventMeta) -> None:
+                await self._ask_for_permission(tool, data)
+
             ctx.emitter.match(
                 create_internal_event_matcher("start", tool, parent_run_id=ctx.run_id),
-                lambda data, event, tool_ref=tool: asyncio.create_task(self._ask_for_permission(tool_ref, event)),
+                handler,
+                EmitterOptions(is_blocking=True, persistent=True, match_nested=True),
             )
 
-        remaining_tools: set[str] = self._include.copy() if self._include else {t.name for t in tools}
         for tool in tools:
-            if tool.name in self._exclude:
+            if _target_seen_in(tool, self._exclude):
                 continue
 
-            if tool.name in remaining_tools:
+            if not self._include or _target_seen_in(tool, self._include):
                 setup_tool(tool)
-                remaining_tools.remove(tool.name)
-
-        if remaining_tools:
-            raise FrameworkError(f"Following tools are not found: {remaining_tools}", is_fatal=True, is_retryable=False)
 
     async def _ask_for_permission(self, tool: AnyTool, data: RunContextStartEvent) -> None:
-        if tool.name in self._state:
-            return
-
-        # TODO: generalize
-        response = input(
-            f"The agent wants to use tool '{tool.name}' with the following input {data.input}."
-            f" Do you allow it? (yes/no)"
-        )
-        allowed = response.lower().strip() == "yes"
-        if self._remember_choices:
-            self._state[tool.name] = allowed
+        allowed = self._state.get(tool.name, None)
+        if allowed is None:
+            allowed = await (ensure_async(self._handler))(tool, data.input)
+            if self._remember_choices:
+                self._state[tool.name] = allowed
 
         if not allowed:
             data.output = StringToolOutput("This tool is not allowed to be used.")
 
     @with_run_context
-    async def run(self, input: AbilityAgentRunState, context: RunContext) -> list[RequirementResult]:
+    async def run(self, input: GovernedAgentRunState, context: RunContext) -> list[RequirementResult]:
         return [
             RequirementResult(
                 target=target,

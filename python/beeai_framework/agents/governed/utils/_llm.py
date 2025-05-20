@@ -16,9 +16,9 @@ import contextlib
 from collections.abc import Sequence
 from typing import Literal
 
-from beeai_framework.agents.controlled.requirements.final_answer_tool import FinalAnswerTool
-from beeai_framework.agents.controlled.requirements.requirement import Requirement, RequirementResult
-from beeai_framework.agents.controlled.types import AbilityAgentRequest, AbilityAgentRunState
+from beeai_framework.agents.governed.requirements.requirement import Requirement, RequirementResult
+from beeai_framework.agents.governed.types import GovernedAgentRequest, GovernedAgentRunState
+from beeai_framework.agents.governed.utils._tool import FinalAnswerTool
 from beeai_framework.context import RunContext
 from beeai_framework.errors import FrameworkError
 from beeai_framework.tools import AnyTool
@@ -31,7 +31,7 @@ class RequirementsReasoner:
         self,
         *,
         tools: Sequence[AnyTool],
-        requirements: Sequence[Requirement[AbilityAgentRunState]],
+        requirements: Sequence[Requirement[GovernedAgentRunState]],
         final_answer: FinalAnswerTool,
         context: RunContext,
     ) -> None:
@@ -41,7 +41,7 @@ class RequirementsReasoner:
         self.final_answer = final_answer
         self.update(requirements)
 
-    def update(self, requirements: Sequence[Requirement[AbilityAgentRunState]]) -> None:
+    def update(self, requirements: Sequence[Requirement[GovernedAgentRunState]]) -> None:
         self._entries.clear()
 
         for requirement in requirements:
@@ -50,7 +50,7 @@ class RequirementsReasoner:
         for entry in self._entries:
             entry.init(tools=self._tools, ctx=self._context)
 
-    async def create_request(self, state: AbilityAgentRunState, *, force_tool_call: bool) -> AbilityAgentRequest:
+    async def create_request(self, state: GovernedAgentRunState, *, force_tool_call: bool) -> GovernedAgentRequest:
         hidden: list[AnyTool] = []
         allowed: list[AnyTool] = []
         all_tools: list[AnyTool] = list(self._tools)
@@ -74,7 +74,10 @@ class RequirementsReasoner:
 
         # Filter invalid
         for tool_name, rules in rules_by_tool.items():
-            tool = next(tool for tool in self._tools if tool.name == tool_name)
+            tool = next((tool for tool in self._tools if tool.name == tool_name), None)
+            if tool is None:
+                raise ValueError(f"Tool '{tool_name}' not found.")
+
             rules.sort(key=lambda x: x[1], reverse=True)  # DESC
 
             max_priority = rules[0][1] if rules else 1
@@ -118,7 +121,7 @@ class RequirementsReasoner:
         if len(allowed) == 1:
             tool_choice = allowed[0]
 
-        return AbilityAgentRequest(
+        return GovernedAgentRequest(
             tools=all_tools,
             allowed_tools=allowed,
             tool_choice=tool_choice if isinstance(tool_choice, Tool) or force_tool_call or prevent_stop else "auto",

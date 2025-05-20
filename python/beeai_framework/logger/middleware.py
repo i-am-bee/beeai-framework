@@ -1,3 +1,17 @@
+# Copyright 2025 © BeeAI a Series of LF Projects, LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 import sys
 from collections.abc import Callable
 from typing import Any, Protocol, runtime_checkable
@@ -6,7 +20,7 @@ from langchain_core.tools import BaseTool
 from pydantic import BaseModel
 
 from beeai_framework.agents import BaseAgent
-from beeai_framework.agents.controlled.requirements.requirement import Requirement
+from beeai_framework.agents.governed.requirements.requirement import Requirement
 from beeai_framework.backend import AnyMessage, ChatModel
 from beeai_framework.context import RunContext, RunContextFinishEvent, RunContextStartEvent, RunMiddleware
 from beeai_framework.emitter import EmitterOptions, EventMeta
@@ -169,6 +183,7 @@ class GlobalLoggerMiddleware(RunMiddleware):
             self._write("error has occurred", meta)
             self._write(data.error.explain(), meta)
 
+    # TODO: move to separate module
     def _process_new_messages(self, messages: list[AnyMessage], meta: EventMeta) -> None:
         if not messages:
             return
