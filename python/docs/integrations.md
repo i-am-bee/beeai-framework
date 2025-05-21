@@ -11,8 +11,8 @@
 - [Model Context Protocol (MCP) Integration](#model-context-protocol-integration)
   - [MCPTool](#mcp-tool)
   - [MCPServer](#mcp-server)
-- [Agent2Agent (A2A) Protocol Integration](#agent-2-agent-integration)
-  - [A2AAgent](#a-2-a-agent)
+- [Agent2Agent (A2A) Protocol Integration](#agent2agent-protocol-integration)
+  - [A2AAgent](#a2a-agent)
 - [Examples](#examples)
 <!-- /TOC -->
 
@@ -413,7 +413,7 @@ if __name__ == "__main__":
 > [!Tip]
 > MCPTool lets you add MCP-compatible tools to any agent, see Tools documentation to learn more.
 
-## Agent2Agent (A2A) Protocol Integration
+## Agent2Agent Protocol Integration
 
 ### A2A Agent
 
