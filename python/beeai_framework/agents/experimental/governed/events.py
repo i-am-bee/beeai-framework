@@ -12,8 +12,24 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from beeai_framework.utils.cancellation import AbortController, AbortSignal
-from beeai_framework.utils.models import JSONSchemaModel, ModelLike
-from beeai_framework.utils.types import MaybeAsync
 
-__all__ = ["AbortController", "AbortSignal", "JSONSchemaModel", "MaybeAsync", "ModelLike"]
+from pydantic import BaseModel
+
+from beeai_framework.agents.experimental.governed.types import GovernedAgentRequest, GovernedAgentRunState
+from beeai_framework.backend import ChatModelOutput
+
+
+class GovernedAgentStartEvent(BaseModel):
+    state: GovernedAgentRunState
+    request: GovernedAgentRequest
+
+
+class GovernedAgentSuccessEvent(BaseModel):
+    state: GovernedAgentRunState
+    response: ChatModelOutput
+
+
+ability_agent_event_types: dict[str, type] = {
+    "start": GovernedAgentStartEvent,
+    "success": GovernedAgentSuccessEvent,
+}

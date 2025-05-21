@@ -18,7 +18,7 @@ from typing import Generic, Self
 
 from typing_extensions import TypeVar
 
-from beeai_framework.agents.governed.requirements._utils import (
+from beeai_framework.agents.experimental.governed.requirements._utils import (
     MultiTargetType,
     TargetType,
     _assert_all_rules_found,
@@ -26,13 +26,13 @@ from beeai_framework.agents.governed.requirements._utils import (
     _extract_targets,
     _target_seen_in,
 )
-from beeai_framework.agents.governed.requirements.requirement import (
+from beeai_framework.agents.experimental.governed.requirements.requirement import (
     Requirement,
     RequirementError,
     RequirementResult,
     with_run_context,
 )
-from beeai_framework.agents.governed.types import GovernedAgentRunState
+from beeai_framework.agents.experimental.governed.types import GovernedAgentRunState
 from beeai_framework.context import RunContext
 from beeai_framework.tools import AnyTool
 

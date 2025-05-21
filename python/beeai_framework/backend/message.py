@@ -126,6 +126,9 @@ class Message(ABC, Generic[T]):
             "content": [m.model_dump() for m in self.content],
         }
 
+    def to_json_safe(self) -> Any:
+        return self.to_plain()
+
     def __str__(self) -> str:
         return to_json(self.to_plain(), sort_keys=False)
 

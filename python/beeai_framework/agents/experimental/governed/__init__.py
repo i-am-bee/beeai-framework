@@ -12,22 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+__all__ = ["GovernedAgent", "GovernedAgentRunOutput", "GovernedAgentTemplates"]
 
-from pydantic import BaseModel
-
-from beeai_framework.agents.governed.types import GovernedAgentRequest, GovernedAgentRunState
-
-
-class GovernedAgentStartEvent(BaseModel):
-    state: GovernedAgentRunState
-    request: GovernedAgentRequest
-
-
-class GovernedAgentSuccessEvent(BaseModel):
-    state: GovernedAgentRunState
-
-
-ability_agent_event_types: dict[str, type] = {
-    "start": GovernedAgentStartEvent,
-    "success": GovernedAgentSuccessEvent,
-}
+from beeai_framework.agents.experimental.governed.agent import GovernedAgent
+from beeai_framework.agents.experimental.governed.types import GovernedAgentRunOutput, GovernedAgentTemplates

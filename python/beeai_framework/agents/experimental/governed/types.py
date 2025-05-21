@@ -17,7 +17,7 @@ from typing import Annotated, Any
 
 from pydantic import BaseModel, ConfigDict, Field, InstanceOf
 
-from beeai_framework.agents.governed.prompts import (
+from beeai_framework.agents.experimental.governed.prompts import (
     GovernedAgentCycleDetectionPrompt,
     GovernedAgentCycleDetectionPromptInput,
     GovernedAgentSystemPrompt,
@@ -27,7 +27,7 @@ from beeai_framework.agents.governed.prompts import (
     GovernedAgentToolErrorPrompt,
     GovernedAgentToolErrorPromptInput,
 )
-from beeai_framework.agents.governed.utils._tool import FinalAnswerTool
+from beeai_framework.agents.experimental.governed.utils._tool import FinalAnswerTool
 from beeai_framework.backend import (
     AssistantMessage,
 )

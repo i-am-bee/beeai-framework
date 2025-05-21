@@ -23,6 +23,7 @@ aiofiles = "^24.1.0"
 boto3 = {version = "^1.37.5", optional = true}
 cachetools = "^5.5.2"
 chevron = "^0.14.0"
+deepeval = "2.9.3"
 duckduckgo-search = {version = "^8.0.2", optional = true}
 json-repair = "^0.39.0"
 jsonref = "^1.1.0"
@@ -40,7 +41,7 @@ wikipedia-api = {version = "^0.8.1", optional = true}
 
 [tool.poetry.group.dev.dependencies]
 commitizen = "^4.2.1"
-deepeval = "^2.9.2"
+deepeval = "2.9.3"
 mypy = "^1.15.0"
 nbstripout = "^0.8.1"
 poethepoet = "^0.33.1"
@@ -119,7 +120,7 @@ asyncio_mode = "strict"
 default_fixture_loop_scope = "function"
 
 [tool.coverage.run]
-omit = ["tests/*"]
+omit = ["tests/*", "eval/**/*"]
 
 [tool.coverage.report]
 exclude_lines = [
@@ -310,13 +311,14 @@ lint.select = [
     "ASYNC", # async
 ]
 force-exclude = true
-lint.ignore = ["ANN401", "B904"]
+lint.ignore = ["ANN401", "B904", "RUF001"]
 lint.fixable = ["ALL"]
 lint.unfixable = []
 line-length = 120
 
 [tool.ruff.lint.per-file-ignores]
 "*.ipynb" = ["E501"]
+"examples/**/*.py" = ["E501"]
 
 [tool.ruff.lint.pydocstyle]
 convention = "google"

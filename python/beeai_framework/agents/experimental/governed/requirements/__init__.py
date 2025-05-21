@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-__all__ = ["GovernedAgent", "GovernedAgentRunOutput", "GovernedAgentTemplates"]
+from beeai_framework.agents.experimental.governed.requirements.requirement import Requirement, RequirementResult
 
-from beeai_framework.agents.governed.agent import GovernedAgent
-from beeai_framework.agents.governed.types import GovernedAgentRunOutput, GovernedAgentTemplates
+__all__ = ["Requirement", "RequirementResult"]

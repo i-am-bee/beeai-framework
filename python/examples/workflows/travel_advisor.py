@@ -41,7 +41,7 @@ async def main() -> None:
     workflow.add_agent(
         name="Travel Advisor",
         role="A travel advisor",
-        instructions="""You can synthesize travel details such as weather and recommended activities and provide a coherent summary.""",  # noqa: E501
+        instructions="""You can synthesize travel details such as weather and recommended activities and provide a coherent summary.""",
         llm=llm,
     )
 
@@ -49,15 +49,15 @@ async def main() -> None:
         inputs=[
             AgentWorkflowInput(
                 prompt=f"Provide a comprehensive weather summary for '{destination}' from '{travel_dates}'.",
-                expected_output="Essential weather details such as chance of rain, temperature and wind. Only report information that is available.",  # noqa: E501
+                expected_output="Essential weather details such as chance of rain, temperature and wind. Only report information that is available.",
             ),
             AgentWorkflowInput(
-                prompt=f"Search for a set of activities close to '{destination}' from '{travel_dates}' that are appropriate in light of the weather conditions.",  # noqa: E501
+                prompt=f"Search for a set of activities close to '{destination}' from '{travel_dates}' that are appropriate in light of the weather conditions.",
                 expected_output="A list of activities including location and description that are weather appropriate.",
             ),
             AgentWorkflowInput(
-                prompt=f"Consider the weather report and recommended activities for the trip to '{destination}' from '{travel_dates}' and provide a coherent summary.",  # noqa: E501
-                expected_output="A summary of the trip that the traveler could take with them. Break it down by day including weather, location and helpful tips.",  # noqa: E501
+                prompt=f"Consider the weather report and recommended activities for the trip to '{destination}' from '{travel_dates}' and provide a coherent summary.",
+                expected_output="A summary of the trip that the traveler could take with them. Break it down by day including weather, location and helpful tips.",
             ),
         ]
     ).on(

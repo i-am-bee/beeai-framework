@@ -64,8 +64,11 @@ class JSONToolOutput(ToolOutput, Generic[T]):
     def __init__(self, result: T) -> None:
         self.result = result
 
+    def to_json_safe(self) -> Any:
+        return self.result
+
     def get_text_content(self) -> str:
-        return to_json(self.result)
+        return to_json(self.result, sort_keys=False)
 
     def is_empty(self) -> bool:
         return not self.result

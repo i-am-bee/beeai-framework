@@ -15,7 +15,7 @@
 import asyncio
 import json
 from asyncio import create_task
-from typing import Any, TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from pydantic import BaseModel, Field, InstanceOf, create_model
 
@@ -26,7 +26,8 @@ from beeai_framework.errors import FrameworkError
 from beeai_framework.tools import AnyTool, StringToolOutput, Tool, ToolError, ToolOutput, ToolRunOptions
 
 if TYPE_CHECKING:
-    from beeai_framework.agents.governed.types import GovernedAgentRunState
+    from beeai_framework.agents.experimental.governed.types import GovernedAgentRunState
+
 
 async def _run_tool(
     tools: list[AnyTool],

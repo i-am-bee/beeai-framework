@@ -14,18 +14,19 @@
 
 from typing import Any
 
-from beeai_framework.agents.governed.requirements._utils import (
+from beeai_framework.agents.experimental.governed.requirements._utils import (
     MultiTargetType,
     _assert_all_rules_found,
     _extract_targets,
     _target_seen_in,
 )
-from beeai_framework.agents.governed.requirements.requirement import (
+from beeai_framework.agents.experimental.governed.requirements.requirement import (
     Requirement,
     RequirementResult,
     with_run_context,
 )
-from beeai_framework.agents.governed.types import GovernedAgentRunState
+from beeai_framework.agents.experimental.governed.types import GovernedAgentRunState
+from beeai_framework.agents.experimental.governed.utils._tool import FinalAnswerTool
 from beeai_framework.context import RunContext, RunContextStartEvent
 from beeai_framework.emitter import EmitterOptions, EventMeta
 from beeai_framework.emitter.utils import create_internal_event_matcher
@@ -53,17 +54,20 @@ class AskPermissionRequirement(Requirement[GovernedAgentRunState]):
         super().__init__()
         self.priority += 1
         self._include = _extract_targets(include)
+
         self._exclude = _extract_targets(exclude)
+        self._exclude.add(FinalAnswerTool)
+
         self._state = dict[str, bool]()
         self._remember_choices = remember_choices
         self._hide_disallowed = hide_disallowed
         self._always_allow = always_allow
-        self._handler = (
+        self._handler = ensure_async(
             handler
             if handler
             else (
                 lambda tool, tool_input: input(
-                    f"The agent wants to use tool '{tool.name}'\nInput: {tool_input}\nDo you allow it? (yes/no): "
+                    f"The agent wants to use the '{tool.name} tool.'\nInput: {tool_input}\nDo you allow it? (yes/no): "
                 )
                 .strip()
                 .startswith("yes")
@@ -92,9 +96,9 @@ class AskPermissionRequirement(Requirement[GovernedAgentRunState]):
                 setup_tool(tool)
 
     async def _ask_for_permission(self, tool: AnyTool, data: RunContextStartEvent) -> None:
-        allowed = self._state.get(tool.name, None)
+        allowed: bool | None = True if self._always_allow else self._state.get(tool.name)
         if allowed is None:
-            allowed = await (ensure_async(self._handler))(tool, data.input)
+            allowed = await self._handler(tool, data.input)
             if self._remember_choices:
                 self._state[tool.name] = allowed
 

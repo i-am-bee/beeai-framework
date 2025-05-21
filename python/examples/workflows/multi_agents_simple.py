@@ -49,11 +49,11 @@ async def main() -> None:
                 ),
                 AgentWorkflowInput(
                     prompt=f"Provide a comprehensive weather summary for {location} today.",
-                    expected_output="Essential weather details such as chance of rain, temperature and wind. Only report information that is available.",  # noqa: E501
+                    expected_output="Essential weather details such as chance of rain, temperature and wind. Only report information that is available.",
                 ),
                 AgentWorkflowInput(
                     prompt=f"Summarize the historical and weather data for {location}.",
-                    expected_output=f"A paragraph that describes the history of {location}, followed by the current weather conditions.",  # noqa: E501
+                    expected_output=f"A paragraph that describes the history of {location}, followed by the current weather conditions.",
                 ),
             ]
         )

@@ -21,7 +21,11 @@ from typing import Any, Generic, Self
 from pydantic import BaseModel, Field
 from typing_extensions import TypeVar
 
-from beeai_framework.agents.governed.requirements._utils import MultiTargetType, _assert_targets_exist, _extract_targets
+from beeai_framework.agents.experimental.governed.requirements._utils import (
+    MultiTargetType,
+    _assert_targets_exist,
+    _extract_targets,
+)
 from beeai_framework.context import Run, RunContext
 from beeai_framework.emitter import Emitter
 from beeai_framework.errors import FrameworkError

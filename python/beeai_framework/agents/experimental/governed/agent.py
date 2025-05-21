@@ -19,15 +19,18 @@ from pydantic import BaseModel
 
 from beeai_framework.agents import AgentError, AgentExecutionConfig, AgentMeta
 from beeai_framework.agents.base import BaseAgent
-from beeai_framework.agents.governed._utils import _create_system_message
-from beeai_framework.agents.governed.events import (
+from beeai_framework.agents.experimental.governed._utils import _create_system_message
+from beeai_framework.agents.experimental.governed.events import (
     GovernedAgentStartEvent,
     GovernedAgentSuccessEvent,
     ability_agent_event_types,
 )
-from beeai_framework.agents.governed.prompts import GovernedAgentCycleDetectionPromptInput, GovernedAgentTaskPromptInput
-from beeai_framework.agents.governed.requirements.requirement import Requirement
-from beeai_framework.agents.governed.types import (
+from beeai_framework.agents.experimental.governed.prompts import (
+    GovernedAgentCycleDetectionPromptInput,
+    GovernedAgentTaskPromptInput,
+)
+from beeai_framework.agents.experimental.governed.requirements.requirement import Requirement
+from beeai_framework.agents.experimental.governed.types import (
     GovernedAgentRunOutput,
     GovernedAgentRunState,
     GovernedAgentRunStateStep,
@@ -35,8 +38,8 @@ from beeai_framework.agents.governed.types import (
     GovernedAgentTemplates,
     GovernedAgentTemplatesKeys,
 )
-from beeai_framework.agents.governed.utils._llm import RequirementsReasoner
-from beeai_framework.agents.governed.utils._tool import FinalAnswerTool, _run_tools
+from beeai_framework.agents.experimental.governed.utils._llm import RequirementsReasoner
+from beeai_framework.agents.experimental.governed.utils._tool import FinalAnswerTool, _run_tools
 from beeai_framework.agents.tool_calling.utils import ToolCallChecker, ToolCallCheckerConfig
 from beeai_framework.backend.chat import ChatModel
 from beeai_framework.backend.message import (
@@ -64,7 +67,7 @@ class GovernedAgent(BaseAgent[GovernedAgentRunOutput]):
     def __init__(
         self,
         *,
-        model: ChatModel,
+        llm: ChatModel,
         memory: BaseMemory | None = None,
         tools: Sequence[AnyTool] | None = None,
         requirements: Sequence[GovernedAgentRequirement] | None = None,
@@ -78,7 +81,7 @@ class GovernedAgent(BaseAgent[GovernedAgentRunOutput]):
         templates: dict[GovernedAgentTemplatesKeys, PromptTemplate[Any] | GovernedAgentTemplateFactory] | None = None,
     ) -> None:
         super().__init__()
-        self._model = model
+        self._llm = llm
         self._memory = memory or UnconstrainedMemory()
         self._templates = self._generate_templates(templates)
         self._save_intermediate_steps = save_intermediate_steps
@@ -153,7 +156,7 @@ class GovernedAgent(BaseAgent[GovernedAgentRunOutput]):
                     GovernedAgentStartEvent(state=state, request=request),
                 )
 
-                response = await self._model.create(
+                response = await self._llm.create(
                     messages=[
                         _create_system_message(
                             template=self._templates.system,
@@ -241,7 +244,7 @@ class GovernedAgent(BaseAgent[GovernedAgentRunOutput]):
 
                 await run_context.emitter.emit(
                     "success",
-                    GovernedAgentSuccessEvent(state=state),
+                    GovernedAgentSuccessEvent(state=state, response=response),
                 )
 
             if self._save_intermediate_steps:
@@ -288,7 +291,7 @@ class GovernedAgent(BaseAgent[GovernedAgentRunOutput]):
 
     async def clone(self) -> "GovernedAgent":
         cloned = GovernedAgent(
-            model=await self._model.clone(),
+            llm=await self._llm.clone(),
             memory=await self._memory.clone(),
             tools=self._tools.copy(),
             requirements=self._requirements.copy(),

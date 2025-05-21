@@ -18,7 +18,7 @@ import re
 import string
 from collections.abc import Sequence
 from enum import StrEnum
-from typing import Any, cast
+from typing import Any, Protocol, cast, runtime_checkable
 
 from pydantic import BaseModel
 
@@ -52,8 +52,38 @@ def from_json(input: str) -> Any:
     return json.loads(input)
 
 
-def to_json(input: Any, *, indent: int | None = None, sort_keys: bool = True) -> str:
-    return json.dumps(input, ensure_ascii=False, default=lambda o: o.__dict__, sort_keys=sort_keys, indent=indent)
+@runtime_checkable
+class CustomJsonDump(Protocol):
+    def to_json_safe(self) -> Any: ...
+
+
+def to_json_serializable(input: Any, *, exclude_none: bool = False) -> Any:
+    if isinstance(input, BaseModel):
+        return input.model_dump(fallback=lambda value: to_json_serializable(value, exclude_none=exclude_none))
+    if isinstance(input, CustomJsonDump):
+        return input.to_json_safe()
+    elif isinstance(input, dict):
+        return vars(input)
+    elif isinstance(input, str | bool | int | float):
+        return input
+    elif isinstance(input, dict) and exclude_none:
+        return {k: v for k, v in input.items() if v is not None}
+    else:
+        return str(input)
+
+
+def to_json(input: Any, *, indent: int | None = None, sort_keys: bool = True, exclude_none: bool = False) -> str:
+    def fallback(value: Any) -> Any:
+        return to_json_serializable(value, exclude_none=exclude_none)
+
+    if isinstance(input, BaseModel):
+        return input.model_dump_json(
+            indent=indent,
+            fallback=fallback,
+            exclude_none=exclude_none,
+        )
+    else:
+        return json.dumps(input, ensure_ascii=False, default=fallback, sort_keys=sort_keys, indent=indent)
 
 
 def to_safe_word(phrase: str) -> str:

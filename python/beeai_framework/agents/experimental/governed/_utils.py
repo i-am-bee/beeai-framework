@@ -13,11 +13,11 @@
 # limitations under the License.
 
 
-from beeai_framework.agents.governed.prompts import (
+from beeai_framework.agents.experimental.governed.prompts import (
     GovernedAgentSystemPromptInput,
     ToolWithRequirementsPromptTemplateDefinition,
 )
-from beeai_framework.agents.governed.types import GovernedAgentRequest
+from beeai_framework.agents.experimental.governed.types import GovernedAgentRequest
 from beeai_framework.backend import SystemMessage
 from beeai_framework.template import PromptTemplate
 from beeai_framework.utils.strings import to_json

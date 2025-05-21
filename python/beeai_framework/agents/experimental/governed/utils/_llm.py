@@ -16,9 +16,9 @@ import contextlib
 from collections.abc import Sequence
 from typing import Literal
 
-from beeai_framework.agents.governed.requirements.requirement import Requirement, RequirementResult
-from beeai_framework.agents.governed.types import GovernedAgentRequest, GovernedAgentRunState
-from beeai_framework.agents.governed.utils._tool import FinalAnswerTool
+from beeai_framework.agents.experimental.governed.requirements.requirement import Requirement, RequirementResult
+from beeai_framework.agents.experimental.governed.types import GovernedAgentRequest, GovernedAgentRunState
+from beeai_framework.agents.experimental.governed.utils._tool import FinalAnswerTool
 from beeai_framework.context import RunContext
 from beeai_framework.errors import FrameworkError
 from beeai_framework.tools import AnyTool
