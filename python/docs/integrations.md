@@ -12,7 +12,7 @@
   - [MCPTool](#mcp-tool)
   - [MCPServer](#mcp-server)
 - [Agent2Agent (A2A) Protocol Integration](#agent-2-agent-integration)
-  - [A2AAgent](#a2a-agent)
+  - [A2AAgent](#a-2-a-agent)
 - [Examples](#examples)
 <!-- /TOC -->
 
