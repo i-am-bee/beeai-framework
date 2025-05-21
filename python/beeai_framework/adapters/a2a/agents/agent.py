@@ -42,6 +42,8 @@ from beeai_framework.agents.errors import AgentError
 from beeai_framework.backend.message import (
     AnyMessage,
     AssistantMessage,
+    CustomMessage,
+    CustomMessageContent,
     Message,
     Role,
     UserMessage,
@@ -65,8 +67,12 @@ class A2AAgent(BaseAgent[A2AAgentRunOutput]):
             self._url = url
         else:
             raise ValueError("Either url or agent_card must be provided.")
-        self._memory = memory
-        self._agent_card = agent_card
+        if not memory.is_empty():
+            raise ValueError("Memory must be empty before setting.")
+        self._memory: BaseMemory = memory
+        self._agent_card: a2a_types.AgentCard | None = agent_card
+        self._context_id: str | None = None
+        self._task_id: str | None = None
 
     @property
     def name(self) -> str:
@@ -101,14 +107,16 @@ class A2AAgent(BaseAgent[A2AAgentRunOutput]):
                 if last_event is None:
                     raise AgentError("No event received from agent.")
 
-                if isinstance(last_event, a2a_types.JSONRPCErrorResponse):
+                if isinstance(last_event.root, a2a_types.JSONRPCErrorResponse):
                     await context.emitter.emit(
                         "error",
-                        A2AAgentErrorEvent(message=last_event.root.error.message),
+                        A2AAgentErrorEvent(message=last_event.root.error.message or "Unknown error"),
                     )
-                    raise AgentError(last_event.root.error.message)
-                elif isinstance(last_event, a2a_types.SendStreamingMessageSuccessResponse):
+                    raise AgentError(last_event.root.error.message or "Unknown error")
+                elif isinstance(last_event.root, a2a_types.SendStreamingMessageSuccessResponse):
                     response = last_event.root.result
+                    self._context_id = response.contextId
+                    self._task_id = response.id if isinstance(response, a2a_types.Task) else response.taskId
                     if not isinstance(response, a2a_types.Message):
                         raise AgentError("Invalid response from agent.")
                     input_message: AnyMessage = self._convert_to_framework_message(input)
@@ -143,6 +151,8 @@ class A2AAgent(BaseAgent[A2AAgentRunOutput]):
 
     @memory.setter
     def memory(self, memory: BaseMemory) -> None:
+        if not memory.is_empty():
+            raise ValueError("Memory must be empty before setting.")
         self._memory = memory
 
     async def clone(self) -> "A2AAgent":
@@ -162,7 +172,11 @@ class A2AAgent(BaseAgent[A2AAgentRunOutput]):
                     meta={"event": input},
                 )
             else:
-                raise ValueError("Unsupported response part type")
+                return CustomMessage(
+                    role=Role.ASSISTANT if input.role == a2a_types.Role.agent else Role.USER,
+                    content=[CustomMessageContent(**part.model_dump()) for part in input.parts],
+                    meta={"event": input},
+                )
         else:
             raise ValueError(f"Unsupported input type {type(input)}")
 
@@ -172,12 +186,16 @@ class A2AAgent(BaseAgent[A2AAgentRunOutput]):
                 role=a2a_types.Role.user,
                 parts=[a2a_types.Part(root=a2a_types.TextPart(text=input))],
                 messageId=uuid4().hex,
+                contextId=self._context_id,
+                taskId=self._task_id,
             )
         elif isinstance(input, Message):
             return a2a_types.Message(
                 role=a2a_types.Role.agent if input.role == Role.ASSISTANT else a2a_types.Role.user,
                 parts=[a2a_types.Part(root=a2a_types.TextPart(text=input.text))],
                 messageId=uuid4().hex,
+                contextId=self._context_id,
+                taskId=self._task_id,
             )
         elif isinstance(input, a2a_types.Message):
             return input
