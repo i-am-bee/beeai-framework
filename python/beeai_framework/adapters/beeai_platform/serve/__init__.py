@@ -12,18 +12,3 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-
-from acp_sdk.models.models import Event
-from pydantic import BaseModel, InstanceOf
-
-from beeai_framework.backend.message import AnyMessage
-
-
-class RemoteAgentRunOutput(BaseModel):
-    result: InstanceOf[AnyMessage]
-    event: Event
-
-
-class RemoteAgentInput(BaseModel):
-    agent_name: str
-    url: str

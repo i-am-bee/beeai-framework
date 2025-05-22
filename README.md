@@ -18,6 +18,7 @@
 
 | Date       | Language      | Update Description                                                                 
 |------------|---------------|-------------------------------------------------------------------------------------|
+| 2025/05/15 | Python        | New protocol integrations: [ACP and MCP](/python/docs/integrations.md).           |
 | 2025/02/19 | Python        | Launched Python library alpha. See [getting started guide](#installation).               |
 | 2025/02/07 | TypeScript    | Introduced [Backend](/typescript/docs/backend.md) module to simplify working with AI services (chat, embedding). See [migration guide](/typescript/docs/migration_guide.md). |
 | 2025/01/28 | TypeScript    | Added support for DeepSeek R1, check out the [Competitive Analysis Workflow example](/typescript/examples/workflows/competitive-analysis). |

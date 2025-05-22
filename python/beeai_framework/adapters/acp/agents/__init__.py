@@ -12,7 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from beeai_framework.adapters.acp.serve._utils import acp_msg_to_framework_msg
-from beeai_framework.adapters.acp.serve.server import ACPServer, ACPServerConfig, to_acp_agent_metadata
+from beeai_framework.adapters.acp.agents.agent import ACPAgent
+from beeai_framework.adapters.acp.agents.events import ACPAgentErrorEvent, ACPAgentUpdateEvent
+from beeai_framework.adapters.acp.agents.types import ACPAgentRunOutput
 
-__all__ = ["ACPServer", "ACPServerConfig", "acp_msg_to_framework_msg", "to_acp_agent_metadata"]
+__all__ = [
+    "ACPAgent",
+    "ACPAgentErrorEvent",
+    "ACPAgentRunOutput",
+    "ACPAgentUpdateEvent",
+]

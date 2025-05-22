@@ -12,7 +12,21 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from beeai_framework.adapters.acp.serve._utils import acp_msg_to_framework_msg
-from beeai_framework.adapters.acp.serve.server import ACPServer, ACPServerConfig, to_acp_agent_metadata
+from typing import Any
 
-__all__ = ["ACPServer", "ACPServerConfig", "acp_msg_to_framework_msg", "to_acp_agent_metadata"]
+from pydantic import BaseModel
+
+
+class BeeAIPlatformAgentUpdateEvent(BaseModel):
+    key: str
+    value: dict[str, Any]
+
+
+class BeeAIPlatformAgentErrorEvent(BaseModel):
+    message: str
+
+
+beeai_platform_agent_event_types: dict[str, type] = {
+    "update": BeeAIPlatformAgentUpdateEvent,
+    "error": BeeAIPlatformAgentErrorEvent,
+}

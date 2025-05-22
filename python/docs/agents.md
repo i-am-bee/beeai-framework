@@ -3,10 +3,9 @@
 <!-- TOC -->
 ## Table of Contents
 - [Overview](#overview)
-- [Agent abstractions](#agent-abstractions)
+- [Agent Abstractions](#agent-abstractions)
   - [ReActAgent](#react-agent)
   - [ToolCallingAgent](#tool-calling-agent)
-  - [RemoteAgent](#remote-agent)
 - [Customizing Agent Behavior](#customizing-agent-behavior)
   - [1. Setting Execution Policy](#1-setting-execution-policy)
   - [2. Overriding Prompt Templates](#2-overriding-prompt-templates)
@@ -39,8 +38,6 @@ Agents control the path to solving a problem, acting on feedback to refine their
 > [!NOTE]
 >
 > Location within the framework: [beeai_framework/agents](/python/beeai_framework/agents).
-
----
 
 ## Agent abstractions
 
@@ -299,78 +296,6 @@ if __name__ == "__main__":
 _Source: [examples/agents/tool_calling.py](/python/examples/agents/tool_calling.py)_
 
 </details>
-
-### Remote Agent
-
-RemoteAgent enables seamless integration with agents hosted on the [BeeAI platform](https://github.com/i-am-bee/beeai), allowing you to interact with and orchestrate agents built in any framework.
-
-This agent connects to the BeeAI platform via the Model Context Protocol (MCP), providing these key capabilities:
-- **Cross-framework compatibility:** Interact with agents built in any framework hosted on the BeeAI platform
-- **Simplified integration:** Connect to specialized agents without having to implement their functionality
-- **Workflow orchestration:** Chain multiple remote agents together to create workflows
-
-Inputs are accepted in a flexible JSON format that varies based on the target agent. Common input patterns include:
-```
-# For chat-style agents
-input_data = {
-    "messages": [{"role": "user", "content": "Your query here"}],
-    "config": {"tools": ["weather", "search", "wikipedia"]}  # Optional configuration
-}
-
-# For text-based agents
-input_data = {"text": "Your query here"}
-
-# Run the agent with the appropriate input format
-response = await agent.run(input_data)
-```
-
-<details>
-<summary>▶️ Click to expand Remote Agent example</summary>
-
-<!-- embedme examples/agents/experimental/remote.py -->
-
-```py
-import asyncio
-import sys
-import traceback
-
-from beeai_framework.agents.experimental.remote import RemoteAgent
-from beeai_framework.errors import FrameworkError
-from beeai_framework.memory.unconstrained_memory import UnconstrainedMemory
-from examples.helpers.io import ConsoleReader
-
-
-async def main() -> None:
-    reader = ConsoleReader()
-
-    agent = RemoteAgent(agent_name="chat", url="http://127.0.0.1:8333/api/v1/acp/", memory=UnconstrainedMemory())
-    for prompt in reader:
-        # Run the agent and observe events
-        response = await agent.run(prompt).on(
-            "update",
-            lambda data, event: (reader.write("Agent 🤖 (debug) : ", data)),
-        )
-
-        reader.write("Agent 🤖 : ", response.result.text)
-
-
-if __name__ == "__main__":
-    try:
-        asyncio.run(main())
-    except FrameworkError as e:
-        traceback.print_exc()
-        sys.exit(e.explain())
-
-```
-
-_Source: [examples/agents/experimental/remote.py](/python/examples/agents/experimental/remote.py)_
-
-</details>
-
-> [!TIP]
-> Check out our [RemoteAgent tutorial](https://github.com/i-am-bee/beeai-framework/blob/main/python/docs/tutorials.md#beeai-platform-integration)
-
----
 
 ## Customizing Agent Behavior
 

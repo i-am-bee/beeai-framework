@@ -12,18 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import Any
+from typing import TypeVar
 
-from pydantic import BaseModel
-
-
-class RemoteAgentUpdateEvent(BaseModel):
-    key: str
-    value: dict[str, Any]
+T = TypeVar("T")
 
 
-class RemoteAgentErrorEvent(BaseModel):
-    message: str
-
-
-remote_agent_event_types: dict[str, type] = {"update": RemoteAgentUpdateEvent, "error": RemoteAgentErrorEvent}
+def identity(value: T) -> T:
+    return value

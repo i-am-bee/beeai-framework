@@ -18,6 +18,7 @@
     - [Events](events.md)
   - [Serialization](serialization.md)
   - [Tools](tools.md)
+  - [Serve](serve.md)
   - [Cache](cache.md)
   - [Logger](logger.md)
   - [Version](version.md)
