@@ -12,7 +12,24 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-__all__ = ["GovernedAgent", "GovernedAgentRunOutput", "GovernedAgentTemplates"]
 
-from beeai_framework.agents.experimental.governed.agent import GovernedAgent
-from beeai_framework.agents.experimental.governed.types import GovernedAgentRunOutput, GovernedAgentTemplates
+from pydantic import BaseModel
+
+from beeai_framework.agents.experimental.types import RequirementAgentRequest, RequirementAgentRunState
+from beeai_framework.backend import ChatModelOutput
+
+
+class RequirementAgentStartEvent(BaseModel):
+    state: RequirementAgentRunState
+    request: RequirementAgentRequest
+
+
+class RequirementAgentSuccessEvent(BaseModel):
+    state: RequirementAgentRunState
+    response: ChatModelOutput
+
+
+requirement_agent_event_types: dict[str, type] = {
+    "start": RequirementAgentStartEvent,
+    "success": RequirementAgentSuccessEvent,
+}

@@ -3,15 +3,15 @@ from typing import Any, TypeVar
 from deepeval.test_case import ConversationalTestCase, LLMTestCase, ToolCall
 from pydantic import BaseModel
 
-from beeai_framework.agents.experimental.governed import GovernedAgent
-from beeai_framework.agents.experimental.governed.types import GovernedAgentRunStateStep
-from beeai_framework.agents.experimental.governed.utils._tool import FinalAnswerTool
+from beeai_framework.agents.experimental import RequirementAgent
+from beeai_framework.agents.experimental.types import RequirementAgentRunStateStep
+from beeai_framework.agents.experimental.utils._tool import FinalAnswerTool
 from beeai_framework.tools.think import ThinkTool
 from beeai_framework.tools.tool import Tool
 from beeai_framework.utils.strings import to_json
 
 
-def to_eval_tool_call(step: GovernedAgentRunStateStep, *, reasoning: str | None = None) -> ToolCall:
+def to_eval_tool_call(step: RequirementAgentRunStateStep, *, reasoning: str | None = None) -> ToolCall:
     if not step.tool:
         raise ValueError("Passed step is missing a tool call.")
 
@@ -38,11 +38,10 @@ def tool_to_tool_call(
     )
 
 
-async def invoke_agent(agent: GovernedAgent, test_case: LLMTestCase) -> None:
+async def run_agent(agent: RequirementAgent, test_case: LLMTestCase) -> None:
     response = await agent.run(prompt=test_case.input)
     test_case.tools_called = []
     test_case.actual_output = response.result.text
-    print("got response", response)
     for index, step in enumerate(response.state.steps):
         if not step.tool:
             continue
@@ -60,7 +59,7 @@ async def invoke_agent(agent: GovernedAgent, test_case: LLMTestCase) -> None:
         ]
 
 
-def to_conversation_test_case(agent: GovernedAgent, turns: list[LLMTestCase]) -> ConversationalTestCase:
+def to_conversation_test_case(agent: RequirementAgent, turns: list[LLMTestCase]) -> ConversationalTestCase:
     return ConversationalTestCase(
         turns=turns,
         chatbot_role=agent.meta.description or "",

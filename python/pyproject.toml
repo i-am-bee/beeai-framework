@@ -23,7 +23,6 @@ aiofiles = "^24.1.0"
 boto3 = {version = "^1.37.5", optional = true}
 cachetools = "^5.5.2"
 chevron = "^0.14.0"
-deepeval = "2.9.3"
 duckduckgo-search = {version = "^8.0.2", optional = true}
 json-repair = "^0.39.0"
 jsonref = "^1.1.0"
@@ -41,7 +40,7 @@ wikipedia-api = {version = "^0.8.1", optional = true}
 
 [tool.poetry.group.dev.dependencies]
 commitizen = "^4.2.1"
-deepeval = "2.9.3"
+deepeval = "2.9.6"
 mypy = "^1.15.0"
 nbstripout = "^0.8.1"
 poethepoet = "^0.33.1"
@@ -51,6 +50,7 @@ pytest = "^8.3.4"
 pytest-asyncio = "^0.25.3"
 pytest-cov = "^6.0.0"
 pytest-xdist = "^3.6.1"
+rich = ">=13.6.0,<14.0.0"
 ruff = "^0.9.6"
 tox = "^4.20"
 types-aiofiles = "^24.1.0.20250326"
@@ -71,7 +71,7 @@ beeai-platform = ["acp-sdk", "uvicorn"]
 
 
 [tool.mypy]
-mypy_path = "$MYPY_CONFIG_FILE_DIR/beeai_framework"
+mypy_path = ["$MYPY_CONFIG_FILE_DIR/beeai_framework"]
 exclude = ["^build/$", "^examples/playground/"]
 check_untyped_defs = true
 plugins = ["pydantic.mypy"]
@@ -79,9 +79,7 @@ strict = true
 
 [[tool.mypy.overrides]]
 module = ["deepeval.*", "deepeval"]
-ignore_errors = true
-ignore_missing_imports = true
-disallow_untyped_defs = true
+implicit_reexport = true
 
 [tool.pydantic-mypy]
 init_forbid_extra = true
@@ -98,9 +96,7 @@ major_version_zero = true
 bump_message = "chore: python release $new_version"
 
 [tool.pytest.ini_options]
-addopts = "-v --cov --cov-report html"
 testpaths = ["tests", "beeai_framework"]
-python_files = ["test_*.py", "*_test.py"]
 markers = [
     "unit",
     "integration",
@@ -120,7 +116,7 @@ asyncio_mode = "strict"
 default_fixture_loop_scope = "function"
 
 [tool.coverage.run]
-omit = ["tests/*", "eval/**/*"]
+omit = ["tests/*", "eval/*"]
 
 [tool.coverage.report]
 exclude_lines = [

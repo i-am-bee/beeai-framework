@@ -14,19 +14,19 @@
 
 from typing import Any
 
-from beeai_framework.agents.experimental.governed.requirements._utils import (
+from beeai_framework.agents.experimental.requirements._utils import (
     MultiTargetType,
     _assert_all_rules_found,
     _extract_targets,
     _target_seen_in,
 )
-from beeai_framework.agents.experimental.governed.requirements.requirement import (
+from beeai_framework.agents.experimental.requirements.requirement import (
     Requirement,
     RequirementResult,
     with_run_context,
 )
-from beeai_framework.agents.experimental.governed.types import GovernedAgentRunState
-from beeai_framework.agents.experimental.governed.utils._tool import FinalAnswerTool
+from beeai_framework.agents.experimental.types import RequirementAgentRunState
+from beeai_framework.agents.experimental.utils._tool import FinalAnswerTool
 from beeai_framework.context import RunContext, RunContextStartEvent
 from beeai_framework.emitter import EmitterOptions, EventMeta
 from beeai_framework.emitter.utils import create_internal_event_matcher
@@ -37,7 +37,7 @@ from beeai_framework.utils.asynchronous import ensure_async
 AskHandler = MaybeAsync[[AnyTool, dict[str, Any]], bool]
 
 
-class AskPermissionRequirement(Requirement[GovernedAgentRunState]):
+class AskPermissionRequirement(Requirement[RequirementAgentRunState]):
     name = "ask_permission"
     description = "Use to ask the user for a clarification"
 
@@ -106,7 +106,7 @@ class AskPermissionRequirement(Requirement[GovernedAgentRunState]):
             data.output = StringToolOutput("This tool is not allowed to be used.")
 
     @with_run_context
-    async def run(self, input: GovernedAgentRunState, context: RunContext) -> list[RequirementResult]:
+    async def run(self, input: RequirementAgentRunState, context: RunContext) -> list[RequirementResult]:
         return [
             RequirementResult(
                 target=target,

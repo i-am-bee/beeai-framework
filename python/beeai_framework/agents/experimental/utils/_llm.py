@@ -16,9 +16,9 @@ import contextlib
 from collections.abc import Sequence
 from typing import Literal
 
-from beeai_framework.agents.experimental.governed.requirements.requirement import Requirement, RequirementResult
-from beeai_framework.agents.experimental.governed.types import GovernedAgentRequest, GovernedAgentRunState
-from beeai_framework.agents.experimental.governed.utils._tool import FinalAnswerTool
+from beeai_framework.agents.experimental.requirements.requirement import Requirement, RequirementResult
+from beeai_framework.agents.experimental.types import RequirementAgentRequest, RequirementAgentRunState
+from beeai_framework.agents.experimental.utils._tool import FinalAnswerTool
 from beeai_framework.context import RunContext
 from beeai_framework.errors import FrameworkError
 from beeai_framework.tools import AnyTool
@@ -31,7 +31,7 @@ class RequirementsReasoner:
         self,
         *,
         tools: Sequence[AnyTool],
-        requirements: Sequence[Requirement[GovernedAgentRunState]],
+        requirements: Sequence[Requirement[RequirementAgentRunState]],
         final_answer: FinalAnswerTool,
         context: RunContext,
     ) -> None:
@@ -41,7 +41,7 @@ class RequirementsReasoner:
         self.final_answer = final_answer
         self.update(requirements)
 
-    def update(self, requirements: Sequence[Requirement[GovernedAgentRunState]]) -> None:
+    def update(self, requirements: Sequence[Requirement[RequirementAgentRunState]]) -> None:
         self._entries.clear()
 
         for requirement in requirements:
@@ -50,7 +50,9 @@ class RequirementsReasoner:
         for entry in self._entries:
             entry.init(tools=self._tools, ctx=self._context)
 
-    async def create_request(self, state: GovernedAgentRunState, *, force_tool_call: bool) -> GovernedAgentRequest:
+    async def create_request(
+        self, state: RequirementAgentRunState, *, force_tool_call: bool
+    ) -> RequirementAgentRequest:
         hidden: list[AnyTool] = []
         allowed: list[AnyTool] = []
         all_tools: list[AnyTool] = list(self._tools)
@@ -121,7 +123,7 @@ class RequirementsReasoner:
         if len(allowed) == 1:
             tool_choice = allowed[0]
 
-        return GovernedAgentRequest(
+        return RequirementAgentRequest(
             tools=all_tools,
             allowed_tools=allowed,
             tool_choice=tool_choice if isinstance(tool_choice, Tool) or force_tool_call or prevent_stop else "auto",

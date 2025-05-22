@@ -1,3 +1,4 @@
+import os
 from typing import Any, TypeVar
 
 from deepeval.key_handler import KEY_FILE_HANDLER, KeyValues
@@ -8,6 +9,7 @@ from pydantic import BaseModel
 from beeai_framework.backend import ChatModel, ChatModelParameters
 from beeai_framework.backend.constants import ProviderName
 from beeai_framework.backend.message import UserMessage
+from beeai_framework.middleware.trajectory import GlobalTrajectoryMiddleware
 from beeai_framework.utils import ModelLike
 
 TSchema = TypeVar("TSchema", bound=BaseModel)
@@ -29,11 +31,15 @@ class DeepEvalLLM(DeepEvalBaseLLM):
 
     async def a_generate(self, prompt: str, schema: TSchema | None = None) -> str:
         input_msg = UserMessage(prompt)
-        print("a", self._model)
         response = await self._model.create(
             messages=[input_msg],
             response_format=schema.model_json_schema(mode="serialization") if schema is not None else None,
             stream=False,
+            temperature=0,
+        ).middleware(
+            GlobalTrajectoryMiddleware(
+                pretty=True, exclude_none=True, enabled=os.environ.get("EVAL_LOG_LLM_CALLS", "").lower() == "true"
+            )
         )
         text = response.get_text_content()
         return schema.model_validate_json(text) if schema else text  # type: ignore

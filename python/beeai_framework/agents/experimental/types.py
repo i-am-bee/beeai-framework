@@ -17,17 +17,17 @@ from typing import Annotated, Any
 
 from pydantic import BaseModel, ConfigDict, Field, InstanceOf
 
-from beeai_framework.agents.experimental.governed.prompts import (
-    GovernedAgentCycleDetectionPrompt,
-    GovernedAgentCycleDetectionPromptInput,
-    GovernedAgentSystemPrompt,
-    GovernedAgentSystemPromptInput,
-    GovernedAgentTaskPrompt,
-    GovernedAgentTaskPromptInput,
-    GovernedAgentToolErrorPrompt,
-    GovernedAgentToolErrorPromptInput,
+from beeai_framework.agents.experimental.prompts import (
+    RequirementAgentCycleDetectionPrompt,
+    RequirementAgentCycleDetectionPromptInput,
+    RequirementAgentSystemPrompt,
+    RequirementAgentSystemPromptInput,
+    RequirementAgentTaskPrompt,
+    RequirementAgentTaskPromptInput,
+    RequirementAgentToolErrorPrompt,
+    RequirementAgentToolErrorPromptInput,
 )
-from beeai_framework.agents.experimental.governed.utils._tool import FinalAnswerTool
+from beeai_framework.agents.experimental.utils._tool import FinalAnswerTool
 from beeai_framework.backend import (
     AssistantMessage,
 )
@@ -38,26 +38,26 @@ from beeai_framework.template import PromptTemplate
 from beeai_framework.tools import AnyTool, Tool, ToolOutput
 
 
-class GovernedAgentTemplates(BaseModel):
-    system: InstanceOf[PromptTemplate[GovernedAgentSystemPromptInput]] = Field(
-        default_factory=lambda: GovernedAgentSystemPrompt.fork(None),
+class RequirementAgentTemplates(BaseModel):
+    system: InstanceOf[PromptTemplate[RequirementAgentSystemPromptInput]] = Field(
+        default_factory=lambda: RequirementAgentSystemPrompt.fork(None),
     )
-    task: InstanceOf[PromptTemplate[GovernedAgentTaskPromptInput]] = Field(
-        default_factory=lambda: GovernedAgentTaskPrompt.fork(None),
+    task: InstanceOf[PromptTemplate[RequirementAgentTaskPromptInput]] = Field(
+        default_factory=lambda: RequirementAgentTaskPrompt.fork(None),
     )
-    ability_error: InstanceOf[PromptTemplate[GovernedAgentToolErrorPromptInput]] = Field(
-        default_factory=lambda: GovernedAgentToolErrorPrompt.fork(None),
+    requirement_error: InstanceOf[PromptTemplate[RequirementAgentToolErrorPromptInput]] = Field(
+        default_factory=lambda: RequirementAgentToolErrorPrompt.fork(None),
     )
-    cycle_detection: InstanceOf[PromptTemplate[GovernedAgentCycleDetectionPromptInput]] = Field(
-        default_factory=lambda: GovernedAgentCycleDetectionPrompt.fork(None),
+    cycle_detection: InstanceOf[PromptTemplate[RequirementAgentCycleDetectionPromptInput]] = Field(
+        default_factory=lambda: RequirementAgentCycleDetectionPrompt.fork(None),
     )
 
 
-GovernedAgentTemplateFactory = Callable[[InstanceOf[PromptTemplate[Any]]], InstanceOf[PromptTemplate[Any]]]
-GovernedAgentTemplatesKeys = Annotated[str, lambda v: v in GovernedAgentTemplates.model_fields]
+RequirementAgentTemplateFactory = Callable[[InstanceOf[PromptTemplate[Any]]], InstanceOf[PromptTemplate[Any]]]
+RequirementAgentTemplatesKeys = Annotated[str, lambda v: v in RequirementAgentTemplates.model_fields]
 
 
-class GovernedAgentRunStateStep(BaseModel):
+class RequirementAgentRunStateStep(BaseModel):
     model_config = ConfigDict(extra="allow")
 
     iteration: int
@@ -67,20 +67,20 @@ class GovernedAgentRunStateStep(BaseModel):
     error: InstanceOf[FrameworkError] | None
 
 
-class GovernedAgentRunState(BaseModel):
+class RequirementAgentRunState(BaseModel):
     result: InstanceOf[AssistantMessage] | None = None
     memory: InstanceOf[BaseMemory]
     iteration: int
-    steps: list[GovernedAgentRunStateStep] = []
+    steps: list[RequirementAgentRunStateStep] = []
 
 
-class GovernedAgentRunOutput(BaseModel):
+class RequirementAgentRunOutput(BaseModel):
     result: InstanceOf[AssistantMessage]
     memory: InstanceOf[BaseMemory]
-    state: GovernedAgentRunState
+    state: RequirementAgentRunState
 
 
-class GovernedAgentRequest(BaseModel):
+class RequirementAgentRequest(BaseModel):
     model_config = ConfigDict(extra="allow", arbitrary_types_allowed=True)
 
     tools: list[AnyTool]

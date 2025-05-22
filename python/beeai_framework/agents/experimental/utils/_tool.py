@@ -26,7 +26,7 @@ from beeai_framework.errors import FrameworkError
 from beeai_framework.tools import AnyTool, StringToolOutput, Tool, ToolError, ToolOutput, ToolRunOptions
 
 if TYPE_CHECKING:
-    from beeai_framework.agents.experimental.governed.types import GovernedAgentRunState
+    from beeai_framework.agents.experimental.types import RequirementAgentRunState
 
 
 async def _run_tool(
@@ -69,7 +69,7 @@ class FinalAnswerTool(Tool[BaseModel, ToolRunOptions, StringToolOutput]):
     description = "Sends the final answer to the user"
 
     def __init__(
-        self, expected_output: str | type[BaseModel] | None, state: "GovernedAgentRunState"
+        self, expected_output: str | type[BaseModel] | None, state: "RequirementAgentRunState"
     ) -> None:  # TODO: propagate state with ability context..
         super().__init__()
         self._expected_output = expected_output

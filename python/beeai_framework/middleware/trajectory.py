@@ -19,7 +19,7 @@ from typing import Any, Protocol, runtime_checkable
 from langchain_core.tools import BaseTool
 
 from beeai_framework.agents import BaseAgent
-from beeai_framework.agents.experimental.governed.requirements.requirement import Requirement
+from beeai_framework.agents.experimental.requirements.requirement import Requirement
 from beeai_framework.backend import AnyMessage, ChatModel
 from beeai_framework.context import RunContext, RunContextFinishEvent, RunContextStartEvent, RunMiddleware
 from beeai_framework.emitter import EmitterOptions, EventMeta
@@ -54,8 +54,10 @@ class GlobalTrajectoryMiddleware(RunMiddleware):
         pretty: bool = False,
         prefix_by_type: dict[type, str] | None = None,
         exclude_none: bool = True,
+        enabled: bool = True,
     ) -> None:
         super().__init__()
+        self.enabled = enabled
         self._included = included or []
         self._excluded = excluded or []
         self._cleanups: list[Callable[[], None]] = []
@@ -146,6 +148,9 @@ class GlobalTrajectoryMiddleware(RunMiddleware):
 
         self._log_trace_id(meta)
         if not self._is_allowed(meta):
+            return
+
+        if not self.enabled:
             return
 
         indent, indent_parent = self._get_trace_level(meta)

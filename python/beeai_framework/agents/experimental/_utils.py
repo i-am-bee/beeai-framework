@@ -13,18 +13,18 @@
 # limitations under the License.
 
 
-from beeai_framework.agents.experimental.governed.prompts import (
-    GovernedAgentSystemPromptInput,
+from beeai_framework.agents.experimental.prompts import (
+    RequirementAgentSystemPromptInput,
     ToolWithRequirementsPromptTemplateDefinition,
 )
-from beeai_framework.agents.experimental.governed.types import GovernedAgentRequest
+from beeai_framework.agents.experimental.types import RequirementAgentRequest
 from beeai_framework.backend import SystemMessage
 from beeai_framework.template import PromptTemplate
 from beeai_framework.utils.strings import to_json
 
 
 def _create_system_message(
-    *, template: PromptTemplate[GovernedAgentSystemPromptInput], request: GovernedAgentRequest
+    *, template: PromptTemplate[RequirementAgentSystemPromptInput], request: RequirementAgentRequest
 ) -> SystemMessage:
     return SystemMessage(
         template.render(

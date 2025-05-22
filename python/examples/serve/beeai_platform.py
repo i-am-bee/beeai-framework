@@ -14,7 +14,7 @@ def main() -> None:
     # For the ToolCallingAgent and ReActAgent, we dont need to specify BeeAIPlatformAgent factory method
     # because they are already registered in the BeeAIPlatformServer
     BeeAIPlatformServer().register(
-        agent, name="chat_agent", description="Simple chat agent", ui={"type": "chat"}
+        agent, name="chat_agent_demo", description="Simple chat agent", ui={"type": "chat"}
     ).serve()
 
 

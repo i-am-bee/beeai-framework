@@ -1,23 +1,42 @@
 import asyncio
 import os
-from collections.abc import Callable
+from collections.abc import Awaitable, Callable
 from pathlib import Path
+from typing import TypeVar
 
+import pytest
+from deepeval import evaluate
 from deepeval.dataset import EvaluationDataset, Golden
+from deepeval.evaluate import DisplayConfig
+from deepeval.metrics import BaseMetric
 from deepeval.test_case import LLMTestCase
+from deepeval.test_run.test_run import TestRunResultDisplay
+from rich.console import Console, Group
+from rich.panel import Panel
+from rich.table import Table
 
-from beeai_framework.agents.experimental.governed import GovernedAgent
-from eval.agents.governed._utils import invoke_agent
+from beeai_framework.agents import AnyAgent
 
 ROOT_CACHE_DIR = f"{os.path.dirname(os.path.abspath(__file__))}/.cache"
 Path(ROOT_CACHE_DIR).mkdir(parents=True, exist_ok=True)
 
 
+T = TypeVar("T", bound=AnyAgent)
+
+
 async def create_dataset(
-    *, name: str, agent_factory: Callable[[], GovernedAgent], goldens: list[Golden], cache: bool
+    *,
+    name: str,
+    agent_factory: Callable[[], T],
+    agent_run: Callable[[T, LLMTestCase], Awaitable[None]],
+    goldens: list[Golden],
+    cache: bool | None = None,
 ) -> EvaluationDataset:
     dataset = EvaluationDataset()
+
     cache_dir = Path(f"{ROOT_CACHE_DIR}/{name}")
+    if cache is None:
+        cache = os.getenv("EVAL_CACHE_DATASET", "").lower() == "true"
 
     if cache and cache_dir.exists():
         for file_path in cache_dir.glob("*.json"):
@@ -46,7 +65,7 @@ async def create_dataset(
                 retrieval_context=golden.retrieval_context,
                 additional_metadata=golden.additional_metadata,
             )
-            await invoke_agent(agent, case)
+            await agent_run(agent, case)
             return case
 
         for test_case in await asyncio.gather(*[process_golden(golden) for golden in goldens], return_exceptions=False):
@@ -61,13 +80,84 @@ async def create_dataset(
     return dataset
 
 
-async def create_dataset_sync(
-    *, name: str, agent_factory: Callable[[], GovernedAgent], goldens: list[Golden], cache: bool | None = None
-) -> EvaluationDataset:
-    dataset = await create_dataset(
-        name=name,
-        agent_factory=agent_factory,
-        goldens=goldens,
-        cache=str(os.getenv("EVAL_CACHE_DATASET")).lower() == "true" if cache is None else cache,
+def evaluate_dataset(
+    dataset: EvaluationDataset, metrics: list[BaseMetric], display_mode: TestRunResultDisplay | None = None
+) -> None:
+    console = Console()
+    console.print("[bold green]Evaluating dataset[/bold green]")
+
+    if display_mode is None:
+        display_mode = TestRunResultDisplay(os.environ.get("EVAL_DISPLAY_MODE", "all"))
+
+    output = evaluate(
+        test_cases=dataset.test_cases,  # type: ignore
+        metrics=metrics,
+        display_config=DisplayConfig(
+            show_indicator=False, print_results=False, verbose_mode=False, display_option=None
+        ),
     )
-    return dataset
+
+    # Calculate pass/fail counts
+    total = len(output.test_results)
+    passed = sum(
+        bool(test_result.metrics_data) and all(md.success for md in (test_result.metrics_data or []))
+        for test_result in output.test_results
+    )
+    failed = total - passed
+
+    # Print summary table
+    summary_table = Table(title="Test Results Summary", show_header=True, header_style="bold cyan")
+    summary_table.add_column("Total", justify="right")
+    summary_table.add_column("Passed", justify="right", style="green")
+    summary_table.add_column("Failed", justify="right", style="red")
+    summary_table.add_row(str(total), str(passed), str(failed))
+    console.print(summary_table)
+
+    for test_result in output.test_results:
+        if display_mode != TestRunResultDisplay.ALL and (
+            (display_mode == TestRunResultDisplay.FAILING and test_result.success)
+            or (display_mode == TestRunResultDisplay.PASSING and not test_result.success)
+        ):
+            continue
+
+        # Info Table
+        info_table = Table(show_header=False, box=None, pad_edge=False)
+        info_table.add_row("Input", str(test_result.input))
+        info_table.add_row("Expected Output", str(test_result.expected_output))
+        info_table.add_row("Actual Output", str(test_result.actual_output))
+
+        # Metrics Table
+        metrics_table = Table(title="Metrics", show_header=True, header_style="bold magenta")
+        metrics_table.add_column("Metric")
+        metrics_table.add_column("Success")
+        metrics_table.add_column("Score")
+        metrics_table.add_column("Threshold")
+        metrics_table.add_column("Reason")
+        metrics_table.add_column("Error")
+        # metrics_table.add_column("Verbose Log")
+
+        for metric_data in test_result.metrics_data or []:
+            metrics_table.add_row(
+                str(metric_data.name),
+                str(metric_data.success),
+                str(metric_data.score),
+                str(metric_data.threshold),
+                str(metric_data.reason),
+                str(metric_data.error) if metric_data.error else "",
+                # str(metric_data.verbose_logs),
+            )
+
+        # Print the panel with info and metrics table
+        console.print(
+            Panel(
+                Group(info_table, metrics_table),
+                title=f"[bold blue]{test_result.name}[/bold blue]",
+                border_style="blue",
+            )
+        )
+
+    # Gather failed tests
+    if failed:
+        pytest.fail(f"{failed}/{total} tests failed. See the summary table above for more details.", pytrace=False)
+    else:
+        assert 1 == 1

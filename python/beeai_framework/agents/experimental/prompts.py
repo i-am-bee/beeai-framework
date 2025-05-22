@@ -40,7 +40,7 @@ class ToolWithRequirementsPromptTemplateDefinition(BaseModel):
         )
 
 
-class GovernedAgentSystemPromptInput(BaseModel):
+class RequirementAgentSystemPromptInput(BaseModel):
     role: str
     instructions: str | None = None
     final_answer_name: str  # TODO: refactor
@@ -49,11 +49,11 @@ class GovernedAgentSystemPromptInput(BaseModel):
     tools: list[ToolWithRequirementsPromptTemplateDefinition]
 
 
-GovernedAgentSystemPrompt = PromptTemplate(
+RequirementAgentSystemPrompt = PromptTemplate(
     PromptTemplateInput(
-        schema=GovernedAgentSystemPromptInput,
+        schema=RequirementAgentSystemPromptInput,
         functions={"formatDate": lambda data: datetime.now(tz=UTC).strftime("%Y-%m-%d")},
-        defaults={"role": "a helpful AI assistant", "instructions": ""},
+        defaults={"role": "a helpful AI assistant", "instructions": "", "notes": ""},
         template="""# Role
 Assume the role of {{role}}.
 
@@ -84,31 +84,32 @@ Available: {{allowed}}
 {{/tools}}
 {{/tools.0}}
 
-# Best practices
+# Notes
 - Use markdown syntax to format code snippets, links, JSON, tables, images, and files.
 - If the provided task is unclear, ask the user for clarification.
 - Do not refer to tools or tool outputs by name when responding.
 - Always take it one step at a time. Don't try to do multiple things at once.
-
-# Notes
 - When the tool doesn't give you what you were asking for, you must either use another tool or a different tool input.
 - You should always try a few different approaches before declaring the problem unsolvable.
 - You cannot do complex calculations, computations, or data manipulations without using tools.
 - The current date and time is: {{formatDate}}
+{{#notes}}
+{{&.}}
+{{/notes}}
 """,  # noqa: E501
     )
 )
 
 
-class GovernedAgentTaskPromptInput(BaseModel):
+class RequirementAgentTaskPromptInput(BaseModel):
     prompt: str
     context: str | None = None
     expected_output: str | None = None
 
 
-GovernedAgentTaskPrompt = PromptTemplate(
+RequirementAgentTaskPrompt = PromptTemplate(
     PromptTemplateInput(
-        schema=GovernedAgentTaskPromptInput,
+        schema=RequirementAgentTaskPromptInput,
         template="""{{#context}}This is the context that you are working with:
 {{.}}
 
@@ -118,19 +119,20 @@ This is the expected criteria for your output:
 {{.}}
 
 {{/expected_output}}
+
 Your task: {{prompt}}
 """,
     )
 )
 
 
-class GovernedAgentToolErrorPromptInput(BaseModel):
+class RequirementAgentToolErrorPromptInput(BaseModel):
     reason: str
 
 
-GovernedAgentToolErrorPrompt = PromptTemplate(
+RequirementAgentToolErrorPrompt = PromptTemplate(
     PromptTemplateInput(
-        schema=GovernedAgentToolErrorPromptInput,
+        schema=RequirementAgentToolErrorPromptInput,
         template="""The tool has failed; the error log is shown below. If the tool cannot accomplish what you want, use a different tool or explain why you can't use it.
 
 {{&reason}}""",  # noqa: E501
@@ -138,15 +140,15 @@ GovernedAgentToolErrorPrompt = PromptTemplate(
 )
 
 
-class GovernedAgentCycleDetectionPromptInput(BaseModel):
+class RequirementAgentCycleDetectionPromptInput(BaseModel):
     tool_name: str
     tool_args: str
     final_answer_name: str
 
 
-GovernedAgentCycleDetectionPrompt = PromptTemplate(
+RequirementAgentCycleDetectionPrompt = PromptTemplate(
     PromptTemplateInput(
-        schema=GovernedAgentCycleDetectionPromptInput,
+        schema=RequirementAgentCycleDetectionPromptInput,
         template="""I can't see your answer. You must use the '{{final_answer_name}}' tool to send me a message.""",
     )
 )

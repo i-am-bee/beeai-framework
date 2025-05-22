@@ -2,10 +2,10 @@ import asyncio
 import sys
 import traceback
 
-from beeai_framework.agents.experimental.governed import GovernedAgent
-from beeai_framework.agents.experimental.governed.requirements import Requirement
-from beeai_framework.agents.experimental.governed.requirements.ask_permission import AskPermissionRequirement
-from beeai_framework.agents.experimental.governed.requirements.conditional import ConditionalRequirement
+from beeai_framework.agents.experimental import RequirementAgent
+from beeai_framework.agents.experimental.requirements import Requirement
+from beeai_framework.agents.experimental.requirements.ask_permission import AskPermissionRequirement
+from beeai_framework.agents.experimental.requirements.conditional import ConditionalRequirement
 from beeai_framework.backend import ChatModel
 from beeai_framework.errors import FrameworkError
 from beeai_framework.memory import UnconstrainedMemory
@@ -23,14 +23,14 @@ reader = ConsoleReader()
 async def main() -> None:
     reader.write("ℹ️", "Initializing agents and tools")
 
-    destination_expert = GovernedAgent(
+    destination_expert = RequirementAgent(
         name="DestinationExpert",
         description="A specialist in local attractions, history, and cultural information",
         llm=ChatModel.from_name("ollama:granite3.3:8b"),
         memory=UnconstrainedMemory(),
         tools=[ThinkTool(), WikipediaTool(), DuckDuckGoSearchTool()],
         requirements=[
-            AskPermissionRequirement(exclude=ThinkTool, always_allow=True),
+            AskPermissionRequirement(exclude=ThinkTool),
             ConditionalRequirement("Wikipedia", min_invocations=1),
             ConditionalRequirement("DuckDuckGo", only_after="Wikipedia", max_invocations=2),
         ],
@@ -47,7 +47,7 @@ async def main() -> None:
     )
     reader.write("ℹ️", "Destination expert agent initialized")
 
-    travel_meteorologist = GovernedAgent(
+    travel_meteorologist = RequirementAgent(
         name="TravelMeteorologistPro",
         description="An expert on seasonal weather patterns and climate considerations for travelers",
         llm=ChatModel.from_name("ollama:granite3.3:8b"),
@@ -55,7 +55,7 @@ async def main() -> None:
         tools=[ThinkTool(), OpenMeteoTool()],
         requirements=[
             ConditionalRequirement(ThinkTool, force_at_step=0, can_be_used_in_row=False),
-            AskPermissionRequirement("OpenMeteoTool", remember_choices=True, hide_disallowed=False, always_allow=True),
+            AskPermissionRequirement("OpenMeteoTool", remember_choices=True, hide_disallowed=False),
             ConditionalRequirement("OpenMeteoTool", force_at_step=2, min_invocations=1),
         ],
         role="Travel Weather Specialist",
@@ -71,7 +71,7 @@ async def main() -> None:
     )
     reader.write("ℹ️", "Travel meteorologist agent initialized")
 
-    travel_advisor = GovernedAgent(
+    travel_advisor = RequirementAgent(
         name="TravelAdvisor",
         description="A personal travel concierge who helps plan perfect trips",
         llm=ChatModel.from_name("ollama:granite3.3:8b"),
@@ -90,7 +90,7 @@ async def main() -> None:
         ],
         requirements=[
             ConditionalRequirement(ThinkTool),
-            AskPermissionRequirement(["DestinationResearch", "WeatherPlanning"], always_allow=True),
+            AskPermissionRequirement(["DestinationResearch", "WeatherPlanning"]),
         ],
         role="Travel Concierge",
         instructions=(
