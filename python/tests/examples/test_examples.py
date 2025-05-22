@@ -49,6 +49,7 @@ exclude = list(
             "agents/providers/*.py",
             "workflows/remote.py",
             "serve/acp.py",
+            "serve/a2a_server.py",
             "serve/acp_with_custom_agent.py",
             "serve/mcp_tool.py",
             # Requires Code Interpreter to be running

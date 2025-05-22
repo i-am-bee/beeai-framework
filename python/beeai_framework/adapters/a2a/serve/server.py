@@ -27,24 +27,16 @@ try:
     import a2a.server.request_handlers as a2a_request_handlers
     import a2a.server.tasks as a2a_server_tasks
     import a2a.types as a2a_types
-    import a2a.utils as a2a_utils
 except ModuleNotFoundError as e:
     raise ModuleNotFoundError(
         "Optional module [a2a] not found.\nRun 'pip install \"beeai-framework[a2a]\"' to install."
     ) from e
 
+from beeai_framework.adapters.a2a.serve.agent_executor import BasicAgentExecutor, TollCallingAgentExecutor
 from beeai_framework.agents import AnyAgent
 from beeai_framework.agents.tool_calling.agent import ToolCallingAgent
-from beeai_framework.agents.tool_calling.events import (
-    ToolCallingAgentSuccessEvent,
-)
-from beeai_framework.backend.message import (
-    AnyMessage,
-    UserMessage,
-)
 from beeai_framework.serve.server import Server
 from beeai_framework.utils import ModelLike
-from beeai_framework.utils.lists import find_index
 from beeai_framework.utils.models import to_model
 
 AnyAgentLike = TypeVar("AnyAgentLike", bound=AnyAgent, default=AnyAgent)
@@ -69,55 +61,6 @@ class A2AServerMetadata(TypedDict, total=False):
     queue_manager: a2a_server_events.QueueManager | None
     push_notifier: a2a_server_tasks.PushNotifier | None
     request_context_builder: a2a_agent_execution.RequestContextBuilder | None
-
-
-class BasicAgentExecutor(a2a_agent_execution.AgentExecutor):
-    def __init__(self, agent: AnyAgentLike, agent_card: a2a_types.AgentCard) -> None:
-        super().__init__()
-        self._agent = agent
-        self.agent_card = agent_card
-
-    @override
-    async def execute(
-        self,
-        context: a2a_agent_execution.RequestContext,
-        event_queue: a2a_server.events.EventQueue,
-    ) -> None:
-        query = context.get_user_input()
-
-        if not context.message:
-            raise Exception("No message provided")
-
-        updater = a2a_server_tasks.TaskUpdater(event_queue, context.task_id, context.context_id)  # type: ignore[arg-type]
-        if not context.current_task:
-            updater.submit()
-
-        await self._agent.memory.add(UserMessage(query))
-        updater.start_work()
-        try:
-            response = await self._agent.run()
-
-            event_queue.enqueue_event(
-                a2a_utils.new_agent_text_message(
-                    response.result.text,
-                    context.context_id,
-                    context.task_id,
-                )
-            )
-            updater.complete()
-
-        except Exception as e:
-            updater.failed(
-                message=a2a_utils.new_agent_text_message(str(e)),
-            )
-
-    @override
-    async def cancel(
-        self,
-        context: a2a_agent_execution.RequestContext,
-        event_queue: a2a_server.events.EventQueue,
-    ) -> None:
-        raise Exception("cancel not supported")
 
 
 class A2AServer(
@@ -170,55 +113,6 @@ def _tool_calling_agent_factory(
 ) -> BasicAgentExecutor:
     if metadata is None:
         metadata = {}
-
-    class TollCallingAgentExecutor(BasicAgentExecutor):
-        @override
-        async def execute(
-            self,
-            context: a2a_agent_execution.RequestContext,
-            event_queue: a2a_server.events.EventQueue,
-        ) -> None:
-            query = context.get_user_input()
-
-            if not context.message:
-                raise Exception("No message provided")
-
-            updater = a2a_server_tasks.TaskUpdater(event_queue, context.task_id, context.context_id)  # type: ignore[arg-type]
-            if not context.current_task:
-                updater.submit()
-
-            await self._agent.memory.add(UserMessage(query))
-            updater.start_work()
-
-            last_msg: AnyMessage | None = None
-            try:
-                async for data, _ in self._agent.run():
-                    messages = data.state.memory.messages
-                    if last_msg is None:
-                        last_msg = messages[-1]
-
-                    cur_index = find_index(messages, lambda msg: msg is last_msg, fallback=-1, reverse_traversal=True)  # noqa: B023
-                    for message in messages[cur_index + 1 :]:
-                        updater.update_status(
-                            a2a_types.TaskState.working,
-                            message=a2a_utils.new_agent_text_message(str(message.to_plain())),
-                        )
-                        last_msg = message
-
-                    if isinstance(data, ToolCallingAgentSuccessEvent) and data.state.result is not None:
-                        event_queue.enqueue_event(
-                            a2a_utils.new_agent_text_message(
-                                data.state.result.text,
-                                context.context_id,
-                                context.task_id,
-                            )
-                        )
-                        updater.complete()
-
-            except Exception as e:
-                updater.failed(
-                    message=a2a_utils.new_agent_text_message(str(e)),
-                )
 
     return TollCallingAgentExecutor(
         agent=agent,

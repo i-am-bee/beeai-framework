@@ -94,31 +94,27 @@ class A2AAgent(BaseAgent[A2AAgentRunOutput]):
                     params=a2a_types.MessageSendParams(message=self._convert_to_a2a_message(input))
                 )
 
-                last_message_or_artifact = None
+                last_event = None
                 stream_response: AsyncGenerator[a2a_types.SendStreamingMessageResponse] = client.send_message_streaming(
                     streaming_request
                 )
                 async for event in stream_response:
-                    if isinstance(event.root, a2a_types.SendStreamingMessageSuccessResponse) and isinstance(
-                        event.root.result, a2a_types.Message | a2a_types.TaskArtifactUpdateEvent
-                    ):
-                        last_message_or_artifact = event
-
+                    last_event = event
                     await context.emitter.emit(
                         "update", A2AAgentUpdateEvent(value=event.model_dump(mode="json", exclude_none=True))
                     )
 
-                if last_message_or_artifact is None:
+                if last_event is None:
                     raise AgentError("No result received from agent.")
 
-                if isinstance(last_message_or_artifact.root, a2a_types.JSONRPCErrorResponse):
+                if isinstance(last_event.root, a2a_types.JSONRPCErrorResponse):
                     await context.emitter.emit(
                         "error",
-                        A2AAgentErrorEvent(message=last_message_or_artifact.root.error.message or "Unknown error"),
+                        A2AAgentErrorEvent(message=last_event.root.error.message or "Unknown error"),
                     )
-                    raise AgentError(last_message_or_artifact.root.error.message or "Unknown error")
-                elif isinstance(last_message_or_artifact.root, a2a_types.SendStreamingMessageSuccessResponse):
-                    response = last_message_or_artifact.root.result
+                    raise AgentError(last_event.root.error.message or "Unknown error")
+                elif isinstance(last_event.root, a2a_types.SendStreamingMessageSuccessResponse):
+                    response = last_event.root.result
                     self._context_id = response.contextId
                     self._task_id = response.id if isinstance(response, a2a_types.Task) else response.taskId
 
@@ -133,15 +129,23 @@ class A2AAgent(BaseAgent[A2AAgentRunOutput]):
                             raise AgentError("Agent's response is not complete.")
 
                         assistant_message = self._convert_artifact_to_framework_message(response.artifact)
+                    elif isinstance(response, a2a_types.Task | a2a_types.TaskStatusUpdateEvent):
+                        if isinstance(response, a2a_types.TaskStatusUpdateEvent) and not response.final:
+                            raise AgentError("Agent's task update event is not final.")
+                        if response.status.state != a2a_types.TaskState.completed:
+                            raise AgentError("Agent's task is not completed.")
+                        if not response.status.message:
+                            return A2AAgentRunOutput(
+                                result=AssistantMessage("No response from agent."), event=last_event
+                            )
+                        assistant_message = self._convert_message_to_framework_message(response.status.message)
                     else:
                         raise AgentError("Invalid response from agent.")
 
                     await self.memory.add(assistant_message)
-                    return A2AAgentRunOutput(result=assistant_message, event=last_message_or_artifact)
+                    return A2AAgentRunOutput(result=assistant_message, event=last_event)
                 else:
-                    return A2AAgentRunOutput(
-                        result=AssistantMessage("No response from agent."), event=last_message_or_artifact
-                    )
+                    return A2AAgentRunOutput(result=AssistantMessage("No response from agent."), event=last_event)
 
         return self._to_run(
             handler,
