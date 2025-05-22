@@ -11,10 +11,11 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+"""Definition of plugin types."""
 
-from typing import Any, Protocol, runtime_checkable
+from typing import Annotated, Any, Protocol, runtime_checkable
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field, StringConstraints
 from typing_extensions import TypeVar
 
 from beeai_framework.plugins.plugin import Plugin
@@ -34,12 +35,60 @@ class PluggableInstanceRegistry(Registry[type[Pluggable]]):
         pluggable = self.lookup(name)
         return pluggable.ref(**parameters)
 
+
 class PluggableRegistry(Registry[Pluggable]): ...
 
 
-class PluginInstanceRegistry(Registry[type[Plugin]]):
-    def create(self, name: str, parameters: Any) -> Plugin:
-        plugin = self.lookup(name)
-        return plugin.ref(**parameters)
+AnyPluggable = Pluggable[Any, Any]
 
-class PluginRegistry(Registry[Plugin]): ...
+
+class PluginSection(BaseModel):
+    """The plugin registration and configuration."""
+
+    configpaths: list[str] = []
+    codepaths: list[str] = []
+    plugins: list[str] = []
+
+
+class Config(BaseModel):
+    """The main SDK configuration object."""
+
+    loader: PluginSection
+
+
+class Runtime(BaseModel):
+    """The plugin's runtime configuration object."""
+
+    class_name: str = Field(alias="class")
+    tests: list[str] | None = None
+
+
+class PluginConfig(BaseModel):
+    """The plugin object."""
+
+    name: Annotated[str, StringConstraints(min_length=1)]
+    id_: str = Field(alias="id")
+    display_name: str | None = ""
+    description: Annotated[str, StringConstraints(min_length=1)]
+    version: str
+    tags: list[str] | None = []
+    based_on: str | None = None
+    runtime: Runtime | None = None
+    pipeline: str | None = None
+    config: dict[Any, Any] | None = {}
+    streamlit: dict[Any, Any] | None = {}
+    analysis: dict[Any, Any] | None = None
+
+
+class DataContext(BaseModel):
+    """Instance of the data input."""
+
+    data: str | dict[Any, Any] | list[Any]
+    context: dict[Any, Any] | None = Field(default={})
+
+
+class PluggableDef(BaseModel):
+    """Pluggable definition."""
+
+    type: str = ""
+    arguments: dict[Any, Any] | None = {}

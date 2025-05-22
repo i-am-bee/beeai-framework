@@ -26,4 +26,12 @@ ASSISTANT_EXAMPLE = "{{assistant}}"
 
 PROMPT_STOP = ["\nInput:"]
 
-CHAT_MODEL_PLUGIN = "ChatModelPlugin"
+INPUT = "input"
+
+"""Chat Model options."""
+MODEL_ID = "model_id"
+
+FINISH_REASON = "finish_reason"
+PROMPT_TOKENS = "prompt_tokens"
+COMPLETION_TOKENS = "completion_tokens"
+TOTAL_TOKENS = "total_tokens"

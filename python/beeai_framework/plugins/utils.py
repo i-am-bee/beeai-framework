@@ -111,22 +111,21 @@ def plugin(
         return create_plugin(fn)
 
 
-def render_env_variables(template: str | dict | list) -> str | dict | list:
+def render_env_variables(template: str | dict[Any, Any] | list[Any]) -> str | dict[Any, Any] | list[Any]:
     """Renders a template with environment variables.
     Args:
         template: a chevron template.
     """
     if isinstance(template, str):
-        return chevron.render(template=template, data=os.environ)
+        return chevron.render(template=template, data=dict(os.environ))
     elif isinstance(template, dict):
         for key, value in template.items():
-            if isinstance(value, str|dict|list):
+            if isinstance(value, str | dict | list):
                 template[key] = render_env_variables(value)
         return template
     elif isinstance(template, list):
         for i, value in enumerate(template):
-            if isinstance(value, str|dict|list):
+            if isinstance(value, str | dict | list):
                 template[i] = render_env_variables(value)
         return template
     return template
-

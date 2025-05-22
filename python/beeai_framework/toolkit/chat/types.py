@@ -17,79 +17,76 @@ Define plugin configuration attributes.
 
 from typing import Any
 
-from pydantic import BaseModel
+from pydantic import BaseModel, model_validator
 
 from beeai_framework.backend.types import ChatModelParameters
-from beeai_framework.plugins.constants import MemoryType
-from beeai_framework.plugins.model.constants import (
-    ASSISTANT_EXAMPLE,
-    ASSISTANT_PROMPT_VARIABLE,
-    PROMPT_PREFIX,
-    PROMPT_STOP,
-    PROMPT_SUFFIX,
-    PROMPT_SYSTEM,
-    USER_EXAMPLE,
-    USER_PROMPT_VARIABLE,
-)
 from beeai_framework.plugins.utils import render_env_variables
+from beeai_framework.toolkit.chat.constants import (
+    ASSISTANT_EXAMPLE,
+    PROMPT_PREFIX,
+    PROMPT_SUFFIX,
+    USER_EXAMPLE,
+)
 
 
 class ExampleTemplate(BaseModel):
     """Examples template."""
+
     user: str = USER_EXAMPLE
     assistant: str = ASSISTANT_EXAMPLE
 
+
 class Templates(BaseModel):
     """Fewshot template"""
+
     user: str = PROMPT_SUFFIX
     assistant: str = PROMPT_PREFIX
-    examples: ExampleTemplate | None = None
+    examples: ExampleTemplate = ExampleTemplate()
+
 
 class UserExample(BaseModel):
     """User example"""
-    user: str | dict
+
+    user: str | dict[str, str]
+
 
 class AssistantExample(BaseModel):
     """Assistant example"""
-    assistant: str | dict
+
+    assistant: str | dict[str, str]
+
 
 class ToolCallExample(BaseModel):
     """Tool call example"""
-    tool_call: str | dict
+
+    tool_call: str | dict[str, str]
+
 
 class ToolResultExample(BaseModel):
     """Tool result example"""
-    tool_result: str | dict
+
+    tool_result: str | dict[str, str]
+
 
 class Example(BaseModel):
     """Example"""
+
     example: list[UserExample | AssistantExample | ToolCallExample | ToolResultExample]
 
+
 class Model(BaseModel):
-    model_id: str
-    options: dict | None = {}
+    """Chat model configurations."""
 
-    def model_post_init(self, __context: Any=None) -> None:
-        if self.model_id:
-            self.model_id = render_env_variables(self.model_id)
-        if self.options:
-            self.options = render_env_variables(self.options)
+    type: str = ""
+    model_id: str = ""
+    parameters: ChatModelParameters | None = None
+    model_config = {"extra": "allow"}
 
-
-
-class PromptConfig(BaseModel):
-    """A configuration dictionary that automatically handles default values for prompt plugins."""
-    memory: MemoryType = MemoryType.NONE
-    model: Model = {},
-    parameters: ChatModelParameters = {}
-    instruction: str = PROMPT_SYSTEM
-    templates: Templates
-    examples: list[Example] = []
-    examples_files: list[str] = []
-    output_parser_regex: str = ""
-    stop: list[str] = PROMPT_STOP
-    stream: bool = False
-    user_variables: list[str] = [USER_PROMPT_VARIABLE]
-    assistant_variable: str = ASSISTANT_PROMPT_VARIABLE
-    vector_config: dict = {}
-    tools: list[str] = []
+    @model_validator(mode="before")
+    @classmethod
+    def check_for_env_vars(cls, data: Any) -> Any:
+        if isinstance(data, dict):
+            for key, value in list(data.items()):
+                if isinstance(value, str | dict | list):
+                    data[key] = render_env_variables(value)
+        return data

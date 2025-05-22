@@ -11,24 +11,12 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
-# memory types
-
-from enum import Enum
-
-
-class MemoryType(str, Enum):
-    """Built-in memory types"""
-    NONE = "none"
-    UNCONSTRAINED = "unconstrained"
-    SLIDING = "sliding"
-    TOKEN = "token"
-    SUMMARIZE = "summarize"
-
-class ConfigurablePlugins(str, Enum):
-    """Built-in configurable plugins."""
-    CHAT_MODEL = "ChatModel"
-
+"""Plugin constants."""
 
 INPUT = "input"
-CONFIG = "config"
+TYPE = "type"
+PARAMETERS = "parameters"
+ARGUMENTS = "arguments"
+NAME = "name"
+DESCRIPTION = "description"
+ID = "id_"

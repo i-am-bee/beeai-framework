@@ -1,18 +1,20 @@
 name: 'SigmaComposer'
-alias: 'sigma-composer-plugin'
-creator: 'IBM Research'
-based_on: 'ChatModel'
+id: 'sigma-composer-plugin'
+creator: 'Bee AI'
+based_on: 'PromptingChatModel'
 description: 'A Sigma rules generator'
 version: '0.1'
 config:
   model:
-    model_id: 'ollama:llama3.3'
+    type: OllamaChatModel
+    model_id: granite3.1-dense:8b
+    parameters:
+      temperature: 0
+      min_tokens: 1
+      max_tokens: 600
   stream: True
-  memory: unconstrained
-  parameters:
-    temperature: 0
-    min_tokens: 1
-    max_tokens: 600
+  memory:
+    type: UnconstrainedMemory
   instruction: |
     You are a security expert who knows how to write Sigma rules for threat detection.
     You know how to translate detection rules described in natural language into Sigma rules.

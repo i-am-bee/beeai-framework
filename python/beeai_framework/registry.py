@@ -69,3 +69,6 @@ class Registry(Generic[T]):
         if not entry:
             raise ValueError(f"Entry '{name}' not found in registry.")
         return entry
+
+    def is_registered(self, name: str) -> bool:
+        return name in self._entries

@@ -11,9 +11,10 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Example using the plugin loader to load and run the SigmaComposer plugin defined in detection.yaml"""
+"""Example using the plugin loader to load and run the plugins defined in the plugins directory."""
 
 import asyncio
+import sys
 
 from dotenv import load_dotenv
 from pydantic import ValidationError
@@ -24,10 +25,12 @@ from beeai_framework.plugins.loader import PluginLoader
 from examples.helpers.io import ConsoleReader
 
 load_dotenv()
-
+plugin_name = "SigmaComposer"
+if len(sys.argv) > 1:
+    plugin_name = sys.argv[1]
 
 PluginLoader.root().load_config("python/examples/plugins/models/config.yaml")
-plugin = PluginLoader.root().get_plugin("SigmaComposer")
+plugin = PluginLoader.root().get_plugin(plugin_name)
 
 
 async def main() -> None:
@@ -61,10 +64,7 @@ async def main() -> None:
     except ValidationError as exc:
         print(exc)
         print(repr(exc.errors()[0]["type"]))
-        #> 'arguments_type'
+        # > 'arguments_type'
 
 
 asyncio.run(main())
-
-
-
