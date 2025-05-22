@@ -85,8 +85,13 @@ class A2AAgent(BaseAgent[A2AAgentRunOutput]):
         self,
         input: str | AnyMessage | a2a_types.Message,
         *,
+        context_id: str | None = None,
+        task_id: str | None = None,
         signal: AbortSignal | None = None,
     ) -> Run[A2AAgentRunOutput]:
+        self._context_id = context_id or self._context_id
+        self._task_id = task_id or self._task_id
+
         async def handler(context: RunContext) -> A2AAgentRunOutput:
             async with httpx.AsyncClient() as httpx_client:
                 client: a2a_client.A2AClient = await a2a_client.A2AClient.get_client_from_agent_card_url(
@@ -139,7 +144,7 @@ class A2AAgent(BaseAgent[A2AAgentRunOutput]):
                         if not response.lastChunk:
                             raise AgentError("Agent's response is not complete.")
 
-                        assistant_message = self._convert_artifact_to_framework_message(response.artifact)
+                        assistant_message = self._convert_message_to_framework_message(response.artifact)
                     elif isinstance(response, a2a_types.Task | a2a_types.TaskStatusUpdateEvent):
                         if isinstance(response, a2a_types.TaskStatusUpdateEvent) and not response.final:
                             logger.warning("Agent's task update event is not final.")
@@ -151,7 +156,7 @@ class A2AAgent(BaseAgent[A2AAgentRunOutput]):
                                 and response.artifacts
                                 and len(response.artifacts) > 0
                             ):
-                                assistant_message = self._convert_artifact_to_framework_message(response.artifacts[-1])
+                                assistant_message = self._convert_message_to_framework_message(response.artifacts[-1])
                             else:
                                 return A2AAgentRunOutput(
                                     result=AssistantMessage("No response from agent."), event=last_event_with_data
@@ -200,33 +205,17 @@ class A2AAgent(BaseAgent[A2AAgentRunOutput]):
         cloned.emitter = await self.emitter.clone()
         return cloned
 
-    def _convert_message_to_framework_message(self, input: str | AnyMessage | a2a_types.Message) -> AnyMessage:
+    def _convert_message_to_framework_message(
+        self, input: str | AnyMessage | a2a_types.Message | a2a_types.Artifact
+    ) -> AnyMessage:
         if isinstance(input, str):
             return UserMessage(input)
         elif isinstance(input, Message):
             return input
-        elif isinstance(input, a2a_types.Message):
-            return self._convert_parts_to_framework_message(input)
+        elif isinstance(input, a2a_types.Message | a2a_types.Artifact):
+            return convert_a2a_to_framework_message(input)
         else:
             raise ValueError(f"Unsupported input type {type(input)}")
-
-    def _convert_artifact_to_framework_message(self, input: a2a_types.Artifact) -> AnyMessage:
-        return self._convert_parts_to_framework_message(input)
-
-    def _convert_parts_to_framework_message(self, input: a2a_types.Message | a2a_types.Artifact) -> AnyMessage:
-        if all(isinstance(part.root, a2a_types.TextPart) for part in input.parts):
-            return AssistantMessage(
-                str(reduce(lambda x, y: x + y, input.parts).root.text),  # type: ignore
-                meta={"event": input},
-            )
-        else:
-            return CustomMessage(
-                role=Role.ASSISTANT
-                if isinstance(input, a2a_types.Artifact) or input.role == a2a_types.Role.agent
-                else Role.USER,
-                content=[CustomMessageContent(**part.model_dump()) for part in input.parts],
-                meta={"event": input},
-            )
 
     def _convert_to_a2a_message(self, input: str | AnyMessage | a2a_types.Message) -> a2a_types.Message:
         if isinstance(input, str):
@@ -249,6 +238,22 @@ class A2AAgent(BaseAgent[A2AAgentRunOutput]):
             return input
         else:
             raise ValueError("Unsupported input type")
+
+
+def convert_a2a_to_framework_message(input: a2a_types.Message | a2a_types.Artifact) -> AnyMessage:
+    if all(isinstance(part.root, a2a_types.TextPart) for part in input.parts):
+        return AssistantMessage(
+            str(reduce(lambda x, y: x + y, input.parts).root.text),  # type: ignore
+            meta={"event": input},
+        )
+    else:
+        return CustomMessage(
+            role=Role.ASSISTANT
+            if isinstance(input, a2a_types.Artifact) or input.role == a2a_types.Role.agent
+            else Role.USER,
+            content=[CustomMessageContent(**part.model_dump()) for part in input.parts],
+            meta={"event": input},
+        )
 
 
 def has_content(event: a2a_types.SendStreamingMessageResponse) -> bool:

@@ -15,6 +15,8 @@
 
 from typing_extensions import TypeVar, override
 
+from beeai_framework.adapters.a2a.agents.agent import convert_a2a_to_framework_message
+
 try:
     import a2a.server as a2a_server
     import a2a.server.agent_execution as a2a_agent_execution
@@ -32,7 +34,6 @@ from beeai_framework.agents.tool_calling.events import (
 )
 from beeai_framework.backend.message import (
     AnyMessage,
-    UserMessage,
 )
 from beeai_framework.utils.lists import find_index
 
@@ -51,16 +52,19 @@ class BasicAgentExecutor(a2a_agent_execution.AgentExecutor):
         context: a2a_agent_execution.RequestContext,
         event_queue: a2a_server.events.EventQueue,
     ) -> None:
-        query = context.get_user_input()
-
         if not context.message:
             raise Exception("No message provided")
 
         updater = a2a_server_tasks.TaskUpdater(event_queue, context.task_id, context.context_id)  # type: ignore[arg-type]
         if not context.current_task:
+            context.current_task = a2a_utils.new_task(context.message)
             updater.submit()
 
-        await self._agent.memory.add(UserMessage(query))
+        self._agent.memory.reset()
+        await self._agent.memory.add_many(
+            [convert_a2a_to_framework_message(message) for message in context.current_task.history or []]
+        )
+
         updater.start_work()
         try:
             response = await self._agent.run()
@@ -94,8 +98,6 @@ class TollCallingAgentExecutor(BasicAgentExecutor):
         context: a2a_agent_execution.RequestContext,
         event_queue: a2a_server.events.EventQueue,
     ) -> None:
-        query = context.get_user_input()
-
         if not context.message:
             raise Exception("No message provided")
 
@@ -104,7 +106,11 @@ class TollCallingAgentExecutor(BasicAgentExecutor):
             context.current_task = a2a_utils.new_task(context.message)
             updater.submit()
 
-        await self._agent.memory.add(UserMessage(query))
+        self._agent.memory.reset()
+        await self._agent.memory.add_many(
+            [convert_a2a_to_framework_message(message) for message in context.current_task.history or []]
+        )
+
         updater.start_work()
 
         last_msg: AnyMessage | None = None
