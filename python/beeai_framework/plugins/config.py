@@ -22,7 +22,7 @@ import chevron
 import yaml
 from pydantic import ValidationError
 
-from beeai_framework.plugins.configurable.schemas import Config, PluginConfig
+from beeai_framework.plugins.types import Config, PluginConfig
 
 
 class ConfigLoader:
@@ -41,11 +41,7 @@ class ConfigLoader:
         """
         with open(os.path.normpath(config), encoding="utf8") as file:
             template = file.read()
-            rendered_template = (
-                  chevron.render(template, data=os.environ)
-                  if use_mustache
-                  else template
-              )
+            rendered_template = chevron.render(template, data=dict(os.environ)) if use_mustache else template
             config_data = yaml.safe_load(rendered_template)
         return Config(**config_data)
 
@@ -100,11 +96,7 @@ class ConfigLoader:
           The dictionary of plugin configuration objects
 
         """
-        roots = (
-            [dirs]
-            if isinstance(dirs, str)
-            else dirs
-          )
+        roots = [dirs] if isinstance(dirs, str) else dirs
         plugs = {}
         for root in roots:
             path = os.path.join(os.path.normpath(root), "**", "*.yaml")

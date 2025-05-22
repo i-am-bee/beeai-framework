@@ -93,7 +93,6 @@ async def workflow_as_plugin() -> None:
 
 
 async def registry_and_autoloading() -> None:
-
     # We start by registering the plugins we want to use
     loader = PluginLoader()
 
@@ -106,23 +105,23 @@ async def registry_and_autoloading() -> None:
     # We retrieve the configuration from an external source (like YAML)
     user_config = {
         "ollama_granite31_chat_model": {
-            "plugin": "OllamaChatModel",
+            "type": "OllamaChatModel",
             "parameters": {"model_id": "llama3.1"},
         },
         "weather_tool": {
-            "plugin": "OpenMeteoTool",
+            "type": "OpenMeteoTool",
             "parameters": {},
         },
         "duckduckgo_search_tool": {
-            "plugin": "DuckDuckGoSearchTool",
+            "type": "DuckDuckGoSearchTool",
             "parameters": {},
         },
         "my_memory": {
-            "plugin": "UnconstrainedMemory",
+            "type": "UnconstrainedMemory",
             "parameters": {},
         },
         "my_agent": {
-            "plugin": "ToolCallingAgent",
+            "type": "ToolCallingAgent",
             "parameters": {
                 "llm": "$ollama_granite31_chat_model",
                 "tools": ["$weather_tool", "$duckduckgo_search_tool"],
@@ -133,7 +132,7 @@ async def registry_and_autoloading() -> None:
     }
 
     # We convert the plain configuration into instances of the plugins
-    loader.load(user_config)
+    loader.load(user_config, interpret_variables=True)
 
     # We retrieve user actions (from an external source like API / CLI)
     user_actions = [

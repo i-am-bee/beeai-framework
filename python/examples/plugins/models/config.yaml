@@ -1,5 +1,8 @@
-plugin:
+loader:
   configpaths:
-    - python/examples/plugins/models
+    - python/examples/plugins/models/plugins
   plugins:
-    - SigmaComposer 
+    - SigmaComposer
+    - CodeGenerator
+    - ShellExplainer
+    - LanguageTranslator

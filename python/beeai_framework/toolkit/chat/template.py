@@ -13,38 +13,56 @@
 # limitations under the License.
 """Fewshot prompt template."""
 
-import chevron
+from collections.abc import Callable
+from typing import Any
 
-from beeai_framework.backend.message import AssistantMessage, Message, SystemMessage, ToolMessage, UserMessage
-from beeai_framework.plugins.model.constants import ASSISTANT_PROMPT_VARIABLE, USER_PROMPT_VARIABLE
-from beeai_framework.plugins.model.schemas import (
+import chevron
+from pydantic import BaseModel, RootModel
+
+from beeai_framework.backend.message import AnyMessage, AssistantMessage, SystemMessage, UserMessage
+from beeai_framework.template import PromptTemplate, PromptTemplateInput
+from beeai_framework.toolkit.chat.constants import ASSISTANT_PROMPT_VARIABLE, USER_PROMPT_VARIABLE
+from beeai_framework.toolkit.chat.types import (
     AssistantExample,
     Example,
     ExampleTemplate,
-    ToolCallExample,
     UserExample,
 )
-from beeai_framework.template import PromptTemplate, PromptTemplateInput, T
+from beeai_framework.utils.models import ModelLike, create_model_from_type
+
+DictBaseModel = RootModel[type[dict]]
 
 
-class FewShotPromptTemplateInput(PromptTemplateInput[T]):
+class FewShotPromptTemplateInput(BaseModel):
     """Few shot prompt template input"""
+
     instruction: str
     example_template: ExampleTemplate
-    examples: list[Example]
+    examples: list[Example] = []
+    template: str
+    functions: dict[str, Callable[[dict[str, Any]], str]] = {}
+    defaults: dict[str, Any] = {}
 
 
-class FewShotChatPromptTemplate(PromptTemplate[T]):
-    def __init__(self, config: FewShotPromptTemplateInput[T]) -> None:
-        super().__init__(config)
+class FewShotChatPromptTemplate:
+    """A few shot chat template."""
 
-    def to_template_messages(self) -> list[Message]:
+    def __init__(self, config: FewShotPromptTemplateInput) -> None:
+        self._config = config
+        dict_model = create_model_from_type(dict[str, Any])
+        prompt_template_input: PromptTemplateInput[DictBaseModel] = PromptTemplateInput(
+            schema=dict_model, template=config.template, functions=config.functions, defaults=config.defaults
+        )
+
+        self._prompt_template = PromptTemplate(prompt_template_input)
+
+    def to_template_messages(self) -> list[AnyMessage]:
         """few shot template as a list of messages.
 
         Returns:
             a list of message objects.
         """
-        messages = [SystemMessage(content=self._config.instruction)]
+        messages: list[AnyMessage] = [SystemMessage(content=self._config.instruction)]
 
         for example_set in self._config.examples:
             for examples in example_set:
@@ -55,7 +73,7 @@ class FewShotChatPromptTemplate(PromptTemplate[T]):
                                 UserMessage(
                                     content=chevron.render(
                                         template=self._config.example_template.user,
-                                        data={USER_PROMPT_VARIABLE: example.user}
+                                        data={USER_PROMPT_VARIABLE: example.user},
                                     )
                                 )
                             )
@@ -63,8 +81,7 @@ class FewShotChatPromptTemplate(PromptTemplate[T]):
                             messages.append(
                                 UserMessage(
                                     content=chevron.render(
-                                        template=self._config.example_template.user,
-                                        data=example.user
+                                        template=self._config.example_template.user, data=example.user
                                     )
                                 )
                             )
@@ -74,7 +91,7 @@ class FewShotChatPromptTemplate(PromptTemplate[T]):
                                 AssistantMessage(
                                     content=chevron.render(
                                         template=self._config.example_template.assistant,
-                                        data={ASSISTANT_PROMPT_VARIABLE: example.assistant}
+                                        data={ASSISTANT_PROMPT_VARIABLE: example.assistant},
                                     )
                                 )
                             )
@@ -82,13 +99,13 @@ class FewShotChatPromptTemplate(PromptTemplate[T]):
                             messages.append(
                                 AssistantMessage(
                                     chevron.render(
-                                        template=self._config.templates.example_template.assistant,
-                                        data=example.assistant
-                                        )
+                                        template=self._config.example_template.assistant,
+                                        data=example.assistant,
                                     )
+                                )
                             )
-                    elif isinstance(example, ToolCallExample):
-                        messages.append(ToolMessage(example.tool_call))
+                    # elif isinstance(example, ToolCallExample):
+                    #    messages.append(ToolMessage(example.tool_call))
         return messages
 
     def __str__(self) -> str:
@@ -99,5 +116,11 @@ class FewShotChatPromptTemplate(PromptTemplate[T]):
             text += f"{message}\n"
         return text
 
-
-
+    def render(self, template_input: ModelLike[DictBaseModel] | None = None, /, **kwargs: Any) -> str:
+        """Renders an input inside a template.
+        Args:
+            template_input: input to be rendered.
+        Return:
+            A rendered input value.
+        """
+        return self._prompt_template.render(template_input, **kwargs)
