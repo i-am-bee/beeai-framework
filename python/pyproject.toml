@@ -67,7 +67,7 @@ wikipedia = ["wikipedia-api"]
 mcp = ["mcp"]
 acp = ["acp-sdk", "uvicorn"]
 beeai-platform = ["acp-sdk", "uvicorn"]
-a2a = ["a2a-sdk"]
+a2a = ["a2a-sdk", "uvicorn"]
 
 
 [tool.mypy]

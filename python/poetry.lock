@@ -4476,7 +4476,7 @@ description = "The lightning-fast ASGI server."
 optional = true
 python-versions = ">=3.9"
 groups = ["main"]
-markers = "extra == \"acp\" or extra == \"beeai-platform\" or extra == \"mcp\""
+markers = "extra == \"acp\" or extra == \"beeai-platform\" or extra == \"mcp\" or extra == \"a2a\""
 files = [
     {file = "uvicorn-0.34.2-py3-none-any.whl", hash = "sha256:deb49af569084536d269fe0a6d67e3754f104cf03aba7c11c40f01aadf33c403"},
     {file = "uvicorn-0.34.2.tar.gz", hash = "sha256:0e929828f6186353a80b58ea719861d2629d766293b6d19baf086ba31d4f3328"},
@@ -5240,7 +5240,7 @@ cffi = {version = ">=1.11", markers = "platform_python_implementation == \"PyPy\
 cffi = ["cffi (>=1.11)"]
 
 [extras]
-a2a = ["a2a-sdk"]
+a2a = ["a2a-sdk", "uvicorn"]
 acp = ["acp-sdk", "uvicorn"]
 beeai-platform = ["acp-sdk", "uvicorn"]
 duckduckgo = ["duckduckgo-search"]
@@ -5253,4 +5253,4 @@ wikipedia = ["wikipedia-api"]
 [metadata]
 lock-version = "2.1"
 python-versions = ">= 3.11,<4.0"
-content-hash = "c31f18ed27c5726b405c2d035215fec3ff7081e700bef1f5893c61a28576da26"
+content-hash = "1655728762d54d7d2202b3c926b53a98b7c1c94e851fc4fa6062e435420944e5"

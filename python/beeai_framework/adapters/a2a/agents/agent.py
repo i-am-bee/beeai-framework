@@ -94,40 +94,54 @@ class A2AAgent(BaseAgent[A2AAgentRunOutput]):
                     params=a2a_types.MessageSendParams(message=self._convert_to_a2a_message(input))
                 )
 
-                last_event = None
+                last_message_or_artifact = None
                 stream_response: AsyncGenerator[a2a_types.SendStreamingMessageResponse] = client.send_message_streaming(
                     streaming_request
                 )
                 async for event in stream_response:
-                    last_event = event
+                    if isinstance(event.root, a2a_types.SendStreamingMessageSuccessResponse) and isinstance(
+                        event.root.result, a2a_types.Message | a2a_types.TaskArtifactUpdateEvent
+                    ):
+                        last_message_or_artifact = event
+
                     await context.emitter.emit(
                         "update", A2AAgentUpdateEvent(value=event.model_dump(mode="json", exclude_none=True))
                     )
 
-                if last_event is None:
-                    raise AgentError("No event received from agent.")
+                if last_message_or_artifact is None:
+                    raise AgentError("No result received from agent.")
 
-                if isinstance(last_event.root, a2a_types.JSONRPCErrorResponse):
+                if isinstance(last_message_or_artifact.root, a2a_types.JSONRPCErrorResponse):
                     await context.emitter.emit(
                         "error",
-                        A2AAgentErrorEvent(message=last_event.root.error.message or "Unknown error"),
+                        A2AAgentErrorEvent(message=last_message_or_artifact.root.error.message or "Unknown error"),
                     )
-                    raise AgentError(last_event.root.error.message or "Unknown error")
-                elif isinstance(last_event.root, a2a_types.SendStreamingMessageSuccessResponse):
-                    response = last_event.root.result
+                    raise AgentError(last_message_or_artifact.root.error.message or "Unknown error")
+                elif isinstance(last_message_or_artifact.root, a2a_types.SendStreamingMessageSuccessResponse):
+                    response = last_message_or_artifact.root.result
                     self._context_id = response.contextId
                     self._task_id = response.id if isinstance(response, a2a_types.Task) else response.taskId
-                    if not isinstance(response, a2a_types.Message):
-                        raise AgentError("Invalid response from agent.")
-                    input_message: AnyMessage = self._convert_to_framework_message(input)
-                    assistant_message: AnyMessage = self._convert_to_framework_message(response)
 
+                    input_message: AnyMessage = self._convert_message_to_framework_message(input)
                     await self.memory.add(input_message)
-                    await self.memory.add(assistant_message)
 
-                    return A2AAgentRunOutput(result=assistant_message, event=last_event)
+                    assistant_message = None
+                    if isinstance(response, a2a_types.Message):
+                        assistant_message = self._convert_message_to_framework_message(response)
+                    elif isinstance(response, a2a_types.TaskArtifactUpdateEvent):
+                        if not response.lastChunk:
+                            raise AgentError("Agent's response is not complete.")
+
+                        assistant_message = self._convert_artifact_to_framework_message(response.artifact)
+                    else:
+                        raise AgentError("Invalid response from agent.")
+
+                    await self.memory.add(assistant_message)
+                    return A2AAgentRunOutput(result=assistant_message, event=last_message_or_artifact)
                 else:
-                    return A2AAgentRunOutput(result=AssistantMessage("No response from agent."), event=last_event)
+                    return A2AAgentRunOutput(
+                        result=AssistantMessage("No response from agent."), event=last_message_or_artifact
+                    )
 
         return self._to_run(
             handler,
@@ -160,25 +174,33 @@ class A2AAgent(BaseAgent[A2AAgentRunOutput]):
         cloned.emitter = await self.emitter.clone()
         return cloned
 
-    def _convert_to_framework_message(self, input: str | AnyMessage | a2a_types.Message) -> AnyMessage:
+    def _convert_message_to_framework_message(self, input: str | AnyMessage | a2a_types.Message) -> AnyMessage:
         if isinstance(input, str):
             return UserMessage(input)
         elif isinstance(input, Message):
             return input
         elif isinstance(input, a2a_types.Message):
-            if all(isinstance(part.root, a2a_types.TextPart) for part in input.parts):
-                return AssistantMessage(
-                    str(reduce(lambda x, y: x + y, input.parts).root.text),  # type: ignore
-                    meta={"event": input},
-                )
-            else:
-                return CustomMessage(
-                    role=Role.ASSISTANT if input.role == a2a_types.Role.agent else Role.USER,
-                    content=[CustomMessageContent(**part.model_dump()) for part in input.parts],
-                    meta={"event": input},
-                )
+            return self._convert_parts_to_framework_message(input)
         else:
             raise ValueError(f"Unsupported input type {type(input)}")
+
+    def _convert_artifact_to_framework_message(self, input: a2a_types.Artifact) -> AnyMessage:
+        return self._convert_parts_to_framework_message(input)
+
+    def _convert_parts_to_framework_message(self, input: a2a_types.Message | a2a_types.Artifact) -> AnyMessage:
+        if all(isinstance(part.root, a2a_types.TextPart) for part in input.parts):
+            return AssistantMessage(
+                str(reduce(lambda x, y: x + y, input.parts).root.text),  # type: ignore
+                meta={"event": input},
+            )
+        else:
+            return CustomMessage(
+                role=Role.ASSISTANT
+                if isinstance(input, a2a_types.Artifact) or input.role == a2a_types.Role.agent
+                else Role.USER,
+                content=[CustomMessageContent(**part.model_dump()) for part in input.parts],
+                meta={"event": input},
+            )
 
     def _convert_to_a2a_message(self, input: str | AnyMessage | a2a_types.Message) -> a2a_types.Message:
         if isinstance(input, str):

@@ -12,6 +12,3 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from beeai_framework.adapters.a2a.serve.server import A2AServer, A2AServerConfig
-
-__all__ = ["A2AServer", "A2AServerConfig"]
