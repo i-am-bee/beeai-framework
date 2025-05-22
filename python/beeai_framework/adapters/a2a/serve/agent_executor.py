@@ -101,6 +101,7 @@ class TollCallingAgentExecutor(BasicAgentExecutor):
 
         updater = a2a_server_tasks.TaskUpdater(event_queue, context.task_id, context.context_id)  # type: ignore[arg-type]
         if not context.current_task:
+            context.current_task = a2a_utils.new_task(context.message)
             updater.submit()
 
         await self._agent.memory.add(UserMessage(query))
