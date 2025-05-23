@@ -57,6 +57,7 @@ from beeai_framework.tools.errors import ToolError
 from beeai_framework.tools.tool import AnyTool
 from beeai_framework.tools.tool import tool as create_tool
 from beeai_framework.tools.types import StringToolOutput
+from beeai_framework.utils.cancellation import AbortSignal
 from beeai_framework.utils.counter import RetryCounter
 from beeai_framework.utils.models import update_model
 from beeai_framework.utils.strings import find_first_pair, generate_random_string, to_json
@@ -92,6 +93,7 @@ class ToolCallingAgent(BaseAgent[ToolCallingAgentRunOutput]):
         *,
         context: str | None = None,
         expected_output: str | type[BaseModel] | None = None,
+        signal: AbortSignal | None = None,
         execution: AgentExecutionConfig | None = None,
     ) -> Run[ToolCallingAgentRunOutput]:
         execution_config = execution or AgentExecutionConfig(
@@ -267,7 +269,7 @@ class ToolCallingAgent(BaseAgent[ToolCallingAgentRunOutput]):
                 await self.memory.add_many(state.memory.messages[-2:])
             return ToolCallingAgentRunOutput(result=state.result, memory=state.memory)
 
-        return self._to_run(handler, signal=None, run_params={"prompt": prompt, "execution": execution})
+        return self._to_run(handler, signal=signal, run_params={"prompt": prompt, "execution": execution})
 
     def _create_emitter(self) -> Emitter:
         return Emitter.root().child(

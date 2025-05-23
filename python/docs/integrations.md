@@ -11,6 +11,9 @@
 - [Model Context Protocol (MCP) Integration](#model-context-protocol-integration)
   - [MCPTool](#mcp-tool)
   - [MCPServer](#mcp-server)
+- [Agent2Agent (A2A) Protocol Integration](#agent2agent-protocol-integration)
+  - [A2AAgent](#a2a-agent)
+  - [A2AServer](#a2a-server)
 - [Examples](#examples)
 <!-- /TOC -->
 
@@ -410,6 +413,84 @@ if __name__ == "__main__":
 
 > [!Tip]
 > MCPTool lets you add MCP-compatible tools to any agent, see Tools documentation to learn more.
+
+## Agent2Agent Protocol Integration
+
+### A2A Agent
+
+A2AAgent lets you easily connect with external agents using the [Agent2Agent (A2A)](https://google.github.io/A2A).
+
+<!-- embedme examples/agents/providers/a2a_agent.py -->
+
+```py
+import asyncio
+import sys
+import traceback
+
+from beeai_framework.adapters.a2a.agents import A2AAgent
+from beeai_framework.errors import FrameworkError
+from beeai_framework.memory.unconstrained_memory import UnconstrainedMemory
+from examples.helpers.io import ConsoleReader
+
+
+async def main() -> None:
+    reader = ConsoleReader()
+
+    agent = A2AAgent(url="http://127.0.0.1:9999", memory=UnconstrainedMemory())
+    for prompt in reader:
+        # Run the agent and observe events
+        response = await agent.run(prompt).on(
+            "update",
+            lambda data, event: (reader.write("Agent 🤖 (debug) : ", data)),
+        )
+
+        reader.write("Agent 🤖 : ", response.result.text)
+
+
+if __name__ == "__main__":
+    try:
+        asyncio.run(main())
+    except FrameworkError as e:
+        traceback.print_exc()
+        sys.exit(e.explain())
+```
+
+_Source: [examples/agents/providers/a2a_agent.py](/python/examples/agents/providers/a2a_agent.py)_
+
+### A2A Server
+
+Basic example:
+
+<!-- embedme examples/serve/a2a_server.py -->
+
+```py
+from beeai_framework.adapters.a2a import A2AServer, A2AServerConfig
+from beeai_framework.agents.tool_calling.agent import ToolCallingAgent
+from beeai_framework.backend import ChatModel
+from beeai_framework.memory import UnconstrainedMemory
+from beeai_framework.tools.search.duckduckgo import DuckDuckGoSearchTool
+from beeai_framework.tools.weather import OpenMeteoTool
+
+
+def main() -> None:
+    llm = ChatModel.from_name("ollama:granite3.1-dense:8b")
+    agent = ToolCallingAgent(
+        llm=llm,
+        tools=[DuckDuckGoSearchTool(), OpenMeteoTool()],
+        memory=UnconstrainedMemory(),
+    )
+
+    # Register the agent with the A2A server and run the HTTP server
+    # For the ToolCallingAgent, we dont need to specify ACPAgent factory method
+    # because it is already registered in the A2AServer
+    A2AServer(config=A2AServerConfig(port=9999)).register(agent).serve()
+
+
+if __name__ == "__main__":
+    main()
+```
+
+_Source: [examples/serve/a2a_server.py](/python/examples/serve/a2a_server.py)_
 
 ---
 
