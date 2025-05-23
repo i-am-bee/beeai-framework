@@ -43,6 +43,10 @@ Agents control the path to solving a problem, acting on feedback to refine their
 
 BeeAI framework provides multiple agent implementations for different use cases.
 
+> [!TIP]
+>
+> Check out our new experimental [`RequirementAgent`](./experimental/requirement_agent.md) that combines the power of LLMs, tools, and requirements, all wrapped in a declarative interface.
+
 ### ReAct Agent
 
 ReActAgent implements the ReAct pattern ([Reasoning and Acting](https://arxiv.org/abs/2210.03629)), following this general flow:
