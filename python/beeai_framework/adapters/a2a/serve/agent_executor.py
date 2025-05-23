@@ -15,7 +15,8 @@
 
 from typing_extensions import TypeVar, override
 
-from beeai_framework.adapters.a2a.agents.agent import convert_a2a_to_framework_message
+from beeai_framework.adapters.a2a.agents._utils import convert_a2a_to_framework_message
+from beeai_framework.agents.errors import AgentError
 from beeai_framework.utils.cancellation import AbortController
 
 try:
@@ -55,7 +56,7 @@ class BasicAgentExecutor(a2a_agent_execution.AgentExecutor):
         event_queue: a2a_server.events.EventQueue,
     ) -> None:
         if not context.message:
-            raise Exception("No message provided")
+            raise AgentError("No message provided")
 
         updater = a2a_server_tasks.TaskUpdater(event_queue, context.task_id, context.context_id)  # type: ignore[arg-type]
         if not context.current_task:
@@ -101,7 +102,7 @@ class TollCallingAgentExecutor(BasicAgentExecutor):
         event_queue: a2a_server.events.EventQueue,
     ) -> None:
         if not context.message:
-            raise Exception("No message provided")
+            raise AgentError("No message provided")
 
         updater = a2a_server_tasks.TaskUpdater(event_queue, context.task_id, context.context_id)  # type: ignore[arg-type]
         if not context.current_task:

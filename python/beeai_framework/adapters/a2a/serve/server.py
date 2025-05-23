@@ -77,31 +77,31 @@ class A2AServer(
     def serve(self) -> None:
         if len(self._members) == 0:
             raise ValueError("No agents registered to the server.")
-        else:
-            member = self._members[0]
-            factory = type(self)._factories[type(member)]
-            config = self._metadata_by_agent.get(member, {})
-            executor = factory(member, metadata=config)  # type: ignore[call-arg]
 
-            request_handler = a2a_request_handlers.DefaultRequestHandler(
-                agent_executor=executor,
-                task_store=a2a_server.tasks.InMemoryTaskStore(),
-                queue_manager=config.get("queue_manager", None),
-                push_notifier=config.get("push_notifier", None),
-                request_context_builder=config.get("request_context_builder", None),
-            )
+        member = self._members[0]
+        factory = type(self)._factories[type(member)]
+        config = self._metadata_by_agent.get(member, {})
+        executor = factory(member, metadata=config)  # type: ignore[call-arg]
 
-            server = a2a_apps.A2AStarletteApplication(agent_card=executor.agent_card, http_handler=request_handler)
-            uvicorn.run(server.build(), host=self._config.host, port=self._config.port)
+        request_handler = a2a_request_handlers.DefaultRequestHandler(
+            agent_executor=executor,
+            task_store=a2a_server.tasks.InMemoryTaskStore(),
+            queue_manager=config.get("queue_manager", None),
+            push_notifier=config.get("push_notifier", None),
+            request_context_builder=config.get("request_context_builder", None),
+        )
+
+        server = a2a_apps.A2AStarletteApplication(agent_card=executor.agent_card, http_handler=request_handler)
+        uvicorn.run(server.build(), host=self._config.host, port=self._config.port)
 
     @override
     def register(self, input: AnyAgentLike, **metadata: Unpack[A2AServerMetadata]) -> Self:
-        if len(self._members) == 0:
+        if len(self._members) != 0:
+            raise ValueError("A2AServer only supports one agent.")
+        else:
             super().register(input)
             self._metadata_by_agent[input] = metadata
             return self
-        else:
-            raise ValueError("A2AServer only supports one agent.")
 
     @override
     def register_many(self, input: Sequence[AnyAgentLike]) -> Self:

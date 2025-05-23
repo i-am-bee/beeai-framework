@@ -13,11 +13,11 @@
 # limitations under the License.
 
 from collections.abc import AsyncGenerator
-from functools import reduce
 from uuid import uuid4
 
 import httpx
 
+from beeai_framework.adapters.a2a.agents._utils import convert_a2a_to_framework_message, has_content
 from beeai_framework.utils.strings import to_safe_word
 
 try:
@@ -42,8 +42,6 @@ from beeai_framework.agents.errors import AgentError
 from beeai_framework.backend.message import (
     AnyMessage,
     AssistantMessage,
-    CustomMessage,
-    CustomMessageContent,
     Message,
     Role,
     UserMessage,
@@ -124,7 +122,10 @@ class A2AAgent(BaseAgent[A2AAgentRunOutput]):
                         "error",
                         A2AAgentErrorEvent(message=last_event_with_data.root.error.message or "Unknown error"),
                     )
-                    raise AgentError(last_event_with_data.root.error.message or "Unknown error")
+                    raise AgentError(
+                        last_event_with_data.root.error.message or "Unknown error",
+                        context=last_event_with_data.model_dump(),
+                    )
 
                 # process success
                 elif isinstance(last_event_with_data.root, a2a_types.SendStreamingMessageSuccessResponse):
@@ -142,7 +143,9 @@ class A2AAgent(BaseAgent[A2AAgentRunOutput]):
                         assistant_message = self._convert_message_to_framework_message(response)
                     elif isinstance(response, a2a_types.TaskArtifactUpdateEvent):
                         if not response.lastChunk:
-                            raise AgentError("Agent's response is not complete.")
+                            raise AgentError(
+                                "Agent's response is not complete.", context=last_event_with_data.model_dump()
+                            )
 
                         assistant_message = self._convert_message_to_framework_message(response.artifact)
                     elif isinstance(response, a2a_types.Task | a2a_types.TaskStatusUpdateEvent):
@@ -164,7 +167,7 @@ class A2AAgent(BaseAgent[A2AAgentRunOutput]):
                         else:
                             assistant_message = self._convert_message_to_framework_message(response.status.message)
                     else:
-                        raise AgentError("Invalid response from agent.")
+                        raise AgentError("Invalid response from agent.", context=last_event_with_data.model_dump())
 
                     # add assistant message to memory
                     await self.memory.add(assistant_message)
@@ -238,45 +241,3 @@ class A2AAgent(BaseAgent[A2AAgentRunOutput]):
             return input
         else:
             raise ValueError("Unsupported input type")
-
-
-def convert_a2a_to_framework_message(input: a2a_types.Message | a2a_types.Artifact) -> AnyMessage:
-    if all(isinstance(part.root, a2a_types.TextPart) for part in input.parts):
-        content = str(reduce(lambda x, y: x + y, input.parts).root.text)  # type: ignore
-        if isinstance(input, a2a_types.Artifact) or input.role == a2a_types.Role.agent:
-            return AssistantMessage(
-                content,
-                meta={"event": input},
-            )
-        else:
-            return UserMessage(
-                content,
-                meta={"event": input},
-            )
-    else:
-        return CustomMessage(
-            role=Role.ASSISTANT
-            if isinstance(input, a2a_types.Artifact) or input.role == a2a_types.Role.agent
-            else Role.USER,
-            content=[CustomMessageContent(**part.model_dump()) for part in input.parts],
-            meta={"event": input},
-        )
-
-
-def has_content(event: a2a_types.SendStreamingMessageResponse) -> bool:
-    """Check if the event has content."""
-    if isinstance(event.root, a2a_types.SendStreamingMessageSuccessResponse):
-        response = event.root.result
-        if isinstance(response, a2a_types.Message):
-            return True
-        elif isinstance(response, a2a_types.TaskArtifactUpdateEvent):
-            return response.lastChunk or False
-        elif isinstance(response, a2a_types.TaskStatusUpdateEvent):
-            return bool(response.status.message)
-        elif isinstance(response, a2a_types.Task):
-            return bool(response.status.message) or bool(response.artifacts and len(response.artifacts) > 0)
-        else:
-            return False
-    elif isinstance(event.root, a2a_types.JSONRPCErrorResponse):
-        return True
-    return False
