@@ -242,10 +242,17 @@ class A2AAgent(BaseAgent[A2AAgentRunOutput]):
 
 def convert_a2a_to_framework_message(input: a2a_types.Message | a2a_types.Artifact) -> AnyMessage:
     if all(isinstance(part.root, a2a_types.TextPart) for part in input.parts):
-        return AssistantMessage(
-            str(reduce(lambda x, y: x + y, input.parts).root.text),  # type: ignore
-            meta={"event": input},
-        )
+        content = str(reduce(lambda x, y: x + y, input.parts).root.text)  # type: ignore
+        if isinstance(input, a2a_types.Artifact) or input.role == a2a_types.Role.agent:
+            return AssistantMessage(
+                content,
+                meta={"event": input},
+            )
+        else:
+            return UserMessage(
+                content,
+                meta={"event": input},
+            )
     else:
         return CustomMessage(
             role=Role.ASSISTANT

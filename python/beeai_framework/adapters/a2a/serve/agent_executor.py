@@ -16,6 +16,7 @@
 from typing_extensions import TypeVar, override
 
 from beeai_framework.adapters.a2a.agents.agent import convert_a2a_to_framework_message
+from beeai_framework.utils.cancellation import AbortController
 
 try:
     import a2a.server as a2a_server
@@ -45,6 +46,7 @@ class BasicAgentExecutor(a2a_agent_execution.AgentExecutor):
         super().__init__()
         self._agent = agent
         self.agent_card = agent_card
+        self._abort_controller = AbortController()
 
     @override
     async def execute(
@@ -67,7 +69,7 @@ class BasicAgentExecutor(a2a_agent_execution.AgentExecutor):
 
         updater.start_work()
         try:
-            response = await self._agent.run()
+            response = await self._agent.run(signal=self._abort_controller.signal)
 
             updater.complete(
                 a2a_utils.new_agent_text_message(
@@ -88,7 +90,7 @@ class BasicAgentExecutor(a2a_agent_execution.AgentExecutor):
         context: a2a_agent_execution.RequestContext,
         event_queue: a2a_server.events.EventQueue,
     ) -> None:
-        raise Exception("cancel not supported")
+        self._abort_controller.abort()
 
 
 class TollCallingAgentExecutor(BasicAgentExecutor):
@@ -108,14 +110,18 @@ class TollCallingAgentExecutor(BasicAgentExecutor):
 
         self._agent.memory.reset()
         await self._agent.memory.add_many(
-            [convert_a2a_to_framework_message(message) for message in context.current_task.history or []]
+            [
+                convert_a2a_to_framework_message(message)
+                for message in (context.current_task.history or [])
+                if all(isinstance(part.root, a2a_types.TextPart) for part in message.parts)
+            ]
         )
 
         updater.start_work()
 
         last_msg: AnyMessage | None = None
         try:
-            async for data, _ in self._agent.run():
+            async for data, _ in self._agent.run(signal=self._abort_controller.signal):
                 messages = data.state.memory.messages
                 if last_msg is None:
                     last_msg = messages[-1]
@@ -124,7 +130,12 @@ class TollCallingAgentExecutor(BasicAgentExecutor):
                 for message in messages[cur_index + 1 :]:
                     updater.update_status(
                         a2a_types.TaskState.working,
-                        message=a2a_utils.new_agent_text_message(str(message.to_plain())),
+                        message=a2a_utils.new_agent_parts_message(
+                            parts=[
+                                a2a_types.Part(root=a2a_types.DataPart(data=content.model_dump()))
+                                for content in message.content
+                            ]
+                        ),
                     )
                     last_msg = message
 
