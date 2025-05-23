@@ -12,6 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from beeai_framework.agents.experimental.requirements.requirement import Requirement, RequirementResult
+from beeai_framework.agents.experimental.requirements.requirement import Requirement, Rule
 
-__all__ = ["Requirement", "RequirementResult"]
+__all__ = ["Requirement", "Rule"]

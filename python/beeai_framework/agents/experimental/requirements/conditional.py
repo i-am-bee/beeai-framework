@@ -29,8 +29,8 @@ from beeai_framework.agents.experimental.requirements._utils import (
 from beeai_framework.agents.experimental.requirements.requirement import (
     Requirement,
     RequirementError,
-    RequirementResult,
-    with_run_context,
+    Rule,
+    run_with_context,
 )
 from beeai_framework.agents.experimental.types import RequirementAgentRunState
 from beeai_framework.context import RunContext
@@ -56,11 +56,13 @@ class ConditionalRequirement(Generic[TInput], Requirement[TInput]):
         can_be_used_in_row: bool = True,  # TODO: auto inherit from source?
         priority: int | None = None,  # TODO: auto inherit from source?
         custom_checks: list[ConditionalAbilityCheck[TInput]] | None = None,
+        enabled: bool = True,
     ) -> None:
         super().__init__()
 
+        self.enabled = enabled
         self.source = target
-        self._source_name: str | None = None
+        self._source_tool: AnyTool | None = None
         self.name = name or f"Condition{(_extract_target_name(target)).capitalize()}"
 
         if priority is not None:
@@ -89,10 +91,10 @@ class ConditionalRequirement(Generic[TInput], Requirement[TInput]):
             raise ValueError("The 'min_invocations' argument must be less than or equal to 'max_invocations'!")
 
         if self.source in self._before:
-            raise ValueError(f"Referencing self in 'before' is not allowed: {self.source}!")
+            raise ValueError(f"Referencing self in 'before' is not allowed ({self.source})!")
 
         if self.source in self._force_after:
-            raise ValueError(f"Referencing self in 'force_after' is not allowed: {self.source}!")
+            raise ValueError(f"Referencing self in 'force_after' is not allowed ({self.source})!")
 
         before_after_force_req = self._before & self._after
         if before_after_force_req:
@@ -104,8 +106,8 @@ class ConditionalRequirement(Generic[TInput], Requirement[TInput]):
                 f"Tool specified as 'before' and 'force_after' at the same time: {before_after_force_req}!"
             )
 
-        if (self._force_at_step or 0) < 0:
-            raise ValueError("The 'force_at_step' argument must be non negative!")
+        if self._force_at_step is not None and self._force_at_step < 1:
+            raise ValueError("The 'force_at_step' argument must be >= 1!")
 
     def init(self, *, tools: list[AnyTool], ctx: RunContext) -> None:
         targets = self._before & self._after & self._force_after & {self.source}
@@ -113,10 +115,22 @@ class ConditionalRequirement(Generic[TInput], Requirement[TInput]):
 
         for tool in tools:
             if _target_seen_in(tool, {self.source}):
-                if self._source_name:
+                if self._source_tool and self._source_tool is not tool:
                     raise ValueError(f"More than one occurrence of {self.source} has been found!")
 
-                self._source_name = tool.name
+                self._source_tool = tool
+
+        if not self._source_tool:
+            raise ValueError(f"Source tool {self.source} was not found!")
+
+        if _target_seen_in(self._source_tool, self._before):
+            raise ValueError(f"Referencing self in 'before' is not allowed: {self._source_tool}!")
+
+        if self._can_be_used_in_row and _target_seen_in(self._source_tool, self._force_after):
+            raise ValueError(
+                f"Referencing self in 'force_after' is not allowed: {self._source_tool}. "
+                f"It would prevent an infinite loop. Consider setting 'can_be_used_in_row' to False."
+            )
 
     def reset(self) -> Self:
         self._before.clear()
@@ -124,32 +138,35 @@ class ConditionalRequirement(Generic[TInput], Requirement[TInput]):
         self._force_after.clear()
         return self
 
-    @with_run_context
-    async def run(self, input: TInput, context: RunContext) -> list[RequirementResult]:
-        source_name = self._source_name
-        if not source_name:
+    @run_with_context
+    async def run(self, input: TInput, context: RunContext) -> list[Rule]:
+        source_tool = self._source_tool
+        if not source_tool:
             raise RequirementError("Source was not found!", requirement=self)
 
         steps = (
             [step for step in input.steps if not step.error] if self._only_success_invocations else list(input.steps)
         )
-        last_step = steps[-1] if steps else None
-        last_tool_name = last_step.tool.name if last_step and last_step.tool else ""
-        invocations = sum(1 if step.tool and step.tool.name == source_name else 0 for step in steps)
+        last_step_tool = steps[-1].tool if steps and steps[-1].tool is not None else None
+        invocations = sum(1 if step.tool is source_tool else 0 for step in steps)
 
-        def resolve(allowed: bool) -> list[RequirementResult]:
-            if not allowed and self._force_at_step == len(steps):
+        def resolve(allowed: bool) -> list[Rule]:
+            if not allowed and self._force_at_step == (len(steps) + 1):
                 raise RequirementError(
-                    f"Tool '{source_name}' cannot be executed at step {self._force_at_step} "
+                    f"Tool '{source_tool.name}' cannot be executed at step {self._force_at_step} "
                     f"because it has not met all requirements.",
                     requirement=self,
                 )
 
-            forced = last_tool_name in self._force_after or self._force_at_step == len(steps) if allowed else False
+            forced = (
+                _target_seen_in(last_step_tool, self._force_after) or self._force_at_step == len(steps)
+                if allowed
+                else False
+            )
 
             return [
-                RequirementResult(
-                    target=source_name,
+                Rule(
+                    target=source_tool.name,
                     allowed=allowed,
                     forced=forced,
                     hidden=False,
@@ -157,7 +174,7 @@ class ConditionalRequirement(Generic[TInput], Requirement[TInput]):
                 )
             ]
 
-        if not self._can_be_used_in_row and source_name == last_tool_name:
+        if not self._can_be_used_in_row and source_tool is last_step_tool:
             return resolve(False)
 
         if invocations >= self._max_invocations:
@@ -192,5 +209,5 @@ class ConditionalRequirement(Generic[TInput], Requirement[TInput]):
         instance._force_at_step = self._force_at_step
         instance._can_be_used_in_row = self._can_be_used_in_row
         instance.source = self.source
-        instance._source_name = self._source_name
+        instance._source_tool = self._source_tool
         return instance

@@ -59,15 +59,25 @@ class CustomJsonDump(Protocol):
 
 def to_json_serializable(input: Any, *, exclude_none: bool = False) -> Any:
     if isinstance(input, BaseModel):
-        return input.model_dump(fallback=lambda value: to_json_serializable(value, exclude_none=exclude_none))
-    if isinstance(input, CustomJsonDump):
+        return input.model_dump(
+            fallback=lambda value: to_json_serializable(value, exclude_none=exclude_none), exclude_none=exclude_none
+        )
+    elif isinstance(input, CustomJsonDump):
         return input.to_json_safe()
+    elif isinstance(input, list):
+        return (
+            {v for v in to_json_serializable(input, exclude_none=exclude_none) if input is not None}
+            if exclude_none
+            else input
+        )
     elif isinstance(input, dict):
-        return vars(input)
+        return (
+            {k: to_json_serializable(v, exclude_none=exclude_none) for k, v in input.items() if v is not None}
+            if exclude_none
+            else input
+        )
     elif isinstance(input, str | bool | int | float):
         return input
-    elif isinstance(input, dict) and exclude_none:
-        return {k: v for k, v in input.items() if v is not None}
     else:
         return str(input)
 

@@ -16,7 +16,7 @@ import contextlib
 from collections.abc import Sequence
 from typing import Literal
 
-from beeai_framework.agents.experimental.requirements.requirement import Requirement, RequirementResult
+from beeai_framework.agents.experimental.requirements.requirement import Requirement, Rule
 from beeai_framework.agents.experimental.types import RequirementAgentRequest, RequirementAgentRunState
 from beeai_framework.agents.experimental.utils._tool import FinalAnswerTool
 from beeai_framework.context import RunContext
@@ -60,7 +60,7 @@ class RequirementsReasoner:
         prevent_stop: bool = False
         forced: AnyTool | None = None
         forced_level: int = 0
-        rules_by_tool: dict[str, list[tuple[RequirementResult, int]]] = {t.name: [] for t in self._tools}
+        rules_by_tool: dict[str, list[tuple[Rule, int]]] = {t.name: [] for t in self._tools}
 
         # Group rules
         for entry in [entry for entry in self._entries if entry.enabled]:

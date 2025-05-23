@@ -48,9 +48,12 @@ def _assert_all_rules_found(
 
 
 def _target_seen_in(
-    target: AnyTool,
+    target: AnyTool | None,
     haystack: set[_HaystackValue] | _HaystackValue,
 ) -> bool:
+    if target is None:
+        return False
+
     if not isinstance(haystack, set):
         haystack = {haystack}
 

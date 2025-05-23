@@ -34,7 +34,7 @@ from beeai_framework.utils import MaybeAsync
 from beeai_framework.utils.strings import to_safe_word
 
 
-class RequirementResult(BaseModel):
+class Rule(BaseModel):
     target: str = Field(..., description="A tool that the requirement apply to.")
     allowed: bool = Field(True, description="Can the agent use the tool?")
     prevent_stop: bool = Field(False, description="Prevent the agent from terminating.")
@@ -81,7 +81,7 @@ class Requirement(ABC, Generic[T]):
         self._priority = value
 
     @abstractmethod
-    def run(self, input: T) -> Run[list[RequirementResult]]: ...
+    def run(self, input: T) -> Run[list[Rule]]: ...
 
     def init(self, *, tools: list[AnyTool], ctx: RunContext) -> None:
         pass
@@ -98,15 +98,14 @@ class Requirement(ABC, Generic[T]):
 TSelf = TypeVar("TSelf", bound=Requirement[Any])
 
 
-# TODO: refactor name
-def with_run_context(
+def run_with_context(
     fn: Callable[
         [TSelf, T, "RunContext"],
-        Awaitable[list[RequirementResult]],
+        Awaitable[list[Rule]],
     ],
-) -> Callable[[TSelf, T], Run[list[RequirementResult]]]:
-    def decorated(self: TSelf, input: T) -> Run[list[RequirementResult]]:
-        async def handler(context: RunContext) -> list[RequirementResult]:
+) -> Callable[[TSelf, T], Run[list[Rule]]]:
+    def decorated(self: TSelf, input: T) -> Run[list[Rule]]:
+        async def handler(context: RunContext) -> list[Rule]:
             return await fn(self, input, context)
 
         return RunContext.enter(
@@ -118,7 +117,7 @@ def with_run_context(
     return decorated
 
 
-RequirementFn = MaybeAsync[[T, RunContext], list[RequirementResult]]
+RequirementFn = MaybeAsync[[T, RunContext], list[Rule]]
 
 
 def requirement(
@@ -135,8 +134,8 @@ def requirement(
         class FunctionRequirement(Requirement[Any]):
             name = req_name or fn.__name__
 
-            @with_run_context
-            async def run(self, input: T, context: RunContext) -> list[RequirementResult]:
+            @run_with_context
+            async def run(self, input: T, context: RunContext) -> list[Rule]:
                 result = fn(input, context)
                 if inspect.isawaitable(result):
                     return await result

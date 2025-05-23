@@ -22,8 +22,8 @@ from beeai_framework.agents.experimental.requirements._utils import (
 )
 from beeai_framework.agents.experimental.requirements.requirement import (
     Requirement,
-    RequirementResult,
-    with_run_context,
+    Rule,
+    run_with_context,
 )
 from beeai_framework.agents.experimental.types import RequirementAgentRunState
 from beeai_framework.agents.experimental.utils._tool import FinalAnswerTool
@@ -47,7 +47,7 @@ class AskPermissionRequirement(Requirement[RequirementAgentRunState]):
         *,
         handler: AskHandler | None = None,
         exclude: MultiTargetType | None = None,
-        remember_choices: bool = True,
+        remember_choices: bool = False,
         hide_disallowed: bool = False,
         always_allow: bool = False,
     ) -> None:
@@ -80,7 +80,7 @@ class AskPermissionRequirement(Requirement[RequirementAgentRunState]):
 
         def setup_tool(tool: AnyTool) -> None:
             async def handler(data: Any, _: EventMeta) -> None:
-                await self._ask_for_permission(tool, data)
+                await self._ask(tool, data)
 
             ctx.emitter.match(
                 create_internal_event_matcher("start", tool, parent_run_id=ctx.run_id),
@@ -95,7 +95,7 @@ class AskPermissionRequirement(Requirement[RequirementAgentRunState]):
             if not self._include or _target_seen_in(tool, self._include):
                 setup_tool(tool)
 
-    async def _ask_for_permission(self, tool: AnyTool, data: RunContextStartEvent) -> None:
+    async def _ask(self, tool: AnyTool, data: RunContextStartEvent) -> None:
         allowed: bool | None = True if self._always_allow else self._state.get(tool.name)
         if allowed is None:
             allowed = await self._handler(tool, data.input)
@@ -105,10 +105,10 @@ class AskPermissionRequirement(Requirement[RequirementAgentRunState]):
         if not allowed:
             data.output = StringToolOutput("This tool is not allowed to be used.")
 
-    @with_run_context
-    async def run(self, input: RequirementAgentRunState, context: RunContext) -> list[RequirementResult]:
+    @run_with_context
+    async def run(self, input: RequirementAgentRunState, context: RunContext) -> list[Rule]:
         return [
-            RequirementResult(
+            Rule(
                 target=target,
                 allowed=state,
                 prevent_stop=False,
