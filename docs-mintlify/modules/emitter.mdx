@@ -15,16 +15,16 @@ This flexible event-driven mechanism providers the ability to:
 * Implement custom event handling
 
 <Note>
-Location within the framework: [beeai_framework/emitter](https://github.com/i-am-bee/beeai-framework/tree/python/beeai_framework/emitter).
+Explore the implementation in [Python](https://github.com/i-am-bee/beeai-framework/tree/main/python/beeai_framework/emitter) or
+[TypeScript](https://github.com/i-am-bee/beeai-framework/tree/main/typescript/src/emitter).
 </Note>
 
 ## Basic usage
 
-The following example demonstrates how the [`Emitter`](https://github.com/i-am-bee/beeai-framework/blob/main/python/beeai_framework/emitter/emitter.py) feature works.
+<CodeGroup>
 
 {/* <!-- embedme python/examples/emitter/base.py --> */}
-
-```py
+```py Python [expandable]
 import asyncio
 import json
 import sys
@@ -56,8 +56,22 @@ if __name__ == "__main__":
         sys.exit(e.explain())
 
 ```
+{/* <!-- embedme typescript/examples/emitter/base.ts --> */}
+```ts TypeScript [expandable]
+import { Emitter, EventMeta } from "beeai-framework/emitter/emitter";
 
-_Source: [python/examples/emitter/base.py](https://github.com/i-am-bee/beeai-framework/blob/main/python/examples/emitter/base.py)_
+// Get the root emitter or create your own
+const root = Emitter.root;
+
+root.match("*.*", async (data: unknown, event: EventMeta) => {
+  console.log(`Received event '${event.path}' with data ${JSON.stringify(data)}`);
+});
+
+await root.emit("start", { id: 123 });
+await root.emit("end", { id: 123 });
+
+```
+</CodeGroup>
 
 <Note>
 You can create your own emitter by initiating the `Emitter` class, but typically it's better to use or fork the root one.
@@ -72,9 +86,10 @@ Event matching allows you to:
 * Use wildcard matching
 * Handle nested events
 
-{/* <!-- embedme python/examples/emitter/matchers.py --> */}
+<CodeGroup>
 
-```py
+{/* <!-- embedme python/examples/emitter/matchers.py --> */}
+```py Python [expandable]
 import asyncio
 import re
 import sys
@@ -123,7 +138,39 @@ if __name__ == "__main__":
 
 ```
 
-_Source: [python/examples/emitter/matchers.py](https://github.com/i-am-bee/beeai-framework/blob/main/python/examples/emitter/matchers.py)_
+{/* <!-- embedme typescript/examples/emitter/matchers.ts --> */}
+```ts TypeScript [expandable]
+import { Callback, Emitter } from "beeai-framework/emitter/emitter";
+import { ChatModel } from "beeai-framework/backend/chat";
+
+interface Events {
+  update: Callback<{ data: string }>;
+}
+
+const emitter = new Emitter<Events>({
+  namespace: ["app"],
+});
+
+// Match events by a concrete name (strictly typed)
+emitter.on("update", async (data, event) => {});
+
+// Match all events emitted directly on the instance (not nested)
+emitter.match("*", async (data, event) => {});
+
+// Match all events (included nested)
+emitter.match("*.*", async (data, event) => {});
+
+// Match events by providing a filter function
+emitter.match(
+  (event) => event.creator instanceof ChatModel,
+  async (data, event) => {},
+);
+
+// Match events by regex
+emitter.match(/watsonx/, async (data, event) => {});
+
+```
+</CodeGroup>
 
 ### Event piping
 
@@ -132,9 +179,10 @@ Event piping enables:
 * Transforming events in transit
 * Creating complex event workflows
 
-{/* <!-- embedme python/examples/emitter/piping.py --> */}
+<CodeGroup>
 
-```py
+{/* <!-- embedme python/examples/emitter/piping.py --> */}
+```py Python [expandable]
 import asyncio
 import sys
 import traceback
@@ -184,7 +232,44 @@ if __name__ == "__main__":
 
 ```
 
-_Source: [python/examples/emitter/piping.py](https://github.com/i-am-bee/beeai-framework/blob/main/python/examples/emitter/piping.py)_
+{/* <!-- embedme typescript/examples/emitter/piping.ts --> */}
+```ts TypeScript [expandable]
+import { Emitter, EventMeta } from "beeai-framework/emitter/emitter";
+
+const first = new Emitter({
+  namespace: ["app"],
+});
+
+first.match("*.*", (data: unknown, event: EventMeta) => {
+  console.log(
+    `'first' has retrieved the following event ${event.path}, isDirect: ${event.source === first}`,
+  );
+});
+
+const second = new Emitter({
+  namespace: ["app", "llm"],
+});
+second.match("*.*", (data: unknown, event: EventMeta) => {
+  console.log(
+    `'second' has retrieved the following event '${event.path}', isDirect: ${event.source === second}`,
+  );
+});
+
+// Propagate all events from the 'second' emitter to the 'first' emitter
+const unpipe = second.pipe(first);
+
+await first.emit("a", {});
+await second.emit("b", {});
+
+console.log("Unpipe");
+unpipe();
+
+await first.emit("c", {});
+await second.emit("d", {});
+
+```
+
+</CodeGroup>
 
 ---
 
@@ -199,9 +284,10 @@ Integrate emitters with agents to:
 * Log agent interactions
 * Debug agent behaviors
 
-{/* <!-- embedme python/examples/emitter/agent_matchers.py --> */}
+<CodeGroup>
 
-```py
+{/* <!-- embedme python/examples/emitter/agent_matchers.py --> */}
+```py Python [expandable]
 import asyncio
 import sys
 import traceback
@@ -237,14 +323,41 @@ if __name__ == "__main__":
 
 ```
 
-_Source: [python/examples/emitter/agentMatchers.py](https://github.com/i-am-bee/beeai-framework/blob/main/python/examples/emitter/agent_matchers.py)_
+{/* <!-- embedme typescript/examples/emitter/agentMatchers.ts --> */}
+```ts TypeScript [expandable]
+import { ReActAgent } from "beeai-framework/agents/react/agent";
+import { UnconstrainedMemory } from "beeai-framework/memory/unconstrainedMemory";
+import { OllamaChatModel } from "beeai-framework/adapters/ollama/backend/chat";
+
+const agent = new ReActAgent({
+  llm: new OllamaChatModel("llama3.1"),
+  memory: new UnconstrainedMemory(),
+  tools: [],
+});
+
+// Matching events on the instance level
+agent.emitter.match("*.*", (data, event) => {});
+
+await agent
+  .run({
+    prompt: "Hello agent!",
+  })
+  .observe((emitter) => {
+    // Matching events on the execution (run) level
+    emitter.match("*.*", (data, event) => {
+      console.info(`RUN LOG: received event '${event.path}'`);
+    });
+  });
+
+```
+</CodeGroup>
 
 <Note>
-The observe method is also supported on [Tools](/python/modules/tools.mdx) and [Backend](/python/modules/backend.mdx).
+The observe method is also supported on [Tools](modules/tools.mdx) and [Backend](modules/backend.mdx).
 </Note>
 
 <Tip>
-See the [events documentation](/python/modules/events.mdx) for more information on standard emitter events.
+See the [events documentation](modules/events.mdx) for more information on standard emitter events.
 </Tip>
 
 ---
@@ -256,9 +369,9 @@ Advanced techniques include:
 * Complex event filtering
 * Performance optimization
 
+<CodeGroup>
 {/* <!-- embedme python/examples/emitter/advanced.py --> */}
-
-```py
+```py Python [expandable]
 import asyncio
 import sys
 import traceback
@@ -297,11 +410,50 @@ if __name__ == "__main__":
         sys.exit(e.explain())
 
 ```
+{/* <!-- embedme typescript/examples/emitter/advanced.ts --> */}
+```ts TypeScript [expandable]
+import { Emitter, EventMeta, Callback } from "beeai-framework/emitter/emitter";
 
-_Source: [python/examples/emitter/advanced.py](https://github.com/i-am-bee/beeai-framework/blob/main/python/examples/emitter/advanced.py)_
+// Define events in advanced
+interface Events {
+  start: Callback<{ id: number }>;
+  update: Callback<{ id: number; data: string }>;
+}
+
+// Create emitter with a type support
+const emitter = Emitter.root.child<Events>({
+  namespace: ["bee", "demo"],
+  creator: {}, // typically a class
+  context: {}, // custom data (propagates to the event's context property)
+  groupId: undefined, // optional id for grouping common events (propagates to the event's groupId property)
+  trace: undefined, // data related to identity what emitted what and which context (internally used by framework's components)
+});
+
+// Listen for "start" event
+emitter.on("start", async (data, event: EventMeta) => {
+  console.log(`Received ${event.name} event with id "${data.id}"`);
+});
+
+// Listen for "update" event
+emitter.on("update", async (data, event: EventMeta) => {
+  console.log(`Received ${event.name}' with id "${data.id}" and data ${data.data}`);
+});
+
+await emitter.emit("start", { id: 123 });
+await emitter.emit("update", { id: 123, data: "Hello Bee!" });
+
+```
+</CodeGroup>
 
 ---
 
 ## Examples
 
-- All emitter examples can be found in [here](https://github.com/i-am-bee/beeai-framework/tree/main/python/examples/emitter).
+<CardGroup cols={2}>
+  <Card title="Python" icon="python" href="https://github.com/i-am-bee/beeai-framework/tree/main/python/examples/emitter">
+    Explore reference emitter implementations in Python
+  </Card>
+  <Card title="TypeScript" icon="js" href="https://github.com/i-am-bee/beeai-framework/tree/main/typescript/examples/emitter">
+    Explore reference emitter implementations in TypeScript
+  </Card>
+</CardGroup>

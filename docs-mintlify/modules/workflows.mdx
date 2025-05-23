@@ -13,6 +13,11 @@ Workflows provide a flexible and extensible component for managing and executing
 - 🧩 **Modularity:** Steps can be standalone or invoke nested workflows
 - 👁️ **Observability:** Emit events during execution to track progress or handle errors
 
+<Note>
+Explore the implementation in the [Python](https://github.com/i-am-bee/beeai-framework/tree/main/python/beeai_framework/workflows) or
+[TypeScript](https://github.com/i-am-bee/beeai-framework/tree/main/typescript/src/workflows).
+</Note>
+
 ---
 
 ## Core Concepts
@@ -47,9 +52,10 @@ Transitions determine the flow of execution between steps. Each step returns eit
 
 The example below demonstrates a minimal workflow that processes steps in sequence. This pattern is useful for straightforward, linear processes where each step builds on the previous one.
 
-{/* <!-- embedme python/examples/workflows/simple.py --> */}
+<CodeGroup>
 
-```py
+{/* <!-- embedme python/examples/workflows/simple.py --> */}
+```py Python [expandable]
 import asyncio
 import sys
 import traceback
@@ -82,15 +88,47 @@ if __name__ == "__main__":
 
 ```
 
-_Source: [python/examples/workflows/simple.py](https://github.com/i-am-bee/beeai-framework/blob/main/python/examples/workflows/simple.py)_
+{/* <!-- embedme typescript/examples/workflows/simple.ts --> */}
+```ts Typescript [expandable]
+import { Workflow } from "beeai-framework/workflows/workflow";
+import { z } from "zod";
 
-### Multi-Step Workflow
+const schema = z.object({
+  hops: z.number().default(0),
+});
+
+const workflow = new Workflow({ schema })
+  .addStep("a", async (state) => {
+    state.hops += 1;
+  })
+  .addStep("b", () => (Math.random() > 0.5 ? Workflow.PREV : Workflow.END));
+
+const response = await workflow.run({ hops: 0 }).observe((emitter) => {
+  emitter.on("start", (data) => console.log(`-> start ${data.step}`));
+  emitter.on("error", (data) => console.log(`-> error ${data.step}`));
+  emitter.on("success", (data) => console.log(`-> finish ${data.step}`));
+});
+
+console.log(`Hops: ${response.result.hops}`);
+console.log(`-> steps`, response.steps.map((step) => step.name).join(","));
+
+```
+
+</CodeGroup>
+
+---
+
+## Advanced Features
+
+### Multi-Step and Nested Workflows
 
 This advanced example showcases a workflow that implements multiplication through repeated addition—demonstrating control flow, state manipulation, nesting, and conditional logic.
 
-{/* <!-- embedme python/examples/workflows/nesting.py --> */}
+Workflow nesting allows complex behaviors to be encapsulated as reusable components, enabling hierarchical composition of workflows. This promotes modularity, reusability, and better organization of complex agent logic.
 
-```py
+<CodeGroup>
+{/* <!-- embedme python/examples/workflows/nesting.py --> */}
+```py Python [expandable]
 import asyncio
 import sys
 import traceback
@@ -156,7 +194,47 @@ if __name__ == "__main__":
 
 ```
 
-_Source: [python/examples/workflows/nesting.py](https://github.com/i-am-bee/beeai-framework/blob/main/python/examples/workflows/nesting.py)_
+{/* <!-- embedme typescript/examples/workflows/nesting.ts --> */}
+```ts Typescript [expandable]
+import { Workflow } from "beeai-framework/workflows/workflow";
+import { z } from "zod";
+
+const schema = z.object({
+  threshold: z.number().min(0).max(1),
+  counter: z.number().default(0),
+});
+
+const addFlow = new Workflow({ schema }).addStep("run", async (state) => {
+  state.counter += 1;
+  return Math.random() > 0.5 ? Workflow.SELF : Workflow.END;
+});
+
+const subtractFlow = new Workflow({
+  schema,
+}).addStep("run", async (state) => {
+  state.counter -= 1;
+  return Math.random() > 0.5 ? Workflow.SELF : Workflow.END;
+});
+
+const workflow = new Workflow({
+  schema,
+})
+  .addStep("start", (state) =>
+    Math.random() > state.threshold ? "delegateAdd" : "delegateSubtract",
+  )
+  .addStep("delegateAdd", addFlow.asStep({ next: Workflow.END }))
+  .addStep("delegateSubtract", subtractFlow.asStep({ next: Workflow.END }));
+
+const response = await workflow.run({ threshold: 0.5 }).observe((emitter) => {
+  emitter.on("start", (data, event) =>
+    console.log(`-> step ${data.step}`, event.trace?.parentRunId ? "(nested flow)" : ""),
+  );
+});
+console.info(`Counter:`, response.result);
+
+```
+
+</CodeGroup>
 
 This workflow demonstrates several powerful concepts:
 - Implementing loops by returning `Workflow.SELF`
@@ -167,89 +245,14 @@ This workflow demonstrates several powerful concepts:
 
 ---
 
-## Advanced Features
-
-### Workflow Nesting
-
-Workflow nesting allows complex behaviors to be encapsulated as reusable components, enabling hierarchical composition of workflows. This promotes modularity, reusability, and better organization of complex agent logic.
-
-{/* <!-- embedme python/examples/workflows/nesting.py --> */}
-
-```py
-import asyncio
-import sys
-import traceback
-from typing import Literal, TypeAlias
-
-from pydantic import BaseModel
-
-from beeai_framework.errors import FrameworkError
-from beeai_framework.workflows import Workflow, WorkflowReservedStepName
-
-WorkflowStep: TypeAlias = Literal["pre_process", "add_loop", "post_process"]
-
-
-async def main() -> None:
-    # State
-    class State(BaseModel):
-        x: int
-        y: int
-        abs_repetitions: int | None = None
-        result: int | None = None
-
-    def pre_process(state: State) -> WorkflowStep:
-        print("pre_process")
-        state.abs_repetitions = abs(state.y)
-        return "add_loop"
-
-    def add_loop(state: State) -> WorkflowStep | WorkflowReservedStepName:
-        if state.abs_repetitions and state.abs_repetitions > 0:
-            result = (state.result if state.result is not None else 0) + state.x
-            abs_repetitions = (state.abs_repetitions if state.abs_repetitions is not None else 0) - 1
-            print(f"add_loop: intermediate result {result}")
-            state.abs_repetitions = abs_repetitions
-            state.result = result
-            return Workflow.SELF
-        else:
-            return "post_process"
-
-    def post_process(state: State) -> WorkflowReservedStepName:
-        print("post_process")
-        if state.y < 0:
-            result = -(state.result if state.result is not None else 0)
-            state.result = result
-        return Workflow.END
-
-    multiplication_workflow = Workflow[State, WorkflowStep](name="MultiplicationWorkflow", schema=State)
-    multiplication_workflow.add_step("pre_process", pre_process)
-    multiplication_workflow.add_step("add_loop", add_loop)
-    multiplication_workflow.add_step("post_process", post_process)
-
-    response = await multiplication_workflow.run(State(x=8, y=5))
-    print(f"result: {response.state.result}")
-
-    response = await multiplication_workflow.run(State(x=8, y=-5))
-    print(f"result: {response.state.result}")
-
-
-if __name__ == "__main__":
-    try:
-        asyncio.run(main())
-    except FrameworkError as e:
-        traceback.print_exc()
-        sys.exit(e.explain())
-
-```
-
-_Source: [python/examples/workflows/nesting.py](https://github.com/i-am-bee/beeai-framework/blob/main/python/examples/workflows/nesting.py)_
-
 ### Multi-Agent Workflows
 
 The multi-agent workflow pattern enables the orchestration of specialized agents that collaborate to solve complex problems. Each agent focuses on a specific domain or capability, with results combined by a coordinator agent.
 
-{/* <!-- embedme python/examples/workflows/multi_agents.py --> */}
+<CodeGroup>
 
-```py
+{/* <!-- embedme python/examples/workflows/multi_agents.py --> */}
+```py Python [expandable]
 import asyncio
 import sys
 import traceback
@@ -339,7 +342,72 @@ if __name__ == "__main__":
 
 ```
 
-_Source: [python/examples/workflows/multi_agents.py](https://github.com/i-am-bee/beeai-framework/blob/main/python/examples/workflows/multi_agents.py)_
+{/* <!-- embedme typescript/examples/workflows/multiAgents.ts --> */}
+```ts Typescript [expandable]
+import "dotenv/config";
+import { createConsoleReader } from "examples/helpers/io.js";
+import { OpenMeteoTool } from "beeai-framework/tools/weather/openMeteo";
+import { WikipediaTool } from "beeai-framework/tools/search/wikipedia";
+import { AgentWorkflow } from "beeai-framework/workflows/agent";
+import { OllamaChatModel } from "beeai-framework/adapters/ollama/backend/chat";
+
+const workflow = new AgentWorkflow("Smart assistant");
+const llm = new OllamaChatModel("llama3.1");
+
+workflow.addAgent({
+  name: "Researcher",
+  role: "A diligent researcher",
+  instructions: "You look up and provide information about a specific topic.",
+  tools: [new WikipediaTool()],
+  llm,
+});
+workflow.addAgent({
+  name: "WeatherForecaster",
+  role: "A weather reporter",
+  instructions: "You provide detailed weather reports.",
+  tools: [new OpenMeteoTool()],
+  llm,
+});
+workflow.addAgent({
+  name: "DataSynthesizer",
+  role: "A meticulous and creative data synthesizer",
+  instructions: "You can combine disparate information into a final coherent summary.",
+  llm,
+});
+
+const reader = createConsoleReader();
+reader.write("Assistant 🤖 : ", "What location do you want to learn about?");
+for await (const { prompt } of reader) {
+  const { result } = await workflow
+    .run([
+      { prompt: "Provide a short history of the location.", context: prompt },
+      {
+        prompt: "Provide a comprehensive weather summary for the location today.",
+        expectedOutput:
+          "Essential weather details such as chance of rain, temperature and wind. Only report information that is available.",
+      },
+      {
+        prompt: "Summarize the historical and weather data for the location.",
+        expectedOutput:
+          "A paragraph that describes the history of the location, followed by the current weather conditions.",
+      },
+    ])
+    .observe((emitter) => {
+      emitter.on("success", (data) => {
+        reader.write(
+          `Step '${data.step}' has been completed with the following outcome:\n`,
+          data.state?.finalAnswer ?? "-",
+        );
+      });
+    });
+
+  reader.write(`Assistant 🤖`, result.finalAnswer);
+  reader.write("Assistant 🤖 : ", "What location do you want to learn about?");
+}
+
+```
+
+</CodeGroup>
 
 This pattern demonstrates:
 
@@ -349,16 +417,17 @@ This pattern demonstrates:
 - Synthesis of multiple expert perspectives into a cohesive response
 
 <Tip>
-See the [events documentation](/python/modules/events.mdx) for more information on standard emitter events.
+See the [events documentation](/modules/events) for more information on standard emitter events.
 </Tip>
 
 ### Memory in Workflows
 
 Integrating memory into workflows allows agents to maintain context across interactions, enabling conversational interfaces and stateful processing. This example demonstrates a simple conversational echo workflow with persistent memory.
 
-{/* <!-- embedme python/examples/workflows/memory.py --> */}
+<CodeGroup>
 
-```py
+{/* <!-- embedme python/examples/workflows/memory.py --> */}
+```py Python [expandable]
 import asyncio
 import sys
 import traceback
@@ -410,7 +479,12 @@ if __name__ == "__main__":
 
 ```
 
-_Source: [python/examples/workflows/memory.py](https://github.com/i-am-bee/beeai-framework/blob/main/python/examples/workflows/memory.py)_
+{/* <!-- todo typescript/examples/workflows/memory.ts --> */}
+```ts Typescript [expandable]
+Example coming soon
+```
+
+</CodeGroup>
 
 This pattern demonstrates:
 - Integration of memory as a first-class citizen in workflow state
@@ -422,4 +496,11 @@ This pattern demonstrates:
 
 ## Examples
 
-- All workflow examples can be found in [here](https://github.com/i-am-bee/beeai-framework/tree/main/python/examples/workflows).
+<CardGroup cols={2}>
+  <Card title="Python" icon="python" href="https://github.com/i-am-bee/beeai-framework/tree/main/python/examples/workflows">
+    Explore reference workflow implementations in Python
+  </Card>
+  <Card title="TypeScript" icon="js" href="https://github.com/i-am-bee/beeai-framework/tree/main/typescript/examples/workflows">
+    Explore reference workflow implementations in TypeScript
+  </Card>
+</CardGroup>
