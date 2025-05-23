@@ -32,7 +32,7 @@ except ModuleNotFoundError as e:
         "Optional module [a2a] not found.\nRun 'pip install \"beeai-framework[a2a]\"' to install."
     ) from e
 
-from beeai_framework.adapters.a2a.serve.agent_executor import BasicAgentExecutor, TollCallingAgentExecutor
+from beeai_framework.adapters.a2a.serve.agent_executor import BaseA2AAgentExecutor, TollCallingAgentExecutor
 from beeai_framework.agents import AnyAgent
 from beeai_framework.agents.tool_calling.agent import ToolCallingAgent
 from beeai_framework.serve.server import Server
@@ -66,7 +66,7 @@ class A2AServerMetadata(TypedDict, total=False):
 class A2AServer(
     Server[
         AnyAgentLike,
-        BasicAgentExecutor,
+        BaseA2AAgentExecutor,
         A2AServerConfig,
     ],
 ):
@@ -110,7 +110,7 @@ class A2AServer(
 
 def _tool_calling_agent_factory(
     agent: ToolCallingAgent, *, metadata: A2AServerMetadata | None = None
-) -> BasicAgentExecutor:
+) -> BaseA2AAgentExecutor:
     if metadata is None:
         metadata = {}
 

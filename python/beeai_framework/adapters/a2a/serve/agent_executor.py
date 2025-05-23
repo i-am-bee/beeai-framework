@@ -42,7 +42,7 @@ from beeai_framework.utils.lists import find_index
 AnyAgentLike = TypeVar("AnyAgentLike", bound=AnyAgent, default=AnyAgent)
 
 
-class BasicAgentExecutor(a2a_agent_execution.AgentExecutor):
+class BaseA2AAgentExecutor(a2a_agent_execution.AgentExecutor):
     def __init__(self, agent: AnyAgentLike, agent_card: a2a_types.AgentCard) -> None:
         super().__init__()
         self._agent = agent
@@ -94,7 +94,7 @@ class BasicAgentExecutor(a2a_agent_execution.AgentExecutor):
         self._abort_controller.abort()
 
 
-class TollCallingAgentExecutor(BasicAgentExecutor):
+class TollCallingAgentExecutor(BaseA2AAgentExecutor):
     @override
     async def execute(
         self,
