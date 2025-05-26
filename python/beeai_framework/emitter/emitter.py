@@ -8,7 +8,7 @@ import re
 import uuid
 from collections.abc import Callable
 from datetime import UTC, datetime
-from typing import Any, TypeAlias
+from typing import Any, TypeAlias, overload
 
 from pydantic import BaseModel, ConfigDict, InstanceOf
 
@@ -126,8 +126,24 @@ class Emitter:
             cleanup()
         self._cleanups.clear()
 
-    def on(self, event: str, callback: Callback, options: EmitterOptions | None = None) -> CleanupFn:
-        return self.match(event, callback, options)
+    @overload
+    def on(
+        self, event: str | None = None, callback: None = None, options: EmitterOptions | None = None
+    ) -> Callable[[Callback], Any]: ...
+    @overload
+    def on(self, event: str, callback: Callback, options: EmitterOptions | None = None) -> CleanupFn: ...
+    def on(
+        self, event: str | None = None, callback: Callback | None = None, options: EmitterOptions | None = None
+    ) -> CleanupFn | Callable[[Callback], Any]:
+        if callback is None or event is None:
+
+            def factory(fn: Callback) -> Any:
+                name = event or str(fn.__name__).removeprefix("on_")
+                return self.match(name, fn, options)
+
+            return factory
+        else:
+            return self.match(event, callback, options)
 
     def match(self, matcher: Matcher, callback: Callback, options: EmitterOptions | None = None) -> CleanupFn:
         def create_matcher() -> MatcherFn:
