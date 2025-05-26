@@ -46,13 +46,19 @@ exclude = list(
             # Example requires Searx instance
             "workflows/searx_agent.py",
             # Requires BeeAI platform to be running
-            "agents/experimental/remote.py",
+            "agents/providers/*.py",
             "workflows/remote.py",
+            "serve/acp.py",
+            "serve/a2a_server.py",
+            "serve/acp_with_custom_agent.py",
+            "serve/mcp_tool.py",
             # Requires Code Interpreter to be running
             "tools/python_tool.py" if os.getenv("CODE_INTERPRETER_URL") is None else None,
             "tools/custom/sandbox.py" if os.getenv("CODE_INTERPRETER_URL") is None else None,
             # Requires custom prompt
             "workflows/travel_advisor.py",
+            # Local playground
+            "playground/**/*.py",
         ],
     )
 )

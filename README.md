@@ -11,32 +11,58 @@
 [![Join our Discord](https://img.shields.io/badge/Join%20our%20Discord-7289DA?style=plastic&logo=discord&logoColor=white)](https://discord.com/invite/NradeA6ZNF)
 [![LF AI & Data](https://img.shields.io/badge/LF%20AI%20%26%20Data-0072C6?style=plastic&logo=linuxfoundation&logoColor=white)](https://lfaidata.foundation/projects/)
 
+
 </div>
 
-**BeeAI Framework** is an open-source framework for building production-grade multi-agent systems. It is hosted by the Linux Foundation under open governance, ensuring transparency, community-driven development, and enterprise-grade stability. BeeAI Framework provides the flexibility and performance needed for scalable AI systems, supporting both **Python** and **TypeScript** with complete feature parity.
+## Latest updates
+
+| Date       | Language      | Update Description                                                                 
+|------------|---------------|-------------------------------------------------------------------------------------|
+| 2025/05/15 | Python        | New protocol integrations: [ACP and MCP](/python/docs/integrations.md).           |
+| 2025/02/19 | Python        | Launched Python library alpha. See [getting started guide](#installation).               |
+| 2025/02/07 | TypeScript    | Introduced [Backend](/typescript/docs/backend.md) module to simplify working with AI services (chat, embedding). See [migration guide](/typescript/docs/migration_guide.md). |
+| 2025/01/28 | TypeScript    | Added support for DeepSeek R1, check out the [Competitive Analysis Workflow example](/typescript/examples/workflows/competitive-analysis). |
+| 2025/01/09 | TypeScript    | Introduced [Workflows](/typescript/docs/workflows.md), a way of building multi-agent systems. Added support for [Model Context Protocol](/typescript/docs/tools.md#using-the-mcptool-class). |
+| 2024/12/09 | TypeScript    | Added support for LLaMa 3.3. See [multi-agent workflow example using watsonx](/typescript/examples/workflows/multiAgents.ts) or explore [other available providers](/typescript/docs/backend.md#providers-implementations).        |
+| 2024/11/21 | TypeScript    | Added an experimental [Streamlit agent](/typescript/examples/agents/experimental/streamlit.ts). |
+
+
+For a full changelog, see our [releases page](https://github.com/i-am-bee/beeai-framework/releases).
+
+---
+
+## Why BeeAI?
+
+**🏆 Build for your use case.**  Implement simple to complex multi-agent patterns using [Workflows](/python/docs/workflows.md), start with a [ReActAgent](/python/examples/agents/react.py), or easily [build your own agent architecture](/python/docs/agents.md#creating-your-own-agent). There is no one-size-fits-all agent architecture, you need full flexibility in orchestrating agents and defining their roles and behaviors. 
+
+**🔌 Seamlessly integrate with your models and tools.** Get started with any model from [Ollama](/python/examples/backend/providers/ollama.py), [Groq](/python/examples/backend/providers/groq.py), [OpenAI](/python/examples/backend/providers/openai_example.py), [watsonx.ai](/python/examples/backend/providers/watsonx.py), and [more](/python/docs/backend.md#supported-providers). Leverage tools from [LangChain](/python/examples/tools/langchain.py), connect to any server using the [Model Context Protocol](/python/docs/tools.md#mcp-tool), or build your own [custom tools](/python/docs/tools.md#creating-custom-tools). BeeAI is designed to integrate with the systems and capabilities you need.
+
+**🚀 Scale with production-grade controls.** Optimize token usage through configurable [memory strategies](/python/docs/memory.md), persist and restore agent state via [(de)serialization](/python/docs/serialization.md), generate structured outputs, and execute generated code in a sandboxed environment (coming soon). When things go wrong, the [emitter](/python/docs/emitter.md) system tracks the full agent workflow, generating detailed [events](/python/docs/events.md) for monitoring and analysis. [Telemetry](/python/docs/instrumentation.md) and [logging](/python/docs/logger.md) capabilities capture key diagnostic data. When issues arise, BeeAI handles [errors](/python/docs/errors.md) gracefully with clear, well-defined exceptions.
 
 > [!TIP]
 > Get started quickly with the [beeai-framework-py-starter](https://github.com/i-am-bee/beeai-framework-py-starter) template.
 
-## Key Features
+---
 
-- 🌍 **Dual Language Support**: Complete feature parity between Python and TypeScript implementations
-- 🔄 **Workflow Composition**: Complex multi-agent workflow management with state handling
-- 🔌 **Provider Agnostic**: Supports 10+ LLM providers including Ollama, Groq, OpenAI, Watsonx.ai, and more
-- 🧠 **Advanced Memory Support**: Four memory strategies optimized for different use cases, with support for custom memory
-- 🛠️ **Seamless Integration**: Support for integrating with LangChain tools, using the MCP, and custom tool development
-- ⚡ **Production Optimization**: Built-in caching, memory optimization, and resource management
-- 📡 **Full Observability**: Real-time monitoring, OpenTelemetry integration, and detailed tracing
+## Installation
 
-## Quickstart
-
-1. Install BeeAI Framework
-   
-```sh
+To install the Python library:
+```shell
 pip install beeai-framework
 ```
 
-2. Create your project file
+To install the TypeScript library:
+```shell
+npm install beeai-framework
+```
+
+For more guidance and starter examples in your desired language, head to the docs pages for [Python](/python/README.md) and [TypeScript](/typescript/README.md).
+
+---
+
+## Quick example
+
+This example demonstrates how to build a multi-agent workflow using BeeAI framework in Python.
 
 ```py
 import asyncio
@@ -105,18 +131,34 @@ if __name__ == "__main__":
 
 _Source: [python/examples/workflows/multi_agents_simple.py](/python/examples/workflows/multi_agents.py)_
 
+TypeScript version of this example can be found [here](/typescript/examples/workflows/multiAgents.ts).
+
+### Running the example
+
 > [!Note]
 >
-> To run this example, be sure that you have installed [ollama](https://ollama.com) with the [granite3.1-dense:8b](https://ollama.com/library/granite3.1-dense) model downloaded.<br />
-> TypeScript version of this example can be found [here](/typescript/examples/workflows/multiAgents.ts).
+> To run this example, be sure that you have installed [ollama](https://ollama.com) with the [granite3.1-dense:8b](https://ollama.com/library/granite3.1-dense) model downloaded.
 
-3. Run the example
+To run projects, use:
 
-```sh
+```shell
 python [project_name].py
 ```
 
 Explore more in our examples for [Python](/python/examples/README.md) and [TypeScript](/typescript/examples/README.md).
+
+---
+
+## Roadmap
+
+- Python parity with TypeScript
+- Standalone docs site
+- Integration with watsonx.ai for deployment
+- More multi-agent reference architecture implementations using workflows
+- More OTTB agent implementations
+- Native tool calling with supported LLM providers
+
+To stay up-to-date on our [public roadmap](https://github.com/orgs/i-am-bee/projects/1/views/2).
 
 ---
 

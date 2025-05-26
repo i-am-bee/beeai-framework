@@ -1,3 +1,13 @@
+## python_v0.1.21 (2025-05-15)
+
+### Features
+
+- **adapters**: add validation checks for ACP and BeeAI Platform (#838)
+- **adapters**: introduce ACP and BeeAIPlatform serve integrations (#833)
+- **adapters**: add MCP server adapter (#830)
+- **agents**: prevent cycles in ToolCallingAgent (#832)
+- **adapters**: add support for ACP servers (#808)
+
 ## python_v0.1.20 (2025-05-06)
 
 ### Bug Fixes
