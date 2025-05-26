@@ -15,7 +15,7 @@
 
 from abc import ABC, abstractmethod
 from collections.abc import Iterable, Iterator
-from typing import TYPE_CHECKING, Self, Any
+from typing import TYPE_CHECKING, Any, Self
 
 from beeai_framework.backend.message import AnyMessage
 
