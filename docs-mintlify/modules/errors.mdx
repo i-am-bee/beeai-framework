@@ -9,7 +9,8 @@ icon: "circle-exclamation"
 Error handling is a critical part of any Python application, especially when dealing with asynchronous operations, various error types, and error propagation across multiple layers. In the BeeAI Framework, we provide a robust and consistent error-handling structure that ensures reliability and ease of debugging.
 
 <Note>
-Location within the framework: [beeai_framework/errors.py](https://github.com/i-am-bee/beeai-framework/blob/main/python/beeai_framework/errors.py).
+Explore the implementation in [Python](https://github.com/i-am-bee/beeai-framework/tree/main/python/beeai_framework/logger) or
+[TypeScript](https://github.com/i-am-bee/beeai-framework/tree/main/typescript/src/logger).
 </Note>
 
 ---
@@ -28,8 +29,10 @@ Benefits of using `FrameworkError`:
 
 This structure ensures that users can trace the complete error history while clearly identifying any errors originating from the BeeAI Framework.
 
+<CodeGroup>
+
 {/* <!-- embedme python/examples/errors/base.py --> */}
-```py
+```py Python [expandable]
 from beeai_framework.errors import FrameworkError
 
 # Create the main FrameworkError instance
@@ -62,7 +65,33 @@ print(str(error))  # Human-readable format (for debug)
 
 ```
 
-_Source: [python/examples/errors/base.py](https://github.com/i-am-bee/beeai-framework/blob/main/python/examples/errors/base.py)_
+{/* <!-- embedme typescript/examples/errors/base.ts --> */}
+```ts TypeScript [expandable]
+import { FrameworkError } from "beeai-framework/errors";
+
+const error = new FrameworkError(
+  "Function 'getUser' has failed.",
+  [
+    new FrameworkError("Cannot retrieve data from the API.", [
+      new Error("User with given ID does not exist!"),
+    ]),
+  ],
+  {
+    context: { input: { id: "123" } },
+    isFatal: true,
+    isRetryable: false,
+  },
+);
+
+console.log("Message", error.message); // Main error message
+console.log("Meta", { fatal: error.isFatal, retryable: error.isRetryable }); // Is the error fatal/retryable?
+console.log("Context", error.context); // Context in which the error occurred
+console.log(error.explain()); // Human-readable format without stack traces (ideal for LLMs)
+console.log(error.dump()); // Full error dump, including sub-errors
+console.log(error.getCause()); // Retrieve the initial cause of the error
+
+```
+</CodeGroup>
 
 Framework error also has two additional properties which help with agent processing, though ultimately the code that catches the exception will determine the appropriate action.
 
@@ -74,13 +103,13 @@ Framework error also has two additional properties which help with agent process
 The BeeAI Framework extends `FrameworkError` to create specialized error classes for different components or scenarios. This ensures that each part of the framework has clear and well-defined error types, improving debugging and error handling.
 
 <Tip>
-Casting an unknown error to a `FrameworkError` can be done by calling the `FrameworkError.ensure` static method ([example](https://github.com/i-am-bee/beeai-framework/blob/main/python/examples/errors/cast.py)).
+Casting an unknown error to a `FrameworkError` can be done by calling the `FrameworkError.ensure` static method ([Python example](https://github.com/i-am-bee/beeai-framework/blob/main/python/examples/errors/cast.py), [TypeScript example](https://github.com/i-am-bee/beeai-framework/blob/main/typescript/examples/errors/cast.ts)).
 </Tip>
 
 The definitions for these classes are typically local to the module where they are raised.
 
 | Error Class | Category | Description |
-|-------------|----------|-------------|
+| :------------- | :---------- | :-------------|
 | `AbortError` | Aborts | Raised when an operation has been aborted |
 | `ToolError` | Tools | Raised when a problem is reported by a tool |
 | `ToolInputValidationError` | Tools | Extends ToolError, raised when input validation fails |
@@ -99,9 +128,10 @@ The definitions for these classes are typically local to the module where they a
 
 ## Tools example
 
-example
+<CodeGroup>
+
 {/* <!-- embedme python/examples/errors/tool.py --> */}
-```py
+```py Python [expandable]
 import asyncio
 
 from beeai_framework.tools import ToolError, tool
@@ -129,7 +159,35 @@ if __name__ == "__main__":
 
 ```
 
-_Source: [python/examples/errors/tool.py](https://github.com/i-am-bee/beeai-framework/blob/main/python/examples/errors/tool.py)_
+{/* <!-- embedme typescript/examples/errors/tool.ts --> */}
+```ts TypeScript [expandable]
+import { DynamicTool, ToolError } from "beeai-framework/tools/base";
+import { FrameworkError } from "beeai-framework/errors";
+import { z } from "zod";
+
+const tool = new DynamicTool({
+  name: "dummy",
+  description: "dummy",
+  inputSchema: z.object({}),
+  handler: async () => {
+    throw new Error("Division has failed.");
+  },
+});
+
+try {
+  await tool.run({});
+} catch (e) {
+  const err = e as FrameworkError;
+  console.log(e instanceof ToolError); // true
+  console.log("===DUMP===");
+  console.log(err.dump());
+
+  console.log("===EXPLAIN===");
+  console.log(err.explain());
+}
+
+```
+</CodeGroup>
 
 ---
 
@@ -196,4 +254,11 @@ See the source file [errors.py](https://github.com/i-am-bee/beeai-framework/blob
 
 ## Examples
 
-- All error examples can be found in [here](https://github.com/i-am-bee/beeai-framework/tree/main/python/examples/errors).
+<CardGroup cols={2}>
+  <Card title="Python" icon="python" href="https://github.com/i-am-bee/beeai-framework/tree/main/python/examples/errors">
+    Explore reference error implementations in Python
+  </Card>
+  <Card title="TypeScript" icon="js" href="https://github.com/i-am-bee/beeai-framework/tree/main/typescript/examples/errors">
+    Explore reference error implementations in TypeScript
+  </Card>
+</CardGroup>

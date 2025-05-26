@@ -11,7 +11,8 @@ Logger is a core component designed to record and track events, errors, and othe
 In the BeeAI framework, the `Logger` class is an abstraction built on top of Python's built-in logging module, offering enhanced capabilities specifically designed for AI agent workflows.
 
 <Note>
-Location within the framework: [beeai_framework/logger](https://github.com/i-am-bee/beeai-framework/blob/main/python/beeai_framework/logger.py).
+Explore the implementation in the [Python](https://github.com/i-am-bee/beeai-framework/tree/main/python/beeai_framework/logger) or
+[TypeScript](https://github.com/i-am-bee/beeai-framework/tree/main/typescript/src/logger).
 </Note>
 
 ---
@@ -31,9 +32,10 @@ Location within the framework: [beeai_framework/logger](https://github.com/i-am-
 
 To use the logger in your application:
 
-{/* <!-- embedme python/examples/logger/base.py --> */}
+<CodeGroup>
 
-```py
+{/* <!-- embedme python/examples/logger/base.py --> */}
+```py Python [expandable]
 from beeai_framework.logger import Logger
 
 # Configure logger with default log level
@@ -49,7 +51,30 @@ logger.fatal("Fatal!")
 
 ```
 
-_Source: examples/logger/base.py_
+{/* <!-- embedme typescript/examples/logger/base.ts --> */}
+```ts TypeScript [expandable]
+import { Logger, LoggerLevel } from "beeai-framework/logger/logger";
+
+// Configure logger defaults
+Logger.defaults.pretty = true; // Pretty-print logs (default: false, can also be set via ENV: BEE_FRAMEWORK_LOG_PRETTY=true)
+Logger.defaults.level = LoggerLevel.TRACE; // Set log level to trace (default: TRACE, can also be set via ENV: BEE_FRAMEWORK_LOG_LEVEL=trace)
+Logger.defaults.name = undefined; // Optional name for logger (default: undefined)
+Logger.defaults.bindings = {}; // Optional bindings for structured logging (default: empty)
+
+// Create a child logger for your app
+const logger = Logger.root.child({ name: "app" });
+
+// Log at different levels
+logger.trace("Trace!");
+logger.debug("Debug!");
+logger.info("Info!");
+logger.warn("Warning!");
+logger.error("Error!");
+logger.fatal("Fatal!");
+
+```
+
+</CodeGroup>
 
 ## Configuration
 
@@ -101,9 +126,10 @@ The logger integrates with BeeAI framework's error handling system through the `
 
 The Logger seamlessly integrates with agents in the framework. Below is an example that demonstrates how logging can be used in conjunction with agents and event emitters.
 
-{/* <!-- embedme python/examples/logger/agent.py --> */}
+<CodeGroup>
 
-```py
+{/* <!-- embedme python/examples/logger/agent.py --> */}
+```py Python [expandable]
 import asyncio
 import sys
 import traceback
@@ -138,10 +164,50 @@ if __name__ == "__main__":
 
 ```
 
-_Source: /examples/logger/agent.py_
+{/* <!-- embedme typescript/examples/logger/agent.ts --> */}
+```ts TypeScript [expandable]
+import { ReActAgent } from "beeai-framework/agents/react/agent";
+import { UnconstrainedMemory } from "beeai-framework/memory/unconstrainedMemory";
+import { Logger } from "beeai-framework/logger/logger";
+import { Emitter } from "beeai-framework/emitter/emitter";
+import { OllamaChatModel } from "beeai-framework/adapters/ollama/backend/chat";
+
+// Set up logging
+Logger.defaults.pretty = true;
+
+const logger = Logger.root.child({
+  level: "trace",
+  name: "app",
+});
+
+// Log events emitted during agent execution
+Emitter.root.match("*.*", (data, event) => {
+  const logLevel = event.path.includes(".run.") ? "trace" : "info";
+  logger[logLevel](`Event '${event.path}' triggered by '${event.creator.constructor.name}'`);
+});
+
+// Create and run an agent
+const agent = new ReActAgent({
+  llm: new OllamaChatModel("llama3.1"),
+  memory: new UnconstrainedMemory(),
+  tools: [],
+});
+
+const response = await agent.run({ prompt: "Hello!" });
+logger.info(response.result.text);
+
+```
+</CodeGroup>
 
 ---
 
 ## Examples
 
-- All logger examples can be found in [here](https://github.com/i-am-bee/beeai-framework/tree/main/python/examples/logger).
+<CardGroup cols={2}>
+  <Card title="Python" icon="python" href="https://github.com/i-am-bee/beeai-framework/tree/main/python/examples/logger">
+    COMING SOON: Explore reference logger implementations in Python
+  </Card>
+  <Card title="TypeScript" icon="js" href="https://github.com/i-am-bee/beeai-framework/tree/main/typescript/examples/logger">
+    COMING SOON: Explore reference logger implementations in TypeScript
+  </Card>
+</CardGroup>

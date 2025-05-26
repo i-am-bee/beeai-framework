@@ -30,7 +30,8 @@
           "modules/tools",
           "modules/cache",
           "modules/logger",
-          "modules/errors"
+          "modules/errors",
+          "modules/events"
         ]
       },
       {

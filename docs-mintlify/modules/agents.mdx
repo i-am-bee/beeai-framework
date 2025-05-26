@@ -18,7 +18,8 @@ Dive deeper into the concepts behind AI agents in this [research article](https:
 </Tip>
 
 <Note>
-Explore the implementation in the [beeai_framework/agents directory](https://github.com/i-am-bee/beeai-framework/tree/python/beeai_framework/agents).
+Explore the implementation in [Python](https://github.com/i-am-bee/beeai-framework/tree/main/python/beeai_framework/agents) or
+[TypeScript](https://github.com/i-am-bee/beeai-framework/tree/main/typescript/src/agents).
 </Note>
 
 ## Agent Types
@@ -37,7 +38,7 @@ Let's see how a ReActAgent approaches a simple question:
 
 **First iteration:**
 
-```
+```log
 thought: I need to retrieve the current weather in Las Vegas. I can use the OpenMeteo function to get the current weather forecast for a location.
 tool_name: OpenMeteo
 tool_input: {"location": {"name": "Las Vegas"}, "start_date": "2024-10-17", "end_date": "2024-10-17", "temperature_unit": "celsius"}
@@ -45,7 +46,7 @@ tool_input: {"location": {"name": "Las Vegas"}, "start_date": "2024-10-17", "end
 
 **Second iteration:**
 
-```
+```log
 thought: I have the current weather in Las Vegas in Celsius.
 final_answer: The current weather in Las Vegas is 20.5°C with an apparent temperature of 18.3°C.
 ```
@@ -57,11 +58,259 @@ During execution, the agent emits partial updates as it generates each line, fol
 <CodeGroup>
 
 {/* <!-- embedme python/examples/agents/react.py --> */}
-```py Python
+```py Python [expandable]
+import asyncio
+import logging
+import os
+import sys
+import tempfile
+import traceback
+from typing import Any
+
+from dotenv import load_dotenv
+
+from beeai_framework.agents import AgentExecutionConfig
+from beeai_framework.agents.react import ReActAgent
+from beeai_framework.backend import ChatModel, ChatModelParameters
+from beeai_framework.emitter import EmitterOptions, EventMeta
+from beeai_framework.errors import FrameworkError
+from beeai_framework.logger import Logger
+from beeai_framework.memory import TokenMemory
+from beeai_framework.tools import AnyTool
+from beeai_framework.tools.code import LocalPythonStorage, PythonTool
+from beeai_framework.tools.search.duckduckgo import DuckDuckGoSearchTool
+from beeai_framework.tools.search.wikipedia import WikipediaTool
+from beeai_framework.tools.weather import OpenMeteoTool
+from examples.helpers.io import ConsoleReader
+
+# Load environment variables
+load_dotenv()
+
+# Configure logging - using DEBUG instead of trace
+logger = Logger("app", level=logging.DEBUG)
+
+reader = ConsoleReader()
+
+
+def create_agent() -> ReActAgent:
+    """Create and configure the agent with tools and LLM"""
+
+    # Other models to try:
+    # "llama3.1"
+    # "granite3.1-dense"
+    # "deepseek-r1"
+    # ensure the model is pulled before running
+    llm = ChatModel.from_name(
+        "ollama:granite3.1-dense:8b",
+        ChatModelParameters(temperature=0),
+    )
+
+    # Configure tools
+    tools: list[AnyTool] = [
+        WikipediaTool(),
+        OpenMeteoTool(),
+        DuckDuckGoSearchTool(),
+    ]
+
+    # Add code interpreter tool if URL is configured
+    code_interpreter_url = os.getenv("CODE_INTERPRETER_URL")
+    if code_interpreter_url:
+        tools.append(
+            PythonTool(
+                code_interpreter_url,
+                LocalPythonStorage(
+                    local_working_dir=tempfile.mkdtemp("code_interpreter_source"),
+                    interpreter_working_dir=os.getenv("CODE_INTERPRETER_TMPDIR", "./tmp/code_interpreter_target"),
+                ),
+            )
+        )
+
+    # Create agent with memory and tools
+    agent = ReActAgent(llm=llm, tools=tools, memory=TokenMemory(llm))
+
+    return agent
+
+
+def process_agent_events(data: Any, event: EventMeta) -> None:
+    """Process agent events and log appropriately"""
+
+    if event.name == "error":
+        reader.write("Agent 🤖 : ", FrameworkError.ensure(data.error).explain())
+    elif event.name == "retry":
+        reader.write("Agent 🤖 : ", "retrying the action...")
+    elif event.name == "update":
+        reader.write(f"Agent({data.update.key}) 🤖 : ", data.update.parsed_value)
+    elif event.name == "start":
+        reader.write("Agent 🤖 : ", "starting new iteration")
+    elif event.name == "success":
+        reader.write("Agent 🤖 : ", "success")
+
+
+async def main() -> None:
+    """Main application loop"""
+
+    # Create agent
+    agent = create_agent()
+
+    # Log code interpreter status if configured
+    code_interpreter_url = os.getenv("CODE_INTERPRETER_URL")
+    if code_interpreter_url:
+        reader.write(
+            "🛠️ System: ",
+            f"The code interpreter tool is enabled. Please ensure that it is running on {code_interpreter_url}",
+        )
+
+    reader.write("🛠️ System: ", "Agent initialized with Wikipedia, DuckDuckGo, and Weather tools.")
+
+    # Main interaction loop with user input
+    for prompt in reader:
+        # Run agent with the prompt
+        response = await agent.run(
+            prompt=prompt,
+            execution=AgentExecutionConfig(max_retries_per_step=3, total_max_retries=10, max_iterations=20),
+        ).on("*", process_agent_events, EmitterOptions(match_nested=False))
+
+        reader.write("Agent 🤖 : ", response.result.text)
+
+
+if __name__ == "__main__":
+    try:
+        asyncio.run(main())
+    except FrameworkError as e:
+        traceback.print_exc()
+        sys.exit(e.explain())
+
 ```
 
 {/* <!-- embedme typescript/examples/agents/react.ts --> */}
-```ts TypeScript
+```ts TypeScript [expandable]
+import "dotenv/config.js";
+import { ReActAgent } from "beeai-framework/agents/react/agent";
+import { createConsoleReader } from "../helpers/io.js";
+import { FrameworkError } from "beeai-framework/errors";
+import { TokenMemory } from "beeai-framework/memory/tokenMemory";
+import { Logger } from "beeai-framework/logger/logger";
+import { PythonTool } from "beeai-framework/tools/python/python";
+import { LocalPythonStorage } from "beeai-framework/tools/python/storage";
+import { DuckDuckGoSearchTool } from "beeai-framework/tools/search/duckDuckGoSearch";
+import { WikipediaTool } from "beeai-framework/tools/search/wikipedia";
+import { OpenMeteoTool } from "beeai-framework/tools/weather/openMeteo";
+import { dirname } from "node:path";
+import { fileURLToPath } from "node:url";
+import { OllamaChatModel } from "beeai-framework/adapters/ollama/backend/chat";
+
+Logger.root.level = "silent"; // disable internal logs
+const logger = new Logger({ name: "app", level: "trace" });
+
+// Other models to try:
+// "llama3.1:70b"
+// "granite3.1-dense"
+// "deepseek-r1:32b"
+// ensure the model is pulled before running
+const llm = new OllamaChatModel("llama3.1");
+
+const codeInterpreterUrl = process.env.CODE_INTERPRETER_URL;
+const __dirname = dirname(fileURLToPath(import.meta.url));
+
+const codeInterpreterTmpdir =
+  process.env.CODE_INTERPRETER_TMPDIR ?? "./examples/tmp/code_interpreter";
+const localTmpdir = process.env.LOCAL_TMPDIR ?? "./examples/tmp/local";
+
+const agent = new ReActAgent({
+  llm,
+  memory: new TokenMemory(),
+  tools: [
+    new DuckDuckGoSearchTool(),
+    // new WebCrawlerTool(), // HTML web page crawler
+    new WikipediaTool(),
+    new OpenMeteoTool(), // weather tool
+    // new ArXivTool(), // research papers
+    // new DynamicTool() // custom python tool
+    ...(codeInterpreterUrl
+      ? [
+          new PythonTool({
+            codeInterpreter: { url: codeInterpreterUrl },
+            storage: new LocalPythonStorage({
+              interpreterWorkingDir: `${__dirname}/../../${codeInterpreterTmpdir}`,
+              localWorkingDir: `${__dirname}/../../${localTmpdir}`,
+            }),
+          }),
+        ]
+      : []),
+  ],
+});
+
+const reader = createConsoleReader();
+if (codeInterpreterUrl) {
+  reader.write(
+    "🛠️ System",
+    `The code interpreter tool is enabled. Please ensure that it is running on ${codeInterpreterUrl}`,
+  );
+}
+
+try {
+  for await (const { prompt } of reader) {
+    const response = await agent
+      .run(
+        { prompt },
+        {
+          execution: {
+            maxRetriesPerStep: 3,
+            totalMaxRetries: 10,
+            maxIterations: 20,
+          },
+        },
+      )
+      .observe((emitter) => {
+        // emitter.on("start", () => {
+        //   reader.write(`Agent 🤖 : `, "starting new iteration");
+        // });
+        emitter.on("error", ({ error }) => {
+          reader.write(`Agent 🤖 : `, FrameworkError.ensure(error).dump());
+        });
+        emitter.on("retry", () => {
+          reader.write(`Agent 🤖 : `, "retrying the action...");
+        });
+        emitter.on("update", async ({ data, update, meta }) => {
+          // log 'data' to see the whole state
+          // to log only valid runs (no errors), check if meta.success === true
+          reader.write(`Agent (${update.key}) 🤖 : `, update.value);
+        });
+        emitter.on("partialUpdate", ({ data, update, meta }) => {
+          // ideal for streaming (line by line)
+          // log 'data' to see the whole state
+          // to log only valid runs (no errors), check if meta.success === true
+          // reader.write(`Agent (partial ${update.key}) 🤖 : `, update.value);
+        });
+
+        // To observe all events (uncomment following block)
+        // emitter.match("*.*", async (data: unknown, event) => {
+        //   logger.trace(event, `Received event "${event.path}"`);
+        // });
+
+        // To get raw LLM input (uncomment following block)
+        // emitter.match(
+        //   (event) => event.creator === llm && event.name === "start",
+        //   async (data: InferCallbackValue<GenerateEvents["start"]>, event) => {
+        //     logger.trace(
+        //       event,
+        //       [
+        //         `Received LLM event "${event.path}"`,
+        //         JSON.stringify(data.input), // array of messages
+        //       ].join("\n"),
+        //     );
+        //   },
+        // );
+      });
+
+    reader.write(`Agent 🤖 : `, response.result.text);
+  }
+} catch (error) {
+  logger.error(FrameworkError.ensure(error).dump());
+} finally {
+  reader.close();
+}
+
 ```
 
 </CodeGroup>
@@ -72,12 +321,147 @@ The ToolCallingAgent is optimized for scenarios where tool usage is the primary 
 
 <CodeGroup>
 
-{/* <!-- embedme python/examples/agents/toolCalling/agent.py --> */}
-```py Python
+{/* <!-- embedme python/examples/agents/tool_calling.py --> */}
+```py Python [expandable]
+import asyncio
+import logging
+import sys
+import traceback
+from typing import Any
+
+from dotenv import load_dotenv
+
+from beeai_framework.agents.tool_calling import ToolCallingAgent
+from beeai_framework.backend import ChatModel
+from beeai_framework.emitter import EventMeta
+from beeai_framework.errors import FrameworkError
+from beeai_framework.logger import Logger
+from beeai_framework.memory import UnconstrainedMemory
+from beeai_framework.tools.weather import OpenMeteoTool
+from examples.helpers.io import ConsoleReader
+
+# Load environment variables
+load_dotenv()
+
+# Configure logging - using DEBUG instead of trace
+logger = Logger("app", level=logging.DEBUG)
+
+reader = ConsoleReader()
+
+
+def process_agent_events(data: Any, event: EventMeta) -> None:
+    """Process agent events and log appropriately"""
+
+    if event.name == "start":
+        reader.write("Agent (debug) 🤖 : ", "starting new iteration")
+    elif event.name == "success":
+        reader.write("Agent (debug) 🤖 : ", data.state.memory.messages[-1])
+
+
+async def main() -> None:
+    """Main application loop"""
+
+    # Create agent
+    agent = ToolCallingAgent(
+        llm=ChatModel.from_name("ollama:llama3.1"), memory=UnconstrainedMemory(), tools=[OpenMeteoTool()]
+    )
+
+    # Main interaction loop with user input
+    for prompt in reader:
+        response = await agent.run(prompt).on("*", process_agent_events)
+        reader.write("Agent 🤖 : ", response.result.text)
+
+    print("======DONE (showing the full message history)=======")
+
+    for msg in response.memory.messages:
+        print(msg)
+
+
+if __name__ == "__main__":
+    try:
+        asyncio.run(main())
+    except FrameworkError as e:
+        traceback.print_exc()
+        sys.exit(e.explain())
+
 ```
 
 {/* <!-- embedme typescript/examples/agents/toolCalling/agent.ts --> */}
-```ts TypeScript
+```ts TypeScript [expandable]
+import "dotenv/config.js";
+import { createConsoleReader } from "../../helpers/io.js";
+import { FrameworkError } from "beeai-framework/errors";
+import { TokenMemory } from "beeai-framework/memory/tokenMemory";
+import { Logger } from "beeai-framework/logger/logger";
+import { OpenMeteoTool } from "beeai-framework/tools/weather/openMeteo";
+import { OllamaChatModel } from "beeai-framework/adapters/ollama/backend/chat";
+import { ToolCallingAgent } from "beeai-framework/agents/toolCalling/agent";
+
+Logger.root.level = "silent"; // disable internal logs
+const logger = new Logger({ name: "app", level: "trace" });
+
+// Other models to try:
+// "llama3.1:70b"
+// "granite3.1-dense"
+// "deepseek-r1:32b"
+// ensure the model is pulled before running
+const llm = new OllamaChatModel("llama3.1");
+
+const agent = new ToolCallingAgent({
+  llm,
+  memory: new TokenMemory(),
+  tools: [
+    new OpenMeteoTool(), // weather tool
+  ],
+});
+
+const reader = createConsoleReader();
+
+try {
+  for await (const { prompt } of reader) {
+    let messagesCount = agent.memory.messages.length + 1;
+
+    const response = await agent.run({ prompt }).observe((emitter) => {
+      emitter.on("success", async ({ state }) => {
+        const newMessages = state.memory.messages.slice(messagesCount);
+        messagesCount += newMessages.length;
+
+        reader.write(
+          `Agent (${newMessages.length} new messages) 🤖 :\n`,
+          newMessages.map((msg) => `-> ${JSON.stringify(msg.toPlain())}`).join("\n"),
+        );
+      });
+
+      // To observe all events (uncomment following block)
+      // emitter.match("*.*", async (data: unknown, event) => {
+      //   logger.trace(event, `Received event "${event.path}"`);
+      // }, {
+      //   matchNested: true
+      // });
+
+      // To get raw LLM input (uncomment following block)
+      // emitter.match(
+      //   (event) => event.creator === llm && event.name === "start",
+      //   async (data: InferCallbackValue<GenerateEvents["start"]>, event) => {
+      //     logger.trace(
+      //       event,
+      //       [
+      //         `Received LLM event "${event.path}"`,
+      //         JSON.stringify(data.input), // array of messages
+      //       ].join("\n"),
+      //     );
+      //   },
+      // );
+    });
+
+    reader.write(`Agent 🤖 : `, response.result.text);
+  }
+} catch (error) {
+  logger.error(FrameworkError.ensure(error).dump());
+} finally {
+  reader.close();
+}
+
 ```
 
 </CodeGroup>
@@ -289,6 +673,120 @@ if __name__ == "__main__":
 
 {/* <!-- embedme typescript/examples/agents/custom_agent.ts --> */}
 ```ts TypeScript [expandable]
+import { BaseAgent, BaseAgentRunOptions } from "beeai-framework/agents/base";
+import {
+  AssistantMessage,
+  Message,
+  SystemMessage,
+  UserMessage,
+} from "beeai-framework/backend/message";
+import { Emitter } from "beeai-framework/emitter/emitter";
+import { GetRunContext } from "beeai-framework/context";
+import { z } from "zod";
+import { AgentMeta } from "beeai-framework/agents/types";
+import { BaseMemory } from "beeai-framework/memory/base";
+import { UnconstrainedMemory } from "beeai-framework/memory/unconstrainedMemory";
+import { ChatModel } from "beeai-framework/backend/chat";
+import { OllamaChatModel } from "beeai-framework/adapters/ollama/backend/chat";
+
+interface RunInput {
+  message: Message;
+}
+
+interface RunOutput {
+  message: Message;
+  state: {
+    thought: string;
+    final_answer: string;
+  };
+}
+
+interface RunOptions extends BaseAgentRunOptions {
+  maxRetries?: number;
+}
+
+interface AgentInput {
+  llm: ChatModel;
+  memory: BaseMemory;
+}
+
+export class CustomAgent extends BaseAgent<RunInput, RunOutput, RunOptions> {
+  public readonly memory: BaseMemory;
+  protected readonly model: ChatModel;
+  public emitter = Emitter.root.child({
+    namespace: ["agent", "custom"],
+    creator: this,
+  });
+
+  constructor(input: AgentInput) {
+    super();
+    this.model = input.llm;
+    this.memory = input.memory;
+  }
+
+  protected async _run(
+    input: RunInput,
+    options: RunOptions,
+    run: GetRunContext<this>,
+  ): Promise<RunOutput> {
+    const response = await this.model.createStructure({
+      schema: z.object({
+        thought: z
+          .string()
+          .describe("Describe your thought process before coming with a final answer"),
+        final_answer: z
+          .string()
+          .describe("Here you should provide concise answer to the original question."),
+      }),
+      messages: [
+        new SystemMessage("You are a helpful assistant. Always use JSON format for you responses."),
+        ...this.memory.messages,
+        input.message,
+      ],
+      maxRetries: options?.maxRetries,
+      abortSignal: run.signal,
+    });
+
+    const result = new AssistantMessage(response.object.final_answer);
+    await this.memory.add(result);
+
+    return {
+      message: result,
+      state: response.object,
+    };
+  }
+
+  public get meta(): AgentMeta {
+    return {
+      name: "CustomAgent",
+      description: "Custom Agent is a simple LLM agent.",
+      tools: [],
+    };
+  }
+
+  createSnapshot() {
+    return {
+      ...super.createSnapshot(),
+      emitter: this.emitter,
+      memory: this.memory,
+    };
+  }
+
+  loadSnapshot(snapshot: ReturnType<typeof this.createSnapshot>) {
+    Object.assign(this, snapshot);
+  }
+}
+
+const agent = new CustomAgent({
+  llm: new OllamaChatModel("granite3.1-dense"),
+  memory: new UnconstrainedMemory(),
+});
+
+const response = await agent.run({
+  message: new UserMessage("Why is the sky blue?"),
+});
+console.info(response.state);
+
 ```
 
 </CodeGroup>
@@ -349,10 +847,47 @@ The agent uses several templates that you can override:
 
 {/* <!-- embedme python/examples/templates/system_prompt.py --> */}
 ```py Python
+import sys
+import traceback
+
+from beeai_framework.agents.react.runners.default.prompts import (
+    SystemPromptTemplate,
+    ToolDefinition,
+)
+from beeai_framework.errors import FrameworkError
+from beeai_framework.tools.weather import OpenMeteoTool
+from beeai_framework.utils.strings import to_json
+
+
+def main() -> None:
+    tool = OpenMeteoTool()
+
+    tool_def = ToolDefinition(
+        name=tool.name,
+        description=tool.description,
+        input_schema=to_json(tool.input_schema.model_json_schema()),
+    )
+
+    # Render the granite system prompt
+    prompt = SystemPromptTemplate.render(
+        instructions="You are a helpful AI assistant!", tools=[tool_def], tools_length=1
+    )
+
+    print(prompt)
+
+
+if __name__ == "__main__":
+    try:
+        main()
+    except FrameworkError as e:
+        traceback.print_exc()
+        sys.exit(e.explain())
+
 ```
 
-{/* <!-- embedme typescript/examples/templates/system_prompt.ts --> */}
+{/* <!-- todo typescript/examples/templates/system_prompt.ts --> */}
 ```ts TypeScript
+Example coming soon
 ```
 
 </CodeGroup>
@@ -494,6 +1029,25 @@ if __name__ == "__main__":
 
 {/* <!-- embedme typescript/examples/memory/agentMemory.ts --> */}
 ```ts TypeScript [expandable]
+import { UnconstrainedMemory } from "beeai-framework/memory/unconstrainedMemory";
+import { ReActAgent } from "beeai-framework/agents/react/agent";
+import { OllamaChatModel } from "beeai-framework/adapters/ollama/backend/chat";
+
+const agent = new ReActAgent({
+  memory: new UnconstrainedMemory(),
+  llm: new OllamaChatModel("llama3.1"),
+  tools: [],
+});
+await agent.run({ prompt: "Hello world!" });
+
+console.info(agent.memory.messages.length); // 2
+
+const userMessage = agent.memory.messages[0];
+console.info(`User: ${userMessage.text}`); // User: Hello world!
+
+const agentMessage = agent.memory.messages[1];
+console.info(`Agent: ${agentMessage.text}`); // Agent: Hello! It's nice to chat with you.
+
 ```
 
 </CodeGroup>
@@ -541,7 +1095,7 @@ import traceback
 from beeai_framework.backend import ChatModel
 from beeai_framework.emitter import EmitterOptions
 from beeai_framework.errors import FrameworkError
-from beeai_framework.tools.search import WikipediaTool
+from beeai_framework.tools.search.wikipedia import WikipediaTool
 from beeai_framework.tools.weather import OpenMeteoTool
 from beeai_framework.workflows.agent import AgentWorkflow, AgentWorkflowInput
 from examples.helpers.io import ConsoleReader
@@ -597,18 +1151,17 @@ async def main() -> None:
                 lambda event: isinstance(event.creator, ChatModel) and event.name == "success",
                 # log data to the console
                 lambda data, event: reader.write(
-                    "Updated message content: "
-                    + "".join(str([message.content[0] for message in data.value.messages]))
-                    + "\n",
-                    data,
+                    "->Got response from the LLM",
+                    "  \n->".join([str(message.content[0].model_dump()) for message in data.value.messages]),
                 ),
                 EmitterOptions(match_nested=True),
             )
             .on(
                 "success",
                 lambda data, event: reader.write(
-                    f"->Step '{data.step}' has been completed with the following outcome:\n",
-                    data.state.final_answer,
+                    f"->Step '{data.step}' has been completed with the following outcome."
+                    f"\n\n{data.state.final_answer}\n\n",
+                    data.model_dump(exclude={"data"}),
                 ),
             )
         )
@@ -621,10 +1174,72 @@ if __name__ == "__main__":
     except FrameworkError as e:
         traceback.print_exc()
         sys.exit(e.explain())
+
 ```
 
 {/* <!-- embedme typescript/examples/workflows/multiAgents.ts --> */}
 ```ts TypeScript [expandable]
+import "dotenv/config";
+import { createConsoleReader } from "examples/helpers/io.js";
+import { OpenMeteoTool } from "beeai-framework/tools/weather/openMeteo";
+import { WikipediaTool } from "beeai-framework/tools/search/wikipedia";
+import { AgentWorkflow } from "beeai-framework/workflows/agent";
+import { OllamaChatModel } from "beeai-framework/adapters/ollama/backend/chat";
+
+const workflow = new AgentWorkflow("Smart assistant");
+const llm = new OllamaChatModel("llama3.1");
+
+workflow.addAgent({
+  name: "Researcher",
+  role: "A diligent researcher",
+  instructions: "You look up and provide information about a specific topic.",
+  tools: [new WikipediaTool()],
+  llm,
+});
+workflow.addAgent({
+  name: "WeatherForecaster",
+  role: "A weather reporter",
+  instructions: "You provide detailed weather reports.",
+  tools: [new OpenMeteoTool()],
+  llm,
+});
+workflow.addAgent({
+  name: "DataSynthesizer",
+  role: "A meticulous and creative data synthesizer",
+  instructions: "You can combine disparate information into a final coherent summary.",
+  llm,
+});
+
+const reader = createConsoleReader();
+reader.write("Assistant 🤖 : ", "What location do you want to learn about?");
+for await (const { prompt } of reader) {
+  const { result } = await workflow
+    .run([
+      { prompt: "Provide a short history of the location.", context: prompt },
+      {
+        prompt: "Provide a comprehensive weather summary for the location today.",
+        expectedOutput:
+          "Essential weather details such as chance of rain, temperature and wind. Only report information that is available.",
+      },
+      {
+        prompt: "Summarize the historical and weather data for the location.",
+        expectedOutput:
+          "A paragraph that describes the history of the location, followed by the current weather conditions.",
+      },
+    ])
+    .observe((emitter) => {
+      emitter.on("success", (data) => {
+        reader.write(
+          `Step '${data.step}' has been completed with the following outcome:\n`,
+          data.state?.finalAnswer ?? "-",
+        );
+      });
+    });
+
+  reader.write(`Assistant 🤖`, result.finalAnswer);
+  reader.write("Assistant 🤖 : ", "What location do you want to learn about?");
+}
+
 ```
 
 </CodeGroup>
@@ -635,7 +1250,7 @@ if __name__ == "__main__":
   <Card title="Python" icon="python" href="https://github.com/i-am-bee/beeai-framework/tree/main/python/examples/agents">
     Explore reference agent implementations in Python
   </Card>
-  <Card title="TypeScript" icon="typescript" href="https://github.com/i-am-bee/beeai-framework/tree/main/typescript/examples/agents">
+  <Card title="TypeScript" icon="js" href="https://github.com/i-am-bee/beeai-framework/tree/main/typescript/examples/agents">
     Explore reference agent implementations in TypeScript
   </Card>
 </CardGroup>
