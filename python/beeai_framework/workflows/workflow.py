@@ -25,7 +25,7 @@ from beeai_framework.emitter.emitter import Emitter
 from beeai_framework.errors import FrameworkError
 from beeai_framework.plugins.plugin import Plugin
 from beeai_framework.plugins.types import Pluggable
-from beeai_framework.plugins.utils import plugin
+from beeai_framework.plugins.utils import plugin, transfer_run_context
 from beeai_framework.utils.models import ModelLike, check_model, to_model, to_model_optional
 from beeai_framework.utils.strings import to_safe_word
 from beeai_framework.workflows.errors import WorkflowError
@@ -215,10 +215,10 @@ class Workflow(Generic[T, K], Pluggable[WorkflowInput[T, K], WorkflowRun[T, K]])
             description="Workflow",  # TODO
             input_schema=WorkflowInput[T, K],
             output_schema=WorkflowRun[T, K],
-            emitter=self.emitter.child(namespace=["plugin"], reverse=True),
+            emitter=self.emitter.fork(),
         )
         async def connector(**kwargs: Any) -> WorkflowRun[T, K]:
             input = WorkflowInput[T, K].model_validate(kwargs)
-            return await self.run(**input.model_dump())
+            return await self.run(**input.model_dump()).middleware(transfer_run_context())
 
         return connector

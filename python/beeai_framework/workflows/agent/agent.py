@@ -35,7 +35,7 @@ from beeai_framework.memory.readonly_memory import ReadOnlyMemory
 from beeai_framework.memory.unconstrained_memory import UnconstrainedMemory
 from beeai_framework.plugins.plugin import Plugin
 from beeai_framework.plugins.types import Pluggable
-from beeai_framework.plugins.utils import plugin
+from beeai_framework.plugins.utils import plugin, transfer_run_context
 from beeai_framework.tools.tool import AnyTool
 from beeai_framework.utils.dicts import exclude_none
 from beeai_framework.utils.lists import remove_falsy
@@ -179,10 +179,9 @@ class AgentWorkflow(Pluggable[Any, AgentWorkflowOutput]):
             name=self.workflow.name,
             description="AgentWorkflow",  # TODO
             output_schema=AgentWorkflowOutput,
-            emitter=self._workflow.emitter.child(namespace=["plugin"], reverse=True),
+            emitter=self._workflow.emitter.fork(),
         )
         async def connector(inputs: Sequence[AgentWorkflowInput | AnyMessage]) -> AgentWorkflowOutput:
-            print(inputs)
-            return await self.run(inputs=inputs)
+            return await self.run(inputs=inputs).middleware(transfer_run_context())
 
         return connector

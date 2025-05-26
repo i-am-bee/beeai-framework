@@ -53,7 +53,7 @@ from beeai_framework.emitter import Emitter
 from beeai_framework.logger import Logger
 from beeai_framework.plugins.plugin import Plugin
 from beeai_framework.plugins.types import Pluggable
-from beeai_framework.plugins.utils import plugin
+from beeai_framework.plugins.utils import plugin, transfer_run_context
 from beeai_framework.retryable import Retryable, RetryableConfig, RetryableContext, RetryableInput
 from beeai_framework.template import PromptTemplate, PromptTemplateInput
 from beeai_framework.tools.tool import AnyTool, Tool
@@ -412,10 +412,10 @@ IMPORTANT: You MUST answer with a JSON object that matches the JSON schema above
             description=f"${self.provider_id} Chat Model",
             input_schema=ChatModelInput,
             output_schema=ChatModelOutput,
-            emitter=self.emitter.child(namespace=["plugin"], reverse=True),
+            emitter=self.emitter.fork(),
         )
         async def connector(**kwargs: Any) -> ChatModelOutput:
             input: ChatModelInput = ChatModelInput.model_validate(kwargs)
-            return await self.create(**input.model_dump())
+            return await self.create(**input.model_dump()).middleware(transfer_run_context())
 
         return connector

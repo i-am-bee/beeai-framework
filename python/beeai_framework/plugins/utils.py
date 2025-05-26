@@ -22,7 +22,7 @@ import chevron
 from pydantic import BaseModel
 from typing_extensions import Unpack
 
-from beeai_framework.context import Run, RunContext
+from beeai_framework.context import Run, RunContext, storage
 from beeai_framework.emitter import Emitter
 from beeai_framework.plugins.plugin import AnyPlugin, Plugin, PluginKwargs
 from beeai_framework.utils.models import ModelLike, get_input_schema, get_output_schema, to_model
@@ -129,3 +129,16 @@ def render_env_variables(template: str | dict[Any, Any] | list[Any]) -> str | di
                 template[i] = render_env_variables(value)
         return template
     return template
+
+
+def transfer_run_context(source: RunContext | None = None) -> Callable[[RunContext], None]:
+    source_context = source or storage.get()
+
+    def transfer_middleware(target: RunContext) -> None:
+        target.run_id = source_context.run_id
+        target.parent_id = source_context.parent_id
+        target.group_id = source_context.group_id
+        target.emitter.trace = source_context.emitter.trace
+        target.emitter.namespace = source_context.emitter.namespace
+
+    return transfer_middleware

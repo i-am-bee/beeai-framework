@@ -105,8 +105,6 @@ class Emitter:
         context: dict[Any, Any] | None = None,
         trace: EventTrace | None = None,
         events: dict[str, type] | None = None,
-        *,
-        reverse: bool = False,
     ) -> "Emitter":
         child_emitter = Emitter(
             trace=trace or self.trace,
@@ -117,13 +115,36 @@ class Emitter:
             events=events or self.events,
         )
 
-        if reverse:
-            self.pipe(child_emitter)
-        else:
-            cleanup = child_emitter.pipe(self)
-            self._cleanups.append(cleanup)
+        cleanup = child_emitter.pipe(self)
+        self._cleanups.append(cleanup)
 
         return child_emitter
+
+    def fork(
+        self,
+        group_id: str | None = None,
+        namespace: list[str] | None = None,
+        creator: object | None = None,
+        context: dict[Any, Any] | None = None,
+        trace: EventTrace | None = None,
+        events: dict[str, type] | None = None,
+    ) -> "Emitter":
+        fork = Emitter(
+            trace=trace or self.trace,
+            group_id=group_id or self._group_id,
+            context={**self.context, **(context or {})},
+            creator=creator or self.creator,
+            namespace=namespace + self.namespace if namespace else self.namespace[:],
+            events=events or self.events,
+        )
+
+        async def recreate(data: Any, event: EventMeta) -> None:
+            await fork.emit(event.name, data)
+
+        cleanup = self.on("*", recreate, EmitterOptions(is_blocking=True, persistent=True))
+        self._cleanups.append(cleanup)
+
+        return fork
 
     def pipe(self, target: "Emitter") -> CleanupFn:
         return self.on(

@@ -26,7 +26,7 @@ from beeai_framework.emitter import Emitter
 from beeai_framework.memory import BaseMemory
 from beeai_framework.plugins.plugin import Plugin
 from beeai_framework.plugins.types import Pluggable
-from beeai_framework.plugins.utils import plugin
+from beeai_framework.plugins.utils import plugin, transfer_run_context
 from beeai_framework.utils import AbortSignal
 from beeai_framework.utils.models import AnyModel, get_input_schema, to_model
 
@@ -60,10 +60,10 @@ class BaseAgent(ABC, Generic[TOutput], Pluggable[Any, TOutput]):
             description=self.meta.description,
             input_schema=get_input_schema(self.run, excluded={"self"}),
             output_schema=self.output_schema,
-            emitter=self.emitter.child(namespace=["plugin"], reverse=False),
+            emitter=self.emitter.fork(),
         )
         async def connector(**kwargs: Any) -> TOutput:
-            output: TOutput = await self.run(**kwargs)
+            output: TOutput = await self.run(**kwargs).middleware(transfer_run_context())
             return to_model(self.output_schema, output.model_dump())
 
         return connector

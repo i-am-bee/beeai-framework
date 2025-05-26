@@ -20,13 +20,13 @@ from beeai_framework.backend import AnyMessage, ChatModel, UserMessage
 from beeai_framework.backend.events import chat_model_event_types
 from beeai_framework.backend.types import ChatModelOutput, ChatModelParameters
 from beeai_framework.context import Run, RunContext
-from beeai_framework.emitter import Emitter
+from beeai_framework.emitter import Emitter, EventMeta
 from beeai_framework.memory.base_memory import BaseMemory
 from beeai_framework.plugins.constants import PARAMETERS, TYPE
 from beeai_framework.plugins.loader import PluginLoader
 from beeai_framework.plugins.plugin import Plugin
 from beeai_framework.plugins.types import DataContext, Pluggable, PluggableDef
-from beeai_framework.plugins.utils import plugin
+from beeai_framework.plugins.utils import plugin, transfer_run_context
 from beeai_framework.toolkit.chat.constants import (
     COMPLETION_TOKENS,
     FINISH_REASON,
@@ -40,6 +40,7 @@ from beeai_framework.toolkit.chat.constants import (
 from beeai_framework.toolkit.chat.template import FewShotChatPromptTemplate, FewShotPromptTemplateInput
 from beeai_framework.toolkit.chat.types import Example, Model, Templates
 from beeai_framework.utils.models import ModelLike
+from beeai_framework.utils.strings import to_safe_word
 
 
 class PromptingChatModel(Pluggable):
@@ -126,7 +127,7 @@ class PromptingChatModel(Pluggable):
 
     def _create_emitter(self) -> Emitter:
         return Emitter.root().child(
-            namespace=["toolkit", "chat", self._name],
+            namespace=["toolkit", "chat", to_safe_word(self._name)],
             creator=self,
             events=chat_model_event_types,
         )
@@ -181,7 +182,13 @@ class PromptingChatModel(Pluggable):
             else:
                 messages = self._few_shot_messages.copy()
                 messages.extend(input_messages)
-            response = await self._model.create(messages=messages, stream=self._stream)
+
+            async def propagate_top_level_events(data: Any, event: EventMeta) -> None:
+                await context.emitter.emit(event.name, data)
+
+            response = await self._model.create(messages=messages, stream=self._stream).on(
+                "*", propagate_top_level_events
+            )
             if self._memory:
                 await self._memory.add_many(response.messages)
             return response
@@ -199,12 +206,11 @@ class PromptingChatModel(Pluggable):
             description=self._description,
             input_schema=DataContext,
             output_schema=DataContext,
-            emitter=self.emitter.child(namespace=["plugin"], reverse=True),
+            emitter=self.emitter.fork(),
         )
         async def connector(**kwargs: Any) -> DataContext:
             data_input: DataContext = DataContext.model_validate(kwargs)
-            result: ChatModelOutput | None = None
-            result = await self.run(data_input.data)
+            result = await self.run(data_input.data).middleware(transfer_run_context())
             context: dict[str, Any] = {}
             if result.usage:
                 context[PROMPT_TOKENS] = result.usage.prompt_tokens

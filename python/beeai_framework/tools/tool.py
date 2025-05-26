@@ -31,7 +31,7 @@ from beeai_framework.errors import FrameworkError
 from beeai_framework.logger import Logger
 from beeai_framework.plugins.plugin import Plugin
 from beeai_framework.plugins.types import Pluggable
-from beeai_framework.plugins.utils import plugin
+from beeai_framework.plugins.utils import plugin, transfer_run_context
 from beeai_framework.retryable import Retryable, RetryableConfig, RetryableContext, RetryableInput
 from beeai_framework.tools.errors import ToolError, ToolInputValidationError
 from beeai_framework.tools.events import (
@@ -108,11 +108,11 @@ class Tool(ABC, Generic[TInput, TRunOptions, TOutput, TOutputRaw], Pluggable[TIn
             description=self.description,
             input_schema=self.input_schema,
             output_schema=self.output_schema,
-            emitter=self.emitter.child(namespace=["plugin"], reverse=True),
+            emitter=self.emitter.fork(),
         )
         async def connector(**kwargs: Any) -> TOutputRaw:
             input = self.input_schema.model_validate(kwargs)
-            output: TOutput = await self.run(input)
+            output: TOutput = await self.run(input).middleware(transfer_run_context())
             return self.output_schema.model_validate(output.result)
 
         return connector
