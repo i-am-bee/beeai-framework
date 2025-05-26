@@ -2,15 +2,15 @@
 
 [[package]]
 name = "a2a-sdk"
-version = "0.2.3"
+version = "0.2.4"
 description = "A2A Python SDK"
 optional = true
-python-versions = ">=3.13"
+python-versions = ">=3.10"
 groups = ["main"]
-markers = "python_version >= \"3.13\" and extra == \"a2a\""
+markers = "extra == \"a2a\""
 files = [
-    {file = "a2a_sdk-0.2.3-py3-none-any.whl", hash = "sha256:5fae5c5a51928d2bf1775ad520e2706988055b5b09949c7049cad7af0351be9e"},
-    {file = "a2a_sdk-0.2.3.tar.gz", hash = "sha256:b38db75f94d2ad407933a039b5fd20b9ec7945b72eb59fd0cc393a3166984261"},
+    {file = "a2a_sdk-0.2.4-py3-none-any.whl", hash = "sha256:0fdd8dcc98780f5a8adbd42f4d9bce5ade849bbba992e985ecf9ef317ecf01d8"},
+    {file = "a2a_sdk-0.2.4.tar.gz", hash = "sha256:d914a463b7946eed0a69261963b73b0785f02f786678015649898c081a9c90f5"},
 ]
 
 [package.dependencies]
@@ -723,7 +723,7 @@ description = "Python @deprecated decorator to deprecate old python classes, fun
 optional = true
 python-versions = "!=3.0.*,!=3.1.*,!=3.2.*,!=3.3.*,>=2.7"
 groups = ["main"]
-markers = "extra == \"acp\" or extra == \"beeai-platform\" or python_version >= \"3.13\" and (extra == \"acp\" or extra == \"beeai-platform\" or extra == \"a2a\")"
+markers = "extra == \"acp\" or extra == \"beeai-platform\" or extra == \"a2a\""
 files = [
     {file = "Deprecated-1.2.18-py2.py3-none-any.whl", hash = "sha256:bd5011788200372a32418f888e326a09ff80d0214bd961147cfed01b5c018eec"},
     {file = "deprecated-1.2.18.tar.gz", hash = "sha256:422b6f6d859da6f2ef57857761bfb392480502a64c3028ca9bbe86085d72115d"},
@@ -1297,7 +1297,7 @@ description = "Consume Server-Sent Event (SSE) messages with HTTPX."
 optional = true
 python-versions = ">=3.8"
 groups = ["main"]
-markers = "extra == \"acp\" or extra == \"beeai-platform\" or extra == \"langchain\" or extra == \"mcp\" or python_version >= \"3.13\" and (extra == \"acp\" or extra == \"beeai-platform\" or extra == \"langchain\" or extra == \"mcp\" or extra == \"a2a\")"
+markers = "extra == \"acp\" or extra == \"beeai-platform\" or extra == \"a2a\" or extra == \"langchain\" or extra == \"mcp\""
 files = [
     {file = "httpx-sse-0.4.0.tar.gz", hash = "sha256:1e81a3a3070ce322add1d3529ed42eb5f70817f45ed6ec915ab753f961139721"},
     {file = "httpx_sse-0.4.0-py3-none-any.whl", hash = "sha256:f329af6eae57eaa2bdfd962b42524764af68075ea87370a2de920af5341e318f"},
@@ -2558,7 +2558,7 @@ description = "OpenTelemetry Python API"
 optional = true
 python-versions = ">=3.8"
 groups = ["main"]
-markers = "extra == \"acp\" or extra == \"beeai-platform\" or python_version >= \"3.13\" and (extra == \"acp\" or extra == \"beeai-platform\" or extra == \"a2a\")"
+markers = "extra == \"acp\" or extra == \"beeai-platform\" or extra == \"a2a\""
 files = [
     {file = "opentelemetry_api-1.33.1-py3-none-any.whl", hash = "sha256:4db83ebcf7ea93e64637ec6ee6fabee45c5cbe4abd9cf3da95c43828ddb50b83"},
     {file = "opentelemetry_api-1.33.1.tar.gz", hash = "sha256:1c6055fc0a2d3f23a50c7e17e16ef75ad489345fd3df1f8b8af7c0bbf8a109e8"},
@@ -2717,7 +2717,7 @@ description = "OpenTelemetry Python SDK"
 optional = true
 python-versions = ">=3.8"
 groups = ["main"]
-markers = "extra == \"acp\" or extra == \"beeai-platform\" or python_version >= \"3.13\" and (extra == \"acp\" or extra == \"beeai-platform\" or extra == \"a2a\")"
+markers = "extra == \"acp\" or extra == \"beeai-platform\" or extra == \"a2a\""
 files = [
     {file = "opentelemetry_sdk-1.33.1-py3-none-any.whl", hash = "sha256:19ea73d9a01be29cacaa5d6c8ce0adc0b7f7b4d58cc52f923e4413609f670112"},
     {file = "opentelemetry_sdk-1.33.1.tar.gz", hash = "sha256:85b9fcf7c3d23506fbc9692fd210b8b025a1920535feec50bd54ce203d57a531"},
@@ -2735,7 +2735,7 @@ description = "OpenTelemetry Semantic Conventions"
 optional = true
 python-versions = ">=3.8"
 groups = ["main"]
-markers = "extra == \"acp\" or extra == \"beeai-platform\" or python_version >= \"3.13\" and (extra == \"acp\" or extra == \"beeai-platform\" or extra == \"a2a\")"
+markers = "extra == \"acp\" or extra == \"beeai-platform\" or extra == \"a2a\""
 files = [
     {file = "opentelemetry_semantic_conventions-0.54b1-py3-none-any.whl", hash = "sha256:29dab644a7e435b58d3a3918b58c333c92686236b30f7891d5e51f02933ca60d"},
     {file = "opentelemetry_semantic_conventions-0.54b1.tar.gz", hash = "sha256:d1cecedae15d19bdaafca1e56b29a66aa286f50b5d08f036a145c7f3e9ef9cee"},
@@ -4103,7 +4103,7 @@ description = "SSE plugin for Starlette"
 optional = true
 python-versions = ">=3.9"
 groups = ["main"]
-markers = "extra == \"mcp\" or python_version >= \"3.13\" and (extra == \"mcp\" or extra == \"a2a\")"
+markers = "extra == \"a2a\" or extra == \"mcp\""
 files = [
     {file = "sse_starlette-2.3.3-py3-none-any.whl", hash = "sha256:8b0a0ced04a329ff7341b01007580dd8cf71331cc21c0ccea677d500618da1e0"},
     {file = "sse_starlette-2.3.3.tar.gz", hash = "sha256:fdd47c254aad42907cfd5c5b83e2282be15be6c51197bf1a9b70b8e990522072"},
@@ -4124,7 +4124,7 @@ description = "The little ASGI library that shines."
 optional = true
 python-versions = ">=3.9"
 groups = ["main"]
-markers = "extra == \"acp\" or extra == \"beeai-platform\" or extra == \"mcp\" or python_version >= \"3.13\" and (extra == \"acp\" or extra == \"beeai-platform\" or extra == \"mcp\" or extra == \"a2a\")"
+markers = "extra == \"acp\" or extra == \"beeai-platform\" or extra == \"a2a\" or extra == \"mcp\""
 files = [
     {file = "starlette-0.46.2-py3-none-any.whl", hash = "sha256:595633ce89f8ffa71a015caed34a5b2dc1c0cdb3f0f1fbd1e69339cf2abeec35"},
     {file = "starlette-0.46.2.tar.gz", hash = "sha256:7f7361f34eed179294600af672f565727419830b54b7b084efe44bb82d2fccd5"},
@@ -4769,7 +4769,7 @@ description = "Module for decorators, wrappers and monkey patching."
 optional = true
 python-versions = ">=3.8"
 groups = ["main"]
-markers = "extra == \"acp\" or extra == \"beeai-platform\" or python_version >= \"3.13\" and (extra == \"acp\" or extra == \"beeai-platform\" or extra == \"a2a\")"
+markers = "extra == \"acp\" or extra == \"beeai-platform\" or extra == \"a2a\""
 files = [
     {file = "wrapt-1.17.2-cp310-cp310-macosx_10_9_universal2.whl", hash = "sha256:3d57c572081fed831ad2d26fd430d565b76aa277ed1d30ff4d40670b1c0dd984"},
     {file = "wrapt-1.17.2-cp310-cp310-macosx_10_9_x86_64.whl", hash = "sha256:b5e251054542ae57ac7f3fba5d10bfff615b6c2fb09abeb37d2f1463f841ae22"},
@@ -5253,4 +5253,4 @@ wikipedia = ["wikipedia-api"]
 [metadata]
 lock-version = "2.1"
 python-versions = ">= 3.11,<4.0"
-content-hash = "1655728762d54d7d2202b3c926b53a98b7c1c94e851fc4fa6062e435420944e5"
+content-hash = "ef8249ae380a9bb0a31dcb597aef73f3ea20822039d74cc1a3512e67b1ab1d4c"
