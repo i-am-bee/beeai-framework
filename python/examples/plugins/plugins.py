@@ -106,26 +106,26 @@ async def registry_and_autoloading() -> None:
     user_config = {
         "ollama_granite31_chat_model": {
             "type": "OllamaChatModel",
-            "parameters": {"model_id": "llama3.1"},
+            "arguments": {"model_id": "llama3.1"},
         },
         "weather_tool": {
             "type": "OpenMeteoTool",
-            "parameters": {},
+            "arguments": {},
         },
         "duckduckgo_search_tool": {
             "type": "DuckDuckGoSearchTool",
-            "parameters": {},
+            "arguments": {},
         },
         "my_memory": {
             "type": "UnconstrainedMemory",
-            "parameters": {},
+            "arguments": {},
         },
         "my_agent": {
             "type": "ToolCallingAgent",
-            "parameters": {
-                "llm": "$ollama_granite31_chat_model",
-                "tools": ["$weather_tool", "$duckduckgo_search_tool"],
-                "memory": "$my_memory",
+            "arguments": {
+                "llm": "#ollama_granite31_chat_model",
+                "tools": ["#weather_tool", "#duckduckgo_search_tool"],
+                "memory": "#my_memory",
                 "save_intermediate_steps": True,
             },
         },
