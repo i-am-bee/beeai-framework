@@ -9,8 +9,7 @@ icon: "circle-exclamation"
 Error handling is a critical part of any Python application, especially when dealing with asynchronous operations, various error types, and error propagation across multiple layers. In the BeeAI Framework, we provide a robust and consistent error-handling structure that ensures reliability and ease of debugging.
 
 <Note>
-Explore the implementation in [Python](https://github.com/i-am-bee/beeai-framework/tree/main/python/beeai_framework/logger) or
-[TypeScript](https://github.com/i-am-bee/beeai-framework/tree/main/typescript/src/logger).
+Supported in Python and TypeScript.
 </Note>
 
 ---
@@ -212,7 +211,6 @@ If you wish to create additional errors, you can extend `FrameworkError` or any 
 ```py
 from beeai_framework.errors import FrameworkError
 
-```py
 class MyCustomError(FrameworkError):
     def __init__(self, message: str = "My custom error", *, cause: Exception | None = None, context: dict | None = None) -> None:
         super().__init__(message, is_fatal=True, is_retryable=False, cause=cause, context=context)

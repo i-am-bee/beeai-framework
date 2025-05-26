@@ -18,8 +18,7 @@ Dive deeper into the concepts behind AI agents in this [research article](https:
 </Tip>
 
 <Note>
-Explore the implementation in [Python](https://github.com/i-am-bee/beeai-framework/tree/main/python/beeai_framework/agents) or
-[TypeScript](https://github.com/i-am-bee/beeai-framework/tree/main/typescript/src/agents).
+Supported in Python and TypeScript.
 </Note>
 
 ## Agent Types
@@ -462,94 +461,6 @@ try {
   reader.close();
 }
 
-```
-
-</CodeGroup>
-
-### Remote Agent
-
-The RemoteAgent is a powerful client-side abstraction designed to facilitate communication with agents running on remote servers, containers, or cloud environments. It provides an asynchronous interface for sending prompts, receiving responses, and managing agent state.
-
-Use RemoteAgent with the framework’s workflow component to build multi-agent systems that:
-- Connect to multiple agents, each hosted at a different API URL
-- Coordinate all agents within a single application
-- Add or remove agents easily, thanks to a modular design
-- Work across different technologies, even if agents are built with different frameworks or run in different environments
-
-<Tip>
-Before running a RemoteAgent, ensure the agent server is running at the specified URL.
-</Tip>
-
-<CodeGroup>
-
-{/* <!-- embedme python/examples/agents/experimental/remote.py --> */}
-```py Python [expandable]
-import asyncio
-import sys
-import traceback
-
-from beeai_framework.agents.experimental.remote import RemoteAgent
-from beeai_framework.errors import FrameworkError
-from beeai_framework.memory.unconstrained_memory import UnconstrainedMemory
-from examples.helpers.io import ConsoleReader
-
-
-async def main() -> None:
-    reader = ConsoleReader()
-
-    agent = RemoteAgent(agent_name="chat", url="http://127.0.0.1:8333/api/v1/acp/", memory=UnconstrainedMemory())
-    for prompt in reader:
-        # Run the agent and observe events
-        response = await agent.run(prompt).on(
-            "update",
-            lambda data, event: (reader.write("Agent 🤖 (debug) : ", data)),
-        )
-
-        reader.write("Agent 🤖 : ", response.result.text)
-
-
-if __name__ == "__main__":
-    try:
-        asyncio.run(main())
-    except FrameworkError as e:
-        traceback.print_exc()
-        sys.exit(e.explain())
-```
-
-{/* <!-- embedme typescript/examples/agents/experimental/remote.ts --> */}
-```ts TypeScript [expandable]
-import "dotenv/config.js";
-import { RemoteAgent } from "beeai-framework/agents/experimental/remote/agent";
-import { createConsoleReader } from "examples/helpers/io.js";
-import { FrameworkError } from "beeai-framework/errors";
-import { TokenMemory } from "beeai-framework/memory/tokenMemory";
-
-const agentName = "chat";
-
-const instance = new RemoteAgent({
-  url: "http://127.0.0.1:8333/api/v1/acp",
-  agentName,
-  memory: new TokenMemory(),
-});
-
-const reader = createConsoleReader();
-
-try {
-  for await (const { prompt } of reader) {
-    const result = await instance.run({ input: prompt }).observe((emitter) => {
-      emitter.on("update", (data) => {
-        reader.write(`Agent (received progress) 🤖 : `, JSON.stringify(data.value, null, 2));
-      });
-      emitter.on("error", (data) => {
-        reader.write(`Agent (error) 🤖 : `, data.message);
-      });
-    });
-
-    reader.write(`Agent (${agentName}) 🤖 : `, result.result.text);
-  }
-} catch (error) {
-  reader.write("Agent (error)  🤖", FrameworkError.ensure(error).dump());
-}
 ```
 
 </CodeGroup>

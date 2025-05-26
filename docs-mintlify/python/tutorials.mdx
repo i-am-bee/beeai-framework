@@ -118,7 +118,7 @@ async def create_agent(session: ClientSession) -> ToolCallingAgent:
     # "deepseek-r1"
     # ensure the model is pulled before running
     llm = ChatModel.from_name(
-        "ollama:llama3.1",
+        "ollama:granite3.3:8b",
         ChatModelParameters(temperature=0),
     )
 
@@ -224,14 +224,14 @@ The `RemoteAgent` class allows you to connect to any agent hosted on the BeeAI p
 
 Here's a simple example that uses the built-in `chat` agent:
 
-{/* <!-- embedme python/examples/agents/experimental/remote.py --> */}
+{/* <!-- embedme python/examples/agents/providers/beeai_platform.py --> */}
 
 ```py
 import asyncio
 import sys
 import traceback
 
-from beeai_framework.agents.experimental.remote import RemoteAgent
+from beeai_framework.adapters.beeai_platform.agents import BeeAIPlatformAgent
 from beeai_framework.errors import FrameworkError
 from beeai_framework.memory.unconstrained_memory import UnconstrainedMemory
 from examples.helpers.io import ConsoleReader
@@ -240,7 +240,7 @@ from examples.helpers.io import ConsoleReader
 async def main() -> None:
     reader = ConsoleReader()
 
-    agent = RemoteAgent(agent_name="chat", url="http://127.0.0.1:8333/api/v1/acp/", memory=UnconstrainedMemory())
+    agent = BeeAIPlatformAgent(agent_name="chat", url="http://127.0.0.1:8333/api/v1/acp/", memory=UnconstrainedMemory())
     for prompt in reader:
         # Run the agent and observe events
         response = await agent.run(prompt).on(
@@ -287,7 +287,7 @@ import traceback
 
 from pydantic import BaseModel
 
-from beeai_framework.agents.experimental.remote import RemoteAgent
+from beeai_framework.adapters.acp.agents import ACPAgent
 from beeai_framework.errors import FrameworkError
 from beeai_framework.memory.unconstrained_memory import UnconstrainedMemory
 from beeai_framework.workflows import Workflow
@@ -303,7 +303,7 @@ async def main() -> None:
         output: str | None = None
 
     async def research(state: State) -> None:
-        agent = RemoteAgent(
+        agent = ACPAgent(
             agent_name="gpt-researcher", url="http://127.0.0.1:8333/api/v1/acp", memory=UnconstrainedMemory()
         )
         # Run the agent and observe events
@@ -314,7 +314,7 @@ async def main() -> None:
         state.research = response.result.text
 
     async def podcast(state: State) -> None:
-        agent = RemoteAgent(
+        agent = ACPAgent(
             agent_name="podcast-creator", url="http://127.0.0.1:8333/api/v1/acp", memory=UnconstrainedMemory()
         )
         # Run the agent and observe events

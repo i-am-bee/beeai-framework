@@ -48,7 +48,7 @@ async def create_agent(session: ClientSession) -> ToolCallingAgent:
     # "deepseek-r1"
     # ensure the model is pulled before running
     llm = ChatModel.from_name(
-        "ollama:llama3.1",
+        "ollama:granite3.3:8b",
         ChatModelParameters(temperature=0),
     )
 

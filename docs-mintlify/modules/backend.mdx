@@ -16,8 +16,7 @@ Backend is an umbrella module that encapsulates a unified way to work with the f
 BeeAI framework's backend is designed with a provider-based architecture, allowing you to switch between different AI service providers while maintaining a consistent API.
 
 <Note>
-Explore the implementation in the [Python](https://github.com/i-am-bee/beeai-framework/tree/main/python/beeai_framework/backend) or
-[TypeScript](https://github.com/i-am-bee/beeai-framework/tree/main/typescript/src/backend).
+Supported in Python and TypeScript.
 </Note>
 
 ---
@@ -26,17 +25,17 @@ Explore the implementation in the [Python](https://github.com/i-am-bee/beeai-fra
 
 The following table depicts supported providers. Each provider requires specific configuration through environment variables. Ensure all required variables are set before initializing a provider.
 
-| Name           | Chat | Embedding | Dependency           | Environment Variables                                                                                                                                                 |
-| :------------- | :--- | :-------- | :------------------- | :-------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Ollama         |  ✅  |          | ollama-ai-provider    | OLLAMA_CHAT_MODEL<br/>OLLAMA_BASE_URL                                                                                                       |
-| OpenAI         |  ✅  |          | openai                | OPENAI_CHAT_MODEL<br/>OPENAI_API_BASE<br/>OPENAI_API_KEY<br/>OPENAI_ORGANIZATION<br/>OPENAI_API_HEADERS                                                                                                       |
-| Watsonx        |  ✅  |          | @ibm-cloud/watsonx-ai | WATSONX_CHAT_MODEL<br/>WATSONX_API_KEY<br/>WATSONX_PROJECT_ID<br/>WATSONX_SPACE_ID<br/>WATSONX_TOKEN<br/>WATSONX_ZENAPIKEY<br/>WATSONX_URL<br/>WATSONX_REGION |
-| Groq           |  ✅  |          |                       | GROQ_CHAT_MODEL<br/>GROQ_API_KEY |
-| Amazon Bedrock |  ✅  |          | boto3                 | AWS_CHAT_MODEL<br/>AWS_ACCESS_KEY_ID<br/>AWS_SECRET_ACCESS_KEY<br/>AWS_REGION<br/>AWS_API_HEADERS |
-| Google Vertex  |  ✅  |          |  | GOOGLE_VERTEX_CHAT_MODEL<br/>GOOGLE_VERTEX_PROJECT<br/>GOOGLE_APPLICATION_CREDENTIALS<br/>GOOGLE_APPLICATION_CREDENTIALS_JSON<br/>GOOGLE_CREDENTIALS<br/>GOOGLE_VERTEX_API_HEADERS |
-| Azure OpenAI   |  ✅  |          |  | AZURE_OPENAI_CHAT_MODEL<br/>AZURE_OPENAI_API_KEY<br/>AZURE_OPENAI_API_BASE<br/>AZURE_OPENAI_API_VERSION<br/>AZURE_AD_TOKEN<br/>AZURE_API_TYPE<br/>AZURE_API_HEADERS |
-| Anthropic      |  ✅  |          |  | ANTHROPIC_CHAT_MODEL<br/>ANTHROPIC_API_KEY<br/>ANTHROPIC_API_HEADERS |
-| xAI            |  ✅  |          |  | XAI_CHAT_MODEL<br/>XAI_API_KEY |
+| Name           | Chat | Embedding |  Environment Variables                                                                                                                                                 |
+| :------------- | :--- | :-------- | :-------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Ollama         |  ✅  |     ✅     | OLLAMA_CHAT_MODEL<br/>OLLAMA_BASE_URL                                                                                                       |
+| OpenAI         |  ✅  |     ✅ *(TS only)*     | OPENAI_CHAT_MODEL<br/>OPENAI_API_BASE<br/>OPENAI_API_KEY<br/>OPENAI_ORGANIZATION<br/>OPENAI_API_HEADERS                                                                                                       |
+| Watsonx        |  ✅  |     ✅     | WATSONX_CHAT_MODEL<br/>WATSONX_API_KEY<br/>WATSONX_PROJECT_ID<br/>WATSONX_SPACE_ID<br/>WATSONX_TOKEN<br/>WATSONX_ZENAPIKEY<br/>WATSONX_URL<br/>WATSONX_REGION |
+| Groq           |  ✅  |     ✅ *(TS only)*     | GROQ_CHAT_MODEL<br/>GROQ_API_KEY |
+| Amazon Bedrock |  ✅  |     ✅  *(TS only)*    | AWS_CHAT_MODEL<br/>AWS_ACCESS_KEY_ID<br/>AWS_SECRET_ACCESS_KEY<br/>AWS_REGION<br/>AWS_API_HEADERS |
+| Google Vertex  |  ✅  |     ✅  *(TS only)*    | GOOGLE_VERTEX_CHAT_MODEL<br/>GOOGLE_VERTEX_PROJECT<br/>GOOGLE_APPLICATION_CREDENTIALS<br/>GOOGLE_APPLICATION_CREDENTIALS_JSON<br/>GOOGLE_CREDENTIALS<br/>GOOGLE_VERTEX_API_HEADERS |
+| Azure OpenAI   |  ✅  |     ✅  *(TS only)*    | AZURE_OPENAI_CHAT_MODEL<br/>AZURE_OPENAI_API_KEY<br/>AZURE_OPENAI_API_BASE<br/>AZURE_OPENAI_API_VERSION<br/>AZURE_AD_TOKEN<br/>AZURE_API_TYPE<br/>AZURE_API_HEADERS |
+| Anthropic      |  ✅  |     ✅  *(TS only)*    | ANTHROPIC_CHAT_MODEL<br/>ANTHROPIC_API_KEY<br/>ANTHROPIC_API_HEADERS |
+| xAI            |  ✅  |     ✅  *(TS only)*    | XAI_CHAT_MODEL<br/>XAI_API_KEY |
 
 <Tip>
 If you don't see your provider raise an issue [here](https://github.com/i-am-bee/beeai-framework/issues).
@@ -59,13 +58,18 @@ import json
 import sys
 import traceback
 
+from dotenv import load_dotenv
 from pydantic import BaseModel, Field
 
 from beeai_framework.adapters.watsonx import WatsonxChatModel
+from beeai_framework.adapters.watsonx.backend.embedding import WatsonxEmbeddingModel
 from beeai_framework.backend import ChatModel, MessageToolResultContent, ToolMessage, UserMessage
 from beeai_framework.errors import AbortError, FrameworkError
 from beeai_framework.tools.weather import OpenMeteoTool
 from beeai_framework.utils import AbortSignal
+
+# Load environment variables
+load_dotenv()
 
 # Setting can be passed here during initiation or pre-configured via environment variables
 llm = WatsonxChatModel(
@@ -179,6 +183,15 @@ async def watsonx_debug() -> None:
     print(response.messages[0].to_plain())
 
 
+async def watsonx_embedding() -> None:
+    embedding_llm = WatsonxEmbeddingModel()
+
+    response = await embedding_llm.create(["Text", "to", "embed"])
+
+    for row in response.embeddings:
+        print(*row)
+
+
 async def main() -> None:
     print("*" * 10, "watsonx_from_name")
     await watsonx_from_name()
@@ -196,6 +209,8 @@ async def main() -> None:
     await watson_tool_calling()
     print("*" * 10, "watsonx_debug")
     await watsonx_debug()
+    print("*" * 10, "watsonx_embedding")
+    await watsonx_embedding()
 
 
 if __name__ == "__main__":
@@ -378,13 +393,13 @@ The `ChatModel` class represents a Chat Large Language Model and provides method
 ```py Python
 from beeai_framework.backend.chat import ChatModel
 
-ollama_chat_model = ChatModel.from_name("ollama:llama3.1")
+model = ChatModel.from_name("ollama:llama3.1")
 ```
 
 ```ts TypeScript
 import { ChatModel } from "beeai-framework/backend/chat";
 
-const chatModel = await ChatModel.fromName("ollama:granite3.2:8b");
+const model = await ChatModel.fromName("ollama:granite3.3:8b");
 ```
 </CodeGroup>
 
@@ -394,13 +409,13 @@ const chatModel = await ChatModel.fromName("ollama:granite3.2:8b");
 ```py Python
 from beeai_framework.adapters.ollama.backend.chat import OllamaChatModel
 
-ollama_chat_model = OllamaChatModel("llama3.1")
+model = OllamaChatModel("llama3.1")
 ```
 
 ```ts Typescript
 import { OllamaChatModel } from "beeai-framework/adapters/ollama/backend/chat";
 
-const chatModel = new OllamaChatModel("llama3.1");
+const model = new OllamaChatModel("llama3.1");
 ```
 </CodeGroup>
 
@@ -463,6 +478,24 @@ import { OllamaChatModel } from "beeai-framework/adapters/ollama/backend/chat";
 
 const llm = new OllamaChatModel("llama3.1");
 
+//  Optionally one may set llm parameters
+llm.parameters.maxTokens = 10000  // high number yields longer potential output
+llm.parameters.topP = 0  // higher number yields more complex vocabulary, recommend only changing p or k
+llm.parameters.frequencyPenalty = 0  // higher number yields reduction in word reptition
+llm.parameters.temperature = 0  // higher number yields greater randomness and variation
+llm.parameters.topK = 0  // higher number yields more variance, recommend only changing p or k
+llm.parameters.n = 1  // higher number yields more choices
+llm.parameters.presencePenalty = 0  // higher number yields reduction in repetition of words
+llm.parameters.seed = 10  // can help produce similar responses if prompt and seed are always the same
+llm.parameters.stopSequences = ["q", "quit", "ahhhhhhhhh"]  // stops the model on input of any of these strings
+
+// alternatively
+llm.config({ parameters: {
+  maxTokens: 10000,
+  // other parameters
+}})
+
+
 const reader = createConsoleReader();
 
 for await (const { prompt } of reader) {
@@ -486,8 +519,8 @@ The most basic usage is to generate text responses:
 from beeai_framework.adapters.ollama.backend.chat import OllamaChatModel
 from beeai_framework.backend.message import UserMessage
 
-ollama_chat_model = OllamaChatModel("llama3.1")
-response = await ollama_chat_model.create(
+model = OllamaChatModel("llama3.1")
+response = await model.create(
     messages=[UserMessage("what states are part of New England?")]
 )
 
@@ -523,10 +556,14 @@ from beeai_framework.adapters.ollama.backend.chat import OllamaChatModel
 from beeai_framework.backend.message import UserMessage
 
 llm = OllamaChatModel("llama3.1")
-const response = await llm.create({
-  messages: [new UserMessage("How many islands make up the country of Cape Verde?")],
-});
+user_message = UserMessage("How many islands make up the country of Cape Verde?")
 response = await llm.create(messages=[user_message], stream=True)
+  .on(
+    "new_token",
+    lambda data, event: print(data.value.get_text_content()))
+  )
+)
+print("Full response", response.get_text_content())
 ```
 
 {/* <!-- embedme typescript/examples/backend/chatStream.ts --> */}
@@ -800,27 +837,81 @@ You can initialize an embedding model in multiple ways:
 
 **Method 1: Using the generic factory method**
 
-```txt
-Coming soon
+<CodeGroup>
+```py Python
+from beeai_framework.backend.embedding import EmbeddingModel
+
+model = EmbeddingModel.from_name("ollama:nomic-embed-text")
 ```
+
+```ts TypeScript
+import { EmbeddingModel } from "beeai-framework/backend/embedding";
+
+const model = await EmbeddingModel.fromName("ollama:nomic-embed-text");
+```
+</CodeGroup>
 
 **Method 2: Creating a specific provider model directly**
 
-```txt
-Coming soon
+<CodeGroup>
+```py Python
+from beeai_framework.adapters.ollama.backend import OllamaEmbeddingModel
+
+model = OllamaEmbeddingModel("nomic-embed-text")
 ```
+
+```ts TypeScript
+import { OpenAIEmbeddingModel } from "beeai-framework/adapters/openai/embedding";
+
+const model = new OpenAIEmbeddingModel(
+  "text-embedding-3-large",
+  {
+    dimensions: 512,
+    maxEmbeddingsPerCall: 5,
+  },
+  {
+    baseURL: "your_custom_endpoint",
+    compatibility: "compatible",
+    headers: {
+      CUSTOM_HEADER: "...",
+    },
+  },
+);
+```
+</CodeGroup>
 
 ### Embedding model usage
 
 Generate embeddings for one or more text strings:
 
-```txt
-Coming soon
+<CodeGroup>
+```py Python
+from beeai_framework.backend.embedding import EmbeddingModel
+
+model = EmbeddingModel.from_name("ollama:nomic-embed-text")
+
+response = await model.create(["Hello world!", "Hello Bee!"])
+console.log(response.values)
+console.log(response.embeddings)
 ```
+
+```ts TypeScript
+import { EmbeddingModel } from "beeai-framework/backend/embedding";
+
+const model = await EmbeddingModel.fromName("ollama:nomic-embed-text");
+
+const response = await model.create({
+	values: ["Hello world!", "Hello Bee!"],
+});
+console.log(response.values);
+console.log(response.embeddings);
+```
+</CodeGroup>
+
 
 ---
 
-## Advanced usage
+## Others
 
 If your preferred provider isn't directly supported, you can use the LangChain adapter as a bridge.
 

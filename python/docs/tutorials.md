@@ -218,7 +218,7 @@ You will observe the agent:
 
 ### Implementing the remote agent
 
-The `RemoteAgent` class allows you to connect to any agent hosted on the BeeAI platform. This means that you can interact with agents built from any framework!
+The `BeeAIPlatformAgent` class allows you to connect to any agent hosted on the BeeAI platform. This means that you can interact with agents built from any framework!
 
 Here's a simple example that uses the built-in `chat` agent:
 
@@ -238,7 +238,7 @@ from examples.helpers.io import ConsoleReader
 async def main() -> None:
     reader = ConsoleReader()
 
-    agent = ACPAgent(agent_name="chat", url="http://127.0.0.1:8000", memory=UnconstrainedMemory())
+    agent = BeeAIPlatformAgent(agent_name="chat", url="http://127.0.0.1:8000", memory=UnconstrainedMemory())
     for prompt in reader:
         # Run the agent and observe events
         response = await agent.run(prompt).on(
