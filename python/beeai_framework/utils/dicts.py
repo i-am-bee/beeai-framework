@@ -42,3 +42,19 @@ def exclude_non_annotated(input: Mapping[str, Any], cls: type[Mapping[str, Any]]
             input.pop(k)
 
     return excluded
+
+
+def merge_nested(a: dict[str, Any], b: dict[str, Any]) -> dict[str, Any]:
+    merged = a.copy()
+    for k, v in b.items():
+        if isinstance(v, dict):
+            merged[k] = merge_nested(merged.get(k, {}), v)
+        else:
+            merged[k] = v
+    return merged
+
+
+def sort_by_key(input: dict[str, Any], *, reverse: bool = False) -> dict[str, Any]:
+    return dict(
+        sorted(input.items(), key=lambda item: item[0], reverse=reverse),
+    )

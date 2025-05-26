@@ -14,31 +14,28 @@
 """Prompting chat model with configurations."""
 
 from functools import cached_property
-from typing import Any, cast
+from typing import Any
 
 from beeai_framework.backend import AnyMessage, ChatModel, UserMessage
 from beeai_framework.backend.events import chat_model_event_types
-from beeai_framework.backend.types import ChatModelOutput, ChatModelParameters
+from beeai_framework.backend.types import ChatModelOutput
 from beeai_framework.context import Run, RunContext
 from beeai_framework.emitter import Emitter, EventMeta
 from beeai_framework.memory.base_memory import BaseMemory
-from beeai_framework.plugins.constants import PARAMETERS, TYPE
-from beeai_framework.plugins.loader import PluginLoader
 from beeai_framework.plugins.plugin import Plugin
-from beeai_framework.plugins.types import DataContext, Pluggable, PluggableDef
+from beeai_framework.plugins.types import DataContext, Pluggable
 from beeai_framework.plugins.utils import plugin, transfer_run_context
 from beeai_framework.toolkit.chat.constants import (
     COMPLETION_TOKENS,
     FINISH_REASON,
     INPUT,
-    MODEL_ID,
     PROMPT_SYSTEM,
     PROMPT_TOKENS,
     TOTAL_TOKENS,
     USER_PROMPT_VARIABLE,
 )
 from beeai_framework.toolkit.chat.template import FewShotChatPromptTemplate, FewShotPromptTemplateInput
-from beeai_framework.toolkit.chat.types import Example, Model, Templates
+from beeai_framework.toolkit.chat.types import Example, Templates
 from beeai_framework.utils.models import ModelLike
 from beeai_framework.utils.strings import to_safe_word
 
@@ -51,13 +48,13 @@ class PromptingChatModel(Pluggable):
         name: str,
         description: str,
         id_: str,
-        model: ModelLike[Model] | ChatModel,
+        model: ChatModel | str,
         instruction: str = PROMPT_SYSTEM,
         templates: ModelLike[Templates] | None = None,
         examples: list[Example] | None = None,
         examples_files: list[str] | None = None,
         stream: bool = False,
-        memory: ModelLike[PluggableDef] | BaseMemory | None = None,
+        memory: BaseMemory | None = None,
     ) -> None:
         """Initializes a prompting chat model.
         Args:
@@ -83,30 +80,8 @@ class PromptingChatModel(Pluggable):
         self._examples = examples or []
         self._examples_files = examples_files or []
         self._stream = stream
-        if isinstance(model, ChatModel):
-            self._model = model
-        elif isinstance(model, Model | dict):
-            self._model_info = model if isinstance(model, Model) else Model.model_validate(model)
-            params = self._model_info.model_dump().copy()
-            params.pop(TYPE, None)
-            model_params = params.pop(PARAMETERS, None)
-            if not self._model_info.type:
-                params.pop(MODEL_ID, None)
-                self._model = ChatModel.from_name(self._model_info.model_id, params)
-            else:
-                self._model = cast(ChatModel, PluginLoader.root().create_pluggable(self._model_info.type, params))
-                if not self._model:
-                    raise ValueError(f"Unable to load ChatModel of type {self._model_info.type}")
-            if model_params and self._model:
-                self._model.config(parameters=ChatModelParameters(**model_params))
-        self._memory: BaseMemory | None = None
-        if isinstance(memory, BaseMemory):
-            self._memory = memory
-        elif memory is not None and isinstance(memory, PluggableDef | dict):
-            self._memory_info = memory if isinstance(memory, PluggableDef) else PluggableDef.model_validate(memory)
-            self._memory = cast(
-                BaseMemory, PluginLoader.root().create_pluggable(self._memory_info.type, self._memory_info.arguments)
-            )
+        self._model = ChatModel.from_name(model) if isinstance(model, str) else model
+        self._memory = memory
         self._template = self._get_few_shot_template()
         self._few_shot_messages = self._template.to_template_messages()
 

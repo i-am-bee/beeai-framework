@@ -104,28 +104,28 @@ async def registry_and_autoloading() -> None:
 
     # We retrieve the configuration from an external source (like YAML)
     user_config = {
-        "ollama_granite31_chat_model": {
+        "$ollama_granite31_chat_model": {
             "type": "OllamaChatModel",
             "arguments": {"model_id": "llama3.1"},
         },
-        "weather_tool": {
+        "$weather_tool": {
             "type": "OpenMeteoTool",
             "arguments": {},
         },
-        "duckduckgo_search_tool": {
+        "$duckduckgo_search_tool": {
             "type": "DuckDuckGoSearchTool",
             "arguments": {},
         },
-        "my_memory": {
+        "$my_memory": {
             "type": "UnconstrainedMemory",
             "arguments": {},
         },
-        "my_agent": {
+        "$my_agent": {
             "type": "ToolCallingAgent",
             "arguments": {
-                "llm": "#ollama_granite31_chat_model",
-                "tools": ["#weather_tool", "#duckduckgo_search_tool"],
-                "memory": "#my_memory",
+                "llm": "$ollama_granite31_chat_model",
+                "tools": ["$weather_tool", "$duckduckgo_search_tool"],
+                "memory": "$my_memory",
                 "save_intermediate_steps": True,
             },
         },
@@ -137,33 +137,33 @@ async def registry_and_autoloading() -> None:
     # We retrieve user actions (from an external source like API / CLI)
     user_actions = [
         {
-            "instance": "weather_tool",
+            "instance": "$weather_tool",
             "input": {
                 "location_name": "Prague",
             },
         },
         {
-            "instance": "duckduckgo_search_tool",
+            "instance": "$duckduckgo_search_tool",
             "input": {
                 "query": "Current time and date",
             },
         },
         {
-            "instance": "my_memory",
+            "instance": "$my_memory",
             "input": {
                 "message": UserMessage("Hello agent."),
             },
         },
         {
-            "instance": "my_agent",
+            "instance": "$my_agent",
             "input": {"prompt": "Who is the president of Czech Republic?"},
         },
         {
-            "instance": "my_agent",
+            "instance": "$my_agent",
             "input": {"prompt": "How old is he?"},
         },
         {
-            "instance": "my_agent",
+            "instance": "$my_agent",
             "input": {"prompt": "What is the current weather in Prague?"},
         },
     ]

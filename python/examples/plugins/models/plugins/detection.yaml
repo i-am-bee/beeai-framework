@@ -7,11 +7,12 @@ version: '0.1'
 config:
   model:
     type: OllamaChatModel
-    model_id: granite3.1-dense:8b
-    parameters:
-      temperature: 0
-      min_tokens: 1
-      max_tokens: 600
+    arguments:
+      model_id: granite3.3:8b
+      parameters:
+        temperature: 0
+        min_tokens: 1
+        max_tokens: 600
   stream: True
   memory:
     type: UnconstrainedMemory
@@ -27,10 +28,10 @@ config:
     Use your own knowledge about threat detection and Sigma rules, including community Sigma rules, manual pages, and documentation.
     Store the Sigma rule in the Output variable.
   templates:
-    user: "User: {{user}}"
+    user: "{{user}}"
     examples:
-       user: "User: {{user}}"
-       assistant: "Assistant: {{assistant}}"
+       user: "{{user}}"
+       assistant: "{{assistant}}"
   examples:
     - example:
       - user: 'Create a Sigma rule that detects process discovery commands in Linux.'

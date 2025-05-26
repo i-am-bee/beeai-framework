@@ -22,15 +22,18 @@ from pydantic import ValidationError
 from beeai_framework.backend import ChatModelNewTokenEvent, ChatModelStartEvent, ChatModelSuccessEvent
 from beeai_framework.emitter import EventMeta
 from beeai_framework.plugins.loader import PluginLoader
+from beeai_framework.utils.strings import to_json
 from examples.helpers.io import ConsoleReader
 
 load_dotenv()
-plugin_name = "SigmaComposer"
+plugin_name = "CodeGenerator"
 if len(sys.argv) > 1:
     plugin_name = sys.argv[1]
 
-PluginLoader.root().load_config("python/examples/plugins/models/config.yaml")
-plugin = PluginLoader.root().get_plugin(plugin_name)
+
+loader = PluginLoader().root()
+loader.load_config("./config.yaml")
+plugin = loader.get_plugin(plugin_name)
 
 
 async def main() -> None:
@@ -38,10 +41,19 @@ async def main() -> None:
     try:
         reader = ConsoleReader()
 
-        for prompt in reader:
+        for prompt in ["Hello!"]:
 
             def on_start(data: ChatModelStartEvent, meta: EventMeta) -> None:
-                reader.write("LLM 🤖 (start)", str(data.input.model_dump()))
+                reader.write(
+                    "LLM 🤖 (start)",
+                    to_json(
+                        {
+                            "messages": [msg.to_plain() for msg in data.input.messages],
+                        },
+                        indent=2,
+                        sort_keys=False,
+                    ),
+                )
 
             def on_new_token(data: ChatModelNewTokenEvent, meta: EventMeta) -> None:
                 reader.write("LLM 🤖 (new_token)", data.value.get_text_content())

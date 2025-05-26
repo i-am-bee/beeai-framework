@@ -15,10 +15,10 @@
 import json
 from abc import ABC, abstractmethod
 from collections.abc import AsyncGenerator, Callable
-from functools import cached_property
-from typing import Any, ClassVar, Literal, Self
+from functools import cached_property, partial
+from typing import Annotated, Any, ClassVar, Literal, Self
 
-from pydantic import BaseModel, ConfigDict, Field, InstanceOf, TypeAdapter
+from pydantic import BaseModel, BeforeValidator, ConfigDict, Field, InstanceOf, TypeAdapter
 from typing_extensions import TypedDict, TypeVar, Unpack
 
 from beeai_framework.backend.constants import ProviderName
@@ -74,7 +74,7 @@ class ChatModelKwargs(TypedDict, total=False):
     model_supports_tool_calling: bool
     use_strict_tool_schema: bool
     use_strict_model_schema: bool
-    parameters: InstanceOf[ChatModelParameters]
+    parameters: Annotated[Any, BeforeValidator(partial(to_model, ChatModelParameters)), InstanceOf[ChatModelParameters]]
     cache: InstanceOf[ChatModelCache]
     settings: dict[str, Any]
 
@@ -111,8 +111,7 @@ class ChatModel(ABC, Pluggable[ChatModelInput, ChatModelOutput]):
 
         parameters = type(self).get_default_parameters()
         update_model(parameters, sources=[kwargs.get("parameters")])
-        self.parameters = parameters
-
+        self.parameters = to_model(ChatModelParameters, kwargs.get("parameters") or {})
         self.cache = kwargs.get("cache", NullCache[list[ChatModelOutput]]())
         self.tool_call_fallback_via_response_format = kwargs.get("tool_call_fallback_via_response_format", True)
         self.model_supports_tool_calling = kwargs.get("model_supports_tool_calling", True)

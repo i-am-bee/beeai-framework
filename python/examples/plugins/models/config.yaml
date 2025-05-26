@@ -1,6 +1,6 @@
 loader:
   configpaths:
-    - python/examples/plugins/models/plugins
+    - ./plugins
   plugins:
     - SigmaComposer
     - CodeGenerator

@@ -14,7 +14,8 @@
 
 import inspect
 import os
-from collections.abc import Callable
+from collections import defaultdict, deque
+from collections.abc import Callable, Mapping
 from functools import cached_property
 from typing import Any, ClassVar, TypeVar, overload
 
@@ -25,6 +26,7 @@ from typing_extensions import Unpack
 from beeai_framework.context import Run, RunContext, storage
 from beeai_framework.emitter import Emitter
 from beeai_framework.plugins.plugin import AnyPlugin, Plugin, PluginKwargs
+from beeai_framework.utils.lists import cast_list
 from beeai_framework.utils.models import ModelLike, get_input_schema, get_output_schema, to_model
 from beeai_framework.utils.strings import to_safe_word
 
@@ -142,3 +144,38 @@ def transfer_run_context(source: RunContext | None = None) -> Callable[[RunConte
         target.emitter.namespace = source_context.emitter.namespace
 
     return transfer_middleware
+
+
+T = TypeVar("T")
+
+
+def topological_sort(items: Mapping[str, T], attr_name: str) -> list[tuple[str, T]]:
+    # Build the graph and in-degree count
+    graph = defaultdict(list)
+    in_degree = {key: 0 for key in items}
+
+    for key, value in items.items():
+        based_on = cast_list(getattr(value, attr_name) or [])
+        for dep in based_on:
+            if dep not in items:
+                continue
+
+            graph[dep].append(key)
+            in_degree[key] += 1
+
+    # Queue for items with no dependencies
+    queue = deque([k for k, v in in_degree.items() if v == 0])
+    sorted_list = []
+
+    while queue:
+        node = queue.popleft()
+        sorted_list.append(node)
+        for neighbor in graph[node]:
+            in_degree[neighbor] -= 1
+            if in_degree[neighbor] == 0:
+                queue.append(neighbor)
+
+    if len(sorted_list) != len(items):
+        raise ValueError("Cycle detected or missing dependencies!")
+
+    return [(key, items[key]) for key in sorted_list]
