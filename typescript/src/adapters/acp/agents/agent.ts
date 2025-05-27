@@ -21,14 +21,8 @@ import { AssistantMessage, Message, UserMessage } from "@/backend/message.js";
 import { BaseMemory } from "@/memory/base.js";
 import { shallowCopy } from "@/serializer/utils.js";
 import { RestfulClient } from "@/internals/fetcher.js";
-import { ACPAgentRunInput, ACPAgentRunOutput } from "./types.js";
+import { ACPAgentInput, ACPAgentRunInput, ACPAgentRunOutput } from "./types.js";
 import { ACPAgentEvents } from "./events.js";
-
-interface Input {
-  url: string;
-  agentName: string;
-  memory: BaseMemory;
-}
 
 export class ACPAgent extends BaseAgent<ACPAgentRunInput, ACPAgentRunOutput> {
   public emitter = Emitter.root.child<ACPAgentEvents>({
@@ -37,7 +31,7 @@ export class ACPAgent extends BaseAgent<ACPAgentRunInput, ACPAgentRunOutput> {
   });
   protected client: RestfulClient<{ runs: string; agents: string }>;
 
-  constructor(protected readonly input: Input) {
+  constructor(protected readonly input: ACPAgentInput) {
     super();
     this.client = new RestfulClient({
       baseUrl: this.input.url,

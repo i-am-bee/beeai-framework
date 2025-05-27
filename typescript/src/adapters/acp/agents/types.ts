@@ -15,6 +15,7 @@
  */
 
 import { Message } from "@/backend/message.js";
+import { BaseMemory } from "@/memory/base.js";
 
 export interface ACPAgentRunInput {
   input: Message | string | Message[] | string[];
@@ -23,4 +24,10 @@ export interface ACPAgentRunInput {
 export interface ACPAgentRunOutput {
   result: Message;
   event: Record<string, any>;
+}
+
+export interface ACPAgentInput {
+  url: string;
+  agentName: string;
+  memory: BaseMemory;
 }

@@ -20,15 +20,13 @@ import { GetRunContext } from "@/context.js";
 import { ACPAgentUpdateEvent, ACPAgentErrorEvent } from "@/adapters/acp/agents/events.js";
 import { BaseMemory } from "@/memory/base.js";
 import { shallowCopy } from "@/serializer/utils.js";
-import { BeeAIPlatformAgentRunInput, BeeAIPlatformAgentRunOutput } from "./types.js";
+import {
+  BeeAIPlatformAgentInput,
+  BeeAIPlatformAgentRunInput,
+  BeeAIPlatformAgentRunOutput,
+} from "./types.js";
 import { BeeAIPlatformAgentEvents } from "./events.js";
 import { ACPAgent } from "@/adapters/acp/agents/agent.js";
-
-interface Input {
-  url: string;
-  agentName: string;
-  memory: BaseMemory;
-}
 
 export class BeeAIPlatformAgent extends BaseAgent<
   BeeAIPlatformAgentRunInput,
@@ -40,7 +38,7 @@ export class BeeAIPlatformAgent extends BaseAgent<
   });
   protected agent: ACPAgent;
 
-  constructor(protected readonly input: Input) {
+  constructor(protected readonly input: BeeAIPlatformAgentInput) {
     super();
     this.agent = new ACPAgent(input);
   }
