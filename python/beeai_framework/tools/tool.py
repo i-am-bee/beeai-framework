@@ -53,6 +53,9 @@ class Tool(Generic[TInput, TRunOptions, TOutput], ABC):
         self._options: dict[str, Any] | None = options or None
         self._cache = self.options.get("cache", NullCache[TOutput]()) if self.options else NullCache[TOutput]()
 
+    def __str__(self) -> str:
+        return self.name
+
     @property
     def options(self) -> dict[str, Any] | None:
         return self._options
@@ -188,8 +191,8 @@ class Tool(Generic[TInput, TRunOptions, TOutput], ABC):
 # this method was inspired by the discussion that was had in this issue:
 # https://github.com/pydantic/pydantic/issues/1391
 @typing.no_type_check
-def get_input_schema(tool_function: Callable) -> type[BaseModel]:
-    input_model_name = tool_function.__name__
+def get_input_schema(tool_function: Callable, *, name: str | None = None) -> type[BaseModel]:
+    input_model_name = name or tool_function.__name__
 
     args, _, _, defaults, kwonlyargs, kwonlydefaults, annotations = inspect.getfullargspec(tool_function)
     defaults = defaults or []
@@ -228,6 +231,8 @@ def tool(
     name: str | None = ...,
     description: str | None = ...,
     input_schema: type[BaseModel] | None = ...,
+    with_context: bool = False,
+    emitter: Emitter | None = None,
 ) -> AnyTool: ...
 @typing.overload
 def tool(
@@ -235,6 +240,8 @@ def tool(
     name: str | None = ...,
     description: str | None = ...,
     input_schema: type[BaseModel] | None = ...,
+    with_context: bool = False,
+    emitter: Emitter | None = None,
 ) -> Callable[[TFunction], AnyTool]: ...
 def tool(
     tool_function: TFunction | None = None,
@@ -243,6 +250,8 @@ def tool(
     name: str | None = None,
     description: str | None = None,
     input_schema: type[BaseModel] | None = None,
+    with_context: bool = False,
+    emitter: Emitter | None = None,
 ) -> AnyTool | Callable[[TFunction], AnyTool]:
     def create_tool(fn: TFunction) -> AnyTool:
         tool_name = name or fn.__name__
@@ -261,6 +270,9 @@ def tool(
                 super().__init__(options)
 
             def _create_emitter(self) -> Emitter:
+                if emitter is not None:
+                    return emitter
+
                 return Emitter.root().child(
                     namespace=["tool", "custom", to_safe_word(self.name)],
                     creator=self,
@@ -268,6 +280,9 @@ def tool(
 
             async def _run(self, input: Any, options: ToolRunOptions | None, context: RunContext) -> ToolOutput:
                 tool_input_dict = input.model_dump()
+                if with_context:
+                    tool_input_dict["context"] = context
+
                 if inspect.iscoroutinefunction(fn):
                     result = await fn(**tool_input_dict)
                 else:

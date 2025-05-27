@@ -45,7 +45,7 @@ async def main() -> None:
             .on("new_token", on_new_token)
         )
 
-        reader.write("ℹ️", f"Received {len(response.messages)} chunks.")  # noqa: RUF001
+        reader.write("ℹ️", f"Received {len(response.messages)} chunks.")
 
 
 if __name__ == "__main__":

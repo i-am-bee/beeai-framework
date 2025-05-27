@@ -68,5 +68,5 @@ async def test_call_invalid_bad_type(tool: OpenMeteoTool) -> None:
 @pytest.mark.asyncio
 async def test_output(tool: OpenMeteoTool) -> None:
     result = await tool.run(input={"location_name": "White Plains"})
-    assert type(result) is StringToolOutput
+    assert isinstance(result, StringToolOutput)
     assert "current" in result.get_text_content()

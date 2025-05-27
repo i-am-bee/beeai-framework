@@ -11,7 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
+from typing import Any
 
 from pydantic import BaseModel
 
@@ -38,3 +38,6 @@ class SearchToolOutput(ToolOutput):
 
     def sources(self) -> list[str]:
         return [result.url for result in self.results]
+
+    def to_json_safe(self) -> list[Any]:
+        return [r.model_dump() for r in self.results]

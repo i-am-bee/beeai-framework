@@ -64,7 +64,7 @@ async def create_agent(session: ClientSession) -> ToolCallingAgent:
         templates={
             "system": lambda template: template.update(
                 defaults={
-                    "instructions": """IMPORTANT: When the user mentions Slack, you must interact with the Slack tool before sending the final answer.""",  # noqa: E501
+                    "instructions": """IMPORTANT: When the user mentions Slack, you must interact with the Slack tool before sending the final answer.""",
                 }
             )
         },
