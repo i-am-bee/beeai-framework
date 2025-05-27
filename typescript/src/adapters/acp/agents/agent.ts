@@ -23,16 +23,18 @@ import { shallowCopy } from "@/serializer/utils.js";
 import { RestfulClient } from "@/internals/fetcher.js";
 import { ACPAgentInput, ACPAgentRunInput, ACPAgentRunOutput } from "./types.js";
 import { ACPAgentEvents } from "./events.js";
+import { toCamelCase } from "remeda";
 
 export class ACPAgent extends BaseAgent<ACPAgentRunInput, ACPAgentRunOutput> {
-  public emitter = Emitter.root.child<ACPAgentEvents>({
-    namespace: ["agent", "acp"],
-    creator: this,
-  });
+  public readonly emitter: Emitter<ACPAgentEvents>;
   protected client: RestfulClient<{ runs: string; agents: string }>;
 
   constructor(protected readonly input: ACPAgentInput) {
     super();
+    this.emitter = Emitter.root.child<ACPAgentEvents>({
+      namespace: ["agent", "acp", toCamelCase(this.input.agentName)],
+      creator: this,
+    });
     this.client = new RestfulClient({
       baseUrl: this.input.url,
       headers: async () => ({

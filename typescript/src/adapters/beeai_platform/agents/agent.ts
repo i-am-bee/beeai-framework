@@ -27,20 +27,22 @@ import {
 } from "./types.js";
 import { BeeAIPlatformAgentEvents } from "./events.js";
 import { ACPAgent } from "@/adapters/acp/agents/agent.js";
+import { toCamelCase } from "remeda";
 
 export class BeeAIPlatformAgent extends BaseAgent<
   BeeAIPlatformAgentRunInput,
   BeeAIPlatformAgentRunOutput
 > {
-  public emitter = Emitter.root.child<BeeAIPlatformAgentEvents>({
-    namespace: ["agent", "beeai_platform"],
-    creator: this,
-  });
+  public readonly emitter: Emitter<BeeAIPlatformAgentEvents>;
   protected agent: ACPAgent;
 
   constructor(protected readonly input: BeeAIPlatformAgentInput) {
     super();
     this.agent = new ACPAgent(input);
+    this.emitter = Emitter.root.child<BeeAIPlatformAgentEvents>({
+      namespace: ["agent", "beeAIPlatform", toCamelCase(this.input.agentName)],
+      creator: this,
+    });
   }
 
   protected async _run(
@@ -48,17 +50,16 @@ export class BeeAIPlatformAgent extends BaseAgent<
     _options: BaseAgentRunOptions,
     context: GetRunContext<this>,
   ): Promise<BeeAIPlatformAgentRunOutput> {
-    async function updateEvent(data: ACPAgentUpdateEvent, _: EventMeta) {
-      await context.emitter.emit("update", data);
-    }
-
-    async function errorEvent(data: ACPAgentErrorEvent, _: EventMeta) {
-      await context.emitter.emit("error", data);
-    }
-
     const response = await this.agent.run(input).observe((emitter) => {
-      emitter.on("update", updateEvent);
-      emitter.on("error", errorEvent);
+      emitter.on(
+        "update",
+        async (data: ACPAgentUpdateEvent, _: EventMeta) =>
+          await context.emitter.emit("update", data),
+      );
+      emitter.on(
+        "error",
+        async (data: ACPAgentErrorEvent, _: EventMeta) => await context.emitter.emit("error", data),
+      );
     });
 
     return { result: response.result, event: response.event };
