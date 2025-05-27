@@ -2,6 +2,8 @@
 
 > [!NOTE]
 >
+> This is an experimental feature and will evolve based on community feedback.
+>
 > **Location within the framework:** [`beeai_framework/agents/experimental`](/python/beeai_framework/agents/experimental).
 
 
@@ -26,11 +28,11 @@ response = await agent.run("What to do in Boston?").middleware(GlobalTrajectoryM
 print(response.result.text)
 ```
 
-➡️ Check out more [examples](/python/examples/experimental/requirement) (multi-agent, custom requirements, ...). 
+➡️ Check out more [examples](/python/examples/experimental/requirement) (multi-agent, custom requirements, ...).
 
 ## 💬 Motivation
 
-Every language model is different and expects a unique style of communication. This makes it complicated to create a single system prompt (agent) that works well for all models. Nudging the model within existing implementations can be tricky, as system prompts are often highly opinionated and typically optimized for a single model or a small subset. Additionally, an agent’s system prompt may force the LLM to produce text in a predefined structure, which models may not be able to follow. The model might get confused by the large context window or simply be incapable of adhering to the structure. 
+Every language model is different and expects a unique style of communication. This makes it complicated to create a single system prompt (agent) that works well for all models. Nudging the model within existing implementations can be tricky, as system prompts are often highly opinionated and typically optimized for a single model or a small subset. Additionally, an agent’s system prompt may force the LLM to produce text in a predefined structure, which models may not be able to follow. The model might get confused by the large context window or simply be incapable of adhering to the structure.
 
 As a result, you never know whether the response is hallucinated or backed by evidence from a tool. For smaller models, you need to be more explicit, while for more capable models, you can be more flexible. This is why people have started switching to workflows (graphs), which are typically more restrictive but come with additional development costs.
 
@@ -38,7 +40,7 @@ We have addressed these issues in our new agent-building abstraction.
 
 ## 🔎 Core principles
 
-- **Everything is a tool** 
+- **Everything is a tool**
   - From data retrieval and web search to reasoning or even providing a final answer.
   - This allows us to generate outputs that adhere to a user-defined format (leveraging structured decoding).
   - The model always produces a valid response—no more parsing errors.
@@ -79,8 +81,8 @@ We have addressed these issues in our new agent-building abstraction.
 
 ### Conditional
 
-A requirement that enables the use of a given tool (or set of tools) after certain conditions are met. 
-See the following examples. 
+A requirement that enables the use of a given tool (or set of tools) after certain conditions are met.
+See the following examples.
 
 **Define order of execution**
 
@@ -102,7 +104,7 @@ RequirementAgent(
 A ReAct Agent (Reason and Act) follows this trajectory:
 
 ```text
-Think -> Use a tool -> Think -> Use a tool -> Think -> ... -> End 
+Think -> Use a tool -> Think -> Use a tool -> Think -> ... -> End
 ```
 
 This can be easily achieved by forcing the execution of the `Think` tool after every other tool.
@@ -117,11 +119,11 @@ RequirementAgent(
 
 > [!TIP]
 >
-> To generalize further, use `ConditionalRequirement(ThinkTool, force_at_step=1, force_after=Tool, can_be_used_in_row=False)`.
+> To generalize further, use `ConditionalRequirement(ThinkTool, force_at_step=1, force_after=Tool, can_be_used_in_row=False)`, where the option `can_be_used_in_row=False` simply denotes that `ThinkTool` cannot be used multiple times in a row.
 
 **Creating a ReAct agent with custom conditions**
 
-You may want an agent that works like ReAct but skips the 'reasoning' (thinking) step under certain conditions.
+You may want an agent that works like ReAct but skips the 'reasoning' (thinking) step under certain conditions. In the example below, the `priority` option is used to tell the agent to send an email by calling the `send_email` tool after `create_order` is invoked, and call `ThinkTool` after every other action.
 
 ```python
 RequirementAgent(
@@ -134,7 +136,7 @@ RequirementAgent(
 )
 ```
 
-**Prevent agent termination before calling a tool**
+**Prevent agent termination if a tool hasn't been called yet**
 
 The following requirement prevents the agent from providing a final answer before it calls the `my_tool`.
 
@@ -148,8 +150,8 @@ ConditionalRequirement(my_tool, min_invocations=1)
 ConditionalRequirement(
   target_tool, # Tool class, instance, or name (can also be specified as `target=...`)
   name="", # (optional) Name, useful for logging
-  only_before=[...], # (optional) Disable target_tool after any of these tools are called  
-  only_after=[...], # (optional) Disable target_tool before all these tools are called  
+  only_before=[...], # (optional) Disable target_tool after any of these tools are called
+  only_after=[...], # (optional) Disable target_tool before all these tools are called
   force_after=[...], # (optional) Force target_tool execution immediately after any of these tools are called
   min_invocations=0, # (optional) Minimum times the tool must be called before agent can stop
   max_invocations=10, # (optional) Maximum times the tool can be called before being disabled
@@ -168,11 +170,7 @@ ConditionalRequirement(
 
 > [!TIP]
 >
-> It is recommended to pass a class instance (e.g., `weather_tool = ...`) or a class (`OpenMeteoTool`) rather than a tool’s name, as some tools may have dynamically generated names.
-
-> [!TIP]
->
-> It is always better to pass a class instance (e.g., `OpenMeteoTool`) than a tool name.
+> It is recommended to pass a class instance (e.g., `weather_tool = ...`) or a class (`OpenMeteoTool`) rather than a tool's name, as some tools may have dynamically generated names.
 
 > [!NOTE]
 >
