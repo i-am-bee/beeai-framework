@@ -14,7 +14,6 @@
  * limitations under the License.
  */
 
-import { Callback } from "@/emitter/types.js";
 import { Emitter } from "@/emitter/emitter.js";
 import { AgentError, BaseAgent, BaseAgentRunOptions } from "@/agents/base.js";
 import { GetRunContext } from "@/context.js";
@@ -22,20 +21,8 @@ import { AssistantMessage, Message, UserMessage } from "@/backend/message.js";
 import { BaseMemory } from "@/memory/base.js";
 import { shallowCopy } from "@/serializer/utils.js";
 import { RestfulClient } from "@/internals/fetcher.js";
-
-export interface RemoteAgentRunInput {
-  input: Message | string | Message[] | string[];
-}
-
-export interface RemoteAgentRunOutput {
-  result: Message;
-  event: Record<string, any>;
-}
-
-export interface RemoteAgentEvents {
-  update: Callback<{ key: string; value: any }>;
-  error: Callback<{ message: string }>;
-}
+import { ACPAgentRunInput, ACPAgentRunOutput } from "./types.js";
+import { ACPAgentEvents } from "./events.js";
 
 interface Input {
   url: string;
@@ -43,9 +30,9 @@ interface Input {
   memory: BaseMemory;
 }
 
-export class RemoteAgent extends BaseAgent<RemoteAgentRunInput, RemoteAgentRunOutput> {
-  public emitter = Emitter.root.child<RemoteAgentEvents>({
-    namespace: ["agent", "remote"],
+export class ACPAgent extends BaseAgent<ACPAgentRunInput, ACPAgentRunOutput> {
+  public emitter = Emitter.root.child<ACPAgentEvents>({
+    namespace: ["agent", "acp"],
     creator: this,
   });
   protected client: RestfulClient<{ runs: string; agents: string }>;
@@ -63,10 +50,10 @@ export class RemoteAgent extends BaseAgent<RemoteAgentRunInput, RemoteAgentRunOu
   }
 
   protected async _run(
-    input: RemoteAgentRunInput,
+    input: ACPAgentRunInput,
     _options: BaseAgentRunOptions,
     context: GetRunContext<this>,
-  ): Promise<RemoteAgentRunOutput> {
+  ): Promise<ACPAgentRunOutput> {
     const inputs = Array.isArray(input.input)
       ? input.input.map(this.convertToACPMessage)
       : [this.convertToACPMessage(input.input)];
