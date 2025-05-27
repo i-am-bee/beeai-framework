@@ -1,13 +1,13 @@
 import "dotenv/config.js";
-import { RemoteAgent } from "beeai-framework/agents/experimental/remote/agent";
+import { ACPAgent } from "beeai-framework/adapters/acp/agents/agent";
 import { createConsoleReader } from "examples/helpers/io.js";
 import { FrameworkError } from "beeai-framework/errors";
 import { TokenMemory } from "beeai-framework/memory/tokenMemory";
 
 const agentName = "chat";
 
-const instance = new RemoteAgent({
-  url: "http://127.0.0.1:8333/api/v1/acp",
+const instance = new ACPAgent({
+  url: "http://127.0.0.1:8000",
   agentName,
   memory: new TokenMemory(),
 });

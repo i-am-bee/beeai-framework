@@ -14,7 +14,6 @@
  * limitations under the License.
  */
 
-import { Callback } from "@/emitter/types.js";
 import { Emitter } from "@/emitter/emitter.js";
 import { AgentError, BaseAgent, BaseAgentRunOptions } from "@/agents/base.js";
 import { GetRunContext } from "@/context.js";
@@ -22,36 +21,20 @@ import { AssistantMessage, Message, UserMessage } from "@/backend/message.js";
 import { BaseMemory } from "@/memory/base.js";
 import { shallowCopy } from "@/serializer/utils.js";
 import { RestfulClient } from "@/internals/fetcher.js";
+import { ACPAgentInput, ACPAgentRunInput, ACPAgentRunOutput } from "./types.js";
+import { ACPAgentEvents } from "./events.js";
+import { toCamelCase } from "remeda";
 
-export interface RemoteAgentRunInput {
-  input: Message | string | Message[] | string[];
-}
-
-export interface RemoteAgentRunOutput {
-  result: Message;
-  event: Record<string, any>;
-}
-
-export interface RemoteAgentEvents {
-  update: Callback<{ key: string; value: any }>;
-  error: Callback<{ message: string }>;
-}
-
-interface Input {
-  url: string;
-  agentName: string;
-  memory: BaseMemory;
-}
-
-export class RemoteAgent extends BaseAgent<RemoteAgentRunInput, RemoteAgentRunOutput> {
-  public emitter = Emitter.root.child<RemoteAgentEvents>({
-    namespace: ["agent", "remote"],
-    creator: this,
-  });
+export class ACPAgent extends BaseAgent<ACPAgentRunInput, ACPAgentRunOutput> {
+  public readonly emitter: Emitter<ACPAgentEvents>;
   protected client: RestfulClient<{ runs: string; agents: string }>;
 
-  constructor(protected readonly input: Input) {
+  constructor(protected readonly input: ACPAgentInput) {
     super();
+    this.emitter = Emitter.root.child<ACPAgentEvents>({
+      namespace: ["agent", "acp", toCamelCase(this.input.agentName)],
+      creator: this,
+    });
     this.client = new RestfulClient({
       baseUrl: this.input.url,
       headers: async () => ({
@@ -63,10 +46,10 @@ export class RemoteAgent extends BaseAgent<RemoteAgentRunInput, RemoteAgentRunOu
   }
 
   protected async _run(
-    input: RemoteAgentRunInput,
+    input: ACPAgentRunInput,
     _options: BaseAgentRunOptions,
     context: GetRunContext<this>,
-  ): Promise<RemoteAgentRunOutput> {
+  ): Promise<ACPAgentRunOutput> {
     const inputs = Array.isArray(input.input)
       ? input.input.map(this.convertToACPMessage)
       : [this.convertToACPMessage(input.input)];
