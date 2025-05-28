@@ -134,6 +134,7 @@ def update_model(target: T, *, sources: list[T | None | bool], exclude_unset: bo
         for k, v in source.model_dump(exclude_unset=exclude_unset, exclude_defaults=True).items():
             setattr(target, k, v)
 
+
 class AnyModel(BaseModel):
     model_config = ConfigDict(extra="allow", arbitrary_types_allowed=True)
 

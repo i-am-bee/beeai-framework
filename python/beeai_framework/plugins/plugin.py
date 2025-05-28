@@ -31,6 +31,7 @@ from beeai_framework.utils.models import ModelLike, to_model
 TInput = TypeVar("TInput", bound=BaseModel)
 TOutput = TypeVar("TOutput", bound=BaseModel)
 
+
 class PluginKwargs(TypedDict, total=False):
     context: dict[str, Any]
     signal: AbortSignal

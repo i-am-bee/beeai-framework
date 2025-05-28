@@ -20,7 +20,7 @@ from collections.abc import Callable
 from functools import cached_property
 from typing import Any, Generic, Self, TypeAlias
 
-from pydantic import BaseModel, ValidationError
+from pydantic import BaseModel, ConfigDict, ValidationError, create_model
 from typing_extensions import TypeVar
 
 from beeai_framework.cache.base import BaseCache
@@ -42,7 +42,7 @@ from beeai_framework.tools.events import (
     tool_event_types,
 )
 from beeai_framework.tools.types import StringToolOutput, ToolOutput, ToolRunOptions
-from beeai_framework.utils.models import create_model_from_type, get_input_schema
+from beeai_framework.utils.models import create_model_from_type
 from beeai_framework.utils.strings import to_safe_word
 
 logger = Logger(__name__)
