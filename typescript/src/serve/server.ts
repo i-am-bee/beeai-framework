@@ -14,20 +14,22 @@
  * limitations under the License.
  */
 
+type ServerFactory<TInput, TInternal> = (input: TInput) => Promise<TInternal>;
+
 export abstract class Server<
   TInput extends object = object,
   TInternal extends object = object,
   TConfig extends object = object,
 > {
-  protected factories = new Map<object, (input: TInput) => Promise<TInternal>>();
+  protected factories = new Map<object, ServerFactory<TInput, TInternal>>();
 
-  protected _members: TInput[] = [];
+  private _members: TInput[] = [];
 
   constructor(protected config: TConfig) {}
 
   public registerFactory(
     ref: TInput,
-    factory: (input: TInput) => Promise<TInternal>,
+    factory: ServerFactory<TInput, TInternal>,
     override = false,
   ): void {
     if (!this.factories.get(ref) || override) {
@@ -56,7 +58,7 @@ export abstract class Server<
     return this;
   }
 
-  protected getFactory(input: TInput): (input: TInput) => Promise<TInternal> {
+  protected getFactory(input: TInput): ServerFactory<TInput, TInternal> {
     const factory = this.factories.get(input.constructor);
     if (!factory) {
       throw new Error(`No factory registered for ${input.constructor.name}.`);
