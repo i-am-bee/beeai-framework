@@ -51,7 +51,7 @@ from beeai_framework.cache.null_cache import NullCache
 from beeai_framework.context import Run, RunContext
 from beeai_framework.emitter import Emitter
 from beeai_framework.logger import Logger
-from beeai_framework.plugins.plugin import Plugin
+from beeai_framework.plugins.plugin import DataContextPlugin
 from beeai_framework.plugins.types import Pluggable
 from beeai_framework.plugins.utils import plugin, transfer_run_context
 from beeai_framework.retryable import Retryable, RetryableConfig, RetryableContext, RetryableInput
@@ -405,7 +405,8 @@ IMPORTANT: You MUST answer with a JSON object that matches the JSON schema above
     def get_default_parameters(cls) -> ChatModelParameters:
         return ChatModelParameters(temperature=0)
 
-    def as_plugin(self) -> Plugin[ChatModelInput, ChatModelOutput]:
+    def as_plugin(self) -> DataContextPlugin:
+        # TODO: refactor this method
         @plugin(
             name=f"{self.provider_id}:{self.model_id}",
             description=f"${self.provider_id} Chat Model",

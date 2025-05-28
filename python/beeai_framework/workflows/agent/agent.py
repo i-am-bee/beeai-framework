@@ -175,6 +175,7 @@ class AgentWorkflow(Pluggable[Any, AgentWorkflowOutput]):
         return self
 
     def as_plugin(self) -> Plugin[AgentWorkflowInput, AgentWorkflowOutput]:
+        # TODO: refactor to use DataContextPlugin
         @plugin(
             name=self.workflow.name,
             description="AgentWorkflow",  # TODO

@@ -22,7 +22,7 @@ from beeai_framework.backend.types import ChatModelOutput
 from beeai_framework.context import Run, RunContext
 from beeai_framework.emitter import Emitter, EventMeta
 from beeai_framework.memory.base_memory import BaseMemory
-from beeai_framework.plugins.plugin import Plugin
+from beeai_framework.plugins.plugin import DataContextPlugin
 from beeai_framework.plugins.types import DataContext, Pluggable
 from beeai_framework.plugins.utils import plugin, transfer_run_context
 from beeai_framework.toolkit.chat.constants import (
@@ -170,7 +170,7 @@ class PromptingChatModel(Pluggable):
 
         return RunContext.enter(self, handler, signal=None, run_params={INPUT: input})
 
-    def as_plugin(self) -> Plugin[DataContext, DataContext]:
+    def as_plugin(self) -> DataContextPlugin:
         """Returns the model as a plugin.
         Returns:
             A plugin object.

@@ -31,8 +31,8 @@ from beeai_framework.plugins.config import ConfigLoader
 from beeai_framework.plugins.constants import ARGUMENTS, DESCRIPTION, ID, NAME, TYPE
 from beeai_framework.plugins.plugin import AnyPlugin
 from beeai_framework.plugins.types import (
-    AnyPluggable,
     Config,
+    DataContextPluggable,
     Pluggable,
     PluggableInstanceRegistry,
     PluggableRegistry,
@@ -158,7 +158,7 @@ class PluginLoader:
 
         self.pluggable_type_factory.register(cast(type[Pluggable], dynamic_factory), name="ChatModel")
 
-    def register_pluggable_type(self, pluggable: type[AnyPluggable], name: str | None = None) -> None:
+    def register_pluggable_type(self, pluggable: type[DataContextPluggable], name: str | None = None) -> None:
         """Register a plugin instance."""
         self.pluggable_type_factory.register(pluggable, name)
 

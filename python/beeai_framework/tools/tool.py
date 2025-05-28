@@ -29,7 +29,7 @@ from beeai_framework.context import Run, RunContext
 from beeai_framework.emitter.emitter import Emitter
 from beeai_framework.errors import FrameworkError
 from beeai_framework.logger import Logger
-from beeai_framework.plugins.plugin import Plugin
+from beeai_framework.plugins.plugin import DataContextPlugin
 from beeai_framework.plugins.types import Pluggable
 from beeai_framework.plugins.utils import plugin, transfer_run_context
 from beeai_framework.retryable import Retryable, RetryableConfig, RetryableContext, RetryableInput
@@ -102,7 +102,8 @@ class Tool(ABC, Generic[TInput, TRunOptions, TOutput, TOutputRaw], Pluggable[TIn
     async def _run(self, input: TInput, options: TRunOptions | None, context: RunContext) -> TOutput:
         pass
 
-    def as_plugin(self) -> Plugin[TInput, TOutputRaw]:
+    def as_plugin(self) -> DataContextPlugin:
+        # TODO: refactor based on new interface
         @plugin(
             name=self.name,
             description=self.description,

@@ -20,14 +20,26 @@ from typing_extensions import TypeVar
 
 from beeai_framework.plugins.plugin import Plugin
 from beeai_framework.registry import Registry
+from beeai_framework.utils import ModelLike
 
-TInput = TypeVar("TInput", bound=BaseModel, default=Any)
-TOutput = TypeVar("TOutput", bound=BaseModel, default=Any)
+
+class DataContext(BaseModel):
+    """Instance of the data exchange object for input and output."""
+
+    data: str | list[Any] | ModelLike[BaseModel]
+    context: dict[str, Any] | None = Field(default={})
+
+
+TInput = TypeVar("TInput", bound=DataContext, default=DataContext)
+TOutput = TypeVar("TOutput", bound=DataContext, default=DataContext)
 
 
 @runtime_checkable
 class Pluggable(Protocol[TInput, TOutput]):
     def as_plugin(self) -> Plugin[TInput, TOutput]: ...
+
+
+DataContextPluggable = Pluggable[DataContext, DataContext]
 
 
 class PluggableInstanceRegistry(Registry[type[Pluggable]]):
@@ -37,9 +49,6 @@ class PluggableInstanceRegistry(Registry[type[Pluggable]]):
 
 
 class PluggableRegistry(Registry[Pluggable]): ...
-
-
-AnyPluggable = Pluggable[Any, Any]
 
 
 class PluginSection(BaseModel):
@@ -78,13 +87,6 @@ class PluginConfig(BaseModel):
     config: dict[Any, Any] | None = {}
     streamlit: dict[Any, Any] | None = {}
     analysis: dict[Any, Any] | None = None
-
-
-class DataContext(BaseModel):
-    """Instance of the data input."""
-
-    data: str | dict[Any, Any] | list[Any]
-    context: dict[Any, Any] | None = Field(default={})
 
 
 class PluggableDef(BaseModel):

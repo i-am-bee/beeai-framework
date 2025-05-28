@@ -210,6 +210,7 @@ class Workflow(Generic[T, K], Pluggable[WorkflowInput[T, K], WorkflowRun[T, K]])
         )
 
     def as_plugin(self) -> Plugin[WorkflowInput[T, K], WorkflowRun[T, K]]:
+        # TODO: add new PluginWorkflow or refactor the interface to use DataContextPlugin
         @plugin(
             name=self.name,
             description="Workflow",  # TODO

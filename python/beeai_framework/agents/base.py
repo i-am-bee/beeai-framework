@@ -15,25 +15,20 @@
 from abc import ABC, abstractmethod
 from collections.abc import Awaitable, Callable
 from functools import cached_property
-from typing import Any, Generic, TypeVar
-
-from pydantic import BaseModel
+from typing import Any, Generic
 
 from beeai_framework.agents.errors import AgentError
 from beeai_framework.agents.types import AgentMeta
 from beeai_framework.context import Run, RunContext
 from beeai_framework.emitter import Emitter
 from beeai_framework.memory import BaseMemory
-from beeai_framework.plugins.plugin import Plugin
-from beeai_framework.plugins.types import Pluggable
-from beeai_framework.plugins.utils import plugin, transfer_run_context
+from beeai_framework.plugins.plugin import DataContextPlugin
+from beeai_framework.plugins.types import Pluggable, TOutput
 from beeai_framework.utils import AbortSignal
-from beeai_framework.utils.models import AnyModel, get_input_schema, to_model
-
-TOutput = TypeVar("TOutput", bound=BaseModel)
+from beeai_framework.utils.models import AnyModel
 
 
-class BaseAgent(ABC, Generic[TOutput], Pluggable[Any, TOutput]):
+class BaseAgent(ABC, Generic[TOutput], Pluggable):
     def __init__(self) -> None:
         super().__init__()
         self._is_running = False
@@ -54,19 +49,23 @@ class BaseAgent(ABC, Generic[TOutput], Pluggable[Any, TOutput]):
     def run(self, *args: Any, **kwargs: Any) -> Run[TOutput]:
         pass
 
-    def as_plugin(self) -> Plugin[Any, TOutput]:
-        @plugin(
-            name=self.meta.name,
-            description=self.meta.description,
-            input_schema=get_input_schema(self.run, excluded={"self"}),
-            output_schema=self.output_schema,
-            emitter=self.emitter.fork(),
-        )
-        async def connector(**kwargs: Any) -> TOutput:
-            output: TOutput = await self.run(**kwargs).middleware(transfer_run_context())
-            return to_model(self.output_schema, output.model_dump())
+    @abstractmethod
+    def as_plugin(self) -> DataContextPlugin:
+        pass
 
-        return connector
+    # def as_plugin(self) -> Plugin[Any, TOutput]:
+    #     @plugin(
+    #         name=self.meta.name,
+    #         description=self.meta.description,
+    #         input_schema=get_input_schema(self.run, excluded={"self"}),
+    #         output_schema=self.output_schema,
+    #         emitter=self.emitter.fork(),
+    #     )
+    #     async def connector(**kwargs: Any) -> TOutput:
+    #         output: TOutput = await self.run(**kwargs).middleware(transfer_run_context())
+    #         return to_model(self.output_schema, output.model_dump())
+
+    #     return connector
 
     def destroy(self) -> None:
         self.emitter.destroy()
