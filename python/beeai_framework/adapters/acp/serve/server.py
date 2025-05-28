@@ -131,6 +131,8 @@ def _react_agent_factory(agent: ReActAgent, *, metadata: ACPServerMetadata | Non
             acp_msg_to_framework_msg(Role(message.parts[0].role), str(message))  # type: ignore[attr-defined]
             for message in input
         ]
+
+        agent.memory.reset()
         await agent.memory.add_many(framework_messages)
 
         async for data, event in agent.run():
@@ -169,6 +171,8 @@ def _tool_calling_agent_factory(
             acp_msg_to_framework_msg(Role(message.parts[0].role), str(message))  # type: ignore[attr-defined]
             for message in input
         ]
+
+        agent.memory.reset()
         await agent.memory.add_many(framework_messages)
 
         last_msg: AnyMessage | None = None

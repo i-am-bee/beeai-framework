@@ -418,7 +418,7 @@ if __name__ == "__main__":
 
 ### A2A Agent
 
-A2AAgent lets you easily connect with external agents using the [Agent2Agent (A2A)](https://google.github.io/A2A).
+A2AAgent lets you easily connect with external agents using the [Agent2Agent (A2A)](https://google-a2a.github.io/A2A).
 
 <!-- embedme examples/agents/providers/a2a_agent.py -->
 

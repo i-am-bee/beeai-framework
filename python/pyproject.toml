@@ -18,7 +18,7 @@ documentation = "https://i-am-bee.github.io/beeai-framework/#/python/"
 
 [tool.poetry.dependencies]
 python = ">= 3.11,<4.0"
-acp-sdk = {version = "~0.8.4", optional = true}
+acp-sdk = {version = "~0.10.0", optional = true}
 a2a-sdk = {version = "~0.2.4", optional = true}
 aiofiles = "^24.1.0"
 boto3 = {version = "^1.37.5", optional = true}
