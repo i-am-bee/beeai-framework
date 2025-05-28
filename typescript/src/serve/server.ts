@@ -19,7 +19,7 @@ export abstract class Server<
   TInternal extends object = object,
   TConfig extends object = object,
 > {
-  private factories = new Map<TInput, (input: TInput) => TInternal>();
+  protected factories = new Map<object, (input: TInput) => Promise<TInternal>>();
 
   protected _members: TInput[] = [];
 
@@ -27,7 +27,7 @@ export abstract class Server<
 
   public registerFactory(
     ref: TInput,
-    factory: (input: TInput) => TInternal,
+    factory: (input: TInput) => Promise<TInternal>,
     override = false,
   ): void {
     if (!this.factories.get(ref) || override) {
@@ -56,8 +56,8 @@ export abstract class Server<
     return this;
   }
 
-  protected getFactory(input: TInput): (input: TInput) => TInternal {
-    const factory = this.factories.get(input);
+  protected getFactory(input: TInput): (input: TInput) => Promise<TInternal> {
+    const factory = this.factories.get(input.constructor);
     if (!factory) {
       throw new Error(`No factory registered for ${input.constructor.name}.`);
     }
