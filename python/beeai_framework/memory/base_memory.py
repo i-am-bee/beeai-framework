@@ -15,7 +15,7 @@
 
 from abc import ABC, abstractmethod
 from collections.abc import Iterable, Iterator
-from typing import TYPE_CHECKING, Self
+from typing import TYPE_CHECKING, Any, Self
 
 from beeai_framework.backend.message import AnyMessage
 
@@ -87,3 +87,9 @@ class BaseMemory(ABC):
 
     async def clone(self) -> Self:
         return type(self)()
+
+    def to_json_safe(self) -> dict[str, Any]:
+        return {
+            "name": type(self).__name__,
+            "messages": self.messages,
+        }
