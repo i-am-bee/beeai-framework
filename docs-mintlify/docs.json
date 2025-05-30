@@ -28,6 +28,7 @@
           "modules/emitter",
           "modules/serialization",
           "modules/tools",
+          "modules/serve",
           "modules/cache",
           "modules/logger",
           "modules/errors",
@@ -37,6 +38,7 @@
       {
         "group": "Guides",
         "pages": [
+          "guides/integrations",
           "guides/slack-integration",
           "guides/beeai-platform-integration"
         ]
