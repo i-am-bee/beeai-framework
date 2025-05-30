@@ -67,7 +67,7 @@ class HumanTool(Tool[HumanToolInput, ToolRunOptions, HumanToolOutput]):
           Final Answer: The French translation of 'Hello, how are you?' is 'Bonjour, comment vas-tu?'
 
     Note: Do NOT attempt to guess or provide incomplete responses. Always use this tool when in doubt to ensure accurate and meaningful interactions.
-"""  # noqa: E501
+"""
 
     def __init__(self, *, reader: Reader, name: str | None = None, description: str | None = None) -> None:
         super().__init__()

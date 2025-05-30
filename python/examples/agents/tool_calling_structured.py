@@ -52,7 +52,7 @@ async def main() -> None:
             "system": lambda template: template.update(
                 defaults={
                     "role": "a weather forecast agent",
-                    "instructions": "- If user only provides a location, assume they want to know the weather forecast for it.",  # noqa: E501
+                    "instructions": "- If user only provides a location, assume they want to know the weather forecast for it.",
                 }
             ),
         },
@@ -69,7 +69,7 @@ async def main() -> None:
 
     # Main interaction loop with user input
     for prompt in reader:
-        reader.write("ℹ️ ", "enter a location for which you would like to get the weather forecast")  # noqa: RUF001
+        reader.write("ℹ️ ", "enter a location for which you would like to get the weather forecast")
         response = await agent.run(prompt, expected_output=WeatherForecatModel).on(
             "*",
             log_intermediate_steps,

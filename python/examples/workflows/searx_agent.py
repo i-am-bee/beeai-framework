@@ -62,7 +62,7 @@ async def main() -> None:
     {{search_results}}
 
     Query: {{input}}
-    """,  # noqa: E501
+    """,
             )
         ).render(
             RAGSchema(

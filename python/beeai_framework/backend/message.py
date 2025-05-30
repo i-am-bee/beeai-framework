@@ -25,6 +25,7 @@ from typing_extensions import TypedDict
 
 from beeai_framework.utils.lists import cast_list
 from beeai_framework.utils.models import to_any_model, to_model
+from beeai_framework.utils.strings import to_json
 
 T = TypeVar("T", bound=BaseModel)
 T2 = TypeVar("T2")
@@ -125,8 +126,11 @@ class Message(ABC, Generic[T]):
             "content": [m.model_dump() for m in self.content],
         }
 
+    def to_json_safe(self) -> Any:
+        return self.to_plain()
+
     def __str__(self) -> str:
-        return json.dumps(self.to_plain())
+        return to_json(self.to_plain(), sort_keys=False)
 
 
 AssistantMessageContent = MessageTextContent | MessageToolCallContent
