@@ -1,0 +1,77 @@
+{
+  "$schema": "https://mintlify.com/docs.json",
+  "theme": "maple",
+  "name": "BeeAI Framework",
+  "colors": {
+    "primary": "#000000",
+    "light": "#c5c5c5",
+    "dark": "#000000"
+  },
+  "favicon": "/favicon.svg",
+  "navigation": {
+    "groups": [
+      {
+        "group": "Introduction",
+        "pages": [
+          "introduction/welcome",
+          "introduction/quickstart"
+        ]
+      },
+      {
+        "group": "Core Concepts",
+        "pages": [
+          "modules/agents",
+          "modules/workflows",
+          "modules/backend",
+          "modules/templates",
+          "modules/memory",
+          "modules/emitter",
+          "modules/serialization",
+          "modules/tools",
+          "modules/cache",
+          "modules/logger",
+          "modules/errors",
+          "modules/events"
+        ]
+      },
+      {
+        "group": "Guides",
+        "pages": [
+          "guides/slack-integration",
+          "guides/beeai-platform-integration"
+        ]
+      },
+      {
+        "group": "Community",
+        "pages": [
+          "community/contribute"
+        ]
+      }
+    ]
+  },
+  "logo": {
+    "light": "/logo/beeai-framework-light.svg",
+    "dark": "/logo/beeai-framework-dark.svg"
+  },
+  "navbar": {
+    "links": [
+      {
+        "label": "Discord",
+        "href": "https://discord.gg/AZFrp3UF5k"
+      }
+    ],
+    "primary": {
+      "type": "button",
+      "label": "GitHub",
+      "href": "https://github.com/i-am-bee/beeai-framework"
+    }
+  },
+  "footer": {
+    "socials": {
+      "github": "https://github.com/i-am-bee/beeai-framework",
+      "discord": "https://discord.gg/NradeA6ZNF",
+      "bluesky": "https://bsky.app/profile/beeaiagents.bsky.social",
+      "youtube": "https://www.youtube.com/@BeeAIAgents"
+    }
+  }
+}
