@@ -1,0 +1,20 @@
+{
+  "name": "@beeai/framework-docs",
+  "version": "0.0.1",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "dev": "mintlify dev --port 3333",
+    "snippets:embed": "yarn exec embedme --source-root=.. ./**/*.mdx",
+    "snippets:check": "yarn exec embedme --source-root=.. ./**/*.mdx --verify",
+    "git:pre-commit": "yarn snippets:check && echo 'OK'"
+  },
+  "keywords": [],
+  "packageManager": "yarn@4.9.1",
+  "author": "BeeAI a Series of LF Projects, LLC",
+  "license": "Apache-2.0",
+  "devDependencies": {
+    "embedme": "^1.22.1",
+    "mintlify": "^4.0.523"
+  }
+}
