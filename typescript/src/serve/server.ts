@@ -32,11 +32,10 @@ export abstract class Server<
 
   public static registerFactory<
     TInput2 extends object,
-    TInternal2 extends object,
-    TConfig2 extends object
+    TInternal2 extends object
   >(
-    this: typeof Server<TInput2, TInternal2, TConfig2>,
-    ref: TInput2,
+    this: typeof Server<TInput2, TInternal2, any>,
+    ref: abstract new (...args: any[]) => TInput2 | (new (...args: any[]) => TInput2) | ((...args: any[]) => TInput2),
     factory: ServerFactory<TInput2, TInternal2>,
     override = false,
   ): void {
@@ -67,7 +66,7 @@ export abstract class Server<
   }
 
   protected getFactory(input: TInput): ServerFactory<TInput, TInternal> {
-    const factory = Object.getPrototypeOf(this).factories.get(input);
+    const factory = (this.constructor as typeof Server).factories.get(input);
     if (!factory) {
       throw new Error(`No factory registered for ${input.constructor.name}.`);
     }
@@ -76,3 +75,4 @@ export abstract class Server<
 
   public abstract serve(): void;
 }
+

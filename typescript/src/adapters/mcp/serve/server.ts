@@ -26,7 +26,7 @@ import {
   ToolCallback,
 } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
-import { Tool } from "@/tools/base.js";
+import { AnyTool, Tool } from "@/tools/base.js";
 import { runServer } from "./http_server.js";
 import { ZodRawShape, ZodType } from "zod";
 import { ToolAnnotations } from "@modelcontextprotocol/sdk/types.js";
@@ -134,7 +134,7 @@ export class MCPServer extends Server<any, MCPServerEntry, MCPServerConfig> {
   }
 
   getFactory(member: any) {
-    const factories = Object.getPrototypeOf(this).factories;
+    const factories = (this.constructor as typeof Server).factories;
     return !factories.has(member.constructor) &&
       member instanceof Tool &&
       factories.has(Tool)
@@ -167,3 +167,5 @@ async function toolFactory(tool: Tool): Promise<MCPServerEntry> {
     },
   };
 }
+
+MCPServer.registerFactory(Tool, toolFactory)
