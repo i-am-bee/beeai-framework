@@ -38,9 +38,9 @@
       {
         "group": "Guides",
         "pages": [
-          "guides/integrations",
           "guides/slack-integration",
-          "guides/beeai-platform-integration"
+          "guides/beeai-platform-integration",
+          "guides/acp"
         ]
       },
       {

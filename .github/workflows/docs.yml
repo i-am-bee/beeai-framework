@@ -1,0 +1,41 @@
+name: Documentation
+
+permissions:
+  contents: read
+
+on:
+  workflow_dispatch:
+  push:
+    branches: ["main"]
+    paths:
+      # TODO: to be updated
+      - 'docs-mintlify/**/*.mdx'
+  pull_request:
+    paths:
+      # TODO: to be updated
+      - 'docs-mintlify/**/*.mdx'
+
+jobs:
+  links:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Link Checker
+        id: lychee
+        uses: lycheeverse/lychee-action@v2
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          fail: true
+          # Only check docs
+          args: |
+            --verbose
+            --no-progress
+            --include-fragments
+            --exclude-path=python
+            --exclude-path=typescript
+            --max-concurrency 10
+            --max-retries 0
+            './**/*.mdx'

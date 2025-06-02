@@ -5,6 +5,7 @@
   "main": "index.js",
   "scripts": {
     "dev": "mintlify dev --port 3333",
+    "links:check": "lychee --verbose --include-fragments ./**/*.mdx --exclude-path=python --exclude-path=typescript",
     "snippets:embed": "yarn exec embedme --source-root=.. ./**/*.mdx",
     "snippets:check": "yarn exec embedme --source-root=.. ./**/*.mdx --verify",
     "git:pre-commit": "yarn snippets:check && echo 'OK'"

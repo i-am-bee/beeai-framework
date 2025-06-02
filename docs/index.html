@@ -19,9 +19,26 @@
       .app-name-link img {
         filter: invert(var(--docs-logo-color-invert));
       }
+      .deprecation-banner {
+        background: #fff3cd;
+        color: #856404;
+        border: 1px solid #ffeeba;
+        padding: 16px;
+        text-align: center;
+        font-size: 1.1em;
+        font-weight: bold;
+        position: fixed;
+        width: 100%;
+        left: 0;
+        top: 0;
+        z-index: 9999;
+      }
     </style>
   </head>
   <body>
+    <div class="deprecation-banner">
+      ⚠️ <strong>This documentation is deprecated.</strong> Please refer to the <a href="https://framework.beeai.dev">new documentation</a>.
+    </div>
     <div id="app"></div>
     <script>
       function fixLinkFactory() {
@@ -94,7 +111,7 @@
                 link.nextSibling.style.display = 'none'
               }
             });
-          }
+          },
         ],
         "markdown": {
           smartypants: true,

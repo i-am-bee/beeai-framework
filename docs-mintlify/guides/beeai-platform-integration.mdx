@@ -3,7 +3,7 @@ title: "BeeAI Platform Integration"
 icon: "server"
 ---
 
-[BeeAI platform](https://beeai.dev/) is an open platform to help you discover, run, and compose AI agents from any framework. This tutorial demonstrates how to integrate BeeAI platform agents with the BeeAI Framework using the `RemoteAgent` class.
+[BeeAI platform](https://beeai.dev/) is an open platform to help you discover, run, and compose AI agents from any framework. This tutorial demonstrates how to integrate BeeAI platform agents with the BeeAI Framework using the `BeeAIPlatformAgent` class.
 
 <Note>
 	BeeAI platform is an open agent platform, while the BeeAI framework is an SDK for developing agents in Python or TypeScript.
@@ -13,17 +13,18 @@ icon: "server"
 
 ## Table of Contents
 
-- [Remote Agent Prerequisites](#remote-agent-prerequisites)
-- [Implementing the Remote Agent](#implementing-the-remote-agent)
-- [Running the Remote Agent](#running-the-remote-agent)
+- [Agent Prerequisites](#agent-prerequisites)
+- [Implementing the agent](#implementing-the-agent)
+- [Running the Agent](#running-the-agent)
 - [Advanced Orchestration](#advanced-orchestration)
 
 ---
 
-### Remote agent prerequisites
+### Agent prerequisites
 
 - **[BeeAI platform](https://beeai.dev/)** installed and running locally
-- **BeeAI framework** installed with `pip install beeai-framework`
+- **BeeAI Framework** installed with `pip install beeai-framework`
+- **BeeAI Framework extension for platform** installed with `pip install 'beeai-framework[beeai-platform]'`
 - Project setup:
     - Create project directory: `mkdir beeai-remote-agent && cd beeai-remote-agent`
     - Set up Python virtual environment: `python -m venv venv && source venv/bin/activate`
@@ -71,9 +72,9 @@ if __name__ == "__main__":
 
 ```
 
-_Source: python/examples/agents/experimental/remote.py_
+_Source: python/examples/agents/providers/beeai_platform.py_
 
-### Running the remote agent
+### Running the agent
 
 Execute your agent with:
 
