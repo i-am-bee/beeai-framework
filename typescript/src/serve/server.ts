@@ -21,15 +21,17 @@ export abstract class Server<
   TInternal extends object = object,
   TConfig extends object = object,
 > {
-  private factories = new Map<TInput, (input: TInput) => TInternal>();
+  // @ts-expect-error
+  private static readonly factories = new Map<TInput, (input: TInput) => TInternal>();
 
   public readonly members: TInput[] = [];
 
   constructor(protected config: TConfig) {}
 
-  public registerFactory(
-    ref: TInput,
-    factory: (input: TInput) => TInternal,
+  public static registerFactory<TInput2 extends object, TInternal2 extends object, TConfig2 extends object>(
+    this: typeof Server<TInput2, TInternal2, TConfig2>,
+    ref: TInput2,
+    factory: (input: TInput2) => TInternal2,
     override = false,
   ): void {
     if (!this.factories.get(ref) || override) {
@@ -59,7 +61,7 @@ export abstract class Server<
   }
 
   protected getFactory(input: TInput): (input: TInput) => TInternal {
-    const factory = this.factories.get(input);
+    const factory = Object.getPrototypeOf(this).factories.get(input);
     if (!factory) {
       throw new Error(`No factory registered for ${input.constructor.name}.`);
     }
