@@ -8,7 +8,7 @@ Welcome to BeeAI framework tutorials! This guide will help you build powerful AI
 
 - [Slack Integration](#slack-integration) → Build a custom AI-powered Slack bot
     - [Slack Agent Prerequisites](#slack-agent-prerequisites)
-    - [Slack Confiuration](#slack-configuration)
+    - [Slack Configuration](#slack-configuration)
     - [Implementing the Slack Agent](#implementing-the-slack-agent)
     - [Running the Slack Agent](#running-the-slack-agent)
 - [BeeAI Platform Integration](#beeai-platform-integration) → Integrate with the BeeAI platform to run agents from any framework
@@ -16,7 +16,7 @@ Welcome to BeeAI framework tutorials! This guide will help you build powerful AI
     - [Implementing the Remote Agent](#implementing-the-remote-agent)
     - [Running the Remote Agent](#running-the-remote-agent)
     - [Advanced Orchestration](#advanced-orchestration)
-      
+
 ---
 
 ## Slack integration
@@ -27,7 +27,7 @@ This tutorial guides you through creating an AI agent that can post messages to 
 
 - **[Python](https://www.python.org/)**: Version 3.11 or higher
 - **[Ollama](https://ollama.com/)**: Installed with the `granite3.1-dense:8b` model pulled
-- **BeeAI framework** installed with `pip install beeai-framework` 
+- **BeeAI framework** installed with `pip install beeai-framework`
 - Project setup:
     - Create project directory: `mkdir beeai-slack-agent && cd beeai-slack-agent`
     - Set up Python virtual environment: `python -m venv venv && source venv/bin/activate`
@@ -65,7 +65,7 @@ The framework doesn't have any specialized tools for using Slack API. However, i
 
 Now, copy and paste the following code into `slack_agent.py` module. Then, follow along with the comments for an explanation.
 
-<!-- embedme examples/tools/mcp_slack_agent.py -->
+{/* <!-- embedme python/examples/tools/mcp_slack_agent.py --> */}
 
 ```python
 import asyncio
@@ -118,7 +118,7 @@ async def create_agent(session: ClientSession) -> ToolCallingAgent:
     # "deepseek-r1"
     # ensure the model is pulled before running
     llm = ChatModel.from_name(
-        "ollama:llama3.1",
+        "ollama:granite3.3:8b",
         ChatModelParameters(temperature=0),
     )
 
@@ -175,7 +175,7 @@ if __name__ == "__main__":
 
 ```
 
-_Source: [examples/tools/mcp_slack_agent.py](/python/examples/tools/mcp_slack_agent.py)_
+_Source: [python/examples/tools/mcp_slack_agent.py](https://github.com/i-am-bee/beeai-framework/blob/main/python/examples/tools/mcp_slack_agent.py)_
 
 ### Running the Slack agent
 
@@ -191,11 +191,13 @@ You will observe the agent:
 - Use the OpenMeteo tool to get the current temperature
 - Use the `slack_post_message` tool to post to the #bee-playground Slack channel
 
-> [!TIP]
-> As you might have noticed, we made some restrictions to make the agent work with smaller models so that it can be executed locally. With larger LLMs, we could further simplify the code, use more tools, and create simpler prompts.
+<Tip>
+As you might have noticed, we made some restrictions to make the agent work with smaller models so that it can be executed locally. With larger LLMs, we could further simplify the code, use more tools, and create simpler prompts.
+</Tip>
 
-> [!TIP]
-> This tutorial can be easily generalized to any MCP server with tools capability. Just plug it into Bee and execute.
+<Tip>
+This tutorial can be easily generalized to any MCP server with tools capability. Just plug it into Bee and execute.
+</Tip>
 
 ---
 
@@ -203,9 +205,9 @@ You will observe the agent:
 
 [BeeAI platform](https://beeai.dev/) is an open platform to help you discover, run, and compose AI agents from any framework. This tutorial demonstrates how to integrate BeeAI platform agents with the BeeAI Framework using the `RemoteAgent` class.
 
-> [!NOTE]
->
-> BeeAI platform is an open agent platform, while the BeeAI framework is an SDK for developing agents in Python or TypeScript. 
+<Note>
+BeeAI platform is an open agent platform, while the BeeAI framework is an SDK for developing agents in Python or TypeScript.
+</Note>
 
 ### Remote agent prerequisites
 
@@ -218,18 +220,18 @@ You will observe the agent:
 
 ### Implementing the remote agent
 
-The `BeeAIPlatformAgent` class allows you to connect to any agent hosted on the BeeAI platform. This means that you can interact with agents built from any framework!
+The `RemoteAgent` class allows you to connect to any agent hosted on the BeeAI platform. This means that you can interact with agents built from any framework!
 
 Here's a simple example that uses the built-in `chat` agent:
 
-<!-- embedme examples/agents/providers/acp.py -->
+{/* <!-- embedme python/examples/agents/providers/beeai_platform.py --> */}
 
 ```py
 import asyncio
 import sys
 import traceback
 
-from beeai_framework.adapters.acp.agents import ACPAgent
+from beeai_framework.adapters.beeai_platform.agents import BeeAIPlatformAgent
 from beeai_framework.errors import FrameworkError
 from beeai_framework.memory.unconstrained_memory import UnconstrainedMemory
 from examples.helpers.io import ConsoleReader
@@ -238,7 +240,7 @@ from examples.helpers.io import ConsoleReader
 async def main() -> None:
     reader = ConsoleReader()
 
-    agent = BeeAIPlatformAgent(agent_name="chat", url="http://127.0.0.1:8000", memory=UnconstrainedMemory())
+    agent = BeeAIPlatformAgent(agent_name="chat", url="http://127.0.0.1:8333/api/v1/acp/", memory=UnconstrainedMemory())
     for prompt in reader:
         # Run the agent and observe events
         response = await agent.run(prompt).on(
@@ -258,7 +260,7 @@ if __name__ == "__main__":
 
 ```
 
-_Source: examples/agents/providers/acp.py_
+_Source: examples/agents/experimental/remote.py_
 
 ### Running the remote agent
 
@@ -272,11 +274,11 @@ python my_agents/remote_agent.py
 
 You can compose multiple BeeAI platform agents into advanced workflows using the BeeAI framework's workflow capabilities. This example demonstrates a research and content creation pipeline:
 
-In this example, the `gpt-researcher` agent researches a topic, and the `podcast-creator` takes the research report and produces a podcast transcript. 
+In this example, the `gpt-researcher` agent researches a topic, and the `podcast-creator` takes the research report and produces a podcast transcript.
 
 You can adjust or expand this pattern to orchestrate more complex multi agent workflows.
 
-<!-- embedme examples/workflows/remote.py -->
+{/* <!-- embedme python/examples/workflows/remote.py --> */}
 
 ```py
 import asyncio
@@ -345,10 +347,4 @@ if __name__ == "__main__":
 
 ```
 
-_Source: examples/workflows/remote.py_
-
-### Expose the agent to the platform
-
-The framework's agent can be easily exposed to the BeeAI platform.
-
-<!-- embedme examples/serve/acp.py -->
+_Source: python/examples/workflows/remote.py_

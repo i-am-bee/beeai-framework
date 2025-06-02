@@ -119,6 +119,8 @@ class DefaultRunner(BaseRunner):
                 ),
             },
             options=LinePrefixParserOptions(
+                wait_for_start_node=True,
+                end_on_repeat=True,
                 fallback=lambda value: [
                     {"key": "thought", "value": "I now know the final answer."},
                     {"key": "final_answer", "value": value},
