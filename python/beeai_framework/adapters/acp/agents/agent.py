@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import uuid
 from functools import reduce
 
 from beeai_framework.utils.strings import to_safe_word
@@ -48,6 +49,7 @@ class ACPAgent(BaseAgent[ACPAgentRunOutput]):
         self._memory = memory
         self._url = url
         self._name = agent_name
+        self._session_id: acp_models.SessionId | None = None
 
     @property
     def name(self) -> str:
@@ -58,9 +60,15 @@ class ACPAgent(BaseAgent[ACPAgentRunOutput]):
         input: str | AnyMessage | acp_models.Message | list[str] | list[AnyMessage] | list[acp_models.Message],
         *,
         signal: AbortSignal | None = None,
+        session_id: uuid.UUID | acp_models.SessionId | None = None,
     ) -> Run[ACPAgentRunOutput]:
         async def handler(context: RunContext) -> ACPAgentRunOutput:
-            async with acp_client.Client(base_url=self._url) as client:
+            if self._session_id is None or session_id is not None:
+                self._session_id = session_id or uuid.uuid4()
+            async with (
+                acp_client.Client(base_url=self._url) as client,
+                client.session(session_id=self._session_id) as session,
+            ):
                 inputs = (
                     [self._convert_to_platform_message(i) for i in input]
                     if isinstance(input, list)
@@ -68,7 +76,7 @@ class ACPAgent(BaseAgent[ACPAgentRunOutput]):
                 )
 
                 last_event = None
-                async for event in client.run_stream(agent=self._name, input=inputs):
+                async for event in session.run_stream(agent=self._name, input=inputs):
                     last_event = event
                     await context.emitter.emit(
                         "update",
