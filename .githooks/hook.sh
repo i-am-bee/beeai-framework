@@ -19,6 +19,10 @@ HAS_TS_FILES=$(echo "$STAGED_FILES" | grep -q "^$TS_DIR/" && echo 1 || echo 0)
 PY_DIR="python"
 HAS_PY_FILES=$(echo "$STAGED_FILES" | grep -q "^$PY_DIR/" && echo 1 || echo 0)
 
+# TODO: rename after replacing the current 'docs' directory
+DOCS_DIR="docs-mintlify"
+HAS_DOCS_FILES=$(echo "$STAGED_FILES" | grep -q "^$DOCS_DIR/" && echo 1 || echo 0)
+
 # Run hooks based on staged files
 if [ "$HAS_TS_FILES" -eq 1  ] && grep -q "\"git:$HOOK_NAME\"" "$TS_DIR/package.json"; then
   echo "Running $HOOK_NAME hook in $TS_DIR..."
@@ -31,6 +35,14 @@ if [ "$HAS_PY_FILES" -eq 1 ]; then
   echo "Running Python $HOOK_NAME hook..."
   HOOK_ARGS_SCOPED=$(echo "$HOOK_ARGS" | sed 's/[^ ]* */..\/&/g' | sed 's/..\/python\///g')
   (cd "$PY_DIR" && poetry run poe git --hook "$HOOK_NAME" "$HOOK_ARGS_SCOPED") || exit $?
+  echo "$STAGED_EXISTING_FILES" | xargs -r git add
+fi
+
+if [ "$HAS_DOCS_FILES" -eq 1  ] && grep -q "\"git:$HOOK_NAME\"" "$DOCS_DIR/package.json"; then
+  echo "Running $HOOK_NAME hook in $DOCS_DIR..."
+  # TODO: rename after replacing the current 'docs' directory
+  HOOK_ARGS_SCOPED=$(echo "$HOOK_ARGS" | sed 's/[^ ]* */..\/&/g' | sed 's/..\/docs-mintlify\///g')
+  (cd "$DOCS_DIR" && npm run "git:$HOOK_NAME" "$HOOK_ARGS_SCOPED") || exit $?
   echo "$STAGED_EXISTING_FILES" | xargs -r git add
 fi
 

@@ -6,7 +6,7 @@ import { TokenMemory } from "beeai-framework/memory/tokenMemory";
 
 const agentName = "chat";
 
-const instance = new ACPAgent({
+const agent = new ACPAgent({
   url: "http://127.0.0.1:8000",
   agentName,
   memory: new TokenMemory(),
@@ -16,7 +16,7 @@ const reader = createConsoleReader();
 
 try {
   for await (const { prompt } of reader) {
-    const result = await instance.run({ input: prompt }).observe((emitter) => {
+    const result = await agent.run({ input: prompt }).observe((emitter) => {
       emitter.on("update", (data) => {
         reader.write(`Agent (received progress) 🤖 : `, JSON.stringify(data.value, null, 2));
       });

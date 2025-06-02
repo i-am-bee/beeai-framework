@@ -118,7 +118,7 @@ async def create_agent(session: ClientSession) -> ToolCallingAgent:
     # "deepseek-r1"
     # ensure the model is pulled before running
     llm = ChatModel.from_name(
-        "ollama:llama3.1",
+        "ollama:granite3.3:8b",
         ChatModelParameters(temperature=0),
     )
 
@@ -218,7 +218,7 @@ You will observe the agent:
 
 ### Implementing the remote agent
 
-The `RemoteAgent` class allows you to connect to any agent hosted on the BeeAI platform. This means that you can interact with agents built from any framework!
+The `BeeAIPlatformAgent` class allows you to connect to any agent hosted on the BeeAI platform. This means that you can interact with agents built from any framework!
 
 Here's a simple example that uses the built-in `chat` agent:
 

@@ -96,8 +96,6 @@ export class MCPServer extends Server<any, MCPServerEntry, MCPServerConfig> {
       version: this.config.version,
       ...this.config.settings,
     });
-
-    this.registerFactory(Tool, toolFactory);
   }
 
   async serve() {
@@ -136,10 +134,11 @@ export class MCPServer extends Server<any, MCPServerEntry, MCPServerConfig> {
   }
 
   getFactory(member: any) {
-    return !this.factories.has(member.constructor) &&
+    const factories = Object.getPrototypeOf(this).factories;
+    return !factories.has(member.constructor) &&
       member instanceof Tool &&
-      this.factories.has(Tool)
-      ? this.factories.get(Tool)!
+      factories.has(Tool)
+      ? factories.get(Tool)!
       : super.getFactory(member);
   }
 }

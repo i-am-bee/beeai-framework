@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
+import { removeFromArray } from "@/internals/helpers/array.js";
+
 type ServerFactory<TInput, TInternal> = (input: TInput) => Promise<TInternal>;
 
 export abstract class Server<
@@ -21,15 +23,21 @@ export abstract class Server<
   TInternal extends object = object,
   TConfig extends object = object,
 > {
-  protected factories = new Map<object, ServerFactory<TInput, TInternal>>();
+  // @ts-expect-error
+  public static readonly factories = new Map<object, ServerFactory<TInput, TInternal>>();
 
-  private _members: TInput[] = [];
+  public readonly members: TInput[] = [];
 
   constructor(protected config: TConfig) {}
 
-  public registerFactory(
-    ref: TInput,
-    factory: ServerFactory<TInput, TInternal>,
+  public static registerFactory<
+    TInput2 extends object,
+    TInternal2 extends object,
+    TConfig2 extends object
+  >(
+    this: typeof Server<TInput2, TInternal2, TConfig2>,
+    ref: TInput2,
+    factory: ServerFactory<TInput2, TInternal2>,
     override = false,
   ): void {
     if (!this.factories.get(ref) || override) {
@@ -42,8 +50,8 @@ export abstract class Server<
   public register(input: TInput): this {
     // check if the type has a factory registered
     this.getFactory(input);
-    if (!this._members.includes(input)) {
-      this._members.push(input);
+    if (!this.members.includes(input)) {
+      this.members.push(input);
     }
     return this;
   }
@@ -54,20 +62,16 @@ export abstract class Server<
   }
 
   public deregister(input: TInput): this {
-    this._members = this._members.filter((member) => member !== input);
+    removeFromArray(this.members, input);
     return this;
   }
 
   protected getFactory(input: TInput): ServerFactory<TInput, TInternal> {
-    const factory = this.factories.get(input.constructor);
+    const factory = Object.getPrototypeOf(this).factories.get(input);
     if (!factory) {
       throw new Error(`No factory registered for ${input.constructor.name}.`);
     }
     return factory;
-  }
-
-  public get members(): TInput[] {
-    return this._members;
   }
 
   public abstract serve(): void;
