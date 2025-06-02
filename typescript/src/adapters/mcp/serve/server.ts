@@ -135,15 +135,13 @@ export class MCPServer extends Server<any, MCPServerEntry, MCPServerConfig> {
 
   getFactory(member: any) {
     const factories = (this.constructor as typeof Server).factories;
-    return !factories.has(member.constructor) &&
-      member instanceof Tool &&
-      factories.has(Tool)
+    return !factories.has(member.constructor) && member instanceof Tool && factories.has(Tool)
       ? factories.get(Tool)!
       : super.getFactory(member);
   }
 }
 
-async function toolFactory(tool: Tool): Promise<MCPServerEntry> {
+async function toolFactory(tool: AnyTool): Promise<MCPServerEntry> {
   const schema = await tool.inputSchema();
   if (!(schema instanceof ZodType)) {
     throw new ValueError("JsonSchema is not supported for MCP tools.");
@@ -168,4 +166,4 @@ async function toolFactory(tool: Tool): Promise<MCPServerEntry> {
   };
 }
 
-MCPServer.registerFactory(Tool, toolFactory)
+MCPServer.registerFactory(Tool, toolFactory);

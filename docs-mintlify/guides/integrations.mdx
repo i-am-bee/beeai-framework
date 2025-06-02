@@ -385,8 +385,10 @@ Key benefits
 - Register multiple tools on a single server
 - Custom server settings and instructions
 
+<CodeGroup>
+
 {/* <!-- embedme python/examples/serve/mcp_tool.py --> */}
-```py
+```py Python
 from mcp.server.fastmcp.server import Settings
 
 from beeai_framework.adapters.mcp.serve.server import MCPServer, MCPServerConfig
@@ -415,9 +417,47 @@ if __name__ == "__main__":
 
 ```
 
+{/* <!-- embedme typescript/examples/serve/mcp_tool.ts --> */}
+```ts TypeScript
+import { StringToolOutput, Tool, ToolEmitter, ToolInput } from "beeai-framework/tools/base";
+import { OpenMeteoTool } from "beeai-framework/tools/weather/openMeteo";
+import { MCPServer, MCPServerConfig } from "beeai-framework/adapters/mcp/serve/server";
+import { Emitter } from "beeai-framework/emitter/emitter";
+import { z } from "zod";
+
+export class ReverseTool extends Tool<StringToolOutput> {
+  name = "ReverseTool";
+  description = "A tool that reverses a word";
+
+  public readonly emitter: ToolEmitter<ToolInput<this>, StringToolOutput> = Emitter.root.child({
+    namespace: ["tool", "reverseTool"],
+    creator: this,
+  });
+
+  inputSchema() {
+    return z.object({
+      word: z.string(),
+    });
+  }
+
+  protected async _run(input: ToolInput<this>): Promise<StringToolOutput> {
+    return new StringToolOutput(input.word.split("").reverse().join(""));
+  }
+}
+
+//  create a MCP server with custom config, register reverseTool and OpenMeteoTool to the MCP server and run it
+await new MCPServer(new MCPServerConfig({ transport: "sse" }))
+  .registerMany([new ReverseTool(), new OpenMeteoTool()])
+  .serve();
+```
+
+</CodeGroup>
+
 The MCP adapter uses the MCPServerConfig class to configure the MCP server:
 
-```py
+<CodeGroup>
+
+```py Python
 class MCPServerConfig(BaseModel):
     """Configuration for the MCPServer."""
     transport: Literal["stdio", "sse"] = "stdio"  # Transport protocol (stdio or server-sent events)
@@ -426,13 +466,28 @@ class MCPServerConfig(BaseModel):
     settings: mcp_server.Settings[Any] = Field(default_factory=lambda: mcp_server.Settings())
 ```
 
+```ts TypeScript
+export class MCPServerConfig {
+  transport: "stdio" | "sse" = "stdio";
+  hostname = "127.0.0.1";
+  port = 3000;
+  name = "MCP Server";
+  version = "1.0.0";
+  settings?: ServerOptions;
+}
+```
+
+</CodeGroup>
+
 Transport Options
 - stdio: Uses standard input/output for communication (default)
 - sse: Uses server-sent events over HTTP
 
 Creating an MCP server is easy. You instantiate the MCPServer class with your configuration, register your tools, and then call serve() to start the server:
 
-```py
+<CodeGroup>
+
+```py Python
 from beeai_framework.adapters.mcp import MCPServer, MCPServerConfig
 from beeai_framework.tools.weather import OpenMeteoTool
 
@@ -446,9 +501,27 @@ server.register(OpenMeteoTool())
 server.serve()
 ```
 
+```ts Typescript
+import { OpenMeteoTool } from "beeai-framework/tools/weather/openMeteo";
+import { MCPServer } from "beeai-framework/adapters/mcp/serve/server";
+
+// Create an MCP server with default configuration
+const server = new MCPServer()
+
+// Register tools
+server.register(new OpenMeteoTool())
+
+// Start serving
+await server.serve();
+```
+
+</CodeGroup>
+
 You can configure the server behavior by passing a custom configuration:
 
-```py
+<CodeGroup>
+
+```py Python
 from beeai_framework.adapters.mcp import MCPServer
 from beeai_framework.tools.weather import OpenMeteoTool
 from beeai_framework.tools.search.wikipedia import WikipediaTool
@@ -466,6 +539,21 @@ def main():
 if __name__ == "__main__":
     main()
 ```
+
+```ts TypeScript
+import { OpenMeteoTool } from "beeai-framework/tools/weather/openMeteo";
+import { MCPServer } from "beeai-framework/adapters/mcp/serve/server";
+import { WikipediaTool } from "beeai-framework/tools/search/wikipedia";
+import { DuckDuckGoSearchTool } from "beeai-framework/tools/search/duckDuckGoSearch";
+
+const server = new MCPServer();
+
+server.registerMany([new OpenMeteoTool(), new WikipediaTool(), new DuckDuckGoSearchTool()]);
+
+await server.serve();
+```
+
+</CodeGroup>
 
 <Tip>
 MCPTool lets you add MCP-compatible tools to any agent, see Tools documentation to learn more.

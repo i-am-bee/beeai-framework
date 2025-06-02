@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
+// Taken from: https://github.com/modelcontextprotocol/typescript-sdk/blob/main/src/examples/shared/inMemoryEventStore.ts
+
 import { EventStore } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
 import { JSONRPCMessage } from "@modelcontextprotocol/sdk/types.js";
 

@@ -17,6 +17,9 @@
 import { removeFromArray } from "@/internals/helpers/array.js";
 
 type ServerFactory<TInput, TInternal> = (input: TInput) => Promise<TInternal>;
+export type FactoryMember<TInput> = abstract new (
+  ...args: any[]
+) => TInput | (new (...args: any[]) => TInput) | ((...args: any[]) => TInput);
 
 export abstract class Server<
   TInput extends object = object,
@@ -30,12 +33,9 @@ export abstract class Server<
 
   constructor(protected config: TConfig) {}
 
-  public static registerFactory<
-    TInput2 extends object,
-    TInternal2 extends object
-  >(
+  public static registerFactory<TInput2 extends object, TInternal2 extends object>(
     this: typeof Server<TInput2, TInternal2, any>,
-    ref: abstract new (...args: any[]) => TInput2 | (new (...args: any[]) => TInput2) | ((...args: any[]) => TInput2),
+    ref: FactoryMember<TInput2>,
     factory: ServerFactory<TInput2, TInternal2>,
     override = false,
   ): void {
@@ -75,4 +75,3 @@ export abstract class Server<
 
   public abstract serve(): void;
 }
-

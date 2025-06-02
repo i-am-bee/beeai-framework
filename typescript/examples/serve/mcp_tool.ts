@@ -15,7 +15,7 @@ export class ReverseTool extends Tool<StringToolOutput> {
 
   inputSchema() {
     return z.object({
-      word: z.string()
+      word: z.string(),
     });
   }
 
