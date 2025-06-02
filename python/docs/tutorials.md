@@ -118,7 +118,7 @@ async def create_agent(session: ClientSession) -> ToolCallingAgent:
     # "deepseek-r1"
     # ensure the model is pulled before running
     llm = ChatModel.from_name(
-        "ollama:llama3.1",
+        "ollama:granite3.3:8b",
         ChatModelParameters(temperature=0),
     )
 
@@ -238,7 +238,7 @@ from examples.helpers.io import ConsoleReader
 async def main() -> None:
     reader = ConsoleReader()
 
-    agent = BeeAIPlatformAgent(agent_name="chat", url="http://127.0.0.1:8000", memory=UnconstrainedMemory())
+    agent = ACPAgent(agent_name="chat", url="http://127.0.0.1:8000", memory=UnconstrainedMemory())
     for prompt in reader:
         # Run the agent and observe events
         response = await agent.run(prompt).on(

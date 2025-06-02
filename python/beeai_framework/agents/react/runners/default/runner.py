@@ -126,7 +126,7 @@ class DefaultRunner(BaseRunner):
                     {"key": "final_answer", "value": value},
                 ]
                 if value
-                else []
+                else [],
             ),
         )
 
