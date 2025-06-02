@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
+import { removeFromArray } from "@/internals/helpers/array.js";
+
 export abstract class Server<
   TInput extends object = object,
   TInternal extends object = object,
@@ -21,7 +23,7 @@ export abstract class Server<
 > {
   private factories = new Map<TInput, (input: TInput) => TInternal>();
 
-  protected _members: TInput[] = [];
+  public readonly members: TInput[] = [];
 
   constructor(protected config: TConfig) {}
 
@@ -40,8 +42,8 @@ export abstract class Server<
   public register(input: TInput): this {
     // check if the type has a factory registered
     this.getFactory(input);
-    if (!this._members.includes(input)) {
-      this._members.push(input);
+    if (!this.members.includes(input)) {
+      this.members.push(input);
     }
     return this;
   }
@@ -52,7 +54,7 @@ export abstract class Server<
   }
 
   public deregister(input: TInput): this {
-    this._members = this._members.filter((member) => member !== input);
+    removeFromArray(this.members, input);
     return this;
   }
 
@@ -62,10 +64,6 @@ export abstract class Server<
       throw new Error(`No factory registered for ${input.constructor.name}.`);
     }
     return factory;
-  }
-
-  public get members(): TInput[] {
-    return this._members;
   }
 
   public abstract serve(): void;
