@@ -28,7 +28,11 @@ export abstract class Server<
 
   constructor(protected config: TConfig) {}
 
-  public static registerFactory<TInput2 extends object, TInternal2 extends object, TConfig2 extends object>(
+  public static registerFactory<
+    TInput2 extends object,
+    TInternal2 extends object,
+    TConfig2 extends object,
+  >(
     this: typeof Server<TInput2, TInternal2, TConfig2>,
     ref: TInput2,
     factory: (input: TInput2) => TInternal2,

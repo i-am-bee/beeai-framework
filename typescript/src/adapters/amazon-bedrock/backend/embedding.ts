@@ -36,8 +36,3 @@ export class BedrockEmbeddingModel extends VercelEmbeddingModel {
     super(model);
   }
 }
-
-const x = new BedrockEmbeddingModel()
-x.create({
-  v
-})
