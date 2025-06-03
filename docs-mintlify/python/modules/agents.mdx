@@ -329,7 +329,7 @@ class CustomAgent(BaseAgent[CustomAgentRunOutput]):
 
 async def main() -> None:
     agent = CustomAgent(
-        llm=OllamaChatModel("granite3.1-dense:8b"),
+        llm=OllamaChatModel("granite3.3:8b"),
         memory=UnconstrainedMemory(),
     )
 
@@ -370,7 +370,7 @@ memory = UnconstrainedMemory()
 
 
 def create_agent() -> ReActAgent:
-    llm = ChatModel.from_name("ollama:granite3.1-dense:8b")
+    llm = ChatModel.from_name("ollama:granite3.3:8b")
 
     # Initialize the agent
     agent = ReActAgent(llm=llm, memory=memory, tools=[])

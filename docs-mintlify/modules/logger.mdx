@@ -143,7 +143,7 @@ from beeai_framework.memory import UnconstrainedMemory
 async def main() -> None:
     logger = Logger("app", level="TRACE")
 
-    agent = ReActAgent(llm=ChatModel.from_name("ollama:granite3.1-dense:8b"), tools=[], memory=UnconstrainedMemory())
+    agent = ReActAgent(llm=ChatModel.from_name("ollama:granite3.3:8b"), tools=[], memory=UnconstrainedMemory())
 
     output: ReActAgentRunOutput = await agent.run("Hello!").observe(
         lambda emitter: emitter.on(

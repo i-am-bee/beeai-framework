@@ -39,7 +39,7 @@ E2E Tests
 @pytest.mark.asyncio
 @pytest.mark.e2e
 async def test_runner_init() -> None:
-    llm: ChatModel = ChatModel.from_name("ollama:granite3.1-dense:8b")
+    llm: ChatModel = ChatModel.from_name("ollama:granite3.3:8b")
 
     input = ReActAgentInput(
         llm=llm,

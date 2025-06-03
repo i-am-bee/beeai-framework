@@ -204,7 +204,7 @@ def basic_calculator(expression: str) -> StringToolOutput:
 async def main() -> None:
     # using the tool in an agent
 
-    chat_model = ChatModel.from_name("ollama:granite3.1-dense:8b")
+    chat_model = ChatModel.from_name("ollama:granite3.3:8b")
 
     agent = ReActAgent(llm=chat_model, tools=[basic_calculator], memory=UnconstrainedMemory())
 
@@ -247,7 +247,7 @@ from beeai_framework.tools.search.duckduckgo import DuckDuckGoSearchTool
 
 
 async def main() -> None:
-    chat_model = ChatModel.from_name("ollama:granite3.1-dense:8b")
+    chat_model = ChatModel.from_name("ollama:granite3.3:8b")
     agent = ReActAgent(llm=chat_model, tools=[DuckDuckGoSearchTool()], memory=UnconstrainedMemory())
 
     result = await agent.run("How tall is the mount Everest?")
@@ -288,7 +288,7 @@ from beeai_framework.tools.weather import OpenMeteoTool
 
 
 async def main() -> None:
-    llm = ChatModel.from_name("ollama:granite3.1-dense:8b")
+    llm = ChatModel.from_name("ollama:granite3.3:8b")
     agent = ReActAgent(llm=llm, tools=[OpenMeteoTool()], memory=UnconstrainedMemory())
 
     result = await agent.run("What's the current weather in London?")

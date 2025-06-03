@@ -143,7 +143,7 @@ _Source: [python/examples/workflows/multi_agents_simple.py](/python/examples/wor
 
 > [!Note]
 >
-> To run this example, be sure that you have installed [ollama](https://ollama.com) with the [granite3.1-dense:8b](https://ollama.com/library/granite3.1-dense) model downloaded.
+> To run this example, be sure that you have installed [ollama](https://ollama.com) with the [granite3.3:8b](https://ollama.com/library/granite3.3:8b) model downloaded.
 
 To run projects, use:
 

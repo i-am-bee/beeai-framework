@@ -10,7 +10,7 @@ from beeai_framework.tools.weather import OpenMeteoTool
 
 
 async def main() -> None:
-    llm = ChatModel.from_name("ollama:granite3.1-dense:8b")
+    llm = ChatModel.from_name("ollama:granite3.3:8b")
     agent = ReActAgent(llm=llm, tools=[OpenMeteoTool()], memory=UnconstrainedMemory())
 
     result = await agent.run("What's the current weather in London?")

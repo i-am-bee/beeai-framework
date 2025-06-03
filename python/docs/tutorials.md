@@ -26,7 +26,7 @@ This tutorial guides you through creating an AI agent that can post messages to 
 ### Slack agent prerequisites
 
 - **[Python](https://www.python.org/)**: Version 3.11 or higher
-- **[Ollama](https://ollama.com/)**: Installed with the `granite3.1-dense:8b` model pulled
+- **[Ollama](https://ollama.com/)**: Installed with the `granite3.3:8b` model pulled
 - **BeeAI framework** installed with `pip install beeai-framework` 
 - Project setup:
     - Create project directory: `mkdir beeai-slack-agent && cd beeai-slack-agent`

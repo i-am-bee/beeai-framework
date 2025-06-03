@@ -76,7 +76,7 @@ async function createWikipediaRetrivalTool(
 }
 
 // Agent LLM
-const llm = await ChatModel.fromName("ollama:granite3.1-dense:8b", {
+const llm = await ChatModel.fromName("ollama:granite3.3:8b", {
   temperature: 0,
   maxTokens: 2048,
 });

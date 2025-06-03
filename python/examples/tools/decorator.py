@@ -47,7 +47,7 @@ def basic_calculator(expression: str) -> StringToolOutput:
 async def main() -> None:
     # using the tool in an agent
 
-    chat_model = ChatModel.from_name("ollama:granite3.1-dense:8b")
+    chat_model = ChatModel.from_name("ollama:granite3.3:8b")
 
     agent = ReActAgent(llm=chat_model, tools=[basic_calculator], memory=UnconstrainedMemory())
 

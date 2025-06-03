@@ -113,11 +113,11 @@ def create_agent() -> ReActAgent:
 
     # Other models to try:
     # "llama3.1"
-    # "granite3.1-dense"
+    # "granite3.3:8b"
     # "deepseek-r1"
     # ensure the model is pulled before running
     llm = ChatModel.from_name(
-        "ollama:granite3.1-dense:8b",
+        "ollama:granite3.3:8b",
         ChatModelParameters(temperature=0),
     )
 
@@ -543,7 +543,7 @@ class CustomAgent(BaseAgent[CustomAgentRunOutput]):
 
 async def main() -> None:
     agent = CustomAgent(
-        llm=OllamaChatModel("granite3.1-dense:8b"),
+        llm=OllamaChatModel("granite3.3:8b"),
         memory=UnconstrainedMemory(),
     )
 
@@ -584,7 +584,7 @@ memory = UnconstrainedMemory()
 
 
 def create_agent() -> ReActAgent:
-    llm = ChatModel.from_name("ollama:granite3.1-dense:8b")
+    llm = ChatModel.from_name("ollama:granite3.3:8b")
 
     # Initialize the agent
     agent = ReActAgent(llm=llm, memory=memory, tools=[])

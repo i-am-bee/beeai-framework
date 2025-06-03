@@ -7,7 +7,7 @@ from beeai_framework.tools.weather import OpenMeteoTool
 
 
 def main() -> None:
-    llm = ChatModel.from_name("ollama:granite3.1-dense:8b")
+    llm = ChatModel.from_name("ollama:granite3.3:8b")
     agent = ToolCallingAgent(
         llm=llm,
         tools=[DuckDuckGoSearchTool(), OpenMeteoTool()],
