@@ -4,10 +4,6 @@ icon: "robot"
 ---
 
 <Note>
-**Location within the framework:** [`beeai_framework/agents/experimental`](/python/beeai_framework/agents/experimental).
-</Note>
-
-<Note>
 This is an experimental feature and will evolve based on community feedback.
 </Note>
 
@@ -32,12 +28,17 @@ agent = RequirementAgent(
 )
 ```
 
+Congratulations! You now have an agent that will plan your evening. The agent first thinks, and then either produces an answer or calls the OpenMeteoTool, followed by DuckDuckGo.
+Let's execute the agent while logging all intermediate steps.
+
 ```py
-response = await agent.run("What to do in Boston?").middleware(GlobalTrajectoryMiddleware())
+response = await agent.run("What to do in Boston?")
+  .middleware(GlobalTrajectoryMiddleware())
+
 print(response.result.text)
 ```
 
-➡️ Check out more [examples](/python/examples/experimental/requirement) (multi-agent, custom requirements, ...).
+➡️ Check out more [examples](https://github.com/i-am-bee/beeai-framework/tree/main/python/examples/agents/experimental/requirement) (multi-agent, custom requirements, ...).
 
 ## 💬 Motivation
 
@@ -228,9 +229,24 @@ If no targets are specified, permission is required for all tools.
 
 #### Writing Your Own Requirement
 
-You can create a custom requirement by implementing the base `Requirement` class.
+You can create a custom requirement by implementing the base Requirement class.
+The Requirement class has the following lifecycle:
 
-The following example demonstrates how to write a requirement that prevents the agent from answering if the question contains a certain phrase.
+1. An external caller invokes init(tools):
+- `tools` is a list of available tools for a given agent.
+- This method is called only once, at the very beginning.
+- It is an ideal place to introduce hooks, validate the presence of certain tools, etc.
+- The return type of the `init` method is `None`.
+
+2. An external caller invokes run(state):
+- `state` is a generic parameter; in `RequirementAgent`, it refers to the `RequirementAgentRunState` class.
+- This method is called multiple times, typically before an LLM call.
+- The return type of the `run` method is a list of rules.
+
+
+**PrematureStopRequirement Example**
+
+The following example demonstrates how to write a requirement that prevents the agent from answering if the question contains a specific phrase.
 
 {/* <!-- embedme python/examples/agents/experimental/requirement/custom_requirement.py --> */}
 
@@ -293,7 +309,7 @@ if __name__ == "__main__":
 
 <CardGroup cols={2}>
 	<Card title="Python" icon="python" href="https://github.com/i-am-bee/beeai-framework/tree/main/python/examples/agents/experimental/requirement">
-		Explore reference examples in Python
+		Explore examples in Python
 	</Card>
 	<Card title="TypeScript" icon="js">
 		Coming soon

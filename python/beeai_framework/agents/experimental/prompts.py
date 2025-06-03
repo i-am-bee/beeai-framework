@@ -18,6 +18,7 @@ from typing import Self
 
 from pydantic import BaseModel
 
+from beeai_framework.agents.experimental.utils._tool import ToolInvocationResult
 from beeai_framework.template import PromptTemplate, PromptTemplateInput
 from beeai_framework.tools import AnyTool
 from beeai_framework.utils.strings import to_json
@@ -52,7 +53,7 @@ RequirementAgentSystemPrompt = PromptTemplate(
     PromptTemplateInput(
         schema=RequirementAgentSystemPromptInput,
         functions={"formatDate": lambda data: datetime.now(tz=UTC).strftime("%Y-%m-%d")},
-        defaults={"role": "a helpful AI assistant", "instructions": "", "notes": ""},
+        defaults={"role": "a helpful AI assistant", "instructions": ""},
         template="""# Role
 Assume the role of {{role}}.
 
@@ -112,8 +113,8 @@ class RequirementAgentTaskPromptInput(BaseModel):
 RequirementAgentTaskPrompt = PromptTemplate(
     PromptTemplateInput(
         schema=RequirementAgentTaskPromptInput,
-        template="""{{#context}}This is the context that you are working with:
-{{.}}
+        template="""{{#context}}This is the context relevant to the task:
+{{&.}}
 
 {{/context}}
 {{#expected_output}}
@@ -152,5 +153,17 @@ RequirementAgentCycleDetectionPrompt = PromptTemplate(
     PromptTemplateInput(
         schema=RequirementAgentCycleDetectionPromptInput,
         template="""I can't see your answer. You must use the '{{final_answer_name}}' tool to send me a message.""",
+    )
+)
+
+
+class RequirementAgentToolNoResultTemplateInput(BaseModel):
+    tool_call: ToolInvocationResult
+
+
+RequirementAgentToolNoResultPrompt = PromptTemplate(
+    PromptTemplateInput(
+        schema=RequirementAgentToolNoResultTemplateInput,
+        template="""No results were found! Try to reformulate your query.""",
     )
 )

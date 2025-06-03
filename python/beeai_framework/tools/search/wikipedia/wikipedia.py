@@ -30,7 +30,7 @@ from beeai_framework.tools.types import ToolRunOptions
 
 
 class WikipediaToolInput(BaseModel):
-    query: str = Field(description="Search query, name of the Wikipedia page.")
+    query: str = Field(description="Short search query or name of the Wikipedia page.")
     full_text: bool = Field(
         description="If set to true, it will return the full text of the page instead of its summary.",
         default=False,

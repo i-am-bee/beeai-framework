@@ -45,6 +45,8 @@ from beeai_framework.backend.chat import ChatModel
 from beeai_framework.backend.message import (
     AssistantMessage,
     MessageToolCallContent,
+    MessageToolResultContent,
+    ToolMessage,
     UserMessage,
 )
 from beeai_framework.backend.utils import parse_broken_json
@@ -81,6 +83,7 @@ class RequirementAgent(BaseAgent[RequirementAgentRunOutput]):
         final_answer_as_tool: bool = True,
         save_intermediate_steps: bool = True,
         templates: dict[RequirementAgentTemplatesKeys, PromptTemplate[Any] | RequirementAgentTemplateFactory]
+        | RequirementAgentTemplates
         | None = None,
     ) -> None:
         super().__init__()
@@ -234,7 +237,17 @@ class RequirementAgent(BaseAgent[RequirementAgentRunOutput]):
                                 error=tool_call.error,
                             )
                         )
-                        await state.memory.add(tool_call.as_message())
+                        await state.memory.add(
+                            ToolMessage(
+                                MessageToolResultContent(
+                                    tool_name=tool_call.tool.name if tool_call.tool else tool_call.msg.tool_name,
+                                    tool_call_id=tool_call.msg.id,
+                                    result=tool_call.output.get_text_content()
+                                    if not tool_call.output.is_empty()
+                                    else self._templates.tool_no_result.render(tool_call=tool_call),
+                                )
+                            )
+                        )
                         if tool_call.error:
                             tool_call_retry_counter.use(tool_call.error)
 
@@ -262,7 +275,16 @@ class RequirementAgent(BaseAgent[RequirementAgentRunOutput]):
 
             return RequirementAgentRunOutput(result=state.result, memory=state.memory, state=state)
 
-        return self._to_run(handler, signal=None, run_params={"prompt": prompt, "execution": execution})
+        return self._to_run(
+            handler,
+            signal=None,
+            run_params={
+                "prompt": prompt,
+                "context": context,
+                "expected_output": expected_output,
+                "execution": execution,
+            },
+        )
 
     def _create_emitter(self) -> Emitter:
         return Emitter.root().child(
@@ -280,8 +302,12 @@ class RequirementAgent(BaseAgent[RequirementAgentRunOutput]):
     @staticmethod
     def _generate_templates(
         overrides: dict[RequirementAgentTemplatesKeys, PromptTemplate[Any] | RequirementAgentTemplateFactory]
+        | RequirementAgentTemplates
         | None = None,
     ) -> RequirementAgentTemplates:
+        if isinstance(overrides, RequirementAgentTemplates):
+            return overrides
+
         templates = RequirementAgentTemplates()
         if overrides is None:
             return templates

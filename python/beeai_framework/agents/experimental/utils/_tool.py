@@ -19,7 +19,7 @@ from typing import TYPE_CHECKING, Any
 
 from pydantic import BaseModel, Field, InstanceOf, create_model
 
-from beeai_framework.backend import AssistantMessage, MessageToolCallContent, MessageToolResultContent, ToolMessage
+from beeai_framework.backend import AssistantMessage, MessageToolCallContent
 from beeai_framework.context import RunContext
 from beeai_framework.emitter import Emitter
 from beeai_framework.errors import FrameworkError
@@ -48,7 +48,7 @@ async def _run_tool(
             raise ToolError(f"Tool '{msg.tool_name}' does not exist!")
 
         result.output = await result.tool.run(result.input).context({**context, "tool_call_msg": msg})
-    except Exception as e:  # TODO
+    except ToolError as e:
         error = FrameworkError.ensure(e)
         result.error = error
 
@@ -111,12 +111,3 @@ class ToolInvocationResult(BaseModel):
     input: dict[str, Any]
     output: InstanceOf[ToolOutput]
     error: InstanceOf[FrameworkError] | None
-
-    def as_message(self) -> ToolMessage:
-        return ToolMessage(
-            MessageToolResultContent(
-                tool_name=self.tool.name if self.tool else self.msg.tool_name,
-                tool_call_id=self.msg.id,
-                result=self.output.get_text_content(),
-            )
-        )

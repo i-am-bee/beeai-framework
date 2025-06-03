@@ -680,11 +680,11 @@ def get_riddle() -> Optional[Dict[str, str]]:
       Returns None if the request fails.
   """
   url = os.environ.get('API_URL')
-
+  
   try:
       response = requests.get(url)
-      response.raise_for_status()
-      return response.json()
+      response.raise_for_status() 
+      return response.json() 
   except Exception as e:
       return None`,
 );
@@ -793,11 +793,11 @@ def get_riddle() -> Optional[Dict[str, str]]:
       Returns None if the request fails.
   """
   url = os.environ.get('API_URL')
-
+  
   try:
       response = requests.get(url)
-      response.raise_for_status()
-      return response.json()
+      response.raise_for_status() 
+      return response.json() 
   except Exception as e:
       return None`,
 );
@@ -928,11 +928,11 @@ def get_riddle() -> Optional[Dict[str, str]]:
       Returns None if the request fails.
   """
   url = os.environ.get('API_URL')
-
+  
   try:
       response = requests.get(url)
-      response.raise_for_status()
-      return response.json()
+      response.raise_for_status() 
+      return response.json() 
   except Exception as e:
       return None`,
 );

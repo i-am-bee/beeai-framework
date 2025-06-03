@@ -26,6 +26,8 @@ from beeai_framework.agents.experimental.prompts import (
     RequirementAgentTaskPromptInput,
     RequirementAgentToolErrorPrompt,
     RequirementAgentToolErrorPromptInput,
+    RequirementAgentToolNoResultPrompt,
+    RequirementAgentToolNoResultTemplateInput,
 )
 from beeai_framework.agents.experimental.utils._tool import FinalAnswerTool
 from beeai_framework.backend import (
@@ -45,11 +47,14 @@ class RequirementAgentTemplates(BaseModel):
     task: InstanceOf[PromptTemplate[RequirementAgentTaskPromptInput]] = Field(
         default_factory=lambda: RequirementAgentTaskPrompt.fork(None),
     )
-    requirement_error: InstanceOf[PromptTemplate[RequirementAgentToolErrorPromptInput]] = Field(
+    tool_error: InstanceOf[PromptTemplate[RequirementAgentToolErrorPromptInput]] = Field(
         default_factory=lambda: RequirementAgentToolErrorPrompt.fork(None),
     )
     cycle_detection: InstanceOf[PromptTemplate[RequirementAgentCycleDetectionPromptInput]] = Field(
         default_factory=lambda: RequirementAgentCycleDetectionPrompt.fork(None),
+    )
+    tool_no_result: InstanceOf[PromptTemplate[RequirementAgentToolNoResultTemplateInput]] = Field(
+        default_factory=lambda: RequirementAgentToolNoResultPrompt.fork(None),
     )
 
 
