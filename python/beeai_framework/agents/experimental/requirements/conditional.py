@@ -53,7 +53,7 @@ class ConditionalRequirement(Generic[TInput], Requirement[TInput]):
         min_invocations: int | None = None,
         max_invocations: int | None = None,
         only_success_invocations: bool = True,
-        can_be_used_in_row: bool = True,
+        consecutive_allowed: bool = True,
         priority: int | None = None,
         custom_checks: list[ConditionalAbilityCheck[TInput]] | None = None,
         enabled: bool = True,
@@ -75,7 +75,7 @@ class ConditionalRequirement(Generic[TInput], Requirement[TInput]):
         self._max_invocations = math.inf if max_invocations is None else max_invocations
         self._force_at_step = force_at_step
         self._only_success_invocations = only_success_invocations
-        self._can_be_used_in_row = can_be_used_in_row
+        self._consecutive_allowed = consecutive_allowed
         self._custom_checks = list(custom_checks or [])
 
         self._check_invariant()
@@ -126,10 +126,10 @@ class ConditionalRequirement(Generic[TInput], Requirement[TInput]):
         if _target_seen_in(self._source_tool, self._before):
             raise ValueError(f"Referencing self in 'before' is not allowed: {self._source_tool}!")
 
-        if self._can_be_used_in_row and _target_seen_in(self._source_tool, self._force_after):
+        if self._consecutive_allowed and _target_seen_in(self._source_tool, self._force_after):
             raise ValueError(
                 f"Referencing self in 'force_after' is not allowed: {self._source_tool}. "
-                f"It would prevent an infinite loop. Consider setting 'can_be_used_in_row' to False."
+                f"It would prevent an infinite loop. Consider setting 'consecutive_allowed' to False."
             )
 
     def reset(self) -> Self:
@@ -174,7 +174,7 @@ class ConditionalRequirement(Generic[TInput], Requirement[TInput]):
                 )
             ]
 
-        if not self._can_be_used_in_row and source_tool is last_step_tool:
+        if not self._consecutive_allowed and source_tool is last_step_tool:
             return resolve(False)
 
         if invocations >= self._max_invocations:
@@ -211,7 +211,7 @@ class ConditionalRequirement(Generic[TInput], Requirement[TInput]):
         instance._custom_checks = self._custom_checks.copy()
         instance._only_success_invocations = self._only_success_invocations
         instance._force_at_step = self._force_at_step
-        instance._can_be_used_in_row = self._can_be_used_in_row
+        instance._consecutive_allowed = self._consecutive_allowed
         instance.source = self.source
         instance._source_tool = self._source_tool
         return instance
