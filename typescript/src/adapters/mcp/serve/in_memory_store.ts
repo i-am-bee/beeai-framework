@@ -1,0 +1,96 @@
+/**
+ * Copyright 2025 © BeeAI a Series of LF Projects, LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+// Taken from: https://github.com/modelcontextprotocol/typescript-sdk/blob/main/src/examples/shared/inMemoryEventStore.ts
+
+import { EventStore } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
+import { JSONRPCMessage } from "@modelcontextprotocol/sdk/types.js";
+
+/**
+ * Simple in-memory implementation of the EventStore interface for resumability
+ * This is primarily intended for examples and testing, not for production use
+ * where a persistent storage solution would be more appropriate.
+ */
+export class InMemoryEventStore implements EventStore {
+  private events = new Map<string, { streamId: string; message: JSONRPCMessage }>();
+
+  /**
+   * Generates a unique event ID for a given stream ID
+   */
+  private generateEventId(streamId: string): string {
+    return `${streamId}_${Date.now()}_${Math.random().toString(36).substring(2, 10)}`;
+  }
+
+  /**
+   * Extracts the stream ID from an event ID
+   */
+  private getStreamIdFromEventId(eventId: string): string {
+    const parts = eventId.split("_");
+    return parts.length > 0 ? parts[0] : "";
+  }
+
+  /**
+   * Stores an event with a generated event ID
+   * Implements EventStore.storeEvent
+   */
+  async storeEvent(streamId: string, message: JSONRPCMessage): Promise<string> {
+    const eventId = this.generateEventId(streamId);
+    this.events.set(eventId, { streamId, message });
+    return eventId;
+  }
+
+  /**
+   * Replays events that occurred after a specific event ID
+   * Implements EventStore.replayEventsAfter
+   */
+  async replayEventsAfter(
+    lastEventId: string,
+    { send }: { send: (eventId: string, message: JSONRPCMessage) => Promise<void> },
+  ): Promise<string> {
+    if (!lastEventId || !this.events.has(lastEventId)) {
+      return "";
+    }
+
+    // Extract the stream ID from the event ID
+    const streamId = this.getStreamIdFromEventId(lastEventId);
+    if (!streamId) {
+      return "";
+    }
+
+    let foundLastEvent = false;
+
+    // Sort events by eventId for chronological ordering
+    const sortedEvents = [...this.events.entries()].sort((a, b) => a[0].localeCompare(b[0]));
+
+    for (const [eventId, { streamId: eventStreamId, message }] of sortedEvents) {
+      // Only include events from the same stream
+      if (eventStreamId !== streamId) {
+        continue;
+      }
+
+      // Start sending events after we find the lastEventId
+      if (eventId === lastEventId) {
+        foundLastEvent = true;
+        continue;
+      }
+
+      if (foundLastEvent) {
+        await send(eventId, message);
+      }
+    }
+    return streamId;
+  }
+}

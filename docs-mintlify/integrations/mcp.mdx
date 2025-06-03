@@ -1,0 +1,198 @@
+---
+title: "MCP"
+icon: "server"
+---
+
+The MCP (Model Context Protocol), developed by Anthropic, is an open protocol that standardizes how applications provide context to LLMs.
+
+---
+
+
+### MCP Tool
+
+MCPTool allows you to consume external tools exposed via MCP protocol. See the [MCP tool documentation](/modules/tools#mcp-tool) for more information.
+
+### MCP Server
+
+MCPServer allows you to expose your tools to external systems that support the Model Context Protocol (MCP) standard, enabling seamless integration with LLM tools ecosystems.
+
+Key benefits
+- Fast setup with minimal configuration
+- Support for multiple transport options
+- Register multiple tools on a single server
+- Custom server settings and instructions
+
+<CodeGroup>
+
+	{/* <!-- embedme python/examples/serve/mcp_tool.py --> */}
+	```py Python
+	from mcp.server.fastmcp.server import Settings
+	
+	from beeai_framework.adapters.mcp.serve.server import MCPServer, MCPServerConfig
+	from beeai_framework.tools import tool
+	from beeai_framework.tools.types import StringToolOutput
+	from beeai_framework.tools.weather.openmeteo import OpenMeteoTool
+	
+	
+	@tool
+	def reverse_tool(word: str) -> StringToolOutput:
+	    """
+	    A tool that reverses a word
+	    """
+	    return StringToolOutput(result=word[::-1])
+	
+	
+	def main() -> None:
+	    # create a MCP server with custom config, register ReverseTool and OpenMeteoTool to the MCP server and run it
+	    MCPServer(config=MCPServerConfig(transport="sse", settings=Settings(port=8001))).register_many(
+	        [reverse_tool, OpenMeteoTool()]
+	    ).serve()
+	
+	
+	if __name__ == "__main__":
+	    main()
+	
+	```
+
+	{/* <!-- embedme typescript/examples/serve/mcp_tool.ts --> */}
+	```ts TypeScript
+	import { StringToolOutput, Tool, ToolEmitter, ToolInput } from "beeai-framework/tools/base";
+	import { OpenMeteoTool } from "beeai-framework/tools/weather/openMeteo";
+	import { MCPServer, MCPServerConfig } from "beeai-framework/adapters/mcp/serve/server";
+	import { Emitter } from "beeai-framework/emitter/emitter";
+	import { z } from "zod";
+	
+	export class ReverseTool extends Tool<StringToolOutput> {
+	  name = "ReverseTool";
+	  description = "A tool that reverses a word";
+	
+	  public readonly emitter: ToolEmitter<ToolInput<this>, StringToolOutput> = Emitter.root.child({
+	    namespace: ["tool", "reverseTool"],
+	    creator: this,
+	  });
+	
+	  inputSchema() {
+	    return z.object({
+	      word: z.string(),
+	    });
+	  }
+	
+	  protected async _run(input: ToolInput<this>): Promise<StringToolOutput> {
+	    return new StringToolOutput(input.word.split("").reverse().join(""));
+	  }
+	}
+	
+	//  create a MCP server with custom config, register reverseTool and OpenMeteoTool to the MCP server and run it
+	await new MCPServer(new MCPServerConfig({ transport: "sse" }))
+	  .registerMany([new ReverseTool(), new OpenMeteoTool()])
+	  .serve();
+	
+	```
+
+</CodeGroup>
+
+The MCP adapter uses the MCPServerConfig class to configure the MCP server:
+
+<CodeGroup>
+
+	```py Python
+	class MCPServerConfig(BaseModel):
+	"""Configuration for the MCPServer."""
+	transport: Literal["stdio", "sse"] = "stdio"  # Transport protocol (stdio or server-sent events)
+	name: str = "MCP Server"                     # Name of the MCP server
+	instructions: str | None = None              # Optional instructions for the server
+	settings: mcp_server.Settings[Any] = Field(default_factory=lambda: mcp_server.Settings())
+	```
+
+	```ts TypeScript
+	export class MCPServerConfig {
+	transport: "stdio" | "sse" = "stdio";
+	hostname = "127.0.0.1";
+	port = 3000;
+	name = "MCP Server";
+	version = "1.0.0";
+	settings?: ServerOptions;
+}
+	```
+
+</CodeGroup>
+
+Transport Options
+- stdio: Uses standard input/output for communication (default)
+- sse: Uses server-sent events over HTTP
+
+Creating an MCP server is easy. You instantiate the MCPServer class with your configuration, register your tools, and then call serve() to start the server:
+
+<CodeGroup>
+
+	```py Python
+	from beeai_framework.adapters.mcp import MCPServer, MCPServerConfig
+	from beeai_framework.tools.weather import OpenMeteoTool
+
+	# Create an MCP server with default configuration
+	server = MCPServer()
+
+	# Register tools
+	server.register(OpenMeteoTool())
+
+	# Start serving
+	server.serve()
+	```
+
+	```ts Typescript
+	import { OpenMeteoTool } from "beeai-framework/tools/weather/openMeteo";
+	import { MCPServer } from "beeai-framework/adapters/mcp/serve/server";
+
+	// Create an MCP server with default configuration
+	const server = new MCPServer()
+
+	// Register tools
+	server.register(new OpenMeteoTool())
+
+	// Start serving
+	await server.serve();
+	```
+
+</CodeGroup>
+
+You can configure the server behavior by passing a custom configuration:
+
+<CodeGroup>
+
+	```py Python
+	from beeai_framework.adapters.mcp import MCPServer
+	from beeai_framework.tools.weather import OpenMeteoTool
+	from beeai_framework.tools.search.wikipedia import WikipediaTool
+	from beeai_framework.tools.search.duckduckgo import DuckDuckGoSearchTool
+
+	def main():
+	server = MCPServer()
+	server.register_many([
+	OpenMeteoTool(),
+	WikipediaTool(),
+	DuckDuckGoSearchTool()
+	])
+	server.serve()
+
+	if __name__ == "__main__":
+	main()
+	```
+
+	```ts TypeScript
+	import { OpenMeteoTool } from "beeai-framework/tools/weather/openMeteo";
+	import { MCPServer } from "beeai-framework/adapters/mcp/serve/server";
+	import { WikipediaTool } from "beeai-framework/tools/search/wikipedia";
+	import { DuckDuckGoSearchTool } from "beeai-framework/tools/search/duckDuckGoSearch";
+
+	const server = new MCPServer();
+
+	server.registerMany([new OpenMeteoTool(), new WikipediaTool(), new DuckDuckGoSearchTool()]);
+
+	await server.serve();
+	```
+
+</CodeGroup>
+
+<Tip>
+	MCPTool lets you add MCP-compatible tools to any agent, see Tools documentation to learn more.
+</Tip>
