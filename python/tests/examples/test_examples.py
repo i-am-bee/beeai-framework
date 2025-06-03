@@ -31,6 +31,8 @@ exclude = list(
             "helpers/io.py",
             # Only test authenticated providers if API key is found
             "backend/providers/watsonx.py" if os.getenv("WATSONX_API_KEY") is None else None,
+            "backend/providers/ollama.py" if os.getenv("OLLAMA_BASE_URL") is None else None,
+            "backend/embedding.py" if os.getenv("OLLAMA_BASE_URL") is None else None,
             "backend/providers/openai_example.py" if os.getenv("OPENAI_API_KEY") is None else None,
             "backend/providers/groq.py" if os.getenv("GROQ_API_KEY") is None else None,
             "backend/providers/xai.py" if os.getenv("XAI_API_KEY") is None else None,
@@ -46,9 +48,12 @@ exclude = list(
             # Example requires Searx instance
             "workflows/searx_agent.py",
             # Requires BeeAI platform to be running
-            "agents/providers/*.py",
+            "agents/providers/acp.py",
+            "agents/providers/a2a_agent.py",
+            "agents/providers/beeai_platform.py",
             "workflows/remote.py",
             "serve/acp.py",
+            "serve/beeai_platform.py",
             "serve/a2a_server.py",
             "serve/acp_with_custom_agent.py",
             "serve/mcp_tool.py",
