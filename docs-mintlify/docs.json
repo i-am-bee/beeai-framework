@@ -21,6 +21,7 @@
         "group": "Core Concepts",
         "pages": [
           "modules/agents",
+          "experimental/requirement-agent",
           "modules/workflows",
           "modules/backend",
           "modules/templates",
