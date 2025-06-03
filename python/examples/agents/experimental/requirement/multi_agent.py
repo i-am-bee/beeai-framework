@@ -54,7 +54,7 @@ async def main() -> None:
         memory=UnconstrainedMemory(),
         tools=[ThinkTool(), OpenMeteoTool()],
         requirements=[
-            ConditionalRequirement(ThinkTool, force_at_step=1, can_be_used_in_row=False),
+            ConditionalRequirement(ThinkTool, force_at_step=1, consecutive_allowed=False),
             AskPermissionRequirement(OpenMeteoTool, remember_choices=True, hide_disallowed=False),
             ConditionalRequirement(OpenMeteoTool, force_at_step=2, min_invocations=1),
         ],

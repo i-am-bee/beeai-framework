@@ -25,6 +25,7 @@ Ready-to-use tools that provide immediate functionality for common agent tasks:
 | `PythonTool`     | Run arbitrary Python code in a sandboxed environment                                                |
 | `SandboxTool`    | Run custom Python functions in a sandboxed environment                                              |
 | `ThinkTool`    | Gives an agent a place to think.                                                                                              |
+| `HandoffTool`    | Delegates a task to an expert agent                                                                                             |
 
 ➕ [Request additional built-in tools](https://github.com/i-am-bee/beeai-framework/discussions)
 
@@ -679,11 +680,11 @@ def get_riddle() -> Optional[Dict[str, str]]:
       Returns None if the request fails.
   """
   url = os.environ.get('API_URL')
-  
+
   try:
       response = requests.get(url)
-      response.raise_for_status() 
-      return response.json() 
+      response.raise_for_status()
+      return response.json()
   except Exception as e:
       return None`,
 );
@@ -792,11 +793,11 @@ def get_riddle() -> Optional[Dict[str, str]]:
       Returns None if the request fails.
   """
   url = os.environ.get('API_URL')
-  
+
   try:
       response = requests.get(url)
-      response.raise_for_status() 
-      return response.json() 
+      response.raise_for_status()
+      return response.json()
   except Exception as e:
       return None`,
 );
@@ -927,11 +928,11 @@ def get_riddle() -> Optional[Dict[str, str]]:
       Returns None if the request fails.
   """
   url = os.environ.get('API_URL')
-  
+
   try:
       response = requests.get(url)
-      response.raise_for_status() 
-      return response.json() 
+      response.raise_for_status()
+      return response.json()
   except Exception as e:
       return None`,
 );

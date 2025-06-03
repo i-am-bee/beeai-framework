@@ -15,7 +15,7 @@ async def main() -> None:
     agent = RequirementAgent(
         llm=ChatModel.from_name("ollama:granite3.3:8b"),
         tools=[ThinkTool(), WikipediaTool(), OpenMeteoTool()],
-        requirements=[ConditionalRequirement(ThinkTool, force_at_step=1, force_after=Tool, can_be_used_in_row=False)],
+        requirements=[ConditionalRequirement(ThinkTool, force_at_step=1, force_after=Tool, consecutive_allowed=False)],
     )
 
     response = await agent.run("What to do in Boston?").middleware(GlobalTrajectoryMiddleware(excluded=[Requirement]))

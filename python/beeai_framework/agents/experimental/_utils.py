@@ -15,7 +15,7 @@
 
 from beeai_framework.agents.experimental.prompts import (
     RequirementAgentSystemPromptInput,
-    ToolWithRequirementsPromptTemplateDefinition,
+    RequirementAgentToolTemplateDefinition,
 )
 from beeai_framework.agents.experimental.types import RequirementAgentRequest
 from beeai_framework.backend import SystemMessage
@@ -29,7 +29,7 @@ def _create_system_message(
     return SystemMessage(
         template.render(
             tools=[
-                ToolWithRequirementsPromptTemplateDefinition.from_tool(tool, allowed=tool in request.allowed_tools)
+                RequirementAgentToolTemplateDefinition.from_tool(tool, allowed=tool in request.allowed_tools)
                 for tool in request.tools
             ],
             final_answer_name=request.final_answer.name,
@@ -38,6 +38,6 @@ def _create_system_message(
             )
             if request.final_answer.custom_schema
             else None,
-            final_answer_instructions=request.final_answer.instructions,  # TODO: update template!
+            final_answer_instructions=request.final_answer.instructions,
         )
     )

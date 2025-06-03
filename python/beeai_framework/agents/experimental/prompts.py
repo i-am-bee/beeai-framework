@@ -23,8 +23,7 @@ from beeai_framework.tools import AnyTool
 from beeai_framework.utils.strings import to_json
 
 
-# TODO: refactor
-class ToolWithRequirementsPromptTemplateDefinition(BaseModel):
+class RequirementAgentToolTemplateDefinition(BaseModel):
     name: str
     description: str
     input_schema: str
@@ -46,7 +45,7 @@ class RequirementAgentSystemPromptInput(BaseModel):
     final_answer_name: str  # TODO: refactor
     final_answer_schema: str | None  # TODO: refactor
     final_answer_instructions: str | None  # TODO: refactor
-    tools: list[ToolWithRequirementsPromptTemplateDefinition]
+    tools: list[RequirementAgentToolTemplateDefinition]
 
 
 RequirementAgentSystemPrompt = PromptTemplate(
@@ -69,6 +68,9 @@ The final answer must fulfill the following.
 {{&final_answer_schema}}
 ```
 {{/final_answer_schema}}
+{{#final_answer_instructions}}
+{{&final_answer_instructions}}
+{{/final_answer_instructions}}
 
 IMPORTANT: The facts mentioned in the final answer must be backed by evidence provided by relevant tool outputs.
 
@@ -79,7 +81,7 @@ You must use a tool to retrieve factual or historical information.
 {{#tools}}
 Name: {{name}}
 Description: {{description}}
-Available: {{allowed}}
+Allowed: {{allowed}}
 
 {{/tools}}
 {{/tools.0}}

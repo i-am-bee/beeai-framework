@@ -119,7 +119,7 @@ RequirementAgent(
 
 > [!TIP]
 >
-> To generalize further, use `ConditionalRequirement(ThinkTool, force_at_step=1, force_after=Tool, can_be_used_in_row=False)`, where the option `can_be_used_in_row=False` simply denotes that `ThinkTool` cannot be used multiple times in a row.
+> To generalize further, use `ConditionalRequirement(ThinkTool, force_at_step=1, force_after=Tool, consecutive_allowed=False)`, where the option `consecutive_allowed=False` simply denotes that `ThinkTool` cannot be used multiple times in a row.
 
 **Creating a ReAct agent with custom conditions**
 
@@ -158,7 +158,7 @@ ConditionalRequirement(
   force_at_step=1, # (optional) Step number at which the tool must be invoked
   only_success_invocations=True, # (optional) Whether 'force_at_step' counts only successful invocations
   priority=10, # (optional) Higher number means higher priority for requirement enforcement
-  can_be_used_in_row=True, # (optional) Whether the tool can be invoked twice in a row
+  consecutive_allowed=True, # (optional) Whether the tool can be invoked twice in a row
   enabled=True, # (optional) Whether to skip this requirement’s execution
   custom_checks=[
      # (optional) Custom callbacks; all must pass for the tool to be used
