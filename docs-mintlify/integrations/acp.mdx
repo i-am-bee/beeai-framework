@@ -1,5 +1,5 @@
 ---
-title: "ACP Integration"
+title: "ACP"
 icon: "server"
 ---
 
@@ -29,16 +29,16 @@ When to use ACP instead of [BeeAI Platform Integration](./beeai-platform-integra
 	import asyncio
 	import sys
 	import traceback
-
+	
 	from beeai_framework.adapters.acp.agents import ACPAgent
 	from beeai_framework.errors import FrameworkError
 	from beeai_framework.memory.unconstrained_memory import UnconstrainedMemory
 	from examples.helpers.io import ConsoleReader
-
-
+	
+	
 	async def main() -> None:
 	    reader = ConsoleReader()
-
+	
 	    agent = ACPAgent(agent_name="chat", url="http://127.0.0.1:8000", memory=UnconstrainedMemory())
 	    for prompt in reader:
 	        # Run the agent and observe events
@@ -46,17 +46,17 @@ When to use ACP instead of [BeeAI Platform Integration](./beeai-platform-integra
 	            "update",
 	            lambda data, event: (reader.write("Agent 🤖 (debug) : ", data)),
 	        )
-
+	
 	        reader.write("Agent 🤖 : ", response.result.text)
-
-
+	
+	
 	if __name__ == "__main__":
 	    try:
 	        asyncio.run(main())
 	    except FrameworkError as e:
 	        traceback.print_exc()
 	        sys.exit(e.explain())
-
+	
 	```
 
 	{/* <!-- embedme typescript/examples/agents/providers/acp.ts --> */}
@@ -66,17 +66,17 @@ When to use ACP instead of [BeeAI Platform Integration](./beeai-platform-integra
 	import { createConsoleReader } from "examples/helpers/io.js";
 	import { FrameworkError } from "beeai-framework/errors";
 	import { TokenMemory } from "beeai-framework/memory/tokenMemory";
-
+	
 	const agentName = "chat";
-
+	
 	const agent = new ACPAgent({
 	  url: "http://127.0.0.1:8000",
 	  agentName,
 	  memory: new TokenMemory(),
 	});
-
+	
 	const reader = createConsoleReader();
-
+	
 	try {
 	  for await (const { prompt } of reader) {
 	    const result = await agent.run({ input: prompt }).observe((emitter) => {
@@ -87,13 +87,13 @@ When to use ACP instead of [BeeAI Platform Integration](./beeai-platform-integra
 	        reader.write(`Agent (error) 🤖 : `, data.message);
 	      });
 	    });
-
+	
 	    reader.write(`Agent (${agentName}) 🤖 : `, result.result.text);
 	  }
 	} catch (error) {
 	  reader.write("Agent (error)  🤖", FrameworkError.ensure(error).dump());
 	}
-
+	
 	```
 
 </CodeGroup>

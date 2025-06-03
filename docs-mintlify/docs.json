@@ -36,11 +36,19 @@
         ]
       },
       {
+        "group": "Integrations",
+        "pages": [
+          "integrations/beeai-platform",
+          "integrations/acp",
+          "integrations/mcp",
+          "integrations/a2a"
+        ]
+      },
+
+      {
         "group": "Guides",
         "pages": [
-          "guides/slack-integration",
-          "guides/beeai-platform-integration",
-          "guides/acp"
+          "guides/mcp-slackbot"
         ]
       },
       {

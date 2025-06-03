@@ -1,0 +1,234 @@
+---
+title: "BeeAI Platform"
+icon: "server"
+---
+
+[BeeAI platform](https://beeai.dev/) is an open platform to help you discover, run, and compose AI agents from any framework. This tutorial demonstrates how to integrate BeeAI platform agents with the BeeAI Framework using the `BeeAIPlatformAgent` class.
+
+<Note>
+	BeeAI platform is an open agent platform, while the BeeAI framework is an SDK for developing agents in Python or TypeScript.
+</Note>
+
+---
+
+### Prerequisites
+
+- **[BeeAI platform](https://beeai.dev/)** installed and running locally
+- **BeeAI Framework** installed with `pip install beeai-framework`
+- **Extension for BeeAI Platform** installed with `pip install 'beeai-framework[beeai-platform]'`
+- Project setup:
+    - Create project directory: `mkdir beeai-remote-agent && cd beeai-remote-agent`
+    - Set up Python virtual environment: `python -m venv venv && source venv/bin/activate`
+    - Create agent module: `mkdir my_agents && touch my_agents/remote_agent.py`
+
+### Consuming an agent from the platform (client)
+
+The `BeeAIPlatformAgent` class allows you to connect to any agent hosted on the BeeAI platform. This means that you can interact with agents built from any framework!
+
+Use `BeeAIPlatformAgent` when:
+- You're connecting specifically to the BeeAI Platform services.
+- You want forward compatibility for the BeeAI Platform, no matter which protocol it is based on.
+
+
+Here's a simple example that uses the built-in `chat` agent:
+
+
+<CodeGroup>
+
+	{/* <!-- embedme python/examples/agents/providers/beeai_platform.py --> */}
+
+	```py Python
+	import asyncio
+	import sys
+	import traceback
+	
+	from beeai_framework.adapters.beeai_platform.agents import BeeAIPlatformAgent
+	from beeai_framework.errors import FrameworkError
+	from beeai_framework.memory.unconstrained_memory import UnconstrainedMemory
+	from examples.helpers.io import ConsoleReader
+	
+	
+	async def main() -> None:
+	    reader = ConsoleReader()
+	
+	    agent = BeeAIPlatformAgent(agent_name="chat", url="http://127.0.0.1:8333/api/v1/acp/", memory=UnconstrainedMemory())
+	    for prompt in reader:
+	        # Run the agent and observe events
+	        response = await agent.run(prompt).on(
+	            "update",
+	            lambda data, event: (reader.write("Agent 🤖 (debug) : ", data)),
+	        )
+	
+	        reader.write("Agent 🤖 : ", response.result.text)
+	
+	
+	if __name__ == "__main__":
+	    try:
+	        asyncio.run(main())
+	    except FrameworkError as e:
+	        traceback.print_exc()
+	        sys.exit(e.explain())
+	
+	```
+
+	{/* <!-- embedme typescript/examples/agents/providers/beeai_platform.ts --> */}
+
+	```ts TypeScript
+	import "dotenv/config.js";
+	import { BeeAIPlatformAgent } from "beeai-framework/adapters/beeai_platform/agents/agent";
+	import { createConsoleReader } from "examples/helpers/io.js";
+	import { FrameworkError } from "beeai-framework/errors";
+	import { TokenMemory } from "beeai-framework/memory/tokenMemory";
+	
+	const agentName = "chat";
+	
+	const instance = new BeeAIPlatformAgent({
+	  url: "http://127.0.0.1:8333/api/v1/acp",
+	  agentName,
+	  memory: new TokenMemory(),
+	});
+	
+	const reader = createConsoleReader();
+	
+	try {
+	  for await (const { prompt } of reader) {
+	    const result = await instance.run({ input: prompt }).observe((emitter) => {
+	      emitter.on("update", (data) => {
+	        reader.write(`Agent (received progress) 🤖 : `, JSON.stringify(data.value, null, 2));
+	      });
+	      emitter.on("error", (data) => {
+	        reader.write(`Agent (error) 🤖 : `, data.message);
+	      });
+	    });
+	
+	    reader.write(`Agent (${agentName}) 🤖 : `, result.result.text);
+	  }
+	} catch (error) {
+	  reader.write("Agent (error)  🤖", FrameworkError.ensure(error).dump());
+	}
+	
+	```
+</CodeGroup>
+
+
+**Usage in Workflow**
+
+You can compose multiple BeeAI platform agents into advanced workflows using the BeeAI framework's workflow capabilities. This example demonstrates a research and content creation pipeline:
+
+In this example, the `gpt-researcher` agent researches a topic, and the `podcast-creator` takes the research report and produces a podcast transcript.
+
+You can adjust or expand this pattern to orchestrate more complex multi agent workflows.
+
+{/* <!-- embedme python/examples/workflows/remote.py --> */}
+
+```py
+import asyncio
+import sys
+import traceback
+
+from pydantic import BaseModel
+
+from beeai_framework.adapters.acp.agents import ACPAgent
+from beeai_framework.errors import FrameworkError
+from beeai_framework.memory.unconstrained_memory import UnconstrainedMemory
+from beeai_framework.workflows import Workflow
+from examples.helpers.io import ConsoleReader
+
+
+async def main() -> None:
+    reader = ConsoleReader()
+
+    class State(BaseModel):
+        topic: str
+        research: str | None = None
+        output: str | None = None
+
+    async def research(state: State) -> None:
+        agent = ACPAgent(
+            agent_name="gpt-researcher", url="http://127.0.0.1:8333/api/v1/acp", memory=UnconstrainedMemory()
+        )
+        # Run the agent and observe events
+        response = await agent.run(state.topic).on(
+            "update",
+            lambda data, _: (reader.write("Agent 🤖 (debug) : ", data)),
+        )
+        state.research = response.result.text
+
+    async def podcast(state: State) -> None:
+        agent = ACPAgent(
+            agent_name="podcast-creator", url="http://127.0.0.1:8333/api/v1/acp", memory=UnconstrainedMemory()
+        )
+        # Run the agent and observe events
+        response = await agent.run(state.research or "").on(
+            "update",
+            lambda data, _: (reader.write("Agent 🤖 (debug) : ", data)),
+        )
+        state.output = response.result.text
+
+    # Define the structure of the workflow graph
+    workflow = Workflow(State)
+    workflow.add_step("research", research)
+    workflow.add_step("podcast", podcast)
+
+    # Execute the workflow
+    result = await workflow.run(State(topic="Connemara"))
+
+    print("\n*********************")
+    print("Topic: ", result.state.topic)
+    print("Research: ", result.state.research)
+    print("Output: ", result.state.output)
+
+
+if __name__ == "__main__":
+    try:
+        asyncio.run(main())
+    except FrameworkError as e:
+        traceback.print_exc()
+        sys.exit(e.explain())
+
+```
+
+_Source: python/examples/workflows/remote.py_
+
+
+### Registering agents to the platform (server)
+
+The `BeeAIPlatformServer` class exposes agents built with the BeeAI Framework as an ACP server. It is automatically registered with the platform, allowing you to access and use the agents directly within the framework.
+
+
+<CodeGroup>
+
+	{/* <!-- embedme python/examples/serve/beeai_platform.py --> */}
+
+	```py Python
+	from beeai_framework.adapters.beeai_platform.serve.server import BeeAIPlatformServer
+	from beeai_framework.agents.tool_calling.agent import ToolCallingAgent
+	from beeai_framework.backend import ChatModel
+	from beeai_framework.memory import UnconstrainedMemory
+	from beeai_framework.tools.search.duckduckgo import DuckDuckGoSearchTool
+	from beeai_framework.tools.weather import OpenMeteoTool
+	
+	
+	def main() -> None:
+	    llm = ChatModel.from_name("ollama:granite3.1-dense:8b")
+	    agent = ToolCallingAgent(llm=llm, tools=[DuckDuckGoSearchTool(), OpenMeteoTool()], memory=UnconstrainedMemory())
+	
+	    # Register the agent with the Beeai platform and run the HTTP server
+	    # For the ToolCallingAgent and ReActAgent, we dont need to specify BeeAIPlatformAgent factory method
+	    # because they are already registered in the BeeAIPlatformServer
+	    BeeAIPlatformServer().register(
+	        agent, name="chat_agent", description="Simple chat agent", ui={"type": "chat"}
+	    ).serve()
+	
+	
+	if __name__ == "__main__":
+	    main()
+	
+	# run: beeai agent run chat_agent
+	
+	```
+
+	```ts TypeScript
+	// COMING SOON
+	```
+</CodeGroup>
