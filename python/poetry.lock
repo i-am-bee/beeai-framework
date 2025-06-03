@@ -25,15 +25,15 @@ typing-extensions = ">=4.13.2"
 
 [[package]]
 name = "acp-sdk"
-version = "0.10.0"
+version = "0.10.1"
 description = "Agent Communication Protocol SDK"
 optional = true
 python-versions = "<4.0,>=3.11"
 groups = ["main"]
 markers = "extra == \"acp\" or extra == \"beeai-platform\""
 files = [
-    {file = "acp_sdk-0.10.0-py3-none-any.whl", hash = "sha256:0a91f9b1ca820237739a7ec5488163bc8caf5422614ea0fdebd8e790b0894f17"},
-    {file = "acp_sdk-0.10.0.tar.gz", hash = "sha256:bc6634e5e0339697e72ef3f6fab020360651a1d2a4ce7b358fec9f204053bf93"},
+    {file = "acp_sdk-0.10.1-py3-none-any.whl", hash = "sha256:8e8c23e866f8432d7d4ba110331a88a667d3737edfdff2f0bcdf037a5000bf0f"},
+    {file = "acp_sdk-0.10.1.tar.gz", hash = "sha256:27a8b041badea34755d28b55ef5fbc011de54f64475b8421d3bd905fa8d928d1"},
 ]
 
 [package.dependencies]
@@ -5404,4 +5404,4 @@ wikipedia = ["wikipedia-api"]
 [metadata]
 lock-version = "2.1"
 python-versions = ">= 3.11,<4.0"
-content-hash = "e53d0fa7c4e2ac78ae3c8d4657060ee0d182f748c20011571488401833a077f9"
+content-hash = "6400a85186e3a64cad073a4a3b7add07208100941bc2bdd2827773375ff61cef"
