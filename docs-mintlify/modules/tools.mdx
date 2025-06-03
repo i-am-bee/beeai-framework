@@ -16,14 +16,15 @@ Supported in Python and TypeScript.
 
 Ready-to-use tools that provide immediate functionality for common agent tasks:
 
-| Tool             | Description                                                                                        |
-| :--------------- | :------------------------------------------------------------------------------------------------- |
-| `DuckDuckGoTool` | Search for data on DuckDuckGo                                                                      |
-| `OpenMeteoTool`  | Retrieve weather information for specific locations and dates                                      |
-| `WikipediaTool`  | Search for data on Wikipedia                                                                       |
-| `MCPTool`        | Discover and use tools exposed by arbitrary [MCP Server](https://modelcontextprotocol.io/examples) |
-| `PythonTool`     | Run arbitrary Python code in a sandboxed environment                                               |
-| `SandboxTool`    | Run custom Python functions in a sandboxed environment                                             |
+| Tool             | Description                                                                                         |
+| :--------------- |:----------------------------------------------------------------------------------------------------|
+| `DuckDuckGoTool` | Search for data on DuckDuckGo                                                                       |
+| `OpenMeteoTool`  | Retrieve weather information for specific locations and dates                                       |
+| `WikipediaTool`  | Search for data on Wikipedia                                                                        |
+| `MCPTool`        | Discover and use tools exposed by arbitrary [MCP Server](https://modelcontextprotocol.io/examples)  |
+| `PythonTool`     | Run arbitrary Python code in a sandboxed environment                                                |
+| `SandboxTool`    | Run custom Python functions in a sandboxed environment                                              |
+| `ThinkTool`    | Gives an agent a place to think.                                                                                              |
 
 ➕ [Request additional built-in tools](https://github.com/i-am-bee/beeai-framework/discussions)
 
@@ -47,6 +48,7 @@ import sys
 from datetime import date
 
 from beeai_framework.errors import FrameworkError
+from beeai_framework.middleware.trajectory import GlobalTrajectoryMiddleware
 from beeai_framework.tools.weather import OpenMeteoTool, OpenMeteoToolInput
 
 
@@ -54,7 +56,7 @@ async def main() -> None:
     tool = OpenMeteoTool()
     result = await tool.run(
         input=OpenMeteoToolInput(location_name="New York", start_date=date(2025, 1, 1), end_date=date(2025, 2, 1))
-    )
+    ).middleware(GlobalTrajectoryMiddleware())
     print(result.get_text_content())
 
 

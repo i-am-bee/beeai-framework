@@ -23,7 +23,13 @@ Supported in Python and TypeScript.
 
 ## Agent Types
 
-BeeAI Framework provides several agent implementations for different use cases:
+BeeAI Framework provides several agent implementations for different use cases.
+
+<Tip>
+Check out our new experimental [`RequirementAgent`](/experimental/requirement_agent) that combines the power of LLMs, tools, and requirements, all wrapped in a declarative interface.
+
+**This approach will soon become a default building block for building agents and will replace the others.**
+</Tip>
 
 ### ReAct Agent
 
@@ -1049,11 +1055,11 @@ async def main() -> None:
                     AgentWorkflowInput(prompt="Provide a short history of the location.", context=prompt),
                     AgentWorkflowInput(
                         prompt="Provide a comprehensive weather summary for the location today.",
-                        expected_output="Essential weather details such as chance of rain, temperature and wind. Only report information that is available.",  # noqa: E501
+                        expected_output="Essential weather details such as chance of rain, temperature and wind. Only report information that is available.",
                     ),
                     AgentWorkflowInput(
                         prompt="Summarize the historical and weather data for the location.",
-                        expected_output="A paragraph that describes the history of the location, followed by the current weather conditions.",  # noqa: E501
+                        expected_output="A paragraph that describes the history of the location, followed by the current weather conditions.",
                     ),
                 ]
             )

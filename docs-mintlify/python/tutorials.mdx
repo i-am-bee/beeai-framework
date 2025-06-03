@@ -118,7 +118,7 @@ async def create_agent(session: ClientSession) -> ToolCallingAgent:
     # "deepseek-r1"
     # ensure the model is pulled before running
     llm = ChatModel.from_name(
-        "ollama:granite3.3:8b",
+        "ollama:llama3.1",
         ChatModelParameters(temperature=0),
     )
 
@@ -134,7 +134,7 @@ async def create_agent(session: ClientSession) -> ToolCallingAgent:
         templates={
             "system": lambda template: template.update(
                 defaults={
-                    "instructions": """IMPORTANT: When the user mentions Slack, you must interact with the Slack tool before sending the final answer.""",  # noqa: E501
+                    "instructions": """IMPORTANT: When the user mentions Slack, you must interact with the Slack tool before sending the final answer.""",
                 }
             )
         },
