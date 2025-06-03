@@ -8,7 +8,7 @@
     "links:check": "lychee --verbose --include-fragments ./**/*.mdx --exclude-path=python --exclude-path=typescript",
     "snippets:embed": "yarn exec embedme --source-root=.. ./**/*.mdx",
     "snippets:check": "yarn exec embedme --source-root=.. ./**/*.mdx --verify",
-    "git:pre-commit": "yarn snippets:check && echo 'OK'"
+    "git:pre-commit": "yarn snippets:check && yarn links:check && echo 'OK'"
   },
   "keywords": [],
   "packageManager": "yarn@4.9.1",
