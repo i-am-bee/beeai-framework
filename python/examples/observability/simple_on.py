@@ -19,7 +19,7 @@ async def main() -> None:
         ]
     )
 
-    llm = ChatModel.from_name("ollama:granite3.1-dense:8b")
+    llm = ChatModel.from_name("ollama:granite3.3:8b")
 
     response = (
         await llm.create(messages=memory.messages, stream=True)

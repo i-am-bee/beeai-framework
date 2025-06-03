@@ -45,7 +45,7 @@ async def create_agent(session: ClientSession) -> ReActAgent:
 
     # Other models to try:
     # "llama3.1"
-    # "granite3.1-dense"
+    # "granite3.3"
     # "deepseek-r1"
     # ensure the model is pulled before running
     llm = ChatModel.from_name(

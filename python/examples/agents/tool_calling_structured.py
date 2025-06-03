@@ -45,7 +45,7 @@ async def main() -> None:
 
     # Create agent
     agent = ToolCallingAgent(
-        llm=ChatModel.from_name("ollama:granite3.1-dense:8b"),
+        llm=ChatModel.from_name("ollama:granite3.3:8b"),
         memory=UnconstrainedMemory(),
         tools=[OpenMeteoTool()],
         templates={

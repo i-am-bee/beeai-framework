@@ -103,7 +103,7 @@ export class CustomAgent extends BaseAgent<RunInput, RunOutput, RunOptions> {
 }
 
 const agent = new CustomAgent({
-  llm: new OllamaChatModel("granite3.1-dense"),
+  llm: new OllamaChatModel("granite3.3"),
   memory: new UnconstrainedMemory(),
 });
 

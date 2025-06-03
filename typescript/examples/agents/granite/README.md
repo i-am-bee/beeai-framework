@@ -88,10 +88,10 @@ In this example the wikipedia tool interface is extended so that the agent can s
 
 This example uses Ollama exclusively.
 
-To get started you will need to pull `granite3.1-dense:8b` and `nomic-embed-text` (to perform text embedding). If you are unfamiliar with using Ollama then check out instructions for getting up and running at the the [Ollama Github repo](https://github.com/ollama/ollama).
+To get started you will need to pull `granite3.3:8b` and `nomic-embed-text` (to perform text embedding). If you are unfamiliar with using Ollama then check out instructions for getting up and running at the the [Ollama Github repo](https://github.com/ollama/ollama).
 
 ```shell
-ollama pull granite3.1-dense:8b
+ollama pull granite3.3:8b
 ollama pull nomic-embed-text
 ollama serve
 ```

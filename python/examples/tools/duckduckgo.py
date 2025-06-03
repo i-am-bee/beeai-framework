@@ -10,7 +10,7 @@ from beeai_framework.tools.search.duckduckgo import DuckDuckGoSearchTool
 
 
 async def main() -> None:
-    chat_model = ChatModel.from_name("ollama:granite3.1-dense:8b")
+    chat_model = ChatModel.from_name("ollama:granite3.3:8b")
     agent = ReActAgent(llm=chat_model, tools=[DuckDuckGoSearchTool()], memory=UnconstrainedMemory())
 
     result = await agent.run("How tall is the mount Everest?")

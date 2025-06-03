@@ -83,7 +83,7 @@ A2AServer lets you expose agents built in the BeeAI framework via A2A protocol.
 	
 	
 	def main() -> None:
-	    llm = ChatModel.from_name("ollama:granite3.1-dense:8b")
+	    llm = ChatModel.from_name("ollama:granite3.3:8b")
 	    agent = ToolCallingAgent(
 	        llm=llm,
 	        tools=[DuckDuckGoSearchTool(), OpenMeteoTool()],

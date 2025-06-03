@@ -91,7 +91,7 @@ class CustomAgent(BaseAgent[CustomAgentRunOutput]):
 
 async def main() -> None:
     agent = CustomAgent(
-        llm=OllamaChatModel("granite3.1-dense:8b"),
+        llm=OllamaChatModel("granite3.3:8b"),
         memory=UnconstrainedMemory(),
     )
 

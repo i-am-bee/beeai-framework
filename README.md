@@ -72,7 +72,7 @@ from beeai_framework.tools.weather.openmeteo import OpenMeteoTool
 from beeai_framework.workflows.agent import AgentWorkflow, AgentWorkflowInput
 
 async def main() -> None:
-    llm = ChatModel.from_name("ollama:granite3.1-dense:8b")
+    llm = ChatModel.from_name("ollama:granite3.3:8b")
     workflow = AgentWorkflow(name="Smart assistant")
 
     workflow.add_agent(
@@ -137,7 +137,7 @@ TypeScript version of this example can be found [here](/typescript/examples/work
 
 > [!Note]
 >
-> To run this example, be sure that you have installed [ollama](https://ollama.com) with the [granite3.1-dense:8b](https://ollama.com/library/granite3.1-dense) model downloaded.
+> To run this example, be sure that you have installed [ollama](https://ollama.com) with the [granite3.3:8b](https://ollama.com/library/granite3.3:8b) model downloaded.
 
 To run projects, use:
 

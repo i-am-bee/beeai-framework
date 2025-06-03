@@ -1,0 +1,62 @@
+name: Build documentation
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+  pull_request:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Copy root
+        run: cp *.md docs/
+
+      - name: Copy TypeScript Documentation
+        run: |
+          cp -r ./typescript/docs docs/typescript
+          cp ./typescript/*.md docs/typescript
+          cp ./typescript/examples/README.md docs/typescript/examples.md
+
+      - name: Copy Python Documentation
+        run: |
+          cp -r ./python/docs docs/python
+          cp ./python/*.md docs/python
+          cp ./python/examples/README.md docs/python/examples.md
+
+      - name: Link Checker
+        id: lychee
+        uses: lycheeverse/lychee-action@v2
+        with:
+          fail: true
+          # Only check docs
+          args: |
+            --verbose
+            --no-progress
+            --include-fragments
+            --exclude-path docs/typescript/CHANGELOG.md
+            './docs/**/*.md'
+            './docs/**/*.html'
+
+      - name: Upload Documentation Artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: ./docs
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    if: github.event_name != 'pull_request'
+
+    steps:
+      - name: Deploy to GitHub Pages
+        uses: actions/deploy-pages@v4

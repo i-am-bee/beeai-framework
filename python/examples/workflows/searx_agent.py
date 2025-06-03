@@ -13,7 +13,7 @@ from beeai_framework.workflows import Workflow
 
 
 async def main() -> None:
-    llm = OllamaChatModel("granite3.1-dense:8b")
+    llm = OllamaChatModel("granite3.3:8b")
     search = SearxSearchWrapper(searx_host="http://127.0.0.1:8888")
 
     class State(BaseModel):

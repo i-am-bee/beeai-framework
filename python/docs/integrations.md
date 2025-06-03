@@ -96,7 +96,7 @@ from beeai_framework.tools.weather import OpenMeteoTool
 
 
 def main() -> None:
-    llm = ChatModel.from_name("ollama:granite3.1-dense:8b")
+    llm = ChatModel.from_name("ollama:granite3.3:8b")
     agent = ToolCallingAgent(
         llm=llm,
         tools=[DuckDuckGoSearchTool(), OpenMeteoTool()],
@@ -289,7 +289,7 @@ from beeai_framework.tools.weather import OpenMeteoTool
 
 
 def main() -> None:
-    llm = ChatModel.from_name("ollama:granite3.1-dense:8b")
+    llm = ChatModel.from_name("ollama:granite3.3:8b")
     agent = ToolCallingAgent(llm=llm, tools=[DuckDuckGoSearchTool(), OpenMeteoTool()], memory=UnconstrainedMemory())
 
     # Register the agent with the Beeai platform and run the HTTP server
@@ -473,7 +473,7 @@ from beeai_framework.tools.weather import OpenMeteoTool
 
 
 def main() -> None:
-    llm = ChatModel.from_name("ollama:granite3.1-dense:8b")
+    llm = ChatModel.from_name("ollama:granite3.3:8b")
     agent = ToolCallingAgent(
         llm=llm,
         tools=[DuckDuckGoSearchTool(), OpenMeteoTool()],

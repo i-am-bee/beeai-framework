@@ -42,7 +42,7 @@ jobs:
         run: |
           ollama serve &
           ollama pull llama3.1
-          ollama pull granite3.1-dense:8b
+          ollama pull granite3.3:8b
       - name: Call ollama API
         run: |
           curl -d '{"model": "llama3.1:latest", "stream": false, "prompt":"Whatever I say, answer with Yes"}' http://localhost:11434/api/generate
