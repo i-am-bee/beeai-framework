@@ -20,8 +20,8 @@ from typing import Any, Self, overload
 from pydantic import BaseModel, InstanceOf
 
 from beeai_framework.agents.base import AnyAgent
+from beeai_framework.agents.experimental import RequirementAgent
 from beeai_framework.agents.tool_calling.agent import ToolCallingAgent
-from beeai_framework.agents.tool_calling.types import ToolCallingAgentRunOutput
 from beeai_framework.agents.tool_calling.utils import ToolCallCheckerConfig
 from beeai_framework.agents.types import (
     AgentExecutionConfig,
@@ -40,6 +40,7 @@ from beeai_framework.workflows.types import WorkflowRun
 from beeai_framework.workflows.workflow import Workflow
 
 AgentFactory = Callable[[ReadOnlyMemory], AnyAgent | Awaitable[AnyAgent]]
+AgentWorkflowAgentType = ToolCallingAgent | RequirementAgent
 
 
 class AgentWorkflowInput(BaseModel):
@@ -101,10 +102,10 @@ class AgentWorkflow:
         final_answer_as_tool: bool | None = None,
     ) -> "AgentWorkflow": ...
     @overload
-    def add_agent(self, instance: ToolCallingAgent, /) -> "AgentWorkflow": ...
+    def add_agent(self, instance: ToolCallingAgent | RequirementAgent, /) -> "AgentWorkflow": ...
     def add_agent(
         self,
-        instance: ToolCallingAgent | None = None,
+        instance: ToolCallingAgent | RequirementAgent | None = None,
         /,
         *,
         name: str | None = None,
@@ -121,7 +122,7 @@ class AgentWorkflow:
         if instance is None and llm is None:
             raise ValueError("Either instance or the agent configuration must be provided!")
 
-        async def create_agent(memory: BaseMemory) -> ToolCallingAgent:
+        async def create_agent(memory: BaseMemory) -> ToolCallingAgent | RequirementAgent:
             if instance is not None:
                 new_instance = await instance.clone()
                 new_instance.memory = memory
@@ -155,7 +156,7 @@ class AgentWorkflow:
             run_input = state.inputs.pop(0).model_copy() if state.inputs else AgentWorkflowInput()
             state.current_input = run_input
             agent = await create_agent(memory.as_read_only())
-            run_output: ToolCallingAgentRunOutput = await agent.run(**run_input.model_dump(), execution=execution)
+            run_output = await agent.run(**run_input.model_dump(), execution=execution)
 
             state.final_answer = run_output.result.text
             if run_input.prompt:

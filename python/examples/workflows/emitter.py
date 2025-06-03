@@ -14,6 +14,8 @@ WorkflowStep: TypeAlias = Literal["pre_process", "add_loop", "post_process"]
 
 def print_event(event_data: Any, event_meta: EventMeta) -> None:
     """Process agent events and log appropriately"""
+    if event_meta.context.get("internal"):
+        return
 
     if event_meta.name == "error":
         print("Workflow : ", event_data)
