@@ -8,90 +8,101 @@ This is an **experimental** feature and will evolve based on community feedback.
 </Note>
 
 
-The `RequirementAgent` combines the power of LLMs, tools, and requirements, all wrapped in a declarative interface.
+The `RequirementAgent` is a declarative AI agent that combines language models, tools, and execution requirements to create predictable, controlled behavior across different LLMs.
+
+## Quickstart
+
+Here's a simple example that demonstrates how to create an agent with enforced tool execution order:
 
 ```py
 from beeai_framework.agents.experimental import RequirementAgent
+from beeai_framework.agents.experimental.requirements.conditional import ConditionalRequirement
 
 agent = RequirementAgent(
-  llm=ChatModel.from_name("ollama:granite3.3:8b"),
-  tools=[
-	ThinkTool(),
-	OpenMeteoTool(),
-	DuckDuckGoSearchTool()
-  ],
-  instructions="Plan activities for a given destination based on current weather and events.",
-  requirements=[
-    ConditionalRequirement(ThinkTool, force_at_step=1),
-    ConditionalRequirement(DuckDuckGoSearchTool, only_after=[OpenMeteoTool], min_invocations=1),
-  ],
+    llm=ChatModel.from_name("ollama:granite3.3:8b"),
+    tools=[
+        ThinkTool(),
+        OpenMeteoTool(),
+        DuckDuckGoSearchTool()
+    ],
+    instructions="Plan activities for a given destination based on current weather and events.",
+    requirements=[
+        ConditionalRequirement(ThinkTool, force_at_step=1),
+        ConditionalRequirement(DuckDuckGoSearchTool, only_after=[OpenMeteoTool], min_invocations=1),
+    ],
 )
-```
 
-Congratulations! You now have an agent that will plan your evening. The agent first thinks, and then either produces an answer or calls the OpenMeteoTool, followed by DuckDuckGo.
-Let's execute the agent while logging all intermediate steps.
-
-```py
-response = await agent.run("What to do in Boston?")
-  .middleware(GlobalTrajectoryMiddleware())
-
+# Execute with logging
+response = await agent.run("What to do in Boston?").middleware(GlobalTrajectoryMiddleware())
 print(response.result.text)
 ```
 
+This agent will:
+1. First use `ThinkTool` to reason about the request
+2. Check weather using `OpenMeteoTool`
+3. Search for events using `DuckDuckGoSearchTool` (at least once)
+4. Provide recommendations based on the gathered information
+
 ➡️ Check out more [examples](https://github.com/i-am-bee/beeai-framework/tree/main/python/examples/agents/experimental/requirement) (multi-agent, custom requirements, ...).
 
-## 💬 Motivation
+## Motivation
 
-Every language model is different and expects a unique style of communication. This makes it complicated to create a single system prompt (agent) that works well for all models. Nudging the model within existing implementations can be tricky, as system prompts are often highly opinionated and typically optimized for a single model or a small subset. Additionally, an agent’s system prompt may force the LLM to produce text in a predefined structure, which models may not be able to follow. The model might get confused by the large context window or simply be incapable of adhering to the structure.
+Building agents that work reliably across multiple LLMs is difficult.
 
-As a result, you never know whether the response is hallucinated or backed by evidence from a tool. For smaller models, you need to be more explicit, while for more capable models, you can be more flexible. This is why people have started switching to workflows (graphs), which are typically more restrictive but come with additional development costs.
+Most current agents are tightly tuned to specific models. Their prompts are often rigid, verbose, or overly structured - causing models to misinterpret instructions, skip tool use, or hallucinate facts.
 
-We have addressed these issues in our new agent-building abstraction.
+To address this, many teams resort to structured workflows or graphs. These improve reliability but come at the cost of flexibility and ease of development.
 
+`RequirementAgent` provides a declarative framework for designing agents that strikes a balance between flexibility and control. It allows for agent behavior that is both predictable and adaptable, without the complexity and limitations of more rigid systems.
 
-## 🔎 Core principles
+## Core Architecture
 
-**Everything is a tool**
+**Everything is a Tool**
 - From data retrieval and web search to reasoning or even providing a final answer.
 - This allows us to generate outputs that adhere to a user-defined format (leveraging structured decoding).
 - The model always produces a valid response—no more parsing errors.
 
-**Tool execution is influenced by a set of requirements**
+**Requirements Control Tool Usage**
 - Use tool `A` only after tool `B` was called.
 - Tool `D` must be run exactly twice, but never in a row.
 - Tool `E` can only be run after both `A` and `B` have been executed.
 - Tool `F` must be called immediately after tool `D`.
 - You can't provide a final answer before calling tool `C` at least once.
 
-## 📋 What are Requirements?
+## Understanding Requirements
+
+### What Are Requirements?
 
 **Requirements** are functions that take the current agent state and produce a list of **rules**.
 
+### What Are Rules?
+
 **Rules** are objects that define restrictions to the agent based on its current state:
 
-- The tool the rule applies to (`target` attribute)
-- Whether the tool can be used (`allowed` attribute)
-- Whether the tool’s definition is visible to the agent (`hidden` attribute)
-- Whether the rule blocks termination (`prevent_stop` attribute)
-- Whether the tool must be invoked (`forced` attribute)
+| Attribute      | Description                                           |
+|:---------------|:------------------------------------------------------|
+| `target`       | The tool the rule applies to                          |
+| `allowed`      | Whether the tool can be used                          |
+| `hidden`       | Whether the tool’s definition is visible to the agent |
+| `prevent_stop` | Whether the rule blocks termination                   |
+| `forced`       | Whether the tool must be invoked                      |
+
+When multiple requirements generate conflicting rules:
+- Forbidden takes precedence: If any rule forbids a tool, it cannot be used
+- Highest priority forced rule wins: Among forced rules, the highest priority requirement determines the forced tool
+- Multiple prevention rules combine: All `prevent_stop` rules are respected
 
 <Warning>
-If two different rules force a tool execution, the one with a higher priority is applied.
+Requirements are evaluated on every iteration before calling the LLM. Design them to be efficient for frequent execution.
 </Warning>
-
-<Warning>
-Forbidding a tool’s usage takes precedence over allowing it.
-</Warning>
-
-<Note>
-Requirements are invoked on every iteration's start (before calling an LLM).
-</Note>
 
 <Tip>
 Start with a single requirement and add more as needed.
 </Tip>
 
-### Conditional
+## Built-in Requirements
+
+### Conditional Requirement
 
 A requirement that enables the use of a given tool (or set of tools) after certain conditions are met.
 See the following examples.
@@ -188,7 +199,7 @@ It is recommended to pass a class instance (e.g., `weather_tool = ...`) or a cla
 If the reasoner detects two contradictory rules or a rule without an existing target, it throws an error.
 </Note>
 
-### AskPermission
+### Ask Permission Requirement
 
 Some tools may be expensive to run or have destructive effects. For these, you may want to get approval from an external system or directly from the user.
 
@@ -227,7 +238,7 @@ AskPermissionRequirement(
 If no targets are specified, permission is required for all tools.
 </Note>
 
-#### Writing Your Own Requirement
+## Custom Requirement
 
 You can create a custom requirement by implementing the base Requirement class.
 The Requirement class has the following lifecycle:
