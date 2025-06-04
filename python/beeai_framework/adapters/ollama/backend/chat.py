@@ -38,11 +38,12 @@ class OllamaChatModel(LiteLLMChatModel):
         *,
         api_key: str | None = None,
         base_url: str | None = None,
+        text_completion: bool | None = False,
         **kwargs: Unpack[ChatModelKwargs],
     ) -> None:
         super().__init__(
             model_id if model_id else os.getenv("OLLAMA_CHAT_MODEL", "llama3.1"),
-            provider_id="openai",
+            provider_id="text-completion-openai" if text_completion else "openai",
             **kwargs,
         )
 
