@@ -36,7 +36,7 @@ DictBaseModel = RootModel[type[dict]]
 class FewShotPromptTemplateInput(BaseModel):
     """Few shot prompt template input"""
 
-    instruction: str
+    instruction: str | None
     example_template: ExampleTemplate
     examples: list[Example] = []
     template: str

@@ -15,12 +15,8 @@
 Define plugin configuration attributes.
 """
 
-from typing import Any
+from pydantic import BaseModel
 
-from pydantic import BaseModel, model_validator
-
-from beeai_framework.backend.types import ChatModelParameters
-from beeai_framework.plugins.utils import render_env_variables
 from beeai_framework.toolkit.chat.constants import (
     ASSISTANT_EXAMPLE,
     PROMPT_PREFIX,
@@ -72,21 +68,3 @@ class Example(BaseModel):
     """Example"""
 
     example: list[UserExample | AssistantExample | ToolCallExample | ToolResultExample]
-
-
-class Model(BaseModel):
-    """Chat model configurations."""
-
-    type: str = ""
-    model_id: str = ""
-    parameters: ChatModelParameters | None = None
-    model_config = {"extra": "allow"}
-
-    @model_validator(mode="before")
-    @classmethod
-    def check_for_env_vars(cls, data: Any) -> Any:
-        if isinstance(data, dict):
-            for key, value in list(data.items()):
-                if isinstance(value, str | dict | list):
-                    data[key] = render_env_variables(value)
-        return data

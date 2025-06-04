@@ -1,0 +1,25 @@
+name: 'GeneralChat'
+id: 'general-chat-agent'
+creator: 'IBM Research'
+based_on: 'Agent'
+description: 'A general chat agent.'
+version: '0.1'
+config:
+  model:
+    type: ChatModel
+    arguments:
+      model_id: ollama:granite3.3:8b
+      stream: False
+      parameters:
+        temperature: 0
+  memory:
+    type: TokenMemory
+    arguments:
+      llm:
+        type: OllamaChatModel
+        arguments:
+          model_id: 'granite3.1-dense:8b'
+  tools:
+    - type: beeai_framework.tools.search.duckduckgo.DuckDuckGoSearchTool
+    - type: beeai_framework.tools.search.wikipedia.WikipediaTool
+    - type: beeai_framework.tools.weather.OpenMeteoTool 

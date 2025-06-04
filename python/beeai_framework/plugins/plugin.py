@@ -17,16 +17,19 @@ import uuid
 from abc import ABC, abstractmethod
 from collections.abc import Callable
 from contextlib import suppress
-from typing import Any, ClassVar, Generic, TypedDict
+from typing import Any, ClassVar, Generic, TypedDict, TypeVar
 
+from pydantic import BaseModel
 from typing_extensions import Unpack
 
 from beeai_framework.context import Run
 from beeai_framework.emitter import Emitter
-from beeai_framework.plugins import DataContext, TInput, TOutput
 from beeai_framework.registry import Registry, RegistryEntry
 from beeai_framework.utils.cancellation import AbortSignal
 from beeai_framework.utils.models import ModelLike, to_model
+
+TInput = TypeVar("TInput", bound=BaseModel)
+TOutput = TypeVar("TOutput", bound=BaseModel)
 
 
 class PluginKwargs(TypedDict, total=False):
@@ -111,6 +114,5 @@ class Plugin(ABC, Generic[TInput, TOutput]):
 
 AnyPlugin = Plugin[Any, Any]
 
-DataContextPlugin = Plugin[DataContext, DataContext]
 
 TFunction = Callable[..., Any]

@@ -18,7 +18,7 @@ from collections.abc import Iterable, Iterator
 from typing import TYPE_CHECKING, Any, Self
 
 from beeai_framework.backend.message import AnyMessage
-from beeai_framework.plugins.plugin import DataContextPlugin
+from beeai_framework.plugins.plugin import AnyPlugin
 from beeai_framework.plugins.types import Pluggable
 from beeai_framework.plugins.utils import plugin
 
@@ -97,7 +97,7 @@ class BaseMemory(ABC, Pluggable):
             "messages": self.messages,
         }
 
-    def as_plugin(self) -> DataContextPlugin:
+    def as_plugin(self) -> AnyPlugin:
         # TODO: refactor based on new interface
         @plugin(name=f"{type(self).__name__}", description="Memory plugin")
         async def connector(*, message: AnyMessage) -> None:

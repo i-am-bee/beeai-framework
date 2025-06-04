@@ -1,0 +1,5 @@
+loader:
+  configpaths:
+    - ./plugins
+  plugins:
+    - GeneralChat

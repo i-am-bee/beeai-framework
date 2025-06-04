@@ -15,6 +15,7 @@
 
 import functools
 import re
+from pydoc import locate
 from typing import Any, cast
 
 from beeai_framework.adapters.amazon_bedrock import AmazonBedrockChatModel
@@ -30,13 +31,11 @@ from beeai_framework.memory import SlidingMemory, SummarizeMemory, TokenMemory, 
 from beeai_framework.plugins.config import ConfigLoader
 from beeai_framework.plugins.constants import ARGUMENTS, DESCRIPTION, ID, NAME, TYPE
 from beeai_framework.plugins.plugin import AnyPlugin
+from beeai_framework.plugins.schemas import Config, PluginConfig
 from beeai_framework.plugins.types import (
-    Config,
-    DataContextPluggable,
     Pluggable,
     PluggableInstanceRegistry,
     PluggableRegistry,
-    PluginConfig,
 )
 from beeai_framework.plugins.utils import topological_sort
 from beeai_framework.utils.dicts import merge_nested, sort_by_key
@@ -108,6 +107,12 @@ class PluginLoader:
     def _parse_plugin_parameters(self, /, input: Any, interpret_variables: bool = False, key: str | None = None) -> Any:
         if isinstance(input, dict):
             if TYPE in input and (ARGUMENTS in input or len(input.keys()) == 1):
+                if not self.is_pluggable_type_registered(input[TYPE]):
+                    pluggable_type = locate(input[TYPE])
+                    if pluggable_type is Pluggable:
+                        self.register_pluggable_type(pluggable_type, input[TYPE])
+                    else:
+                        raise ValueError(f"Unable to register type: {input[TYPE]}")
                 pluggable = self.create_pluggable(
                     input[TYPE], input.get(ARGUMENTS, {}), interpreter_variables=interpret_variables
                 )
@@ -133,9 +138,11 @@ class PluginLoader:
             return input
 
     def _register_toolkit_classes(self) -> None:
+        from beeai_framework.toolkit.chat.agent import Agent
         from beeai_framework.toolkit.chat.prompting import PromptingChatModel
 
         self.pluggable_type_factory.register(PromptingChatModel)
+        self.pluggable_type_factory.register(Agent)
 
     def _register_memory(self) -> None:
         self.pluggable_type_factory.register(UnconstrainedMemory)
@@ -158,7 +165,7 @@ class PluginLoader:
 
         self.pluggable_type_factory.register(cast(type[Pluggable], dynamic_factory), name="ChatModel")
 
-    def register_pluggable_type(self, pluggable: type[DataContextPluggable], name: str | None = None) -> None:
+    def register_pluggable_type(self, pluggable: type[Pluggable], name: str | None = None) -> None:
         """Register a plugin instance."""
         self.pluggable_type_factory.register(pluggable, name)
 

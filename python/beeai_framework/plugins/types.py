@@ -13,33 +13,21 @@
 # limitations under the License.
 """Definition of plugin types."""
 
-from typing import Annotated, Any, Protocol, runtime_checkable
+from typing import Any, Protocol, runtime_checkable
 
-from pydantic import BaseModel, Field, StringConstraints
+from pydantic import BaseModel
 from typing_extensions import TypeVar
 
 from beeai_framework.plugins.plugin import Plugin
 from beeai_framework.registry import Registry
-from beeai_framework.utils import ModelLike
 
-
-class DataContext(BaseModel):
-    """Instance of the data exchange object for input and output."""
-
-    data: str | list[Any] | ModelLike[BaseModel]
-    context: dict[str, Any] | None = Field(default={})
-
-
-TInput = TypeVar("TInput", bound=DataContext, default=DataContext)
-TOutput = TypeVar("TOutput", bound=DataContext, default=DataContext)
+TInput = TypeVar("TInput", bound=BaseModel, default=Any)
+TOutput = TypeVar("TOutput", bound=BaseModel, default=Any)
 
 
 @runtime_checkable
 class Pluggable(Protocol[TInput, TOutput]):
     def as_plugin(self) -> Plugin[TInput, TOutput]: ...
-
-
-DataContextPluggable = Pluggable[DataContext, DataContext]
 
 
 class PluggableInstanceRegistry(Registry[type[Pluggable]]):
@@ -49,48 +37,3 @@ class PluggableInstanceRegistry(Registry[type[Pluggable]]):
 
 
 class PluggableRegistry(Registry[Pluggable]): ...
-
-
-class PluginSection(BaseModel):
-    """The plugin registration and configuration."""
-
-    configpaths: list[str] = []
-    codepaths: list[str] = []
-    plugins: list[str] = []
-
-
-class Config(BaseModel):
-    """The main SDK configuration object."""
-
-    loader: PluginSection
-
-
-class Runtime(BaseModel):
-    """The plugin's runtime configuration object."""
-
-    class_name: str = Field(alias="class")
-    tests: list[str] | None = None
-
-
-class PluginConfig(BaseModel):
-    """The plugin object."""
-
-    name: Annotated[str, StringConstraints(min_length=1)]
-    id_: str = Field(alias="id")
-    display_name: str | None = ""
-    description: Annotated[str, StringConstraints(min_length=1)]
-    version: str
-    tags: list[str] | None = []
-    based_on: str | None = None
-    runtime: Runtime | None = None
-    pipeline: str | None = None
-    config: dict[Any, Any] | None = {}
-    streamlit: dict[Any, Any] | None = {}
-    analysis: dict[Any, Any] | None = None
-
-
-class PluggableDef(BaseModel):
-    """Pluggable definition."""
-
-    type: str = ""
-    arguments: dict[Any, Any] | None = {}

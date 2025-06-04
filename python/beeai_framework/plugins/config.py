@@ -15,14 +15,13 @@
 
 import logging
 import os
-import re
 from glob import glob
 
 import chevron
 import yaml
 from pydantic import ValidationError
 
-from beeai_framework.plugins.types import Config, PluginConfig
+from beeai_framework.plugins.schemas import Config, PluginConfig
 
 
 class ConfigLoader:
@@ -76,13 +75,6 @@ class ConfigLoader:
         with open(os.path.normpath(config), encoding="utf8") as file:
             template = file.read()
             config_data = yaml.safe_load(template)
-            if config_data.get("config"):
-                for key in ["instruction", "examples"]:
-                    if key in config_data["config"]:
-                        value = re.sub(
-                            r"(?<!{){(?!{)(.+)(?<!})}(?!})", r"{{\1}}", yaml.dump(config_data["config"][key])
-                        )
-                        config_data["config"][key] = yaml.load(value, Loader=yaml.FullLoader)
         return PluginConfig(**config_data)
 
     @staticmethod
