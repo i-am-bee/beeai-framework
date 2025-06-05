@@ -3,6 +3,10 @@ name: Documentation
 permissions:
   contents: read
 
+defaults:
+  run:
+    working-directory: ./docs
+
 on:
   workflow_dispatch:
   push:
@@ -52,7 +56,7 @@ jobs:
           node-version-file: "docs/.nvmrc"
           cache: "yarn"
           cache-dependency-path: "docs/yarn.lock"
+      - name: Install dependencies
+        run: yarn install --immutable
       - name: Check snippets
-        run: |
-          cd docs
-          yarn snippets:check
+        run: yarn snippets:check
