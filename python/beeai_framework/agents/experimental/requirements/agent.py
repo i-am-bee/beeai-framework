@@ -15,8 +15,6 @@
 from collections.abc import Sequence
 from typing import Any
 
-
-from beeai_framework.agents.experimental.requirements.utils import RequirementsReasoner
 from pydantic import BaseModel
 
 from beeai_framework.agents import AgentError, AgentExecutionConfig, AgentMeta
@@ -40,6 +38,7 @@ from beeai_framework.agents.experimental.requirements.types import (
     RequirementAgentTemplates,
     RequirementAgentTemplatesKeys,
 )
+from beeai_framework.agents.experimental.requirements.utils import RequirementsReasoner
 from beeai_framework.agents.experimental.utils._tool import FinalAnswerTool, _run_tools
 from beeai_framework.agents.tool_calling.utils import ToolCallChecker, ToolCallCheckerConfig
 from beeai_framework.backend.chat import ChatModel

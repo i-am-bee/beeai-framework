@@ -14,20 +14,16 @@
 
 from typing import Any, TypeVar
 
-from beeai_framework.errors import FrameworkError
-from beeai_framework.tools import AnyTool, Tool
 from beeai_framework.agents.experimental.requirements.prompts import (
     RequirementAgentSystemPromptInput,
     RequirementAgentToolTemplateDefinition,
 )
 from beeai_framework.agents.experimental.requirements.types import RequirementAgentRequest
 from beeai_framework.backend import SystemMessage
+from beeai_framework.errors import FrameworkError
 from beeai_framework.template import PromptTemplate
+from beeai_framework.tools import AnyTool, Tool
 from beeai_framework.utils.strings import to_json
-
-
-from beeai_framework.tools import AnyTool
-from beeai_framework.tools.tool import Tool
 
 T = TypeVar("T", bound=Any)
 
