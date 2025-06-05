@@ -7,10 +7,8 @@ on:
   workflow_dispatch:
   push:
     branches: ["main"]
-    paths:
-      # TODO: to be updated
-      - 'docs-mintlify/**/*.mdx'
   pull_request:
+    branches: ["main"]
     paths:
       - 'docs-mintlify/**/*.mdx'
       - 'python/**/*.py'
@@ -43,6 +41,9 @@ jobs:
 
   snippets:
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: python
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
@@ -56,7 +57,5 @@ jobs:
           cache: "yarn"
           # TODO: to be updated
           cache-dependency-path: "docs-mintlify/yarn.lock"
-      - name: Install dependencies
-        run: yarn install --immutable
       - name: Check snippets
         run: yarn snippets:check
