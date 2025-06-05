@@ -2,17 +2,17 @@ import asyncio
 import math
 
 from beeai_framework.agents.experimental import RequirementAgent
-from beeai_framework.agents.experimental.prompts import (
+from beeai_framework.agents.experimental.requirements import Requirement, Rule
+from beeai_framework.agents.experimental.requirements.conditional import ConditionalRequirement
+from beeai_framework.agents.experimental.requirements.prompts import (
     RequirementAgentCycleDetectionPrompt,
     RequirementAgentSystemPrompt,
     RequirementAgentTaskPrompt,
     RequirementAgentToolErrorPrompt,
     RequirementAgentToolNoResultPrompt,
 )
-from beeai_framework.agents.experimental.requirements import Requirement, Rule
-from beeai_framework.agents.experimental.requirements.conditional import ConditionalRequirement
 from beeai_framework.agents.experimental.requirements.requirement import run_with_context
-from beeai_framework.agents.experimental.types import RequirementAgentRunState, RequirementAgentTemplates
+from beeai_framework.agents.experimental.requirements.types import RequirementAgentRunState, RequirementAgentTemplates
 from beeai_framework.backend import ChatModel
 from beeai_framework.context import RunContext
 from beeai_framework.memory import UnconstrainedMemory

@@ -4,7 +4,7 @@ from deepeval.test_case import ConversationalTestCase, LLMTestCase, ToolCall
 from pydantic import BaseModel
 
 from beeai_framework.agents.experimental import RequirementAgent
-from beeai_framework.agents.experimental.types import RequirementAgentRunStateStep
+from beeai_framework.agents.experimental.requirements.types import RequirementAgentRunStateStep
 from beeai_framework.agents.experimental.utils._tool import FinalAnswerTool
 from beeai_framework.tools.think import ThinkTool
 from beeai_framework.tools.tool import Tool

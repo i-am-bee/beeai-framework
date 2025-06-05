@@ -15,7 +15,7 @@
 
 from pydantic import BaseModel
 
-from beeai_framework.agents.experimental.types import RequirementAgentRequest, RequirementAgentRunState
+from beeai_framework.agents.experimental.requirements.types import RequirementAgentRequest, RequirementAgentRunState
 from beeai_framework.backend import ChatModelOutput
 
 

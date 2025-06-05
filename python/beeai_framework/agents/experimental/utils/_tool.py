@@ -26,7 +26,7 @@ from beeai_framework.errors import FrameworkError
 from beeai_framework.tools import AnyTool, StringToolOutput, Tool, ToolError, ToolOutput, ToolRunOptions
 
 if TYPE_CHECKING:
-    from beeai_framework.agents.experimental.types import RequirementAgentRunState
+    from beeai_framework.agents.experimental.requirements.types import RequirementAgentRunState
 
 
 async def _run_tool(

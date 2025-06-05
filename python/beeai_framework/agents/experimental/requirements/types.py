@@ -17,7 +17,7 @@ from typing import Annotated, Any
 
 from pydantic import BaseModel, ConfigDict, Field, InstanceOf
 
-from beeai_framework.agents.experimental.prompts import (
+from beeai_framework.agents.experimental.requirements.prompts import (
     RequirementAgentCycleDetectionPrompt,
     RequirementAgentCycleDetectionPromptInput,
     RequirementAgentSystemPrompt,

@@ -25,7 +25,7 @@ from beeai_framework.agents.experimental.requirements.requirement import (
     Rule,
     run_with_context,
 )
-from beeai_framework.agents.experimental.types import RequirementAgentRunState
+from beeai_framework.agents.experimental.requirements.types import RequirementAgentRunState
 from beeai_framework.agents.experimental.utils._tool import FinalAnswerTool
 from beeai_framework.context import RunContext, RunContextStartEvent
 from beeai_framework.emitter import EmitterOptions, EventMeta
