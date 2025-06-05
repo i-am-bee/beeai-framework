@@ -81,7 +81,7 @@ class Requirement(ABC, Generic[T]):
         self._priority = value
 
     @abstractmethod
-    def run(self, input: T) -> Run[list[Rule]]: ...
+    def run(self, state: T) -> Run[list[Rule]]: ...
 
     def init(self, *, tools: list[AnyTool], ctx: RunContext) -> None:
         pass
@@ -135,8 +135,8 @@ def requirement(
             name = req_name or fn.__name__
 
             @run_with_context
-            async def run(self, input: T, context: RunContext) -> list[Rule]:
-                result = fn(input, context)
+            async def run(self, state: T, context: RunContext) -> list[Rule]:
+                result = fn(state, context)
                 if inspect.isawaitable(result):
                     return await result
                 else:

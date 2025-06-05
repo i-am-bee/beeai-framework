@@ -23,7 +23,8 @@ Building agents that work reliably across multiple LLMs is difficult. Most agent
 - This structure ensures valid responses with structured outputs and eliminates parsing errors
 
 **Requirements Control Tool Usage**
-You can define rules that control when and how tools are used:
+> You can define rules that control when and how tools are used.
+
 - "Only use tool A after tool B has been called"
 - "Tool D must be used exactly twice, but not two times in a row"
 - "Tool E can only be used after both tool A and tool B have been used"
@@ -42,9 +43,9 @@ from beeai_framework.agents.experimental.requirements.conditional import Conditi
 agent = RequirementAgent(
     llm=ChatModel.from_name("ollama:granite3.3:8b"),
     tools=[
-        ThinkTool(),             # For reasoning
-        OpenMeteoTool(),         # For weather data
-        DuckDuckGoSearchTool()   # For event search
+        ThinkTool(),             # to reason
+        OpenMeteoTool(),         # retrieve weather data
+        DuckDuckGoSearchTool()   # search web
     ],
     instructions="Plan activities for a given destination based on current weather and events.",
     requirements=[
@@ -66,7 +67,13 @@ This agent will:
 3. Search for events using `DuckDuckGoSearchTool` (at least once)
 4. Provide recommendations based on the gathered information
 
-➡️ Check out more [examples](https://github.com/i-am-bee/beeai-framework/tree/main/python/examples/agents/experimental/requirement) (multi-agent, custom requirements, ...).
+**➡️ Check out the following examples**
+
+- [Multi-agent](https://github.com/i-am-bee/beeai-framework/blob/main/python/examples/agents/experimental/requirement/multi_agent.py) system via handoffs.
+- [ReAct](https://github.com/i-am-bee/beeai-framework/blob/main/python/examples/agents/experimental/requirement/multi_agent.py) in a second.
+- Generating [text](https://github.com/i-am-bee/beeai-framework/blob/main/python/examples/agents/experimental/requirement/structured_output.py) and [structured](https://github.com/i-am-bee/beeai-framework/blob/main/python/examples/agents/experimental/requirement/text_output.py) output.
+- [Advanced](https://github.com/i-am-bee/beeai-framework/blob/main/python/examples/agents/experimental/requirement/complex.py) (detailed configuration).
+
 
 ## Requirements and Rules
 
@@ -88,7 +95,7 @@ When requirements generate conflicting rules, the system applies this precedence
 - **Multiple prevention rules combine:** All `prevent_stop` rules are respected
 
 <Warning>
-Requirements are evaluated on every iteration before calling the LLM. Design them to be efficient for frequent execution.
+Requirements are evaluated on every iteration before calling the LLM.
 </Warning>
 
 <Tip>
@@ -183,6 +190,8 @@ ConditionalRequirement(
 )
 ```
 
+➡️ See the [full example](https://github.com/i-am-bee/beeai-framework/blob/main/python/examples/agents/experimental/requirement/complex.py#L56-L82).
+
 <Tip>
 Pass a class instance (e.g., `weather_tool = ...`) or a class (`OpenMeteoTool`) rather than a tool's name. Some tools may have dynamically generated names.
 </Tip>
@@ -193,17 +202,25 @@ The reasoner throws an error if it detects contradictory rules or a rule without
 
 ## Ask Permission Requirement
 
-Some tools may be expensive to run or have destructive effects. For these tools, you may want to get approval from an external system or directly from the user.
+Some tools may be expensive to run or have destructive effects.
+For these tools, you may want to get **approval from an external system or directly from the user**.
+
+The following agent firstly asks the user before it runs the `remove_data` or the `get_data` tool.
 
 ```py
 RequirementAgent(
   llm=ChatModel.from_name("ollama:granite3.3:8b"),
   tools=[get_data, remove_data, update_data],
-  requirements=[AskPermissionRequirement([remove_data, get_data])]
+  requirements=[
+    AskPermissionRequirement([remove_data, get_data])
+  ]
 )
 ```
 
 ### Using a Custom Handler
+
+By default, the approval process is done as a simple prompt in terminal.
+The framework provides a simple way to provide a custom implementation.
 
 ```py
 async def handler(tool: Tool, input: dict[str, Any]) -> bool:
@@ -217,12 +234,12 @@ AskPermissionRequirement(..., handler=handler)
 
 ```py
 AskPermissionRequirement(
-    include=[...], # (optional) List of targets (tool name, instance, or class) requiring explicit approval
-    exclude=[...], # (optional) List of targets to exclude
-    remember_choices=False, # (optional) If approved, should the agent ask again?
-    hide_disallowed=False, # (optional) Permanently disable disallowed targets
-    always_allow=False, # (optional) Skip the asking part
-    handler=input(f"The agent wants to use the '{tool.name}' tool.\nInput: {tool_input}\nDo you allow it? (yes/no): ").strip().startswith("yes") # (optional) Custom handler, can be async
+  include=[...], # (optional) List of targets (tool name, instance, or class) requiring explicit approval
+  exclude=[...], # (optional) List of targets to exclude
+  remember_choices=False, # (optional) If approved, should the agent ask again?
+  hide_disallowed=False, # (optional) Permanently disable disallowed targets
+  always_allow=False, # (optional) Skip the asking part
+  handler=input(f"The agent wants to use the '{tool.name}' tool.\nInput: {tool_input}\nDo you allow it? (yes/no): ").strip().startswith("yes") # (optional) Custom handler, can be async
 )
 ```
 
@@ -235,13 +252,13 @@ If no targets are specified, permission is required for all tools.
 You can create a custom requirement by implementing the base Requirement class.
 The Requirement class has the following lifecycle:
 
-1. An external caller invokes init(tools):
+1. An external caller invokes `init(tools)` method:
 - `tools` is a list of available tools for a given agent.
 - This method is called only once, at the very beginning.
 - It is an ideal place to introduce hooks, validate the presence of certain tools, etc.
 - The return type of the `init` method is `None`.
 
-2. An external caller invokes run(state):
+2. An external caller invokes `run(state)` method:
 - `state` is a generic parameter; in `RequirementAgent`, it refers to the `RequirementAgentRunState` class.
 - This method is called multiple times, typically before an LLM call.
 - The return type of the `run` method is a list of rules.

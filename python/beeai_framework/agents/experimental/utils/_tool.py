@@ -64,6 +64,10 @@ async def _run_tools(
     )
 
 
+class FinalAnswerToolSchema(BaseModel):
+    response: str = Field(description="The final answer to the user")
+
+
 class FinalAnswerTool(Tool[BaseModel, ToolRunOptions, StringToolOutput]):
     name = "final_answer"
     description = "Sends the final answer to the user"
@@ -97,10 +101,11 @@ class FinalAnswerTool(Tool[BaseModel, ToolRunOptions, StringToolOutput]):
         )
 
     async def _run(self, input: BaseModel, options: ToolRunOptions | None, context: RunContext) -> StringToolOutput:
+        self._state.result = input
         if self.input_schema is self._expected_output:
-            self._state.result = AssistantMessage(input.model_dump_json())
+            self._state.answer = AssistantMessage(input.model_dump_json())
         else:
-            self._state.result = AssistantMessage(input.response)  # type: ignore
+            self._state.answer = AssistantMessage(input.response)  # type: ignore
 
         return StringToolOutput("Message has been sent")
 
@@ -108,6 +113,6 @@ class FinalAnswerTool(Tool[BaseModel, ToolRunOptions, StringToolOutput]):
 class ToolInvocationResult(BaseModel):
     msg: InstanceOf[MessageToolCallContent]
     tool: InstanceOf[AnyTool] | None
-    input: dict[str, Any]
+    input: Any
     output: InstanceOf[ToolOutput]
     error: InstanceOf[FrameworkError] | None
