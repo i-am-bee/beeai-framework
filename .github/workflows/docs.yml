@@ -12,8 +12,9 @@ on:
       - 'docs-mintlify/**/*.mdx'
   pull_request:
     paths:
-      # TODO: to be updated
       - 'docs-mintlify/**/*.mdx'
+      - 'python/**/*.py'
+      - 'typescript/**/*.ts'
 
 jobs:
   links:
@@ -39,3 +40,23 @@ jobs:
             --max-concurrency 10
             --max-retries 0
             './**/*.mdx'
+
+  snippets:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+      - name: Enable Corepack
+        run: corepack enable
+      - name: Use Node.js
+        uses: actions/setup-node@v4
+        with:
+          # TODO: to be updated
+          node-version-file: "docs-mintlify/.nvmrc"
+          cache: "yarn"
+          # TODO: to be updated
+          cache-dependency-path: "docs-mintlify/yarn.lock"
+      - name: Install dependencies
+        run: yarn install --immutable
+      - name: Check snippets
+        run: yarn snippets:check
