@@ -188,36 +188,8 @@ default = "pass"
         { "ref" = "format --fix ${TARGET}"},
         { "ref" = "lint --fix ${TARGET}" },
         { "ref" = "type-check ${TARGET}" },
-        { "ref" = "docs --type check"},
         { "ref" = "copyright --type check ${TARGET}"},
     ]
-
-[tool.poe.tasks.docs]
-help = "Documentation related commands"
-control.expr = "type"
-args = ["type"]
-
-    [[tool.poe.tasks.docs.switch]]
-    case = "build"
-    help = "Update sources for the documentation"
-    sequence = [
-        { shell = "npx --yes embedme --source-root=. docs/**/*.md" },
-        { "ref" = "format --fix docs"},
-        { "ref" = "lint --fix docs" },
-        { "shell" = "git add -u docs" }
-    ]
-
-    [[tool.poe.tasks.docs.switch]]
-    case = "check"
-    help = "Update sources for the documentation"
-    sequence = [
-        { shell = "npx --yes embedme --source-root=. docs/**/*.md --verify" },
-    ]
-
-    [[tool.poe.tasks.docs.switch]]
-    case = "watch"
-    help = "Open docs web dev mode"
-    shell = "npx --yes docsify-cli serve ./docs --open"
 
 [tool.poe.tasks.copyright]
 help = "Copyright headers"

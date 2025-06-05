@@ -85,8 +85,6 @@
     },
     "hooks": {
       "before:init": [
-        "yarn docs:check",
-        "[ \"$RELEASE_SKIP_DOCS_LINKS\" = \"true\" ] && echo 'Skipping docs links check.' || yarn docs:links:check",
         "yarn lint",
         "yarn ts:check",
         "[ \"$RELEASE_SKIP_TESTS\" = \"true\" ] && echo 'Skipping tests.' || yarn test:all"
@@ -95,7 +93,6 @@
         "yarn build"
       ],
       "before:release": [
-        "yarn docs:build && git add . --update",
         "yarn lint:fix && yarn format:fix && git add . --update"
       ]
     },
@@ -156,11 +153,6 @@
     "ts:check": "tsc --noEmit && tsc -p tsconfig.examples.json --noEmit",
     "start": "tsx --tsconfig tsconfig.examples.json",
     "start:bee": "yarn start -- examples/agents/bee.ts",
-    "docs:build": "embedme --source-root=. docs/**/*.md && yarn lint:fix docs/ && yarn prettier --write docs/",
-    "docs:check": "embedme --source-root=. docs/**/*.md --verify",
-    "docs:links": "linkinator . --timeout=10000 --retry --markdown --directory-listing --skip node_modules --skip CHANGELOG.md --skip docs/CHANGELOG.md --skip docs/_sidebar.md --skip \"https://ai.meta.com/blog/meta-llama-3-1/\" --include",
-    "docs:links:check": "yarn docs:links docs/**/*.md",
-    "docs:watch": "docsify serve ./docs --open",
     "lint": "yarn eslint",
     "prepare": "../.githooks/install.sh",
     "lint:fix": "yarn eslint --fix",
@@ -178,7 +170,7 @@
     "release": "release-it",
     "_ensure_env": "cp -n .env.template .env || true",
     "git:commit-msg": "yarn commitlint --edit --",
-    "git:pre-commit": "yarn copyright:check && yarn docs:check && yarn lint && yarn format && yarn ts:check && yarn run test:unit"
+    "git:pre-commit": "yarn copyright:check && yarn lint && yarn format && yarn ts:check && yarn run test:unit"
   },
   "dependencies": {
     "@ai-zen/node-fetch-event-source": "^2.1.4",
@@ -319,7 +311,6 @@
     "@types/object-hash": "^3.0.6",
     "@types/turndown": "^5.0.5",
     "@zilliz/milvus2-sdk-node": "^2.5.1",
-    "docsify-cli": "^4.4.4",
     "dotenv": "^16.4.7",
     "embedme": "^1.22.1",
     "eslint": "^9.17.0",
