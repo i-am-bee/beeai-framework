@@ -147,13 +147,6 @@ We are using GitHub Issues to manage public bugs. We keep a close eye on this, s
 
 This project and everyone participating in it are governed by the [Code of Conduct](/CODE_OF_CONDUCT.md). By participating, you are expected to uphold this code. Please read the [full text](/CODE_OF_CONDUCT.md) so that you can read which actions may or may not be tolerated.
 
-# Documentation
-
-The BeeAI Framework documentation automatically generates code snippets from the source files located in the examples directory.
-If you want to make changes to the documentation, or if you have updated any example files, you must regenerate the documentation to ensure it reflects the latest changes.
-
-[Learn more about the documentation](/docs/README.md).
-
 ## Legal notice
 
 All content in these repositories including code has been provided by IBM under the associated open source software license and IBM is under no obligation to provide enhancements, updates, or support. IBM developers produced this code as an open source project (not as an IBM product), and IBM makes no assertions as to the level of quality nor security, and will not be maintaining this code going forward.
