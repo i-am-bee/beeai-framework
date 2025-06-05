@@ -6,8 +6,7 @@ from datetime import UTC, datetime
 
 from pydantic import BaseModel, Field
 
-from beeai_framework.adapters.ollama import OllamaChatModel
-from beeai_framework.adapters.ollama.backend.embedding import OllamaEmbeddingModel
+from beeai_framework.adapters.ollama import OllamaChatModel, OllamaEmbeddingModel
 from beeai_framework.backend import (
     AnyMessage,
     ChatModel,
