@@ -32,7 +32,7 @@ from beeai_framework.agents.experimental.requirements.requirement import (
     Rule,
     run_with_context,
 )
-from beeai_framework.agents.experimental.types import RequirementAgentRunState
+from beeai_framework.agents.experimental.requirements.types import RequirementAgentRunState
 from beeai_framework.context import RunContext
 from beeai_framework.tools import AnyTool
 

@@ -15,22 +15,24 @@
 from collections.abc import Sequence
 from typing import Any
 
+
+from beeai_framework.agents.experimental.requirements.utils import RequirementsReasoner
 from pydantic import BaseModel
 
 from beeai_framework.agents import AgentError, AgentExecutionConfig, AgentMeta
 from beeai_framework.agents.base import BaseAgent
-from beeai_framework.agents.experimental._utils import _create_system_message
-from beeai_framework.agents.experimental.events import (
+from beeai_framework.agents.experimental.requirements._utils import _create_system_message
+from beeai_framework.agents.experimental.requirements.events import (
     RequirementAgentStartEvent,
     RequirementAgentSuccessEvent,
     requirement_agent_event_types,
 )
-from beeai_framework.agents.experimental.prompts import (
+from beeai_framework.agents.experimental.requirements.prompts import (
     RequirementAgentCycleDetectionPromptInput,
     RequirementAgentTaskPromptInput,
 )
 from beeai_framework.agents.experimental.requirements.requirement import Requirement
-from beeai_framework.agents.experimental.types import (
+from beeai_framework.agents.experimental.requirements.types import (
     RequirementAgentRunOutput,
     RequirementAgentRunState,
     RequirementAgentRunStateStep,
@@ -38,7 +40,6 @@ from beeai_framework.agents.experimental.types import (
     RequirementAgentTemplates,
     RequirementAgentTemplatesKeys,
 )
-from beeai_framework.agents.experimental.utils._llm import RequirementsReasoner
 from beeai_framework.agents.experimental.utils._tool import FinalAnswerTool, _run_tools
 from beeai_framework.agents.tool_calling.utils import ToolCallChecker, ToolCallCheckerConfig
 from beeai_framework.backend.chat import ChatModel

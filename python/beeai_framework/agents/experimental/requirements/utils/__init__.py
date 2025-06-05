@@ -12,6 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-__all__ = ["RequirementAgent"]
+from beeai_framework.agents.experimental.requirements.utils.requirement_reasoner import RequirementsReasoner
 
-from beeai_framework.agents.experimental.requirements.agent import RequirementAgent
+__all__ = ["RequirementsReasoner"]

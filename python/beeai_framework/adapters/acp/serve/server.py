@@ -19,7 +19,7 @@ from datetime import UTC, datetime, timedelta
 from typing import Any, Generic, Self
 
 from beeai_framework.agents.experimental import RequirementAgent
-from beeai_framework.agents.experimental.events import RequirementAgentSuccessEvent
+from beeai_framework.agents.experimental.requirements.events import RequirementAgentSuccessEvent
 
 try:
     import acp_sdk.models as acp_models

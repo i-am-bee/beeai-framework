@@ -11,15 +11,16 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
 import contextlib
 from collections.abc import Sequence
 from typing import Literal
 
-from beeai_framework.agents.experimental.requirements.requirement import Requirement, Rule
-from beeai_framework.agents.experimental.types import RequirementAgentRequest, RequirementAgentRunState
+from beeai_framework.errors import FrameworkError
+from beeai_framework.agents.experimental.requirements.types import RequirementAgentRequest, RequirementAgentRunState
+from beeai_framework.agents.experimental.requirements.requirement import Requirement, Rule 
 from beeai_framework.agents.experimental.utils._tool import FinalAnswerTool
 from beeai_framework.context import RunContext
-from beeai_framework.errors import FrameworkError
 from beeai_framework.tools import AnyTool
 from beeai_framework.tools.tool import Tool
 from beeai_framework.utils.lists import remove_by_reference
