@@ -170,7 +170,6 @@ poe test --type e2e
 - `poe build`
 - `poe commit`
 - `poe copyright` and `poe copyright --type check`
-- `poe docs --type build` and `poe docs --type check`
 
 #### Follow Conventional Commit Messages
 
@@ -201,16 +200,6 @@ poe commit "<type>(<scope>): <subject>"
 ```
 
 By following these steps, you'll be all set to contribute to our project! If you encounter any issues during the setup process, please feel free to open an issue.
-
-## Updating examples and embedding
-
-Currently [embedme](https://github.com/zakhenry/embedme) is used to embed code examples directly in documentation. Supported file types can be found [here](https://github.com/zakhenry/embedme?tab=readme-ov-file#multi-language).
-
-Once an example is edited or a new one is created and referenced running the following command will update the documentation.
-
-```bash
-poe docs --type build
-```
 
 ## Legal
 
