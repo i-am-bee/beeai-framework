@@ -41,9 +41,6 @@ jobs:
 
   snippets:
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: python
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
@@ -56,4 +53,6 @@ jobs:
           cache: "yarn"
           cache-dependency-path: "docs/yarn.lock"
       - name: Check snippets
-        run: yarn snippets:check
+        run: |
+          cd docs
+          yarn snippets:check
