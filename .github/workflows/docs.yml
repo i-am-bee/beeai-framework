@@ -3,10 +3,6 @@ name: Documentation
 permissions:
   contents: read
 
-defaults:
-  run:
-    working-directory: ./docs
-
 on:
   workflow_dispatch:
   push:
@@ -57,6 +53,9 @@ jobs:
           cache: "yarn"
           cache-dependency-path: "docs/yarn.lock"
       - name: Install dependencies
+        working-directory: ./docs
         run: yarn install --immutable
       - name: Check snippets
-        run: yarn snippets:check
+        run: |
+          cd docs
+          yarn snippets:check
