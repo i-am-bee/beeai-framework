@@ -152,7 +152,7 @@ This project and everyone participating in it are governed by the [Code of Condu
 The BeeAI Framework documentation automatically generates code snippets from the source files located in the examples directory.
 If you want to make changes to the documentation, or if you have updated any example files, you must regenerate the documentation to ensure it reflects the latest changes.
 
-[Learn more about the documentation](/docs-mintlify/README.md).
+[Learn more about the documentation](/docs/README.md).
 
 ## Legal notice
 
