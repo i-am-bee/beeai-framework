@@ -26,12 +26,14 @@ class PrematureStopRequirement(Requirement[RequirementAgentRunState]):
         # we take the last step's output (if exists) or the user's input
         last_step = state.steps[-1].output.get_text_content() if state.steps else state.input.text
         if self._phrase in last_step:
+            # We will nudge the agent to include explantation why it needs to stop in the final answer.
             await state.memory.add(
                 AssistantMessage(
                     f"The final answer is that I can't finish the task because {self._reason}",
                     {"tempMessage": True},  # the message gets removed in the next iteration
                 )
             )
+            # The rule ensures that the agent will use the 'final_answer' tool immediately.
             return [Rule(target="final_answer", forced=True)]
             # or return [Rule(target=FinalAnswerTool, forced=True)]
         else:

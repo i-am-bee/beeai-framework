@@ -83,6 +83,8 @@ class RequirementAgentRunState(BaseModel):
 
     @property
     def input(self) -> UserMessage:
+        """Get the last user message."""
+
         return next(msg for msg in reversed(self.memory.messages) if isinstance(msg, UserMessage))
 
 
