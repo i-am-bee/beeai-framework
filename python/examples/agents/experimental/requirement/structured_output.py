@@ -23,7 +23,7 @@ async def main() -> None:
     response = await agent.run("Generate fictional characters", expected_output=Characters).middleware(
         GlobalTrajectoryMiddleware()
     )
-    for index, character in response.answer_obj:
+    for index, character in response.answer_structured:
         print("Index:", index)
         print("-> Full Name:", character.first_name, character.last_name)
         print("-> Age:", character.age)

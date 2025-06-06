@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-__all__ = ["RequirementAgent"]
+__all__ = ["RequirementAgent", "RequirementAgentRunOutput", "RequirementAgentRunState"]
 
 from beeai_framework.agents.experimental.agent import RequirementAgent
+from beeai_framework.agents.experimental.types import RequirementAgentRunOutput, RequirementAgentRunState

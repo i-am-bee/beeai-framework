@@ -278,7 +278,7 @@ class RequirementAgent(BaseAgent[RequirementAgentRunOutput]):
                 await self.memory.add_many(extract_last_tool_call_pair(state.memory) or [])
 
             return RequirementAgentRunOutput(
-                answer=state.answer, memory=state.memory, state=state, answer_obj=state.result
+                answer=state.answer, memory=state.memory, state=state, answer_structured=state.result
             )
 
         return self._to_run(

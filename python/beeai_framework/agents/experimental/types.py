@@ -86,12 +86,12 @@ class RequirementAgentRunState(BaseModel):
         return next(msg for msg in reversed(self.memory.messages) if isinstance(msg, UserMessage))
 
 
-TResult = TypeVar("TResult", bound=BaseModel, default=Any)
+TAnswer = TypeVar("TAnswer", bound=BaseModel, default=Any)
 
 
-class RequirementAgentRunOutput(BaseModel, Generic[TResult]):
+class RequirementAgentRunOutput(BaseModel, Generic[TAnswer]):
     answer: InstanceOf[AssistantMessage]
-    answer_obj: TResult
+    answer_structured: TAnswer
     memory: InstanceOf[BaseMemory]
     state: RequirementAgentRunState
 
