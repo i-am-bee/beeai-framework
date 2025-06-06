@@ -13,5 +13,6 @@
 # limitations under the License.
 
 from beeai_framework.adapters.watsonx.backend.chat import WatsonxChatModel
+from beeai_framework.adapters.watsonx.backend.embedding import WatsonxEmbeddingModel
 
-__all__ = ["WatsonxChatModel"]
+__all__ = ["WatsonxChatModel", "WatsonxEmbeddingModel"]
