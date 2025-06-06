@@ -17,7 +17,7 @@ import json
 from asyncio import create_task
 from typing import TYPE_CHECKING, Any
 
-from pydantic import BaseModel, Field, InstanceOf, create_model
+from pydantic import BaseModel, Field, InstanceOf
 
 from beeai_framework.backend import AssistantMessage, MessageToolCallContent
 from beeai_framework.context import RunContext
@@ -84,21 +84,20 @@ class FinalAnswerTool(Tool[BaseModel, ToolRunOptions, StringToolOutput]):
 
     @property
     def input_schema(self) -> type[BaseModel]:
-        return (
-            self._expected_output
-            if (
-                self._expected_output is not None
-                and isinstance(self._expected_output, type)
-                and issubclass(self._expected_output, BaseModel)
-            )
-            else create_model(
-                f"{self.name}Schema",
-                response=(
-                    str,
-                    Field(description=self._expected_output or None),
-                ),
-            )
-        )
+        expected_output = self._expected_output
+
+        if expected_output is None:
+            return FinalAnswerToolSchema
+        elif isinstance(expected_output, type) and issubclass(expected_output, BaseModel):
+            return expected_output
+        elif isinstance(expected_output, str):
+
+            class CustomFinalAnswerToolSchema(FinalAnswerToolSchema):
+                response: str = Field(description=expected_output)  # type: ignore
+
+            return CustomFinalAnswerToolSchema
+        else:
+            return FinalAnswerToolSchema
 
     async def _run(self, input: BaseModel, options: ToolRunOptions | None, context: RunContext) -> StringToolOutput:
         self._state.result = input
