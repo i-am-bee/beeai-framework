@@ -16,10 +16,10 @@
 from abc import ABC, abstractmethod
 from collections.abc import Sequence
 from functools import cached_property
-from typing import Any, Self, TypedDict
+from typing import Any, Self
 
 from pydantic import ConfigDict, TypeAdapter
-from typing_extensions import Unpack
+from typing_extensions import TypedDict, Unpack
 
 from beeai_framework.backend.constants import ProviderName
 from beeai_framework.backend.errors import EmbeddingModelError
