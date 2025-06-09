@@ -29,7 +29,7 @@ load_dotenv()  # take environment variables
 
 POPULATE_VECTOR_DB = True
 VECTOR_DB_PATH_4_DUMP = "/Users/antonp/code/tmp/vector.db.dump"
-LONG_DOCUMENT_LOCATION = "/Users/antonp/Downloads/some_text.txt"
+LONG_DOCUMENT_LOCATION = "/Users/antonp/Downloads/various_malware_details.txt"
 
 
 async def populate_documents() -> VectorStore:
@@ -70,7 +70,7 @@ async def main() -> None:
         vector_store=vector_store
     )
 
-    response = await agent.run(RunInput(message=UserMessage("Why is the sky blue?")))
+    response = await agent.run(RunInput(message=UserMessage("Tell me about the Polar malware")))
     print(response.state)
 
 
