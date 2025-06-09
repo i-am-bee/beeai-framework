@@ -21,7 +21,7 @@ from pydantic import BaseModel
 
 from beeai_framework.agents.errors import AgentError
 from beeai_framework.agents.types import AgentMeta
-from beeai_framework.context import Run, RunContext
+from beeai_framework.context import Run, RunContext, RunMiddlewareType
 from beeai_framework.emitter import Emitter
 from beeai_framework.memory import BaseMemory
 from beeai_framework.utils import AbortSignal
@@ -33,6 +33,7 @@ class BaseAgent(ABC, Generic[TOutput]):
     def __init__(self) -> None:
         super().__init__()
         self._is_running = False
+        self.middlewares: list[RunMiddlewareType] = []
 
     @abstractmethod
     def _create_emitter(self) -> Emitter:
@@ -91,7 +92,7 @@ class BaseAgent(ABC, Generic[TOutput]):
             handler,
             signal=signal,
             run_params=run_params,
-        )
+        ).middleware(*self.middlewares)
 
 
 AnyAgent = BaseAgent[Any]

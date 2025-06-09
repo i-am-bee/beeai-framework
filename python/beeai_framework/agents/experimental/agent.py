@@ -51,7 +51,7 @@ from beeai_framework.backend.message import (
     UserMessage,
 )
 from beeai_framework.backend.utils import parse_broken_json
-from beeai_framework.context import Run, RunContext
+from beeai_framework.context import Run, RunContext, RunMiddlewareType
 from beeai_framework.emitter import Emitter
 from beeai_framework.memory.base_memory import BaseMemory
 from beeai_framework.memory.unconstrained_memory import UnconstrainedMemory
@@ -87,6 +87,7 @@ class RequirementAgent(BaseAgent[RequirementAgentRunOutput]):
         templates: dict[RequirementAgentTemplatesKeys, PromptTemplate[Any] | RequirementAgentTemplateFactory]
         | RequirementAgentTemplates
         | None = None,
+        middlewares: Sequence[RunMiddlewareType] | None = None,
     ) -> None:
         super().__init__()
         self._llm = llm
@@ -108,6 +109,7 @@ class RequirementAgent(BaseAgent[RequirementAgentRunOutput]):
         self._tools = list(tools or [])
         self._requirements = list(requirements or [])
         self._meta = AgentMeta(name=name or "", description=description or "", tools=self._tools)
+        self.middlewares.extend(middlewares or [])
 
     def run(
         self,

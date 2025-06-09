@@ -22,9 +22,11 @@ import litellm
 from litellm import aembedding
 from litellm.litellm_core_utils.get_supported_openai_params import get_supported_openai_params
 from litellm.types.utils import EmbeddingResponse
+from typing_extensions import Unpack
 
 from beeai_framework.adapters.litellm.utils import litellm_debug
 from beeai_framework.backend import EmbeddingModel
+from beeai_framework.backend.embedding import EmbeddingModelKwargs
 from beeai_framework.backend.types import EmbeddingModelInput, EmbeddingModelOutput, EmbeddingModelUsage
 from beeai_framework.context import RunContext
 from beeai_framework.logger import Logger
@@ -42,9 +44,9 @@ class LiteLLMEmbeddingModel(EmbeddingModel, ABC):
         model_id: str,
         *,
         provider_id: str,
-        **kwargs: dict[str, Any],
+        **kwargs: Unpack[EmbeddingModelKwargs],
     ) -> None:
-        self._settings: dict[str, Any] = kwargs
+        super().__init__(**kwargs)
         self._model_id = model_id
         self._litellm_provider_id = provider_id
         self.supported_params = get_supported_openai_params(model=self.model_id, custom_llm_provider=provider_id) or []

@@ -14,13 +14,14 @@
 
 import asyncio
 import inspect
+from collections.abc import Sequence
 from functools import cached_property
 from typing import ClassVar, Final, Generic, Literal
 
 from pydantic import BaseModel
 from typing_extensions import TypeVar
 
-from beeai_framework.context import Run, RunContext
+from beeai_framework.context import Run, RunContext, RunMiddlewareType
 from beeai_framework.emitter.emitter import Emitter
 from beeai_framework.errors import FrameworkError
 from beeai_framework.utils.models import ModelLike, check_model, to_model, to_model_optional
@@ -49,11 +50,14 @@ class Workflow(Generic[T, K]):
 
     _RESERVED_STEP_NAMES: ClassVar = [START, SELF, PREV, NEXT, END]
 
-    def __init__(self, schema: type[T], name: str = "Workflow") -> None:
+    def __init__(
+        self, schema: type[T], name: str = "Workflow", *, middlewares: Sequence[RunMiddlewareType] | None = None
+    ) -> None:
         self._name = name
         self._schema = schema
         self._steps: dict[K, WorkflowStepDefinition[T, K]] = {}
         self._start_step: K | None = None
+        self.middlewares: list[RunMiddlewareType] = [*middlewares] if middlewares else []
 
     @cached_property
     def emitter(self) -> Emitter:
@@ -191,7 +195,7 @@ class Workflow(Generic[T, K]):
             handler,
             signal=options.signal if options else None,
             run_params={"state": state, "options": options},
-        )
+        ).middleware(*self.middlewares)
 
     def _find_step(self, current: K) -> WorkflowState[K]:
         index = self.step_names.index(current)

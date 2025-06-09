@@ -14,11 +14,13 @@
 
 
 import os
-from typing import Any
+
+from typing_extensions import Unpack
 
 from beeai_framework.adapters.litellm import utils
 from beeai_framework.adapters.litellm.embedding import LiteLLMEmbeddingModel
 from beeai_framework.backend.constants import ProviderName
+from beeai_framework.backend.embedding import EmbeddingModelKwargs
 
 
 class OpenAIEmbeddingModel(LiteLLMEmbeddingModel):
@@ -32,7 +34,7 @@ class OpenAIEmbeddingModel(LiteLLMEmbeddingModel):
         *,
         api_key: str | None = None,
         base_url: str | None = None,
-        **kwargs: Any,
+        **kwargs: Unpack[EmbeddingModelKwargs],
     ) -> None:
         super().__init__(
             model_id if model_id else os.getenv("OPENAI_EMBEDDING_MODEL", "text-embedding-3-small"),
