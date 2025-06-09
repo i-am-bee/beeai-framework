@@ -1,6 +1,7 @@
 .idea
 .vscode
 .DS_Store
+.env
 
 /docs/typescript
 /docs/python
