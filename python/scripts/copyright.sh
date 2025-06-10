@@ -1,22 +1,11 @@
 #!/bin/bash
 # Copyright 2025 © BeeAI a Series of LF Projects, LLC
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
+# SPDX-License-Identifier: Apache-2.0
 
 set -e
 
 if [ "$#" -eq 0 ]; then
-  TARGETS=('beeai_framework/**/*.py' "cz_commitizen/**/*.py" "tests/**/*.py" "scripts/**/*.{sh,py}")
+  TARGETS=(beeai_framework/**/*.py cz_commitizen/*.py tests/**/*.py scripts/*.{sh,py})
 else
   TARGETS=("${@/#$PWD\//}")
 fi
@@ -42,9 +31,9 @@ TYPE=${TYPE:-add}
 
 if command -v nwa &> /dev/null; then
   echo "Running 'nwa' version $(nwa --version)"
-  nwa "${TYPE}" -l apache -c "$AUTHOR" "${TARGETS[@]}"
+  nwa "${TYPE}" -i "Apache-2.0" -c "$AUTHOR" "${TARGETS[@]}"
 elif command -v docker &> /dev/null; then
-  docker run --rm -v "${PWD}:/src" ghcr.io/b1nary-gr0up/nwa:main "${TYPE}" -l apache -c "$AUTHOR" "${TARGETS[@]}"
+  docker run --rm -v "${PWD}:/src" ghcr.io/b1nary-gr0up/nwa:main "${TYPE}" -i "Apache-2.0" -c "$AUTHOR" "${TARGETS[@]}"
 else
   if [ "$COPYRIGHT_STRICT" = true ] ; then
     echo "Error: 'nwa' is not available. Either install it manually or install go/docker."
