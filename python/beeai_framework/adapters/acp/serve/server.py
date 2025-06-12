@@ -18,6 +18,9 @@ from collections.abc import AsyncGenerator, Awaitable, Callable
 from datetime import UTC, datetime, timedelta
 from typing import Any, Generic, Self
 
+from beeai_framework.agents.experimental import RequirementAgent
+from beeai_framework.agents.experimental.events import RequirementAgentSuccessEvent
+
 try:
     import acp_sdk.models as acp_models
     import acp_sdk.server.context as acp_context
@@ -33,7 +36,7 @@ import uvicorn
 from pydantic import BaseModel
 from typing_extensions import TypedDict, TypeVar, Unpack, override
 
-from beeai_framework.adapters.acp.serve._utils import acp_msg_to_framework_msg
+from beeai_framework.adapters.acp.serve._utils import acp_msgs_to_framework_msgs
 from beeai_framework.adapters.acp.serve.agent import ACPServerAgent
 from beeai_framework.agents import AnyAgent
 from beeai_framework.agents.react.agent import ReActAgent
@@ -42,7 +45,6 @@ from beeai_framework.agents.tool_calling.agent import ToolCallingAgent
 from beeai_framework.agents.tool_calling.events import ToolCallingAgentSuccessEvent
 from beeai_framework.backend.message import (
     AnyMessage,
-    Role,
 )
 from beeai_framework.serve.server import Server
 from beeai_framework.utils import ModelLike
@@ -127,13 +129,8 @@ def _react_agent_factory(agent: ReActAgent, *, metadata: ACPServerMetadata | Non
     async def run(
         input: list[acp_models.Message], context: acp_context.Context
     ) -> AsyncGenerator[acp_types.RunYield, acp_types.RunYieldResume]:
-        framework_messages = [
-            acp_msg_to_framework_msg(Role(message.parts[0].role), str(message))  # type: ignore[attr-defined]
-            for message in input
-        ]
-
         agent.memory.reset()
-        await agent.memory.add_many(framework_messages)
+        await agent.memory.add_many(acp_msgs_to_framework_msgs(input))
 
         async for data, event in agent.run():
             match (data, event.name):
@@ -161,19 +158,11 @@ ACPServer.register_factory(ReActAgent, _react_agent_factory)
 def _tool_calling_agent_factory(
     agent: ToolCallingAgent, *, metadata: ACPServerMetadata | None = None
 ) -> ACPServerAgent:
-    if metadata is None:
-        metadata = {}
-
     async def run(
         input: list[acp_models.Message], context: acp_context.Context
     ) -> AsyncGenerator[acp_types.RunYield, acp_types.RunYieldResume]:
-        framework_messages = [
-            acp_msg_to_framework_msg(Role(message.parts[0].role), str(message))  # type: ignore[attr-defined]
-            for message in input
-        ]
-
         agent.memory.reset()
-        await agent.memory.add_many(framework_messages)
+        await agent.memory.add_many(acp_msgs_to_framework_msgs(input))
 
         last_msg: AnyMessage | None = None
         async for data, _ in agent.run():
@@ -189,6 +178,7 @@ def _tool_calling_agent_factory(
             if isinstance(data, ToolCallingAgentSuccessEvent) and data.state.result is not None:
                 yield acp_models.MessagePart(content=data.state.result.text, role="assistant")  # type: ignore[call-arg]
 
+    metadata = metadata or {}
     return ACPServerAgent(
         fn=run,
         name=metadata.get("name", agent.meta.name),
@@ -198,6 +188,39 @@ def _tool_calling_agent_factory(
 
 
 ACPServer.register_factory(ToolCallingAgent, _tool_calling_agent_factory)
+
+
+def _requirement_agent_factory(agent: RequirementAgent, *, metadata: ACPServerMetadata | None = None) -> ACPServerAgent:
+    async def run(
+        input: list[acp_models.Message], context: acp_context.Context
+    ) -> AsyncGenerator[acp_types.RunYield, acp_types.RunYieldResume]:
+        agent.memory.reset()
+        await agent.memory.add_many(acp_msgs_to_framework_msgs(input))
+
+        last_msg: AnyMessage | None = None
+        async for data, _ in agent.run():
+            messages = data.state.memory.messages
+            if last_msg is None:
+                last_msg = messages[-1]
+
+            cur_index = find_index(messages, lambda msg: msg is last_msg, fallback=-1, reverse_traversal=True)  # noqa: B023
+            for message in messages[cur_index + 1 :]:
+                yield {"message": message.to_plain()}
+                last_msg = message
+
+            if isinstance(data, RequirementAgentSuccessEvent) and data.state.answer is not None:
+                yield acp_models.MessagePart(content=data.state.answer.text, role="assistant")  # type: ignore[call-arg]
+
+    metadata = metadata or {}
+    return ACPServerAgent(
+        fn=run,
+        name=metadata.get("name", agent.meta.name),
+        description=metadata.get("description", agent.meta.description),
+        metadata=to_acp_agent_metadata(metadata),
+    )
+
+
+ACPServer.register_factory(RequirementAgent, _requirement_agent_factory)
 
 
 class ACPServerConfig(BaseModel):

@@ -19,6 +19,8 @@ import uvicorn
 from pydantic import BaseModel
 from typing_extensions import TypedDict, TypeVar, Unpack, override
 
+from beeai_framework.agents.experimental import RequirementAgent
+
 try:
     import a2a.server as a2a_server
     import a2a.server.agent_execution as a2a_agent_execution
@@ -140,3 +142,36 @@ def _tool_calling_agent_factory(
 
 
 A2AServer.register_factory(ToolCallingAgent, _tool_calling_agent_factory)
+
+
+def _requirement_agent_factory(
+    agent: RequirementAgent, *, metadata: A2AServerMetadata | None = None
+) -> BaseA2AAgentExecutor:
+    metadata = metadata or {}
+
+    return TollCallingAgentExecutor(
+        agent=agent,
+        agent_card=a2a_types.AgentCard(
+            name=metadata.get("name", agent.meta.name),
+            description=metadata.get("description", agent.meta.description),
+            url=metadata.get("url", "http://localhost:9999"),
+            version=metadata.get("version", "1.0.0"),
+            defaultInputModes=metadata.get("defaultInputModes", ["text"]),
+            defaultOutputModes=metadata.get("defaultOutputModes", ["text"]),
+            capabilities=metadata.get("capabilities", a2a_types.AgentCapabilities(streaming=True)),
+            skills=metadata.get(
+                "skills",
+                [
+                    a2a_types.AgentSkill(
+                        id=metadata.get("name", agent.meta.name),
+                        description=metadata.get("description", agent.meta.description),
+                        name=metadata.get("name", agent.meta.name),
+                        tags=[],
+                    )
+                ],
+            ),
+        ),
+    )
+
+
+A2AServer.register_factory(RequirementAgent, _requirement_agent_factory)

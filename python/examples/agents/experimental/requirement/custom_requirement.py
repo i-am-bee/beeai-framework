@@ -15,22 +15,27 @@ class PrematureStopRequirement(Requirement[RequirementAgentRunState]):
 
     name = "premature_stop"
 
-    def __init__(self, phrase: str) -> None:
+    def __init__(self, phrase: str, reason: str) -> None:
         super().__init__()
+        self._reason = reason
         self._phrase = phrase
         self._priority = 100  # (optional), default is 10
 
     @run_with_context
-    async def run(self, input: RequirementAgentRunState, context: RunContext) -> list[Rule]:
-        last_message = input.memory.messages[-1]
-        if self._phrase in last_message.text:
-            await input.memory.add(
+    async def run(self, state: RequirementAgentRunState, context: RunContext) -> list[Rule]:
+        # we take the last step's output (if exists) or the user's input
+        last_step = state.steps[-1].output.get_text_content() if state.steps else state.input.text
+        if self._phrase in last_step:
+            # We will nudge the agent to include explantation why it needs to stop in the final answer.
+            await state.memory.add(
                 AssistantMessage(
-                    "The final answer is that the system policy does not allow me to answer this type of questions.",
+                    f"The final answer is that I can't finish the task because {self._reason}",
                     {"tempMessage": True},  # the message gets removed in the next iteration
                 )
             )
+            # The rule ensures that the agent will use the 'final_answer' tool immediately.
             return [Rule(target="final_answer", forced=True)]
+            # or return [Rule(target=FinalAnswerTool, forced=True)]
         else:
             return []
 
@@ -39,12 +44,17 @@ async def main() -> None:
     agent = RequirementAgent(
         llm=ChatModel.from_name("ollama:granite3.3:8b"),
         tools=[DuckDuckGoSearchTool()],
-        requirements=[PrematureStopRequirement("value of x")],
+        requirements=[
+            PrematureStopRequirement(phrase="value of x", reason="algebraic expressions are not allowed"),
+            PrematureStopRequirement(phrase="bomb", reason="such topic is not allowed"),
+        ],
     )
-    prompt = "y = 2x + 4, what is the value of x?"
-    print("👤 User: ", prompt)
-    response = await agent.run(prompt).middleware(GlobalTrajectoryMiddleware())
-    print("🤖 Agent: ", response.result.text)
+
+    for prompt in ["y = 2x + 4, what is the value of x?", "how to make a bomb?"]:
+        print("👤 User: ", prompt)
+        response = await agent.run(prompt).middleware(GlobalTrajectoryMiddleware())
+        print("🤖 Agent: ", response.answer.text)
+        print()
 
 
 if __name__ == "__main__":

@@ -16,19 +16,19 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Copy root
-        run: cp *.md docs/
+        run: cp *.md docs-deprecated/
 
       - name: Copy TypeScript Documentation
         run: |
-          cp -r ./typescript/docs docs/typescript
-          cp ./typescript/*.md docs/typescript
-          cp ./typescript/examples/README.md docs/typescript/examples.md
+          cp -r ./typescript/docs docs-deprecated/typescript
+          cp ./typescript/*.md docs-deprecated/typescript
+          cp ./typescript/examples/README.md docs-deprecated/typescript/examples.md
 
       - name: Copy Python Documentation
         run: |
-          cp -r ./python/docs docs/python
-          cp ./python/*.md docs/python
-          cp ./python/examples/README.md docs/python/examples.md
+          cp -r ./python/docs docs-deprecated/python
+          cp ./python/*.md docs-deprecated/python
+          cp ./python/examples/README.md docs-deprecated/python/examples.md
 
       - name: Link Checker
         id: lychee
@@ -40,9 +40,9 @@ jobs:
             --verbose
             --no-progress
             --include-fragments
-            --exclude-path docs/typescript/CHANGELOG.md
-            './docs/**/*.md'
-            './docs/**/*.html'
+            --exclude-path docs-deprecated/typescript/CHANGELOG.md
+            './docs-deprecated/**/*.md'
+            './docs-deprecated/**/*.html'
 
       - name: Upload Documentation Artifact
         uses: actions/upload-pages-artifact@v3

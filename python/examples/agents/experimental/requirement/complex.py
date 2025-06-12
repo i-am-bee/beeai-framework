@@ -42,8 +42,8 @@ class RepeatIfEmptyRequirement(Requirement[RequirementAgentRunState]):
             raise ValueError(f"No tool of type {self._target_cls.__name__} found!")
 
     @run_with_context
-    async def run(self, input: RequirementAgentRunState, ctx: RunContext) -> list[Rule]:
-        last_step = input.steps[-1] if input.steps else None
+    async def run(self, state: RequirementAgentRunState, ctx: RunContext) -> list[Rule]:
+        last_step = state.steps[-1] if state.steps else None
         if last_step and last_step.tool in self._targets and last_step.output.is_empty():
             self._remaining -= 1
             return [Rule(target=last_step.tool.name, forced=True)]
@@ -88,7 +88,7 @@ async def main() -> None:
         expected_output="Detailed plan on what to do from morning to evening, split in sections each with a time range.",
     ).middleware(GlobalTrajectoryMiddleware())
 
-    print(response.result.text)
+    print(response.answer.text)
     # print(response.memory)  # temp memory created
     # print(response.state.iteration)  # number of iterations (steps)
     # print(response.state.steps)  # individual steps

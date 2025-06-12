@@ -1,5 +1,5 @@
 from beeai_framework.adapters.a2a import A2AServer, A2AServerConfig
-from beeai_framework.agents.tool_calling.agent import ToolCallingAgent
+from beeai_framework.agents.experimental import RequirementAgent
 from beeai_framework.backend import ChatModel
 from beeai_framework.memory import UnconstrainedMemory
 from beeai_framework.tools.search.duckduckgo import DuckDuckGoSearchTool
@@ -8,7 +8,7 @@ from beeai_framework.tools.weather import OpenMeteoTool
 
 def main() -> None:
     llm = ChatModel.from_name("ollama:granite3.3:8b")
-    agent = ToolCallingAgent(
+    agent = RequirementAgent(
         llm=llm,
         tools=[DuckDuckGoSearchTool(), OpenMeteoTool()],
         memory=UnconstrainedMemory(),

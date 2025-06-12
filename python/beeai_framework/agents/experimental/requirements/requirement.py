@@ -26,7 +26,7 @@ from beeai_framework.agents.experimental.requirements._utils import (
     _assert_targets_exist,
     _extract_targets,
 )
-from beeai_framework.context import Run, RunContext
+from beeai_framework.context import Run, RunContext, RunMiddlewareType
 from beeai_framework.emitter import Emitter
 from beeai_framework.errors import FrameworkError
 from beeai_framework.tools import AnyTool
@@ -57,6 +57,7 @@ class Requirement(ABC, Generic[T]):
         self._priority = 10
         self.enabled = True
         self.state = {}
+        self.middlewares: list[RunMiddlewareType] = []
 
     @cached_property
     def emitter(self) -> Emitter:
@@ -81,7 +82,7 @@ class Requirement(ABC, Generic[T]):
         self._priority = value
 
     @abstractmethod
-    def run(self, input: T) -> Run[list[Rule]]: ...
+    def run(self, state: T) -> Run[list[Rule]]: ...
 
     def init(self, *, tools: list[AnyTool], ctx: RunContext) -> None:
         pass
@@ -112,7 +113,7 @@ def run_with_context(
             self,
             handler,
             run_params=input.model_dump() if isinstance(input, BaseModel) else input,
-        )  # TODO: check
+        ).middleware(*self.middlewares)
 
     return decorated
 
@@ -135,8 +136,8 @@ def requirement(
             name = req_name or fn.__name__
 
             @run_with_context
-            async def run(self, input: T, context: RunContext) -> list[Rule]:
-                result = fn(input, context)
+            async def run(self, state: T, context: RunContext) -> list[Rule]:
+                result = fn(state, context)
                 if inspect.isawaitable(result):
                     return await result
                 else:

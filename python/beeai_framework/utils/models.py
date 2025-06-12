@@ -13,12 +13,13 @@
 # limitations under the License.
 
 from abc import ABC
-from collections.abc import Sequence
+from collections.abc import Generator, Sequence
 from contextlib import suppress
 from logging import Logger
 from typing import Any, Literal, Optional, TypeVar, Union
 
-from pydantic import BaseModel, ConfigDict, Field, GetJsonSchemaHandler, create_model
+from pydantic import BaseModel, ConfigDict, Field, GetJsonSchemaHandler, RootModel, create_model
+from pydantic.fields import FieldInfo
 from pydantic.json_schema import JsonSchemaValue
 from pydantic_core import CoreSchema, SchemaValidator
 
@@ -128,3 +129,23 @@ def update_model(target: T, *, sources: list[T | None | bool], exclude_unset: bo
 
         for k, v in source.model_dump(exclude_unset=exclude_unset, exclude_defaults=True).items():
             setattr(target, k, v)
+
+
+class ListModel(RootModel[list[T]]):
+    root: list[T]
+
+    def __iter__(self) -> Generator[tuple[str, T], None, None]:
+        for i, item in enumerate(self.root):
+            yield str(i), item
+
+    def __getitem__(self, item: int) -> T:
+        return self.root[item]
+
+
+def to_list_model(target: type[T], field: FieldInfo | None = None) -> type[ListModel[T]]:
+    field = field or Field(...)
+
+    class CustomListModel(ListModel[target]):  # type: ignore
+        root: list[target] = field  # type: ignore
+
+    return CustomListModel

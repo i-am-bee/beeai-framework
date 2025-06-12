@@ -135,7 +135,7 @@ export class ToolCallingAgent extends BaseAgent<
       description: "Sends the final answer to the user",
       inputSchema: finalAnswerToolSchema,
       handler: async (input) => {
-        const result = usePlainResponse ? input.response : JSON.stringify(input.response);
+        const result = usePlainResponse ? input.response : JSON.stringify(input);
         state.result = new AssistantMessage(result);
         return new StringToolOutput("Message has been sent");
       },

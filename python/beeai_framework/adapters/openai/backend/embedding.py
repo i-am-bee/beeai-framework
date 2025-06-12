@@ -17,15 +17,16 @@ import os
 
 from typing_extensions import Unpack
 
+from beeai_framework.adapters.litellm import utils
 from beeai_framework.adapters.litellm.embedding import LiteLLMEmbeddingModel
 from beeai_framework.backend.constants import ProviderName
 from beeai_framework.backend.embedding import EmbeddingModelKwargs
 
 
-class OllamaEmbeddingModel(LiteLLMEmbeddingModel):
+class OpenAIEmbeddingModel(LiteLLMEmbeddingModel):
     @property
     def provider_id(self) -> ProviderName:
-        return "ollama"
+        return "openai"
 
     def __init__(
         self,
@@ -36,14 +37,15 @@ class OllamaEmbeddingModel(LiteLLMEmbeddingModel):
         **kwargs: Unpack[EmbeddingModelKwargs],
     ) -> None:
         super().__init__(
-            model_id if model_id else os.getenv("OLLAMA_EMBEDDING_MODEL", "nomic-embed-text"),
+            model_id if model_id else os.getenv("OPENAI_EMBEDDING_MODEL", "text-embedding-3-small"),
             provider_id="openai",
             **kwargs,
         )
 
-        self._assert_setting_value("api_key", api_key, envs=["OLLAMA_API_KEY"], fallback="ollama")
+        self._assert_setting_value("api_key", api_key, envs=["OPENAI_API_KEY"])
         self._assert_setting_value(
-            "base_url", base_url, envs=["OLLAMA_API_BASE"], fallback="http://localhost:11434", aliases=["api_base"]
+            "base_url", base_url, envs=["OPENAI_API_BASE"], aliases=["api_base"], allow_empty=True
         )
-        if not self._settings["base_url"].endswith("/v1"):
-            self._settings["base_url"] += "/v1"
+        self._settings["extra_headers"] = utils.parse_extra_headers(
+            self._settings.get("extra_headers"), os.getenv("OPENAI_API_HEADERS")
+        )

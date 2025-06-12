@@ -1,3 +1,12 @@
+## python_v0.1.24 (2025-06-08)
+
+### Features
+
+- **agents**: improve RequirementAgent interfaces, examples, docs (#878)
+- expose watsonx embedding model (#877)
+- **backend**: Support OpenAI embedding models (#873)
+- **agents**: allow RequirementAgent to be exposed via ACP,BeeAIPlatform and A2A
+
 ## python_v0.1.23 (2025-06-03)
 
 ### Bug Fixes

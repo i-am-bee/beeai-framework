@@ -14,7 +14,7 @@
 
 import json
 from abc import ABC, abstractmethod
-from collections.abc import AsyncGenerator, Callable
+from collections.abc import AsyncGenerator, Callable, Sequence
 from functools import cached_property
 from typing import Any, ClassVar, Literal, Self
 
@@ -48,7 +48,7 @@ from beeai_framework.backend.utils import (
     parse_model,
 )
 from beeai_framework.cache.null_cache import NullCache
-from beeai_framework.context import Run, RunContext
+from beeai_framework.context import Run, RunContext, RunMiddlewareType
 from beeai_framework.emitter import Emitter
 from beeai_framework.logger import Logger
 from beeai_framework.retryable import Retryable, RetryableConfig, RetryableContext, RetryableInput
@@ -74,8 +74,9 @@ class ChatModelKwargs(TypedDict, total=False):
     parameters: InstanceOf[ChatModelParameters]
     cache: InstanceOf[ChatModelCache]
     settings: dict[str, Any]
+    middlewares: Sequence[RunMiddlewareType]
 
-    __pydantic_config__ = ConfigDict(extra="forbid")  # type: ignore
+    __pydantic_config__ = ConfigDict(extra="forbid", arbitrary_types_allowed=True)  # type: ignore
 
 
 _ChatModelKwargsAdapter = TypeAdapter(ChatModelKwargs)
@@ -103,6 +104,7 @@ class ChatModel(ABC):
         self._settings.update(**exclude_non_annotated(kwargs, ChatModelKwargs))
 
         kwargs = _ChatModelKwargsAdapter.validate_python(kwargs)
+        self.middlewares = [*kwargs.get("middlewares", [])]
 
         parameters = type(self).get_default_parameters()
         update_model(parameters, sources=[kwargs.get("parameters")])
@@ -306,7 +308,7 @@ IMPORTANT: You MUST answer with a JSON object that matches the JSON schema above
             handler,
             signal=abort_signal,
             run_params=model_input.model_dump(),
-        )
+        ).middleware(*self.middlewares)
 
     def create_structure(
         self,
@@ -328,7 +330,7 @@ IMPORTANT: You MUST answer with a JSON object that matches the JSON schema above
             handler,
             signal=abort_signal,
             run_params=model_input.model_dump(),
-        )
+        ).middleware(*self.middlewares)
 
     def config(
         self,

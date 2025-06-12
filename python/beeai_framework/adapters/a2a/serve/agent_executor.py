@@ -74,7 +74,7 @@ class BaseA2AAgentExecutor(a2a_agent_execution.AgentExecutor):
 
             updater.complete(
                 a2a_utils.new_agent_text_message(
-                    response.result.text,
+                    response.answer.text,
                     context.context_id,
                     context.task_id,
                 )

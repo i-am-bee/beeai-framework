@@ -17,7 +17,7 @@ import json
 from asyncio import create_task
 from typing import TYPE_CHECKING, Any
 
-from pydantic import BaseModel, Field, InstanceOf, create_model
+from pydantic import BaseModel, Field, InstanceOf
 
 from beeai_framework.backend import AssistantMessage, MessageToolCallContent
 from beeai_framework.context import RunContext
@@ -64,6 +64,10 @@ async def _run_tools(
     )
 
 
+class FinalAnswerToolSchema(BaseModel):
+    response: str = Field(description="The final answer to the user")
+
+
 class FinalAnswerTool(Tool[BaseModel, ToolRunOptions, StringToolOutput]):
     name = "final_answer"
     description = "Sends the final answer to the user"
@@ -80,27 +84,27 @@ class FinalAnswerTool(Tool[BaseModel, ToolRunOptions, StringToolOutput]):
 
     @property
     def input_schema(self) -> type[BaseModel]:
-        return (
-            self._expected_output
-            if (
-                self._expected_output is not None
-                and isinstance(self._expected_output, type)
-                and issubclass(self._expected_output, BaseModel)
-            )
-            else create_model(
-                f"{self.name}Schema",
-                response=(
-                    str,
-                    Field(description=self._expected_output or None),
-                ),
-            )
-        )
+        expected_output = self._expected_output
+
+        if expected_output is None:
+            return FinalAnswerToolSchema
+        elif isinstance(expected_output, type) and issubclass(expected_output, BaseModel):
+            return expected_output
+        elif isinstance(expected_output, str):
+
+            class CustomFinalAnswerToolSchema(FinalAnswerToolSchema):
+                response: str = Field(description=expected_output)  # type: ignore
+
+            return CustomFinalAnswerToolSchema
+        else:
+            return FinalAnswerToolSchema
 
     async def _run(self, input: BaseModel, options: ToolRunOptions | None, context: RunContext) -> StringToolOutput:
+        self._state.result = input
         if self.input_schema is self._expected_output:
-            self._state.result = AssistantMessage(input.model_dump_json())
+            self._state.answer = AssistantMessage(input.model_dump_json())
         else:
-            self._state.result = AssistantMessage(input.response)  # type: ignore
+            self._state.answer = AssistantMessage(input.response)  # type: ignore
 
         return StringToolOutput("Message has been sent")
 
@@ -108,6 +112,6 @@ class FinalAnswerTool(Tool[BaseModel, ToolRunOptions, StringToolOutput]):
 class ToolInvocationResult(BaseModel):
     msg: InstanceOf[MessageToolCallContent]
     tool: InstanceOf[AnyTool] | None
-    input: dict[str, Any]
+    input: Any
     output: InstanceOf[ToolOutput]
     error: InstanceOf[FrameworkError] | None

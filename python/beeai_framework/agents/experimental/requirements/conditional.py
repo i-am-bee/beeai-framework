@@ -139,13 +139,13 @@ class ConditionalRequirement(Generic[TInput], Requirement[TInput]):
         return self
 
     @run_with_context
-    async def run(self, input: TInput, context: RunContext) -> list[Rule]:
+    async def run(self, state: TInput, context: RunContext) -> list[Rule]:
         source_tool = self._source_tool
         if not source_tool:
             raise RequirementError("Source was not found!", requirement=self)
 
         steps = (
-            [step for step in input.steps if not step.error] if self._only_success_invocations else list(input.steps)
+            [step for step in state.steps if not step.error] if self._only_success_invocations else list(state.steps)
         )
         last_step_tool = steps[-1].tool if steps and steps[-1].tool is not None else None
         invocations = sum(1 if step.tool is source_tool else 0 for step in steps)
@@ -196,7 +196,7 @@ class ConditionalRequirement(Generic[TInput], Requirement[TInput]):
                 return resolve(False)
 
         for check in self._custom_checks:
-            if not check(input):
+            if not check(state):
                 return resolve(False)
 
         return resolve(True)

@@ -4,7 +4,7 @@ import traceback
 
 from pydantic import BaseModel, Field
 
-from beeai_framework.adapters.openai import OpenAIChatModel
+from beeai_framework.adapters.openai import OpenAIChatModel, OpenAIEmbeddingModel
 from beeai_framework.backend import ChatModel, ChatModelNewTokenEvent, UserMessage
 from beeai_framework.emitter import EventMeta
 from beeai_framework.errors import AbortError, FrameworkError
@@ -91,6 +91,15 @@ async def openai_stream_parser() -> None:
     print(result)
 
 
+async def openai_embedding() -> None:
+    embedding_llm = OpenAIEmbeddingModel()
+
+    response = await embedding_llm.create(["Text", "to", "embed"])
+
+    for row in response.embeddings:
+        print(*row)
+
+
 async def main() -> None:
     print("*" * 10, "openai_from_name")
     await openai_from_name()
@@ -106,6 +115,8 @@ async def main() -> None:
     await openai_structure()
     print("*" * 10, "openai_stream_parser")
     await openai_stream_parser()
+    print("*" * 10, "openai_embedding")
+    await openai_embedding()
 
 
 if __name__ == "__main__":

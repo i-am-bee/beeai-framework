@@ -106,7 +106,7 @@ class AskPermissionRequirement(Requirement[RequirementAgentRunState]):
             data.output = StringToolOutput("This tool is not allowed to be used.")
 
     @run_with_context
-    async def run(self, input: RequirementAgentRunState, context: RunContext) -> list[Rule]:
+    async def run(self, state: RequirementAgentRunState, context: RunContext) -> list[Rule]:
         return [
             Rule(
                 target=target,
