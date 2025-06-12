@@ -15,11 +15,9 @@
 import asyncio
 import copy
 import functools
-import inspect
 import re
 import uuid
-from asyncio import Task
-from collections.abc import Callable, Coroutine
+from collections.abc import Callable
 from datetime import UTC, datetime
 from typing import Any, TypeAlias
 
@@ -31,6 +29,7 @@ from beeai_framework.emitter.utils import (
     assert_valid_name,
     assert_valid_namespace,
 )
+from beeai_framework.utils.asynchronous import ensure_async
 from beeai_framework.utils.types import MaybeAsync
 
 MatcherFn: TypeAlias = Callable[["EventMeta"], bool]
@@ -183,7 +182,7 @@ class Emitter:
         listener = Listener(match=create_matcher(), raw=matcher, callback=callback, options=options)
         self._listeners.add(listener)
 
-        return lambda: self._listeners.remove(listener)
+        return lambda: self._listeners.remove(listener) if listener in self._listeners else None
 
     async def emit(self, name: str, value: Any) -> None:
         try:
@@ -194,31 +193,28 @@ class Emitter:
             raise EmitterError.ensure(e)
 
     async def _invoke(self, data: Any, event: EventMeta) -> None:
-        executions: list[Coroutine[Any, Any, Any] | Task[Any]] = []
-        for listener in self._listeners:
-            if not listener.match(event):
-                continue
+        async def run(ln: Listener) -> Any:
+            try:
+                ln_async = ensure_async(ln.callback)
+                return await ln_async(data, event)
+            except Exception as e:
+                raise EmitterError.ensure(
+                    e,
+                    message=f"One of the provided emitter callbacks has failed. Event: {event.path}",
+                    event=event,
+                )
 
-            if listener.options and listener.options.once:
-                self._listeners.remove(listener)
+        async with asyncio.TaskGroup() as tg:
+            for listener in self._listeners:
+                if not listener.match(event):
+                    continue
 
-            async def run(ln: Listener = listener) -> Any:
-                try:
-                    if inspect.iscoroutinefunction(ln.callback):
-                        return await ln.callback(data, event)
-                    else:
-                        return ln.callback(data, event)
-                except Exception as e:
-                    raise EmitterError.ensure(
-                        e, message="One of the provided Emitter callbacks has failed.", event=event
-                    )
+                if listener.options and listener.options.once:
+                    self._listeners.remove(listener)
 
-            if listener.options and listener.options.is_blocking:
-                executions.append(run())
-            else:
-                executions.append(asyncio.create_task(run()))
-
-        await asyncio.gather(*executions)
+                task = tg.create_task(run(listener))
+                if listener.options and listener.options.is_blocking:
+                    _ = await task
 
     def _create_event(self, name: str) -> EventMeta:
         return EventMeta(
