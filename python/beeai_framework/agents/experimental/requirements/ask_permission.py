@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from collections.abc import Sequence
 from typing import Any
 
 from beeai_framework.agents.experimental.requirements._utils import (
@@ -27,12 +28,13 @@ from beeai_framework.agents.experimental.requirements.requirement import (
 )
 from beeai_framework.agents.experimental.types import RequirementAgentRunState
 from beeai_framework.agents.experimental.utils._tool import FinalAnswerTool
-from beeai_framework.context import RunContext, RunContextStartEvent
+from beeai_framework.context import RunContext, RunContextStartEvent, RunMiddlewareType
 from beeai_framework.emitter import EmitterOptions, EventMeta
 from beeai_framework.emitter.utils import create_internal_event_matcher
 from beeai_framework.tools import AnyTool, StringToolOutput
 from beeai_framework.utils import MaybeAsync
 from beeai_framework.utils.asynchronous import ensure_async
+from beeai_framework.utils.io import io_read
 
 AskHandler = MaybeAsync[[AnyTool, dict[str, Any]], bool]
 
@@ -50,9 +52,11 @@ class AskPermissionRequirement(Requirement[RequirementAgentRunState]):
         remember_choices: bool = False,
         hide_disallowed: bool = False,
         always_allow: bool = False,
+        middlewares: Sequence[RunMiddlewareType] | None = None,
     ) -> None:
         super().__init__()
         self.priority += 1
+        self.middlewares.extend(middlewares or [])
         self._include = _extract_targets(include)
 
         self._exclude = _extract_targets(exclude)
@@ -62,17 +66,7 @@ class AskPermissionRequirement(Requirement[RequirementAgentRunState]):
         self._remember_choices = remember_choices
         self._hide_disallowed = hide_disallowed
         self._always_allow = always_allow
-        self._handler = ensure_async(
-            handler
-            if handler
-            else (
-                lambda tool, tool_input: input(
-                    f"The agent wants to use the '{tool.name} tool.'\nInput: {tool_input}\nDo you allow it? (yes/no): "
-                )
-                .strip()
-                .startswith("yes")
-            )
-        )
+        self._handler = ensure_async(handler) if handler else _default_handler
 
     def init(self, *, tools: list[AnyTool], ctx: RunContext) -> None:
         _assert_all_rules_found(self._include, tools)
@@ -117,3 +111,10 @@ class AskPermissionRequirement(Requirement[RequirementAgentRunState]):
             )
             for target, state in self._state.items()
         ]
+
+
+async def _default_handler(tool: AnyTool, input: dict[str, Any]) -> bool:
+    response = await io_read(
+        f"The agent wants to use the '{tool.name} tool.'\nInput: {input}\nDo you allow it? (yes/no): "
+    )
+    return response.strip().startswith("yes")
