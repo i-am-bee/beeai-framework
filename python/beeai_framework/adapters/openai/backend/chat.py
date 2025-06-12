@@ -42,6 +42,7 @@ class OpenAIChatModel(LiteLLMChatModel):
         *,
         api_key: str | None = None,
         base_url: str | None = None,
+        text_completion: bool | None = False,
         **kwargs: Unpack[ChatModelKwargs],
     ) -> None:
         """
@@ -54,7 +55,9 @@ class OpenAIChatModel(LiteLLMChatModel):
             **kwargs: A dictionary of settings to configure the provider.
         """
         super().__init__(
-            model_id if model_id else os.getenv("OPENAI_CHAT_MODEL", "gpt-4o"), provider_id="openai", **kwargs
+            model_id if model_id else os.getenv("OPENAI_CHAT_MODEL", "gpt-4o"),
+            provider_id="text-completion-openai" if text_completion else "openai",
+            **kwargs,
         )
         self._assert_setting_value("api_key", api_key, envs=["OPENAI_API_KEY"])
         self._assert_setting_value(

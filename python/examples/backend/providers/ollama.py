@@ -38,6 +38,12 @@ async def ollama_granite_from_name() -> None:
     print(response.get_text_content())
 
 
+async def ollama_text_completion() -> None:
+    llm = OllamaChatModel("granite3.3:8b", text_completion=True)
+    response = await llm.create(messages=[UserMessage("hello")])
+    print(response.get_text_content())
+
+
 async def ollama_sync() -> None:
     llm = OllamaChatModel("llama3.1")
     user_message = UserMessage("what is the capital of Massachusetts?")
@@ -137,6 +143,8 @@ async def ollama_embedding() -> None:
 async def main() -> None:
     print("*" * 10, "ollama_from_name")
     await ollama_from_name()
+    print("*" * 10, "ollama_text_completion")
+    await ollama_text_completion()
     print("*" * 10, "ollama_granite_from_name")
     await ollama_granite_from_name()
     print("*" * 10, "ollama_sync")

@@ -20,7 +20,7 @@ from asyncio import Queue
 from collections.abc import AsyncGenerator, Awaitable, Callable, Generator
 from contextvars import ContextVar
 from datetime import UTC, datetime
-from typing import Any, Generic, Protocol, Self, TypeVar, runtime_checkable
+from typing import Any, Generic, Protocol, Self, TypeAlias, TypeVar, runtime_checkable
 
 from pydantic import BaseModel, InstanceOf
 
@@ -46,16 +46,22 @@ class RunInstance(Protocol):
 
 
 @runtime_checkable
-class RunMiddleware(Protocol):
+class RunMiddlewareProtocol(Protocol):
     def bind(self, ctx: "RunContext") -> None:
         pass
 
 
 RunMiddlewareFn = Callable[["RunContext"], None]
 
+RunMiddlewareType: TypeAlias = RunMiddlewareFn | RunMiddlewareProtocol
+
 
 class Run(Generic[R]):
-    def __init__(self, handler: Callable[[], R | Awaitable[R]], context: "RunContext") -> None:
+    def __init__(
+        self,
+        handler: Callable[[], R | Awaitable[R]],
+        context: "RunContext",
+    ) -> None:
         super().__init__()
         self.handler = ensure_async(handler)
         self._tasks: list[tuple[Callable[..., Any], list[Any]]] = []
@@ -103,11 +109,13 @@ class Run(Generic[R]):
         self._tasks.append((self._set_context, [context]))
         return self
 
-    def middleware(self, fn: RunMiddleware | RunMiddlewareFn) -> Self:
-        if isinstance(fn, RunMiddleware):
-            return self.middleware(lambda ctx: fn.bind(ctx))
+    def middleware(self, *fns: RunMiddlewareProtocol | RunMiddlewareFn) -> Self:
+        for fn in fns:
+            if isinstance(fn, RunMiddlewareProtocol):
+                self._tasks.append((lambda ctx, _fn=fn: _fn.bind(ctx), [self._run_context]))
+            else:
+                self._tasks.append((fn, [self._run_context]))
 
-        self._tasks.append((fn.bind if isinstance(fn, RunMiddleware) else fn, [self._run_context]))
         return self
 
     async def _run_tasks(self) -> R:
@@ -287,5 +295,6 @@ __all__ = [
     "RunContextFinishEvent",
     "RunContextStartEvent",
     "RunContextSuccessEvent",
+    "RunMiddlewareType",
     "run_context_event_types",
 ]

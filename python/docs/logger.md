@@ -26,7 +26,7 @@ In the BeeAI framework, the `Logger` class is an abstraction built on top of Pyt
 
 > [!NOTE]
 >
-> Location within the framework: [beeai_framework/logger](/python/beeai_framework/logger.py).
+> Location within the framework: [beeai_framework/logger](/python/beeai_framework/logger/logger.py).
 
 ---
 

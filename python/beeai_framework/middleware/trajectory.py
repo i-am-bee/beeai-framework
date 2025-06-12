@@ -8,7 +8,7 @@ from typing import Any, Protocol, runtime_checkable
 from beeai_framework.agents import BaseAgent
 from beeai_framework.agents.experimental.requirements.requirement import Requirement
 from beeai_framework.backend import AnyMessage, ChatModel
-from beeai_framework.context import RunContext, RunContextFinishEvent, RunContextStartEvent, RunMiddleware
+from beeai_framework.context import RunContext, RunContextFinishEvent, RunContextStartEvent, RunMiddlewareProtocol
 from beeai_framework.emitter import EmitterOptions, EventMeta
 from beeai_framework.logger import Logger
 from beeai_framework.tools import Tool
@@ -30,7 +30,7 @@ def logger_to_writeable(logger: Logger) -> Writeable:
     return CustomWriteable()
 
 
-class GlobalTrajectoryMiddleware(RunMiddleware):
+class GlobalTrajectoryMiddleware(RunMiddlewareProtocol):
     def __init__(
         self,
         *,
