@@ -17,7 +17,6 @@ import copy
 import functools
 import re
 import uuid
-from asyncio import Task
 from collections.abc import Callable
 from datetime import UTC, datetime
 from typing import Any, TypeAlias
@@ -183,7 +182,7 @@ class Emitter:
         listener = Listener(match=create_matcher(), raw=matcher, callback=callback, options=options)
         self._listeners.add(listener)
 
-        return lambda: self._listeners.remove(listener)
+        return lambda: self._listeners.remove(listener) if listener in self._listeners else None
 
     async def emit(self, name: str, value: Any) -> None:
         try:
@@ -194,8 +193,6 @@ class Emitter:
             raise EmitterError.ensure(e)
 
     async def _invoke(self, data: Any, event: EventMeta) -> None:
-        tasks: list[Task[Any]] = []
-
         async def run(ln: Listener) -> Any:
             try:
                 ln_async = ensure_async(ln.callback)
@@ -207,7 +204,7 @@ class Emitter:
                     event=event,
                 )
 
-        try:
+        async with asyncio.TaskGroup() as tg:
             for listener in self._listeners:
                 if not listener.match(event):
                     continue
@@ -215,19 +212,9 @@ class Emitter:
                 if listener.options and listener.options.once:
                     self._listeners.remove(listener)
 
-                task = asyncio.create_task(run(listener))
-                tasks.append(task)
-
+                task = tg.create_task(run(listener))
                 if listener.options and listener.options.is_blocking:
                     _ = await task
-
-            await asyncio.gather(*tasks)
-        except:
-            for task in tasks:
-                task.cancel()
-
-            await asyncio.gather(*tasks, return_exceptions=True)
-            raise
 
     def _create_event(self, name: str) -> EventMeta:
         return EventMeta(
