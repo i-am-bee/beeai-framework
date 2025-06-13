@@ -37,4 +37,5 @@ class ACPIOContext:
     async def _read(self, prompt: str) -> str:
         message = Message(parts=[MessagePart(content=prompt)])
         response = await self.context.yield_async(MessageAwaitRequest(message=message))
-        return (response.message.parts[0].content or "") if response else ""
+        # TODO: handle non-text responses
+        return str(response.message) if response else ""

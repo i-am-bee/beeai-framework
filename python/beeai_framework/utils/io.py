@@ -11,7 +11,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 from collections.abc import Awaitable, Callable
 from contextvars import ContextVar
 from dataclasses import dataclass
@@ -29,17 +28,11 @@ class IOHandlers:
 
 
 _storage: ContextVar[IOHandlers] = ContextVar("io_storage")
-
-
-def _get_store() -> IOHandlers:
-    try:
-        return _storage.get()
-    except LookupError:
-        return IOHandlers(read=ensure_async(input))
+_storage.set(IOHandlers(read=ensure_async(input)))
 
 
 async def io_read(prompt: str) -> str:
-    store = _get_store()
+    store = _storage.get()
     return await store.read(prompt)
 
 
