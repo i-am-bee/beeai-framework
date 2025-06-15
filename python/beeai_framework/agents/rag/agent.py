@@ -1,4 +1,5 @@
 
+from beeai_framework.adapters.llama_index.document_processors import DocumentsRerankWithLLM
 from beeai_framework.backend.vector_store import VectorStore
 from pydantic import BaseModel, Field, InstanceOf
 from beeai_framework.agents import AgentMeta, BaseAgent, BaseAgentRunOptions
@@ -33,6 +34,7 @@ class RAGAgent(BaseAgent[RAGAgentRunOutput]):
         self.model = llm
         self.memory = memory
         self.vector_store = vector_store
+        self.reranker = DocumentsRerankWithLLM(self.model)
         self.emitter.on("*.*", lambda data, event: print("Got something: ", data, event))
 
     def _create_emitter(self) -> Emitter:
@@ -47,16 +49,14 @@ class RAGAgent(BaseAgent[RAGAgentRunOutput]):
         options: RAGAgentRunOptions | None = None,
     ) -> Run[RAGAgentRunOutput]:
         async def handler(context: RunContext) -> RAGAgentRunOutput:
-            # class CustomSchema(BaseModel):
-            #     thought: str = Field(description="Describe your thought process before coming with a final answer")
-            #     final_answer: str = Field(
-            #         description="Here you should provide concise answer to the original question."
-            #     )
-            
             await self.memory.add(run_input.message) if self.memory else None
-            retrieved_docs = await self.vector_store.asearch(run_input.message.text)
+            retrieved_docs = await self.vector_store.asearch(run_input.message.text, k=200)
+            
+            # Apply re-ranking
+            reranked_documnets = await self.reranker.apostprocess_nodes(query=run_input.message.text, documents=retrieved_docs)
+            
             # Extract documents context
-            docs_content = "\n\n".join(doc_with_score[0].content for doc_with_score in retrieved_docs)
+            docs_content = "\n\n".join(doc_with_score[0].content for doc_with_score in reranked_documnets)
         
             # Place content in template
             input_message = UserMessage(content=f"The context for replying to the task is:\n\n{docs_content}")
@@ -77,7 +77,7 @@ class RAGAgent(BaseAgent[RAGAgentRunOutput]):
             # result = AssistantMessage(response.object["final_answer"])
             result = AssistantMessage(response.messages[-1].text)
             await self.memory.add(result) if self.memory else None
-
+            
             return RAGAgentRunOutput(
                 message=result,
                 # state=State(thought=response.object["thought"], final_answer=response.object["final_answer"]),

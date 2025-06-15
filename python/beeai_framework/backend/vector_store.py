@@ -17,12 +17,7 @@ from dataclasses import dataclass
 from typing import Dict, Any, Union, List, Tuple
 
 from beeai_framework.backend.embedding import EmbeddingModel
-
-
-@dataclass
-class VectorStoreDocument:
-    content: str
-    metadata: Dict[str, Union[str, int, float, bool]]
+from beeai_framework.backend.types import Document, DocumentWithScore
 
 
 class VectorStore(ABC):
@@ -30,18 +25,18 @@ class VectorStore(ABC):
         self.embedding_model = embedding_model
     
     @abstractmethod
-    def add_documents(self, documents: VectorStoreDocument):
+    def add_documents(self, documents: Document):
         raise NotImplementedError("Implement me")
     
     @abstractmethod
-    async def aadd_documents(self, documents: VectorStoreDocument):
+    async def aadd_documents(self, documents: Document):
         raise NotImplementedError("Implement me")
     
     @abstractmethod
-    def search(self, query: str, search_type: str, k: int=4, **kwargs: Any) -> List[Tuple[VectorStoreDocument, float]]:
+    def search(self, query: str, search_type: str, k: int=4, **kwargs: Any) -> List[DocumentWithScore]:
         raise NotImplementedError("Implement me")
 
     @abstractmethod
-    async def asearch(self, query: str, search_type: str, k: int=4, **kwargs: Any) -> List[Tuple[VectorStoreDocument, float]]:
+    async def asearch(self, query: str, search_type: str, k: int=4, **kwargs: Any) -> List[DocumentWithScore]:
         raise NotImplementedError("Implement me")
     

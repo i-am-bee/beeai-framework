@@ -64,9 +64,11 @@ types-requests = "^2.32.0.20241016"
 [tool.poetry.group.rag.dependencies]
 langchain = "^0.3.25"
 langchain-ibm = "^0.3.11"
+llama-index = "^0.12.42"
 
 [tool.poetry.extras]
 langchain = ["langchain-core", "langchain-community", "langgraph", "langchain-ollama"]
+llama_index = ["llama-index"]
 huggingface = ["datasets", "transformers"]
 search = ["ddgs", "wikipedia-api"]
 duckduckgo = ["ddgs"]
