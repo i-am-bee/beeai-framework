@@ -5,6 +5,7 @@ import os
 
 from beeai_framework.adapters.langchain.utils import lc_document_to_document
 from beeai_framework.adapters.langchain.vector_store import InMemoryVectorStore
+from beeai_framework.adapters.llama_index.wrappers.li_llm import LILLM
 from beeai_framework.adapters.watsonx.backend.embedding import WatsonxEmbeddingModel
 from beeai_framework.agents.rag.agent import RAGAgent, RunInput
 from beeai_framework.adapters.ollama import OllamaChatModel
@@ -65,7 +66,7 @@ async def main() -> None:
         vector_store = None
     
     agent = RAGAgent(
-        llm=OllamaChatModel("granite3.1-dense:8b"),
+        llm=OllamaChatModel("llama3.2:latest"),
         memory=UnconstrainedMemory(),
         vector_store=vector_store
     )
@@ -74,9 +75,17 @@ async def main() -> None:
     print(response.state)
 
 
+# def llm_generation():
+#     llm=OllamaChatModel("granite3.1-dense:8b")
+#     llama_index_llm = LILLM(llm=llm)
+#     output = llama_index_llm.complete(prompt="You are a helpful assistant, follow the instructions\nTell me a joke about bob")
+#     print(output)
+
+
 if __name__ == "__main__":
     try:
         asyncio.run(main())
+        # llm_generation()
     except FrameworkError as e:
         traceback.print_exc()
         sys.exit(e.explain())
