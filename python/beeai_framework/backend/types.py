@@ -126,3 +126,13 @@ class EmbeddingModelOutput(BaseModel):
     values: list[str]
     embeddings: list[list[float]]
     usage: InstanceOf[EmbeddingModelUsage] | None = None
+
+
+class Document(BaseModel):
+    content: str
+    metadata: dict[str, str | int | float | bool]
+
+
+class DocumentWithScore(BaseModel):
+    document: Document
+    score: float

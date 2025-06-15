@@ -15,10 +15,12 @@
 from __future__ import annotations
 from typing import Any, List, Tuple, Dict
 
+from beeai_framework.backend.types import Document, DocumentWithScore
+
 try:
     from langchain_core.vectorstores import InMemoryVectorStore as LCInMemoryVectorStore
     from langchain_core.vectorstores import VectorStore as VectorStoreFromLC
-    from langchain_core.documents import Document
+    from langchain_core.documents import Document as LCDocument
     
 except ModuleNotFoundError as e:
     raise ModuleNotFoundError(
@@ -27,7 +29,7 @@ except ModuleNotFoundError as e:
 
 from beeai_framework.adapters.langchain.utils import document_to_lc_document, lc_document_to_document
 from beeai_framework.adapters.langchain.wrappers.lc_embedding import LCEmbedding
-from beeai_framework.backend.vector_store import VectorStore, VectorStoreDocument
+from beeai_framework.backend.vector_store import VectorStore
 
 from beeai_framework.backend.embedding import EmbeddingModel
 
@@ -41,30 +43,32 @@ class LCVectorStore(VectorStore):
     def instantiate_by_name(vector_store_name: str, **kwards: Dict[Any, Any]):
         raise NotImplementedError("TBD")
     
-    def add_documents(self, documents: VectorStoreDocument):
+    def add_documents(self, documents: Document):
         if self.vector_store is None:
             raise ValueError("Vector store must be set before adding documents")
         lc_documents = [document_to_lc_document(document) for document in documents]
         self.vector_store.add_documents(lc_documents)
         
-    async def aadd_documents(self, documents: VectorStoreDocument):
+    async def aadd_documents(self, documents: Document):
         if self.vector_store is None:
             raise ValueError("Vector store must be set before adding documents")
         lc_documents = [document_to_lc_document(document) for document in documents]
         await self.vector_store.aadd_documents(lc_documents)
 
-    def search(self, query: str, k: int=4, **kwargs: Any) -> List[Tuple[VectorStoreDocument, float]]:
+    def search(self, query: str, k: int=4, **kwargs: Any) -> List[DocumentWithScore]:
         if self.vector_store is None:
             raise ValueError("Vector store must be set before searching for documents")
-        documents_with_scores: list[tuple[Document, float]] = self.vector_store.similarity_search_with_relevance_scores(query=query, k=k, **kwargs)
-        documents_with_scores = [(lc_document_to_document(lc_document), score) for lc_document, score in documents_with_scores]
+        lc_documents_with_scores: list[tuple[LCDocument, float]] = self.vector_store.similarity_search_with_relevance_scores(query=query, k=k, **kwargs)
+        documents_with_scores = [DocumentWithScore(document=lc_document_to_document(lc_document), score=score) 
+                                 for lc_document, score in lc_documents_with_scores]
         return documents_with_scores
 
-    async def asearch(self, query: str, k: int=4, **kwargs: Any) -> List[Tuple[VectorStoreDocument, float]]:
+    async def asearch(self, query: str, k: int=4, **kwargs: Any) -> List[DocumentWithScore]:
         if self.vector_store is None:
             raise ValueError("Vector store must be set before searching for documents")
-        documents_with_scores: list[tuple[Document, float]] = await self.vector_store.asimilarity_search_with_relevance_scores(query=query, k=k, **kwargs)
-        documents_with_scores = [(lc_document_to_document(lc_document), score) for lc_document, score in documents_with_scores]
+        lc_documents_with_scores: list[tuple[LCDocument, float]] = await self.vector_store.asimilarity_search_with_relevance_scores(query=query, k=k, **kwargs)
+        documents_with_scores = [DocumentWithScore(document=lc_document_to_document(lc_document), score=score) 
+                                 for lc_document, score in lc_documents_with_scores]
         return documents_with_scores
     
     
@@ -73,18 +77,20 @@ class InMemoryVectorStore(LCVectorStore):
         super().__init__(embedding_model=embedding_model)
         self.vector_store = LCInMemoryVectorStore(embedding=LCEmbedding(embedding=self.embedding_model))
     
-    def search(self, query: str, k: int=4, **kwargs: Any) -> List[Tuple[VectorStoreDocument, float]]:
+    def search(self, query: str, k: int=4, **kwargs: Any) -> List[DocumentWithScore]:
         if self.vector_store is None:
             raise ValueError("Vector store must be set before searching for documents")
-        documents_with_scores: list[tuple[Document, float]] = self.vector_store.similarity_search_with_score(query=query, k=k, **kwargs)
-        documents_with_scores = [(lc_document_to_document(lc_document), score) for lc_document, score in documents_with_scores]
+        lc_documents_with_scores: list[tuple[LCDocument, float]] = self.vector_store.similarity_search_with_score(query=query, k=k, **kwargs)
+        documents_with_scores = [DocumentWithScore(document=lc_document_to_document(lc_document), score=score) 
+                                 for lc_document, score in lc_documents_with_scores]
         return documents_with_scores
     
-    async def asearch(self, query: str, k: int=4, **kwargs: Any) -> List[Tuple[VectorStoreDocument, float]]:
+    async def asearch(self, query: str, k: int=4, **kwargs: Any) -> List[DocumentWithScore]:
         if self.vector_store is None:
             raise ValueError("Vector store must be set before searching for documents")
-        documents_with_scores: list[tuple[Document, float]] = await self.vector_store.asimilarity_search_with_score(query=query, k=k, **kwargs)
-        documents_with_scores = [(lc_document_to_document(lc_document), score) for lc_document, score in documents_with_scores]
+        lc_documents_with_scores: list[tuple[LCDocument, float]] = await self.vector_store.asimilarity_search_with_score(query=query, k=k, **kwargs)
+        documents_with_scores = [DocumentWithScore(document=lc_document_to_document(lc_document), score=score) 
+                                 for lc_document, score in lc_documents_with_scores]
         return documents_with_scores
 
     def dump(self, path: str):

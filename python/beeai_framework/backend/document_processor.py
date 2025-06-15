@@ -12,7 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from beeai_framework.adapters.langchain.tools import LangChainTool, LangChainToolRunOptions
-from beeai_framework.adapters.langchain.vector_store import InMemoryVectorStore
 
-__all__ = ["LangChainTool", "LangChainToolRunOptions", "InMemoryVectorStore"]
+from abc import abstractmethod
+from beeai_framework.backend.types import DocumentWithScore
+
+
+class DocumentProcessor:
+    @abstractmethod
+    def postprocess_documents(documents: list[DocumentWithScore]) -> list[DocumentWithScore]:
+        raise NotImplementedError()

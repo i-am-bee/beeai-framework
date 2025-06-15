@@ -13,23 +13,21 @@
 # limitations under the License.
 
 try:
-    from langchain_core.documents import Document
+    from llama_index.core.schema import NodeWithScore
+    from llama_index.core.schema import TextNode
 except ModuleNotFoundError as e:
     raise ModuleNotFoundError(
-        "Optional module [langchain] not found.\nRun 'pip install \"beeai-framework[langchain]\"' to install."
+        "Optional module [llama_index] not found.\nRun 'pip install \"beeai-framework[llama_index]\"' to install."
     ) from e
 
 
 from beeai_framework.adapters.langchain.wrappers.lc_embedding import LCEmbedding
-from beeai_framework.backend.types import Document as VectorStoreDocument
+from beeai_framework.backend.types import Document, DocumentWithScore
 from beeai_framework.backend.embedding import EmbeddingModel
 
 
-def get_langchain_embedding(embedding_model: EmbeddingModel):
-    return LCEmbedding(embedding=embedding_model)
+def doc_with_score_to_li_doc_with_score(document: DocumentWithScore) -> NodeWithScore:
+    return NodeWithScore(node=TextNode(text=document.document.content, metadata=document.document.metadata), score=document.score)
 
-def lc_document_to_document(lc_document: Document) -> VectorStoreDocument:
-    return VectorStoreDocument(content=lc_document.page_content, metadata=lc_document.metadata)
-
-def document_to_lc_document(document: VectorStoreDocument) -> Document:
-    return Document(page_content=document.content, metadata=document.metadata)
+def li_doc_with_score_to_doc_with_score(document: NodeWithScore) -> DocumentWithScore:
+    return DocumentWithScore(document=Document(content=document.text, metadata=document.metadata), score=document.score)
