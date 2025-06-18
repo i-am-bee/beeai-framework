@@ -117,7 +117,7 @@ class LiteLLMEmbeddingModel(EmbeddingModel, ABC):
             )
 
         for alias in aliases:
-            self._settings[alias] = None
+            self._settings[alias] = value or None
 
         if not value and not allow_empty:
             raise ValueError(
