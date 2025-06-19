@@ -44,7 +44,7 @@ class OpenAIEmbeddingModel(LiteLLMEmbeddingModel):
 
         self._assert_setting_value("api_key", api_key, envs=["OPENAI_API_KEY"])
         self._assert_setting_value(
-            "base_url", base_url, envs=["OPENAI_API_BASE"], aliases=["api_base"], allow_empty=True
+            "api_base", base_url, envs=["OPENAI_API_BASE"], aliases=["base_url"], allow_empty=True
         )
         self._settings["extra_headers"] = utils.parse_extra_headers(
             self._settings.get("extra_headers"), os.getenv("OPENAI_API_HEADERS")
