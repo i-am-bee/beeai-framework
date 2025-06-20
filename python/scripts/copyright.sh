@@ -5,7 +5,7 @@
 set -e
 
 if [ "$#" -eq 0 ]; then
-  TARGETS=(beeai_framework/**/*.py cz_commitizen/*.py tests/**/*.py scripts/*.{sh,py})
+  TARGETS=(*/*.py beeai_framework/**/*.py examples/**/*.py tests/**/*.py scripts/*.sh)
 else
   TARGETS=("${@/#$PWD\//}")
 fi
