@@ -173,6 +173,7 @@
     "git:pre-commit": "yarn copyright:check && yarn lint && yarn format && yarn ts:check && yarn run test:unit"
   },
   "dependencies": {
+    "@ai-sdk/xai": "^1.2.16",
     "@ai-zen/node-fetch-event-source": "^2.1.4",
     "@streamparser/json": "^0.0.22",
     "ai": "^4.3.13",
