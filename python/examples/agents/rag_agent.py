@@ -16,11 +16,11 @@ from beeai_framework.memory import UnconstrainedMemory
 
 # LC dependencies
 try:
-    from langchain_community.document_loaders import TextLoader
+    from langchain_community.document_loaders import UnstructuredMarkdownLoader
     from langchain_text_splitters import RecursiveCharacterTextSplitter
 except ModuleNotFoundError as e:
     raise ModuleNotFoundError(
-        "Optional module [langchain] not found.\nRun 'pip install \"beeai-framework[langchain]\"' to install."
+        "Optional modules are not found.\nRun 'pip install \"beeai-framework[langchain,rag,rag_examples]\"' to install."
     ) from e
 
 
@@ -29,13 +29,13 @@ load_dotenv()  # take environment variables
 
 
 POPULATE_VECTOR_DB = True
-VECTOR_DB_PATH_4_DUMP = "/Users/antonp/code/tmp/vector.db.dump"
-LONG_DOCUMENT_LOCATION = "/Users/antonp/Downloads/various_malware_details.txt"
+VECTOR_DB_PATH_4_DUMP = "" # Set this path for persistency
+INPUT_DOCUMENTS_LOCATION = "docs-mintlify/integrations"
 
 
 async def populate_documents() -> VectorStore:
     # Load and chunk contents of the blog
-    loader = TextLoader(file_path=LONG_DOCUMENT_LOCATION)
+    loader = UnstructuredMarkdownLoader(file_path="python/docs/agents.md")
     docs = loader.load()
 
     text_splitter = RecursiveCharacterTextSplitter(chunk_size=500, chunk_overlap=100)
@@ -47,15 +47,16 @@ async def populate_documents() -> VectorStore:
                                        apikey=os.getenv("WATSONX_APIKEY"), base_url=os.getenv("WATSONX_URL"))
     
     # Index chunks
-    if os.path.exists(VECTOR_DB_PATH_4_DUMP):
+    if VECTOR_DB_PATH_4_DUMP and os.path.exists(VECTOR_DB_PATH_4_DUMP):
         print(f"Loading vector store from: {VECTOR_DB_PATH_4_DUMP}")
         vector_store = InMemoryVectorStore.load(VECTOR_DB_PATH_4_DUMP, embedding=embeddings)
     else:
         print("Rebuilding vector store")
         vector_store = InMemoryVectorStore(embeddings)
         _ = await vector_store.aadd_documents(documents=documents)
-        print(f"Dumping vector store to: {VECTOR_DB_PATH_4_DUMP}")
-        vector_store.dump(VECTOR_DB_PATH_4_DUMP)
+        if VECTOR_DB_PATH_4_DUMP:
+            print(f"Dumping vector store to: {VECTOR_DB_PATH_4_DUMP}")
+            vector_store.dump(VECTOR_DB_PATH_4_DUMP)
     return vector_store
 
 
@@ -71,15 +72,8 @@ async def main() -> None:
         vector_store=vector_store
     )
 
-    response = await agent.run(RunInput(message=UserMessage("Tell me about the Polar malware")))
+    response = await agent.run(RunInput(message=UserMessage("What agents are available in BeeAI?")))
     print(response.state)
-
-
-# def llm_generation():
-#     llm=OllamaChatModel("granite3.1-dense:8b")
-#     llama_index_llm = LILLM(llm=llm)
-#     output = llama_index_llm.complete(prompt="You are a helpful assistant, follow the instructions\nTell me a joke about bob")
-#     print(output)
 
 
 if __name__ == "__main__":

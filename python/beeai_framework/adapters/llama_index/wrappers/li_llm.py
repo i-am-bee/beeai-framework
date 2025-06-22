@@ -14,8 +14,7 @@ try:
         CompletionResponse,
         CompletionResponseGen
     )
-    from llama_index.core.constants import DEFAULT_CONTEXT_WINDOW
-    from llama_index.core.llms.callbacks import llm_chat_callback, llm_completion_callback
+    from llama_index.core.llms.callbacks import llm_completion_callback
 except ModuleNotFoundError as e:
     raise ModuleNotFoundError(
         "Optional module [llama_index] not found.\nRun 'pip install \"beeai-framework[llama_index]\"' to install."
