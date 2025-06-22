@@ -4,4 +4,4 @@
 from beeai_framework.adapters.langchain.tools import LangChainTool, LangChainToolRunOptions
 from beeai_framework.adapters.langchain.vector_store import InMemoryVectorStore
 
-__all__ = ["LangChainTool", "LangChainToolRunOptions", "InMemoryVectorStore"]
+__all__ = ["InMemoryVectorStore", "LangChainTool", "LangChainToolRunOptions"]

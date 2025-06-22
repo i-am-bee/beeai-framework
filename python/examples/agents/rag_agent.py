@@ -1,14 +1,13 @@
 import asyncio
+import os
 import sys
 import traceback
-import os
 
 from beeai_framework.adapters.langchain.utils import lc_document_to_document
 from beeai_framework.adapters.langchain.vector_store import InMemoryVectorStore
-from beeai_framework.adapters.watsonx.backend.embedding import WatsonxEmbeddingModel
-from ibm_watsonx_ai.metanames import EmbedTextParamsMetaNames
-from beeai_framework.agents.rag.agent import RAGAgent, RunInput
 from beeai_framework.adapters.ollama import OllamaChatModel
+from beeai_framework.adapters.watsonx.backend.embedding import WatsonxEmbeddingModel
+from beeai_framework.agents.rag.agent import RAGAgent, RunInput
 from beeai_framework.backend import UserMessage
 from beeai_framework.backend.vector_store import VectorStore
 from beeai_framework.errors import FrameworkError
@@ -25,11 +24,12 @@ except ModuleNotFoundError as e:
 
 
 from dotenv import load_dotenv
+
 load_dotenv()  # take environment variables
 
 
 POPULATE_VECTOR_DB = True
-VECTOR_DB_PATH_4_DUMP = "/Users/antonp/code/tmp/vector.db.dump" # Set this path for persistency
+VECTOR_DB_PATH_4_DUMP = "/Users/antonp/code/tmp/vector.db.dump"  # Set this path for persistency
 INPUT_DOCUMENTS_LOCATION = "docs-mintlify/integrations"
 
 
@@ -42,9 +42,14 @@ async def populate_documents() -> VectorStore:
     all_splits = text_splitter.split_documents(docs)
     documents = [lc_document_to_document(document) for document in all_splits]
 
-    embeddings = WatsonxEmbeddingModel(model_id="ibm/slate-125m-english-rtrvr-v2", project_id=os.getenv("WATSONX_PROJECT_ID"), 
-                                       apikey=os.getenv("WATSONX_APIKEY"), base_url=os.getenv("WATSONX_URL"), truncate_input_tokens=500)
-    
+    embeddings = WatsonxEmbeddingModel(
+        model_id="ibm/slate-125m-english-rtrvr-v2",
+        project_id=os.getenv("WATSONX_PROJECT_ID"),
+        apikey=os.getenv("WATSONX_APIKEY"),
+        base_url=os.getenv("WATSONX_URL"),
+        truncate_input_tokens=500,
+    )
+
     # Index chunks
     if VECTOR_DB_PATH_4_DUMP and os.path.exists(VECTOR_DB_PATH_4_DUMP):
         print(f"Loading vector store from: {VECTOR_DB_PATH_4_DUMP}")
@@ -64,12 +69,8 @@ async def main() -> None:
         vector_store = await populate_documents()
     else:
         vector_store = None
-    
-    agent = RAGAgent(
-        llm=OllamaChatModel("llama3.2:latest"),
-        memory=UnconstrainedMemory(),
-        vector_store=vector_store
-    )
+
+    agent = RAGAgent(llm=OllamaChatModel("llama3.2:latest"), memory=UnconstrainedMemory(), vector_store=vector_store)
 
     response = await agent.run(RunInput(message=UserMessage("What agents are available in BeeAI?")))
     print(response.message.text)

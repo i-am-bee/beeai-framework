@@ -13,29 +13,36 @@
 # limitations under the License.
 
 from abc import ABC, abstractmethod
-from typing import Any, List
+from typing import Any
 
 from beeai_framework.backend.embedding import EmbeddingModel
 from beeai_framework.backend.types import Document, DocumentWithScore
 
 
 class VectorStore(ABC):
-    def __init__(self, embedding_model: EmbeddingModel=None) -> None:
+    def __init__(self, embedding_model: EmbeddingModel = None) -> None:
         self.embedding_model = embedding_model
-    
+
     @abstractmethod
-    def add_documents(self, documents: Document):
-        raise NotImplementedError("Implement me")
-    
-    @abstractmethod
-    async def aadd_documents(self, documents: Document):
-        raise NotImplementedError("Implement me")
-    
-    @abstractmethod
-    def search(self, query: str, search_type: str, k: int=4, **kwargs: Any) -> List[DocumentWithScore]:
+    def add_documents(self, documents: Document) -> list[str]:
+        """Add or update documents in the vectorstore.
+
+        Args:
+            documents: Documents to add to the vectorstore.
+
+        Returns:
+            List of identifiers of the added documents.
+        """
         raise NotImplementedError("Implement me")
 
     @abstractmethod
-    async def asearch(self, query: str, search_type: str, k: int=4, **kwargs: Any) -> List[DocumentWithScore]:
+    async def aadd_documents(self, documents: Document) -> list[str]:
         raise NotImplementedError("Implement me")
-    
+
+    @abstractmethod
+    def search(self, query: str, search_type: str, k: int = 4, **kwargs: Any) -> list[DocumentWithScore]:
+        raise NotImplementedError("Implement me")
+
+    @abstractmethod
+    async def asearch(self, query: str, search_type: str, k: int = 4, **kwargs: Any) -> list[DocumentWithScore]:
+        raise NotImplementedError("Implement me")
