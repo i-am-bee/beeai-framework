@@ -40,8 +40,6 @@ jobs:
         run: poetry run poe format
       - name: Commits Lint
         run: poetry run cz check --rev-range HEAD~1..HEAD
-      - name: Documentation - code snippet embeddings
-        run: poetry run poe docs --type check
       - name: Build
         run: poetry build
       - name: Unit Tests

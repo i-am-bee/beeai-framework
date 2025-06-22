@@ -25,7 +25,7 @@ from typing_extensions import TypeVar
 
 from beeai_framework.cache.base import BaseCache
 from beeai_framework.cache.null_cache import NullCache
-from beeai_framework.context import Run, RunContext
+from beeai_framework.context import Run, RunContext, RunMiddlewareType
 from beeai_framework.emitter.emitter import Emitter
 from beeai_framework.errors import FrameworkError
 from beeai_framework.logger import Logger
@@ -52,6 +52,7 @@ class Tool(Generic[TInput, TRunOptions, TOutput], ABC):
     def __init__(self, options: dict[str, Any] | None = None) -> None:
         self._options: dict[str, Any] | None = options or None
         self._cache = self.options.get("cache", NullCache[TOutput]()) if self.options else NullCache[TOutput]()
+        self.middlewares: list[RunMiddlewareType] = []
 
     def __str__(self) -> str:
         return self.name
@@ -180,7 +181,7 @@ class Tool(Generic[TInput, TRunOptions, TOutput], ABC):
             handler,
             signal=options.signal if options else None,
             run_params={"input": input, "options": options},
-        )
+        ).middleware(*self.middlewares)
 
     async def clone(self) -> Self:
         cloned = type(self)(self._options.copy() if self._options else None)

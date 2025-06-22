@@ -20,7 +20,8 @@ from typing import Any, Self, overload
 from pydantic import BaseModel, InstanceOf
 
 from beeai_framework.agents.base import AnyAgent
-from beeai_framework.agents.experimental import RequirementAgent
+from beeai_framework.agents.experimental import RequirementAgent, RequirementAgentRunOutput
+from beeai_framework.agents.tool_calling import ToolCallingAgentRunOutput
 from beeai_framework.agents.tool_calling.agent import ToolCallingAgent
 from beeai_framework.agents.tool_calling.utils import ToolCallCheckerConfig
 from beeai_framework.agents.types import (
@@ -156,9 +157,13 @@ class AgentWorkflow:
             run_input = state.inputs.pop(0).model_copy() if state.inputs else AgentWorkflowInput()
             state.current_input = run_input
             agent = await create_agent(memory.as_read_only())
-            run_output = await agent.run(**run_input.model_dump(), execution=execution)
+            run_output: ToolCallingAgentRunOutput | RequirementAgentRunOutput = await agent.run(
+                **run_input.model_dump(), execution=execution
+            )
 
-            state.final_answer = run_output.result.text
+            state.final_answer = (
+                run_output.result.text if isinstance(run_output, ToolCallingAgentRunOutput) else run_output.answer.text
+            )
             if run_input.prompt:
                 state.new_messages.append(UserMessage(run_input.prompt))
             state.new_messages.extend(run_output.memory.messages[-2:])

@@ -135,7 +135,7 @@ def filter_tools_by_tool_choice(tools: list[AnyTool], value: ChatModelToolChoice
     if isinstance(value, Tool):
         tool = [tool for tool in tools if tool is value]
         if not tool:
-            raise ValueError("Invalid tool choice provided! Tool was not found.")
+            raise ValueError(f"Invalid tool choice provided! Tool '{value}' was not found.")
 
         return tool
 

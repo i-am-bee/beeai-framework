@@ -16,21 +16,23 @@ import asyncio
 import functools
 import inspect
 from collections.abc import AsyncGenerator, Awaitable, Callable
-from typing import Any, TypeVar
+from typing import ParamSpec, TypeVar
 
 T = TypeVar("T")
+P = ParamSpec("P")
 
 
-def ensure_async(fn: Callable[..., T | Awaitable[T]]) -> Callable[..., Awaitable[T]]:
+def ensure_async(fn: Callable[P, T | Awaitable[T]]) -> Callable[P, Awaitable[T]]:
     if asyncio.iscoroutinefunction(fn):
-        return fn  # Already async, no wrapping needed.
+        return fn
 
     @functools.wraps(fn)
-    async def wrapper(*args: Any, **kwargs: Any) -> T:
-        result: T | Awaitable[T] = fn(*args, **kwargs)
+    async def wrapper(*args: P.args, **kwargs: P.kwargs) -> T:
+        result: T | Awaitable[T] = await asyncio.to_thread(fn, *args, **kwargs)
         if inspect.isawaitable(result):
-            result = await result
-        return result
+            return await result
+        else:
+            return result
 
     return wrapper
 

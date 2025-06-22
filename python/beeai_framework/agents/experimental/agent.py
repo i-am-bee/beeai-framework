@@ -16,6 +16,7 @@ from collections.abc import Sequence
 from typing import Any
 
 from pydantic import BaseModel
+from typing_extensions import TypeVar
 
 from beeai_framework.agents import AgentError, AgentExecutionConfig, AgentMeta
 from beeai_framework.agents.base import BaseAgent
@@ -39,7 +40,7 @@ from beeai_framework.agents.experimental.types import (
     RequirementAgentTemplatesKeys,
 )
 from beeai_framework.agents.experimental.utils._llm import RequirementsReasoner
-from beeai_framework.agents.experimental.utils._tool import FinalAnswerTool, _run_tools
+from beeai_framework.agents.experimental.utils._tool import FinalAnswerTool, FinalAnswerToolSchema, _run_tools
 from beeai_framework.agents.tool_calling.utils import ToolCallChecker, ToolCallCheckerConfig
 from beeai_framework.backend.chat import ChatModel
 from beeai_framework.backend.message import (
@@ -50,7 +51,7 @@ from beeai_framework.backend.message import (
     UserMessage,
 )
 from beeai_framework.backend.utils import parse_broken_json
-from beeai_framework.context import Run, RunContext
+from beeai_framework.context import Run, RunContext, RunMiddlewareType
 from beeai_framework.emitter import Emitter
 from beeai_framework.memory.base_memory import BaseMemory
 from beeai_framework.memory.unconstrained_memory import UnconstrainedMemory
@@ -64,6 +65,7 @@ from beeai_framework.utils.models import update_model
 from beeai_framework.utils.strings import find_first_pair, generate_random_string, to_json
 
 RequirementAgentRequirement = Requirement[RequirementAgentRunState]
+TOutput = TypeVar("TOutput", bound=BaseModel, default=FinalAnswerToolSchema)
 
 
 class RequirementAgent(BaseAgent[RequirementAgentRunOutput]):
@@ -85,6 +87,7 @@ class RequirementAgent(BaseAgent[RequirementAgentRunOutput]):
         templates: dict[RequirementAgentTemplatesKeys, PromptTemplate[Any] | RequirementAgentTemplateFactory]
         | RequirementAgentTemplates
         | None = None,
+        middlewares: Sequence[RunMiddlewareType] | None = None,
     ) -> None:
         super().__init__()
         self._llm = llm
@@ -106,15 +109,16 @@ class RequirementAgent(BaseAgent[RequirementAgentRunOutput]):
         self._tools = list(tools or [])
         self._requirements = list(requirements or [])
         self._meta = AgentMeta(name=name or "", description=description or "", tools=self._tools)
+        self.middlewares.extend(middlewares or [])
 
     def run(
         self,
         prompt: str | None = None,
         *,
         context: str | None = None,
-        expected_output: str | type[BaseModel] | None = None,
+        expected_output: str | type[TOutput] | None = None,
         execution: AgentExecutionConfig | None = None,
-    ) -> Run[RequirementAgentRunOutput]:
+    ) -> Run[RequirementAgentRunOutput[TOutput]]:
         run_config = execution or AgentExecutionConfig(
             max_retries_per_step=3,
             total_max_retries=20,
@@ -122,7 +126,9 @@ class RequirementAgent(BaseAgent[RequirementAgentRunOutput]):
         )
 
         async def init_state() -> tuple[RequirementAgentRunState, UserMessage | None]:
-            state = RequirementAgentRunState(memory=UnconstrainedMemory(), steps=[], iteration=0, result=None)
+            state = RequirementAgentRunState(
+                memory=UnconstrainedMemory(), steps=[], iteration=0, answer=None, result=None
+            )
             await state.memory.add_many(self.memory.messages)
 
             user_message: UserMessage | None = None
@@ -137,7 +143,7 @@ class RequirementAgent(BaseAgent[RequirementAgentRunOutput]):
 
             return state, user_message
 
-        async def handler(run_context: RunContext) -> RequirementAgentRunOutput:
+        async def handler(run_context: RunContext) -> RequirementAgentRunOutput[TOutput]:
             state, user_message = await init_state()
 
             reasoner = RequirementsReasoner(
@@ -150,7 +156,7 @@ class RequirementAgent(BaseAgent[RequirementAgentRunOutput]):
             tool_call_retry_counter = RetryCounter(error_type=AgentError, max_retries=run_config.total_max_retries or 1)
             force_final_answer_as_tool = self._final_answer_as_tool
 
-            while state.result is None:
+            while state.answer is None:
                 state.iteration += 1
 
                 if run_config.max_iterations and state.iteration > run_config.max_iterations:
@@ -273,7 +279,9 @@ class RequirementAgent(BaseAgent[RequirementAgentRunOutput]):
 
                 await self.memory.add_many(extract_last_tool_call_pair(state.memory) or [])
 
-            return RequirementAgentRunOutput(result=state.result, memory=state.memory, state=state)
+            return RequirementAgentRunOutput(
+                answer=state.answer, memory=state.memory, state=state, answer_structured=state.result
+            )
 
         return self._to_run(
             handler,

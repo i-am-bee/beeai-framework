@@ -64,6 +64,8 @@ exclude = list(
             "workflows/travel_advisor.py",
             # Local playground
             "playground/**/*.py",
+            # Exercises including bugs
+            "agents/experimental/requirement/exercises/**",
         ],
     )
 )

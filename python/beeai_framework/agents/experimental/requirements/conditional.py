@@ -50,6 +50,7 @@ class ConditionalRequirement(Generic[TInput], Requirement[TInput]):
         only_before: MultiTargetType | None = None,
         only_after: MultiTargetType | None = None,
         force_after: MultiTargetType | None = None,
+        force_prevent_stop: bool = True,
         min_invocations: int | None = None,
         max_invocations: int | None = None,
         only_success_invocations: bool = True,
@@ -77,6 +78,7 @@ class ConditionalRequirement(Generic[TInput], Requirement[TInput]):
         self._only_success_invocations = only_success_invocations
         self._consecutive_allowed = consecutive_allowed
         self._custom_checks = list(custom_checks or [])
+        self._force_prevent_stop = force_prevent_stop
 
         self._check_invariant()
 
@@ -139,19 +141,20 @@ class ConditionalRequirement(Generic[TInput], Requirement[TInput]):
         return self
 
     @run_with_context
-    async def run(self, input: TInput, context: RunContext) -> list[Rule]:
+    async def run(self, state: TInput, context: RunContext) -> list[Rule]:
         source_tool = self._source_tool
         if not source_tool:
             raise RequirementError("Source was not found!", requirement=self)
 
         steps = (
-            [step for step in input.steps if not step.error] if self._only_success_invocations else list(input.steps)
+            [step for step in state.steps if not step.error] if self._only_success_invocations else list(state.steps)
         )
         last_step_tool = steps[-1].tool if steps and steps[-1].tool is not None else None
         invocations = sum(1 if step.tool is source_tool else 0 for step in steps)
 
         def resolve(allowed: bool) -> list[Rule]:
-            if not allowed and self._force_at_step == (len(steps) + 1):
+            current_step = len(steps) + 1
+            if not allowed and self._force_at_step == current_step:
                 raise RequirementError(
                     f"Tool '{source_tool.name}' cannot be executed at step {self._force_at_step} "
                     f"because it has not met all requirements.",
@@ -159,7 +162,7 @@ class ConditionalRequirement(Generic[TInput], Requirement[TInput]):
                 )
 
             forced = bool(
-                _target_seen_in(last_step_tool, self._force_after) or self._force_at_step == len(steps)
+                _target_seen_in(last_step_tool, self._force_after) or self._force_at_step == current_step
                 if allowed
                 else False
             )
@@ -170,7 +173,7 @@ class ConditionalRequirement(Generic[TInput], Requirement[TInput]):
                     allowed=allowed,
                     forced=forced,
                     hidden=False,
-                    prevent_stop=(self._min_invocations > invocations) or forced,
+                    prevent_stop=(self._min_invocations > invocations) or (forced and self._force_prevent_stop),
                 )
             ]
 
@@ -196,7 +199,7 @@ class ConditionalRequirement(Generic[TInput], Requirement[TInput]):
                 return resolve(False)
 
         for check in self._custom_checks:
-            if not check(input):
+            if not check(state):
                 return resolve(False)
 
         return resolve(True)
@@ -214,4 +217,5 @@ class ConditionalRequirement(Generic[TInput], Requirement[TInput]):
         instance._consecutive_allowed = self._consecutive_allowed
         instance.source = self.source
         instance._source_tool = self._source_tool
+        instance._force_prevent_stop = self._force_prevent_stop
         return instance

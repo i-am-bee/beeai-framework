@@ -77,6 +77,7 @@ IMPORTANT: The facts mentioned in the final answer must be backed by evidence pr
 
 # Tools
 You must use a tool to retrieve factual or historical information.
+Don't use the a tool twice with the same input if not stated otherwise.
 
 {{#tools.0}}
 {{#tools}}

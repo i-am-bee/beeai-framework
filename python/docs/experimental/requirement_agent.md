@@ -25,7 +25,7 @@ agent = RequirementAgent(
 
 ```python
 response = await agent.run("What to do in Boston?").middleware(GlobalTrajectoryMiddleware())
-print(response.result.text)
+print(response.answer.text)
 ```
 
 ➡️ Check out more [examples](/python/examples/experimental/requirement) (multi-agent, custom requirements, ...).
@@ -44,6 +44,7 @@ We have addressed these issues in our new agent-building abstraction.
   - From data retrieval and web search to reasoning or even providing a final answer.
   - This allows us to generate outputs that adhere to a user-defined format (leveraging structured decoding).
   - The model always produces a valid response—no more parsing errors.
+
 - **Tool execution is influenced by a set of requirements**
   - Use tool `A` only after tool `B` was called.
   - Tool `D` must be run exactly twice, but never in a row.
@@ -104,7 +105,7 @@ RequirementAgent(
 A ReAct Agent (Reason and Act) follows this trajectory:
 
 ```text
-Think -> Use a tool -> Think -> Use a tool -> Think -> ... -> End
+Think -> Use a tool -> Think -> Use a tool -> Think -> ... -> Final Answer
 ```
 
 This can be easily achieved by forcing the execution of the `Think` tool after every other tool.
@@ -270,7 +271,7 @@ async def main() -> None:
     prompt = "y = 2x + 4, what is the value of x?"
     print("👤 User: ", prompt)
     response = await agent.run(prompt).middleware(GlobalTrajectoryMiddleware())
-    print("🤖 Agent: ", response.result.text)
+    print("🤖 Agent: ", response.answer.text)
 
 
 if __name__ == "__main__":

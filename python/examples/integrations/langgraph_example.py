@@ -54,7 +54,7 @@ async def main() -> None:
         return Workflow.END
 
     def langgraph_step(state: Schema) -> str:
-        langgraph_agent = create_react_agent(ChatOllama(model="llama3.1"), tools=[DuckDuckGoSearchRun()])
+        langgraph_agent = create_react_agent(ChatOllama(model="llama3.1", temperature=0), tools=[DuckDuckGoSearchRun()])
         response = langgraph_agent.invoke(
             {"messages": [_convert_message(msg) for msg in state.memory.messages]},
             RunnableConfig(recursion_limit=5),

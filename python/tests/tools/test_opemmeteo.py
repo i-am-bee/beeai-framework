@@ -14,7 +14,7 @@
 
 import pytest
 
-from beeai_framework.tools import StringToolOutput, ToolInputValidationError
+from beeai_framework.tools import JSONToolOutput, ToolInputValidationError
 from beeai_framework.tools.weather import OpenMeteoTool, OpenMeteoToolInput
 
 """
@@ -68,5 +68,5 @@ async def test_call_invalid_bad_type(tool: OpenMeteoTool) -> None:
 @pytest.mark.asyncio
 async def test_output(tool: OpenMeteoTool) -> None:
     result = await tool.run(input={"location_name": "White Plains"})
-    assert isinstance(result, StringToolOutput)
+    assert isinstance(result, JSONToolOutput)
     assert "current" in result.get_text_content()

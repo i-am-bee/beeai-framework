@@ -13,5 +13,6 @@
 # limitations under the License.
 
 from beeai_framework.adapters.openai.backend.chat import OpenAIChatModel
+from beeai_framework.adapters.openai.backend.embedding import OpenAIEmbeddingModel
 
-__all__ = ["OpenAIChatModel"]
+__all__ = ["OpenAIChatModel", "OpenAIEmbeddingModel"]

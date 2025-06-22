@@ -19,8 +19,7 @@ HAS_TS_FILES=$(echo "$STAGED_FILES" | grep -q "^$TS_DIR/" && echo 1 || echo 0)
 PY_DIR="python"
 HAS_PY_FILES=$(echo "$STAGED_FILES" | grep -q "^$PY_DIR/" && echo 1 || echo 0)
 
-# TODO: rename after replacing the current 'docs' directory
-DOCS_DIR="docs-mintlify"
+DOCS_DIR="docs"
 HAS_DOCS_FILES=$(echo "$STAGED_FILES" | grep -q "^$DOCS_DIR/" && echo 1 || echo 0)
 
 # Run hooks based on staged files
@@ -40,8 +39,7 @@ fi
 
 if [ "$HAS_DOCS_FILES" -eq 1  ] && grep -q "\"git:$HOOK_NAME\"" "$DOCS_DIR/package.json"; then
   echo "Running $HOOK_NAME hook in $DOCS_DIR..."
-  # TODO: rename after replacing the current 'docs' directory
-  HOOK_ARGS_SCOPED=$(echo "$HOOK_ARGS" | sed 's/[^ ]* */..\/&/g' | sed 's/..\/docs-mintlify\///g')
+  HOOK_ARGS_SCOPED=$(echo "$HOOK_ARGS" | sed 's/[^ ]* */..\/&/g' | sed 's/..\/docs\///g')
   (cd "$DOCS_DIR" && npm run "git:$HOOK_NAME" "$HOOK_ARGS_SCOPED") || exit $?
   echo "$STAGED_EXISTING_FILES" | xargs -r git add
 fi

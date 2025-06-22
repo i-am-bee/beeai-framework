@@ -142,7 +142,7 @@ To run these examples, make sure you have the BeeAI Framework cloned and properl
    yarn start examples/path/to/example.ts
    ```
 
-For more detailed information on the BeeAI Framework, please refer to the [documentation](/docs/README.md).
+For more detailed information on the BeeAI Framework, please refer to the [documentation](https://framework.beeai.dev/).
 
 > [!TIP]
 >

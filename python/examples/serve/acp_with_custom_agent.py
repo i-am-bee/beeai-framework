@@ -27,7 +27,7 @@ class EchoAgentRunOutput(BaseModel):
 
 # This is a simple echo agent that echoes back the last message it received.
 class EchoAgent(BaseAgent[EchoAgentRunOutput]):
-    memory: BaseMemory | None = None
+    memory: BaseMemory
 
     def __init__(self, memory: BaseMemory) -> None:
         super().__init__()

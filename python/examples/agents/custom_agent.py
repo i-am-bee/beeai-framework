@@ -32,7 +32,7 @@ class CustomAgentRunOutput(BaseModel):
 
 
 class CustomAgent(BaseAgent[CustomAgentRunOutput]):
-    memory: BaseMemory | None = None
+    memory: BaseMemory
 
     def __init__(self, llm: ChatModel, memory: BaseMemory) -> None:
         super().__init__()

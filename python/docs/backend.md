@@ -43,8 +43,8 @@ The following table depicts supported providers. Each provider requires specific
 
 | Name             | Chat | Embedding | Dependency               | Environment Variables                                                                                                                                                 |
 | ---------------- | :--: | :-------: | ------------------------ | :-------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `Ollama`         |  ✅  |          | `ollama-ai-provider`     | OLLAMA_CHAT_MODEL<br/>OLLAMA_BASE_URL                                                                                                       |
-| `OpenAI`         |  ✅  |          | `openai`     | OPENAI_CHAT_MODEL<br/>OPENAI_API_BASE<br/>OPENAI_API_KEY<br/>OPENAI_ORGANIZATION<br>OPENAI_API_HEADERS                                                                                                       |
+| `Ollama`         |  ✅  |          | `ollama-ai-provider`     | OLLAMA_CHAT_MODEL<br/>OLLAMA_EMBEDDING_MODEL<br/>OLLAMA_API_BASE                                                                                                       |
+| `OpenAI`         |  ✅  |          | `openai`     | OPENAI_CHAT_MODEL<br/>OPENAI_EMBEDDING_MODEL<br/>OPENAI_API_BASE<br/>OPENAI_API_KEY<br/>OPENAI_ORGANIZATION<br>OPENAI_API_HEADERS                                                                                                       |
 | `Watsonx`        |  ✅  |          | `@ibm-cloud/watsonx-ai`  | WATSONX_CHAT_MODEL<br>WATSONX_API_KEY<br>WATSONX_PROJECT_ID<br>WATSONX_SPACE_ID<br>WATSONX_TOKEN<br>WATSONX_ZENAPIKEY<br>WATSONX_URL<br>WATSONX_REGION |
 | `Groq`           |  ✅  |         | | GROQ_CHAT_MODEL<br>GROQ_API_KEY |
 | `Amazon Bedrock` |  ✅  |         |  `boto3`| AWS_CHAT_MODEL<br>AWS_ACCESS_KEY_ID<br>AWS_SECRET_ACCESS_KEY<br>AWS_REGION<br>AWS_API_HEADERS |

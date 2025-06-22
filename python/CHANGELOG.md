@@ -1,3 +1,31 @@
+## python_v0.1.25 (2025-06-13)
+
+### Bug Fixes
+
+- **internals**: correctly abort tasks
+- **agents**: correctly handle the 'force_at_step' argument in ConditionalRequirement
+- properly invoke sync and async callbacks in runs (#883)
+
+### Features
+
+- add context dependent IO support (#886)
+- **agents**: update RequirementAgent system prompt
+- **internals**: execute sync callbacks in threads
+- **agents**: add 'force_prevent_stop' attribute to ConditionalRequirement
+- **agents**: update the behaviour of 'forced' attribute in RequirementAgent
+- **tools**: simplify the Wikipedia tool
+- **backend**: add text completion support for OpenAI (#871)
+- add middleware arg to the core modules (#880)
+
+## python_v0.1.24 (2025-06-08)
+
+### Features
+
+- **agents**: improve RequirementAgent interfaces, examples, docs (#878)
+- expose watsonx embedding model (#877)
+- **backend**: Support OpenAI embedding models (#873)
+- **agents**: allow RequirementAgent to be exposed via ACP,BeeAIPlatform and A2A
+
 ## python_v0.1.23 (2025-06-03)
 
 ### Bug Fixes

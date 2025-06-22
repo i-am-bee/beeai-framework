@@ -7,13 +7,12 @@ on:
   workflow_dispatch:
   push:
     branches: ["main"]
-    paths:
-      # TODO: to be updated
-      - 'docs-mintlify/**/*.mdx'
   pull_request:
+    branches: ["main"]
     paths:
-      # TODO: to be updated
-      - 'docs-mintlify/**/*.mdx'
+      - 'docs/**/*.mdx'
+      - 'python/**/*.py'
+      - 'typescript/**/*.ts'
 
 jobs:
   links:
@@ -34,8 +33,29 @@ jobs:
             --no-progress
             --exclude '(github)\.com'
             --include-fragments
-            --exclude-path=./docs-mintlify/python
-            --exclude-path=./docs-mintlify/typescript
+            --exclude-path=./docs/python
+            --exclude-path=./docs/typescript
             --max-concurrency 10
             --max-retries 0
             './**/*.mdx'
+
+  snippets:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+      - name: Enable Corepack
+        run: corepack enable
+      - name: Use Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: "docs/.nvmrc"
+          cache: "yarn"
+          cache-dependency-path: "docs/yarn.lock"
+      - name: Install dependencies
+        working-directory: ./docs
+        run: yarn install --immutable
+      - name: Check snippets
+        run: |
+          cd docs
+          yarn snippets:check

@@ -6,8 +6,7 @@ from datetime import UTC, datetime
 
 from pydantic import BaseModel, Field
 
-from beeai_framework.adapters.ollama import OllamaChatModel
-from beeai_framework.adapters.ollama.backend.embedding import OllamaEmbeddingModel
+from beeai_framework.adapters.ollama import OllamaChatModel, OllamaEmbeddingModel
 from beeai_framework.backend import (
     AnyMessage,
     ChatModel,
@@ -36,6 +35,12 @@ async def ollama_granite_from_name() -> None:
     llm = ChatModel.from_name("ollama:granite3.3:8b")
     user_message = UserMessage("what states are part of New England?")
     response = await llm.create(messages=[user_message])
+    print(response.get_text_content())
+
+
+async def ollama_text_completion() -> None:
+    llm = OllamaChatModel("granite3.3:8b", text_completion=True)
+    response = await llm.create(messages=[UserMessage("hello")])
     print(response.get_text_content())
 
 
@@ -138,6 +143,8 @@ async def ollama_embedding() -> None:
 async def main() -> None:
     print("*" * 10, "ollama_from_name")
     await ollama_from_name()
+    print("*" * 10, "ollama_text_completion")
+    await ollama_text_completion()
     print("*" * 10, "ollama_granite_from_name")
     await ollama_granite_from_name()
     print("*" * 10, "ollama_sync")

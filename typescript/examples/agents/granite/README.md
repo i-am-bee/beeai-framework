@@ -76,7 +76,7 @@ The [granite_bee](/examples/agents/granite/granite_bee.ts) example agent is set 
     yarn run start examples/agents/granite/granite_bee.ts <<< "What’s the weather going to be like tomorrow in Sydney?"
    ```
 
-   The example is configured with 2 available [tools](/docs/tools.md), these are OpenMeteo for facilitating weather related prompts and DuckDuckGo for facilitating search related prompts. The above example prompts demonstrate how each of these tools can be exercised.
+   The example is configured with 2 available [tools](https://framework.beeai.dev/modules/tools), these are OpenMeteo for facilitating weather related prompts and DuckDuckGo for facilitating search related prompts. The above example prompts demonstrate how each of these tools can be exercised.
 
 ## 🤖 Granite Wiki Bee
 

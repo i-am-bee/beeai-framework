@@ -12,7 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+
+import contextlib
 from collections.abc import AsyncGenerator, Callable
+
+from beeai_framework.adapters.acp.serve.io import ACPIOContext
 
 try:
     import acp_sdk.models as acp_models
@@ -59,10 +63,8 @@ class ACPServerAgent(ACPBaseAgent):
     async def run(
         self, input: list[acp_models.Message], context: acp_context.Context
     ) -> AsyncGenerator[acp_types.RunYield, acp_types.RunYieldResume]:
-        try:
-            gen: AsyncGenerator[acp_types.RunYield, acp_types.RunYieldResume] = self.fn(input, context)
+        with ACPIOContext(context), contextlib.suppress(StopAsyncIteration):
+            gen = self.fn(input, context)
             value = None
             while True:
                 value = yield await gen.asend(value)
-        except StopAsyncIteration:
-            pass

@@ -11,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
 import contextlib
 from collections.abc import Sequence
 from typing import Literal
@@ -108,7 +109,12 @@ class RequirementsReasoner:
             if is_prevent_stop:
                 prevent_stop = True
 
-        if prevent_stop:
+        if forced is not None:
+            allowed.clear()
+            allowed.append(forced)
+            allowed.append(self.final_answer)
+
+        if prevent_stop and not isinstance(forced, FinalAnswerTool):
             with contextlib.suppress(ValueError):
                 remove_by_reference(allowed, self.final_answer)
 

@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from typing import Any, Self
 
 try:
     import wikipediaapi  # type: ignore
@@ -30,15 +31,11 @@ from beeai_framework.tools.types import ToolRunOptions
 
 
 class WikipediaToolInput(BaseModel):
-    query: str = Field(description="Short search query or name of the Wikipedia page.")
+    query: str = Field(description="Name of the Wikipedia page.")
     full_text: bool = Field(
-        description="If set to true, it will return the full text of the page instead of its summary.",
+        description="If set to true, it will return the full text of the page instead of its short summary.",
         default=False,
     )
-    section_titles: bool = Field(
-        description="If set to true, it returns section titles as the description.", default=False
-    )
-    language: str | None = Field(description="Retrieves the specified language version if available.", default=None)
 
 
 class WikipediaToolResult(SearchToolResult):
@@ -55,21 +52,17 @@ class WikipediaTool(Tool[WikipediaToolInput, ToolRunOptions, WikipediaToolOutput
         history, politics, geography, society, culture, science, technology, people, \
         animal species, mathematics, and other subjects."
     input_schema = WikipediaToolInput
-    client = wikipediaapi.Wikipedia(
-        user_agent="beeai-framework https://github.com/i-am-bee/beeai-framework", language="en"
-    )
+
+    def __init__(self, options: dict[str, Any] | None = None, *, language: str = "en") -> None:
+        super().__init__(options)
+        self.client = wikipediaapi.Wikipedia(user_agent="beeai-framework https://github.com/i-am-bee/beeai-framework")
+        self._language = language
 
     def _create_emitter(self) -> Emitter:
         return Emitter.root().child(
             namespace=["tool", "search", "wikipedia"],
             creator=self,
         )
-
-    def get_section_titles(self, sections: wikipediaapi.WikipediaPage.sections) -> str:
-        titles = []
-        for section in sections:
-            titles.append(section.title)
-        return ",".join(str(title) for title in titles)
 
     async def _run(
         self, input: WikipediaToolInput, options: ToolRunOptions | None, context: RunContext
@@ -79,15 +72,10 @@ class WikipediaTool(Tool[WikipediaToolInput, ToolRunOptions, WikipediaToolOutput
         if not page_py.exists():
             return WikipediaToolOutput([])
 
-        if input.language is not None and input.language in page_py.langlinks:
-            page_py = page_py.langlinks[input.language]
+        if self._language in page_py.langlinks:
+            page_py = page_py.langlinks[self._language]
 
-        if input.section_titles:
-            description_output = self.get_section_titles(page_py.sections)
-        elif input.full_text:
-            description_output = page_py.text
-        else:
-            description_output = page_py.summary
+        description_output = page_py.text if input.full_text else page_py.summary
 
         return WikipediaToolOutput(
             [
@@ -98,3 +86,8 @@ class WikipediaTool(Tool[WikipediaToolInput, ToolRunOptions, WikipediaToolOutput
                 )
             ]
         )
+
+    async def clone(self) -> Self:
+        cloned = await super().clone()
+        cloned._language = self._language
+        return cloned

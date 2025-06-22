@@ -3,6 +3,6 @@
 .DS_Store
 .env
 
-/docs/typescript
-/docs/python
-/docs/README.md
+/docs-deprecated/typescript
+/docs-deprecated/python
+/docs-deprecated/README.md

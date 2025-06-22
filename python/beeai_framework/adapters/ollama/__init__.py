@@ -13,5 +13,6 @@
 # limitations under the License.
 
 from beeai_framework.adapters.ollama.backend.chat import OllamaChatModel
+from beeai_framework.adapters.ollama.backend.embedding import OllamaEmbeddingModel
 
-__all__ = ["OllamaChatModel"]
+__all__ = ["OllamaChatModel", "OllamaEmbeddingModel"]

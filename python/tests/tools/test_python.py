@@ -14,6 +14,7 @@
 
 import os
 import shutil
+import uuid
 from collections.abc import Generator
 from typing import Any
 from unittest.mock import patch
@@ -24,10 +25,11 @@ import pytest_asyncio
 from beeai_framework.tools.code import LocalPythonStorage, PythonTool
 
 
-@pytest_asyncio.fixture
+@pytest_asyncio.fixture(scope="session")
 def test_dirs() -> Generator[tuple[str, str], Any, None]:
-    local_dir = "local_dir"
-    interpreter_dir = "interpreter_dir"
+    id = str(uuid.uuid4())
+    local_dir = f"local_dir_{id}"
+    interpreter_dir = f"interpreter_dir_{id}"
     os.makedirs(local_dir, exist_ok=True)
     os.makedirs(interpreter_dir, exist_ok=True)
 
