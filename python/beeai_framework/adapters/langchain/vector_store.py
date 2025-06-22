@@ -13,7 +13,7 @@
 # limitations under the License.
 
 from __future__ import annotations
-from typing import Any, List, Tuple, Dict
+from typing import Any, List, Dict
 
 from beeai_framework.backend.types import Document, DocumentWithScore
 
