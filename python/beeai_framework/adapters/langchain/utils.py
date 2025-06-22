@@ -21,15 +21,17 @@ except ModuleNotFoundError as e:
 
 
 from beeai_framework.adapters.langchain.wrappers.lc_embedding import LCEmbedding
-from beeai_framework.backend.types import Document as VectorStoreDocument
 from beeai_framework.backend.embedding import EmbeddingModel
+from beeai_framework.backend.types import Document as VectorStoreDocument
 
 
-def get_langchain_embedding(embedding_model: EmbeddingModel):
+def get_langchain_embedding(embedding_model: EmbeddingModel) -> LCEmbedding:
     return LCEmbedding(embedding=embedding_model)
+
 
 def lc_document_to_document(lc_document: Document) -> VectorStoreDocument:
     return VectorStoreDocument(content=lc_document.page_content, metadata=lc_document.metadata)
+
 
 def document_to_lc_document(document: VectorStoreDocument) -> Document:
     return Document(page_content=document.content, metadata=document.metadata)

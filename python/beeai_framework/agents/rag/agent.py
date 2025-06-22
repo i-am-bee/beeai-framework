@@ -1,10 +1,10 @@
+from pydantic import BaseModel, InstanceOf
 
 from beeai_framework.adapters.llama_index.document_processors import DocumentsRerankWithLLM
-from beeai_framework.backend.types import DocumentWithScore
-from beeai_framework.backend.vector_store import VectorStore
-from pydantic import BaseModel, InstanceOf
 from beeai_framework.agents import AgentMeta, BaseAgent, BaseAgentRunOptions
 from beeai_framework.backend import AnyMessage, AssistantMessage, ChatModel, SystemMessage, UserMessage
+from beeai_framework.backend.types import DocumentWithScore
+from beeai_framework.backend.vector_store import VectorStore
 from beeai_framework.context import Run, RunContext
 from beeai_framework.emitter import Emitter
 from beeai_framework.memory import BaseMemory
@@ -24,6 +24,7 @@ class RAGAgentRunOptions(BaseAgentRunOptions):
 
 class RAGAgentRunOutput(BaseModel):
     message: InstanceOf[AnyMessage]
+
 
 class RAGAgent(BaseAgent[RAGAgentRunOutput]):
     memory: BaseMemory | None = None
@@ -49,21 +50,23 @@ class RAGAgent(BaseAgent[RAGAgentRunOutput]):
         async def handler(context: RunContext) -> RAGAgentRunOutput:
             await self.memory.add(run_input.message) if self.memory else None
             retrieved_docs = await self.vector_store.asearch(run_input.message.text, k=10)
-            
+
             # Apply re-ranking
-            reranked_documnets: list[DocumentWithScore] = await self.reranker.apostprocess_nodes(query=run_input.message.text, documents=retrieved_docs)
-            
+            reranked_documnets: list[DocumentWithScore] = await self.reranker.apostprocess_nodes(
+                query=run_input.message.text, documents=retrieved_docs
+            )
+
             # Extract documents context
             docs_content = "\n\n".join(doc_with_score.document.content for doc_with_score in reranked_documnets)
-        
+
             # Place content in template
             input_message = UserMessage(content=f"The context for replying to the task is:\n\n{docs_content}")
-            
-            messages=[
-                    SystemMessage("You are a helpful agent, answer based only on the context."),
-                    *(self.memory.messages if self.memory is not None else []),
-                    input_message,
-                ]
+
+            messages = [
+                SystemMessage("You are a helpful agent, answer based only on the context."),
+                *(self.memory.messages if self.memory is not None else []),
+                input_message,
+            ]
             response = await self.model.create(
                 messages=messages,
                 max_retries=options.max_retries if options else None,
@@ -72,10 +75,8 @@ class RAGAgent(BaseAgent[RAGAgentRunOutput]):
 
             result = AssistantMessage(response.messages[-1].text)
             await self.memory.add(result) if self.memory else None
-            
-            return RAGAgentRunOutput(
-                message=result
-            )
+
+            return RAGAgentRunOutput(message=result)
 
         return self._to_run(
             handler, signal=options.signal if options else None, run_params={"input": run_input, "options": options}
@@ -88,5 +89,3 @@ class RAGAgent(BaseAgent[RAGAgentRunOutput]):
             description="Rag agent is an agent capable of answering questions based on a corpus of documents.",
             tools=[],
         )
-
-

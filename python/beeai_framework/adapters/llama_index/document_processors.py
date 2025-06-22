@@ -13,7 +13,10 @@
 # limitations under the License.
 
 
-from beeai_framework.adapters.llama_index.utils import doc_with_score_to_li_doc_with_score, li_doc_with_score_to_doc_with_score
+from beeai_framework.adapters.llama_index.utils import (
+    doc_with_score_to_li_doc_with_score,
+    li_doc_with_score_to_doc_with_score,
+)
 from beeai_framework.adapters.llama_index.wrappers.li_llm import LILLM
 from beeai_framework.backend.chat import ChatModel
 from beeai_framework.backend.document_processor import DocumentProcessor
@@ -29,24 +32,19 @@ except ModuleNotFoundError as e:
 
 class DocumentsRerankWithLLM(DocumentProcessor):
     llm: ChatModel
-    
-    def __init__(self, llm: ChatModel):
+
+    def __init__(self, llm: ChatModel) -> None:
         self.llm = llm
         self.reranker = LLMRerank(choice_batch_size=5, top_n=5, llm=LILLM(bai_llm=self.llm))
-        
+
     def postprocess_documents(self, query: str, documents: list[DocumentWithScore]) -> list[DocumentWithScore]:
         li_documents_with_score = [doc_with_score_to_li_doc_with_score(document) for document in documents]
-        processed_nodes = self.reranker.postprocess_nodes(
-            li_documents_with_score, query_str=query
-        )
+        processed_nodes = self.reranker.postprocess_nodes(li_documents_with_score, query_str=query)
         documents_with_score = [li_doc_with_score_to_doc_with_score(node) for node in processed_nodes]
         return documents_with_score
-    
+
     async def apostprocess_nodes(self, query: str, documents: list[DocumentWithScore]) -> list[DocumentWithScore]:
         li_documents_with_score = [doc_with_score_to_li_doc_with_score(document) for document in documents]
-        processed_nodes = await self.reranker.apostprocess_nodes(
-            li_documents_with_score, query_str=query
-        )
+        processed_nodes = await self.reranker.apostprocess_nodes(li_documents_with_score, query_str=query)
         documents_with_score = [li_doc_with_score_to_doc_with_score(node) for node in processed_nodes]
         return documents_with_score
-    
