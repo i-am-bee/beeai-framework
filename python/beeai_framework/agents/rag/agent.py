@@ -11,7 +11,6 @@ from beeai_framework.memory import BaseMemory
 
 
 class State(BaseModel):
-    thought: str
     final_answer: str
 
 
@@ -25,7 +24,6 @@ class RAGAgentRunOptions(BaseAgentRunOptions):
 
 class RAGAgentRunOutput(BaseModel):
     message: InstanceOf[AnyMessage]
-    state: State
 
 class RAGAgent(BaseAgent[RAGAgentRunOutput]):
     memory: BaseMemory | None = None
@@ -36,7 +34,6 @@ class RAGAgent(BaseAgent[RAGAgentRunOutput]):
         self.memory = memory
         self.vector_store = vector_store
         self.reranker = DocumentsRerankWithLLM(self.model)
-        self.emitter.on("*.*", lambda data, event: print("Got something: ", data, event))
 
     def _create_emitter(self) -> Emitter:
         return Emitter.root().child(
@@ -68,21 +65,16 @@ class RAGAgent(BaseAgent[RAGAgentRunOutput]):
                     input_message,
                 ]
             response = await self.model.create(
-            # response = await self.model.create_structure(
-                # schema=CustomSchema,
                 messages=messages,
                 max_retries=options.max_retries if options else None,
                 abort_signal=context.signal,
             )
 
-            # result = AssistantMessage(response.object["final_answer"])
             result = AssistantMessage(response.messages[-1].text)
             await self.memory.add(result) if self.memory else None
             
             return RAGAgentRunOutput(
-                message=result,
-                # state=State(thought=response.object["thought"], final_answer=response.object["final_answer"]),
-                state=State(thought="The joke!", final_answer=result.text),
+                message=result
             )
 
         return self._to_run(
@@ -92,8 +84,8 @@ class RAGAgent(BaseAgent[RAGAgentRunOutput]):
     @property
     def meta(self) -> AgentMeta:
         return AgentMeta(
-            name="CustomAgent",
-            description="Custom Agent is a simple LLM agent.",
+            name="RagAgent",
+            description="Rag agent is an agent capable of answering questions based on a corpus of documents.",
             tools=[],
         )
 

@@ -12,6 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# from beeai_framework.agents.experimental.requirements.requirement import Requirement, Rule
+from beeai_framework.agents.rag.agent import RAGAgent
 
-# __all__ = ["Requirement", "Rule"]
+__all__ = ["RAGAgent"]

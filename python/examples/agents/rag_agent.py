@@ -5,8 +5,8 @@ import os
 
 from beeai_framework.adapters.langchain.utils import lc_document_to_document
 from beeai_framework.adapters.langchain.vector_store import InMemoryVectorStore
-from beeai_framework.adapters.llama_index.wrappers.li_llm import LILLM
 from beeai_framework.adapters.watsonx.backend.embedding import WatsonxEmbeddingModel
+from ibm_watsonx_ai.metanames import EmbedTextParamsMetaNames
 from beeai_framework.agents.rag.agent import RAGAgent, RunInput
 from beeai_framework.adapters.ollama import OllamaChatModel
 from beeai_framework.backend import UserMessage
@@ -29,7 +29,7 @@ load_dotenv()  # take environment variables
 
 
 POPULATE_VECTOR_DB = True
-VECTOR_DB_PATH_4_DUMP = "" # Set this path for persistency
+VECTOR_DB_PATH_4_DUMP = "/Users/antonp/code/tmp/vector.db.dump" # Set this path for persistency
 INPUT_DOCUMENTS_LOCATION = "docs-mintlify/integrations"
 
 
@@ -38,13 +38,12 @@ async def populate_documents() -> VectorStore:
     loader = UnstructuredMarkdownLoader(file_path="python/docs/agents.md")
     docs = loader.load()
 
-    text_splitter = RecursiveCharacterTextSplitter(chunk_size=500, chunk_overlap=100)
+    text_splitter = RecursiveCharacterTextSplitter(chunk_size=2000, chunk_overlap=1000)
     all_splits = text_splitter.split_documents(docs)
     documents = [lc_document_to_document(document) for document in all_splits]
 
-    # Generate embeddings
     embeddings = WatsonxEmbeddingModel(model_id="ibm/slate-125m-english-rtrvr-v2", project_id=os.getenv("WATSONX_PROJECT_ID"), 
-                                       apikey=os.getenv("WATSONX_APIKEY"), base_url=os.getenv("WATSONX_URL"))
+                                       apikey=os.getenv("WATSONX_APIKEY"), base_url=os.getenv("WATSONX_URL"), truncate_input_tokens=500)
     
     # Index chunks
     if VECTOR_DB_PATH_4_DUMP and os.path.exists(VECTOR_DB_PATH_4_DUMP):
@@ -73,7 +72,7 @@ async def main() -> None:
     )
 
     response = await agent.run(RunInput(message=UserMessage("What agents are available in BeeAI?")))
-    print(response.state)
+    print(response.message.text)
 
 
 if __name__ == "__main__":
