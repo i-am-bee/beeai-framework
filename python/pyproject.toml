@@ -66,6 +66,11 @@ langchain = "^0.3.25"
 langchain-ibm = "^0.3.11"
 llama-index = "^0.12.42"
 
+
+[tool.poetry.group.rag_examples.dependencies]
+markdown = "^3.8.2"
+unstructured = "^0.17.2"
+
 [tool.poetry.extras]
 langchain = ["langchain-core", "langchain-community", "langgraph", "langchain-ollama"]
 llama_index = ["llama-index"]

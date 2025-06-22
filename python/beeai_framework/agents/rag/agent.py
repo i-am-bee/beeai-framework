@@ -1,7 +1,8 @@
 
 from beeai_framework.adapters.llama_index.document_processors import DocumentsRerankWithLLM
+from beeai_framework.backend.types import DocumentWithScore
 from beeai_framework.backend.vector_store import VectorStore
-from pydantic import BaseModel, Field, InstanceOf
+from pydantic import BaseModel, InstanceOf
 from beeai_framework.agents import AgentMeta, BaseAgent, BaseAgentRunOptions
 from beeai_framework.backend import AnyMessage, AssistantMessage, ChatModel, SystemMessage, UserMessage
 from beeai_framework.context import Run, RunContext
@@ -50,13 +51,13 @@ class RAGAgent(BaseAgent[RAGAgentRunOutput]):
     ) -> Run[RAGAgentRunOutput]:
         async def handler(context: RunContext) -> RAGAgentRunOutput:
             await self.memory.add(run_input.message) if self.memory else None
-            retrieved_docs = await self.vector_store.asearch(run_input.message.text, k=200)
+            retrieved_docs = await self.vector_store.asearch(run_input.message.text, k=10)
             
             # Apply re-ranking
-            reranked_documnets = await self.reranker.apostprocess_nodes(query=run_input.message.text, documents=retrieved_docs)
+            reranked_documnets: list[DocumentWithScore] = await self.reranker.apostprocess_nodes(query=run_input.message.text, documents=retrieved_docs)
             
             # Extract documents context
-            docs_content = "\n\n".join(doc_with_score[0].content for doc_with_score in reranked_documnets)
+            docs_content = "\n\n".join(doc_with_score.document.content for doc_with_score in reranked_documnets)
         
             # Place content in template
             input_message = UserMessage(content=f"The context for replying to the task is:\n\n{docs_content}")

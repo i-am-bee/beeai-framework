@@ -13,8 +13,7 @@
 # limitations under the License.
 
 from abc import ABC, abstractmethod
-from dataclasses import dataclass
-from typing import Dict, Any, Union, List, Tuple
+from typing import Any, List
 
 from beeai_framework.backend.embedding import EmbeddingModel
 from beeai_framework.backend.types import Document, DocumentWithScore
