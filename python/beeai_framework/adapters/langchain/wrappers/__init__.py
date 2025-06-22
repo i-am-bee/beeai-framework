@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from beeai_framework.adapters.langchain.tools import LangChainTool, LangChainToolRunOptions
-from beeai_framework.adapters.langchain.vector_store import InMemoryVectorStore
+from beeai_framework.adapters.langchain.wrappers.lc_embedding import LCEmbedding
 
-__all__ = ["InMemoryVectorStore", "LangChainTool", "LangChainToolRunOptions"]
+__all__ = ["LCEmbedding"]

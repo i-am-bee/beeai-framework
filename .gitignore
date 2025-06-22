@@ -1,6 +1,7 @@
 .idea
 .vscode
 .DS_Store
+.env
 
 /docs-deprecated/typescript
 /docs-deprecated/python
