@@ -31,7 +31,7 @@ langchain-community = {version = "^0.3.19", optional = true}
 langchain-core = {version = "^0.3.41", optional = true}
 langchain-ollama={version = "^0.3.1", optional = true}
 langgraph = {version = "^0.3.27", optional = true}
-litellm = "1.69.3"
+litellm = "1.73.0"
 mcp = {version = "^1.2.0", optional = true}
 pydantic = "^2.10"
 pydantic-settings = "^2.9.0"
@@ -64,16 +64,18 @@ types-requests = "^2.32.0.20241016"
 [tool.poetry.group.rag.dependencies]
 langchain = "^0.3.25"
 langchain-ibm = "^0.3.11"
-llama-index = "^0.12.42"
 
 
 [tool.poetry.group.rag_examples.dependencies]
 markdown = "^3.8.2"
 unstructured = "^0.17.2"
 
+
+[tool.poetry.group.llama_index.dependencies]
+llama-index = "^0.12.43"
+
 [tool.poetry.extras]
 langchain = ["langchain-core", "langchain-community", "langgraph", "langchain-ollama"]
-llama_index = ["llama-index"]
 huggingface = ["datasets", "transformers"]
 search = ["duckduckgo-search", "wikipedia-api"]
 duckduckgo = ["duckduckgo-search"]
