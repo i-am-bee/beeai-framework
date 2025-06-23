@@ -1,9 +1,8 @@
 python:
-  - '**/*.py'
+  - 'python/**'
 
 typescript:
-  - '**/*.ts'
-  - '**/*.tsx'
+  - 'typescript/**'
 
 documentation:
   - 'docs/**'
