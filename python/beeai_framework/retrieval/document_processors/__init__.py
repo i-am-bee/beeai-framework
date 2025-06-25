@@ -12,13 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from beeai_framework.retrieval.document_processors.document_processors import DocumentsRerankWithLLM
 
-from abc import abstractmethod
-
-from beeai_framework.backend.types import DocumentWithScore
-
-
-class DocumentProcessor:
-    @abstractmethod
-    def apostprocess_documents(self, documents: list[DocumentWithScore]) -> list[DocumentWithScore]:
-        raise NotImplementedError()
+__all__ = ["DocumentsRerankWithLLM"]

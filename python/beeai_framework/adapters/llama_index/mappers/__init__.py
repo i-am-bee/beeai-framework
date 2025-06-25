@@ -12,6 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from beeai_framework.adapters.llama_index.wrappers.li_llm import LILLM
+from beeai_framework.adapters.llama_index.mappers.li_llm import LlamaIndexLLM
 
-__all__ = ["LILLM"]
+__all__ = ["LlamaIndexLLM"]

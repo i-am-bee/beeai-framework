@@ -1,6 +1,5 @@
 from pydantic import BaseModel, InstanceOf
 
-from beeai_framework.adapters.llama_index.document_processors import DocumentsRerankWithLLM
 from beeai_framework.agents import AgentMeta, BaseAgent, BaseAgentRunOptions
 from beeai_framework.backend import AnyMessage, AssistantMessage, ChatModel, SystemMessage, UserMessage
 from beeai_framework.backend.types import DocumentWithScore
@@ -8,6 +7,7 @@ from beeai_framework.backend.vector_store import VectorStore
 from beeai_framework.context import Run, RunContext
 from beeai_framework.emitter import Emitter
 from beeai_framework.memory import BaseMemory
+from beeai_framework.retrieval.document_processors.document_processors import DocumentsRerankWithLLM
 
 
 class State(BaseModel):
@@ -29,12 +29,18 @@ class RAGAgentRunOutput(BaseModel):
 class RAGAgent(BaseAgent[RAGAgentRunOutput]):
     memory: BaseMemory | None = None
 
-    def __init__(self, llm: ChatModel, memory: BaseMemory, vector_store: VectorStore) -> None:
+    def __init__(
+        self,
+        llm: ChatModel,
+        memory: BaseMemory,
+        vector_store: VectorStore,
+        reranker: DocumentsRerankWithLLM | None = None
+    ) -> None:
         super().__init__()
         self.model = llm
         self.memory = memory
         self.vector_store = vector_store
-        self.reranker = DocumentsRerankWithLLM(self.model)
+        self.reranker = reranker
 
     def _create_emitter(self) -> Emitter:
         return Emitter.root().child(
@@ -52,12 +58,13 @@ class RAGAgent(BaseAgent[RAGAgentRunOutput]):
             retrieved_docs = await self.vector_store.asearch(run_input.message.text, k=10)
 
             # Apply re-ranking
-            reranked_documnets: list[DocumentWithScore] = await self.reranker.apostprocess_nodes(
-                query=run_input.message.text, documents=retrieved_docs
-            )
+            if self.reranker:
+                retrieved_docs: list[DocumentWithScore] = await self.reranker.apostprocess_documents(
+                    query=run_input.message.text, documents=retrieved_docs
+                )
 
             # Extract documents context
-            docs_content = "\n\n".join(doc_with_score.document.content for doc_with_score in reranked_documnets)
+            docs_content = "\n\n".join(doc_with_score.document.content for doc_with_score in retrieved_docs)
 
             # Place content in template
             input_message = UserMessage(content=f"The context for replying to the task is:\n\n{docs_content}")
