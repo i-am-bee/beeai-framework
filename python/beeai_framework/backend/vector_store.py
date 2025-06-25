@@ -24,23 +24,7 @@ class VectorStore(ABC):
         self.embedding_model = embedding_model
 
     @abstractmethod
-    def add_documents(self, documents: Document) -> list[str]:
-        """Add or update documents in the vectorstore.
-
-        Args:
-            documents: Documents to add to the vectorstore.
-
-        Returns:
-            List of identifiers of the added documents.
-        """
-        raise NotImplementedError("Implement me")
-
-    @abstractmethod
     async def aadd_documents(self, documents: Document) -> list[str]:
-        raise NotImplementedError("Implement me")
-
-    @abstractmethod
-    def search(self, query: str, search_type: str, k: int = 4, **kwargs: Any) -> list[DocumentWithScore]:
         raise NotImplementedError("Implement me")
 
     @abstractmethod

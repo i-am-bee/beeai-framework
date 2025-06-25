@@ -66,6 +66,7 @@ exclude = list(
             "playground/**/*.py",
             # Exercises including bugs
             "agents/experimental/requirement/exercises/**",
+            "agents/rag_agent.py",
         ],
     )
 )

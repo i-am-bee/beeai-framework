@@ -3,8 +3,7 @@ import os
 import sys
 import traceback
 
-from beeai_framework.adapters.langchain.utils import lc_document_to_document
-from beeai_framework.adapters.langchain.vector_store import InMemoryVectorStore
+from beeai_framework.adapters.langchain.mappers.documents import lc_document_to_document
 from beeai_framework.adapters.ollama import OllamaChatModel
 from beeai_framework.adapters.watsonx.backend.embedding import WatsonxEmbeddingModel
 from beeai_framework.agents.rag.agent import RAGAgent, RunInput
@@ -12,6 +11,7 @@ from beeai_framework.backend import UserMessage
 from beeai_framework.backend.vector_store import VectorStore
 from beeai_framework.errors import FrameworkError
 from beeai_framework.memory import UnconstrainedMemory
+from beeai_framework.retrieval.document_processors.document_processors import DocumentsRerankWithLLM
 
 # LC dependencies
 try:
@@ -24,6 +24,8 @@ except ModuleNotFoundError as e:
 
 
 from dotenv import load_dotenv
+
+from beeai_framework.retrieval.vector_stores.in_memory_vector_store import InMemoryVectorStore
 
 load_dotenv()  # take environment variables
 
@@ -69,8 +71,10 @@ async def main() -> None:
         vector_store = await populate_documents()
     else:
         vector_store = None
+    llm = OllamaChatModel("llama3.2:latest")
+    reranker = DocumentsRerankWithLLM(llm)
 
-    agent = RAGAgent(llm=OllamaChatModel("llama3.2:latest"), memory=UnconstrainedMemory(), vector_store=vector_store)
+    agent = RAGAgent(llm=llm, memory=UnconstrainedMemory(), vector_store=vector_store, reranker=reranker)
 
     response = await agent.run(RunInput(message=UserMessage("What agents are available in BeeAI?")))
     print(response.message.text)
