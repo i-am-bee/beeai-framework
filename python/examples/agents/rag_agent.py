@@ -27,11 +27,11 @@ from dotenv import load_dotenv
 
 from beeai_framework.retrieval.vector_stores.in_memory_vector_store import InMemoryVectorStore
 
-load_dotenv()  # take environment variables
+load_dotenv()  # load environment variables
 
 
 POPULATE_VECTOR_DB = True
-VECTOR_DB_PATH_4_DUMP = "/Users/antonp/code/tmp/vector.db.dump"  # Set this path for persistency
+VECTOR_DB_PATH_4_DUMP = ""  # Set this path for persistency
 INPUT_DOCUMENTS_LOCATION = "docs-mintlify/integrations"
 
 
