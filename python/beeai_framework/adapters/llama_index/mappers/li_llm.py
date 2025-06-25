@@ -32,7 +32,7 @@ def run_in_loop(awaitable: Any) -> Any:
     return future.result()
 
 
-class LILLM(CustomLLM):
+class LlamaIndexLLM(CustomLLM):
     bai_llm: ChatModel = Field(description="The BeeAI LLM instances.", default=None)
 
     def __init__(self, bai_llm: ChatModel, *args: Any, **kwargs: Any) -> None:

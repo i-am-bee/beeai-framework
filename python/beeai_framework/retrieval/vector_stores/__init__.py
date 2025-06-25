@@ -12,13 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from beeai_framework.retrieval.vector_stores.in_memory_vector_store import InMemoryVectorStore
 
-from abc import abstractmethod
-
-from beeai_framework.backend.types import DocumentWithScore
-
-
-class DocumentProcessor:
-    @abstractmethod
-    def apostprocess_documents(self, documents: list[DocumentWithScore]) -> list[DocumentWithScore]:
-        raise NotImplementedError()
+__all__ = ["InMemoryVectorStore"]
