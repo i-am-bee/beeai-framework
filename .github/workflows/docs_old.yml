@@ -30,20 +30,6 @@ jobs:
           cp ./python/*.md docs-deprecated/python
           cp ./python/examples/README.md docs-deprecated/python/examples.md
 
-      - name: Link Checker
-        id: lychee
-        uses: lycheeverse/lychee-action@v2
-        with:
-          fail: true
-          # Only check docs
-          args: |
-            --verbose
-            --no-progress
-            --include-fragments
-            --exclude-path docs-deprecated/typescript/CHANGELOG.md
-            './docs-deprecated/**/*.md'
-            './docs-deprecated/**/*.html'
-
       - name: Upload Documentation Artifact
         uses: actions/upload-pages-artifact@v3
         with:

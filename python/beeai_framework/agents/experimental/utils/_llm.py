@@ -50,8 +50,18 @@ class RequirementsReasoner:
         for entry in self._entries:
             entry.init(tools=self._tools, ctx=self._context)
 
+    def _find_tool_by_name(self, name: str) -> AnyTool:
+        tool: AnyTool | None = next((t for t in self._tools if t.name == name), None)
+        if tool is None:
+            raise ValueError(f"Tool '{name}' not found in ({','.join(t.name for t in self._tools)}).")
+        return tool
+
     async def create_request(
-        self, state: RequirementAgentRunState, *, force_tool_call: bool
+        self,
+        state: RequirementAgentRunState,
+        *,
+        force_tool_call: bool,
+        extra_rules: list[Rule] | None = None,
     ) -> RequirementAgentRequest:
         hidden: list[AnyTool] = []
         allowed: list[AnyTool] = []
@@ -66,18 +76,21 @@ class RequirementsReasoner:
         for entry in [entry for entry in self._entries if entry.enabled]:
             requirements = await entry.run(state)
             for rule in requirements:
-                tool: AnyTool | None = next((tool for tool in self._tools if tool.name == rule.target), None)
-                if tool is None:
-                    raise ValueError(f"Tool '{rule.target}' not found in ({','.join(t.name for t in self._tools)}).")
-
+                tool = self._find_tool_by_name(rule.target)
                 rules_by_tool[tool.name].append((rule, entry.priority))
+
+        # Add extra rules
+        for rule in extra_rules or []:
+            if rule.target not in rules_by_tool:
+                raise ValueError(f"Tool '{rule.target}' not found.")
+
+            rules = rules_by_tool[rule.target]
+            priority = max(rules, key=lambda v: v[1])[1] + 1 if rules else 1
+            rules.append((rule, priority))
 
         # Aggregate rules and infer the required tool
         for tool_name, rules in rules_by_tool.items():
-            tool = next((tool for tool in self._tools if tool.name == tool_name), None)
-            if tool is None:
-                raise ValueError(f"Tool '{tool_name}' not found.")
-
+            tool = self._find_tool_by_name(tool_name)
             rules.sort(key=lambda x: x[1], reverse=True)  # DESC
 
             max_priority = rules[0][1] if rules else 1

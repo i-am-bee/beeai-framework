@@ -442,7 +442,7 @@ async def main() -> None:
 
     #  Optionally one may set llm parameters
     llm.parameters.max_tokens = 10000  # high number yields longer potential output
-    llm.parameters.top_p = 0  # higher number yields more complex vocabulary, recommend only changing p or k
+    llm.parameters.top_p = 0.1  # higher number yields more complex vocabulary, recommend only changing p or k
     llm.parameters.frequency_penalty = 0  # higher number yields reduction in word reptition
     llm.parameters.temperature = 0  # higher number yields greater randomness and variation
     llm.parameters.top_k = 0  # higher number yields more variance, recommend only changing p or k
@@ -727,6 +727,7 @@ async def main() -> None:
         )
 
         tool_calls = response.get_tool_calls()
+        messages.extend(response.messages)
 
         tool_results: list[ToolMessage] = []
 
@@ -736,7 +737,7 @@ async def main() -> None:
             assert tool is not None
             res: ToolOutput = await tool.run(json.loads(tool_call.args))
             result = res.get_text_content()
-            print(f"<- got response from '{tool_call.tool_name}'", re.sub(r"\s+", " ", result)[:90] + " (truncated)")
+            print(f"<- got response from '{tool_call.tool_name}'", re.sub(r"\s+", " ", result)[:256] + " (truncated)")
             tool_results.append(
                 ToolMessage(
                     MessageToolResultContent(

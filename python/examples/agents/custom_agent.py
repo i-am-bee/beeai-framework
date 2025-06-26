@@ -32,12 +32,18 @@ class CustomAgentRunOutput(BaseModel):
 
 
 class CustomAgent(BaseAgent[CustomAgentRunOutput]):
-    memory: BaseMemory
-
     def __init__(self, llm: ChatModel, memory: BaseMemory) -> None:
         super().__init__()
         self.model = llm
-        self.memory = memory
+        self._memory = memory
+
+    @property
+    def memory(self) -> BaseMemory:
+        return self._memory
+
+    @memory.setter
+    def memory(self, memory: BaseMemory) -> None:
+        self._memory = memory
 
     def _create_emitter(self) -> Emitter:
         return Emitter.root().child(

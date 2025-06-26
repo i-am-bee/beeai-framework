@@ -48,9 +48,7 @@ class WikipediaToolOutput(SearchToolOutput):
 
 class WikipediaTool(Tool[WikipediaToolInput, ToolRunOptions, WikipediaToolOutput]):
     name = "Wikipedia"
-    description = "Search factual and historical information, including biography, \
-        history, politics, geography, society, culture, science, technology, people, \
-        animal species, mathematics, and other subjects."
+    description = "Search factual and historical information, including biography, history, politics, geography, society, culture, science, technology, people, animal species, mathematics, and other subjects."  # noqa: E501
     input_schema = WikipediaToolInput
 
     def __init__(self, options: dict[str, Any] | None = None, *, language: str = "en") -> None:

@@ -89,7 +89,7 @@ async def main() -> None:
             ),
         ],
         requirements=[
-            ConditionalRequirement(ThinkTool),
+            ConditionalRequirement(ThinkTool, consecutive_allowed=False),
             AskPermissionRequirement(["DestinationResearch", "WeatherPlanning"]),
         ],
         role="Travel Concierge",
@@ -102,6 +102,7 @@ async def main() -> None:
             "would benefit the traveler's planning process. When synthesizing information from specialists, create personalized "
             "recommendations that consider both destination features and weather conditions."
         ),
+        notes=["If user does not provide a valid destination, use 'final_answer' tool for clarification."],
     )
 
     reader.write("ℹ️", "Travel advisor agent initialized")

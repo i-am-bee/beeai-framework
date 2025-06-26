@@ -218,6 +218,8 @@ class LiteLLMChatModel(ChatModel, ABC):
             if isinstance(input.tool_choice, Tool)
             else input.tool_choice
         )
+        if isinstance(tool_choice, str) and tool_choice not in self.tool_choice_support:
+            tool_choice = None
 
         return exclude_none(
             exclude_none(settings)

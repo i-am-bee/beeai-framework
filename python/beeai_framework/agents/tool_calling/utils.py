@@ -19,7 +19,7 @@ from beeai_framework.utils.counter import OccurrencesCounter
 
 
 class ToolCallCheckerConfig(BaseModel):
-    max_strike_length: int = 2
+    max_strike_length: int = 1
     max_total_occurrences: int = 5
     window_size: int = 10
 

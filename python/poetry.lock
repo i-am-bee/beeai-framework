@@ -25,15 +25,15 @@ typing-extensions = ">=4.13.2"
 
 [[package]]
 name = "acp-sdk"
-version = "0.12.1"
+version = "0.12.2"
 description = "Agent Communication Protocol SDK"
 optional = true
 python-versions = "<4.0,>=3.11"
 groups = ["main"]
 markers = "extra == \"acp\" or extra == \"beeai-platform\""
 files = [
-    {file = "acp_sdk-0.12.1-py3-none-any.whl", hash = "sha256:b45ceb38d7c40c88f4292c32014564a013f485215ffe82c7432a494614a0b040"},
-    {file = "acp_sdk-0.12.1.tar.gz", hash = "sha256:ed1b5fe477849515b4d98aadaf6c9af28e1db49ecb2b68ef97bc26a3745eb662"},
+    {file = "acp_sdk-0.12.2-py3-none-any.whl", hash = "sha256:3ba125c8fb6cfb5bfe5a2206d84334483eb0948eda4616cb2279f86d3ce22d02"},
+    {file = "acp_sdk-0.12.2.tar.gz", hash = "sha256:32844d736d71cd41d214138b268115c89e5f40dbc6c3654f8959526e190d548d"},
 ]
 
 [package.dependencies]
@@ -893,15 +893,15 @@ wmi = ["wmi (>=1.5.1)"]
 
 [[package]]
 name = "duckduckgo-search"
-version = "8.0.2"
+version = "8.0.4"
 description = "Search for words, documents, images, news, maps and text translation using the DuckDuckGo.com search engine."
 optional = true
 python-versions = ">=3.9"
 groups = ["main"]
 markers = "extra == \"search\" or extra == \"duckduckgo\""
 files = [
-    {file = "duckduckgo_search-8.0.2-py3-none-any.whl", hash = "sha256:b5ff8b6b8f169b8e1b15a788a5749aa900ebcefd6e1ab485787582f8d5b4f1ef"},
-    {file = "duckduckgo_search-8.0.2.tar.gz", hash = "sha256:3109a99967b29cab8862823bbe320d140d5c792415de851b9d6288de2311b3ec"},
+    {file = "duckduckgo_search-8.0.4-py3-none-any.whl", hash = "sha256:22490e83c0ca885998d6623d8274f24934faffc43dac3c3482fe24ea4f6799bb"},
+    {file = "duckduckgo_search-8.0.4.tar.gz", hash = "sha256:02aee731d05056a6bbf217c51faddd0b9565c5ce1e94d0278cbd2fbcc0e41b95"},
 ]
 
 [package.dependencies]
@@ -1503,7 +1503,7 @@ description = "Consume Server-Sent Event (SSE) messages with HTTPX."
 optional = true
 python-versions = ">=3.8"
 groups = ["main"]
-markers = "extra == \"a2a\" or extra == \"acp\" or extra == \"beeai-platform\" or extra == \"langchain\" or extra == \"mcp\""
+markers = "extra == \"a2a\" or extra == \"acp\" or extra == \"beeai-platform\" or extra == \"langchain\" or extra == \"mcp\" or extra == \"all\""
 files = [
     {file = "httpx-sse-0.4.0.tar.gz", hash = "sha256:1e81a3a3070ce322add1d3529ed42eb5f70817f45ed6ec915ab753f961139721"},
     {file = "httpx_sse-0.4.0-py3-none-any.whl", hash = "sha256:f329af6eae57eaa2bdfd962b42524764af68075ea87370a2de920af5341e318f"},
@@ -2395,7 +2395,7 @@ description = "Model Context Protocol SDK"
 optional = true
 python-versions = ">=3.10"
 groups = ["main"]
-markers = "extra == \"mcp\""
+markers = "extra == \"mcp\" or extra == \"all\""
 files = [
     {file = "mcp-1.6.0-py3-none-any.whl", hash = "sha256:7bd24c6ea042dbec44c754f100984d186620d8b841ec30f1b19eda9b93a634d0"},
     {file = "mcp-1.6.0.tar.gz", hash = "sha256:d9324876de2c5637369f43161cd71eebfd803df5a95e46225cab8d280e366723"},
@@ -3246,18 +3246,6 @@ files = [
 ]
 
 [[package]]
-name = "pastel"
-version = "0.2.1"
-description = "Bring colors to your terminal."
-optional = false
-python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*"
-groups = ["dev"]
-files = [
-    {file = "pastel-0.2.1-py2.py3-none-any.whl", hash = "sha256:4349225fcdf6c2bb34d483e523475de5bb04a5c10ef711263452cb37d7dd4364"},
-    {file = "pastel-0.2.1.tar.gz", hash = "sha256:e6581ac04e973cac858828c6202c1e1e81fee1dc7de7683f3e1ffe0bfd8a573d"},
-]
-
-[[package]]
 name = "pathspec"
 version = "0.12.1"
 description = "Utility library for gitignore style pattern matching of file paths."
@@ -3301,25 +3289,6 @@ files = [
 [package.extras]
 dev = ["pre-commit", "tox"]
 testing = ["pytest", "pytest-benchmark"]
-
-[[package]]
-name = "poethepoet"
-version = "0.33.1"
-description = "A task runner that works well with poetry."
-optional = false
-python-versions = ">=3.9"
-groups = ["dev"]
-files = [
-    {file = "poethepoet-0.33.1-py3-none-any.whl", hash = "sha256:b86d80a81b2ca4e4ce8e8f716cc6004a1a1cdead027778bc07d1c26cb3664770"},
-    {file = "poethepoet-0.33.1.tar.gz", hash = "sha256:8775e09b64f773278b5483659ff238a708723491efadeedd1c2cbf773558cb4c"},
-]
-
-[package.dependencies]
-pastel = ">=0.2.1,<0.3.0"
-pyyaml = ">=6.0.2,<7.0"
-
-[package.extras]
-poetry-plugin = ["poetry (>=1.2.0,<3.0.0) ; python_version < \"4.0\""]
 
 [[package]]
 name = "portalocker"
@@ -4777,7 +4746,7 @@ description = "SSE plugin for Starlette"
 optional = true
 python-versions = ">=3.9"
 groups = ["main"]
-markers = "extra == \"a2a\" or extra == \"mcp\""
+markers = "extra == \"a2a\" or extra == \"mcp\" or extra == \"all\""
 files = [
     {file = "sse_starlette-2.3.3-py3-none-any.whl", hash = "sha256:8b0a0ced04a329ff7341b01007580dd8cf71331cc21c0ccea677d500618da1e0"},
     {file = "sse_starlette-2.3.3.tar.gz", hash = "sha256:fdd47c254aad42907cfd5c5b83e2282be15be6c51197bf1a9b70b8e990522072"},
@@ -4798,7 +4767,7 @@ description = "The little ASGI library that shines."
 optional = true
 python-versions = ">=3.9"
 groups = ["main"]
-markers = "extra == \"a2a\" or extra == \"mcp\" or extra == \"acp\" or extra == \"beeai-platform\""
+markers = "extra == \"a2a\" or extra == \"mcp\" or extra == \"all\" or extra == \"acp\" or extra == \"beeai-platform\""
 files = [
     {file = "starlette-0.46.2-py3-none-any.whl", hash = "sha256:595633ce89f8ffa71a015caed34a5b2dc1c0cdb3f0f1fbd1e69339cf2abeec35"},
     {file = "starlette-0.46.2.tar.gz", hash = "sha256:7f7361f34eed179294600af672f565727419830b54b7b084efe44bb82d2fccd5"},
@@ -5178,7 +5147,7 @@ description = "The lightning-fast ASGI server."
 optional = true
 python-versions = ">=3.9"
 groups = ["main"]
-markers = "extra == \"acp\" or extra == \"beeai-platform\" or extra == \"mcp\" or extra == \"a2a\""
+markers = "extra == \"acp\" or extra == \"beeai-platform\" or extra == \"mcp\" or extra == \"all\" or extra == \"a2a\""
 files = [
     {file = "uvicorn-0.34.2-py3-none-any.whl", hash = "sha256:deb49af569084536d269fe0a6d67e3754f104cf03aba7c11c40f01aadf33c403"},
     {file = "uvicorn-0.34.2.tar.gz", hash = "sha256:0e929828f6186353a80b58ea719861d2629d766293b6d19baf086ba31d4f3328"},
@@ -5959,6 +5928,7 @@ cffi = ["cffi (>=1.11)"]
 [extras]
 a2a = ["a2a-sdk", "uvicorn"]
 acp = ["acp-sdk", "uvicorn"]
+all = ["mcp"]
 beeai-platform = ["acp-sdk", "uvicorn"]
 duckduckgo = ["duckduckgo-search"]
 huggingface = []
@@ -5970,4 +5940,4 @@ wikipedia = ["wikipedia-api"]
 [metadata]
 lock-version = "2.1"
 python-versions = ">= 3.11,<4.0"
-content-hash = "ad3e7f0d584ed140a297f67225c0a90b54059f471a49acf7606cb8e90c9ec676"
+content-hash = "b2962e505e2438cb04b90c3e62298c60945cf49528d06d6955ec0afd1b8ef402"

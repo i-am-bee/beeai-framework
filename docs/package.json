@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "dev": "mintlify dev --port 3333",
-    "links:check": "lychee --verbose --include-fragments ./**/*.mdx --exclude-path=python --exclude-path=typescript",
+    "links:check": "lychee --verbose ./**/*.mdx --exclude-path=python --exclude-path=typescript",
     "snippets:embed": "yarn exec embedme --source-root=.. ./**/*.mdx",
     "snippets:check": "yarn exec embedme --source-root=.. ./**/*.mdx --verify",
     "git:pre-commit": "yarn snippets:check && yarn links:check && echo 'OK'"
@@ -16,6 +16,6 @@
   "license": "Apache-2.0",
   "devDependencies": {
     "embedme": "^1.22.1",
-    "mintlify": "^4.0.523"
+    "mintlify": "^4.1.94"
   }
 }

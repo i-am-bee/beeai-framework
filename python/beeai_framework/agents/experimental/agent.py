@@ -27,10 +27,9 @@ from beeai_framework.agents.experimental.events import (
     requirement_agent_event_types,
 )
 from beeai_framework.agents.experimental.prompts import (
-    RequirementAgentCycleDetectionPromptInput,
     RequirementAgentTaskPromptInput,
 )
-from beeai_framework.agents.experimental.requirements.requirement import Requirement
+from beeai_framework.agents.experimental.requirements.requirement import Requirement, Rule
 from beeai_framework.agents.experimental.types import (
     RequirementAgentRunOutput,
     RequirementAgentRunState,
@@ -121,8 +120,8 @@ class RequirementAgent(BaseAgent[RequirementAgentRunOutput]):
     ) -> Run[RequirementAgentRunOutput[TOutput]]:
         run_config = execution or AgentExecutionConfig(
             max_retries_per_step=3,
-            total_max_retries=20,
-            max_iterations=10,
+            total_max_retries=3,
+            max_iterations=20,
         )
 
         async def init_state() -> tuple[RequirementAgentRunState, UserMessage | None]:
@@ -155,6 +154,7 @@ class RequirementAgent(BaseAgent[RequirementAgentRunOutput]):
             tool_call_cycle_checker = self._create_tool_call_checker()
             tool_call_retry_counter = RetryCounter(error_type=AgentError, max_retries=run_config.total_max_retries or 1)
             force_final_answer_as_tool = self._final_answer_as_tool
+            tmp_rules: list[Rule] = []
 
             while state.answer is None:
                 state.iteration += 1
@@ -162,7 +162,10 @@ class RequirementAgent(BaseAgent[RequirementAgentRunOutput]):
                 if run_config.max_iterations and state.iteration > run_config.max_iterations:
                     raise AgentError(f"Agent was not able to resolve the task in {state.iteration} iterations.")
 
-                request = await reasoner.create_request(state, force_tool_call=force_final_answer_as_tool)
+                request = await reasoner.create_request(
+                    state, force_tool_call=force_final_answer_as_tool, extra_rules=tmp_rules
+                )
+                tmp_rules.clear()
 
                 await run_context.emitter.emit(
                     "start",
@@ -214,17 +217,7 @@ class RequirementAgent(BaseAgent[RequirementAgentRunOutput]):
                     tool_call_cycle_checker.register(tool_call_msg)
                     if cycle_found := tool_call_cycle_checker.cycle_found:
                         await state.memory.delete_many(response.messages)
-                        await state.memory.add(
-                            UserMessage(
-                                self._templates.cycle_detection.render(
-                                    RequirementAgentCycleDetectionPromptInput(
-                                        tool_args=tool_call_msg.args,
-                                        tool_name=tool_call_msg.tool_name,
-                                        final_answer_name=request.final_answer.name,
-                                    )
-                                )
-                            )
-                        )
+                        tmp_rules.append(Rule(target=tool_call_msg.tool_name, allowed=False, hidden=False))
                         tool_call_cycle_checker.reset()
                         break
 

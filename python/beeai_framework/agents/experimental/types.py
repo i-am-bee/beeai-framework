@@ -19,8 +19,6 @@ from pydantic import BaseModel, ConfigDict, Field, InstanceOf
 from typing_extensions import TypeVar
 
 from beeai_framework.agents.experimental.prompts import (
-    RequirementAgentCycleDetectionPrompt,
-    RequirementAgentCycleDetectionPromptInput,
     RequirementAgentSystemPrompt,
     RequirementAgentSystemPromptInput,
     RequirementAgentTaskPrompt,
@@ -51,9 +49,6 @@ class RequirementAgentTemplates(BaseModel):
     )
     tool_error: InstanceOf[PromptTemplate[RequirementAgentToolErrorPromptInput]] = Field(
         default_factory=lambda: RequirementAgentToolErrorPrompt.fork(None),
-    )
-    cycle_detection: InstanceOf[PromptTemplate[RequirementAgentCycleDetectionPromptInput]] = Field(
-        default_factory=lambda: RequirementAgentCycleDetectionPrompt.fork(None),
     )
     tool_no_result: InstanceOf[PromptTemplate[RequirementAgentToolNoResultTemplateInput]] = Field(
         default_factory=lambda: RequirementAgentToolNoResultPrompt.fork(None),

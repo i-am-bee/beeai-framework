@@ -64,7 +64,7 @@ __metadata:
   resolution: "@beeai/framework-docs@workspace:."
   dependencies:
     embedme: "npm:^1.22.1"
-    mintlify: "npm:^4.0.523"
+    mintlify: "npm:^4.1.94"
   languageName: unknown
   linkType: soft
 
@@ -578,48 +578,49 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@mintlify/cli@npm:4.0.521":
-  version: 4.0.521
-  resolution: "@mintlify/cli@npm:4.0.521"
+"@mintlify/cli@npm:4.0.595":
+  version: 4.0.595
+  resolution: "@mintlify/cli@npm:4.0.595"
   dependencies:
-    "@mintlify/common": "npm:1.0.368"
-    "@mintlify/link-rot": "npm:3.0.480"
-    "@mintlify/models": "npm:0.0.189"
-    "@mintlify/prebuild": "npm:1.0.477"
-    "@mintlify/previewing": "npm:4.0.512"
-    "@mintlify/validation": "npm:0.1.358"
+    "@mintlify/common": "npm:1.0.427"
+    "@mintlify/link-rot": "npm:3.0.546"
+    "@mintlify/models": "npm:0.0.197"
+    "@mintlify/prebuild": "npm:1.0.542"
+    "@mintlify/previewing": "npm:4.0.584"
+    "@mintlify/validation": "npm:0.1.397"
     chalk: "npm:^5.2.0"
     detect-port: "npm:^1.5.1"
     fs-extra: "npm:^11.2.0"
     inquirer: "npm:^12.3.0"
     js-yaml: "npm:^4.1.0"
     ora: "npm:^6.1.2"
+    semver: "npm:^7.7.2"
     yargs: "npm:^17.6.0"
   bin:
     mint: bin/index.js
     mintlify: bin/index.js
-  checksum: 10c0/9ca991f86dd248a8932822597c8dde6295bd1909d818c20cb06c4fbcece0ff418805d1f262f9a10f2efce199eb256e546ab5950e7e83e72ce6ac32f9006363a5
+  checksum: 10c0/71b93ac1e3d36f8b2f21eb565ce5759dfa8c394cd72612096db8a502c00fd574688a8cab31cea0a5052d1213237ce48e09ab67f7d64be514e829015aa3c443fe
   languageName: node
   linkType: hard
 
-"@mintlify/common@npm:1.0.368":
-  version: 1.0.368
-  resolution: "@mintlify/common@npm:1.0.368"
+"@mintlify/common@npm:1.0.427":
+  version: 1.0.427
+  resolution: "@mintlify/common@npm:1.0.427"
   dependencies:
     "@asyncapi/parser": "npm:^3.4.0"
-    "@mintlify/mdx": "npm:^1.0.1"
-    "@mintlify/models": "npm:0.0.189"
+    "@mintlify/mdx": "npm:^2.0.3"
+    "@mintlify/models": "npm:0.0.197"
     "@mintlify/openapi-parser": "npm:^0.0.7"
-    "@mintlify/validation": "npm:0.1.358"
+    "@mintlify/validation": "npm:0.1.397"
     "@sindresorhus/slugify": "npm:^2.1.1"
     acorn: "npm:^8.11.2"
+    acorn-jsx: "npm:^5.3.2"
     estree-util-to-js: "npm:^2.0.0"
     estree-walker: "npm:^3.0.3"
     gray-matter: "npm:^4.0.3"
     hast-util-from-html: "npm:^2.0.3"
     hast-util-to-html: "npm:^9.0.4"
     hast-util-to-text: "npm:^4.0.2"
-    is-absolute-url: "npm:^4.0.1"
     js-yaml: "npm:^4.1.0"
     lodash: "npm:^4.17.21"
     mdast: "npm:^3.0.0"
@@ -642,52 +643,51 @@ __metadata:
     unist-util-visit: "npm:^5.0.0"
     unist-util-visit-parents: "npm:^6.0.1"
     vfile: "npm:^6.0.3"
-  checksum: 10c0/c3172d3020875dc93cdd2eee965e73c993c53cd2707c86593ac057975a3cf6482db7c173f42e993c6dd438decdb33d3f7b6c4e22c77072176def205430e2a17e
+  checksum: 10c0/8ed6eb12ee00464d6eb3fd037f0e4a0b98e55adcbb2218277d7a1c080047cbd3425d3ee8f8b402ec2c3e5ca350f70f6fc4e05250d9a85574411415c9b8a2ac74
   languageName: node
   linkType: hard
 
-"@mintlify/link-rot@npm:3.0.480":
-  version: 3.0.480
-  resolution: "@mintlify/link-rot@npm:3.0.480"
+"@mintlify/link-rot@npm:3.0.546":
+  version: 3.0.546
+  resolution: "@mintlify/link-rot@npm:3.0.546"
   dependencies:
-    "@mintlify/common": "npm:1.0.368"
-    "@mintlify/prebuild": "npm:1.0.477"
+    "@mintlify/common": "npm:1.0.427"
+    "@mintlify/prebuild": "npm:1.0.542"
     fs-extra: "npm:^11.1.0"
-    is-absolute-url: "npm:^4.0.1"
     unist-util-visit: "npm:^4.1.1"
-  checksum: 10c0/e13ce7edec76b0053665fda5238eaa9bed329e03f503c860965474302ac1e008009931f36470f4df1821f4b3cd56206bc218496157ef51ee951e0d692d75c2c3
+  checksum: 10c0/3d5805ac21436520ae137a4a600695c8521d2731fc1f7e1abc65f8c698b4f4251293bf97644e231a8a251bda8396c6115bdc40ab419280474a60836285860386
   languageName: node
   linkType: hard
 
-"@mintlify/mdx@npm:^1.0.1":
-  version: 1.0.1
-  resolution: "@mintlify/mdx@npm:1.0.1"
+"@mintlify/mdx@npm:^2.0.3":
+  version: 2.0.3
+  resolution: "@mintlify/mdx@npm:2.0.3"
   dependencies:
-    "@types/hast": "npm:^3.0.4"
-    "@types/unist": "npm:^3.0.3"
+    "@shikijs/transformers": "npm:^3.6.0"
     hast-util-to-string: "npm:^3.0.1"
+    mdast-util-mdx-jsx: "npm:^3.2.0"
     next-mdx-remote-client: "npm:^1.0.3"
-    refractor: "npm:^4.8.1"
     rehype-katex: "npm:^7.0.1"
     remark-gfm: "npm:^4.0.0"
     remark-math: "npm:^6.0.0"
     remark-smartypants: "npm:^3.0.2"
+    shiki: "npm:^3.6.0"
     unified: "npm:^11.0.0"
     unist-util-visit: "npm:^5.0.0"
   peerDependencies:
     react: ^18.3.1
     react-dom: ^18.3.1
-  checksum: 10c0/f599cea374357fc9a954080928b14456b95489657dac0ad797c1cbc1314f32324d99923b752292ed662ec156c1e91a9359d1a864dd77158717135019d2513db3
+  checksum: 10c0/39d91ee3df6e07e998a18dc752b77d8d9acda165d4ee5be9ee1b4db82c2dc735b4f07731cbea644c31401251edd6351512b97ce83a101f0ffa02db951a328cbe
   languageName: node
   linkType: hard
 
-"@mintlify/models@npm:0.0.189":
-  version: 0.0.189
-  resolution: "@mintlify/models@npm:0.0.189"
+"@mintlify/models@npm:0.0.197":
+  version: 0.0.197
+  resolution: "@mintlify/models@npm:0.0.197"
   dependencies:
     axios: "npm:^1.4.0"
     openapi-types: "npm:^12.0.0"
-  checksum: 10c0/9805328c90a6bf3ca855d7f3b4f5bbccf2a0189bd5182989da1943e77f355daeade503f14c1da10c8206893e618b950c5bd92b694baa4bd512bcc71af06294b9
+  checksum: 10c0/fd95239383baab680acac3c97d9770e0d86679858bcbbb8a7059944913cbc56dcc4d1fa400d564f55335dd7f47adf4e97f2fa8d3279266f98ed895b009050d43
   languageName: node
   linkType: hard
 
@@ -705,35 +705,34 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@mintlify/prebuild@npm:1.0.477":
-  version: 1.0.477
-  resolution: "@mintlify/prebuild@npm:1.0.477"
+"@mintlify/prebuild@npm:1.0.542":
+  version: 1.0.542
+  resolution: "@mintlify/prebuild@npm:1.0.542"
   dependencies:
-    "@mintlify/common": "npm:1.0.368"
+    "@mintlify/common": "npm:1.0.427"
     "@mintlify/openapi-parser": "npm:^0.0.7"
-    "@mintlify/scraping": "npm:4.0.224"
-    "@mintlify/validation": "npm:0.1.358"
+    "@mintlify/scraping": "npm:4.0.283"
+    "@mintlify/validation": "npm:0.1.397"
     axios: "npm:^1.6.2"
     chalk: "npm:^5.3.0"
-    favicons: "npm:^7.0.2"
+    favicons: "npm:^7.2.0"
     fs-extra: "npm:^11.1.0"
     gray-matter: "npm:^4.0.3"
-    is-absolute-url: "npm:^4.0.1"
     js-yaml: "npm:^4.1.0"
     mdast: "npm:^3.0.0"
     openapi-types: "npm:^12.0.0"
     unist-util-visit: "npm:^4.1.1"
-  checksum: 10c0/410228a5bcb72e6f76e6c23546d6326c06d7c4f98437bb416edc4e39afc8fddabdb70d834335c0b2d917e0709c68848e733322a47256a4ebc71aba36b2da4958
+  checksum: 10c0/d542ab18e0b79ba408c87856602e29859828e3179c3b63e386d78e3ec911468a1dd1b076253e3a2d14012136336a16089fccf2d86b1552843ec03746b5bdc929
   languageName: node
   linkType: hard
 
-"@mintlify/previewing@npm:4.0.512":
-  version: 4.0.512
-  resolution: "@mintlify/previewing@npm:4.0.512"
+"@mintlify/previewing@npm:4.0.584":
+  version: 4.0.584
+  resolution: "@mintlify/previewing@npm:4.0.584"
   dependencies:
-    "@mintlify/common": "npm:1.0.368"
-    "@mintlify/prebuild": "npm:1.0.477"
-    "@mintlify/validation": "npm:0.1.358"
+    "@mintlify/common": "npm:1.0.427"
+    "@mintlify/prebuild": "npm:1.0.542"
+    "@mintlify/validation": "npm:0.1.397"
     better-opn: "npm:^3.0.2"
     chalk: "npm:^5.1.0"
     chokidar: "npm:^3.5.3"
@@ -741,7 +740,6 @@ __metadata:
     fs-extra: "npm:^11.1.0"
     got: "npm:^13.0.0"
     gray-matter: "npm:^4.0.3"
-    is-absolute-url: "npm:^4.0.1"
     is-online: "npm:^10.0.0"
     js-yaml: "npm:^4.1.0"
     mdast: "npm:^3.0.0"
@@ -751,15 +749,15 @@ __metadata:
     tar: "npm:^6.1.15"
     unist-util-visit: "npm:^4.1.1"
     yargs: "npm:^17.6.0"
-  checksum: 10c0/bd5ea3173bc2608fbf2027674d1d3f129db1aa7c2e4dd27e47d92a6462e3b171fda8f7faa0d0efbc965a21231620af9d4b00224fdf74bfbc26fbc616a300da4d
+  checksum: 10c0/f2943efb45e752d14375f553b500f275e2f8f8cbc8f7d052587bfcc8553a7aa75d750f3542d2c64a1cc53091189179c9399b8a11665aa2fe86fc6f8a0bf4b668
   languageName: node
   linkType: hard
 
-"@mintlify/scraping@npm:4.0.224":
-  version: 4.0.224
-  resolution: "@mintlify/scraping@npm:4.0.224"
+"@mintlify/scraping@npm:4.0.283":
+  version: 4.0.283
+  resolution: "@mintlify/scraping@npm:4.0.283"
   dependencies:
-    "@mintlify/common": "npm:1.0.368"
+    "@mintlify/common": "npm:1.0.427"
     "@mintlify/openapi-parser": "npm:^0.0.7"
     fs-extra: "npm:^11.1.1"
     hast-util-to-mdast: "npm:^10.1.0"
@@ -778,22 +776,21 @@ __metadata:
     zod: "npm:^3.20.6"
   bin:
     mintlify-scrape: bin/cli.js
-  checksum: 10c0/3367ff5a727229b6bae772a20eac417b1b19ccafcc6e8ec43ad8a43ca081bc031409e56a1255d1976d38099ee85f9575d2cec7a57e56f0538d3f806c2c87bb75
+  checksum: 10c0/743b04252e8bf7d48c71973827e1b85d4c0966d1a3cb5018b51e2a1bc2d0f42e4311deaaacea95c93dc77fb1cfe29679dc2fadae73c3a983c8950f614fea1dd5
   languageName: node
   linkType: hard
 
-"@mintlify/validation@npm:0.1.358":
-  version: 0.1.358
-  resolution: "@mintlify/validation@npm:0.1.358"
+"@mintlify/validation@npm:0.1.397":
+  version: 0.1.397
+  resolution: "@mintlify/validation@npm:0.1.397"
   dependencies:
-    "@mintlify/models": "npm:0.0.189"
-    is-absolute-url: "npm:^4.0.1"
+    "@mintlify/models": "npm:0.0.197"
     lcm: "npm:^0.0.3"
     lodash: "npm:^4.17.21"
     openapi-types: "npm:^12.0.0"
     zod: "npm:^3.20.6"
     zod-to-json-schema: "npm:^3.20.3"
-  checksum: 10c0/41c7d9d4afac54ad586fcf73af814635f068d85406ce0c1ad9aef5eb01313b76da18cb68463f0b2cc3aadf730d465098d90bee638c5dff8813c0299146ede68b
+  checksum: 10c0/220220ce5fb7281c818148145267658a4bb2f20bca859128adae12a9567c7b52827a5c60664fdc4dd2c7610ee2990e30f53005953ccc0965a79cf7e0337072d1
   languageName: node
   linkType: hard
 
@@ -850,6 +847,84 @@ __metadata:
   bin:
     browsers: lib/cjs/main-cli.js
   checksum: 10c0/8665a7d5be5e1489855780b7684bf94a55647b54a8391474cbdc1defdb2e4e6642722ef1d20bfabe49d3aed3eec2c8db41d6eabc24440f4a16d071effc5a1049
+  languageName: node
+  linkType: hard
+
+"@shikijs/core@npm:3.7.0":
+  version: 3.7.0
+  resolution: "@shikijs/core@npm:3.7.0"
+  dependencies:
+    "@shikijs/types": "npm:3.7.0"
+    "@shikijs/vscode-textmate": "npm:^10.0.2"
+    "@types/hast": "npm:^3.0.4"
+    hast-util-to-html: "npm:^9.0.5"
+  checksum: 10c0/885c9d00712d350ab0aac0d239b26d8ba045f075abbaee5eda33c4a39fe841a1a2b0ca34391a3704cde0edcf1468ca583bea25fcbd37b7b8d6189b7afcf2a55d
+  languageName: node
+  linkType: hard
+
+"@shikijs/engine-javascript@npm:3.7.0":
+  version: 3.7.0
+  resolution: "@shikijs/engine-javascript@npm:3.7.0"
+  dependencies:
+    "@shikijs/types": "npm:3.7.0"
+    "@shikijs/vscode-textmate": "npm:^10.0.2"
+    oniguruma-to-es: "npm:^4.3.3"
+  checksum: 10c0/ac792fe99a2007ab076856d32d4934e191d3b03f8bd416e96f461821580c223da73de8abc199e5eceb8b56fd47e992824b2571270e7c3d55efa6b9a6d87fec80
+  languageName: node
+  linkType: hard
+
+"@shikijs/engine-oniguruma@npm:3.7.0":
+  version: 3.7.0
+  resolution: "@shikijs/engine-oniguruma@npm:3.7.0"
+  dependencies:
+    "@shikijs/types": "npm:3.7.0"
+    "@shikijs/vscode-textmate": "npm:^10.0.2"
+  checksum: 10c0/e1ec52ec2255e3330812084d62bde8853d20162b1cd285dbb63440d63d0b16c03b6ce6983982e41ac2fc2eceb3e2f6b2bc1c627d093482c4c3836c4fbb9567b0
+  languageName: node
+  linkType: hard
+
+"@shikijs/langs@npm:3.7.0":
+  version: 3.7.0
+  resolution: "@shikijs/langs@npm:3.7.0"
+  dependencies:
+    "@shikijs/types": "npm:3.7.0"
+  checksum: 10c0/326e8b014e74d25ce84a63bf7fdd47d5582f85c8404d4c48d6bdacf2f32ab92ddb39b41710ee7eff3daaecbbea7ee96a6c49d427344ee8375551597c74010a81
+  languageName: node
+  linkType: hard
+
+"@shikijs/themes@npm:3.7.0":
+  version: 3.7.0
+  resolution: "@shikijs/themes@npm:3.7.0"
+  dependencies:
+    "@shikijs/types": "npm:3.7.0"
+  checksum: 10c0/6887eb99b55439988edab21a1af00302eaed6ba0dd7e2bea6c844ff4dfb8879a0c6c2178ba3fcfe2dbf3fd9f3ab6105572c57ae871e147aaceaf53bcc345d0cd
+  languageName: node
+  linkType: hard
+
+"@shikijs/transformers@npm:^3.6.0":
+  version: 3.7.0
+  resolution: "@shikijs/transformers@npm:3.7.0"
+  dependencies:
+    "@shikijs/core": "npm:3.7.0"
+    "@shikijs/types": "npm:3.7.0"
+  checksum: 10c0/ed875bba8c6354be35a86c9a9c4d8b5254b75713372434082cdfad0bce3d6527ba907bf0b46f441fe98cc4ffea3ee35cfa6e3707899fabe87cf3e797280ff6c6
+  languageName: node
+  linkType: hard
+
+"@shikijs/types@npm:3.7.0":
+  version: 3.7.0
+  resolution: "@shikijs/types@npm:3.7.0"
+  dependencies:
+    "@shikijs/vscode-textmate": "npm:^10.0.2"
+    "@types/hast": "npm:^3.0.4"
+  checksum: 10c0/d7c4fcca358c0585602090e2b4ed0a3f6742b55bea340030c115cb7aa643eac79836baa095517a538d695415458bb48c08b7be7f3c8d1cf1c1c7749a58913a3f
+  languageName: node
+  linkType: hard
+
+"@shikijs/vscode-textmate@npm:^10.0.2":
+  version: 10.0.2
+  resolution: "@shikijs/vscode-textmate@npm:10.0.2"
+  checksum: 10c0/36b682d691088ec244de292dc8f91b808f95c89466af421cf84cbab92230f03c8348649c14b3251991b10ce632b0c715e416e992dd5f28ff3221dc2693fd9462
   languageName: node
   linkType: hard
 
@@ -1176,15 +1251,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/hast@npm:^2.0.0":
-  version: 2.3.10
-  resolution: "@types/hast@npm:2.3.10"
-  dependencies:
-    "@types/unist": "npm:^2"
-  checksum: 10c0/16daac35d032e656defe1f103f9c09c341a6dc553c7ec17b388274076fa26e904a71ea5ea41fd368a6d5f1e9e53be275c80af7942b9c466d8511d261c9529c7e
-  languageName: node
-  linkType: hard
-
 "@types/hast@npm:^3.0.0, @types/hast@npm:^3.0.4":
   version: 3.0.4
   resolution: "@types/hast@npm:3.0.4"
@@ -1256,21 +1322,14 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/prismjs@npm:^1.0.0":
-  version: 1.26.5
-  resolution: "@types/prismjs@npm:1.26.5"
-  checksum: 10c0/5619cb449e0d8df098c8759d6f47bf8fdd510abf5dbdfa999e55c6a2545efbd1e209cc85a33d8d9f4ff2898089a1a6d9a70737c9baffaae635c46852c40d384a
-  languageName: node
-  linkType: hard
-
-"@types/unist@npm:*, @types/unist@npm:^3.0.0, @types/unist@npm:^3.0.3":
+"@types/unist@npm:*, @types/unist@npm:^3.0.0":
   version: 3.0.3
   resolution: "@types/unist@npm:3.0.3"
   checksum: 10c0/2b1e4adcab78388e088fcc3c0ae8700f76619dbcb4741d7d201f87e2cb346bfc29a89003cfea2d76c996e1061452e14fcd737e8b25aacf949c1f2d6b2bc3dd60
   languageName: node
   linkType: hard
 
-"@types/unist@npm:^2, @types/unist@npm:^2.0.0":
+"@types/unist@npm:^2.0.0":
   version: 2.0.11
   resolution: "@types/unist@npm:2.0.11"
   checksum: 10c0/24dcdf25a168f453bb70298145eb043cfdbb82472db0bc0b56d6d51cd2e484b9ed8271d4ac93000a80da568f2402e9339723db262d0869e2bf13bc58e081768d
@@ -1326,7 +1385,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"acorn-jsx@npm:^5.0.0":
+"acorn-jsx@npm:^5.0.0, acorn-jsx@npm:^5.3.2":
   version: 5.3.2
   resolution: "acorn-jsx@npm:5.3.2"
   peerDependencies:
@@ -2982,7 +3041,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"favicons@npm:^7.0.2":
+"favicons@npm:^7.2.0":
   version: 7.2.0
   resolution: "favicons@npm:7.2.0"
   dependencies:
@@ -3550,15 +3609,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"hast-util-parse-selector@npm:^3.0.0":
-  version: 3.1.1
-  resolution: "hast-util-parse-selector@npm:3.1.1"
-  dependencies:
-    "@types/hast": "npm:^2.0.0"
-  checksum: 10c0/34ac1707a477fd9764e328087163f1f21857bdb0f8d425bf41f6def7baf840e50e4bca2eb03072e3da4e39856de28893c4b688dcba0cc305160d53afcece4df4
-  languageName: node
-  linkType: hard
-
 "hast-util-parse-selector@npm:^4.0.0":
   version: 4.0.0
   resolution: "hast-util-parse-selector@npm:4.0.0"
@@ -3605,7 +3655,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"hast-util-to-html@npm:^9.0.0, hast-util-to-html@npm:^9.0.4":
+"hast-util-to-html@npm:^9.0.0, hast-util-to-html@npm:^9.0.4, hast-util-to-html@npm:^9.0.5":
   version: 9.0.5
   resolution: "hast-util-to-html@npm:9.0.5"
   dependencies:
@@ -3696,19 +3746,6 @@ __metadata:
   dependencies:
     "@types/hast": "npm:^3.0.0"
   checksum: 10c0/b898bc9fe27884b272580d15260b6bbdabe239973a147e97fa98c45fa0ffec967a481aaa42291ec34fb56530dc2d484d473d7e2bae79f39c83f3762307edfea8
-  languageName: node
-  linkType: hard
-
-"hastscript@npm:^7.0.0":
-  version: 7.2.0
-  resolution: "hastscript@npm:7.2.0"
-  dependencies:
-    "@types/hast": "npm:^2.0.0"
-    comma-separated-tokens: "npm:^2.0.0"
-    hast-util-parse-selector: "npm:^3.0.0"
-    property-information: "npm:^6.0.0"
-    space-separated-tokens: "npm:^2.0.0"
-  checksum: 10c0/579912b03ff4a5b19eb609df7403c6dba2505ef1a1e2bc47cbf467cbd7cffcd51df40e74d882de1ccdda40aaf18487f82619eb9cb9f2077cba778017e95e868e
   languageName: node
   linkType: hard
 
@@ -3914,13 +3951,6 @@ __metadata:
   version: 1.9.1
   resolution: "ipaddr.js@npm:1.9.1"
   checksum: 10c0/0486e775047971d3fdb5fb4f063829bac45af299ae0b82dcf3afa2145338e08290563a2a70f34b732d795ecc8311902e541a8530eeb30d75860a78ff4e94ce2a
-  languageName: node
-  linkType: hard
-
-"is-absolute-url@npm:^4.0.1":
-  version: 4.0.1
-  resolution: "is-absolute-url@npm:4.0.1"
-  checksum: 10c0/6f8f603945bd9f2c6031758bbc12352fc647bd5d807cad10d96cc6300fd0e15240cc091521a61db767e4ec0bacff257b4f1015fd5249c147bbb4a4497356c72e
   languageName: node
   linkType: hard
 
@@ -4709,7 +4739,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"mdast-util-mdx-jsx@npm:^3.0.0, mdast-util-mdx-jsx@npm:^3.1.3":
+"mdast-util-mdx-jsx@npm:^3.0.0, mdast-util-mdx-jsx@npm:^3.1.3, mdast-util-mdx-jsx@npm:^3.2.0":
   version: 3.2.0
   resolution: "mdast-util-mdx-jsx@npm:3.2.0"
   dependencies:
@@ -5458,15 +5488,15 @@ __metadata:
   languageName: node
   linkType: hard
 
-"mintlify@npm:^4.0.523":
-  version: 4.0.523
-  resolution: "mintlify@npm:4.0.523"
+"mintlify@npm:^4.1.94":
+  version: 4.1.94
+  resolution: "mintlify@npm:4.1.94"
   dependencies:
-    "@mintlify/cli": "npm:4.0.521"
+    "@mintlify/cli": "npm:4.0.595"
   bin:
     mint: index.js
     mintlify: index.js
-  checksum: 10c0/f7c710fb7707c7fd31c4868dea7c5b855c19655aec6a68504d69b2122b975a7a0a0ca18fcdedacab7c1d063ddde18e48d6b683c59b7dfb9a1b4d2664e3965817
+  checksum: 10c0/2025c2c04f135667d83002bf81b043b155e9b4b1d7d04e9515e80bce71ba3aa6460ef0359a49102247e85772b93a8aa7fdaebadb7af8db6459189867ebf9108f
   languageName: node
   linkType: hard
 
@@ -5722,6 +5752,24 @@ __metadata:
   dependencies:
     mimic-fn: "npm:^2.1.0"
   checksum: 10c0/ffcef6fbb2692c3c40749f31ea2e22677a876daea92959b8a80b521d95cca7a668c884d8b2045d1d8ee7d56796aa405c405462af112a1477594cc63531baeb8f
+  languageName: node
+  linkType: hard
+
+"oniguruma-parser@npm:^0.12.1":
+  version: 0.12.1
+  resolution: "oniguruma-parser@npm:0.12.1"
+  checksum: 10c0/b843ea54cda833efb19f856314afcbd43e903ece3de489ab78c527ddec84859208052557daa9fad4bdba89ebdd15b0cc250de86b3daf8c7cbe37bac5a6a185d3
+  languageName: node
+  linkType: hard
+
+"oniguruma-to-es@npm:^4.3.3":
+  version: 4.3.3
+  resolution: "oniguruma-to-es@npm:4.3.3"
+  dependencies:
+    oniguruma-parser: "npm:^0.12.1"
+    regex: "npm:^6.0.1"
+    regex-recursion: "npm:^6.0.2"
+  checksum: 10c0/bc034e84dfee4dbc061cf6364023e66e1667fb8dc3afcad3b7d6a2c77e2d4a4809396ee2fb8c1fd3d6f00f76f7ca14b773586bf862c5f0c0074c059e2a219252
   languageName: node
   linkType: hard
 
@@ -6015,13 +6063,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"property-information@npm:^6.0.0":
-  version: 6.5.0
-  resolution: "property-information@npm:6.5.0"
-  checksum: 10c0/981e0f9cc2e5acdb414a6fd48a99dd0fd3a4079e7a91ab41cf97a8534cf43e0e0bc1ffada6602a1b3d047a33db8b5fc2ef46d863507eda712d5ceedac443f0ef
-  languageName: node
-  linkType: hard
-
 "property-information@npm:^7.0.0":
   version: 7.1.0
   resolution: "property-information@npm:7.1.0"
@@ -6229,15 +6270,28 @@ __metadata:
   languageName: node
   linkType: hard
 
-"refractor@npm:^4.8.1":
-  version: 4.9.0
-  resolution: "refractor@npm:4.9.0"
+"regex-recursion@npm:^6.0.2":
+  version: 6.0.2
+  resolution: "regex-recursion@npm:6.0.2"
   dependencies:
-    "@types/hast": "npm:^2.0.0"
-    "@types/prismjs": "npm:^1.0.0"
-    hastscript: "npm:^7.0.0"
-    parse-entities: "npm:^4.0.0"
-  checksum: 10c0/58c9471d17d4e2d19436c0917d94c214366b43de090da679880d01d47a3ca5e9da1790aaa55d23da14222bc82d61bb9fd27ad17ab4bc5218e1fa026893c2b5d7
+    regex-utilities: "npm:^2.3.0"
+  checksum: 10c0/68e8b6889680e904b75d7f26edaf70a1a4dc1087406bff53face4c2929d918fd77c72223843fe816ac8ed9964f96b4160650e8d5909e26a998c6e9de324dadb1
+  languageName: node
+  linkType: hard
+
+"regex-utilities@npm:^2.3.0":
+  version: 2.3.0
+  resolution: "regex-utilities@npm:2.3.0"
+  checksum: 10c0/78c550a80a0af75223244fff006743922591bd8f61d91fef7c86b9b56cf9bbf8ee5d7adb6d8991b5e304c57c90103fc4818cf1e357b11c6c669b782839bd7893
+  languageName: node
+  linkType: hard
+
+"regex@npm:^6.0.1":
+  version: 6.0.1
+  resolution: "regex@npm:6.0.1"
+  dependencies:
+    regex-utilities: "npm:^2.3.0"
+  checksum: 10c0/687b3e063d4ca19b0de7c55c24353f868a0fb9ba21512692470d2fb412e3a410894dd5924c91ea49d8cb8fa865e36ec956e52436ae0a256bdc095ff136c30aba
   languageName: node
   linkType: hard
 
@@ -6617,6 +6671,15 @@ __metadata:
   languageName: node
   linkType: hard
 
+"semver@npm:^7.7.2":
+  version: 7.7.2
+  resolution: "semver@npm:7.7.2"
+  bin:
+    semver: bin/semver.js
+  checksum: 10c0/aca305edfbf2383c22571cb7714f48cadc7ac95371b4b52362fb8eeffdfbc0de0669368b82b2b15978f8848f01d7114da65697e56cd8c37b0dab8c58e543f9ea
+  languageName: node
+  linkType: hard
+
 "send@npm:0.19.0":
   version: 0.19.0
   resolution: "send@npm:0.19.0"
@@ -6785,6 +6848,22 @@ __metadata:
   version: 3.0.0
   resolution: "shebang-regex@npm:3.0.0"
   checksum: 10c0/1dbed0726dd0e1152a92696c76c7f06084eb32a90f0528d11acd764043aacf76994b2fb30aa1291a21bd019d6699164d048286309a278855ee7bec06cf6fb690
+  languageName: node
+  linkType: hard
+
+"shiki@npm:^3.6.0":
+  version: 3.7.0
+  resolution: "shiki@npm:3.7.0"
+  dependencies:
+    "@shikijs/core": "npm:3.7.0"
+    "@shikijs/engine-javascript": "npm:3.7.0"
+    "@shikijs/engine-oniguruma": "npm:3.7.0"
+    "@shikijs/langs": "npm:3.7.0"
+    "@shikijs/themes": "npm:3.7.0"
+    "@shikijs/types": "npm:3.7.0"
+    "@shikijs/vscode-textmate": "npm:^10.0.2"
+    "@types/hast": "npm:^3.0.4"
+  checksum: 10c0/a458d06cc0487da5916e10ab9daaf314e3c3c92024664c545bcacb58fad9bd3aa18cde90a200afe4f6632a2487014def57eb6f10f38ab6269e90f3420b724105
   languageName: node
   linkType: hard
 

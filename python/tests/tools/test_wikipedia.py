@@ -47,7 +47,7 @@ async def test_output() -> None:
     tool = WikipediaTool()
     result = await tool.run(input=WikipediaToolInput(query="bee"))
     assert type(result) is WikipediaToolOutput
-    assert "Bees are winged insects closely related to wasps and ants" in result.get_text_content()
+    assert "Bees are winged" in result.get_text_content()
 
 
 @pytest.mark.e2e

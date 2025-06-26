@@ -11,15 +11,13 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
-
+import os
 from datetime import UTC, date, datetime
 from typing import Any, Literal
 from urllib.parse import urlencode
 
 import httpx
-import requests
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 from beeai_framework.context import RunContext
 from beeai_framework.emitter.emitter import Emitter
@@ -45,6 +43,14 @@ class OpenMeteoToolInput(BaseModel):
         description="The unit to express temperature", default="celsius"
     )
 
+    @classmethod
+    @field_validator("temperature_unit", mode="before")
+    def _to_lower(cls, value: Any) -> Any:
+        if isinstance(value, str):
+            return value.lower()
+        else:
+            return value
+
 
 class OpenMeteoTool(Tool[OpenMeteoToolInput, ToolRunOptions, JSONToolOutput[dict[str, Any]]]):
     name = "OpenMeteoTool"
@@ -60,7 +66,7 @@ class OpenMeteoTool(Tool[OpenMeteoToolInput, ToolRunOptions, JSONToolOutput[dict
             creator=self,
         )
 
-    def _geocode(self, input: OpenMeteoToolInput) -> dict[str, str]:
+    async def _geocode(self, input: OpenMeteoToolInput) -> dict[str, str]:
         params = {"format": "json", "count": 1}
         if input.location_name:
             params["name"] = input.location_name
@@ -69,19 +75,20 @@ class OpenMeteoTool(Tool[OpenMeteoToolInput, ToolRunOptions, JSONToolOutput[dict
 
         encoded_params = urlencode(params, doseq=True)
 
-        response = requests.get(
-            f"https://geocoding-api.open-meteo.com/v1/search?{encoded_params}",
-            headers={"Content-Type": "application/json", "Accept": "application/json"},
-        )
+        async with httpx.AsyncClient(proxy=os.environ.get("BEEAI_OPEN_METEO_TOOL_PROXY")) as client:
+            response = await client.get(
+                f"https://geocoding-api.open-meteo.com/v1/search?{encoded_params}",
+                headers={"Content-Type": "application/json", "Accept": "application/json"},
+            )
 
-        response.raise_for_status()
-        results = response.json().get("results", [])
-        if not results:
-            raise ToolInputValidationError(f"Location '{input.location_name}' was not found.")
-        geocode: dict[str, str] = results[0]
-        return geocode
+            response.raise_for_status()
+            results = response.json().get("results", [])
+            if not results:
+                raise ToolInputValidationError(f"Location '{input.location_name}' was not found.")
+            geocode: dict[str, str] = results[0]
+            return geocode
 
-    def get_params(self, input: OpenMeteoToolInput) -> dict[str, Any]:
+    async def get_params(self, input: OpenMeteoToolInput) -> dict[str, Any]:
         params = {
             "current": ",".join(
                 [
@@ -95,7 +102,7 @@ class OpenMeteoTool(Tool[OpenMeteoToolInput, ToolRunOptions, JSONToolOutput[dict
             "timezone": "UTC",
         }
 
-        geocode = self._geocode(input)
+        geocode = await self._geocode(input)
         params["latitude"] = geocode.get("latitude", "")
         params["longitude"] = geocode.get("longitude", "")
         current_date = datetime.now(tz=UTC).date()
@@ -107,10 +114,10 @@ class OpenMeteoTool(Tool[OpenMeteoToolInput, ToolRunOptions, JSONToolOutput[dict
     async def _run(
         self, input: OpenMeteoToolInput, options: ToolRunOptions | None, context: RunContext
     ) -> JSONToolOutput[dict[str, Any]]:
-        params = urlencode(self.get_params(input), doseq=True)
+        params = urlencode(await self.get_params(input), doseq=True)
         logger.debug(f"Using OpenMeteo URL: https://api.open-meteo.com/v1/forecast?{params}")
 
-        async with httpx.AsyncClient() as client:
+        async with httpx.AsyncClient(proxy=os.environ.get("BEEAI_OPEN_METEO_TOOL_PROXY")) as client:
             response = await client.get(
                 f"https://api.open-meteo.com/v1/forecast?{params}",
                 headers={"Content-Type": "application/json", "Accept": "application/json"},

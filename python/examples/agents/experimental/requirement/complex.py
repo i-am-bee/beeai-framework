@@ -3,7 +3,6 @@ import math
 
 from beeai_framework.agents.experimental import RequirementAgent
 from beeai_framework.agents.experimental.prompts import (
-    RequirementAgentCycleDetectionPrompt,
     RequirementAgentSystemPrompt,
     RequirementAgentTaskPrompt,
     RequirementAgentToolErrorPrompt,
@@ -70,12 +69,11 @@ async def main() -> None:
         ],
         save_intermediate_steps=True,  # store tool calls between individual starts (default: true)
         tool_call_checker=True,  # detects and resolve cycles (default: true)
-        final_answer_as_tool=True,  # produces the final answer as a tool call (default: true)
+        final_answer_as_tool=False,  # produces the final answer as a tool call (default: true)
         memory=UnconstrainedMemory(),
         templates=RequirementAgentTemplates(
             system=RequirementAgentSystemPrompt,
             task=RequirementAgentTaskPrompt,
-            cycle_detection=RequirementAgentCycleDetectionPrompt,
             tool_error=RequirementAgentToolErrorPrompt,
             tool_no_result=RequirementAgentToolNoResultPrompt,
         ),

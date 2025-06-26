@@ -67,6 +67,19 @@ poetry self add poetry-plugin-shell
 > [!IMPORTANT]
 > You must have poetry >= 2.0 installed
 
+#### Poe
+
+[Poe](https://poethepoet.natn.io/index.html) is a batteries-included task runner that integrates seamlessly with both Poetry and uv. It allows you to define project tasks directly in your `pyproject.toml` file and provides a simple way to run them using your project’s virtual environment—either via a standalone CLI or as a Poetry plugin.
+
+To install Poe, use:
+
+```bash
+pipx install poethepoet
+```
+
+For more details, see the [official installation guide](https://poethepoet.natn.io/installation.html#install-the-cli-globally-recommended).
+
+---
 ### Clone and set up the code
 
 Follow these steps:
