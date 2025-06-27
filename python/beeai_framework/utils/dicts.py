@@ -42,3 +42,9 @@ def exclude_non_annotated(input: Mapping[str, Any], cls: type[Mapping[str, Any]]
             input.pop(k)
 
     return excluded
+
+
+def remap_key(obj: dict[str, Any], *, source: str, target: str, fallback: Any | None = None) -> dict[str, Any]:
+    clone = {**obj}
+    clone[target] = clone.pop(source, fallback)
+    return clone

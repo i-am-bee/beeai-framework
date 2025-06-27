@@ -43,6 +43,7 @@ def test_json_schema() -> dict[str, list[str] | str | Any]:
                 },
             },
             "roles": {"type": "array", "items": {"type": "string", "enum": ["admin", "user", "guest"]}},
+            "hobby": {"anyOf": [{"type": "string"}, {"type": "null"}], "default": None, "title": "An Arg"},
         },
         "required": ["name", "age"],
     }
@@ -58,9 +59,24 @@ def test_json_schema_model(test_json_schema: dict[str, list[str] | str | Any]) -
     model = JSONSchemaModel.create("test_schema", test_json_schema)
     assert model.model_json_schema()
 
-    # should throw exception if required fields are missing
-    with pytest.raises(ValidationError):  # No description provided
+    with pytest.raises(ValidationError):
         model.model_validate({"name": "aaa"})
+
+    with pytest.raises(ValidationError):
+        model.model_validate({"name": "aaa", "age": []})
+
+    with pytest.raises(ValidationError):
+        model.model_validate({"name": "aaa", "age": 123, "hobby": 123})
 
     # should not fail if optional fields are not included
     assert model.model_validate({"name": "aaa", "age": 25})
+    assert model.model_validate({"name": "aaa", "age": 25, "hobby": "cycling"})
+    assert model.model_validate({"name": "aaa", "age": 25, "hobby": None})
+    assert model.model_validate({"name": "aaa", "age": 25, "hobby": "cycling"}).model_dump() == {
+        "address": None,
+        "age": 25,
+        "hobby": "cycling",
+        "is_active": None,
+        "name": "aaa",
+        "roles": None,
+    }
