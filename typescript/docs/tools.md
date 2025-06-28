@@ -312,7 +312,6 @@ _Source: [examples/tools/custom/openLibrary.ts](/typescript/examples/tools/custo
 #### Implementation Notes
 
 - **Implement the `Tool` class:**
-
   - `MyNewToolOutput` is required, must be an implementation of `ToolOutput` such as `StringToolOutput` or `JSONToolOutput`.
 
   - `ToolOptions` is optional (default BaseToolOptions), constructor parameters that are passed during tool creation

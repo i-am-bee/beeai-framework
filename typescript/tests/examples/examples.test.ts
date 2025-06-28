@@ -65,12 +65,28 @@ const exclude: string[] = [
   !getEnv("AWS_REGION") && ["examples/backend/providers/amazon-bedrock.ts"],
   !getEnv("GOOGLE_APPLICATION_CREDENTIALS") && ["examples/backend/providers/vertexai.ts"],
   !getEnv("ANTHROPIC_API_KEY") && ["examples/backend/providers/anthropic.ts"],
+  !getEnv("XAI_API_KEY") && ["examples/backend/providers/xai.ts"],
   "examples/tools/custom/extending.ts", // DDG problems
 ]
   .filter(isTruthy)
   .flat(); // list of examples that are excluded
 
 describe("E2E Examples", async () => {
+  // Skip tests if no relevant environment variables are set
+  const hasAnyRequiredEnv = [
+    "WATSONX_API_KEY",
+    "GROQ_API_KEY",
+    "OPENAI_API_KEY",
+    "AZURE_OPENAI_API_KEY",
+    "COHERE_API_KEY",
+    "CODE_INTERPRETER_URL",
+    "ELASTICSEARCH_NODE",
+    "AWS_REGION",
+    "GOOGLE_APPLICATION_CREDENTIALS",
+    "ANTHROPIC_API_KEY",
+    "XAI_API_KEY",
+  ].some((envVar) => getEnv(envVar));
+
   const exampleFiles = await glob(includePattern, {
     cwd: process.cwd(),
     dot: false,
@@ -79,6 +95,11 @@ describe("E2E Examples", async () => {
   });
 
   it.concurrent.each(exampleFiles)(`Run %s`, async (example) => {
+    if (!hasAnyRequiredEnv) {
+      // eslint-disable-next-line no-console
+      console.log("Skipping tests: No relevant environment variables set");
+      return;
+    }
     await execAsync(`yarn start -- ${example} <<< "Hello world"`)
       .then(({ stdout, stderr }) => {
         // eslint-disable-next-line no-console
