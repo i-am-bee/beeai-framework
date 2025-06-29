@@ -1,3 +1,8 @@
+/**
+ * Copyright 2025 © BeeAI a Series of LF Projects, LLC
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
 import "dotenv/config.js";
 import { ACPAgent } from "beeai-framework/adapters/acp/agents/agent";
 import { createConsoleReader } from "examples/helpers/io.js";

@@ -77,7 +77,7 @@ BeeAI framework supports several caching patterns:
 
 The simplest way to use caching is to wrap a function that produces deterministic output:
 
-{/* <!-- embedme python/examples/cache/unconstrained_cache_function.py --> */}
+{/* <!-- embedme python/examples/cache/unconstrained_cache_function.py#L4-L9999 --> */}
 
 ```python
 import asyncio
@@ -127,7 +127,7 @@ _Source: [python/examples/cache/unconstrained_cache_function.py](https://github.
 
 BeeAI framework's caching system seamlessly integrates with tools:
 
-{/* <!-- embedme python/examples/cache/tool_cache.py --> */}
+{/* <!-- embedme python/examples/cache/tool_cache.py#L4-L9999 --> */}
 
 ```python
 import asyncio
@@ -172,7 +172,7 @@ _Source: [examples/cache/tool_cache.py](https://github.com/i-am-bee/beeai-framew
 
 You can also cache LLM responses to save on API costs:
 
-{/* <!-- embedme python/examples/cache/llm_cache.py --> */}
+{/* <!-- embedme python/examples/cache/llm_cache.py#L4-L9999 --> */}
 
 ```python
 import asyncio
@@ -218,7 +218,7 @@ _Source: [examples/cache/llm_cache.py](https://github.com/i-am-bee/beeai-framewo
 
 The simplest cache type with no constraints on size or entry lifetime. Good for development and smaller applications.
 
-{/* <!-- embedme python/examples/cache/unconstrained_cache.py --> */}
+{/* <!-- embedme python/examples/cache/unconstrained_cache.py#L4-L9999 --> */}
 
 ```python
 import asyncio
@@ -271,7 +271,7 @@ _Source: [examples/cache/unconstrained_cache.py](https://github.com/i-am-bee/bee
 
 Maintains a maximum number of entries, removing the oldest entries when the limit is reached.
 
-{/* <!-- embedme python/examples/cache/sliding_cache.py --> */}
+{/* <!-- embedme python/examples/cache/sliding_cache.py#L4-L9999 --> */}
 
 ```python
 import asyncio
@@ -373,7 +373,7 @@ _Source: /examples/cache/cacheFn.py_
 
 You can create your own cache implementation by extending the `BaseCache` class:
 
-{/* <!-- embedme python/examples/cache/custom.py --> */}
+{/* <!-- embedme python/examples/cache/custom.py#L4-L9999 --> */}
 
 ```python
 from typing import TypeVar

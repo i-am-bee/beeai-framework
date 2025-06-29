@@ -20,9 +20,11 @@ The Prompt Template concept is used anywhere - especially in our agents.
 
 ### Primitives
 
-{/* <!-- embedme typescript/examples/templates/primitives.ts --> */}
+{/* <!-- embedme typescript/examples/templates/primitives.ts#L4-L9999 --> */}
 
 ```ts
+ */
+
 import { PromptTemplate } from "beeai-framework/template";
 import { z } from "zod";
 
@@ -37,15 +39,18 @@ const output = greetTemplate.render({
   name: "Alex",
 });
 console.log(output); // Hello Alex!
+
 ```
 
 _Source: [typescript/examples/templates/primitives.ts](https://github.com/i-am-bee/beeai-framework/blob/main/typescript/examples/templates/primitives.ts)_
 
 ### Arrays
 
-{/* <!-- embedme typescript/examples/templates/arrays.ts --> */}
+{/* <!-- embedme typescript/examples/templates/arrays.ts#L4-L9999 --> */}
 
 ```ts
+ */
+
 import { PromptTemplate } from "beeai-framework/template";
 import { z } from "zod";
 
@@ -60,15 +65,18 @@ const output = template.render({
   colors: ["Green", "Yellow"],
 });
 console.log(output); // Colors: Green,Yellow
+
 ```
 
 _Source: [typescript/examples/templates/arrays.ts](https://github.com/i-am-bee/beeai-framework/blob/main/typescript/examples/templates/arrays.ts)_
 
 ### Objects
 
-{/* <!-- embedme typescript/examples/templates/objects.ts --> */}
+{/* <!-- embedme typescript/examples/templates/objects.ts#L4-L9999 --> */}
 
 ```ts
+ */
+
 import { PromptTemplate } from "beeai-framework/template";
 import { z } from "zod";
 
@@ -88,15 +96,18 @@ const output = template.render({
   responses: [{ duration: 3 }, { duration: 5 }, { duration: 6 }],
 });
 console.log(output); // Expected Duration: 5ms; Retrieved: 3ms 5ms 6ms
+
 ```
 
 _Source: [typescript/examples/templates/objects.ts](https://github.com/i-am-bee/beeai-framework/blob/main/typescript/examples/templates/objects.ts)_
 
 ### Forking
 
-{/* <!-- embedme typescript/examples/templates/forking.ts --> */}
+{/* <!-- embedme typescript/examples/templates/forking.ts#L4-L9999 --> */}
 
 ```ts
+ */
+
 import { PromptTemplate } from "beeai-framework/template";
 import { z } from "zod";
 
@@ -121,15 +132,18 @@ const output = modified.render({
   objective: "fulfill the user needs",
 });
 console.log(output); // You are a helpful assistant called Bee. Your objective is to fulfill the user needs. Your answers must be concise.
+
 ```
 
 _Source: [typescript/examples/templates/forking.ts](https://github.com/i-am-bee/beeai-framework/blob/main/typescript/examples/templates/forking.ts)_
 
 ### Functions
 
-{/* <!-- embedme typescript/examples/templates/functions.ts --> */}
+{/* <!-- embedme typescript/examples/templates/functions.ts#L4-L9999 --> */}
 
 ```ts
+ */
+
 import { PromptTemplate } from "beeai-framework/template";
 import { z } from "zod";
 
@@ -172,6 +186,7 @@ console.log(
     text: "Hello from the present!",
   }),
 );
+
 ```
 
 _Source: [typescript/examples/templates/functions.ts](https://github.com/i-am-bee/beeai-framework/blob/main/typescript/examples/templates/functions.ts)_

@@ -1,3 +1,8 @@
+/**
+ * Copyright 2025 © BeeAI a Series of LF Projects, LLC
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
 import { Emitter, EventMeta, Callback } from "beeai-framework/emitter/emitter";
 
 // Define events in advanced

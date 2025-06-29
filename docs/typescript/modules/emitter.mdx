@@ -10,9 +10,11 @@ The following examples demonstrate how [`Emitter`](https://github.com/i-am-bee/b
 
 ### Basic Usage
 
-{/* <!-- embedme typescript/examples/emitter/base.ts --> */}
+{/* <!-- embedme typescript/examples/emitter/base.ts#L4-L9999 --> */}
 
 ```ts
+ */
+
 import { Emitter, EventMeta } from "beeai-framework/emitter/emitter";
 
 // Get the root emitter or create your own
@@ -24,6 +26,7 @@ root.match("*.*", async (data: unknown, event: EventMeta) => {
 
 await root.emit("start", { id: 123 });
 await root.emit("end", { id: 123 });
+
 ```
 
 _Source: [typescript/examples/emitter/base.ts](https://github.com/i-am-bee/beeai-framework/blob/main/typescript/examples/emitter/base.ts)_
@@ -34,9 +37,11 @@ You can create your own emitter by initiating the `Emitter` class, but typically
 
 ### Advanced
 
-{/* <!-- embedme typescript/examples/emitter/advanced.ts --> */}
+{/* <!-- embedme typescript/examples/emitter/advanced.ts#L4-L9999 --> */}
 
 ```ts
+ */
+
 import { Emitter, EventMeta, Callback } from "beeai-framework/emitter/emitter";
 
 // Define events in advanced
@@ -66,6 +71,7 @@ emitter.on("update", async (data, event: EventMeta) => {
 
 await emitter.emit("start", { id: 123 });
 await emitter.emit("update", { id: 123, data: "Hello Bee!" });
+
 ```
 
 _Source: [typescript/examples/emitter/advanced.ts](https://github.com/i-am-bee/beeai-framework/blob/main/typescript/examples/emitter/advanced.ts)_
@@ -77,9 +83,11 @@ The `piping` concept is explained later on.
 
 ### Event Matching
 
-{/* <!-- embedme typescript/examples/emitter/matchers.ts --> */}
+{/* <!-- embedme typescript/examples/emitter/matchers.ts#L4-L9999 --> */}
 
 ```ts
+ */
+
 import { Callback, Emitter } from "beeai-framework/emitter/emitter";
 import { ChatModel } from "beeai-framework/backend/chat";
 
@@ -108,15 +116,18 @@ emitter.match(
 
 // Match events by regex
 emitter.match(/watsonx/, async (data, event) => {});
+
 ```
 
 _Source: [typescript/examples/emitter/matchers.ts](https://github.com/i-am-bee/beeai-framework/blob/main/typescript/examples/emitter/matchers.ts)_
 
 ### Event Piping
 
-{/* <!-- embedme typescript/examples/emitter/piping.ts --> */}
+{/* <!-- embedme typescript/examples/emitter/piping.ts#L4-L9999 --> */}
 
 ```ts
+ */
+
 import { Emitter, EventMeta } from "beeai-framework/emitter/emitter";
 
 const first = new Emitter({
@@ -149,6 +160,7 @@ unpipe();
 
 await first.emit("c", {});
 await second.emit("d", {});
+
 ```
 
 _Source: [typescript/examples/emitter/piping.ts](https://github.com/i-am-bee/beeai-framework/blob/main/typescript/examples/emitter/piping.ts)_
@@ -159,9 +171,11 @@ Typically, you consume out-of-the-box modules that use the `Emitter` concept on 
 
 ## Agent usage
 
-{/* <!-- embedme typescript/examples/emitter/agentMatchers.ts --> */}
+{/* <!-- embedme typescript/examples/emitter/agentMatchers.ts#L4-L9999 --> */}
 
 ```ts
+ */
+
 import { ReActAgent } from "beeai-framework/agents/react/agent";
 import { UnconstrainedMemory } from "beeai-framework/memory/unconstrainedMemory";
 import { OllamaChatModel } from "beeai-framework/adapters/ollama/backend/chat";
@@ -185,6 +199,7 @@ await agent
       console.info(`RUN LOG: received event '${event.path}'`);
     });
   });
+
 ```
 
 _Source: [typescript/examples/emitter/agentMatchers.ts](https://github.com/i-am-bee/beeai-framework/blob/main/typescript/examples/emitter/agentMatchers.ts)_

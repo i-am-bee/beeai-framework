@@ -1,3 +1,8 @@
+/**
+ * Copyright 2025 © BeeAI a Series of LF Projects, LLC
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
 import readline from "node:readline/promises";
 import { stdin, stdout } from "node:process";
 import picocolors from "picocolors";

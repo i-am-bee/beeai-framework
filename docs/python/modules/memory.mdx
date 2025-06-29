@@ -71,7 +71,7 @@ Memory components integrate with other parts of the framework:
 
 ### Capabilities showcase
 
-{/* <!-- embedme python/examples/memory/base.py --> */}
+{/* <!-- embedme python/examples/memory/base.py#L4-L9999 --> */}
 
 ```py
 import asyncio
@@ -112,7 +112,7 @@ _Source: [/python/examples/memory/base.py](https://github.com/i-am-bee/beeai-fra
 
 ### Usage with LLMs
 
-{/* <!-- embedme python/examples/memory/llm_memory.py --> */}
+{/* <!-- embedme python/examples/memory/llm_memory.py#L4-L9999 --> */}
 
 ```py
 import asyncio
@@ -160,7 +160,7 @@ Memory for non-chat LLMs works exactly the same way.
 
 ### Usage with agents
 
-{/* <!-- embedme python/examples/memory/agent_memory.py --> */}
+{/* <!-- embedme python/examples/memory/agent_memory.py#L4-L9999 --> */}
 
 ```py
 import asyncio
@@ -254,7 +254,7 @@ The framework provides multiple out-of-the-box memory implementations for differ
 
 Unlimited in size, stores all messages without constraints.
 
-{/* <!-- embedme python/examples/memory/unconstrained_memory.py --> */}
+{/* <!-- embedme python/examples/memory/unconstrained_memory.py#L4-L9999 --> */}
 
 ```py
 import asyncio
@@ -298,7 +298,7 @@ _Source: [/python/examples/memory/unconstrained_memory.py](https://github.com/i-
 
 Keeps last `k` entries in the memory. The oldest ones are deleted (unless specified otherwise).
 
-{/* <!-- embedme python/examples/memory/sliding_memory.py --> */}
+{/* <!-- embedme python/examples/memory/sliding_memory.py#L4-L9999 --> */}
 
 ```py
 import asyncio
@@ -352,7 +352,7 @@ _Source: [/python/examples/memory/sliding_memory.py](https://github.com/i-am-bee
 Ensures that the token sum of all messages is below the given threshold.
 If overflow occurs, the oldest message will be removed.
 
-{/* <!-- embedme python/examples/memory/token_memory.py --> */}
+{/* <!-- embedme python/examples/memory/token_memory.py#L4-L9999 --> */}
 
 ```py
 import asyncio
@@ -424,7 +424,7 @@ _Source: [/python/examples/memory/token_memory.py](https://github.com/i-am-bee/b
 
 Only a single summarization of the conversation is preserved. Summarization is updated with every new message.
 
-{/* <!-- embedme python/examples/memory/summarize_memory.py --> */}
+{/* <!-- embedme python/examples/memory/summarize_memory.py#L4-L9999 --> */}
 
 ```py
 import asyncio
@@ -481,7 +481,7 @@ _Source: [python/examples/memory/summarize_memory.py](https://github.com/i-am-be
 
 To create your memory implementation, you must implement the `BaseMemory` class.
 
-{/* <!-- embedme python/examples/memory/custom.py --> */}
+{/* <!-- embedme python/examples/memory/custom.py#L4-L9999 --> */}
 
 ```py
 from typing import Any

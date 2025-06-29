@@ -1,3 +1,8 @@
+/**
+ * Copyright 2025 © BeeAI a Series of LF Projects, LLC
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
 import { TavilySearchResults } from "@langchain/community/tools/tavily_search";
 import { getEnv } from "beeai-framework/internals/env";
 import "dotenv/config";

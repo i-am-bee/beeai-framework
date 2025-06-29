@@ -1,3 +1,8 @@
+/**
+ * Copyright 2025 © BeeAI a Series of LF Projects, LLC
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
 import "dotenv/config.js";
 import { ToolMessage, UserMessage } from "beeai-framework/backend/message";
 import { ChatModel } from "beeai-framework/backend/chat";

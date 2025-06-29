@@ -62,7 +62,7 @@ During execution, the agent emits partial updates as it generates each line, fol
 
 <CodeGroup>
 
-{/* <!-- embedme python/examples/agents/react.py --> */}
+{/* <!-- embedme python/examples/agents/react.py#L4-L9999 --> */}
 ```py Python [expandable]
 import asyncio
 import logging
@@ -187,7 +187,7 @@ if __name__ == "__main__":
 
 ```
 
-{/* <!-- embedme typescript/examples/agents/react.ts --> */}
+{/* <!-- embedme typescript/examples/agents/react.ts#L6-L9999 --> */}
 ```ts TypeScript [expandable]
 import "dotenv/config.js";
 import { ReActAgent } from "beeai-framework/agents/react/agent";
@@ -326,7 +326,7 @@ The ToolCallingAgent is optimized for scenarios where tool usage is the primary 
 
 <CodeGroup>
 
-{/* <!-- embedme python/examples/agents/tool_calling.py --> */}
+{/* <!-- embedme python/examples/agents/tool_calling.py#L4-L9999 --> */}
 ```py Python [expandable]
 import asyncio
 import logging
@@ -391,7 +391,7 @@ if __name__ == "__main__":
 
 ```
 
-{/* <!-- embedme typescript/examples/agents/toolCalling/agent.ts --> */}
+{/* <!-- embedme typescript/examples/agents/toolCalling/agent.ts#L6-L9999 --> */}
 ```ts TypeScript [expandable]
 import "dotenv/config.js";
 import { createConsoleReader } from "../../helpers/io.js";
@@ -477,7 +477,7 @@ For advanced use cases, you can create your own agent implementation by extendin
 
 <CodeGroup>
 
-{/* <!-- embedme python/examples/agents/custom_agent.py --> */}
+{/* <!-- embedme python/examples/agents/custom_agent.py#L4-L9999 --> */}
 ```py Python [expandable]
 import asyncio
 import sys
@@ -595,7 +595,7 @@ if __name__ == "__main__":
 
 ```
 
-{/* <!-- embedme typescript/examples/agents/custom_agent.ts --> */}
+{/* <!-- embedme typescript/examples/agents/custom_agent.ts#L6-L9999 --> */}
 ```ts TypeScript [expandable]
 import { BaseAgent, BaseAgentRunOptions } from "beeai-framework/agents/base";
 import {
@@ -769,7 +769,7 @@ The agent uses several templates that you can override:
 
 <CodeGroup>
 
-{/* <!-- embedme python/examples/templates/system_prompt.py --> */}
+{/* <!-- embedme python/examples/templates/system_prompt.py#L4-L9999 --> */}
 ```py Python
 import sys
 import traceback
@@ -879,7 +879,7 @@ const agent = new ReActAgent({
 
 <CodeGroup>
 
-{/* <!-- embedme python/examples/memory/agent_memory.py --> */}
+{/* <!-- embedme python/examples/memory/agent_memory.py#L4-L9999 --> */}
 ```py Python [expandable]
 import asyncio
 import sys
@@ -949,9 +949,10 @@ if __name__ == "__main__":
     except FrameworkError as e:
         traceback.print_exc()
         sys.exit(e.explain())
+
 ```
 
-{/* <!-- embedme typescript/examples/memory/agentMemory.ts --> */}
+{/* <!-- embedme typescript/examples/memory/agentMemory.ts#L6-L9999 --> */}
 ```ts TypeScript [expandable]
 import { UnconstrainedMemory } from "beeai-framework/memory/unconstrainedMemory";
 import { ReActAgent } from "beeai-framework/agents/react/agent";
@@ -1010,7 +1011,7 @@ For complex applications, you can create multi-agent workflows where specialized
 
 <CodeGroup>
 
-{/* <!-- embedme python/examples/workflows/multi_agents.py --> */}
+{/* <!-- embedme python/examples/workflows/multi_agents.py#L4-L9999 --> */}
 ```py Python [expandable]
 import asyncio
 import sys
@@ -1101,7 +1102,7 @@ if __name__ == "__main__":
 
 ```
 
-{/* <!-- embedme typescript/examples/workflows/multiAgents.ts --> */}
+{/* <!-- embedme typescript/examples/workflows/multiAgents.ts#L6-L9999 --> */}
 ```ts TypeScript [expandable]
 import "dotenv/config";
 import { createConsoleReader } from "examples/helpers/io.js";
