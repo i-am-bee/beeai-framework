@@ -40,7 +40,7 @@ Would you like to use a tool from LangChain? See the [example](https://github.co
 
 ### Basic
 
-{/* <!-- embedme typescript/examples/tools/base.ts --> */}
+{/* <!-- embedme typescript/examples/tools/base.ts#L6-L9999 --> */}
 
 ```ts
 import { OpenMeteoTool } from "beeai-framework/tools/weather/openMeteo";
@@ -52,13 +52,14 @@ const result = await tool.run({
   end_date: "2024-10-10",
 });
 console.log(result.getTextContent());
+
 ```
 
 _Source: [typescript/examples/tools/base.ts](https://github.com/i-am-bee/beeai-framework/blob/main/typescript/examples/tools/base.ts)_
 
 ### Advanced
 
-{/* <!-- embedme typescript/examples/tools/advanced.ts --> */}
+{/* <!-- embedme typescript/examples/tools/advanced.ts#L6-L9999 --> */}
 
 ```ts
 import { OpenMeteoTool } from "beeai-framework/tools/weather/openMeteo";
@@ -85,6 +86,7 @@ const result = await tool.run({
 console.log(result.isEmpty()); // false
 console.log(result.result); // prints raw data
 console.log(result.getTextContent()); // prints data as text
+
 ```
 
 _Source: [typescript/examples/tools/advanced.ts](https://github.com/i-am-bee/beeai-framework/blob/main/typescript/examples/tools/advanced.ts)_
@@ -95,7 +97,7 @@ To learn more about caching, refer to the [Cache documentation page](./cache.md)
 
 ### Usage with agents
 
-{/* <!-- embedme typescript/examples/tools/agent.ts --> */}
+{/* <!-- embedme typescript/examples/tools/agent.ts#L6-L9999 --> */}
 
 ```ts
 import { ArXivTool } from "beeai-framework/tools/arxiv";
@@ -108,6 +110,7 @@ const agent = new ReActAgent({
   memory: new UnconstrainedMemory(),
   tools: [new ArXivTool()],
 });
+
 ```
 
 _Source: [typescript/examples/tools/agent.ts](https://github.com/i-am-bee/beeai-framework/blob/main/typescript/examples/tools/agent.ts)_
@@ -126,7 +129,7 @@ The recommended and most sustainable way to create a tool is by implementing the
 
 #### Basic
 
-{/* <!-- embedme typescript/examples/tools/custom/base.ts --> */}
+{/* <!-- embedme typescript/examples/tools/custom/base.ts#L6-L9999 --> */}
 
 ```ts
 import {
@@ -184,6 +187,7 @@ export class RiddleTool extends Tool<StringToolOutput> {
     return new StringToolOutput(riddle);
   }
 }
+
 ```
 
 _Source: [typescript/examples/tools/custom/base.ts](https://github.com/i-am-bee/beeai-framework/blob/main/typescript/examples/tools/custom/base.ts)_
@@ -200,7 +204,7 @@ If you want to return an array or a plain object, use `JSONToolOutput` or implem
 
 If your tool is more complex, you may want to use the full power of the tool abstraction, as the following example shows.
 
-{/* <!-- embedme typescript/examples/tools/custom/openLibrary.ts --> */}
+{/* <!-- embedme typescript/examples/tools/custom/openLibrary.ts#L6-L9999 --> */}
 
 ```ts
 import {
@@ -304,6 +308,7 @@ export class OpenLibraryTool extends Tool<OpenLibraryToolOutput, ToolOptions, To
     return new OpenLibraryToolOutput(json);
   }
 }
+
 ```
 
 _Source: [typescript/examples/tools/custom/openLibrary.ts](https://github.com/i-am-bee/beeai-framework/blob/main/typescript/examples/tools/custom/openLibrary.ts)_
@@ -384,7 +389,7 @@ _Source: [typescript/examples/tools/custom/openLibrary.ts](https://github.com/i-
 
 The `DynamicTool` allows you to create a tool without extending the base tool class.
 
-{/* <!-- embedme typescript/examples/tools/custom/dynamic.ts --> */}
+{/* <!-- embedme typescript/examples/tools/custom/dynamic.ts#L6-L9999 --> */}
 
 ```ts
 import { DynamicTool, StringToolOutput } from "beeai-framework/tools/base";
@@ -405,6 +410,7 @@ const tool = new DynamicTool({
     return new StringToolOutput(number.toString());
   },
 });
+
 ```
 
 _Source: [typescript/examples/tools/custom/dynamic.ts](https://github.com/i-am-bee/beeai-framework/blob/main/typescript/examples/tools/custom/dynamic.ts)_
@@ -417,7 +423,7 @@ The `inputSchema` and `description` are also both required.
 
 If you want to use the Python function, use the [`CustomTool`](https://github.com/i-am-bee/beeai-framework/blob/main/typescript/src/tools/custom.ts).
 
-{/* <!-- embedme typescript/examples/tools/custom/python.ts --> */}
+{/* <!-- embedme typescript/examples/tools/custom/python.ts#L6-L9999 --> */}
 
 ```ts
 import "dotenv/config";
@@ -475,7 +481,7 @@ Custom tools are executed within the code interpreter, but they cannot access an
 
 The `MCPTool` allows you to instantiate tools given a connection to [MCP server](https://modelcontextprotocol.io/examples) with tools capability.
 
-{/* <!-- embedme typescript/examples/tools/mcp.ts --> */}
+{/* <!-- embedme typescript/examples/tools/mcp.ts#L6-L9999 --> */}
 
 ```ts
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
@@ -522,6 +528,7 @@ try {
   // Close the MCP connection
   await client.close();
 }
+
 ```
 
 _Source: [typescript/examples/tools/mcp.ts](https://github.com/i-am-bee/beeai-framework/blob/main/typescript/examples/tools/mcp.ts)_

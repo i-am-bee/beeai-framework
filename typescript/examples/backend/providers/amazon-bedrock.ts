@@ -1,3 +1,8 @@
+/**
+ * Copyright 2025 © BeeAI a Series of LF Projects, LLC
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
 import "dotenv/config";
 import { AmazonBedrockChatModel } from "beeai-framework/adapters/amazon-bedrock/backend/chat";
 import "dotenv/config.js";

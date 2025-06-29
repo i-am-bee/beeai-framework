@@ -1,3 +1,8 @@
+/**
+ * Copyright 2025 © BeeAI a Series of LF Projects, LLC
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
 import { defineConfig } from "tsup";
 import packageJson from "./package.json" with { type: "json" };
 import swc, { JscConfig } from "@swc/core";

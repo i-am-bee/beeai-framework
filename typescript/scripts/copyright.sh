@@ -5,7 +5,7 @@
 set -e
 
 if [ "$#" -eq 0 ]; then
-  TARGETS=(src/**/*.{js,ts} tests/**/*.ts scripts/*.sh)
+  TARGETS=($(find . -type d -name node_modules -prune -false -o \( -name "*.js" -o -name "*.ts" -o -name "*.sh" \) ))
 else
   TARGETS=("${@/#$PWD\//}")
 fi

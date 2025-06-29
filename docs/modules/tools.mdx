@@ -42,7 +42,7 @@ The simplest way to use a tool is to instantiate it directly and call its `run()
 
 <CodeGroup>
 
-{/* <!-- embedme python/examples/tools/base.py --> */}
+{/* <!-- embedme python/examples/tools/base.py#L4-L9999 --> */}
 ```py Python [expandable]
 import asyncio
 import sys
@@ -69,7 +69,7 @@ if __name__ == "__main__":
 
 ```
 
-{/* <!-- embedme typescript/examples/tools/base.ts --> */}
+{/* <!-- embedme typescript/examples/tools/base.ts#L6-L9999 --> */}
 ```ts TypeScript [expandable]
 import { OpenMeteoTool } from "beeai-framework/tools/weather/openMeteo";
 
@@ -91,7 +91,7 @@ Tools often support additional configuration options to customize their behavior
 
 <CodeGroup>
 
-{/* <!-- embedme python/examples/tools/advanced.py --> */}
+{/* <!-- embedme python/examples/tools/advanced.py#L4-L9999 --> */}
 ```py Python [expandable]
 import asyncio
 import sys
@@ -121,7 +121,7 @@ if __name__ == "__main__":
 
 ```
 
-{/* <!-- embedme typescript/examples/tools/advanced.ts --> */}
+{/* <!-- embedme typescript/examples/tools/advanced.ts#L6-L9999 --> */}
 ```ts TypeScript [expandable]
 import { OpenMeteoTool } from "beeai-framework/tools/weather/openMeteo";
 import { UnconstrainedCache } from "beeai-framework/cache/unconstrainedCache";
@@ -157,7 +157,7 @@ The true power of tools emerges when integrating them with agents. Tools extend 
 
 <CodeGroup>
 
-{/* <!-- embedme python/examples/tools/agent.py --> */}
+{/* <!-- embedme python/examples/tools/agent.py#L4-L9999 --> */}
 ```py Python [expandable]
 from beeai_framework.adapters.ollama import OllamaChatModel
 from beeai_framework.agents.react import ReActAgent
@@ -168,7 +168,7 @@ agent = ReActAgent(llm=OllamaChatModel("llama3.1"), tools=[OpenMeteoTool()], mem
 
 ```
 
-{/* <!-- embedme typescript/examples/tools/agent.ts --> */}
+{/* <!-- embedme typescript/examples/tools/agent.ts#L6-L9999 --> */}
 ```ts TypeScript [expandable]
 import { ArXivTool } from "beeai-framework/tools/arxiv";
 import { ReActAgent } from "beeai-framework/agents/react/agent";
@@ -189,7 +189,7 @@ const agent = new ReActAgent({
 
 For simpler tools, you can use the `tool` decorator to quickly create a tool from a function:
 
-{/* <!-- embedme python/examples/tools/decorator.py --> */}
+{/* <!-- embedme python/examples/tools/decorator.py#L4-L9999 --> */}
 ```py Python [expandable]
 import asyncio
 import json
@@ -266,7 +266,7 @@ Use the DuckDuckGo search tool to retrieve real-time search results from across 
 
 <CodeGroup>
 
-{/* <!-- embedme python/examples/tools/duckduckgo.py --> */}
+{/* <!-- embedme python/examples/tools/duckduckgo.py#L4-L9999 --> */}
 ```py Python [expandable]
 import asyncio
 import sys
@@ -297,7 +297,7 @@ if __name__ == "__main__":
 
 ```
 
-{/* <!-- embedme typescript/examples/tools/custom/extending.ts --> */}
+{/* <!-- embedme typescript/examples/tools/custom/extending.ts#L6-L9999 --> */}
 ```ts TypeScript [expandable]
 import { z } from "zod";
 import {
@@ -343,7 +343,7 @@ Use the OpenMeteo tool to retrieve real-time weather forecasts including detaile
 
 <CodeGroup>
 
-{/* <!-- embedme python/examples/tools/openmeteo.py --> */}
+{/* <!-- embedme python/examples/tools/openmeteo.py#L4-L9999 --> */}
 ```py Python [expandable]
 import asyncio
 import sys
@@ -373,7 +373,7 @@ if __name__ == "__main__":
         sys.exit(e.explain())
 
 ```
-{/* <!-- embedme typescript/examples/tools/base.ts --> */}
+{/* <!-- embedme typescript/examples/tools/base.ts#L6-L9999 --> */}
 ```ts TypeScript [expandable]
 import { OpenMeteoTool } from "beeai-framework/tools/weather/openMeteo";
 
@@ -393,7 +393,7 @@ console.log(result.getTextContent());
 Use the Wikipedia tool to retrieve detailed information from Wikipedia.org on a wide range of topics, including famous individuals, locations, organizations, and historical events. Ideal for obtaining comprehensive overviews or specific details on well-documented subjects. May not be suitable for lesser-known or more recent topics. The information is subject to community edits which can be inaccurate.
 
 <CodeGroup>
-{/* <!-- embedme python/examples/tools/wikipedia.py --> */}
+{/* <!-- embedme python/examples/tools/wikipedia.py#L4-L9999 --> */}
 ```py Python [expandable]
 import asyncio
 import sys
@@ -422,7 +422,7 @@ if __name__ == "__main__":
 
 ```
 
-{/* <!-- embedme typescript/examples/tools/custom/piping.ts --> */}
+{/* <!-- embedme typescript/examples/tools/custom/piping.ts#L6-L9999 --> */}
 ```ts TypeScript [expandable]
 import { WikipediaTool } from "beeai-framework/tools/search/wikipedia";
 import { SimilarityTool } from "beeai-framework/tools/similarity";
@@ -480,7 +480,7 @@ Check out the [MCP Slack integration tutorial](/guides/slack-integration)
 
 <CodeGroup>
 
-{/* <!-- embedme python/examples/tools/mcp_tool_creation.py --> */}
+{/* <!-- embedme python/examples/tools/mcp_tool_creation.py#L4-L9999 --> */}
 ```py Python [expandable]
 import asyncio
 import os
@@ -522,7 +522,7 @@ agent = ReActAgent(llm=OllamaChatModel("llama3.1"), tools=[asyncio.run(slack_too
 
 ```
 
-{/* <!-- embedme typescript/examples/tools/mcp.ts --> */}
+{/* <!-- embedme typescript/examples/tools/mcp.ts#L6-L9999 --> */}
 ```ts TypeScript [expandable]
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { MCPTool } from "beeai-framework/tools/mcp";
@@ -600,7 +600,7 @@ Key components:
 
 <CodeGroup>
 
-{/* <!-- embedme python/examples/tools/python_tool.py --> */}
+{/* <!-- embedme python/examples/tools/python_tool.py#L4-L9999 --> */}
 ```py Python [expandable]
 import asyncio
 import os
@@ -652,7 +652,7 @@ if __name__ == "__main__":
 
 ```
 
-{/* <!-- embedme typescript/examples/tools/custom/python.ts --> */}
+{/* <!-- embedme typescript/examples/tools/custom/python.ts#L6-L9999 --> */}
 ```ts TypeScript [expandable]
 import "dotenv/config";
 import { CustomTool } from "beeai-framework/tools/custom";
@@ -704,7 +704,7 @@ Get started quickly with [beeai-framework-py-starter](https://github.com/i-am-be
 
 <CodeGroup>
 
-{/* <!-- embedme python/examples/tools/custom/sandbox.py --> */}
+{/* <!-- embedme python/examples/tools/custom/sandbox.py#L4-L9999 --> */}
 ```py Python [expandable]
 import asyncio
 import os
@@ -765,7 +765,7 @@ if __name__ == "__main__":
 
 ```
 
-{/* <!-- embedme typescript/examples/tools/custom/python.ts --> */}
+{/* <!-- embedme typescript/examples/tools/custom/python.ts#L6-L9999 --> */}
 ```ts TypeScript [expandable]
 import "dotenv/config";
 import { CustomTool } from "beeai-framework/tools/custom";
@@ -834,7 +834,7 @@ Here's an example of a simple custom tool that provides riddles:
 
 <CodeGroup>
 
-{/* <!-- embedme python/examples/tools/custom/base.py --> */}
+{/* <!-- embedme python/examples/tools/custom/base.py#L4-L9999 --> */}
 ```py Python [expandable]
 import asyncio
 import random
@@ -900,7 +900,7 @@ if __name__ == "__main__":
 
 ```
 
-{/* <!-- embedme typescript/examples/tools/custom/python.ts --> */}
+{/* <!-- embedme typescript/examples/tools/custom/python.ts#L6-L9999 --> */}
 ```ts TypeScript [expandable]
 import "dotenv/config";
 import { CustomTool } from "beeai-framework/tools/custom";
@@ -954,7 +954,7 @@ For structured data responses, use `JSONToolOutput` or implement your own custom
 For more complex scenarios, you can implement tools with robust input validation, error handling, and structured outputs:
 
 <CodeGroup>
-{/* <!-- embedme python/examples/tools/custom/openlibrary.py --> */}
+{/* <!-- embedme python/examples/tools/custom/openlibrary.py#L4-L9999 --> */}
 ```py Python [expandable]
 import asyncio
 import sys
@@ -1042,7 +1042,7 @@ if __name__ == "__main__":
         sys.exit(e.explain())
 
 ```
-{/* <!-- embedme typescript/examples/tools/custom/openLibrary.ts --> */}
+{/* <!-- embedme typescript/examples/tools/custom/openLibrary.ts#L6-L9999 --> */}
 ```ts TypeScript [expandable]
 import {
   BaseToolOptions,

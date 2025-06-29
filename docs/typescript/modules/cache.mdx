@@ -10,7 +10,7 @@ Caching is a process used to temporarily store copies of data or computations in
 
 ### Capabilities showcase
 
-{/* <!-- embedme typescript/examples/cache/unconstrainedCache.ts --> */}
+{/* <!-- embedme typescript/examples/cache/unconstrainedCache.ts#L6-L9999 --> */}
 
 ```ts
 import { UnconstrainedCache } from "beeai-framework/cache/unconstrainedCache";
@@ -39,13 +39,14 @@ console.log(await cache.has("a")); // false
 // Clear
 await cache.clear();
 console.log(await cache.size()); // 0
+
 ```
 
 _Source: [typescript/examples/cache/unconstrainedCache.ts](https://github.com/i-am-bee/beeai-framework/blob/main/typescript/examples/cache/unconstrainedCache.ts)_
 
 ### Caching function output + intermediate steps
 
-{/* <!-- embedme typescript/examples/cache/unconstrainedCacheFunction.ts --> */}
+{/* <!-- embedme typescript/examples/cache/unconstrainedCacheFunction.ts#L6-L9999 --> */}
 
 ```ts
 import { UnconstrainedCache } from "beeai-framework/cache/unconstrainedCache";
@@ -67,13 +68,14 @@ async function fibonacci(n: number): Promise<number> {
 console.info(await fibonacci(10)); // 55
 console.info(await fibonacci(9)); // 34 (retrieved from cache)
 console.info(`Cache size ${await cache.size()}`); // 10
+
 ```
 
 _Source: [typescript/examples/cache/unconstrainedCacheFunction.ts](https://github.com/i-am-bee/beeai-framework/blob/main/typescript/examples/cache/unconstrainedCacheFunction.ts)_
 
 ### Usage with tools
 
-{/* <!-- embedme typescript/examples/cache/toolCache.ts --> */}
+{/* <!-- embedme typescript/examples/cache/toolCache.ts#L6-L9999 --> */}
 
 ```ts
 import { SlidingCache } from "beeai-framework/cache/slidingCache";
@@ -90,6 +92,7 @@ const response = await ddg.run({
   query: "United States",
 });
 // upcoming requests with the EXACTLY same input will be retrieved from the cache
+
 ```
 
 _Source: [typescript/examples/cache/toolCache.ts](https://github.com/i-am-bee/beeai-framework/blob/main/typescript/examples/cache/toolCache.ts)_
@@ -100,7 +103,7 @@ Cache key is created by serializing function parameters (the order of keys in th
 
 ### Usage with LLMs
 
-{/* <!-- embedme typescript/examples/cache/llmCache.ts --> */}
+{/* <!-- embedme typescript/examples/cache/llmCache.ts#L6-L9999 --> */}
 
 ```ts
 import { SlidingCache } from "beeai-framework/cache/slidingCache";
@@ -128,6 +131,7 @@ const second = await llm.create({
 });
 console.info(first.getTextContent() === second.getTextContent()); // true
 console.info(await llm.cache.size()); // 1
+
 ```
 
 _Source: [typescript/examples/cache/llmCache.ts](https://github.com/i-am-bee/beeai-framework/blob/main/typescript/examples/cache/llmCache.ts)_
@@ -153,7 +157,7 @@ console.log(await cache.size()); // 1
 
 Keeps last `k` entries in the memory. The oldest ones are deleted.
 
-{/* <!-- embedme typescript/examples/cache/slidingCache.ts --> */}
+{/* <!-- embedme typescript/examples/cache/slidingCache.ts#L6-L9999 --> */}
 
 ```ts
 import { SlidingCache } from "beeai-framework/cache/slidingCache";
@@ -170,6 +174,7 @@ await cache.set("c", 3);
 await cache.set("d", 4); // overflow - cache internally removes the oldest entry (key "a")
 console.log(await cache.has("a")); // false
 console.log(await cache.size()); // 3
+
 ```
 
 _Source: [typescript/examples/cache/slidingCache.ts](https://github.com/i-am-bee/beeai-framework/blob/main/typescript/examples/cache/slidingCache.ts)_
@@ -179,7 +184,7 @@ _Source: [typescript/examples/cache/slidingCache.ts](https://github.com/i-am-bee
 One may want to persist data to a file so that the data can be later loaded. In that case the `FileCache` is ideal candidate.
 You have to provide a location where the cache is persisted.
 
-{/* <!-- embedme typescript/examples/cache/fileCache.ts --> */}
+{/* <!-- embedme typescript/examples/cache/fileCache.ts#L6-L9999 --> */}
 
 ```ts
 import { FileCache } from "beeai-framework/cache/fileCache";
@@ -190,6 +195,7 @@ const cache = new FileCache({
 });
 console.log(`Saving cache to "${cache.source}"`);
 await cache.set("abc", { firstName: "John", lastName: "Doe" });
+
 ```
 
 _Source: [typescript/examples/cache/fileCache.ts](https://github.com/i-am-bee/beeai-framework/blob/main/typescript/examples/cache/fileCache.ts)_
@@ -204,7 +210,7 @@ Every modification to the cache (adding, deleting, clearing) immediately updates
 
 #### Using a custom provider
 
-{/* <!-- embedme typescript/examples/cache/fileCacheCustomProvider.ts --> */}
+{/* <!-- embedme typescript/examples/cache/fileCacheCustomProvider.ts#L6-L9999 --> */}
 
 ```ts
 import { FileCache } from "beeai-framework/cache/fileCache";
@@ -219,6 +225,7 @@ const fileCache = await FileCache.fromProvider(memoryCache, {
 });
 console.log(`Saving cache to "${fileCache.source}"`);
 console.log(await fileCache.get("a")); // 1
+
 ```
 
 _Source: [typescript/examples/cache/fileCacheCustomProvider.ts](https://github.com/i-am-bee/beeai-framework/blob/main/typescript/examples/cache/fileCacheCustomProvider.ts)_
@@ -231,7 +238,7 @@ The reason for implementing is to enable [Null object pattern](https://en.wikipe
 
 ### @Cache (decorator cache)
 
-{/* <!-- embedme typescript/examples/cache/decoratorCache.ts --> */}
+{/* <!-- embedme typescript/examples/cache/decoratorCache.ts#L6-L9999 --> */}
 
 ```ts
 import { Cache } from "beeai-framework/cache/decoratorCache";
@@ -248,13 +255,14 @@ const a = generator.get(5);
 const b = generator.get(5);
 console.info(a === b); // true
 console.info(a === generator.get(6)); // false
+
 ```
 
 _Source: [typescript/examples/cache/decoratorCache.ts](https://github.com/i-am-bee/beeai-framework/blob/main/typescript/examples/cache/decoratorCache.ts)_
 
 **Complex example**
 
-{/* <!-- embedme typescript/examples/cache/decoratorCacheComplex.ts --> */}
+{/* <!-- embedme typescript/examples/cache/decoratorCacheComplex.ts#L6-L9999 --> */}
 
 ```ts
 import { Cache, SingletonCacheKeyFn } from "beeai-framework/cache/decoratorCache";
@@ -280,6 +288,7 @@ const a = service.id;
 console.info(a === service.id); // true
 service.reset();
 console.info(a === service.id); // false
+
 ```
 
 _Source: [typescript/examples/cache/decoratorCacheComplex.ts](https://github.com/i-am-bee/beeai-framework/blob/main/typescript/examples/cache/decoratorCacheComplex.ts)_
@@ -298,7 +307,7 @@ Be aware of that. If you want your method always to return the same response, us
 Because previously mentioned `CacheDecorator` can be applied only to class methods/getter the framework
 provides a way how to do caching on a function level.
 
-{/* <!-- embedme typescript/examples/cache/cacheFn.ts --> */}
+{/* <!-- embedme typescript/examples/cache/cacheFn.ts#L6-L9999 --> */}
 
 ```ts
 import { CacheFn } from "beeai-framework/cache/decoratorCache";
@@ -318,6 +327,7 @@ const token = await getSecret();
 console.info(token === (await getSecret())); // true
 await setTimeout(150);
 console.info(token === (await getSecret())); // false
+
 ```
 
 _Source: [typescript/examples/cache/cacheFn.ts](https://github.com/i-am-bee/beeai-framework/blob/main/typescript/examples/cache/cacheFn.ts)_
@@ -330,7 +340,7 @@ Internally, the function is wrapped as a class; therefore, the same rules apply 
 
 To create your cache implementation, you must implement the `BaseCache` class.
 
-{/* <!-- embedme typescript/examples/cache/custom.ts --> */}
+{/* <!-- embedme typescript/examples/cache/custom.ts#L6-L9999 --> */}
 
 ```ts
 import { BaseCache } from "beeai-framework/cache/base";
@@ -369,6 +379,7 @@ export class CustomCache<T> extends BaseCache<T> {
     throw new NotImplementedError();
   }
 }
+
 ```
 
 _Source: [typescript/examples/cache/custom.ts](https://github.com/i-am-bee/beeai-framework/blob/main/typescript/examples/cache/custom.ts)_

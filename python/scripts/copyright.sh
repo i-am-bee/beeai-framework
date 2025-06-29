@@ -5,7 +5,7 @@
 set -e
 
 if [ "$#" -eq 0 ]; then
-  TARGETS=(*/*.py beeai_framework/**/*.py examples/**/*.py tests/**/*.py scripts/*.sh)
+  TARGETS=($(find . -type f \( -name "*.py" -o -name "*.sh" \)))
 else
   TARGETS=("${@/#$PWD\//}")
 fi
