@@ -209,7 +209,7 @@ def _requirement_agent_factory(agent: RequirementAgent, *, metadata: ACPServerMe
                 last_msg = message
 
             if isinstance(data, RequirementAgentSuccessEvent) and data.state.answer is not None:
-                yield acp_models.MessagePart(content=data.state.answer.text, role="assistant")  # type: ignore[call-arg]
+                yield acp_models.MessagePart(content=data.state.result.text, role="assistant")  # type: ignore[call-arg]
 
     metadata = metadata or {}
     return ACPServerAgent(

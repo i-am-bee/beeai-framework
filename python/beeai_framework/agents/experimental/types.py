@@ -92,6 +92,22 @@ class RequirementAgentRunOutput(BaseModel, Generic[TAnswer]):
     memory: InstanceOf[BaseMemory]
     state: RequirementAgentRunState
 
+    @property
+    def result(self) -> AssistantMessage:
+        """
+        This property is provided for compatibility reasons only.
+        Use 'answer' instead.
+        """
+        return self.answer
+
+    @result.setter
+    def result(self, value: AssistantMessage) -> None:
+        """
+        This setter is provided for compatibility reasons only.
+        Sets the 'answer' attribute.
+        """
+        self.answer = value
+
 
 class RequirementAgentRequest(BaseModel):
     model_config = ConfigDict(extra="allow", arbitrary_types_allowed=True)
