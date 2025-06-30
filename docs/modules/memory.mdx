@@ -55,7 +55,7 @@ Memory components integrate with other parts of the framework:
 
 <CodeGroup>
 
-{/* <!-- embedme python/examples/memory/base.py --> */}
+{/* <!-- embedme python/examples/memory/base.py#L4-L9999 --> */}
 ```py Python [expandable]
 import asyncio
 import sys
@@ -91,7 +91,7 @@ if __name__ == "__main__":
 
 ```
 
-{/* <!-- embedme typescript/examples/memory/base.ts --> */}
+{/* <!-- embedme typescript/examples/memory/base.ts#L6-L9999 --> */}
 ```ts TypeScript [expandable]
 import { UnconstrainedMemory } from "beeai-framework/memory/unconstrainedMemory";
 import { AssistantMessage, SystemMessage, UserMessage } from "beeai-framework/backend/message";
@@ -117,7 +117,7 @@ memory.reset(); // removes all messages
 
 <CodeGroup>
 
-{/* <!-- embedme python/examples/memory/llm_memory.py --> */}
+{/* <!-- embedme python/examples/memory/llm_memory.py#L4-L9999 --> */}
 ```py Python [expandable]
 import asyncio
 import sys
@@ -156,7 +156,7 @@ if __name__ == "__main__":
 
 ```
 
-{/* <!-- embedme typescript/examples/memory/llmMemory.ts --> */}
+{/* <!-- embedme typescript/examples/memory/llmMemory.ts#L6-L9999 --> */}
 ```ts TypeScript [expandable]
 import { UnconstrainedMemory } from "beeai-framework/memory/unconstrainedMemory";
 import { Message } from "beeai-framework/backend/message";
@@ -194,7 +194,7 @@ Memory for non-chat LLMs works exactly the same way.
 
 <CodeGroup>
 
-{/* <!-- embedme python/examples/memory/agent_memory.py --> */}
+{/* <!-- embedme python/examples/memory/agent_memory.py#L4-L9999 --> */}
 ```py Python [expandable]
 import asyncio
 import sys
@@ -267,7 +267,7 @@ if __name__ == "__main__":
 
 ```
 
-{/* <!-- embedme typescript/examples/memory/agentMemory.ts --> */}
+{/* <!-- embedme typescript/examples/memory/agentMemory.ts#L6-L9999 --> */}
 ```ts TypeScript [expandable]
 import { UnconstrainedMemory } from "beeai-framework/memory/unconstrainedMemory";
 import { ReActAgent } from "beeai-framework/agents/react/agent";
@@ -310,7 +310,7 @@ The framework provides multiple out-of-the-box memory implementations for differ
 Unlimited in size, stores all messages without constraints.
 
 <CodeGroup>
-{/* <!-- embedme python/examples/memory/unconstrained_memory.py --> */}
+{/* <!-- embedme python/examples/memory/unconstrained_memory.py#L4-L9999 --> */}
 ```py Python [expandable]
 import asyncio
 import sys
@@ -346,7 +346,7 @@ if __name__ == "__main__":
 
 ```
 
-{/* <!-- embedme typescript/examples/memory/unconstrainedMemory.ts --> */}
+{/* <!-- embedme typescript/examples/memory/unconstrainedMemory.ts#L6-L9999 --> */}
 ```ts TypeScript [expandable]
 import { UnconstrainedMemory } from "beeai-framework/memory/unconstrainedMemory";
 import { Message } from "beeai-framework/backend/message";
@@ -373,7 +373,7 @@ Keeps last `k` entries in the memory. The oldest ones are deleted (unless specif
 
 <CodeGroup>
 
-{/* <!-- embedme python/examples/memory/sliding_memory.py --> */}
+{/* <!-- embedme python/examples/memory/sliding_memory.py#L4-L9999 --> */}
 ```py Python [expandable]
 import asyncio
 import sys
@@ -417,7 +417,7 @@ if __name__ == "__main__":
         sys.exit(e.explain())
 
 ```
-{/* <!-- embedme typescript/examples/memory/slidingMemory.ts --> */}
+{/* <!-- embedme typescript/examples/memory/slidingMemory.ts#L6-L9999 --> */}
 ```ts TypeScript [expandable]
 import { SlidingMemory } from "beeai-framework/memory/slidingMemory";
 import { Message } from "beeai-framework/backend/message";
@@ -452,7 +452,7 @@ If overflow occurs, the oldest message will be removed.
 
 <CodeGroup>
 
-{/* <!-- embedme python/examples/memory/token_memory.py --> */}
+{/* <!-- embedme python/examples/memory/token_memory.py#L4-L9999 --> */}
 ```py Python [expandable]
 import asyncio
 import math
@@ -516,7 +516,7 @@ if __name__ == "__main__":
         sys.exit(e.explain())
 
 ```
-{/* <!-- embedme typescript/examples/memory/tokenMemory.ts --> */}
+{/* <!-- embedme typescript/examples/memory/tokenMemory.ts#L6-L9999 --> */}
 ```ts TypeScript [expandable]
 import { TokenMemory } from "beeai-framework/memory/tokenMemory";
 import { Message } from "beeai-framework/backend/message";
@@ -552,7 +552,7 @@ Only a single summarization of the conversation is preserved. Summarization is u
 
 <CodeGroup>
 
-{/* <!-- embedme python/examples/memory/summarize_memory.py --> */}
+{/* <!-- embedme python/examples/memory/summarize_memory.py#L4-L9999 --> */}
 ```py Python [expandable]
 import asyncio
 import sys
@@ -599,7 +599,7 @@ if __name__ == "__main__":
         sys.exit(e.explain())
 
 ```
-{/* <!-- embedme typescript/examples/memory/summarizeMemory.ts --> */}
+{/* <!-- embedme typescript/examples/memory/summarizeMemory.ts#L6-L9999 --> */}
 ```ts TypeScript [expandable]
 import { Message } from "beeai-framework/backend/message";
 import { SummarizeMemory } from "beeai-framework/memory/summarizeMemory";
@@ -630,7 +630,7 @@ console.log(memory.messages[0].text); // The capital city of France is Paris, ..
 To create your memory implementation, you must implement the `BaseMemory` class.
 
 <CodeGroup>
-{/* <!-- embedme python/examples/memory/custom.py --> */}
+{/* <!-- embedme python/examples/memory/custom.py#L4-L9999 --> */}
 ```py Python [expandable]
 from typing import Any
 
@@ -660,7 +660,7 @@ class MyMemory(BaseMemory):
 
 ```
 
-{/* <!-- embedme typescript/examples/memory/custom.ts --> */}
+{/* <!-- embedme typescript/examples/memory/custom.ts#L6-L9999 --> */}
 ```ts TypeScript [expandable]
 import { BaseMemory } from "beeai-framework/memory/base";
 import { Message } from "beeai-framework/backend/message";

@@ -4,7 +4,7 @@ BeeAI Framework is open-source framework for building, deploying, and serving po
 
 ## LangGraph
 
-{/* <!-- embedme typescript/examples/integrations/langgraph.ts --> */}
+{/* <!-- embedme typescript/examples/integrations/langgraph.ts#L6-L9999 --> */}
 
 ```ts
 import "dotenv/config";
@@ -66,6 +66,7 @@ for await (const { prompt } of reader) {
   reader.write(`-> solved by `, steps.at(-1)!.name);
   await memory.add(Message.of({ role: "assistant", text: result.answer }));
 }
+
 ```
 
 _Source: [typescript/examples/integrations/langgraph.ts](https://github.com/i-am-bee/beeai-framework/blob/main/typescript/examples/integrations/langgraph.ts)_

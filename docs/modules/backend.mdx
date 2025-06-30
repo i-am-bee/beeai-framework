@@ -52,7 +52,7 @@ The `Backend` class serves as a central entry point to access models from your c
 
 <CodeGroup>
 
-{/* <!-- embedme python/examples/backend/providers/watsonx.py --> */}
+{/* <!-- embedme python/examples/backend/providers/watsonx.py#L4-L9999 --> */}
 ```py Python [expandable]
 import asyncio
 import json
@@ -223,7 +223,7 @@ if __name__ == "__main__":
 
 ```
 
-{/* <!-- embedme typescript/examples/backend/providers/watsonx.ts --> */}
+{/* <!-- embedme typescript/examples/backend/providers/watsonx.ts#L6-L9999 --> */}
 ```ts TypeScript [expandable]
 import "dotenv/config.js";
 import { CustomMessage, ToolMessage, UserMessage } from "beeai-framework/backend/message";
@@ -426,7 +426,7 @@ You can configure various parameters for your chat model:
 
 <CodeGroup>
 
-{/* <!-- embedme python/examples/backend/chat.py --> */}
+{/* <!-- embedme python/examples/backend/chat.py#L4-L9999 --> */}
 ```python Python
 import asyncio
 import sys
@@ -470,7 +470,7 @@ if __name__ == "__main__":
 
 ```
 
-{/* <!-- embedme typescript/examples/backend/chat.ts --> */}
+{/* <!-- embedme typescript/examples/backend/chat.ts#L6-L9999 --> */}
 ```ts TypeScript [expandable]
 import "dotenv/config.js";
 import { createConsoleReader } from "examples/helpers/io.js";
@@ -568,7 +568,7 @@ response = await llm.create(messages=[user_message], stream=True)
 print("Full response", response.get_text_content())
 ```
 
-{/* <!-- embedme typescript/examples/backend/chatStream.ts --> */}
+{/* <!-- embedme typescript/examples/backend/chatStream.ts#L6-L9999 --> */}
 ```ts TypeScript [expandable]
 import "dotenv/config.js";
 import { createConsoleReader } from "examples/helpers/io.js";
@@ -607,7 +607,7 @@ Generate structured data according to a schema:
 
 <CodeGroup>
 
-{/* <!-- embedme python/examples/backend/structured.py --> */}
+{/* <!-- embedme python/examples/backend/structured.py#L4-L9999 --> */}
 ```py Python [expandable]
 import asyncio
 import json
@@ -657,7 +657,7 @@ if __name__ == "__main__":
 
 ```
 
-{/* <!-- embedme typescript/examples/backend/structured.ts --> */}
+{/* <!-- embedme typescript/examples/backend/structured.ts#L6-L9999 --> */}
 ```ts TypeScript [expandable]
 import { ChatModel, UserMessage } from "beeai-framework/backend/core";
 import { z } from "zod";
@@ -690,7 +690,7 @@ Integrate external tools with your AI model:
 
 <CodeGroup>
 
-{/* <!-- embedme python/examples/backend/tool_calling.py --> */}
+{/* <!-- embedme python/examples/backend/tool_calling.py#L4-L9999 --> */}
 ```py Python [expandable]
 import asyncio
 import json
@@ -767,7 +767,7 @@ if __name__ == "__main__":
 
 ```
 
-{/* <!-- embedme typescript/examples/backend/toolCalling.ts --> */}
+{/* <!-- embedme typescript/examples/backend/toolCalling.ts#L6-L9999 --> */}
 ```ts TypeScript [expandable]
 import "dotenv/config";
 import {
@@ -926,7 +926,7 @@ This allows you to leverage any provider that has LangChain compatibility.
 Example coming soon
 ```
 
-{/* <!-- embedme typescript/examples/backend/providers/langchain.ts --> */}
+{/* <!-- embedme typescript/examples/backend/providers/langchain.ts#L6-L9999 --> */}
 ```ts TypeScript [expandable]
 // NOTE: ensure you have installed following packages
 // - @langchain/core

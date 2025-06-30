@@ -457,7 +457,7 @@ _Source: [examples/agents/providers/a2a_agent.py](/python/examples/agents/provid
 
 Basic example:
 
-<!-- embedme examples/serve/a2a_server.py -->
+<!-- embedme examples/serve/a2a_server.py#L4-L9999 -->
 
 ```py
 from beeai_framework.adapters.a2a import A2AServer, A2AServerConfig

@@ -20,7 +20,7 @@ Benefits of using `FrameworkError`:
 
 This structure ensures that users can trace the complete error history while clearly identifying any errors originating from the BeeAI Framework.
 
-{/* <!-- embedme typescript/examples/errors/base.ts --> */}
+{/* <!-- embedme typescript/examples/errors/base.ts#L6-L9999 --> */}
 
 ```ts
 import { FrameworkError } from "beeai-framework/errors";
@@ -45,6 +45,7 @@ console.log("Context", error.context); // Context in which the error occurred
 console.log(error.explain()); // Human-readable format without stack traces (ideal for LLMs)
 console.log(error.dump()); // Full error dump, including sub-errors
 console.log(error.getCause()); // Retrieve the initial cause of the error
+
 ```
 
 _Source: [typescript/examples/errors/base.ts](https://github.com/i-am-bee/beeai-framework/blob/main/typescript/examples/errors/base.ts)_
@@ -69,7 +70,7 @@ Casting an unknown error to a `FrameworkError` can be done by calling the `Frame
 
 When a tool encounters an error, it throws a `ToolError`, which extends `FrameworkError`. If input validation fails, a `ToolInputValidationError` (which extends `ToolError`) is thrown.
 
-{/* <!-- embedme typescript/examples/errors/tool.ts --> */}
+{/* <!-- embedme typescript/examples/errors/tool.ts#L6-L9999 --> */}
 
 ```ts
 import { DynamicTool, ToolError } from "beeai-framework/tools/base";
@@ -96,6 +97,7 @@ try {
   console.log("===EXPLAIN===");
   console.log(err.explain());
 }
+
 ```
 
 _Source: [typescript/examples/errors/tool.ts](https://github.com/i-am-bee/beeai-framework/blob/main/typescript/examples/errors/tool.ts)_

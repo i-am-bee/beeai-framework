@@ -1,3 +1,8 @@
+/**
+ * Copyright 2025 © BeeAI a Series of LF Projects, LLC
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
 // NOTE: ensure you have installed following packages
 // - @langchain/core
 // - @langchain/cohere (or any other provider related package that you would like to use)
