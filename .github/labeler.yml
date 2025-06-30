@@ -1,12 +1,16 @@
 python:
-  - 'python/**'
+  - changed-files:
+    - any-glob-to-any-file: 'python/**'
 
 typescript:
-  - 'typescript/**'
+  - changed-files:
+    - any-glob-to-any-file: 'typescript/**'
 
 documentation:
-  - 'docs/**'
-  - 'python/docs/**'
-  - 'typescript/docs/**'
-  - '**/*.md'
-  - '**/*.mdx'
+  - changed-files:
+    - any-glob-to-any-file:
+      - 'docs/**'
+      - 'python/docs/**'
+      - 'typescript/docs/**'
+      - '**/*.md'
+      - '**/*.mdx'
