@@ -25,6 +25,7 @@ boto3 = {version = "^1.37.5", optional = true}
 cachetools = "^5.5.2"
 chevron = "^0.14.0"
 duckduckgo-search = {version = "^8.0.4", optional = true}
+fastapi = {version = "^0.115.0", optional = true }
 json-repair = "^0.39.0"
 jsonref = "^1.1.0"
 langchain-community = {version = "^0.3.19", optional = true}
@@ -70,6 +71,7 @@ acp = ["acp-sdk", "uvicorn"]
 beeai-platform = ["acp-sdk", "uvicorn"]
 a2a = ["a2a-sdk", "uvicorn"]
 all = ["langchain", "huggingface", "search", "duckduckgo", "wikipedia", "mcp", "acp", "beeai-platform", "a2a"]
+watsonx-orchestrate = ["uvicorn", "fastapi"]
 
 
 [tool.mypy]

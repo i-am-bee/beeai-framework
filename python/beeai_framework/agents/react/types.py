@@ -29,8 +29,8 @@ from beeai_framework.agents.react.runners.default.prompts import (
     UserPromptTemplateInput,
 )
 from beeai_framework.agents.types import AgentExecutionConfig, AgentMeta, BaseAgentRunOptions
+from beeai_framework.backend import AssistantMessage
 from beeai_framework.backend.chat import ChatModel
-from beeai_framework.backend.message import AnyMessage
 from beeai_framework.backend.types import ChatModelOutput
 from beeai_framework.memory.base_memory import BaseMemory
 from beeai_framework.template import PromptTemplate
@@ -73,7 +73,7 @@ class ReActAgentRunIteration(BaseModel):
 
 
 class ReActAgentRunOutput(BaseModel):
-    result: InstanceOf[AnyMessage]
+    result: InstanceOf[AssistantMessage]
     iterations: list[ReActAgentRunIteration]
     memory: InstanceOf[BaseMemory]
 
