@@ -2,14 +2,12 @@
 - [Python](/python/)
 
 - Getting started
-
   - [Examples](examples.md)
   - [Tutorials](tutorials.md)
   - [Migration Guide](migration_guide.md)
   - [Changelog](CHANGELOG.md)
 
 - Modules
-
   - [Agents](agents.md)
   - [Workflows](workflows.md)
   - [Backend](backend.md)
@@ -24,5 +22,4 @@
   - [Error Handling](errors.md)
 
 - Others
-
   - [Integrations](integrations.md)

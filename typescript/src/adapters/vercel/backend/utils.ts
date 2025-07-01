@@ -1,5 +1,4 @@
 /**
- import { parseEnv } from "@/internals/env.js";
  * Copyright 2025 © BeeAI a Series of LF Projects, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -72,8 +71,8 @@ export function vercelFetcher(customFetch?: typeof fetch): typeof fetch {
     if (
       options &&
       isString(options.body) &&
-      (getProp(options.headers, ["content-type"]) == "application/json" ||
-        getProp(options.headers, ["Content-Type"]) == "application/json")
+      (getProp(options.headers, ["content-type"]) === "application/json" ||
+        getProp(options.headers, ["Content-Type"]) === "application/json")
     ) {
       const body = JSON.parse(options.body);
       if (isPlainObject(body) && Array.isArray(body.messages)) {

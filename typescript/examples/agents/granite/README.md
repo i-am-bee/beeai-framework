@@ -37,7 +37,6 @@ Ensure you have access to an IBM Granite model and have followed any other requi
 The [granite_bee](/examples/agents/granite/granite_bee.ts) example agent is set up to demonstrate how to use IBM Granite with the BeeAI Framework. In order to run this example, take the following steps:
 
 1. Copy the [.env.template](/.env.template) file to a new file called `.env` and fill out the required details within the `.env` file (replace the values shown in braces), as follows
-
    1. For watsonx:
 
       ```.env

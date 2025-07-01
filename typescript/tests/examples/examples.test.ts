@@ -65,6 +65,7 @@ const exclude: string[] = [
   !getEnv("AWS_REGION") && ["examples/backend/providers/amazon-bedrock.ts"],
   !getEnv("GOOGLE_APPLICATION_CREDENTIALS") && ["examples/backend/providers/vertexai.ts"],
   !getEnv("ANTHROPIC_API_KEY") && ["examples/backend/providers/anthropic.ts"],
+  !getEnv("XAI_API_KEY") && ["examples/backend/providers/xai.ts"],
   "examples/tools/custom/extending.ts", // DDG problems
 ]
   .filter(isTruthy)
