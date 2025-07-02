@@ -13,7 +13,8 @@
 # limitations under the License.
 
 
-from typing import Any, Self
+import contextlib
+from typing import Any, ClassVar, Self
 
 try:
     from mcp import ClientSession
@@ -37,8 +38,13 @@ from beeai_framework.utils.strings import to_safe_word
 logger = Logger(__name__)
 
 
+MCPClient = contextlib._AsyncGeneratorContextManager[Any, None]
+
+
 class MCPTool(Tool[BaseModel, ToolRunOptions, JSONToolOutput]):
     """Tool implementation for Model Context Protocol."""
+
+    _resources: ClassVar[list[tuple[MCPClient, ClientSession]]] = []
 
     def __init__(self, session: ClientSession, tool: MCPToolInfo, **options: int) -> None:
         """Initialize MCPTool with client and tool configuration."""
@@ -74,9 +80,24 @@ class MCPTool(Tool[BaseModel, ToolRunOptions, JSONToolOutput]):
         return JSONToolOutput(result.content)
 
     @classmethod
-    async def from_client(cls, session: ClientSession) -> list["MCPTool"]:
+    async def from_client(cls, client: MCPClient) -> list["MCPTool"]:
+        read, write = await client.__aenter__()
+        session = await ClientSession(read, write).__aenter__()
+        cls._resources.append((client, session))
+        await session.initialize()
         tools_result = await session.list_tools()
-        return [MCPTool(session, tool) for tool in tools_result.tools]
+        tools = [MCPTool(session, tool) for tool in tools_result.tools]
+
+        return tools
+
+    @classmethod
+    async def cleanup(cls) -> None:
+        for client, session in cls._resources:
+            try:
+                await session.__aexit__(None, None, None)
+                await client.__aexit__(None, None, None)
+            except Exception:
+                pass
 
     async def clone(self) -> Self:
         cloned = await super().clone()

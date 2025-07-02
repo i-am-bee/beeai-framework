@@ -6,7 +6,7 @@ import traceback
 from typing import Any
 
 from dotenv import load_dotenv
-from mcp import ClientSession, StdioServerParameters
+from mcp import StdioServerParameters
 from mcp.client.stdio import stdio_client
 
 from beeai_framework.agents import AgentExecutionConfig
@@ -17,7 +17,7 @@ from beeai_framework.errors import FrameworkError
 from beeai_framework.logger import Logger
 from beeai_framework.memory import TokenMemory
 from beeai_framework.tools import AnyTool
-from beeai_framework.tools.mcp import MCPTool
+from beeai_framework.tools.mcp import MCPClient, MCPTool
 from examples.helpers.io import ConsoleReader
 
 # Load environment variables
@@ -40,7 +40,7 @@ server_params = StdioServerParameters(
 )
 
 
-async def create_agent(session: ClientSession) -> ReActAgent:
+async def create_agent(client: MCPClient) -> ReActAgent:
     """Create and configure the agent with tools and LLM"""
 
     # Other models to try:
@@ -54,7 +54,7 @@ async def create_agent(session: ClientSession) -> ReActAgent:
     )
 
     # Configure tools
-    slacktools = await MCPTool.from_client(session)
+    slacktools = await MCPTool.from_client(client)
     tools: list[AnyTool] = list(filter(lambda tool: tool.name == "slack_post_message", slacktools))
 
     # Create agent with memory and tools
@@ -86,20 +86,18 @@ def observer(emitter: Emitter) -> None:
 async def main() -> None:
     """Main application loop"""
 
-    async with stdio_client(server_params) as (read, write), ClientSession(read, write) as session:
-        await session.initialize()
-        # Create agent
-        agent = await create_agent(session)
+    # Create agent
+    agent = await create_agent(stdio_client(server_params))
 
-        # Main interaction loop with user input
-        for prompt in reader:
-            # Run agent with the prompt
-            response = await agent.run(
-                prompt=prompt,
-                execution=AgentExecutionConfig(max_retries_per_step=3, total_max_retries=10, max_iterations=20),
-            ).observe(observer)
+    # Main interaction loop with user input
+    for prompt in reader:
+        # Run agent with the prompt
+        response = await agent.run(
+            prompt=prompt,
+            execution=AgentExecutionConfig(max_retries_per_step=3, total_max_retries=10, max_iterations=20),
+        ).observe(observer)
 
-            reader.write("Agent 🤖 : ", response.result.text)
+        reader.write("Agent 🤖 : ", response.result.text)
 
 
 if __name__ == "__main__":
