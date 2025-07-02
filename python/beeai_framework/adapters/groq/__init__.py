@@ -13,5 +13,6 @@
 # limitations under the License.
 
 from beeai_framework.adapters.groq.backend.chat import GroqChatModel
+from beeai_framework.adapters.groq.backend.embedding import GroqEmbeddingModel
 
-__all__ = ["GroqChatModel"]
+__all__ = ["GroqChatModel", "GroqEmbeddingModel"]
