@@ -40,7 +40,7 @@ async def slack_tool(client: MCPClient) -> MCPTool:
     return slack[0]
 
 
-async def create_agent(client: MCPClient) -> ToolCallingAgent:
+async def create_agent() -> ToolCallingAgent:
     """Create and configure the agent with tools and LLM"""
 
     # Other models to try:
@@ -53,7 +53,7 @@ async def create_agent(client: MCPClient) -> ToolCallingAgent:
     )
 
     # Configure tools
-    slack = await slack_tool(client)
+    slack = await slack_tool(stdio_client(server_params))
     weather = OpenMeteoTool()
 
     # Create agent with memory and tools and custom system prompt template
@@ -82,7 +82,7 @@ async def main() -> None:
     """Main application loop"""
 
     # Create agent
-    agent = await create_agent(stdio_client(server_params))
+    agent = await create_agent()
 
     # Run agent with the prompt
     response = await agent.run(

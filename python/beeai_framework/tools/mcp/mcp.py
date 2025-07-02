@@ -16,8 +16,11 @@
 import contextlib
 from typing import Any, ClassVar, Self
 
+from anyio.streams.memory import MemoryObjectReceiveStream, MemoryObjectSendStream
+
 try:
     from mcp import ClientSession
+    from mcp.shared.message import SessionMessage
     from mcp.types import CallToolResult
     from mcp.types import Tool as MCPToolInfo
 except ModuleNotFoundError as e:
@@ -38,7 +41,9 @@ from beeai_framework.utils.strings import to_safe_word
 logger = Logger(__name__)
 
 
-MCPClient = contextlib._AsyncGeneratorContextManager[Any, None]
+MCPClient = contextlib._AsyncGeneratorContextManager[
+    tuple[MemoryObjectReceiveStream[SessionMessage | Exception], MemoryObjectSendStream[SessionMessage]], None
+]
 
 
 class MCPTool(Tool[BaseModel, ToolRunOptions, JSONToolOutput]):
@@ -91,13 +96,17 @@ class MCPTool(Tool[BaseModel, ToolRunOptions, JSONToolOutput]):
         return tools
 
     @classmethod
+    async def from_session(cls, session: ClientSession) -> list["MCPTool"]:
+        tools_result = await session.list_tools()
+        return [MCPTool(session, tool) for tool in tools_result.tools]
+
+    @classmethod
     async def cleanup(cls) -> None:
         for client, session in cls._resources:
-            try:
+            with contextlib.suppress(Exception):
                 await session.__aexit__(None, None, None)
+            with contextlib.suppress(Exception):
                 await client.__aexit__(None, None, None)
-            except Exception:
-                pass
 
     async def clone(self) -> Self:
         cloned = await super().clone()

@@ -125,7 +125,7 @@ class TestMCPTool:
         tools_result.tools = [mock_tool_info]
         mock_client_session.list_tools = AsyncMock(return_value=tools_result)  # type: ignore
 
-        tools = await MCPTool.from_client(mock_client_session)
+        tools = await MCPTool.from_session(mock_client_session)
 
         mock_client_session.list_tools.assert_awaited_once()
         assert len(tools) == 1
@@ -164,7 +164,7 @@ class TestAddNumbersTool:
         tools_result.tools = [add_numbers_tool_info]
         mock_client_session.list_tools = AsyncMock(return_value=tools_result)  # type: ignore
 
-        tools = await MCPTool.from_client(mock_client_session)
+        tools = await MCPTool.from_session(mock_client_session)
 
         mock_client_session.list_tools.assert_awaited_once()
         assert len(tools) == 1

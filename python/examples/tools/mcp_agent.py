@@ -17,7 +17,7 @@ from beeai_framework.errors import FrameworkError
 from beeai_framework.logger import Logger
 from beeai_framework.memory import TokenMemory
 from beeai_framework.tools import AnyTool
-from beeai_framework.tools.mcp import MCPClient, MCPTool
+from beeai_framework.tools.mcp import MCPTool
 from examples.helpers.io import ConsoleReader
 
 # Load environment variables
@@ -40,7 +40,7 @@ server_params = StdioServerParameters(
 )
 
 
-async def create_agent(client: MCPClient) -> ReActAgent:
+async def create_agent() -> ReActAgent:
     """Create and configure the agent with tools and LLM"""
 
     # Other models to try:
@@ -54,7 +54,7 @@ async def create_agent(client: MCPClient) -> ReActAgent:
     )
 
     # Configure tools
-    slacktools = await MCPTool.from_client(client)
+    slacktools = await MCPTool.from_client(stdio_client(server_params))
     tools: list[AnyTool] = list(filter(lambda tool: tool.name == "slack_post_message", slacktools))
 
     # Create agent with memory and tools
@@ -87,7 +87,7 @@ async def main() -> None:
     """Main application loop"""
 
     # Create agent
-    agent = await create_agent(stdio_client(server_params))
+    agent = await create_agent()
 
     # Main interaction loop with user input
     for prompt in reader:
