@@ -27,11 +27,7 @@ except ModuleNotFoundError as e:
 logger = Logger(__name__)
 
 
-def get_langchain_embedding(embedding_model: EmbeddingModel) -> LangChainCEmbedding:
-    return LangChainCEmbedding(embedding=embedding_model)
-
-
-class LangChainCEmbedding(Embeddings):
+class LangChainBeeAIEmbeddingModel(Embeddings):
     def __init__(self, embedding: EmbeddingModel, batch_size: int = 1000) -> None:
         self._embedding_model = embedding
         self._batch_size = batch_size
