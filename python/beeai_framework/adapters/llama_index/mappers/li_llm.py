@@ -1,4 +1,3 @@
-import asyncio
 from typing import Any
 
 from pydantic import Field
@@ -6,6 +5,7 @@ from pydantic import Field
 from beeai_framework.backend import UserMessage
 from beeai_framework.backend.chat import ChatModel
 from beeai_framework.backend.types import ChatModelOutput
+from beeai_framework.utils.asynchronous import sync_run_awaitable
 
 try:
     from llama_index.core.base.llms.types import CompletionResponse, CompletionResponseGen, LLMMetadata
@@ -15,21 +15,6 @@ except ModuleNotFoundError as e:
     raise ModuleNotFoundError(
         "Optional module [llama_index] not found.\nRun 'pip install \"beeai-framework[llama_index]\"' to install."
     ) from e
-
-
-def run_in_loop(awaitable: Any) -> Any:
-    try:
-        loop = asyncio.get_running_loop()
-    except RuntimeError:
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
-        return loop.run_until_complete(awaitable)
-
-    # We're inside an already running loop — use `asyncio.run_coroutine_threadsafe`
-    # This works only if called from another thread.
-
-    future = asyncio.run_coroutine_threadsafe(awaitable, loop)
-    return future.result()
 
 
 class LlamaIndexLLM(CustomLLM):
@@ -47,7 +32,7 @@ class LlamaIndexLLM(CustomLLM):
     def complete(self, prompt: str, formatted: bool = False, **kwargs: Any) -> CompletionResponse:
         messages = [UserMessage(prompt)]
         # Formatted argument is neglected as no structure is enforced
-        response: ChatModelOutput = run_in_loop(self.bai_llm.create(messages=messages))
+        response: ChatModelOutput = sync_run_awaitable(self.bai_llm.create(messages=messages))
         completion_response = CompletionResponse(text=response.messages[-1].text)
         return completion_response
 
