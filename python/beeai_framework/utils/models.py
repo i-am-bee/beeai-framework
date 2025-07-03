@@ -16,14 +16,12 @@ from abc import ABC
 from collections.abc import Generator, Sequence
 from contextlib import suppress
 from logging import Logger
-from typing import Any, Literal, Optional, TypeVar, Union
+from typing import Any, Literal, TypeVar, Union, cast
 
 from pydantic import BaseModel, ConfigDict, Field, GetJsonSchemaHandler, RootModel, create_model
 from pydantic.fields import FieldInfo
 from pydantic.json_schema import JsonSchemaValue
 from pydantic_core import CoreSchema, SchemaValidator
-
-from beeai_framework.utils.dicts import remap_key
 
 logger = Logger(__name__)
 
@@ -95,46 +93,28 @@ class JSONSchemaModel(ABC, BaseModel):
         required = set(schema.get("required", []))
 
         def create_field(param_name: str, param: dict[str, Any]) -> tuple[type, Any]:
-            is_optional = param_name not in required
-            target_field = Field(
-                description=param.get("description"),
-                default=None if is_optional else param["const"] if param.get("const") else ...,
-            )
+            raw_type = param.get("type")
+            default = param.get("default", ...)
+            const = param.get("const")
 
-            if "oneOf" in param:
-                logger.debug(
-                    f"{JSONSchemaModel.__name__}: does not support 'oneOf' modifier found in {param_name} attribute."
-                    f" Will use 'anyOf' instead."
-                )
-                return create_field(param_name, remap_key(param, source="oneOf", target="anyOf"))
+            target_type: type | Any = type_mapping.get(cast(str, raw_type), Any)
 
-            if "anyOf" in param:
-                target_types: list[type] = [create_field(f"option_{i}", t)[0] for i, t in enumerate(param["anyOf"])]
-                if len(target_types) == 1:
-                    return create_field(param_name, remap_key(param, source="anyOf", target="type"))
-                else:
-                    return Union[*target_types], target_field  # type: ignore
-            else:
-                target_type: type | Any = type_mapping.get(param.get("type"))  # type: ignore[arg-type]
-                if is_optional:
-                    target_type = Optional[target_type] if target_type else type(None)  # noqa: UP007
+            if const is not None:
+                target_type = Literal[const]
+                default = const
 
-                if isinstance(param.get("const"), str):
-                    target_type = Literal[param["const"]]
-                if not target_type:
-                    logger.debug(
-                        f"{JSONSchemaModel.__name__}: Can't resolve a correct type for '{param_name}' attribute."
-                        f" Using 'Any' as a fallback."
-                    )
-                    target_type = type
+            allows_null = raw_type == "null" or (isinstance(raw_type, list) and "null" in raw_type)
 
-                if target_type is dict:
-                    target_type = cls.create(param_name, param)
+            is_required = param_name in required
 
-            return (
-                target_type,
-                target_field,
-            )
+            if not is_required or allows_null:
+                target_type = target_type | None
+                if default is ...:
+                    default = None
+
+            field = Field(default=default, description=param.get("description"))
+
+            return target_type, field
 
         properties = schema.get("properties", {})
         if not properties:
