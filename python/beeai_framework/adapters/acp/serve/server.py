@@ -56,7 +56,7 @@ AnyAgentLike = TypeVar("AnyAgentLike", bound=AnyAgent, default=AnyAgent)
 class ACPServerMetadata(TypedDict, total=False):
     name: str
     description: str
-    annotations: acp_models.AnyModel
+    annotations: acp_models.Annotations
     documentation: str
     license: str
     programming_language: str

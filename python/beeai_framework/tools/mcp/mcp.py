@@ -13,10 +13,14 @@
 # limitations under the License.
 
 
-from typing import Any, Self
+import contextlib
+from typing import Any, ClassVar, Self
+
+from anyio.streams.memory import MemoryObjectReceiveStream, MemoryObjectSendStream
 
 try:
     from mcp import ClientSession
+    from mcp.shared.message import SessionMessage
     from mcp.types import CallToolResult
     from mcp.types import Tool as MCPToolInfo
 except ModuleNotFoundError as e:
@@ -37,8 +41,15 @@ from beeai_framework.utils.strings import to_safe_word
 logger = Logger(__name__)
 
 
+MCPClient = contextlib._AsyncGeneratorContextManager[
+    tuple[MemoryObjectReceiveStream[SessionMessage | Exception], MemoryObjectSendStream[SessionMessage]], None
+]
+
+
 class MCPTool(Tool[BaseModel, ToolRunOptions, JSONToolOutput]):
     """Tool implementation for Model Context Protocol."""
+
+    _resources: ClassVar[list[tuple[MCPClient, ClientSession]]] = []
 
     def __init__(self, session: ClientSession, tool: MCPToolInfo, **options: int) -> None:
         """Initialize MCPTool with client and tool configuration."""
@@ -74,9 +85,29 @@ class MCPTool(Tool[BaseModel, ToolRunOptions, JSONToolOutput]):
         return JSONToolOutput(result.content)
 
     @classmethod
-    async def from_client(cls, session: ClientSession) -> list["MCPTool"]:
+    async def from_client(cls, client: MCPClient) -> list["MCPTool"]:
+        read, write = await client.__aenter__()
+        session = await ClientSession(read, write).__aenter__()
+        cls._resources.append((client, session))
+        await session.initialize()
+        tools_result = await session.list_tools()
+        tools = [MCPTool(session, tool) for tool in tools_result.tools]
+
+        return tools
+
+    @classmethod
+    async def from_session(cls, session: ClientSession) -> list["MCPTool"]:
         tools_result = await session.list_tools()
         return [MCPTool(session, tool) for tool in tools_result.tools]
+
+    @classmethod
+    async def cleanup(cls) -> None:
+        # TODO count references and close unsused sessions
+        for client, session in cls._resources:
+            with contextlib.suppress(Exception):
+                await session.__aexit__(None, None, None)
+            with contextlib.suppress(Exception):
+                await client.__aexit__(None, None, None)
 
     async def clone(self) -> Self:
         cloned = await super().clone()

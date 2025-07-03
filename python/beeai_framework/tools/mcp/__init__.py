@@ -12,6 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from beeai_framework.tools.mcp.mcp import MCPTool
+from beeai_framework.tools.mcp.mcp import MCPClient, MCPTool
 
-__all__ = ["MCPTool"]
+__all__ = ["MCPClient", "MCPTool"]
