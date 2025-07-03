@@ -102,6 +102,7 @@ class MCPTool(Tool[BaseModel, ToolRunOptions, JSONToolOutput]):
 
     @classmethod
     async def cleanup(cls) -> None:
+        # TODO count references and close unsused sessions
         for client, session in cls._resources:
             with contextlib.suppress(Exception):
                 await session.__aexit__(None, None, None)
