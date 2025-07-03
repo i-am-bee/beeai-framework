@@ -20,5 +20,5 @@ from beeai_framework.backend.types import DocumentWithScore
 
 class DocumentProcessor:
     @abstractmethod
-    def apostprocess_documents(self, documents: list[DocumentWithScore]) -> list[DocumentWithScore]:
+    def postprocess_documents(self, documents: list[DocumentWithScore]) -> list[DocumentWithScore]:
         raise NotImplementedError()

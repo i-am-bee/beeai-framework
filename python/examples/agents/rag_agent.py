@@ -1,21 +1,40 @@
+# Copyright 2025 © BeeAI a Series of LF Projects, LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 import asyncio
+import logging
 import os
 import sys
 import traceback
 
 from beeai_framework.adapters.langchain.mappers.documents import lc_document_to_document
+from beeai_framework.adapters.langchain.mappers.lc_embedding import LangChainBeeAIEmbeddingModel
+from beeai_framework.adapters.langchain.vector_store import LangChainVectorStore
 from beeai_framework.adapters.ollama import OllamaChatModel
 from beeai_framework.adapters.watsonx.backend.embedding import WatsonxEmbeddingModel
 from beeai_framework.agents.rag.agent import RAGAgent, RunInput
 from beeai_framework.backend import UserMessage
 from beeai_framework.backend.vector_store import VectorStore
 from beeai_framework.errors import FrameworkError
+from beeai_framework.logger import Logger
 from beeai_framework.memory import UnconstrainedMemory
 from beeai_framework.retrieval.document_processors.document_processors import DocumentsRerankWithLLM
 
-# LC dependencies
+# LC dependencies - to be swapped with BAI dependencies
 try:
     from langchain_community.document_loaders import UnstructuredMarkdownLoader
+    from langchain_core.vectorstores import InMemoryVectorStore as LCInMemoryVectorStore
     from langchain_text_splitters import RecursiveCharacterTextSplitter
 except ModuleNotFoundError as e:
     raise ModuleNotFoundError(
@@ -25,9 +44,8 @@ except ModuleNotFoundError as e:
 
 from dotenv import load_dotenv
 
-from beeai_framework.retrieval.vector_stores.in_memory_vector_store import InMemoryVectorStore
-
 load_dotenv()  # load environment variables
+logger = Logger("rag-agent", level=logging.DEBUG)
 
 
 POPULATE_VECTOR_DB = True
@@ -36,15 +54,7 @@ INPUT_DOCUMENTS_LOCATION = "docs-mintlify/integrations"
 
 
 async def populate_documents() -> VectorStore:
-    # Load and chunk contents of the blog
-    loader = UnstructuredMarkdownLoader(file_path="python/docs/agents.md")
-    docs = loader.load()
-
-    text_splitter = RecursiveCharacterTextSplitter(chunk_size=2000, chunk_overlap=1000)
-    all_splits = text_splitter.split_documents(docs)
-    documents = [lc_document_to_document(document) for document in all_splits]
-
-    embeddings = WatsonxEmbeddingModel(
+    embedding_model = WatsonxEmbeddingModel(
         model_id="ibm/slate-125m-english-rtrvr-v2",
         project_id=os.getenv("WATSONX_PROJECT_ID"),
         apikey=os.getenv("WATSONX_APIKEY"),
@@ -55,14 +65,25 @@ async def populate_documents() -> VectorStore:
     # Index chunks
     if VECTOR_DB_PATH_4_DUMP and os.path.exists(VECTOR_DB_PATH_4_DUMP):
         print(f"Loading vector store from: {VECTOR_DB_PATH_4_DUMP}")
-        vector_store = InMemoryVectorStore.load(VECTOR_DB_PATH_4_DUMP, embedding=embeddings)
+        lc_embedding = LangChainBeeAIEmbeddingModel(embedding_model)
+        lc_inmemory_vector_store = LCInMemoryVectorStore.load(path=VECTOR_DB_PATH_4_DUMP, embedding=lc_embedding)
+        vector_store = LangChainVectorStore(langchain_vector_store=lc_inmemory_vector_store)
     else:
+        loader = UnstructuredMarkdownLoader(file_path="python/docs/agents.md")
+        docs = loader.load()
+
+        text_splitter = RecursiveCharacterTextSplitter(chunk_size=2000, chunk_overlap=1000)
+        all_splits = text_splitter.split_documents(docs)
+        documents = [lc_document_to_document(document) for document in all_splits]
+        print(f"Loaded {len(documents)} documents")
+
         print("Rebuilding vector store")
-        vector_store = InMemoryVectorStore(embeddings)
-        _ = await vector_store.aadd_documents(documents=documents)
+        vector_store = VectorStore.from_name(name="langchain/InMemoryVectorStore", embedding_model=embedding_model)
+        # vector_store = InMemoryVectorStore(embedding_model)
+        _ = await vector_store.add_documents(documents=documents)
         if VECTOR_DB_PATH_4_DUMP:
             print(f"Dumping vector store to: {VECTOR_DB_PATH_4_DUMP}")
-            vector_store.dump(VECTOR_DB_PATH_4_DUMP)
+            vector_store.vector_store.dump(VECTOR_DB_PATH_4_DUMP)
     return vector_store
 
 

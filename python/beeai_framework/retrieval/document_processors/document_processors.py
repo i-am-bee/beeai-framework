@@ -37,7 +37,7 @@ class DocumentsRerankWithLLM(DocumentProcessor):
         self.llm = llm
         self.reranker = LLMRerank(choice_batch_size=5, top_n=5, llm=LlamaIndexLLM(bai_llm=self.llm))
 
-    async def apostprocess_documents(self, query: str, documents: list[DocumentWithScore]) -> list[DocumentWithScore]:
+    async def postprocess_documents(self, query: str, documents: list[DocumentWithScore]) -> list[DocumentWithScore]:
         li_documents_with_score = [doc_with_score_to_li_doc_with_score(document) for document in documents]
         processed_nodes = await self.reranker.apostprocess_nodes(li_documents_with_score, query_str=query)
         documents_with_score = [li_doc_with_score_to_doc_with_score(node) for node in processed_nodes]

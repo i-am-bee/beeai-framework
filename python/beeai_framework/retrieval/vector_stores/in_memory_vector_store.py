@@ -1,4 +1,3 @@
-
 from __future__ import annotations
 
 from typing import Any
@@ -13,18 +12,17 @@ except ModuleNotFoundError as e:
     ) from e
 
 from beeai_framework.adapters.langchain.mappers.documents import lc_document_to_document
-from beeai_framework.adapters.langchain.mappers.lc_embedding import get_langchain_embedding
-from beeai_framework.adapters.langchain.vector_store import LangChainVectorStore
+from beeai_framework.adapters.langchain.mappers.lc_embedding import LangChainBeeAIEmbeddingModel
 from beeai_framework.backend.embedding import EmbeddingModel
 from beeai_framework.backend.types import DocumentWithScore
 
 
-class InMemoryVectorStore(LangChainVectorStore):
+class InMemoryVectorStore:
     def __init__(self, embedding_model: EmbeddingModel) -> None:
         super().__init__(embedding_model=embedding_model)
-        self.vector_store = LCInMemoryVectorStore(embedding=get_langchain_embedding(self.embedding_model))
+        self.vector_store = LCInMemoryVectorStore(embedding=LangChainBeeAIEmbeddingModel(self.embedding_model))
 
-    async def asearch(self, query: str, k: int = 4, **kwargs: Any) -> list[DocumentWithScore]:
+    async def search(self, query: str, k: int = 4, **kwargs: Any) -> list[DocumentWithScore]:
         if self.vector_store is None:
             raise ValueError("Vector store must be set before searching for documents")
         lc_documents_with_scores: list[
@@ -43,6 +41,6 @@ class InMemoryVectorStore(LangChainVectorStore):
     def load(cls, path: str, embedding: EmbeddingModel) -> InMemoryVectorStore:
         new_vector_store = cls(embedding_model=embedding)
         new_vector_store.vector_store = LCInMemoryVectorStore.load(
-            path=path, embedding=get_langchain_embedding(new_vector_store.embedding_model)
+            path=path, embedding=LangChainBeeAIEmbeddingModel(new_vector_store.embedding_model)
         )
         return new_vector_store

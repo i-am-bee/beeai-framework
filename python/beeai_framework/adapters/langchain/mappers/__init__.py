@@ -12,6 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from beeai_framework.adapters.langchain.mappers.lc_embedding import LangChainCEmbedding
+from beeai_framework.adapters.langchain.mappers.lc_embedding import LangChainBeeAIEmbeddingModel
 
-__all__ = ["LangChainCEmbedding"]
+__all__ = ["LangChainBeeAIEmbeddingModel"]
