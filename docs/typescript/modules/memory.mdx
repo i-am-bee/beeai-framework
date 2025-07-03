@@ -10,7 +10,7 @@ Memory in the context of an agent refers to the system's capability to store, re
 
 ### Capabilities showcase
 
-{/* <!-- embedme typescript/examples/memory/base.ts --> */}
+{/* <!-- embedme typescript/examples/memory/base.ts#L6-L9999 --> */}
 
 ```ts
 import { UnconstrainedMemory } from "beeai-framework/memory/unconstrainedMemory";
@@ -28,13 +28,14 @@ console.info(memory.isEmpty()); // false
 console.info(memory.messages); // prints all saved messages
 console.info(memory.asReadOnly()); // returns a NEW read only instance
 memory.reset(); // removes all messages
+
 ```
 
 _Source: [typescript/examples/memory/base.ts](https://github.com/i-am-bee/beeai-framework/blob/main/typescript/examples/memory/base.ts)_
 
 ### Usage with LLMs
 
-{/* <!-- embedme typescript/examples/memory/llmMemory.ts --> */}
+{/* <!-- embedme typescript/examples/memory/llmMemory.ts#L6-L9999 --> */}
 
 ```ts
 import { UnconstrainedMemory } from "beeai-framework/memory/unconstrainedMemory";
@@ -59,6 +60,7 @@ console.log(`Conversation history`);
 for (const message of memory) {
   console.log(`${message.role}: ${message.text}`);
 }
+
 ```
 
 _Source: [typescript/examples/memory/llmMemory.ts](https://github.com/i-am-bee/beeai-framework/blob/main/typescript/examples/memory/llmMemory.ts)_
@@ -69,7 +71,7 @@ Memory for non-chat LLMs works exactly the same way.
 
 ### Usage with agents
 
-{/* <!-- embedme typescript/examples/memory/agentMemory.ts --> */}
+{/* <!-- embedme typescript/examples/memory/agentMemory.ts#L6-L9999 --> */}
 
 ```ts
 import { UnconstrainedMemory } from "beeai-framework/memory/unconstrainedMemory";
@@ -90,6 +92,7 @@ console.info(`User: ${userMessage.text}`); // User: Hello world!
 
 const agentMessage = agent.memory.messages[1];
 console.info(`Agent: ${agentMessage.text}`); // Agent: Hello! It's nice to chat with you.
+
 ```
 
 _Source: [typescript/examples/memory/agentMemory.ts](https://github.com/i-am-bee/beeai-framework/blob/main/typescript/examples/memory/agentMemory.ts)_
@@ -114,7 +117,7 @@ The framework provides multiple out-of-the-box memory implementations.
 
 Unlimited in size.
 
-{/* <!-- embedme typescript/examples/memory/unconstrainedMemory.ts --> */}
+{/* <!-- embedme typescript/examples/memory/unconstrainedMemory.ts#L6-L9999 --> */}
 
 ```ts
 import { UnconstrainedMemory } from "beeai-framework/memory/unconstrainedMemory";
@@ -131,6 +134,7 @@ await memory.add(
 console.info(memory.isEmpty()); // false
 console.log(memory.messages.length); // 1
 console.log(memory.messages);
+
 ```
 
 _Source: [typescript/examples/memory/unconstrainedMemory.ts](https://github.com/i-am-bee/beeai-framework/blob/main/typescript/examples/memory/unconstrainedMemory.ts)_
@@ -139,7 +143,7 @@ _Source: [typescript/examples/memory/unconstrainedMemory.ts](https://github.com/
 
 Keeps last `k` entries in the memory. The oldest ones are deleted (unless specified otherwise).
 
-{/* <!-- embedme typescript/examples/memory/slidingMemory.ts --> */}
+{/* <!-- embedme typescript/examples/memory/slidingMemory.ts#L6-L9999 --> */}
 
 ```ts
 import { SlidingMemory } from "beeai-framework/memory/slidingMemory";
@@ -163,6 +167,7 @@ await memory.add(Message.of({ role: "assistant", text: "French" })); // removes 
 console.info(memory.isEmpty()); // false
 console.log(memory.messages.length); // 3
 console.log(memory.messages);
+
 ```
 
 _Source: [typescript/examples/memory/slidingMemory.ts](https://github.com/i-am-bee/beeai-framework/blob/main/typescript/examples/memory/slidingMemory.ts)_
@@ -172,7 +177,7 @@ _Source: [typescript/examples/memory/slidingMemory.ts](https://github.com/i-am-b
 Ensures that the token sum of all messages is below the given threshold.
 If overflow occurs, the oldest message will be removed.
 
-{/* <!-- embedme typescript/examples/memory/tokenMemory.ts --> */}
+{/* <!-- embedme typescript/examples/memory/tokenMemory.ts#L6-L9999 --> */}
 
 ```ts
 import { TokenMemory } from "beeai-framework/memory/tokenMemory";
@@ -198,6 +203,7 @@ console.info(memory.isDirty); // is the consumed token count estimated or retrie
 console.log(memory.tokensUsed); // number of used tokens
 console.log(memory.stats()); // prints statistics
 await memory.sync(); // calculates real token usage for all messages marked as "dirty"
+
 ```
 
 _Source: [typescript/examples/memory/tokenMemory.ts](https://github.com/i-am-bee/beeai-framework/blob/main/typescript/examples/memory/tokenMemory.ts)_
@@ -206,7 +212,7 @@ _Source: [typescript/examples/memory/tokenMemory.ts](https://github.com/i-am-bee
 
 Only a single summarization of the conversation is preserved. Summarization is updated with every new message.
 
-{/* <!-- embedme typescript/examples/memory/summarizeMemory.ts --> */}
+{/* <!-- embedme typescript/examples/memory/summarizeMemory.ts#L6-L9999 --> */}
 
 ```ts
 import { Message } from "beeai-framework/backend/message";
@@ -227,6 +233,7 @@ await memory.addMany([
 console.info(memory.isEmpty()); // false
 console.log(memory.messages.length); // 1
 console.log(memory.messages[0].text); // The capital city of France is Paris, ...
+
 ```
 
 _Source: [typescript/examples/memory/summarizeMemory.ts](https://github.com/i-am-bee/beeai-framework/blob/main/typescript/examples/memory/summarizeMemory.ts)_
@@ -235,7 +242,7 @@ _Source: [typescript/examples/memory/summarizeMemory.ts](https://github.com/i-am
 
 To create your memory implementation, you must implement the `BaseMemory` class.
 
-{/* <!-- embedme typescript/examples/memory/custom.ts --> */}
+{/* <!-- embedme typescript/examples/memory/custom.ts#L6-L9999 --> */}
 
 ```ts
 import { BaseMemory } from "beeai-framework/memory/base";
@@ -267,6 +274,7 @@ export class MyMemory extends BaseMemory {
     throw new NotImplementedError("Method not implemented.");
   }
 }
+
 ```
 
 _Source: [typescript/examples/memory/custom.ts](https://github.com/i-am-bee/beeai-framework/blob/main/typescript/examples/memory/custom.ts)_

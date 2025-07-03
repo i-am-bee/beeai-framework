@@ -1,3 +1,8 @@
+/**
+ * Copyright 2025 © BeeAI a Series of LF Projects, LLC
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
 import { Message } from "beeai-framework/backend/message";
 import { SummarizeMemory } from "beeai-framework/memory/summarizeMemory";
 import { OllamaChatModel } from "beeai-framework/adapters/ollama/backend/chat";

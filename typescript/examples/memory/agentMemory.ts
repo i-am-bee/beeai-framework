@@ -1,3 +1,8 @@
+/**
+ * Copyright 2025 © BeeAI a Series of LF Projects, LLC
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
 import { UnconstrainedMemory } from "beeai-framework/memory/unconstrainedMemory";
 import { ReActAgent } from "beeai-framework/agents/react/agent";
 import { OllamaChatModel } from "beeai-framework/adapters/ollama/backend/chat";

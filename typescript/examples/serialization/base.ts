@@ -1,3 +1,8 @@
+/**
+ * Copyright 2025 © BeeAI a Series of LF Projects, LLC
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
 import { Serializer } from "beeai-framework/serializer/serializer";
 
 const original = new Date("2024-01-01T00:00:00.000Z");

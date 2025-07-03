@@ -1,3 +1,8 @@
+/**
+ * Copyright 2025 © BeeAI a Series of LF Projects, LLC
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
 import { BaseMemory } from "beeai-framework/memory/base";
 import { Message } from "beeai-framework/backend/message";
 import { NotImplementedError } from "beeai-framework/errors";

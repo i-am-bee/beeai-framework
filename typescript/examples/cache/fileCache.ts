@@ -1,3 +1,8 @@
+/**
+ * Copyright 2025 © BeeAI a Series of LF Projects, LLC
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
 import { FileCache } from "beeai-framework/cache/fileCache";
 import * as os from "node:os";
 

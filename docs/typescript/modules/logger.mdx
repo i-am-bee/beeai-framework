@@ -10,7 +10,7 @@ In the BeeAI Framework, the [Logger](https://github.com/i-am-bee/beeai-framework
 
 ## Basic Usage
 
-{/* <!-- embedme typescript/examples/logger/base.ts --> */}
+{/* <!-- embedme typescript/examples/logger/base.ts#L6-L9999 --> */}
 
 ```ts
 import { Logger, LoggerLevel } from "beeai-framework/logger/logger";
@@ -31,6 +31,7 @@ logger.info("Info!");
 logger.warn("Warning!");
 logger.error("Error!");
 logger.fatal("Fatal!");
+
 ```
 
 _Source: [typescript/examples/logger/base.ts](https://github.com/i-am-bee/beeai-framework/blob/main/typescript/examples/logger/base.ts)_
@@ -39,7 +40,7 @@ _Source: [typescript/examples/logger/base.ts](https://github.com/i-am-bee/beeai-
 
 The [Logger](https://github.com/i-am-bee/beeai-framework/blob/main/typescript/src/logger/logger.ts) seamlessly integrates with agents in the framework. Below is an example that demonstrates how logging can be used in conjunction with agents and event emitters.
 
-{/* <!-- embedme typescript/examples/logger/agent.ts --> */}
+{/* <!-- embedme typescript/examples/logger/agent.ts#L6-L9999 --> */}
 
 ```ts
 import { ReActAgent } from "beeai-framework/agents/react/agent";
@@ -71,6 +72,7 @@ const agent = new ReActAgent({
 
 const response = await agent.run({ prompt: "Hello!" });
 logger.info(response.result.text);
+
 ```
 
 _Source: [typescript/examples/logger/agent.ts](https://github.com/i-am-bee/beeai-framework/blob/main/typescript/examples/logger/agent.ts)_
@@ -79,7 +81,7 @@ _Source: [typescript/examples/logger/agent.ts](https://github.com/i-am-bee/beeai
 
 If you need to integrate your own `pino` instance with the BeeAI Framework Logger, you can do so easily. Below is an example that demonstrates how to create a pino logger and use it with the framework’s [Logger](https://github.com/i-am-bee/beeai-framework/blob/main/typescript/src/logger/logger.ts).
 
-{/* <!-- embedme typescript/examples/logger/pino.ts --> */}
+{/* <!-- embedme typescript/examples/logger/pino.ts#L6-L9999 --> */}
 
 ```ts
 import { Logger } from "beeai-framework/logger/logger";
@@ -98,6 +100,7 @@ const frameworkLogger = new Logger(
   },
   customLogger, // Pass the custom pino instance
 );
+
 ```
 
 _Source: [typescript/examples/logger/pino.ts](https://github.com/i-am-bee/beeai-framework/blob/main/typescript/examples/logger/pino.ts)_
