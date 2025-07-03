@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import contextlib
 from collections.abc import Sequence
 from typing import Any, Self
 
@@ -27,6 +28,7 @@ from beeai_framework.agents.experimental import RequirementAgent
 from beeai_framework.agents.react import ReActAgent
 from beeai_framework.agents.tool_calling import ToolCallingAgent
 from beeai_framework.logger import Logger
+from beeai_framework.serve.errors import FactoryAlreadyRegisteredError
 from beeai_framework.serve.server import Server
 from beeai_framework.utils import ModelLike
 from beeai_framework.utils.models import to_model
@@ -97,10 +99,17 @@ class WatsonxOrchestrateServer(
         raise NotImplementedError("register_many is not implemented for WatsonxOrchestrateServer")
 
 
-WatsonxOrchestrateServer.register_factory(ReActAgent, lambda agent: factories.WatsonxOrchestrateServerReActAgent(agent))
-WatsonxOrchestrateServer.register_factory(
-    ToolCallingAgent, lambda agent: factories.WatsonxOrchestrateServerToolCallingAgent(agent)
-)
-WatsonxOrchestrateServer.register_factory(
-    RequirementAgent, lambda agent: factories.WatsonxOrchestrateServerRequirementAgent(agent)
-)
+with contextlib.suppress(FactoryAlreadyRegisteredError):
+    WatsonxOrchestrateServer.register_factory(
+        ReActAgent, lambda agent: factories.WatsonxOrchestrateServerReActAgent(agent)
+    )
+
+with contextlib.suppress(FactoryAlreadyRegisteredError):
+    WatsonxOrchestrateServer.register_factory(
+        ToolCallingAgent, lambda agent: factories.WatsonxOrchestrateServerToolCallingAgent(agent)
+    )
+
+with contextlib.suppress(FactoryAlreadyRegisteredError):
+    WatsonxOrchestrateServer.register_factory(
+        RequirementAgent, lambda agent: factories.WatsonxOrchestrateServerRequirementAgent(agent)
+    )

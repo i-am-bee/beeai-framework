@@ -20,7 +20,7 @@ from commitizen.cz.conventional_commits import ConventionalCommitsCz  # type: ig
 
 __all__ = ["MonorepoCommitsCz"]
 
-from commitizen.defaults import Questions
+from commitizen.question import CzQuestion
 
 
 class MonorepoCommitsCz(ConventionalCommitsCz):
@@ -43,10 +43,10 @@ class MonorepoCommitsCz(ConventionalCommitsCz):
         parent_hook = super().changelog_message_builder_hook
         return parent_hook(parsed_message, commit) if parent_hook else parsed_message
 
-    def questions(self) -> Questions:
+    def questions(self) -> list[CzQuestion]:
         questions = super().questions()
         for index, question in enumerate(questions):
-            if question["name"] == "prefix":
+            if question["type"] == "list" and question["name"] == "prefix":
                 question["choices"].append({"value": "chore", "name": "chore: other uncategorized changes"})
 
             if question["name"] == "scope":

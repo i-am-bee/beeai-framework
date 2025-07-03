@@ -62,7 +62,7 @@ class BaseA2AAgentExecutor(a2a_agent_execution.AgentExecutor):
         updater = a2a_server_tasks.TaskUpdater(event_queue, context.task_id, context.context_id)  # type: ignore[arg-type]
         if not context.current_task:
             context.current_task = a2a_utils.new_task(context.message)
-            updater.submit()
+            await updater.submit()
         assert context.current_task is not None
 
         self._agent.memory.reset()
@@ -70,11 +70,11 @@ class BaseA2AAgentExecutor(a2a_agent_execution.AgentExecutor):
             [convert_a2a_to_framework_message(message) for message in context.current_task.history or []]
         )
 
-        updater.start_work()
+        await updater.start_work()
         try:
             response = await self._agent.run(signal=self._abort_controller.signal)
 
-            updater.complete(
+            await updater.complete(
                 a2a_utils.new_agent_text_message(
                     response.result.text,
                     context.context_id,
@@ -83,7 +83,7 @@ class BaseA2AAgentExecutor(a2a_agent_execution.AgentExecutor):
             )
 
         except Exception as e:
-            updater.failed(
+            await updater.failed(
                 message=a2a_utils.new_agent_text_message(str(e)),
             )
 
@@ -109,7 +109,7 @@ class TollCallingAgentExecutor(BaseA2AAgentExecutor):
         updater = a2a_server_tasks.TaskUpdater(event_queue, context.task_id, context.context_id)  # type: ignore[arg-type]
         if not context.current_task:
             context.current_task = a2a_utils.new_task(context.message)
-            updater.submit()
+            await updater.submit()
         assert context.current_task is not None
 
         self._agent.memory.reset()
@@ -121,7 +121,7 @@ class TollCallingAgentExecutor(BaseA2AAgentExecutor):
             ]
         )
 
-        updater.start_work()
+        await updater.start_work()
 
         last_msg: AnyMessage | None = None
         try:
@@ -132,7 +132,7 @@ class TollCallingAgentExecutor(BaseA2AAgentExecutor):
 
                 cur_index = find_index(messages, lambda msg: msg is last_msg, fallback=-1, reverse_traversal=True)  # noqa: B023
                 for message in messages[cur_index + 1 :]:
-                    updater.update_status(
+                    await updater.update_status(
                         a2a_types.TaskState.working,
                         message=a2a_utils.new_agent_parts_message(
                             parts=[
@@ -144,7 +144,7 @@ class TollCallingAgentExecutor(BaseA2AAgentExecutor):
                     last_msg = message
 
                 if isinstance(data, ToolCallingAgentSuccessEvent) and data.state.result is not None:
-                    updater.complete(
+                    await updater.complete(
                         a2a_utils.new_agent_text_message(
                             data.state.result.text,
                             context.context_id,
@@ -152,7 +152,7 @@ class TollCallingAgentExecutor(BaseA2AAgentExecutor):
                         )
                     )
                 if isinstance(data, RequirementAgentSuccessEvent) and data.state.answer is not None:
-                    updater.complete(
+                    await updater.complete(
                         a2a_utils.new_agent_text_message(
                             data.state.answer.text,
                             context.context_id,
@@ -161,6 +161,6 @@ class TollCallingAgentExecutor(BaseA2AAgentExecutor):
                     )
 
         except Exception as e:
-            updater.failed(
+            await updater.failed(
                 message=a2a_utils.new_agent_text_message(str(e)),
             )

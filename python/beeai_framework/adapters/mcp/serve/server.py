@@ -11,12 +11,13 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
+import contextlib
 from collections.abc import Callable, Coroutine
 from typing import Any, Literal
 
 from pydantic import BaseModel, Field
 
+from beeai_framework.serve.errors import FactoryAlreadyRegisteredError
 from beeai_framework.tools.tool import AnyTool, Tool
 from beeai_framework.tools.types import ToolOutput
 from beeai_framework.utils.funcs import identity
@@ -109,6 +110,11 @@ def _tool_factory(
     return run
 
 
-MCPServer.register_factory(Tool, _tool_factory)
-MCPServer.register_factory(mcp_resources.Resource, identity)
-MCPServer.register_factory(mcp_prompts.Prompt, identity)
+with contextlib.suppress(FactoryAlreadyRegisteredError):
+    MCPServer.register_factory(Tool, _tool_factory)
+
+with contextlib.suppress(FactoryAlreadyRegisteredError):
+    MCPServer.register_factory(mcp_resources.Resource, identity)
+
+with contextlib.suppress(FactoryAlreadyRegisteredError):
+    MCPServer.register_factory(mcp_prompts.Prompt, identity)
