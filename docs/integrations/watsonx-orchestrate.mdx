@@ -1,0 +1,122 @@
+---
+title: "IBM watsonx Orchestrate"
+icon: "server"
+---
+
+IBM watsonx Orchestrate is IBM’s AI-powered automation platform designed to streamline and automate workflows across diverse applications. By leveraging artificial intelligence and pre-built task modules, it empowers users to design, manage, and monitor end-to-end business processes through natural language interactions. As part of the IBM Watsonx suite, IBM watsonx Orchestrate makes automation accessible to both technical and non-technical users, helping organizations operationalize AI in their daily operations.
+
+---
+
+## Prerequisites
+
+Before integrating IBM watsonx Orchestrate with the BeeAI Framework, ensure you have the following:
+
+- An active **[IBM watsonx Orchestrate](https://www.ibm.com/products/watsonx-orchestrate)** account.
+- The **BeeAI Framework** installed:
+	```sh
+    pip install beeai-framework
+	```
+- The **IBM watsonx Orchestrate extension** for BeeAI:
+	```sh
+    pip install 'beeai-framework[watsonx-orchestrate]'
+	```
+
+---
+
+## Consuming agent from IBM watsonx Orchestrate (Client)
+
+The `WatsonxOrchestrateAgent` class enables you to connect to any native agent hosted on IBM watsonx Orchestrate. This allows your BeeAI-powered applications to interact with IBM watsonx Orchestrate agents programmatically.
+
+<CodeGroup>
+
+	{/* <!-- embedme python/examples/agents/providers/watsonx_orchestrate.py --> */}
+
+	```py Python
+	import asyncio
+	import sys
+	import traceback
+	
+	from beeai_framework.adapters.watsonx_orchestrate.agents import WatsonxOrchestrateAgent
+	from beeai_framework.errors import FrameworkError
+	from examples.helpers.io import ConsoleReader
+	
+	
+	async def main() -> None:
+	    reader = ConsoleReader()
+	
+	    agent = WatsonxOrchestrateAgent(
+	        # To find your instance URL, visit IBM watsonx Orchestrate -> Settings -> API Details
+	        # Example: https://api.eu-de.watson-orchestrate.cloud.ibm.com/instances/aaaaaa-bbbb-cccc-dddd-eeeeeeeee
+	        instance_url="YOUR_INSTANCE_URL",
+	        # To find agent's ID, visit IBM watsonx Orchestrate -> Select any existing agent -> copy the last part of the URL ()
+	        # Example: 1xfa8c27-6d0f-4962-9eb5-4e1c0b8073d8
+	        agent_id="YOUR_AGENT_ID",
+	        # Auth type, typically IAM (hosted version) or JWT for custom deployments
+	        auth_type="iam",
+	        # To find your API Key, visit IBM watsonx Orchestrate -> Settings -> API Details -> Generate API Key
+	        api_key="YOUR_API_KEY",
+	    )
+	    for prompt in reader:
+	        response = await agent.run(prompt)
+	        reader.write("Agent 🤖 : ", response.result.text)
+	
+	
+	if __name__ == "__main__":
+	    try:
+	        asyncio.run(main())
+	    except FrameworkError as e:
+	        traceback.print_exc()
+	        sys.exit(e.explain())
+	
+	```
+
+	```ts TypeScript
+	// COMING SOON
+	```
+</CodeGroup>
+
+---
+
+## Consuming BeeAI Agents in IBM watsonx Orchestrate (Server)
+
+The `WatsonxOrchestrateServer` allows you to expose BeeAI agents as HTTP server with a chat completion endpoint compatible with IBM watsonx Orchestrate.
+This enables you to register and use your local BeeAI agents as external agents within IBM watsonx Orchestrate.
+
+<CodeGroup>
+
+	{/* <!-- embedme python/examples/serve/watsonx_orchestrate.py --> */}
+
+	```py Python
+	from beeai_framework.adapters.watsonx_orchestrate import WatsonxOrchestrateServer, WatsonxOrchestrateServerConfig
+	from beeai_framework.agents.experimental import RequirementAgent
+	from beeai_framework.backend import ChatModel
+	from beeai_framework.memory import UnconstrainedMemory
+	from beeai_framework.tools.weather import OpenMeteoTool
+	
+	
+	def main() -> None:
+	    llm = ChatModel.from_name("ollama:granite3.3:8b")
+	    agent = RequirementAgent(llm=llm, tools=[OpenMeteoTool()], memory=UnconstrainedMemory(), role="a weather agent")
+	
+	    config = WatsonxOrchestrateServerConfig(port=8080, host="0.0.0.0", api_key=None)  # optional
+	    server = WatsonxOrchestrateServer(config=config)
+	    server.register(agent)
+	
+	    # start an API with /chat/completions endpoint which is compatible with Watsonx Orchestrate
+	    server.serve()
+	
+	
+	if __name__ == "__main__":
+	    main()
+	
+	```
+
+	```ts TypeScript
+	// COMING SOON
+	```
+</CodeGroup>
+
+<Note>
+	You can't consume local agents in the hosted version. To use your agents in IBM watsonx Orchestrate, first deploy the server, then register it in the IBM watsonx Orchestrate UI or CLI.
+</Note>
+

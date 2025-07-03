@@ -1,3 +1,30 @@
+## python_v0.1.29 (2025-07-02)
+
+### Bug Fixes
+
+- acp-sdk import
+
+## python_v0.1.28 (2025-07-02)
+
+### Bug Fixes
+
+- **adapters**: handle result of the RequirementAgent
+
+## python_v0.1.27 (2025-07-01)
+
+### Bug Fixes
+
+- put back accidental changes
+- resolve CI failures for PR
+- **adapters**: agent's return type in the A2AServer
+- **adapters**: agent's return type in the ACPServer
+- **agents**: add 'result' field to RequirementAgent's output for backward compatibility
+
+### Features
+
+- **adapters**: add IBM watsonx Orchestrate integration (#897)
+- add support for oneOf/anyOf modifiers in the JSONSchemaModel (#896)
+
 ## python_v0.1.26 (2025-06-26)
 
 ### Bug Fixes

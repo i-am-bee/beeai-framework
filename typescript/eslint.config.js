@@ -127,7 +127,6 @@ export default tseslint.config(
       "no-restricted-imports": "off",
     },
   },
-  // @ts-expect-error
   ...markdown.configs.processor,
   prettierConfig,
   {

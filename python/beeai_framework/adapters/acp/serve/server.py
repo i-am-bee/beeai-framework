@@ -26,7 +26,6 @@ try:
     import acp_sdk.server.context as acp_context
     import acp_sdk.server.server as acp_server
     import acp_sdk.server.types as acp_types
-    from acp_sdk import AnyModel, Author, Capability, Contributor, Dependency, Link
 except ModuleNotFoundError as e:
     raise ModuleNotFoundError(
         "Optional module [acp] not found.\nRun 'pip install \"beeai-framework[acp]\"' to install."
@@ -57,21 +56,21 @@ AnyAgentLike = TypeVar("AnyAgentLike", bound=AnyAgent, default=AnyAgent)
 class ACPServerMetadata(TypedDict, total=False):
     name: str
     description: str
-    annotations: AnyModel
+    annotations: acp_models.AnyModel
     documentation: str
     license: str
     programming_language: str
     natural_languages: list[str]
     framework: str
-    capabilities: list[Capability]
+    capabilities: list[acp_models.Capability]
     domains: list[str]
     tags: list[str]
     created_at: datetime
     updated_at: datetime
-    author: Author
-    contributors: list[Contributor]
-    links: list[Link]
-    dependencies: list[Dependency]
+    author: acp_models.Author
+    contributors: list[acp_models.Contributor]
+    links: list[acp_models.Link]
+    dependencies: list[acp_models.Dependency]
     recommended_models: list[str]
     extra: dict[str, Any]
 
@@ -209,7 +208,7 @@ def _requirement_agent_factory(agent: RequirementAgent, *, metadata: ACPServerMe
                 last_msg = message
 
             if isinstance(data, RequirementAgentSuccessEvent) and data.state.answer is not None:
-                yield acp_models.MessagePart(content=data.state.result.text, role="assistant")  # type: ignore[call-arg]
+                yield acp_models.MessagePart(content=data.state.answer.text, role="assistant")  # type: ignore[call-arg]
 
     metadata = metadata or {}
     return ACPServerAgent(

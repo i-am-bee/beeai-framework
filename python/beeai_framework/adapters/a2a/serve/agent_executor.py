@@ -17,6 +17,7 @@ from typing_extensions import TypeVar, override
 
 from beeai_framework.adapters.a2a.agents._utils import convert_a2a_to_framework_message
 from beeai_framework.agents.errors import AgentError
+from beeai_framework.agents.experimental.events import RequirementAgentSuccessEvent
 from beeai_framework.utils.cancellation import AbortController
 
 try:
@@ -146,6 +147,14 @@ class TollCallingAgentExecutor(BaseA2AAgentExecutor):
                     updater.complete(
                         a2a_utils.new_agent_text_message(
                             data.state.result.text,
+                            context.context_id,
+                            context.task_id,
+                        )
+                    )
+                if isinstance(data, RequirementAgentSuccessEvent) and data.state.answer is not None:
+                    updater.complete(
+                        a2a_utils.new_agent_text_message(
+                            data.state.answer.text,
                             context.context_id,
                             context.task_id,
                         )
