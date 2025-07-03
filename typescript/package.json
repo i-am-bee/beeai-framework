@@ -47,7 +47,6 @@
     }
   },
   "lint-staged": {
-    "{src,tests,scripts}/**/*": "yarn copyright",
     "*": "prettier --ignore-unknown --write",
     "*.{ts,js}": "eslint --fix"
   },
@@ -165,12 +164,10 @@
     "test:all": "yarn test:unit && yarn test:e2e && yarn test:examples",
     "test:examples": "vitest --config ./examples/vitest.examples.config.ts run tests/examples",
     "test:examples:watch": "vitest --config ./examples/vitest.examples.config.ts watch tests/examples",
-    "copyright": "./scripts/copyright.sh",
-    "copyright:check": "TYPE=check ./scripts/copyright.sh",
     "release": "release-it",
     "_ensure_env": "cp -n .env.template .env || true",
     "git:commit-msg": "yarn commitlint --edit --",
-    "git:pre-commit": "yarn copyright:check && yarn lint && yarn format && yarn ts:check && yarn run test:unit"
+    "git:pre-commit": "yarn lint && yarn format && yarn ts:check && yarn run test:unit"
   },
   "dependencies": {
     "@ai-sdk/xai": "^1.2.16",

@@ -1,0 +1,10 @@
+name: 'Setup environment'
+description: 'Set up mise tools (Python, Node.js, ...) and install project dependencies'
+
+runs:
+  using: "composite"
+  steps:
+    - uses: jdx/mise-action@5083fe46898c414b2475087cc79da59e7da859e8
+      with:
+        version: 2025.2.6
+
