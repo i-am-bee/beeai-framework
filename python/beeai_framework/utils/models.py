@@ -16,7 +16,7 @@ from abc import ABC
 from collections.abc import Generator, Sequence
 from contextlib import suppress
 from logging import Logger
-from typing import Any, Literal, TypeVar, Union, cast
+from typing import Any, Literal, TypeVar, Union
 
 from pydantic import BaseModel, ConfigDict, Field, GetJsonSchemaHandler, RootModel, create_model
 from pydantic.fields import FieldInfo
@@ -89,28 +89,63 @@ class JSONSchemaModel(ABC, BaseModel):
             "null": None,
         }
 
-        fields: dict[str, tuple[type, Any]] = {}
+        fields: dict[str, tuple[type, FieldInfo]] = {}
         required = set(schema.get("required", []))
 
         def create_field(param_name: str, param: dict[str, Any]) -> tuple[type, Any]:
             raw_type = param.get("type")
-            default = param.get("default", ...)
+            any_of = param.get("anyOf")
             const = param.get("const")
+            default = param.get("default", ...)
+            enum = param.get("enum")
+            target_type: Any
 
-            target_type: type | Any = type_mapping.get(cast(str, raw_type), Any)
-
+            # Determine base type(s)
             if const is not None:
                 target_type = Literal[const]
                 default = const
 
-            allows_null = raw_type == "null" or (isinstance(raw_type, list) and "null" in raw_type)
+            elif any_of:
+                sub_types = []
+                for variant in any_of:
+                    variant_type = type_mapping.get(variant.get("type"), Any)
+                    if "enum" in variant:
+                        variant_type = Literal[*variant["enum"]]
+                    sub_types.append(variant_type)
+                if len(sub_types) == 1:
+                    target_type = sub_types[0]
+                else:
+                    target_type = sub_types[0]
+                    for t in sub_types[1:]:
+                        target_type |= t
+
+            elif enum is not None and isinstance(enum, list):
+                target_type = Literal[tuple(enum)]
+
+            elif isinstance(raw_type, list):
+                sub_types = [type_mapping.get(t, Any) for t in raw_type]
+                if len(sub_types) == 1:
+                    target_type = sub_types[0]
+                else:
+                    target_type = sub_types[0]
+                    for t in sub_types[1:]:
+                        target_type |= t
+            else:
+                target_type = type_mapping.get(str(raw_type), Any)
 
             is_required = param_name in required
+            explicitly_nullable = (
+                raw_type == "null"
+                or (isinstance(raw_type, list) and "null" in raw_type)
+                or (any_of and any(t.get("type") == "null" for t in any_of))
+            )
 
-            if not is_required or allows_null:
-                target_type = target_type | None
-                if default is ...:
-                    default = None
+            if not is_required and default is ...:
+                default = None
+                target_type |= type(None)
+
+            elif explicitly_nullable:
+                target_type |= type(None)
 
             field = Field(default=default, description=param.get("description"))
 
@@ -124,9 +159,11 @@ class JSONSchemaModel(ABC, BaseModel):
             fields[param_name] = create_field(param_name, param)
 
         model: type[JSONSchemaModel] = create_model(  # type: ignore
-            schema_name, **fields, __base__=cls
+            schema_name, __base__=cls, **fields
         )
+
         model._custom_json_schema = schema
+
         return model
 
 
