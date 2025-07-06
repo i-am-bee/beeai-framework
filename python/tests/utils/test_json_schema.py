@@ -80,3 +80,41 @@ def test_json_schema_model(test_json_schema: dict[str, list[str] | str | Any]) -
         "name": "aaa",
         "roles": None,
     }
+
+
+@pytest.mark.unit
+def test_preserve_default_type_not_optional() -> None:
+    """
+    Regression test for incorrect annotation of defaulted fields.
+
+    Ensures that fields with a default value (but no explicit nullability)
+    are treated as non-optional, with the correct type and preserved metadata.
+    """
+    json_schema = {
+        "title": "great_toolArguments",
+        "type": "object",
+        "properties": {
+            "an_arg": {
+                "type": "string",
+                "default": "default string",
+                "description": "great description",
+                "title": "An Arg",
+            }
+        },
+        "required": [],
+    }
+
+    model = JSONSchemaModel.create("great_toolArguments", json_schema)
+    field_info = model.model_fields["an_arg"]
+
+    # should not wrap type in Optional
+    assert field_info.annotation is str, "Expected annotation to be `str`, not `Optional[str]`"
+
+    # should preserve the default value
+    assert field_info.default == "default string", "Expected default value to be 'default string'"
+
+    # should preserve the description
+    assert field_info.description == "great description", "Expected description to be 'great description'"
+
+    # should not mark the field as required
+    assert not field_info.is_required(), "Expected field to be optional due to default value"
