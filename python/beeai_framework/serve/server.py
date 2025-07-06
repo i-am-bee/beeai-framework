@@ -19,6 +19,8 @@ from typing import ClassVar, Generic, Self
 from pydantic import BaseModel
 from typing_extensions import TypeVar
 
+from beeai_framework.serve.errors import FactoryAlreadyRegisteredError
+
 TInput = TypeVar("TInput", bound=object, default=object, contravariant=True)
 TInternal = TypeVar("TInternal", bound=object, default=object)
 TConfig = TypeVar("TConfig", bound=BaseModel, default=BaseModel)
@@ -43,7 +45,7 @@ class Server(Generic[TInput, TInternal, TConfig], ABC):
         if ref not in cls._factories or override:
             cls._factories[ref] = factory
         elif cls._factories[ref] is not factory:
-            raise ValueError(f"Factory for {ref} is already registered.")
+            raise FactoryAlreadyRegisteredError(f"Factory for {ref} is already registered.")
 
     def register(self, input: TInput) -> Self:
         # check if the type has a factory registered

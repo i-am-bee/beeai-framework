@@ -246,7 +246,7 @@ git commit -s
 If a commit has already been created but signoff was missed this can be remedied
 
 ```bash
-git --amend -s
+git commit --amend -s
 ```
 
 The following example includes a `Signed-off-by:` line, which indicates that the submitter has accepted the DCO:
