@@ -4,7 +4,18 @@ description: 'Set up mise tools (Python, Node.js, ...) and install project depen
 runs:
   using: "composite"
   steps:
+    - uses: actions/cache@v4
+      with:
+        path: python/.venv
+        key: poetry-venv-v1-${{ runner.os }}-${{ hashFiles('python/poetry.lock') }}
+        restore-keys: uv-venv-v1-${{ runner.os }}-
+    - uses: actions/cache@v4
+      with:
+        path: ~/.cache/yarn
+        key: yarn-cache-v1-${{ runner.os }}-${{ hashFiles('**/yarn.lock') }}
+        restore-keys: yarn-cache-v1-${{ runner.os }}-
     - uses: jdx/mise-action@5083fe46898c414b2475087cc79da59e7da859e8
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
         version: 2025.2.6
-
