@@ -64,7 +64,7 @@ describe("E2E Examples", async () => {
   });
 
   it.concurrent.each(exampleFiles)(`Run %s`, async (example) => {
-    await execAsync(`yarn start -- ${example} <<< "Hello world"`)
+    await execAsync(`echo "Hello world" | yarn start -- ${example}`)
       .then(({ stdout, stderr }) => {
         // eslint-disable-next-line no-console
         console.log("STDOUT:", stdout);

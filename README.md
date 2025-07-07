@@ -19,13 +19,13 @@
 | Date       | Language      | Update Description                                                                 
 |------------|---------------|-------------------------------------------------------------------------------------|
 | 2025/06/03 | Python        | Release experimental [Requirement Agent](https://framework.beeai.dev/experimental/requirement-agent).           |
-| 2025/05/15 | Python        | New protocol integrations: [ACP and MCP](/python/docs/integrations.md).           |
-| 2025/02/19 | Python        | Launched Python library alpha. See [getting started guide](#installation).               |
-| 2025/02/07 | TypeScript    | Introduced [Backend](/typescript/docs/backend.md) module to simplify working with AI services (chat, embedding). See [migration guide](/typescript/docs/migration_guide.md). |
-| 2025/01/28 | TypeScript    | Added support for DeepSeek R1, check out the [Competitive Analysis Workflow example](/typescript/examples/workflows/competitive-analysis). |
-| 2025/01/09 | TypeScript    | Introduced [Workflows](/typescript/docs/workflows.md), a way of building multi-agent systems. Added support for [Model Context Protocol](/typescript/docs/tools.md#using-the-mcptool-class). |
-| 2024/12/09 | TypeScript    | Added support for LLaMa 3.3. See [multi-agent workflow example using watsonx](/typescript/examples/workflows/multiAgents.ts) or explore [other available providers](/typescript/docs/backend.md#providers-implementations).        |
-| 2024/11/21 | TypeScript    | Added an experimental [Streamlit agent](/typescript/examples/agents/experimental/streamlit.ts). |
+| 2025/05/15 | Python        | New protocol integrations: [ACP and MCP](https://github.com/i-am-bee/beeai-framework/tree/main/python/docs/integrations.md).           |
+| 2025/02/19 | Python        | Launched Python library alpha. See [getting started guide](https://github.com/i-am-bee/beeai-framework/tree/main#installation).               |
+| 2025/02/07 | TypeScript    | Introduced [Backend](https://github.com/i-am-bee/beeai-framework/tree/main/typescript/docs/backend.md) module to simplify working with AI services (chat, embedding). See [migration guide](https://github.com/i-am-bee/beeai-framework/tree/main/typescript/docs/migration_guide.md). |
+| 2025/01/28 | TypeScript    | Added support for DeepSeek R1, check out the [Competitive Analysis Workflow example](https://github.com/i-am-bee/beeai-framework/tree/main/typescript/examples/workflows/competitive-analysis). |
+| 2025/01/09 | TypeScript    | Introduced [Workflows](https://github.com/i-am-bee/beeai-framework/tree/main/typescript/docs/workflows.md), a way of building multi-agent systems. Added support for [Model Context Protocol](https://github.com/i-am-bee/beeai-framework/tree/main/typescript/docs/tools.md#using-the-mcptool-class). |
+| 2024/12/09 | TypeScript    | Added support for LLaMa 3.3. See [multi-agent workflow example using watsonx](https://github.com/i-am-bee/beeai-framework/tree/main/typescript/examples/workflows/multiAgents.ts) or explore [other available providers](https://github.com/i-am-bee/beeai-framework/tree/main/typescript/docs/backend.md#providers-implementations).        |
+| 2024/11/21 | TypeScript    | Added an experimental [Streamlit agent](https://github.com/i-am-bee/beeai-framework/tree/main/typescript/examples/agents/experimental/streamlit.ts). |
 
 
 For a full changelog, see our [releases page](https://github.com/i-am-bee/beeai-framework/releases).
@@ -34,11 +34,11 @@ For a full changelog, see our [releases page](https://github.com/i-am-bee/beeai-
 
 ## Why BeeAI?
 
-**🏆 Build for your use case.**  Implement simple to complex multi-agent patterns using [Workflows](/python/docs/workflows.md), start with a [ReActAgent](/python/examples/agents/react.py), or easily [build your own agent architecture](/python/docs/agents.md#creating-your-own-agent). There is no one-size-fits-all agent architecture, you need full flexibility in orchestrating agents and defining their roles and behaviors. 
+**🏆 Build for your use case.**  Implement simple to complex multi-agent patterns using [Workflows](https://github.com/i-am-bee/beeai-framework/tree/main/python/docs/workflows.md), start with a [ReActAgent](https://github.com/i-am-bee/beeai-framework/tree/main/python/examples/agents/react.py), or easily [build your own agent architecture](https://github.com/i-am-bee/beeai-framework/tree/main/python/docs/agents.md#creating-your-own-agent). There is no one-size-fits-all agent architecture, you need full flexibility in orchestrating agents and defining their roles and behaviors. 
 
-**🔌 Seamlessly integrate with your models and tools.** Get started with any model from [Ollama](/python/examples/backend/providers/ollama.py), [Groq](/python/examples/backend/providers/groq.py), [OpenAI](/python/examples/backend/providers/openai_example.py), [watsonx.ai](/python/examples/backend/providers/watsonx.py), and [more](/python/docs/backend.md#supported-providers). Leverage tools from [LangChain](/python/examples/tools/langchain.py), connect to any server using the [Model Context Protocol](/python/docs/tools.md#mcp-tool), or build your own [custom tools](/python/docs/tools.md#creating-custom-tools). BeeAI is designed to integrate with the systems and capabilities you need.
+**🔌 Seamlessly integrate with your models and tools.** Get started with any model from [Ollama](https://github.com/i-am-bee/beeai-framework/tree/main/python/examples/backend/providers/ollama.py), [Groq](https://github.com/i-am-bee/beeai-framework/tree/main/python/examples/backend/providers/groq.py), [OpenAI](https://github.com/i-am-bee/beeai-framework/tree/main/python/examples/backend/providers/openai_example.py), [watsonx.ai](https://github.com/i-am-bee/beeai-framework/tree/main/python/examples/backend/providers/watsonx.py), and [more](https://github.com/i-am-bee/beeai-framework/tree/main/python/docs/backend.md#supported-providers). Leverage tools from [LangChain](https://github.com/i-am-bee/beeai-framework/tree/main/python/examples/tools/langchain.py), connect to any server using the [Model Context Protocol](https://github.com/i-am-bee/beeai-framework/tree/main/python/docs/tools.md#mcp-tool), or build your own [custom tools](https://github.com/i-am-bee/beeai-framework/tree/main/python/docs/tools.md#creating-custom-tools). BeeAI is designed to integrate with the systems and capabilities you need.
 
-**🚀 Scale with production-grade controls.** Optimize token usage through configurable [memory strategies](/python/docs/memory.md), persist and restore agent state via [(de)serialization](/python/docs/serialization.md), generate structured outputs, and execute generated code in a sandboxed environment (coming soon). When things go wrong, the [emitter](/python/docs/emitter.md) system tracks the full agent workflow, generating detailed [events](/python/docs/events.md) for monitoring and analysis. [Telemetry](/python/docs/instrumentation.md) and [logging](/python/docs/logger.md) capabilities capture key diagnostic data. When issues arise, BeeAI handles [errors](/python/docs/errors.md) gracefully with clear, well-defined exceptions.
+**🚀 Scale with production-grade controls.** Optimize token usage through configurable [memory strategies](https://github.com/i-am-bee/beeai-framework/tree/main/python/docs/memory.md), persist and restore agent state via [(de)serialization](https://github.com/i-am-bee/beeai-framework/tree/main/python/docs/serialization.md), generate structured outputs, and execute generated code in a sandboxed environment (coming soon). When things go wrong, the [emitter](https://github.com/i-am-bee/beeai-framework/tree/main/python/docs/emitter.md) system tracks the full agent workflow, generating detailed [events](https://github.com/i-am-bee/beeai-framework/tree/main/python/docs/events.md) for monitoring and analysis. [Telemetry](https://github.com/i-am-bee/beeai-framework/tree/main/python/docs/instrumentation.md) and [logging](https://github.com/i-am-bee/beeai-framework/tree/main/python/docs/logger.md) capabilities capture key diagnostic data. When issues arise, BeeAI handles [errors](https://github.com/i-am-bee/beeai-framework/tree/main/python/docs/errors.md) gracefully with clear, well-defined exceptions.
 
 > [!TIP]
 > Get started quickly with the [beeai-framework-py-starter](https://github.com/i-am-bee/beeai-framework-py-starter) template.
@@ -57,7 +57,7 @@ To install the TypeScript library:
 npm install beeai-framework
 ```
 
-For more guidance and starter examples in your desired language, head to the docs pages for [Python](/python/README.md) and [TypeScript](/typescript/README.md).
+For more guidance and starter examples in your desired language, head to the docs pages for [Python](https://github.com/i-am-bee/beeai-framework/tree/main/python/README.md) and [TypeScript](https://github.com/i-am-bee/beeai-framework/tree/main/typescript/README.md).
 
 ---
 
@@ -130,9 +130,9 @@ if __name__ == "__main__":
     asyncio.run(main())
 ```
 
-_Source: [python/examples/workflows/multi_agents_simple.py](/python/examples/workflows/multi_agents.py)_
+_Source: [python/examples/workflows/multi_agents_simple.py](https://github.com/i-am-bee/beeai-framework/tree/main/python/examples/workflows/multi_agents.py)_
 
-TypeScript version of this example can be found [here](/typescript/examples/workflows/multiAgents.ts).
+TypeScript version of this example can be found [here](https://github.com/i-am-bee/beeai-framework/tree/main/typescript/examples/workflows/multiAgents.ts).
 
 ### Running the example
 
@@ -146,7 +146,7 @@ To run projects, use:
 python [project_name].py
 ```
 
-Explore more in our examples for [Python](/python/examples/README.md) and [TypeScript](/typescript/examples/README.md).
+Explore more in our examples for [Python](https://github.com/i-am-bee/beeai-framework/tree/main/python/examples/README.md) and [TypeScript](https://github.com/i-am-bee/beeai-framework/tree/main/typescript/examples/README.md).
 
 ---
 
@@ -168,8 +168,8 @@ To stay up-to-date on our [public roadmap](https://github.com/orgs/i-am-bee/proj
 BeeAI framework is open-source and we ❤️ contributions.<br>
 
 To help build BeeAI, take a look at our:
-- [Python contribution guidelines](/python/CONTRIBUTING.md)
-- [TypeScript contribution guidelines](/typescript/CONTRIBUTING.md)
+- [Python contribution guidelines](https://github.com/i-am-bee/beeai-framework/tree/main/python/CONTRIBUTING.md)
+- [TypeScript contribution guidelines](https://github.com/i-am-bee/beeai-framework/tree/main/typescript/CONTRIBUTING.md)
 
 ## Bugs
 
@@ -177,7 +177,7 @@ We use GitHub Issues to manage bugs. Before filing a new issue, please check to 
 
 ## Code of conduct
 
-This project and everyone participating in it are governed by the [Code of Conduct](./CODE_OF_CONDUCT.md). By participating, you are expected to uphold this code. Please read the [full text](./CODE_OF_CONDUCT.md) so that you know which actions may or may not be tolerated.
+This project and everyone participating in it are governed by the [Code of Conduct](https://github.com/i-am-bee/beeai-framework/tree/main./CODE_OF_CONDUCT.md). By participating, you are expected to uphold this code. Please read the [full text](https://github.com/i-am-bee/beeai-framework/tree/main./CODE_OF_CONDUCT.md) so that you know which actions may or may not be tolerated.
 
 ## Legal notice
 

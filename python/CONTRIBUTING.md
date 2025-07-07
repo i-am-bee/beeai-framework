@@ -36,168 +36,48 @@ BeeAI Python uses the following labels to help non-maintainers find issues best 
 
 ## Setting up a local development environment
 
-### Prerequisites
+This project uses [Mise-en-place](https://mise.jdx.dev/) as a manager of tool versions (`python`, `poetry`, `nodejs`, `yarn` etc.), as well as a task runner and environment manager. Mise will download all the needed tools automatically -- you don't need to install them yourself.
 
-For development, there are some tools you will need prior cloning the code.
+Clone this project, then run these setup steps:
 
-#### Python
-
-We recommend using Python 3.11 or higher. First, ensure you have Python installed:
-
-```bash
-python --version
+```sh
+curl https://mise.run | sh # more ways to install: https://mise.jdx.dev/installing-mise.html
+mise trust
+mise install
 ```
 
-#### Poetry
+After setup, you can use:
 
-[Poetry](https://python-poetry.org/) is a tool for Python packaging, dependency and virtual environment management that is used to manage the development of this project. Verify version two (V2) is installed on your machine. There are several ways to install it including through the package manager of your operating system, however, the easiest way to install is using the official installer, as follows:
+- `mise run` to list tasks and select one interactively to run
 
-```bash
-curl -sSL https://install.python-poetry.org | python3 -
-```
+- `mise <task-name>` to run a task
 
-You can also use `pip` and `pipx` to install poetry.
+- `mise x -- <command>` to run a project tool -- for example `mise x -- poetry add <package>`
 
-Once you have Poetry installed, you will also need to add the poetry shell plugin:
+If you want to run tools directly without the `mise x --` prefix, you need to activate a shell hook:
 
-```bash
-poetry self add poetry-plugin-shell
-```
+- Bash: `eval "$(mise activate bash)"` (add to `~/.bashrc` to make permanent)
 
-> [!IMPORTANT]
-> You must have poetry >= 2.0 installed
+- Zsh: `eval "$(mise activate zsh)"` (add to `~/.zshrc` to make permanent)
 
-#### Poe
+- Fish: `mise activate fish | source` (add to `~/.config/fish/config.fish` to make permanent)
 
-[Poe](https://poethepoet.natn.io/index.html) is a batteries-included task runner that integrates seamlessly with both Poetry and uv. It allows you to define project tasks directly in your `pyproject.toml` file and provides a simple way to run them using your project’s virtual environment—either via a standalone CLI or as a Poetry plugin.
+- Other shells: [documentation](https://mise.jdx.dev/installing-mise.html#shells)
 
-To install Poe, use:
 
-```bash
-pipx install poethepoet
-```
+Some tasks to get you started:
 
-For more details, see the [official installation guide](https://poethepoet.natn.io/installation.html#install-the-cli-globally-recommended).
-
-#### Mise
-
-[Mise](https://mise.jdx.dev) is used as a task runner and tool installer.
-
-Install it with:
-
-```bash
-curl https://mise.run | sh
-```
-
-...or some of the [other installation options](https://mise.jdx.dev/installing-mise.html).
-
----
-
-### Clone and set up the code
-
-Follow these steps:
-
-```bash
-# Clone the repository
-git clone https://github.com/i-am-bee/beeai-framework.git
-
-# Enter the repository
-cd beeai-framework
-
-# Ensure you have the pre-commit hooks installed
-.githooks/install.sh
-
-# Enter the Python framework
-cd python
-
-# Use Poetry to install the project dependencies and activate a virtual environment
-poetry install --all-extras
-poetry shell
-
-# Copy .env.example to .env and fill in required values
-cp .env.example .env
-```
-
-#### Build the package:
-
-```bash
-poetry build
-```
-
-#### Test the Build Locally (Recommended)
-
-Note: This should be be done outside an existing virtual environment or poetry shell.
-
-```bash
-# Create a virtual environment
-python -m venv test_env
-
-source test_env/bin/activate  # On Windows: test_env\Scripts\activate
-
-# Install the built package
-pip install dist/beeai_framework-0.1.1.tar.gz
-```
-
-#### Run Linters/Formatters
-
-Ensure your changes meet code quality standards:
-
-- lint: use the next command run Black and Ruff:
-
-```bash
-poe lint # poe lint --fix
-poe format # poe format --fix
-```
-
-#### Run Static Type Checker using mypy
-
-MyPy has been integrated as a poe task in our development workflow. A set of comprehensive tasks are available for different type checking scenarios.
-
-Running the basic type check looks for all python files in current directory and subdirectories.
-
-```bash
-poe type-check
-```
-Support for dynamic flags is available via the `${POE_ARGS}`. The `${POE_ARGS}` allows passing flags like --strict or --verbose.
-
-Running with the `--strict` flag enables strict type checking mode.
-
-```bash
-poe type-check --strict
-```
-
-Running with the `--verbose` flag offers more detailed messages during type checking.
-
-```bash
-poe type-check --verbose
-```
-
-#### Run Tests
-
-Ensure your changes pass all tests:
-
-```bash
-# Run Unit tests
-poe test --type unit
-
-# Run integration tests
-poe test --type integration
-
-# Run E2E tests
-poe test --type e2e
-```
+- `mise python:check` to run formatters and linters (also runs on commit and in CI)
+- `mise python:fix` to fix issues where possible
+- `mise python:build` to build the package
+- `mise python:test:unit` to run unit tests
+- `mise python:test:e2e` to run end-to-end tests
 
 > [!NOTE]
 >
 > To run E2E tests locally, you must have an Ollama instance running with the following models: `llama3.1:8b` and `granite3.3:8b`.
 
-### Other useful commands
-
-- `poe build`
-- `poe commit`
-- `poe copyright` and `poe copyright --type check`
-
-#### Follow Conventional Commit Messages
+## Conventional Commits
 
 We use [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/#summary) to structure our commit messages. Please use the following format:
 
@@ -217,15 +97,7 @@ feat(llm): add streaming support for watsonx adapter
 Ref: #15
 ```
 
-#### Commit:
-
-- commit: for convenience you can use the following command to sign-off your commit with `-s` and generate the commit.
-
-```bash[README.md](../typescript/README.md)
-poe commit "<type>(<scope>): <subject>"
-```
-
-By following these steps, you'll be all set to contribute to our project! If you encounter any issues during the setup process, please feel free to open an issue.
+Use `mise commit` for an interactive commit guide.
 
 # Documentation
 

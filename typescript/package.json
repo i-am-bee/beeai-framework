@@ -13,7 +13,7 @@
     "Bee Agent Framework",
     "NodeJS Agent Framework"
   ],
-  "packageManager": "yarn@4.1.1",
+  "packageManager": "yarn@4.9.1",
   "commitlint": {
     "extends": [
       "@commitlint/config-conventional"
@@ -45,10 +45,6 @@
         ]
       ]
     }
-  },
-  "lint-staged": {
-    "*": "prettier --ignore-unknown --write",
-    "*.{ts,js}": "eslint --fix"
   },
   "prettier": {
     "printWidth": 100,
@@ -83,16 +79,11 @@
       "publish": true
     },
     "hooks": {
-      "before:init": [
-        "yarn lint",
-        "yarn ts:check",
-        "[ \"$RELEASE_SKIP_TESTS\" = \"true\" ] && echo 'Skipping tests.' || yarn test:all"
-      ],
       "after:bump": [
-        "yarn build"
+        "mise typescript:build"
       ],
       "before:release": [
-        "yarn lint:fix && yarn format:fix && git add . --update"
+        "mise typescript:fix && git add . --update"
       ]
     },
     "github": {
@@ -145,29 +136,6 @@
   },
   "bugs": {
     "url": "https://github.com/i-am-bee/beeai-framework/issues"
-  },
-  "scripts": {
-    "clean": "rimraf dist",
-    "build": "yarn clean && yarn ts:check && NODE_OPTIONS='--max-old-space-size=8192' tsup",
-    "ts:check": "tsc --noEmit && tsc -p tsconfig.examples.json --noEmit",
-    "start": "tsx --tsconfig tsconfig.examples.json",
-    "start:bee": "yarn start -- examples/agents/bee.ts",
-    "lint": "yarn eslint",
-    "prepare": "../.githooks/install.sh",
-    "lint:fix": "yarn eslint --fix",
-    "format": "yarn prettier --check .",
-    "format:fix": "yarn prettier --write .",
-    "test:unit": "vitest run src",
-    "test:unit:watch": "vitest run src",
-    "test:e2e": "vitest run tests/e2e",
-    "test:e2e:watch": "vitest watch tests/e2e",
-    "test:all": "yarn test:unit && yarn test:e2e && yarn test:examples",
-    "test:examples": "vitest --config ./examples/vitest.examples.config.ts run tests/examples",
-    "test:examples:watch": "vitest --config ./examples/vitest.examples.config.ts watch tests/examples",
-    "release": "release-it",
-    "_ensure_env": "cp -n .env.template .env || true",
-    "git:commit-msg": "yarn commitlint --edit --",
-    "git:pre-commit": "yarn lint && yarn format && yarn ts:check && yarn run test:unit"
   },
   "dependencies": {
     "@ai-sdk/xai": "^1.2.16",
@@ -318,7 +286,6 @@
     "glob": "^11.0.0",
     "ibm-cloud-sdk-core": "^5.3.2",
     "langchain": "0.3.19",
-    "lint-staged": "^15.2.10",
     "ollama-ai-provider": "^1.2.0",
     "picocolors": "^1.1.1",
     "pino-pretty": "^13.0.0",

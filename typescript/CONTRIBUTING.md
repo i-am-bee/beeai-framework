@@ -35,35 +35,45 @@ Bee uses the following labels to help non-maintainers find issues best suited to
 
 ## Set up a development environment
 
-To start contributing to the BeeAI Framework, follow these steps to set up your development environment:
+This project uses [Mise-en-place](https://mise.jdx.dev/) as a manager of tool versions (`python`, `poetry`, `nodejs`, `yarn` etc.), as well as a task runner and environment manager. Mise will download all the needed tools automatically -- you don't need to install them yourself.
 
-1.  **Install Node Version Manager (NVM):** We use `.nvmrc` to specify the required Node.js version. Install [nvm](https://github.com/nvm-sh/nvm) by following the official installation instructions.
+Clone this project, then run these setup steps:
 
-2.  **Install the Correct Node.js Version:** Use `nvm` to install and use the Node.js version specified in the `.nvmrc` file:
-
-```bash
-nvm install
-nvm use
+```sh
+curl https://mise.run | sh # more ways to install: https://mise.jdx.dev/installing-mise.html
+mise trust
+mise install
 ```
 
-3. **Install [Yarn](https://yarnpkg.com/) via Corepack:** This project uses Yarn as the package manager. Ensure you have Corepack enabled and install Yarn:
+After setup, you can use:
 
-```bash
-corepack enable
-```
+- `mise run` to list tasks and select one interactively to run
 
-4. **Install [Mise](https://mise.jdx.dev):** Use `curl https://mise.run | sh` or [other installation options](https://mise.jdx.dev/installing-mise.html).
+- `mise <task-name>` to run a task
 
-5. **Install Dependencies:** Install all project dependencies by running:
+- `mise x -- <command>` to run a project tool -- for example `mise x -- poetry add <package>`
 
-```bash
-yarn install --immutable
-yarn prepare
-```
+If you want to run tools directly without the `mise x --` prefix, you need to activate a shell hook:
 
-6.  **Setup environmental variables:** To run E2E Tests, you should set the requisite environmental variables in your `.env` file.
+- Bash: `eval "$(mise activate bash)"` (add to `~/.bashrc` to make permanent)
 
-7.  **Follow Conventional Commit Messages:** We use [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/#summary) to structure our commit messages. This helps maintain a clean and manageable commit history. Please use the following format:
+- Zsh: `eval "$(mise activate zsh)"` (add to `~/.zshrc` to make permanent)
+
+- Fish: `mise activate fish | source` (add to `~/.config/fish/config.fish` to make permanent)
+
+- Other shells: [documentation](https://mise.jdx.dev/installing-mise.html#shells)
+
+Some tasks to get you started:
+
+- `mise typescript:check` to run formatters and linters (also runs on commit and in CI)
+- `mise typescript:fix` to fix issues where possible
+- `mise typescript:build` to build the package
+- `mise typescript:test:unit` to run unit tests
+- `mise typescript:test:e2e` to run end-to-end tests
+
+## Conventional Commits
+
+We use [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/#summary) to structure our commit messages. This helps maintain a clean and manageable commit history. Please use the following format:
 
 ```
 <type>(<scope>): <subject>
@@ -81,21 +91,7 @@ feat(llms): add streaming support for watsonx adapter
 Ref: #15
 ```
 
-8.  **Run Linters/Formatters:** Ensure your changes meet code quality standards. Run the following commands:
-
-```shell
-yarn lint # or yarn lint:fix
-yarn format # or yarn format:fix
-```
-
-9.  **Run Tests:** Ensure your changes pass all tests (unit, integration, E2E). Run the following commands:
-
-```shell
-yarn test:unit
-yarn test:e2e
-```
-
-By following these steps, you'll be all set to contribute to our project! If you encounter any issues during the setup process, please feel free to open an issue.
+Use `mise commit` for an interactive commit guide.
 
 # Documentation
 

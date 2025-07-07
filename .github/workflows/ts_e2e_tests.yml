@@ -28,16 +28,11 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
-      - name: Enable Corepack
-        run: corepack enable
-      - name: Use Node.js ${{ matrix.node-version }}
-        uses: actions/setup-node@v4
-        with:
-          node-version: ${{ matrix.node-version }}
-          cache: "yarn"
-          cache-dependency-path: "typescript/yarn.lock"
-      - name: Install dependencies
-        run: yarn install --immutable
+      - uses: ./.github/actions/setup
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - run: mise use nodejs@${{ matrix.node-version }}
+      - run: mise setup
       - name: E2E Tests
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
@@ -52,4 +47,4 @@ jobs:
           WATSONX_REGION: ${{ secrets.WATSONX_REGION }}
           # WATSONX_SPACE_ID: ${{ secrets.WATSONX_SPACE_ID }}
           # WATSONX_DEPLOYMENT_ID: ${{ secrets.WATSONX_DEPLOYMENT_ID }}
-        run: yarn test:e2e
+        run: mise typescript:test:e2e

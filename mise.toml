@@ -1,8 +1,38 @@
 [tools]
-fd = "latest"
-"ubi:google/addlicense" = "latest"
+# Python
+python = "3.13"
+"pipx:poetry" = "2.1.1"
 
-## grouped tasks
+# Node.js
+node = "20.15.1"
+yarn = "4.9.1"
+
+# Misc
+yq = "latest"
+fd = "latest"
+"ubi:google/addlicense" = "1.1.1"
+"ubi:lycheeverse/lychee" = "lychee-v0.19.1"
+
+[settings]
+raw = true
+node.gpg_verify = false # tends to randomly fail; sha is checked by lockfile
+
+[hooks]
+postinstall = "{{ mise_bin }} setup"
+
+# TASKS
+
+[task_config]
+includes = [
+    "python/tasks.toml",
+    "typescript/tasks.toml",
+    "docs/tasks.toml",
+]
+
+## convenience tasks
+
+[tasks."setup"]
+depends = ["*:setup"]
 
 [tasks."check"]
 depends = ["*:check"]
@@ -10,7 +40,51 @@ depends = ["*:check"]
 [tasks."fix"]
 depends = ["*:fix"]
 
+[tasks."test"]
+depends = ["*:test"]
+
+[tasks."test:unit"]
+depends = ["*:test:unit"]
+
+[tasks."test:e2e"]
+depends = ["*:test:e2e"]
+
+[tasks."commit"]
+depends = ["python:setup"]
+dir = "{{config_root}}/python"
+run = "poetry run -- cz commit -- --signoff"
+
+## git hooks
+
+[tasks."git-hooks:pre-commit"]
+hide = true
+depends = ["check", "*:git-hooks:pre-commit"]
+
+[tasks."git-hooks:commit-msg"]
+hide = true
+depends = ["*:git-hooks:commit-msg"]
+
 ## common tasks
+
+### setup
+
+[tasks."common:setup"]
+depends = ["common:setup:*"]
+
+[tasks."common:setup:git-hooks"]
+hide = true
+dir = "{{config_root}}"
+run = """
+#!/bin/bash
+set -eu -o pipefail
+test -d .git || exit 0
+for hook in pre-commit commit-msg; do
+    printf "#!/bin/sh\n{{ mise_bin }} run git-hooks:$hook" >.git/hooks/$hook
+    chmod +x .git/hooks/$hook
+done
+"""
+sources = [".git/hooks/pre-commit", ".git/hooks/commit-msg"]
+outputs = { auto = true }
 
 ### check
 

@@ -8,14 +8,12 @@ runs:
       with:
         path: python/.venv
         key: poetry-venv-v1-${{ runner.os }}-${{ hashFiles('python/poetry.lock') }}
-        restore-keys: uv-venv-v1-${{ runner.os }}-
+        restore-keys: poetry-venv-v1-${{ runner.os }}-
     - uses: actions/cache@v4
       with:
         path: ~/.cache/yarn
         key: yarn-cache-v1-${{ runner.os }}-${{ hashFiles('**/yarn.lock') }}
         restore-keys: yarn-cache-v1-${{ runner.os }}-
-    - uses: jdx/mise-action@5083fe46898c414b2475087cc79da59e7da859e8
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    - uses: jdx/mise-action@5cb1df66ed5e1fb3c670ea0b62fd17a76979826a
       with:
-        version: 2025.2.6
+        version: 2025.7.1
