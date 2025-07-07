@@ -200,18 +200,10 @@ default = "pass"
     [[tool.poe.tasks.git.switch]]
     case = "pre-commit"
     sequence = [
-        { "ref" = "copyright ${TARGET}"},
         { "ref" = "format --fix ${TARGET}"},
         { "ref" = "lint --fix ${TARGET}" },
         { "ref" = "type-check ${TARGET}" },
-        { "ref" = "copyright --type check ${TARGET}"},
     ]
-
-[tool.poe.tasks.copyright]
-help = "Copyright headers"
-args = [{ name = "TARGET", positional = true, multiple = true }, { name = "type", options = ["--type"], default = "add" }]
-cwd = "."
-shell = "TYPE=${type} ./scripts/copyright.sh"
 
 [tool.poe.tasks.release]
 help = "Release a new version"

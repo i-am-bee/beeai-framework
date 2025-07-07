@@ -23,6 +23,9 @@ DOCS_DIR="docs"
 HAS_DOCS_FILES=$(echo "$STAGED_FILES" | grep -q "^$DOCS_DIR/" && echo 1 || echo 0)
 
 # Run hooks based on staged files
+mise trust
+mise run check
+
 if [ "$HAS_TS_FILES" -eq 1  ] && grep -q "\"git:$HOOK_NAME\"" "$TS_DIR/package.json"; then
   echo "Running $HOOK_NAME hook in $TS_DIR..."
   HOOK_ARGS_SCOPED=$(echo "$HOOK_ARGS" | sed 's/[^ ]* */..\/&/g' | sed 's/..\/typescript\///g')
