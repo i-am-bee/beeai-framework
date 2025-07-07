@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import asyncio
+import contextlib
 import os
 from collections.abc import AsyncGenerator, Awaitable, Callable
 from datetime import UTC, datetime, timedelta
@@ -20,6 +21,7 @@ from typing import Any, Generic, Self
 
 from beeai_framework.agents.experimental import RequirementAgent
 from beeai_framework.agents.experimental.events import RequirementAgentSuccessEvent
+from beeai_framework.serve.errors import FactoryAlreadyRegisteredError
 
 try:
     import acp_sdk.models as acp_models
@@ -151,7 +153,8 @@ def _react_agent_factory(agent: ReActAgent, *, metadata: ACPServerMetadata | Non
     )
 
 
-ACPServer.register_factory(ReActAgent, _react_agent_factory)
+with contextlib.suppress(FactoryAlreadyRegisteredError):
+    ACPServer.register_factory(ReActAgent, _react_agent_factory)
 
 
 def _tool_calling_agent_factory(
@@ -186,7 +189,8 @@ def _tool_calling_agent_factory(
     )
 
 
-ACPServer.register_factory(ToolCallingAgent, _tool_calling_agent_factory)
+with contextlib.suppress(FactoryAlreadyRegisteredError):
+    ACPServer.register_factory(ToolCallingAgent, _tool_calling_agent_factory)
 
 
 def _requirement_agent_factory(agent: RequirementAgent, *, metadata: ACPServerMetadata | None = None) -> ACPServerAgent:
@@ -219,7 +223,8 @@ def _requirement_agent_factory(agent: RequirementAgent, *, metadata: ACPServerMe
     )
 
 
-ACPServer.register_factory(RequirementAgent, _requirement_agent_factory)
+with contextlib.suppress(FactoryAlreadyRegisteredError):
+    ACPServer.register_factory(RequirementAgent, _requirement_agent_factory)
 
 
 class ACPServerConfig(BaseModel):

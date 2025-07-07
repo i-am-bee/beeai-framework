@@ -85,15 +85,14 @@ class MCPTool(Tool[BaseModel, ToolRunOptions, JSONToolOutput]):
         return JSONToolOutput(result.content)
 
     @classmethod
-    async def from_client(cls, client: MCPClient) -> list["MCPTool"]:
+    async def from_client(cls, client: MCPClient | ClientSession) -> list["MCPTool"]:
+        if isinstance(client, ClientSession):
+            return await cls.from_session(client)
         read, write = await client.__aenter__()
         session = await ClientSession(read, write).__aenter__()
         cls._resources.append((client, session))
         await session.initialize()
-        tools_result = await session.list_tools()
-        tools = [MCPTool(session, tool) for tool in tools_result.tools]
-
-        return tools
+        return await cls.from_session(session)
 
     @classmethod
     async def from_session(cls, session: ClientSession) -> list["MCPTool"]:
