@@ -4,10 +4,9 @@
 depends = ["python:setup:*"]
 
 ["python:setup:poetry"]
-hide = true
 dir = "{{config_root}}/python"
-env.POETRY_VIRTUALENVS_IN_PROJECT = "True"
-run = "poetry install --no-interaction --all-extras"
+env.POETRY_VIRTUALENVS_IN_PROJECT = "true"
+run = 'poetry env use "$(which python)" && poetry install --no-interaction --all-extras'
 sources = ["python/poetry.lock", "python/pyproject.toml"]
 outputs = { auto = true }
 

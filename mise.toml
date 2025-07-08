@@ -1,6 +1,6 @@
 [tools]
 # Python
-python = "3.13"
+python = "3.11"
 "pipx:poetry" = "2.1.1"
 
 # Node.js
@@ -14,6 +14,7 @@ fd = "latest"
 "ubi:lycheeverse/lychee" = "lychee-v0.19.1"
 
 [settings]
+experimental = true # for hooks
 raw = true
 node.gpg_verify = false # tends to randomly fail; sha is checked by lockfile
 
@@ -57,7 +58,6 @@ run = "poetry run -- cz commit -- --signoff"
 ## git hooks
 
 [tasks."git-hooks:pre-commit"]
-hide = true
 run = """
 #!/bin/bash
 set -euo pipefail
@@ -69,8 +69,14 @@ if grep -q '^docs/'       <<< "$changed"; then (set -x; {{mise_bin}} docs:git-ho
 """
 
 [tasks."git-hooks:commit-msg"]
-hide = true
-depends = ["*:git-hooks:commit-msg"]
+run = """
+#!/bin/bash
+set -euo pipefail
+(set -x; {{mise_bin}} common:git-hooks:commit-msg)
+changed=$(git diff --cached --name-only)
+if grep -q '^python/'     <<< "$changed"; then (set -x; {{mise_bin}} python:git-hooks:commit-msg);     fi
+if grep -q '^typescript/' <<< "$changed"; then (set -x; {{mise_bin}} typescript:git-hooks:commit-msg); fi
+"""
 
 ## common tasks
 
@@ -80,7 +86,6 @@ depends = ["*:git-hooks:commit-msg"]
 depends = ["common:setup:*"]
 
 [tasks."common:setup:git-hooks"]
-hide = true
 dir = "{{config_root}}"
 run = """
 #!/bin/bash
@@ -116,3 +121,10 @@ run = "addlicense -l apache -s=only -c '© BeeAI a Series of LF Projects, LLC' $
 
 [tasks."common:git-hooks:pre-commit"]
 depends = ["common:check"]
+
+[tasks."common:git-hooks:commit-msg"]
+dir = "{{config_root}}"
+run = """
+grep -qE "^(feat|fix|chore|ci|docs|revert)(\\(\\w+\\))?!?: .+" .git/COMMIT_EDITMSG || (echo "ERROR: Commit message does not adhere to conventional commit style!" && exit 1)
+grep -qi "^Signed-off-by: "                                    .git/COMMIT_EDITMSG || (echo "ERROR: Commit message must contain a Signed-off-by line!"            && exit 1)
+"""

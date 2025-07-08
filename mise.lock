@@ -9,12 +9,15 @@ backend = "aqua:sharkdp/fd"
 version = "20.15.1"
 backend = "core:node"
 
+[tools.node.checksums]
+"node-v20.15.1-darwin-arm64.tar.gz" = "sha256:4743bc042f90ba5d9edf09403207290a9cdd2f6061bdccf7caaa0bbfd49f343e"
+
 [tools."pipx:poetry"]
 version = "2.1.1"
 backend = "pipx:poetry"
 
 [tools.python]
-version = "3.13.5"
+version = "3.11.13"
 backend = "core:python"
 
 [tools."ubi:google/addlicense"]
