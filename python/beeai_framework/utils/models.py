@@ -16,12 +16,14 @@ from abc import ABC
 from collections.abc import Generator, Sequence
 from contextlib import suppress
 from logging import Logger
-from typing import Any, Literal, TypeVar, Union
+from typing import Any, Literal, Optional, TypeVar, Union
 
 from pydantic import BaseModel, ConfigDict, Field, GetJsonSchemaHandler, RootModel, create_model
 from pydantic.fields import FieldInfo
 from pydantic.json_schema import JsonSchemaValue
 from pydantic_core import CoreSchema, SchemaValidator
+
+from beeai_framework.utils.dicts import remap_key
 
 logger = Logger(__name__)
 
@@ -93,63 +95,64 @@ class JSONSchemaModel(ABC, BaseModel):
         required = set(schema.get("required", []))
 
         def create_field(param_name: str, param: dict[str, Any]) -> tuple[type, Any]:
-            raw_type = param.get("type")
             any_of = param.get("anyOf")
+            one_of = param.get("oneOf")
+            default = param.get("default")
             const = param.get("const")
-            default = param.get("default", ...)
-            enum = param.get("enum")
-            target_type: Any
 
-            # Determine base type(s)
-            if const is not None:
-                target_type = Literal[const]
-                default = const
-
-            elif any_of:
-                sub_types = []
-                for variant in any_of:
-                    variant_type = type_mapping.get(variant.get("type"), Any)
-                    if "enum" in variant:
-                        variant_type = Literal[*variant["enum"]]
-                    sub_types.append(variant_type)
-                if len(sub_types) == 1:
-                    target_type = sub_types[0]
-                else:
-                    target_type = sub_types[0]
-                    for t in sub_types[1:]:
-                        target_type |= t
-
-            elif enum is not None and isinstance(enum, list):
-                target_type = Literal[tuple(enum)]
-
-            elif isinstance(raw_type, list):
-                sub_types = [type_mapping.get(t, Any) for t in raw_type]
-                if len(sub_types) == 1:
-                    target_type = sub_types[0]
-                else:
-                    target_type = sub_types[0]
-                    for t in sub_types[1:]:
-                        target_type |= t
-            else:
-                target_type = type_mapping.get(str(raw_type), Any)
-
-            is_required = param_name in required
-            explicitly_nullable = (
-                raw_type == "null"
-                or (isinstance(raw_type, list) and "null" in raw_type)
-                or (any_of and any(t.get("type") == "null" for t in any_of))
+            target_field = Field(
+                description=param.get("description"),
+                default=default if default else const if const else None,
             )
 
-            if not is_required and default is ...:
-                default = None
-                target_type |= type(None)
+            if one_of:
+                logger.debug(
+                    f"{JSONSchemaModel.__name__}: does not support 'oneOf' modifier found in {param_name} attribute."
+                    f" Will use 'anyOf' instead."
+                )
+                return create_field(param_name, remap_key(param, source="oneOf", target="anyOf"))
 
-            elif explicitly_nullable:
-                target_type |= type(None)
+            if any_of:
+                target_types: list[type] = [create_field(f"option_{i}", t)[0] for i, t in enumerate(param["anyOf"])]
+                if len(target_types) == 1:
+                    return create_field(param_name, remap_key(param, source="anyOf", target="type"))
+                else:
+                    return Union[*target_types], target_field  # type: ignore
 
-            field = Field(default=default, description=param.get("description"))
+            else:
+                raw_type = param.get("type")
+                enum = param.get("enum")
 
-            return target_type, field
+                target_type: type | Any = type_mapping.get(raw_type)  # type: ignore[arg-type]
+
+                is_required = param_name in required
+                explicitly_nullable = (
+                    raw_type == "null"
+                    or (isinstance(raw_type, list) and "null" in raw_type)
+                    or (any_of and any(t.get("type") == "null" for t in any_of))
+                    or (one_of and any(t.get("type") == "null" for t in one_of))
+                )
+                if (not is_required and not default) or explicitly_nullable:
+                    target_type = Optional[target_type] if target_type else type(None)  # noqa: UP007
+
+                if enum is not None and isinstance(enum, list):
+                    target_type = Literal[tuple(enum)]
+                if isinstance(const, str):
+                    target_type = Literal[const]
+                if not target_type:
+                    logger.debug(
+                        f"{JSONSchemaModel.__name__}: Can't resolve a correct type for '{param_name}' attribute."
+                        f" Using 'Any' as a fallback."
+                    )
+                    target_type = type
+
+                if target_type is dict:
+                    target_type = cls.create(param_name, param)
+
+            return (
+                target_type,
+                target_field,
+            )
 
         properties = schema.get("properties", {})
         if not properties:
