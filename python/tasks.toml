@@ -44,7 +44,9 @@ outputs = { auto = true }
 ["python:check:commitlint"]
 depends = ["python:setup"]
 dir = "{{config_root}}/python"
-run = "poetry run cz check --rev-range HEAD~1..HEAD"
+run = "(git branch --list main | grep main >/dev/null || git fetch origin main:main) && poetry run cz check --rev-range $(git merge-base main HEAD)..HEAD"
+sources = ["../.git/HEAD"]
+outputs = { auto = true }
 
 # fix
 

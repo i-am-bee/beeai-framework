@@ -49,7 +49,9 @@ outputs = { auto = true }
 ["typescript:check:commitlint"]
 depends = ["typescript:setup"]
 dir = "{{config_root}}/typescript"
-run = "git fetch origin main:main && yarn commitlint --from $(git merge-base main HEAD) --to HEAD"
+run = "(git branch --list main | grep main >/dev/null || git fetch origin main:main) && yarn commitlint --from $(git merge-base main HEAD) --to HEAD"
+sources = ["../.git/HEAD"]
+outputs = { auto = true }
 
 # fix
 
