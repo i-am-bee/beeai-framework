@@ -34,7 +34,7 @@ outputs = { auto = true }
 ["docs:check:snippets"]
 depends = ["docs:setup"]
 dir = "{{config_root}}/docs"
-run = "yarn exec embedme --source-root=.. ./**/*.mdx --verify --silent"
+run = "yarn embedme --source-root=.. ./**/*.mdx --verify --silent"
 sources = ["**/*.mdx", "../python/examples/**/*", "../typescript/examples/**/*"]
 outputs = { auto = true }
 
@@ -46,13 +46,12 @@ depends = ["docs:fix:*"]
 ["docs:fix:snippets"]
 depends = ["docs:setup"]
 dir = "{{config_root}}/docs"
-run = "yarn exec embedme --source-root=.. ./**/*.mdx --silent"
+run = "yarn embedme --source-root=.. ./**/*.mdx --silent"
 sources = ["**/*.mdx", "../python/examples/**/*", "../typescript/examples/**/*"]
 outputs = { auto = true }
 
 # run
 
 ["docs:run"]
-depends = ["docs:build"]
 dir = "{{config_root}}/docs"
-run = "mintlify dev --port 3333"
+run = "yarn mintlify dev --port 3333"
