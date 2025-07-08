@@ -18,13 +18,13 @@ documentation = "https://i-am-bee.github.io/beeai-framework/#/python/"
 
 [tool.poetry.dependencies]
 python = ">= 3.11,<4.0"
-a2a-sdk = {version = "~0.2.4", optional = true}
-acp-sdk = {version = "~1.0.0", optional = true}
+a2a-sdk = {version = "~0.2.10", optional = true}
+acp-sdk = {version = "^1.0.0", optional = true}
 aiofiles = "^24.1.0"
 boto3 = {version = "^1.37.5", optional = true}
 cachetools = "^5.5.2"
 chevron = "^0.14.0"
-duckduckgo-search = {version = "^8.0.4", optional = true}
+duckduckgo-search = {version = "^8.1.0", optional = true }
 fastapi = {version = "^0.115.0", optional = true }
 json-repair = "^0.39.0"
 jsonref = "^1.1.0"
@@ -33,7 +33,7 @@ langchain-core = {version = "^0.3.41", optional = true}
 langchain-ollama={version = "^0.3.1", optional = true}
 langgraph = {version = "^0.3.27", optional = true}
 litellm = "^1.69.3"
-mcp = {version = "^1.2.0", optional = true}
+mcp = {version = "^1.10.1", optional = true}
 pydantic = "^2.10"
 pydantic-settings = "^2.9.0"
 requests = "^2.32"
@@ -200,18 +200,10 @@ default = "pass"
     [[tool.poe.tasks.git.switch]]
     case = "pre-commit"
     sequence = [
-        { "ref" = "copyright ${TARGET}"},
         { "ref" = "format --fix ${TARGET}"},
         { "ref" = "lint --fix ${TARGET}" },
         { "ref" = "type-check ${TARGET}" },
-        { "ref" = "copyright --type check ${TARGET}"},
     ]
-
-[tool.poe.tasks.copyright]
-help = "Copyright headers"
-args = [{ name = "TARGET", positional = true, multiple = true }, { name = "type", options = ["--type"], default = "add" }]
-cwd = "."
-shell = "TYPE=${type} ./scripts/copyright.sh"
 
 [tool.poe.tasks.release]
 help = "Release a new version"

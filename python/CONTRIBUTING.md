@@ -79,7 +79,20 @@ pipx install poethepoet
 
 For more details, see the [official installation guide](https://poethepoet.natn.io/installation.html#install-the-cli-globally-recommended).
 
+#### Mise
+
+[Mise](https://mise.jdx.dev) is used as a task runner and tool installer.
+
+Install it with:
+
+```bash
+curl https://mise.run | sh
+```
+
+...or some of the [other installation options](https://mise.jdx.dev/installing-mise.html).
+
 ---
+
 ### Clone and set up the code
 
 Follow these steps:
@@ -246,7 +259,7 @@ git commit -s
 If a commit has already been created but signoff was missed this can be remedied
 
 ```bash
-git --amend -s
+git commit --amend -s
 ```
 
 The following example includes a `Signed-off-by:` line, which indicates that the submitter has accepted the DCO:

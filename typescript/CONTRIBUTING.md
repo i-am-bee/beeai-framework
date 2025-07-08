@@ -52,16 +52,18 @@ nvm use
 corepack enable
 ```
 
-4.  **Install Dependencies:** Install all project dependencies by running:
+4. **Install [Mise](https://mise.jdx.dev):** Use `curl https://mise.run | sh` or [other installation options](https://mise.jdx.dev/installing-mise.html).
+
+5. **Install Dependencies:** Install all project dependencies by running:
 
 ```bash
 yarn install --immutable
 yarn prepare
 ```
 
-5.  **Setup environmental variables:** To run E2E Tests, you should set the requisite environmental variables in your `.env` file.
+6.  **Setup environmental variables:** To run E2E Tests, you should set the requisite environmental variables in your `.env` file.
 
-6.  **Follow Conventional Commit Messages:** We use [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/#summary) to structure our commit messages. This helps maintain a clean and manageable commit history. Please use the following format:
+7.  **Follow Conventional Commit Messages:** We use [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/#summary) to structure our commit messages. This helps maintain a clean and manageable commit history. Please use the following format:
 
 ```
 <type>(<scope>): <subject>
@@ -79,14 +81,14 @@ feat(llms): add streaming support for watsonx adapter
 Ref: #15
 ```
 
-7.  **Run Linters/Formatters:** Ensure your changes meet code quality standards. Run the following commands:
+8.  **Run Linters/Formatters:** Ensure your changes meet code quality standards. Run the following commands:
 
 ```shell
 yarn lint # or yarn lint:fix
 yarn format # or yarn format:fix
 ```
 
-8.  **Run Tests:** Ensure your changes pass all tests (unit, integration, E2E). Run the following commands:
+9.  **Run Tests:** Ensure your changes pass all tests (unit, integration, E2E). Run the following commands:
 
 ```shell
 yarn test:unit

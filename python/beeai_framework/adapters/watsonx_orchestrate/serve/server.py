@@ -1,17 +1,7 @@
 # Copyright 2025 © BeeAI a Series of LF Projects, LLC
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
+# SPDX-License-Identifier: Apache-2.0
 
+import contextlib
 from collections.abc import Sequence
 from typing import Any, Self
 
@@ -27,6 +17,7 @@ from beeai_framework.agents.experimental import RequirementAgent
 from beeai_framework.agents.react import ReActAgent
 from beeai_framework.agents.tool_calling import ToolCallingAgent
 from beeai_framework.logger import Logger
+from beeai_framework.serve.errors import FactoryAlreadyRegisteredError
 from beeai_framework.serve.server import Server
 from beeai_framework.utils import ModelLike
 from beeai_framework.utils.models import to_model
@@ -97,10 +88,17 @@ class WatsonxOrchestrateServer(
         raise NotImplementedError("register_many is not implemented for WatsonxOrchestrateServer")
 
 
-WatsonxOrchestrateServer.register_factory(ReActAgent, lambda agent: factories.WatsonxOrchestrateServerReActAgent(agent))
-WatsonxOrchestrateServer.register_factory(
-    ToolCallingAgent, lambda agent: factories.WatsonxOrchestrateServerToolCallingAgent(agent)
-)
-WatsonxOrchestrateServer.register_factory(
-    RequirementAgent, lambda agent: factories.WatsonxOrchestrateServerRequirementAgent(agent)
-)
+with contextlib.suppress(FactoryAlreadyRegisteredError):
+    WatsonxOrchestrateServer.register_factory(
+        ReActAgent, lambda agent: factories.WatsonxOrchestrateServerReActAgent(agent)
+    )
+
+with contextlib.suppress(FactoryAlreadyRegisteredError):
+    WatsonxOrchestrateServer.register_factory(
+        ToolCallingAgent, lambda agent: factories.WatsonxOrchestrateServerToolCallingAgent(agent)
+    )
+
+with contextlib.suppress(FactoryAlreadyRegisteredError):
+    WatsonxOrchestrateServer.register_factory(
+        RequirementAgent, lambda agent: factories.WatsonxOrchestrateServerRequirementAgent(agent)
+    )

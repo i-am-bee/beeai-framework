@@ -1,17 +1,7 @@
 # Copyright 2025 © BeeAI a Series of LF Projects, LLC
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
+# SPDX-License-Identifier: Apache-2.0
 
+import contextlib
 from collections.abc import Sequence
 from typing import Self
 
@@ -20,6 +10,7 @@ from pydantic import BaseModel
 from typing_extensions import TypedDict, TypeVar, Unpack, override
 
 from beeai_framework.agents.experimental import RequirementAgent
+from beeai_framework.serve.errors import FactoryAlreadyRegisteredError
 
 try:
     import a2a.server as a2a_server
@@ -141,7 +132,8 @@ def _tool_calling_agent_factory(
     )
 
 
-A2AServer.register_factory(ToolCallingAgent, _tool_calling_agent_factory)
+with contextlib.suppress(FactoryAlreadyRegisteredError):
+    A2AServer.register_factory(ToolCallingAgent, _tool_calling_agent_factory)
 
 
 def _requirement_agent_factory(
@@ -174,4 +166,5 @@ def _requirement_agent_factory(
     )
 
 
-A2AServer.register_factory(RequirementAgent, _requirement_agent_factory)
+with contextlib.suppress(FactoryAlreadyRegisteredError):
+    A2AServer.register_factory(RequirementAgent, _requirement_agent_factory)
