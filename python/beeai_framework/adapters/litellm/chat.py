@@ -48,7 +48,7 @@ from beeai_framework.cache.null_cache import NullCache
 from beeai_framework.context import RunContext
 from beeai_framework.logger import Logger
 from beeai_framework.tools.tool import Tool
-from beeai_framework.utils.dicts import exclude_keys, exclude_none, include_keys
+from beeai_framework.utils.dicts import exclude_keys, exclude_none, include_keys, set_attr_if_none
 from beeai_framework.utils.strings import to_json
 
 logger = Logger(__name__)
@@ -88,6 +88,7 @@ class LiteLLMChatModel(ChatModel, ABC):
 
     async def _create_stream(self, input: ChatModelInput, _: RunContext) -> AsyncGenerator[ChatModelOutput]:
         litellm_input = self._transform_input(input) | {"stream": True}
+        set_attr_if_none(litellm_input, ["stream_options", "include_usage"], value=True)
         response = await acompletion(**litellm_input)
 
         is_empty = True

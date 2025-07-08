@@ -37,3 +37,17 @@ def remap_key(obj: dict[str, Any], *, source: str, target: str, fallback: Any | 
     clone = {**obj}
     clone[target] = clone.pop(source, fallback)
     return clone
+
+
+def set_attr_if_none(obj: dict[str, Any], attrs: list[str], value: Any) -> None:
+    for attr, next_attr in zip(attrs, attrs[1:] + [None], strict=False):
+        if not isinstance(obj, dict):
+            raise ValueError(f"obj must be a dict, got {type(obj)}")
+
+        if obj.get(attr) is not None:
+            obj = obj[attr]
+        elif next_attr is None:
+            obj[attr] = value
+        else:
+            obj[attr] = {}
+            obj = obj[attr]

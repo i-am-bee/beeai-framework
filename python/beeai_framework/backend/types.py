@@ -40,7 +40,7 @@ class ChatModelStructureOutput(BaseModel):
 
 
 class ChatModelInput(ChatModelParameters):
-    model_config = ConfigDict(frozen=True)
+    model_config = ConfigDict(frozen=True, extra="allow")
 
     tools: list[InstanceOf[AnyTool]] | None = None
     tool_choice: InstanceOf[AnyTool] | Literal["required"] | Literal["auto"] | Literal["none"] | None = None
