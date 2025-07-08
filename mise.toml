@@ -58,7 +58,15 @@ run = "poetry run -- cz commit -- --signoff"
 
 [tasks."git-hooks:pre-commit"]
 hide = true
-depends = ["check", "*:git-hooks:pre-commit"]
+run = """
+#!/bin/bash
+set -euo pipefail
+(set -x; {{mise_bin}} common:git-hooks:pre-commit)
+changed=$(git diff --cached --name-only)
+if grep -q '^python/'     <<< "$changed"; then (set -x; {{mise_bin}} python:git-hooks:pre-commit);     fi
+if grep -q '^typescript/' <<< "$changed"; then (set -x; {{mise_bin}} typescript:git-hooks:pre-commit); fi
+if grep -q '^docs/'       <<< "$changed"; then (set -x; {{mise_bin}} docs:git-hooks:pre-commit);       fi
+"""
 
 [tasks."git-hooks:commit-msg"]
 hide = true
@@ -103,3 +111,8 @@ depends = ["common:fix:*"]
 [tasks."common:fix:license"]
 dir = "{{config_root}}"
 run = "addlicense -l apache -s=only -c '© BeeAI a Series of LF Projects, LLC' $(fd --exclude examples '\\.(py|[jt]sx?|html|s?css)$' docs docs-deprecated python typescript)"
+
+### git hooks
+
+[tasks."common:git-hooks:pre-commit"]
+depends = ["common:check"]

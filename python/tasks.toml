@@ -123,6 +123,9 @@ echo git push origin $(git describe --tags --exact-match)
 
 # git hooks
 
+["python:git-hooks:pre-commit"]
+depends = ["python:check"]
+
 ["python:git-hooks:commit-msg"]
 depends = ["python:setup"]
 dir = "{{config_root}}/python"

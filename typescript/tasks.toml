@@ -129,7 +129,7 @@ run = "yarn release-it"
 # git hooks
 
 ["typescript:git-hooks:pre-commit"]
-depends = ["typescript:test:unit"]
+depends = ["typescript:check", "typescript:test:unit"]
 
 ["typescript:git-hooks:commit-msg"]
 depends = ["typescript:setup"]

@@ -55,3 +55,8 @@ outputs = { auto = true }
 ["docs:run"]
 dir = "{{config_root}}/docs"
 run = "yarn mintlify dev --port 3333"
+
+# git hooks
+
+["docs:git-hooks:pre-commit"]
+depends = ["docs:check"]
