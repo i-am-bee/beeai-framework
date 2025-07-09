@@ -2,8 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 from types import NoneType
-from typing import Any, Literal, Optional, Union
-from typing_extensions import TypedDict
+from typing import Any, Literal, Optional
 
 import pytest
 from pydantic import ValidationError
@@ -35,7 +34,7 @@ def test_json_schema() -> dict[str, list[str] | str | Any]:
             },
             "roles": {"type": "array", "items": {"type": "string", "enum": ["admin", "user", "guest"]}},
             "hobby": {"anyOf": [{"type": "string"}, {"type": "null"}], "default": None, "title": "An Arg"},
-            "contact": {"oneOf": [{"type": "string"}, {"type": "integer"}]}
+            "contact": {"oneOf": [{"type": "string"}, {"type": "integer"}]},
         },
         "required": ["name", "age", "contact"],
     }
@@ -62,9 +61,11 @@ def test_json_schema_model(test_json_schema: dict[str, list[str] | str | Any]) -
 
     # should not fail if optional fields are not included
     assert model.model_validate({"name": "aaa", "age": 25, "contact": 123456789})
-    assert model.model_validate({"name": "aaa", "age": 25, "hobby": "cycling","contact": "name@email.com"})
+    assert model.model_validate({"name": "aaa", "age": 25, "hobby": "cycling", "contact": "name@email.com"})
     assert model.model_validate({"name": "aaa", "age": 25, "hobby": None, "contact": "name@email.com"})
-    assert model.model_validate({"name": "aaa", "age": 25, "hobby": "cycling", "contact": "name@email.com"}).model_dump() == {
+    assert model.model_validate(
+        {"name": "aaa", "age": 25, "hobby": "cycling", "contact": "name@email.com"}
+    ).model_dump() == {
         "object": "user",
         "address": None,
         "age": 25,
@@ -72,17 +73,19 @@ def test_json_schema_model(test_json_schema: dict[str, list[str] | str | Any]) -
         "is_active": True,
         "name": "aaa",
         "roles": None,
-        "contact": "name@email.com"
+        "contact": "name@email.com",
     }
-       
-    assert model.model_fields["object"].annotation == Literal['user'], "Expected annotation to be `Literal['user']`"
-    assert model.model_fields["name"].annotation == str, "Expected annotation to be `str`"
-    assert model.model_fields["age"].annotation == int, "Expected annotation to be `int`"
-    assert model.model_fields["is_active"].annotation == bool, "Expected annotation to be `bool`"
-    assert model.model_fields["roles"].annotation is Optional[list[Literal[tuple(("admin", "user", "guest"))]]], "Expected annotation to be `Optional[list[Literal[tuple((\"admin\", \"user\", \"guest\"))]]]``"
-    assert model.model_fields["hobby"].annotation == Optional[str], "Expected annotation to be `Optional[str]`"
-    assert model.model_fields["contact"].annotation == Union[str, int], "Expected annotation to be `Union[str, int]`"
 
+    assert model.model_fields["object"].annotation is Literal["user"], "Expected annotation to be `Literal['user']`"  # type: ignore
+    assert model.model_fields["name"].annotation is str, "Expected annotation to be `str`"
+    assert model.model_fields["age"].annotation is int, "Expected annotation to be `int`"
+    assert model.model_fields["is_active"].annotation is bool, "Expected annotation to be `bool`"
+    # ruff: noqa: UP007, E501
+    assert model.model_fields["roles"].annotation is Optional[list[Literal[("admin", "user", "guest")]]], (  # type: ignore
+        "Expected correct type"
+    )
+    assert model.model_fields["hobby"].annotation == str | NoneType, "Expected annotation to be `Optional[str]`"
+    assert model.model_fields["contact"].annotation == str | int, "Expected annotation to be `Union[str, int]`"
 
 
 @pytest.mark.unit

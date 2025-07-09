@@ -118,8 +118,8 @@ class JSONSchemaModel(ABC, BaseModel):
                     target_type = cls.create(param_name, param)
 
                 if target_type is list:
-                    target_type = list[create_field(param_name, param.get("items"))[0]]
-                
+                    target_type = list[create_field(param_name, param.get("items"))[0]]  # type: ignore
+
                 is_required = param_name in required
                 explicitly_nullable = (
                     raw_type == "null"
