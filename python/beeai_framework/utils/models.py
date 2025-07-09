@@ -113,7 +113,7 @@ class JSONSchemaModel(ABC, BaseModel):
                 return create_field(param_name, remap_key(param, source="oneOf", target="anyOf"))
 
             if any_of:
-                target_types: list[type] = [create_field(f"option_{i}", t)[0] for i, t in enumerate(param["anyOf"])]
+                target_types: list[type] = [create_field(param_name, t)[0] for t in param["anyOf"]]
                 if len(target_types) == 1:
                     return create_field(param_name, remap_key(param, source="anyOf", target="type"))
                 else:
@@ -125,6 +125,12 @@ class JSONSchemaModel(ABC, BaseModel):
 
                 target_type: type | Any = type_mapping.get(raw_type)  # type: ignore[arg-type]
 
+                if target_type is dict:
+                    target_type = cls.create(param_name, param)
+
+                if target_type is list:
+                    target_type = list[create_field(param_name, param.get("items"))[0]]
+                
                 is_required = param_name in required
                 explicitly_nullable = (
                     raw_type == "null"
@@ -145,9 +151,6 @@ class JSONSchemaModel(ABC, BaseModel):
                         f" Using 'Any' as a fallback."
                     )
                     target_type = type
-
-                if target_type is dict:
-                    target_type = cls.create(param_name, param)
 
             return (
                 target_type,
