@@ -12,7 +12,7 @@ outputs = { auto = true }
 
 ["python:setup:env"]
 dir = "{{config_root}}/python"
-run = "cp -n .env.example .env || true"
+run = "test -f .env || cp .env.example .env"
 
 # check
 

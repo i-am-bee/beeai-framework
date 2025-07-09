@@ -11,7 +11,7 @@ outputs = { auto = true }
 
 ["typescript:setup:env"]
 dir = "{{config_root}}/typescript"
-run = "cp -n .env.template .env || true"
+run = "test -f .env || cp .env.template .env"
 
 # check
 
