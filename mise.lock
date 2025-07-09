@@ -37,10 +37,3 @@ lychee-macos-aarch64 = "sha256:fe0299ffaf2f99646d280f44b7ee578f78aed06361dc703cf
 [tools.yarn]
 version = "4.9.1"
 backend = "asdf:yarn"
-
-[tools.yq]
-version = "4.45.4"
-backend = "aqua:mikefarah/yq"
-
-[tools.yq.checksums]
-yq_darwin_arm64 = "sha256:602dbbc116af9eb8a91d2239d0ec286eb9c90b94e76676d5268ab6ca184719b6"
