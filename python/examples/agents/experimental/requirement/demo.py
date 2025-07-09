@@ -1,5 +1,7 @@
 import asyncio
 
+from dotenv import load_dotenv
+
 from beeai_framework.agents.experimental import RequirementAgent
 from beeai_framework.agents.experimental.requirements.conditional import ConditionalRequirement
 from beeai_framework.backend import ChatModel
@@ -7,6 +9,8 @@ from beeai_framework.middleware.trajectory import GlobalTrajectoryMiddleware
 from beeai_framework.tools.search.duckduckgo import DuckDuckGoSearchTool
 from beeai_framework.tools.think import ThinkTool
 from beeai_framework.tools.weather import OpenMeteoTool
+
+load_dotenv()
 
 
 async def main() -> None:

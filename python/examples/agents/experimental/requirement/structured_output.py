@@ -1,11 +1,15 @@
 import asyncio
 
+from dotenv import load_dotenv
 from pydantic import BaseModel, Field
 
+from beeai_framework.agents import AgentExecutionConfig
 from beeai_framework.agents.experimental import RequirementAgent
 from beeai_framework.backend import ChatModel
 from beeai_framework.middleware.trajectory import GlobalTrajectoryMiddleware
 from beeai_framework.utils.models import to_list_model
+
+load_dotenv()
 
 
 async def main() -> None:
@@ -20,9 +24,9 @@ async def main() -> None:
 
     Characters = to_list_model(Character, Field(min_length=5, max_length=5))  # noqa: N806
 
-    response = await agent.run("Generate fictional characters", expected_output=Characters).middleware(
-        GlobalTrajectoryMiddleware()
-    )
+    response = await agent.run(
+        "Generate fictional characters", config=AgentExecutionConfig(expected_output=Characters)
+    ).middleware(GlobalTrajectoryMiddleware())
     for index, character in response.answer_structured:
         print("Index:", index)
         print("-> Full Name:", character.first_name, character.last_name)

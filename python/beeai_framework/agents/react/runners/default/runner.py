@@ -223,11 +223,7 @@ class DefaultRunner(BaseRunner):
                 raw=output, state=ReActAgentIterationResult.model_validate(parser.final_state, strict=False)
             )
 
-        if self._options and self._options.execution and self._options.execution.max_retries_per_step:
-            max_retries = self._options.execution.max_retries_per_step
-        else:
-            max_retries = 0
-
+        max_retries = self._options.max_retries_per_step if self._options else 0
         return await Retryable(
             RetryableInput(
                 on_retry=on_retry,
@@ -296,11 +292,7 @@ class DefaultRunner(BaseRunner):
                     output=StringToolOutput(self.templates.tool_error.render({"reason": err.explain()})),
                 )
 
-        if self._options and self._options.execution and self._options.execution.max_retries_per_step:
-            max_retries = self._options.execution.max_retries_per_step
-        else:
-            max_retries = 0
-
+        max_retries = self._options.max_retries_per_step if self._options else 0
         return await Retryable(
             RetryableInput(
                 on_error=on_error,

@@ -67,7 +67,7 @@ RequirementAgentRequirement = Requirement[RequirementAgentRunState]
 TOutput = TypeVar("TOutput", bound=BaseModel, default=FinalAnswerToolSchema)
 
 
-class RequirementAgent(BaseAgent[RequirementAgentRunOutput]):
+class RequirementAgent(BaseAgent[str, RequirementAgentRunOutput, AgentExecutionConfig]):
     def __init__(
         self,
         *,
@@ -110,19 +110,8 @@ class RequirementAgent(BaseAgent[RequirementAgentRunOutput]):
         self._meta = AgentMeta(name=name or "", description=description or "", tools=self._tools)
         self.middlewares.extend(middlewares or [])
 
-    def run(
-        self,
-        prompt: str | None = None,
-        *,
-        context: str | None = None,
-        expected_output: str | type[TOutput] | None = None,
-        execution: AgentExecutionConfig | None = None,
-    ) -> Run[RequirementAgentRunOutput[TOutput]]:
-        run_config = execution or AgentExecutionConfig(
-            max_retries_per_step=3,
-            total_max_retries=3,
-            max_iterations=20,
-        )
+    def run(self, input: str, config: AgentExecutionConfig | None = None) -> Run[RequirementAgentRunOutput[TOutput]]:
+        run_config = config or AgentExecutionConfig(max_retries_per_step=3)
 
         async def init_state() -> tuple[RequirementAgentRunState, UserMessage | None]:
             state = RequirementAgentRunState(
@@ -131,11 +120,11 @@ class RequirementAgent(BaseAgent[RequirementAgentRunOutput]):
             await state.memory.add_many(self.memory.messages)
 
             user_message: UserMessage | None = None
-            if prompt:
+            if input:
                 task_input = RequirementAgentTaskPromptInput(
-                    prompt=prompt,
-                    context=context,
-                    expected_output=expected_output if isinstance(expected_output, str) else None,  # TODO: validate
+                    prompt=input,
+                    context=run_config.context,
+                    expected_output=run_config.expected_output if isinstance(run_config.expected_output, str) else None,
                 )
                 user_message = UserMessage(self._templates.task.render(task_input))
                 await state.memory.add(user_message)
@@ -148,7 +137,7 @@ class RequirementAgent(BaseAgent[RequirementAgentRunOutput]):
             reasoner = RequirementsReasoner(
                 tools=self._tools,
                 requirements=self._requirements,
-                final_answer=FinalAnswerTool(expected_output, state=state),
+                final_answer=FinalAnswerTool(run_config.expected_output, state=state),
                 context=run_context,
             )
             tool_call_cycle_checker = self._create_tool_call_checker()
@@ -280,10 +269,10 @@ class RequirementAgent(BaseAgent[RequirementAgentRunOutput]):
             handler,
             signal=None,
             run_params={
-                "prompt": prompt,
-                "context": context,
-                "expected_output": expected_output,
-                "execution": execution,
+                "prompt": input,
+                "context": run_config.context,
+                "expected_output": run_config.expected_output,
+                "execution": run_config,
             },
         )
 

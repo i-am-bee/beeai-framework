@@ -18,7 +18,7 @@ from typing import Any, Self
 
 from pydantic import BaseModel, InstanceOf
 
-from beeai_framework.agents import AgentError
+from beeai_framework.agents import AgentError, AgentExecutionConfig
 from beeai_framework.agents.react.events import react_agent_event_types
 from beeai_framework.agents.react.types import (
     ReActAgentInput,
@@ -26,7 +26,6 @@ from beeai_framework.agents.react.types import (
     ReActAgentIterationResult,
     ReActAgentRunInput,
     ReActAgentRunIteration,
-    ReActAgentRunOptions,
     ReActAgentTemplateFactory,
     ReActAgentTemplates,
 )
@@ -65,7 +64,7 @@ class ReActAgentRunnerToolInput(BaseModel):
 
 
 class BaseRunner(ABC):
-    def __init__(self, input: ReActAgentInput, options: ReActAgentRunOptions, run: RunContext) -> None:
+    def __init__(self, input: ReActAgentInput, options: AgentExecutionConfig, run: RunContext) -> None:
         self._input = input
         self._options = options
         self._memory: BaseMemory | None = None
@@ -74,9 +73,7 @@ class BaseRunner(ABC):
             error_type=AgentError,
             max_retries=(
                 max(
-                    options.execution.total_max_retries
-                    if options.execution and options.execution.total_max_retries
-                    else 0,
+                    options.total_max_retries if options.total_max_retries else 0,
                     1,  # we need to handle empty results from LiteLLM
                 )
             ),
@@ -95,11 +92,7 @@ class BaseRunner(ABC):
 
     async def create_iteration(self) -> ReActAgentRunnerIteration:
         meta: ReActAgentIterationMeta = ReActAgentIterationMeta(iteration=len(self._iterations) + 1)
-        max_iterations = (
-            self._options.execution.max_iterations
-            if self._options.execution and self._options.execution.max_iterations
-            else math.inf
-        )
+        max_iterations = self._options.max_iterations if self._options.max_iterations else math.inf
 
         if meta.iteration > max_iterations:
             raise AgentError(f"Agent was not able to resolve the task in {max_iterations} iterations.")

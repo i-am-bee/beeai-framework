@@ -35,7 +35,6 @@ from beeai_framework.agents.react.runners.granite.runner import GraniteRunner
 from beeai_framework.agents.react.types import (
     ReActAgentInput,
     ReActAgentRunInput,
-    ReActAgentRunOptions,
     ReActAgentRunOutput,
     ReActAgentTemplateFactory,
     ReActAgentTemplatesKeys,
@@ -51,10 +50,9 @@ from beeai_framework.emitter import Emitter
 from beeai_framework.memory import BaseMemory
 from beeai_framework.template import PromptTemplate
 from beeai_framework.tools.tool import AnyTool
-from beeai_framework.utils import AbortSignal
 
 
-class ReActAgent(BaseAgent[ReActAgentRunOutput]):
+class ReActAgent(BaseAgent[str, ReActAgentRunOutput, AgentExecutionConfig]):
     _runner: Callable[..., BaseRunner]
 
     def __init__(
@@ -114,29 +112,16 @@ class ReActAgent(BaseAgent[ReActAgentRunOutput]):
             extra_description="\n".join(extra_description) if len(tools) > 0 else None,
         )
 
-    def run(
-        self,
-        prompt: str | None = None,
-        *,
-        signal: AbortSignal | None = None,
-        execution: AgentExecutionConfig | None = None,
-    ) -> Run[ReActAgentRunOutput]:
+    def run(self, input: str, config: AgentExecutionConfig | None = None) -> Run[ReActAgentRunOutput]:
+        run_config = config or self._input.execution or AgentExecutionConfig()
+
         async def handler(context: RunContext) -> ReActAgentRunOutput:
             runner = self._runner(
                 self._input,
-                ReActAgentRunOptions(
-                    execution=self._input.execution
-                    or execution
-                    or AgentExecutionConfig(
-                        max_retries_per_step=3,
-                        total_max_retries=20,
-                        max_iterations=10,
-                    ),
-                    signal=signal,
-                ),
+                run_config,
                 context,
             )
-            await runner.init(ReActAgentRunInput(prompt=prompt))
+            await runner.init(ReActAgentRunInput(prompt=input))
 
             final_message: AssistantMessage | None = None
             while not final_message:
@@ -197,22 +182,22 @@ class ReActAgent(BaseAgent[ReActAgentRunOutput]):
                         ),
                     )
 
-            if prompt is not None:
+            if input is not None:
                 await self._input.memory.add(
-                    UserMessage(content=prompt, meta=MessageMeta({"createdAt": context.created_at}))
+                    UserMessage(content=input, meta=MessageMeta({"createdAt": context.created_at}))
                 )
 
             await self._input.memory.add(final_message)
 
-            return ReActAgentRunOutput(result=final_message, iterations=runner.iterations, memory=runner.memory)
+            return ReActAgentRunOutput(answer=final_message, iterations=runner.iterations, memory=runner.memory)
 
         return self._to_run(
             handler,
-            signal=signal,
+            signal=run_config.signal,
             run_params={
-                "prompt": prompt,
-                "signal": signal,
-                "execution": execution,
+                "prompt": input,
+                "signal": run_config.signal,
+                "execution": run_config,
             },
         )
 

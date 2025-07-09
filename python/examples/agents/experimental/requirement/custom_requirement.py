@@ -1,5 +1,7 @@
 import asyncio
 
+from dotenv import load_dotenv
+
 from beeai_framework.agents.experimental import RequirementAgent
 from beeai_framework.agents.experimental.requirements import Requirement, Rule
 from beeai_framework.agents.experimental.requirements.requirement import run_with_context
@@ -8,6 +10,8 @@ from beeai_framework.backend import AssistantMessage, ChatModel
 from beeai_framework.context import RunContext
 from beeai_framework.middleware.trajectory import GlobalTrajectoryMiddleware
 from beeai_framework.tools.search.duckduckgo import DuckDuckGoSearchTool
+
+load_dotenv()
 
 
 class PrematureStopRequirement(Requirement[RequirementAgentRunState]):

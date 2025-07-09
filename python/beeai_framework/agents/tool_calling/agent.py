@@ -57,13 +57,12 @@ from beeai_framework.tools.errors import ToolError
 from beeai_framework.tools.tool import AnyTool
 from beeai_framework.tools.tool import tool as create_tool
 from beeai_framework.tools.types import StringToolOutput
-from beeai_framework.utils.cancellation import AbortSignal
 from beeai_framework.utils.counter import RetryCounter
 from beeai_framework.utils.models import update_model
 from beeai_framework.utils.strings import find_first_pair, generate_random_string, to_json
 
 
-class ToolCallingAgent(BaseAgent[ToolCallingAgentRunOutput]):
+class ToolCallingAgent(BaseAgent):
     def __init__(
         self,
         *,
@@ -87,20 +86,8 @@ class ToolCallingAgent(BaseAgent[ToolCallingAgentRunOutput]):
         self._tool_call_checker = tool_call_checker
         self._final_answer_as_tool = final_answer_as_tool
 
-    def run(
-        self,
-        prompt: str | None = None,
-        *,
-        context: str | None = None,
-        expected_output: str | type[BaseModel] | None = None,
-        signal: AbortSignal | None = None,
-        execution: AgentExecutionConfig | None = None,
-    ) -> Run[ToolCallingAgentRunOutput]:
-        execution_config = execution or AgentExecutionConfig(
-            max_retries_per_step=3,
-            total_max_retries=20,
-            max_iterations=10,
-        )
+    def run(self, input: str, config: AgentExecutionConfig | None = None) -> Run[ToolCallingAgentRunOutput]:
+        run_config = config or AgentExecutionConfig()
 
         async def handler(run_context: RunContext) -> ToolCallingAgentRunOutput:
             state = ToolCallingAgentRunState(memory=UnconstrainedMemory(), result=None, iteration=0)
@@ -108,31 +95,29 @@ class ToolCallingAgent(BaseAgent[ToolCallingAgentRunOutput]):
             await state.memory.add_many(self.memory.messages)
 
             user_message: UserMessage | None = None
-            if prompt:
+            if input:
                 task_input = ToolCallingAgentTaskPromptInput(
-                    prompt=prompt,
-                    context=context,
-                    expected_output=expected_output if isinstance(expected_output, str) else None,
+                    prompt=input,
+                    context=run_config.context,
+                    expected_output=run_config.expected_output if isinstance(run_config.expected_output, str) else None,
                 )
                 user_message = UserMessage(self._templates.task.render(task_input))
                 await state.memory.add(user_message)
 
-            global_retries_counter = RetryCounter(
-                error_type=AgentError, max_retries=execution_config.total_max_retries or 1
-            )
+            global_retries_counter = RetryCounter(error_type=AgentError, max_retries=run_config.total_max_retries or 1)
 
             final_answer_schema_cls: type[BaseModel] = (
-                expected_output
+                run_config.expected_output
                 if (
-                    expected_output is not None
-                    and isinstance(expected_output, type)
-                    and issubclass(expected_output, BaseModel)
+                    run_config.expected_output is not None
+                    and isinstance(run_config.expected_output, type)
+                    and issubclass(run_config.expected_output, BaseModel)
                 )
                 else create_model(
                     "FinalAnswer",
                     response=(
                         str,
-                        Field(description=expected_output or None),
+                        Field(description=run_config.expected_output or None),
                     ),
                 )
             )
@@ -143,7 +128,7 @@ class ToolCallingAgent(BaseAgent[ToolCallingAgentRunOutput]):
                 input_schema=final_answer_schema_cls,
             )
             def final_answer_tool(**kwargs: Any) -> StringToolOutput:
-                if final_answer_schema_cls is expected_output:
+                if final_answer_schema_cls is run_config.expected_output:
                     dump = final_answer_schema_cls.model_validate(kwargs)
                     state.result = AssistantMessage(to_json(dump.model_dump()))
                 else:
@@ -158,7 +143,7 @@ class ToolCallingAgent(BaseAgent[ToolCallingAgentRunOutput]):
             while state.result is None:
                 state.iteration += 1
 
-                if execution_config.max_iterations and state.iteration > execution_config.max_iterations:
+                if run_config.max_iterations and state.iteration > run_config.max_iterations:
                     raise AgentError(f"Agent was not able to resolve the task in {state.iteration} iterations.")
 
                 await run_context.emitter.emit(
@@ -179,7 +164,7 @@ class ToolCallingAgent(BaseAgent[ToolCallingAgentRunOutput]):
                     full_text = "".join(msg.text for msg in text_messages)
                     json_object_pair = find_first_pair(full_text, ("{", "}"))
                     final_answer_input = parse_broken_json(json_object_pair.outer) if json_object_pair else None
-                    if not final_answer_input and final_answer_schema_cls is not expected_output:
+                    if not final_answer_input and final_answer_schema_cls is not run_config.expected_output:
                         final_answer_input = {"response": full_text}
 
                     if not final_answer_input:
@@ -267,9 +252,9 @@ class ToolCallingAgent(BaseAgent[ToolCallingAgentRunOutput]):
                 if user_message is not None:
                     await self.memory.add(user_message)
                 await self.memory.add_many(state.memory.messages[-2:])
-            return ToolCallingAgentRunOutput(result=state.result, memory=state.memory)
+            return ToolCallingAgentRunOutput(answer=state.result, memory=state.memory)
 
-        return self._to_run(handler, signal=signal, run_params={"prompt": prompt, "execution": execution})
+        return self._to_run(handler, signal=run_config.signal, run_params={"prompt": input, "execution": run_config})
 
     def _create_emitter(self) -> Emitter:
         return Emitter.root().child(

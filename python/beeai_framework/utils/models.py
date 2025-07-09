@@ -16,18 +16,19 @@ from abc import ABC
 from collections.abc import Generator, Sequence
 from contextlib import suppress
 from logging import Logger
-from typing import Any, Literal, Optional, TypeVar, Union
+from typing import Any, Literal, Optional, Union
 
 from pydantic import BaseModel, ConfigDict, Field, GetJsonSchemaHandler, RootModel, create_model
 from pydantic.fields import FieldInfo
 from pydantic.json_schema import JsonSchemaValue
 from pydantic_core import CoreSchema, SchemaValidator
+from typing_extensions import TypeVar
 
 from beeai_framework.utils.dicts import remap_key
 
 logger = Logger(__name__)
 
-T = TypeVar("T", bound=BaseModel)
+T = TypeVar("T", bound=BaseModel, default=BaseModel)
 ModelLike = Union[T, dict[str, Any]]  # noqa: UP007
 
 
@@ -117,7 +118,7 @@ class JSONSchemaModel(ABC, BaseModel):
             else:
                 target_type: type | Any = type_mapping.get(param.get("type"))  # type: ignore[arg-type]
                 if is_optional:
-                    target_type = Optional[target_type] if target_type else type(None)  # noqa: UP007
+                    target_type = Optional[target_type] if target_type else type(None)  # noqa UP007
 
                 if isinstance(param.get("const"), str):
                     target_type = Literal[param["const"]]

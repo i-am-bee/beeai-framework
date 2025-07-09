@@ -58,7 +58,7 @@ class HandoffTool(Tool[HandoffSchema, ToolRunOptions, StringToolOutput]):
         target: AnyAgent = await self._target.clone()  # type: ignore
         target.memory.reset()
         await target.memory.add_many(memory.messages)
-        response = await target.run(prompt=input.task)
+        response = await target.run(input.task)
         return StringToolOutput(response.result.text)
 
     def _create_emitter(self) -> Emitter:

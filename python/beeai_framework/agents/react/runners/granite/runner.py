@@ -14,6 +14,7 @@
 
 from typing import Any
 
+from beeai_framework.agents import AgentExecutionConfig
 from beeai_framework.agents.react.events import ReActAgentUpdateEvent
 from beeai_framework.agents.react.runners.default.prompts import ToolNoResultsTemplate, UserEmptyPromptTemplate
 from beeai_framework.agents.react.runners.default.runner import DefaultRunner
@@ -29,7 +30,6 @@ from beeai_framework.agents.react.runners.granite.prompts import (
 from beeai_framework.agents.react.types import (
     ReActAgentInput,
     ReActAgentIterationResult,
-    ReActAgentRunOptions,
     ReActAgentTemplates,
 )
 from beeai_framework.backend.message import MessageToolResultContent, ToolMessage
@@ -45,7 +45,7 @@ from beeai_framework.utils.strings import create_strenum
 class GraniteRunner(DefaultRunner):
     use_native_tool_calling: bool = True
 
-    def __init__(self, input: ReActAgentInput, options: ReActAgentRunOptions, run: RunContext) -> None:
+    def __init__(self, input: ReActAgentInput, options: AgentExecutionConfig, run: RunContext) -> None:
         super().__init__(input, options, run)
 
         async def on_update(data: ReActAgentUpdateEvent, event: EventMeta) -> None:

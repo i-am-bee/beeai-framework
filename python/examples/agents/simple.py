@@ -2,12 +2,16 @@ import asyncio
 import sys
 import traceback
 
+from dotenv import load_dotenv
+
 from beeai_framework.agents.react import ReActAgent, ReActAgentRunOutput
 from beeai_framework.backend import ChatModel
 from beeai_framework.errors import FrameworkError
 from beeai_framework.memory import UnconstrainedMemory
 from beeai_framework.tools.search.duckduckgo import DuckDuckGoSearchTool
 from beeai_framework.tools.weather import OpenMeteoTool
+
+load_dotenv()
 
 
 async def main() -> None:

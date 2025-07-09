@@ -2,6 +2,8 @@ import asyncio
 import sys
 import traceback
 
+from dotenv import load_dotenv
+
 from beeai_framework.agents import AgentExecutionConfig
 from beeai_framework.agents.react import ReActAgent, ReActAgentRunOutput
 from beeai_framework.backend import ChatModel
@@ -10,6 +12,8 @@ from beeai_framework.memory import UnconstrainedMemory
 from beeai_framework.tools.search.duckduckgo import DuckDuckGoSearchTool
 from beeai_framework.tools.weather import OpenMeteoTool
 from examples.helpers.io import ConsoleReader
+
+load_dotenv()
 
 
 async def main() -> None:
@@ -25,7 +29,7 @@ async def main() -> None:
 
     for prompt in reader:
         output: ReActAgentRunOutput = await agent.run(
-            prompt=prompt, execution=AgentExecutionConfig(total_max_retries=2, max_retries_per_step=3, max_iterations=8)
+            prompt, config=AgentExecutionConfig(total_max_retries=2, max_retries_per_step=3, max_iterations=8)
         ).on(
             "update",
             lambda data, event: reader.write(f"Agent({data.update.key}) 🤖 : ", data.update.parsed_value),
