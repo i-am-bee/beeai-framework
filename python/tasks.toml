@@ -1,0 +1,131 @@
+# setup
+
+["python:setup"]
+depends = ["python:setup:*"]
+
+["python:setup:poetry"]
+dir = "{{config_root}}/python"
+env.POETRY_VIRTUALENVS_IN_PROJECT = "true"
+run = 'poetry env use "$(which python)" && poetry install --no-interaction --all-extras'
+sources = ["python/poetry.lock", "python/pyproject.toml"]
+outputs = { auto = true }
+
+["python:setup:env"]
+dir = "{{config_root}}/python"
+run = "cp -n .env.example .env || true"
+
+# check
+
+["python:check"]
+depends = ["python:check:*"]
+
+["python:check:ruff-check"]
+depends = ["python:setup"]
+dir = "{{config_root}}/python"
+run = "poetry run python -m ruff check --quiet"
+sources = ["beeai_framework/**/*.py", "cz_commitizen/**/*.py", "eval/**/*.py", "examples/**/*.py", "tests/**/*.py"]
+outputs = { auto = true }
+
+["python:check:ruff-format"]
+depends = ["python:setup"]
+dir = "{{config_root}}/python"
+run = "poetry run python -m ruff format --quiet --check"
+sources = ["beeai_framework/**/*.py", "cz_commitizen/**/*.py", "eval/**/*.py", "examples/**/*.py", "tests/**/*.py"]
+outputs = { auto = true }
+
+["python:check:mypy"]
+depends = ["python:setup"]
+dir = "{{config_root}}/python"
+run = "poetry run mypy --show-error-context --pretty ."
+sources = ["beeai_framework/**/*.py", "cz_commitizen/**/*.py", "eval/**/*.py", "examples/**/*.py", "tests/**/*.py"]
+outputs = { auto = true }
+
+["python:check:commitlint"]
+depends = ["python:setup"]
+dir = "{{config_root}}/python"
+run = "(git branch --list main | grep main >/dev/null || git fetch origin main:main) && poetry run cz check --rev-range $(git merge-base main HEAD)..HEAD"
+sources = ["../.git/HEAD"]
+outputs = { auto = true }
+
+# fix
+
+["python:fix"]
+depends = ["python:fix:*"]
+
+["python:fix:ruff-check"]
+depends = ["python:setup"]
+dir = "{{config_root}}/python"
+run = "poetry run python -m ruff check --quiet --fix"
+sources = ["beeai_framework/**/*.py", "cz_commitizen/**/*.py", "eval/**/*.py", "examples/**/*.py", "examples/**/*.ipynb", "tests/**/*.py"]
+outputs = { auto = true }
+
+["python:fix:ruff-format"]
+depends = ["python:setup"]
+dir = "{{config_root}}/python"
+run = "poetry run python -m ruff format --quiet"
+sources = ["beeai_framework/**/*.py", "cz_commitizen/**/*.py", "eval/**/*.py", "examples/**/*.py", "examples/**/*.ipynb", "tests/**/*.py"]
+outputs = { auto = true }
+
+# build
+
+["python:build"]
+depends = ["python:setup"]
+dir = "{{config_root}}/python"
+run = "rm -rf build dist 2>/dev/null; poetry build"
+sources = ["beeai_framework/**/*.py"]
+outputs = { auto = true }
+
+# test
+
+["python:test"]
+depends = ["python:test:*"]
+
+["python:test:unit"]
+depends = ["python:setup"]
+dir = "{{config_root}}/python"
+run = "poetry run pytest -m unit -n auto"
+sources = ["beeai_framework/**/*.py", "tests/**/*.py"]
+outputs = { auto = true }
+
+["python:test:e2e"]
+depends = ["python:setup"]
+dir = "{{config_root}}/python"
+run = "poetry run pytest -m e2e -n auto"
+sources = ["beeai_framework/**/*.py", "tests/**/*.py"]
+outputs = { auto = true }
+
+["python:test:eval"]
+depends = ["python:setup"]
+dir = "{{config_root}}/python"
+run = "poetry run deepeval test run eval"
+sources = ["beeai_framework/**/*.py", "eval/**/*.py"]
+outputs = { auto = true }
+
+# release
+
+["python:release"]
+run = '''
+#!/bin/bash
+set -eu -o pipefail
+git fetch origin
+[ "$(git rev-parse @)" = "$(git rev-parse @{u})" ] || echo "Your branch is not up to date! Pull or push changes." && exit 1
+[ -z "$(git status -uno --porcelain)" ] || echo "Your index contains uncommitted changes! Commit them and try again." && exit 1
+rm -rf build dist || true
+poetry run cz bump --increment PATCH
+perl -i -pe 's{(\[.*?\]\()(?!https?://)(.*?)(\))}{$1https://github.com/i-am-bee/beeai-framework/tree/main$2$3}g' README.md
+poetry publish --build
+echo git add README.md >/dev/null
+echo git checkout HEAD README.md >/dev/null
+echo git push
+echo git push origin $(git describe --tags --exact-match)
+'''
+
+# git hooks
+
+["python:git-hooks:pre-commit"]
+depends = ["python:check"]
+
+["python:git-hooks:commit-msg"]
+depends = ["python:setup"]
+dir = "{{config_root}}/python"
+run = "poetry run cz check --allow-abort --commit-msg-file ../.git/COMMIT_EDITMSG"

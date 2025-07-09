@@ -19,20 +19,20 @@ BeeAI framework provides a comprehensive set of features for building powerful A
 
 | Feature | Description |
 |-----------|-------------|
-| [**Agents**](/python/docs/agents.md) | Create intelligent, autonomous agents using the ReAct pattern. Build agents that can reason about problems, take appropriate actions, and adapt their approach based on feedback. Includes pre-built agent architectures and customizable components. |
-| [**Workflows**](/python/docs/workflows.md) | Orchestrate complex multi-agent systems where specialized agents collaborate to solve problems. Define sequential or conditional execution flows with state management and observability. |
-| [**Backend**](/python/docs/backend.md) | Connect to various LLM providers like Ollama, watsonx.ai, and more. Offers unified interfaces for chat, embeddings, and structured outputs, making it easy to swap models without changing your code. |
-| [**Tools**](/python/docs/tools.md) | Extend agent capabilities with ready-to-use tools for web search, weather forecasting, knowledge retrieval, code execution, and more. Create custom tools to connect agents to any API or service. |
-| [**Memory**](/python/docs/memory.md) | Manage conversation history with different memory strategies. Choose from unconstrained memory, token-aware memory, sliding window memory, or summarization memory based on your needs. |
-| [**Templates**](/python/docs/templates.md) | Build flexible prompt templates using an enhanced Mustache syntax. Create reusable templates with variables, conditionals, and loops to generate well-structured prompts. |
+| [**Agents**](https://github.com/i-am-bee/beeai-framework/tree/main/python/docs/agents.md) | Create intelligent, autonomous agents using the ReAct pattern. Build agents that can reason about problems, take appropriate actions, and adapt their approach based on feedback. Includes pre-built agent architectures and customizable components. |
+| [**Workflows**](https://github.com/i-am-bee/beeai-framework/tree/main/python/docs/workflows.md) | Orchestrate complex multi-agent systems where specialized agents collaborate to solve problems. Define sequential or conditional execution flows with state management and observability. |
+| [**Backend**](https://github.com/i-am-bee/beeai-framework/tree/main/python/docs/backend.md) | Connect to various LLM providers like Ollama, watsonx.ai, and more. Offers unified interfaces for chat, embeddings, and structured outputs, making it easy to swap models without changing your code. |
+| [**Tools**](https://github.com/i-am-bee/beeai-framework/tree/main/python/docs/tools.md) | Extend agent capabilities with ready-to-use tools for web search, weather forecasting, knowledge retrieval, code execution, and more. Create custom tools to connect agents to any API or service. |
+| [**Memory**](https://github.com/i-am-bee/beeai-framework/tree/main/python/docs/memory.md) | Manage conversation history with different memory strategies. Choose from unconstrained memory, token-aware memory, sliding window memory, or summarization memory based on your needs. |
+| [**Templates**](https://github.com/i-am-bee/beeai-framework/tree/main/python/docs/templates.md) | Build flexible prompt templates using an enhanced Mustache syntax. Create reusable templates with variables, conditionals, and loops to generate well-structured prompts. |
 
 ### Production optimization
 
 | Feature | Description |
 |-----------|-------------|
-| [**Cache**](/python/docs/cache.md) | Optimize performance and reduce costs with caching mechanisms for tool outputs and LLM responses. Implement different caching strategies based on your application requirements. |
-| [**Serialization**](/python/docs/serialization.md) | Save and load agent state for persistence across sessions. Serialize workflows, memory, and other components to support stateful applications. |
-| [**Errors**](/python/docs/errors.md) | Implement robust error management with specialized error classes. Distinguish between different error types and implement appropriate recovery strategies. |
+| [**Cache**](https://github.com/i-am-bee/beeai-framework/tree/main/python/docs/cache.md) | Optimize performance and reduce costs with caching mechanisms for tool outputs and LLM responses. Implement different caching strategies based on your application requirements. |
+| [**Serialization**](https://github.com/i-am-bee/beeai-framework/tree/main/python/docs/serialization.md) | Save and load agent state for persistence across sessions. Serialize workflows, memory, and other components to support stateful applications. |
+| [**Errors**](https://github.com/i-am-bee/beeai-framework/tree/main/python/docs/errors.md) | Implement robust error management with specialized error classes. Distinguish between different error types and implement appropriate recovery strategies. |
 
 > [!NOTE]
 > Cache and serialization features are not yet implemented in Python, but they are coming soon!
@@ -41,10 +41,10 @@ BeeAI framework provides a comprehensive set of features for building powerful A
 
 | Feature | Description |
 |-----------|-------------|
-| [**Emitter**](/python/docs/emitter.md) | Gain visibility into agent decision processes with a flexible event system. Subscribe to events like updates, errors, and tool executions to monitor agent behavior. |
-| [**Logger**](/python/docs/logger.md) | Track agent actions and system events with comprehensive logging. Configure logging levels and outputs to support debugging and monitoring. |
-| [**Instrumentation**](/python/docs/instrumentation.md) | Monitor performance and usage with OpenTelemetry integration. Collect metrics and traces to understand system behavior in production environments. |
-| [**Version**](/python/docs/version.md) | Access framework version information programmatically to ensure compatibility. |
+| [**Emitter**](https://github.com/i-am-bee/beeai-framework/tree/main/python/docs/emitter.md) | Gain visibility into agent decision processes with a flexible event system. Subscribe to events like updates, errors, and tool executions to monitor agent behavior. |
+| [**Logger**](https://github.com/i-am-bee/beeai-framework/tree/main/python/docs/logger.md) | Track agent actions and system events with comprehensive logging. Configure logging levels and outputs to support debugging and monitoring. |
+| [**Instrumentation**](https://github.com/i-am-bee/beeai-framework/tree/main/python/docs/instrumentation.md) | Monitor performance and usage with OpenTelemetry integration. Collect metrics and traces to understand system behavior in production environments. |
+| [**Version**](https://github.com/i-am-bee/beeai-framework/tree/main/python/docs/version.md) | Access framework version information programmatically to ensure compatibility. |
 
 > [!NOTE]
 > Instrumentation and version features are not yet implemented in Python, but they are coming soon!
@@ -53,8 +53,8 @@ BeeAI framework provides a comprehensive set of features for building powerful A
 
 | Topic | Description |
 |-----------|-------------|
-| [**How to Slack with Bee**](/python/docs/tutorials.md#how-to-slack-with-bee) | This tutorial will guide you through integrating the BeeAI Python Framework with the Slack API. By the end, the agent will be able to post messages to a Slack channel.|
-| [**BeeAI integration using RemoteAgent**](/python/docs/tutorials.md#beeai-integration-using-remoteagent) | BeeAI is an open platform to help you discover, run, and compose AI agents from any framework and language. In this tutorial you will learn how to integrate BeeAI agents into the framework.|
+| [**How to Slack with Bee**](https://github.com/i-am-bee/beeai-framework/tree/main/python/docs/tutorials.md#how-to-slack-with-bee) | This tutorial will guide you through integrating the BeeAI Python Framework with the Slack API. By the end, the agent will be able to post messages to a Slack channel.|
+| [**BeeAI integration using RemoteAgent**](https://github.com/i-am-bee/beeai-framework/tree/main/python/docs/tutorials.md#beeai-integration-using-remoteagent) | BeeAI is an open platform to help you discover, run, and compose AI agents from any framework and language. In this tutorial you will learn how to integrate BeeAI agents into the framework.|
 
 ## Prerequisites
 
@@ -137,7 +137,7 @@ if __name__ == "__main__":
     asyncio.run(main())
 ```
 
-_Source: [python/examples/workflows/multi_agents_simple.py](/python/examples/workflows/multi_agents.py)_
+_Source: [python/examples/workflows/multi_agents_simple.py](https://github.com/i-am-bee/beeai-framework/tree/main/python/examples/workflows/multi_agents.py)_
 
 ### Running the example
 
@@ -151,13 +151,13 @@ To run projects, use:
 python [project_name].py
 ```
 
-➡️ Explore more in our [examples library](/python/examples).
+➡️ Explore more in our [examples library](https://github.com/i-am-bee/beeai-framework/tree/main/python/examples).
 
 ## Contribution guidelines
 
 BeeAI framework is an open-source project and we ❤️ contributions.<br>
 
-If you'd like to help build BeeAI, take a look at our [contribution guidelines](/python/CONTRIBUTING.md).
+If you'd like to help build BeeAI, take a look at our [contribution guidelines](https://github.com/i-am-bee/beeai-framework/tree/main/python/CONTRIBUTING.md).
 
 ## Bugs
 
@@ -165,7 +165,7 @@ We are using GitHub Issues to manage public bugs. We keep a close eye on this, s
 
 ## Code of conduct
 
-This project and everyone participating in it are governed by the [Code of Conduct](/CODE_OF_CONDUCT.md). By participating, you are expected to uphold this code. Please read the [full text](/CODE_OF_CONDUCT.md) so that you can read which actions may or may not be tolerated.
+This project and everyone participating in it are governed by the [Code of Conduct](https://github.com/i-am-bee/beeai-framework/tree/main/CODE_OF_CONDUCT.md). By participating, you are expected to uphold this code. Please read the [full text](https://github.com/i-am-bee/beeai-framework/tree/main/CODE_OF_CONDUCT.md) so that you can read which actions may or may not be tolerated.
 
 ## Legal notice
 

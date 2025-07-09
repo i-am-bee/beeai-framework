@@ -1,0 +1,137 @@
+# setup
+
+["typescript:setup"]
+depends = ["typescript:setup:*"]
+
+["typescript:setup:yarn"]
+dir = "{{config_root}}/typescript"
+run = "yarn install"
+sources = ["yarn.lock", "package.json"]
+outputs = { auto = true }
+
+["typescript:setup:env"]
+dir = "{{config_root}}/typescript"
+run = "cp -n .env.template .env || true"
+
+# check
+
+["typescript:check"]
+depends = ["typescript:check:*"]
+
+["typescript:check:tsc"]
+depends = ["typescript:setup"]
+dir = "{{config_root}}/typescript"
+run = "yarn tsc --noEmit"
+sources = ["src/**/*.ts", "tests/**/*.ts", "*.json"]
+outputs = { auto = true }
+
+["typescript:check:tsc-examples"]
+depends = ["typescript:setup"]
+dir = "{{config_root}}/typescript"
+run = "yarn tsc -p tsconfig.examples.json --noEmit"
+sources = ["src/**/*.ts", "tests/**/*.ts", "examples/**/*.ts", "*.json"]
+outputs = { auto = true }
+
+["typescript:check:eslint"]
+depends = ["typescript:setup"]
+dir = "{{config_root}}/typescript"
+run = "yarn eslint"
+sources = ["src/**/*.ts", "tests/**/*.ts", "examples/**/*.ts", "*.json"]
+outputs = { auto = true }
+
+["typescript:check:prettier"]
+depends = ["typescript:setup"]
+dir = "{{config_root}}/typescript"
+run = "yarn prettier --log-level warn --check ."
+sources = ["src/**/*.ts", "tests/**/*.ts", "examples/**/*.ts", "*.json"]
+outputs = { auto = true }
+
+["typescript:check:commitlint"]
+depends = ["typescript:setup"]
+dir = "{{config_root}}/typescript"
+run = "(git branch --list main | grep main >/dev/null || git fetch origin main:main) && yarn commitlint --from $(git merge-base main HEAD) --to HEAD"
+sources = ["../.git/HEAD"]
+outputs = { auto = true }
+
+# fix
+
+["typescript:fix"]
+depends = ["typescript:fix:*"]
+
+["typescript:fix:eslint"]
+depends = ["typescript:setup"]
+dir = "{{config_root}}/typescript"
+run = "yarn eslint --fix"
+sources = ["src/**/*.ts", "tests/**/*.ts", "examples/**/*.ts", "*.json"]
+outputs = { auto = true }
+
+["typescript:fix:prettier"]
+depends = ["typescript:setup"]
+dir = "{{config_root}}/typescript"
+run = "yarn prettier --log-level warn --write ."
+sources = ["src/**/*", "tests/**/*", "examples/**/*", "docs/**/*", "*"]
+outputs = { auto = true }
+
+# build
+
+["typescript:build"]
+depends = ["typescript:setup", "typescript:check:tsc"]
+dir = "{{config_root}}/typescript"
+run = "rm -rf dist && NODE_OPTIONS='--max-old-space-size=8192' yarn tsup"
+sources = ["src/**/*.ts", "tests/**/*.ts", "examples/**/*.ts", "*.json", "tsup.config.ts"]
+outputs = { auto = true }
+
+# run
+
+["typescript:run"]
+depends = ["typescript:build"]
+dir = "{{config_root}}/typescript"
+run = "yarn tsx --tsconfig tsconfig.examples.json"
+
+["typescript:run:bee"]
+depends = ["typescript:build"]
+dir = "{{config_root}}/typescript"
+run = "yarn tsx --tsconfig tsconfig.examples.json examples/agents/bee.ts"
+
+# test
+
+["typescript:test"]
+depends = ["typescript:test:*"]
+
+["typescript:test:unit"]
+depends = ["typescript:setup"]
+dir = "{{config_root}}/typescript"
+run = "yarn vitest run src"
+sources = ["src/**/*"]
+outputs = { auto = true }
+
+["typescript:test:e2e"]
+depends = ["typescript:setup"]
+dir = "{{config_root}}/typescript"
+run = "yarn vitest run tests/e2e"
+sources = ["src/**/*", "tests/e2e/**/*"]
+outputs = { auto = true }
+
+["typescript:test:examples"]
+depends = ["typescript:setup"]
+dir = "{{config_root}}/typescript"
+run = "yarn vitest --config ./examples/vitest.examples.config.ts run tests/examples"
+sources = ["src/**/*", "examples/**/*", "tests/examples/**/*"]
+outputs = { auto = true }
+
+# release
+
+["typescript:release"]
+depends = ["typescript:check", "typescript:test", "typescript:build"]
+dir = "{{config_root}}/typescript"
+run = "yarn release-it"
+
+# git hooks
+
+["typescript:git-hooks:pre-commit"]
+depends = ["typescript:check", "typescript:test:unit"]
+
+["typescript:git-hooks:commit-msg"]
+depends = ["typescript:setup"]
+dir = "{{config_root}}/typescript"
+run = "yarn commitlint --edit --"

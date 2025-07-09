@@ -15,47 +15,11 @@ on:
       - 'typescript/**/*.ts'
 
 jobs:
-  links:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout Repository
-        uses: actions/checkout@v4
-
-      - name: Link Checker
-        id: lychee
-        uses: lycheeverse/lychee-action@v2
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          fail: true
-          # Only check docs
-          args: |
-            --verbose
-            --no-progress
-            --exclude '(github)\.com'
-            --include-fragments
-            --exclude-path=./docs/python
-            --exclude-path=./docs/typescript
-            --max-concurrency 10
-            --max-retries 0
-            './**/*.mdx'
-
   snippets:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout Repository
-        uses: actions/checkout@v4
-      - name: Enable Corepack
-        run: corepack enable
-      - name: Use Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version-file: "docs/.nvmrc"
-          cache: "yarn"
-          cache-dependency-path: "docs/yarn.lock"
-      - name: Install dependencies
-        working-directory: ./docs
-        run: yarn install --immutable
-      - name: Check snippets
-        run: |
-          cd docs
-          yarn snippets:check
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - run: mise docs:check

@@ -2,7 +2,7 @@ import asyncio
 import os
 
 from dotenv import load_dotenv
-from mcp import ClientSession, StdioServerParameters
+from mcp import StdioServerParameters
 from mcp.client.stdio import stdio_client
 
 from beeai_framework.adapters.ollama import OllamaChatModel
@@ -25,13 +25,11 @@ server_params = StdioServerParameters(
 
 
 async def slack_tool() -> MCPTool:
-    async with stdio_client(server_params) as (read, write), ClientSession(read, write) as session:
-        await session.initialize()
-        # Discover Slack tools via MCP client
-        slacktools = await MCPTool.from_client(session)
-        filter_tool = filter(lambda tool: tool.name == "slack_post_message", slacktools)
-        slack = list(filter_tool)
-        return slack[0]
+    # Discover Slack tools via MCP client
+    slacktools = await MCPTool.from_client(stdio_client(server_params))
+    filter_tool = filter(lambda tool: tool.name == "slack_post_message", slacktools)
+    slack = list(filter_tool)
+    return slack[0]
 
 
 agent = ReActAgent(llm=OllamaChatModel("llama3.1"), tools=[asyncio.run(slack_tool())], memory=UnconstrainedMemory())
