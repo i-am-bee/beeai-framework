@@ -73,12 +73,12 @@ class ACPServer(Generic[AnyAgentLike], Server[AnyAgentLike, ACPServerAgent, "ACP
         self._server = acp_server.Server()
 
     def serve(self) -> None:
-        for member in self.members:
-            factory = type(self)._factories[type(member)]
-            config = self._metadata_by_agent.get(member, None)
-            self._server.register(factory(member, metadata=config))  # type: ignore[call-arg]
-
+        self._setup_members()
         self._server.run(**self._config.model_dump(exclude_none=True))
+
+    async def aserve(self) -> None:
+        self._setup_members()
+        await self._server.serve(**self._config.model_dump(exclude_none=True))
 
     @override
     def register(self, input: AnyAgentLike, **metadata: Unpack[ACPServerMetadata]) -> Self:
@@ -97,6 +97,12 @@ class ACPServer(Generic[AnyAgentLike], Server[AnyAgentLike, ACPServerAgent, "ACP
         self._metadata_by_agent[input] = metadata
 
         return self
+
+    def _setup_members(self) -> None:
+        for member in self.members:
+            factory = type(self)._factories[type(member)]
+            config = self._metadata_by_agent.get(member, None)
+            self._server.register(factory(member, metadata=config))  # type: ignore[call-arg]
 
 
 def to_acp_agent_metadata(metadata: ACPServerMetadata) -> acp_models.Metadata:
