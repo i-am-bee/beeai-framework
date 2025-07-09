@@ -8,7 +8,6 @@ node = "20.15.1"
 yarn = "4.9.1"
 
 # Misc
-yq = "latest"
 fd = "latest"
 "ubi:google/addlicense" = "1.1.1"
 "ubi:lycheeverse/lychee" = "lychee-v0.19.1"

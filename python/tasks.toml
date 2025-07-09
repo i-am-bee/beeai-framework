@@ -43,7 +43,10 @@ outputs = { auto = true }
 ["python:check:commitlint"]
 depends = ["python:setup"]
 dir = "{{config_root}}/python"
-run = "(git branch --list main | grep main >/dev/null || git fetch origin main:main) && poetry run cz check --rev-range $(git merge-base main HEAD)..HEAD"
+run = """
+git rev-parse --verify main || git fetch origin main:main
+test $(git rev-parse HEAD) = $(git rev-parse main) || poetry run cz check --rev-range $(git merge-base main HEAD)..HEAD
+"""
 sources = ["../.git/HEAD"]
 outputs = { auto = true }
 
