@@ -2,6 +2,8 @@ import asyncio
 import sys
 import traceback
 
+from dotenv import load_dotenv
+
 from beeai_framework.adapters.ollama import OllamaChatModel
 from beeai_framework.agents import AgentExecutionConfig
 from beeai_framework.agents.react import ReActAgent
@@ -10,6 +12,8 @@ from beeai_framework.memory import TokenMemory
 from beeai_framework.tools.weather import OpenMeteoTool
 from examples.helpers.io import ConsoleReader
 from examples.tools.experimental.human import HumanTool
+
+load_dotenv()
 
 
 async def main() -> None:
@@ -36,8 +40,8 @@ async def main() -> None:
         # Run the agent and observe events
         response = (
             await agent.run(
-                prompt=prompt,
-                execution=AgentExecutionConfig(max_retries_per_step=3, total_max_retries=10, max_iterations=20),
+                prompt,
+                config=AgentExecutionConfig(max_retries_per_step=3, total_max_retries=10, max_iterations=20),
             )
             .on(
                 "update",

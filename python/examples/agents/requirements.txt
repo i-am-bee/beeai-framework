@@ -1,2 +1,3 @@
 wikipedia-api
 langchain_community
+duckduckgo-search

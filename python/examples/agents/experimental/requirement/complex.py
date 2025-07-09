@@ -1,6 +1,9 @@
 import asyncio
 import math
 
+from dotenv import load_dotenv
+
+from beeai_framework.agents import AgentExecutionConfig
 from beeai_framework.agents.experimental import RequirementAgent
 from beeai_framework.agents.experimental.prompts import (
     RequirementAgentSystemPrompt,
@@ -20,6 +23,8 @@ from beeai_framework.tools import AnyTool, Tool
 from beeai_framework.tools.search.wikipedia import WikipediaTool
 from beeai_framework.tools.think import ThinkTool
 from beeai_framework.tools.weather import OpenMeteoTool
+
+load_dotenv()
 
 
 class RepeatIfEmptyRequirement(Requirement[RequirementAgentRunState]):
@@ -81,9 +86,11 @@ async def main() -> None:
 
     response = await agent.run(
         "What to do in Boston?",
-        context="I already visited Freedom Trail.",
-        # one can pass a Pydantic model to get a structured output
-        expected_output="Detailed plan on what to do from morning to evening, split in sections each with a time range.",
+        config=AgentExecutionConfig(
+            context="I already visited Freedom Trail.",
+            # one can pass a Pydantic model to get a structured output
+            expected_output="Detailed plan on what to do from morning to evening, split in sections each with a time range.",
+        ),
     ).middleware(GlobalTrajectoryMiddleware())
 
     print(response.answer.text)

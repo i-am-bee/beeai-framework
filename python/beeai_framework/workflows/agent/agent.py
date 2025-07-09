@@ -8,15 +8,12 @@ from typing import Any, Self, overload
 
 from pydantic import BaseModel, InstanceOf
 
+from beeai_framework.agents import AgentExecutionConfig, AgentMeta
 from beeai_framework.agents.base import AnyAgent
 from beeai_framework.agents.experimental import RequirementAgent, RequirementAgentRunOutput
 from beeai_framework.agents.tool_calling import ToolCallingAgentRunOutput
 from beeai_framework.agents.tool_calling.agent import ToolCallingAgent
 from beeai_framework.agents.tool_calling.utils import ToolCallCheckerConfig
-from beeai_framework.agents.types import (
-    AgentExecutionConfig,
-    AgentMeta,
-)
 from beeai_framework.backend.chat import ChatModel
 from beeai_framework.backend.message import AnyMessage, AssistantMessage, UserMessage
 from beeai_framework.context import Run
@@ -34,7 +31,7 @@ AgentWorkflowAgentType = ToolCallingAgent | RequirementAgent
 
 
 class AgentWorkflowInput(BaseModel):
-    prompt: str | None = None
+    prompt: str = ""
     context: str | None = None
     expected_output: str | type[BaseModel] | None = None
 
@@ -146,8 +143,11 @@ class AgentWorkflow:
             run_input = state.inputs.pop(0).model_copy() if state.inputs else AgentWorkflowInput()
             state.current_input = run_input
             agent = await create_agent(memory.as_read_only())
+            run_config = execution or AgentExecutionConfig()
+            run_config.context = run_input.context
+            run_config.expected_output = run_input.expected_output
             run_output: ToolCallingAgentRunOutput | RequirementAgentRunOutput = await agent.run(
-                **run_input.model_dump(), execution=execution
+                run_input.prompt, config=run_config
             )
 
             state.final_answer = (

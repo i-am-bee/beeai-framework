@@ -45,7 +45,7 @@ BeeAI framework provides multiple agent implementations for different use cases.
 
 > [!TIP]
 >
-> Check out our new experimental [`RequirementAgent`](./experimental/requirement_agent.md) that combines the power of LLMs, tools, and requirements, all wrapped in a declarative interface. 
+> Check out our new experimental [`RequirementAgent`](./experimental/requirement_agent.md) that combines the power of LLMs, tools, and requirements, all wrapped in a declarative interface.
 > This approach will soon become a default building block for building agents and will replace the others.
 
 ### ReAct Agent
@@ -462,11 +462,12 @@ import traceback
 from pydantic import BaseModel, Field, InstanceOf
 
 from beeai_framework.adapters.ollama import OllamaChatModel
-from beeai_framework.agents import AgentMeta, BaseAgent, BaseAgentRunOptions
+from beeai_framework.agents import AgentMeta, BaseAgent
 from beeai_framework.backend import AnyMessage, AssistantMessage, ChatModel, SystemMessage, UserMessage
 from beeai_framework.context import Run, RunContext
 from beeai_framework.emitter import Emitter
 from beeai_framework.errors import FrameworkError
+from beeai_framework.runnable import RunnableConfig
 from beeai_framework.memory import BaseMemory, UnconstrainedMemory
 
 
@@ -479,7 +480,7 @@ class RunInput(BaseModel):
     message: InstanceOf[AnyMessage]
 
 
-class CustomAgentRunOptions(BaseAgentRunOptions):
+class CustomAgentRunOptions(RunnableConfig):
     max_retries: int | None = None
 
 

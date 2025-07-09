@@ -2,6 +2,8 @@ import asyncio
 import sys
 import traceback
 
+from dotenv import load_dotenv
+
 from beeai_framework.backend import ChatModel
 from beeai_framework.emitter import EmitterOptions
 from beeai_framework.errors import FrameworkError
@@ -9,6 +11,8 @@ from beeai_framework.tools.search.wikipedia import WikipediaTool
 from beeai_framework.tools.weather import OpenMeteoTool
 from beeai_framework.workflows.agent import AgentWorkflow, AgentWorkflowInput
 from examples.helpers.io import ConsoleReader
+
+load_dotenv()
 
 
 async def main() -> None:

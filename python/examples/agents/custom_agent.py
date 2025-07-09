@@ -2,15 +2,18 @@ import asyncio
 import sys
 import traceback
 
+from dotenv import load_dotenv
 from pydantic import BaseModel, Field, InstanceOf
 
 from beeai_framework.adapters.ollama import OllamaChatModel
-from beeai_framework.agents import AgentMeta, BaseAgent, BaseAgentRunOptions
+from beeai_framework.agents import AgentExecutionConfig, AgentMeta, BaseAgent
 from beeai_framework.backend import AnyMessage, AssistantMessage, ChatModel, SystemMessage, UserMessage
 from beeai_framework.context import Run, RunContext
 from beeai_framework.emitter import Emitter
 from beeai_framework.errors import FrameworkError
 from beeai_framework.memory import BaseMemory, UnconstrainedMemory
+
+load_dotenv()
 
 
 class State(BaseModel):
@@ -22,7 +25,7 @@ class RunInput(BaseModel):
     message: InstanceOf[AnyMessage]
 
 
-class CustomAgentRunOptions(BaseAgentRunOptions):
+class CustomAgentRunOptions(AgentExecutionConfig):
     max_retries: int | None = None
 
 
@@ -31,7 +34,7 @@ class CustomAgentRunOutput(BaseModel):
     state: State
 
 
-class CustomAgent(BaseAgent[CustomAgentRunOutput]):
+class CustomAgent(BaseAgent[RunInput, CustomAgentRunOutput, CustomAgentRunOptions]):
     def __init__(self, llm: ChatModel, memory: BaseMemory) -> None:
         super().__init__()
         self.model = llm
@@ -53,8 +56,8 @@ class CustomAgent(BaseAgent[CustomAgentRunOutput]):
 
     def run(
         self,
-        run_input: RunInput,
-        options: CustomAgentRunOptions | None = None,
+        input: RunInput,
+        config: CustomAgentRunOptions | None = None,
     ) -> Run[CustomAgentRunOutput]:
         async def handler(context: RunContext) -> CustomAgentRunOutput:
             class CustomSchema(BaseModel):
@@ -68,9 +71,9 @@ class CustomAgent(BaseAgent[CustomAgentRunOutput]):
                 messages=[
                     SystemMessage("You are a helpful assistant. Always use JSON format for your responses."),
                     *(self.memory.messages if self.memory is not None else []),
-                    run_input.message,
+                    input.message,
                 ],
-                max_retries=options.max_retries if options else None,
+                max_retries=config.max_retries if config else None,
                 abort_signal=context.signal,
             )
 
@@ -83,7 +86,7 @@ class CustomAgent(BaseAgent[CustomAgentRunOutput]):
             )
 
         return self._to_run(
-            handler, signal=options.signal if options else None, run_params={"input": run_input, "options": options}
+            handler, signal=config.signal if config else None, run_params={"input": input, "options": config}
         )
 
     @property

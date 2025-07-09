@@ -105,8 +105,8 @@ async def main() -> None:
     for prompt in reader:
         # Run agent with the prompt
         response = await agent.run(
-            prompt=prompt,
-            execution=AgentExecutionConfig(max_retries_per_step=3, total_max_retries=10, max_iterations=20),
+            prompt,
+            config=AgentExecutionConfig(max_retries_per_step=3, total_max_retries=10, max_iterations=20),
         ).on("*", process_agent_events, EmitterOptions(match_nested=False))
 
         reader.write("Agent 🤖 : ", response.result.text)

@@ -2,6 +2,9 @@ import asyncio
 import sys
 import traceback
 
+from dotenv import load_dotenv
+
+from beeai_framework.agents import AgentExecutionConfig
 from beeai_framework.agents.experimental import RequirementAgent
 from beeai_framework.agents.experimental.requirements import Requirement
 from beeai_framework.agents.experimental.requirements.ask_permission import AskPermissionRequirement
@@ -16,6 +19,8 @@ from beeai_framework.tools.search.wikipedia import WikipediaTool
 from beeai_framework.tools.think import ThinkTool
 from beeai_framework.tools.weather import OpenMeteoTool
 from examples.helpers.io import ConsoleReader
+
+load_dotenv()
 
 reader = ConsoleReader()
 
@@ -117,7 +122,10 @@ async def main() -> None:
         try:
             reader.write("✅", "Processing with travel advisor agent")
             response = await travel_advisor.run(
-                prompt, expected_output="Detailed trip plan for a given destination. Formated as markdown."
+                prompt,
+                config=AgentExecutionConfig(
+                    expected_output="Detailed trip plan for a given destination. Formated as markdown."
+                ),
             ).middleware(GlobalTrajectoryMiddleware(excluded=[Requirement]))  # log tracejtory
             reader.write("✅", "Response received from agent")
             reader.write("🤖 Travel Advisor:\n", response.answer.text)
