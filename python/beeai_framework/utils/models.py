@@ -114,11 +114,11 @@ class JSONSchemaModel(ABC, BaseModel):
 
                 target_type: type | Any = type_mapping.get(raw_type)  # type: ignore[arg-type]
 
-                if target_type is dict:
-                    target_type = cls.create(param_name, param)
-
                 if target_type is list:
                     target_type = list[create_field(param_name, param.get("items"))[0]]  # type: ignore
+
+                if target_type is dict:
+                    target_type = cls.create(param_name, param)
 
                 is_required = param_name in required
                 explicitly_nullable = (
@@ -148,13 +148,16 @@ class JSONSchemaModel(ABC, BaseModel):
 
         properties = schema.get("properties", {})
         if not properties:
-            properties["root"] = schema
+            if schema.get("additionalProperties", {}):
+                properties = {}
+            else:
+                properties["root"] = schema
 
         for param_name, param in properties.items():
             fields[param_name] = create_field(param_name, param)
 
         model: type[JSONSchemaModel] = create_model(  # type: ignore
-            schema_name, __base__=cls, **fields
+            schema_name, **fields, __base__=cls
         )
 
         model._custom_json_schema = schema

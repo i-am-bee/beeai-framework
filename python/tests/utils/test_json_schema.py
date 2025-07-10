@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 from types import NoneType
-from typing import Any, Literal, Optional
+from typing import Any, Literal, Optional, get_args
 
 import pytest
 from pydantic import ValidationError
@@ -31,6 +31,7 @@ def test_json_schema() -> dict[str, list[str] | str | Any]:
                     "city": {"type": "string"},
                     "zipcode": {"type": "integer"},
                 },
+                "required": ["city"],
             },
             "roles": {"type": "array", "items": {"type": "string", "enum": ["admin", "user", "guest"]}},
             "hobby": {"anyOf": [{"type": "string"}, {"type": "null"}], "default": None, "title": "An Arg"},
@@ -40,9 +41,41 @@ def test_json_schema() -> dict[str, list[str] | str | Any]:
     }
 
 
+@pytest.fixture
+def schema_with_additional_properties() -> dict[str, list[str] | str | Any]:
+    return {
+        "properties": {
+            "input": {
+                "additionalProperties": True,
+                "title": "Input",
+                "type": "object",
+            },
+            "config": {
+                "type": "object",
+                "properties": {
+                    "max_retries": {"type": "integer", "default": 3, "title": "Max Retries"},
+                },
+            },
+        },
+        "required": ["input"],
+        "title": "runArguments",
+        "type": "object",
+    }
+
+
 """
 Unit Tests
 """
+
+
+@pytest.mark.unit
+def test_schema_with_additional_properties(schema_with_additional_properties: dict[str, list[str] | str | Any]) -> None:
+    model = JSONSchemaModel.create("test_schema", schema_with_additional_properties)
+    assert model.model_json_schema()
+
+    assert model.model_fields["input"].annotation.model_fields == {}  # type: ignore
+    assert get_args(model.model_fields["config"].annotation)[0].model_fields["max_retries"].annotation == int
+    assert model.model_validate({"input": {"query": "test query"}})
 
 
 @pytest.mark.unit
@@ -84,6 +117,9 @@ def test_json_schema_model(test_json_schema: dict[str, list[str] | str | Any]) -
     assert model.model_fields["roles"].annotation is Optional[list[Literal[("admin", "user", "guest")]]], (  # type: ignore
         "Expected correct type"
     )
+    assert get_args(model.model_fields["address"].annotation)[0].model_fields["city"].annotation is str
+    assert get_args(model.model_fields["address"].annotation)[0].model_fields["street"].annotation == str | NoneType
+    assert get_args(model.model_fields["address"].annotation)[0].model_fields["zipcode"].annotation == int | NoneType
     assert model.model_fields["hobby"].annotation == str | NoneType, "Expected annotation to be `Optional[str]`"
     assert model.model_fields["contact"].annotation == str | int, "Expected annotation to be `Union[str, int]`"
 
