@@ -184,6 +184,7 @@ def test_schema_with_additional_properties(schema_with_additional_properties: di
         model.model_validate({"config": {"test": "test"}})
 
     assert model.model_validate({"input": {"query": "test"}})
+    assert model.model_validate({"input": {"query": "test"}}).model_dump()["input"] == {"query": "test"}
 
     assert model.model_fields["input"].annotation.model_fields == {}  # type: ignore
     assert get_args(model.model_fields["config"].annotation)[0].model_fields["max_retries"].annotation is int
