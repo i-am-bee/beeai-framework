@@ -180,6 +180,11 @@ def test_schema_with_additional_properties(schema_with_additional_properties: di
     model = JSONSchemaModel.create("schema_with_additional_properties", schema_with_additional_properties)
     assert model.model_json_schema()
 
+    with pytest.raises(ValidationError):
+        model.model_validate({"config": {"test": "test"}})
+
+    assert model.model_validate({"input": {"query": "test"}})
+
     assert model.model_fields["input"].annotation.model_fields == {}  # type: ignore
     assert get_args(model.model_fields["config"].annotation)[0].model_fields["max_retries"].annotation is int
     assert model.model_validate({"input": {"query": "test query"}})

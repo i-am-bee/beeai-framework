@@ -1,6 +1,7 @@
 # Copyright 2025 © BeeAI a Series of LF Projects, LLC
 # SPDX-License-Identifier: Apache-2.0
 
+import copy
 from abc import ABC
 from collections.abc import Generator, Sequence
 from contextlib import suppress
@@ -72,7 +73,7 @@ class JSONSchemaModel(ABC, BaseModel):
     def create(cls, schema_name: str, schema: dict[str, Any]) -> type["JSONSchemaModel"]:
         from beeai_framework.backend.utils import inline_schema_refs
 
-        schema = inline_schema_refs(schema)
+        schema = inline_schema_refs(copy.deepcopy(schema))
         type_mapping: dict[str, Any] = {
             "string": str,
             "integer": int,
@@ -153,8 +154,10 @@ class JSONSchemaModel(ABC, BaseModel):
             )
 
         properties = schema.get("properties", {})
+        updated_config = {**cls.model_config}
         if not properties:
             if schema.get("additionalProperties", None) is not None:
+                updated_config.update({"extra": "allow" if schema.get("additionalProperties") else "ignore"})
                 properties = {}
             else:
                 properties["root"] = schema
@@ -163,7 +166,7 @@ class JSONSchemaModel(ABC, BaseModel):
             fields[param_name] = create_field(param_name, param)
 
         model: type[JSONSchemaModel] = create_model(  # type: ignore
-            schema_name, __base__=cls, **fields
+            schema_name, __base__=cls, **fields, __config__=updated_config
         )
 
         model._custom_json_schema = schema
