@@ -96,28 +96,28 @@ def _tool_factory(
         result: ToolOutput = await tool.run(kwargs)
         return result
 
-    class FakeToolSchema(tool.input_schema):  # type: ignore
+    class CustomToolSchema(tool.input_schema):  # type: ignore
         def model_dump_one_level(self) -> dict[str, Any]:
             kwargs: dict[str, Any] = {}
             for field_name in self.__class__.model_fields:
                 kwargs[field_name] = getattr(self, field_name)
             return kwargs
 
-    def always_true_subclasscheck(cls: Any, subclass: type[Any]) -> Any:
-        if cls is ArgModelBase and subclass is FakeToolSchema:
+    def custom_tool_subclasscheck(cls: Any, subclass: type[Any]) -> Any:
+        if cls is ArgModelBase and subclass is CustomToolSchema:
             return True
 
         return original_subclass_check(cls, subclass)
 
     original_subclass_check = ArgModelBase.__class__.__subclasscheck__  # type: ignore
-    ArgModelBase.__class__.__subclasscheck__ = always_true_subclasscheck  # type: ignore
+    ArgModelBase.__class__.__subclasscheck__ = custom_tool_subclasscheck  # type: ignore
 
     return MCPNativeTool(
         fn=run,
         name=tool.name,
         description=tool.description,
         parameters=tool.input_schema.model_json_schema(),
-        fn_metadata=FuncMetadata(arg_model=FakeToolSchema, wrap_output=False),
+        fn_metadata=FuncMetadata(arg_model=CustomToolSchema, wrap_output=False),
         is_async=True,
     )
 
