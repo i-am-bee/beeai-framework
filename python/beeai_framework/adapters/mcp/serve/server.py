@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import contextlib
-from collections.abc import Callable, Coroutine
+from collections.abc import Callable
 from typing import Any, Literal
 
 from pydantic import BaseModel, Field
@@ -17,6 +17,8 @@ try:
     import mcp.server.fastmcp.prompts as mcp_prompts
     import mcp.server.fastmcp.resources as mcp_resources
     import mcp.server.fastmcp.server as mcp_server
+    from mcp.server.fastmcp.tools.base import Tool as MCPNativeTool
+    from mcp.server.fastmcp.utilities.func_metadata import ArgModelBase, FuncMetadata
 except ModuleNotFoundError as e:
     raise ModuleNotFoundError(
         "Optional module [mcp] not found.\nRun 'pip install \"beeai-framework[mcp]\"' to install."
@@ -28,7 +30,7 @@ from beeai_framework.utils import ModelLike
 from beeai_framework.utils.models import to_model
 
 MCPServerTool = MaybeAsync[[Any], ToolOutput]
-MCPServerEntry = mcp_prompts.Prompt | mcp_resources.Resource | MCPServerTool
+MCPServerEntry = mcp_prompts.Prompt | mcp_resources.Resource | MCPServerTool | MCPNativeTool
 
 
 class MCPServerConfig(BaseModel):
@@ -60,17 +62,14 @@ class MCPServer(
             factory = type(self)._get_factory(member)
             entry = factory(member)
 
-            if callable(entry):
-                name, description = (
-                    [member.name, member.description]
-                    if isinstance(member, Tool)
-                    else [member.__name__, member.__doc__ or ""]
-                )
-                self._server.add_tool(fn=entry, name=name, description=description)
+            if isinstance(entry, MCPNativeTool):
+                self._server._tool_manager._tools[entry.name] = entry
             elif isinstance(entry, mcp_prompts.Prompt):
                 self._server.add_prompt(entry)
             elif isinstance(entry, mcp_resources.Resource):
                 self._server.add_resource(entry)
+            elif callable(entry):
+                self._server.add_tool(fn=member.__name__, name=member.__name__, description=member.__doc__ or "")
             else:
                 raise ValueError(f"Input type {type(member)} is not supported by this server.")
 
@@ -92,12 +91,35 @@ class MCPServer(
 
 def _tool_factory(
     tool: AnyTool,
-) -> Callable[[dict[str, Any]], Coroutine[Any, Any, ToolOutput]]:
-    async def run(input: dict[str, Any]) -> ToolOutput:
-        result: ToolOutput = await tool.run(input)
+) -> MCPNativeTool:
+    async def run(**kwargs: Any) -> ToolOutput:
+        result: ToolOutput = await tool.run(kwargs)
         return result
 
-    return run
+    class CustomToolSchema(tool.input_schema):  # type: ignore
+        def model_dump_one_level(self) -> dict[str, Any]:
+            kwargs: dict[str, Any] = {}
+            for field_name in self.__class__.model_fields:
+                kwargs[field_name] = getattr(self, field_name)
+            return kwargs
+
+    def custom_tool_subclasscheck(cls: Any, subclass: type[Any]) -> Any:
+        if cls is ArgModelBase and subclass is CustomToolSchema:
+            return True
+
+        return original_subclass_check(cls, subclass)
+
+    original_subclass_check = ArgModelBase.__class__.__subclasscheck__  # type: ignore
+    ArgModelBase.__class__.__subclasscheck__ = custom_tool_subclasscheck  # type: ignore
+
+    return MCPNativeTool(
+        fn=run,
+        name=tool.name,
+        description=tool.description,
+        parameters=tool.input_schema.model_json_schema(),
+        fn_metadata=FuncMetadata(arg_model=CustomToolSchema, wrap_output=False),
+        is_async=True,
+    )
 
 
 with contextlib.suppress(FactoryAlreadyRegisteredError):
@@ -108,3 +130,6 @@ with contextlib.suppress(FactoryAlreadyRegisteredError):
 
 with contextlib.suppress(FactoryAlreadyRegisteredError):
     MCPServer.register_factory(mcp_prompts.Prompt, identity)
+
+with contextlib.suppress(FactoryAlreadyRegisteredError):
+    MCPServer.register_factory(MCPNativeTool, identity)

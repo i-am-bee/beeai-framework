@@ -124,6 +124,6 @@ depends = ["common:check"]
 [tasks."common:git-hooks:commit-msg"]
 dir = "{{config_root}}"
 run = """
-grep -qE "^(feat|fix|chore|ci|docs|revert)(\\(\\w+\\))?!?: .+" .git/COMMIT_EDITMSG || (echo "ERROR: Commit message does not adhere to conventional commit style!" && exit 1)
+grep -qE "^(fixup! )*(feat|fix|chore|ci|docs|revert)(\\(\\w+\\))?!?: .+" .git/COMMIT_EDITMSG || (echo "ERROR: Commit message does not adhere to conventional commit style!" && exit 1)
 grep -qi "^Signed-off-by: "                                    .git/COMMIT_EDITMSG || (echo "ERROR: Commit message must contain a Signed-off-by line!"            && exit 1)
 """
