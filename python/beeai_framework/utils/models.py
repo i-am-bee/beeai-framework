@@ -70,6 +70,9 @@ class JSONSchemaModel(ABC, BaseModel):
 
     @classmethod
     def create(cls, schema_name: str, schema: dict[str, Any]) -> type["JSONSchemaModel"]:
+        from beeai_framework.backend.utils import inline_schema_refs
+
+        schema = inline_schema_refs(schema)
         type_mapping: dict[str, Any] = {
             "string": str,
             "integer": int,
@@ -92,6 +95,9 @@ class JSONSchemaModel(ABC, BaseModel):
             target_field = Field(
                 description=param.get("description"),
                 default=default if default else const if const else None,
+                pattern=param.get("pattern"),
+                ge=param.get("minimum"),
+                le=param.get("maximum"),
             )
 
             if one_of:
@@ -148,7 +154,7 @@ class JSONSchemaModel(ABC, BaseModel):
 
         properties = schema.get("properties", {})
         if not properties:
-            if schema.get("additionalProperties", {}):
+            if schema.get("additionalProperties", None) is not None:
                 properties = {}
             else:
                 properties["root"] = schema
