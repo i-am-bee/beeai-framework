@@ -121,7 +121,7 @@ class JSONSchemaModel(ABC, BaseModel):
 
                 target_type: type | Any = type_mapping.get(raw_type)  # type: ignore[arg-type]
 
-                if target_type is dict:
+                if target_type is dict and param.get("properties") is not None:
                     target_type = cls.create(param_name, param)
 
                 if target_type is list:
@@ -155,12 +155,14 @@ class JSONSchemaModel(ABC, BaseModel):
 
         properties = schema.get("properties", {})
         updated_config = {**cls.model_config}
+        # additionalProperties is True by default so we allow extra fields
+        updated_config.update({"extra": "allow"})
+
         if not properties:
-            if schema.get("additionalProperties", None) is not None:
-                updated_config.update({"extra": "allow" if schema.get("additionalProperties") else "ignore"})
-                properties = {}
-            else:
-                properties["root"] = schema
+            properties["root"] = schema
+
+        if schema.get("additionalProperties", None) is False:
+            updated_config.update({"extra": "forbid"})
 
         for param_name, param in properties.items():
             fields[param_name] = create_field(param_name, param)
