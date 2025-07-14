@@ -11,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
 from __future__ import annotations
 
 from beeai_framework.backend.embedding import EmbeddingModel
@@ -18,7 +19,7 @@ from beeai_framework.backend.types import EmbeddingModelOutput
 from beeai_framework.logger import Logger
 
 try:
-    from langchain_core.embeddings import Embeddings
+    from langchain_core.embeddings import Embeddings as LCEmbeddingModel
 except ModuleNotFoundError as e:
     raise ModuleNotFoundError(
         "Optional module [langchain] not found.\nRun 'pip install \"beeai-framework[langchain]\"' to install."
@@ -27,7 +28,7 @@ except ModuleNotFoundError as e:
 logger = Logger(__name__)
 
 
-class LangChainBeeAIEmbeddingModel(Embeddings):
+class LangChainBeeAIEmbeddingModel(LCEmbeddingModel):
     def __init__(self, embedding: EmbeddingModel, batch_size: int = 1000) -> None:
         self._embedding_model = embedding
         self._batch_size = batch_size

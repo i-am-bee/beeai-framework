@@ -18,14 +18,14 @@ import os
 import sys
 import traceback
 
+from beeai_framework.adapters.langchain.backend.vectorstore import LangChainVectorStore
 from beeai_framework.adapters.langchain.mappers.documents import lc_document_to_document
 from beeai_framework.adapters.langchain.mappers.lc_embedding import LangChainBeeAIEmbeddingModel
-from beeai_framework.adapters.langchain.vector_store import LangChainVectorStore
-from beeai_framework.adapters.ollama import OllamaChatModel
 from beeai_framework.adapters.watsonx.backend.embedding import WatsonxEmbeddingModel
 from beeai_framework.agents.rag.agent import RAGAgent, RunInput
 from beeai_framework.backend import UserMessage
-from beeai_framework.backend.vector_store import VectorStore
+from beeai_framework.backend.chat import ChatModel
+from beeai_framework.backend.vectorstore import VectorStore
 from beeai_framework.errors import FrameworkError
 from beeai_framework.logger import Logger
 from beeai_framework.memory import UnconstrainedMemory
@@ -67,7 +67,7 @@ async def populate_documents() -> VectorStore:
         print(f"Loading vector store from: {VECTOR_DB_PATH_4_DUMP}")
         lc_embedding = LangChainBeeAIEmbeddingModel(embedding_model)
         lc_inmemory_vector_store = LCInMemoryVectorStore.load(path=VECTOR_DB_PATH_4_DUMP, embedding=lc_embedding)
-        vector_store = LangChainVectorStore(langchain_vector_store=lc_inmemory_vector_store)
+        vector_store = LangChainVectorStore(vector_store=lc_inmemory_vector_store)
     else:
         loader = UnstructuredMarkdownLoader(file_path="python/docs/agents.md")
         docs = loader.load()
@@ -78,7 +78,7 @@ async def populate_documents() -> VectorStore:
         print(f"Loaded {len(documents)} documents")
 
         print("Rebuilding vector store")
-        vector_store = VectorStore.from_name(name="langchain/InMemoryVectorStore", embedding_model=embedding_model)
+        vector_store = VectorStore.from_name(name="langchain:InMemoryVectorStore", embedding_model=embedding_model)
         # vector_store = InMemoryVectorStore(embedding_model)
         _ = await vector_store.add_documents(documents=documents)
         if VECTOR_DB_PATH_4_DUMP:
@@ -92,7 +92,7 @@ async def main() -> None:
         vector_store = await populate_documents()
     else:
         vector_store = None
-    llm = OllamaChatModel("llama3.2:latest")
+    llm = ChatModel.from_name("ollama:llama3.2:latest")
     reranker = DocumentsRerankWithLLM(llm)
 
     agent = RAGAgent(llm=llm, memory=UnconstrainedMemory(), vector_store=vector_store, reranker=reranker)

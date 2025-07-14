@@ -18,7 +18,7 @@ from beeai_framework.backend.types import DocumentWithScore
 
 
 class InMemoryVectorStore:
-    def __init__(self, embedding_model: EmbeddingModel) -> None:
+    def __init__(self, *, embedding_model: EmbeddingModel) -> None:
         super().__init__(embedding_model=embedding_model)
         self.vector_store = LCInMemoryVectorStore(embedding=LangChainBeeAIEmbeddingModel(self.embedding_model))
 
