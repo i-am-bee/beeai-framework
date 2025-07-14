@@ -47,7 +47,7 @@ def awaitable_to_coroutine(awaitable: Awaitable[T]) -> Coroutine[Any, Any, T]:
     return as_coroutine()
 
 
-def sync_run_awaitable(awaitable: Awaitable[T], timeout: int | None = None) -> T:
+def run_sync(awaitable: Awaitable[T], *, timeout: int | None = None) -> T:
     """
     Run *awaitable* from synchronous code.
 

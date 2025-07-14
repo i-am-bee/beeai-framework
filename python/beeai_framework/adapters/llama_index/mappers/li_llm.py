@@ -5,7 +5,7 @@ from pydantic import Field
 from beeai_framework.backend import UserMessage
 from beeai_framework.backend.chat import ChatModel
 from beeai_framework.backend.types import ChatModelOutput
-from beeai_framework.utils.asynchronous import sync_run_awaitable
+from beeai_framework.utils.asynchronous import run_sync
 
 try:
     from llama_index.core.base.llms.types import CompletionResponse, CompletionResponseGen, LLMMetadata
@@ -32,7 +32,7 @@ class LlamaIndexLLM(CustomLLM):
     def complete(self, prompt: str, formatted: bool = False, **kwargs: Any) -> CompletionResponse:
         messages = [UserMessage(prompt)]
         # Formatted argument is neglected as no structure is enforced
-        response: ChatModelOutput = sync_run_awaitable(self.bai_llm.create(messages=messages))
+        response: ChatModelOutput = run_sync(self.bai_llm.create(messages=messages))
         completion_response = CompletionResponse(text=response.messages[-1].text)
         return completion_response
 

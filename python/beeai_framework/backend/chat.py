@@ -32,9 +32,9 @@ from beeai_framework.backend.types import (
 from beeai_framework.backend.utils import (
     filter_tools_by_tool_choice,
     generate_tool_union_schema,
-    load_model,
+    load_module,
     parse_broken_json,
-    parse_model,
+    parse_module,
 )
 from beeai_framework.cache.null_cache import NullCache
 from beeai_framework.context import Run, RunContext, RunMiddlewareType
@@ -349,14 +349,14 @@ IMPORTANT: You MUST answer with a JSON object that matches the JSON schema above
         /,
         **kwargs: Any,
     ) -> "ChatModel":
-        parsed_model = parse_model(name)
-        TargetChatModel = load_model(parsed_model.provider_id, "chat")  # type: ignore # noqa: N806
+        parsed_model = parse_module(name)
+        TargetChatModel = load_module(parsed_model.provider_id, "chat")  # type: ignore # noqa: N806
         if options and isinstance(options, ChatModelParameters):
             kwargs["parameters"] = to_model(ChatModelParameters, options)
         elif options:
             kwargs.update(options)
 
-        return TargetChatModel(parsed_model.model_id, **kwargs)  # type: ignore
+        return TargetChatModel(parsed_model.entity_id, **kwargs)  # type: ignore
 
     def _force_tool_call_via_response_format(
         self,

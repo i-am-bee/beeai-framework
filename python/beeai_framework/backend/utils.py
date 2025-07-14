@@ -11,8 +11,10 @@ from pydantic import ConfigDict, Field, RootModel, create_model
 
 from beeai_framework.backend.constants import (
     BackendProviders,
+    ModuleClassSuffix,
+    ModuleTypes,
     ProviderDef,
-    ProviderModelDef,
+    ProviderModuleDef,
     ProviderName,
 )
 from beeai_framework.backend.errors import BackendError
@@ -32,7 +34,7 @@ def find_provider_def(value: str) -> ProviderDef | None:
     return None
 
 
-def parse_model(name: str) -> ProviderModelDef:
+def parse_module(name: str) -> ProviderModuleDef:
     if not name:
         raise BackendError("Neither 'provider' nor 'provider:model' was specified.")
 
@@ -45,21 +47,24 @@ def parse_model(name: str) -> ProviderModelDef:
     if not provider_def:
         raise BackendError("Model does not contain provider name!")
 
-    return ProviderModelDef(
+    return ProviderModuleDef(
         provider_id=name_parts[0],
-        model_id=name_parts[1] if len(name_parts) > 1 else None,
+        entity_id=name_parts[1] if len(name_parts) > 1 else None,
         provider_def=provider_def,
     )
 
 
-def load_model(name: ProviderName | str, model_type: Literal["embedding", "chat"] = "chat") -> type[T]:
-    parsed = parse_model(name)
+def load_module(name: ProviderName | str, module_type: ModuleTypes = "chat") -> type[T]:
+    def capitalize_first_letter(module_type: str) -> str:
+        return module_type[0].upper() + module_type[1:] if module_type else module_type
+
+    parsed = parse_module(name)
     provider_def = parsed.provider_def
 
-    module_path = f"beeai_framework.adapters.{provider_def.module}.backend.{model_type}"
+    module_path = f"beeai_framework.adapters.{provider_def.module}.backend.{module_type.lower()}"
     module = import_module(module_path)
 
-    class_name = f"{provider_def.name}{model_type.capitalize()}Model"
+    class_name = f"{provider_def.name}{capitalize_first_letter(module_type)}{ModuleClassSuffix[module_type]}"
     return getattr(module, class_name)  # type: ignore
 
 

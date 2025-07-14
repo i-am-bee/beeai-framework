@@ -18,7 +18,7 @@ from beeai_framework.backend.events import (
     embedding_model_event_types,
 )
 from beeai_framework.backend.types import EmbeddingModelInput, EmbeddingModelOutput
-from beeai_framework.backend.utils import load_model, parse_model
+from beeai_framework.backend.utils import load_module, parse_module
 from beeai_framework.context import Run, RunContext, RunMiddlewareType
 from beeai_framework.emitter import Emitter
 from beeai_framework.utils import AbortSignal
@@ -88,9 +88,9 @@ class EmbeddingModel(ABC):
 
     @staticmethod
     def from_name(name: str | ProviderName, **kwargs: Any) -> "EmbeddingModel":
-        parsed_model = parse_model(name)
-        TargetChatModel: type = load_model(parsed_model.provider_id, "embedding")  # noqa: N806
-        return TargetChatModel(parsed_model.model_id, **kwargs)  # type: ignore
+        parsed_model = parse_module(name)
+        TargetChatModel: type = load_module(parsed_model.provider_id, "embedding")  # noqa: N806
+        return TargetChatModel(parsed_model.entity_id, **kwargs)  # type: ignore
 
     @abstractmethod
     async def _create(

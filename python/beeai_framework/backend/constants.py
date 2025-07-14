@@ -6,11 +6,35 @@ from typing import Literal
 from pydantic import BaseModel
 
 ProviderName = Literal[
-    "ollama", "openai", "watsonx", "groq", "xai", "vertexai", "amazon_bedrock", "anthropic", "azure_openai", "mistralai"
+    "ollama",
+    "openai",
+    "watsonx",
+    "groq",
+    "xai",
+    "vertexai",
+    "amazon_bedrock",
+    "anthropic",
+    "azure_openai",
+    "mistralai",
+    "langchain",
+    "llamaindex",
 ]
 ProviderHumanName = Literal[
-    "Ollama", "OpenAI", "Watsonx", "Groq", "XAI", "VertexAI", "AmazonBedrock", "Anthropic", "AzureOpenAI", "MistralAI"
+    "Ollama",
+    "OpenAI",
+    "Watsonx",
+    "Groq",
+    "XAI",
+    "VertexAI",
+    "AmazonBedrock",
+    "Anthropic",
+    "AzureOpenAI",
+    "MistralAI"
+    "LangChain",
+    "LlamaIndex",
 ]
+
+ModuleTypes = Literal["embedding", "chat", "vectorStore"]
 
 
 class ProviderDef(BaseModel):
@@ -19,9 +43,9 @@ class ProviderDef(BaseModel):
     aliases: list[str]
 
 
-class ProviderModelDef(BaseModel):
+class ProviderModuleDef(BaseModel):
     provider_id: str
-    model_id: str | None = None
+    entity_id: str | None = None
     provider_def: ProviderDef
 
 
@@ -44,4 +68,8 @@ BackendProviders = {
         aliases=["azure_openai", "azure"],
     ),
     "mistralAI": ProviderDef(name="MistralAI", module="mistralai", aliases=["mistral"]),
+    "Langchain": ProviderDef(name="LangChain", module="langchain", aliases=["langchain", "LangChain"]),
+    "Llamaindex": ProviderDef(name="LlamaIndex", module="llamaindex", aliases=["llamaindex", "LlamaIndex"]),
 }
+
+ModuleClassSuffix = {"embedding": "Model", "chat": "Model", "vectorStore": ""}

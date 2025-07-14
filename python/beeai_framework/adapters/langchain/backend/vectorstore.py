@@ -22,7 +22,7 @@ from beeai_framework.backend.types import Document, DocumentWithScore
 
 try:
     from langchain_core.documents import Document as LCDocument
-    from langchain_core.vectorstores import VectorStore as VectorStoreFromLC
+    from langchain_core.vectorstores import VectorStore as LCVectorStore
 except ModuleNotFoundError as e:
     raise ModuleNotFoundError(
         "Optional module [langchain] not found.\nRun 'pip install \"beeai-framework[langchain]\"' to install."
@@ -30,15 +30,18 @@ except ModuleNotFoundError as e:
 
 from beeai_framework.adapters.langchain.mappers.documents import document_to_lc_document, lc_document_to_document
 from beeai_framework.backend.embedding import EmbeddingModel
-from beeai_framework.backend.vector_store import VectorStore
+from beeai_framework.backend.vectorstore import VectorStore
 from beeai_framework.logger import Logger
+
+logger = Logger(__name__)
 
 
 class LangChainVectorStore(VectorStore):
-    integration_name: str = "langchain"
+    provider_id: str = "langchain"
 
-    def __init__(self, langchain_vector_store: VectorStoreFromLC) -> None:
-        self.vector_store: VectorStoreFromLC = langchain_vector_store
+    def __init__(self, *, vector_store: LCVectorStore) -> None:
+        super().__init__()
+        self.vector_store: LCVectorStore = vector_store
 
     async def add_documents(self, documents: Document) -> list[str]:
         if self.vector_store is None:
@@ -82,7 +85,7 @@ class LangChainVectorStore(VectorStore):
                 cls_obj = getattr(module, class_name)
                 lc_vector_store = cls_obj(embedding_function=lc_embedding, **kwargs)
             except (ImportError, AttributeError):
-                Logger.info(
+                logger.info(
                     f"Failed to import LangChain vector store {class_name} from the external integrations, \
                             trying standard LangChain integration"
                 )
@@ -95,7 +98,7 @@ class LangChainVectorStore(VectorStore):
                 cls_obj = getattr(module, class_name)
                 lc_vector_store = cls_obj(embedding_function=lc_embedding, **kwargs)
             except (ImportError, AttributeError):
-                Logger.error(f"Failed to import class {class_name}")
+                logger.error(f"Failed to import class {class_name}")
                 return None
 
-        return cls(langchain_vector_store=lc_vector_store)
+        return cls(vector_store=lc_vector_store)

@@ -19,7 +19,7 @@ from beeai_framework.adapters.llama_index.mappers.documents import (
 )
 from beeai_framework.adapters.llama_index.mappers.li_llm import LlamaIndexLLM
 from beeai_framework.backend.chat import ChatModel
-from beeai_framework.backend.document_processor import DocumentProcessor
+from beeai_framework.backend.documentprocessor import DocumentProcessor
 from beeai_framework.backend.types import DocumentWithScore
 
 try:

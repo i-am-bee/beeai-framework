@@ -19,6 +19,7 @@ from typing import Any, ClassVar
 
 from beeai_framework.backend.embedding import EmbeddingModel
 from beeai_framework.backend.types import Document, DocumentWithScore
+from beeai_framework.backend.utils import load_module, parse_module
 
 
 class VectorStore(ABC):
@@ -26,7 +27,7 @@ class VectorStore(ABC):
 
     def __init_subclass__(cls, /, **kwargs: Any) -> None:
         super().__init_subclass__(**kwargs)
-        cls._integration_registry[cls.integration_name.lower()] = cls
+        cls._integration_registry[cls.provider_id.lower()] = cls
 
     @abstractmethod
     def _class_from_name(self, class_name: str, embedding_model: EmbeddingModel, **kwargs: Any) -> VectorStore:
@@ -61,11 +62,10 @@ class VectorStore(ABC):
         ImportError
             If the specified class cannot be found in any known integration package.
         """
-        integration_name = name[: name.find("/")].lower()
-        if integration_name not in cls._integration_registry:
-            raise ImportError(f"Unknown integration: {integration_name}")
-        return cls._integration_registry[integration_name]._class_from_name(
-            class_name=name[name.find("/") + 1 :], embedding_model=embedding_model, **kwargs
+        parsed_module = parse_module(name)
+        TargetVectorStore = load_module(parsed_module.provider_id, "vectorStore")  # type: ignore # noqa: N806
+        return TargetVectorStore._class_from_name(
+            class_name=parsed_module.entity_id, embedding_model=embedding_model, **kwargs
         )
 
     @abstractmethod

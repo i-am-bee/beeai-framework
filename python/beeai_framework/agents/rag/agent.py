@@ -16,15 +16,17 @@ from enum import Enum
 
 from pydantic import BaseModel, InstanceOf
 
-from beeai_framework.agents import AgentMeta, BaseAgent, BaseAgentRunOptions
+from beeai_framework.agents import AgentExecutionConfig, AgentMeta, BaseAgent
 from beeai_framework.agents.rag.prompts import QUERY_IMPROVEMENT_PROMPT
 from beeai_framework.backend import AnyMessage, AssistantMessage, ChatModel, SystemMessage, UserMessage
 from beeai_framework.backend.types import DocumentWithScore
-from beeai_framework.backend.vector_store import VectorStore
+from beeai_framework.backend.vectorstore import VectorStore
 from beeai_framework.context import Run, RunContext
 from beeai_framework.emitter import Emitter
 from beeai_framework.memory import BaseMemory
+from beeai_framework.memory.unconstrained_memory import UnconstrainedMemory
 from beeai_framework.retrieval.document_processors.document_processors import DocumentsRerankWithLLM
+from beeai_framework.utils.cancellation import AbortSignal
 
 
 class State(BaseModel):
@@ -33,10 +35,6 @@ class State(BaseModel):
 
 class RunInput(BaseModel):
     message: InstanceOf[AnyMessage]
-
-
-class RAGAgentRunOptions(BaseAgentRunOptions):
-    max_retries: int | None = None
 
 
 class RAGAgentRunOutput(BaseModel):
@@ -50,10 +48,9 @@ class FallbackStrategy(str, Enum):
 
 
 class RAGAgent(BaseAgent[RAGAgentRunOutput]):
-    memory: BaseMemory | None = None
-
     def __init__(
         self,
+        *,
         llm: ChatModel,
         memory: BaseMemory,
         vector_store: VectorStore,
@@ -61,7 +58,7 @@ class RAGAgent(BaseAgent[RAGAgentRunOutput]):
     ) -> None:
         super().__init__()
         self.model = llm
-        self.memory = memory
+        self._memory = memory or UnconstrainedMemory()
         self.vector_store = vector_store
         self.reranker = reranker
 
@@ -73,13 +70,14 @@ class RAGAgent(BaseAgent[RAGAgentRunOutput]):
 
     def run(
         self,
-        run_input: RunInput,
-        options: RAGAgentRunOptions | None = None,
+        prompt: RunInput,
+        execution: AgentExecutionConfig | None = None,
+        signal: AbortSignal | None = None,
     ) -> Run[RAGAgentRunOutput]:
         async def handler(context: RunContext) -> RAGAgentRunOutput:
-            await self.memory.add(run_input.message) if self.memory else None
+            await self.memory.add(prompt.message)
 
-            query = run_input.message.text
+            query = prompt.message.text
             retrieved_docs = await self.vector_store.search(query, k=10)
 
             # Apply re-ranking
@@ -96,23 +94,21 @@ class RAGAgent(BaseAgent[RAGAgentRunOutput]):
 
             messages = [
                 SystemMessage("You are a helpful agent, answer based only on the context."),
-                *(self.memory.messages if self.memory is not None else []),
+                *self.memory.messages,
                 input_message,
             ]
             response = await self.model.create(
                 messages=messages,
-                max_retries=options.max_retries if options else None,
+                max_retries=execution.total_max_retries if execution else None,
                 abort_signal=context.signal,
             )
 
             result = AssistantMessage(response.messages[-1].text)
-            await self.memory.add(result) if self.memory else None
+            await self.memory.add(result)
 
             return RAGAgentRunOutput(message=result)
 
-        return self._to_run(
-            handler, signal=options.signal if options else None, run_params={"input": run_input, "options": options}
-        )
+        return self._to_run(handler, signal=signal, run_params={"input": prompt, "execution": execution})
 
     async def _search_with_scores(self, query: str) -> list[DocumentWithScore]:
         next_search_technique = "rerank"
@@ -143,6 +139,14 @@ class RAGAgent(BaseAgent[RAGAgentRunOutput]):
             if retrieved_docs:
                 return retrieved_docs
         return []
+
+    @property
+    def memory(self) -> BaseMemory:
+        return self._memory
+
+    @memory.setter
+    def memory(self, memory: BaseMemory) -> None:
+        self._memory = memory
 
     @property
     def meta(self) -> AgentMeta:
