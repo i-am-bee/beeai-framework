@@ -8,7 +8,7 @@ from dotenv import load_dotenv
 from mcp import ClientSession, StdioServerParameters
 from mcp.client.stdio import stdio_client
 
-from beeai_framework.agents import AgentExecutionConfig
+from beeai_framework.agents import AgentContext
 from beeai_framework.agents.tool_calling import ToolCallingAgent
 from beeai_framework.backend import ChatModel, ChatModelParameters
 from beeai_framework.emitter import EventMeta
@@ -89,8 +89,8 @@ async def main() -> None:
 
         # Run agent with the prompt
         response = await agent.run(
-            prompt="Post the current temperature in Prague to the '#bee-playground-xxx' Slack channel.",
-            execution=AgentExecutionConfig(max_retries_per_step=3, total_max_retries=10, max_iterations=20),
+            "Post the current temperature in Prague to the '#bee-playground-xxx' Slack channel.",
+            context=AgentContext(max_retries_per_step=3, total_max_retries=10, max_iterations=20),
         ).on("*", print_events)
 
         print("Agent 🤖 : ", response.result.text)

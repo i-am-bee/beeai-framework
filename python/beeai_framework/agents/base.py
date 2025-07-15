@@ -21,7 +21,7 @@ from pydantic import BaseModel
 from typing_extensions import TypeVar
 
 from beeai_framework.agents.errors import AgentError
-from beeai_framework.agents.types import AgentExecutionConfig, AgentMeta, AgentRunOutput
+from beeai_framework.agents.types import AgentContext, AgentMeta, AgentRunOutput
 from beeai_framework.backend.message import UserMessage
 from beeai_framework.context import Run, RunContext, RunMiddlewareType
 from beeai_framework.emitter import Emitter
@@ -32,7 +32,7 @@ from beeai_framework.utils.models import ModelLike
 
 Input = TypeVar("Input", bound=str | UserMessage | ModelLike, default=str)
 Output = TypeVar("Output", bound=BaseModel, default=AgentRunOutput)
-Config = TypeVar("Config", bound=AgentExecutionConfig, default=AgentExecutionConfig)
+Config = TypeVar("Config", bound=AgentContext, default=AgentContext)
 
 
 class BaseAgent(Runnable[Input, Output, Config]):

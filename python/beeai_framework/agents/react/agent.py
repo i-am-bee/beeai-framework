@@ -40,7 +40,7 @@ from beeai_framework.agents.react.types import (
     ReActAgentTemplatesKeys,
 )
 from beeai_framework.agents.types import (
-    AgentExecutionConfig,
+    AgentContext,
     AgentMeta,
 )
 from beeai_framework.backend.chat import ChatModel
@@ -52,7 +52,7 @@ from beeai_framework.template import PromptTemplate
 from beeai_framework.tools.tool import AnyTool
 
 
-class ReActAgent(BaseAgent[str, ReActAgentRunOutput, AgentExecutionConfig]):
+class ReActAgent(BaseAgent[str, ReActAgentRunOutput, AgentContext]):
     _runner: Callable[..., BaseRunner]
 
     def __init__(
@@ -62,7 +62,7 @@ class ReActAgent(BaseAgent[str, ReActAgentRunOutput, AgentExecutionConfig]):
         memory: BaseMemory,
         meta: AgentMeta | None = None,
         templates: dict[ReActAgentTemplatesKeys, PromptTemplate[Any] | ReActAgentTemplateFactory] | None = None,
-        execution: AgentExecutionConfig | None = None,
+        execution: AgentContext | None = None,
         stream: bool = True,
     ) -> None:
         super().__init__()
@@ -112,8 +112,8 @@ class ReActAgent(BaseAgent[str, ReActAgentRunOutput, AgentExecutionConfig]):
             extra_description="\n".join(extra_description) if len(tools) > 0 else None,
         )
 
-    def run(self, input: str, config: AgentExecutionConfig | None = None) -> Run[ReActAgentRunOutput]:
-        run_config = config or self._input.execution or AgentExecutionConfig()
+    def run(self, input: str, context: AgentContext | None = None) -> Run[ReActAgentRunOutput]:
+        run_config = context or self._input.execution or AgentContext()
 
         async def handler(context: RunContext) -> ReActAgentRunOutput:
             runner = self._runner(
@@ -182,7 +182,7 @@ class ReActAgent(BaseAgent[str, ReActAgentRunOutput, AgentExecutionConfig]):
                         ),
                     )
 
-            if input is not None:
+            if input:
                 await self._input.memory.add(
                     UserMessage(content=input, meta=MessageMeta({"createdAt": context.created_at}))
                 )

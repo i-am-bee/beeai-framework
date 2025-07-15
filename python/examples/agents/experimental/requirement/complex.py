@@ -3,7 +3,7 @@ import math
 
 from dotenv import load_dotenv
 
-from beeai_framework.agents import AgentExecutionConfig
+from beeai_framework.agents import AgentContext
 from beeai_framework.agents.experimental import RequirementAgent
 from beeai_framework.agents.experimental.prompts import (
     RequirementAgentSystemPrompt,
@@ -86,7 +86,7 @@ async def main() -> None:
 
     response = await agent.run(
         "What to do in Boston?",
-        config=AgentExecutionConfig(
+        context=AgentContext(
             context="I already visited Freedom Trail.",
             # one can pass a Pydantic model to get a structured output
             expected_output="Detailed plan on what to do from morning to evening, split in sections each with a time range.",

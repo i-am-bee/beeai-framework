@@ -17,7 +17,7 @@ from typing import Annotated, Any
 
 from pydantic import BaseModel, InstanceOf
 
-from beeai_framework.agents import AgentExecutionConfig, AgentMeta, AgentRunOutput
+from beeai_framework.agents import AgentContext, AgentMeta, AgentRunOutput
 from beeai_framework.agents.react.runners.default.prompts import (
     AssistantPromptTemplateInput,
     SchemaErrorTemplateInput,
@@ -32,7 +32,7 @@ from beeai_framework.agents.react.runners.default.prompts import (
 from beeai_framework.backend.chat import ChatModel
 from beeai_framework.backend.types import ChatModelOutput
 from beeai_framework.memory.base_memory import BaseMemory
-from beeai_framework.runnable import RunnableConfig
+from beeai_framework.runnable import RunnableContext
 from beeai_framework.template import PromptTemplate
 from beeai_framework.tools.tool import AnyTool
 from beeai_framework.utils.strings import to_json
@@ -46,8 +46,8 @@ class ReActAgentIterationMeta(BaseModel):
     iteration: int
 
 
-class ReActAgentRunOptions(RunnableConfig):
-    execution: AgentExecutionConfig | None = None
+class ReActAgentRunOptions(RunnableContext):
+    execution: AgentContext | None = None
 
 
 class ReActAgentIterationResult(BaseModel):
@@ -98,5 +98,5 @@ class ReActAgentInput(BaseModel):
     memory: InstanceOf[BaseMemory]
     meta: InstanceOf[AgentMeta] | None = None
     templates: dict[ReActAgentTemplatesKeys, InstanceOf[PromptTemplate[Any]] | ReActAgentTemplateFactory] | None = None
-    execution: AgentExecutionConfig | None = None
+    execution: AgentContext | None = None
     stream: bool = True

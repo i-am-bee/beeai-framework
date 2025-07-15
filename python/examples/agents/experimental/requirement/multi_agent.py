@@ -4,7 +4,7 @@ import traceback
 
 from dotenv import load_dotenv
 
-from beeai_framework.agents import AgentExecutionConfig
+from beeai_framework.agents import AgentContext
 from beeai_framework.agents.experimental import RequirementAgent
 from beeai_framework.agents.experimental.requirements import Requirement
 from beeai_framework.agents.experimental.requirements.ask_permission import AskPermissionRequirement
@@ -123,7 +123,7 @@ async def main() -> None:
             reader.write("✅", "Processing with travel advisor agent")
             response = await travel_advisor.run(
                 prompt,
-                config=AgentExecutionConfig(
+                context=AgentContext(
                     expected_output="Detailed trip plan for a given destination. Formated as markdown."
                 ),
             ).middleware(GlobalTrajectoryMiddleware(excluded=[Requirement]))  # log tracejtory

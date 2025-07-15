@@ -24,7 +24,7 @@ from beeai_framework.utils import AbortSignal
 from beeai_framework.utils.models import ModelLike
 
 
-class RunnableConfig(BaseModel):
+class RunnableContext(BaseModel):
     """Configuration and runtime metadata for a Runnable."""
 
     """The runnable's abort signal data"""
@@ -33,11 +33,11 @@ class RunnableConfig(BaseModel):
 
 Input = TypeVar("Input", bound=str | UserMessage | ModelLike)
 Output = TypeVar("Output", bound=str | ModelLike)
-Config = TypeVar("Config", bound=RunnableConfig)
+Config = TypeVar("Config", bound=RunnableContext)
 
 
 class Runnable(Generic[Input, Output, Config], ABC):
     """A unit of work that can be invoked using a stable interface."""
 
     @abstractmethod
-    def run(self, input: Input, config: Config | None = None) -> Run[Output]: ...
+    def run(self, input: Input, context: Config | None = None) -> Run[Output]: ...

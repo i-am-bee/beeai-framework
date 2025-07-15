@@ -18,7 +18,7 @@ from typing import Any
 from pydantic import BaseModel
 from typing_extensions import TypeVar
 
-from beeai_framework.agents import AgentError, AgentExecutionConfig, AgentMeta
+from beeai_framework.agents import AgentContext, AgentError, AgentMeta
 from beeai_framework.agents.base import BaseAgent
 from beeai_framework.agents.experimental._utils import _create_system_message
 from beeai_framework.agents.experimental.events import (
@@ -67,7 +67,7 @@ RequirementAgentRequirement = Requirement[RequirementAgentRunState]
 TOutput = TypeVar("TOutput", bound=BaseModel, default=FinalAnswerToolSchema)
 
 
-class RequirementAgent(BaseAgent[str, RequirementAgentRunOutput, AgentExecutionConfig]):
+class RequirementAgent(BaseAgent[str, RequirementAgentRunOutput, AgentContext]):
     def __init__(
         self,
         *,
@@ -110,8 +110,8 @@ class RequirementAgent(BaseAgent[str, RequirementAgentRunOutput, AgentExecutionC
         self._meta = AgentMeta(name=name or "", description=description or "", tools=self._tools)
         self.middlewares.extend(middlewares or [])
 
-    def run(self, input: str, config: AgentExecutionConfig | None = None) -> Run[RequirementAgentRunOutput[TOutput]]:
-        run_config = config or AgentExecutionConfig(max_retries_per_step=3)
+    def run(self, input: str, context: AgentContext | None = None) -> Run[RequirementAgentRunOutput[TOutput]]:
+        run_config = context or AgentContext(max_retries_per_step=3)
 
         async def init_state() -> tuple[RequirementAgentRunState, UserMessage | None]:
             state = RequirementAgentRunState(

@@ -16,12 +16,12 @@ from pydantic import BaseModel, ConfigDict, Field, InstanceOf
 
 from beeai_framework.backend import AssistantMessage
 from beeai_framework.memory import BaseMemory
-from beeai_framework.runnable import RunnableConfig
+from beeai_framework.runnable import RunnableContext
 from beeai_framework.tools.tool import AnyTool
 
 
-class AgentExecutionConfig(RunnableConfig):
-    """An agent's execution configuration."""
+class AgentContext(RunnableContext):
+    """An agent's execution context."""
 
     context: str | None = None
     """

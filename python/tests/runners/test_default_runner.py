@@ -15,7 +15,7 @@
 
 import pytest
 
-from beeai_framework.agents import AgentExecutionConfig
+from beeai_framework.agents import AgentContext
 from beeai_framework.agents.react.runners.base import ReActAgentRunnerToolInput
 from beeai_framework.agents.react.runners.default.runner import DefaultRunner
 from beeai_framework.agents.react.types import (
@@ -45,7 +45,7 @@ async def test_runner_init() -> None:
         llm=llm,
         tools=[OpenMeteoTool()],
         memory=TokenMemory(llm),
-        execution=AgentExecutionConfig(max_iterations=10, max_retries_per_step=3, total_max_retries=10),
+        execution=AgentContext(max_iterations=10, max_retries_per_step=3, total_max_retries=10),
     )
     # TODO Figure out run
     runner = DefaultRunner(input=input, options=ReActAgentRunOptions(execution=input.execution, signal=None), run=None)  # type: ignore

@@ -7,7 +7,7 @@ from dotenv import load_dotenv
 from pydantic import BaseModel
 
 from beeai_framework.adapters.ollama import OllamaChatModel
-from beeai_framework.agents import AgentExecutionConfig
+from beeai_framework.agents import AgentContext
 from beeai_framework.agents.react import ReActAgent
 from beeai_framework.emitter import Emitter, EmitterOptions, EventMeta
 from beeai_framework.errors import FrameworkError
@@ -108,9 +108,13 @@ async def main() -> None:
 
     for prompt in reader:
         response = await agent.run(
-            prompt=prompt,
-            execution=AgentExecutionConfig(max_retries_per_step=3, total_max_retries=10, max_iterations=20),
-            signal=AbortSignal.timeout(2 * 60 * 1000),
+            prompt,
+            context=AgentContext(
+                max_retries_per_step=3,
+                total_max_retries=10,
+                max_iterations=20,
+                signal=AbortSignal.timeout(2 * 60 * 1000),
+            ),
         ).observe(observer)
 
         reader.write("Agent 🤖 : ", response.result.text)

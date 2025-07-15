@@ -14,6 +14,6 @@
 
 from beeai_framework.agents.base import AnyAgent, BaseAgent
 from beeai_framework.agents.errors import AgentError
-from beeai_framework.agents.types import AgentExecutionConfig, AgentMeta, AgentRunOutput
+from beeai_framework.agents.types import AgentContext, AgentMeta, AgentRunOutput
 
-__all__ = ["AgentError", "AgentExecutionConfig", "AgentMeta", "AgentRunOutput", "AnyAgent", "BaseAgent"]
+__all__ = ["AgentContext", "AgentError", "AgentMeta", "AgentRunOutput", "AnyAgent", "BaseAgent"]

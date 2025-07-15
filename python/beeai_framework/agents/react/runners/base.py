@@ -18,7 +18,7 @@ from typing import Any, Self
 
 from pydantic import BaseModel, InstanceOf
 
-from beeai_framework.agents import AgentError, AgentExecutionConfig
+from beeai_framework.agents import AgentContext, AgentError
 from beeai_framework.agents.react.events import react_agent_event_types
 from beeai_framework.agents.react.types import (
     ReActAgentInput,
@@ -64,7 +64,7 @@ class ReActAgentRunnerToolInput(BaseModel):
 
 
 class BaseRunner(ABC):
-    def __init__(self, input: ReActAgentInput, options: AgentExecutionConfig, run: RunContext) -> None:
+    def __init__(self, input: ReActAgentInput, options: AgentContext, run: RunContext) -> None:
         self._input = input
         self._options = options
         self._memory: BaseMemory | None = None

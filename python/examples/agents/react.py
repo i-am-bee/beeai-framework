@@ -8,7 +8,7 @@ from typing import Any
 
 from dotenv import load_dotenv
 
-from beeai_framework.agents import AgentExecutionConfig
+from beeai_framework.agents import AgentContext
 from beeai_framework.agents.react import ReActAgent
 from beeai_framework.backend import ChatModel, ChatModelParameters
 from beeai_framework.emitter import EmitterOptions, EventMeta
@@ -106,7 +106,7 @@ async def main() -> None:
         # Run agent with the prompt
         response = await agent.run(
             prompt,
-            config=AgentExecutionConfig(max_retries_per_step=3, total_max_retries=10, max_iterations=20),
+            context=AgentContext(max_retries_per_step=3, total_max_retries=10, max_iterations=20),
         ).on("*", process_agent_events, EmitterOptions(match_nested=False))
 
         reader.write("Agent 🤖 : ", response.result.text)

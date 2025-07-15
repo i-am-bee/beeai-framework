@@ -6,7 +6,7 @@ import traceback
 from dotenv import load_dotenv
 from pydantic import BaseModel
 
-from beeai_framework.agents import AgentExecutionConfig
+from beeai_framework.agents import AgentContext
 from beeai_framework.agents.tool_calling import (
     ToolCallingAgent,
     ToolCallingAgentStartEvent,
@@ -71,7 +71,7 @@ async def main() -> None:
     # Main interaction loop with user input
     for prompt in reader:
         reader.write("ℹ️ ", "enter a location for which you would like to get the weather forecast")
-        response = await agent.run(prompt, config=AgentExecutionConfig(expected_output=WeatherForecatModel)).on(
+        response = await agent.run(prompt, context=AgentContext(expected_output=WeatherForecatModel)).on(
             "*",
             log_intermediate_steps,
         )

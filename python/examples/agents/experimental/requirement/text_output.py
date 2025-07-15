@@ -2,7 +2,7 @@ import asyncio
 
 from dotenv import load_dotenv
 
-from beeai_framework.agents import AgentExecutionConfig
+from beeai_framework.agents import AgentContext
 from beeai_framework.agents.experimental import RequirementAgent
 from beeai_framework.backend import ChatModel
 from beeai_framework.middleware.trajectory import GlobalTrajectoryMiddleware
@@ -17,7 +17,7 @@ async def main() -> None:
         # pass the task
         "Write a step-by-step tutorial on how to bake bread.",
         # nudge the model to format an output
-        config=AgentExecutionConfig(
+        context=AgentContext(
             expected_output="The output should be an ordered list of steps. Each step should be ideally one sentence."
         ),
     ).middleware(GlobalTrajectoryMiddleware())  # log intermediate steps

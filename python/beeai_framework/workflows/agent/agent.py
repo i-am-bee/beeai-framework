@@ -19,7 +19,7 @@ from typing import Any, Self, overload
 
 from pydantic import BaseModel, InstanceOf
 
-from beeai_framework.agents import AgentExecutionConfig, AgentMeta
+from beeai_framework.agents import AgentContext, AgentMeta
 from beeai_framework.agents.base import AnyAgent
 from beeai_framework.agents.experimental import RequirementAgent, RequirementAgentRunOutput
 from beeai_framework.agents.tool_calling import ToolCallingAgentRunOutput
@@ -93,7 +93,7 @@ class AgentWorkflow:
         llm: ChatModel,
         instructions: str | None = None,
         tools: list[InstanceOf[AnyTool]] | None = None,
-        execution: AgentExecutionConfig | None = None,
+        execution: AgentContext | None = None,
         save_intermediate_steps: bool = True,
         meta: AgentMeta | None = None,
         tool_call_checker: ToolCallCheckerConfig | bool | None = None,
@@ -111,7 +111,7 @@ class AgentWorkflow:
         llm: ChatModel | None = None,
         instructions: str | None = None,
         tools: list[InstanceOf[AnyTool]] | None = None,
-        execution: AgentExecutionConfig | None = None,
+        execution: AgentContext | None = None,
         save_intermediate_steps: bool = True,
         meta: AgentMeta | None = None,
         tool_call_checker: ToolCallCheckerConfig | bool | None = None,
@@ -154,11 +154,11 @@ class AgentWorkflow:
             run_input = state.inputs.pop(0).model_copy() if state.inputs else AgentWorkflowInput()
             state.current_input = run_input
             agent = await create_agent(memory.as_read_only())
-            run_config = execution or AgentExecutionConfig()
+            run_config = execution or AgentContext()
             run_config.context = run_input.context
             run_config.expected_output = run_input.expected_output
             run_output: ToolCallingAgentRunOutput | RequirementAgentRunOutput = await agent.run(
-                run_input.prompt, config=run_config
+                run_input.prompt, context=run_config
             )
 
             state.final_answer = (

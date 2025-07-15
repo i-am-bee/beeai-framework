@@ -18,7 +18,7 @@ from typing import Any
 
 from pydantic import BaseModel, Field, create_model
 
-from beeai_framework.agents import AgentError, AgentExecutionConfig
+from beeai_framework.agents import AgentContext, AgentError
 from beeai_framework.agents.base import BaseAgent
 from beeai_framework.agents.tool_calling.events import (
     ToolCallingAgentStartEvent,
@@ -86,8 +86,8 @@ class ToolCallingAgent(BaseAgent):
         self._tool_call_checker = tool_call_checker
         self._final_answer_as_tool = final_answer_as_tool
 
-    def run(self, input: str, config: AgentExecutionConfig | None = None) -> Run[ToolCallingAgentRunOutput]:
-        run_config = config or AgentExecutionConfig()
+    def run(self, input: str, context: AgentContext | None = None) -> Run[ToolCallingAgentRunOutput]:
+        run_config = context or AgentContext()
 
         async def handler(run_context: RunContext) -> ToolCallingAgentRunOutput:
             state = ToolCallingAgentRunState(memory=UnconstrainedMemory(), result=None, iteration=0)

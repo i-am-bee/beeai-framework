@@ -5,7 +5,7 @@ import traceback
 from dotenv import load_dotenv
 
 from beeai_framework.adapters.ollama import OllamaChatModel
-from beeai_framework.agents import AgentExecutionConfig
+from beeai_framework.agents import AgentContext
 from beeai_framework.agents.react import ReActAgent
 from beeai_framework.errors import FrameworkError
 from beeai_framework.memory import TokenMemory
@@ -41,7 +41,7 @@ async def main() -> None:
         response = (
             await agent.run(
                 prompt,
-                config=AgentExecutionConfig(max_retries_per_step=3, total_max_retries=10, max_iterations=20),
+                context=AgentContext(max_retries_per_step=3, total_max_retries=10, max_iterations=20),
             )
             .on(
                 "update",

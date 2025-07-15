@@ -6,7 +6,7 @@ from dotenv import load_dotenv
 from pydantic import BaseModel, Field, InstanceOf
 
 from beeai_framework.adapters.ollama import OllamaChatModel
-from beeai_framework.agents import AgentExecutionConfig, AgentMeta, BaseAgent
+from beeai_framework.agents import AgentContext, AgentMeta, BaseAgent
 from beeai_framework.backend import AnyMessage, AssistantMessage, ChatModel, SystemMessage, UserMessage
 from beeai_framework.context import Run, RunContext
 from beeai_framework.emitter import Emitter
@@ -25,7 +25,7 @@ class RunInput(BaseModel):
     message: InstanceOf[AnyMessage]
 
 
-class CustomAgentRunOptions(AgentExecutionConfig):
+class CustomAgentRunOptions(AgentContext):
     max_retries: int | None = None
 
 
@@ -57,9 +57,9 @@ class CustomAgent(BaseAgent[RunInput, CustomAgentRunOutput, CustomAgentRunOption
     def run(
         self,
         input: RunInput,
-        config: CustomAgentRunOptions | None = None,
+        context: CustomAgentRunOptions | None = None,
     ) -> Run[CustomAgentRunOutput]:
-        async def handler(context: RunContext) -> CustomAgentRunOutput:
+        async def handler(run_context: RunContext) -> CustomAgentRunOutput:
             class CustomSchema(BaseModel):
                 thought: str = Field(description="Describe your thought process before coming with a final answer")
                 final_answer: str = Field(
@@ -73,8 +73,8 @@ class CustomAgent(BaseAgent[RunInput, CustomAgentRunOutput, CustomAgentRunOption
                     *(self.memory.messages if self.memory is not None else []),
                     input.message,
                 ],
-                max_retries=config.max_retries if config else None,
-                abort_signal=context.signal,
+                max_retries=context.max_retries if context else None,
+                abort_signal=run_context.signal,
             )
 
             result = AssistantMessage(response.object["final_answer"])
@@ -86,7 +86,7 @@ class CustomAgent(BaseAgent[RunInput, CustomAgentRunOutput, CustomAgentRunOption
             )
 
         return self._to_run(
-            handler, signal=config.signal if config else None, run_params={"input": input, "options": config}
+            handler, signal=context.signal if context else None, run_params={"input": input, "options": context}
         )
 
     @property
