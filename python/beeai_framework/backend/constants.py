@@ -29,7 +29,7 @@ ProviderHumanName = Literal[
     "AmazonBedrock",
     "Anthropic",
     "AzureOpenAI",
-    "MistralAI"
+    "MistralAI",
     "LangChain",
     "LlamaIndex",
 ]
