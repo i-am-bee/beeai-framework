@@ -89,7 +89,6 @@ all = [
 
 
 [tool.mypy]
-mypy_path = ["$MYPY_CONFIG_FILE_DIR/beeai_framework"]
 exclude = ["^build/$", "^examples/playground/"]
 check_untyped_defs = true
 plugins = ["pydantic.mypy"]
