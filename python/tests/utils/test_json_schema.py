@@ -193,6 +193,20 @@ def test_schema_with_additional_properties(schema_with_additional_properties: di
 
 
 @pytest.mark.unit
+@pytest.mark.parametrize("additional_properties", [True, False])
+def test_empty_object_schema(additional_properties: bool) -> None:
+    schema = {
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "additionalProperties": additional_properties,
+        "properties": {},
+        "type": "object",
+    }
+
+    model = JSONSchemaModel.create("test_empty_object", schema)
+    assert model.model_json_schema()
+
+
+@pytest.mark.unit
 def test_json_schema_model(test_json_schema: dict[str, list[str] | str | Any]) -> None:
     model = JSONSchemaModel.create("test_json_schema", test_json_schema)
     assert model.model_json_schema()

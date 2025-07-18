@@ -154,15 +154,11 @@ class JSONSchemaModel(ABC, BaseModel):
             )
 
         properties = schema.get("properties", {})
-        updated_config = {**cls.model_config}
-        # additionalProperties is True by default so we allow extra fields
-        updated_config.update({"extra": "allow"})
+        updated_config = ConfigDict(**cls.model_config)
+        updated_config["extra"] = "allow" if schema.get("additionalProperties") else "forbid"
 
-        if not properties:
+        if not properties and schema.get("type") != "object":
             properties["root"] = schema
-
-        if schema.get("additionalProperties", None) is False:
-            updated_config.update({"extra": "forbid"})
 
         for param_name, param in properties.items():
             fields[param_name] = create_field(param_name, param)
