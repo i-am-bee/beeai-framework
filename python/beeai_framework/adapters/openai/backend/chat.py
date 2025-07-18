@@ -1,6 +1,6 @@
 # Copyright 2025 © BeeAI a Series of LF Projects, LLC
 # SPDX-License-Identifier: Apache-2.0
-
+import contextlib
 import os
 
 from typing_extensions import Unpack
@@ -51,6 +51,11 @@ class OpenAIChatModel(LiteLLMChatModel):
         self._assert_setting_value(
             "base_url", base_url, envs=["OPENAI_API_BASE"], aliases=["api_base"], allow_empty=True
         )
+
+        if self._settings.get("base_url") and kwargs.get("tool_choice_support") is None:
+            with contextlib.suppress(KeyError):
+                self._tool_choice_support.remove("required")
+
         self._settings["extra_headers"] = utils.parse_extra_headers(
             self._settings.get("extra_headers"), os.getenv("OPENAI_API_HEADERS")
         )

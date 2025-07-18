@@ -52,6 +52,7 @@ from beeai_framework.utils.strings import generate_random_string, to_json
 T = TypeVar("T", bound=BaseModel)
 TTool = TypeVar("TTool", bound=AnyTool)
 ChatModelFinishReason: Literal["stop", "length", "function_call", "content_filter", "null"]
+ToolChoiceType = Literal["required", "none", "single", "auto"]
 logger = Logger(__name__)
 
 
@@ -64,6 +65,7 @@ class ChatModelKwargs(TypedDict, total=False):
     cache: InstanceOf[ChatModelCache]
     settings: dict[str, Any]
     middlewares: Sequence[RunMiddlewareType]
+    tool_choice_support: set[ToolChoiceType]
 
     __pydantic_config__ = ConfigDict(extra="forbid", arbitrary_types_allowed=True)  # type: ignore
 
@@ -72,7 +74,7 @@ _ChatModelKwargsAdapter = TypeAdapter(ChatModelKwargs)
 
 
 class ChatModel(ABC):
-    tool_choice_support: ClassVar[set[str]] = {"required", "none", "single", "auto"}
+    tool_choice_support: ClassVar[set[ToolChoiceType]] = {"required", "none", "single", "auto"}
     tool_call_fallback_via_response_format: bool
     model_supports_tool_calling: bool
     use_strict_model_schema: bool
@@ -104,6 +106,13 @@ class ChatModel(ABC):
         self.model_supports_tool_calling = kwargs.get("model_supports_tool_calling", True)
         self.use_strict_tool_schema = kwargs.get("use_strict_tool_schema", True)
         self.use_strict_model_schema = kwargs.get("use_strict_model_schema", False)
+
+        custom_tool_choice_support = kwargs.get("tool_choice_support")
+        self._tool_choice_support: set[ToolChoiceType] = (
+            custom_tool_choice_support
+            if custom_tool_choice_support is not None
+            else type(self).tool_choice_support.copy()
+        )
 
     @cached_property
     def emitter(self) -> Emitter:
@@ -367,9 +376,9 @@ IMPORTANT: You MUST answer with a JSON object that matches the JSON schema above
             return False
 
         tool_choice_supported = not tool_choice or (
-            "single" in self.tool_choice_support
+            "single" in self._tool_choice_support
             if isinstance(tool_choice, Tool)
-            else tool_choice in self.tool_choice_support
+            else tool_choice in self._tool_choice_support
         )
 
         return not self.model_supports_tool_calling or not tool_choice_supported

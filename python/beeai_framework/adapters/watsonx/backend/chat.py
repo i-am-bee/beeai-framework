@@ -8,7 +8,7 @@ from typing_extensions import Unpack
 
 from beeai_framework.adapters.litellm.chat import LiteLLMChatModel
 from beeai_framework.backend import ChatModelParameters
-from beeai_framework.backend.chat import ChatModelKwargs
+from beeai_framework.backend.chat import ChatModelKwargs, ToolChoiceType
 from beeai_framework.backend.constants import ProviderName
 from beeai_framework.logger import Logger
 
@@ -16,7 +16,7 @@ logger = Logger(__name__)
 
 
 class WatsonxChatModel(LiteLLMChatModel):
-    tool_choice_support: ClassVar[set[str]] = {"none", "single", "auto"}
+    tool_choice_support: ClassVar[set[ToolChoiceType]] = {"none", "single", "auto"}
 
     @property
     def provider_id(self) -> ProviderName:

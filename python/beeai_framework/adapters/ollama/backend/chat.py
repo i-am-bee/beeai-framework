@@ -8,7 +8,7 @@ from typing_extensions import Unpack
 
 from beeai_framework.adapters.litellm.chat import LiteLLMChatModel
 from beeai_framework.adapters.litellm.utils import parse_extra_headers
-from beeai_framework.backend.chat import ChatModelKwargs
+from beeai_framework.backend.chat import ChatModelKwargs, ToolChoiceType
 from beeai_framework.backend.constants import ProviderName
 from beeai_framework.logger import Logger
 
@@ -16,7 +16,7 @@ logger = Logger(__name__)
 
 
 class OllamaChatModel(LiteLLMChatModel):
-    tool_choice_support: ClassVar[set[str]] = set()
+    tool_choice_support: ClassVar[set[ToolChoiceType]] = set()
 
     @property
     def provider_id(self) -> ProviderName:
