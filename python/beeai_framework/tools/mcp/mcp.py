@@ -1,14 +1,11 @@
 # Copyright 2025 © BeeAI a Series of LF Projects, LLC
 # SPDX-License-Identifier: Apache-2.0
+from typing import Any, Self
 
-import contextlib
-from typing import Any, ClassVar, Self
-
-from anyio.streams.memory import MemoryObjectReceiveStream, MemoryObjectSendStream
+from beeai_framework.tools.mcp.utils.session_provider import MCPClient, MCPSessionProvider
 
 try:
     from mcp import ClientSession
-    from mcp.shared.message import SessionMessage
     from mcp.types import CallToolResult
     from mcp.types import Tool as MCPToolInfo
 except ModuleNotFoundError as e:
@@ -28,16 +25,11 @@ from beeai_framework.utils.strings import to_safe_word
 
 logger = Logger(__name__)
 
-
-MCPClient = contextlib._AsyncGeneratorContextManager[
-    tuple[MemoryObjectReceiveStream[SessionMessage | Exception], MemoryObjectSendStream[SessionMessage]], None
-]
+__all__ = ["MCPClient", "MCPTool"]
 
 
 class MCPTool(Tool[BaseModel, ToolRunOptions, JSONToolOutput]):
     """Tool implementation for Model Context Protocol."""
-
-    _resources: ClassVar[list[tuple[MCPClient, ClientSession]]] = []
 
     def __init__(self, session: ClientSession, tool: MCPToolInfo, **options: int) -> None:
         """Initialize MCPTool with client and tool configuration."""
@@ -76,26 +68,19 @@ class MCPTool(Tool[BaseModel, ToolRunOptions, JSONToolOutput]):
     async def from_client(cls, client: MCPClient | ClientSession) -> list["MCPTool"]:
         if isinstance(client, ClientSession):
             return await cls.from_session(client)
-        read, write, *_ = await client.__aenter__()
-        session = await ClientSession(read, write).__aenter__()
-        cls._resources.append((client, session))
-        await session.initialize()
-        return await cls.from_session(session)
+
+        manager = MCPSessionProvider(client)
+        session = await manager.session()
+        instance = await cls.from_session(session)
+        return instance
+
+    def __del__(self) -> None:
+        MCPSessionProvider.destroy(self._session)
 
     @classmethod
     async def from_session(cls, session: ClientSession) -> list["MCPTool"]:
         tools_result = await session.list_tools()
         return [MCPTool(session, tool) for tool in tools_result.tools]
-
-    @classmethod
-    async def cleanup(cls) -> None:
-        # TODO count references and close unsused sessions
-        while cls._resources:
-            client, session = cls._resources.pop(0)
-            with contextlib.suppress(Exception):
-                await session.__aexit__(None, None, None)
-            with contextlib.suppress(Exception):
-                await client.__aexit__(None, None, None)
 
     async def clone(self) -> Self:
         cloned = await super().clone()

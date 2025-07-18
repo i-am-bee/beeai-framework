@@ -2,8 +2,10 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import asyncio
+import contextlib
 import functools
 import inspect
+from asyncio import CancelledError
 from collections.abc import AsyncGenerator, Awaitable, Callable
 from typing import ParamSpec, TypeVar
 
@@ -29,3 +31,10 @@ def ensure_async(fn: Callable[P, T | Awaitable[T]]) -> Callable[P, Awaitable[T]]
 async def to_async_generator(items: list[T]) -> AsyncGenerator[T]:
     for item in items:
         yield item
+
+
+async def cancel_task(task: asyncio.Task[None] | None) -> None:
+    if task:
+        task.cancel()
+        with contextlib.suppress(CancelledError):
+            await task
