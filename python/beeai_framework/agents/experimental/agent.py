@@ -1,6 +1,6 @@
 # Copyright 2025 © BeeAI a Series of LF Projects, LLC
 # SPDX-License-Identifier: Apache-2.0
-
+import uuid
 from collections.abc import Sequence
 from typing import Any
 
@@ -136,10 +136,11 @@ class RequirementAgent(BaseAgent[RequirementAgentRunOutput]):
 
             reasoner = RequirementsReasoner(
                 tools=self._tools,
-                requirements=self._requirements,
                 final_answer=FinalAnswerTool(expected_output, state=state),
                 context=run_context,
             )
+            await reasoner.update(self._requirements)
+
             tool_call_cycle_checker = self._create_tool_call_checker()
             tool_call_retry_counter = RetryCounter(error_type=AgentError, max_retries=run_config.total_max_retries or 1)
             force_final_answer_as_tool = self._final_answer_as_tool
@@ -188,7 +189,7 @@ class RequirementAgent(BaseAgent[RequirementAgentRunOutput]):
                         final_answer_input = {"response": full_text}
 
                     if not final_answer_input:
-                        reasoner.update(requirements=[])
+                        await reasoner.update(requirements=[])
                         force_final_answer_as_tool = True
                         continue
 
@@ -218,6 +219,7 @@ class RequirementAgent(BaseAgent[RequirementAgentRunOutput]):
                     ):
                         state.steps.append(
                             RequirementAgentRunStateStep(
+                                id=str(uuid.uuid4()),
                                 iteration=state.iteration,
                                 input=tool_call.input,
                                 output=tool_call.output,

@@ -51,6 +51,7 @@ RequirementAgentTemplatesKeys = Annotated[str, lambda v: v in RequirementAgentTe
 class RequirementAgentRunStateStep(BaseModel):
     model_config = ConfigDict(extra="allow")
 
+    id: str
     iteration: int
     tool: InstanceOf[Tool[Any, Any, Any]] | None
     input: Any

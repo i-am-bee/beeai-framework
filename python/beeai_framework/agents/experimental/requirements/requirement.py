@@ -8,13 +8,14 @@ from functools import cached_property
 from typing import Any, Generic, Self
 
 from pydantic import BaseModel, Field
-from typing_extensions import TypeVar
+from typing_extensions import TypeVar, override
 
 from beeai_framework.agents.experimental.requirements._utils import (
     MultiTargetType,
     _assert_targets_exist,
     _extract_targets,
 )
+from beeai_framework.agents.experimental.requirements.events import RequirementInitEvent, requirement_event_types
 from beeai_framework.context import Run, RunContext, RunMiddlewareType
 from beeai_framework.emitter import Emitter
 from beeai_framework.errors import FrameworkError
@@ -56,7 +57,7 @@ class Requirement(ABC, Generic[T]):
         return Emitter.root().child(
             namespace=["requirement", to_safe_word(self.name)],
             creator=self,
-            events={},
+            events=requirement_event_types,
         )
 
     @property
@@ -73,8 +74,8 @@ class Requirement(ABC, Generic[T]):
     @abstractmethod
     def run(self, state: T) -> Run[list[Rule]]: ...
 
-    def init(self, *, tools: list[AnyTool], ctx: RunContext) -> None:
-        pass
+    async def init(self, *, tools: list[AnyTool], ctx: RunContext) -> None:
+        await ctx.emitter.emit("init", RequirementInitEvent(tools=tools))
 
     async def clone(self) -> Self:
         instance = type(self).__new__(self.__class__)
@@ -132,7 +133,10 @@ def requirement(
                 else:
                     return result
 
-            def init(self, *, tools: list[AnyTool], ctx: RunContext) -> None:
+            @override
+            async def init(self, *, tools: list[AnyTool], ctx: RunContext) -> None:
+                await super().init(tools=tools, ctx=ctx)
+
                 _assert_targets_exist(targets=tools, allowed=req_targets)
 
         return FunctionRequirement()

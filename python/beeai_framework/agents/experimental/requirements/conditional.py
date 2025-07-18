@@ -5,7 +5,7 @@ import math
 from collections.abc import Callable
 from typing import Generic, Self
 
-from typing_extensions import TypeVar
+from typing_extensions import TypeVar, override
 
 from beeai_framework.agents.experimental.requirements._utils import (
     MultiTargetType,
@@ -100,7 +100,10 @@ class ConditionalRequirement(Generic[TInput], Requirement[TInput]):
         if self._force_at_step is not None and self._force_at_step < 1:
             raise ValueError("The 'force_at_step' argument must be >= 1!")
 
-    def init(self, *, tools: list[AnyTool], ctx: RunContext) -> None:
+    @override
+    async def init(self, *, tools: list[AnyTool], ctx: RunContext) -> None:
+        await super().init(tools=tools, ctx=ctx)
+
         targets = self._before & self._after & self._force_after & {self.source}
         _assert_all_rules_found(targets, tools)
 

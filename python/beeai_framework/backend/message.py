@@ -121,6 +121,9 @@ class Message(ABC, Generic[T]):
     def __str__(self) -> str:
         return to_json(self.to_plain(), sort_keys=False)
 
+    def clone(self) -> Self:
+        return type(self)([c.model_copy() for c in self.content], self.meta.copy())
+
 
 AssistantMessageContent = MessageTextContent | MessageToolCallContent
 

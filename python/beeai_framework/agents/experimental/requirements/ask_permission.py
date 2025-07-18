@@ -4,6 +4,8 @@
 from collections.abc import Sequence
 from typing import Any
 
+from typing_extensions import override
+
 from beeai_framework.agents.experimental.requirements._utils import (
     MultiTargetType,
     _assert_all_rules_found,
@@ -57,7 +59,10 @@ class AskPermissionRequirement(Requirement[RequirementAgentRunState]):
         self._always_allow = always_allow
         self._handler = ensure_async(handler) if handler else _default_handler
 
-    def init(self, *, tools: list[AnyTool], ctx: RunContext) -> None:
+    @override
+    async def init(self, *, tools: list[AnyTool], ctx: RunContext) -> None:
+        await super().init(tools=tools, ctx=ctx)
+
         _assert_all_rules_found(self._include, tools)
         _assert_all_rules_found(self._exclude, tools)
 

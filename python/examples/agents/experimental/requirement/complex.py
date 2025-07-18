@@ -1,6 +1,8 @@
 import asyncio
 import math
 
+from typing_extensions import override
+
 from beeai_framework.agents.experimental import RequirementAgent
 from beeai_framework.agents.experimental.prompts import (
     RequirementAgentSystemPrompt,
@@ -35,7 +37,10 @@ class RepeatIfEmptyRequirement(Requirement[RequirementAgentRunState]):
         self._remaining = self._limit
 
     # this part is optional (you don't need to verify whether tools exist)
-    def init(self, *, tools: list[AnyTool], ctx: RunContext) -> None:
+    @override
+    async def init(self, *, tools: list[AnyTool], ctx: RunContext) -> None:
+        await super().init(tools=tools, ctx=ctx)
+
         self._targets.extend([tool for tool in tools if isinstance(tool, self._target_cls)])
         if not self._targets:
             raise ValueError(f"No tool of type {self._target_cls.__name__} found!")

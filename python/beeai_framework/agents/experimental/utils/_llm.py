@@ -20,24 +20,22 @@ class RequirementsReasoner:
         self,
         *,
         tools: Sequence[AnyTool],
-        requirements: Sequence[Requirement[RequirementAgentRunState]],
         final_answer: FinalAnswerTool,
         context: RunContext,
     ) -> None:
         self._tools = [*tools, final_answer]
-        self._entries = list(requirements)
+        self._entries: list[Requirement[RequirementAgentRunState]] = []
         self._context = context
         self.final_answer = final_answer
-        self.update(requirements)
 
-    def update(self, requirements: Sequence[Requirement[RequirementAgentRunState]]) -> None:
+    async def update(self, requirements: Sequence[Requirement[RequirementAgentRunState]]) -> None:
         self._entries.clear()
 
         for requirement in requirements:
             self._entries.append(requirement)
 
         for entry in self._entries:
-            entry.init(tools=self._tools, ctx=self._context)
+            await entry.init(tools=self._tools, ctx=self._context)
 
     def _find_tool_by_name(self, name: str) -> AnyTool:
         tool: AnyTool | None = next((t for t in self._tools if t.name == name), None)
