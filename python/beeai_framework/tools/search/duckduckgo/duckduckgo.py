@@ -5,7 +5,7 @@ import os
 from typing import Self
 
 try:
-    from duckduckgo_search import DDGS
+    from ddgs import DDGS
 except ModuleNotFoundError as e:
     raise ModuleNotFoundError(
         "Optional module [duckduckgo] not found.\nRun 'pip install \"beeai-framework[duckduckgo]\"' to install."
@@ -65,7 +65,7 @@ class DuckDuckGoSearchTool(Tool[DuckDuckGoSearchToolInput, ToolRunOptions, DuckD
             results = DDGS(
                 proxy=os.environ.get("BEEAI_DDG_TOOL_PROXY"),
                 verify=os.environ.get("BEEAI_DDG_TOOL_PROXY_VERIFY", "").lower() != "false",
-            ).text(input.query, max_results=self.max_results, safesearch=self.safe_search)
+            ).text(input.query, max_results=self.max_results, safesearch=self.safe_search, backend="duckduckgo")
             search_results: list[SearchToolResult] = [
                 DuckDuckGoSearchToolResult(
                     title=result.get("title") or "", description=result.get("body") or "", url=result.get("href") or ""

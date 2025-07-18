@@ -24,7 +24,7 @@ aiofiles = "^24.1.0"
 boto3 = {version = "^1.37.5", optional = true}
 cachetools = "^5.5.2"
 chevron = "^0.14.0"
-duckduckgo-search = {version = ">=8.0.5", optional = true }
+ddgs = { version="^9.3.1", optional = true }
 fastapi = {version = "^0.115.0", optional = true }
 json-repair = "^0.39.0"
 jsonref = "^1.1.0"
@@ -63,8 +63,8 @@ types-requests = "^2.32.0.20241016"
 [tool.poetry.extras]
 langchain = ["langchain-core", "langchain-community", "langgraph", "langchain-ollama"]
 huggingface = ["datasets", "transformers"]
-search = ["duckduckgo-search", "wikipedia-api"]
-duckduckgo = ["duckduckgo-search"]
+search = ["ddgs", "wikipedia-api"]
+duckduckgo = ["ddgs"]
 wikipedia = ["wikipedia-api"]
 mcp = ["mcp"]
 acp = ["acp-sdk", "uvicorn"]
@@ -78,7 +78,7 @@ all = [
     "langchain-ollama",
     "datasets",
     "transformers",
-    "duckduckgo-search",
+    "ddgs",
     "wikipedia-api",
     "mcp",
     "acp-sdk",
