@@ -38,7 +38,7 @@ class MCPSessionProvider:
         async def create() -> None:
             nonlocal _session
 
-            async with self._client as (read, write), ClientSession(read, write) as _session:
+            async with self._client as (read, write, *_), ClientSession(read, write) as _session:
                 await _session.initialize()
                 _session_initialized.set()
                 await _session_stopping.wait()

@@ -5,8 +5,6 @@ from dotenv import load_dotenv
 from mcp import StdioServerParameters
 from mcp.client.stdio import stdio_client
 
-from beeai_framework.agents.experimental import RequirementAgent
-from beeai_framework.backend import ChatModel
 from beeai_framework.tools.mcp import MCPTool
 
 load_dotenv()
@@ -23,18 +21,14 @@ server_params = StdioServerParameters(
 )
 
 
-async def slack_tool() -> MCPTool:
-    slacktools = await MCPTool.from_client(stdio_client(server_params))
-    filter_tool = filter(lambda tool: tool.name == "slack_post_message", slacktools)
-    slack = list(filter_tool)
-    return slack[0]
+async def slack_post_message_tool() -> MCPTool:
+    slack_tools = await MCPTool.from_client(stdio_client(server_params))
+    return next(filter(lambda tool: tool.name == "slack_post_message", slack_tools))
 
 
 async def main() -> None:
-    tool = await slack_tool()
-    agent = RequirementAgent(tools=[tool], llm=ChatModel.from_name("ollama:llama3.1"))
-    response = await agent.run("Say hello to the '#bee-playground-xxx' Slack channel.")
-    print(response.answer.text)
+    tool = await slack_post_message_tool()
+    print(tool.name, tool.description)
 
 
 if __name__ == "__main__":
