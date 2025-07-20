@@ -43,6 +43,12 @@ class ProviderDef(BaseModel):
     aliases: list[str]
 
 
+class ProviderModelDef(BaseModel):
+    provider_id: str
+    model_id: str | None = None
+    provider_def: ProviderDef
+
+
 class ProviderModuleDef(BaseModel):
     provider_id: str
     entity_id: str | None = None
@@ -71,5 +77,3 @@ BackendProviders = {
     "Langchain": ProviderDef(name="LangChain", module="langchain", aliases=["langchain", "LangChain"]),
     "Llamaindex": ProviderDef(name="LlamaIndex", module="llamaindex", aliases=["llamaindex", "LlamaIndex"]),
 }
-
-ModuleClassSuffix = {"embedding": "Model", "chat": "Model", "vectorStore": ""}
