@@ -17,7 +17,6 @@ from enum import Enum
 from pydantic import BaseModel, InstanceOf
 
 from beeai_framework.agents import AgentExecutionConfig, AgentMeta, BaseAgent
-from beeai_framework.agents.rag.prompts import QUERY_IMPROVEMENT_PROMPT
 from beeai_framework.backend import AnyMessage, AssistantMessage, ChatModel, SystemMessage, UserMessage
 from beeai_framework.backend.types import DocumentWithScore
 from beeai_framework.backend.vector_store import VectorStore
@@ -33,7 +32,7 @@ class State(BaseModel):
     final_answer: str
 
 
-class RunInput(BaseModel):
+class RagAgentRunInput(BaseModel):
     message: InstanceOf[AnyMessage]
 
 
@@ -74,7 +73,7 @@ class RAGAgent(BaseAgent[RAGAgentRunOutput]):
 
     def run(
         self,
-        prompt: RunInput,
+        prompt: RagAgentRunInput,
         execution: AgentExecutionConfig | None = None,
         signal: AbortSignal | None = None,
     ) -> Run[RAGAgentRunOutput]:

@@ -22,7 +22,7 @@ from beeai_framework.adapters.langchain.backend.vector_store import LangChainVec
 from beeai_framework.adapters.langchain.mappers.documents import lc_document_to_document
 from beeai_framework.adapters.langchain.mappers.lc_embedding import LangChainBeeAIEmbeddingModel
 from beeai_framework.adapters.watsonx.backend.embedding import WatsonxEmbeddingModel
-from beeai_framework.agents.rag.agent import RAGAgent, RunInput
+from beeai_framework.agents.experimental import RAGAgent, RagAgentRunInput
 from beeai_framework.backend import UserMessage
 from beeai_framework.backend.chat import ChatModel
 from beeai_framework.backend.vector_store import VectorStore
@@ -109,7 +109,7 @@ async def main() -> None:
 
     agent = RAGAgent(llm=llm, memory=UnconstrainedMemory(), vector_store=vector_store, reranker=reranker)
 
-    response = await agent.run(RunInput(message=UserMessage("What agents are available in BeeAI?")))
+    response = await agent.run(RagAgentRunInput(message=UserMessage("What agents are available in BeeAI?")))
     print(response.message.text)
 
 
