@@ -11,7 +11,7 @@ from pydantic import ConfigDict, Field, RootModel, create_model
 
 from beeai_framework.backend.constants import (
     BackendProviders,
-    ModuleClassSuffix,
+    ModelTypes,
     ModuleTypes,
     ProviderDef,
     ProviderModelDef,
@@ -75,7 +75,7 @@ def parse_module(name: str) -> ProviderModuleDef:
     )
 
 
-def load_model(name: ProviderName | str, model_type: Literal["embedding", "chat"] = "chat") -> type[T]:
+def load_model(name: ProviderName | str, model_type: ModelTypes = "chat") -> type[T]:
     parsed = parse_model(name)
     provider_def = parsed.provider_def
 
@@ -86,9 +86,10 @@ def load_model(name: ProviderName | str, model_type: Literal["embedding", "chat"
     return getattr(module, class_name)  # type: ignore
 
 
-def load_module(name: ProviderName | str, module_type: ModuleTypes = "chat") -> type[T]:
-    def capitalize_first_letter(module_type: str) -> str:
-        return module_type[0].upper() + module_type[1:] if module_type else module_type
+def load_module(name: ProviderName | str, module_type: ModuleTypes = "vector_store") -> type[T]:
+    def get_class_suffix(module_type: str) -> str:
+        words = module_type.split('_')
+        return ''.join(word.capitalize() for word in words)
 
     parsed = parse_module(name)
     provider_def = parsed.provider_def
@@ -96,7 +97,7 @@ def load_module(name: ProviderName | str, module_type: ModuleTypes = "chat") -> 
     module_path = f"beeai_framework.adapters.{provider_def.module}.backend.{module_type.lower()}"
     module = import_module(module_path)
 
-    class_name = f"{provider_def.name}{capitalize_first_letter(module_type)}{ModuleClassSuffix[module_type]}"
+    class_name = f"{provider_def.name}{get_class_suffix(module_type)}"
     return getattr(module, class_name)  # type: ignore
 
 

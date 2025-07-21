@@ -20,7 +20,7 @@ from beeai_framework.agents import AgentExecutionConfig, AgentMeta, BaseAgent
 from beeai_framework.agents.rag.prompts import QUERY_IMPROVEMENT_PROMPT
 from beeai_framework.backend import AnyMessage, AssistantMessage, ChatModel, SystemMessage, UserMessage
 from beeai_framework.backend.types import DocumentWithScore
-from beeai_framework.backend.vectorstore import VectorStore
+from beeai_framework.backend.vector_store import VectorStore
 from beeai_framework.context import Run, RunContext
 from beeai_framework.emitter import Emitter
 from beeai_framework.memory import BaseMemory
@@ -55,12 +55,16 @@ class RAGAgent(BaseAgent[RAGAgentRunOutput]):
         memory: BaseMemory,
         vector_store: VectorStore,
         reranker: DocumentsRerankWithLLM | None = None,
+        number_of_retrieved_documents: int = 7,
+        documents_threshold: float = 0.0,
     ) -> None:
         super().__init__()
         self.model = llm
         self._memory = memory or UnconstrainedMemory()
         self.vector_store = vector_store
         self.reranker = reranker
+        self.number_of_retrieved_documents = number_of_retrieved_documents
+        self.documents_threshold = documents_threshold
 
     def _create_emitter(self) -> Emitter:
         return Emitter.root().child(
@@ -78,12 +82,12 @@ class RAGAgent(BaseAgent[RAGAgentRunOutput]):
             await self.memory.add(prompt.message)
 
             query = prompt.message.text
-            retrieved_docs = await self.vector_store.search(query, k=10)
+            retrieved_docs = await self.vector_store.search(query, k=self.number_of_retrieved_documents)
 
             # Apply re-ranking
             if self.reranker:
-                retrieved_docs: list[DocumentWithScore] = await self.reranker.postprocess_documents(
-                    query=query, documents=retrieved_docs
+                retrieved_docs: list[DocumentWithScore] = await self.reranker.postprocess_documents(  # type: ignore[no-redef]
+                    retrieved_docs, query=query
                 )
 
             # Extract documents context
@@ -109,36 +113,6 @@ class RAGAgent(BaseAgent[RAGAgentRunOutput]):
             return RAGAgentRunOutput(message=result)
 
         return self._to_run(handler, signal=signal, run_params={"input": prompt, "execution": execution})
-
-    async def _search_with_scores(self, query: str) -> list[DocumentWithScore]:
-        next_search_technique = "rerank"
-        search_round = 0
-        while search_round < 5:
-            search_round += 1
-            match next_search_technique:
-                case "rerank":
-                    retrieved_docs = await self.vector_store.search(query, k=self.number_of_retrieved_documents)
-                    next_search_technique = "more_documents"
-                case "more_documents":
-                    retrieved_docs = await self.vector_store.search(
-                        query, k=self.number_of_retrieved_documents * search_round
-                    )
-                    next_search_technique = "rephrase_search"
-                case "rephrase_search":
-                    rephrasing_prompt = [UserMessage(content=QUERY_IMPROVEMENT_PROMPT.render(user_query=query))]
-                    search_query = await self.model.create(messages=rephrasing_prompt)
-                    search_query = search_query.messages[-1].text
-                    print(search_query)
-                    retrieved_docs = await self.vector_store.search(search_query, k=self.number_of_retrieved_documents)
-                    next_search_technique = "more_documents"
-
-            retrieved_docs: list[DocumentWithScore] = await self.reranker.postprocess_documents(
-                query=query, documents=retrieved_docs
-            )
-            retrieved_docs = [doc for doc in retrieved_docs if doc.score >= self.documents_threshold]
-            if retrieved_docs:
-                return retrieved_docs
-        return []
 
     @property
     def memory(self) -> BaseMemory:

@@ -12,11 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+
 from __future__ import annotations
 
 from beeai_framework.backend.embedding import EmbeddingModel
 from beeai_framework.backend.types import EmbeddingModelOutput
 from beeai_framework.logger import Logger
+from beeai_framework.utils.asynchronous import run_sync
 
 try:
     from langchain_core.embeddings import Embeddings as LCEmbeddingModel
@@ -34,7 +36,7 @@ class LangChainBeeAIEmbeddingModel(LCEmbeddingModel):
         self._batch_size = batch_size
 
     def embed_documents(self, texts: list[str]) -> list[list[float]]:
-        embedding_res: EmbeddingModelOutput = self._embedding_model.create(values=texts)
+        embedding_res: EmbeddingModelOutput = run_sync(self._embedding_model.create(values=texts))
         return embedding_res.embeddings
 
     async def aembed_documents(self, texts: list[str]) -> list[list[float]]:
@@ -46,7 +48,7 @@ class LangChainBeeAIEmbeddingModel(LCEmbeddingModel):
         return results
 
     def embed_query(self, text: str) -> list[float]:
-        embedding_res: EmbeddingModelOutput = self._embedding_model.create(values=[text])
+        embedding_res: EmbeddingModelOutput = run_sync(self._embedding_model.create(values=[text]))
         return embedding_res.embeddings[0]
 
     async def aembed_query(self, text: str) -> list[float]:

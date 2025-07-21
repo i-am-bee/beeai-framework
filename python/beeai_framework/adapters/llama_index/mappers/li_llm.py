@@ -1,8 +1,8 @@
 from typing import Any
 
-from pydantic import Field
+from pydantic import ConfigDict
 
-from beeai_framework.backend import UserMessage
+from beeai_framework.backend import AnyMessage, UserMessage
 from beeai_framework.backend.chat import ChatModel
 from beeai_framework.backend.types import ChatModelOutput
 from beeai_framework.utils.asynchronous import run_sync
@@ -18,11 +18,10 @@ except ModuleNotFoundError as e:
 
 
 class LlamaIndexLLM(CustomLLM):
-    bai_llm: ChatModel = Field(description="The BeeAI LLM instances.", default=None)
-
+    bai_llm: ChatModel
+    
     def __init__(self, bai_llm: ChatModel, *args: Any, **kwargs: Any) -> None:
-        super().__init__(*args, **kwargs)
-        self.bai_llm = bai_llm
+        super().__init__(bai_llm=bai_llm, *args, **kwargs)
 
     @property
     def metadata(self) -> LLMMetadata:
@@ -30,7 +29,7 @@ class LlamaIndexLLM(CustomLLM):
 
     @llm_completion_callback()
     def complete(self, prompt: str, formatted: bool = False, **kwargs: Any) -> CompletionResponse:
-        messages = [UserMessage(prompt)]
+        messages: list[AnyMessage] = [UserMessage(prompt)]
         # Formatted argument is neglected as no structure is enforced
         response: ChatModelOutput = run_sync(self.bai_llm.create(messages=messages))
         completion_response = CompletionResponse(text=response.messages[-1].text)

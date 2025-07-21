@@ -30,7 +30,7 @@ except ModuleNotFoundError as e:
 
 from beeai_framework.adapters.langchain.mappers.documents import document_to_lc_document, lc_document_to_document
 from beeai_framework.backend.embedding import EmbeddingModel
-from beeai_framework.backend.vectorstore import VectorStore
+from beeai_framework.backend.vector_store import VectorStore
 from beeai_framework.logger import Logger
 
 logger = Logger(__name__)
@@ -43,7 +43,7 @@ class LangChainVectorStore(VectorStore):
         super().__init__()
         self.vector_store: LCVectorStore = vector_store
 
-    async def add_documents(self, documents: Document) -> list[str]:
+    async def add_documents(self, documents: list[Document]) -> list[str]:
         if self.vector_store is None:
             raise ValueError("Vector store must be set before adding documents")
         lc_documents = [document_to_lc_document(document) for document in documents]
@@ -97,8 +97,8 @@ class LangChainVectorStore(VectorStore):
                 module = importlib.import_module(module_name)
                 cls_obj = getattr(module, class_name)
                 lc_vector_store = cls_obj(embedding_function=lc_embedding, **kwargs)
-            except (ImportError, AttributeError):
+            except (ImportError, AttributeError) as e:
                 logger.error(f"Failed to import class {class_name}")
-                return None
+                raise ImportError(f"Could not import {class_name} from langchain.vectorstores") from e
 
         return cls(vector_store=lc_vector_store)

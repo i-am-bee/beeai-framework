@@ -27,11 +27,13 @@ class VectorStore(ABC):
 
     def __init_subclass__(cls, /, **kwargs: Any) -> None:
         super().__init_subclass__(**kwargs)
-        cls._integration_registry[cls.provider_id.lower()] = cls
+        if hasattr(cls, 'provider_id'):
+            cls._integration_registry[cls.provider_id.lower()] = cls
 
+    @classmethod
     @abstractmethod
-    def _class_from_name(self, class_name: str, embedding_model: EmbeddingModel, **kwargs: Any) -> VectorStore:
-        # Every implemen
+    def _class_from_name(cls, class_name: str, embedding_model: EmbeddingModel, **kwargs: Any) -> VectorStore:
+        # Every implementation
         raise NotImplementedError("Implement me")
 
     @classmethod
@@ -63,15 +65,15 @@ class VectorStore(ABC):
             If the specified class cannot be found in any known integration package.
         """
         parsed_module = parse_module(name)
-        TargetVectorStore = load_module(parsed_module.provider_id, "vectorStore")  # type: ignore # noqa: N806
-        return TargetVectorStore._class_from_name(
+        TargetVectorStore = load_module(parsed_module.provider_id, "vector_store")  # type: ignore # noqa: N806
+        return TargetVectorStore._class_from_name(  # type: ignore[no-any-return]
             class_name=parsed_module.entity_id, embedding_model=embedding_model, **kwargs
         )
 
     @abstractmethod
-    async def add_documents(self, documents: Document) -> list[str]:
+    async def add_documents(self, documents: list[Document]) -> list[str]:
         raise NotImplementedError("Implement me")
 
     @abstractmethod
-    async def search(self, query: str, search_type: str, k: int = 4, **kwargs: Any) -> list[DocumentWithScore]:
+    async def search(self, query: str, k: int = 4, **kwargs: Any) -> list[DocumentWithScore]:
         raise NotImplementedError("Implement me")

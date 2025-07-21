@@ -34,7 +34,8 @@ ProviderHumanName = Literal[
     "LlamaIndex",
 ]
 
-ModuleTypes = Literal["embedding", "chat", "vectorStore"]
+ModelTypes = Literal["embedding", "chat"]
+ModuleTypes = Literal["vector_store"]
 
 
 class ProviderDef(BaseModel):
