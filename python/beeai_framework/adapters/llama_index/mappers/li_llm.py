@@ -17,7 +17,7 @@ except ModuleNotFoundError as e:
     ) from e
 
 
-class LlamaIndexLLM(CustomLLM):
+class LlamaIndexChatModel(CustomLLM):
     bai_llm: ChatModel
     
     def __init__(self, bai_llm: ChatModel, *args: Any, **kwargs: Any) -> None:

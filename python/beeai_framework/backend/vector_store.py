@@ -37,14 +37,14 @@ class VectorStore(ABC):
         raise NotImplementedError("Implement me")
 
     @classmethod
-    def from_name(cls, name: str, embedding_model: EmbeddingModel, **kwargs: Any) -> VectorStore:
+    def from_name(cls, name: str, *, embedding_model: EmbeddingModel, **kwargs: Any) -> VectorStore:
         """
         Import and instantiate a VectorStore class dynamically.
 
         Parameters
         ----------
         name : str
-            A *case sensitive* string in the format "integration/ClassName".
+            A *case sensitive* string in the format "integration:ClassName".
             - `integration` is the name of the Python package namespace (e.g. "langchain").
             - `ClassName` is the name of the vector store class to load (e.g. "Milvus").
 

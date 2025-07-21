@@ -17,7 +17,7 @@ from beeai_framework.adapters.llama_index.mappers.documents import (
     doc_with_score_to_li_doc_with_score,
     li_doc_with_score_to_doc_with_score,
 )
-from beeai_framework.adapters.llama_index.mappers.li_llm import LlamaIndexLLM
+from beeai_framework.adapters.llama_index.mappers.li_llm import LlamaIndexChatModel
 from beeai_framework.backend.chat import ChatModel
 from beeai_framework.backend.documentprocessor import DocumentProcessor
 from beeai_framework.backend.types import DocumentWithScore
@@ -35,7 +35,7 @@ class DocumentsRerankWithLLM(DocumentProcessor):
 
     def __init__(self, llm: ChatModel) -> None:
         self.llm = llm
-        self.reranker = LLMRerank(choice_batch_size=5, top_n=5, llm=LlamaIndexLLM(bai_llm=self.llm))
+        self.reranker = LLMRerank(choice_batch_size=5, top_n=5, llm=LlamaIndexChatModel(bai_llm=self.llm))
 
     async def postprocess_documents(self, documents: list[DocumentWithScore], *, query: str | None = None) -> list[DocumentWithScore]:
         if query is None:

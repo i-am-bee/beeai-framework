@@ -12,6 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from beeai_framework.adapters.llama_index.mappers.li_llm import LlamaIndexLLM
+from beeai_framework.adapters.llama_index.mappers.li_llm import LlamaIndexChatModel
 
-__all__ = ["LlamaIndexLLM"]
+__all__ = ["LlamaIndexChatModel"]
