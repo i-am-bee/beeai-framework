@@ -14,10 +14,11 @@ from sse_starlette import ServerSentEvent
 from typing_extensions import TypeVar
 
 import beeai_framework.adapters.watsonx_orchestrate._api as watsonx_orchestrate_api
-from beeai_framework.adapters.watsonx_orchestrate._utils import create_sse_emitter
+from beeai_framework.adapters.watsonx_orchestrate._utils import create_emitter
 from beeai_framework.agents import AnyAgent
 from beeai_framework.backend import AnyMessage, AssistantMessage
 from beeai_framework.memory import BaseMemory
+from beeai_framework.utils.strings import to_json
 
 T = TypeVar("T", bound=AnyAgent, default=AnyAgent)
 
@@ -52,7 +53,7 @@ class WatsonxOrchestrateServerAgent(ABC, Generic[T]):
     async def stream(self, messages: list[AnyMessage], thread_id: str | None) -> AsyncIterable[ServerSentEvent]:
         await self._set_memory(messages)
 
-        async for event in create_sse_emitter(self._stream):
+        async for event in create_emitter(self._stream):
             match event:
                 case WatsonxOrchestrateServerAgentMessageEvent():
                     yield self._create_message_event(event.text, thread_id)
@@ -106,7 +107,7 @@ class WatsonxOrchestrateServerAgent(ABC, Generic[T]):
             "created": int(time.time()),
             "choices": [{"delta": {"role": "assistant", "step_details": content}}],
         }
-        return ServerSentEvent(data=data, id=data["id"], event=data["object"])
+        return ServerSentEvent(data=to_json(data, sort_keys=False), id=data["id"], event=data["object"])
 
     def _create_message_event(self, content: Any, thread_id: str | None) -> ServerSentEvent:
         data: dict[str, Any] = {
@@ -117,7 +118,7 @@ class WatsonxOrchestrateServerAgent(ABC, Generic[T]):
             "created": int(time.time()),
             "choices": [{"delta": {"role": "assistant", "content": content}}],
         }
-        return ServerSentEvent(data=data, id=data["id"], event=data["object"])
+        return ServerSentEvent(data=to_json(data, sort_keys=False), id=data["id"], event=data["object"])
 
     async def _set_memory(self, messages: list[AnyMessage]) -> None:
         memory = self._agent.memory

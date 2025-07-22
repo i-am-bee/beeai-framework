@@ -8,8 +8,6 @@ from asyncio import Queue
 from collections.abc import AsyncGenerator, Awaitable, Callable
 from typing import Any, TypeVar
 
-from sse_starlette import ServerSentEvent
-
 import beeai_framework.adapters.watsonx_orchestrate._api as watsonx_orchestrate_api
 from beeai_framework.backend import AssistantMessage, SystemMessage, ToolMessage
 from beeai_framework.backend.message import (
@@ -23,7 +21,6 @@ from beeai_framework.backend.message import (
 )
 from beeai_framework.logger import Logger
 from beeai_framework.utils.lists import cast_list
-from beeai_framework.utils.strings import to_json
 
 logger = Logger(__name__)
 
@@ -108,28 +105,15 @@ def watsonx_orchestrate_message_to_beeai_message(message: watsonx_orchestrate_ap
 
 
 T = TypeVar("T")
-EmitFn = Callable[[ServerSentEvent | Any], Awaitable[None]]
 
 
-async def create_sse_emitter(
-    handler: Callable[[Callable[[T | Any], Awaitable[None]]], Any],
-) -> AsyncGenerator[ServerSentEvent | None, None]:
-    queue = Queue[ServerSentEvent | None]()
+async def create_emitter(
+    handler: Callable[[Callable[[T], Awaitable[None]]], Any],
+) -> AsyncGenerator[T, None]:
+    queue = Queue[T | None]()
 
-    async def emit(data: Any) -> Any:
-        event = (
-            ServerSentEvent(
-                id=data.id,
-                data=to_json(data.data, sort_keys=False, exclude_none=True),
-                event=data.event,
-                comment=data.comment,
-                sep=data._sep,
-                retry=data.retry,
-            )
-            if isinstance(data, ServerSentEvent)
-            else ServerSentEvent(data=to_json(data, sort_keys=False, exclude_none=True))
-        )
-        await queue.put(event)
+    async def emit(data: T) -> None:
+        await queue.put(data)
 
     async def wrapper() -> None:
         try:

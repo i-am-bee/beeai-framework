@@ -33,18 +33,18 @@ class WatsonxOrchestrateServerRequirementAgent(WatsonxOrchestrateServerAgent[Req
             assert meta.trace, "ToolSuccessEvent must have trace"
             assert isinstance(meta.creator, Tool)
 
-            await emit(
-                WatsonxOrchestrateServerAgentToolResponse(
-                    name=meta.creator.name, id=meta.trace.run_id, result=data.output.get_text_content()
-                )
-            )
-
             if isinstance(meta.creator, FinalAnswerTool):
                 await emit(
                     WatsonxOrchestrateServerAgentMessageEvent(
                         text=data.input.response
                         if isinstance(data.input, FinalAnswerToolSchema)
                         else data.input.model_dump_json(indent=2),
+                    )
+                )
+            else:
+                await emit(
+                    WatsonxOrchestrateServerAgentToolResponse(
+                        name=meta.creator.name, id=meta.trace.run_id, result=data.output.get_text_content()
                     )
                 )
 

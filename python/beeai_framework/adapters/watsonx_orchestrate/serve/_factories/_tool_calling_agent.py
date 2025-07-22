@@ -10,7 +10,6 @@ from beeai_framework.adapters.watsonx_orchestrate.serve.agent import (
     WatsonxOrchestrateServerAgentToolCallEvent,
     WatsonxOrchestrateServerAgentToolResponse,
 )
-from beeai_framework.agents.experimental.utils._tool import FinalAnswerTool
 from beeai_framework.agents.tool_calling import ToolCallingAgent
 from beeai_framework.backend import AssistantMessage
 from beeai_framework.emitter import EmitterOptions, EventMeta
@@ -31,6 +30,9 @@ class WatsonxOrchestrateServerToolCallingAgent(WatsonxOrchestrateServerAgent[Too
             assert meta.trace, "ToolSuccessEvent must have trace"
             assert isinstance(meta.creator, Tool)
 
+            if meta.creator.name == "final_answer":
+                return
+
             await emit(
                 WatsonxOrchestrateServerAgentToolResponse(
                     name=meta.creator.name, id=meta.trace.run_id, result=data.output.get_text_content()
@@ -41,7 +43,7 @@ class WatsonxOrchestrateServerToolCallingAgent(WatsonxOrchestrateServerAgent[Too
             assert meta.trace, "ToolStartEvent must have trace"
             assert isinstance(meta.creator, Tool)
 
-            if isinstance(meta.creator, FinalAnswerTool):
+            if meta.creator.name == "final_answer":
                 return
 
             await emit(
