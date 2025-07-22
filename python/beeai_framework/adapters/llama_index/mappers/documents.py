@@ -30,4 +30,6 @@ def doc_with_score_to_li_doc_with_score(document: DocumentWithScore) -> NodeWith
 
 
 def li_doc_with_score_to_doc_with_score(document: NodeWithScore) -> DocumentWithScore:
-    return DocumentWithScore(document=Document(content=document.text, metadata=document.metadata), score=document.score or 0.0)
+    return DocumentWithScore(
+        document=Document(content=document.text, metadata=document.metadata), score=document.score or 0.0
+    )

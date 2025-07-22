@@ -20,5 +20,7 @@ from beeai_framework.backend.types import DocumentWithScore
 
 class DocumentProcessor(ABC):
     @abstractmethod
-    async def postprocess_documents(self, documents: list[DocumentWithScore], *, query: str | None = None) -> list[DocumentWithScore]:
+    async def postprocess_documents(
+        self, documents: list[DocumentWithScore], *, query: str | None = None
+    ) -> list[DocumentWithScore]:
         raise NotImplementedError()

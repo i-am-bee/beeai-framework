@@ -88,8 +88,8 @@ def load_model(name: ProviderName | str, model_type: ModelTypes = "chat") -> typ
 
 def load_module(name: ProviderName | str, module_type: ModuleTypes = "vector_store") -> type[T]:
     def get_class_suffix(module_type: str) -> str:
-        words = module_type.split('_')
-        return ''.join(word.capitalize() for word in words)
+        words = module_type.split("_")
+        return "".join(word.capitalize() for word in words)
 
     parsed = parse_module(name)
     provider_def = parsed.provider_def

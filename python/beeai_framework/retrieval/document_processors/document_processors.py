@@ -37,10 +37,12 @@ class DocumentsRerankWithLLM(DocumentProcessor):
         self.llm = llm
         self.reranker = LLMRerank(choice_batch_size=5, top_n=5, llm=LlamaIndexChatModel(llm=self.llm))
 
-    async def postprocess_documents(self, documents: list[DocumentWithScore], *, query: str | None = None) -> list[DocumentWithScore]:
+    async def postprocess_documents(
+        self, documents: list[DocumentWithScore], *, query: str | None = None
+    ) -> list[DocumentWithScore]:
         if query is None:
             raise ValueError("DocumentsRerankWithLLM requires 'query' parameter for reranking")
-        
+
         li_documents_with_score = [doc_with_score_to_li_doc_with_score(document) for document in documents]
         processed_nodes = await self.reranker.apostprocess_nodes(li_documents_with_score, query_str=query)
         documents_with_score = [li_doc_with_score_to_doc_with_score(node) for node in processed_nodes]

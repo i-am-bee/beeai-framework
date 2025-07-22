@@ -12,17 +12,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from enum import Enum
 
 from pydantic import BaseModel, InstanceOf
 
 from beeai_framework.agents import AgentExecutionConfig, AgentMeta, BaseAgent
 from beeai_framework.backend import AnyMessage, AssistantMessage, ChatModel, SystemMessage, UserMessage
-from beeai_framework.errors import FrameworkError
 from beeai_framework.backend.types import DocumentWithScore
 from beeai_framework.backend.vector_store import VectorStore
 from beeai_framework.context import Run, RunContext
 from beeai_framework.emitter import Emitter
+from beeai_framework.errors import FrameworkError
 from beeai_framework.memory import BaseMemory
 from beeai_framework.memory.unconstrained_memory import UnconstrainedMemory
 from beeai_framework.retrieval.document_processors.document_processors import DocumentsRerankWithLLM
@@ -75,8 +74,8 @@ class RAGAgent(BaseAgent[RAGAgentRunOutput]):
         async def handler(context: RunContext) -> RAGAgentRunOutput:
             await self.memory.add(prompt.message)
             query = prompt.message.text
-            
-            try:    
+
+            try:
                 retrieved_docs = await self.vector_store.search(query, k=self.number_of_retrieved_documents)
 
                 # Apply re-ranking
@@ -101,16 +100,16 @@ class RAGAgent(BaseAgent[RAGAgentRunOutput]):
                     max_retries=execution.total_max_retries if execution else None,
                     abort_signal=context.signal,
                 )
-                
+
             except FrameworkError as error:
                 error_message = AssistantMessage(content=error.explain())
                 await self.memory.add(error_message)
                 raise error
-            
+
             result = response.messages[-1]
             await self.memory.add(result)
             return RAGAgentRunOutput(message=result)
-            
+
         return self._to_run(handler, signal=signal, run_params={"input": prompt, "execution": execution})
 
     @property

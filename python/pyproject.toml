@@ -33,10 +33,13 @@ langchain-core = {version = "^0.3.41", optional = true}
 langchain-ollama={version = "^0.3.1", optional = true}
 langgraph = {version = "^0.3.27", optional = true}
 litellm = "^1.69.3"
+llama-index = {version = "^0.12.42", optional = true}
+markdown = {version = "^3.8.2", optional = true}
 mcp = {version = "^1.10.1", optional = true}
 pydantic = "^2.10"
 pydantic-settings = "^2.9.0"
 requests = "^2.32"
+unstructured = {version = "^0.17.2", optional = true}
 uvicorn = {version = "^0.34.2", optional = true}
 wikipedia-api = {version = "^0.8.1", optional = true}
 
@@ -62,11 +65,13 @@ types-requests = "^2.32.0.20241016"
 
 [tool.poetry.extras]
 langchain = ["langchain-core", "langchain-community", "langgraph", "langchain-ollama"]
+llama-index = ["llama-index"]
 huggingface = ["datasets", "transformers"]
 search = ["ddgs", "wikipedia-api"]
 duckduckgo = ["ddgs"]
 wikipedia = ["wikipedia-api"]
 mcp = ["mcp"]
+rag_components = ["markdown", "unstructured"]
 acp = ["acp-sdk", "uvicorn"]
 beeai-platform = ["acp-sdk", "uvicorn"]
 a2a = ["a2a-sdk", "uvicorn"]

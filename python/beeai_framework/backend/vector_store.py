@@ -15,7 +15,7 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import Any, ClassVar
+from typing import Any
 
 from beeai_framework.backend.embedding import EmbeddingModel
 from beeai_framework.backend.types import Document, DocumentWithScore

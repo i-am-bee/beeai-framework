@@ -38,7 +38,7 @@ async def cancel_task(task: asyncio.Task[None] | None) -> None:
         task.cancel()
         with contextlib.suppress(CancelledError):
             await task
-            
+
 
 def awaitable_to_coroutine(awaitable: Awaitable[T]) -> Coroutine[Any, Any, T]:
     async def as_coroutine() -> T:

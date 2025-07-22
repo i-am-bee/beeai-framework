@@ -69,7 +69,7 @@ async def populate_documents() -> VectorStore | None:
         lc_inmemory_vector_store = LCInMemoryVectorStore.load(path=VECTOR_DB_PATH_4_DUMP, embedding=lc_embedding)
         vector_store = LangChainVectorStore(vector_store=lc_inmemory_vector_store)
         return vector_store
-    
+
     # Create new vector store if population is enabled
     if POPULATE_VECTOR_DB:
         loader = UnstructuredMarkdownLoader(file_path="python/docs/agents.md")
@@ -91,7 +91,7 @@ async def populate_documents() -> VectorStore | None:
             print(f"Dumping vector store to: {VECTOR_DB_PATH_4_DUMP}")
             vector_store.vector_store.dump(VECTOR_DB_PATH_4_DUMP)  # type: ignore[attr-defined]
         return vector_store
-    
+
     # Neither existing DB found nor population enabled
     return None
 
@@ -103,7 +103,7 @@ async def main() -> None:
             f"Vector database not found at {VECTOR_DB_PATH_4_DUMP}. "
             "Either set POPULATE_VECTOR_DB=True to create a new one, or ensure the database file exists."
         )
-    
+
     llm = ChatModel.from_name("ollama:llama3.2:latest")
     reranker = DocumentsRerankWithLLM(llm)
 
