@@ -121,7 +121,13 @@ class Document(BaseModel):
     content: str
     metadata: dict[str, str | int | float | bool]
 
+    def __str__(self) -> str:
+        return self.content
+
 
 class DocumentWithScore(BaseModel):
     document: Document
     score: float
+
+    def __str__(self) -> str:
+        return str(self.document)

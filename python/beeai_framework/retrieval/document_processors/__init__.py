@@ -12,6 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from beeai_framework.retrieval.document_processors.document_processors import DocumentsRerankWithLLM
+from beeai_framework.retrieval.document_processors.llm_document_reranker import LLMDocumentReranker
 
-__all__ = ["DocumentsRerankWithLLM"]
+__all__ = ["LLMDocumentReranker"]

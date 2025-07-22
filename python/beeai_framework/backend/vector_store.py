@@ -15,11 +15,18 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import Any
+from typing import Any, Protocol
 
 from beeai_framework.backend.embedding import EmbeddingModel
 from beeai_framework.backend.types import Document, DocumentWithScore
 from beeai_framework.backend.utils import load_module, parse_module
+
+
+class QueryLike(Protocol):
+    def __str__(self) -> str: ...
+
+
+__all__ = ["QueryLike", "VectorStore"]
 
 
 class VectorStore(ABC):
@@ -71,5 +78,5 @@ class VectorStore(ABC):
         raise NotImplementedError("Implement me")
 
     @abstractmethod
-    async def search(self, query: str, k: int = 4, **kwargs: Any) -> list[DocumentWithScore]:
+    async def search(self, query: QueryLike, k: int = 4, **kwargs: Any) -> list[DocumentWithScore]:
         raise NotImplementedError("Implement me")

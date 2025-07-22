@@ -24,12 +24,8 @@ from beeai_framework.emitter import Emitter
 from beeai_framework.errors import FrameworkError
 from beeai_framework.memory import BaseMemory
 from beeai_framework.memory.unconstrained_memory import UnconstrainedMemory
-from beeai_framework.retrieval.document_processors.document_processors import DocumentsRerankWithLLM
+from beeai_framework.retrieval.document_processors.llm_document_reranker import LLMDocumentReranker
 from beeai_framework.utils.cancellation import AbortSignal
-
-
-class State(BaseModel):
-    final_answer: str
 
 
 class RagAgentRunInput(BaseModel):
@@ -47,7 +43,7 @@ class RAGAgent(BaseAgent[RAGAgentRunOutput]):
         llm: ChatModel,
         memory: BaseMemory,
         vector_store: VectorStore,
-        reranker: DocumentsRerankWithLLM | None = None,
+        reranker: LLMDocumentReranker | None = None,
         number_of_retrieved_documents: int = 7,
         documents_threshold: float = 0.0,
     ) -> None:

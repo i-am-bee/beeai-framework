@@ -17,7 +17,7 @@ from __future__ import annotations
 import importlib
 from typing import Any
 
-from beeai_framework.adapters.langchain.mappers.lc_embedding import LangChainBeeAIEmbeddingModel
+from beeai_framework.adapters.langchain.mappers.embedding import LangChainBeeAIEmbeddingModel
 from beeai_framework.backend.types import Document, DocumentWithScore
 
 try:
@@ -30,7 +30,7 @@ except ModuleNotFoundError as e:
 
 from beeai_framework.adapters.langchain.mappers.documents import document_to_lc_document, lc_document_to_document
 from beeai_framework.backend.embedding import EmbeddingModel
-from beeai_framework.backend.vector_store import VectorStore
+from beeai_framework.backend.vector_store import QueryLike, VectorStore
 from beeai_framework.logger import Logger
 
 logger = Logger(__name__)
@@ -47,10 +47,11 @@ class LangChainVectorStore(VectorStore):
         lc_documents = [document_to_lc_document(document) for document in documents]
         return await self.vector_store.aadd_documents(lc_documents)
 
-    async def search(self, query: str, k: int = 4, **kwargs: Any) -> list[DocumentWithScore]:
+    async def search(self, query: QueryLike, k: int = 4, **kwargs: Any) -> list[DocumentWithScore]:
+        query_str = str(query)
         lc_documents_with_scores: list[
             tuple[LCDocument, float]
-        ] = await self.vector_store.asimilarity_search_with_score(query=query, k=k, **kwargs)
+        ] = await self.vector_store.asimilarity_search_with_score(query=query_str, k=k, **kwargs)
         documents_with_scores = [
             DocumentWithScore(document=lc_document_to_document(lc_document), score=score)
             for lc_document, score in lc_documents_with_scores
