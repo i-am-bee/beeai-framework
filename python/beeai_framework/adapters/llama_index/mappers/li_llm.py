@@ -1,6 +1,8 @@
-from typing import Any, cast
+# Copyright 2025 © BeeAI a Series of LF Projects, LLC
+# SPDX-License-Identifier: Apache-2.0
 
-from pydantic import ConfigDict
+from typing import Any
+
 
 from beeai_framework.backend import AnyMessage, UserMessage
 from beeai_framework.backend.chat import ChatModel
