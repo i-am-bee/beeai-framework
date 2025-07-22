@@ -13,12 +13,12 @@
 # limitations under the License.
 
 
-from abc import abstractmethod
+from abc import ABC, abstractmethod
 
 from beeai_framework.backend.types import DocumentWithScore
 
 
-class DocumentProcessor:
+class DocumentProcessor(ABC):
     @abstractmethod
     async def postprocess_documents(self, documents: list[DocumentWithScore], *, query: str | None = None) -> list[DocumentWithScore]:
         raise NotImplementedError()

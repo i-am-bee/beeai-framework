@@ -35,7 +35,7 @@ class DocumentsRerankWithLLM(DocumentProcessor):
 
     def __init__(self, llm: ChatModel) -> None:
         self.llm = llm
-        self.reranker = LLMRerank(choice_batch_size=5, top_n=5, llm=LlamaIndexChatModel(bai_llm=self.llm))
+        self.reranker = LLMRerank(choice_batch_size=5, top_n=5, llm=LlamaIndexChatModel(llm=self.llm))
 
     async def postprocess_documents(self, documents: list[DocumentWithScore], *, query: str | None = None) -> list[DocumentWithScore]:
         if query is None:

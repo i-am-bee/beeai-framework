@@ -18,6 +18,7 @@ from pydantic import BaseModel, InstanceOf
 
 from beeai_framework.agents import AgentExecutionConfig, AgentMeta, BaseAgent
 from beeai_framework.backend import AnyMessage, AssistantMessage, ChatModel, SystemMessage, UserMessage
+from beeai_framework.errors import FrameworkError
 from beeai_framework.backend.types import DocumentWithScore
 from beeai_framework.backend.vector_store import VectorStore
 from beeai_framework.context import Run, RunContext
@@ -38,12 +39,6 @@ class RagAgentRunInput(BaseModel):
 
 class RAGAgentRunOutput(BaseModel):
     message: InstanceOf[AnyMessage]
-
-
-class FallbackStrategy(str, Enum):
-    NONE = "none"
-    INTERNAL_KNOWLEDGE = "internal_knowledge"
-    WEB_SEARCH = "web_search"
 
 
 class RAGAgent(BaseAgent[RAGAgentRunOutput]):
@@ -79,38 +74,43 @@ class RAGAgent(BaseAgent[RAGAgentRunOutput]):
     ) -> Run[RAGAgentRunOutput]:
         async def handler(context: RunContext) -> RAGAgentRunOutput:
             await self.memory.add(prompt.message)
-
             query = prompt.message.text
-            retrieved_docs = await self.vector_store.search(query, k=self.number_of_retrieved_documents)
+            
+            try:    
+                retrieved_docs = await self.vector_store.search(query, k=self.number_of_retrieved_documents)
 
-            # Apply re-ranking
-            if self.reranker:
-                retrieved_docs: list[DocumentWithScore] = await self.reranker.postprocess_documents(  # type: ignore[no-redef]
-                    retrieved_docs, query=query
+                # Apply re-ranking
+                if self.reranker:
+                    retrieved_docs: list[DocumentWithScore] = await self.reranker.postprocess_documents(  # type: ignore[no-redef]
+                        retrieved_docs, query=query
+                    )
+
+                # Extract documents context
+                docs_content = "\n\n".join(doc_with_score.document.content for doc_with_score in retrieved_docs)
+
+                # Place content in template
+                input_message = UserMessage(content=f"The context for replying to the query is:\n\n{docs_content}")
+
+                messages = [
+                    SystemMessage("You are a helpful agent, answer based only on the context."),
+                    *self.memory.messages,
+                    input_message,
+                ]
+                response = await self.model.create(
+                    messages=messages,
+                    max_retries=execution.total_max_retries if execution else None,
+                    abort_signal=context.signal,
                 )
-
-            # Extract documents context
-            docs_content = "\n\n".join(doc_with_score.document.content for doc_with_score in retrieved_docs)
-
-            # Place content in template
-            input_message = UserMessage(content=f"The context for replying to the query is:\n\n{docs_content}")
-
-            messages = [
-                SystemMessage("You are a helpful agent, answer based only on the context."),
-                *self.memory.messages,
-                input_message,
-            ]
-            response = await self.model.create(
-                messages=messages,
-                max_retries=execution.total_max_retries if execution else None,
-                abort_signal=context.signal,
-            )
-
-            result = AssistantMessage(response.messages[-1].text)
+                
+            except FrameworkError as error:
+                error_message = AssistantMessage(content=error.explain())
+                await self.memory.add(error_message)
+                raise error
+            
+            result = response.messages[-1]
             await self.memory.add(result)
-
             return RAGAgentRunOutput(message=result)
-
+            
         return self._to_run(handler, signal=signal, run_params={"input": prompt, "execution": execution})
 
     @property

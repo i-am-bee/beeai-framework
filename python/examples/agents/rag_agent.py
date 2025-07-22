@@ -38,7 +38,7 @@ try:
     from langchain_text_splitters import RecursiveCharacterTextSplitter
 except ModuleNotFoundError as e:
     raise ModuleNotFoundError(
-        "Optional modules are not found.\nRun 'pip install \"beeai-framework[langchain,rag,rag_examples]\"' to install."
+        "Optional modules are not found.\nRun 'poetry install --extras langchain' to install."
     ) from e
 
 

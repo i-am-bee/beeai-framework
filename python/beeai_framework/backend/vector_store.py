@@ -23,12 +23,8 @@ from beeai_framework.backend.utils import load_module, parse_module
 
 
 class VectorStore(ABC):
-    _integration_registry: ClassVar[dict[str, type[VectorStore]]] = {}
-
     def __init_subclass__(cls, /, **kwargs: Any) -> None:
         super().__init_subclass__(**kwargs)
-        if hasattr(cls, 'provider_id'):
-            cls._integration_registry[cls.provider_id.lower()] = cls
 
     @classmethod
     @abstractmethod

@@ -44,14 +44,10 @@ class LangChainVectorStore(VectorStore):
         self.vector_store: LCVectorStore = vector_store
 
     async def add_documents(self, documents: list[Document]) -> list[str]:
-        if self.vector_store is None:
-            raise ValueError("Vector store must be set before adding documents")
         lc_documents = [document_to_lc_document(document) for document in documents]
         return await self.vector_store.aadd_documents(lc_documents)
 
     async def search(self, query: str, k: int = 4, **kwargs: Any) -> list[DocumentWithScore]:
-        if self.vector_store is None:
-            raise ValueError("Vector store must be set before searching for documents")
         lc_documents_with_scores: list[
             tuple[LCDocument, float]
         ] = await self.vector_store.asimilarity_search_with_score(query=query, k=k, **kwargs)
