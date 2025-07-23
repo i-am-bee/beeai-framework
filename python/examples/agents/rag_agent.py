@@ -18,9 +18,10 @@ import os
 import sys
 import traceback
 
+from beeai_framework.adapters.beeai.backend.document_processor import LLMDocumentReranker
+from beeai_framework.adapters.beeai.backend.vector_store import TemporalVectorStore
 from beeai_framework.adapters.langchain.backend.vector_store import LangChainVectorStore
 from beeai_framework.adapters.langchain.mappers.documents import lc_document_to_document
-from beeai_framework.adapters.langchain.mappers.embedding import LangChainBeeAIEmbeddingModel
 from beeai_framework.adapters.watsonx.backend.embedding import WatsonxEmbeddingModel
 from beeai_framework.agents.experimental import RAGAgent, RagAgentRunInput
 from beeai_framework.backend import UserMessage
@@ -29,22 +30,18 @@ from beeai_framework.backend.vector_store import VectorStore
 from beeai_framework.errors import FrameworkError
 from beeai_framework.logger import Logger
 from beeai_framework.memory import UnconstrainedMemory
-from beeai_framework.retrieval.document_processors.llm_document_reranker import LLMDocumentReranker
 
 # LC dependencies - to be swapped with BAI dependencies
 try:
     from langchain_community.document_loaders import UnstructuredMarkdownLoader
-    from langchain_core.vectorstores import InMemoryVectorStore as LCInMemoryVectorStore
     from langchain_text_splitters import RecursiveCharacterTextSplitter
 except ModuleNotFoundError as e:
     raise ModuleNotFoundError(
-        "Optional modules are not found.\nRun 'poetry install --extras langchain' to install."
+        "Optional modules are not found.\nRun 'pip install \"beeai-framework[rag]\"' to install."
     ) from e
 
 
 from dotenv import load_dotenv
-
-from beeai_framework.retrieval.vector_stores.in_memory import InMemoryVectorStore
 
 load_dotenv()  # load environment variables
 logger = Logger("rag-agent", level=logging.DEBUG)
@@ -67,9 +64,9 @@ async def populate_documents() -> VectorStore | None:
     # Load existing vector store if available
     if VECTOR_DB_PATH_4_DUMP and os.path.exists(VECTOR_DB_PATH_4_DUMP):
         print(f"Loading vector store from: {VECTOR_DB_PATH_4_DUMP}")
-        lc_embedding = LangChainBeeAIEmbeddingModel(embedding_model)
-        lc_inmemory_vector_store = LCInMemoryVectorStore.load(path=VECTOR_DB_PATH_4_DUMP, embedding=lc_embedding)
-        preloaded_vector_store: VectorStore = LangChainVectorStore(vector_store=lc_inmemory_vector_store)
+        preloaded_vector_store: VectorStore = TemporalVectorStore.load(
+            path=VECTOR_DB_PATH_4_DUMP, embedding_model=embedding_model
+        )
         return preloaded_vector_store
 
     # Create new vector store if population is enabled
@@ -87,9 +84,11 @@ async def populate_documents() -> VectorStore | None:
 
         print("Rebuilding vector store")
         # Adapter example
-        # vector_store = VectorStore.from_name(name="langchain:InMemoryVectorStore", embedding_model=embedding_model)  # type: ignore[assignment]
+        vector_store: TemporalVectorStore = VectorStore.from_name(
+            name="beeai:TemporalVectorStore", embedding_model=embedding_model
+        )  # type: ignore[assignment]
         # Native examples
-        vector_store: InMemoryVectorStore = InMemoryVectorStore(embedding_model=embedding_model)
+        # vector_store: TemporalVectorStore = TemporalVectorStore(embedding_model=embedding_model)
         # vector_store = InMemoryVectorStore(embedding_model)
         _ = await vector_store.add_documents(documents=documents)
         if VECTOR_DB_PATH_4_DUMP and isinstance(vector_store, LangChainVectorStore):

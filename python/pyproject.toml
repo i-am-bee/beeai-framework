@@ -64,14 +64,12 @@ types-PyYAML = "^6.0.12.20250402"
 types-requests = "^2.32.0.20241016"
 
 [tool.poetry.extras]
-langchain = ["langchain-core", "langchain-community", "langgraph", "langchain-ollama"]
-llama-index = ["llama-index"]
 huggingface = ["datasets", "transformers"]
 search = ["ddgs", "wikipedia-api"]
 duckduckgo = ["ddgs"]
 wikipedia = ["wikipedia-api"]
 mcp = ["mcp"]
-rag = ["markdown", "unstructured"]
+rag = ["llama-index", "langchain-core", "langchain-community", "langgraph", "langchain-ollama", "markdown", "unstructured"]
 acp = ["acp-sdk", "uvicorn"]
 beeai-platform = ["acp-sdk", "uvicorn"]
 a2a = ["a2a-sdk", "uvicorn"]

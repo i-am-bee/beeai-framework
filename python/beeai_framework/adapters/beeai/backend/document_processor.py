@@ -12,6 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from __future__ import annotations
+
+from typing import Any
 
 from beeai_framework.adapters.llama_index.mappers.chat import LlamaIndexChatModel
 from beeai_framework.adapters.llama_index.mappers.documents import (
@@ -19,18 +22,38 @@ from beeai_framework.adapters.llama_index.mappers.documents import (
     li_doc_with_score_to_doc_with_score,
 )
 from beeai_framework.backend.chat import ChatModel
-from beeai_framework.backend.documentprocessor import DocumentProcessor
+from beeai_framework.backend.document_processor import DocumentProcessor
 from beeai_framework.backend.types import DocumentWithScore
 
 try:
     from llama_index.core.postprocessor.llm_rerank import LLMRerank
 except ModuleNotFoundError as e:
     raise ModuleNotFoundError(
-        "Optional module [llama_index] not found.\nRun 'pip install \"beeai-framework[llama_index]\"' to install."
+        "Optional module [llama_index] not found.\nRun 'pip install \"beeai-framework[rag]\"' to install."
     ) from e
 
 
+class BeeAIDocumentProcessor(DocumentProcessor):
+    @classmethod
+    def _class_from_name(cls, class_name: str, llm: ChatModel, **kwargs: Any) -> BeeAIDocumentProcessor:
+        """Create an instance from class name (required by VectorStore base class)."""
+        # Get the current module to look for classes
+        import sys
+
+        current_module = sys.modules[cls.__module__]
+        # Try to get the class from the current module
+        try:
+            target_class = getattr(current_module, class_name)
+            if not issubclass(target_class, DocumentProcessor):
+                raise ValueError(f"Class '{class_name}' is not a DocumentProcessor subclass")
+            instance: BeeAIDocumentProcessor = target_class(llm=llm, **kwargs)
+            return instance
+        except AttributeError:
+            raise ValueError(f"Class '{class_name}' not found for BeeAI provider")
+
+
 class LLMDocumentReranker(DocumentProcessor):
+    provider_id: str = "langchain"
     llm: ChatModel
 
     def __init__(self, llm: ChatModel, *, choice_batch_size: int = 5, top_n: int = 5) -> None:

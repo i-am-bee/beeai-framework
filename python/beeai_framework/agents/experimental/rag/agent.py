@@ -15,6 +15,7 @@
 
 from pydantic import BaseModel, InstanceOf
 
+from beeai_framework.adapters.beeai.backend.document_processor import LLMDocumentReranker
 from beeai_framework.agents import AgentExecutionConfig, AgentMeta, BaseAgent
 from beeai_framework.backend import AnyMessage, AssistantMessage, ChatModel, SystemMessage, UserMessage
 from beeai_framework.backend.types import DocumentWithScore
@@ -24,7 +25,6 @@ from beeai_framework.emitter import Emitter
 from beeai_framework.errors import FrameworkError
 from beeai_framework.memory import BaseMemory
 from beeai_framework.memory.unconstrained_memory import UnconstrainedMemory
-from beeai_framework.retrieval.document_processors.llm_document_reranker import LLMDocumentReranker
 from beeai_framework.utils.cancellation import AbortSignal
 
 
