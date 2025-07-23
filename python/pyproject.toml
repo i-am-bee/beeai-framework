@@ -86,6 +86,7 @@ all = [
     "uvicorn",
     "a2a-sdk",
     "fastapi",
+    "llama-index"
 ]
 
 
