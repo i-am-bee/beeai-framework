@@ -73,22 +73,28 @@ class WatsonxOrchestrateAPI:
 
         agent = self._create_agent()
 
-        memory = await agent._agent.memory.clone()
-        memory.reset()
+        async def create_empty_memory() -> BaseMemory:
+            memory = await agent._agent.memory.clone()
+            memory.reset()
+            return memory
 
+        memory = None
         if self._stateful and thread_id:
             if thread_id not in self._conversations:
-                self._conversations[thread_id] = memory
+                self._conversations[thread_id] = await create_empty_memory()
             memory = self._conversations[thread_id]
+        else:
+            memory = await create_empty_memory()
 
         messages = self._transform_request_messages(request.messages)
-        await memory.add_many(messages)
+
         try:
             agent._agent.memory = memory
         except Exception:
             logger.debug("Agent does not support setting a new memory, resetting existing one for the agent.")
             agent._agent.memory.reset()
-            await agent._agent.memory.add_many(messages)
+
+        await agent._agent.memory.add_many(messages)
 
         if request.stream:
             stream = agent.stream(thread_id)
