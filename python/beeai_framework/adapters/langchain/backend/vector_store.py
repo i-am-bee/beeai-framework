@@ -26,8 +26,6 @@ logger = Logger(__name__)
 
 
 class LangChainVectorStore(VectorStore):
-    provider_id: str = "langchain"
-
     def __init__(self, *, vector_store: LCVectorStore) -> None:
         super().__init__()
         self.vector_store: LCVectorStore = vector_store

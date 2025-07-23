@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+from abc import ABC
 from typing import Any
 
 from beeai_framework.backend.embedding import EmbeddingModel
@@ -12,16 +13,16 @@ from beeai_framework.backend.vector_store import QueryLike, VectorStore
 try:
     from langchain_core.documents import Document as LCDocument
     from langchain_core.vectorstores import InMemoryVectorStore as LCInMemoryVectorStore
+
+    from beeai_framework.adapters.langchain.mappers.documents import document_to_lc_document, lc_document_to_document
+    from beeai_framework.adapters.langchain.mappers.embedding import LangChainBeeAIEmbeddingModel
 except ModuleNotFoundError as e:
     raise ModuleNotFoundError(
-        "Optional module [langchain] not found.\nRun 'pip install \"beeai-framework[rag]\"' to install."
+        "Optional module [rag] not found.\nRun 'pip install \"beeai-framework[rag]\"' to install."
     ) from e
 
-from beeai_framework.adapters.langchain.mappers.documents import document_to_lc_document, lc_document_to_document
-from beeai_framework.adapters.langchain.mappers.embedding import LangChainBeeAIEmbeddingModel
 
-
-class BeeAIVectorStore(VectorStore):
+class BeeAIVectorStore(VectorStore, ABC):
     @classmethod
     def _class_from_name(cls, class_name: str, embedding_model: EmbeddingModel, **kwargs: Any) -> BeeAIVectorStore:
         """Create an instance from class name (required by VectorStore base class)."""
@@ -41,8 +42,6 @@ class BeeAIVectorStore(VectorStore):
 
 
 class TemporalVectorStore(BeeAIVectorStore):
-    provider_id: str = "langchain"
-
     """In-memory vector store implementation using LangChain's InMemoryVectorStore."""
 
     def __init__(self, embedding_model: EmbeddingModel) -> None:

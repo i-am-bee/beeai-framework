@@ -19,7 +19,7 @@ try:
     from llama_index.core.llms.custom import CustomLLM
 except ModuleNotFoundError as e:
     raise ModuleNotFoundError(
-        "Optional module [llama_index] not found.\nRun 'poetry install --extras llama-index' to install."
+        "Optional module [llama_index] not found.\nRun 'pip install \"beeai-framework[llama_index]\"' to install."
     ) from e
 
 
@@ -52,4 +52,4 @@ class LlamaIndexChatModel(CustomLLM):
 
     @llm_completion_callback()
     def stream_complete(self, prompt: str, formatted: bool = False, **kwargs: Any) -> CompletionResponseGen:
-        return run_sync(self.astream_complete(prompt, formatted, **kwargs))
+        raise NotImplementedError("Stream completion is not currently supported in LlamaIndex Chat Models")

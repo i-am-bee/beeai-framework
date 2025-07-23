@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+from abc import ABC
 from typing import Any
 
 from beeai_framework.adapters.llama_index.mappers.chat import LlamaIndexChatModel
@@ -18,11 +19,11 @@ try:
     from llama_index.core.postprocessor.llm_rerank import LLMRerank
 except ModuleNotFoundError as e:
     raise ModuleNotFoundError(
-        "Optional module [llama_index] not found.\nRun 'pip install \"beeai-framework[rag]\"' to install."
+        "Optional module [rag] not found.\nRun 'pip install \"beeai-framework[rag]\"' to install."
     ) from e
 
 
-class BeeAIDocumentProcessor(DocumentProcessor):
+class BeeAIDocumentProcessor(DocumentProcessor, ABC):
     @classmethod
     def _class_from_name(cls, class_name: str, llm: ChatModel, **kwargs: Any) -> BeeAIDocumentProcessor:
         """Create an instance from class name (required by VectorStore base class)."""
@@ -42,9 +43,6 @@ class BeeAIDocumentProcessor(DocumentProcessor):
 
 
 class LLMDocumentReranker(DocumentProcessor):
-    provider_id: str = "langchain"
-    llm: ChatModel
-
     def __init__(self, llm: ChatModel, *, choice_batch_size: int = 5, top_n: int = 5) -> None:
         self.llm = llm
         self.reranker = LLMRerank(
