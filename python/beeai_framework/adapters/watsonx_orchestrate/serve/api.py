@@ -14,6 +14,7 @@ from beeai_framework.adapters.watsonx_orchestrate._utils import watsonx_orchestr
 from beeai_framework.adapters.watsonx_orchestrate.serve.agent import WatsonxOrchestrateServerAgent
 from beeai_framework.backend import AnyMessage, AssistantMessage, SystemMessage, ToolMessage
 from beeai_framework.logger import Logger
+from beeai_framework.memory import BaseMemory
 
 logger = Logger(__name__)
 
@@ -25,10 +26,13 @@ class WatsonxOrchestrateAPI:
         create_agent: Callable[[], "WatsonxOrchestrateServerAgent"],
         api_key: str | None = None,
         fast_api_kwargs: dict[str, Any] | None = None,
+        stateful: bool = False,
     ) -> None:
         self._create_agent = create_agent
         self._api_key = api_key
         self._fast_api_kwargs = fast_api_kwargs or {}
+        self._stateful = stateful
+        self._conversations: dict[str, BaseMemory] = {}
 
         self._router = APIRouter()
         self._router.add_api_route(
@@ -68,13 +72,20 @@ class WatsonxOrchestrateAPI:
             )
 
         agent = self._create_agent()
+        if self._stateful and thread_id:
+            if thread_id not in self._conversations:
+                self._conversations[thread_id] = await agent._agent.memory.clone()
+            else:
+                agent._agent.memory = self._conversations[thread_id]
+
         messages = self._transform_request_messages(request.messages)
+        await agent._agent.memory.add_many(messages)
 
         if request.stream:
-            stream = agent.stream(messages, thread_id)
+            stream = agent.stream(thread_id)
             return EventSourceResponse(stream)
         else:
-            content = await agent.run(messages)
+            content = await agent.run()
             return JSONResponse(content=content.model_dump())
 
     def _transform_request_messages(

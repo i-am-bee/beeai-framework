@@ -16,8 +16,7 @@ from typing_extensions import TypeVar
 import beeai_framework.adapters.watsonx_orchestrate._api as watsonx_orchestrate_api
 from beeai_framework.adapters.watsonx_orchestrate._utils import create_emitter
 from beeai_framework.agents import AnyAgent
-from beeai_framework.backend import AnyMessage, AssistantMessage
-from beeai_framework.memory import BaseMemory
+from beeai_framework.backend import AssistantMessage
 from beeai_framework.utils.strings import to_json
 
 T = TypeVar("T", bound=AnyAgent, default=AnyAgent)
@@ -32,8 +31,7 @@ class WatsonxOrchestrateServerAgent(ABC, Generic[T]):
     @abstractmethod
     def model_id(self) -> str: ...
 
-    async def run(self, messages: list[AnyMessage]) -> watsonx_orchestrate_api.ChatCompletionResponse:
-        await self._set_memory(messages)
+    async def run(self) -> watsonx_orchestrate_api.ChatCompletionResponse:
         message = await self._run()
 
         return watsonx_orchestrate_api.ChatCompletionResponse(
@@ -50,9 +48,7 @@ class WatsonxOrchestrateServerAgent(ABC, Generic[T]):
             ],
         )
 
-    async def stream(self, messages: list[AnyMessage], thread_id: str | None) -> AsyncIterable[ServerSentEvent]:
-        await self._set_memory(messages)
-
+    async def stream(self, thread_id: str | None) -> AsyncIterable[ServerSentEvent]:
         async for event in create_emitter(self._stream):
             match event:
                 case WatsonxOrchestrateServerAgentMessageEvent():
@@ -119,14 +115,6 @@ class WatsonxOrchestrateServerAgent(ABC, Generic[T]):
             "choices": [{"delta": {"role": "assistant", "content": content}}],
         }
         return ServerSentEvent(data=to_json(data, sort_keys=False), id=data["id"], event=data["object"])
-
-    async def _set_memory(self, messages: list[AnyMessage]) -> None:
-        memory = self._agent.memory
-        if not isinstance(memory, BaseMemory):
-            raise ValueError(f"Memory must be an instance of BaseMemory, got {type(memory)}")
-
-        memory.reset()
-        await memory.add_many(messages)
 
 
 class WatsonxOrchestrateServerAgentMessageEvent(BaseModel):
