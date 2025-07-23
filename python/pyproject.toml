@@ -31,7 +31,6 @@ jsonref = "^1.1.0"
 langchain-community = {version = "^0.3.19", optional = true}
 langchain-core = {version = "^0.3.41", optional = true}
 langchain-ollama={version = "^0.3.1", optional = true}
-langgraph = {version = "^0.3.27", optional = true}
 litellm = "^1.69.3"
 llama-index = {version = "^0.12.42", optional = true}
 markdown = {version = "^3.8.2", optional = true}
@@ -69,7 +68,7 @@ search = ["ddgs", "wikipedia-api"]
 duckduckgo = ["ddgs"]
 wikipedia = ["wikipedia-api"]
 mcp = ["mcp"]
-rag = ["llama-index", "langchain-core", "langchain-community", "langgraph", "langchain-ollama", "markdown", "unstructured"]
+rag = ["llama-index", "langchain-core", "langchain-community", "langchain-ollama", "markdown", "unstructured"]
 acp = ["acp-sdk", "uvicorn"]
 beeai-platform = ["acp-sdk", "uvicorn"]
 a2a = ["a2a-sdk", "uvicorn"]
@@ -77,7 +76,6 @@ watsonx-orchestrate = ["uvicorn", "fastapi"]
 all = [
     "langchain-core",
     "langchain-community",
-    "langgraph",
     "langchain-ollama",
     "datasets",
     "transformers",
