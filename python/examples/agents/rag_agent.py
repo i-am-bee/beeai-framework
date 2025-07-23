@@ -12,7 +12,7 @@ from beeai_framework.adapters.beeai.backend.vector_store import TemporalVectorSt
 from beeai_framework.adapters.langchain.backend.vector_store import LangChainVectorStore
 from beeai_framework.adapters.langchain.mappers.documents import lc_document_to_document
 from beeai_framework.adapters.watsonx.backend.embedding import WatsonxEmbeddingModel
-from beeai_framework.agents.experimental import RAGAgent, RagAgentRunInput
+from beeai_framework.agents.experimental.rag import RAGAgent, RagAgentRunInput
 from beeai_framework.backend import UserMessage
 from beeai_framework.backend.chat import ChatModel
 from beeai_framework.backend.vector_store import VectorStore
