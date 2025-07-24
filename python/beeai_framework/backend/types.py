@@ -63,6 +63,7 @@ class ChatModelUsage(BaseModel):
 class ChatModelOutput(BaseModel):
     messages: list[InstanceOf[AnyMessage]]
     usage: InstanceOf[ChatModelUsage] | None = None
+    cost: float | None = None
     finish_reason: str | None = None
 
     @classmethod
@@ -75,6 +76,10 @@ class ChatModelOutput(BaseModel):
     def merge(self, other: Self) -> None:
         self.messages.extend(other.messages)
         self.finish_reason = other.finish_reason
+
+        if self.cost is not None and other.cost is not None:
+            self.cost = max(self.cost, other.cost)
+
         if self.usage and other.usage:
             merged_usage = self.usage.model_copy()
             if other.usage.total_tokens:
@@ -82,6 +87,7 @@ class ChatModelOutput(BaseModel):
                 merged_usage.prompt_tokens = max(self.usage.prompt_tokens, other.usage.prompt_tokens)
                 merged_usage.completion_tokens = max(self.usage.completion_tokens, other.usage.completion_tokens)
             self.usage = merged_usage
+
         elif other.usage:
             self.usage = other.usage.model_copy()
 

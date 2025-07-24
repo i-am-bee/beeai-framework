@@ -235,6 +235,7 @@ class LiteLLMChatModel(ChatModel, ABC):
         finish_reason = choice.finish_reason
         usage = chunk.get("usage")  # type: ignore
         update = choice.delta if isinstance(choice, StreamingChoices) else choice.message
+        cost = chunk._hidden_params.get("response_cost")
 
         return ChatModelOutput(
             messages=(
@@ -259,6 +260,7 @@ class LiteLLMChatModel(ChatModel, ABC):
             ),
             finish_reason=finish_reason,
             usage=ChatModelUsage(**usage.model_dump()) if usage else None,
+            cost=cost,
         )
 
     def _format_tool_model(self, model: type[BaseModel]) -> dict[str, Any]:
