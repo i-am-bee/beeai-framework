@@ -16,7 +16,7 @@ from langchain_community.tools import DuckDuckGoSearchRun
 from langchain_core.messages import AIMessage, BaseMessage, HumanMessage, SystemMessage, ToolMessage
 from langchain_core.runnables import RunnableConfig
 from langchain_ollama import ChatOllama
-from langgraph.prebuilt import create_react_agent  # type: ignore
+from langgraph.prebuilt import create_react_agent
 from pydantic import BaseModel, InstanceOf
 
 from beeai_framework.agents import AgentExecutionConfig
