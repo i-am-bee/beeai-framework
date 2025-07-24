@@ -114,8 +114,8 @@ def _tool_calling_agent_factory(
             description=metadata.get("description", agent.meta.description),
             url=metadata.get("url", "http://localhost:9999"),
             version=metadata.get("version", "1.0.0"),
-            defaultInputModes=metadata.get("defaultInputModes", ["text"]),
-            defaultOutputModes=metadata.get("defaultOutputModes", ["text"]),
+            default_input_modes=metadata.get("defaultInputModes", ["text"]),
+            default_output_modes=metadata.get("defaultOutputModes", ["text"]),
             capabilities=metadata.get("capabilities", a2a_types.AgentCapabilities(streaming=True)),
             skills=metadata.get(
                 "skills",
@@ -148,8 +148,8 @@ def _requirement_agent_factory(
             description=metadata.get("description", agent.meta.description),
             url=metadata.get("url", "http://localhost:9999"),
             version=metadata.get("version", "1.0.0"),
-            defaultInputModes=metadata.get("defaultInputModes", ["text"]),
-            defaultOutputModes=metadata.get("defaultOutputModes", ["text"]),
+            default_input_modes=metadata.get("defaultInputModes", ["text"]),
+            default_output_modes=metadata.get("defaultOutputModes", ["text"]),
             capabilities=metadata.get("capabilities", a2a_types.AgentCapabilities(streaming=True)),
             skills=metadata.get(
                 "skills",

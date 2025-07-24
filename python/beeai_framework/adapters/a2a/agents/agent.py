@@ -214,17 +214,17 @@ class A2AAgent(BaseAgent[A2AAgentRunOutput]):
             return a2a_types.Message(
                 role=a2a_types.Role.user,
                 parts=[a2a_types.Part(root=a2a_types.TextPart(text=input))],
-                messageId=uuid4().hex,
-                contextId=self._context_id,
-                taskId=self._task_id,
+                message_id=uuid4().hex,
+                context_id=self._context_id,
+                task_id=self._task_id,
             )
         elif isinstance(input, Message):
             return a2a_types.Message(
                 role=a2a_types.Role.agent if input.role == Role.ASSISTANT else a2a_types.Role.user,
                 parts=[a2a_types.Part(root=a2a_types.TextPart(text=input.text))],
-                messageId=uuid4().hex,
-                contextId=self._context_id,
-                taskId=self._task_id,
+                message_id=uuid4().hex,
+                context_id=self._context_id,
+                task_id=self._task_id,
             )
         elif isinstance(input, a2a_types.Message):
             return input
