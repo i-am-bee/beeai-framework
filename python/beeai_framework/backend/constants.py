@@ -13,6 +13,7 @@ ProviderName = Literal[
     "groq",
     "xai",
     "vertexai",
+    "gemini",
     "amazon_bedrock",
     "anthropic",
     "azure_openai",
@@ -28,6 +29,7 @@ ProviderHumanName = Literal[
     "Groq",
     "XAI",
     "VertexAI",
+    "Gemini",
     "AmazonBedrock",
     "Anthropic",
     "AzureOpenAI",
@@ -65,6 +67,7 @@ BackendProviders = {
     "Groq": ProviderDef(name="Groq", module="groq", aliases=["groq"]),
     "xAI": ProviderDef(name="XAI", module="xai", aliases=["xai", "grok"]),
     "vertexAI": ProviderDef(name="VertexAI", module="vertexai", aliases=["vertexai", "google"]),
+    "Gemini": ProviderDef(name="Gemini", module="gemini", aliases=["gemini"]),
     "AmazonBedrock": ProviderDef(
         name="AmazonBedrock",
         module="amazon_bedrock",
