@@ -29,6 +29,7 @@
           "modules/emitter",
           "modules/serialization",
           "modules/tools",
+          "modules/rag",
           "modules/serve",
           "modules/cache",
           "modules/logger",

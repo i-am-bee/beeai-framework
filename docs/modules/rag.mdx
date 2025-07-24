@@ -1,0 +1,177 @@
+---
+title: "RAG"
+description: "Build intelligent agents that combine retrieval with generation for enhanced AI capabilities"
+icon: "search"
+---
+
+## Overview
+
+Retrieval-Augmented Generation (RAG) is a powerful paradigm that enhances large language models by providing them with relevant information from external knowledge sources. This approach has become essential for enterprise AI applications that need to work with specific, up-to-date, or domain-specific information that wasn't part of the model's training data.
+
+RAG addresses key limitations of traditional LLMs:
+- **Knowledge cutoffs** - Access the most current information
+- **Domain expertise** - Integrate specialized knowledge bases
+- **Factual accuracy** - Reduce hallucinations with grounded responses
+- **Scalability** - Work with vast document collections efficiently
+
+Enterprises rely on RAG for applications like customer support, document analysis, knowledge management, and intelligent search systems.
+
+<Tip>
+RAG is most effective when document chunking and retrieval strategies are tailored to your specific problem domain. It's recommended to experiment with different configurations such as chunk sizes, overlap settings, and retrieval parameters. Future releases of BeeAI will provide enhanced capabilities to streamline this optimization process.
+</Tip>
+
+## Philosophy
+
+BeeAI Framework's approach to RAG emphasizes **integration over invention**. Rather than building RAG components from scratch, we provide seamless adapters for proven, production-ready solutions from leading platforms like LangChain and Llama-Index.
+
+This philosophy offers several advantages:
+- **Leverage existing expertise** - Use battle-tested implementations
+- **Faster time-to-market** - Focus on your application logic, not infrastructure
+- **Community support** - Benefit from extensive documentation and community
+- **Flexibility** - Switch between providers as needs evolve
+
+## RAG Components
+
+The following table outlines the key RAG components available in the BeeAI Framework:
+
+| Component | Description | Compatibility | Future Compatibility |
+|-----------|-------------|---------------|---------------------|
+| **Document Loaders** | Responsible for loading content from different formats and sources such as PDFs, web pages, and structured text files | WIP | BeeAI, LangChain |
+| **Text Splitters** | Splits long documents into workable chunks using various strategies, e.g. fixed length or preserving context | WIP | BeeAI, LangChain |
+| **Document** | The basic data structure to house text content, metadata, and relevant scores for retrieval operations | BeeAI | - |
+| **Vector Store** | Used to store document embeddings and retrieve them based on semantic similarity using embedding distance | LangChain | BeeAI, Llama-Index |
+| **Document Processors** | Used to process and refine documents during the retrieval-generation lifecycle including reranking and filtering | Llama-Index | - |
+
+## Dynamic Module Loading
+
+BeeAI Framework provides a dynamic module loading system that allows you to instantiate RAG components using string identifiers. This approach enables configuration-driven architectures and easy provider switching.
+
+The `from_name` method uses the format `provider:ClassName` where:
+- `provider` identifies the integration module (e.g., "beeai", "langchain")
+- `ClassName` specifies the exact class to instantiate
+
+<Tip>
+Dynamic loading enables you to switch between different vector store implementations without changing your application code - just update the configuration string.
+</Tip>
+
+### BeeAI Vector Store
+
+```python
+from beeai_framework.backend.vector_store import VectorStore
+from beeai_framework.adapters.watsonx.backend.embedding import WatsonxEmbeddingModel
+
+# Initialize embedding model
+embedding_model = WatsonxEmbeddingModel(
+    model_id="ibm/slate-125m-english-rtrvr-v2",
+    project_id=os.getenv("WATSONX_PROJECT_ID"),
+    api_key=os.getenv("WATSONX_APIKEY"),
+    base_url=os.getenv("WATSONX_URL"),
+)
+
+# BeeAI native vector store
+vector_store = VectorStore.from_name(
+    name="beeai:TemporalVectorStore", 
+    embedding_model=embedding_model
+)
+```
+
+### LangChain Vector Store
+
+```python
+# LangChain integration
+vector_store = VectorStore.from_name(
+    name="langchain:InMemoryVectorStore", 
+    embedding_model=embedding_model
+)
+```
+
+<Tip>
+You can customize dynamically loaded components by passing additional parameters directly to the `from_name` method. These parameters will be forwarded to the component's constructor, allowing you to configure settings like batch sizes, connection pools, or other provider-specific options without changing your code structure.
+</Tip>
+
+## RAG Agent
+
+The RAG Agent implements a sophisticated retrieval-augmented generation pipeline that combines the power of semantic search with large language models. The agent follows a three-stage process and supports advanced configuration options including custom reranking, flexible retrieval parameters, comprehensive error handling, and query flexibility using various object types.
+
+### 1. Retrieval
+The agent searches the vector store using semantic similarity to find the most relevant documents for the user's query. You can configure the number of documents retrieved and similarity thresholds to optimize for your specific use case.
+
+### 2. Reranking (Optional)
+Retrieved documents can be reranked using advanced LLM-based models to improve relevance and quality of the context provided to the generation stage. This step significantly enhances response accuracy for complex queries.
+
+### 3. Generation
+The LLM generates a response using the retrieved documents as context, ensuring grounded and accurate answers. Built-in error handling ensures informative error messages are stored in memory when issues occur.
+
+### Basic Usage
+
+<Note>
+Document loading and population of the vector store is the developers's responsibility and out of scope for the agent. 
+</Note>
+
+<CodeGroup>
+
+```py Python
+
+# Create vector store (assumes documents are already populated)
+vector_store = VectorStore.from_name(
+    name="...", 
+    embedding_model=...
+)
+
+# Initialize chat model and reranker
+llm = ChatModel.from_name("ollama:llama3.2:latest")
+reranker = LLMDocumentReranker(llm, top_n=3)
+
+# Create RAG agent
+agent = RAGAgent(
+    llm=llm,
+    memory=UnconstrainedMemory(),
+    vector_store=vector_store,
+    reranker=reranker,
+    number_of_retrieved_documents=5
+)
+
+# Run the agent
+response = await agent.run(
+    RagAgentRunInput(message=UserMessage("What agents are available in BeeAI?"))
+)
+print(response.message.text)
+```
+
+</CodeGroup>
+
+<Tip>
+For production deployments, consider implementing document caching and index optimization to improve response times.
+</Tip>
+
+### Future Enhancements
+
+The RAG Agent is designed for extensibility. The roadmap focuses on two main areas of improvement:
+
+#### Fallback Strategies
+Handle edge cases and improve robustness when standard retrieval approaches fall short:
+- **Query rephrasing** - Automatically rephrase queries for better retrieval when initial attempts yield poor results
+- **Query decomposition** - Break complex queries into simpler sub-queries for more targeted retrieval
+- **Alternative retrieval methods** - Implement backup strategies when semantic search doesn't find relevant documents
+
+#### Agentic Capabilities  
+Add autonomous reasoning and self-improvement capabilities for higher quality responses:
+- **Reflection loops** - Enable the agent to evaluate and improve its own responses
+- **Iterative refinement** - Allow multiple rounds of retrieval and generation for complex queries
+- **Self-assessment** - Implement confidence scoring and quality evaluation mechanisms
+
+## Installation
+
+To use RAG components, install the framework with the RAG extras:
+
+```bash
+pip install "beeai-framework[rag]"
+```
+
+## Examples
+
+<CardGroup cols={1}>
+  <Card title="Python RAG Agent" icon="python" href="https://github.com/i-am-bee/beeai-framework/tree/main/python/examples/agents/rag_agent.py">
+    Complete RAG agent implementation with document loading and processing
+  </Card>
+</CardGroup>
