@@ -2,14 +2,16 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import asyncio
+import functools
 import uuid
 from asyncio import Queue
 from collections.abc import AsyncGenerator, Awaitable, Callable, Generator
 from contextvars import ContextVar
 from datetime import UTC, datetime
-from typing import Any, Generic, Protocol, Self, TypeAlias, TypeVar, runtime_checkable
+from typing import Any, Generic, Protocol, Self, TypeAlias, cast, runtime_checkable
 
 from pydantic import BaseModel, InstanceOf
+from typing_extensions import ParamSpec, TypeVar
 
 from beeai_framework.emitter import Callback, Emitter, EmitterOptions, EventMeta, EventTrace, Matcher
 from beeai_framework.errors import AbortError, FrameworkError
@@ -18,6 +20,7 @@ from beeai_framework.utils import AbortController, AbortSignal
 from beeai_framework.utils.asynchronous import ensure_async
 from beeai_framework.utils.cancellation import register_signals
 from beeai_framework.utils.dicts import exclude_keys
+from examples.playground.experiments.runnnables.protocol_approach import RunnableKwargs
 
 R = TypeVar("R")
 
@@ -26,6 +29,7 @@ logger = Logger(__name__)
 storage: ContextVar["RunContext"] = ContextVar("storage")
 
 
+@runtime_checkable
 class RunInstance(Protocol):
     @property
     def emitter(self) -> Emitter:
@@ -261,6 +265,13 @@ class RunContext:
         cloned._controller = await self._controller.clone()
         return cloned
 
+    @classmethod
+    def get(cls) -> "RunContext":
+        context = storage.get(None)
+        if context is None:
+            raise RuntimeError("Called from non-context.")
+        return context
+
 
 class RunContextStartEvent(BaseModel):
     input: dict[str, Any]
@@ -295,3 +306,21 @@ __all__ = [
     "RunMiddlewareType",
     "run_context_event_types",
 ]
+
+T = TypeVar("T")
+P = ParamSpec("P")
+
+
+def run_wrapper(handler: Callable[P, Awaitable[T]]) -> Callable[P, Run[T]]:
+    @functools.wraps(handler)
+    def wrapper(*args: P.args, **kwargs: P.kwargs) -> Run[T]:
+        async def inner(_: RunContext) -> T:
+            return await handler(*args, **kwargs)
+
+        self = args[0] if args else None
+        assert isinstance(self, RunInstance)
+
+        kwargs_typed = cast(RunnableKwargs, kwargs)
+        return RunContext.enter(self, inner, signal=kwargs_typed["signal"], run_params={"input": args[1]})
+
+    return wrapper
