@@ -17,7 +17,7 @@ RAG addresses key limitations of traditional LLMs:
 Enterprises rely on RAG for applications like customer support, document analysis, knowledge management, and intelligent search systems.
 
 <Note>
-Location within the framework: [beeai_framework/agents/experimental/rag](https://github.com/i-am-bee/beeai-framework/blob/main/python/beeai_framework/agents/experimental/rag).
+	Location within the framework: [beeai_framework/rag](https://github.com/i-am-bee/beeai-framework/blob/main/python/beeai_framework/rag).
 </Note>
 
 <Tip>
@@ -125,7 +125,7 @@ Native BeeAI modules can be loaded directly by importing and instantiating the m
 ```py Python
 # LangChain integration
 vector_store = VectorStore.from_name(
-    name="langchain:InMemoryVectorStore", 
+    name="langchain:InMemoryVectorStore",
     embedding_model=embedding_model
 )
 ```
@@ -150,7 +150,7 @@ The LLM generates a response using the retrieved documents as context, ensuring 
 ### Basic Usage
 
 <Note>
-Document loading and population of the vector store is the developers's responsibility and out of scope for the agent. 
+Document loading and population of the vector store is the developers's responsibility and out of scope for the agent.
 </Note>
 
 {/* <!-- embedme python/examples/agents/rag_agent.py --> */}
@@ -279,7 +279,7 @@ Handle edge cases and improve robustness when standard retrieval approaches fall
 - **Query decomposition** - Break complex queries into simpler sub-queries for more targeted retrieval
 - **Alternative retrieval methods** - Implement backup strategies when semantic search doesn't find relevant documents
 
-#### Agentic Capabilities  
+#### Agentic Capabilities
 Add autonomous reasoning and self-improvement capabilities for higher quality responses:
 - **Reflection loops** - Enable the agent to evaluate and improve its own responses
 - **Iterative refinement** - Allow multiple rounds of retrieval and generation for complex queries
