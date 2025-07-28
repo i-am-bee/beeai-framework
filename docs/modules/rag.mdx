@@ -34,6 +34,14 @@ This philosophy offers several advantages:
 - **Community support** - Benefit from extensive documentation and community
 - **Flexibility** - Switch between providers as needs evolve
 
+## Installation
+
+To use RAG components, install the framework with the RAG extras:
+
+```bash
+pip install "beeai-framework[rag]"
+```
+
 ## RAG Components
 
 The following table outlines the key RAG components available in the BeeAI Framework:
@@ -61,9 +69,6 @@ Dynamic loading enables you to switch between different vector store implementat
 ### BeeAI Vector Store
 {/* <!-- embedme python/examples/backend/module_loading.py --> */}
 ```py Python
-# Copyright 2025 © BeeAI a Series of LF Projects, LLC
-# SPDX-License-Identifier: Apache-2.0
-
 import asyncio
 import sys
 import traceback
@@ -104,7 +109,6 @@ async def main() -> None:
 if __name__ == "__main__":
     try:
         asyncio.run(main())
-        # llm_generation()
     except FrameworkError as e:
         traceback.print_exc()
         sys.exit(e.explain())
@@ -151,9 +155,6 @@ Document loading and population of the vector store is the developers's responsi
 
 {/* <!-- embedme python/examples/agents/rag_agent.py --> */}
 ```py Python [expandable]
-# Copyright 2025 © BeeAI a Series of LF Projects, LLC
-# SPDX-License-Identifier: Apache-2.0
-
 import asyncio
 import logging
 import os
@@ -256,7 +257,6 @@ async def main() -> None:
 if __name__ == "__main__":
     try:
         asyncio.run(main())
-        # llm_generation()
     except FrameworkError as e:
         traceback.print_exc()
         sys.exit(e.explain())
@@ -284,14 +284,6 @@ Add autonomous reasoning and self-improvement capabilities for higher quality re
 - **Reflection loops** - Enable the agent to evaluate and improve its own responses
 - **Iterative refinement** - Allow multiple rounds of retrieval and generation for complex queries
 - **Self-assessment** - Implement confidence scoring and quality evaluation mechanisms
-
-## Installation
-
-To use RAG components, install the framework with the RAG extras:
-
-```bash
-pip install "beeai-framework[rag]"
-```
 
 ## Examples
 

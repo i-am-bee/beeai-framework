@@ -1,6 +1,3 @@
-# Copyright 2025 © BeeAI a Series of LF Projects, LLC
-# SPDX-License-Identifier: Apache-2.0
-
 import asyncio
 import logging
 import os
@@ -103,7 +100,6 @@ async def main() -> None:
 if __name__ == "__main__":
     try:
         asyncio.run(main())
-        # llm_generation()
     except FrameworkError as e:
         traceback.print_exc()
         sys.exit(e.explain())
