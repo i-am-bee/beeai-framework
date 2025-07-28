@@ -11,10 +11,10 @@ from beeai_framework.adapters.beeai.backend.document_processor import LLMDocumen
 from beeai_framework.adapters.beeai.backend.vector_store import TemporalVectorStore
 from beeai_framework.adapters.langchain.backend.vector_store import LangChainVectorStore
 from beeai_framework.adapters.langchain.mappers.documents import lc_document_to_document
-from beeai_framework.adapters.watsonx.backend.embedding import WatsonxEmbeddingModel
 from beeai_framework.agents.experimental.rag import RAGAgent, RagAgentRunInput
 from beeai_framework.backend import UserMessage
 from beeai_framework.backend.chat import ChatModel
+from beeai_framework.backend.embedding import EmbeddingModel
 from beeai_framework.backend.vector_store import VectorStore
 from beeai_framework.errors import FrameworkError
 from beeai_framework.logger import Logger
@@ -42,13 +42,7 @@ INPUT_DOCUMENTS_LOCATION = "docs/integrations"
 
 
 async def populate_documents() -> VectorStore | None:
-    embedding_model = WatsonxEmbeddingModel(  # type: ignore[call-arg]
-        model_id="ibm/slate-125m-english-rtrvr-v2",
-        project_id=os.getenv("WATSONX_PROJECT_ID"),
-        api_key=os.getenv("WATSONX_APIKEY"),
-        base_url=os.getenv("WATSONX_URL"),
-        truncate_input_tokens=500,  # Base class parameter
-    )
+    embedding_model = EmbeddingModel.from_name("watsonx:ibm/slate-125m-english-rtrvr-v2", truncate_input_tokens=500)
 
     # Load existing vector store if available
     if VECTOR_DB_PATH_4_DUMP and os.path.exists(VECTOR_DB_PATH_4_DUMP):
@@ -97,7 +91,7 @@ async def main() -> None:
             "Either set POPULATE_VECTOR_DB=True to create a new one, or ensure the database file exists."
         )
 
-    llm = ChatModel.from_name("ollama:llama3.2:latest")
+    llm = ChatModel.from_name("ollama:llama3.2")
     reranker = LLMDocumentReranker(llm)
 
     agent = RAGAgent(llm=llm, memory=UnconstrainedMemory(), vector_store=vector_store, reranker=reranker)
