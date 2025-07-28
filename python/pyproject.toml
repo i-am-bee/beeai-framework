@@ -45,7 +45,7 @@ wikipedia-api = {version = "^0.8.1", optional = true}
 [tool.poetry.group.dev.dependencies]
 commitizen = "^4.2.1"
 deepeval = "2.9.7"
-mypy = "^1.16.1"
+mypy = "^1.17.0"
 nbstripout = "^0.8.1"
 pydantic-settings = "^2.7"
 pylint = "^3.3.2"
