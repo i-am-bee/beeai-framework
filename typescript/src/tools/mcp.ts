@@ -10,6 +10,7 @@ import { Client as MCPClient } from "@modelcontextprotocol/sdk/client/index.js";
 import { ListToolsResult } from "@modelcontextprotocol/sdk/types.js";
 import { SchemaObject } from "ajv";
 import { paginate } from "@/internals/helpers/paginate.js";
+import { toCamelCase } from "remeda";
 
 export interface MCPToolInput {
   client: MCPClient;
@@ -34,7 +35,7 @@ export class MCPTool extends Tool<MCPToolOutput> {
     this.description =
       tool.description ?? "No available description, use the tool based on its name and schema.";
     this.emitter = Emitter.root.child({
-      namespace: ["tool", "mcp", this.name],
+      namespace: ["tool", "mcp", toCamelCase(this.name)],
       creator: this,
     });
   }
