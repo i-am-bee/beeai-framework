@@ -15,6 +15,9 @@
 
 BeeAI Framework is a comprehensive toolkit for building intelligent, autonomous agents and multi-agent systems. It provides everything you need to create agents that can reason, take actions, and collaborate to solve complex problems.
 
+> [!TIP]
+> Get started quickly with the [beeai-framework-py-starter](https://github.com/i-am-bee/beeai-framework-py-starter) template.
+
 ## Key Features
 
 | Feature | Description |
