@@ -11,7 +11,6 @@
 [![Join our Discord](https://img.shields.io/badge/Join%20our%20Discord-7289DA?style=plastic&logo=discord&logoColor=white)](https://discord.com/invite/NradeA6ZNF)
 [![LF AI & Data](https://img.shields.io/badge/LF%20AI%20%26%20Data-0072C6?style=plastic&logo=linuxfoundation&logoColor=white)](https://lfaidata.foundation/projects/)
 
-
 </div>
 
 ## Latest updates
@@ -27,25 +26,36 @@
 | 2024/12/09 | TypeScript    | Added support for LLaMa 3.3. See [multi-agent workflow example using watsonx](https://github.com/i-am-bee/beeai-framework/tree/main/typescript/examples/workflows/multiAgents.ts) or explore [other available providers](https://github.com/i-am-bee/beeai-framework/tree/main/typescript/docs/backend.md#providers-implementations).        |
 | 2024/11/21 | TypeScript    | Added an experimental [Streamlit agent](https://github.com/i-am-bee/beeai-framework/tree/main/typescript/examples/agents/experimental/streamlit.ts). |
 
-
 For a full changelog, see our [releases page](https://github.com/i-am-bee/beeai-framework/releases).
 
 ---
 
-## Why BeeAI?
+## What is BeeAI Framework?
 
-**🏆 Build for your use case.**  Implement simple to complex multi-agent patterns using [Workflows](https://github.com/i-am-bee/beeai-framework/tree/main/python/docs/workflows.md), start with a [ReActAgent](https://github.com/i-am-bee/beeai-framework/tree/main/python/examples/agents/react.py), or easily [build your own agent architecture](https://github.com/i-am-bee/beeai-framework/tree/main/python/docs/agents.md#creating-your-own-agent). There is no one-size-fits-all agent architecture, you need full flexibility in orchestrating agents and defining their roles and behaviors. 
-
-**🔌 Seamlessly integrate with your models and tools.** Get started with any model from [Ollama](https://github.com/i-am-bee/beeai-framework/tree/main/python/examples/backend/providers/ollama.py), [Groq](https://github.com/i-am-bee/beeai-framework/tree/main/python/examples/backend/providers/groq.py), [OpenAI](https://github.com/i-am-bee/beeai-framework/tree/main/python/examples/backend/providers/openai_example.py), [watsonx.ai](https://github.com/i-am-bee/beeai-framework/tree/main/python/examples/backend/providers/watsonx.py), and [more](https://github.com/i-am-bee/beeai-framework/tree/main/python/docs/backend.md#supported-providers). Leverage tools from [LangChain](https://github.com/i-am-bee/beeai-framework/tree/main/python/examples/tools/langchain.py), connect to any server using the [Model Context Protocol](https://github.com/i-am-bee/beeai-framework/tree/main/python/docs/tools.md#mcp-tool), or build your own [custom tools](https://github.com/i-am-bee/beeai-framework/tree/main/python/docs/tools.md#creating-custom-tools). BeeAI is designed to integrate with the systems and capabilities you need.
-
-**🚀 Scale with production-grade controls.** Optimize token usage through configurable [memory strategies](https://github.com/i-am-bee/beeai-framework/tree/main/python/docs/memory.md), persist and restore agent state via [(de)serialization](https://github.com/i-am-bee/beeai-framework/tree/main/python/docs/serialization.md), generate structured outputs, and execute generated code in a sandboxed environment (coming soon). When things go wrong, the [emitter](https://github.com/i-am-bee/beeai-framework/tree/main/python/docs/emitter.md) system tracks the full agent workflow, generating detailed [events](https://github.com/i-am-bee/beeai-framework/tree/main/python/docs/events.md) for monitoring and analysis. [Telemetry](https://github.com/i-am-bee/beeai-framework/tree/main/python/docs/instrumentation.md) and [logging](https://github.com/i-am-bee/beeai-framework/tree/main/python/docs/logger.md) capabilities capture key diagnostic data. When issues arise, BeeAI handles [errors](https://github.com/i-am-bee/beeai-framework/tree/main/python/docs/errors.md) gracefully with clear, well-defined exceptions.
+BeeAI Framework is a comprehensive toolkit for building intelligent, autonomous agents and multi-agent systems. It provides everything you need to create agents that can reason, take actions, and collaborate to solve complex problems.
 
 > [!TIP]
-> Get started quickly with the [beeai-framework-py-starter](https://github.com/i-am-bee/beeai-framework-py-starter) template.
+> Get started quickly with the [beeai-framework-py-starter](https://github.com/i-am-bee/beeai-framework-py-starter) [Python] or [beeai-framework-ts-starter](https://github.com/i-am-bee/beeai-framework-ts-starter) [TypeScript] template.
 
----
+## Key Features
 
-## Installation
+| Feature | Description |
+|---------|-------------|
+| 🤖 [**Agents**](https://framework.beeai.dev/modules/agents) | Create intelligent agents that can reason, act, and adapt |
+| 🔄 [**Workflows**](https://framework.beeai.dev/modules/workflows) | Orchestrate multi-agent systems with complex execution flows |
+| 🔌 [**Backend**](https://framework.beeai.dev/modules/backend) | Connect to any LLM provider with unified interfaces |
+| 🔧 [**Tools**](https://framework.beeai.dev/modules/tools) | Extend agents with web search, weather, code execution, and more |
+| 🔍 [**RAG**](https://framework.beeai.dev/modules/rag) | Build retrieval-augmented generation systems with vector stores and document processing |
+| 📝 [**Templates**](https://framework.beeai.dev/modules/templates) | Build dynamic prompts with enhanced Mustache syntax |
+| 🧠 [**Memory**](https://framework.beeai.dev/modules/memory) | Manage conversation history with flexible memory strategies |
+| 📊 **Observability** | Monitor agent behavior with [events](), [logging](), and robust [error handling]() |
+| 🚀 [**Serve**](https://framework.beeai.dev/modules/serve) | Host agents in servers with support for multiple protocols such as [A2A](https://framework.beeai.dev/integrations/a2a) and [MCP](https://framework.beeai.dev/integrations/mcp) |
+| 💾 [**Cache**](https://framework.beeai.dev/modules/cache) | Optimize performance and reduce costs with intelligent caching |
+| 💿 [**Serialization**](https://framework.beeai.dev/modules/serialization) | Save and load agent state for persistence across sessions |
+
+## Quickstart
+
+### Installation
 
 To install the Python library:
 ```shell
@@ -57,13 +67,7 @@ To install the TypeScript library:
 npm install beeai-framework
 ```
 
-For more guidance and starter examples in your desired language, head to the docs pages for [Python](https://github.com/i-am-bee/beeai-framework/tree/main/python/README.md) and [TypeScript](https://github.com/i-am-bee/beeai-framework/tree/main/typescript/README.md).
-
----
-
-## Quick example
-
-This example demonstrates how to build a multi-agent workflow using BeeAI framework in Python.
+## Multi-Agent Workflow Example
 
 ```py
 import asyncio
@@ -132,7 +136,8 @@ if __name__ == "__main__":
 
 _Source: [python/examples/workflows/multi_agents_simple.py](https://github.com/i-am-bee/beeai-framework/tree/main/python/examples/workflows/multi_agents.py)_
 
-TypeScript version of this example can be found [here](https://github.com/i-am-bee/beeai-framework/tree/main/typescript/examples/workflows/multiAgents.ts).
+> [!TIP]
+> TypeScript version of this example can be found [here](https://github.com/i-am-bee/beeai-framework/tree/main/typescript/examples/workflows/multiAgents.ts).
 
 ### Running the example
 
@@ -147,19 +152,6 @@ python [project_name].py
 ```
 
 Explore more in our examples for [Python](https://github.com/i-am-bee/beeai-framework/tree/main/python/examples/README.md) and [TypeScript](https://github.com/i-am-bee/beeai-framework/tree/main/typescript/examples/README.md).
-
----
-
-## Roadmap
-
-- Python parity with TypeScript
-- Standalone docs site
-- Integration with watsonx.ai for deployment
-- More multi-agent reference architecture implementations using workflows
-- More OTTB agent implementations
-- Native tool calling with supported LLM providers
-
-To stay up-to-date on our [public roadmap](https://github.com/orgs/i-am-bee/projects/1/views/2).
 
 ---
 
