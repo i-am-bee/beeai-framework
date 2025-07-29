@@ -46,6 +46,7 @@ from beeai_framework.memory.unconstrained_memory import UnconstrainedMemory
 from beeai_framework.memory.utils import extract_last_tool_call_pair
 from beeai_framework.template import PromptTemplate
 from beeai_framework.tools import AnyTool
+from beeai_framework.utils import AbortSignal
 from beeai_framework.utils.counter import RetryCounter
 from beeai_framework.utils.dicts import exclude_none
 from beeai_framework.utils.lists import cast_list
@@ -106,6 +107,7 @@ class RequirementAgent(BaseAgent[RequirementAgentRunOutput]):
         context: str | None = None,
         expected_output: str | type[TOutput] | None = None,
         execution: AgentExecutionConfig | None = None,
+        signal: AbortSignal | None = None,
     ) -> Run[RequirementAgentRunOutput[TOutput]]:
         run_config = execution or AgentExecutionConfig(
             max_retries_per_step=3,
@@ -269,7 +271,7 @@ class RequirementAgent(BaseAgent[RequirementAgentRunOutput]):
 
         return self._to_run(
             handler,
-            signal=None,
+            signal=signal,
             run_params={
                 "prompt": prompt,
                 "context": context,
