@@ -13,12 +13,12 @@
 # limitations under the License.
 
 from abc import ABC, abstractmethod
-from typing import Generic
+from typing import Any, Generic
 
 from pydantic import BaseModel
 from typing_extensions import TypeVar
 
-from beeai_framework.backend.message import UserMessage
+from beeai_framework.backend import AnyMessage
 from beeai_framework.context import Run
 from beeai_framework.utils import AbortSignal
 from beeai_framework.utils.models import ModelLike
@@ -31,13 +31,25 @@ class RunnableContext(BaseModel):
     signal: AbortSignal | None = None
 
 
-Input = TypeVar("Input", bound=str | UserMessage | ModelLike)
+Input = TypeVar("Input", bound=str | AnyMessage | list[AnyMessage])
 Output = TypeVar("Output", bound=str | ModelLike)
-Config = TypeVar("Config", bound=RunnableContext)
+Context = TypeVar("Context", bound=RunnableContext)
 
 
-class Runnable(Generic[Input, Output, Config], ABC):
+class Runnable(Generic[Input, Context, Output], ABC):
     """A unit of work that can be invoked using a stable interface."""
 
     @abstractmethod
-    def run(self, input: Input, context: Config | None = None) -> Run[Output]: ...
+    def run(self, input: Input, context: Context | None = None, **kwargs: Any) -> Run[Output]:
+        """Invoke the runnable on a single input to produce an output.
+
+        Args:
+            input: The input to the runnable
+            context: Context to be used when invoking the runnable.
+                The context object supports predefined attributes to
+                be used in conjunction with the runnable invocation.
+
+        Returns:
+            The output of the runnable.
+        """
+        pass

@@ -13,7 +13,7 @@
 # limitations under the License.
 
 from abc import abstractmethod
-from collections.abc import Awaitable, Callable
+from collections.abc import Awaitable, Callable, Sequence
 from functools import cached_property
 from typing import Any
 
@@ -21,25 +21,53 @@ from pydantic import BaseModel
 from typing_extensions import TypeVar
 
 from beeai_framework.agents.errors import AgentError
+from beeai_framework.agents.tool_calling.utils import ToolCallCheckerConfig
 from beeai_framework.agents.types import AgentContext, AgentMeta, AgentRunOutput
-from beeai_framework.backend.message import UserMessage
+from beeai_framework.backend import AnyMessage
+from beeai_framework.backend.chat import ChatModel
 from beeai_framework.context import Run, RunContext, RunMiddlewareType
 from beeai_framework.emitter import Emitter
 from beeai_framework.memory import BaseMemory
+from beeai_framework.memory.unconstrained_memory import UnconstrainedMemory
 from beeai_framework.runnable import Runnable
+from beeai_framework.tools import AnyTool
 from beeai_framework.utils import AbortSignal
-from beeai_framework.utils.models import ModelLike
 
-Input = TypeVar("Input", bound=str | UserMessage | ModelLike, default=str)
+Input = TypeVar("Input", bound=str | AnyMessage | list[AnyMessage], default=str)
 Output = TypeVar("Output", bound=BaseModel, default=AgentRunOutput)
-Config = TypeVar("Config", bound=AgentContext, default=AgentContext)
+Context = TypeVar("Context", bound=AgentContext, default=AgentContext)
 
 
-class BaseAgent(Runnable[Input, Output, Config]):
-    def __init__(self) -> None:
+class BaseAgent(Runnable[Input, Context, Output]):
+    """An abstract agent."""
+
+    def __init__(
+        self,
+        *,
+        llm: ChatModel,
+        name: str | None = None,
+        description: str | None = None,
+        role: str | None = None,
+        instructions: str | list[str] | None = None,
+        notes: str | list[str] | None = None,
+        tools: list[AnyTool] | None = None,
+        tool_call_checker: ToolCallCheckerConfig | bool = True,
+        memory: BaseMemory | None = None,
+        middlewares: Sequence[RunMiddlewareType] | None = None,
+        stream: bool = True,
+    ) -> None:
         super().__init__()
         self._is_running = False
-        self.middlewares: list[RunMiddlewareType] = []
+        self._llm = llm
+        self._memory = memory or UnconstrainedMemory()
+        self._tools = tools or []
+        self._tool_call_checker = tool_call_checker
+        self._meta = AgentMeta(name=name or self.__class__.__name__, description=description or "", tools=self._tools)
+        self._role = role
+        self._instructions = instructions
+        self._notes = notes
+        self.middlewares = middlewares or []
+        self._stream = stream
 
     @abstractmethod
     def _create_emitter(self) -> Emitter:
@@ -64,11 +92,7 @@ class BaseAgent(Runnable[Input, Output, Config]):
 
     @property
     def meta(self) -> AgentMeta:
-        return AgentMeta(
-            name=self.__class__.__name__,
-            description="",
-            tools=[],
-        )
+        return self._meta
 
     def _to_run(
         self,

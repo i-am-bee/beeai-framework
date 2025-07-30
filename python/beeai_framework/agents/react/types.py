@@ -94,8 +94,8 @@ ReActAgentTemplatesKeys = Annotated[str, lambda v: v in ReActAgentTemplates.mode
 
 class ReActAgentInput(BaseModel):
     llm: InstanceOf[ChatModel]
-    tools: list[InstanceOf[AnyTool]]
-    memory: InstanceOf[BaseMemory]
+    tools: list[InstanceOf[AnyTool]] | None = None
+    memory: InstanceOf[BaseMemory] | None = None
     meta: InstanceOf[AgentMeta] | None = None
     templates: dict[ReActAgentTemplatesKeys, InstanceOf[PromptTemplate[Any]] | ReActAgentTemplateFactory] | None = None
     execution: AgentContext | None = None

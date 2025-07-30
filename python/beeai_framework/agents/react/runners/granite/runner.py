@@ -73,7 +73,7 @@ class GraniteRunner(DefaultRunner):
         run.emitter.on("update", on_update, EmitterOptions(is_blocking=True))
 
     def _create_parser(self) -> LinePrefixParser:
-        tool_names = create_strenum("ToolsEnum", [tool.name for tool in self._input.tools])
+        tool_names = create_strenum("ToolsEnum", [tool.name for tool in self._input.tools] if self._input.tools else [])
 
         return LinePrefixParser(
             nodes={

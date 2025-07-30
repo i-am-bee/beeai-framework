@@ -1,6 +1,7 @@
 import asyncio
 import sys
 import traceback
+from typing import Any
 
 from dotenv import load_dotenv
 from pydantic import BaseModel, Field, InstanceOf
@@ -21,10 +22,6 @@ class State(BaseModel):
     final_answer: str
 
 
-class RunInput(BaseModel):
-    message: InstanceOf[AnyMessage]
-
-
 class CustomAgentRunOptions(AgentContext):
     max_retries: int | None = None
 
@@ -34,11 +31,9 @@ class CustomAgentRunOutput(BaseModel):
     state: State
 
 
-class CustomAgent(BaseAgent[RunInput, CustomAgentRunOutput, CustomAgentRunOptions]):
+class CustomAgent(BaseAgent[UserMessage, CustomAgentRunOptions, CustomAgentRunOutput]):
     def __init__(self, llm: ChatModel, memory: BaseMemory) -> None:
-        super().__init__()
-        self.model = llm
-        self._memory = memory
+        super().__init__(llm=llm, memory=memory)
 
     @property
     def memory(self) -> BaseMemory:
@@ -56,8 +51,9 @@ class CustomAgent(BaseAgent[RunInput, CustomAgentRunOutput, CustomAgentRunOption
 
     def run(
         self,
-        input: RunInput,
+        input: UserMessage,
         context: CustomAgentRunOptions | None = None,
+        **kwargs: Any,
     ) -> Run[CustomAgentRunOutput]:
         async def handler(run_context: RunContext) -> CustomAgentRunOutput:
             class CustomSchema(BaseModel):
@@ -66,12 +62,12 @@ class CustomAgent(BaseAgent[RunInput, CustomAgentRunOutput, CustomAgentRunOption
                     description="Here you should provide concise answer to the original question."
                 )
 
-            response = await self.model.create_structure(
+            response = await self._llm.create_structure(
                 schema=CustomSchema,
                 messages=[
                     SystemMessage("You are a helpful assistant. Always use JSON format for your responses."),
                     *(self.memory.messages if self.memory is not None else []),
-                    input.message,
+                    input,
                 ],
                 max_retries=context.max_retries if context else None,
                 abort_signal=run_context.signal,
@@ -104,7 +100,7 @@ async def main() -> None:
         memory=UnconstrainedMemory(),
     )
 
-    response = await agent.run(RunInput(message=UserMessage("Why is the sky blue?")))
+    response = await agent.run(UserMessage("Why is the sky blue?"))
     print(response.state)
 
 

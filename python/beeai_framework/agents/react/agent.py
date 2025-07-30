@@ -13,7 +13,7 @@
 # limitations under the License.
 
 
-from collections.abc import Callable
+from collections.abc import Callable, Sequence
 from datetime import UTC, datetime
 from typing import Any
 
@@ -39,33 +39,56 @@ from beeai_framework.agents.react.types import (
     ReActAgentTemplateFactory,
     ReActAgentTemplatesKeys,
 )
+from beeai_framework.agents.tool_calling.utils import ToolCallCheckerConfig
 from beeai_framework.agents.types import (
     AgentContext,
     AgentMeta,
 )
 from beeai_framework.backend.chat import ChatModel
 from beeai_framework.backend.message import AssistantMessage, MessageMeta, UserMessage
-from beeai_framework.context import Run, RunContext
+from beeai_framework.context import Run, RunContext, RunMiddlewareType
 from beeai_framework.emitter import Emitter
 from beeai_framework.memory import BaseMemory
 from beeai_framework.template import PromptTemplate
 from beeai_framework.tools.tool import AnyTool
 
 
-class ReActAgent(BaseAgent[str, ReActAgentRunOutput, AgentContext]):
+class ReActAgent(BaseAgent[str, AgentContext, ReActAgentRunOutput]):
     _runner: Callable[..., BaseRunner]
 
     def __init__(
         self,
+        *,
         llm: ChatModel,
-        tools: list[AnyTool],
-        memory: BaseMemory,
+        name: str | None = None,
+        description: str | None = None,
+        role: str | None = None,
+        instructions: str | list[str] | None = None,
+        notes: str | list[str] | None = None,
+        tools: list[AnyTool] | None = None,
+        tool_call_checker: ToolCallCheckerConfig | bool = True,
+        memory: BaseMemory | None = None,
+        middlewares: Sequence[RunMiddlewareType] | None = None,
+        stream: bool = True,
         meta: AgentMeta | None = None,
         templates: dict[ReActAgentTemplatesKeys, PromptTemplate[Any] | ReActAgentTemplateFactory] | None = None,
         execution: AgentContext | None = None,
-        stream: bool = True,
     ) -> None:
-        super().__init__()
+        super().__init__(
+            llm=llm,
+            name=name,
+            description=description,
+            role=role,
+            instructions=instructions,
+            notes=notes,
+            tools=tools,
+            tool_call_checker=tool_call_checker,
+            memory=memory,
+            middlewares=middlewares,
+            stream=stream,
+        )
+        if meta:
+            self._meta = meta
         self._input = ReActAgentInput(
             llm=llm, tools=tools, memory=memory, meta=meta, templates=templates, execution=execution, stream=stream
         )
@@ -82,37 +105,22 @@ class ReActAgent(BaseAgent[str, ReActAgentRunOutput, AgentContext]):
 
     @property
     def memory(self) -> BaseMemory:
-        return self._input.memory
+        return self._memory
 
     @memory.setter
     def memory(self, memory: BaseMemory) -> None:
-        self._input.memory = memory
+        self._memory = memory
 
     @property
     def meta(self) -> AgentMeta:
-        tools = self._input.tools[:]
-
-        if self._input.meta:
-            return AgentMeta(
-                name=self._input.meta.name,
-                description=self._input.meta.description,
-                extra_description=self._input.meta.extra_description,
-                tools=tools,
-            )
-
+        tools = self._tools[:]
         extra_description = ["Tools that I can use to accomplish given task."]
         for tool in tools:
             extra_description.append(f"Tool ${tool.name}': ${tool.description}.")
+        self._meta.extra_description = "\n".join(extra_description) if len(tools) > 0 else None
+        return self._meta
 
-        return AgentMeta(
-            name="ReAct",
-            tools=tools,
-            description="The BeeAI framework demonstrates its ability to auto-correct and adapt in real-time, improving"
-            " the overall reliability and resilience of the system.",
-            extra_description="\n".join(extra_description) if len(tools) > 0 else None,
-        )
-
-    def run(self, input: str, context: AgentContext | None = None) -> Run[ReActAgentRunOutput]:
+    def run(self, input: str, context: AgentContext | None = None, **kwargs: Any) -> Run[ReActAgentRunOutput]:
         run_config = context or self._input.execution or AgentContext()
 
         async def handler(context: RunContext) -> ReActAgentRunOutput:
@@ -183,11 +191,9 @@ class ReActAgent(BaseAgent[str, ReActAgentRunOutput, AgentContext]):
                     )
 
             if input:
-                await self._input.memory.add(
-                    UserMessage(content=input, meta=MessageMeta({"createdAt": context.created_at}))
-                )
+                await self._memory.add(UserMessage(content=input, meta=MessageMeta({"createdAt": context.created_at})))
 
-            await self._input.memory.add(final_message)
+            await self._memory.add(final_message)
 
             return ReActAgentRunOutput(answer=final_message, iterations=runner.iterations, memory=runner.memory)
 

@@ -48,7 +48,7 @@ from beeai_framework.backend.message import (
     UserMessage,
 )
 from beeai_framework.backend.utils import parse_broken_json
-from beeai_framework.context import Run, RunContext
+from beeai_framework.context import Run, RunContext, RunMiddlewareType
 from beeai_framework.emitter import Emitter
 from beeai_framework.memory.base_memory import BaseMemory
 from beeai_framework.memory.unconstrained_memory import UnconstrainedMemory
@@ -67,26 +67,40 @@ class ToolCallingAgent(BaseAgent):
         self,
         *,
         llm: ChatModel,
+        name: str | None = None,
+        description: str | None = None,
+        role: str | None = None,
+        instructions: str | list[str] | None = None,
+        notes: str | list[str] | None = None,
+        tools: list[AnyTool] | None = None,
+        tool_call_checker: ToolCallCheckerConfig | bool = True,
         memory: BaseMemory | None = None,
-        tools: Sequence[AnyTool] | None = None,
+        middlewares: Sequence[RunMiddlewareType] | None = None,
+        stream: bool = True,
+        meta: AgentMeta | None = None,
         templates: dict[ToolCallingAgentTemplatesKeys, PromptTemplate[Any] | ToolCallingAgentTemplateFactory]
         | None = None,
         save_intermediate_steps: bool = True,
-        meta: AgentMeta | None = None,
-        tool_call_checker: ToolCallCheckerConfig | bool = True,
         final_answer_as_tool: bool = True,
     ) -> None:
-        super().__init__()
-        self._llm = llm
-        self._memory = memory or UnconstrainedMemory()
-        self._tools = tools or []
+        super().__init__(
+            llm=llm,
+            role=role,
+            instructions=instructions,
+            notes=notes,
+            tools=tools,
+            tool_call_checker=tool_call_checker,
+            memory=memory,
+            middlewares=middlewares,
+            stream=stream,
+        )
+        if meta:
+            self._meta = meta
         self._templates = self._generate_templates(templates)
         self._save_intermediate_steps = save_intermediate_steps
-        self._meta = meta
-        self._tool_call_checker = tool_call_checker
         self._final_answer_as_tool = final_answer_as_tool
 
-    def run(self, input: str, context: AgentContext | None = None) -> Run[ToolCallingAgentRunOutput]:
+    def run(self, input: str, context: AgentContext | None = None, **kwargs: Any) -> Run[ToolCallingAgentRunOutput]:
         run_config = context or AgentContext()
 
         async def handler(run_context: RunContext) -> ToolCallingAgentRunOutput:

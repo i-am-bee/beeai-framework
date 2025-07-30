@@ -67,34 +67,45 @@ RequirementAgentRequirement = Requirement[RequirementAgentRunState]
 TOutput = TypeVar("TOutput", bound=BaseModel, default=FinalAnswerToolSchema)
 
 
-class RequirementAgent(BaseAgent[str, RequirementAgentRunOutput, AgentContext]):
+class RequirementAgent(BaseAgent[str, AgentContext, RequirementAgentRunOutput]):
     def __init__(
         self,
         *,
         llm: ChatModel,
-        memory: BaseMemory | None = None,
-        tools: Sequence[AnyTool] | None = None,
-        requirements: Sequence[RequirementAgentRequirement] | None = None,
         name: str | None = None,
         description: str | None = None,
         role: str | None = None,
         instructions: str | list[str] | None = None,
         notes: str | list[str] | None = None,
+        tools: list[AnyTool] | None = None,
         tool_call_checker: ToolCallCheckerConfig | bool = True,
-        final_answer_as_tool: bool = True,
-        save_intermediate_steps: bool = True,
+        memory: BaseMemory | None = None,
+        middlewares: Sequence[RunMiddlewareType] | None = None,
+        stream: bool = True,
+        requirements: Sequence[RequirementAgentRequirement] | None = None,
         templates: dict[RequirementAgentTemplatesKeys, PromptTemplate[Any] | RequirementAgentTemplateFactory]
         | RequirementAgentTemplates
         | None = None,
-        middlewares: Sequence[RunMiddlewareType] | None = None,
+        save_intermediate_steps: bool = True,
+        final_answer_as_tool: bool = True,
     ) -> None:
-        super().__init__()
-        self._llm = llm
-        self._memory = memory or UnconstrainedMemory()
+        super().__init__(
+            llm=llm,
+            name=name,
+            description=description,
+            role=role,
+            instructions=instructions,
+            notes=notes,
+            tools=tools,
+            tool_call_checker=tool_call_checker,
+            memory=memory,
+            middlewares=middlewares,
+            stream=stream,
+        )
         self._templates = self._generate_templates(templates)
         self._save_intermediate_steps = save_intermediate_steps
-        self._tool_call_checker = tool_call_checker
         self._final_answer_as_tool = final_answer_as_tool
+        self._requirements = list(requirements or [])
         if role or instructions or notes:
             self._templates.system.update(
                 defaults=exclude_none(
@@ -105,12 +116,10 @@ class RequirementAgent(BaseAgent[str, RequirementAgentRunOutput, AgentContext]):
                     }
                 )
             )
-        self._tools = list(tools or [])
-        self._requirements = list(requirements or [])
-        self._meta = AgentMeta(name=name or "", description=description or "", tools=self._tools)
-        self.middlewares.extend(middlewares or [])
 
-    def run(self, input: str, context: AgentContext | None = None) -> Run[RequirementAgentRunOutput[TOutput]]:
+    def run(
+        self, input: str, context: AgentContext | None = None, **kwargs: Any
+    ) -> Run[RequirementAgentRunOutput[TOutput]]:
         run_config = context or AgentContext(max_retries_per_step=3)
 
         async def init_state() -> tuple[RequirementAgentRunState, UserMessage | None]:
