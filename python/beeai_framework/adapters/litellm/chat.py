@@ -231,10 +231,10 @@ class LiteLLMChatModel(ChatModel, ABC):
         )
 
     def _transform_output(self, chunk: ModelResponse | ModelResponseStream) -> ChatModelOutput:
-        choice = chunk.choices[0]
-        finish_reason = choice.finish_reason
+        choice = chunk.choices[0] if chunk.choices else None
+        finish_reason = choice.finish_reason if choice else None
         usage = chunk.get("usage")  # type: ignore
-        update = choice.delta if isinstance(choice, StreamingChoices) else choice.message
+        update = None if not choice else choice.delta if isinstance(choice, StreamingChoices) else choice.message
 
         return ChatModelOutput(
             messages=(
@@ -254,7 +254,7 @@ class LiteLLMChatModel(ChatModel, ABC):
                         else AssistantMessage(update.content)  # type: ignore
                     )
                 ]
-                if update.model_dump(exclude_none=True)
+                if update and update.model_dump(exclude_none=True)
                 else []
             ),
             finish_reason=finish_reason,
