@@ -19,9 +19,6 @@ __all__ = ["QueryLike", "VectorStore"]
 
 
 class VectorStore(ABC):
-    def __init_subclass__(cls, /, **kwargs: Any) -> None:
-        super().__init_subclass__(**kwargs)
-
     @classmethod
     @abstractmethod
     def _class_from_name(cls, class_name: str, embedding_model: EmbeddingModel, **kwargs: Any) -> VectorStore:

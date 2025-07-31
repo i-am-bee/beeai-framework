@@ -39,7 +39,7 @@ ProviderHumanName = Literal[
 ]
 
 ModelTypes = Literal["embedding", "chat"]
-ModuleTypes = Literal["vector_store"]
+ModuleTypes = Literal["vector_store", "document_loader"]
 
 
 class ProviderDef(BaseModel):

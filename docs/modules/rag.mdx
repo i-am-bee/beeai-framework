@@ -48,7 +48,7 @@ The following table outlines the key RAG components available in the BeeAI Frame
 
 | Component | Description | Compatibility | Future Compatibility |
 |-----------|-------------|---------------|---------------------|
-| **Document Loaders** | Responsible for loading content from different formats and sources such as PDFs, web pages, and structured text files | WIP | BeeAI, LangChain |
+| [**Document Loaders**](https://github.com/i-am-bee/beeai-framework/blob/main/python/beeai_framework/backend/document_loader.py) | Responsible for loading content from different formats and sources such as PDFs, web pages, and structured text files | LangChain | BeeAI |
 | **Text Splitters** | Splits long documents into workable chunks using various strategies, e.g. fixed length or preserving context | WIP | BeeAI, LangChain |
 | [**Document**](https://github.com/i-am-bee/beeai-framework/blob/main/python/beeai_framework/backend/types.py) | The basic data structure to house text content, metadata, and relevant scores for retrieval operations | BeeAI | - |
 | [**Vector Store**](https://github.com/i-am-bee/beeai-framework/blob/main/python/beeai_framework/backend/vector_store.py) | Used to store document embeddings and retrieve them based on semantic similarity using embedding distance | LangChain | BeeAI, Llama-Index |
@@ -134,6 +134,10 @@ vector_store = VectorStore.from_name(
 You can customize dynamically loaded components by passing additional parameters directly to the `from_name` method. These parameters will be forwarded to the component's constructor, allowing you to configure settings like batch sizes, connection pools, or other provider-specific options without changing your code structure.
 </Tip>
 
+<Tip>
+The same dynamic loading pattern works for document loaders. For example, you can load documents using `DocumentLoader.from_name("langchain:UnstructuredMarkdownLoader", file_path="docs/modules/agents.mdx")` to get your documents ready for the vector store.
+</Tip>
+
 ## RAG Agent
 
 The RAG Agent implements a sophisticated retrieval-augmented generation pipeline that combines the power of semantic search with large language models. The agent follows a three-stage process and supports advanced configuration options including custom reranking, flexible retrieval parameters, comprehensive error handling, and query flexibility using various object types.
@@ -164,10 +168,10 @@ import traceback
 from beeai_framework.adapters.beeai.backend.document_processor import LLMDocumentReranker
 from beeai_framework.adapters.beeai.backend.vector_store import TemporalVectorStore
 from beeai_framework.adapters.langchain.backend.vector_store import LangChainVectorStore
-from beeai_framework.adapters.langchain.mappers.documents import lc_document_to_document
 from beeai_framework.agents.experimental.rag import RAGAgent, RagAgentRunInput
 from beeai_framework.backend import UserMessage
 from beeai_framework.backend.chat import ChatModel
+from beeai_framework.backend.document_loader import DocumentLoader
 from beeai_framework.backend.embedding import EmbeddingModel
 from beeai_framework.backend.vector_store import VectorStore
 from beeai_framework.errors import FrameworkError
@@ -176,7 +180,6 @@ from beeai_framework.memory import UnconstrainedMemory
 
 # LC dependencies - to be swapped with BAI dependencies
 try:
-    from langchain_community.document_loaders import UnstructuredMarkdownLoader
     from langchain_text_splitters import RecursiveCharacterTextSplitter
 except ModuleNotFoundError as e:
     raise ModuleNotFoundError(
@@ -208,14 +211,23 @@ async def populate_documents() -> VectorStore | None:
 
     # Create new vector store if population is enabled
     if POPULATE_VECTOR_DB:
-        loader = UnstructuredMarkdownLoader(file_path="docs/modules/agents.mdx")
+        loader = DocumentLoader.from_name(
+            name="langchain:UnstructuredMarkdownLoader", file_path="docs/modules/agents.mdx"
+        )
         try:
-            docs = loader.load()
+            documents = await loader.load()
         except Exception:
             return None
 
+        # Note: Text splitting will be abstracted in future versions
+        from beeai_framework.adapters.langchain.mappers.documents import (
+            document_to_lc_document,
+            lc_document_to_document,
+        )
+
         text_splitter = RecursiveCharacterTextSplitter(chunk_size=2000, chunk_overlap=1000)
-        all_splits = text_splitter.split_documents(docs)
+        lc_documents = [document_to_lc_document(doc) for doc in documents]
+        all_splits = text_splitter.split_documents(lc_documents)
         documents = [lc_document_to_document(document) for document in all_splits]
         print(f"Loaded {len(documents)} documents")
 

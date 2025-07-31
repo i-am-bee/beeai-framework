@@ -7,10 +7,10 @@ import traceback
 from beeai_framework.adapters.beeai.backend.document_processor import LLMDocumentReranker
 from beeai_framework.adapters.beeai.backend.vector_store import TemporalVectorStore
 from beeai_framework.adapters.langchain.backend.vector_store import LangChainVectorStore
-from beeai_framework.adapters.langchain.mappers.documents import lc_document_to_document
 from beeai_framework.agents.experimental.rag import RAGAgent, RagAgentRunInput
 from beeai_framework.backend import UserMessage
 from beeai_framework.backend.chat import ChatModel
+from beeai_framework.backend.document_loader import DocumentLoader
 from beeai_framework.backend.embedding import EmbeddingModel
 from beeai_framework.backend.vector_store import VectorStore
 from beeai_framework.errors import FrameworkError
@@ -19,7 +19,6 @@ from beeai_framework.memory import UnconstrainedMemory
 
 # LC dependencies - to be swapped with BAI dependencies
 try:
-    from langchain_community.document_loaders import UnstructuredMarkdownLoader
     from langchain_text_splitters import RecursiveCharacterTextSplitter
 except ModuleNotFoundError as e:
     raise ModuleNotFoundError(
@@ -51,14 +50,23 @@ async def populate_documents() -> VectorStore | None:
 
     # Create new vector store if population is enabled
     if POPULATE_VECTOR_DB:
-        loader = UnstructuredMarkdownLoader(file_path="docs/modules/agents.mdx")
+        loader = DocumentLoader.from_name(
+            name="langchain:UnstructuredMarkdownLoader", file_path="docs/modules/agents.mdx"
+        )
         try:
-            docs = loader.load()
+            documents = await loader.load()
         except Exception:
             return None
 
+        # Note: Text splitting will be abstracted in future versions
+        from beeai_framework.adapters.langchain.mappers.documents import (
+            document_to_lc_document,
+            lc_document_to_document,
+        )
+
         text_splitter = RecursiveCharacterTextSplitter(chunk_size=2000, chunk_overlap=1000)
-        all_splits = text_splitter.split_documents(docs)
+        lc_documents = [document_to_lc_document(doc) for doc in documents]
+        all_splits = text_splitter.split_documents(lc_documents)
         documents = [lc_document_to_document(document) for document in all_splits]
         print(f"Loaded {len(documents)} documents")
 
