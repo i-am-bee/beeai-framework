@@ -16,7 +16,6 @@ class DocumentLoader(ABC):
     @classmethod
     @abstractmethod
     def _class_from_name(cls, class_name: str, **kwargs: Any) -> DocumentLoader:
-        # Every implementation
         raise NotImplementedError("Implement me")
 
     @classmethod

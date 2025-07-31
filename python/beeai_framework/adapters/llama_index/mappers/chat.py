@@ -19,7 +19,7 @@ try:
     from llama_index.core.llms.custom import CustomLLM
 except ModuleNotFoundError as e:
     raise ModuleNotFoundError(
-        "Optional module [llama_index] not found.\nRun 'pip install \"beeai-framework[rag]\"' to install."
+        "Optional module [llama_index] not found.\nRun 'pip install \"beeai-framework[llama_index]\"' to install."
     ) from e
 
 

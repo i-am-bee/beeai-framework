@@ -22,7 +22,6 @@ class VectorStore(ABC):
     @classmethod
     @abstractmethod
     def _class_from_name(cls, class_name: str, embedding_model: EmbeddingModel, **kwargs: Any) -> VectorStore:
-        # Every implementation
         raise NotImplementedError("Implement me")
 
     @classmethod

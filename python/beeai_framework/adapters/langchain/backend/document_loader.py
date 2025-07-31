@@ -10,7 +10,7 @@ try:
     from langchain_core.document_loaders import BaseLoader as LCBaseLoader
 except ModuleNotFoundError as e:
     raise ModuleNotFoundError(
-        "Optional module [langchain] not found.\nRun 'pip install \"beeai-framework[rag]\"' to install."
+        "Optional module [langchain] not found.\nRun 'pip install \"beeai-framework[langchain]\"' to install."
     ) from e
 
 from beeai_framework.adapters.langchain.mappers.documents import lc_document_to_document
