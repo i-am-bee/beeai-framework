@@ -18,7 +18,7 @@
 | Date       | Language      | Update Description                                                                 
 |------------|---------------|-------------------------------------------------------------------------------------|
 | 2025/06/03 | Python        | Release experimental [Requirement Agent](https://framework.beeai.dev/experimental/requirement-agent).           |
-| 2025/05/15 | Python        | New protocol integrations: [ACP and MCP](https://github.com/i-am-bee/beeai-framework/tree/main/python/docs/integrations.md).           |
+| 2025/05/15 | Python        | New protocol integrations: [ACP and MCP](https://github.com/i-am-bee/beeai-framework/tree/main/docs/integrations).           |
 | 2025/02/19 | Python        | Launched Python library alpha. See [getting started guide](https://github.com/i-am-bee/beeai-framework/tree/main#installation).               |
 | 2025/02/07 | TypeScript    | Introduced [Backend](https://github.com/i-am-bee/beeai-framework/tree/main/typescript/docs/backend.md) module to simplify working with AI services (chat, embedding). See [migration guide](https://github.com/i-am-bee/beeai-framework/tree/main/typescript/docs/migration_guide.md). |
 | 2025/01/28 | TypeScript    | Added support for DeepSeek R1, check out the [Competitive Analysis Workflow example](https://github.com/i-am-bee/beeai-framework/tree/main/typescript/examples/workflows/competitive-analysis). |
