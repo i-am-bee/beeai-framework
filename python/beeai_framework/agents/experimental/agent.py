@@ -328,6 +328,7 @@ class RequirementAgent(BaseAgent[RequirementAgentRunOutput]):
             final_answer_as_tool=self._final_answer_as_tool,
             name=self._meta.name,
             description=self._meta.description,
+            middlewares=self.middlewares.copy(),
         )
         cloned.emitter = await self.emitter.clone()
         return cloned
