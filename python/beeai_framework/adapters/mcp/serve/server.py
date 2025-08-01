@@ -3,6 +3,9 @@
 
 import contextlib
 from collections.abc import Callable
+from contextlib import (
+    AbstractAsyncContextManager,
+)
 from typing import Any, Literal
 
 from pydantic import BaseModel, Field
@@ -17,8 +20,11 @@ try:
     import mcp.server.fastmcp.prompts as mcp_prompts
     import mcp.server.fastmcp.resources as mcp_resources
     import mcp.server.fastmcp.server as mcp_server
+    from mcp.server.auth.settings import AuthSettings
     from mcp.server.fastmcp.tools.base import Tool as MCPNativeTool
     from mcp.server.fastmcp.utilities.func_metadata import ArgModelBase, FuncMetadata
+    from mcp.server.lowlevel.server import LifespanResultT
+    from mcp.server.transport_security import TransportSecuritySettings
 except ModuleNotFoundError as e:
     raise ModuleNotFoundError(
         "Optional module [mcp] not found.\nRun 'pip install \"beeai-framework[mcp]\"' to install."
@@ -33,36 +39,44 @@ MCPServerTool = MaybeAsync[[Any], ToolOutput]
 MCPServerEntry = mcp_prompts.Prompt | mcp_resources.Resource | MCPServerTool | MCPNativeTool
 
 
-class MCPSettings(mcp_server.Settings[Any]):
-    def __init__(self, **kwargs: Any) -> None:
-        super().__init__(**kwargs, lifespan=None, auth=None, transport_security=None)
-
+class MCPSettings(mcp_server.Settings[LifespanResultT]):
     # Server settings
-    debug: bool | None = Field(default=None)  # type: ignore[assignment]
-    log_level: Literal["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"] | None = Field(default=None)  # type: ignore[assignment]
+    debug: bool = Field(False)
+    log_level: Literal["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"] = Field("INFO")
 
     # HTTP settings
-    host: str | None = Field(default=None)  # type: ignore[assignment]
-    port: int | None = Field(default=None)  # type: ignore[assignment]
-    mount_path: str | None = Field(default=None)  # type: ignore[assignment]
-    sse_path: str | None = Field(default=None)  # type: ignore[assignment]
-    message_path: str | None = Field(default=None)  # type: ignore[assignment]
-    streamable_http_path: str | None = Field(default=None)  # type: ignore[assignment]
+    host: str = Field("127.0.0.1")
+    port: int = Field(8000)
+    mount_path: str = Field("/")
+    sse_path: str = Field("/sse")
+    message_path: str = Field("/messages/")
+    streamable_http_path: str = Field("/mcp")
 
     # StreamableHTTP settings
-    json_response: bool | None = Field(default=None)  # type: ignore[assignment]
-    stateless_http: bool | None = Field(default=None)  # type: ignore[assignment]
+    json_response: bool = Field(False)
+    stateless_http: bool = Field(False)
 
     # resource settings
-    warn_on_duplicate_resources: bool | None = Field(default=None)  # type: ignore[assignment]
+    warn_on_duplicate_resources: bool = Field(True)
 
     # tool settings
-    warn_on_duplicate_tools: bool | None = Field(default=None)  # type: ignore[assignment]
+    warn_on_duplicate_tools: bool = Field(True)
 
     # prompt settings
-    warn_on_duplicate_prompts: bool | None = Field(default=None)  # type: ignore[assignment]
+    warn_on_duplicate_prompts: bool = Field(True)
 
-    dependencies: list[str] | None = Field(default=None)  # type: ignore[assignment]
+    dependencies: list[str] = Field(
+        default_factory=list, description="List of dependencies to install in the server environment"
+    )
+
+    lifespan: Callable[[mcp_server.FastMCP], AbstractAsyncContextManager[LifespanResultT]] | None = Field(
+        None, description="Lifespan context manager"
+    )
+
+    auth: AuthSettings | None = None
+
+    # Transport security settings (DNS rebinding protection)
+    transport_security: TransportSecuritySettings | None = None
 
 
 class MCPServerConfig(BaseModel):
