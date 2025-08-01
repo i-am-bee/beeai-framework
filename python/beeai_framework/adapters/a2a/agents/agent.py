@@ -63,6 +63,7 @@ class A2AAgent(BaseAgent[A2AAgentRunOutput]):
         self._agent_card: a2a_types.AgentCard | None = agent_card
         self._context_id: str | None = None
         self._task_id: str | None = None
+        self._reference_task_ids: list[str] = []
 
     @property
     def name(self) -> str:
@@ -75,9 +76,13 @@ class A2AAgent(BaseAgent[A2AAgentRunOutput]):
         context_id: str | None = None,
         task_id: str | None = None,
         signal: AbortSignal | None = None,
+        clear_context: bool = False,
     ) -> Run[A2AAgentRunOutput]:
         self._context_id = context_id or self._context_id
-        self._task_id = task_id or self._task_id
+        self._task_id = task_id
+        if clear_context:
+            self._context_id = None
+            self._reference_task_ids.clear()
 
         async def handler(context: RunContext) -> A2AAgentRunOutput:
             async with httpx.AsyncClient() as httpx_client:
@@ -121,6 +126,8 @@ class A2AAgent(BaseAgent[A2AAgentRunOutput]):
                     response = last_event_with_data.root.result
                     self._context_id = response.contextId
                     self._task_id = response.id if isinstance(response, a2a_types.Task) else response.taskId
+                    if self._task_id not in self._reference_task_ids:
+                        self._reference_task_ids.append(self._task_id)
 
                     # add input message to memory
                     input_message: AnyMessage = self._convert_message_to_framework_message(input)
@@ -217,6 +224,7 @@ class A2AAgent(BaseAgent[A2AAgentRunOutput]):
                 message_id=uuid4().hex,
                 context_id=self._context_id,
                 task_id=self._task_id,
+                reference_task_ids=self._reference_task_ids,
             )
         elif isinstance(input, Message):
             return a2a_types.Message(
@@ -225,6 +233,7 @@ class A2AAgent(BaseAgent[A2AAgentRunOutput]):
                 message_id=uuid4().hex,
                 context_id=self._context_id,
                 task_id=self._task_id,
+                reference_task_ids=self._reference_task_ids,
             )
         elif isinstance(input, a2a_types.Message):
             return input
