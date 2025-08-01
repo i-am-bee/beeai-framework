@@ -50,7 +50,7 @@ def has_content(event: a2a_types.SendStreamingMessageResponse) -> bool:
         if isinstance(response, a2a_types.Message):
             return True
         elif isinstance(response, a2a_types.TaskArtifactUpdateEvent):
-            return response.lastChunk or False
+            return response.last_chunk or False
         elif isinstance(response, a2a_types.TaskStatusUpdateEvent):
             return bool(response.status.message)
         elif isinstance(response, a2a_types.Task):

@@ -124,9 +124,9 @@ class A2AAgent(BaseAgent[A2AAgentRunOutput]):
                 # process success
                 elif isinstance(last_event_with_data.root, a2a_types.SendStreamingMessageSuccessResponse):
                     response = last_event_with_data.root.result
-                    self._context_id = response.contextId
-                    self._task_id = response.id if isinstance(response, a2a_types.Task) else response.taskId
-                    if self._task_id not in self._reference_task_ids:
+                    self._context_id = response.context_id
+                    self._task_id = response.id if isinstance(response, a2a_types.Task) else response.task_id
+                    if self._task_id and self._task_id not in self._reference_task_ids:
                         self._reference_task_ids.append(self._task_id)
 
                     # add input message to memory
@@ -138,7 +138,7 @@ class A2AAgent(BaseAgent[A2AAgentRunOutput]):
                     if isinstance(response, a2a_types.Message):
                         assistant_message = self._convert_message_to_framework_message(response)
                     elif isinstance(response, a2a_types.TaskArtifactUpdateEvent):
-                        if not response.lastChunk:
+                        if not response.last_chunk:
                             raise AgentError(
                                 "Agent's response is not complete.", context=last_event_with_data.model_dump()
                             )
