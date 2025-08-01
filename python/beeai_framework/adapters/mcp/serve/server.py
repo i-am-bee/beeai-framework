@@ -33,13 +33,45 @@ MCPServerTool = MaybeAsync[[Any], ToolOutput]
 MCPServerEntry = mcp_prompts.Prompt | mcp_resources.Resource | MCPServerTool | MCPNativeTool
 
 
+class MCPSettings(mcp_server.Settings[Any]):
+    def __init__(self, **kwargs: Any) -> None:
+        super().__init__(**kwargs, lifespan=None, auth=None, transport_security=None)
+
+    # Server settings
+    debug: bool | None = Field(default=None)  # type: ignore[assignment]
+    log_level: Literal["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"] | None = Field(default=None)  # type: ignore[assignment]
+
+    # HTTP settings
+    host: str | None = Field(default=None)  # type: ignore[assignment]
+    port: int | None = Field(default=None)  # type: ignore[assignment]
+    mount_path: str | None = Field(default=None)  # type: ignore[assignment]
+    sse_path: str | None = Field(default=None)  # type: ignore[assignment]
+    message_path: str | None = Field(default=None)  # type: ignore[assignment]
+    streamable_http_path: str | None = Field(default=None)  # type: ignore[assignment]
+
+    # StreamableHTTP settings
+    json_response: bool | None = Field(default=None)  # type: ignore[assignment]
+    stateless_http: bool | None = Field(default=None)  # type: ignore[assignment]
+
+    # resource settings
+    warn_on_duplicate_resources: bool | None = Field(default=None)  # type: ignore[assignment]
+
+    # tool settings
+    warn_on_duplicate_tools: bool | None = Field(default=None)  # type: ignore[assignment]
+
+    # prompt settings
+    warn_on_duplicate_prompts: bool | None = Field(default=None)  # type: ignore[assignment]
+
+    dependencies: list[str] | None = Field(default=None)  # type: ignore[assignment]
+
+
 class MCPServerConfig(BaseModel):
     """Configuration for the MCPServer."""
 
     transport: Literal["stdio", "sse"] = "stdio"
     name: str = "MCP Server"
     instructions: str | None = None
-    settings: mcp_server.Settings[Any] = Field(default_factory=lambda: mcp_server.Settings())
+    settings: MCPSettings | mcp_server.Settings = Field(default_factory=lambda: MCPSettings())
 
 
 class MCPServer(
@@ -54,7 +86,7 @@ class MCPServer(
         self._server = mcp_server.FastMCP(
             self._config.name,
             self._config.instructions,
-            **self._config.settings.model_dump(),
+            **self._config.settings.model_dump(exclude_none=True),
         )
 
     def serve(self) -> None:
