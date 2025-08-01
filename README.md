@@ -18,12 +18,12 @@
 | Date       | Language      | Update Description                                                                 
 |------------|---------------|-------------------------------------------------------------------------------------|
 | 2025/06/03 | Python        | Release experimental [Requirement Agent](https://framework.beeai.dev/experimental/requirement-agent).           |
-| 2025/05/15 | Python        | New protocol integrations: [ACP and MCP](https://github.com/i-am-bee/beeai-framework/tree/main/python/docs/integrations.md).           |
+| 2025/05/15 | Python        | New protocol integrations: [ACP](https://framework.beeai.dev/integrations/acp) and [MCP](https://framework.beeai.dev/integrations/mcp).           |
 | 2025/02/19 | Python        | Launched Python library alpha. See [getting started guide](https://github.com/i-am-bee/beeai-framework/tree/main#installation).               |
-| 2025/02/07 | TypeScript    | Introduced [Backend](https://github.com/i-am-bee/beeai-framework/tree/main/typescript/docs/backend.md) module to simplify working with AI services (chat, embedding). See [migration guide](https://github.com/i-am-bee/beeai-framework/tree/main/typescript/docs/migration_guide.md). |
+| 2025/02/07 | TypeScript    | Introduced [Backend](https://framework.beeai.dev/modules/backend) module to simplify working with AI services (chat, embedding). |
 | 2025/01/28 | TypeScript    | Added support for DeepSeek R1, check out the [Competitive Analysis Workflow example](https://github.com/i-am-bee/beeai-framework/tree/main/typescript/examples/workflows/competitive-analysis). |
-| 2025/01/09 | TypeScript    | Introduced [Workflows](https://github.com/i-am-bee/beeai-framework/tree/main/typescript/docs/workflows.md), a way of building multi-agent systems. Added support for [Model Context Protocol](https://github.com/i-am-bee/beeai-framework/tree/main/typescript/docs/tools.md#using-the-mcptool-class). |
-| 2024/12/09 | TypeScript    | Added support for LLaMa 3.3. See [multi-agent workflow example using watsonx](https://github.com/i-am-bee/beeai-framework/tree/main/typescript/examples/workflows/multiAgents.ts) or explore [other available providers](https://github.com/i-am-bee/beeai-framework/tree/main/typescript/docs/backend.md#providers-implementations).        |
+| 2025/01/09 | TypeScript    | Introduced [Workflows](https://framework.beeai.dev/modules/workflows), a way of building multi-agent systems. Added support for [Model Context Protocol](https://framework.beeai.dev/modules/tools#mcp-tool). |
+| 2024/12/09 | TypeScript    | Added support for LLaMa 3.3. See [multi-agent workflow example using watsonx](https://github.com/i-am-bee/beeai-framework/tree/main/typescript/examples/workflows/multiAgents.ts) or explore [other available providers](https://framework.beeai.dev/modules/backend#supported-providers).        |
 | 2024/11/21 | TypeScript    | Added an experimental [Streamlit agent](https://github.com/i-am-bee/beeai-framework/tree/main/typescript/examples/agents/experimental/streamlit.ts). |
 
 For a full changelog, see our [releases page](https://github.com/i-am-bee/beeai-framework/releases).
