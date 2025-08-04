@@ -83,7 +83,7 @@ class ChatModelOutput(BaseModel):
 
         self.messages.clear()
 
-        for key, messages in messages_by_id.items():
+        for messages in messages_by_id.values():
             main = messages.pop(0)
             for other in messages:
                 main.merge(other)
