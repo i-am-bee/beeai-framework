@@ -158,7 +158,6 @@ class ToolCallingAgent(BaseAgent[ToolCallingAgentRunOutput]):
                     messages=state.memory.messages,
                     tools=tools,
                     tool_choice=("required" if len(tools) > 1 else tools[0]) if final_answer_as_tool else "auto",
-                    stream=False,
                 )
 
                 text_messages = response.get_text_messages()

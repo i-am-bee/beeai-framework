@@ -174,7 +174,6 @@ class RequirementAgent(BaseAgent[RequirementAgentRunOutput]):
                     ],
                     tools=request.allowed_tools,
                     tool_choice=request.tool_choice,
-                    stream=False,
                 )
                 await state.memory.add_many(response.messages)
 

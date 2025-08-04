@@ -19,7 +19,7 @@ from beeai_framework.backend.events import (
     ChatModelSuccessEvent,
     chat_model_event_types,
 )
-from beeai_framework.backend.message import AnyMessage, MessageToolCallContent, SystemMessage
+from beeai_framework.backend.message import AnyMessage, AssistantMessage, MessageToolCallContent, SystemMessage
 from beeai_framework.backend.types import (
     ChatModelCache,
     ChatModelInput,
@@ -176,11 +176,6 @@ IMPORTANT: You MUST answer with a JSON object that matches the JSON schema above
             *input_messages,
         ]
 
-        class DefaultChatModelStructureErrorSchema(BaseModel):
-            errors: str
-            expected: str
-            received: str
-
         async def executor(_: RetryableContext) -> ChatModelStructureOutput:
             response = await self._create(
                 ChatModelInput(
@@ -237,7 +232,7 @@ IMPORTANT: You MUST answer with a JSON object that matches the JSON schema above
                 if force_tool_call_via_response_format and tools
                 else response_format
             ),
-            stream=stream,
+            stream=stream if stream is not None else self.parameters.stream,
             **kwargs,
         )
 
@@ -273,13 +268,13 @@ IMPORTANT: You MUST answer with a JSON object that matches the JSON schema above
                         await self.cache.set(cache_key, [result])
 
                 if force_tool_call_via_response_format and not result.get_tool_calls():
-                    msg = result.messages[-1]
-                    tool_call: dict[str, Any] = parse_broken_json(msg.text)
+                    text = result.get_text_content()
+                    tool_call: dict[str, Any] = parse_broken_json(text)
                     if not tool_call or not tool_call.get("name") or tool_call.get("parameters") is None:
                         raise ChatModelError(
                             "Failed to produce a valid tool call.\n"
                             "Try to increase max new tokens for your chat model.\n"
-                            f"Generated output: {msg.text}",
+                            f"Generated output: {text}",
                         )
 
                     tool_call_content = MessageToolCallContent(
@@ -287,8 +282,12 @@ IMPORTANT: You MUST answer with a JSON object that matches the JSON schema above
                         tool_name=tool_call["name"],
                         args=json.dumps(tool_call["parameters"]),
                     )
-                    msg.content.clear()
-                    msg.content.append(tool_call_content)
+
+                    final_message = AssistantMessage.from_chunks(result.messages)
+                    final_message.content.clear()
+                    final_message.content.append(tool_call_content)
+                    result.messages.clear()
+                    result.messages.append(final_message)
 
                 await context.emitter.emit("success", ChatModelSuccessEvent(value=result))
                 return result

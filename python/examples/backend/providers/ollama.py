@@ -107,6 +107,7 @@ async def ollama_stream_parser() -> None:
 
 async def ollama_tool_calling() -> None:
     llm = OllamaChatModel("llama3.1")
+    llm.parameters.stream = True
     weather_tool = OpenMeteoTool()
     messages: list[AnyMessage] = [
         SystemMessage(
