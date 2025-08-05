@@ -424,13 +424,14 @@ IMPORTANT: You MUST answer with a JSON object that matches the JSON schema above
                     model=self,
                 )
 
-            if tool_calls[0].tool_name != input.tool_choice.name:
-                raise _create_tool_choice_error(
-                    f"The model was required to produce a tool call for the '{input.tool_choice.name}' tool, "
-                    f"but generated one for '{tool_calls[0].tool_name}' instead.",
-                    input_tool_choice=input.tool_choice,
-                    model=self,
-                )
+            for tool_call in tool_calls:
+                if tool_call.tool_name != input.tool_choice.name:
+                    raise _create_tool_choice_error(
+                        f"The model was required to produce a tool call for the '{input.tool_choice.name}' tool, "
+                        f"but generated one for '{tool_call.tool_name}' instead.",
+                        input_tool_choice=input.tool_choice,
+                        model=self,
+                    )
 
         if input.tool_choice == "required" and input.tools and not output.get_tool_calls():
             raise _create_tool_choice_error(
@@ -438,6 +439,15 @@ IMPORTANT: You MUST answer with a JSON object that matches the JSON schema above
                 input_tool_choice=input.tool_choice,
                 model=self,
             )
+
+        if input.tools:
+            available_tools: set[str] = {t.name for t in input.tools}
+            for tool_call in output.get_tool_calls():
+                if tool_call.tool_name not in available_tools:
+                    raise ChatModelError(
+                        f"The model generated a tool call for an unknown tool '{tool_call.tool_name}'.\n"
+                        f"Available tools: {','.join(available_tools)}",
+                    )
 
 
 def _create_tool_choice_error(message: str, *, input_tool_choice: str | AnyTool, model: ChatModel) -> ChatModelError:
