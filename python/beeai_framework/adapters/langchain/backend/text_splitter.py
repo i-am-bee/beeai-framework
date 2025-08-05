@@ -34,28 +34,15 @@ class LangChainTextSplitter(TextSplitter):
         lc_text_splitter = None
 
         # Try importing from langchain_text_splitters first (most common text splitters)
-        if lc_text_splitter is None:
-            try:
-                module = importlib.import_module("langchain_text_splitters")
-                cls_obj = getattr(module, class_name)
-                lc_text_splitter = cls_obj(**kwargs)
-            except (ImportError, AttributeError):
-                logger.info(
-                    f"Failed to import LangChain text splitter {class_name} from langchain_text_splitters, \
-                            trying other LangChain modules"
-                )
-
-        # Try importing from langchain_core (core text splitters)
-        if lc_text_splitter is None:
-            try:
-                module = importlib.import_module("langchain_core.text_splitters")
-                cls_obj = getattr(module, class_name)
-                lc_text_splitter = cls_obj(**kwargs)
-            except (ImportError, AttributeError):
-                logger.info(
-                    f"Failed to import LangChain text splitter {class_name} from langchain_core, \
-                            trying legacy langchain module"
-                )
+        try:
+            module = importlib.import_module("langchain_text_splitters")
+            cls_obj = getattr(module, class_name)
+            lc_text_splitter = cls_obj(**kwargs)
+        except (ImportError, AttributeError):
+            logger.info(
+                f"Failed to import LangChain text splitter {class_name} from langchain_text_splitters, \
+                        trying other LangChain modules"
+            )
 
         # Final resort: try importing from legacy langchain module
         if lc_text_splitter is None:
