@@ -3,9 +3,9 @@
 
 from pydantic import BaseModel, InstanceOf
 
-from beeai_framework.adapters.beeai.backend.document_processor import LLMDocumentReranker
 from beeai_framework.agents import AgentExecutionConfig, AgentMeta, BaseAgent
 from beeai_framework.backend import AnyMessage, AssistantMessage, ChatModel, SystemMessage, UserMessage
+from beeai_framework.backend.document_processor import DocumentProcessor
 from beeai_framework.backend.types import DocumentWithScore
 from beeai_framework.backend.vector_store import VectorStore
 from beeai_framework.context import Run, RunContext
@@ -31,7 +31,7 @@ class RAGAgent(BaseAgent[RAGAgentRunOutput]):
         llm: ChatModel,
         memory: BaseMemory,
         vector_store: VectorStore,
-        reranker: LLMDocumentReranker | None = None,
+        reranker: DocumentProcessor | None = None,
         number_of_retrieved_documents: int = 7,
         documents_threshold: float = 0.0,
     ) -> None:

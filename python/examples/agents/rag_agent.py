@@ -6,13 +6,13 @@ import traceback
 
 from dotenv import load_dotenv
 
-from beeai_framework.adapters.beeai.backend.document_processor import LLMDocumentReranker
 from beeai_framework.adapters.beeai.backend.vector_store import TemporalVectorStore
 from beeai_framework.adapters.langchain.backend.vector_store import LangChainVectorStore
 from beeai_framework.agents.experimental.rag import RAGAgent, RagAgentRunInput
 from beeai_framework.backend import UserMessage
 from beeai_framework.backend.chat import ChatModel
 from beeai_framework.backend.document_loader import DocumentLoader
+from beeai_framework.backend.document_processor import DocumentProcessor
 from beeai_framework.backend.embedding import EmbeddingModel
 from beeai_framework.backend.text_splitter import TextSplitter
 from beeai_framework.backend.vector_store import VectorStore
@@ -84,7 +84,7 @@ async def main() -> None:
         )
 
     llm = ChatModel.from_name("ollama:llama3.2")
-    reranker = LLMDocumentReranker(llm)
+    reranker = DocumentProcessor.from_name("beeai:LLMDocumentReranker", llm=llm)
 
     agent = RAGAgent(llm=llm, memory=UnconstrainedMemory(), vector_store=vector_store, reranker=reranker)
 
