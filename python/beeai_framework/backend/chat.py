@@ -289,6 +289,8 @@ IMPORTANT: You MUST answer with a JSON object that matches the JSON schema above
                     result.messages.clear()
                     result.messages.append(final_message)
 
+                self._assert_tool_response(input=model_input, output=result)
+
                 await context.emitter.emit("success", ChatModelSuccessEvent(value=result))
                 return result
             except Exception as ex:
@@ -399,3 +401,73 @@ IMPORTANT: You MUST answer with a JSON object that matches the JSON schema above
     @classmethod
     def get_default_parameters(cls) -> ChatModelParameters:
         return ChatModelParameters(temperature=0)
+
+    def _assert_tool_response(self, *, input: ChatModelInput, output: ChatModelOutput) -> None:
+        if input.tool_choice is None or input.tool_choice == "auto" or self.model_supports_tool_calling is False:
+            return
+
+        if input.tool_choice == "none" and output.get_tool_calls():
+            raise _create_tool_choice_error(
+                "The model generated a tool call, but 'tool_choice' was set to 'none'.",
+                input_tool_choice=input.tool_choice,
+                model=self,
+            )
+
+        if isinstance(input.tool_choice, Tool):
+            tool_calls = output.get_tool_calls()
+            if not tool_calls:
+                raise _create_tool_choice_error(
+                    f"The model was required to produce a tool call for the '{input.tool_choice.name}' tool, "
+                    f"but no tool calls were generated.",
+                    input_tool_choice=input.tool_choice,
+                    model=self,
+                )
+
+            for tool_call in tool_calls:
+                if tool_call.tool_name != input.tool_choice.name:
+                    raise _create_tool_choice_error(
+                        f"The model was required to produce a tool call for the '{input.tool_choice.name}' tool, "
+                        f"but generated one for '{tool_call.tool_name}' instead.",
+                        input_tool_choice=input.tool_choice,
+                        model=self,
+                    )
+
+        if input.tool_choice == "required" and input.tools and not output.get_tool_calls():
+            raise _create_tool_choice_error(
+                "The model was required to produce a tool call, but no tool calls were generated.",
+                input_tool_choice=input.tool_choice,
+                model=self,
+            )
+
+        if input.tools:
+            available_tools: set[str] = {t.name for t in input.tools}
+            for tool_call in output.get_tool_calls():
+                if tool_call.tool_name not in available_tools:
+                    raise ChatModelError(
+                        f"The model generated a tool call for an unknown tool '{tool_call.tool_name}'.\n"
+                        f"Available tools: {','.join(available_tools)}",
+                    )
+
+
+def _create_tool_choice_error(message: str, *, input_tool_choice: str | AnyTool, model: ChatModel) -> ChatModelError:
+    input_tool_choice_str = "single" if isinstance(input_tool_choice, Tool) else input_tool_choice
+    tool_choice_support: set[str] = set(model.tool_choice_support)
+    tool_choice_support.discard(input_tool_choice_str)
+    tool_choices_set_str = (
+        "{" + ", ".join(f'"{t}"' for t in tool_choice_support) + "}" if tool_choice_support else set()
+    )
+
+    model_class = type(model).__name__
+    provider = f"{model.provider_id}:{model.model_id}"
+
+    return ChatModelError(
+        f"{message}\n\n"
+        f"This may occur if the target provider does not support 'tool_choice={input_tool_choice_str}', "
+        f"but the framework is configured to support it. "
+        f"To resolve this, update the supported values for the 'tool_choice' parameter.\n\n"
+        f"Use one of the provided options:\n"
+        f"1. ChatModel.from_name('{provider}', tool_choice_support={tool_choices_set_str})\n"
+        f"2. model = {model_class}(...) \n"
+        f"   model.tool_choice_support = {tool_choices_set_str}\n"
+        f"3. {model_class}.tool_choice_support.discard({input_tool_choice_str})\n",
+    )
