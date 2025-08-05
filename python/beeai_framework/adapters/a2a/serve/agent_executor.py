@@ -6,6 +6,7 @@ from typing_extensions import TypeVar, override
 from beeai_framework.adapters.a2a.agents._utils import convert_a2a_to_framework_message
 from beeai_framework.agents.errors import AgentError
 from beeai_framework.agents.experimental.events import RequirementAgentSuccessEvent
+from beeai_framework.memory import BaseMemory
 from beeai_framework.utils.cancellation import AbortController
 
 try:
@@ -26,9 +27,12 @@ from beeai_framework.agents.tool_calling.events import (
 from beeai_framework.backend.message import (
     AnyMessage,
 )
+from beeai_framework.logger import Logger
 from beeai_framework.utils.lists import find_index
 
 AnyAgentLike = TypeVar("AnyAgentLike", bound=AnyAgent, default=AnyAgent)
+
+logger = Logger(__name__)
 
 
 class BaseA2AAgentExecutor(a2a_agent_execution.AgentExecutor):
@@ -37,6 +41,41 @@ class BaseA2AAgentExecutor(a2a_agent_execution.AgentExecutor):
         self._agent = agent
         self.agent_card = agent_card
         self._abort_controller = AbortController()
+        self._conversations: dict[str, BaseMemory] = {}
+
+    async def _initialize_memory(self, context: a2a_agent_execution.RequestContext) -> None:
+        async def create_empty_memory() -> BaseMemory:
+            memory = await self._agent.memory.clone()
+            memory.reset()
+            return memory
+
+        memory = None
+        if context.context_id:
+            if context.context_id not in self._conversations:
+                self._conversations[context.context_id] = await create_empty_memory()
+            memory = self._conversations[context.context_id]
+        else:
+            memory = await create_empty_memory()
+
+        try:
+            self._agent.memory = memory
+        except Exception:
+            logger.debug("Agent does not support setting a new memory, resetting existing one for the agent.")
+            self._agent.memory.reset()
+
+        await self._agent.memory.add_many(
+            [
+                convert_a2a_to_framework_message(message)
+                for message in (
+                    (context.current_task.history or [])
+                    if context.current_task
+                    else [context.message]
+                    if context.message
+                    else []
+                )
+                if all(isinstance(part.root, a2a_types.TextPart) for part in message.parts)
+            ]
+        )
 
     @override
     async def execute(
@@ -51,12 +90,8 @@ class BaseA2AAgentExecutor(a2a_agent_execution.AgentExecutor):
         if not context.current_task:
             context.current_task = a2a_utils.new_task(context.message)
             await updater.submit()
-        assert context.current_task is not None
 
-        self._agent.memory.reset()
-        await self._agent.memory.add_many(
-            [convert_a2a_to_framework_message(message) for message in context.current_task.history or []]
-        )
+        await self._initialize_memory(context)
 
         await updater.start_work()
         try:
@@ -98,16 +133,8 @@ class TollCallingAgentExecutor(BaseA2AAgentExecutor):
         if not context.current_task:
             context.current_task = a2a_utils.new_task(context.message)
             await updater.submit()
-        assert context.current_task is not None
 
-        self._agent.memory.reset()
-        await self._agent.memory.add_many(
-            [
-                convert_a2a_to_framework_message(message)
-                for message in (context.current_task.history or [])
-                if all(isinstance(part.root, a2a_types.TextPart) for part in message.parts)
-            ]
-        )
+        await self._initialize_memory(context)
 
         await updater.start_work()
 
