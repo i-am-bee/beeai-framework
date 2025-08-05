@@ -165,6 +165,8 @@ import os
 import sys
 import traceback
 
+from dotenv import load_dotenv
+
 from beeai_framework.adapters.beeai.backend.vector_store import TemporalVectorStore
 from beeai_framework.adapters.langchain.backend.vector_store import LangChainVectorStore
 from beeai_framework.agents.experimental.rag import RAGAgent, RagAgentRunInput
@@ -178,7 +180,6 @@ from beeai_framework.backend.vector_store import VectorStore
 from beeai_framework.errors import FrameworkError
 from beeai_framework.logger import Logger
 from beeai_framework.memory import UnconstrainedMemory
-from dotenv import load_dotenv
 
 load_dotenv()  # load environment variables
 logger = Logger("rag-agent", level=logging.DEBUG)
