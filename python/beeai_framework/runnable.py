@@ -42,21 +42,13 @@ class RunnableOutput(BaseModel):
 class Runnable(ABC):
     """A unit of work that can be invoked using a stable interface.
 
-    For convenience, concrete subclasses can decorate `run` with `runnable_entry`
-    to automatically wrap the runnable into an execution context:
-
-        @runnable_entry
-        async def run(self, input: str | list[AnyMessage], /, **kwargs: Unpack[AgentOptions]) -> RunnableOutput:
-            # ... agent logic ...
-            return AgentOutput(output=...)
-
     Attributes:
-        _middleware: The middleware to be used when executing the runnable.
+        _middlewares: The list of middleware to be used when executing the runnable.
     """
 
-    def __init__(self, middleware: list[RunMiddlewareType] | None = None) -> None:
+    def __init__(self, middlewares: list[RunMiddlewareType] | None = None) -> None:
         super().__init__()
-        self._middleware = middleware or []
+        self._middlewares = middlewares or []
 
     @abstractmethod
     def run(self, input: list[AnyMessage], /, **kwargs: Unpack[RunnableOptions]) -> Run[RunnableOutput]:
@@ -79,13 +71,21 @@ class Runnable(ABC):
         pass
 
     @property
-    def middleware(self) -> list[RunMiddlewareType]:
-        """The middleware to be used when executing the runnable."""
-        return self._middleware
+    def middlewares(self) -> list[RunMiddlewareType]:
+        """The list of middleware to be used when executing the runnable."""
+        return self._middlewares
 
 
 def runnable_entry(handler: Callable[P, Awaitable[T]]) -> Callable[P, Run[T]]:
-    """A decorator that wraps the runnable into an execution context."""
+    """A decorator that wraps the runnable into an execution context.
+
+    For example:
+
+        @runnable_entry
+        async def run(self, input: list[AnyMessage], /, **kwargs: Unpack[RunnableOptions]) -> RunnableOutput:
+            # ... runnable logic ...
+            return RunnableOutput(output=...)
+    """
 
     @functools.wraps(handler)
     def wrapper(*args: P.args, **kwargs: P.kwargs) -> Run[T]:
@@ -104,6 +104,6 @@ def runnable_entry(handler: Callable[P, Awaitable[T]]) -> Callable[P, Run[T]]:
             inner,
             signal=runnable_kwargs.get("signal", None),
             run_params={"input": args[1], **exclude_keys(kwargs, {"signal", "input"})},
-        ).middleware(*self.middleware)
+        ).middleware(*self.middlewares)
 
     return wrapper
