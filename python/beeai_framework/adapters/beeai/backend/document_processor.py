@@ -25,7 +25,7 @@ except ModuleNotFoundError as e:
 
 class BeeAIDocumentProcessor(DocumentProcessor, ABC):
     @classmethod
-    def _class_from_name(cls, class_name: str, **kwargs: Any) -> DocumentProcessor:
+    def _class_from_name(cls, class_name: str, **kwargs: Any) -> BeeAIDocumentProcessor:
         """Create an instance from class name (required by DocumentProcessor base class)."""
         # Get the current module to look for classes
         import sys
@@ -36,7 +36,7 @@ class BeeAIDocumentProcessor(DocumentProcessor, ABC):
             target_class = getattr(current_module, class_name)
             if not issubclass(target_class, DocumentProcessor):
                 raise ValueError(f"Class '{class_name}' is not a DocumentProcessor subclass")
-            instance: DocumentProcessor = target_class(**kwargs)
+            instance: BeeAIDocumentProcessor = target_class(**kwargs)
             return instance
         except AttributeError:
             raise ValueError(f"Class '{class_name}' not found for BeeAI provider")
