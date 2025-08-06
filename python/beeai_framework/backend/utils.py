@@ -149,7 +149,7 @@ def generate_tool_union_schema(
         )
 
         class AvailableTools(BaseClass[SchemaType]):  # type: ignore
-            model_config = ConfigDict(title="AvailableTools")
+            pass
 
         schema = AvailableTools
 
