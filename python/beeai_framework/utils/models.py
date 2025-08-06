@@ -203,7 +203,7 @@ def to_list_model(target: type[T], field: FieldInfo | None = None) -> type[ListM
 
 
 class WrappedRootModel(BaseModel, Generic[T]):
-    item: RootModel[T]
+    item: RootModel[T] = Field(..., title="Item")
 
     @classmethod
     def model_validate(

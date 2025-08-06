@@ -168,7 +168,7 @@ def test_generate_tool_union_wrapped_schema() -> None:
                             },
                         ]
                     },
-                    "title": "RootModel[list[Union[tool_sum, tool_greet]]]",
+                    "title": "Item",
                     "type": "array",
                 }
             },
