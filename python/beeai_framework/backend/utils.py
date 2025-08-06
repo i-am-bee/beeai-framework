@@ -7,8 +7,7 @@ from typing import Any, Literal, TypeVar, Union
 import json_repair
 import jsonref  # type: ignore
 from openai.lib._pydantic import to_strict_json_schema
-from pydantic import ConfigDict, Field, RootModel, create_model, BaseModel
-from typing_extensions import TypeAlias
+from pydantic import BaseModel, ConfigDict, Field, RootModel, create_model
 
 from beeai_framework.backend.constants import (
     BackendProviders,
@@ -144,7 +143,7 @@ def generate_tool_union_schema(
         schema = tool_schemas[0]
     else:
         root_model_type = Union[*tool_schemas]  # type: ignore
-        BaseClass, SchemaType = (
+        BaseClass, SchemaType = (  # noqa: N806
             RootModel if allow_top_level_union else WrappedRootModel,
             list[root_model_type] if allow_parallel_tool_calls else root_model_type,
         )

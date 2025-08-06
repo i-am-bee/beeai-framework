@@ -7,9 +7,9 @@ from abc import ABC
 from collections.abc import Generator, Sequence
 from contextlib import suppress
 from logging import Logger
-from typing import Any, Generic, Literal, Optional, TypeVar, Union, Self
+from typing import Any, Generic, Literal, Optional, Self, TypeVar, Union
 
-from pydantic import BaseModel, ConfigDict, Field, GetJsonSchemaHandler, RootModel, create_model, ValidationError
+from pydantic import BaseModel, ConfigDict, Field, GetJsonSchemaHandler, RootModel, ValidationError, create_model
 from pydantic.fields import FieldInfo
 from pydantic.json_schema import JsonSchemaValue
 from pydantic_core import CoreSchema, SchemaValidator

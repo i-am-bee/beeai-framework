@@ -1,7 +1,6 @@
 # Copyright 2025 © BeeAI a Series of LF Projects, LLC
 # SPDX-License-Identifier: Apache-2.0
 
-import json
 from abc import ABC, abstractmethod
 from collections.abc import AsyncGenerator, Callable, Sequence
 from functools import cached_property
@@ -47,7 +46,7 @@ from beeai_framework.utils import AbortController, AbortSignal, ModelLike
 from beeai_framework.utils.asynchronous import to_async_generator
 from beeai_framework.utils.dicts import exclude_non_annotated
 from beeai_framework.utils.lists import cast_list
-from beeai_framework.utils.models import to_model, update_model, WrappedRootModel
+from beeai_framework.utils.models import WrappedRootModel, to_model, update_model
 from beeai_framework.utils.strings import generate_random_string, to_json
 
 T = TypeVar("T", bound=BaseModel)
@@ -455,8 +454,8 @@ IMPORTANT: You MUST answer with a JSON object that matches the JSON schema above
 
         if not parallel_tool_calls and len(tool_calls) > 1:
             raise ChatModelError(
-                f"The model produced more than one tool call, but parallel tool calls are disabled\n."
-                f"Consider enabling parallel tool calls by setting 'model.allow_parallel_tool_calls' to True.",
+                "The model produced more than one tool call, but parallel tool calls are disabled\n."
+                "Consider enabling parallel tool calls by setting 'model.allow_parallel_tool_calls' to True.",
             )
 
         if input.tool_choice == "none" and tool_calls:
