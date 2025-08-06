@@ -19,6 +19,7 @@ def _create_system_message(
             tools=[
                 RequirementAgentToolTemplateDefinition.from_tool(tool, allowed=tool in request.allowed_tools)
                 for tool in request.tools
+                if tool not in request.hidden_tools
             ],
             final_answer_name=request.final_answer.name,
             final_answer_schema=to_json(
