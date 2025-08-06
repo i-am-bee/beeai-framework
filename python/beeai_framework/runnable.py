@@ -32,7 +32,7 @@ class RunnableOptions(TypedDict, total=False):
 class RunnableOutput(BaseModel):
     """Runnable output."""
 
-    output: AnyMessage
+    output: list[AnyMessage]
     """The runnable output"""
 
     context: dict[str, Any] | None = None
