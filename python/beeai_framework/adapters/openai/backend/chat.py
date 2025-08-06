@@ -59,3 +59,5 @@ class OpenAIChatModel(LiteLLMChatModel):
         self._settings["extra_headers"] = utils.parse_extra_headers(
             self._settings.get("extra_headers"), os.getenv("OPENAI_API_HEADERS")
         )
+        if kwargs.get("supports_top_level_unions") is None:
+            self.supports_top_level_unions = False

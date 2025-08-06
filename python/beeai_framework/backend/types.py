@@ -52,6 +52,7 @@ class ChatModelInput(ChatModelParameters):
         min_length=1,
         frozen=True,
     )
+    parallel_tool_calls: bool | None = None
 
 
 class ChatModelUsage(BaseModel):
