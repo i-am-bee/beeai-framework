@@ -4,6 +4,8 @@ import os
 import sys
 import traceback
 
+from dotenv import load_dotenv
+
 from beeai_framework.adapters.beeai.backend.document_processor import LLMDocumentReranker
 from beeai_framework.adapters.beeai.backend.vector_store import TemporalVectorStore
 from beeai_framework.adapters.langchain.backend.vector_store import LangChainVectorStore
@@ -12,21 +14,11 @@ from beeai_framework.backend import UserMessage
 from beeai_framework.backend.chat import ChatModel
 from beeai_framework.backend.document_loader import DocumentLoader
 from beeai_framework.backend.embedding import EmbeddingModel
+from beeai_framework.backend.text_splitter import TextSplitter
 from beeai_framework.backend.vector_store import VectorStore
 from beeai_framework.errors import FrameworkError
 from beeai_framework.logger import Logger
 from beeai_framework.memory import UnconstrainedMemory
-
-# LC dependencies - to be swapped with BAI dependencies
-try:
-    from langchain_text_splitters import RecursiveCharacterTextSplitter
-except ModuleNotFoundError as e:
-    raise ModuleNotFoundError(
-        "Optional modules are not found.\nRun 'pip install \"beeai-framework[rag]\"' to install."
-    ) from e
-
-
-from dotenv import load_dotenv
 
 load_dotenv()  # load environment variables
 logger = Logger("rag-agent", level=logging.DEBUG)
@@ -58,16 +50,11 @@ async def populate_documents() -> VectorStore | None:
         except Exception:
             return None
 
-        # Note: Text splitting will be abstracted in future versions
-        from beeai_framework.adapters.langchain.mappers.documents import (
-            document_to_lc_document,
-            lc_document_to_document,
+        # Use abstracted text splitter
+        text_splitter = TextSplitter.from_name(
+            name="langchain:RecursiveCharacterTextSplitter", chunk_size=2000, chunk_overlap=1000
         )
-
-        text_splitter = RecursiveCharacterTextSplitter(chunk_size=2000, chunk_overlap=1000)
-        lc_documents = [document_to_lc_document(doc) for doc in documents]
-        all_splits = text_splitter.split_documents(lc_documents)
-        documents = [lc_document_to_document(document) for document in all_splits]
+        documents = await text_splitter.split_documents(documents)
         print(f"Loaded {len(documents)} documents")
 
         print("Rebuilding vector store")

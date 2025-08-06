@@ -147,7 +147,6 @@ def generate_tool_union_schema(tools: list[AnyTool], *, strict: bool) -> dict[st
             "name": "ToolCall",
             "schema": inline_schema_refs(to_strict_json_schema(schema) if strict else schema.model_json_schema()),
         },
-        "strict": strict,
     }
 
 

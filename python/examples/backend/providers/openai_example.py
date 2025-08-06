@@ -1,48 +1,57 @@
 import asyncio
+import datetime
 import sys
 import traceback
 
 from pydantic import BaseModel, Field
 
 from beeai_framework.adapters.openai import OpenAIChatModel, OpenAIEmbeddingModel
-from beeai_framework.backend import ChatModel, ChatModelNewTokenEvent, UserMessage
+from beeai_framework.backend import (
+    ChatModel,
+    ChatModelNewTokenEvent,
+    ChatModelParameters,
+    MessageToolResultContent,
+    ToolMessage,
+    UserMessage,
+)
 from beeai_framework.emitter import EventMeta
 from beeai_framework.errors import AbortError, FrameworkError
 from beeai_framework.parsers.field import ParserField
 from beeai_framework.parsers.line_prefix import LinePrefixParser, LinePrefixParserNode
+from beeai_framework.tools.weather import OpenMeteoTool, OpenMeteoToolInput
 from beeai_framework.utils import AbortSignal
 
 
 async def openai_from_name() -> None:
-    llm = ChatModel.from_name("openai:gpt-4o-mini")
+    llm = ChatModel.from_name("openai:gpt-4.1-mini")
     user_message = UserMessage("what states are part of New England?")
     response = await llm.create(messages=[user_message])
     print(response.get_text_content())
 
 
 async def openai_granite_from_name() -> None:
-    llm = ChatModel.from_name("openai:gpt-4o-mini")
+    llm = ChatModel.from_name("openai:gpt-4.1-mini")
     user_message = UserMessage("what states are part of New England?")
     response = await llm.create(messages=[user_message])
     print(response.get_text_content())
 
 
 async def openai_sync() -> None:
-    llm = OpenAIChatModel("gpt-4o-mini")
+    llm = OpenAIChatModel("gpt-4.1-mini")
     user_message = UserMessage("what is the capital of Massachusetts?")
     response = await llm.create(messages=[user_message])
     print(response.get_text_content())
 
 
 async def openai_stream() -> None:
-    llm = OpenAIChatModel("gpt-4o-mini")
+    llm = OpenAIChatModel("gpt-4.1-mini")
     user_message = UserMessage("How many islands make up the country of Cape Verde?")
     response = await llm.create(messages=[user_message], stream=True)
     print(response.get_text_content())
 
 
 async def openai_stream_abort() -> None:
-    llm = OpenAIChatModel("gpt-4o-mini")
+    llm = OpenAIChatModel("gpt-4.1-mini")
     user_message = UserMessage("What is the smallest of the Cape Verde islands?")
 
     try:
@@ -60,7 +69,7 @@ async def openai_structure() -> None:
     class TestSchema(BaseModel):
         answer: str = Field(description="your final answer")
 
-    llm = OpenAIChatModel("gpt-4o-mini")
+    llm = OpenAIChatModel("gpt-4.1-mini")
     user_message = UserMessage("How many islands make up the country of Cape Verde?")
     response = await llm.create_structure(
         schema=TestSchema,
@@ -70,7 +79,7 @@ async def openai_structure() -> None:
 
 
 async def openai_stream_parser() -> None:
-    llm = OpenAIChatModel("gpt-4o-mini")
+    llm = OpenAIChatModel("gpt-4.1-mini")
 
     parser = LinePrefixParser(
         nodes={
@@ -89,6 +98,26 @@ async def openai_stream_parser() -> None:
     )
     result = await parser.end()
     print(result)
+
+
+async def openai_tool_calling() -> None:
+    watsonx_llm = ChatModel.from_name("openai:gpt-4.1-mini", ChatModelParameters(stream=True, temperature=0))
+    user_message = UserMessage(f"What is the current weather in Boston? Current date is {datetime.datetime.today()}.")
+    weather_tool = OpenMeteoTool()
+    response = await watsonx_llm.create(messages=[user_message], tools=[weather_tool])
+    tool_call_msg = response.get_tool_calls()[0]
+    print(tool_call_msg.model_dump())
+    tool_response = await weather_tool.run(OpenMeteoToolInput(location_name="Boston"))
+    tool_response_msg = ToolMessage(
+        MessageToolResultContent(
+            result=tool_response.get_text_content(),
+            tool_name=weather_tool.name,
+            tool_call_id=response.get_tool_calls()[0].id,
+        )
+    )
+    print(tool_response_msg.to_plain())
+    final_response = await watsonx_llm.create(messages=[user_message, *response.messages, tool_response_msg], tools=[])
+    print(final_response.get_text_content())
 
 
 async def openai_embedding() -> None:
@@ -115,6 +144,8 @@ async def main() -> None:
     await openai_structure()
     print("*" * 10, "openai_stream_parser")
     await openai_stream_parser()
+    print("*" * 10, "openai_tool_calling")
+    await openai_tool_calling()
     print("*" * 10, "openai_embedding")
     await openai_embedding()
 

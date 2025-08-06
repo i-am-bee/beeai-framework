@@ -9,7 +9,7 @@ from datetime import UTC, datetime
 from enum import Enum
 from typing import Any, Generic, Literal, Required, Self, TypeAlias, TypeVar, cast
 
-from pydantic import BaseModel, ConfigDict, field_validator
+from pydantic import BaseModel, ConfigDict
 from typing_extensions import TypedDict
 
 from beeai_framework.utils.lists import cast_list
@@ -64,25 +64,15 @@ class MessageToolCallContent(BaseModel):
     tool_name: str
     args: str
 
-    @field_validator("args", mode="after")
-    @classmethod
-    def validate_args_json(cls, args: str) -> str:
-        try:
-            json.loads(args)
-            return args
-        except Exception:
-            raise ValueError(
-                f"The 'args' parameter for a tool (function) call {args} is the not a valid JSON!"
-                f"Try to increase max new tokens for your chat model.",
-            )
-
 
 class Message(ABC, Generic[T]):
+    id: str | None
     role: Role | str
     content: list[T]
     meta: MessageMeta
 
-    def __init__(self, content: list[T], meta: MessageMeta | None = None) -> None:
+    def __init__(self, content: list[T], meta: MessageMeta | None = None, *, id: str | None = None) -> None:
+        self.id = id
         self.content = content
         self.meta = meta or {}
         if not self.meta.get("createdAt"):
@@ -132,7 +122,11 @@ class AssistantMessage(Message[AssistantMessageContent]):
     role = Role.ASSISTANT
 
     def __init__(
-        self, content: list[AssistantMessageContent] | AssistantMessageContent | str, meta: MessageMeta | None = None
+        self,
+        content: list[AssistantMessageContent] | AssistantMessageContent | str,
+        meta: MessageMeta | None = None,
+        *,
+        id: str | None = None,
     ) -> None:
         super().__init__(
             [
@@ -142,6 +136,7 @@ class AssistantMessage(Message[AssistantMessageContent]):
                 for c in cast_list(content)
             ],
             meta,
+            id=id,
         )
 
     def get_tool_calls(self) -> list[MessageToolCallContent]:
@@ -247,3 +242,27 @@ class CustomMessage(Message[CustomMessageContent]):
 
 
 AnyMessage: TypeAlias = Message[Any]
+
+
+def dedupe_tool_calls(msg: AssistantMessage) -> None:
+    final_tool_calls: dict[str, MessageToolCallContent] = {}
+    last_id = ""
+
+    excluded_indexes: set[int] = set[int]()
+    for idx, chunk in enumerate(msg.content):
+        if not isinstance(chunk, MessageToolCallContent):
+            continue
+
+        id = chunk.id or last_id
+        if id not in final_tool_calls:
+            final_tool_calls[id] = chunk.model_copy()
+            msg.content[idx] = final_tool_calls[id]
+        else:
+            excluded_indexes.add(idx)
+            final_tool_calls[id].tool_name += chunk.tool_name
+            final_tool_calls[id].args += chunk.args
+
+        last_id = id
+
+    for idx in sorted(excluded_indexes, reverse=True):
+        msg.content.pop(idx)

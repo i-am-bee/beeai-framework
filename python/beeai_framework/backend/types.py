@@ -5,7 +5,7 @@ from typing import Any, Generic, Literal, Self, TypeVar
 
 from pydantic import BaseModel, ConfigDict, Field, InstanceOf
 
-from beeai_framework.backend.message import AnyMessage, AssistantMessage, MessageToolCallContent
+from beeai_framework.backend.message import AnyMessage, AssistantMessage, MessageToolCallContent, dedupe_tool_calls
 from beeai_framework.cache.base import BaseCache
 from beeai_framework.tools.tool import AnyTool
 from beeai_framework.utils import AbortSignal
@@ -72,6 +72,30 @@ class ChatModelOutput(BaseModel):
     cost: ChatModelCost | None = None
     finish_reason: str | None = None
 
+    def dedupe(self) -> None:
+        messages_by_id = dict[str, list[AnyMessage]]()
+        for msg in self.messages:
+            msg_id = msg.id or ""
+            if msg_id not in messages_by_id:
+                messages_by_id[msg_id] = [msg]
+            else:
+                messages_by_id[msg_id].append(msg)
+
+        self.messages.clear()
+
+        for messages in messages_by_id.values():
+            main = messages.pop(0)
+            for other in messages:
+                main.merge(other)
+            self.messages.append(main)
+
+        for msg in self.messages:
+            if isinstance(msg, AssistantMessage):
+                dedupe_tool_calls(msg)
+
+    def model_post_init(self, context: Any, /) -> None:
+        self.dedupe()
+
     @classmethod
     def from_chunks(cls, chunks: list[Self]) -> Self:
         final = cls(messages=[])
@@ -80,8 +104,12 @@ class ChatModelOutput(BaseModel):
         return final
 
     def merge(self, other: Self) -> None:
-        self.messages.extend(other.messages)
-        self.finish_reason = other.finish_reason
+        if other.messages:
+            self.messages.extend(other.messages)
+            self.dedupe()
+
+        if other.finish_reason:
+            self.finish_reason = other.finish_reason
 
         if self.cost is not None and other.cost is not None:
             self.cost = ChatModelCost(
