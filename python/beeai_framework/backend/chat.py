@@ -462,12 +462,12 @@ def _create_tool_choice_error(message: str, *, input_tool_choice: str | AnyTool,
 
     return ChatModelError(
         f"{message}\n\n"
-        f"This may occur if the target provider does not support 'tool_choice={input_tool_choice_str}', "
+        f"This may occur if the target provider does not support 'tool_choice={{\"{input_tool_choice_str}\"}}', "
         f"but the framework is configured to support it. "
         f"To resolve this, update the supported values for the 'tool_choice' parameter.\n\n"
         f"Use one of the provided options:\n"
         f"1. ChatModel.from_name('{provider}', tool_choice_support={tool_choices_set_str})\n"
         f"2. model = {model_class}(...) \n"
         f"   model.tool_choice_support = {tool_choices_set_str}\n"
-        f"3. {model_class}.tool_choice_support.discard({input_tool_choice_str})\n",
+        f"3. {model_class}.tool_choice_support.discard(\"{input_tool_choice_str}\")\n",
     )

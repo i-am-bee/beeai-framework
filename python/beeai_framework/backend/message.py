@@ -259,8 +259,11 @@ def dedupe_tool_calls(msg: AssistantMessage) -> None:
             msg.content[idx] = final_tool_calls[id]
         else:
             excluded_indexes.add(idx)
-            final_tool_calls[id].tool_name += chunk.tool_name
-            final_tool_calls[id].args += chunk.args
+            last_tool_call = final_tool_calls[id]
+            last_tool_call.args += chunk.args
+
+            if not last_tool_call.tool_name:
+                last_tool_call.tool_name = chunk.tool_name
 
         last_id = id
 
