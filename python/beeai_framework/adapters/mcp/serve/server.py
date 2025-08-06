@@ -10,6 +10,7 @@ from typing import Any, Literal
 
 from pydantic import BaseModel, Field
 
+from beeai_framework.serve import MemoryManager
 from beeai_framework.serve.errors import FactoryAlreadyRegisteredError
 from beeai_framework.tools.tool import AnyTool, Tool
 from beeai_framework.tools.types import ToolOutput
@@ -95,8 +96,10 @@ class MCPServer(
         MCPServerConfig,
     ],
 ):
-    def __init__(self, *, config: ModelLike[MCPServerConfig] | None = None) -> None:
-        super().__init__(config=to_model(MCPServerConfig, config or MCPServerConfig()))
+    def __init__(
+        self, *, config: ModelLike[MCPServerConfig] | None = None, memory_manager: MemoryManager | None = None
+    ) -> None:
+        super().__init__(config=to_model(MCPServerConfig, config or MCPServerConfig()), memory_manager=memory_manager)
         self._server = mcp_server.FastMCP(
             self._config.name,
             self._config.instructions,

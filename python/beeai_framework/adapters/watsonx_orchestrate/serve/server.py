@@ -17,6 +17,7 @@ from beeai_framework.agents.experimental import RequirementAgent
 from beeai_framework.agents.react import ReActAgent
 from beeai_framework.agents.tool_calling import ToolCallingAgent
 from beeai_framework.logger import Logger
+from beeai_framework.serve import MemoryManager
 from beeai_framework.serve.errors import FactoryAlreadyRegisteredError
 from beeai_framework.serve.server import Server
 from beeai_framework.utils import ModelLike
@@ -58,8 +59,12 @@ class WatsonxOrchestrateServer(
         *,
         config: ModelLike[WatsonxOrchestrateServerConfig] | None = None,
         api_cls: type[WatsonxOrchestrateAPI] = WatsonxOrchestrateAPI,
+        memory_manager: MemoryManager | None = None,
     ) -> None:
-        super().__init__(config=to_model(WatsonxOrchestrateServerConfig, config or WatsonxOrchestrateServerConfig()))
+        super().__init__(
+            config=to_model(WatsonxOrchestrateServerConfig, config or WatsonxOrchestrateServerConfig()),
+            memory_manager=memory_manager,
+        )
         self._api_cls = api_cls
 
     def serve(self) -> None:
@@ -73,6 +78,7 @@ class WatsonxOrchestrateServer(
             create_agent=lambda: factory(member),
             api_key=self._config.api_key,
             fast_api_kwargs=self._config.fast_api_kwargs,
+            memory_manager=self._memory_manager,
         )
         uvicorn.run(api.app, host=self._config.host, port=self._config.port)
 

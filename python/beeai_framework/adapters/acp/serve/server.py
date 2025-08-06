@@ -10,6 +10,7 @@ from typing import Any, Generic, Self
 
 from beeai_framework.agents.experimental import RequirementAgent
 from beeai_framework.agents.experimental.events import RequirementAgentSuccessEvent
+from beeai_framework.serve import MemoryManager
 from beeai_framework.serve.errors import FactoryAlreadyRegisteredError
 
 try:
@@ -67,8 +68,12 @@ class ACPServerMetadata(TypedDict, total=False):
 
 
 class ACPServer(Generic[AnyAgentLike], Server[AnyAgentLike, ACPServerAgent, "ACPServerConfig"]):
-    def __init__(self, *, config: ModelLike["ACPServerConfig"] | None = None) -> None:
-        super().__init__(config=to_model(ACPServerConfig, config or {"self_registration": False}))
+    def __init__(
+        self, *, config: ModelLike["ACPServerConfig"] | None = None, memory_manager: MemoryManager | None = None
+    ) -> None:
+        super().__init__(
+            config=to_model(ACPServerConfig, config or {"self_registration": False}), memory_manager=memory_manager
+        )
         self._metadata_by_agent: dict[AnyAgentLike, ACPServerMetadata] = {}
         self._server = acp_server.Server()
 

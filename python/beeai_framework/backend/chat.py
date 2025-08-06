@@ -469,5 +469,5 @@ def _create_tool_choice_error(message: str, *, input_tool_choice: str | AnyTool,
         f"1. ChatModel.from_name('{provider}', tool_choice_support={tool_choices_set_str})\n"
         f"2. model = {model_class}(...) \n"
         f"   model.tool_choice_support = {tool_choices_set_str}\n"
-        f"3. {model_class}.tool_choice_support.discard(\"{input_tool_choice_str}\")\n",
+        f'3. {model_class}.tool_choice_support.discard("{input_tool_choice_str}")\n',
     )

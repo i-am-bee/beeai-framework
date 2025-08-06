@@ -15,6 +15,8 @@ from beeai_framework.adapters.watsonx_orchestrate.serve.agent import WatsonxOrch
 from beeai_framework.backend import AnyMessage, AssistantMessage, SystemMessage, ToolMessage
 from beeai_framework.logger import Logger
 from beeai_framework.memory import BaseMemory
+from beeai_framework.serve import MemoryManager, initialize_agents_memory
+from beeai_framework.serve.lru_memory_manager import LRUMemoryManager
 
 logger = Logger(__name__)
 
@@ -27,12 +29,14 @@ class WatsonxOrchestrateAPI:
         api_key: str | None = None,
         fast_api_kwargs: dict[str, Any] | None = None,
         stateful: bool = False,
+        memory_manager: MemoryManager | None,
     ) -> None:
         self._create_agent = create_agent
         self._api_key = api_key
         self._fast_api_kwargs = fast_api_kwargs or {}
         self._stateful = stateful
         self._conversations: dict[str, BaseMemory] = {}
+        self._memory_manager = memory_manager or LRUMemoryManager(maxsize=100)
 
         self._router = APIRouter()
         self._router.add_api_route(
@@ -73,27 +77,9 @@ class WatsonxOrchestrateAPI:
 
         agent = self._create_agent()
 
-        async def create_empty_memory() -> BaseMemory:
-            memory = await agent._agent.memory.clone()
-            memory.reset()
-            return memory
-
-        memory = None
-        if self._stateful and thread_id:
-            if thread_id not in self._conversations:
-                self._conversations[thread_id] = await create_empty_memory()
-            memory = self._conversations[thread_id]
-        else:
-            memory = await create_empty_memory()
+        await initialize_agents_memory(agent._agent, self._memory_manager, thread_id, stateful=self._stateful)
 
         messages = self._transform_request_messages(request.messages)
-
-        try:
-            agent._agent.memory = memory
-        except Exception:
-            logger.debug("Agent does not support setting a new memory, resetting existing one for the agent.")
-            agent._agent.memory.reset()
-
         await agent._agent.memory.add_many(messages)
 
         if request.stream:

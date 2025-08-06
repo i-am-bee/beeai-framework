@@ -10,6 +10,7 @@ from pydantic import BaseModel
 from typing_extensions import TypedDict, TypeVar, Unpack, override
 
 from beeai_framework.agents.experimental import RequirementAgent
+from beeai_framework.serve import MemoryManager
 from beeai_framework.serve.errors import FactoryAlreadyRegisteredError
 
 try:
@@ -63,8 +64,10 @@ class A2AServer(
         A2AServerConfig,
     ],
 ):
-    def __init__(self, *, config: ModelLike[A2AServerConfig] | None = None) -> None:
-        super().__init__(config=to_model(A2AServerConfig, config or A2AServerConfig()))
+    def __init__(
+        self, *, config: ModelLike[A2AServerConfig] | None = None, memory_manager: MemoryManager | None = None
+    ) -> None:
+        super().__init__(config=to_model(A2AServerConfig, config or A2AServerConfig()), memory_manager=memory_manager)
         self._metadata_by_agent: dict[AnyAgentLike, A2AServerMetadata] = {}
 
     def serve(self) -> None:
@@ -74,7 +77,7 @@ class A2AServer(
         member = self._members[0]
         factory = type(self)._factories[type(member)]
         config = self._metadata_by_agent.get(member, {})
-        executor = factory(member, metadata=config)  # type: ignore[call-arg]
+        executor = factory(member, metadata=config, memory_manager=self._memory_manager)  # type: ignore[call-arg]
 
         request_handler = a2a_request_handlers.DefaultRequestHandler(
             agent_executor=executor,
@@ -102,13 +105,14 @@ class A2AServer(
 
 
 def _tool_calling_agent_factory(
-    agent: ToolCallingAgent, *, metadata: A2AServerMetadata | None = None
+    agent: ToolCallingAgent, *, metadata: A2AServerMetadata | None = None, memory_manager: MemoryManager
 ) -> BaseA2AAgentExecutor:
     if metadata is None:
         metadata = {}
 
     return TollCallingAgentExecutor(
         agent=agent,
+        memory_manager=memory_manager,
         agent_card=a2a_types.AgentCard(
             name=metadata.get("name", agent.meta.name),
             description=metadata.get("description", agent.meta.description),
@@ -133,16 +137,17 @@ def _tool_calling_agent_factory(
 
 
 with contextlib.suppress(FactoryAlreadyRegisteredError):
-    A2AServer.register_factory(ToolCallingAgent, _tool_calling_agent_factory)
+    A2AServer.register_factory(ToolCallingAgent, _tool_calling_agent_factory)  # type: ignore[arg-type]
 
 
 def _requirement_agent_factory(
-    agent: RequirementAgent, *, metadata: A2AServerMetadata | None = None
+    agent: RequirementAgent, *, metadata: A2AServerMetadata | None = None, memory_manager: MemoryManager
 ) -> BaseA2AAgentExecutor:
     metadata = metadata or {}
 
     return TollCallingAgentExecutor(
         agent=agent,
+        memory_manager=memory_manager,
         agent_card=a2a_types.AgentCard(
             name=metadata.get("name", agent.meta.name),
             description=metadata.get("description", agent.meta.description),
@@ -167,4 +172,4 @@ def _requirement_agent_factory(
 
 
 with contextlib.suppress(FactoryAlreadyRegisteredError):
-    A2AServer.register_factory(RequirementAgent, _requirement_agent_factory)
+    A2AServer.register_factory(RequirementAgent, _requirement_agent_factory)  # type: ignore[arg-type]

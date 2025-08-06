@@ -6,7 +6,7 @@ from typing_extensions import TypeVar, override
 from beeai_framework.adapters.a2a.agents._utils import convert_a2a_to_framework_message
 from beeai_framework.agents.errors import AgentError
 from beeai_framework.agents.experimental.events import RequirementAgentSuccessEvent
-from beeai_framework.memory import BaseMemory
+from beeai_framework.serve import MemoryManager, initialize_agents_memory
 from beeai_framework.utils.cancellation import AbortController
 
 try:
@@ -36,32 +36,15 @@ logger = Logger(__name__)
 
 
 class BaseA2AAgentExecutor(a2a_agent_execution.AgentExecutor):
-    def __init__(self, agent: AnyAgentLike, agent_card: a2a_types.AgentCard) -> None:
+    def __init__(self, agent: AnyAgentLike, memory_manager: MemoryManager, agent_card: a2a_types.AgentCard) -> None:
         super().__init__()
         self._agent = agent
         self.agent_card = agent_card
         self._abort_controller = AbortController()
-        self._conversations: dict[str, BaseMemory] = {}
+        self._memory_manager = memory_manager
 
     async def _initialize_memory(self, context: a2a_agent_execution.RequestContext) -> None:
-        async def create_empty_memory() -> BaseMemory:
-            memory = await self._agent.memory.clone()
-            memory.reset()
-            return memory
-
-        memory = None
-        if context.context_id:
-            if context.context_id not in self._conversations:
-                self._conversations[context.context_id] = await create_empty_memory()
-            memory = self._conversations[context.context_id]
-        else:
-            memory = await create_empty_memory()
-
-        try:
-            self._agent.memory = memory
-        except Exception:
-            logger.debug("Agent does not support setting a new memory, resetting existing one for the agent.")
-            self._agent.memory.reset()
+        await initialize_agents_memory(self._agent, self._memory_manager, context.context_id)
 
         await self._agent.memory.add_many(
             [

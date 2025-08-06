@@ -9,6 +9,8 @@ from pydantic import BaseModel
 from typing_extensions import TypeVar
 
 from beeai_framework.serve.errors import FactoryAlreadyRegisteredError
+from beeai_framework.serve.lru_memory_manager import LRUMemoryManager
+from beeai_framework.serve.memory_manager import MemoryManager
 
 TInput = TypeVar("TInput", bound=object, default=object, contravariant=True)
 TInternal = TypeVar("TInternal", bound=object, default=object)
@@ -19,9 +21,10 @@ class Server(Generic[TInput, TInternal, TConfig], ABC):
     _factories: ClassVar[dict[type[TInput], Callable[[TInput], TInternal]]] = {}  # type: ignore[misc]
 
     # TODO: later remove config property
-    def __init__(self, *, config: TConfig) -> None:
+    def __init__(self, *, config: TConfig, memory_manager: MemoryManager | None) -> None:
         self._members: list[TInput] = []
         self._config = config
+        self._memory_manager: MemoryManager = memory_manager or LRUMemoryManager(maxsize=100)
 
     @classmethod
     def register_factory(
