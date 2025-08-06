@@ -25,8 +25,8 @@ except ModuleNotFoundError as e:
 
 class BeeAIDocumentProcessor(DocumentProcessor, ABC):
     @classmethod
-    def _class_from_name(cls, class_name: str, llm: ChatModel, **kwargs: Any) -> BeeAIDocumentProcessor:
-        """Create an instance from class name (required by VectorStore base class)."""
+    def _class_from_name(cls, class_name: str, **kwargs: Any) -> BeeAIDocumentProcessor:
+        """Create an instance from class name (required by DocumentProcessor base class)."""
         # Get the current module to look for classes
         import sys
 
@@ -36,13 +36,13 @@ class BeeAIDocumentProcessor(DocumentProcessor, ABC):
             target_class = getattr(current_module, class_name)
             if not issubclass(target_class, DocumentProcessor):
                 raise ValueError(f"Class '{class_name}' is not a DocumentProcessor subclass")
-            instance: BeeAIDocumentProcessor = target_class(llm=llm, **kwargs)
+            instance: BeeAIDocumentProcessor = target_class(**kwargs)
             return instance
         except AttributeError:
             raise ValueError(f"Class '{class_name}' not found for BeeAI provider")
 
 
-class LLMDocumentReranker(DocumentProcessor):
+class LLMDocumentReranker(BeeAIDocumentProcessor):
     def __init__(self, llm: ChatModel, *, choice_batch_size: int = 5, top_n: int = 5) -> None:
         self.llm = llm
         self.reranker = LLMRerank(
