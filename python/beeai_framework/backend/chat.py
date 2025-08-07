@@ -1,13 +1,12 @@
 # Copyright 2025 © BeeAI a Series of LF Projects, LLC
 # SPDX-License-Identifier: Apache-2.0
 
-import json
 from abc import ABC, abstractmethod
 from collections.abc import AsyncGenerator, Callable, Sequence
 from functools import cached_property
 from typing import Any, ClassVar, Literal, Self
 
-from pydantic import BaseModel, ConfigDict, Field, InstanceOf, TypeAdapter
+from pydantic import BaseModel, ConfigDict, Field, InstanceOf, TypeAdapter, ValidationError
 from typing_extensions import TypedDict, TypeVar, Unpack
 
 from beeai_framework.backend.constants import ProviderName
@@ -46,7 +45,8 @@ from beeai_framework.tools.tool import AnyTool, Tool
 from beeai_framework.utils import AbortController, AbortSignal, ModelLike
 from beeai_framework.utils.asynchronous import to_async_generator
 from beeai_framework.utils.dicts import exclude_non_annotated
-from beeai_framework.utils.models import to_model, update_model
+from beeai_framework.utils.lists import cast_list
+from beeai_framework.utils.models import WrappedRootModel, to_model, update_model
 from beeai_framework.utils.strings import generate_random_string, to_json
 
 T = TypeVar("T", bound=BaseModel)
@@ -59,8 +59,11 @@ logger = Logger(__name__)
 class ChatModelKwargs(TypedDict, total=False):
     tool_call_fallback_via_response_format: bool
     model_supports_tool_calling: bool
+    allow_parallel_tool_calls: bool
+    ignore_parallel_tool_calls: bool
     use_strict_tool_schema: bool
     use_strict_model_schema: bool
+    supports_top_level_unions: bool
     parameters: InstanceOf[ChatModelParameters]
     cache: InstanceOf[ChatModelCache]
     settings: dict[str, Any]
@@ -104,8 +107,11 @@ class ChatModel(ABC):
         self.cache = kwargs.get("cache", NullCache[list[ChatModelOutput]]())
         self.tool_call_fallback_via_response_format = kwargs.get("tool_call_fallback_via_response_format", True)
         self.model_supports_tool_calling = kwargs.get("model_supports_tool_calling", True)
+        self.allow_parallel_tool_calls = kwargs.get("allow_parallel_tool_calls", False)
+        self.ignore_parallel_tool_calls = kwargs.get("ignore_parallel_tool_calls", False)
         self.use_strict_tool_schema = kwargs.get("use_strict_tool_schema", True)
         self.use_strict_model_schema = kwargs.get("use_strict_model_schema", False)
+        self.supports_top_level_unions = kwargs.get("supports_top_level_unions", True)
 
         custom_tool_choice_support = kwargs.get("tool_choice_support")
         self._tool_choice_support: set[ToolChoiceType] = (
@@ -211,6 +217,7 @@ IMPORTANT: You MUST answer with a JSON object that matches the JSON schema above
         stop_sequences: list[str] | None = None,
         response_format: dict[str, Any] | type[BaseModel] | None = None,
         stream: bool | None = None,
+        parallel_tool_calls: bool | None = None,
         **kwargs: Any,
     ) -> Run[ChatModelOutput]:
         force_tool_call_via_response_format = self._force_tool_call_via_response_format(
@@ -219,20 +226,31 @@ IMPORTANT: You MUST answer with a JSON object that matches the JSON schema above
             has_custom_response_format=bool(response_format),
         )
 
+        if parallel_tool_calls is None:
+            parallel_tool_calls = self.allow_parallel_tool_calls and not self.ignore_parallel_tool_calls
+        else:
+            parallel_tool_calls = parallel_tool_calls and not self.ignore_parallel_tool_calls
+
+        response_format_final, response_format_schema = (
+            generate_tool_union_schema(
+                filter_tools_by_tool_choice(tools, tool_choice),
+                strict=self.use_strict_model_schema,
+                allow_top_level_union=self.supports_top_level_unions,
+                allow_parallel_tool_calls=parallel_tool_calls,
+            )
+            if force_tool_call_via_response_format and tools
+            else (response_format, None)
+        )
+
         model_input = ChatModelInput(
             messages=messages,
             tools=tools if self.model_supports_tool_calling else None,
             tool_choice=tool_choice,
             abort_signal=abort_signal,
             stop_sequences=stop_sequences,
-            response_format=(
-                generate_tool_union_schema(
-                    filter_tools_by_tool_choice(tools, tool_choice), strict=self.use_strict_model_schema
-                )
-                if force_tool_call_via_response_format and tools
-                else response_format
-            ),
+            response_format=response_format_final,
             stream=stream if stream is not None else self.parameters.stream,
+            parallel_tool_calls=parallel_tool_calls,
             **kwargs,
         )
 
@@ -268,26 +286,49 @@ IMPORTANT: You MUST answer with a JSON object that matches the JSON schema above
                         await self.cache.set(cache_key, [result])
 
                 if force_tool_call_via_response_format and not result.get_tool_calls():
-                    text = result.get_text_content()
-                    tool_call: dict[str, Any] = parse_broken_json(text)
-                    if not tool_call or not tool_call.get("name") or tool_call.get("parameters") is None:
-                        raise ChatModelError(
-                            "Failed to produce a valid tool call.\n"
-                            "Try to increase max new tokens for your chat model.\n"
-                            f"Generated output: {text}",
-                        )
-
-                    tool_call_content = MessageToolCallContent(
-                        id=f"call_{generate_random_string(8).lower()}",
-                        tool_name=tool_call["name"],
-                        args=json.dumps(tool_call["parameters"]),
-                    )
+                    assert response_format_schema and issubclass(response_format_schema, BaseModel)
 
                     final_message = AssistantMessage.from_chunks(result.messages)
                     final_message.content.clear()
-                    final_message.content.append(tool_call_content)
+
+                    text = result.get_text_content()
+                    tool_calls_raw = parse_broken_json(text)
+                    if isinstance(tool_calls_raw, list) and self.ignore_parallel_tool_calls:
+                        tool_calls_raw = tool_calls_raw[0]
+
+                    try:
+                        tool_calls = response_format_schema.model_validate(tool_calls_raw)
+                        if isinstance(tool_calls, WrappedRootModel):
+                            tool_calls = tool_calls.item
+                    except ValidationError as ex:
+                        raise ChatModelError("Failed to produce a valid tool call.") from ex
+
+                    for tool_call in cast_list(tool_calls.model_dump()):
+                        if not tool_call or not tool_call.get("name") or tool_call.get("parameters") is None:
+                            raise ChatModelError(
+                                "Failed to produce a valid tool call.\n"
+                                "Try to increase max new tokens for your chat model.\n"
+                                f"Generated output: {text}",
+                            )
+
+                        tool_call_content = MessageToolCallContent(
+                            id=f"call_{generate_random_string(8).lower()}",
+                            tool_name=tool_call["name"],
+                            args=to_json(tool_call["parameters"], sort_keys=False, indent=None),
+                        )
+                        final_message.content.append(tool_call_content)
+
                     result.messages.clear()
                     result.messages.append(final_message)
+
+                while self.ignore_parallel_tool_calls and len(result.get_tool_calls()) > 1:
+                    tool_call_to_remove = result.get_tool_calls()[-1]
+                    for msg in reversed(result.messages):
+                        if isinstance(msg, AssistantMessage):
+                            msg.content.remove(tool_call_to_remove)
+                            if not msg.content:
+                                result.messages.remove(msg)
+                            break
 
                 self._assert_tool_response(input=model_input, output=result)
 
@@ -406,7 +447,18 @@ IMPORTANT: You MUST answer with a JSON object that matches the JSON schema above
         if input.tool_choice is None or input.tool_choice == "auto" or self.model_supports_tool_calling is False:
             return
 
-        if input.tool_choice == "none" and output.get_tool_calls():
+        tool_calls = output.get_tool_calls()
+        parallel_tool_calls = (
+            input.parallel_tool_calls if input.parallel_tool_calls is not None else self.allow_parallel_tool_calls
+        )
+
+        if not parallel_tool_calls and len(tool_calls) > 1:
+            raise ChatModelError(
+                "The model produced more than one tool call, but parallel tool calls are disabled\n."
+                "Consider enabling parallel tool calls by setting 'model.allow_parallel_tool_calls' to True.",
+            )
+
+        if input.tool_choice == "none" and tool_calls:
             raise _create_tool_choice_error(
                 "The model generated a tool call, but 'tool_choice' was set to 'none'.",
                 input_tool_choice=input.tool_choice,
@@ -414,7 +466,6 @@ IMPORTANT: You MUST answer with a JSON object that matches the JSON schema above
             )
 
         if isinstance(input.tool_choice, Tool):
-            tool_calls = output.get_tool_calls()
             if not tool_calls:
                 raise _create_tool_choice_error(
                     f"The model was required to produce a tool call for the '{input.tool_choice.name}' tool, "

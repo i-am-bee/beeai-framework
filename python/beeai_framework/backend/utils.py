@@ -7,7 +7,7 @@ from typing import Any, Literal, TypeVar, Union
 import json_repair
 import jsonref  # type: ignore
 from openai.lib._pydantic import to_strict_json_schema
-from pydantic import ConfigDict, Field, RootModel, create_model
+from pydantic import BaseModel, ConfigDict, Field, RootModel, create_model
 
 from beeai_framework.backend.constants import (
     BackendProviders,
@@ -21,6 +21,7 @@ from beeai_framework.backend.constants import (
 from beeai_framework.backend.errors import BackendError
 from beeai_framework.backend.types import ChatModelToolChoice
 from beeai_framework.tools.tool import AnyTool, Tool
+from beeai_framework.utils.models import WrappedRootModel
 
 T = TypeVar("T")
 
@@ -115,7 +116,13 @@ def inline_schema_refs(schema: dict[str, Any], *, force: bool = False) -> dict[s
     return schema
 
 
-def generate_tool_union_schema(tools: list[AnyTool], *, strict: bool) -> dict[str, Any]:
+def generate_tool_union_schema(
+    tools: list[AnyTool],
+    *,
+    strict: bool,
+    allow_parallel_tool_calls: bool,
+    allow_top_level_union: bool,
+) -> tuple[dict[str, Any], type[BaseModel]]:
     if not tools:
         raise ValueError("No tools provided!")
 
@@ -135,19 +142,27 @@ def generate_tool_union_schema(tools: list[AnyTool], *, strict: bool) -> dict[st
     if len(tool_schemas) == 1:
         schema = tool_schemas[0]
     else:
+        root_model_type = Union[*tool_schemas]  # type: ignore
+        BaseClass, SchemaType = (  # noqa: N806
+            RootModel if allow_top_level_union else WrappedRootModel,
+            list[root_model_type] if allow_parallel_tool_calls else root_model_type,
+        )
 
-        class AvailableTools(RootModel[Union[*tool_schemas]]):  # type: ignore
+        class AvailableTools(BaseClass[SchemaType]):  # type: ignore
             pass
 
         schema = AvailableTools
 
-    return {
-        "type": "json_schema",
-        "json_schema": {
-            "name": "ToolCall",
-            "schema": inline_schema_refs(to_strict_json_schema(schema) if strict else schema.model_json_schema()),
+    return (
+        {
+            "type": "json_schema",
+            "json_schema": {
+                "name": "ToolCall",
+                "schema": inline_schema_refs(to_strict_json_schema(schema) if strict else schema.model_json_schema()),
+            },
         },
-    }
+        schema,
+    )
 
 
 def filter_tools_by_tool_choice(tools: list[AnyTool], value: ChatModelToolChoice | None) -> list[AnyTool]:

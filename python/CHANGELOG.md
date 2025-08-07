@@ -1,3 +1,21 @@
+## python_v0.1.35 (2025-08-06)
+
+### Bug Fixes
+
+- **agents**: exclude hidden tools from the system prompt (RequirementAgent) (#988)
+- **backend**: correctly merge tool call chunks
+- update error message for invalid tool choice
+- **backend**: remove deprecated response_format.strict parameter
+- **backend**: correctly processes streaming chunks (#973)
+
+### Features
+
+- **backend**: handle parallel tool calls (#986)
+- **backend**: support dynamic loading of document processors (#979)
+- **adapters**: add context_id based memory to A2A server (#975)
+- **backend**: detect non-supported tool choice values (#977)
+- **rag**: add text splitter backend class (#974)
+
 ## python_v0.1.34 (2025-08-01)
 
 ### Bug Fixes

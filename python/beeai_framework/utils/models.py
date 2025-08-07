@@ -1,14 +1,15 @@
 # Copyright 2025 © BeeAI a Series of LF Projects, LLC
 # SPDX-License-Identifier: Apache-2.0
 
+import contextlib
 import copy
 from abc import ABC
 from collections.abc import Generator, Sequence
 from contextlib import suppress
 from logging import Logger
-from typing import Any, Literal, Optional, TypeVar, Union
+from typing import Any, Generic, Literal, Optional, Self, TypeVar, Union
 
-from pydantic import BaseModel, ConfigDict, Field, GetJsonSchemaHandler, RootModel, create_model
+from pydantic import BaseModel, ConfigDict, Field, GetJsonSchemaHandler, RootModel, ValidationError, create_model
 from pydantic.fields import FieldInfo
 from pydantic.json_schema import JsonSchemaValue
 from pydantic_core import CoreSchema, SchemaValidator
@@ -199,3 +200,28 @@ def to_list_model(target: type[T], field: FieldInfo | None = None) -> type[ListM
         root: list[target] = field  # type: ignore
 
     return CustomListModel
+
+
+class WrappedRootModel(BaseModel, Generic[T]):
+    item: RootModel[T] = Field(..., title="Item")
+
+    @classmethod
+    def model_validate(
+        cls,
+        obj: Any,
+        *,
+        strict: bool | None = None,
+        from_attributes: bool | None = None,
+        context: Any | None = None,
+        by_alias: bool | None = None,
+        by_name: bool | None = None,
+        **kwargs: Any,
+    ) -> Self:
+        try:
+            return super().model_validate(
+                obj, strict=strict, from_attributes=from_attributes, context=context, **kwargs
+            )
+        except ValidationError as e:
+            with contextlib.suppress(ValidationError):
+                return cls(item=obj)
+            raise e
