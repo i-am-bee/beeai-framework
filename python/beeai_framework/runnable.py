@@ -83,6 +83,7 @@ def runnable_entry(handler: Callable[P, Awaitable[T]]) -> Callable[P, Run[T]]:
 
         @runnable_entry
         async def run(self, input: list[AnyMessage], /, **kwargs: Unpack[RunnableOptions]) -> RunnableOutput:
+            ctx = RunContext.get()
             # ... runnable logic ...
             return RunnableOutput(output=...)
     """

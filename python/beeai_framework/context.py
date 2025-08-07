@@ -159,6 +159,18 @@ class RunContext:
             extra_signals.append(signal)
         register_signals(self._controller, extra_signals)
 
+    @classmethod
+    def get(cls) -> "RunContext":
+        """Get the current run context if invoked from within an execution context.
+
+        Returns:
+            The run context.
+        """
+        context = storage.get(None)
+        if context is None:
+            raise RuntimeError("Called from non-context.")
+        return context
+
     @property
     def signal(self) -> AbortSignal:
         return self._controller.signal
