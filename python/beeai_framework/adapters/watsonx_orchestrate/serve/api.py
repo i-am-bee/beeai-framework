@@ -15,7 +15,7 @@ from beeai_framework.adapters.watsonx_orchestrate.serve.agent import WatsonxOrch
 from beeai_framework.backend import AnyMessage, AssistantMessage, SystemMessage, ToolMessage
 from beeai_framework.logger import Logger
 from beeai_framework.memory import BaseMemory
-from beeai_framework.serve import MemoryManager, initialize_agents_memory
+from beeai_framework.serve import MemoryManager, init_agent_memory
 from beeai_framework.serve.lru_memory_manager import LRUMemoryManager
 
 logger = Logger(__name__)
@@ -77,7 +77,7 @@ class WatsonxOrchestrateAPI:
 
         agent = self._create_agent()
 
-        await initialize_agents_memory(agent._agent, self._memory_manager, thread_id, stateful=self._stateful)
+        await init_agent_memory(agent._agent, self._memory_manager, thread_id, stateful=self._stateful)
 
         messages = self._transform_request_messages(request.messages)
         await agent._agent.memory.add_many(messages)

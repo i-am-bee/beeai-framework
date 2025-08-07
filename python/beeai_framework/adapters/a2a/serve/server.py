@@ -112,7 +112,6 @@ def _tool_calling_agent_factory(
 
     return TollCallingAgentExecutor(
         agent=agent,
-        memory_manager=memory_manager,
         agent_card=a2a_types.AgentCard(
             name=metadata.get("name", agent.meta.name),
             description=metadata.get("description", agent.meta.description),
@@ -133,6 +132,7 @@ def _tool_calling_agent_factory(
                 ],
             ),
         ),
+        memory_manager=memory_manager,
     )
 
 
@@ -147,7 +147,6 @@ def _requirement_agent_factory(
 
     return TollCallingAgentExecutor(
         agent=agent,
-        memory_manager=memory_manager,
         agent_card=a2a_types.AgentCard(
             name=metadata.get("name", agent.meta.name),
             description=metadata.get("description", agent.meta.description),
@@ -168,6 +167,7 @@ def _requirement_agent_factory(
                 ],
             ),
         ),
+        memory_manager=memory_manager,
     )
 
 

@@ -9,7 +9,7 @@ from beeai_framework.serve.memory_manager import MemoryManager
 logger = Logger(__name__)
 
 
-async def initialize_agents_memory(
+async def init_agent_memory(
     agent: AnyAgent, memory_manager: MemoryManager, session_id: str | None, *, stateful: bool = True
 ) -> None:
     async def create_empty_memory() -> BaseMemory:
@@ -17,7 +17,6 @@ async def initialize_agents_memory(
         memory.reset()
         return memory
 
-    memory = None
     if stateful and session_id:
         if not await memory_manager.contains(session_id):
             await memory_manager.set(session_id, await create_empty_memory())

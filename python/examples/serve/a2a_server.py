@@ -18,7 +18,7 @@ def main() -> None:
     # Register the agent with the A2A server and run the HTTP server
     # For the ToolCallingAgent, we dont need to specify ACPAgent factory method
     # because it is already registered in the A2AServer
-    A2AServer(config=A2AServerConfig(port=9999), memory_manager=LRUMemoryManager(maxsize=2)).register(agent).serve()
+    A2AServer(config=A2AServerConfig(port=9999), memory_manager=LRUMemoryManager(maxsize=20)).register(agent).serve()
 
 
 if __name__ == "__main__":
