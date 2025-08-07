@@ -4,6 +4,7 @@
 import asyncio
 import contextlib
 from collections.abc import Callable
+from dataclasses import dataclass
 from typing import ClassVar
 from weakref import WeakKeyDictionary
 
@@ -18,40 +19,56 @@ MCPClient = contextlib._AsyncGeneratorContextManager[
 CleanupFn = Callable[[], None]
 
 
+@dataclass
+class SessionEntry:
+    refs: int
+    cleanup: CleanupFn
+
+
 class MCPSessionProvider:
-    _instances: ClassVar[WeakKeyDictionary[ClientSession, CleanupFn]] = WeakKeyDictionary()
+    _instances: ClassVar[WeakKeyDictionary[ClientSession, "MCPSessionProvider"]] = WeakKeyDictionary()
 
     def __init__(self, client: MCPClient) -> None:
         self._client = client
+        self._session: ClientSession | None = None
+        self._session_initialized = asyncio.Event()
+        self._session_stopping = asyncio.Event()
+        self.refs = 0
+        self._started = False
 
     @classmethod
-    def destroy(cls, session: ClientSession) -> None:
-        cleanup = cls._instances.get(session)
-        if cleanup is not None:
-            cleanup()
+    def destroy_by_session(cls, session: ClientSession) -> None:
+        entry = cls._instances.get(session)
+        if entry is not None:
+            entry.destroy()
+
+    def destroy(self) -> None:
+        if self._session is None:
+            return
+
+        self.refs = max(0, self.refs - 1)
+        if self.refs == 0:
+            self._session_stopping.set()
+            type(self)._instances.pop(self._session, None)
 
     async def session(self) -> ClientSession:
-        _session: ClientSession | None = None
-        _session_initialized = asyncio.Event()
-        _session_stopping = asyncio.Event()
+        if not self._started:
+            self._started = True
+
+        self._started = True
 
         async def create() -> None:
-            nonlocal _session
-
             async with self._client as (read, write, *_), ClientSession(read, write) as _session:
+                self._session = _session
                 await _session.initialize()
-                _session_initialized.set()
-                await _session_stopping.wait()
-
-        def cleanup() -> None:
-            if _session is not None:
-                type(self)._instances.pop(_session, None)
+                self._session_initialized.set()
+                await self._session_stopping.wait()
 
         task = asyncio.create_task(create())
-        task.add_done_callback(lambda *args, **kwargs: cleanup())
+        task.add_done_callback(lambda *args, **kwargs: self.destroy())
+        return await self._get()
 
-        await _session_initialized.wait()
-        assert _session is not None
-
-        type(self)._instances[_session] = lambda: _session_stopping.set()
-        return _session
+    async def _get(self) -> ClientSession:
+        await self._session_initialized.wait()
+        assert self._session is not None
+        return self._session
