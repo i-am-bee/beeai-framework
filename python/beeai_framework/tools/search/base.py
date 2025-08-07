@@ -21,7 +21,7 @@ class SearchToolOutput(ToolOutput):
         self.results = results
 
     def get_text_content(self) -> str:
-        return to_json(self.results)
+        return to_json(self.results, sort_keys=False, exclude_none=True)
 
     def is_empty(self) -> bool:
         return len(self.results) == 0

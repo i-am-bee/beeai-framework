@@ -268,26 +268,26 @@ if __name__ == "__main__":
 For production deployments, consider implementing document caching and index optimization to improve response times.
 </Tip>
 
-### Future Enhancements
+### RAG as Tools
 
-The RAG Agent is designed for extensibility. The roadmap focuses on two main areas of improvement:
+Vector store population (loading and chunking documents) is typically handled offline in production applications, making Vector Store the prominent RAG building block utilized as a tool.
 
-#### Fallback Strategies
-Handle edge cases and improve robustness when standard retrieval approaches fall short:
-- **Query rephrasing** - Automatically rephrase queries for better retrieval when initial attempts yield poor results
-- **Query decomposition** - Break complex queries into simpler sub-queries for more targeted retrieval
-- **Alternative retrieval methods** - Implement backup strategies when semantic search doesn't find relevant documents
+`VectorStoreSearchTool` enables any agent to perform semantic search against a pre-populated vector store. This provides flexibility for agents that need retrieval capabilities alongside other functionalities.
 
-#### Agentic Capabilities
-Add autonomous reasoning and self-improvement capabilities for higher quality responses:
-- **Reflection loops** - Enable the agent to evaluate and improve its own responses
-- **Iterative refinement** - Allow multiple rounds of retrieval and generation for complex queries
-- **Self-assessment** - Implement confidence scoring and quality evaluation mechanisms
+<Tip>
+The VectorStoreSearchTool can be dynamically instantiated using `VectorStoreSearchTool.from_vector_store_name("beeai:TemporalVectorStore", embedding_model=embedding_model)`, see RAG with RequirementAgent example for the full code.
+</Tip>
 
 ## Examples
 
 <CardGroup cols={1}>
   <Card title="Python RAG Agent" icon="python" href="https://github.com/i-am-bee/beeai-framework/tree/main/python/examples/agents/rag_agent.py">
     Complete RAG agent implementation with document loading and processing
+  </Card>
+</CardGroup>
+
+<CardGroup cols={1}>
+  <Card title="RAG with RequirementAgent" icon="search" href="https://github.com/i-am-bee/beeai-framework/tree/main/python/examples/agents/experimental/requirement/rag.py">
+    Example showing how to use VectorStoreSearchTool with RequirementAgent for RAG capabilities
   </Card>
 </CardGroup>

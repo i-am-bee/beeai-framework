@@ -72,10 +72,11 @@ class MCPTool(Tool[BaseModel, ToolRunOptions, JSONToolOutput]):
         manager = MCPSessionProvider(client)
         session = await manager.session()
         instance = await cls.from_session(session)
+        manager.refs += len(instance)
         return instance
 
     def __del__(self) -> None:
-        MCPSessionProvider.destroy(self._session)
+        MCPSessionProvider.destroy_by_session(self._session)
 
     @classmethod
     async def from_session(cls, session: ClientSession) -> list["MCPTool"]:
