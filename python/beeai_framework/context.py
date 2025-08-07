@@ -93,7 +93,8 @@ class Run(Generic[R]):
         return self
 
     def context(self, context: dict[str, Any]) -> Self:
-        self._tasks.append((self._set_context, [context]))
+        if context:
+            self._tasks.append((self._set_context, [context]))
         return self
 
     def middleware(self, *fns: RunMiddlewareProtocol | RunMiddlewareFn) -> Self:

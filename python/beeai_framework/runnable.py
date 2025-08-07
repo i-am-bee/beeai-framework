@@ -100,11 +100,15 @@ def runnable_entry(handler: Callable[P, Awaitable[T]]) -> Callable[P, Run[T]]:
             raise TypeError("The first argument of a runnable must be a Runnable instance.")
 
         runnable_kwargs: RunnableOptions = kwargs  # type: ignore
-        return RunContext.enter(
-            self,
-            inner,
-            signal=runnable_kwargs.get("signal", None),
-            run_params={"input": args[1], **exclude_keys(kwargs, {"signal", "input"})},
-        ).middleware(*self.middlewares)
+        return (
+            RunContext.enter(
+                self,
+                inner,
+                signal=runnable_kwargs.get("signal", None),
+                run_params={"input": args[1], **exclude_keys(kwargs, {"signal", "input"})},
+            )
+            .middleware(*self.middlewares)
+            .context(runnable_kwargs.get("context") or {})
+        )
 
     return wrapper
