@@ -17,7 +17,7 @@ from beeai_framework.tools.search.retrieval import VectorStoreSearchTool
 logger = Logger("vector-store-search-example", level=logging.DEBUG)
 
 POPULATE_VECTOR_DB = True
-VECTOR_DB_PATH_4_DUMP = "/Users/antonp/code/tmp/vector.db"  # Set this path for persistency
+VECTOR_DB_PATH_4_DUMP = ""  # Set this path for persistency
 
 
 async def setup_vector_store() -> VectorStore | None:
