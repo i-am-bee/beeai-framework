@@ -68,7 +68,7 @@ class WikipediaTool(Tool[WikipediaToolInput, ToolRunOptions, WikipediaToolOutput
             [
                 WikipediaToolResult(
                     title=page_py.title or input.query,
-                    content=description_output or "",
+                    description=description_output or "",
                     url=page_py.fullurl or "",
                 )
             ]

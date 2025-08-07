@@ -55,7 +55,7 @@ class VectorStoreSearchTool(Tool[VectorStoreSearchToolInput, ToolRunOptions, Vec
         results = [
             VectorStoreSearchToolResult(
                 title=str(doc.document.metadata.get("title", f"Document {i + 1}")),
-                content=doc.document.content,
+                description=doc.document.content,
                 url=str(doc.document.metadata.get("url", doc.document.metadata.get("source", ""))),
                 score=doc.score,
             )

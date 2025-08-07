@@ -492,7 +492,6 @@ This tool requires a pre-populated vector store. Vector store population (loadin
 {/* <!-- embedme python/examples/agents/experimental/requirement/rag.py --> */}
 ```py Python [expandable]
 import asyncio
-import logging
 import os
 
 from beeai_framework.agents.experimental import RequirementAgent
@@ -501,13 +500,10 @@ from beeai_framework.backend.document_loader import DocumentLoader
 from beeai_framework.backend.embedding import EmbeddingModel
 from beeai_framework.backend.text_splitter import TextSplitter
 from beeai_framework.backend.vector_store import VectorStore
-from beeai_framework.logger import Logger
 from beeai_framework.memory import UnconstrainedMemory
 from beeai_framework.middleware.trajectory import GlobalTrajectoryMiddleware
 from beeai_framework.tools import Tool
 from beeai_framework.tools.search.retrieval import VectorStoreSearchTool
-
-logger = Logger("vector-store-search-example", level=logging.DEBUG)
 
 POPULATE_VECTOR_DB = True
 VECTOR_DB_PATH_4_DUMP = ""  # Set this path for persistency
@@ -590,7 +586,7 @@ async def main() -> None:
     # )
 
     # Create RequirementAgent with the vector store search tool
-    llm = ChatModel.from_name("ollama:llama3.2")
+    llm = ChatModel.from_name("ollama:llama3.1:8b")
     agent = RequirementAgent(
         llm=llm,
         memory=UnconstrainedMemory(),
