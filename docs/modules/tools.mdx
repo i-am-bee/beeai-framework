@@ -490,18 +490,6 @@ This tool requires a pre-populated vector store. Vector store population (loadin
 </Note>
 
 {/* <!-- embedme python/examples/agents/experimental/requirement/rag.py --> */}
-
-### MCP tool
-
-Leverage the Model Context Protocol (MCP) to define, initialize, and utilize tools on compatible MCP servers. These servers expose executable functionalities, enabling AI models to perform tasks such as computations, API calls, or system operations.
-
-<Tip>
-Check out the [MCP Slack integration tutorial](/guides/mcp-slackbot)
-</Tip>
-
-<CodeGroup>
-
-{/* <!-- embedme python/examples/tools/mcp_tool_creation.py --> */}
 ```py Python [expandable]
 import asyncio
 import logging
@@ -620,6 +608,56 @@ async def main() -> None:
     query = "What types of agents are available in BeeAI?"
     response = await agent.run(query)
     print(f"query: {query}\nResponse: {response.answer.text}")
+
+
+if __name__ == "__main__":
+    asyncio.run(main())
+
+```
+
+### MCP tool
+
+Leverage the Model Context Protocol (MCP) to define, initialize, and utilize tools on compatible MCP servers. These servers expose executable functionalities, enabling AI models to perform tasks such as computations, API calls, or system operations.
+
+<Tip>
+Check out the [MCP Slack integration tutorial](/guides/mcp-slackbot)
+</Tip>
+
+<CodeGroup>
+
+{/* <!-- embedme python/examples/tools/mcp_tool_creation.py --> */}
+```py Python [expandable]
+import asyncio
+import os
+
+from dotenv import load_dotenv
+from mcp import StdioServerParameters
+from mcp.client.stdio import stdio_client
+
+from beeai_framework.tools.mcp import MCPTool
+
+load_dotenv()
+
+# Create server parameters for stdio connection
+server_params = StdioServerParameters(
+    command="npx",
+    args=["-y", "@modelcontextprotocol/server-slack"],
+    env={
+        "SLACK_BOT_TOKEN": os.environ["SLACK_BOT_TOKEN"],
+        "SLACK_TEAM_ID": os.environ["SLACK_TEAM_ID"],
+        "PATH": os.getenv("PATH", default=""),
+    },
+)
+
+
+async def slack_post_message_tool() -> MCPTool:
+    slack_tools = await MCPTool.from_client(stdio_client(server_params))
+    return next(filter(lambda tool: tool.name == "slack_post_message", slack_tools))
+
+
+async def main() -> None:
+    tool = await slack_post_message_tool()
+    print(tool.name, tool.description)
 
 
 if __name__ == "__main__":
