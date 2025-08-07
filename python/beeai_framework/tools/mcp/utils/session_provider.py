@@ -4,7 +4,6 @@
 import asyncio
 import contextlib
 from collections.abc import Callable
-from dataclasses import dataclass
 from typing import ClassVar
 from weakref import WeakKeyDictionary
 
@@ -17,12 +16,6 @@ MCPClient = contextlib._AsyncGeneratorContextManager[
 ]
 
 CleanupFn = Callable[[], None]
-
-
-@dataclass
-class SessionEntry:
-    refs: int
-    cleanup: CleanupFn
 
 
 class MCPSessionProvider:
@@ -52,17 +45,21 @@ class MCPSessionProvider:
             type(self)._instances.pop(self._session, None)
 
     async def session(self) -> ClientSession:
-        if not self._started:
-            self._started = True
+        if self._started:
+            return await self._get()
 
         self._started = True
 
         async def create() -> None:
-            async with self._client as (read, write, *_), ClientSession(read, write) as _session:
-                self._session = _session
-                await _session.initialize()
-                self._session_initialized.set()
-                await self._session_stopping.wait()
+            try:
+                async with self._client as (read, write, *_), ClientSession(read, write) as _session:
+                    self._session = _session
+                    type(self)._instances[_session] = self
+                    await _session.initialize()
+                    self._session_initialized.set()
+                    await self._session_stopping.wait()
+            finally:
+                self._session = None
 
         task = asyncio.create_task(create())
         task.add_done_callback(lambda *args, **kwargs: self.destroy())
@@ -70,5 +67,6 @@ class MCPSessionProvider:
 
     async def _get(self) -> ClientSession:
         await self._session_initialized.wait()
-        assert self._session is not None
+        if self._session is None:
+            raise RuntimeError("MCP Client Session has been destroyed.")
         return self._session
