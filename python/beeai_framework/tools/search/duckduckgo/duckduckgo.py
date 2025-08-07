@@ -68,7 +68,7 @@ class DuckDuckGoSearchTool(Tool[DuckDuckGoSearchToolInput, ToolRunOptions, DuckD
             ).text(input.query, max_results=self.max_results, safesearch=self.safe_search, backend="duckduckgo")
             search_results: list[SearchToolResult] = [
                 DuckDuckGoSearchToolResult(
-                    title=result.get("title") or "", description=result.get("body") or "", url=result.get("href") or ""
+                    title=result.get("title") or "", content=result.get("body") or "", url=result.get("href") or ""
                 )
                 for result in results
             ]

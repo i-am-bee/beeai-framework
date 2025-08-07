@@ -53,6 +53,7 @@ exclude = list(
             "agents/experimental/requirement/exercises/*",
             "integrations/langgraph_example.py" if os.getenv("OLLAMA_API_BASE") else None,
             "agents/rag_agent.py",
+            "agents/experimental/requirement/rag.py",
             "backend/module_loading.py",
             # Interactive example
             "agents/experimental/requirement/multi_agent.py",

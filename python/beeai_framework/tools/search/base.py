@@ -11,7 +11,7 @@ from beeai_framework.utils.strings import to_json
 
 class SearchToolResult(BaseModel):
     title: str
-    description: str
+    content: str
     url: str
 
 
