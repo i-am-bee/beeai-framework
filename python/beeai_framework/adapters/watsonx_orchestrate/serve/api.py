@@ -16,7 +16,7 @@ from beeai_framework.backend import AnyMessage, AssistantMessage, SystemMessage,
 from beeai_framework.logger import Logger
 from beeai_framework.memory import BaseMemory
 from beeai_framework.serve import MemoryManager, init_agent_memory
-from beeai_framework.serve.lru_memory_manager import LRUMemoryManager
+from beeai_framework.serve.utils import UnlimitedMemoryManager
 
 logger = Logger(__name__)
 
@@ -36,7 +36,7 @@ class WatsonxOrchestrateAPI:
         self._fast_api_kwargs = fast_api_kwargs or {}
         self._stateful = stateful
         self._conversations: dict[str, BaseMemory] = {}
-        self._memory_manager = memory_manager or LRUMemoryManager(maxsize=100)
+        self._memory_manager = memory_manager or UnlimitedMemoryManager()
 
         self._router = APIRouter()
         self._router.add_api_route(
