@@ -14,7 +14,6 @@
               'type': 'string',
             }),
             'parameters': dict({
-              'additionalProperties': True,
               'description': 'Tool Parameters',
               'properties': dict({
                 'a': dict({
@@ -51,7 +50,6 @@
               'type': 'string',
             }),
             'parameters': dict({
-              'additionalProperties': True,
               'description': 'Tool Parameters',
               'properties': dict({
                 'name': dict({
@@ -93,7 +91,7 @@
               'type': 'string',
             }),
             'parameters': dict({
-              'additionalProperties': True,
+              'additionalProperties': False,
               'description': 'Tool Parameters',
               'properties': dict({
                 'a': dict({
@@ -131,7 +129,7 @@
               'type': 'string',
             }),
             'parameters': dict({
-              'additionalProperties': True,
+              'additionalProperties': False,
               'description': 'Tool Parameters',
               'properties': dict({
                 'name': dict({
@@ -171,7 +169,6 @@
           'type': 'string',
         }),
         'parameters': dict({
-          'additionalProperties': True,
           'description': 'Tool Parameters',
           'properties': dict({
             'a': dict({
@@ -213,7 +210,7 @@
           'type': 'string',
         }),
         'parameters': dict({
-          'additionalProperties': True,
+          'additionalProperties': False,
           'description': 'Tool Parameters',
           'properties': dict({
             'a': dict({
@@ -261,7 +258,6 @@
                     'type': 'string',
                   }),
                   'parameters': dict({
-                    'additionalProperties': True,
                     'description': 'Tool Parameters',
                     'properties': dict({
                       'a': dict({
@@ -298,7 +294,6 @@
                     'type': 'string',
                   }),
                   'parameters': dict({
-                    'additionalProperties': True,
                     'description': 'Tool Parameters',
                     'properties': dict({
                       'name': dict({

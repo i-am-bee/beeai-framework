@@ -125,6 +125,7 @@ markers = [
     "e2e",
     "extension"
 ]
+addopts = "--snapshot-patch-pycharm-diff"
 log_cli = true
 log_cli_level = "DEBUG"
 log_cli_format = "%(asctime)s [%(levelname)8s] %(message)s (%(filename)s:%(lineno)s)"
