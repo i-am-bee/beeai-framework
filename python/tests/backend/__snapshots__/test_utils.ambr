@@ -1,0 +1,336 @@
+# serializer version: 1
+# name: test_generate_tool_union_schema[False]
+  dict({
+    'name': 'ToolCall',
+    'schema': dict({
+      'anyOf': list([
+        dict({
+          'additionalProperties': False,
+          'properties': dict({
+            'name': dict({
+              'const': 'tool_sum',
+              'description': 'Tool Name',
+              'title': 'Name',
+              'type': 'string',
+            }),
+            'parameters': dict({
+              'additionalProperties': True,
+              'description': 'Tool Parameters',
+              'properties': dict({
+                'a': dict({
+                  'title': 'A',
+                  'type': 'integer',
+                }),
+                'b': dict({
+                  'default': 0,
+                  'title': 'B',
+                  'type': 'integer',
+                }),
+              }),
+              'required': list([
+                'a',
+              ]),
+              'title': 'tool_sum',
+              'type': 'object',
+            }),
+          }),
+          'required': list([
+            'name',
+            'parameters',
+          ]),
+          'title': 'tool_sum',
+          'type': 'object',
+        }),
+        dict({
+          'additionalProperties': False,
+          'properties': dict({
+            'name': dict({
+              'const': 'tool_greet',
+              'description': 'Tool Name',
+              'title': 'Name',
+              'type': 'string',
+            }),
+            'parameters': dict({
+              'additionalProperties': True,
+              'description': 'Tool Parameters',
+              'properties': dict({
+                'name': dict({
+                  'title': 'Name',
+                  'type': 'integer',
+                }),
+              }),
+              'required': list([
+                'name',
+              ]),
+              'title': 'tool_greet',
+              'type': 'object',
+            }),
+          }),
+          'required': list([
+            'name',
+            'parameters',
+          ]),
+          'title': 'tool_greet',
+          'type': 'object',
+        }),
+      ]),
+      'title': 'AvailableTools',
+    }),
+  })
+# ---
+# name: test_generate_tool_union_schema[True]
+  dict({
+    'name': 'ToolCall',
+    'schema': dict({
+      'anyOf': list([
+        dict({
+          'additionalProperties': False,
+          'properties': dict({
+            'name': dict({
+              'const': 'tool_sum',
+              'description': 'Tool Name',
+              'title': 'Name',
+              'type': 'string',
+            }),
+            'parameters': dict({
+              'additionalProperties': True,
+              'description': 'Tool Parameters',
+              'properties': dict({
+                'a': dict({
+                  'title': 'A',
+                  'type': 'integer',
+                }),
+                'b': dict({
+                  'default': 0,
+                  'title': 'B',
+                  'type': 'integer',
+                }),
+              }),
+              'required': list([
+                'a',
+                'b',
+              ]),
+              'title': 'tool_sum',
+              'type': 'object',
+            }),
+          }),
+          'required': list([
+            'name',
+            'parameters',
+          ]),
+          'title': 'tool_sum',
+          'type': 'object',
+        }),
+        dict({
+          'additionalProperties': False,
+          'properties': dict({
+            'name': dict({
+              'const': 'tool_greet',
+              'description': 'Tool Name',
+              'title': 'Name',
+              'type': 'string',
+            }),
+            'parameters': dict({
+              'additionalProperties': True,
+              'description': 'Tool Parameters',
+              'properties': dict({
+                'name': dict({
+                  'title': 'Name',
+                  'type': 'integer',
+                }),
+              }),
+              'required': list([
+                'name',
+              ]),
+              'title': 'tool_greet',
+              'type': 'object',
+            }),
+          }),
+          'required': list([
+            'name',
+            'parameters',
+          ]),
+          'title': 'tool_greet',
+          'type': 'object',
+        }),
+      ]),
+      'title': 'AvailableTools',
+    }),
+  })
+# ---
+# name: test_generate_tool_union_schema_non_strict[False]
+  dict({
+    'name': 'ToolCall',
+    'schema': dict({
+      'additionalProperties': False,
+      'properties': dict({
+        'name': dict({
+          'const': 'tool_sum',
+          'description': 'Tool Name',
+          'title': 'Name',
+          'type': 'string',
+        }),
+        'parameters': dict({
+          'additionalProperties': True,
+          'description': 'Tool Parameters',
+          'properties': dict({
+            'a': dict({
+              'title': 'A',
+              'type': 'integer',
+            }),
+            'b': dict({
+              'default': 0,
+              'title': 'B',
+              'type': 'integer',
+            }),
+          }),
+          'required': list([
+            'a',
+          ]),
+          'title': 'tool_sum',
+          'type': 'object',
+        }),
+      }),
+      'required': list([
+        'name',
+        'parameters',
+      ]),
+      'title': 'tool_sum',
+      'type': 'object',
+    }),
+  })
+# ---
+# name: test_generate_tool_union_schema_non_strict[True]
+  dict({
+    'name': 'ToolCall',
+    'schema': dict({
+      'additionalProperties': False,
+      'properties': dict({
+        'name': dict({
+          'const': 'tool_sum',
+          'description': 'Tool Name',
+          'title': 'Name',
+          'type': 'string',
+        }),
+        'parameters': dict({
+          'additionalProperties': True,
+          'description': 'Tool Parameters',
+          'properties': dict({
+            'a': dict({
+              'title': 'A',
+              'type': 'integer',
+            }),
+            'b': dict({
+              'default': 0,
+              'title': 'B',
+              'type': 'integer',
+            }),
+          }),
+          'required': list([
+            'a',
+            'b',
+          ]),
+          'title': 'tool_sum',
+          'type': 'object',
+        }),
+      }),
+      'required': list([
+        'name',
+        'parameters',
+      ]),
+      'title': 'tool_sum',
+      'type': 'object',
+    }),
+  })
+# ---
+# name: test_generate_tool_union_wrapped_schema
+  dict({
+    'name': 'ToolCall',
+    'schema': dict({
+      'properties': dict({
+        'item': dict({
+          'items': dict({
+            'anyOf': list([
+              dict({
+                'additionalProperties': False,
+                'properties': dict({
+                  'name': dict({
+                    'const': 'tool_sum',
+                    'description': 'Tool Name',
+                    'title': 'Name',
+                    'type': 'string',
+                  }),
+                  'parameters': dict({
+                    'additionalProperties': True,
+                    'description': 'Tool Parameters',
+                    'properties': dict({
+                      'a': dict({
+                        'title': 'A',
+                        'type': 'integer',
+                      }),
+                      'b': dict({
+                        'default': 0,
+                        'title': 'B',
+                        'type': 'integer',
+                      }),
+                    }),
+                    'required': list([
+                      'a',
+                    ]),
+                    'title': 'tool_sum',
+                    'type': 'object',
+                  }),
+                }),
+                'required': list([
+                  'name',
+                  'parameters',
+                ]),
+                'title': 'tool_sum',
+                'type': 'object',
+              }),
+              dict({
+                'additionalProperties': False,
+                'properties': dict({
+                  'name': dict({
+                    'const': 'tool_greet',
+                    'description': 'Tool Name',
+                    'title': 'Name',
+                    'type': 'string',
+                  }),
+                  'parameters': dict({
+                    'additionalProperties': True,
+                    'description': 'Tool Parameters',
+                    'properties': dict({
+                      'name': dict({
+                        'title': 'Name',
+                        'type': 'integer',
+                      }),
+                    }),
+                    'required': list([
+                      'name',
+                    ]),
+                    'title': 'tool_greet',
+                    'type': 'object',
+                  }),
+                }),
+                'required': list([
+                  'name',
+                  'parameters',
+                ]),
+                'title': 'tool_greet',
+                'type': 'object',
+              }),
+            ]),
+          }),
+          'title': 'Item',
+          'type': 'array',
+        }),
+      }),
+      'required': list([
+        'item',
+      ]),
+      'title': 'AvailableTools',
+      'type': 'object',
+    }),
+  })
+# ---

@@ -75,6 +75,10 @@ Some tasks to get you started:
 
 > [!NOTE]
 >
+> To regenerate test snapshots, use `--snapshot-update` flag.
+
+> [!NOTE]
+>
 > To run E2E tests locally, you must have an Ollama instance running with the following models: `llama3.1:8b` and `granite3.3:8b`.
 
 ## Conventional Commits
