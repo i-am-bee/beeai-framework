@@ -183,7 +183,7 @@ class Tool(Generic[TInput, TRunOptions, TOutput], ABC):
 def get_input_schema(tool_function: Callable, *, name: str | None = None) -> type[BaseModel]:
     input_model_name = name or tool_function.__name__
 
-    args, _, _, defaults, kwonlyargs, kwonlydefaults, annotations = inspect.getfullargspec(tool_function)
+    args, _, varkw, defaults, kwonlyargs, kwonlydefaults, annotations = inspect.getfullargspec(tool_function)
     defaults = defaults or []
     args = args or []
 
@@ -202,7 +202,7 @@ def get_input_schema(tool_function: Callable, *, name: str | None = None) -> typ
         input_model_name,
         **params,
         **keyword_only_params,
-        __config__=ConfigDict(extra="allow", arbitrary_types_allowed=True),
+        __config__=ConfigDict(extra="allow" if varkw else "forbid", arbitrary_types_allowed=True),
     )
 
     return input_model
