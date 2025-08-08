@@ -7,8 +7,6 @@ from collections.abc import AsyncGenerator
 from itertools import chain
 from typing import Any, Self
 
-from beeai_framework.adapters.litellm.utils import litellm_debug
-
 if not os.getenv("LITELLM_LOCAL_MODEL_COST_MAP", None):
     os.environ["LITELLM_LOCAL_MODEL_COST_MAP"] = "True"
 
@@ -21,10 +19,10 @@ from litellm import (  # type: ignore
     get_supported_openai_params,
 )
 from litellm.types.utils import StreamingChoices
-from openai.lib._pydantic import _ensure_strict_json_schema, to_strict_json_schema
 from pydantic import BaseModel
 from typing_extensions import Unpack
 
+from beeai_framework.adapters.litellm.utils import litellm_debug, to_strict_json_schema
 from beeai_framework.backend.chat import (
     ChatModel,
     ChatModelKwargs,
@@ -291,9 +289,7 @@ class LiteLLMChatModel(ChatModel, ABC):
 
         json_schema = (
             {
-                "schema": _ensure_strict_json_schema(model, path=(), root=model)
-                if self.use_strict_tool_schema
-                else model,
+                "schema": to_strict_json_schema(model) if self.use_strict_tool_schema else model,
                 "name": "schema",
                 "strict": self.use_strict_model_schema,
             }

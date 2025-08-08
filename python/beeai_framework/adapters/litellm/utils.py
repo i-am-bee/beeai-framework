@@ -5,6 +5,10 @@ import logging
 from typing import Any
 
 import litellm
+from openai.lib._pydantic import _ensure_strict_json_schema
+from pydantic import BaseModel
+
+from beeai_framework.utils.dicts import traverse
 
 
 def parse_extra_headers(
@@ -71,3 +75,16 @@ def litellm_debug(enable: bool = True) -> None:
 
     litellm_logger = logging.getLogger("LiteLLM")
     litellm_logger.setLevel(logging.DEBUG if enable else logging.CRITICAL + 1)
+
+
+def to_strict_json_schema(model: type[BaseModel] | dict[str, Any]) -> dict[str, Any]:
+    json_schema = model if isinstance(model, dict) else model.model_json_schema()
+
+    if json_schema.get("type") == "object":
+        json_schema["additionalProperties"] = False
+
+    strict_schema = _ensure_strict_json_schema(json_schema, path=(), root=json_schema)
+    for obj, _ in traverse(strict_schema):
+        if obj.get("type") == "object" and "additionalProperties" in obj:
+            obj["additionalProperties"] = False
+    return strict_schema

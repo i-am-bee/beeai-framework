@@ -1,7 +1,7 @@
 # Copyright 2025 © BeeAI a Series of LF Projects, LLC
 # SPDX-License-Identifier: Apache-2.0
 
-from collections.abc import Mapping
+from collections.abc import Iterator, Mapping
 from typing import Any
 
 
@@ -51,3 +51,12 @@ def set_attr_if_none(obj: dict[str, Any], attrs: list[str], value: Any) -> None:
         else:
             obj[attr] = {}
             obj = obj[attr]
+
+
+def traverse(obj: dict[str, Any] | list[Any], *, path: str = "") -> Iterator[tuple[dict[str, Any], str]]:
+    if isinstance(obj, dict):
+        yield obj, path
+
+    for k, v in obj.items() if isinstance(obj, dict) else enumerate(obj):
+        if isinstance(v, dict | list):
+            yield from traverse(v, path=f"{path}.{k}" if path else str(k))
