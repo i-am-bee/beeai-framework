@@ -6,7 +6,7 @@ from abc import ABC, abstractmethod
 from collections.abc import Awaitable, Callable
 from typing import Any, TypedDict, Unpack
 
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 from typing_extensions import ParamSpec, TypeVar
 
 from beeai_framework.backend import AnyMessage
@@ -31,6 +31,8 @@ class RunnableOptions(TypedDict, total=False):
 
 class RunnableOutput(BaseModel):
     """Runnable output."""
+
+    model_config = ConfigDict(arbitrary_types_allowed=True)
 
     output: list[AnyMessage]
     """The runnable output"""
