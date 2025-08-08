@@ -1,6 +1,7 @@
 # Copyright 2025 © BeeAI a Series of LF Projects, LLC
 # SPDX-License-Identifier: Apache-2.0
 
+import contextlib
 import inspect
 import typing
 from abc import ABC, abstractmethod
@@ -73,6 +74,17 @@ class Tool(Generic[TInput, TRunOptions, TOutput], ABC):
         emitter = self._create_emitter()
         emitter.events = tool_event_types
         return emitter
+
+    def to_json_safe(self) -> dict[str, Any]:
+        input_schema = {}
+        with contextlib.suppress(Exception):
+            input_schema = self.input_schema.model_json_schema()
+
+        return {
+            "name": self.name,
+            "description": self.description,
+            "input_schema": input_schema,
+        }
 
     @abstractmethod
     def _create_emitter(self) -> Emitter:

@@ -50,12 +50,11 @@ def to_json_serializable(input: Any, *, exclude_none: bool = False) -> Any:
     def apply_child(value: Any) -> Any:
         return to_json_serializable(value, exclude_none=exclude_none)
 
-    if isinstance(input, BaseModel):
-        input = input.model_dump(fallback=apply_child, exclude_none=exclude_none)
-    elif isinstance(input, CustomJsonDump):
-        input = input.to_json_safe()
-
-    if isinstance(input, list):
+    if isinstance(input, CustomJsonDump):
+        return apply_child(input.to_json_safe())
+    elif isinstance(input, BaseModel):
+        return apply_child(input.model_dump(exclude_none=exclude_none))
+    elif isinstance(input, list):
         return [apply_child(v) for v in input if input is not None] if exclude_none else input
     elif isinstance(input, dict):
         return {k: apply_child(v) for k, v in input.items() if v is not None} if exclude_none else input
