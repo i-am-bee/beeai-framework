@@ -41,6 +41,7 @@ requests = "^2.32"
 unstructured = {version = "^0.17.2", optional = true}
 uvicorn = {version = "^0.34.2", optional = true}
 wikipedia-api = {version = "^0.8.1", optional = true}
+langsmith = "^0.4.13"
 
 [tool.poetry.group.dev.dependencies]
 commitizen = "^4.2.1"
