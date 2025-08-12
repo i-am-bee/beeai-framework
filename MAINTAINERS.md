@@ -13,7 +13,6 @@ Maintainers are listed in alphabetical order by last name.
 | Tomáš Dvořák | [Tomas2D](https://github.com/Tomas2D) |
 | Matous Havlena | [matoushavlena](https://github.com/matoushavlena) |
 | Lukáš Janeček | [xjacka](https://github.com/xjacka) |
-| Ian Molloy | [imolloy](https://github.com/imolloy) |
 | Anton Puzanov | [antonpibm](https://github.com/antonpibm) |
 | Jenna Winkler | [jenna-winkler](https://github.com/jenna-winkler) |
 
