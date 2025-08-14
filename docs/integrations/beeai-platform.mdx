@@ -54,7 +54,7 @@ Here's a simple example that uses the built-in `chat` agent:
 	    agents = await BeeAIPlatformAgent.from_platform(url="http://127.0.0.1:8333", memory=UnconstrainedMemory())
 	    agent_name = "Granite chat agent"
 	    try:
-	        agent = next(agent for agent in agents if agent._agent.name == agent_name)
+	        agent = next(agent for agent in agents if agent.name == agent_name)
 	    except StopIteration:
 	        raise ValueError(f"Agent with name `{agent_name}` not found") from None
 	
@@ -208,9 +208,10 @@ The `BeeAIPlatformServer` class exposes agents built with the BeeAI Framework as
 
 	```py Python
 	from beeai_framework.adapters.beeai_platform.serve.server import BeeAIPlatformServer
-	from beeai_framework.agents.tool_calling import ToolCallingAgent
+	from beeai_framework.agents.experimental import RequirementAgent
 	from beeai_framework.backend import ChatModel
 	from beeai_framework.memory import UnconstrainedMemory
+	from beeai_framework.middleware.trajectory import GlobalTrajectoryMiddleware
 	from beeai_framework.tools.search.duckduckgo import DuckDuckGoSearchTool
 	from beeai_framework.tools.weather import OpenMeteoTool
 	
@@ -224,11 +225,11 @@ The `BeeAIPlatformServer` class exposes agents built with the BeeAI Framework as
 	
 	def main() -> None:
 	    llm = ChatModel.from_name("ollama:granite3.3:8b")
-	    agent = ToolCallingAgent(
+	    agent = RequirementAgent(
 	        llm=llm,
 	        tools=[DuckDuckGoSearchTool(), OpenMeteoTool()],
 	        memory=UnconstrainedMemory(),
-	        # middlewares=[GlobalTrajectoryMiddleware()],
+	        middlewares=[GlobalTrajectoryMiddleware()],
 	    )
 	
 	    # Runs HTTP server that registers to BeeAI platform

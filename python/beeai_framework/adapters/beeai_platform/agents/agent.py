@@ -39,6 +39,10 @@ class BeeAIPlatformAgent(BaseAgent[BeeAIPlatformAgentRunOutput]):
         super().__init__()
         self._agent = A2AAgent(url=url, agent_card=agent_card, memory=memory)
 
+    @property
+    def name(self) -> str:
+        return self._agent.name
+
     def run(
         self,
         input: str | AnyMessage | a2a_types.Message,
@@ -91,7 +95,7 @@ class BeeAIPlatformAgent(BaseAgent[BeeAIPlatformAgentRunOutput]):
                 BeeAIPlatformAgent(
                     agent_card=a2a_types.AgentCard(**provider["agent_card"]), memory=await memory.clone()
                 )
-                for provider in response.json()["items"]
+                for provider in response.json().get("items", [])
             ]
 
     def _create_emitter(self) -> Emitter:

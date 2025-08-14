@@ -132,8 +132,7 @@ def _react_agent_factory(
             match (data, event.name):
                 case (ReActAgentUpdateEvent(), "partial_update"):
                     update = data.update.value
-                    if not isinstance(update, str):
-                        update = update.get_text_content()
+                    update = update.get_text_content() if hasattr(update, "get_text_content") else str(update)
                     match data.update.key:
                         case "thought" | "tool_name" | "tool_input" | "tool_output":
                             yield trajectory.trajectory_metadata(title=data.update.key, content=update)
