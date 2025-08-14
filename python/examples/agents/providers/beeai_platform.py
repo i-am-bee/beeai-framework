@@ -11,7 +11,13 @@ from examples.helpers.io import ConsoleReader
 async def main() -> None:
     reader = ConsoleReader()
 
-    agent = BeeAIPlatformAgent(agent_name="chat", url="http://127.0.0.1:8333/api/v1/acp/", memory=UnconstrainedMemory())
+    agents = await BeeAIPlatformAgent.from_platform(url="http://127.0.0.1:8333", memory=UnconstrainedMemory())
+    agent_name = "Granite chat agent"
+    try:
+        agent = next(agent for agent in agents if agent.name == agent_name)
+    except StopIteration:
+        raise ValueError(f"Agent with name `{agent_name}` not found") from None
+
     for prompt in reader:
         # Run the agent and observe events
         response = await agent.run(prompt).on(

@@ -106,7 +106,7 @@ class A2AAgent(BaseAgent[A2AAgentRunOutput]):
                         "update", A2AAgentUpdateEvent(value=event.model_dump(mode="json", exclude_none=True))
                     )
 
-                # check if we received a any response
+                # check if we received any response
                 if last_event_with_data is None:
                     raise AgentError("No result received from agent.")
 
@@ -188,6 +188,17 @@ class A2AAgent(BaseAgent[A2AAgentRunOutput]):
             creator=self,
             events=a2a_agent_event_types,
         )
+
+    async def check_agent_exists(self) -> None:
+        try:
+            async with httpx.AsyncClient() as httpx_client:
+                agent: a2a_client.A2AClient = await a2a_client.A2AClient.get_client_from_agent_card_url(
+                    httpx_client, self._url
+                )
+                if not agent:
+                    raise AgentError(f"Agent {self._name} does not exist.")
+        except Exception as e:
+            raise AgentError("Can't connect to ACP agent.", cause=e)
 
     @property
     def memory(self) -> BaseMemory:

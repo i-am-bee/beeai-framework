@@ -10,8 +10,7 @@ from pydantic import BaseModel, InstanceOf
 from beeai_framework.adapters.acp import ACPServer
 from beeai_framework.adapters.acp.serve._utils import acp_msgs_to_framework_msgs
 from beeai_framework.adapters.acp.serve.agent import ACPServerAgent
-from beeai_framework.adapters.acp.serve.server import to_acp_agent_metadata
-from beeai_framework.adapters.beeai_platform.serve.server import BeeAIPlatformServerMetadata
+from beeai_framework.adapters.acp.serve.server import ACPServerMetadata, to_acp_agent_metadata
 from beeai_framework.agents.base import BaseAgent
 from beeai_framework.backend.message import AnyMessage, AssistantMessage
 from beeai_framework.context import Run, RunContext
@@ -54,7 +53,7 @@ class EchoAgent(BaseAgent[EchoAgentRunOutput]):
 
 def main() -> None:
     # Create a custom agent factory for the EchoAgent
-    def agent_factory(agent: EchoAgent, *, metadata: BeeAIPlatformServerMetadata | None = None) -> ACPServerAgent:
+    def agent_factory(agent: EchoAgent, *, metadata: ACPServerMetadata | None = None) -> ACPServerAgent:
         """Factory method to create an ACPAgent from a EchoAgent."""
         if metadata is None:
             metadata = {}
@@ -79,8 +78,7 @@ def main() -> None:
     # Create an instance of the EchoAgent with UnconstrainedMemory
     agent = EchoAgent(memory=UnconstrainedMemory())
     # Register the agent with the ACP server and run the HTTP server
-    # Enamble self-registration for the agent to BeeAI platform
-    ACPServer(config={"self_registration": True}).register(agent, name="echo_agent").serve()
+    ACPServer().register(agent, name="echo_agent").serve()
 
 
 if __name__ == "__main__":
