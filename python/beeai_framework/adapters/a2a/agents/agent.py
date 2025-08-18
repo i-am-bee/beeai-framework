@@ -69,6 +69,63 @@ class A2AAgent(BaseAgent[A2AAgentRunOutput]):
     def name(self) -> str:
         return self._name
 
+    def run(
+        self,
+        input: str | AnyMessage | a2a_types.Message,
+        *,
+        context_id: str | None = None,
+        task_id: str | None = None,
+        signal: AbortSignal | None = None,
+        clear_context: bool = False,
+    ) -> Run[A2AAgentRunOutput]:
+        self._context_id = context_id or self._context_id
+        self._task_id = task_id
+        if clear_context:
+            self._context_id = None
+            self._reference_task_ids.clear()
+
+        async def handler(context: RunContext) -> A2AAgentRunOutput:
+            async with httpx.AsyncClient() as httpx_client:
+                client: a2a_client.A2AClient = await a2a_client.A2AClient.get_client_from_agent_card_url(
+                    httpx_client, self._url
+                )
+
+                if not self._agent_card:
+                    card_resolver = a2a_client.A2ACardResolver(httpx_client, self._url)
+                    self._agent_card = await card_resolver.get_agent_card()
+
+                if self._agent_card.capabilities.streaming:
+                    return await self._handle_streaming_request(client=client, input=input, context=context)
+                else:
+                    return await self._handle_request(client=client, input=input, context=context)
+
+        return self._to_run(
+            handler,
+            signal=signal,
+            run_params={
+                "prompt": input,
+                "signal": signal,
+            },
+        )
+
+    async def check_agent_exists(self) -> None:
+        try:
+            async with httpx.AsyncClient() as httpx_client:
+                agent: a2a_client.A2AClient = await a2a_client.A2AClient.get_client_from_agent_card_url(
+                    httpx_client, self._url
+                )
+                if not agent:
+                    raise AgentError(f"Agent {self._name} does not exist.")
+        except Exception as e:
+            raise AgentError("Can't connect to ACP agent.", cause=e)
+
+    def _create_emitter(self) -> Emitter:
+        return Emitter.root().child(
+            namespace=["a2a", "agent", to_safe_word(self._name)],
+            creator=self,
+            events=a2a_agent_event_types,
+        )
+
     async def _handle_request(
         self, *, client: a2a_client.A2AClient, input: str | AnyMessage | a2a_types.Message, context: RunContext
     ) -> A2AAgentRunOutput:
@@ -91,14 +148,7 @@ class A2AAgent(BaseAgent[A2AAgentRunOutput]):
         # process success
         elif isinstance(result.root, a2a_types.SendMessageSuccessResponse):
             response = result.root.result
-            self._context_id = response.context_id
-            self._task_id = response.id if isinstance(response, a2a_types.Task) else response.task_id
-            if self._task_id and self._task_id not in self._reference_task_ids:
-                self._reference_task_ids.append(self._task_id)
-
-            # add input message to memory
-            input_message: AnyMessage = self._convert_message_to_framework_message(input)
-            await self.memory.add(input_message)
+            await self._update_context_and_add_input_to_memory(response, input)
 
             # retrieve the assistant's response
             if isinstance(response, a2a_types.Message):
@@ -177,14 +227,7 @@ class A2AAgent(BaseAgent[A2AAgentRunOutput]):
         # process success
         elif isinstance(last_event_with_data.root, a2a_types.SendStreamingMessageSuccessResponse):
             response = last_event_with_data.root.result
-            self._context_id = response.context_id
-            self._task_id = response.id if isinstance(response, a2a_types.Task) else response.task_id
-            if self._task_id and self._task_id not in self._reference_task_ids:
-                self._reference_task_ids.append(self._task_id)
-
-            # add input message to memory
-            input_message: AnyMessage = self._convert_message_to_framework_message(input)
-            await self.memory.add(input_message)
+            await self._update_context_and_add_input_to_memory(response, input)
 
             # retrieve the assistant's response
             if len(streamed_artifacts) > 0:
@@ -219,62 +262,21 @@ class A2AAgent(BaseAgent[A2AAgentRunOutput]):
         else:
             return A2AAgentRunOutput(result=AssistantMessage("No response from agent."), event=last_event_with_data)
 
-    def run(
+    async def _update_context_and_add_input_to_memory(
         self,
+        response: a2a_types.Task
+        | a2a_types.Message
+        | a2a_types.TaskStatusUpdateEvent
+        | a2a_types.TaskArtifactUpdateEvent,
         input: str | AnyMessage | a2a_types.Message,
-        *,
-        context_id: str | None = None,
-        task_id: str | None = None,
-        signal: AbortSignal | None = None,
-        clear_context: bool = False,
-    ) -> Run[A2AAgentRunOutput]:
-        self._context_id = context_id or self._context_id
-        self._task_id = task_id
-        if clear_context:
-            self._context_id = None
-            self._reference_task_ids.clear()
+    ) -> None:
+        self._context_id = response.context_id
+        self._task_id = response.id if isinstance(response, a2a_types.Task) else response.task_id
+        if self._task_id and self._task_id not in self._reference_task_ids:
+            self._reference_task_ids.append(self._task_id)
 
-        async def handler(context: RunContext) -> A2AAgentRunOutput:
-            async with httpx.AsyncClient() as httpx_client:
-                client: a2a_client.A2AClient = await a2a_client.A2AClient.get_client_from_agent_card_url(
-                    httpx_client, self._url
-                )
-
-                if not self._agent_card:
-                    card_resolver = a2a_client.A2ACardResolver(httpx_client, self._url)
-                    self._agent_card = await card_resolver.get_agent_card()
-
-                if self._agent_card.capabilities.streaming:
-                    return await self._handle_streaming_request(client=client, input=input, context=context)
-                else:
-                    return await self._handle_request(client=client, input=input, context=context)
-
-        return self._to_run(
-            handler,
-            signal=signal,
-            run_params={
-                "prompt": input,
-                "signal": signal,
-            },
-        )
-
-    def _create_emitter(self) -> Emitter:
-        return Emitter.root().child(
-            namespace=["a2a", "agent", to_safe_word(self._name)],
-            creator=self,
-            events=a2a_agent_event_types,
-        )
-
-    async def check_agent_exists(self) -> None:
-        try:
-            async with httpx.AsyncClient() as httpx_client:
-                agent: a2a_client.A2AClient = await a2a_client.A2AClient.get_client_from_agent_card_url(
-                    httpx_client, self._url
-                )
-                if not agent:
-                    raise AgentError(f"Agent {self._name} does not exist.")
-        except Exception as e:
-            raise AgentError("Can't connect to ACP agent.", cause=e)
+        input_message = self._convert_message_to_framework_message(input)
+        await self.memory.add(input_message)
 
     @property
     def memory(self) -> BaseMemory:
