@@ -22,7 +22,7 @@ except ModuleNotFoundError as e:
 
 def convert_a2a_to_framework_message(input: a2a_types.Message | a2a_types.Artifact) -> AnyMessage:
     if all(isinstance(part.root, a2a_types.TextPart) for part in input.parts):
-        content = str(reduce(lambda x, y: x + y, input.parts).root.text)  # type: ignore
+        content = str(reduce(lambda x, y: x + y.root.text, input.parts, ""))
         if isinstance(input, a2a_types.Artifact) or input.role == a2a_types.Role.agent:
             return AssistantMessage(
                 content,
