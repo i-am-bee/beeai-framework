@@ -14,8 +14,7 @@
         "group": "Introduction",
         "pages": [
           "introduction/welcome",
-          "introduction/quickstart",
-          "modules/observability"
+          "introduction/quickstart"
         ]
       },
       {
@@ -35,7 +34,8 @@
           "modules/cache",
           "modules/logger",
           "modules/errors",
-          "modules/events"
+          "modules/events",
+          "modules/observability"
         ]
       },
       {
