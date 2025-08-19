@@ -9,6 +9,6 @@
   "license": "Apache-2.0",
   "devDependencies": {
     "embedme": "^1.22.1",
-    "mintlify": "^4.2.24"
+    "mintlify": "^4.2.75"
   }
 }
