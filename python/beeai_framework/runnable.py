@@ -6,7 +6,7 @@ from abc import ABC, abstractmethod
 from collections.abc import Awaitable, Callable
 from typing import Any, TypedDict, Unpack
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 from typing_extensions import ParamSpec, TypeVar
 
 from beeai_framework.backend import AnyMessage
@@ -37,7 +37,7 @@ class RunnableOutput(BaseModel):
     output: list[AnyMessage]
     """The runnable output"""
 
-    context: dict[str, Any] | None = None
+    context: dict[str, Any] = Field(default_factory=lambda: {})
     """Context can be used to return additional data by runnable"""
 
 

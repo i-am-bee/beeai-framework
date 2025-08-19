@@ -12,7 +12,7 @@ from beeai_framework.tools.search.wikipedia import (
 async def main() -> None:
     wikipedia_client = WikipediaTool({"full_text": True})
     tool_input = WikipediaToolInput(query="bee")
-    result = await wikipedia_client.run(tool_input)
+    result = await wikipedia_client.run(tool_input).on("*.*", lambda data, event: print(event.path, event.trace.id))
     print(result.get_text_content())
 
 
