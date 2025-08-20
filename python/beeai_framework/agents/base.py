@@ -4,7 +4,7 @@
 from abc import abstractmethod
 from collections.abc import Awaitable, Callable
 from functools import cached_property
-from typing import Any, Generic, Unpack
+from typing import Any, Unpack
 
 from pydantic import BaseModel
 from typing_extensions import TypeVar
@@ -59,7 +59,7 @@ class AgentOutput(RunnableOutput):
 R = TypeVar("R", default=AgentOutput, bound=AgentOutput)
 
 
-class BaseAgent(Generic[R], Runnable[R]):
+class BaseAgent(Runnable[R]):
     """An abstract agent."""
 
     def __init__(self, middlewares: list[RunMiddlewareType] | None = None) -> None:
