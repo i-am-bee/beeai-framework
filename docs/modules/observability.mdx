@@ -1,32 +1,30 @@
 ---
 title: "Observability"
-description: "Instrument BeeAI Framework with OpenInference to generate traces and metrics"
+description: "Monitor and debug your BeeAI Framework applications with OpenInference instrumentation"
 icon: "chart-line"
 ---
 
 ## Overview
 
-BeeAI Framework supports OpenInference instrumentation, allowing you to observe your agents, tools, workflows, and model calls with industry-standard telemetry.
+The BeeAI Framework provides comprehensive observability through OpenInference instrumentation, enabling you to trace and monitor your AI applications with industry-standard telemetry. This allows you to debug issues, optimize performance, and understand how your agents, tools, and workflows are performing in production.
 
 <Note>
-	Supported in Python.
+	Currently supported in Python only.
 </Note>
 
----
+## Quickstart
 
-## Getting started
+### 1. Install the package
 
-### 1. Install the OpenInference BeeAI instrumentation
+This package provides the OpenInference instrumentor specifically designed for the BeeAI Framework.
 
 ```bash
 pip install openinference-instrumentation-beeai
 ```
 
-> The package provides an OpenInference instrumentor specifically for the BeeAI Framework.
+### 2. Set up observability
 
-### 2. Configure observability (OpenTelemetry setup)
-
-Use OpenTelemetry to configure how spans are created and exported. The following example configures an OTLP HTTP exporter and sets up the tracer provider, then enables the BeeAI instrumentor. The example endpoint points to Arize Phoenix running locally.
+Configure OpenTelemetry to create and export spans. This example sets up an OTLP HTTP exporter, a tracer provider, and the BeeAI instrumentor, with the endpoint pointing to a local Arize Phoenix instance.
 
 ```py
 from openinference.instrumentation.beeai import BeeAIInstrumentor
@@ -54,33 +52,79 @@ def setup_observability() -> None:
 	For Arize Phoenix, set `OTEL_EXPORTER_OTLP_TRACES_ENDPOINT` to `http://localhost:6006/v1/traces`.
 </Tip>
 
-### 3. Enable instrumentation in your app
+### 3. Enable instrumentation
 
-Call the setup function before running any BeeAI Framework code.
+Call the setup function **before** running any BeeAI Framework code:
 
 ```py
 setup_observability()
 ```
 
----
+The setup function must be called before importing and using any BeeAI Framework components to ensure all operations are properly instrumented.
 
-## What gets instrumented
+## What Gets Instrumented
 
-When instrumentation is enabled, BeeAI emits spans and attributes for core runtime operations, such as:
+When instrumentation is enabled, BeeAI emits spans and attributes for core runtime operations.
 
-- Agents
-- Tools
-- Chat models (including streaming events)
-- Embedding models
-- Workflows
+### Agents
 
-This provides end-to-end visibility across your BeeAI applications with minimal code changes.
+- Agent execution start/stop times
+- Input prompts and output responses
+- Tool usage within agent workflows
+- Memory operations and state changes
 
----
+### Tools
 
-## Popular backends
+- Tool invocation details
+- Input parameters and return values
+- Execution time and success/failure status
+- Error details when tools fail
 
-- Arize Phoenix (https://github.com/Arize-ai/phoenix)
-- LangFuse (https://langfuse.com/integrations/native/opentelemetry#opentelemetry-native-langfuse-sdk-v3)
-- LangSmith (https://docs.smith.langchain.com/observability/how_to_guides/trace_with_opentelemetry)
-- Any other backend supporting OpenTelemetry / OpenInference
+### Chat Models
+
+- Model inference requests (including streaming)
+- Token usage statistics
+- Model parameters (temperature, max tokens, etc.)
+- Response timing and latency
+
+### Embedding Models
+
+- Text embedding requests
+- Input text and embedding dimensions
+- Processing time and batch sizes
+
+### Workflows
+
+- Workflow step execution
+- State transitions and data flow
+- Step dependencies and execution order
+
+## Observability Backends
+
+### Arize Phoenix
+
+Open-source observability for LLM applications.
+
+<Info>
+**Documentation:** [Arize Phoenix](https://github.com/Arize-ai/phoenix)
+</Info>
+
+### LangFuse
+
+Production-ready LLMOps platform with advanced analytics.
+
+<Info>
+**Documentation:** [LangFuse OpenTelemetry Integration](https://langfuse.com/integrations/native/opentelemetry#opentelemetry-native-langfuse-sdk-v3)
+</Info>
+
+### LangSmith
+
+Comprehensive LLM development platform by LangChain.
+
+<Info>
+**Documentation:** [LangSmith OpenTelemetry Guide](https://docs.smith.langchain.com/observability/how_to_guides/trace_with_opentelemetry)
+</Info>
+
+### Other Platforms
+
+Any backend supporting OpenTelemetry/OpenInference standards.
