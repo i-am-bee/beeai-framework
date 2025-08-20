@@ -1,19 +1,21 @@
 # Copyright 2025 © BeeAI a Series of LF Projects, LLC
 # SPDX-License-Identifier: Apache-2.0
 
+from typing import Unpack
+
 from pydantic import BaseModel, InstanceOf
 
-from beeai_framework.agents import AgentExecutionConfig, AgentMeta, BaseAgent
+from beeai_framework.agents import AgentMeta, AgentOptions, AgentOutput, BaseAgent
 from beeai_framework.backend import AnyMessage, AssistantMessage, ChatModel, SystemMessage, UserMessage
 from beeai_framework.backend.document_processor import DocumentProcessor
 from beeai_framework.backend.types import DocumentWithScore
 from beeai_framework.backend.vector_store import VectorStore
-from beeai_framework.context import Run, RunContext
+from beeai_framework.context import RunContext
 from beeai_framework.emitter import Emitter
 from beeai_framework.errors import FrameworkError
 from beeai_framework.memory import BaseMemory
 from beeai_framework.memory.unconstrained_memory import UnconstrainedMemory
-from beeai_framework.utils.cancellation import AbortSignal
+from beeai_framework.runnable import runnable_entry
 
 
 class RagAgentRunInput(BaseModel):
@@ -24,7 +26,7 @@ class RAGAgentRunOutput(BaseModel):
     message: InstanceOf[AnyMessage]
 
 
-class RAGAgent(BaseAgent[RAGAgentRunOutput]):
+class RAGAgent(BaseAgent):
     def __init__(
         self,
         *,
@@ -49,23 +51,31 @@ class RAGAgent(BaseAgent[RAGAgentRunOutput]):
             creator=self,
         )
 
-    def run(
-        self,
-        prompt: RagAgentRunInput,
-        execution: AgentExecutionConfig | None = None,
-        signal: AbortSignal | None = None,
-    ) -> Run[RAGAgentRunOutput]:
-        async def handler(context: RunContext) -> RAGAgentRunOutput:
-            await self.memory.add(prompt.message)
-            query = prompt.message.text
+    @runnable_entry
+    async def run(self, input: str | list[AnyMessage], /, **kwargs: Unpack[AgentOptions]) -> AgentOutput:
+        """Execute the agent.
+
+        Args:
+            input: The input to the agent (if list of messages, uses the last message as input)
+            total_max_retries: Maximum number of model retries.
+            signal: The agent abort signal
+            context: A dictionary that can be used to pass additional context to the agent
+
+        Returns:
+            The agent output.
+        """
+        text_input = input if isinstance(input, str) else (input[-1].text if input else "")
+
+        async def handler(context: RunContext) -> AgentOutput:
+            await self.memory.add(UserMessage(content=text_input))
 
             try:
-                retrieved_docs = await self.vector_store.search(query, k=self.number_of_retrieved_documents)
+                retrieved_docs = await self.vector_store.search(text_input, k=self.number_of_retrieved_documents)
 
                 # Apply re-ranking
                 if self.reranker:
                     retrieved_docs: list[DocumentWithScore] = await self.reranker.postprocess_documents(  # type: ignore[no-redef]
-                        retrieved_docs, query=query
+                        retrieved_docs, query=text_input
                     )
 
                 # Extract documents context
@@ -81,7 +91,7 @@ class RAGAgent(BaseAgent[RAGAgentRunOutput]):
                 ]
                 response = await self.model.create(
                     messages=messages,
-                    max_retries=execution.total_max_retries if execution else None,
+                    max_retries=kwargs.get("total_max_retries"),
                     abort_signal=context.signal,
                 )
 
@@ -92,9 +102,9 @@ class RAGAgent(BaseAgent[RAGAgentRunOutput]):
 
             result = response.messages[-1]
             await self.memory.add(result)
-            return RAGAgentRunOutput(message=result)
+            return AgentOutput(output=[result])
 
-        return self._to_run(handler, signal=signal, run_params={"input": prompt, "execution": execution})
+        return await handler(RunContext.get())
 
     @property
     def memory(self) -> BaseMemory:

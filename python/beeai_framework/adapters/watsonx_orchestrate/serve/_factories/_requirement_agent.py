@@ -25,8 +25,8 @@ class WatsonxOrchestrateServerRequirementAgent(WatsonxOrchestrateServerAgent[Req
         return self._agent._llm.model_id
 
     async def _run(self) -> AssistantMessage:
-        response = await self._agent.run(prompt=None)
-        return response.answer
+        response = await self._agent.run(None)  # type: ignore # Where do we get the agent input? From memory?
+        return response.message
 
     async def _stream(self, emit: WatsonxOrchestrateServerAgentEmitFn) -> None:
         async def on_tool_success(data: ToolSuccessEvent, meta: EventMeta) -> None:
@@ -76,7 +76,7 @@ class WatsonxOrchestrateServerRequirementAgent(WatsonxOrchestrateServerAgent[Req
                 )
 
         await (
-            self._agent.run(prompt=None)
+            self._agent.run(None)  # type: ignore # Where do we get the agent input? From memory?
             .on(
                 lambda event: isinstance(event.creator, Tool) and event.name == "start",
                 on_tool_start,

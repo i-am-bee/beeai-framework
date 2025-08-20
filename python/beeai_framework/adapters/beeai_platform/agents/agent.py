@@ -1,5 +1,6 @@
 # Copyright 2025 © BeeAI a Series of LF Projects, LLC
 # SPDX-License-Identifier: Apache-2.0
+from typing import Unpack
 
 try:
     from beeai_framework.adapters.acp.agents.agent import ACPAgent
@@ -20,15 +21,13 @@ from beeai_framework.adapters.beeai_platform.agents.events import (
 from beeai_framework.adapters.beeai_platform.agents.types import (
     BeeAIPlatformAgentRunOutput,
 )
-from beeai_framework.agents.base import BaseAgent
-from beeai_framework.agents.errors import AgentError
-from beeai_framework.backend.message import (
-    AnyMessage,
-)
-from beeai_framework.context import Run, RunContext
+from beeai_framework.agents import AgentError, AgentOptions, BaseAgent
+from beeai_framework.backend.message import AnyMessage
+from beeai_framework.context import RunContext
 from beeai_framework.emitter import Emitter
 from beeai_framework.emitter.emitter import EventMeta
 from beeai_framework.memory import BaseMemory
+from beeai_framework.runnable import runnable_entry
 from beeai_framework.utils import AbortSignal
 from beeai_framework.utils.strings import to_safe_word
 
@@ -38,12 +37,10 @@ class BeeAIPlatformAgent(BaseAgent[BeeAIPlatformAgentRunOutput]):
         super().__init__()
         self._agent = ACPAgent(agent_name=agent_name, url=url, memory=memory)
 
-    def run(
-        self,
-        input: str | AnyMessage | list[str] | list[AnyMessage],
-        *,
-        signal: AbortSignal | None = None,
-    ) -> Run[BeeAIPlatformAgentRunOutput]:
+    @runnable_entry
+    async def run(
+        self, input: str | AnyMessage | list[str] | list[AnyMessage], /, **kwargs: Unpack[AgentOptions]
+    ) -> BeeAIPlatformAgentRunOutput:
         async def handler(context: RunContext) -> BeeAIPlatformAgentRunOutput:
             async def update_event(data: ACPAgentUpdateEvent, event: EventMeta) -> None:
                 await context.emitter.emit(
@@ -58,19 +55,14 @@ class BeeAIPlatformAgent(BaseAgent[BeeAIPlatformAgentRunOutput]):
                 )
 
             response = await (
-                self._agent.run(input=input, signal=signal).on("update", update_event).on("error", error_event)
+                self._agent.run(input, signal=kwargs.get("signal", AbortSignal()))
+                .on("update", update_event)
+                .on("error", error_event)
             )
 
-            return BeeAIPlatformAgentRunOutput(result=response.result, event=response.event)
+            return BeeAIPlatformAgentRunOutput(output=response.output, event=response.event)
 
-        return self._to_run(
-            handler,
-            signal=signal,
-            run_params={
-                "prompt": input,
-                "signal": signal,
-            },
-        )
+        return await handler(RunContext.get())
 
     async def check_agent_exists(
         self,

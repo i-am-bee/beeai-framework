@@ -51,8 +51,8 @@ class HandoffTool(Tool[HandoffSchema, ToolRunOptions, StringToolOutput]):
             await target.memory.add_many(memory.messages[:-1])
         else:
             await target.memory.add_many(memory.messages)
-        response = await target.run(prompt=input.task)
-        return StringToolOutput(response.result.text)
+        response = await target.run(input.task)
+        return StringToolOutput(response.message.text)
 
     def _create_emitter(self) -> Emitter:
         return Emitter.root().child(

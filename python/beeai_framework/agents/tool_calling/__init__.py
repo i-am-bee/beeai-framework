@@ -3,11 +3,11 @@
 
 from beeai_framework.agents.tool_calling.agent import ToolCallingAgent
 from beeai_framework.agents.tool_calling.events import ToolCallingAgentStartEvent, ToolCallingAgentSuccessEvent
-from beeai_framework.agents.tool_calling.types import ToolCallingAgentRunOutput, ToolCallingAgentTemplateFactory
+from beeai_framework.agents.tool_calling.types import ToolCallingAgentOutput, ToolCallingAgentTemplateFactory
 
 __all__ = [
     "ToolCallingAgent",
-    "ToolCallingAgentRunOutput",
+    "ToolCallingAgentOutput",
     "ToolCallingAgentStartEvent",
     "ToolCallingAgentSuccessEvent",
     "ToolCallingAgentTemplateFactory",

@@ -1,6 +1,7 @@
 # Copyright 2025 © BeeAI a Series of LF Projects, LLC
 # SPDX-License-Identifier: Apache-2.0
 
+
 from beeai_framework.adapters.watsonx_orchestrate.serve.agent import (
     WatsonxOrchestrateServerAgent,
     WatsonxOrchestrateServerAgentEmitFn,
@@ -18,11 +19,11 @@ class WatsonxOrchestrateServerReActAgent(WatsonxOrchestrateServerAgent[ReActAgen
         return self._agent._input.llm.model_id
 
     async def _run(self) -> AssistantMessage:
-        response = await self._agent.run(prompt=None).middleware(GlobalTrajectoryMiddleware())
-        return response.result
+        response = await self._agent.run(prompt=None).middleware(GlobalTrajectoryMiddleware())  # type: ignore # Where do we get the agent input? From memory?
+        return response.message
 
     async def _stream(self, emit: WatsonxOrchestrateServerAgentEmitFn) -> None:
-        async for data, event in self._agent.run():
+        async for data, event in self._agent.run():  # type: ignore # Where do we get the agent input? From memory?
             match (data, event.name):
                 case (ReActAgentUpdateEvent(), "partial_update"):
                     update = data.update.value

@@ -8,9 +8,8 @@ from typing import Any, Self, overload
 
 from pydantic import BaseModel, InstanceOf
 
-from beeai_framework.agents.base import AnyAgent
-from beeai_framework.agents.experimental import RequirementAgent, RequirementAgentRunOutput
-from beeai_framework.agents.tool_calling import ToolCallingAgentRunOutput
+from beeai_framework.agents import AnyAgent
+from beeai_framework.agents.experimental import RequirementAgent
 from beeai_framework.agents.tool_calling.agent import ToolCallingAgent
 from beeai_framework.agents.tool_calling.utils import ToolCallCheckerConfig
 from beeai_framework.agents.types import (
@@ -24,7 +23,7 @@ from beeai_framework.memory.base_memory import BaseMemory
 from beeai_framework.memory.readonly_memory import ReadOnlyMemory
 from beeai_framework.memory.unconstrained_memory import UnconstrainedMemory
 from beeai_framework.tools.tool import AnyTool
-from beeai_framework.utils.dicts import exclude_none
+from beeai_framework.utils.dicts import exclude_keys, exclude_none
 from beeai_framework.utils.lists import remove_falsy
 from beeai_framework.workflows.types import WorkflowRun
 from beeai_framework.workflows.workflow import Workflow
@@ -34,16 +33,16 @@ AgentWorkflowAgentType = ToolCallingAgent | RequirementAgent
 
 
 class AgentWorkflowInput(BaseModel):
-    prompt: str | None = None
-    context: str | None = None
+    input: str
+    backstory: str | None = None
     expected_output: str | type[BaseModel] | None = None
 
     @classmethod
     def from_message(cls, message: AnyMessage) -> Self:
-        return cls(prompt=message.text)
+        return cls(input=message.text)
 
     def to_message(self) -> AssistantMessage:
-        text = "\n\nContext:".join(remove_falsy([self.prompt or "", self.context or ""]))
+        text = "\n\nContext:".join(remove_falsy([self.input or "", self.backstory or ""]))
         return AssistantMessage(text)
 
 
@@ -112,6 +111,13 @@ class AgentWorkflow:
         if instance is None and llm is None:
             raise ValueError("Either instance or the agent configuration must be provided!")
 
+        if not execution:
+            execution = AgentExecutionConfig(
+                max_retries_per_step=3,
+                total_max_retries=3,
+                max_iterations=20,
+            )
+
         async def create_agent(memory: BaseMemory) -> ToolCallingAgent | RequirementAgent:
             if instance is not None:
                 new_instance = await instance.clone()
@@ -143,19 +149,19 @@ class AgentWorkflow:
             memory = UnconstrainedMemory()
             await memory.add_many(state.new_messages)
 
-            run_input = state.inputs.pop(0).model_copy() if state.inputs else AgentWorkflowInput()
+            last_message = memory.messages[-1].text if memory.messages else ""
+            run_input = state.inputs.pop(0).model_copy() if state.inputs else AgentWorkflowInput(input=last_message)
             state.current_input = run_input
             agent = await create_agent(memory.as_read_only())
-            run_output: ToolCallingAgentRunOutput | RequirementAgentRunOutput = await agent.run(
-                **run_input.model_dump(), execution=execution
+            run_output = await agent.run(
+                run_input.input, **exclude_keys(run_input.model_dump(), {"input"}), **execution.model_dump()
             )
 
-            state.final_answer = (
-                run_output.result.text if isinstance(run_output, ToolCallingAgentRunOutput) else run_output.answer.text
-            )
-            if run_input.prompt:
-                state.new_messages.append(UserMessage(run_input.prompt))
-            state.new_messages.extend(run_output.memory.messages[-2:])
+            state.final_answer = run_output.message.text
+            if run_input.input:
+                state.new_messages.append(UserMessage(run_input.input))
+            _memory = run_output.context.get("memory") if run_output.context else None
+            state.new_messages.extend(_memory.messages[-2:] if _memory else [])
 
         self.workflow.add_step(name or f"Agent{''.join(random.choice(string.ascii_letters) for _ in range(4))}", step)
         return self

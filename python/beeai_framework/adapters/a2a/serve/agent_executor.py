@@ -1,7 +1,7 @@
 # Copyright 2025 © BeeAI a Series of LF Projects, LLC
 # SPDX-License-Identifier: Apache-2.0
 
-from typing_extensions import TypeVar, override
+from typing_extensions import override
 
 from beeai_framework.adapters.a2a.agents._utils import convert_a2a_to_framework_message
 from beeai_framework.agents.errors import AgentError
@@ -30,13 +30,11 @@ from beeai_framework.backend.message import (
 from beeai_framework.logger import Logger
 from beeai_framework.utils.lists import find_index
 
-AnyAgentLike = TypeVar("AnyAgentLike", bound=AnyAgent, default=AnyAgent)
-
 logger = Logger(__name__)
 
 
 class BaseA2AAgentExecutor(a2a_agent_execution.AgentExecutor):
-    def __init__(self, agent: AnyAgentLike, agent_card: a2a_types.AgentCard, *, memory_manager: MemoryManager) -> None:
+    def __init__(self, agent: AnyAgent, agent_card: a2a_types.AgentCard, *, memory_manager: MemoryManager) -> None:
         super().__init__()
         self._agent = agent
         self.agent_card = agent_card
@@ -78,11 +76,13 @@ class BaseA2AAgentExecutor(a2a_agent_execution.AgentExecutor):
 
         await updater.start_work()
         try:
-            response = await self._agent.run(signal=self._abort_controller.signal)
+            response = await self._agent.run(
+                [convert_a2a_to_framework_message(context.message)], signal=self._abort_controller.signal
+            )
 
             await updater.complete(
                 a2a_utils.new_agent_text_message(
-                    response.result.text,
+                    response.message.text,
                     context.context_id,
                     context.task_id,
                 )
@@ -123,7 +123,9 @@ class TollCallingAgentExecutor(BaseA2AAgentExecutor):
 
         last_msg: AnyMessage | None = None
         try:
-            async for data, _ in self._agent.run(signal=self._abort_controller.signal):
+            async for data, _ in self._agent.run(
+                [convert_a2a_to_framework_message(context.message)], signal=self._abort_controller.signal
+            ):
                 messages = data.state.memory.messages
                 if last_msg is None:
                     last_msg = messages[-1]
