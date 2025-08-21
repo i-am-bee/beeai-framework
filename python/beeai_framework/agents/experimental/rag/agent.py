@@ -64,47 +64,50 @@ class RAGAgent(BaseAgent):
         Returns:
             The agent output.
         """
+        if not input:
+            raise ValueError("Invalid input. The input must be a non-empty string or list of messages.")
         text_input = input if isinstance(input, str) else (input[-1].text if input else "")
 
-        async def handler(context: RunContext) -> AgentOutput:
-            await self.memory.add(UserMessage(content=text_input))
+        if isinstance(input, list):
+            await self.memory.add_many(input[:-1])
+        await self.memory.add(UserMessage(content=text_input))
 
-            try:
-                retrieved_docs = await self.vector_store.search(text_input, k=self.number_of_retrieved_documents)
+        context = RunContext.get()
 
-                # Apply re-ranking
-                if self.reranker:
-                    retrieved_docs: list[DocumentWithScore] = await self.reranker.postprocess_documents(  # type: ignore[no-redef]
-                        retrieved_docs, query=text_input
-                    )
+        try:
+            retrieved_docs = await self.vector_store.search(text_input, k=self.number_of_retrieved_documents)
 
-                # Extract documents context
-                docs_content = "\n\n".join(doc_with_score.document.content for doc_with_score in retrieved_docs)
-
-                # Place content in template
-                input_message = UserMessage(content=f"The context for replying to the query is:\n\n{docs_content}")
-
-                messages = [
-                    SystemMessage("You are a helpful agent, answer based only on the context."),
-                    *self.memory.messages,
-                    input_message,
-                ]
-                response = await self.model.create(
-                    messages=messages,
-                    max_retries=kwargs.get("total_max_retries"),
-                    abort_signal=context.signal,
+            # Apply re-ranking
+            if self.reranker:
+                retrieved_docs: list[DocumentWithScore] = await self.reranker.postprocess_documents(  # type: ignore[no-redef]
+                    retrieved_docs, query=text_input
                 )
 
-            except FrameworkError as error:
-                error_message = AssistantMessage(content=error.explain())
-                await self.memory.add(error_message)
-                raise error
+            # Extract documents context
+            docs_content = "\n\n".join(doc_with_score.document.content for doc_with_score in retrieved_docs)
 
-            result = response.messages[-1]
-            await self.memory.add(result)
-            return AgentOutput(output=[result])
+            # Place content in template
+            input_message = UserMessage(content=f"The context for replying to the query is:\n\n{docs_content}")
 
-        return await handler(RunContext.get())
+            messages = [
+                SystemMessage("You are a helpful agent, answer based only on the context."),
+                *self.memory.messages,
+                input_message,
+            ]
+            response = await self.model.create(
+                messages=messages,
+                max_retries=kwargs.get("total_max_retries"),
+                abort_signal=context.signal,
+            )
+
+        except FrameworkError as error:
+            error_message = AssistantMessage(content=error.explain())
+            await self.memory.add(error_message)
+            raise error
+
+        result = response.messages[-1]
+        await self.memory.add(result)
+        return AgentOutput(output=[result])
 
     @property
     def memory(self) -> BaseMemory:
