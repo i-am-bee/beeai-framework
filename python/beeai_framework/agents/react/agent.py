@@ -120,7 +120,9 @@ class ReActAgent(BaseAgent[ReActAgentOutput]):
         Returns:
             The agent output.
         """
-        text_input = input if isinstance(input, str) else (input[-1].text if input else "")
+        if not input:
+            raise ValueError("Invalid input. The input must be a non-empty string or list of messages.")
+
         run_config = AgentExecutionConfig(
             max_retries_per_step=kwargs.get("max_retries_per_step", 3),
             total_max_retries=kwargs.get("total_max_retries", 20),
@@ -136,7 +138,7 @@ class ReActAgent(BaseAgent[ReActAgentOutput]):
             ),
             run_context,
         )
-        await runner.init(ReActAgentRunInput(prompt=text_input))
+        await runner.init(ReActAgentRunInput(prompt=input))
 
         final_message: AssistantMessage | None = None
         while not final_message:
@@ -195,11 +197,12 @@ class ReActAgent(BaseAgent[ReActAgentOutput]):
                     ),
                 )
 
-        if text_input:
-            await self._input.memory.add(
-                UserMessage(content=text_input, meta=MessageMeta({"createdAt": run_context.created_at}))
-            )
-
+        _input = (
+            [UserMessage(content=input, meta=MessageMeta({"createdAt": run_context.created_at}))]
+            if isinstance(input, str)
+            else input
+        )
+        await self._input.memory.add_many(_input)
         await self._input.memory.add(final_message)
 
         return ReActAgentOutput(output=[final_message], iterations=runner.iterations, memory=runner.memory)

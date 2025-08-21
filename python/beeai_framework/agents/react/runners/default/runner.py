@@ -325,13 +325,15 @@ class DefaultRunner(BaseRunner):
             ]
         )
 
-        if memory.is_empty() or input.prompt:
-            created_at = datetime.datetime.now(tz=datetime.UTC)
-            content = (
-                self.templates.user.render(UserPromptTemplateInput(input=input.prompt, created_at=created_at))
-                if input.prompt
-                else self.templates.user_empty.render(UserEmptyPromptTemplateInput())
-            )
+        created_at = datetime.datetime.now(tz=datetime.UTC)
+        if input.prompt:
+            last_msg = input.prompt if isinstance(input.prompt, str) else input.prompt[-1].text
+            content = self.templates.user.render(UserPromptTemplateInput(input=last_msg, created_at=created_at))
+            if isinstance(input.prompt, list):
+                await memory.add_many(input.prompt[:-1])
+            await memory.add(UserMessage(content=content, meta={"createdAt": created_at}))
+        else:
+            content = self.templates.user_empty.render(UserEmptyPromptTemplateInput())
             await memory.add(UserMessage(content=content, meta={"createdAt": created_at}))
 
         return memory

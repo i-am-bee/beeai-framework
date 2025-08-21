@@ -4,7 +4,7 @@
 from collections.abc import Callable
 from typing import Annotated, Any, TypeAlias
 
-from pydantic import BaseModel, InstanceOf
+from pydantic import BaseModel, ConfigDict, InstanceOf
 
 from beeai_framework.agents import AgentOutput
 from beeai_framework.agents.react.runners.default.prompts import (
@@ -19,6 +19,7 @@ from beeai_framework.agents.react.runners.default.prompts import (
     UserPromptTemplateInput,
 )
 from beeai_framework.agents.types import AgentExecutionConfig, AgentMeta, BaseAgentRunOptions
+from beeai_framework.backend import AnyMessage
 from beeai_framework.backend.chat import ChatModel
 from beeai_framework.backend.types import ChatModelOutput
 from beeai_framework.memory.base_memory import BaseMemory
@@ -28,7 +29,8 @@ from beeai_framework.utils.strings import to_json
 
 
 class ReActAgentRunInput(BaseModel):
-    prompt: str | None = None
+    model_config = ConfigDict(arbitrary_types_allowed=True)
+    prompt: str | list[AnyMessage]
 
 
 class ReActAgentIterationMeta(BaseModel):
