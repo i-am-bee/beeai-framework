@@ -4,7 +4,7 @@
 import functools
 from abc import ABC, abstractmethod
 from collections.abc import Awaitable, Callable
-from typing import Any, Generic, TypedDict, Unpack
+from typing import Any, Generic, TypeAlias, TypedDict, Unpack
 
 from pydantic import BaseModel, ConfigDict
 from typing_extensions import ParamSpec, TypeVar
@@ -126,3 +126,6 @@ def runnable_entry(handler: Callable[P, Awaitable[R]]) -> Callable[P, Run[R]]:
         )
 
     return wrapper
+
+
+AnyRunnable: TypeAlias = Runnable[Any]
