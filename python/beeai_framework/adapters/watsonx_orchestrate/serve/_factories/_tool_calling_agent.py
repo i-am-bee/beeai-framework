@@ -22,10 +22,19 @@ class WatsonxOrchestrateServerToolCallingAgent(WatsonxOrchestrateServerAgent[Too
         return self._agent._llm.model_id
 
     async def _run(self) -> AssistantMessage:
-        response = await self._agent.run(None)  # type: ignore # Where do we get the agent input? From memory?
-        return response.message
+        if self._agent.memory.messages:
+            input = self._agent.memory.messages[-1:]
+            response = await self._agent.run(input)
+            return response.message
+        else:
+            raise ValueError("Agent invoked with empty memory.")
 
     async def _stream(self, emit: WatsonxOrchestrateServerAgentEmitFn) -> None:
+        if not self._agent.memory.messages:
+            raise ValueError("Agent invoked with empty memory.")
+
+        input = self._agent.memory.messages[-1:]
+
         async def on_tool_success(data: ToolSuccessEvent, meta: EventMeta) -> None:
             assert meta.trace, "ToolSuccessEvent must have trace"
             assert isinstance(meta.creator, Tool)
@@ -55,7 +64,7 @@ class WatsonxOrchestrateServerToolCallingAgent(WatsonxOrchestrateServerAgent[Too
             )
 
         response = await (
-            self._agent.run(None)  # type: ignore # Where do we get the agent input? From memory?
+            self._agent.run(input)
             .on(
                 lambda event: isinstance(event.creator, Tool) and event.name == "start",
                 on_tool_start,

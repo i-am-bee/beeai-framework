@@ -160,8 +160,9 @@ class AgentWorkflow:
             state.final_answer = run_output.message.text
             if run_input.input:
                 state.new_messages.append(UserMessage(run_input.input))
-            _memory = run_output.context.get("memory") if run_output.context else None
-            state.new_messages.extend(_memory.messages[-2:] if _memory else [])
+            _messages = run_output.state.memory.messages
+            if _messages and len(_messages) >= 2:
+                state.new_messages.extend(_messages[-2:])
 
         self.workflow.add_step(name or f"Agent{''.join(random.choice(string.ascii_letters) for _ in range(4))}", step)
         return self

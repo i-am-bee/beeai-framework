@@ -19,19 +19,27 @@ class WatsonxOrchestrateServerReActAgent(WatsonxOrchestrateServerAgent[ReActAgen
         return self._agent._input.llm.model_id
 
     async def _run(self) -> AssistantMessage:
-        response = await self._agent.run(prompt=None).middleware(GlobalTrajectoryMiddleware())  # type: ignore # Where do we get the agent input? From memory?
-        return response.message
+        if self._agent.memory.messages:
+            input = self._agent.memory.messages[-1:]
+            response = await self._agent.run(input).middleware(GlobalTrajectoryMiddleware())
+            return response.message
+        else:
+            raise ValueError("Agent invoked with empty memory.")
 
     async def _stream(self, emit: WatsonxOrchestrateServerAgentEmitFn) -> None:
-        async for data, event in self._agent.run():  # type: ignore # Where do we get the agent input? From memory?
-            match (data, event.name):
-                case (ReActAgentUpdateEvent(), "partial_update"):
-                    update = data.update.value
-                    if not isinstance(update, str):
-                        update = update.get_text_content()
-                    match data.update.key:
-                        # TODO: ReAct agent does not use native-tool calling capabilities (ignore or simulate?)
-                        case "thought":
-                            await emit(WatsonxOrchestrateServerAgentThinkEvent(text=update))
-                        case "final_answer":
-                            await emit(WatsonxOrchestrateServerAgentMessageEvent(text=update))
+        if self._agent.memory.messages:
+            input = self._agent.memory.messages[-1:]
+            async for data, event in self._agent.run(input):
+                match (data, event.name):
+                    case (ReActAgentUpdateEvent(), "partial_update"):
+                        update = data.update.value
+                        if not isinstance(update, str):
+                            update = update.get_text_content()
+                        match data.update.key:
+                            # TODO: ReAct agent does not use native-tool calling capabilities (ignore or simulate?)
+                            case "thought":
+                                await emit(WatsonxOrchestrateServerAgentThinkEvent(text=update))
+                            case "final_answer":
+                                await emit(WatsonxOrchestrateServerAgentMessageEvent(text=update))
+        else:
+            raise ValueError("Agent invoked with empty memory.")
