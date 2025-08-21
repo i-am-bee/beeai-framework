@@ -525,8 +525,6 @@ class CustomAgent(BaseAgent):
 
     @runnable_entry
     async def run(self, input: str | list[AnyMessage], /, **kwargs: Unpack[AgentOptions]) -> AgentOutput:
-        text_input = input if isinstance(input, str) else (input[-1].text if input else "")
-
         async def handler(context: RunContext) -> AgentOutput:
             class CustomSchema(BaseModel):
                 thought: str = Field(description="Describe your thought process before coming with a final answer")
@@ -539,7 +537,7 @@ class CustomAgent(BaseAgent):
                 messages=[
                     SystemMessage("You are a helpful assistant. Always use JSON format for your responses."),
                     *(self.memory.messages if self.memory is not None else []),
-                    UserMessage(text_input),
+                    *([UserMessage(input)] if isinstance(input, str) else input),
                 ],
                 max_retries=kwargs.get("total_max_retries", 3),
                 abort_signal=context.signal,
