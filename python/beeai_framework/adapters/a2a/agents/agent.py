@@ -131,8 +131,8 @@ class A2AAgent(BaseAgent[A2AAgentOutput]):
                         self._reference_task_ids.append(self._task_id)
 
                     # add input message to memory
-                    input_message: AnyMessage = self._convert_message_to_framework_message(input)
-                    await self.memory.add(input_message)
+                    input_messages = self._convert_messages_to_framework_messages(input)
+                    await self.memory.add_many(input_messages)
 
                     # retrieve the assistant's response
                     assistant_message = None
@@ -199,18 +199,21 @@ class A2AAgent(BaseAgent[A2AAgentOutput]):
         return cloned
 
     def _convert_message_to_framework_message(
-        self, input: str | list[AnyMessage] | AnyMessage | a2a_types.Message | a2a_types.Artifact
+        self, input: str | AnyMessage | a2a_types.Message | a2a_types.Artifact
     ) -> AnyMessage:
         if isinstance(input, str):
             return UserMessage(input)
         elif isinstance(input, Message):
             return input
-        elif isinstance(input, list) and input and isinstance(input[-1], Message):
-            return input[-1]
         elif isinstance(input, a2a_types.Message | a2a_types.Artifact):
             return convert_a2a_to_framework_message(input)
         else:
             raise ValueError(f"Unsupported input type {type(input)}")
+
+    def _convert_messages_to_framework_messages(
+        self, input: str | list[AnyMessage] | AnyMessage | a2a_types.Message | a2a_types.Artifact
+    ) -> list[AnyMessage]:
+        return input if isinstance(input, list) else [self._convert_message_to_framework_message(input)]
 
     def _convert_to_a2a_message(
         self, input: str | list[AnyMessage] | AnyMessage | a2a_types.Message
