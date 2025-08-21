@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 from collections.abc import Callable
-from typing import Annotated, Any
+from typing import Annotated, Any, TypeAlias
 
 from pydantic import BaseModel, InstanceOf
 
@@ -64,6 +64,11 @@ class ReActAgentRunIteration(BaseModel):
 class ReActAgentOutput(AgentOutput):
     iterations: list[ReActAgentRunIteration]
     memory: InstanceOf[BaseMemory]
+
+
+# Deprecated: Use 'ReActAgentOutput' instead.
+# This alias will be removed in version 0.2
+ReActAgentRunOutput: TypeAlias = ReActAgentOutput
 
 
 class ReActAgentTemplates(BaseModel):

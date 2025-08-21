@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 from collections.abc import Callable
-from typing import Annotated, Any
+from typing import Annotated, Any, TypeAlias
 
 from pydantic import BaseModel, ConfigDict, Field, InstanceOf
 from typing_extensions import TypeVar
@@ -79,6 +79,11 @@ TAnswer = TypeVar("TAnswer", bound=BaseModel, default=Any)
 
 class RequirementAgentOutput(AgentOutput):
     state: RequirementAgentRunState
+
+
+# Deprecated: Use 'RequirementAgentOutput' instead.
+# This alias will be removed in version 0.2
+RequirementAgentRunOutput: TypeAlias = RequirementAgentOutput
 
 
 class RequirementAgentRequest(BaseModel):

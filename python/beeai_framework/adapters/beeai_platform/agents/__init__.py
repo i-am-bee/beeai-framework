@@ -6,11 +6,12 @@ from beeai_framework.adapters.beeai_platform.agents.events import (
     BeeAIPlatformAgentErrorEvent,
     BeeAIPlatformAgentUpdateEvent,
 )
-from beeai_framework.adapters.beeai_platform.agents.types import BeeAIPlatformAgentRunOutput
+from beeai_framework.adapters.beeai_platform.agents.types import BeeAIPlatformAgentOutput, BeeAIPlatformAgentRunOutput
 
 __all__ = [
     "BeeAIPlatformAgent",
     "BeeAIPlatformAgentErrorEvent",
+    "BeeAIPlatformAgentOutput",
     "BeeAIPlatformAgentRunOutput",
     "BeeAIPlatformAgentUpdateEvent",
 ]

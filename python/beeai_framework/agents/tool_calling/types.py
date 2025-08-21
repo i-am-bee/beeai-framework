@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 from collections.abc import Callable
-from typing import Annotated, Any
+from typing import Annotated, Any, TypeAlias
 
 from pydantic import BaseModel, Field, InstanceOf
 
@@ -49,3 +49,8 @@ class ToolCallingAgentRunState(BaseModel):
 
 class ToolCallingAgentOutput(AgentOutput):
     state: ToolCallingAgentRunState
+
+
+# Deprecated: Use 'ToolCallingAgentOutput' instead.
+# This alias will be removed in version 0.2
+ToolCallingAgentRunOutput: TypeAlias = ToolCallingAgentOutput

@@ -15,7 +15,7 @@ from beeai_framework.adapters.watsonx_orchestrate._utils import (
     map_watsonx_orchestrate_agent_input_to_bee_messages,
     watsonx_orchestrate_message_to_beeai_message,
 )
-from beeai_framework.adapters.watsonx_orchestrate.agents.types import WatsonxOrchestrateAgentRunOutput
+from beeai_framework.adapters.watsonx_orchestrate.agents.types import WatsonxOrchestrateAgentOutput
 from beeai_framework.agents import AgentOptions, BaseAgent
 from beeai_framework.agents.errors import AgentError
 from beeai_framework.backend import AnyMessage, AssistantMessage
@@ -28,7 +28,7 @@ from beeai_framework.utils.lists import flatten
 from beeai_framework.utils.strings import to_safe_word
 
 
-class WatsonxOrchestrateAgent(BaseAgent[WatsonxOrchestrateAgentRunOutput]):
+class WatsonxOrchestrateAgent(BaseAgent[WatsonxOrchestrateAgentOutput]):
     def __init__(
         self,
         *,
@@ -56,8 +56,8 @@ class WatsonxOrchestrateAgent(BaseAgent[WatsonxOrchestrateAgentRunOutput]):
     @runnable_entry
     async def run(
         self, input: str | list[str] | AnyMessage | list[AnyMessage] | None, /, **kwargs: Unpack[AgentOptions]
-    ) -> WatsonxOrchestrateAgentRunOutput:
-        async def handler(_: RunContext) -> WatsonxOrchestrateAgentRunOutput:
+    ) -> WatsonxOrchestrateAgentOutput:
+        async def handler(_: RunContext) -> WatsonxOrchestrateAgentOutput:
             async with self._create_client() as client:
                 input_messages = map_watsonx_orchestrate_agent_input_to_bee_messages(input)
                 await self.memory.add_many(input_messages)
@@ -86,7 +86,7 @@ class WatsonxOrchestrateAgent(BaseAgent[WatsonxOrchestrateAgentRunOutput]):
                 )
                 assert isinstance(result, AssistantMessage), "Result must be instanceof AssistantMessage"
                 await self.memory.add(result)
-                return WatsonxOrchestrateAgentRunOutput(
+                return WatsonxOrchestrateAgentOutput(
                     output=[result],
                     raw=response_data.model_dump(),
                 )

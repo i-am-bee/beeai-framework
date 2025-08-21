@@ -3,11 +3,12 @@
 
 from beeai_framework.adapters.acp.agents.agent import ACPAgent
 from beeai_framework.adapters.acp.agents.events import ACPAgentErrorEvent, ACPAgentUpdateEvent
-from beeai_framework.adapters.acp.agents.types import ACPAgentOutput
+from beeai_framework.adapters.acp.agents.types import ACPAgentOutput, ACPAgentRunOutput
 
 __all__ = [
     "ACPAgent",
     "ACPAgentErrorEvent",
     "ACPAgentOutput",
+    "ACPAgentRunOutput",
     "ACPAgentUpdateEvent",
 ]
