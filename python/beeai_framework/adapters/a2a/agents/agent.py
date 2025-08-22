@@ -86,9 +86,17 @@ class A2AAgent(BaseAgent[A2AAgentRunOutput]):
 
         async def handler(context: RunContext) -> A2AAgentRunOutput:
             async with httpx.AsyncClient() as httpx_client:
-                client: a2a_client.A2AClient = await a2a_client.A2AClient.get_client_from_agent_card_url(
-                    httpx_client, self._url
-                )
+                card_resolver = a2a_client.A2ACardResolver(httpx_client, self._url)
+
+                try:
+                    self._agent_card = await card_resolver.get_agent_card()
+                except Exception as e:
+                    raise RuntimeError("Failed to fetch the public agent card. Cannot continue.") from e
+
+                if self._agent_card.supports_authenticated_extended_card:
+                    logger.warning("\nPublic card supports authenticated extended card but this is not supported yet.")
+
+                client: a2a_client.A2AClient = a2a_client.A2AClient(httpx_client, self._agent_card)
 
                 streaming_request: a2a_types.SendStreamingMessageRequest = a2a_types.SendStreamingMessageRequest(
                     id=str(uuid4().hex), params=a2a_types.MessageSendParams(message=self._convert_to_a2a_message(input))
@@ -192,10 +200,9 @@ class A2AAgent(BaseAgent[A2AAgentRunOutput]):
     async def check_agent_exists(self) -> None:
         try:
             async with httpx.AsyncClient() as httpx_client:
-                agent: a2a_client.A2AClient = await a2a_client.A2AClient.get_client_from_agent_card_url(
-                    httpx_client, self._url
-                )
-                if not agent:
+                card_resolver = a2a_client.A2ACardResolver(httpx_client, self._url)
+                agent_card = await card_resolver.get_agent_card()
+                if not agent_card:
                     raise AgentError(f"Agent {self._name} does not exist.")
         except Exception as e:
             raise AgentError("Can't connect to ACP agent.", cause=e)

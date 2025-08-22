@@ -29,7 +29,7 @@ def main() -> None:
         agent,
         name="Granite chat agent",
         description="Simple chat agent",  # (optional)
-        detail=AgentDetail(ui_type="chat"),  # default is chat (optional)
+        detail=AgentDetail(interaction_mode="multi-turn"),  # default is multi-turn (optional)
     )
     server.serve()
 
