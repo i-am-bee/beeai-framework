@@ -114,7 +114,7 @@ if __name__ == "__main__":
     asyncio.run(main())
 ```
 
-_Source: [python/examples/workflows/multi_agents_simple.py](https://github.com/i-am-bee/beeai-framework/tree/main/python/examples/workflows/multi_agents.py)_
+_Source: [python/examples/agents/experimental/requirement/handoff.py](https://github.com/i-am-bee/beeai-framework/tree/main/python/examples/agents/experimental/requirement/handoff.py)_
 
 ### Running the Example
 
