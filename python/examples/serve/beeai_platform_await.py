@@ -25,7 +25,7 @@ def main() -> None:
     )
 
     server = BeeAIPlatformServer()
-    server.register(agent, detail=AgentDetail(ui_type="chat"))
+    server.register(agent, detail=AgentDetail(interaction_mode="multi-turn"))
     server.serve()
 
 

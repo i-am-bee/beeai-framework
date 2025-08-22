@@ -122,7 +122,7 @@ def _react_agent_factory(
 ) -> beeai_agent.Agent:
     async def run(
         message: a2a_types.Message,
-        context: beeai_context.Context,
+        context: beeai_context.RunContext,
         trajectory: Annotated[beeai_extensions.TrajectoryExtensionServer, beeai_extensions.TrajectoryExtensionSpec()],
         citation: Annotated[beeai_extensions.CitationExtensionServer, beeai_extensions.CitationExtensionSpec()],
     ) -> AsyncGenerator[beeai_types.RunYield, beeai_types.RunYieldResume]:
@@ -178,7 +178,7 @@ def _tool_calling_agent_factory(
 ) -> beeai_agent.Agent:
     async def run(
         message: a2a_types.Message,
-        context: beeai_context.Context,
+        context: beeai_context.RunContext,
         trajectory: Annotated[beeai_extensions.TrajectoryExtensionServer, beeai_extensions.TrajectoryExtensionSpec()],
         citation: Annotated[beeai_extensions.CitationExtensionServer, beeai_extensions.CitationExtensionSpec()],
     ) -> AsyncGenerator[beeai_types.RunYield, beeai_types.RunYieldResume]:
@@ -192,9 +192,9 @@ def _tool_calling_agent_factory(
                 last_msg = messages[-1]
 
             cur_index = find_index(messages, lambda msg: msg is last_msg, fallback=-1, reverse_traversal=True)  # noqa: B023
-            for message in messages[cur_index + 1 :]:
-                yield trajectory.trajectory_metadata(title="message", content=message.text)
-                last_msg = message  # type: ignore[assignment]
+            for msg in messages[cur_index + 1 :]:
+                yield trajectory.trajectory_metadata(title="message", content=msg.text)
+                last_msg = msg
 
             if isinstance(data, ToolCallingAgentSuccessEvent) and data.state.result is not None:
                 yield beeai_types.AgentMessage(text=data.state.result.text)
@@ -212,7 +212,7 @@ def _requirement_agent_factory(
 ) -> beeai_agent.Agent:
     async def run(
         message: a2a_types.Message,
-        context: beeai_context.Context,
+        context: beeai_context.RunContext,
         trajectory: Annotated[beeai_extensions.TrajectoryExtensionServer, beeai_extensions.TrajectoryExtensionSpec()],
         citation: Annotated[beeai_extensions.CitationExtensionServer, beeai_extensions.CitationExtensionSpec()],
     ) -> AsyncGenerator[beeai_types.RunYield, beeai_types.RunYieldResume]:
@@ -226,9 +226,9 @@ def _requirement_agent_factory(
                 last_msg = messages[-1]
 
             cur_index = find_index(messages, lambda msg: msg is last_msg, fallback=-1, reverse_traversal=True)  # noqa: B023
-            for message in messages[cur_index + 1 :]:
-                yield trajectory.trajectory_metadata(title="message", content=message.text)
-                last_msg = message  # type: ignore[assignment]
+            for msg in messages[cur_index + 1 :]:
+                yield trajectory.trajectory_metadata(title="message", content=msg.text)
+                last_msg = msg
 
             if isinstance(data, RequirementAgentSuccessEvent) and data.state.answer is not None:
                 yield beeai_types.AgentMessage(text=data.state.answer.text)
