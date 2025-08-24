@@ -2,15 +2,16 @@
 # SPDX-License-Identifier: Apache-2.0
 
 
-from typing import Any, TypeAlias
+from typing import TYPE_CHECKING, Any, TypeAlias
 
 from beeai_framework.agents import AgentOutput
+from beeai_framework.utils.warnings import deprecated_type_alias
 
 
 class WatsonxOrchestrateAgentOutput(AgentOutput):
     raw: dict[str, Any]
 
 
-# Deprecated: Use 'BeeAIPlatformAgentOutput' instead.
-# This alias will be removed in version 0.2
-WatsonxOrchestrateAgentRunOutput: TypeAlias = WatsonxOrchestrateAgentOutput
+deprecated_type_alias(__name__, "WatsonxOrchestrateAgentRunOutput", WatsonxOrchestrateAgentOutput)
+if TYPE_CHECKING:  # This will only be seen by type checkers
+    WatsonxOrchestrateAgentRunOutput: TypeAlias = WatsonxOrchestrateAgentOutput

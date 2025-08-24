@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 from collections.abc import Callable
-from typing import Annotated, Any, TypeAlias
+from typing import TYPE_CHECKING, Annotated, Any, TypeAlias
 
 from pydantic import BaseModel, ConfigDict, InstanceOf
 
@@ -26,6 +26,7 @@ from beeai_framework.memory.base_memory import BaseMemory
 from beeai_framework.template import PromptTemplate
 from beeai_framework.tools.tool import AnyTool
 from beeai_framework.utils.strings import to_json
+from beeai_framework.utils.warnings import deprecated_type_alias
 
 
 class ReActAgentRunInput(BaseModel):
@@ -68,11 +69,6 @@ class ReActAgentOutput(AgentOutput):
     memory: InstanceOf[BaseMemory]
 
 
-# Deprecated: Use 'ReActAgentOutput' instead.
-# This alias will be removed in version 0.2
-ReActAgentRunOutput: TypeAlias = ReActAgentOutput
-
-
 class ReActAgentTemplates(BaseModel):
     system: InstanceOf[PromptTemplate[SystemPromptTemplateInput]]
     assistant: InstanceOf[PromptTemplate[AssistantPromptTemplateInput]]
@@ -97,3 +93,8 @@ class ReActAgentInput(BaseModel):
     templates: dict[ReActAgentTemplatesKeys, InstanceOf[PromptTemplate[Any]] | ReActAgentTemplateFactory] | None = None
     execution: AgentExecutionConfig | None = None
     stream: bool = True
+
+
+deprecated_type_alias(__name__, "ReActAgentRunOutput", ReActAgentOutput)
+if TYPE_CHECKING:  # This will only be seen by type checkers
+    ReActAgentRunOutput: TypeAlias = ReActAgentOutput

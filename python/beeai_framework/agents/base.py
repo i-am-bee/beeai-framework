@@ -138,25 +138,3 @@ class BaseAgent(Runnable[R]):
 
 
 AnyAgent = BaseAgent[Any]
-
-# T = TypeVar("T")
-# P = ParamSpec("P")
-
-# def text_input(func: Callable[P, T]) -> Callable[P, T]:
-#     """
-#     Decorator that converts list[AnyMessage] input to str by taking the last element.
-#     If input is already str, passes it through unchanged.
-#     """
-
-#     @wraps(func)
-#     def wrapper(*args: P.args, **kwargs: P.kwargs) -> T:
-#         """Convert list[AnyMessage] to str by taking the last element."""
-#         self = args[0] if args else None
-#         if not isinstance(self, BaseAgent):
-#             raise TypeError("The first argument of an Agent's run method must be an Agent instance.")
-#         input: Any = args[1] if args and len(args) > 1 else None
-#         text_input = input if isinstance(input, str) else (input[-1].text if input else "")
-#         new_args = (args[0], text_input) + args[2:]
-#         return func(*new_args, **kwargs)  # type: ignore[arg-type]  # We preserve the original arg structure
-
-#     return wrapper

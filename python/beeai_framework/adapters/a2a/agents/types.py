@@ -1,15 +1,16 @@
 # Copyright 2025 © BeeAI a Series of LF Projects, LLC
 # SPDX-License-Identifier: Apache-2.0
 
-from typing import Any, TypeAlias
+from typing import TYPE_CHECKING, Any, TypeAlias
 
 from beeai_framework.agents import AgentOutput
+from beeai_framework.utils.warnings import deprecated_type_alias
 
 
 class A2AAgentOutput(AgentOutput):
     event: Any
 
 
-# Deprecated: Use 'A2AAgentOutput' instead.
-# This alias will be removed in version 0.2
-A2AAgentRunOutput: TypeAlias = A2AAgentOutput
+deprecated_type_alias(__name__, "A2AAgentRunOutput", A2AAgentOutput)
+if TYPE_CHECKING:  # This will only be seen by type checkers
+    A2AAgentRunOutput: TypeAlias = A2AAgentOutput
