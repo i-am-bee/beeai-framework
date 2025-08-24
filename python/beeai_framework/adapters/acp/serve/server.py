@@ -131,7 +131,6 @@ def _react_agent_factory(agent: ReActAgent, *, metadata: ACPServerMetadata | Non
         input: list[acp_models.Message], context: acp_context.Context
     ) -> AsyncGenerator[acp_types.RunYield, acp_types.RunYieldResume]:
         agent.memory.reset()
-        await agent.memory.add_many(acp_msgs_to_framework_msgs(input))
 
         async for data, event in agent.run(acp_msgs_to_framework_msgs(input)):
             match (data, event.name):

@@ -131,8 +131,8 @@ class A2AAgent(BaseAgent[A2AAgentOutput]):
                         self._reference_task_ids.append(self._task_id)
 
                     # add input message to memory
-                    input_messages = self._convert_messages_to_framework_messages(input)
-                    await self.memory.add_many(input_messages)
+                    messages = self._convert_messages_to_framework_messages(input)
+                    await self.memory.add_many(messages)
 
                     # retrieve the assistant's response
                     assistant_message = None

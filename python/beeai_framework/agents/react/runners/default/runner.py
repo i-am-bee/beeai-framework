@@ -332,7 +332,7 @@ class DefaultRunner(BaseRunner):
             if isinstance(input.prompt, list):
                 await memory.add_many(input.prompt[:-1])
             await memory.add(UserMessage(content=content, meta={"createdAt": created_at}))
-        else:
+        elif memory.is_empty():
             content = self.templates.user_empty.render(UserEmptyPromptTemplateInput())
             await memory.add(UserMessage(content=content, meta={"createdAt": created_at}))
 

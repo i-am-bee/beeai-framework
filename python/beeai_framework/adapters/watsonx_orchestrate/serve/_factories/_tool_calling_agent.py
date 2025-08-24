@@ -11,7 +11,7 @@ from beeai_framework.adapters.watsonx_orchestrate.serve.agent import (
     WatsonxOrchestrateServerAgentToolResponse,
 )
 from beeai_framework.agents.tool_calling import ToolCallingAgent
-from beeai_framework.backend import AssistantMessage
+from beeai_framework.backend import AnyMessage, AssistantMessage
 from beeai_framework.emitter import EmitterOptions, EventMeta
 from beeai_framework.tools import Tool, ToolStartEvent, ToolSuccessEvent
 
@@ -21,16 +21,16 @@ class WatsonxOrchestrateServerToolCallingAgent(WatsonxOrchestrateServerAgent[Too
     def model_id(self) -> str:
         return self._agent._llm.model_id
 
-    async def _run(self) -> AssistantMessage:
-        if self._agent.memory.messages:
+    async def _run(self, input: list[AnyMessage]) -> AssistantMessage:
+        if input or not self._agent.memory.is_empty():
             input = self._agent.memory.messages[-1:]
             response = await self._agent.run(input)
             return response.message
         else:
             raise ValueError("Agent invoked with empty memory.")
 
-    async def _stream(self, emit: WatsonxOrchestrateServerAgentEmitFn) -> None:
-        if not self._agent.memory.messages:
+    async def _stream(self, input: list[AnyMessage], emit: WatsonxOrchestrateServerAgentEmitFn) -> None:
+        if not input and self._agent.memory.is_empty():
             raise ValueError("Agent invoked with empty memory.")
 
         input = self._agent.memory.messages[-1:]

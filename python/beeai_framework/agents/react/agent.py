@@ -120,8 +120,10 @@ class ReActAgent(BaseAgent[ReActAgentOutput]):
         Returns:
             The agent output.
         """
-        if not input:
-            raise ValueError("Invalid input. The input must be a non-empty string or list of messages.")
+        if not input and self._input.memory.is_empty():
+            raise ValueError(
+                "Invalid input. The input must be a non-empty string or list of messages when memory is empty."
+            )
 
         run_config = AgentExecutionConfig(
             max_retries_per_step=kwargs.get("max_retries_per_step", 3),
