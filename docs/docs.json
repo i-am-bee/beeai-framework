@@ -34,7 +34,8 @@
           "modules/cache",
           "modules/logger",
           "modules/errors",
-          "modules/events"
+          "modules/events",
+          "modules/observability"
         ]
       },
       {
