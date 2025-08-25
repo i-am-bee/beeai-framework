@@ -33,15 +33,15 @@ Key changes to observe:
     - `TooCallingAgentRunOutput` &rarr; `TooCallingAgentOutput`
     - `ReActAgentRunOutput` &rarr; `ReActAgentOutput`
     - `RequirementsAgentRunOutput` &rarr; `RequirementsAgentOutput`
+
+### Adapters
+
+- The internal BeeAIPlatform agent factories were refactored to align with the new runnable input contract that the framework agents now implement. This impacts the agents initialization logic: instead of adding the messages from the task context to memory during agent memory intialization, these are now passed directly to the agent's `run` interface, allowing the agents to manage their own memory. Adapters are responsible for creating and configuring memory only.
+- The following return types are deprecated and should be updated as follows:
     - `BeeAIPlatformAgentRunOutput` &rarr; `BeeAIPlatformAgentOutput`
     - `ACPAgentRunOutput` &rarr; `ACPAgentOutput`
     - `A2AAgentRunOutput` &rarr; `A2AAgentOutput`
     - `WatsonxOrchestrateAgentRunOutput` &rarr; `WatsonxOrchestrateAgentOutput`
-
-### Adapters
-
-No external breaking changes were made to how agent and platform adapters are consumed. The internal BeeAIPlatform agent factories were refactored to align with the new runnable input contract that the framework agents now implement. This impacts the agents initialization logic: instead of adding the messages from the task context to memory during agent memory intialization, these are now passed directly to the agent's `run` interface, allowing the agents to manage their own memory. Adapters are responsible for creating and configuring memory only.
-
 
 ## python_v0.1.36 (2025-08-08)
 
