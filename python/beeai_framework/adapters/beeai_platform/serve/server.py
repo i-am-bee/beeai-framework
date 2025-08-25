@@ -1,7 +1,7 @@
 # Copyright 2025 © BeeAI a Series of LF Projects, LLC
 # SPDX-License-Identifier: Apache-2.0
 import contextlib
-from collections.abc import AsyncGenerator, Sequence
+from collections.abc import AsyncGenerator
 from typing import Annotated, Self
 
 from pydantic import BaseModel
@@ -82,7 +82,7 @@ class BeeAIPlatformServer(
         self._server = beeai_server.Server()
 
     def _setup_member(self) -> None:
-        if len(self._members) == 0:
+        if not self._members:
             raise ValueError("No agents registered to the server.")
 
         member = self._members[0]
@@ -110,10 +110,6 @@ class BeeAIPlatformServer(
 
             self._metadata_by_agent[input] = metadata
             return self
-
-    @override
-    def register_many(self, input: Sequence[AnyAgentLike]) -> Self:
-        raise NotImplementedError("register_many is not implemented for BeeAIPlatformServer")
 
 
 def _react_agent_factory(
