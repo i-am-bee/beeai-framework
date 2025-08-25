@@ -1,6 +1,7 @@
 # Copyright 2025 © BeeAI a Series of LF Projects, LLC
 # SPDX-License-Identifier: Apache-2.0
 import contextlib
+import uuid
 from collections.abc import AsyncGenerator
 from typing import Annotated, Self
 
@@ -124,6 +125,8 @@ def _react_agent_factory(
         await init_agent_memory(agent, memory_manager, context.context_id)
         await agent.memory.add(convert_a2a_to_framework_message(message))
 
+        artifact_id = uuid.uuid4()
+        append = False
         async for data, event in agent.run():
             match (data, event.name):
                 case (ReActAgentUpdateEvent(), "partial_update"):
@@ -133,7 +136,30 @@ def _react_agent_factory(
                         case "thought" | "tool_name" | "tool_input" | "tool_output":
                             yield trajectory.trajectory_metadata(title=data.update.key, content=update)
                         case "final_answer":
-                            yield beeai_types.AgentMessage(text=update)
+                            yield a2a_types.TaskArtifactUpdateEvent(
+                                append=append,
+                                context_id=context.context_id,
+                                task_id=context.task_id,
+                                last_chunk=False,
+                                artifact=a2a_types.Artifact(
+                                    name="final_answer",
+                                    artifact_id=str(artifact_id),
+                                    parts=[a2a_types.Part(root=a2a_types.TextPart(text=update))],
+                                ),
+                            )
+                            append = True
+
+        yield a2a_types.TaskArtifactUpdateEvent(
+            append=True,
+            context_id=context.context_id,
+            task_id=context.task_id,
+            last_chunk=True,
+            artifact=a2a_types.Artifact(
+                name="final_answer",
+                artifact_id=str(artifact_id),
+                parts=[a2a_types.Part(root=a2a_types.TextPart(text=""))],
+            ),
+        )
 
     metadata = metadata or {}
     return beeai_agent.agent(**metadata)(run)
