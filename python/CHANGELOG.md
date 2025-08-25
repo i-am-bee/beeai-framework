@@ -29,6 +29,14 @@ Key changes to observe:
         ).middleware(GlobalTrajectoryMiddleware())
     print(response.message.text)
     ```
+- The following return types are deprecated and should be updated as follows:
+    - `TooCallingAgentRunOutput` &rarr; `TooCallingAgentOutput`
+    - `ReActAgentRunOutput` &rarr; `ReActAgentOutput`
+    - `RequirementsAgentRunOutput` &rarr; `RequirementsAgentOutput`
+    - `BeeAIPlatformAgentRunOutput` &rarr; `BeeAIPlatformAgentOutput`
+    - `ACPAgentRunOutput` &rarr; `ACPAgentOutput`
+    - `A2AAgentRunOutput` &rarr; `A2AAgentOutput`
+    - `WatsonxOrchestrateAgentRunOutput` &rarr; `WatsonxOrchestrateAgentOutput`
 
 ### Adapters
 
