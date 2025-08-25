@@ -30,7 +30,7 @@ class AgentOptions(RunnableOptions, total=False):
 
     total_max_retries: int
     """
-    Maximum number of model retries.
+    Maximum number of retries.
     """
 
     max_retries_per_step: int
