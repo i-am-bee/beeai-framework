@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 from collections.abc import Callable
-from typing import TYPE_CHECKING, Annotated, Any, TypeAlias
+from typing import Annotated, Any
 
 from pydantic import BaseModel, ConfigDict, Field, InstanceOf
 from typing_extensions import TypeVar
@@ -28,7 +28,6 @@ from beeai_framework.errors import FrameworkError
 from beeai_framework.memory import BaseMemory
 from beeai_framework.template import PromptTemplate
 from beeai_framework.tools import AnyTool, Tool, ToolOutput
-from beeai_framework.utils.warnings import deprecated_type_alias
 
 
 class RequirementAgentTemplates(BaseModel):
@@ -91,8 +90,3 @@ class RequirementAgentRequest(BaseModel):
     tool_choice: ChatModelToolChoice
     final_answer: FinalAnswerTool
     can_stop: bool
-
-
-deprecated_type_alias(__name__, "RequirementAgentRunOutput", RequirementAgentOutput)
-if TYPE_CHECKING:  # This will only be seen by type checkers
-    RequirementAgentRunOutput: TypeAlias = RequirementAgentOutput

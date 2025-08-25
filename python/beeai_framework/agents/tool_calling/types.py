@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 from collections.abc import Callable
-from typing import TYPE_CHECKING, Annotated, Any, TypeAlias
+from typing import Annotated, Any
 
 from pydantic import BaseModel, Field, InstanceOf
 
@@ -20,7 +20,6 @@ from beeai_framework.agents.tool_calling.prompts import (
 from beeai_framework.backend import AssistantMessage
 from beeai_framework.memory import BaseMemory
 from beeai_framework.template import PromptTemplate
-from beeai_framework.utils.warnings import deprecated_type_alias
 
 
 class ToolCallingAgentTemplates(BaseModel):
@@ -50,8 +49,3 @@ class ToolCallingAgentRunState(BaseModel):
 
 class ToolCallingAgentOutput(AgentOutput):
     state: ToolCallingAgentRunState
-
-
-deprecated_type_alias(__name__, "ToolCallingAgentRunOutput", ToolCallingAgentOutput)
-if TYPE_CHECKING:  # This will only be seen by type checkers
-    ToolCallingAgentRunOutput: TypeAlias = ToolCallingAgentOutput

@@ -48,15 +48,15 @@ async def main() -> None:
     response = await workflow.run(
         inputs=[
             AgentWorkflowInput(
-                prompt=f"Provide a comprehensive weather summary for '{destination}' from '{travel_dates}'.",
+                input=f"Provide a comprehensive weather summary for '{destination}' from '{travel_dates}'.",
                 expected_output="Essential weather details such as chance of rain, temperature and wind. Only report information that is available.",
             ),
             AgentWorkflowInput(
-                prompt=f"Search for a set of activities close to '{destination}' from '{travel_dates}' that are appropriate in light of the weather conditions.",
+                input=f"Search for a set of activities close to '{destination}' from '{travel_dates}' that are appropriate in light of the weather conditions.",
                 expected_output="A list of activities including location and description that are weather appropriate.",
             ),
             AgentWorkflowInput(
-                prompt=f"Consider the weather report and recommended activities for the trip to '{destination}' from '{travel_dates}' and provide a coherent summary.",
+                input=f"Consider the weather report and recommended activities for the trip to '{destination}' from '{travel_dates}' and provide a coherent summary.",
                 expected_output="A summary of the trip that the traveler could take with them. Break it down by day including weather, location and helpful tips.",
             ),
         ]
