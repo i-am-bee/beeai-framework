@@ -45,14 +45,14 @@ async def main() -> None:
         workflow.run(
             inputs=[
                 AgentWorkflowInput(
-                    input=f"Provide a short history of {location}.",
+                    prompt=f"Provide a short history of {location}.",
                 ),
                 AgentWorkflowInput(
-                    input=f"Provide a comprehensive weather summary for {location} today.",
+                    prompt=f"Provide a comprehensive weather summary for {location} today.",
                     expected_output="Essential weather details such as chance of rain, temperature and wind. Only report information that is available.",
                 ),
                 AgentWorkflowInput(
-                    input=f"Summarize the historical and weather data for {location}.",
+                    prompt=f"Summarize the historical and weather data for {location}.",
                     expected_output=f"A paragraph that describes the history of {location}, followed by the current weather conditions.",
                 ),
             ]

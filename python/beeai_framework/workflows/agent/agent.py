@@ -33,16 +33,16 @@ AgentWorkflowAgentType = ToolCallingAgent | RequirementAgent
 
 
 class AgentWorkflowInput(BaseModel):
-    input: str
-    backstory: str | None = None
+    prompt: str
+    context: str | None = None
     expected_output: str | type[BaseModel] | None = None
 
     @classmethod
     def from_message(cls, message: AnyMessage) -> Self:
-        return cls(input=message.text)
+        return cls(prompt=message.text)
 
     def to_message(self) -> AssistantMessage:
-        text = "\n\nContext:".join(remove_falsy([self.input or "", self.backstory or ""]))
+        text = "\n\nContext:".join(remove_falsy([self.prompt or "", self.context or ""]))
         return AssistantMessage(text)
 
 
@@ -150,16 +150,16 @@ class AgentWorkflow:
             await memory.add_many(state.new_messages)
 
             last_message = memory.messages[-1].text if memory.messages else ""
-            run_input = state.inputs.pop(0).model_copy() if state.inputs else AgentWorkflowInput(input=last_message)
+            run_input = state.inputs.pop(0).model_copy() if state.inputs else AgentWorkflowInput(prompt=last_message)
             state.current_input = run_input
             agent = await create_agent(memory.as_read_only())
             run_output = await agent.run(
-                run_input.input, **exclude_keys(run_input.model_dump(), {"input"}), **execution.model_dump()
+                run_input.prompt, **exclude_keys(run_input.model_dump(), {"input"}), **execution.model_dump()
             )
 
             state.final_answer = run_output.message.text
-            if run_input.input:
-                state.new_messages.append(UserMessage(run_input.input))
+            if run_input.prompt:
+                state.new_messages.append(UserMessage(run_input.prompt))
             _messages = run_output.state.memory.messages
             if _messages and len(_messages) >= 2:
                 state.new_messages.extend(_messages[-2:])

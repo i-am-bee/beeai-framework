@@ -318,22 +318,21 @@ class DefaultRunner(BaseRunner):
             )
         )
 
-        await memory.add_many(
-            [
-                SystemMessage(content=system_prompt),
-                *self._input.memory.messages,
-            ]
-        )
+        await memory.add(SystemMessage(content=system_prompt))
 
         created_at = datetime.datetime.now(tz=datetime.UTC)
         if input.prompt:
-            last_msg = input.prompt if isinstance(input.prompt, str) else input.prompt[-1].text
-            content = self.templates.user.render(UserPromptTemplateInput(input=last_msg, created_at=created_at))
-            if isinstance(input.prompt, list):
+            if isinstance(input.prompt, str):
+                content = self.templates.user.render(UserPromptTemplateInput(input=input.prompt, created_at=created_at))
+                await memory.add(UserMessage(content=content, meta={"createdAt": created_at}))
+            elif isinstance(input.prompt[-1], UserMessage) and input.prompt[-1].text:
                 await memory.add_many(input.prompt[:-1])
-            await memory.add(UserMessage(content=content, meta={"createdAt": created_at}))
-        elif memory.is_empty():
-            content = self.templates.user_empty.render(UserEmptyPromptTemplateInput())
-            await memory.add(UserMessage(content=content, meta={"createdAt": created_at}))
+                last_msg = input.prompt[-1].text
+                content = self.templates.user.render(UserPromptTemplateInput(input=last_msg, created_at=created_at))
+                await memory.add(UserMessage(content=content, meta={"createdAt": created_at}))
+            else:
+                await memory.add_many(input.prompt)
+                content = self.templates.user_empty.render(UserEmptyPromptTemplateInput())
+                await memory.add(UserMessage(content=content, meta={"createdAt": created_at}))
 
         return memory
