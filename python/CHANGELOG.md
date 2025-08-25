@@ -1,3 +1,40 @@
+## Unrelased
+
+### BREAKING CHANGE
+
+- Converted all beeai_framework.agents into "runnables", modifying their `run` method signatures
+
+### Refactor
+
+- convert agents to runnables (#1013)
+
+## Migration Guide
+
+This guide will help you update your codebase to the latest version. It outlines breaking changes and new features which may require updates to your application.
+
+### Agents
+
+Agents now subclass a common `Runnable` interface (#982):
+
+Key changes to observe:
+- Agents require a positional `input: str | list[AnyMessage]`
+- Acceptable, optional keyword options are defined in the new `AgentOptions` typed dictionary
+- Agent return types all derive from `AgentOuput`. This object contains a field `output: list[AnyMessage]` and a convenience property `messsage` that returns the last message in the output (typically, the answer or result of the agent execution).
+
+    **Example**:
+    ```Python
+    response = await agent.run(
+        "Write a step-by-step tutorial on how to bake bread",
+        expected_output="The output should be an ordered list of steps. Each step should be ideally one sentence.",
+        ).middleware(GlobalTrajectoryMiddleware())
+    print(response.message.text)
+    ```
+
+### Adapters
+
+No external breaking changes were made to how agent and platform adapters are consumed. The internal BeeAIPlatform agent factories were refactored to align with the new runnable input contract that the framework agents now implement. This impacts the agents initialization logic: instead of adding the messages from the task context to memory during agent memory intialization, these are now passed directly to the agent's `run` interface, allowing the agents to manage their own memory. Adapters are responsible for creating and configuring memory only.
+
+
 ## python_v0.1.36 (2025-08-08)
 
 ### Bug Fixes
@@ -303,7 +340,7 @@
 
 ### BREAKING CHANGE
 
-- - Removed ability to import classes from beeai_framework without a path
+- Removed ability to import classes from beeai_framework without a path
 - Moved AbortSignal from beeai_framework.cancellation to beeai_framework.utils
 - Moved MCPTool from beeai_framework.tools.mcp_tools to beeai_framework.tools.mcp
 
