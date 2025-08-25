@@ -4,7 +4,7 @@
 from collections.abc import Callable
 from typing import TYPE_CHECKING, Annotated, Any, TypeAlias
 
-from pydantic import BaseModel, ConfigDict, InstanceOf
+from pydantic import BaseModel, InstanceOf
 
 from beeai_framework.agents import AgentOutput
 from beeai_framework.agents.react.runners.default.prompts import (
@@ -30,8 +30,7 @@ from beeai_framework.utils.warnings import deprecated_type_alias
 
 
 class ReActAgentRunInput(BaseModel):
-    model_config = ConfigDict(arbitrary_types_allowed=True)
-    prompt: str | list[AnyMessage]
+    prompt: str | list[InstanceOf[AnyMessage]]
 
 
 class ReActAgentIterationMeta(BaseModel):
