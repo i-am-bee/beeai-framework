@@ -43,7 +43,6 @@
         "pages": [
           "integrations/beeai-platform",
           "integrations/watsonx-orchestrate",
-          "integrations/acp",
           "integrations/mcp",
           "integrations/a2a"
         ]
