@@ -5,6 +5,13 @@ from beeai_framework.backend import ChatModel
 from beeai_framework.middleware.trajectory import GlobalTrajectoryMiddleware
 from beeai_framework.tools.weather import OpenMeteoTool
 
+try:
+    from beeai_sdk.a2a.extensions.ui.agent_detail import AgentDetail
+except ModuleNotFoundError as e:
+    raise ModuleNotFoundError(
+        "Optional module [beeai-platform] not found.\nRun 'pip install \"beeai-framework[beeai-platform]\"' to install."
+    ) from e
+
 
 def main() -> None:
     llm = ChatModel.from_name("ollama:granite3.3:8b")
@@ -18,7 +25,7 @@ def main() -> None:
     )
 
     server = BeeAIPlatformServer()
-    server.register(agent, ui={"type": "chat"})
+    server.register(agent, detail=AgentDetail(interaction_mode="multi-turn"))
     server.serve()
 
 

@@ -4,7 +4,7 @@
 import os
 from typing import Any, TypeVar
 
-from deepeval.key_handler import KEY_FILE_HANDLER, KeyValues
+from deepeval.key_handler import KEY_FILE_HANDLER, ModelKeyValues
 from deepeval.models import DeepEvalBaseLLM
 from dotenv import load_dotenv
 from pydantic import BaseModel
@@ -54,6 +54,6 @@ class DeepEvalLLM(DeepEvalBaseLLM):
     def from_name(
         name: str | ProviderName | None = None, options: ModelLike[ChatModelParameters] | None = None, **kwargs: Any
     ) -> "DeepEvalLLM":
-        name = name or KEY_FILE_HANDLER.fetch_data(KeyValues.LOCAL_MODEL_NAME)
+        name = name or KEY_FILE_HANDLER.fetch_data(ModelKeyValues.LOCAL_MODEL_NAME)
         model = ChatModel.from_name(name, options, **kwargs)
         return DeepEvalLLM(model)

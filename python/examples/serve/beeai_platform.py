@@ -6,6 +6,13 @@ from beeai_framework.middleware.trajectory import GlobalTrajectoryMiddleware
 from beeai_framework.tools.search.duckduckgo import DuckDuckGoSearchTool
 from beeai_framework.tools.weather import OpenMeteoTool
 
+try:
+    from beeai_sdk.a2a.extensions.ui.agent_detail import AgentDetail
+except ModuleNotFoundError as e:
+    raise ModuleNotFoundError(
+        "Optional module [beeai-platform] not found.\nRun 'pip install \"beeai-framework[beeai-platform]\"' to install."
+    ) from e
+
 
 def main() -> None:
     llm = ChatModel.from_name("ollama:granite3.3:8b")
@@ -17,14 +24,12 @@ def main() -> None:
     )
 
     # Runs HTTP server that registers to BeeAI platform
-    server = BeeAIPlatformServer()
+    server = BeeAIPlatformServer(config={"configure_telemetry": False})
     server.register(
         agent,
-        name="granite_chat_agent",
+        name="Granite chat agent",
         description="Simple chat agent",  # (optional)
-        ui={"type": "chat"},  # default is chat (optional)
-        tags=["example"],  # (optional)
-        recommended_models=["granite3.3:8b"],  # (optional)
+        detail=AgentDetail(interaction_mode="multi-turn"),  # default is multi-turn (optional)
     )
     server.serve()
 

@@ -86,92 +86,26 @@ class A2AAgent(BaseAgent[A2AAgentRunOutput]):
 
         async def handler(context: RunContext) -> A2AAgentRunOutput:
             async with httpx.AsyncClient() as httpx_client:
-                client: a2a_client.A2AClient = await a2a_client.A2AClient.get_client_from_agent_card_url(
-                    httpx_client, self._url
-                )
+                card_resolver = a2a_client.A2ACardResolver(httpx_client, self._url)
 
-                streaming_request: a2a_types.SendStreamingMessageRequest = a2a_types.SendStreamingMessageRequest(
-                    id=str(uuid4().hex), params=a2a_types.MessageSendParams(message=self._convert_to_a2a_message(input))
-                )
+                try:
+                    self._agent_card = await card_resolver.get_agent_card()
+                except Exception as e:
+                    raise RuntimeError("Failed to fetch the public agent card. Cannot continue.") from e
 
-                last_event_with_data = None
-                stream_response: AsyncGenerator[a2a_types.SendStreamingMessageResponse] = client.send_message_streaming(
-                    streaming_request
-                )
-                async for event in stream_response:
-                    if last_event_with_data is None or has_content(event):
-                        last_event_with_data = event
-                    # emit all events as updates
-                    await context.emitter.emit(
-                        "update", A2AAgentUpdateEvent(value=event.model_dump(mode="json", exclude_none=True))
-                    )
+                if self._agent_card.supports_authenticated_extended_card:
+                    logger.warning("\nPublic card supports authenticated extended card but this is not supported yet.")
 
-                # check if we received a any response
-                if last_event_with_data is None:
-                    raise AgentError("No result received from agent.")
+                client: a2a_client.A2AClient = a2a_client.A2AClient(httpx_client, self._agent_card)
 
-                # process error
-                if isinstance(last_event_with_data.root, a2a_types.JSONRPCErrorResponse):
-                    await context.emitter.emit(
-                        "error",
-                        A2AAgentErrorEvent(message=last_event_with_data.root.error.message or "Unknown error"),
-                    )
-                    raise AgentError(
-                        last_event_with_data.root.error.message or "Unknown error",
-                        context=last_event_with_data.model_dump(),
-                    )
+                if not self._agent_card:
+                    card_resolver = a2a_client.A2ACardResolver(httpx_client, self._url)
+                    self._agent_card = await card_resolver.get_agent_card()
 
-                # process success
-                elif isinstance(last_event_with_data.root, a2a_types.SendStreamingMessageSuccessResponse):
-                    response = last_event_with_data.root.result
-                    self._context_id = response.context_id
-                    self._task_id = response.id if isinstance(response, a2a_types.Task) else response.task_id
-                    if self._task_id and self._task_id not in self._reference_task_ids:
-                        self._reference_task_ids.append(self._task_id)
-
-                    # add input message to memory
-                    input_message: AnyMessage = self._convert_message_to_framework_message(input)
-                    await self.memory.add(input_message)
-
-                    # retrieve the assistant's response
-                    assistant_message = None
-                    if isinstance(response, a2a_types.Message):
-                        assistant_message = self._convert_message_to_framework_message(response)
-                    elif isinstance(response, a2a_types.TaskArtifactUpdateEvent):
-                        if not response.last_chunk:
-                            raise AgentError(
-                                "Agent's response is not complete.", context=last_event_with_data.model_dump()
-                            )
-
-                        assistant_message = self._convert_message_to_framework_message(response.artifact)
-                    elif isinstance(response, a2a_types.Task | a2a_types.TaskStatusUpdateEvent):
-                        if isinstance(response, a2a_types.TaskStatusUpdateEvent) and not response.final:
-                            logger.warning("Agent's task update event is not final.")
-                        if response.status.state != a2a_types.TaskState.completed:
-                            logger.warning("Agent's task is not completed.")
-                        if not response.status.message:
-                            if (
-                                isinstance(response, a2a_types.Task)
-                                and response.artifacts
-                                and len(response.artifacts) > 0
-                            ):
-                                assistant_message = self._convert_message_to_framework_message(response.artifacts[-1])
-                            else:
-                                return A2AAgentRunOutput(
-                                    result=AssistantMessage("No response from agent."), event=last_event_with_data
-                                )
-                        else:
-                            assistant_message = self._convert_message_to_framework_message(response.status.message)
-                    else:
-                        raise AgentError("Invalid response from agent.", context=last_event_with_data.model_dump())
-
-                    # add assistant message to memory
-                    await self.memory.add(assistant_message)
-                    return A2AAgentRunOutput(result=assistant_message, event=last_event_with_data)
+                if self._agent_card.capabilities.streaming:
+                    return await self._handle_streaming_request(client=client, input=input, context=context)
                 else:
-                    return A2AAgentRunOutput(
-                        result=AssistantMessage("No response from agent."), event=last_event_with_data
-                    )
+                    return await self._handle_request(client=client, input=input, context=context)
 
         return self._to_run(
             handler,
@@ -182,12 +116,179 @@ class A2AAgent(BaseAgent[A2AAgentRunOutput]):
             },
         )
 
+    async def check_agent_exists(self) -> None:
+        try:
+            async with httpx.AsyncClient() as httpx_client:
+                card_resolver = a2a_client.A2ACardResolver(httpx_client, self._url)
+                agent_card = await card_resolver.get_agent_card()
+                if not agent_card:
+                    raise AgentError(f"Agent {self._name} does not exist.")
+        except Exception as e:
+            raise AgentError("Can't connect to ACP agent.", cause=e)
+
     def _create_emitter(self) -> Emitter:
         return Emitter.root().child(
             namespace=["a2a", "agent", to_safe_word(self._name)],
             creator=self,
             events=a2a_agent_event_types,
         )
+
+    async def _handle_request(
+        self, *, client: a2a_client.A2AClient, input: str | AnyMessage | a2a_types.Message, context: RunContext
+    ) -> A2AAgentRunOutput:
+        request: a2a_types.SendMessageRequest = a2a_types.SendMessageRequest(
+            id=str(uuid4().hex),
+            params=a2a_types.MessageSendParams(message=self._convert_to_a2a_message(input)),
+        )
+        result: a2a_types.SendMessageResponse = await client.send_message(request)
+
+        if isinstance(result.root, a2a_types.JSONRPCErrorResponse):
+            await context.emitter.emit(
+                "error",
+                A2AAgentErrorEvent(message=result.root.error.message or "Unknown error"),
+            )
+            raise AgentError(
+                result.root.error.message or "Unknown error",
+                context=result.model_dump(),
+            )
+
+        # process success
+        elif isinstance(result.root, a2a_types.SendMessageSuccessResponse):
+            response = result.root.result
+            await self._update_context_and_add_input_to_memory(response, input)
+
+            # retrieve the assistant's response
+            if isinstance(response, a2a_types.Message):
+                assistant_messages = [self._convert_message_to_framework_message(response)]
+            elif isinstance(response, a2a_types.Task):
+                if not response.status.message:
+                    if response.artifacts and len(response.artifacts) > 0:
+                        assistant_messages = [
+                            self._convert_message_to_framework_message(artifact) for artifact in response.artifacts
+                        ]
+                    else:
+                        return A2AAgentRunOutput(result=AssistantMessage("No response from agent."), event=result)
+                else:
+                    assistant_messages = [self._convert_message_to_framework_message(response.status.message)]
+            else:
+                raise AgentError("Invalid response from agent.", context=result.model_dump())
+
+            # add assistant message to memory
+            await self.memory.add_many(assistant_messages)
+            return A2AAgentRunOutput(result=assistant_messages[-1], event=result)
+
+    async def _handle_streaming_request(
+        self, *, client: a2a_client.A2AClient, input: str | AnyMessage | a2a_types.Message, context: RunContext
+    ) -> A2AAgentRunOutput:
+        streaming_request: a2a_types.SendStreamingMessageRequest = a2a_types.SendStreamingMessageRequest(
+            id=str(uuid4().hex),
+            params=a2a_types.MessageSendParams(message=self._convert_to_a2a_message(input)),
+        )
+
+        last_event_with_data = None
+        last_event = None
+        stream_response: AsyncGenerator[a2a_types.SendStreamingMessageResponse] = client.send_message_streaming(
+            streaming_request
+        )
+        streamed_artifacts: list[a2a_types.Artifact] = []
+        async for event in stream_response:
+            last_event = event
+            if last_event_with_data is None or has_content(event):
+                last_event_with_data = event
+
+            if isinstance(event.root, a2a_types.SendStreamingMessageSuccessResponse):
+                response = event.root.result
+                if isinstance(response, a2a_types.TaskArtifactUpdateEvent):
+                    existing_artifacts = [
+                        artifact
+                        for artifact in streamed_artifacts
+                        if artifact.artifact_id == response.artifact.artifact_id
+                    ]
+                    if any(existing_artifacts) and response.append:
+                        existing_artifacts[-1].parts.extend(response.artifact.parts)
+                    else:
+                        streamed_artifacts.append(response.artifact)
+            # emit all events as updates
+            await context.emitter.emit(
+                "update", A2AAgentUpdateEvent(value=event.model_dump(mode="json", exclude_none=True))
+            )
+
+        # check if we received any response
+        if last_event is None or last_event_with_data is None:
+            raise AgentError("No result received from agent.")
+
+        if isinstance(last_event.root, a2a_types.SendStreamingMessageSuccessResponse) and isinstance(
+            last_event.root.result, a2a_types.Task | a2a_types.TaskStatusUpdateEvent
+        ):
+            if isinstance(last_event.root.result, a2a_types.TaskStatusUpdateEvent) and not last_event.root.result.final:
+                logger.warning("Agent's task update event is not final.")
+            if last_event.root.result.status.state != a2a_types.TaskState.completed:
+                logger.warning("Agent's task is not completed.")
+
+        # process error
+        if isinstance(last_event_with_data.root, a2a_types.JSONRPCErrorResponse):
+            await context.emitter.emit(
+                "error",
+                A2AAgentErrorEvent(message=last_event_with_data.root.error.message or "Unknown error"),
+            )
+            raise AgentError(
+                last_event_with_data.root.error.message or "Unknown error",
+                context=last_event_with_data.model_dump(),
+            )
+
+        # process success
+        elif isinstance(last_event_with_data.root, a2a_types.SendStreamingMessageSuccessResponse):
+            response = last_event_with_data.root.result
+            await self._update_context_and_add_input_to_memory(response, input)
+
+            # retrieve the assistant's response
+            if len(streamed_artifacts) > 0:
+                if len(streamed_artifacts) > 1:
+                    await self.memory.add_many(
+                        self._convert_message_to_framework_message(artifact) for artifact in streamed_artifacts[:-1]
+                    )
+                assistant_message = self._convert_message_to_framework_message(streamed_artifacts[-1])
+            elif isinstance(response, a2a_types.Message):
+                assistant_message = self._convert_message_to_framework_message(response)
+            elif isinstance(response, a2a_types.TaskArtifactUpdateEvent):
+                if not response.last_chunk:
+                    logger.warning("Agent's response is not complete.")
+
+                assistant_message = self._convert_message_to_framework_message(response.artifact)
+            elif isinstance(response, a2a_types.Task | a2a_types.TaskStatusUpdateEvent):
+                if not response.status.message:
+                    if isinstance(response, a2a_types.Task) and response.artifacts and len(response.artifacts) > 0:
+                        assistant_message = self._convert_message_to_framework_message(response.artifacts[-1])
+                    else:
+                        return A2AAgentRunOutput(
+                            result=AssistantMessage("No response from agent."), event=last_event_with_data
+                        )
+                else:
+                    assistant_message = self._convert_message_to_framework_message(response.status.message)
+            else:
+                raise AgentError("Invalid response from agent.", context=last_event_with_data.model_dump())
+
+            # add assistant message to memory
+            await self.memory.add(assistant_message)
+            return A2AAgentRunOutput(result=assistant_message, event=last_event_with_data)
+        else:
+            return A2AAgentRunOutput(result=AssistantMessage("No response from agent."), event=last_event_with_data)
+
+    async def _update_context_and_add_input_to_memory(
+        self,
+        response: a2a_types.Task
+        | a2a_types.Message
+        | a2a_types.TaskStatusUpdateEvent
+        | a2a_types.TaskArtifactUpdateEvent,
+        input: str | AnyMessage | a2a_types.Message,
+    ) -> None:
+        self._context_id = response.context_id
+        self._task_id = response.id if isinstance(response, a2a_types.Task) else response.task_id
+        if self._task_id and self._task_id not in self._reference_task_ids:
+            self._reference_task_ids.append(self._task_id)
+
+        input_message = self._convert_message_to_framework_message(input)
+        await self.memory.add(input_message)
 
     @property
     def memory(self) -> BaseMemory:

@@ -4,6 +4,10 @@ import { createConsoleReader } from "examples/helpers/io.js";
 import { FrameworkError } from "beeai-framework/errors";
 import { TokenMemory } from "beeai-framework/memory/tokenMemory";
 
+////////////////////////////////////////////////////////
+///   Supports only BeeAI platform version v0.2.xx   ///
+////////////////////////////////////////////////////////
+
 const agentName = "chat";
 
 const instance = new BeeAIPlatformAgent({

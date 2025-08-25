@@ -3,7 +3,7 @@
 
 from typing import Any, TypeVar
 
-from deepeval.test_case import ConversationalTestCase, LLMTestCase, ToolCall
+from deepeval.test_case import ConversationalTestCase, LLMTestCase, ToolCall, Turn
 from pydantic import BaseModel
 
 from beeai_framework.agents.experimental import RequirementAgent
@@ -62,7 +62,7 @@ async def run_agent(agent: RequirementAgent, test_case: LLMTestCase) -> None:
         ]
 
 
-def to_conversation_test_case(agent: RequirementAgent, turns: list[LLMTestCase]) -> ConversationalTestCase:
+def to_conversation_test_case(agent: RequirementAgent, turns: list[Turn]) -> ConversationalTestCase:
     return ConversationalTestCase(
         turns=turns,
         chatbot_role=agent.meta.description or "",
