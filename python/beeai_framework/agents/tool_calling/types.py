@@ -6,6 +6,7 @@ from typing import Annotated, Any
 
 from pydantic import BaseModel, Field, InstanceOf
 
+from beeai_framework.agents import AgentOutput
 from beeai_framework.agents.tool_calling.prompts import (
     ToolCallingAgentCycleDetectionPrompt,
     ToolCallingAgentCycleDetectionPromptInput,
@@ -40,12 +41,11 @@ ToolCallingAgentTemplateFactory = Callable[[InstanceOf[PromptTemplate[Any]]], In
 ToolCallingAgentTemplatesKeys = Annotated[str, lambda v: v in ToolCallingAgentTemplates.model_fields]
 
 
-class ToolCallingAgentRunOutput(BaseModel):
-    result: InstanceOf[AssistantMessage]
-    memory: InstanceOf[BaseMemory]
-
-
 class ToolCallingAgentRunState(BaseModel):
     result: InstanceOf[AssistantMessage] | None = None
     memory: InstanceOf[BaseMemory]
     iteration: int
+
+
+class ToolCallingAgentOutput(AgentOutput):
+    state: ToolCallingAgentRunState

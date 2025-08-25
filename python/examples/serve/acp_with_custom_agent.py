@@ -1,32 +1,29 @@
 import sys
 import traceback
 from collections.abc import AsyncGenerator
+from typing import Unpack
 
 import acp_sdk.models as acp_models
 import acp_sdk.server.context as acp_context
 import acp_sdk.server.types as acp_types
-from pydantic import BaseModel, InstanceOf
 
 from beeai_framework.adapters.acp import ACPServer
 from beeai_framework.adapters.acp.serve._utils import acp_msgs_to_framework_msgs
 from beeai_framework.adapters.acp.serve.agent import ACPServerAgent
 from beeai_framework.adapters.acp.serve.server import to_acp_agent_metadata
 from beeai_framework.adapters.beeai_platform.serve.server import BeeAIPlatformServerMetadata
-from beeai_framework.agents.base import BaseAgent
-from beeai_framework.backend.message import AnyMessage, AssistantMessage
-from beeai_framework.context import Run, RunContext
+from beeai_framework.agents import AgentOptions, AgentOutput, BaseAgent
+from beeai_framework.backend.message import AnyMessage, AssistantMessage, UserMessage
+from beeai_framework.context import RunContext
 from beeai_framework.emitter.emitter import Emitter
 from beeai_framework.errors import FrameworkError
 from beeai_framework.memory import UnconstrainedMemory
 from beeai_framework.memory.base_memory import BaseMemory
-
-
-class EchoAgentRunOutput(BaseModel):
-    message: InstanceOf[AnyMessage]
+from beeai_framework.runnable import runnable_entry
 
 
 # This is a simple echo agent that echoes back the last message it received.
-class EchoAgent(BaseAgent[EchoAgentRunOutput]):
+class EchoAgent(BaseAgent):
     memory: BaseMemory
 
     def __init__(self, memory: BaseMemory) -> None:
@@ -39,17 +36,17 @@ class EchoAgent(BaseAgent[EchoAgentRunOutput]):
             creator=self,
         )
 
-    def run(
-        self,
-        input: list[AnyMessage] | None = None,
-    ) -> Run[EchoAgentRunOutput]:
-        async def handler(context: RunContext) -> EchoAgentRunOutput:
-            assert self.memory is not None
-            if input:
-                await self.memory.add_many(input)
-            return EchoAgentRunOutput(message=AssistantMessage(self.memory.messages[-1].text))
+    @runnable_entry
+    async def run(self, input: str | list[AnyMessage], /, **kwargs: Unpack[AgentOptions]) -> AgentOutput:
+        text_input = input if isinstance(input, str) else (input[-1].text if input else "")
 
-        return self._to_run(handler, signal=None)
+        async def handler(context: RunContext) -> AgentOutput:
+            assert self.memory is not None
+            if text_input:
+                await self.memory.add(UserMessage(content=text_input))
+            return AgentOutput(output=[AssistantMessage(text_input)])
+
+        return await handler(RunContext.get())
 
 
 def main() -> None:

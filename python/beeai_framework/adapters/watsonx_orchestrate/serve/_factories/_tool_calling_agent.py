@@ -11,7 +11,7 @@ from beeai_framework.adapters.watsonx_orchestrate.serve.agent import (
     WatsonxOrchestrateServerAgentToolResponse,
 )
 from beeai_framework.agents.tool_calling import ToolCallingAgent
-from beeai_framework.backend import AssistantMessage
+from beeai_framework.backend import AnyMessage, AssistantMessage
 from beeai_framework.emitter import EmitterOptions, EventMeta
 from beeai_framework.tools import Tool, ToolStartEvent, ToolSuccessEvent
 
@@ -21,11 +21,20 @@ class WatsonxOrchestrateServerToolCallingAgent(WatsonxOrchestrateServerAgent[Too
     def model_id(self) -> str:
         return self._agent._llm.model_id
 
-    async def _run(self) -> AssistantMessage:
-        response = await self._agent.run(prompt=None)
-        return response.result
+    async def _run(self, input: list[AnyMessage]) -> AssistantMessage:
+        if input or not self._agent.memory.is_empty():
+            input = self._agent.memory.messages[-1:]
+            response = await self._agent.run(input)
+            return response.message
+        else:
+            raise ValueError("Agent invoked with empty memory.")
 
-    async def _stream(self, emit: WatsonxOrchestrateServerAgentEmitFn) -> None:
+    async def _stream(self, input: list[AnyMessage], emit: WatsonxOrchestrateServerAgentEmitFn) -> None:
+        if not input and self._agent.memory.is_empty():
+            raise ValueError("Agent invoked with empty memory.")
+
+        input = self._agent.memory.messages[-1:]
+
         async def on_tool_success(data: ToolSuccessEvent, meta: EventMeta) -> None:
             assert meta.trace, "ToolSuccessEvent must have trace"
             assert isinstance(meta.creator, Tool)
@@ -55,7 +64,7 @@ class WatsonxOrchestrateServerToolCallingAgent(WatsonxOrchestrateServerAgent[Too
             )
 
         response = await (
-            self._agent.run(prompt=None)
+            self._agent.run(input)
             .on(
                 lambda event: isinstance(event.creator, Tool) and event.name == "start",
                 on_tool_start,
@@ -67,4 +76,4 @@ class WatsonxOrchestrateServerToolCallingAgent(WatsonxOrchestrateServerAgent[Too
                 EmitterOptions(match_nested=True),
             )
         )
-        await emit(WatsonxOrchestrateServerAgentMessageEvent(text=response.result.text))
+        await emit(WatsonxOrchestrateServerAgentMessageEvent(text=response.message.text))
