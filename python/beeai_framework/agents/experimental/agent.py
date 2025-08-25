@@ -8,6 +8,7 @@ from typing_extensions import Unpack
 
 from beeai_framework.agents import (
     AgentError,
+    AgentExecutionConfig,
     AgentMeta,
     AgentOptions,
     BaseAgent,
@@ -128,7 +129,11 @@ class RequirementAgent(BaseAgent[RequirementAgentOutput]):
             if isinstance(input, str)
             else (input[-1].text if input and isinstance(input[-1], UserMessage) else "")
         )
-        run_config = self.run_config(**kwargs)
+        run_config = AgentExecutionConfig(
+            max_retries_per_step=kwargs.get("max_retries_per_step", 3),
+            total_max_retries=kwargs.get("total_max_retries", 20),
+            max_iterations=kwargs.get("max_iterations", 10),
+        )
         expected_output = kwargs.get("expected_output")
 
         async def init_state() -> tuple[RequirementAgentRunState, UserMessage | None]:

@@ -25,7 +25,7 @@ from beeai_framework.agents.tool_calling.types import (
     ToolCallingAgentTemplatesKeys,
 )
 from beeai_framework.agents.tool_calling.utils import ToolCallChecker, ToolCallCheckerConfig
-from beeai_framework.agents.types import AgentMeta
+from beeai_framework.agents.types import AgentExecutionConfig, AgentMeta
 from beeai_framework.backend import AnyMessage
 from beeai_framework.backend.chat import ChatModel
 from beeai_framework.backend.message import (
@@ -103,7 +103,11 @@ class ToolCallingAgent(BaseAgent[ToolCallingAgentOutput]):
             else (input[-1].text if input and isinstance(input[-1], UserMessage) else "")
         )
 
-        run_config = self.run_config(**kwargs)
+        run_config = AgentExecutionConfig(
+            max_retries_per_step=kwargs.get("max_retries_per_step", 3),
+            total_max_retries=kwargs.get("total_max_retries", 20),
+            max_iterations=kwargs.get("max_iterations", 10),
+        )
         expected_output = kwargs.get("expected_output")
 
         run_context = RunContext.get()

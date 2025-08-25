@@ -110,7 +110,7 @@ class BaseAgent(Runnable[R]):
             tools=[],
         )
 
-    def run_config(self, **kwargs: Unpack[AgentOptions]) -> AgentExecutionConfig:
+    def from_options(self, **kwargs: Unpack[AgentOptions]) -> AgentExecutionConfig:
         return AgentExecutionConfig(
             max_retries_per_step=kwargs.get("max_retries_per_step", 3),
             total_max_retries=kwargs.get("total_max_retries", 20),

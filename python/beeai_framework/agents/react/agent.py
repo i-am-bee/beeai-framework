@@ -125,7 +125,11 @@ class ReActAgent(BaseAgent[ReActAgentOutput]):
                 "Invalid input. The input must be a non-empty string or list of messages when memory is empty."
             )
 
-        run_config = self.run_config(**kwargs)
+        run_config = AgentExecutionConfig(
+            max_retries_per_step=kwargs.get("max_retries_per_step", 3),
+            total_max_retries=kwargs.get("total_max_retries", 20),
+            max_iterations=kwargs.get("max_iterations", 10),
+        )
 
         run_context = RunContext.get()
         runner = self._runner(
