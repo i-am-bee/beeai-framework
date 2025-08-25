@@ -10,7 +10,7 @@ from pydantic import BaseModel
 from typing_extensions import TypeVar
 
 from beeai_framework.agents.errors import AgentError
-from beeai_framework.agents.types import AgentMeta
+from beeai_framework.agents.types import AgentExecutionConfig, AgentMeta
 from beeai_framework.backend import AnyMessage
 from beeai_framework.context import Run, RunContext, RunMiddlewareType
 from beeai_framework.emitter import Emitter
@@ -108,6 +108,13 @@ class BaseAgent(Runnable[R]):
             name=self.__class__.__name__,
             description="",
             tools=[],
+        )
+
+    def run_config(self, **kwargs: Unpack[AgentOptions]) -> AgentExecutionConfig:
+        return AgentExecutionConfig(
+            max_retries_per_step=kwargs.get("max_retries_per_step", 3),
+            total_max_retries=kwargs.get("total_max_retries", 20),
+            max_iterations=kwargs.get("max_iterations", 10),
         )
 
     def _to_run(

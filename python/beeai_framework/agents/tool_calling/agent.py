@@ -7,7 +7,7 @@ from typing import Any, Unpack
 
 from pydantic import BaseModel, Field, create_model
 
-from beeai_framework.agents import AgentError, AgentExecutionConfig, AgentOptions, BaseAgent
+from beeai_framework.agents import AgentError, AgentOptions, BaseAgent
 from beeai_framework.agents.tool_calling.events import (
     ToolCallingAgentStartEvent,
     ToolCallingAgentSuccessEvent,
@@ -103,11 +103,7 @@ class ToolCallingAgent(BaseAgent[ToolCallingAgentOutput]):
             else (input[-1].text if input and isinstance(input[-1], UserMessage) else "")
         )
 
-        run_config = AgentExecutionConfig(
-            max_retries_per_step=kwargs.get("max_retries_per_step", 3),
-            total_max_retries=kwargs.get("total_max_retries", 20),
-            max_iterations=kwargs.get("max_iterations", 10),
-        )
+        run_config = self.run_config(**kwargs)
         expected_output = kwargs.get("expected_output")
 
         run_context = RunContext.get()
