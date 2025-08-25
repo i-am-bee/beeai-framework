@@ -16,4 +16,4 @@ from beeai_framework.backend.message import AnyMessage
 
 class BeeAIPlatformAgentRunOutput(BaseModel):
     result: InstanceOf[AnyMessage]
-    event: a2a_types.SendStreamingMessageResponse
+    event: a2a_types.SendStreamingMessageResponse | a2a_types.SendMessageResponse

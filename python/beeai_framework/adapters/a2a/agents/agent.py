@@ -196,15 +196,18 @@ class A2AAgent(BaseAgent[A2AAgentRunOutput]):
             if last_event_with_data is None or has_content(event):
                 last_event_with_data = event
 
-            response = event.root.result
-            if isinstance(response, a2a_types.TaskArtifactUpdateEvent):
-                existing_artifacts = [
-                    artifact for artifact in streamed_artifacts if artifact.artifact_id == response.artifact.artifact_id
-                ]
-                if any(existing_artifacts) and response.append:
-                    existing_artifacts[-1].parts.extend(response.artifact.parts)
-                else:
-                    streamed_artifacts.append(response.artifact)
+            if isinstance(event.root, a2a_types.SendStreamingMessageSuccessResponse):
+                response = event.root.result
+                if isinstance(response, a2a_types.TaskArtifactUpdateEvent):
+                    existing_artifacts = [
+                        artifact
+                        for artifact in streamed_artifacts
+                        if artifact.artifact_id == response.artifact.artifact_id
+                    ]
+                    if any(existing_artifacts) and response.append:
+                        existing_artifacts[-1].parts.extend(response.artifact.parts)
+                    else:
+                        streamed_artifacts.append(response.artifact)
             # emit all events as updates
             await context.emitter.emit(
                 "update", A2AAgentUpdateEvent(value=event.model_dump(mode="json", exclude_none=True))
@@ -214,7 +217,9 @@ class A2AAgent(BaseAgent[A2AAgentRunOutput]):
         if last_event is None or last_event_with_data is None:
             raise AgentError("No result received from agent.")
 
-        if isinstance(last_event.root.result, a2a_types.Task | a2a_types.TaskStatusUpdateEvent):
+        if isinstance(last_event.root, a2a_types.SendStreamingMessageSuccessResponse) and isinstance(
+            last_event.root.result, a2a_types.Task | a2a_types.TaskStatusUpdateEvent
+        ):
             if isinstance(last_event.root.result, a2a_types.TaskStatusUpdateEvent) and not last_event.root.result.final:
                 logger.warning("Agent's task update event is not final.")
             if last_event.root.result.status.state != a2a_types.TaskState.completed:
