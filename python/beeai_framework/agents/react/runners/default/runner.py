@@ -318,7 +318,12 @@ class DefaultRunner(BaseRunner):
             )
         )
 
-        await memory.add(SystemMessage(content=system_prompt))
+        await memory.add_many(
+            [
+                SystemMessage(content=system_prompt),
+                *self._input.memory.messages,
+            ]
+        )
 
         created_at = datetime.datetime.now(tz=datetime.UTC)
         if input.prompt:
@@ -332,7 +337,9 @@ class DefaultRunner(BaseRunner):
                 await memory.add(UserMessage(content=content, meta={"createdAt": created_at}))
             else:
                 await memory.add_many(input.prompt)
-                content = self.templates.user_empty.render(UserEmptyPromptTemplateInput())
-                await memory.add(UserMessage(content=content, meta={"createdAt": created_at}))
+
+        if len(memory.messages) <= 1:
+            content = self.templates.user_empty.render(UserEmptyPromptTemplateInput())
+            await memory.add(UserMessage(content=content, meta={"createdAt": created_at}))
 
         return memory
