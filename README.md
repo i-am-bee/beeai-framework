@@ -17,6 +17,7 @@
 
 | Date       | Language      | Update Description                                                                 
 |------------|---------------|-------------------------------------------------------------------------------------|
+| 2025/08/25 | Python        | 🚀 ACP is now part of A2A under the Linux Foundation! 👉 [Learn more](https://github.com/orgs/i-am-bee/discussions/5) |
 | 2025/06/03 | Python        | Release experimental [Requirement Agent](https://framework.beeai.dev/experimental/requirement-agent).           |
 | 2025/05/15 | Python        | New protocol integrations: [ACP](https://framework.beeai.dev/integrations/acp) and [MCP](https://framework.beeai.dev/integrations/mcp).           |
 | 2025/02/19 | Python        | Launched Python library alpha. See [getting started guide](https://github.com/i-am-bee/beeai-framework/tree/main#installation).               |
@@ -67,77 +68,75 @@ To install the TypeScript library:
 npm install beeai-framework
 ```
 
-## Multi-Agent Workflow Example
+## Multi-Agent Example
 
 ```py
 import asyncio
-from beeai_framework.backend.chat import ChatModel
+
+from beeai_framework.agents.experimental import RequirementAgent
+from beeai_framework.agents.experimental.requirements.conditional import ConditionalRequirement
+from beeai_framework.backend import ChatModel
+from beeai_framework.errors import FrameworkError
+from beeai_framework.middleware.trajectory import GlobalTrajectoryMiddleware
+from beeai_framework.tools import Tool
+from beeai_framework.tools.handoff import HandoffTool
 from beeai_framework.tools.search.wikipedia import WikipediaTool
-from beeai_framework.tools.weather.openmeteo import OpenMeteoTool
-from beeai_framework.workflows.agent import AgentWorkflow, AgentWorkflowInput
+from beeai_framework.tools.think import ThinkTool
+from beeai_framework.tools.weather import OpenMeteoTool
+
 
 async def main() -> None:
-    llm = ChatModel.from_name("ollama:granite3.3:8b")
-    workflow = AgentWorkflow(name="Smart assistant")
-
-    workflow.add_agent(
-        name="Researcher",
-        role="A diligent researcher.",
-        instructions="You look up and provide information about a specific topic.",
-        tools=[WikipediaTool()],
-        llm=llm,
+    knowledge_agent = RequirementAgent(
+        llm=ChatModel.from_name("ollama:granite3.3:8b"),
+        tools=[ThinkTool(), WikipediaTool()],
+        requirements=[ConditionalRequirement(ThinkTool, force_at_step=1)],
+        role="Knowledge Specialist",
+        instructions="Provide answers to general questions about the world.",
     )
 
-    workflow.add_agent(
-        name="WeatherForecaster",
-        role="A weather reporter.",
-        instructions="You provide detailed weather reports.",
+    weather_agent = RequirementAgent(
+        llm=ChatModel.from_name("ollama:granite3.3:8b"),
         tools=[OpenMeteoTool()],
-        llm=llm,
+        role="Weather Specialist",
+        instructions="Provide weather forecast for a given destination.",
     )
 
-    workflow.add_agent(
-        name="DataSynthesizer",
-        role="A meticulous and creative data synthesizer",
-        instructions="You can combine disparate information into a final coherent summary.",
-        llm=llm,
+    main_agent = RequirementAgent(
+        name="MainAgent",
+        llm=ChatModel.from_name("ollama:granite3.3:8b"),
+        tools=[
+            ThinkTool(),
+            HandoffTool(
+                knowledge_agent,
+                name="KnowledgeLookup",
+                description="Consult the Knowledge Agent for general questions.",
+            ),
+            HandoffTool(
+                weather_agent,
+                name="WeatherLookup",
+                description="Consult the Weather Agent for forecasts.",
+            ),
+        ],
+        requirements=[ConditionalRequirement(ThinkTool, force_at_step=1)],
+        # Log all tool calls to the console for easier debugging
+        middlewares=[GlobalTrajectoryMiddleware(included=[Tool])],
     )
 
-    location = "Saint-Tropez"
+    question = "If I travel to Rome next weekend, what should I expect in terms of weather, and also tell me one famous historical landmark there?"
+    print(f"User: {question}")
 
-    response = await workflow.run(
-        inputs=[
-            AgentWorkflowInput(
-                prompt=f"Provide a short history of {location}.",
-            ),
-            AgentWorkflowInput(
-                prompt=f"Provide a comprehensive weather summary for {location} today.",
-                expected_output="Essential weather details such as chance of rain, temperature and wind. Only report information that is available.",
-            ),
-            AgentWorkflowInput(
-                prompt=f"Summarize the historical and weather data for {location}.",
-                expected_output=f"A paragraph that describes the history of {location}, followed by the current weather conditions.",
-            ),
-        ]
-    ).on(
-        "success",
-        lambda data, event: print(
-            f"\n-> Step '{data.step}' has been completed with the following outcome.\n\n{data.state.final_answer}"
-        ),
-    )
-
-    print("==== Final Answer ====")
-    print(response.result.final_answer)
+    try:
+        response = await main_agent.run(question, expected_output="Helpful and clear response.")
+        print("Agent:", response.answer.text)
+    except FrameworkError as err:
+        print("Error:", err.explain())
 
 
 if __name__ == "__main__":
     asyncio.run(main())
 ```
 
-_Source: [python/examples/workflows/multi_agents_simple.py](https://github.com/i-am-bee/beeai-framework/tree/main/python/examples/workflows/multi_agents.py)_
-
-> [!TIP]
-> TypeScript version of this example can be found [here](https://github.com/i-am-bee/beeai-framework/tree/main/typescript/examples/workflows/multiAgents.ts).
+_Source: [python/examples/agents/experimental/requirement/handoff.py](https://github.com/i-am-bee/beeai-framework/tree/main/python/examples/agents/experimental/requirement/handoff.py)_
 
 ### Running the example
 

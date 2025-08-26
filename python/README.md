@@ -46,98 +46,75 @@ BeeAI Framework is a comprehensive toolkit for building intelligent, autonomous 
 pip install beeai-framework
 ```
 
-### Multi-Agent Workflow Example
+### Multi-Agent Example
 
 ```py
 import asyncio
-import sys
-import traceback
 
+from beeai_framework.agents.experimental import RequirementAgent
+from beeai_framework.agents.experimental.requirements.conditional import ConditionalRequirement
 from beeai_framework.backend import ChatModel
-from beeai_framework.emitter import EmitterOptions
 from beeai_framework.errors import FrameworkError
+from beeai_framework.middleware.trajectory import GlobalTrajectoryMiddleware
+from beeai_framework.tools import Tool
+from beeai_framework.tools.handoff import HandoffTool
 from beeai_framework.tools.search.wikipedia import WikipediaTool
+from beeai_framework.tools.think import ThinkTool
 from beeai_framework.tools.weather import OpenMeteoTool
-from beeai_framework.workflows.agent import AgentWorkflow, AgentWorkflowInput
-from examples.helpers.io import ConsoleReader
 
 
 async def main() -> None:
-    llm = ChatModel.from_name("ollama:llama3.1")
-    workflow = AgentWorkflow(name="Smart assistant")
-
-    workflow.add_agent(
-        name="Researcher",
-        role="A diligent researcher.",
-        instructions="You look up and provide information about a specific topic.",
-        tools=[WikipediaTool()],
-        llm=llm,
+    knowledge_agent = RequirementAgent(
+        llm=ChatModel.from_name("ollama:granite3.3:8b"),
+        tools=[ThinkTool(), WikipediaTool()],
+        requirements=[ConditionalRequirement(ThinkTool, force_at_step=1)],
+        role="Knowledge Specialist",
+        instructions="Provide answers to general questions about the world.",
     )
 
-    workflow.add_agent(
-        name="WeatherForecaster",
-        role="A weather reporter.",
-        instructions="You provide detailed weather reports.",
+    weather_agent = RequirementAgent(
+        llm=ChatModel.from_name("ollama:granite3.3:8b"),
         tools=[OpenMeteoTool()],
-        llm=llm,
+        role="Weather Specialist",
+        instructions="Provide weather forecast for a given destination.",
     )
 
-    workflow.add_agent(
-        name="DataSynthesizer",
-        role="A meticulous and creative data synthesizer",
-        instructions="You can combine disparate information into a final coherent summary.",
-        llm=llm,
+    main_agent = RequirementAgent(
+        name="MainAgent",
+        llm=ChatModel.from_name("ollama:granite3.3:8b"),
+        tools=[
+            ThinkTool(),
+            HandoffTool(
+                knowledge_agent,
+                name="KnowledgeLookup",
+                description="Consult the Knowledge Agent for general questions.",
+            ),
+            HandoffTool(
+                weather_agent,
+                name="WeatherLookup",
+                description="Consult the Weather Agent for forecasts.",
+            ),
+        ],
+        requirements=[ConditionalRequirement(ThinkTool, force_at_step=1)],
+        # Log all tool calls to the console for easier debugging
+        middlewares=[GlobalTrajectoryMiddleware(included=[Tool])],
     )
 
-    reader = ConsoleReader()
+    question = "If I travel to Rome next weekend, what should I expect in terms of weather, and also tell me one famous historical landmark there?"
+    print(f"User: {question}")
 
-    reader.write("Assistant 🤖 : ", "What location do you want to learn about?")
-    for prompt in reader:
-        await (
-            workflow.run(
-                inputs=[
-                    AgentWorkflowInput(prompt="Provide a short history of the location.", context=prompt),
-                    AgentWorkflowInput(
-                        prompt="Provide a comprehensive weather summary for the location today.",
-                        expected_output="Essential weather details such as chance of rain, temperature and wind. Only report information that is available.",
-                    ),
-                    AgentWorkflowInput(
-                        prompt="Summarize the historical and weather data for the location.",
-                        expected_output="A paragraph that describes the history of the location, followed by the current weather conditions.",
-                    ),
-                ]
-            )
-            .on(
-                # Event Matcher -> match agent's 'success' events
-                lambda event: isinstance(event.creator, ChatModel) and event.name == "success",
-                # log data to the console
-                lambda data, event: reader.write(
-                    "->Got response from the LLM",
-                    "  \n->".join([str(message.content[0].model_dump()) for message in data.value.messages]),
-                ),
-                EmitterOptions(match_nested=True),
-            )
-            .on(
-                "success",
-                lambda data, event: reader.write(
-                    f"->Step '{data.step}' has been completed with the following outcome."
-                    f"\n\n{data.state.final_answer}\n\n",
-                    data.model_dump(exclude={"data"}),
-                ),
-            )
-        )
-        reader.write("Assistant 🤖 : ", "What location do you want to learn about?")
+    try:
+        response = await main_agent.run(question, expected_output="Helpful and clear response.")
+        print("Agent:", response.answer.text)
+    except FrameworkError as err:
+        print("Error:", err.explain())
 
 
 if __name__ == "__main__":
-    try:
-        asyncio.run(main())
-    except FrameworkError as e:
-        traceback.print_exc()
-        sys.exit(e.explain())
+    asyncio.run(main())
 ```
 
-_Source: [python/examples/workflows/multi_agents_simple.py](https://github.com/i-am-bee/beeai-framework/tree/main/python/examples/workflows/multi_agents.py)_
+_Source: [python/examples/agents/experimental/requirement/handoff.py](https://github.com/i-am-bee/beeai-framework/tree/main/python/examples/agents/experimental/requirement/handoff.py)_
 
 ### Running the Example
 

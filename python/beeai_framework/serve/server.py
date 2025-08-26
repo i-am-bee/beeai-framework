@@ -3,7 +3,7 @@
 
 from abc import ABC, abstractmethod
 from collections.abc import Callable, Sequence
-from typing import ClassVar, Generic, Self
+from typing import Any, ClassVar, Generic, Self
 
 from pydantic import BaseModel
 from typing_extensions import TypeVar
@@ -24,6 +24,15 @@ class Server(Generic[TInput, TInternal, TConfig], ABC):
         self._members: list[TInput] = []
         self._config = config
         self._memory_manager: MemoryManager = memory_manager or UnlimitedMemoryManager()
+
+    def __init_subclass__(cls, **kwargs: Any) -> None:
+        super().__init_subclass__(**kwargs)
+
+        parent_factories = next(
+            parent_class._factories for parent_class in cls.__bases__ if hasattr(parent_class, "_factories")
+        )
+        if cls._factories is parent_factories:
+            cls._factories = {}
 
     @classmethod
     def register_factory(

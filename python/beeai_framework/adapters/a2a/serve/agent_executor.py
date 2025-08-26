@@ -28,7 +28,6 @@ from beeai_framework.backend.message import (
     AnyMessage,
 )
 from beeai_framework.logger import Logger
-from beeai_framework.utils.lists import find_index
 
 AnyAgentLike = TypeVar("AnyAgentLike", bound=AnyAgent, default=AnyAgent)
 
@@ -127,19 +126,6 @@ class TollCallingAgentExecutor(BaseA2AAgentExecutor):
                 messages = data.state.memory.messages
                 if last_msg is None:
                     last_msg = messages[-1]
-
-                cur_index = find_index(messages, lambda msg: msg is last_msg, fallback=-1, reverse_traversal=True)  # noqa: B023
-                for message in messages[cur_index + 1 :]:
-                    await updater.update_status(
-                        a2a_types.TaskState.working,
-                        message=a2a_utils.new_agent_parts_message(
-                            parts=[
-                                a2a_types.Part(root=a2a_types.DataPart(data=content.model_dump()))
-                                for content in message.content
-                            ]
-                        ),
-                    )
-                    last_msg = message
 
                 if isinstance(data, ToolCallingAgentSuccessEvent) and data.state.result is not None:
                     await updater.complete(
