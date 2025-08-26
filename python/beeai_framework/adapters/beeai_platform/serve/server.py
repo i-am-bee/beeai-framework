@@ -1,7 +1,6 @@
 # Copyright 2025 © BeeAI a Series of LF Projects, LLC
 # SPDX-License-Identifier: Apache-2.0
 import contextlib
-import json
 import uuid
 from collections.abc import AsyncGenerator, Generator
 from typing import Annotated, Self
@@ -16,6 +15,7 @@ from beeai_framework.agents.tool_calling import ToolCallingAgent, ToolCallingAge
 from beeai_framework.backend import AssistantMessage, MessageTextContent, MessageToolCallContent, ToolMessage
 from beeai_framework.serve.errors import FactoryAlreadyRegisteredError
 from beeai_framework.utils.lists import find_index
+from beeai_framework.utils.strings import to_json
 
 try:
     import a2a.types as a2a_types
@@ -134,19 +134,17 @@ def _react_agent_factory(
         async for data, event in agent.run():
             match (data, event.name):
                 case (ReActAgentUpdateEvent(), "partial_update"):
-                    update = data.update.value
-                    update = update.get_text_content() if hasattr(update, "get_text_content") else str(update)
                     match data.update.key:
                         case "thought" | "tool_name" | "tool_input" | "tool_output":
+                            update = data.update.parsed_value
+                            update = update.get_text_content() if hasattr(update, "get_text_content") else str(update)
                             if last_key and last_key != data.update.key:
                                 yield trajectory.trajectory_metadata(title=last_key, content=last_update)
                             last_key = data.update.key
-                            last_update = (
-                                data.update.parsed_value.get_text_content()
-                                if hasattr(data.update.parsed_value, "get_text_content")
-                                else str(data.update.parsed_value)
-                            )
+                            last_update = update
                         case "final_answer":
+                            update = data.update.value
+                            update = update.get_text_content() if hasattr(update, "get_text_content") else str(update)
                             yield a2a_types.TaskArtifactUpdateEvent(
                                 append=append,
                                 context_id=context.context_id,
@@ -262,7 +260,7 @@ def send_message_trajectory(
                 if content.tool_name == "final_answer":
                     continue
                 yield trajectory.trajectory_metadata(
-                    title=content.tool_name, content=json.dumps({"id": content.id, "args": content.args})
+                    title=content.tool_name, content=to_json({"id": content.id, "args": content.args}, sort_keys=False)
                 )
     elif isinstance(msg, ToolMessage):
         for result in msg.get_tool_results():
