@@ -502,7 +502,7 @@ IMPORTANT: You MUST answer with a JSON object that matches the JSON schema above
 
 def _create_tool_choice_error(message: str, *, input_tool_choice: str | AnyTool, model: ChatModel) -> ChatModelError:
     input_tool_choice_str = "single" if isinstance(input_tool_choice, Tool) else input_tool_choice
-    tool_choice_support: set[str] = set(model.tool_choice_support)
+    tool_choice_support: set[str] = set(model._tool_choice_support)
     tool_choice_support.discard(input_tool_choice_str)
     tool_choices_set_str = (
         "{" + ", ".join(f'"{t}"' for t in tool_choice_support) + "}" if tool_choice_support else set()

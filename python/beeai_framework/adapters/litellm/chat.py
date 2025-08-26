@@ -208,12 +208,18 @@ class LiteLLMChatModel(ChatModel, ABC):
             set(self.supported_params),
         )
 
-        tool_choice = (
-            {"type": "function", "function": {"name": input.tool_choice.name}}
-            if isinstance(input.tool_choice, Tool)
-            else input.tool_choice
-        )
-        if isinstance(tool_choice, str) and tool_choice not in self._tool_choice_support:
+        if input.tool_choice == "none" and input.tool_choice not in self._tool_choice_support:
+            tool_choice = None
+            tools = []
+        elif input.tool_choice == "auto" and input.tool_choice not in self._tool_choice_support:
+            tool_choice = None
+        elif isinstance(input.tool_choice, Tool) and "single" in self._tool_choice_support:
+            tool_choice = {"type": "function", "function": {"name": input.tool_choice.name}}
+        elif input.tool_choice not in self._tool_choice_support:
+            tool_choice = None
+
+        if input.response_format is not None:
+            tools = []
             tool_choice = None
 
         return exclude_none(
