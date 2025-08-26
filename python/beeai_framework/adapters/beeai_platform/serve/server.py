@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 import contextlib
 import uuid
-from collections.abc import AsyncGenerator
+from collections.abc import AsyncGenerator, Generator
 from typing import Annotated, Self
 
 from pydantic import BaseModel
@@ -12,8 +12,10 @@ from beeai_framework.agents.experimental import RequirementAgent
 from beeai_framework.agents.experimental.events import RequirementAgentSuccessEvent
 from beeai_framework.agents.react import ReActAgent, ReActAgentUpdateEvent
 from beeai_framework.agents.tool_calling import ToolCallingAgent, ToolCallingAgentSuccessEvent
+from beeai_framework.backend import AssistantMessage, MessageTextContent, MessageToolCallContent, ToolMessage
 from beeai_framework.serve.errors import FactoryAlreadyRegisteredError
 from beeai_framework.utils.lists import find_index
+from beeai_framework.utils.strings import to_json
 
 try:
     import a2a.types as a2a_types
@@ -127,15 +129,22 @@ def _react_agent_factory(
 
         artifact_id = uuid.uuid4()
         append = False
+        last_key = None
+        last_update = None
         async for data, event in agent.run():
             match (data, event.name):
                 case (ReActAgentUpdateEvent(), "partial_update"):
-                    update = data.update.value
-                    update = update.get_text_content() if hasattr(update, "get_text_content") else str(update)
                     match data.update.key:
                         case "thought" | "tool_name" | "tool_input" | "tool_output":
-                            yield trajectory.trajectory_metadata(title=data.update.key, content=update)
+                            update = data.update.parsed_value
+                            update = update.get_text_content() if hasattr(update, "get_text_content") else str(update)
+                            if last_key and last_key != data.update.key:
+                                yield trajectory.trajectory_metadata(title=last_key, content=last_update)
+                            last_key = data.update.key
+                            last_update = update
                         case "final_answer":
+                            update = data.update.value
+                            update = update.get_text_content() if hasattr(update, "get_text_content") else str(update)
                             yield a2a_types.TaskArtifactUpdateEvent(
                                 append=append,
                                 context_id=context.context_id,
@@ -189,7 +198,8 @@ def _tool_calling_agent_factory(
 
             cur_index = find_index(messages, lambda msg: msg is last_msg, fallback=-1, reverse_traversal=True)  # noqa: B023
             for msg in messages[cur_index + 1 :]:
-                yield trajectory.trajectory_metadata(title="message", content=msg.text)
+                for value in send_message_trajectory(msg, trajectory):
+                    yield value
                 last_msg = msg
 
             if isinstance(data, ToolCallingAgentSuccessEvent) and data.state.result is not None:
@@ -223,7 +233,8 @@ def _requirement_agent_factory(
 
             cur_index = find_index(messages, lambda msg: msg is last_msg, fallback=-1, reverse_traversal=True)  # noqa: B023
             for msg in messages[cur_index + 1 :]:
-                yield trajectory.trajectory_metadata(title="message", content=msg.text)
+                for value in send_message_trajectory(msg, trajectory):
+                    yield value
                 last_msg = msg
 
             if isinstance(data, RequirementAgentSuccessEvent) and data.state.answer is not None:
@@ -235,3 +246,24 @@ def _requirement_agent_factory(
 
 with contextlib.suppress(FactoryAlreadyRegisteredError):
     BeeAIPlatformServer.register_factory(RequirementAgent, _requirement_agent_factory)  # type: ignore[arg-type]
+
+
+def send_message_trajectory(
+    msg: AnyMessage,
+    trajectory: Annotated[beeai_extensions.TrajectoryExtensionServer, beeai_extensions.TrajectoryExtensionSpec()],
+) -> Generator[beeai_types.Metadata[str, beeai_extensions.Trajectory]]:
+    if isinstance(msg, AssistantMessage):
+        for content in msg.content:
+            if isinstance(content, MessageTextContent):
+                yield trajectory.trajectory_metadata(title="assistant", content=content.text)
+            elif isinstance(content, MessageToolCallContent):
+                if content.tool_name == "final_answer":
+                    continue
+                yield trajectory.trajectory_metadata(
+                    title=content.tool_name, content=to_json({"id": content.id, "args": content.args}, sort_keys=False)
+                )
+    elif isinstance(msg, ToolMessage):
+        for result in msg.get_tool_results():
+            if result.tool_name == "final_answer":
+                continue
+            yield trajectory.trajectory_metadata(title="tool result", content=str(result.result))
