@@ -15,7 +15,7 @@ except ModuleNotFoundError as e:
 
 
 def main() -> None:
-    llm = ChatModel.from_name("groq:llama-3.1-8b-instant")
+    llm = ChatModel.from_name("ollama:granite3.3:8b")
     agent = RequirementAgent(
         llm=llm,
         tools=[DuckDuckGoSearchTool(), OpenMeteoTool()],
