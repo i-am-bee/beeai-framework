@@ -255,7 +255,7 @@ def send_message_trajectory(
     if isinstance(msg, AssistantMessage):
         for content in msg.content:
             if isinstance(content, MessageTextContent):
-                yield trajectory.trajectory_metadata(title="assistant", content=msg.text)
+                yield trajectory.trajectory_metadata(title="assistant", content=content.text)
             elif isinstance(content, MessageToolCallContent):
                 if content.tool_name == "final_answer":
                     continue
