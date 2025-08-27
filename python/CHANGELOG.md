@@ -19,16 +19,18 @@ Agents now subclass a common `Runnable` interface (#982):
 Key changes to observe:
 - Agents require a positional `input: str | list[AnyMessage]`
 - Acceptable, optional keyword options are defined in the new `AgentOptions` typed dictionary
-- Agent return types all derive from `AgentOuput`. This object contains a field `output: list[AnyMessage]` and a convenience property `messsage` that returns the last message in the output (typically, the answer or result of the agent execution).
+- Agent return types all derive from `AgentOuput`. This object contains a field `output: list[AnyMessage]` and a convenience property `response` that returns the last message in the output if that message is an `AssistantMessage` (typically, the answer or result of the agent execution).
 
     **Example**:
     ```Python
-    response = await agent.run(
+    result = await agent.run(
         "Write a step-by-step tutorial on how to bake bread",
         expected_output="The output should be an ordered list of steps. Each step should be ideally one sentence.",
         ).middleware(GlobalTrajectoryMiddleware())
-    print(response.message.text)
+    print(result.response.text)
     ```
+  > Note: Previously, different agents in the framework had completely distinct output types. This means that the output objects were represented by different data structures with different attribute names (e.g., `result`, `answer`) depending on the agent being used. We simplified this contract to enforce that all agent output types must subclass `AgentOutput`. Usage should be updated to reflect those changes. For example, an agent's response is captured in the `response` property of the agents's output object. In additional to the common output object attributes shared by all agents, some agents also include additional properties in the output, such as `state`. Please check each agent implementation for more details.
+
 - The following return types have been renamed and should be updated as follows:
     - `TooCallingAgentRunOutput` &rarr; `TooCallingAgentOutput`
     - `ReActAgentRunOutput` &rarr; `ReActAgentOutput`
