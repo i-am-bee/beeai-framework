@@ -49,6 +49,19 @@ The `AgentWorkflowInput` fields have been renamed to match the attributes passed
     - `A2AAgentRunOutput` &rarr; `A2AAgentOutput`
     - `WatsonxOrchestrateAgentRunOutput` &rarr; `WatsonxOrchestrateAgentOutput`
 
+
+## python_v0.1.38 (2025-08-27)
+
+### Bug Fixes
+
+- **backend**: initialize tool_choice in LiteLLM chat adapter (#1040)
+
+### Features
+
+- **adapters**: update agent's trajectory in BeeAI Platform (#1042)
+- **agents**: improve tool error propagation in the RequirementAgent (#1041)
+
+
 ## python_v0.1.37 (2025-08-26)
 
 ### Bug Fixes

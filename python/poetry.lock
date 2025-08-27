@@ -444,15 +444,15 @@ lxml = ["lxml"]
 
 [[package]]
 name = "beeai-sdk"
-version = "0.3.0"
+version = "0.3.2"
 description = "BeeAI SDK"
 optional = true
 python-versions = ">=3.11"
 groups = ["main"]
 markers = "extra == \"beeai-platform\" or extra == \"all\""
 files = [
-    {file = "beeai_sdk-0.3.0-py3-none-any.whl", hash = "sha256:72c3803e43d5820f2942e1454414983e0ef9bd2a879f0d3ebbdd070aabb84900"},
-    {file = "beeai_sdk-0.3.0.tar.gz", hash = "sha256:cebe297bf2b1449b648dfcaf6db1f2827ef2e10b8b9a8255ecc600c11868aa3c"},
+    {file = "beeai_sdk-0.3.2-py3-none-any.whl", hash = "sha256:6948cc32e2038059f01a81cda618d6b33f8eaca0780b8fc7f37d829a3c80d4ba"},
+    {file = "beeai_sdk-0.3.2.tar.gz", hash = "sha256:1ce6be3204eb0592402307a81ca0d78962d800f57326b7f15b6b764064359efd"},
 ]
 
 [package.dependencies]
@@ -7398,4 +7398,4 @@ wikipedia = ["wikipedia-api"]
 [metadata]
 lock-version = "2.1"
 python-versions = ">= 3.11,<3.14"
-content-hash = "77af42e24e378cbeea0e60382183301c74491baa6af2421621e30281806890b7"
+content-hash = "605d228c6b7f0b95e802d1f1e6b69bb641ee03e45be626060ac746ef49c6395a"

@@ -5,6 +5,7 @@ import contextlib
 from collections.abc import Sequence
 from typing import Literal
 
+from beeai_framework.agents.experimental.requirements.events import RequirementInitEvent, requirement_event_types
 from beeai_framework.agents.experimental.requirements.requirement import Requirement, Rule
 from beeai_framework.agents.experimental.types import RequirementAgentRequest, RequirementAgentRunState
 from beeai_framework.agents.experimental.utils._tool import FinalAnswerTool
@@ -13,6 +14,7 @@ from beeai_framework.errors import FrameworkError
 from beeai_framework.tools import AnyTool
 from beeai_framework.tools.tool import Tool
 from beeai_framework.utils.lists import _append_if_not_exists, remove_by_reference
+from beeai_framework.utils.strings import to_safe_word
 
 
 class RequirementsReasoner:
@@ -35,7 +37,14 @@ class RequirementsReasoner:
             self._entries.append(requirement)
 
         for entry in self._entries:
-            await entry.init(tools=self._tools, ctx=self._context)
+            emitter = self._context.emitter.child(
+                group_id=to_safe_word(entry.name), creator=entry, events=requirement_event_types
+            )
+            emitter.namespace.append("requirement")
+
+            tools = list(self._tools)
+            await emitter.emit("init", RequirementInitEvent(tools=tools))
+            await entry.init(tools=tools, ctx=self._context)
 
     def _find_tool_by_name(self, name: str) -> AnyTool:
         tool: AnyTool | None = next((t for t in self._tools if t.name == name), None)
