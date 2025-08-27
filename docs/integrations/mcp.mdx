@@ -96,7 +96,7 @@ The MCP adapter uses the MCPServerConfig class to configure the MCP server:
 	```py Python
 	class MCPServerConfig(BaseModel):
 	"""Configuration for the MCPServer."""
-	transport: Literal["stdio", "sse"] = "stdio"  # Transport protocol (stdio or server-sent events)
+	transport: Literal["stdio", "sse", "streaming"] = "stdio"  # Transport protocol (stdio, server-sent events, or streaming)
 	name: str = "MCP Server"                     # Name of the MCP server
 	instructions: str | None = None              # Optional instructions for the server
 	settings: mcp_server.Settings[Any] = Field(default_factory=lambda: mcp_server.Settings())
