@@ -34,16 +34,10 @@ Key changes to observe:
     - `ReActAgentRunOutput` &rarr; `ReActAgentOutput`
     - `RequirementsAgentRunOutput` &rarr; `RequirementsAgentOutput`
 
-### AgentWorkflow
-
-The `AgentWorkflowInput` fields have been renamed to match the attributes passed to agents.
-- `prompt` &rarr; `input`
-- `context` &rarr; `backstory`
-
 ### Adapters
 
 - The internal BeeAIPlatform agent factories were refactored to align with the new runnable input contract that the framework agents now implement. This impacts the agents initialization logic: instead of adding the messages from the task context to memory during agent memory intialization, these are now passed directly to the agent's `run` interface, allowing the agents to manage their own memory. Adapters are responsible for creating and configuring memory only.
-- The following return types have been ranamed and should be updated as follows:
+- The following return types have been renamed and should be updated as follows:
     - `BeeAIPlatformAgentRunOutput` &rarr; `BeeAIPlatformAgentOutput`
     - `ACPAgentRunOutput` &rarr; `ACPAgentOutput`
     - `A2AAgentRunOutput` &rarr; `A2AAgentOutput`
