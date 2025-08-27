@@ -17,6 +17,7 @@ from beeai_framework.agents.experimental.events import (
 )
 from beeai_framework.agents.experimental.prompts import (
     RequirementAgentTaskPromptInput,
+    RequirementAgentToolErrorPromptInput,
 )
 from beeai_framework.agents.experimental.requirements.requirement import Requirement, Rule
 from beeai_framework.agents.experimental.types import (
@@ -228,18 +229,28 @@ class RequirementAgent(BaseAgent[RequirementAgentRunOutput]):
                                 error=tool_call.error,
                             )
                         )
+
+                        if tool_call.error is not None:
+                            result = self._templates.tool_error.render(
+                                RequirementAgentToolErrorPromptInput(reason=tool_call.error.explain())
+                            )
+                        else:
+                            result = (
+                                tool_call.output.get_text_content()
+                                if not tool_call.output.is_empty()
+                                else self._templates.tool_no_result.render(tool_call=tool_call)
+                            )
+
                         await state.memory.add(
                             ToolMessage(
                                 MessageToolResultContent(
                                     tool_name=tool_call.tool.name if tool_call.tool else tool_call.msg.tool_name,
                                     tool_call_id=tool_call.msg.id,
-                                    result=tool_call.output.get_text_content()
-                                    if not tool_call.output.is_empty()
-                                    else self._templates.tool_no_result.render(tool_call=tool_call),
+                                    result=result,
                                 )
                             )
                         )
-                        if tool_call.error:
+                        if tool_call.error is not None:
                             tool_call_retry_counter.use(tool_call.error)
 
                 # handle empty responses for some models
