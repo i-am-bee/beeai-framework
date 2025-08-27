@@ -7,9 +7,6 @@ from collections.abc import AsyncGenerator
 from itertools import chain
 from typing import Any, Self
 
-from pydantic import BaseModel, InstanceOf
-from beeai_framework.tools.tool import AnyTool
-
 if not os.getenv("LITELLM_LOCAL_MODEL_COST_MAP", None):
     os.environ["LITELLM_LOCAL_MODEL_COST_MAP"] = "True"
 
@@ -22,7 +19,7 @@ from litellm import (  # type: ignore
     get_supported_openai_params,
 )
 from litellm.types.utils import StreamingChoices
-from pydantic import BaseModel
+from pydantic import BaseModel, InstanceOf
 from typing_extensions import Unpack
 
 from beeai_framework.adapters.litellm.utils import litellm_debug, to_strict_json_schema
@@ -50,7 +47,7 @@ from beeai_framework.backend.utils import parse_broken_json
 from beeai_framework.cache.null_cache import NullCache
 from beeai_framework.context import RunContext
 from beeai_framework.logger import Logger
-from beeai_framework.tools.tool import Tool
+from beeai_framework.tools.tool import Tool, AnyTool
 from beeai_framework.utils.dicts import exclude_keys, exclude_none, include_keys, set_attr_if_none
 from beeai_framework.utils.strings import to_json
 
