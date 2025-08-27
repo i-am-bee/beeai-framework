@@ -19,7 +19,7 @@ from litellm import (  # type: ignore
     get_supported_openai_params,
 )
 from litellm.types.utils import StreamingChoices
-from pydantic import BaseModel, InstanceOf
+from pydantic import BaseModel
 from typing_extensions import Unpack
 
 from beeai_framework.adapters.litellm.utils import litellm_debug, to_strict_json_schema
@@ -208,7 +208,7 @@ class LiteLLMChatModel(ChatModel, ABC):
             set(self.supported_params),
         )
 
-        tool_choice: dict[str, Any] | str | None | InstanceOf[AnyTool] = input.tool_choice
+        tool_choice: dict[str, Any] | str | AnyTool | None = input.tool_choice
         if input.tool_choice == "none" and input.tool_choice not in self._tool_choice_support:
             tool_choice = None
             tools = []
@@ -219,7 +219,7 @@ class LiteLLMChatModel(ChatModel, ABC):
         elif input.tool_choice not in self._tool_choice_support:
             tool_choice = None
 
-        if input.response_format is not None:
+        if input.response_format:
             tools = []
             tool_choice = None
 
