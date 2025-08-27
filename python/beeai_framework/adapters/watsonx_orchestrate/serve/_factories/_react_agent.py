@@ -21,7 +21,7 @@ class WatsonxOrchestrateServerReActAgent(WatsonxOrchestrateServerAgent[ReActAgen
     async def _run(self, input: list[AnyMessage]) -> AssistantMessage:
         if input or not self._agent.memory.is_empty():
             response = await self._agent.run(input).middleware(GlobalTrajectoryMiddleware())
-            return response.message
+            return response.response
         else:
             raise ValueError("Agent invoked with empty memory.")
 

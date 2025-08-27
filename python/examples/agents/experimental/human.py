@@ -55,7 +55,7 @@ async def main() -> None:
         )
 
         # Print the final response
-        reader.write("Agent 🤖 : ", response.message.text)
+        reader.write("Agent 🤖 : ", response.response.text)
 
 
 if __name__ == "__main__":

@@ -25,7 +25,7 @@ class WatsonxOrchestrateServerToolCallingAgent(WatsonxOrchestrateServerAgent[Too
         if input or not self._agent.memory.is_empty():
             input = self._agent.memory.messages[-1:]
             response = await self._agent.run(input)
-            return response.message
+            return response.response
         else:
             raise ValueError("Agent invoked with empty memory.")
 
@@ -76,4 +76,4 @@ class WatsonxOrchestrateServerToolCallingAgent(WatsonxOrchestrateServerAgent[Too
                 EmitterOptions(match_nested=True),
             )
         )
-        await emit(WatsonxOrchestrateServerAgentMessageEvent(text=response.message.text))
+        await emit(WatsonxOrchestrateServerAgentMessageEvent(text=response.response.text))

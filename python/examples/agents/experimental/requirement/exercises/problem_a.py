@@ -44,7 +44,7 @@ async def main() -> None:
     )
 
     response = await agent.run("What's the current weather?")
-    print(response.message.text)
+    print(response.response.text)
 
 
 if __name__ == "__main__":

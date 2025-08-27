@@ -15,7 +15,7 @@ async def main() -> None:
 
     result = await agent.run("How tall is the mount Everest?")
 
-    print(result.message.text)
+    print(result.response.text)
 
 
 if __name__ == "__main__":

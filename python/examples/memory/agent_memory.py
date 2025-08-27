@@ -41,7 +41,7 @@ async def main() -> None:
     print(f"Received response: {response}")
 
     # Create and store assistant's response
-    assistant_message = AssistantMessage(response.message.text)
+    assistant_message = AssistantMessage(response.response.text)
 
     # Await adding assistant message to memory
     await memory.add(assistant_message)

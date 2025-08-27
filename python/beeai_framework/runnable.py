@@ -38,7 +38,7 @@ class RunnableOutput(BaseModel):
     """Context can be used to return additional data by runnable."""
 
     @property
-    def message(self) -> AssistantMessage:
+    def response(self) -> AssistantMessage:
         """
         This property returns the latest message in `output`. It's provided for convenience.
 

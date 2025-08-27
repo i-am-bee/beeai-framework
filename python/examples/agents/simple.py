@@ -18,7 +18,7 @@ async def main() -> None:
         "update", lambda data, event: print(f"Agent({data.update.key}) 🤖 : ", data.update.parsed_value)
     )
 
-    print("Agent 🤖 : ", output.message.text)
+    print("Agent 🤖 : ", output.response.text)
 
 
 if __name__ == "__main__":

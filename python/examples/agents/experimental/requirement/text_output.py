@@ -15,7 +15,7 @@ async def main() -> None:
         expected_output="The output should be an ordered list of steps. Each step should be ideally one sentence.",
     ).middleware(GlobalTrajectoryMiddleware())  # log intermediate steps
 
-    print(response.message.text)
+    print(response.response.text)
 
 
 if __name__ == "__main__":

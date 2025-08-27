@@ -98,7 +98,7 @@ async def main() -> None:
             max_iterations=20,
         ).observe(observer)
 
-        reader.write("Agent 🤖 : ", response.message.text)
+        reader.write("Agent 🤖 : ", response.response.text)
 
 
 if __name__ == "__main__":

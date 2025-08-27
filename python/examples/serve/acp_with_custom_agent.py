@@ -60,7 +60,7 @@ def main() -> None:
         ) -> AsyncGenerator[acp_types.RunYield, acp_types.RunYieldResume]:
             framework_messages = acp_msgs_to_framework_msgs(input)
             response = await agent.run(framework_messages)
-            yield acp_models.MessagePart(content=response.message.text, role="assistant")  # type: ignore[call-arg]
+            yield acp_models.MessagePart(content=response.response.text, role="assistant")  # type: ignore[call-arg]
 
         # Create an ACPAgent instance with the run function
         return ACPServerAgent(

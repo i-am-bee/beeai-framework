@@ -19,7 +19,7 @@ async def main() -> None:
             lambda data, event: (reader.write("Agent 🤖 (debug) : ", data)),
         )
 
-        reader.write("Agent 🤖 : ", response.message.text)
+        reader.write("Agent 🤖 : ", response.response.text)
 
 
 if __name__ == "__main__":
