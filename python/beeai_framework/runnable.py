@@ -6,7 +6,7 @@ from abc import ABC, abstractmethod
 from collections.abc import Awaitable, Callable
 from typing import Any, Generic, TypeAlias, TypedDict, Unpack
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, InstanceOf
 from typing_extensions import ParamSpec, TypeVar
 
 from beeai_framework.backend import AnyMessage, AssistantMessage
@@ -29,9 +29,9 @@ class RunnableOptions(TypedDict, total=False):
 class RunnableOutput(BaseModel):
     """Runnable output."""
 
-    model_config = ConfigDict(arbitrary_types_allowed=True)
+    model_config = ConfigDict(extra="allow")
 
-    output: list[AnyMessage]
+    output: list[InstanceOf[AnyMessage]]
     """The runnable output."""
 
     context: dict[str, Any] = {}
@@ -40,13 +40,13 @@ class RunnableOutput(BaseModel):
     @property
     def message(self) -> AssistantMessage:
         """
-        This property returns the latest message in `output`.
-        It's provided for convenience.
+        This property returns the latest message in `output`. It's provided for convenience.
 
         Returns:
-            The latest message in `output` if not empty, otherwise None.
+            The latest Assistant's message in `output`, returns an empty AssistantMessage as a fallback.
         """
-        return AssistantMessage(self.output[-1].text if self.output else "")
+        last_message = self.output[-1] if self.output else None
+        return last_message if isinstance(last_message, AssistantMessage) else AssistantMessage("")
 
 
 R = TypeVar("R", default=RunnableOutput, bound=RunnableOutput)
