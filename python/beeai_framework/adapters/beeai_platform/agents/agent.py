@@ -3,12 +3,12 @@
 
 from typing import Unpack
 
+import httpx
+
 try:
-    from beeai_framework.adapters.acp.agents.agent import ACPAgent
-    from beeai_framework.adapters.acp.agents.events import (
-        ACPAgentErrorEvent,
-        ACPAgentUpdateEvent,
-    )
+    import a2a.types as a2a_types
+
+    from beeai_framework.adapters.a2a.agents import A2AAgent, A2AAgentErrorEvent, A2AAgentUpdateEvent
 except ModuleNotFoundError as e:
     raise ModuleNotFoundError(
         "Optional module [beeai-platform] not found.\nRun 'pip install \"beeai-framework[beeai-platform]\"' to install."
@@ -34,22 +34,28 @@ from beeai_framework.utils.strings import to_safe_word
 
 
 class BeeAIPlatformAgent(BaseAgent[BeeAIPlatformAgentOutput]):
-    def __init__(self, agent_name: str, *, url: str, memory: BaseMemory) -> None:
+    def __init__(
+        self, *, url: str | None = None, agent_card: a2a_types.AgentCard | None = None, memory: BaseMemory
+    ) -> None:
         super().__init__()
-        self._agent = ACPAgent(agent_name=agent_name, url=url, memory=memory)
+        self._agent = A2AAgent(url=url, agent_card=agent_card, memory=memory)
+
+    @property
+    def name(self) -> str:
+        return self._agent.name
 
     @runnable_entry
     async def run(
-        self, input: str | AnyMessage | list[str] | list[AnyMessage], /, **kwargs: Unpack[AgentOptions]
+        self, input: str | AnyMessage | list[AnyMessage] | a2a_types.Message, /, **kwargs: Unpack[AgentOptions]
     ) -> BeeAIPlatformAgentOutput:
         async def handler(context: RunContext) -> BeeAIPlatformAgentOutput:
-            async def update_event(data: ACPAgentUpdateEvent, event: EventMeta) -> None:
+            async def update_event(data: A2AAgentUpdateEvent, event: EventMeta) -> None:
                 await context.emitter.emit(
                     "update",
-                    BeeAIPlatformAgentUpdateEvent(key=data.key, value=data.value),
+                    BeeAIPlatformAgentUpdateEvent(key="update", value=data.value),
                 )
 
-            async def error_event(data: ACPAgentErrorEvent, event: EventMeta) -> None:
+            async def error_event(data: A2AAgentErrorEvent, event: EventMeta) -> None:
                 await context.emitter.emit(
                     "error",
                     BeeAIPlatformAgentErrorEvent(message=data.message),
@@ -73,6 +79,19 @@ class BeeAIPlatformAgent(BaseAgent[BeeAIPlatformAgentOutput]):
         except Exception as e:
             raise AgentError("Can't connect to beeai platform agent.", cause=e)
 
+    @classmethod
+    async def from_platform(cls, url: str, memory: BaseMemory) -> list["BeeAIPlatformAgent"]:
+        async with httpx.AsyncClient() as client:
+            response = await client.get(f"{url}/api/v1/providers")
+
+            response.raise_for_status()
+            return [
+                BeeAIPlatformAgent(
+                    agent_card=a2a_types.AgentCard(**provider["agent_card"]), memory=await memory.clone()
+                )
+                for provider in response.json().get("items", [])
+            ]
+
     def _create_emitter(self) -> Emitter:
         return Emitter.root().child(
             namespace=["beeai_platform", "agent", to_safe_word(self._agent._name)],
@@ -89,6 +108,6 @@ class BeeAIPlatformAgent(BaseAgent[BeeAIPlatformAgentOutput]):
         self._agent.memory = memory
 
     async def clone(self) -> "BeeAIPlatformAgent":
-        cloned = BeeAIPlatformAgent(self._agent._name, url=self._agent._url, memory=await self._agent.memory.clone())
+        cloned = BeeAIPlatformAgent(url=self._agent._url, memory=await self._agent.memory.clone())
         cloned.emitter = await self.emitter.clone()
         return cloned
