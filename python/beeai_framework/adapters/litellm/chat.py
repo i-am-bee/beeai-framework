@@ -47,6 +47,7 @@ from beeai_framework.backend.utils import parse_broken_json
 from beeai_framework.cache.null_cache import NullCache
 from beeai_framework.context import RunContext
 from beeai_framework.logger import Logger
+from beeai_framework.retryable import Retryable, RetryableConfig, RetryableContext, RetryableInput
 from beeai_framework.tools.tool import AnyTool, Tool
 from beeai_framework.utils.dicts import exclude_keys, exclude_none, include_keys, set_attr_if_none
 from beeai_framework.utils.strings import to_json
@@ -106,7 +107,8 @@ class LiteLLMChatModel(ChatModel, ABC):
         if "response_format" not in self.supported_params:
             logger.warning(f"{self.provider_id} model {self.model_id} does not support structured data.")
             return await super()._create_structure(input, run)
-        else:
+
+        async def executor(_: RetryableContext) -> ChatModelStructureOutput:
             response = await self._create(
                 ChatModelInput(
                     messages=input.messages, response_format=input.input_schema, abort_signal=input.abort_signal
@@ -120,6 +122,16 @@ class LiteLLMChatModel(ChatModel, ABC):
             result = parse_broken_json(text_response)
             # TODO: validate result matches expected schema
             return ChatModelStructureOutput(object=result)
+
+        return await Retryable(
+            RetryableInput(
+                executor=executor,
+                config=RetryableConfig(
+                    max_retries=input.max_retries if input is not None and input.max_retries is not None else 1,
+                    signal=run.signal,
+                ),
+            )
+        ).get()
 
     def _transform_input(self, input: ChatModelInput) -> dict[str, Any]:
         messages: list[dict[str, Any]] = []
@@ -230,9 +242,9 @@ class LiteLLMChatModel(ChatModel, ABC):
                 "model": f"{self._litellm_provider_id}/{self.model_id}",
                 "messages": messages,
                 "tools": tools if tools else None,
-                "response_format": self._format_response_model(input.response_format)
-                if input.response_format
-                else None,
+                "response_format": (
+                    self._format_response_model(input.response_format) if input.response_format else None
+                ),
                 "tool_choice": tool_choice if tools else None,
                 "parallel_tool_calls": bool(input.parallel_tool_calls) if tools else None,
             }
