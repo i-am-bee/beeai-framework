@@ -7,6 +7,9 @@ from collections.abc import AsyncGenerator
 from itertools import chain
 from typing import Any, Self
 
+from pydantic import BaseModel, InstanceOf
+from beeai_framework.tools.tool import AnyTool
+
 if not os.getenv("LITELLM_LOCAL_MODEL_COST_MAP", None):
     os.environ["LITELLM_LOCAL_MODEL_COST_MAP"] = "True"
 
@@ -208,6 +211,7 @@ class LiteLLMChatModel(ChatModel, ABC):
             set(self.supported_params),
         )
 
+        tool_choice: dict[str, Any] | str | None | InstanceOf[AnyTool] = input.tool_choice
         if input.tool_choice == "none" and input.tool_choice not in self._tool_choice_support:
             tool_choice = None
             tools = []
