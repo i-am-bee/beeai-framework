@@ -15,7 +15,6 @@ from beeai_framework.agents.tool_calling import ToolCallingAgent, ToolCallingAge
 from beeai_framework.backend import AssistantMessage, MessageTextContent, MessageToolCallContent, ToolMessage
 from beeai_framework.serve.errors import FactoryAlreadyRegisteredError
 from beeai_framework.utils.lists import find_index
-from beeai_framework.utils.strings import to_json
 
 try:
     import a2a.types as a2a_types
@@ -259,11 +258,12 @@ def send_message_trajectory(
             elif isinstance(content, MessageToolCallContent):
                 if content.tool_name == "final_answer":
                     continue
-                yield trajectory.trajectory_metadata(
-                    title=content.tool_name, content=to_json({"id": content.id, "args": content.args}, sort_keys=False)
-                )
+                yield trajectory.trajectory_metadata(title=f"{content.tool_name} (request)", content=content.args)
     elif isinstance(msg, ToolMessage):
-        for result in msg.get_tool_results():
-            if result.tool_name == "final_answer":
+        for tool_call in msg.get_tool_results():
+            if tool_call.tool_name == "final_answer":
                 continue
-            yield trajectory.trajectory_metadata(title="tool result", content=str(result.result))
+
+            yield trajectory.trajectory_metadata(
+                title=f"{tool_call.tool_name} (response)", content=str(tool_call.result)
+            )
