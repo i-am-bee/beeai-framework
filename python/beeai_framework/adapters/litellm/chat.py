@@ -230,9 +230,10 @@ class LiteLLMChatModel(ChatModel, ABC):
                 "model": f"{self._litellm_provider_id}/{self.model_id}",
                 "messages": messages,
                 "tools": tools if tools else None,
-                "response_format": (
-                    self._format_response_model(input.response_format) if input.response_format else None
-                ),
+                "response_format": self._format_response_model(input.response_format)
+                if input.response_format
+                else None,
+                "max_retries": 0,
                 "tool_choice": tool_choice if tools else None,
                 "parallel_tool_calls": bool(input.parallel_tool_calls) if tools else None,
             }

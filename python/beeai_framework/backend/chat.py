@@ -39,7 +39,7 @@ from beeai_framework.cache.null_cache import NullCache
 from beeai_framework.context import Run, RunContext, RunMiddlewareType
 from beeai_framework.emitter import Emitter
 from beeai_framework.logger import Logger
-from beeai_framework.retryable import Retryable, RetryableConfig, RetryableContext, RetryableInput
+from beeai_framework.retryable import Retryable, RetryableConfig, RetryableInput
 from beeai_framework.template import PromptTemplate, PromptTemplateInput
 from beeai_framework.tools.tool import AnyTool, Tool
 from beeai_framework.utils import AbortController, AbortSignal, ModelLike
@@ -271,18 +271,14 @@ IMPORTANT: You MUST answer with a JSON object that matches the JSON schema above
                     if cache_hit:
                         result = cache_hit[0].model_copy()
                     else:
-                        # Retry this
-                        async def executor(_: RetryableContext) -> ChatModelOutput:
-                            return await self._create(model_input, context)
-
                         result = await Retryable(
                             RetryableInput(
-                                executor=executor,
+                                executor=lambda _: self._create(model_input, context),
                                 config=RetryableConfig(
                                     max_retries=(
                                         model_input.max_retries
                                         if model_input is not None and model_input.max_retries is not None
-                                        else 1
+                                        else 0
                                     ),
                                     signal=context.signal,
                                 ),
@@ -369,17 +365,14 @@ IMPORTANT: You MUST answer with a JSON object that matches the JSON schema above
         )
 
         async def handler(context: RunContext) -> ChatModelStructureOutput:
-            async def executor(_: RetryableContext) -> ChatModelStructureOutput:
-                return await self._create_structure(model_input, context)
-
             return await Retryable(
                 RetryableInput(
-                    executor=executor,
+                    executor=lambda _: self._create_structure(model_input, context),
                     config=RetryableConfig(
                         max_retries=(
                             model_input.max_retries
                             if model_input is not None and model_input.max_retries is not None
-                            else 1
+                            else 0
                         ),
                         signal=context.signal,
                     ),
@@ -448,9 +441,9 @@ IMPORTANT: You MUST answer with a JSON object that matches the JSON schema above
 
     async def clone(self) -> Self:
         cloned = type(self)(
-            parameters=(
-                ChatModelParameters(**self.parameters.model_dump()) if self.parameters else ChatModelParameters()
-            ),
+            parameters=ChatModelParameters(**self.parameters.model_dump())
+            if self.parameters
+            else ChatModelParameters(),
             cache=await self.cache.clone() if self.cache else NullCache[list[ChatModelOutput]](),
             tool_call_fallback_via_response_format=self.tool_call_fallback_via_response_format,
             model_supports_tool_calling=self.model_supports_tool_calling,
