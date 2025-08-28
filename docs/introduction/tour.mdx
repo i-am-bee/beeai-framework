@@ -53,9 +53,9 @@ You can also use other LLM providers like OpenAI, Anthropic, or watsonx - see [B
 
 ---
 
-## Foundation: Build Your First Agent
+## Foundation
 
-### The Basics
+### Build Your First Agent
 
 <Info>
 **New Modules**: [Agent](https://framework.beeai.dev/modules/agents), [Backend](https://framework.beeai.dev/modules/backend)
@@ -112,7 +112,9 @@ if __name__ == "__main__":
 
 ---
 
-## Intelligence: Add Capabilities
+## Intelligence
+
+Now it's time to add capabilities to your agent.
 
 ### Memory for Conversations
 
@@ -314,7 +316,9 @@ if __name__ == "__main__":
 
 ---
 
-## Knowledge: Integrate External Data
+## Knowledge
+
+Now It's time to integrate external data.
 
 <Info>
 New Module: [RAG](https://framework.beeai.dev/modules/rag)
@@ -400,7 +404,7 @@ if __name__ == "__main__":
 Install the RAG extras if you haven't already: `pip install 'beeai-framework[rag]'`
 </Note>
 
-## Orchestration: Agent Coordination
+## Orchestration
 
 <Info>
 New Module: [Workflows](https://framework.beeai.dev/modules/workflows)
@@ -478,7 +482,7 @@ if __name__ == "__main__":
 
 For complex, multi-step processes, use the Workflow system:
 
-```Python
+```python
 import asyncio
 from beeai_framework.backend import ChatModel
 from beeai_framework.tools.search.wikipedia import WikipediaTool
@@ -535,7 +539,9 @@ if __name__ == "__main__":
 
 ---
 
-## Production: Scale & Monitor
+## Production
+
+Now it's time for production-grade features.
 
 ### Monitoring & Logging
 
@@ -659,7 +665,7 @@ if __name__ == "__main__":
     asyncio.run(main())
 ```
 
-### Production Error Handling
+### Error Handling
 
 <Info>
 New Module: [Errors](https://framework.beeai.dev/modules/errors)
@@ -667,7 +673,7 @@ New Module: [Errors](https://framework.beeai.dev/modules/errors)
 
 Make your system robust with comprehensive error management:
 
-```Python
+```python
 import asyncio
 import traceback
 from beeai_framework.agents.experimental import RequirementAgent
@@ -757,7 +763,7 @@ if __name__ == "__main__":
 
 ---
 
-## Integration: Connect & Serve
+## Integration
 
 <Info>
 New Module: [Serve](https://framework.beeai.dev/modules/serve)
