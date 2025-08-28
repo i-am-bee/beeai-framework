@@ -45,6 +45,7 @@ class ChatModelInput(ChatModelParameters):
     tools: list[InstanceOf[AnyTool]] | None = None
     tool_choice: InstanceOf[AnyTool] | Literal["required"] | Literal["auto"] | Literal["none"] | None = None
     abort_signal: AbortSignal | None = None
+    max_retries: int | None = None
     stop_sequences: list[str] | None = None
     response_format: dict[str, Any] | type[BaseModel] | None = None
     messages: list[InstanceOf[AnyMessage]] = Field(

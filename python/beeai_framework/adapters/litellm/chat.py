@@ -107,8 +107,7 @@ class LiteLLMChatModel(ChatModel, ABC):
         if "response_format" not in self.supported_params:
             logger.warning(f"{self.provider_id} model {self.model_id} does not support structured data.")
             return await super()._create_structure(input, run)
-
-        async def executor(_: RetryableContext) -> ChatModelStructureOutput:
+        else:
             response = await self._create(
                 ChatModelInput(
                     messages=input.messages, response_format=input.input_schema, abort_signal=input.abort_signal
@@ -122,16 +121,6 @@ class LiteLLMChatModel(ChatModel, ABC):
             result = parse_broken_json(text_response)
             # TODO: validate result matches expected schema
             return ChatModelStructureOutput(object=result)
-
-        return await Retryable(
-            RetryableInput(
-                executor=executor,
-                config=RetryableConfig(
-                    max_retries=input.max_retries if input is not None and input.max_retries is not None else 1,
-                    signal=run.signal,
-                ),
-            )
-        ).get()
 
     def _transform_input(self, input: ChatModelInput) -> dict[str, Any]:
         messages: list[dict[str, Any]] = []
