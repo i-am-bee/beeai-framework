@@ -11,6 +11,7 @@ from beeai_framework.context import RunContext
 from beeai_framework.emitter import Emitter
 from beeai_framework.memory import BaseMemory
 from beeai_framework.tools import StringToolOutput, Tool, ToolError, ToolRunOptions
+from beeai_framework.utils.cloneable import Cloneable
 from beeai_framework.utils.lists import find_index
 
 
@@ -60,7 +61,7 @@ class HandoffTool(Tool[HandoffSchema, ToolRunOptions, StringToolOutput]):
         if not memory or not isinstance(memory, BaseMemory):
             raise ToolError("No memory found in context.")
 
-        target: AnyAgent = await self._target.clone()  # type: ignore
+        target: AnyAgent = await self._target.clone() if isinstance(self._target, Cloneable) else self._target
         target.memory.reset()
 
         non_system_messages = [msg for msg in memory.messages if not isinstance(msg, SystemMessage)]
