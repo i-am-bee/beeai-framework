@@ -110,7 +110,7 @@ async def main() -> None:
             max_iterations=20,
         ).on("*", process_agent_events, EmitterOptions(match_nested=False))
 
-        reader.write("Agent 🤖 : ", response.response.text)
+        reader.write("Agent 🤖 : ", response.last_message.text)
 
 
 if __name__ == "__main__":

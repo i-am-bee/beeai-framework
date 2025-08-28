@@ -52,7 +52,7 @@ async def main() -> None:
 
     result = await agent.run("What is the square root of 36?", total_max_retries=10)
 
-    print(result.response.text)
+    print(result.last_message.text)
 
 
 if __name__ == "__main__":

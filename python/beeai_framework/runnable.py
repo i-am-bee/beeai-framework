@@ -38,15 +38,11 @@ class RunnableOutput(BaseModel):
     """Context can be used to return additional data by runnable."""
 
     @property
-    def response(self) -> AssistantMessage:
-        """
-        This property returns the latest message in `output`. It's provided for convenience.
+    def last_message(self) -> AnyMessage:
+        """Returns the latest message in `output` with fallback if not defined. It's provided for convenience."""
 
-        Returns:
-            The latest Assistant's message in `output`, returns an empty AssistantMessage as a fallback.
-        """
         last_message = self.output[-1] if self.output else None
-        return last_message if isinstance(last_message, AssistantMessage) else AssistantMessage("")
+        return last_message or AssistantMessage("")
 
 
 R = TypeVar("R", default=RunnableOutput, bound=RunnableOutput)

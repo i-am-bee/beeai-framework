@@ -91,7 +91,7 @@ async def main() -> None:
         max_iterations=20,
     ).on("*", print_events)
 
-    print("Agent 🤖 : ", response.response.text)
+    print("Agent 🤖 : ", response.last_message.text)
 
 
 if __name__ == "__main__":

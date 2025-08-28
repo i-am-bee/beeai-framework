@@ -114,7 +114,7 @@ async def main() -> None:
             signal=AbortSignal.timeout(2 * 60 * 1000),
         ).observe(observer)
 
-        reader.write("Agent 🤖 : ", response.response.text)
+        reader.write("Agent 🤖 : ", response.last_message.text)
 
 
 if __name__ == "__main__":

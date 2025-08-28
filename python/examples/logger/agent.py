@@ -20,7 +20,7 @@ async def main() -> None:
         )
     )
 
-    logger.info(f"Agent 🤖 : {output.response.text}")
+    logger.info(f"Agent 🤖 : {output.last_message.text}")
 
 
 if __name__ == "__main__":

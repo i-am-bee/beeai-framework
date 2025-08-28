@@ -28,7 +28,7 @@ class WatsonxOrchestrateServerRequirementAgent(WatsonxOrchestrateServerAgent[Req
         if input or not self._agent.memory.is_empty():
             input = self._agent.memory.messages[-1:]
             response = await self._agent.run(input)
-            return response.response
+            return response.last_message
         else:
             raise ValueError("Agent invoked with empty memory.")
 

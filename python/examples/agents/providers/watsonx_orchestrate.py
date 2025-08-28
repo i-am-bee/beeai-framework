@@ -24,7 +24,7 @@ async def main() -> None:
     )
     for prompt in reader:
         response = await agent.run(prompt)
-        reader.write("Agent 🤖 : ", response.response.text)
+        reader.write("Agent 🤖 : ", response.last_message.text)
 
 
 if __name__ == "__main__":

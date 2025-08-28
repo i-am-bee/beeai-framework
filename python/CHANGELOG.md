@@ -27,7 +27,7 @@ Key changes to observe:
         "Write a step-by-step tutorial on how to bake bread",
         expected_output="The output should be an ordered list of steps. Each step should be ideally one sentence.",
         ).middleware(GlobalTrajectoryMiddleware())
-    print(result.response.text)
+    print(result.last_message.text)
     ```
   > Note: Previously, different agents in the framework had completely distinct output types. This means that the output objects were represented by different data structures with different attribute names (e.g., `result`, `answer`) depending on the agent being used. We simplified this contract to enforce that all agent output types must subclass `AgentOutput`. Usage should be updated to reflect those changes. For example, an agent's response is captured in the `response` property of the agents's output object. In additional to the common output object attributes shared by all agents, some agents also include additional properties in the output, such as `state`. Please check each agent implementation for more details.
 

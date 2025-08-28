@@ -88,7 +88,7 @@ async def main() -> None:
     agent = RAGAgent(llm=llm, memory=UnconstrainedMemory(), vector_store=vector_store, reranker=reranker)
 
     response = await agent.run("What agents are available in BeeAI?")
-    print(response.response.text)
+    print(response.last_message.text)
 
 
 if __name__ == "__main__":

@@ -162,7 +162,7 @@ class AgentWorkflow:
                 **execution.model_dump(),
             )
 
-            state.final_answer = run_output.response.text
+            state.final_answer = run_output.last_message.text
             if run_input.prompt:
                 state.new_messages.append(UserMessage(run_input.prompt))
 

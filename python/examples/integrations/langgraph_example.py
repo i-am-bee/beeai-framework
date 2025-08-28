@@ -49,7 +49,7 @@ async def main() -> None:
             llm=ChatModel.from_name("ollama:llama3.1"), tools=[DuckDuckGoSearchTool()], memory=state.memory
         )
         response = await agent.run(state.memory.messages, max_iterations=5)
-        state.answer = response.response.text
+        state.answer = response.last_message.text
         return Workflow.END
 
     def langgraph_step(state: Schema) -> str:

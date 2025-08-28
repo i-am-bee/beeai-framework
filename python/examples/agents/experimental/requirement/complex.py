@@ -91,7 +91,7 @@ async def main() -> None:
         expected_output="Detailed plan on what to do from morning to evening, split in sections each with a time range.",
     ).middleware(GlobalTrajectoryMiddleware())
 
-    print(response.response.text)
+    print(response.last_message.text)
     # print(response.memory)  # temp memory created
     # print(response.state.iteration)  # number of iterations (steps)
     # print(response.state.steps)  # individual steps
