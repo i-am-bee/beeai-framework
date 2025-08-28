@@ -1,78 +1,751 @@
 ---
 title: "The Grand Tour"
-description: "A complete journey through BeeAI Framework’s modular architecture"
-icon: "map"
+description: "A guided journey through BeeAI Framework’s modular architecture"
+icon: "route"
 ---
 
-Welcome to the Grand Tour! You’ve probably gone through the quickstart and tried some sample code. Now it’s time to explore what you can build with this framework.
+## Welcome to the Grand Tour
 
-This guide walks you through creating AI applications - from your first agent to full production-ready systems. You can follow it step by step or jump straight to the sections that interest you most.
+You’ve tried the quickstart and run some sample code—now it’s time to build something real.
+
+This guide takes you step by step from your first agent to a production-ready system. Each section adds one new capability, so by the end you’ll see how everything fits together. You can follow the whole journey or skip ahead to the parts you need.
 
 ## Journey Overview
 
-Here’s a quick overview of the stages and modules:
+Here’s a quick map of the stages and modules:
 
 | Stage | What You'll Build | Key Modules |
 |-------|------------------|-------------|
 | **[Foundation](#foundation)** | Your first simple chat agent | [Agent](https://framework.beeai.dev/modules/agents), [Backend](https://framework.beeai.dev/modules/backend) |
-| **[Intelligence](#intelligence)** | An agent that can remember context and take actions | [Memory](https://framework.beeai.dev/modules/memory), [Tools](https://framework.beeai.dev/modules/tools), [Templates](https://framework.beeai.dev/modules/templates) |
-| **[Knowledge](#knowledge)** | An agent grounded in your documents and data | [RAG](https://framework.beeai.dev/modules/rag) |
+| **[Intelligence](#intelligence)** | An agent that can remember and take actions | [Memory](https://framework.beeai.dev/modules/memory), [Tools](https://framework.beeai.dev/modules/tools), [Templates](https://framework.beeai.dev/modules/templates) |
+| **[Knowledge](#knowledge)** | An agent grounded in your data | [RAG](https://framework.beeai.dev/modules/rag) |
 | **[Orchestration](#orchestration)** | A team of specialized agents working together | [Workflows](https://framework.beeai.dev/modules/workflows) |
-| **[Production](#production)** | Enterprise-ready infrastructure for reliability and scale | [Cache](https://framework.beeai.dev/modules/cache), [Observability](https://framework.beeai.dev/modules/observability), [Serialization](https://framework.beeai.dev/modules/serialization), [Errors](https://framework.beeai.dev/modules/errors) |
-| **[Integration](#integration)** | Make your agent accessible as a service (MCP, A2A) | [Serve](https://framework.beeai.dev/modules/serve) |
+| **[Production](#production)** | Reliable, scalable infrastructure | [Cache](https://framework.beeai.dev/modules/cache), [Observability](https://framework.beeai.dev/modules/observability), [Serialization](https://framework.beeai.dev/modules/serialization), [Errors](https://framework.beeai.dev/modules/errors) |
+| **[Integration](#integration)** | Expose your agent as a service (MCP, A2A) | [Serve](https://framework.beeai.dev/modules/serve) |
+
+## Prerequisities
+
+- Install BeeAI Framework: `pip install beeai-framework`  
+- Download and run [Ollama](https://ollama.com/)  
+- Pull model: `ollama pull granite3.3:8b`
 
 ---
 
 ## Foundation: Build Your First Agent
 
-### [Agent](https://framework.beeai.dev/modules/agents) + [Backend](https://framework.beeai.dev/modules/backend)
+<Info>
+New Modules: [Agent](https://framework.beeai.dev/modules/agents), [Backend](https://framework.beeai.dev/modules/backend)
+</Info>
+
+### The Basics 
+
+Let's start with the simplest possible agent - one that can respond to messages.
+
+```Python
+import asyncio
+from beeai_framework.agents.experimental import RequirementAgent
+from beeai_framework.backend import ChatModel
+
+async def main():
+    # Create your first agent
+    agent = RequirementAgent(
+        llm=ChatModel.from_name("ollama:granite3.3:8b"),
+        role="Helpful Assistant",
+        instructions="You are a friendly AI assistant. Be helpful and conversational."
+    )
+
+    # Talk to your agent
+    response = await agent.run("Hello! Can you help me?")
+    print(response.answer.text)
+
+if __name__ == "__main__":
+    asyncio.run(main())
+```
+
+1. Run the code and send your first message
+2. Experiment with different prompts to see the responses
+3. Adjust the `role` and `instructions` to change behavior
+4. Notice: The agent forgets everything between runs
 
 ---
 
 ## Intelligence: Add Capabilities
 
-### [Memory Systems](https://framework.beeai.dev/modules/memory)
+<Info>
+New Modules: [Memory](https://framework.beeai.dev/modules/memory), [Templates](https://framework.beeai.dev/modules/templates), [Tools](https://framework.beeai.dev/modules/tools)
+</Info>
 
-### [Prompt Templates](https://framework.beeai.dev/modules/templates)
+### Add Persistence 
 
-### [Tools](https://framework.beeai.dev/modules/tools)
+Right now your agent forgets everything between conversations. Let's fix that:
+
+```Python
+import asyncio
+from beeai_framework.agents.experimental import RequirementAgent
+from beeai_framework.backend import ChatModel
+from beeai_framework.memory import UnconstrainedMemory
+
+async def main():
+    # Add memory to remember the conversation
+    agent = RequirementAgent(
+        llm=ChatModel.from_name("ollama:granite3.3:8b"),
+        memory=UnconstrainedMemory(),  # Remembers everything
+        role="Helpful Assistant",
+        instructions="You are a friendly AI assistant with a good memory."
+    )
+
+    # Now have a multi-turn conversation
+    response1 = await agent.run("My name is Bob")
+    print(response1.answer.text)
+    
+    response2 = await agent.run("What's my name?")  # It will remember!
+    print(response2.answer.text)
+
+if __name__ == "__main__":
+    asyncio.run(main())
+```
+
+1. Test the memory - introduce yourself, then ask follow-up questions
+2. Have a long conversation and see how context is maintained
+
+### Add Tools
+
+Let's give your agent the ability to access tools for more information:
+
+```Python
+import asyncio
+from beeai_framework.agents.experimental import RequirementAgent
+from beeai_framework.backend import ChatModel
+from beeai_framework.memory import UnconstrainedMemory
+from beeai_framework.tools.search.wikipedia import WikipediaTool
+from beeai_framework.tools.weather import OpenMeteoTool
+
+async def main():
+    # Enhanced agent with tools
+    agent = RequirementAgent(
+        llm=ChatModel.from_name("ollama:granite3.3:8b"),
+        memory=UnconstrainedMemory(),
+        tools=[WikipediaTool(), OpenMeteoTool()],  # Now it can search and get weather
+        role="Research Assistant",
+        instructions="You are a helpful research assistant. Use your tools to find accurate, current information."
+    )
+
+    # Test the tools
+    response = await agent.run("What's the current weather in New York and tell me about the history of the city?")
+    print(response.answer.text)
+
+if __name__ == "__main__":
+    asyncio.run(main())
+```
+
+1. Ask for weather in different cities
+2. Ask factual questions that require Wikipedia search
+3. Try combining both tools in one request
+
+### Prompt Templates
+
+Instead of hardcoding instructions, let's use dynamic templates:
+
+```Python
+import asyncio
+from beeai_framework.agents.experimental import RequirementAgent
+from beeai_framework.backend import ChatModel
+from beeai_framework.memory import UnconstrainedMemory
+from beeai_framework.tools.search.wikipedia import WikipediaTool
+from beeai_framework.tools.weather import OpenMeteoTool
+from beeai_framework.template import PromptTemplate, PromptTemplateInput
+from pydantic import BaseModel
+
+class AgentInstructions(BaseModel):
+    role: str
+    domain: str
+    context: str
+    guidelines: list[str]
+    personality: str
+
+async def main():
+    # Create a dynamic template
+    template = PromptTemplate(
+        PromptTemplateInput(
+            schema=AgentInstructions,
+            template="""You are {{role}} with expertise in {{domain}}.
+
+Current context: {{context}}
+
+Guidelines:
+{{#guidelines}}
+- {{.}}
+{{/guidelines}}
+
+Remember: Always be {{personality}} and use your available tools when needed.""",
+            defaults={"personality": "helpful"}
+        )
+    )
+
+    # Configure your agent dynamically
+    instructions = template.render(
+        role="Research Analyst",
+        domain="technology and science",
+        context="The user is looking for detailed, accurate information",
+        guidelines=[
+            "Verify facts with reliable sources",
+            "Provide specific examples when possible", 
+            "Cite your sources"
+        ],
+        personality="thorough and professional"
+    )
+
+    agent = RequirementAgent(
+        llm=ChatModel.from_name("ollama:granite3.3:8b"),
+        memory=UnconstrainedMemory(),
+        tools=[WikipediaTool(), OpenMeteoTool()],
+        instructions=instructions,
+        role="Research Analyst"
+    )
+    
+    response = await agent.run("Tell me about quantum computing")
+    print(response.answer.text)
+
+if __name__ == "__main__":
+    asyncio.run(main())
+```
+
+1. Create different agent personalities by changing the template variables
+2. Try different roles (e.g., "Creative Writer", "Technical Expert", "Teacher")
+3. Add your own custom guidelines
 
 ---
 
 ## Knowledge: Integrate External Data
 
-### [Retrieval-Augmented Generation (RAG)](https://framework.beeai.dev/modules/rag)
+<Info>
+New Module: [RAG](https://framework.beeai.dev/modules/rag)
+</Info>
 
----
+### Setup Document Knowledge
+
+Let's give your agent access to a knowledge base of documents:
+
+```Python
+import asyncio
+from beeai_framework.agents.experimental import RequirementAgent
+from beeai_framework.backend import ChatModel
+from beeai_framework.backend.document_loader import DocumentLoader
+from beeai_framework.backend.embedding import EmbeddingModel
+from beeai_framework.backend.text_splitter import TextSplitter
+from beeai_framework.backend.vector_store import VectorStore
+from beeai_framework.memory import UnconstrainedMemory
+from beeai_framework.tools.search.wikipedia import WikipediaTool
+from beeai_framework.tools.weather import OpenMeteoTool
+from beeai_framework.tools.search.retrieval import VectorStoreSearchTool
+
+async def main():
+    # Step 1: Load and process your documents
+    loader = DocumentLoader.from_name(
+        "langchain:UnstructuredMarkdownLoader", 
+        file_path="docs/modules/agents.mdx"  # Replace with your file path
+    )
+    text_splitter = TextSplitter.from_name(
+        "langchain:RecursiveCharacterTextSplitter", 
+        chunk_size=1000, 
+        chunk_overlap=200
+    )
+    embedding_model = EmbeddingModel.from_name(
+        "watsonx:ibm/slate-125m-english-rtrvr-v2", 
+        truncate_input_tokens=500
+    )
+
+    # Step 2: Create a vector store and populate it
+    vector_store = VectorStore.from_name(
+        "beeai:TemporalVectorStore", 
+        embedding_model=embedding_model
+    )
+
+    # Load your documents
+    try:
+        documents = await loader.load()
+        chunks = await text_splitter.split_documents(documents)
+        await vector_store.add_documents(chunks)
+        print(f"Loaded {len(chunks)} document chunks")
+    except Exception as e:
+        print(f"Failed to load documents: {e}")
+        return
+
+    # Step 3: Add RAG capability to your agent
+    rag_tool = VectorStoreSearchTool(vector_store=vector_store)
+
+    agent = RequirementAgent(
+        llm=ChatModel.from_name("ollama:granite3.3:8b"),
+        memory=UnconstrainedMemory(),
+        tools=[WikipediaTool(), OpenMeteoTool(), rag_tool],  # Now includes document search
+        role="Knowledge Assistant",
+        instructions="""You are a knowledgeable assistant with access to:
+        1. A document knowledge base (use VectorStoreSearch for specific document queries)
+        2. Wikipedia for general facts
+        3. Weather information
+        
+        When users ask about topics that might be in the documents, search your knowledge base first."""
+    )
+    
+    response = await agent.run("What types of agents are available in BeeAI?")
+    print(response.answer.text)
+
+if __name__ == "__main__":
+    asyncio.run(main())
+```
+
+1. Add some markdown files with information about your company/project
+2. Ask questions that should be answered from your documents
+3. Compare how responses differ with vs. without the knowledge base
 
 ## Orchestration: Agent Coordination
 
-### [Workflows](https://framework.beeai.dev/modules/workflows)
+<Info>
+New Module: [Workflows](https://framework.beeai.dev/modules/workflows)
+</Info>
+
+### Multi-Agent System
+
+Let's create a team of agents that can hand off tasks to each other:
+
+```Python
+import asyncio
+from beeai_framework.agents.experimental import RequirementAgent
+from beeai_framework.backend import ChatModel
+from beeai_framework.memory import UnconstrainedMemory
+from beeai_framework.tools.search.wikipedia import WikipediaTool
+from beeai_framework.tools.weather import OpenMeteoTool
+from beeai_framework.tools.handoff import HandoffTool
+from beeai_framework.tools.think import ThinkTool
+
+async def main():
+    # Create specialized agents
+    knowledge_agent = RequirementAgent(
+        llm=ChatModel.from_name("ollama:granite3.3:8b"),
+        tools=[ThinkTool(), WikipediaTool()],
+        memory=UnconstrainedMemory(),
+        role="Knowledge Specialist", 
+        instructions="Provide detailed, accurate information using available knowledge sources. Think through problems step by step."
+    )
+
+    weather_agent = RequirementAgent(
+        llm=ChatModel.from_name("ollama:granite3.3:8b"),
+        tools=[ThinkTool(), OpenMeteoTool()],
+        memory=UnconstrainedMemory(),
+        role="Weather Expert",
+        instructions="Provide comprehensive weather information and forecasts. Always think before using tools."
+    )
+
+    # Create a coordinator agent that manages handoffs
+    coordinator_agent = RequirementAgent(
+        llm=ChatModel.from_name("ollama:granite3.3:8b"),
+        memory=UnconstrainedMemory(),
+        tools=[
+            HandoffTool(
+                target=knowledge_agent, 
+                name="knowledge_specialist", 
+                description="For general knowledge and research questions"
+            ),
+            HandoffTool(
+                target=weather_agent, 
+                name="weather_expert", 
+                description="For weather-related queries"
+            ),
+        ],
+        role="Coordinator",
+        instructions="""You coordinate between specialist agents. 
+        - For weather queries: use weather_expert
+        - For research/knowledge questions: use knowledge_specialist  
+        - For mixed queries: break them down and use multiple specialists
+        
+        Always introduce yourself and explain which specialist will help."""
+    )
+    
+    response = await coordinator_agent.run("What's the weather in Paris and tell me about its history?")
+    print(response.answer.text)
+
+if __name__ == "__main__":
+    asyncio.run(main())
+```
+
+1. Ask the coordinator mixed questions: "What's the weather in Paris and tell me about its history?"
+2. Test how it decides which agent to use
+3. Try complex queries that need multiple specialists
+
+### Workflow System
+
+For more complex orchestration, use workflows:
+
+```Python
+import asyncio
+from beeai_framework.backend import ChatModel
+from beeai_framework.tools.search.wikipedia import WikipediaTool
+from beeai_framework.tools.weather import OpenMeteoTool
+from beeai_framework.workflows.agent import AgentWorkflow
+
+async def main():
+    # Create a workflow that coordinates multiple agents
+    workflow = AgentWorkflow(name="Research Team")
+    llm = ChatModel.from_name("ollama:granite3.3:8b")
+
+    # Add specialized agents to the workflow
+    workflow.add_agent({
+        "name": "Researcher",
+        "role": "A diligent researcher",
+        "instructions": "You look up and provide information about specific topics.",
+        "tools": [WikipediaTool()],
+        "llm": llm,
+    })
+
+    workflow.add_agent({
+        "name": "WeatherExpert", 
+        "role": "A weather reporter",
+        "instructions": "You provide detailed weather reports.",
+        "tools": [OpenMeteoTool()],
+        "llm": llm,
+    })
+
+    workflow.add_agent({
+        "name": "Synthesizer",
+        "role": "A data synthesizer", 
+        "instructions": "You combine information into coherent summaries.",
+        "llm": llm,
+    })
+
+    # Run the workflow with multiple tasks
+    result = await workflow.run([
+        {
+            "prompt": "Provide a short history of Paris"
+        },
+        {
+            "prompt": "Get the current weather for Paris"
+        },
+        {
+            "prompt": "Combine the history and weather into a travel brief"
+        }
+    ])
+    
+    print(result.state.final_answer)
+
+if __name__ == "__main__":
+    asyncio.run(main())
+```
 
 ---
 
 ## Production: Scale & Monitor
 
-### Performance: [Cache](https://framework.beeai.dev/modules/cache)
+### Add Observability
 
-### State: [Serialization](https://framework.beeai.dev/modules/serialization)
+<Info>
+New Modules: [Observability](https://framework.beeai.dev/modules/observability), [Logger](https://framework.beeai.dev/modules/logger), [Events](https://framework.beeai.dev/modules/events), [Emitter](https://framework.beeai.dev/modules/emitter)
+</Info>
 
-### Monitoring: [Observability](https://framework.beeai.dev/modules/observability)
+Let's add monitoring so you can see what your agents are doing:
 
-- [Logger](https://framework.beeai.dev/modules/logger)
-- [Events](https://framework.beeai.dev/modules/events)
-- [Emitter](https://framework.beeai.dev/modules/emitter)
+```Python
+import asyncio
+from beeai_framework.agents.experimental import RequirementAgent
+from beeai_framework.backend import ChatModel
+from beeai_framework.memory import UnconstrainedMemory
+from beeai_framework.tools.search.wikipedia import WikipediaTool
+from beeai_framework.middleware.trajectory import GlobalTrajectoryMiddleware
+from beeai_framework.tools import Tool
 
-### Errors: [Error Handling](https://framework.beeai.dev/modules/errors)
+async def main():
+    agent = RequirementAgent(
+        llm=ChatModel.from_name("ollama:granite3.3:8b"),
+        memory=UnconstrainedMemory(),
+        tools=[WikipediaTool()],
+        role="Research Assistant",
+        instructions="You are a research assistant. Use tools to find accurate information.",
+        # Add middleware to log all tool calls
+        middlewares=[GlobalTrajectoryMiddleware(included=[Tool])]
+    )
+
+    response = await agent.run("Tell me about quantum computing")
+    print(response.answer.text)
+
+if __name__ == "__main__":
+    asyncio.run(main())
+```
+
+### Add Caching
+
+<Info>
+New Module: [Cache](https://framework.beeai.dev/modules/cache)
+</Info>
+
+Speed up your system and reduce costs with intelligent caching:
+
+```Python
+import asyncio
+from beeai_framework.agents.experimental import RequirementAgent
+from beeai_framework.backend import ChatModel
+from beeai_framework.memory import UnconstrainedMemory
+from beeai_framework.tools.weather import OpenMeteoTool
+from beeai_framework.cache import UnconstrainedCache
+
+async def main():
+    # Create a cached weather tool to avoid repeated API calls
+    weather_tool = OpenMeteoTool()
+    weather_tool.cache = UnconstrainedCache()
+    
+    agent = RequirementAgent(
+        llm=ChatModel.from_name("ollama:granite3.3:8b"),
+        memory=UnconstrainedMemory(),
+        tools=[weather_tool],
+        role="Weather Assistant",
+        instructions="You provide weather information efficiently."
+    )
+
+    # First call will hit the API
+    response1 = await agent.run("What's the weather in New York?")
+    print("First call:", response1.answer.text)
+    
+    # Second call will use cached result
+    response2 = await agent.run("What's the weather in New York?")
+    print("Cached call:", response2.answer.text)
+
+if __name__ == "__main__":
+    asyncio.run(main())
+```
+
+### Error Handling
+
+<Info>
+New Module: [Errors](https://framework.beeai.dev/modules/errors)
+</Info>
+
+Make your system robust with proper error handling:
+
+```Python
+import asyncio
+import traceback
+from beeai_framework.agents.experimental import RequirementAgent
+from beeai_framework.backend import ChatModel
+from beeai_framework.memory import UnconstrainedMemory
+from beeai_framework.tools.weather import OpenMeteoTool
+from beeai_framework.errors import FrameworkError
+
+async def main():
+    try:
+        agent = RequirementAgent(
+            llm=ChatModel.from_name("ollama:granite3.3:8b"),
+            memory=UnconstrainedMemory(),
+            tools=[OpenMeteoTool()],
+            role="Weather Assistant",
+            instructions="You provide weather information."
+        )
+
+        response = await agent.run("What's the weather in Invalid-City-Name?")
+        print(response.answer.text)
+        
+    except FrameworkError as e:
+        print(f"Framework error occurred: {e.explain()}")
+        traceback.print_exc()
+    except Exception as e:
+        print(f"Unexpected error: {e}")
+        traceback.print_exc()
+
+if __name__ == "__main__":
+    asyncio.run(main())
+```
+
+### State Persistence
+
+<Info>
+New Module: [Serialization](https://framework.beeai.dev/modules/serialization)
+</Info>
+
+Save and restore your agent's state:
+
+```Python
+import asyncio
+import json
+from beeai_framework.agents.experimental import RequirementAgent
+from beeai_framework.backend import ChatModel
+from beeai_framework.memory import UnconstrainedMemory
+
+async def main():
+    agent = RequirementAgent(
+        llm=ChatModel.from_name("ollama:granite3.3:8b"),
+        memory=UnconstrainedMemory(),
+        role="Persistent Assistant",
+        instructions="You remember our conversations."
+    )
+
+    # Have a conversation
+    response1 = await agent.run("My favorite color is blue")
+    print("Agent:", response1.answer.text)
+    
+    # Save the agent's memory state
+    memory_state = agent.memory.create_snapshot()
+    with open("agent_memory.json", "w") as f:
+        json.dump({
+            "messages": [msg.model_dump() for msg in memory_state["messages"]]
+        }, f)
+    print("Memory saved!")
+    
+    # Create a new agent and restore memory
+    new_agent = RequirementAgent(
+        llm=ChatModel.from_name("ollama:granite3.3:8b"),
+        memory=UnconstrainedMemory(),
+        role="Persistent Assistant",
+        instructions="You remember our conversations."
+    )
+    
+    # Load and restore memory (simplified example)
+    with open("agent_memory.json", "r") as f:
+        saved_data = json.load(f)
+    
+    # In practice, you'd properly deserialize the messages
+    response2 = await new_agent.run("What's my favorite color?")
+    print("New agent:", response2.answer.text)
+
+if __name__ == "__main__":
+    asyncio.run(main())
+```
 
 ---
 
 ## Integration: Connect & Serve
 
-### [Serve](https://framework.beeai.dev/modules/serve)
+<Info>
+New Module: [Serve](https://framework.beeai.dev/modules/serve)
+</Info>
+
+### MCP Server
+
+Expose your agent as an MCP (Model Context Protocol) server that any MCP-compatible client can use:
+
+```Python
+from beeai_framework.adapters.mcp import MCPServer
+from beeai_framework.tools.weather import OpenMeteoTool
+from beeai_framework.tools.search.wikipedia import WikipediaTool
+
+def main():
+    # Create an MCP server
+    server = MCPServer()
+    
+    # Register tools that can be used by MCP clients
+    server.register_many([
+        OpenMeteoTool(),
+        WikipediaTool()
+    ])
+    
+    # Start the server
+    server.serve()
+
+if __name__ == "__main__":
+    main()
+```
+
+### A2A Server
+
+Expose your agent as an A2A (Agent2Agent Protocol) server that any A2A-compatible client can use:
+
+```Python
+from beeai_framework.adapters.a2a import A2AServer, A2AServerConfig
+from beeai_framework.agents.experimental import RequirementAgent
+from beeai_framework.backend import ChatModel
+from beeai_framework.memory import UnconstrainedMemory
+from beeai_framework.serve.utils import LRUMemoryManager
+from beeai_framework.tools.search.duckduckgo import DuckDuckGoSearchTool
+from beeai_framework.tools.weather import OpenMeteoTool
+
+
+def main() -> None:
+    llm = ChatModel.from_name("ollama:granite3.3:8b")
+    agent = RequirementAgent(
+        llm=llm,
+        tools=[DuckDuckGoSearchTool(), OpenMeteoTool()],
+        memory=UnconstrainedMemory(),
+    )
+
+    # Register the agent with the A2A server and run the HTTP server
+    # For the ToolCallingAgent, we don't need to specify ACPAgent factory method
+    # because it is already registered in the A2AServer
+    # we use LRU memory manager to keep limited amount of sessions in the memory
+    A2AServer(config=A2AServerConfig(port=9999), memory_manager=LRUMemoryManager(maxsize=100)).register(agent).serve()
+
+
+if __name__ == "__main__":
+    main()
+```
+
+### BeeAI Platform Server
+
+Expose your agent as a BeeAI Platform server for seamless platform integration.
+
+```Python
+from beeai_framework.adapters.beeai_platform.serve.server import BeeAIPlatformServer
+from beeai_framework.agents.experimental import RequirementAgent
+from beeai_framework.backend import ChatModel
+from beeai_framework.memory import UnconstrainedMemory
+from beeai_framework.middleware.trajectory import GlobalTrajectoryMiddleware
+from beeai_framework.tools.search.wikipedia import WikipediaTool
+from beeai_framework.tools.weather import OpenMeteoTool
+
+def main():
+    llm = ChatModel.from_name("ollama:granite3.3:8b")
+    agent = RequirementAgent(
+        llm=llm,
+        tools=[WikipediaTool(), OpenMeteoTool()],
+        memory=UnconstrainedMemory(),
+        middlewares=[GlobalTrajectoryMiddleware()],
+        role="Research Assistant",
+        instructions="You are a helpful research assistant with access to Wikipedia and weather data."
+    )
+
+    # Runs HTTP server that registers to BeeAI platform
+    server = BeeAIPlatformServer()
+    server.register()
+    server.serve()
+
+if __name__ == "__main__":
+    main()
+```
+
+### IBM watsonx Orchestrate Server
+
+```Python
+from beeai_framework.adapters.watsonx_orchestrate import WatsonxOrchestrateServer, WatsonxOrchestrateServerConfig
+from beeai_framework.agents.experimental import RequirementAgent
+from beeai_framework.backend import ChatModel
+from beeai_framework.memory import UnconstrainedMemory
+from beeai_framework.serve.utils import LRUMemoryManager
+from beeai_framework.tools.weather import OpenMeteoTool
+
+
+def main() -> None:
+    llm = ChatModel.from_name("ollama:granite3.3:8b")
+    agent = RequirementAgent(llm=llm, tools=[OpenMeteoTool()], memory=UnconstrainedMemory(), role="a weather agent")
+
+    config = WatsonxOrchestrateServerConfig(port=8080, host="0.0.0.0", api_key=None)  # optional
+    # use LRU memory manager to keep limited amount of sessions in the memory
+    server = WatsonxOrchestrateServer(config=config, memory_manager=LRUMemoryManager(maxsize=100))
+    server.register(agent)
+
+    # start an API with /chat/completions endpoint which is compatible with Watsonx Orchestrate
+    server.serve()
+
+
+if __name__ == "__main__":
+    main()
+```
 
 ---
 
 ## What's Next?
 
-Ready to dive deeper? Each module page includes detailed guides, practical examples, and best practices. Start simple, and let the framework grow with you as you add more complexity.
+Congratulations! You've built a complete AI agent system from a simple chat bot to a production-ready, multi-agent workflow with knowledge bases, caching, monitoring, and service endpoints.
+
+Each module page includes detailed guides, examples, and best practices. Here are some next steps:
+1. Explore Advanced Features: Dive deeper into specific modules that interest you
+2. Scale Your System: Add more agents, tools, and knowledge bases
+3. Production Deployment: Set up proper monitoring, logging, and infrastructure
+4. Custom Tools: Build your own tools for domain-specific functionality
+5. Integration: Connect your agents to existing systems and workflows
+
+The framework is designed to scale with you—start small, then grow your system step by step as your needs evolve.
