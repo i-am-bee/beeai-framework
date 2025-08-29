@@ -1,49 +1,70 @@
-## Unrelased
+## Unreleased
 
 ### BREAKING CHANGE
 
-- Converted all beeai_framework.agents into "runnables", modifying their `run` method signatures
+- Converted all `beeai_framework.agents` into “runnables,” modifying their `run` method signatures.
 
 ### Refactor
 
-- convert agents to runnables (#1013)
+- Convert agents to runnables (#1013)
 
 ## Migration Guide
 
-This guide will help you update your codebase to the latest version. It outlines breaking changes and new features which may require updates to your application.
+This guide will help you update your codebase to the latest version. It outlines breaking changes and new features that may require updates to your application.
 
 ### Agents
 
-Agents now subclass a common `Runnable` interface (#982):
+Agents now subclass a common `Runnable` interface (#982).
 
-Key changes to observe:
-- Agents require a positional `input: str | list[AnyMessage]`
-- Acceptable, optional keyword options are defined in the new `AgentOptions` typed dictionary
-- Agent return types all derive from `AgentOuput`. This object contains a field `output: list[AnyMessage]` and a convenience property `response` that returns the last message in the output if that message is an `AssistantMessage` (typically, the answer or result of the agent execution).
+Key changes:
 
-    **Example**:
-    ```Python
-    result = await agent.run(
-        "Write a step-by-step tutorial on how to bake bread",
-        expected_output="The output should be an ordered list of steps. Each step should be ideally one sentence.",
-        ).middleware(GlobalTrajectoryMiddleware())
-    print(result.last_message.text)
-    ```
-  > Note: Previously, different agents in the framework had completely distinct output types. This means that the output objects were represented by different data structures with different attribute names (e.g., `result`, `answer`) depending on the agent being used. We simplified this contract to enforce that all agent output types must subclass `AgentOutput`. Usage should be updated to reflect those changes. For example, an agent's response is captured in the `response` property of the agents's output object. In additional to the common output object attributes shared by all agents, some agents also include additional properties in the output, such as `state`. Please check each agent implementation for more details.
+- Agents require a positional `input: str | list[AnyMessage]` (first argument).
+- Optional keyword options are defined in the new `AgentOptions` typed dictionary.
+- Agent return types all derive from `AgentOutput`. This object contains a field `output: list[AnyMessage]` and a convenience property `last_message` that returns the last message in the output, with a fallback if none is defined.
+
+#### Before
+
+```python
+response: RequirementAgentRunOutput = await agent.run(
+    prompt="Write a step-by-step tutorial on how to bake bread",
+    expected_output="The output should be an ordered list of steps. Each step should ideally be one sentence.",
+    context="Assume that the user has no prior knowledge of baking."
+)
+print(response.result.text) # the result is a message
+print(response.answer_structured) # the result is a structured response (if the expected_output is a Pydantic model)
+```
 
 - The following return types have been renamed and should be updated as follows:
-    - `TooCallingAgentRunOutput` &rarr; `TooCallingAgentOutput`
-    - `ReActAgentRunOutput` &rarr; `ReActAgentOutput`
-    - `RequirementsAgentRunOutput` &rarr; `RequirementsAgentOutput`
+    - `TooCallingAgentRunOutput` → `TooCallingAgentOutput`
+    - `ReActAgentRunOutput` → `ReActAgentOutput`
+    - `RequirementsAgentRunOutput` → `RequirementsAgentOutput`
+
+#### After
+
+```python
+response: RequirementAgentOutput = await agent.run(
+    "Write a step-by-step tutorial on how to bake bread",
+    expected_output="The output should be an ordered list of steps. Each step should ideally be one sentence.",
+    backstory="Assume that the user has no prior knowledge of baking."
+)
+print(response.last_message.text) # the result is a message
+# print(response.output) # a list of all messages that the agent produced
+print(response.output_structured) # structured output, if any
+```
 
 ### Adapters
 
-- The internal BeeAIPlatform agent factories were refactored to align with the new runnable input contract that the framework agents now implement. This impacts the agents initialization logic: instead of adding the messages from the task context to memory during agent memory intialization, these are now passed directly to the agent's `run` interface, allowing the agents to manage their own memory. Adapters are responsible for creating and configuring memory only.
+- The internal BeeAI Platform agent factories were refactored to align with the new runnable input contract that the framework agents now implement. This affects agent initialization logic: instead of adding the messages from the task context to memory during agent memory initialization, these are now passed directly to the agent’s `run` interface, allowing agents to manage their own memory. Adapters are responsible only for creating and configuring memory.
 - The following return types have been renamed and should be updated as follows:
-    - `BeeAIPlatformAgentRunOutput` &rarr; `BeeAIPlatformAgentOutput`
-    - `ACPAgentRunOutput` &rarr; `ACPAgentOutput`
-    - `A2AAgentRunOutput` &rarr; `A2AAgentOutput`
-    - `WatsonxOrchestrateAgentRunOutput` &rarr; `WatsonxOrchestrateAgentOutput`
+    - `BeeAIPlatformAgentRunOutput` → `BeeAIPlatformAgentOutput`
+    - `ACPAgentRunOutput` → `ACPAgentOutput`
+    - `A2AAgentRunOutput` → `A2AAgentOutput`
+    - `WatsonxOrchestrateAgentRunOutput` → `WatsonxOrchestrateAgentOutput`
+
+### Other Changes
+
+- Removed `ReActAgentRunOutput`, `RAGAgentOutput` (switched to `AgentOutput`)
+- Removed `RAGAgentInput`
 
 
 ## python_v0.1.40 (2025-08-29)

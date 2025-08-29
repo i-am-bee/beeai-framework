@@ -39,7 +39,7 @@ class RunnableOutput(BaseModel):
 
     @property
     def last_message(self) -> AnyMessage:
-        """Returns the latest message in `output` with fallback if not defined. It's provided for convenience."""
+        """Returns the latest message in output, with a fallback if it is not defined."""
 
         last_message = self.output[-1] if self.output else None
         return last_message or AssistantMessage("")
