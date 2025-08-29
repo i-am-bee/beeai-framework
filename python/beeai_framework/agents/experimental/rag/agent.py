@@ -3,8 +3,6 @@
 
 from typing import Unpack
 
-from pydantic import BaseModel, InstanceOf
-
 from beeai_framework.agents import AgentMeta, AgentOptions, AgentOutput, BaseAgent
 from beeai_framework.backend import AnyMessage, AssistantMessage, ChatModel, SystemMessage, UserMessage
 from beeai_framework.backend.document_processor import DocumentProcessor
@@ -16,14 +14,6 @@ from beeai_framework.errors import FrameworkError
 from beeai_framework.memory import BaseMemory
 from beeai_framework.memory.unconstrained_memory import UnconstrainedMemory
 from beeai_framework.runnable import runnable_entry
-
-
-class RagAgentRunInput(BaseModel):
-    message: InstanceOf[AnyMessage]
-
-
-class RAGAgentRunOutput(BaseModel):
-    message: InstanceOf[AnyMessage]
 
 
 class RAGAgent(BaseAgent):
