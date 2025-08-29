@@ -75,10 +75,12 @@ class GlobalTrajectoryMiddleware(RunMiddlewareProtocol):
             self._bind_emitter(meta.creator.emitter)
             self.on_internal_start(data, meta)
 
-        emitter.match(
-            matcher,
-            handler,
-            EmitterOptions(match_nested=True, is_blocking=True),
+        self._cleanups.append(
+            emitter.match(
+                matcher,
+                handler,
+                EmitterOptions(match_nested=True, is_blocking=True),
+            )
         )
 
     def _bind_emitter(self, emitter: Emitter) -> None:
@@ -88,12 +90,14 @@ class GlobalTrajectoryMiddleware(RunMiddlewareProtocol):
         )
 
         def bind_internal_event(name: str) -> None:
-            emitter.match(
-                lambda event: event.name == name
-                and bool(event.context.get("internal"))
-                and isinstance(event.creator, RunContext),
-                getattr(self, f"on_internal_{name}"),
-                EmitterOptions(match_nested=False),
+            self._cleanups.append(
+                emitter.match(
+                    lambda event: event.name == name
+                    and bool(event.context.get("internal"))
+                    and isinstance(event.creator, RunContext),
+                    getattr(self, f"on_internal_{name}"),
+                    EmitterOptions(match_nested=False),
+                )
             )
 
         for name in ["start", "finish"]:
