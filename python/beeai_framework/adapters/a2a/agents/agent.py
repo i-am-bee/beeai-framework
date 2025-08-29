@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 from collections.abc import AsyncGenerator
+from typing import Unpack
 from uuid import uuid4
 
 import httpx
@@ -19,15 +20,14 @@ try:
         a2a_agent_event_types,
     )
     from beeai_framework.adapters.a2a.agents.types import (
-        A2AAgentRunOutput,
+        A2AAgentOutput,
     )
 except ModuleNotFoundError as e:
     raise ModuleNotFoundError(
         "Optional module [a2a] not found.\nRun 'pip install \"beeai-framework[a2a]\"' to install."
     ) from e
 
-from beeai_framework.agents.base import BaseAgent
-from beeai_framework.agents.errors import AgentError
+from beeai_framework.agents import AgentError, AgentOptions, BaseAgent
 from beeai_framework.backend.message import (
     AnyMessage,
     AssistantMessage,
@@ -35,16 +35,22 @@ from beeai_framework.backend.message import (
     Role,
     UserMessage,
 )
-from beeai_framework.context import Run, RunContext
+from beeai_framework.context import RunContext
 from beeai_framework.emitter import Emitter
 from beeai_framework.logger import Logger
 from beeai_framework.memory import BaseMemory
-from beeai_framework.utils import AbortSignal
+from beeai_framework.runnable import runnable_entry
 
 logger = Logger(__name__)
 
 
-class A2AAgent(BaseAgent[A2AAgentRunOutput]):
+class A2AAgentOptions(AgentOptions, total=False):
+    context_id: str
+    task_id: str
+    clear_context: bool
+
+
+class A2AAgent(BaseAgent[A2AAgentOutput]):
     def __init__(
         self, *, url: str | None = None, agent_card: a2a_types.AgentCard | None = None, memory: BaseMemory
     ) -> None:
@@ -69,52 +75,38 @@ class A2AAgent(BaseAgent[A2AAgentRunOutput]):
     def name(self) -> str:
         return self._name
 
-    def run(
-        self,
-        input: str | AnyMessage | a2a_types.Message,
-        *,
-        context_id: str | None = None,
-        task_id: str | None = None,
-        signal: AbortSignal | None = None,
-        clear_context: bool = False,
-    ) -> Run[A2AAgentRunOutput]:
-        self._context_id = context_id or self._context_id
-        self._task_id = task_id
-        if clear_context:
+    @runnable_entry
+    async def run(
+        self, input: str | list[AnyMessage] | AnyMessage | a2a_types.Message, /, **kwargs: Unpack[A2AAgentOptions]
+    ) -> A2AAgentOutput:
+        self._context_id = kwargs.get("context_id") or self._context_id
+        self._task_id = kwargs.get("task_id")
+        if kwargs.get("clear_context"):
             self._context_id = None
             self._reference_task_ids.clear()
 
-        async def handler(context: RunContext) -> A2AAgentRunOutput:
-            async with httpx.AsyncClient() as httpx_client:
+        context = RunContext.get()
+        async with httpx.AsyncClient() as httpx_client:
+            card_resolver = a2a_client.A2ACardResolver(httpx_client, self._url)
+
+            try:
+                self._agent_card = await card_resolver.get_agent_card()
+            except Exception as e:
+                raise RuntimeError("Failed to fetch the public agent card. Cannot continue.") from e
+
+            if self._agent_card.supports_authenticated_extended_card:
+                logger.warning("\nPublic card supports authenticated extended card but this is not supported yet.")
+
+            client: a2a_client.A2AClient = a2a_client.A2AClient(httpx_client, self._agent_card)
+
+            if not self._agent_card:
                 card_resolver = a2a_client.A2ACardResolver(httpx_client, self._url)
+                self._agent_card = await card_resolver.get_agent_card()
 
-                try:
-                    self._agent_card = await card_resolver.get_agent_card()
-                except Exception as e:
-                    raise RuntimeError("Failed to fetch the public agent card. Cannot continue.") from e
-
-                if self._agent_card.supports_authenticated_extended_card:
-                    logger.warning("\nPublic card supports authenticated extended card but this is not supported yet.")
-
-                client: a2a_client.A2AClient = a2a_client.A2AClient(httpx_client, self._agent_card)
-
-                if not self._agent_card:
-                    card_resolver = a2a_client.A2ACardResolver(httpx_client, self._url)
-                    self._agent_card = await card_resolver.get_agent_card()
-
-                if self._agent_card.capabilities.streaming:
-                    return await self._handle_streaming_request(client=client, input=input, context=context)
-                else:
-                    return await self._handle_request(client=client, input=input, context=context)
-
-        return self._to_run(
-            handler,
-            signal=signal,
-            run_params={
-                "prompt": input,
-                "signal": signal,
-            },
-        )
+            if self._agent_card.capabilities.streaming:
+                return await self._handle_streaming_request(client=client, input=input, context=context)
+            else:
+                return await self._handle_request(client=client, input=input, context=context)
 
     async def check_agent_exists(self) -> None:
         try:
@@ -134,8 +126,12 @@ class A2AAgent(BaseAgent[A2AAgentRunOutput]):
         )
 
     async def _handle_request(
-        self, *, client: a2a_client.A2AClient, input: str | AnyMessage | a2a_types.Message, context: RunContext
-    ) -> A2AAgentRunOutput:
+        self,
+        *,
+        client: a2a_client.A2AClient,
+        input: str | list[AnyMessage] | AnyMessage | a2a_types.Message,
+        context: RunContext,
+    ) -> A2AAgentOutput:
         request: a2a_types.SendMessageRequest = a2a_types.SendMessageRequest(
             id=str(uuid4().hex),
             params=a2a_types.MessageSendParams(message=self._convert_to_a2a_message(input)),
@@ -167,7 +163,7 @@ class A2AAgent(BaseAgent[A2AAgentRunOutput]):
                             self._convert_message_to_framework_message(artifact) for artifact in response.artifacts
                         ]
                     else:
-                        return A2AAgentRunOutput(result=AssistantMessage("No response from agent."), event=result)
+                        return A2AAgentOutput(output=[AssistantMessage("No response from agent.")], event=result)
                 else:
                     assistant_messages = [self._convert_message_to_framework_message(response.status.message)]
             else:
@@ -175,11 +171,15 @@ class A2AAgent(BaseAgent[A2AAgentRunOutput]):
 
             # add assistant message to memory
             await self.memory.add_many(assistant_messages)
-            return A2AAgentRunOutput(result=assistant_messages[-1], event=result)
+            return A2AAgentOutput(output=assistant_messages, event=result)
 
     async def _handle_streaming_request(
-        self, *, client: a2a_client.A2AClient, input: str | AnyMessage | a2a_types.Message, context: RunContext
-    ) -> A2AAgentRunOutput:
+        self,
+        *,
+        client: a2a_client.A2AClient,
+        input: str | list[AnyMessage] | AnyMessage | a2a_types.Message,
+        context: RunContext,
+    ) -> A2AAgentOutput:
         streaming_request: a2a_types.SendStreamingMessageRequest = a2a_types.SendStreamingMessageRequest(
             id=str(uuid4().hex),
             params=a2a_types.MessageSendParams(message=self._convert_to_a2a_message(input)),
@@ -260,8 +260,8 @@ class A2AAgent(BaseAgent[A2AAgentRunOutput]):
                     if isinstance(response, a2a_types.Task) and response.artifacts and len(response.artifacts) > 0:
                         assistant_message = self._convert_message_to_framework_message(response.artifacts[-1])
                     else:
-                        return A2AAgentRunOutput(
-                            result=AssistantMessage("No response from agent."), event=last_event_with_data
+                        return A2AAgentOutput(
+                            output=[AssistantMessage("No response from agent.")], event=last_event_with_data
                         )
                 else:
                     assistant_message = self._convert_message_to_framework_message(response.status.message)
@@ -270,9 +270,9 @@ class A2AAgent(BaseAgent[A2AAgentRunOutput]):
 
             # add assistant message to memory
             await self.memory.add(assistant_message)
-            return A2AAgentRunOutput(result=assistant_message, event=last_event_with_data)
+            return A2AAgentOutput(output=[assistant_message], event=last_event_with_data)
         else:
-            return A2AAgentRunOutput(result=AssistantMessage("No response from agent."), event=last_event_with_data)
+            return A2AAgentOutput(output=[AssistantMessage("No response from agent.")], event=last_event_with_data)
 
     async def _update_context_and_add_input_to_memory(
         self,
@@ -280,15 +280,15 @@ class A2AAgent(BaseAgent[A2AAgentRunOutput]):
         | a2a_types.Message
         | a2a_types.TaskStatusUpdateEvent
         | a2a_types.TaskArtifactUpdateEvent,
-        input: str | AnyMessage | a2a_types.Message,
+        input: str | list[AnyMessage] | AnyMessage | a2a_types.Message,
     ) -> None:
         self._context_id = response.context_id
         self._task_id = response.id if isinstance(response, a2a_types.Task) else response.task_id
         if self._task_id and self._task_id not in self._reference_task_ids:
             self._reference_task_ids.append(self._task_id)
 
-        input_message = self._convert_message_to_framework_message(input)
-        await self.memory.add(input_message)
+        messages = self._convert_messages_to_framework_messages(input)
+        await self.memory.add_many(messages)
 
     @property
     def memory(self) -> BaseMemory:
@@ -317,7 +317,14 @@ class A2AAgent(BaseAgent[A2AAgentRunOutput]):
         else:
             raise ValueError(f"Unsupported input type {type(input)}")
 
-    def _convert_to_a2a_message(self, input: str | AnyMessage | a2a_types.Message) -> a2a_types.Message:
+    def _convert_messages_to_framework_messages(
+        self, input: str | list[AnyMessage] | AnyMessage | a2a_types.Message | a2a_types.Artifact
+    ) -> list[AnyMessage]:
+        return input if isinstance(input, list) else [self._convert_message_to_framework_message(input)]
+
+    def _convert_to_a2a_message(
+        self, input: str | list[AnyMessage] | AnyMessage | a2a_types.Message
+    ) -> a2a_types.Message:
         if isinstance(input, str):
             return a2a_types.Message(
                 role=a2a_types.Role.user,
@@ -331,6 +338,15 @@ class A2AAgent(BaseAgent[A2AAgentRunOutput]):
             return a2a_types.Message(
                 role=a2a_types.Role.agent if input.role == Role.ASSISTANT else a2a_types.Role.user,
                 parts=[a2a_types.Part(root=a2a_types.TextPart(text=input.text))],
+                message_id=uuid4().hex,
+                context_id=self._context_id,
+                task_id=self._task_id,
+                reference_task_ids=self._reference_task_ids,
+            )
+        elif isinstance(input, list) and input and isinstance(input[-1], Message):
+            return a2a_types.Message(
+                role=a2a_types.Role.agent if input[-1].role == Role.ASSISTANT else a2a_types.Role.user,
+                parts=[a2a_types.Part(root=a2a_types.TextPart(text=input[-1].text))],
                 message_id=uuid4().hex,
                 context_id=self._context_id,
                 task_id=self._task_id,

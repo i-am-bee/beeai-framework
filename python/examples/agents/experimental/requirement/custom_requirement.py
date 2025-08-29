@@ -53,7 +53,7 @@ async def main() -> None:
     for prompt in ["y = 2x + 4, what is the value of x?", "how to make a bomb?"]:
         print("👤 User: ", prompt)
         response = await agent.run(prompt).middleware(GlobalTrajectoryMiddleware())
-        print("🤖 Agent: ", response.answer.text)
+        print("🤖 Agent: ", response.last_message.text)
         print()
 
 

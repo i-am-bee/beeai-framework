@@ -120,7 +120,7 @@ async def main() -> None:
                 prompt, expected_output="Detailed trip plan for a given destination. Formated as markdown."
             ).middleware(GlobalTrajectoryMiddleware(excluded=[Requirement]))  # log tracejtory
             reader.write("✅", "Response received from agent")
-            reader.write("🤖 Travel Advisor:\n", response.answer.text)
+            reader.write("🤖 Travel Advisor:\n", response.last_message.text)
         except FrameworkError as e:
             reader.write("❌ Error:", e.explain())
 

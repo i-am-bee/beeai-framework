@@ -80,13 +80,12 @@ class WatsonxOrchestrateAPI:
         await init_agent_memory(agent._agent, self._memory_manager, thread_id, stateful=self._stateful)
 
         messages = self._transform_request_messages(request.messages)
-        await agent._agent.memory.add_many(messages)
 
         if request.stream:
-            stream = agent.stream(thread_id)
+            stream = agent.stream(messages, thread_id)
             return EventSourceResponse(stream)
         else:
-            content = await agent.run()
+            content = await agent.run(messages)
             return JSONResponse(content=content.model_dump())
 
     def _transform_request_messages(

@@ -31,12 +31,12 @@ async def main() -> None:
     result = await agent.run("Calculate 5036 * 12856 and save the result to answer.txt").on(
         "update", lambda data, event: print(f"Agent 🤖 ({data.update.key}) : ", data.update.parsed_value)
     )
-    print(result.result.text)
+    print(result.last_message.text)
 
     result = await agent.run("Read the content of answer.txt?").on(
         "update", lambda data, event: print(f"Agent 🤖 ({data.update.key}) : ", data.update.parsed_value)
     )
-    print(result.result.text)
+    print(result.last_message.text)
 
 
 if __name__ == "__main__":

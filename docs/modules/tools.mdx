@@ -208,7 +208,6 @@ from urllib.parse import quote
 
 import requests
 
-from beeai_framework.agents import AgentExecutionConfig
 from beeai_framework.agents.react import ReActAgent
 from beeai_framework.backend import ChatModel
 from beeai_framework.errors import FrameworkError
@@ -253,9 +252,9 @@ async def main() -> None:
 
     agent = ReActAgent(llm=chat_model, tools=[basic_calculator], memory=UnconstrainedMemory())
 
-    result = await agent.run("What is the square root of 36?", execution=AgentExecutionConfig(total_max_retries=10))
+    result = await agent.run("What is the square root of 36?", total_max_retries=10)
 
-    print(result.result.text)
+    print(result.last_message.text)
 
 
 if __name__ == "__main__":
@@ -294,7 +293,7 @@ async def main() -> None:
 
     result = await agent.run("How tall is the mount Everest?")
 
-    print(result.result.text)
+    print(result.last_message.text)
 
 
 if __name__ == "__main__":
@@ -371,7 +370,7 @@ async def main() -> None:
 
     result = await agent.run("What's the current weather in London?")
 
-    print(result.result.text)
+    print(result.last_message.text)
 
 
 if __name__ == "__main__":
@@ -603,7 +602,7 @@ async def main() -> None:
 
     query = "What types of agents are available in BeeAI?"
     response = await agent.run(query)
-    print(f"query: {query}\nResponse: {response.answer.text}")
+    print(f"query: {query}\nResponse: {response.last_message.text}")
 
 
 if __name__ == "__main__":
@@ -774,12 +773,12 @@ async def main() -> None:
     result = await agent.run("Calculate 5036 * 12856 and save the result to answer.txt").on(
         "update", lambda data, event: print(f"Agent 🤖 ({data.update.key}) : ", data.update.parsed_value)
     )
-    print(result.result.text)
+    print(result.last_message.text)
 
     result = await agent.run("Read the content of answer.txt?").on(
         "update", lambda data, event: print(f"Agent 🤖 ({data.update.key}) : ", data.update.parsed_value)
     )
-    print(result.result.text)
+    print(result.last_message.text)
 
 
 if __name__ == "__main__":

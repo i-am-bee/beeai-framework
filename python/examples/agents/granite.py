@@ -2,8 +2,7 @@ import asyncio
 import sys
 import traceback
 
-from beeai_framework.agents import AgentExecutionConfig
-from beeai_framework.agents.react import ReActAgent, ReActAgentRunOutput
+from beeai_framework.agents.react import ReActAgent
 from beeai_framework.backend import ChatModel
 from beeai_framework.errors import FrameworkError
 from beeai_framework.memory import UnconstrainedMemory
@@ -24,14 +23,12 @@ async def main() -> None:
     reader.write("🛠️ System: ", "Agent initialized with DuckDuckGo and OpenMeteo tools.")
 
     for prompt in reader:
-        output: ReActAgentRunOutput = await agent.run(
-            prompt=prompt, execution=AgentExecutionConfig(total_max_retries=2, max_retries_per_step=3, max_iterations=8)
-        ).on(
+        output = await agent.run(prompt, total_max_retries=2, max_retries_per_step=3, max_iterations=8).on(
             "update",
             lambda data, event: reader.write(f"Agent({data.update.key}) 🤖 : ", data.update.parsed_value),
         )
 
-    reader.write("Agent 🤖 : ", output.result.text)
+    reader.write("Agent 🤖 : ", output.last_message.text)
 
 
 if __name__ == "__main__":

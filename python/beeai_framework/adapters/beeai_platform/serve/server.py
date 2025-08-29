@@ -124,13 +124,12 @@ def _react_agent_factory(
         citation: Annotated[beeai_extensions.CitationExtensionServer, beeai_extensions.CitationExtensionSpec()],
     ) -> AsyncGenerator[beeai_types.RunYield, beeai_types.RunYieldResume]:
         await init_agent_memory(agent, memory_manager, context.context_id)
-        await agent.memory.add(convert_a2a_to_framework_message(message))
 
         artifact_id = uuid.uuid4()
         append = False
         last_key = None
         last_update = None
-        async for data, event in agent.run():
+        async for data, event in agent.run([convert_a2a_to_framework_message(message)]):
             match (data, event.name):
                 case (ReActAgentUpdateEvent(), "partial_update"):
                     match data.update.key:
@@ -187,10 +186,9 @@ def _tool_calling_agent_factory(
         citation: Annotated[beeai_extensions.CitationExtensionServer, beeai_extensions.CitationExtensionSpec()],
     ) -> AsyncGenerator[beeai_types.RunYield, beeai_types.RunYieldResume]:
         await init_agent_memory(agent, memory_manager, context.context_id)
-        await agent.memory.add(convert_a2a_to_framework_message(message))
 
         last_msg: AnyMessage | None = None
-        async for data, _ in agent.run():
+        async for data, _ in agent.run([convert_a2a_to_framework_message(message)]):
             messages = data.state.memory.messages
             if last_msg is None:
                 last_msg = messages[-1]
@@ -222,10 +220,9 @@ def _requirement_agent_factory(
         citation: Annotated[beeai_extensions.CitationExtensionServer, beeai_extensions.CitationExtensionSpec()],
     ) -> AsyncGenerator[beeai_types.RunYield, beeai_types.RunYieldResume]:
         await init_agent_memory(agent, memory_manager, context.context_id)
-        await agent.memory.add(convert_a2a_to_framework_message(message))
 
         last_msg: AnyMessage | None = None
-        async for data, _ in agent.run():
+        async for data, _ in agent.run([convert_a2a_to_framework_message(message)]):
             messages = data.state.memory.messages
             if last_msg is None:
                 last_msg = messages[-1]

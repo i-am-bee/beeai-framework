@@ -86,12 +86,12 @@ async def main() -> None:
 
     response = await agent.run(
         "What to do in Boston?",
-        context="I already visited Freedom Trail.",
+        backstory="I already visited Freedom Trail.",
         # one can pass a Pydantic model to get a structured output
         expected_output="Detailed plan on what to do from morning to evening, split in sections each with a time range.",
     ).middleware(GlobalTrajectoryMiddleware())
 
-    print(response.answer.text)
+    print(response.last_message.text)
     # print(response.memory)  # temp memory created
     # print(response.state.iteration)  # number of iterations (steps)
     # print(response.state.steps)  # individual steps

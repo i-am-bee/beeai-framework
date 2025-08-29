@@ -54,7 +54,7 @@ async def main() -> None:
 
     try:
         response = await main_agent.run(question, expected_output="Helpful and clear response.")
-        print("Agent:", response.answer.text)
+        print("Agent:", response.last_message.text)
     except FrameworkError as err:
         print("Error:", err.explain())
 

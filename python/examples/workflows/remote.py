@@ -31,7 +31,7 @@ async def main() -> None:
             "update",
             lambda data, _: (reader.write("Agent 🤖 (debug) : ", data)),
         )
-        state.research = response.result.text
+        state.research = response.last_message.text
 
     async def podcast(state: State) -> None:
         # Run the agent and observe events
@@ -43,7 +43,7 @@ async def main() -> None:
             "update",
             lambda data, _: (reader.write("Agent 🤖 (debug) : ", data)),
         )
-        state.output = response.result.text
+        state.output = response.last_message.text
 
     # Define the structure of the workflow graph
     workflow = Workflow(State)

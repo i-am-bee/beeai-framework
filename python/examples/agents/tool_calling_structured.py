@@ -76,7 +76,7 @@ async def main() -> None:
         )
         reader.write(
             "Agent 🤖 : ",
-            to_json(WeatherForecatModel.model_validate_json(response.result.text), indent=2, sort_keys=False),
+            to_json(WeatherForecatModel.model_validate_json(response.last_message.text), indent=2, sort_keys=False),
         )
 
 

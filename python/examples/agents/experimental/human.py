@@ -3,7 +3,6 @@ import sys
 import traceback
 
 from beeai_framework.adapters.ollama import OllamaChatModel
-from beeai_framework.agents import AgentExecutionConfig
 from beeai_framework.agents.react import ReActAgent
 from beeai_framework.errors import FrameworkError
 from beeai_framework.memory import TokenMemory
@@ -36,8 +35,10 @@ async def main() -> None:
         # Run the agent and observe events
         response = (
             await agent.run(
-                prompt=prompt,
-                execution=AgentExecutionConfig(max_retries_per_step=3, total_max_retries=10, max_iterations=20),
+                prompt,
+                max_retries_per_step=3,
+                total_max_retries=10,
+                max_iterations=20,
             )
             .on(
                 "update",
@@ -54,7 +55,7 @@ async def main() -> None:
         )
 
         # Print the final response
-        reader.write("Agent 🤖 : ", response.result.text)
+        reader.write("Agent 🤖 : ", response.last_message.text)
 
 
 if __name__ == "__main__":

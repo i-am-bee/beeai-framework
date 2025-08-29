@@ -31,7 +31,7 @@ async def main(name: str) -> None:
 
     result = await agent.run("What is the smallest of the Cabo Verde islands?")
 
-    print("answer:", result.result.text)
+    print("answer:", result.last_message.text)
 
 
 if __name__ == "__main__":

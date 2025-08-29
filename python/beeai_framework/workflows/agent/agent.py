@@ -8,9 +8,9 @@ from typing import Any, Self, overload
 
 from pydantic import BaseModel, InstanceOf
 
-from beeai_framework.agents.base import AnyAgent
-from beeai_framework.agents.experimental import RequirementAgent, RequirementAgentRunOutput
-from beeai_framework.agents.tool_calling import ToolCallingAgentRunOutput
+from beeai_framework.agents import AnyAgent
+from beeai_framework.agents.experimental import RequirementAgent, RequirementAgentOutput
+from beeai_framework.agents.tool_calling import ToolCallingAgentOutput
 from beeai_framework.agents.tool_calling.agent import ToolCallingAgent
 from beeai_framework.agents.tool_calling.utils import ToolCallCheckerConfig
 from beeai_framework.agents.types import (
@@ -34,7 +34,7 @@ AgentWorkflowAgentType = ToolCallingAgent | RequirementAgent
 
 
 class AgentWorkflowInput(BaseModel):
-    prompt: str | None = None
+    prompt: str
     context: str | None = None
     expected_output: str | type[BaseModel] | None = None
 
@@ -112,6 +112,13 @@ class AgentWorkflow:
         if instance is None and llm is None:
             raise ValueError("Either instance or the agent configuration must be provided!")
 
+        if not execution:
+            execution = AgentExecutionConfig(
+                max_retries_per_step=3,
+                total_max_retries=3,
+                max_iterations=20,
+            )
+
         async def create_agent(memory: BaseMemory) -> ToolCallingAgent | RequirementAgent:
             if instance is not None:
                 new_instance = await instance.clone()
@@ -143,19 +150,30 @@ class AgentWorkflow:
             memory = UnconstrainedMemory()
             await memory.add_many(state.new_messages)
 
-            run_input = state.inputs.pop(0).model_copy() if state.inputs else AgentWorkflowInput()
+            last_message = memory.messages[-1].text if memory.messages else ""
+            run_input = state.inputs.pop(0).model_copy() if state.inputs else AgentWorkflowInput(prompt=last_message)
             state.current_input = run_input
             agent = await create_agent(memory.as_read_only())
-            run_output: ToolCallingAgentRunOutput | RequirementAgentRunOutput = await agent.run(
-                **run_input.model_dump(), execution=execution
+            run_output = await agent.run(
+                run_input.prompt,
+                backstory=run_input.context,
+                expected_output=run_input.expected_output,
+                **run_input.model_dump(exclude={"prompt", "context", "expected_output"}),
+                **execution.model_dump(),
             )
 
-            state.final_answer = (
-                run_output.result.text if isinstance(run_output, ToolCallingAgentRunOutput) else run_output.answer.text
-            )
+            state.final_answer = run_output.last_message.text
             if run_input.prompt:
                 state.new_messages.append(UserMessage(run_input.prompt))
-            state.new_messages.extend(run_output.memory.messages[-2:])
+
+            if isinstance(run_output, ToolCallingAgentOutput | RequirementAgentOutput):
+                _messages = run_output.state.memory.messages
+                if len(_messages) > 2:
+                    state.new_messages.extend(_messages[-2:])
+                else:
+                    state.new_messages.extend(run_output.output)
+            else:
+                state.new_messages.extend(run_output.output)
 
         self.workflow.add_step(name or f"Agent{''.join(random.choice(string.ascii_letters) for _ in range(4))}", step)
         return self
