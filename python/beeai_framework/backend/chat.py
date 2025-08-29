@@ -39,7 +39,7 @@ from beeai_framework.cache.null_cache import NullCache
 from beeai_framework.context import Run, RunContext, RunMiddlewareType
 from beeai_framework.emitter import Emitter
 from beeai_framework.logger import Logger
-from beeai_framework.retryable import Retryable, RetryableConfig, RetryableContext, RetryableInput
+from beeai_framework.retryable import Retryable, RetryableConfig, RetryableInput
 from beeai_framework.template import PromptTemplate, PromptTemplateInput
 from beeai_framework.tools.tool import AnyTool, Tool
 from beeai_framework.utils import AbortController, AbortSignal, ModelLike
@@ -182,30 +182,17 @@ IMPORTANT: You MUST answer with a JSON object that matches the JSON schema above
             *input_messages,
         ]
 
-        async def executor(_: RetryableContext) -> ChatModelStructureOutput:
-            response = await self._create(
-                ChatModelInput(
-                    messages=messages, response_format={"type": "object-json"}, abort_signal=input.abort_signal
-                ),
-                run,
-            )
+        response = await self._create(
+            ChatModelInput(messages=messages, response_format={"type": "object-json"}, abort_signal=input.abort_signal),
+            run,
+        )
 
-            logger.debug(f"Recieved structured response:\n{response}")
+        logger.debug(f"Recieved structured response:\n{response}")
 
-            text_response = response.get_text_content()
-            result = parse_broken_json(text_response)
-            # TODO: validate result matches expected schema
-            return ChatModelStructureOutput(object=result)
-
-        return await Retryable(
-            RetryableInput(
-                executor=executor,
-                config=RetryableConfig(
-                    max_retries=input.max_retries if input is not None and input.max_retries is not None else 1,
-                    signal=run.signal,
-                ),
-            )
-        ).get()
+        text_response = response.get_text_content()
+        result = parse_broken_json(text_response)
+        # TODO: validate result matches expected schema
+        return ChatModelStructureOutput(object=result)
 
     def create(
         self,
@@ -214,6 +201,7 @@ IMPORTANT: You MUST answer with a JSON object that matches the JSON schema above
         tools: list[AnyTool] | None = None,
         tool_choice: ChatModelToolChoice | None = None,
         abort_signal: AbortSignal | None = None,
+        max_retries: int | None = None,
         stop_sequences: list[str] | None = None,
         response_format: dict[str, Any] | type[BaseModel] | None = None,
         stream: bool | None = None,
@@ -247,6 +235,7 @@ IMPORTANT: You MUST answer with a JSON object that matches the JSON schema above
             tools=tools if self.model_supports_tool_calling else None,
             tool_choice=tool_choice,
             abort_signal=abort_signal,
+            max_retries=max_retries,
             stop_sequences=stop_sequences,
             response_format=response_format_final,
             stream=stream if stream is not None else self.parameters.stream,
@@ -282,7 +271,20 @@ IMPORTANT: You MUST answer with a JSON object that matches the JSON schema above
                     if cache_hit:
                         result = cache_hit[0].model_copy()
                     else:
-                        result = await self._create(model_input, context)
+                        result = await Retryable(
+                            RetryableInput(
+                                executor=lambda _: self._create(model_input, context),
+                                config=RetryableConfig(
+                                    max_retries=(
+                                        model_input.max_retries
+                                        if model_input is not None and model_input.max_retries is not None
+                                        else 0
+                                    ),
+                                    signal=context.signal,
+                                ),
+                            )
+                        ).get()
+
                         await self.cache.set(cache_key, [result])
 
                 if force_tool_call_via_response_format and not result.get_tool_calls():
@@ -363,7 +365,19 @@ IMPORTANT: You MUST answer with a JSON object that matches the JSON schema above
         )
 
         async def handler(context: RunContext) -> ChatModelStructureOutput:
-            return await self._create_structure(model_input, context)
+            return await Retryable(
+                RetryableInput(
+                    executor=lambda _: self._create_structure(model_input, context),
+                    config=RetryableConfig(
+                        max_retries=(
+                            model_input.max_retries
+                            if model_input is not None and model_input.max_retries is not None
+                            else 0
+                        ),
+                        signal=context.signal,
+                    ),
+                )
+            ).get()
 
         return RunContext.enter(
             self,

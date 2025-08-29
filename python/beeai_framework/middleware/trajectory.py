@@ -9,7 +9,7 @@ from beeai_framework.agents import BaseAgent
 from beeai_framework.agents.experimental.requirements.requirement import Requirement
 from beeai_framework.backend import AnyMessage, ChatModel
 from beeai_framework.context import RunContext, RunContextFinishEvent, RunContextStartEvent, RunMiddlewareProtocol
-from beeai_framework.emitter import EmitterOptions, EventMeta
+from beeai_framework.emitter import Emitter, EmitterOptions, EventMeta
 from beeai_framework.logger import Logger
 from beeai_framework.tools import Tool
 from beeai_framework.utils.strings import to_json
@@ -41,6 +41,7 @@ class GlobalTrajectoryMiddleware(RunMiddlewareProtocol):
         prefix_by_type: dict[type, str] | None = None,
         exclude_none: bool = True,
         enabled: bool = True,
+        match_nested: bool = True,
     ) -> None:
         super().__init__()
         self.enabled = enabled
@@ -58,6 +59,52 @@ class GlobalTrajectoryMiddleware(RunMiddlewareProtocol):
             prefix_by_type or {}
         )
         self._exclude_none = exclude_none
+        self._match_nested = match_nested
+
+    def _bind_nested_emitter(self, emitter: Emitter) -> None:
+        def matcher(meta: EventMeta) -> bool:
+            return (
+                meta.name == "start"
+                and bool(meta.context.get("internal"))
+                and isinstance(meta.creator, RunContext)
+                and meta.creator.emitter is not emitter
+            )
+
+        def handler(data: Any, meta: EventMeta) -> None:
+            assert isinstance(meta.creator, RunContext)
+            self._bind_emitter(meta.creator.emitter)
+            self.on_internal_start(data, meta)
+
+        self._cleanups.append(
+            emitter.match(
+                matcher,
+                handler,
+                EmitterOptions(match_nested=True, is_blocking=True),
+            )
+        )
+
+    def _bind_emitter(self, emitter: Emitter) -> None:
+        # must be last to be executed as first
+        self._cleanups.append(
+            emitter.match("*.*", lambda _, event: self._log_trace_id(event), EmitterOptions(match_nested=True))
+        )
+
+        def bind_internal_event(name: str) -> None:
+            self._cleanups.append(
+                emitter.match(
+                    lambda event: event.name == name
+                    and bool(event.context.get("internal"))
+                    and isinstance(event.creator, RunContext),
+                    getattr(self, f"on_internal_{name}"),
+                    EmitterOptions(match_nested=False),
+                )
+            )
+
+        for name in ["start", "finish"]:
+            bind_internal_event(name)
+
+        if self._match_nested:
+            self._bind_nested_emitter(emitter)
 
     def bind(self, ctx: RunContext) -> None:
         while self._cleanups:
@@ -67,20 +114,7 @@ class GlobalTrajectoryMiddleware(RunMiddlewareProtocol):
         self._trace_level[ctx.run_id] = 0
         self._ctx = ctx
 
-        # must be last to be executed as first
-        self._cleanups.append(
-            ctx.emitter.match("*.*", lambda _, event: self._log_trace_id(event), EmitterOptions(match_nested=True))
-        )
-
-        def bind_internal_event(name: str) -> None:
-            ctx.emitter.match(
-                lambda event: event.name == name and bool(event.context.get("internal")),
-                getattr(self, f"on_internal_{name}"),
-                EmitterOptions(match_nested=True),
-            )
-
-        for name in ["start", "finish"]:
-            bind_internal_event(name)
+        self._bind_emitter(ctx.emitter)
 
     def _log_trace_id(self, meta: EventMeta) -> None:
         if not meta.trace or not meta.trace.run_id:

@@ -195,7 +195,7 @@ class Emitter:
                 )
 
         async with asyncio.TaskGroup() as tg:
-            for listener in self._listeners:
+            for listener in list(self._listeners):
                 if not listener.match(event):
                     continue
 

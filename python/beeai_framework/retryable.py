@@ -110,8 +110,8 @@ class Retryable(Generic[T]):
         async def _retry(attempt: int) -> T:
             assert_aborted()
             ctx = self._get_context(attempt)
-            if attempt > 1:
-                await self._handlers.on_retry(ctx, last_error) if self._handlers.on_retry and last_error else None
+            if attempt > 1 and last_error and self._handlers.on_retry is not None:
+                await self._handlers.on_retry(ctx, last_error)
             value: T = await self._handlers.executor(ctx)
             return value
 
