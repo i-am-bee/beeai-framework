@@ -8,6 +8,7 @@ from beeai_framework.agents.errors import AgentError
 from beeai_framework.agents.experimental.events import RequirementAgentSuccessEvent
 from beeai_framework.serve import MemoryManager, init_agent_memory
 from beeai_framework.utils.cancellation import AbortController
+from beeai_framework.utils.cloneable import Cloneable
 
 try:
     import a2a.server as a2a_server
@@ -48,7 +49,7 @@ class BaseA2AAgentExecutor(a2a_agent_execution.AgentExecutor):
         context: a2a_agent_execution.RequestContext,
         event_queue: a2a_server.events.EventQueue,
     ) -> None:
-        cloned_agent = await self._agent.clone() if hasattr(self._agent, "clone") else self._agent
+        cloned_agent = await self._agent.clone() if isinstance(self._agent, Cloneable) else self._agent
         if not context.message:
             raise AgentError("No message provided")
 
@@ -92,7 +93,7 @@ class TollCallingAgentExecutor(BaseA2AAgentExecutor):
         context: a2a_agent_execution.RequestContext,
         event_queue: a2a_server.events.EventQueue,
     ) -> None:
-        cloned_agent = await self._agent.clone() if hasattr(self._agent, "clone") else self._agent
+        cloned_agent = await self._agent.clone() if isinstance(self._agent, Cloneable) else self._agent
         if not context.message:
             raise AgentError("No message provided")
 

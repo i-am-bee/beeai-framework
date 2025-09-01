@@ -10,6 +10,7 @@ from beeai_framework.adapters.watsonx_orchestrate.serve.agent import (
 from beeai_framework.agents.react import ReActAgent, ReActAgentUpdateEvent
 from beeai_framework.backend import AssistantMessage
 from beeai_framework.middleware.trajectory import GlobalTrajectoryMiddleware
+from beeai_framework.utils.cloneable import Cloneable
 
 
 class WatsonxOrchestrateServerReActAgent(WatsonxOrchestrateServerAgent[ReActAgent]):
@@ -18,12 +19,12 @@ class WatsonxOrchestrateServerReActAgent(WatsonxOrchestrateServerAgent[ReActAgen
         return self._agent._input.llm.model_id
 
     async def _run(self) -> AssistantMessage:
-        cloned_agent = await self._agent.clone() if hasattr(self._agent, "clone") else self._agent
+        cloned_agent = await self._agent.clone() if isinstance(self._agent, Cloneable) else self._agent
         response = await cloned_agent.run(prompt=None).middleware(GlobalTrajectoryMiddleware())
         return response.result
 
     async def _stream(self, emit: WatsonxOrchestrateServerAgentEmitFn) -> None:
-        cloned_agent = await self._agent.clone() if hasattr(self._agent, "clone") else self._agent
+        cloned_agent = await self._agent.clone() if isinstance(self._agent, Cloneable) else self._agent
         async for data, event in cloned_agent.run():
             match (data, event.name):
                 case (ReActAgentUpdateEvent(), "partial_update"):

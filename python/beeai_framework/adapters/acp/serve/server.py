@@ -12,6 +12,7 @@ from beeai_framework.agents.experimental import RequirementAgent
 from beeai_framework.agents.experimental.events import RequirementAgentSuccessEvent
 from beeai_framework.serve import MemoryManager, init_agent_memory
 from beeai_framework.serve.errors import FactoryAlreadyRegisteredError
+from beeai_framework.utils.cloneable import Cloneable
 
 try:
     import acp_sdk.models as acp_models
@@ -132,7 +133,7 @@ def _react_agent_factory(
     async def run(
         input: list[acp_models.Message], context: acp_context.Context
     ) -> AsyncGenerator[acp_types.RunYield, acp_types.RunYieldResume]:
-        cloned_agent = await agent.clone() if hasattr(agent, "clone") else agent
+        cloned_agent = await agent.clone() if isinstance(agent, Cloneable) else agent
         await init_agent_memory(cloned_agent, memory_manager, str(context.session.id))
         await cloned_agent.memory.add_many(acp_msgs_to_framework_msgs(input))
 
@@ -166,7 +167,7 @@ def _tool_calling_agent_factory(
     async def run(
         input: list[acp_models.Message], context: acp_context.Context
     ) -> AsyncGenerator[acp_types.RunYield, acp_types.RunYieldResume]:
-        cloned_agent = await agent.clone() if hasattr(agent, "clone") else agent
+        cloned_agent = await agent.clone() if isinstance(agent, Cloneable) else agent
         await init_agent_memory(cloned_agent, memory_manager, str(context.session.id))
         await cloned_agent.memory.add_many(acp_msgs_to_framework_msgs(input))
 
@@ -203,7 +204,7 @@ def _requirement_agent_factory(
     async def run(
         input: list[acp_models.Message], context: acp_context.Context
     ) -> AsyncGenerator[acp_types.RunYield, acp_types.RunYieldResume]:
-        cloned_agent = await agent.clone() if hasattr(agent, "clone") else agent
+        cloned_agent = await agent.clone() if isinstance(agent, Cloneable) else agent
         await init_agent_memory(cloned_agent, memory_manager, str(context.session.id))
         await cloned_agent.memory.add_many(acp_msgs_to_framework_msgs(input))
 

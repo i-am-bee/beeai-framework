@@ -14,6 +14,7 @@ from beeai_framework.agents.react import ReActAgent, ReActAgentUpdateEvent
 from beeai_framework.agents.tool_calling import ToolCallingAgent, ToolCallingAgentSuccessEvent
 from beeai_framework.backend import AssistantMessage, MessageTextContent, MessageToolCallContent, ToolMessage
 from beeai_framework.serve.errors import FactoryAlreadyRegisteredError
+from beeai_framework.utils.cloneable import Cloneable
 from beeai_framework.utils.lists import find_index
 
 try:
@@ -123,7 +124,7 @@ def _react_agent_factory(
         trajectory: Annotated[beeai_extensions.TrajectoryExtensionServer, beeai_extensions.TrajectoryExtensionSpec()],
         citation: Annotated[beeai_extensions.CitationExtensionServer, beeai_extensions.CitationExtensionSpec()],
     ) -> AsyncGenerator[beeai_types.RunYield, beeai_types.RunYieldResume]:
-        cloned_agent = await agent.clone() if hasattr(agent, "clone") else agent
+        cloned_agent = await agent.clone() if isinstance(agent, Cloneable) else agent
         await init_agent_memory(cloned_agent, memory_manager, context.context_id)
         await cloned_agent.memory.add(convert_a2a_to_framework_message(message))
 
@@ -187,7 +188,7 @@ def _tool_calling_agent_factory(
         trajectory: Annotated[beeai_extensions.TrajectoryExtensionServer, beeai_extensions.TrajectoryExtensionSpec()],
         citation: Annotated[beeai_extensions.CitationExtensionServer, beeai_extensions.CitationExtensionSpec()],
     ) -> AsyncGenerator[beeai_types.RunYield, beeai_types.RunYieldResume]:
-        cloned_agent = await agent.clone() if hasattr(agent, "clone") else agent
+        cloned_agent = await agent.clone() if isinstance(agent, Cloneable) else agent
         await init_agent_memory(cloned_agent, memory_manager, context.context_id)
         await cloned_agent.memory.add(convert_a2a_to_framework_message(message))
 
@@ -223,7 +224,7 @@ def _requirement_agent_factory(
         trajectory: Annotated[beeai_extensions.TrajectoryExtensionServer, beeai_extensions.TrajectoryExtensionSpec()],
         citation: Annotated[beeai_extensions.CitationExtensionServer, beeai_extensions.CitationExtensionSpec()],
     ) -> AsyncGenerator[beeai_types.RunYield, beeai_types.RunYieldResume]:
-        cloned_agent = await agent.clone() if hasattr(agent, "clone") else agent
+        cloned_agent = await agent.clone() if isinstance(agent, Cloneable) else agent
         await init_agent_memory(cloned_agent, memory_manager, context.context_id)
         await cloned_agent.memory.add(convert_a2a_to_framework_message(message))
 
