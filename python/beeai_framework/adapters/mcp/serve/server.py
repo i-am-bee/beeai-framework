@@ -83,7 +83,7 @@ class MCPSettings(mcp_server.Settings[LifespanResultT]):
 class MCPServerConfig(BaseModel):
     """Configuration for the MCPServer."""
 
-    transport: Literal["stdio", "sse"] = "stdio"
+    transport: Literal["stdio", "sse", "streamable-http"] = "stdio"
     name: str = "MCP Server"
     instructions: str | None = None
     settings: MCPSettings | mcp_server.Settings = Field(default_factory=lambda: MCPSettings())
