@@ -10,8 +10,9 @@ from typing import Any, Generic, Self
 
 from beeai_framework.agents.experimental import RequirementAgent
 from beeai_framework.agents.experimental.events import RequirementAgentSuccessEvent
-from beeai_framework.serve import MemoryManager
+from beeai_framework.serve import MemoryManager, init_agent_memory
 from beeai_framework.serve.errors import FactoryAlreadyRegisteredError
+from beeai_framework.utils.cloneable import Cloneable
 
 try:
     import acp_sdk.models as acp_models
@@ -107,7 +108,7 @@ class ACPServer(Generic[AnyAgentLike], Server[AnyAgentLike, ACPServerAgent, "ACP
         for member in self.members:
             factory = type(self)._factories[type(member)]
             config = self._metadata_by_agent.get(member, None)
-            self._server.register(factory(member, metadata=config))  # type: ignore[call-arg]
+            self._server.register(factory(member, metadata=config, memory_manager=self._memory_manager))  # type: ignore[call-arg]
 
 
 def to_acp_agent_metadata(metadata: ACPServerMetadata) -> acp_models.Metadata:
@@ -123,17 +124,20 @@ def to_acp_agent_metadata(metadata: ACPServerMetadata) -> acp_models.Metadata:
     return model
 
 
-def _react_agent_factory(agent: ReActAgent, *, metadata: ACPServerMetadata | None = None) -> ACPServerAgent:
+def _react_agent_factory(
+    agent: ReActAgent, *, metadata: ACPServerMetadata | None = None, memory_manager: MemoryManager
+) -> ACPServerAgent:
     if metadata is None:
         metadata = {}
 
     async def run(
         input: list[acp_models.Message], context: acp_context.Context
     ) -> AsyncGenerator[acp_types.RunYield, acp_types.RunYieldResume]:
-        agent.memory.reset()
-        await agent.memory.add_many(acp_msgs_to_framework_msgs(input))
+        cloned_agent = await agent.clone() if isinstance(agent, Cloneable) else agent
+        await init_agent_memory(cloned_agent, memory_manager, str(context.session.id))
+        await cloned_agent.memory.add_many(acp_msgs_to_framework_msgs(input))
 
-        async for data, event in agent.run():
+        async for data, event in cloned_agent.run():
             match (data, event.name):
                 case (ReActAgentUpdateEvent(), "partial_update"):
                     update = data.update.value
@@ -154,20 +158,21 @@ def _react_agent_factory(agent: ReActAgent, *, metadata: ACPServerMetadata | Non
 
 
 with contextlib.suppress(FactoryAlreadyRegisteredError):
-    ACPServer.register_factory(ReActAgent, _react_agent_factory)
+    ACPServer.register_factory(ReActAgent, _react_agent_factory)  # type: ignore[arg-type]
 
 
 def _tool_calling_agent_factory(
-    agent: ToolCallingAgent, *, metadata: ACPServerMetadata | None = None
+    agent: ToolCallingAgent, *, metadata: ACPServerMetadata | None = None, memory_manager: MemoryManager
 ) -> ACPServerAgent:
     async def run(
         input: list[acp_models.Message], context: acp_context.Context
     ) -> AsyncGenerator[acp_types.RunYield, acp_types.RunYieldResume]:
-        agent.memory.reset()
-        await agent.memory.add_many(acp_msgs_to_framework_msgs(input))
+        cloned_agent = await agent.clone() if isinstance(agent, Cloneable) else agent
+        await init_agent_memory(cloned_agent, memory_manager, str(context.session.id))
+        await cloned_agent.memory.add_many(acp_msgs_to_framework_msgs(input))
 
         last_msg: AnyMessage | None = None
-        async for data, _ in agent.run():
+        async for data, _ in cloned_agent.run():
             messages = data.state.memory.messages
             if last_msg is None:
                 last_msg = messages[-1]
@@ -190,18 +195,21 @@ def _tool_calling_agent_factory(
 
 
 with contextlib.suppress(FactoryAlreadyRegisteredError):
-    ACPServer.register_factory(ToolCallingAgent, _tool_calling_agent_factory)
+    ACPServer.register_factory(ToolCallingAgent, _tool_calling_agent_factory)  # type: ignore[arg-type]
 
 
-def _requirement_agent_factory(agent: RequirementAgent, *, metadata: ACPServerMetadata | None = None) -> ACPServerAgent:
+def _requirement_agent_factory(
+    agent: RequirementAgent, *, metadata: ACPServerMetadata | None = None, memory_manager: MemoryManager
+) -> ACPServerAgent:
     async def run(
         input: list[acp_models.Message], context: acp_context.Context
     ) -> AsyncGenerator[acp_types.RunYield, acp_types.RunYieldResume]:
-        agent.memory.reset()
-        await agent.memory.add_many(acp_msgs_to_framework_msgs(input))
+        cloned_agent = await agent.clone() if isinstance(agent, Cloneable) else agent
+        await init_agent_memory(cloned_agent, memory_manager, str(context.session.id))
+        await cloned_agent.memory.add_many(acp_msgs_to_framework_msgs(input))
 
         last_msg: AnyMessage | None = None
-        async for data, _ in agent.run():
+        async for data, _ in cloned_agent.run():
             messages = data.state.memory.messages
             if last_msg is None:
                 last_msg = messages[-1]
@@ -224,7 +232,7 @@ def _requirement_agent_factory(agent: RequirementAgent, *, metadata: ACPServerMe
 
 
 with contextlib.suppress(FactoryAlreadyRegisteredError):
-    ACPServer.register_factory(RequirementAgent, _requirement_agent_factory)
+    ACPServer.register_factory(RequirementAgent, _requirement_agent_factory)  # type: ignore[arg-type]
 
 
 class ACPServerConfig(BaseModel):

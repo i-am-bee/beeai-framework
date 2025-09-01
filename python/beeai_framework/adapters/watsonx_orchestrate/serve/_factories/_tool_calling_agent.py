@@ -14,6 +14,7 @@ from beeai_framework.agents.tool_calling import ToolCallingAgent
 from beeai_framework.backend import AssistantMessage
 from beeai_framework.emitter import EmitterOptions, EventMeta
 from beeai_framework.tools import Tool, ToolStartEvent, ToolSuccessEvent
+from beeai_framework.utils.cloneable import Cloneable
 
 
 class WatsonxOrchestrateServerToolCallingAgent(WatsonxOrchestrateServerAgent[ToolCallingAgent]):
@@ -22,10 +23,13 @@ class WatsonxOrchestrateServerToolCallingAgent(WatsonxOrchestrateServerAgent[Too
         return self._agent._llm.model_id
 
     async def _run(self) -> AssistantMessage:
-        response = await self._agent.run(prompt=None)
+        cloned_agent = await self._agent.clone() if isinstance(self._agent, Cloneable) else self._agent
+        response = await cloned_agent.run(prompt=None)
         return response.result
 
     async def _stream(self, emit: WatsonxOrchestrateServerAgentEmitFn) -> None:
+        cloned_agent = await self._agent.clone() if isinstance(self._agent, Cloneable) else self._agent
+
         async def on_tool_success(data: ToolSuccessEvent, meta: EventMeta) -> None:
             assert meta.trace, "ToolSuccessEvent must have trace"
             assert isinstance(meta.creator, Tool)
@@ -55,7 +59,7 @@ class WatsonxOrchestrateServerToolCallingAgent(WatsonxOrchestrateServerAgent[Too
             )
 
         response = await (
-            self._agent.run(prompt=None)
+            cloned_agent.run(prompt=None)
             .on(
                 lambda event: isinstance(event.creator, Tool) and event.name == "start",
                 on_tool_start,
