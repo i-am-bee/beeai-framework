@@ -13,7 +13,7 @@ def main() -> None:
         tools=[DuckDuckGoSearchTool(), OpenMeteoTool()],
         memory=UnconstrainedMemory(),
         # specify the agent's name and other metadata
-        name="my_agent",
+        name="chat",
         description="A simple agent",
     )
 

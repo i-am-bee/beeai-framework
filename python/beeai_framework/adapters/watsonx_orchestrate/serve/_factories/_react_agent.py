@@ -18,11 +18,13 @@ class WatsonxOrchestrateServerReActAgent(WatsonxOrchestrateServerAgent[ReActAgen
         return self._agent._input.llm.model_id
 
     async def _run(self) -> AssistantMessage:
-        response = await self._agent.run(prompt=None).middleware(GlobalTrajectoryMiddleware())
+        cloned_agent = await self._agent.clone() if hasattr(self._agent, "clone") else self._agent
+        response = await cloned_agent.run(prompt=None).middleware(GlobalTrajectoryMiddleware())
         return response.result
 
     async def _stream(self, emit: WatsonxOrchestrateServerAgentEmitFn) -> None:
-        async for data, event in self._agent.run():
+        cloned_agent = await self._agent.clone() if hasattr(self._agent, "clone") else self._agent
+        async for data, event in cloned_agent.run():
             match (data, event.name):
                 case (ReActAgentUpdateEvent(), "partial_update"):
                     update = data.update.value

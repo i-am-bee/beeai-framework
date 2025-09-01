@@ -130,10 +130,11 @@ def _react_agent_factory(agent: ReActAgent, *, metadata: ACPServerMetadata | Non
     async def run(
         input: list[acp_models.Message], context: acp_context.Context
     ) -> AsyncGenerator[acp_types.RunYield, acp_types.RunYieldResume]:
-        agent.memory.reset()
-        await agent.memory.add_many(acp_msgs_to_framework_msgs(input))
+        cloned_agent = await agent.clone() if hasattr(agent, "clone") else agent
+        cloned_agent.memory.reset()
+        await cloned_agent.memory.add_many(acp_msgs_to_framework_msgs(input))
 
-        async for data, event in agent.run():
+        async for data, event in cloned_agent.run():
             match (data, event.name):
                 case (ReActAgentUpdateEvent(), "partial_update"):
                     update = data.update.value
@@ -163,11 +164,12 @@ def _tool_calling_agent_factory(
     async def run(
         input: list[acp_models.Message], context: acp_context.Context
     ) -> AsyncGenerator[acp_types.RunYield, acp_types.RunYieldResume]:
-        agent.memory.reset()
-        await agent.memory.add_many(acp_msgs_to_framework_msgs(input))
+        cloned_agent = await agent.clone() if hasattr(agent, "clone") else agent
+        cloned_agent.memory.reset()
+        await cloned_agent.memory.add_many(acp_msgs_to_framework_msgs(input))
 
         last_msg: AnyMessage | None = None
-        async for data, _ in agent.run():
+        async for data, _ in cloned_agent.run():
             messages = data.state.memory.messages
             if last_msg is None:
                 last_msg = messages[-1]
@@ -197,11 +199,12 @@ def _requirement_agent_factory(agent: RequirementAgent, *, metadata: ACPServerMe
     async def run(
         input: list[acp_models.Message], context: acp_context.Context
     ) -> AsyncGenerator[acp_types.RunYield, acp_types.RunYieldResume]:
-        agent.memory.reset()
-        await agent.memory.add_many(acp_msgs_to_framework_msgs(input))
+        cloned_agent = await agent.clone() if hasattr(agent, "clone") else agent
+        cloned_agent.memory.reset()
+        await cloned_agent.memory.add_many(acp_msgs_to_framework_msgs(input))
 
         last_msg: AnyMessage | None = None
-        async for data, _ in agent.run():
+        async for data, _ in cloned_agent.run():
             messages = data.state.memory.messages
             if last_msg is None:
                 last_msg = messages[-1]

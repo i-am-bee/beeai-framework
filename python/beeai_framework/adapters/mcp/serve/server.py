@@ -142,7 +142,8 @@ def _tool_factory(
     tool: AnyTool,
 ) -> MCPNativeTool:
     async def run(**kwargs: Any) -> ToolOutput:
-        result: ToolOutput = await tool.run(kwargs)
+        cloned_tool = await tool.clone()
+        result: ToolOutput = await cloned_tool.run(kwargs)
         return result
 
     class CustomToolSchema(tool.input_schema):  # type: ignore
