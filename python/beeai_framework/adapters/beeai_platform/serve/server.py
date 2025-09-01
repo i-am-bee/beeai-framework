@@ -285,7 +285,7 @@ def _init_metadata(
     agent: AnyAgentLike,
     base: BeeAIPlatformServerMetadata | None = None,
 ) -> BeeAIPlatformServerMetadata:
-    copy = BeeAIPlatformServerMetadata(**(base or {}))
+    copy = (base or {}).copy()
     if not copy.get("name"):
         copy["name"] = agent.meta.name
     if not copy.get("description"):
