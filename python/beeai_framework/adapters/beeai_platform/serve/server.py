@@ -8,6 +8,7 @@ from typing import Annotated, Self
 from pydantic import BaseModel
 from typing_extensions import TypedDict, TypeVar, Unpack, override
 
+from beeai_framework.adapters.beeai_platform.serve.io import BeeAIPlatformIOContext
 from beeai_framework.agents.experimental import RequirementAgent
 from beeai_framework.agents.experimental.events import RequirementAgentSuccessEvent
 from beeai_framework.agents.react import ReActAgent, ReActAgentUpdateEvent
@@ -128,50 +129,55 @@ def _react_agent_factory(
         await init_agent_memory(cloned_agent, memory_manager, context.context_id)
         await cloned_agent.memory.add(convert_a2a_to_framework_message(message))
 
-        artifact_id = uuid.uuid4()
-        append = False
-        last_key = None
-        last_update = None
-        async for data, event in cloned_agent.run():
-            match (data, event.name):
-                case (ReActAgentUpdateEvent(), "partial_update"):
-                    match data.update.key:
-                        case "thought" | "tool_name" | "tool_input" | "tool_output":
-                            update = data.update.parsed_value
-                            update = update.get_text_content() if hasattr(update, "get_text_content") else str(update)
-                            if last_key and last_key != data.update.key:
-                                yield trajectory.trajectory_metadata(title=last_key, content=last_update)
-                            last_key = data.update.key
-                            last_update = update
-                        case "final_answer":
-                            update = data.update.value
-                            update = update.get_text_content() if hasattr(update, "get_text_content") else str(update)
-                            yield a2a_types.TaskArtifactUpdateEvent(
-                                append=append,
-                                context_id=context.context_id,
-                                task_id=context.task_id,
-                                last_chunk=False,
-                                artifact=a2a_types.Artifact(
-                                    name="final_answer",
-                                    artifact_id=str(artifact_id),
-                                    parts=[a2a_types.Part(root=a2a_types.TextPart(text=update))],
-                                ),
-                            )
-                            append = True
+        with BeeAIPlatformIOContext(context):
+            artifact_id = uuid.uuid4()
+            append = False
+            last_key = None
+            last_update = None
+            async for data, event in cloned_agent.run():
+                match (data, event.name):
+                    case (ReActAgentUpdateEvent(), "partial_update"):
+                        match data.update.key:
+                            case "thought" | "tool_name" | "tool_input" | "tool_output":
+                                update = data.update.parsed_value
+                                update = (
+                                    update.get_text_content() if hasattr(update, "get_text_content") else str(update)
+                                )
+                                if last_key and last_key != data.update.key:
+                                    yield trajectory.trajectory_metadata(title=last_key, content=last_update)
+                                last_key = data.update.key
+                                last_update = update
+                            case "final_answer":
+                                update = data.update.value
+                                update = (
+                                    update.get_text_content() if hasattr(update, "get_text_content") else str(update)
+                                )
+                                yield a2a_types.TaskArtifactUpdateEvent(
+                                    append=append,
+                                    context_id=context.context_id,
+                                    task_id=context.task_id,
+                                    last_chunk=False,
+                                    artifact=a2a_types.Artifact(
+                                        name="final_answer",
+                                        artifact_id=str(artifact_id),
+                                        parts=[a2a_types.Part(root=a2a_types.TextPart(text=update))],
+                                    ),
+                                )
+                                append = True
 
-        yield a2a_types.TaskArtifactUpdateEvent(
-            append=True,
-            context_id=context.context_id,
-            task_id=context.task_id,
-            last_chunk=True,
-            artifact=a2a_types.Artifact(
-                name="final_answer",
-                artifact_id=str(artifact_id),
-                parts=[a2a_types.Part(root=a2a_types.TextPart(text=""))],
-            ),
-        )
+            yield a2a_types.TaskArtifactUpdateEvent(
+                append=True,
+                context_id=context.context_id,
+                task_id=context.task_id,
+                last_chunk=True,
+                artifact=a2a_types.Artifact(
+                    name="final_answer",
+                    artifact_id=str(artifact_id),
+                    parts=[a2a_types.Part(root=a2a_types.TextPart(text=""))],
+                ),
+            )
 
-    metadata = metadata or {}
+    metadata = _init_metadata(agent, metadata)
     return beeai_agent.agent(**metadata)(run)
 
 
@@ -192,22 +198,23 @@ def _tool_calling_agent_factory(
         await init_agent_memory(cloned_agent, memory_manager, context.context_id)
         await cloned_agent.memory.add(convert_a2a_to_framework_message(message))
 
-        last_msg: AnyMessage | None = None
-        async for data, _ in cloned_agent.run():
-            messages = data.state.memory.messages
-            if last_msg is None:
-                last_msg = messages[-1]
+        with BeeAIPlatformIOContext(context):
+            last_msg: AnyMessage | None = None
+            async for data, _ in cloned_agent.run():
+                messages = data.state.memory.messages
+                if last_msg is None:
+                    last_msg = messages[-1]
 
-            cur_index = find_index(messages, lambda msg: msg is last_msg, fallback=-1, reverse_traversal=True)  # noqa: B023
-            for msg in messages[cur_index + 1 :]:
-                for value in send_message_trajectory(msg, trajectory):
-                    yield value
-                last_msg = msg
+                cur_index = find_index(messages, lambda msg: msg is last_msg, fallback=-1, reverse_traversal=True)  # noqa: B023
+                for msg in messages[cur_index + 1 :]:
+                    for value in send_message_trajectory(msg, trajectory):
+                        yield value
+                    last_msg = msg
 
-            if isinstance(data, ToolCallingAgentSuccessEvent) and data.state.result is not None:
-                yield beeai_types.AgentMessage(text=data.state.result.text)
+                if isinstance(data, ToolCallingAgentSuccessEvent) and data.state.result is not None:
+                    yield beeai_types.AgentMessage(text=data.state.result.text)
 
-    metadata = metadata or {}
+    metadata = _init_metadata(agent, metadata)
     return beeai_agent.agent(**metadata)(run)
 
 
@@ -228,22 +235,23 @@ def _requirement_agent_factory(
         await init_agent_memory(cloned_agent, memory_manager, context.context_id)
         await cloned_agent.memory.add(convert_a2a_to_framework_message(message))
 
-        last_msg: AnyMessage | None = None
-        async for data, _ in cloned_agent.run():
-            messages = data.state.memory.messages
-            if last_msg is None:
-                last_msg = messages[-1]
+        with BeeAIPlatformIOContext(context):
+            last_msg: AnyMessage | None = None
+            async for data, _ in cloned_agent.run():
+                messages = data.state.memory.messages
+                if last_msg is None:
+                    last_msg = messages[-1]
 
-            cur_index = find_index(messages, lambda msg: msg is last_msg, fallback=-1, reverse_traversal=True)  # noqa: B023
-            for msg in messages[cur_index + 1 :]:
-                for value in send_message_trajectory(msg, trajectory):
-                    yield value
-                last_msg = msg
+                cur_index = find_index(messages, lambda msg: msg is last_msg, fallback=-1, reverse_traversal=True)  # noqa: B023
+                for msg in messages[cur_index + 1 :]:
+                    for value in send_message_trajectory(msg, trajectory):
+                        yield value
+                    last_msg = msg
 
-            if isinstance(data, RequirementAgentSuccessEvent) and data.state.answer is not None:
-                yield beeai_types.AgentMessage(text=data.state.answer.text)
+                if isinstance(data, RequirementAgentSuccessEvent) and data.state.answer is not None:
+                    yield beeai_types.AgentMessage(text=data.state.answer.text)
 
-    metadata = metadata or {}
+    metadata = _init_metadata(agent, metadata)
     return beeai_agent.agent(**metadata)(run)
 
 
@@ -271,3 +279,15 @@ def send_message_trajectory(
             yield trajectory.trajectory_metadata(
                 title=f"{tool_call.tool_name} (response)", content=str(tool_call.result)
             )
+
+
+def _init_metadata(
+    agent: AnyAgentLike,
+    base: BeeAIPlatformServerMetadata | None = None,
+) -> BeeAIPlatformServerMetadata:
+    copy = BeeAIPlatformServerMetadata(**(base or {}))
+    if not copy.get("name"):
+        copy["name"] = agent.meta.name
+    if not copy.get("description"):
+        copy["description"] = agent.meta.description
+    return copy
