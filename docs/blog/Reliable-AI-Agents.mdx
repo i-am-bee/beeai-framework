@@ -1,0 +1,423 @@
+---
+title: "AI Agent Reliability with BeeAI"
+icon: ""
+---
+import { Author } from "/snippets/Author.jsx"
+
+<Author
+  name="Sandi Besen"
+  avatar="./images/authors/sandi-besen.jpg"
+  subtitle="Sep 2, 2025"
+/>
+
+Imagine you've built a sophisticated AI agent that works brilliantly in testing, but when deployed to production, it starts behaving erratically. Sometimes it skips crucial validation steps, other times it terminates before completing essential tasks, and occasionally it uses completely inappropriate tools for the job at hand. Sound familiar?
+
+This unpredictability has haunted multi-agent systems since their inception, making them difficult to debug, impossible to guarantee, and often unsuitable for production environments where reliability matters. The existing solutions either involve writing lengthy custom code or constraining agents so tightly they lose their problem-solving flexibility.
+
+The [RequirementAgent](https://framework.beeai.dev/experimental/requirement-agent), from the BeeAI Framework is an innovative approach that provides the reliability needed for production scenarios made simple.
+
+<img
+  src="./images/requirement_agent_intro.png"
+  alt="Requirement Agent BeeAI"
+  style={{ width: 450, height: "auto" }}
+/>
+
+
+---
+
+### What Makes RequirementAgent Unique
+
+Simplicity is key. Rather than writing complex orchestration code, ***you define the requirements and let the framework enforce them***. RequirementAgent introduces a **rule system** that defines execution constraints while keeping problem-solving flexibility intact. You can make your agent strict following a specific step-by-step workflow or flexible following few or no constraints.
+
+This control works consistently across different language models, from cost-effective smaller models to powerful large ones, encouraging consistent behavior regardless of the underlying model's tool-calling capabilities. 
+
+
+### Code Example with The RequirementAgent
+
+In about 32 lines of code, this Activity Planner Agent is enabled with memory, state, an internet search tool, weather tool, a “thinking” tool and follows the following rules: 
+
+1. It must think first
+2. The Weather tool must be used at least once, but not consecutive times in a row
+3. The agent can only search  the internet once it has gotten the weather at least once
+
+<img
+  src="./images/mermaid_diagram.png"
+  alt="Requirement Agent Flowchart"
+  style={{ width: 700, height: "auto" }}
+/>
+
+The requirements ensure it follows this logical research sequence every time, preventing shortcuts or missed steps that could lead to incomplete or unreliable results. Parameters like priority, only_after, max_consecutive, etc give you precise control over agent behavior without writing complex orchestration code. A complete parameter reference can be found [here](https://framework.beeai.dev/experimental/requirement-agent#complete-parameter-reference) and additional code examples that provide examples of the usage patterns can be found [here](https://github.com/matoushavlena/beeai-requirement-agent-examples?tab=readme-ov-file). 
+
+The requirements prevent common issues like infinite loops, premature termination, and inappropriate tool usage through built-in safeguards. Additionally, detailed execution traces show exactly which requirements triggered when, making it easy to understand and debug agent behavior.
+
+
+```py python [expandable]
+# uv add beeai_framework
+from beeai_framework.agents.experimental import RequirementAgent
+from beeai_framework.agents.experimental.requirements.conditional import ConditionalRequirement
+from beeai_framework.tools.search.duckduckgo import DuckDuckGoSearchTool
+from beeai_framework.tools.think import ThinkTool
+from beeai_framework.tools.weather import OpenMeteoTool
+from beeai_framework.backend import ChatModel
+from beeai_framework.middleware.trajectory import GlobalTrajectoryMiddleware
+import asyncio
+# Create an agent that plans activities based on weather and events
+async def main() -> None:
+    agent = RequirementAgent(
+        llm=ChatModel.from_name("ollama:granite3.3:8b"),
+        tools=[
+            ThinkTool(),             # to reason
+            OpenMeteoTool(),         # retrieve weather data
+            DuckDuckGoSearchTool()   # search web
+        ],
+        instructions="Plan activities for a given destination based on current weather and events.",
+        requirements=[
+            # Force thinking first
+            ConditionalRequirement(ThinkTool, force_at_step=1),
+            # Search only after getting weather and at least once
+            ConditionalRequirement(DuckDuckGoSearchTool, only_after=[OpenMeteoTool], min_invocations=1),
+            # Weather tool be used at least once but not consecutively
+            ConditionalRequirement(OpenMeteoTool, consecutive_allowed=False, min_invocations=1),
+        ])
+    # Run with execution logging
+    response = await agent.run("What to do in Boston?").middleware(GlobalTrajectoryMiddleware())
+    print(f"Final Answer: {response.answer.text}")
+if __name__ == "__main__":
+    asyncio.run(main())
+```
+You can also find examples of adding [custom requirements](https://framework.beeai.dev/experimental/requirement-agent#custom-requirement) in the documentation.
+
+### How The Requirement Agent Works Step by Step
+
+Under the hood, RequirementAgent follows the following execution pattern:
+
+1. State Initialization: Creates a RequirementAgentRunState that tracks the conversation memory, execution steps, and current iteration
+
+2. Requirements Processing: A RequirementsReasoner analyzes your defined requirements and determines which tools are available and what constraints apply
+
+3. Request Creation: For each iteration, the reasoner creates a request specifying allowed tools, tool choice preferences, and whether the agent can terminate
+
+4. LLM Interaction: The agent calls the language model with the current context and available tools
+
+5. Tool Execution: Any requested tools are executed, with results added to the conversation memory
+
+6. Cycle Detection: Built-in protection prevents infinite tool calling loops
+
+7. Requirement Validation: The reasoner ensures all requirements are met before allowing termination
+
+8. Final Answer: Once requirements are satisfied, the agent produces its final response
+
+This cycle continues until the agent successfully completes the task within the defined constraints, with built-in safeguards for maximum iterations and retry limits.
+
+### Similar Agent, Other Framework Implementation
+
+To demonstrate the simplicity of the RequirementAgent, let's compare our BeeAI implementation with the equivalent functionality built using LangGraph. Frameworks like LangGraph give you fine-grained control by letting you design explicit execution graphs but it often means writing a lot of orchestration logic by hand. In this case, **it took me more than 5x the code to implement the same agent rules!**
+
+***RequirementAgent takes a different route: instead of wiring every node and edge yourself, you declare rules and let the framework enforce them automatically***. The result is fewer lines of code, faster iteration, and less overhead.
+
+```py python [expandable]
+# uv add langgraph langchain-core langchain-openai langchain-community requests
+
+import os
+import json
+import requests
+from datetime import date, timedelta
+from typing import Annotated, Optional, TypedDict, List
+
+from langgraph.graph import StateGraph, END
+from langgraph.graph.message import add_messages
+
+from langchain_core.messages import HumanMessage, SystemMessage, AIMessage, ToolMessage
+from langchain_core.tools import tool
+from langchain_community.tools import DuckDuckGoSearchRun
+from langchain_ollama import ChatOllama
+
+
+# ---------------------------
+# Domain instructions
+# ---------------------------
+INSTRUCT_PROMPT = "Plan activities for a given destination based on current weather and events."
+
+
+# ---------------------------
+# Tools
+# ---------------------------
+
+@tool("think")
+def think(thought: str) -> str:
+    """Reflect on the task and outline your plan (kept concise)."""
+    return "Plan acknowledged."
+
+ddg = DuckDuckGoSearchRun(name="web_search_native")
+
+@tool("web_search")
+def web_search(query: str, max_results: int = 5) -> str:
+    """General web search. Only allowed AFTER get_weather has been used at least once."""
+    return ddg.run(query)
+
+
+@tool("get_weather")
+def get_weather(city: str, day: str = "") -> str:
+    """Fetch a simple forecast for the given city and day (YYYY-MM-DD) using Open-Meteo.
+    Returns summary with min/max and hourly temps if available.
+    """
+    try:
+        if not city:
+            return "City is required to fetch weather. Please provide a destination city."
+
+        # 1) Geocode
+        geo = requests.get(
+            "https://geocoding-api.open-meteo.com/v1/search",
+            params={"name": city, "count": 1},
+            timeout=10,
+        ).json()
+        if not geo.get("results"):
+            return f"Could not geocode city '{city}'."
+        lat = geo["results"][0]["latitude"]
+        lon = geo["results"][0]["longitude"]
+
+        # 2) Determine day (default: tomorrow)
+        if not day:
+            day = (date.today() + timedelta(days=1)).strftime("%Y-%m-%d")
+
+        # 3) Forecast
+        resp = requests.get(
+            "https://api.open-meteo.com/v1/forecast",
+            params={
+                "latitude": lat,
+                "longitude": lon,
+                "timezone": "auto",
+                "start_date": day,
+                "end_date": day,
+                "hourly": "temperature_2m",
+                "daily": "temperature_2m_max,temperature_2m_min",
+            },
+            timeout=15,
+        ).json()
+
+        daily = resp.get("daily", {})
+        hourly = resp.get("hourly", {})
+        tmin = daily.get("temperature_2m_min", [None])[0]
+        tmax = daily.get("temperature_2m_max", [None])[0]
+        times = hourly.get("time", [])
+        temps = hourly.get("temperature_2m", [])
+        sample = list(zip(times[:6], temps[:6]))  # small preview to keep it brief
+
+        return json.dumps(
+            {
+                "city": city,
+                "date": day,
+                "tmin_F": tmin,
+                "tmax_F": tmax,
+                "hourly_preview": sample,
+            }
+        )
+    except Exception as e:
+        return f"Weather tool error: {e}"
+
+
+TOOLS_BY_NAME = {
+    "think": think,
+    "get_weather": get_weather,
+    "web_search": web_search,
+}
+ALL_TOOLS = list(TOOLS_BY_NAME.values())
+
+
+# ---------------------------
+# Agent State
+# ---------------------------
+class AgentState(TypedDict):
+    messages: Annotated[List, add_messages]
+    did_think: bool
+    weather_calls: int
+    last_tool: Optional[str]
+    search_unlocked: bool
+    city: Optional[str]          # no default city
+    todays_date: str
+
+
+# ---------------------------
+# LLM
+# ---------------------------
+# Using local Ollama with Granite 3.3 8B model
+llm = ChatOllama(model="granite3.3:8b", temperature=0)
+
+
+# ---------------------------
+# Agent node (ReAct-style)
+# ---------------------------
+def agent_node(state: AgentState):
+    # Expose think ONLY until it's been used once
+    if not state["did_think"]:
+        allowed = ["think"]
+    else:
+        # Require weather before search
+        allowed = ["get_weather"] if state["weather_calls"] == 0 else ["web_search", "get_weather"]
+        # Block consecutive get_weather unconditionally
+        if state["last_tool"] == "get_weather" and "get_weather" in allowed:
+            allowed.remove("get_weather")
+
+    bound_tools = [TOOLS_BY_NAME[name] for name in allowed]
+    sys = SystemMessage(content=INSTRUCT_PROMPT)  # exactly the requested system prompt
+    response = llm.bind_tools(bound_tools).invoke([sys, *state["messages"]])
+    return {"messages": [response]}
+
+
+# ---------------------------
+# Tool execution node
+# ---------------------------
+def tools_node(state: AgentState):
+    """Execute any requested tool calls and update counters/flags."""
+    last = state["messages"][-1]
+
+    # If the model didn't request a tool, progress with safe fallbacks
+    if (not isinstance(last, AIMessage)) or (isinstance(last, AIMessage) and not last.tool_calls):
+        # 1) Force a one-time THINK to break deadlocks
+        if not state["did_think"]:
+            result = think.invoke({"thought": "Outline plan and information needed before searching or checking weather."})
+            forced = ToolMessage(content=str(result), tool_call_id="forced-think-1")
+            return {
+                "messages": [forced],
+                "did_think": True,
+                "weather_calls": state["weather_calls"],
+                "last_tool": "think",
+                "search_unlocked": state["search_unlocked"],
+            }
+        # 2) After think: if we have a city and no weather yet, force one weather call
+        if state["weather_calls"] < 1 and state["city"]:
+            result = get_weather.invoke({"city": state["city"], "day": ""})
+            forced = ToolMessage(content=str(result), tool_call_id="forced-weather-1")
+            return {
+                "messages": [forced],
+                "did_think": state["did_think"],
+                "weather_calls": state["weather_calls"] + 1,
+                "last_tool": "get_weather",
+                "search_unlocked": True,
+            }
+        # 3) Otherwise nothing to execute
+        return {}
+
+    # --- NORMAL TOOL EXECUTION PATH ---
+    out_messages: List[ToolMessage] = []
+    did_think = state["did_think"]
+    weather_calls = state["weather_calls"]
+    last_tool = state["last_tool"]
+    search_unlocked = state["search_unlocked"]
+
+    for tc in last.tool_calls:
+        name = tc["name"]
+        args = tc.get("args", {}) or {}
+        tool = TOOLS_BY_NAME.get(name)
+
+        if tool is None:
+            content = f"Unknown tool '{name}'."
+        else:
+            result = tool.invoke(args)
+            content = result
+
+            if name == "think":
+                did_think = True
+            if name == "get_weather":
+                # Count every get_weather call to preserve "no two in a row"
+                weather_calls += 1
+                search_unlocked = True
+            last_tool = name
+
+        out_messages.append(ToolMessage(content=str(content), tool_call_id=tc["id"]))
+
+    return {
+        "messages": out_messages,
+        "did_think": did_think,
+        "weather_calls": weather_calls,
+        "last_tool": last_tool,
+        "search_unlocked": search_unlocked,
+    }
+
+
+# ---------------------------
+# Routing logic
+# ---------------------------
+def route_after_agent(state: AgentState):
+    """Route to tools if tools were requested; otherwise keep going or end.
+
+    Strict ordering + deadlock escape:
+    - Think must happen before anything else.
+    - Must make at least one weather call before search.
+    - If no city yet and no tool calls, END so the model can ask for a destination.
+    """
+    last = state["messages"][-1]
+
+    # If the model requested tools, execute them.
+    if isinstance(last, AIMessage) and last.tool_calls:
+        return "tools"
+
+    # Before first weather call:
+    if state["weather_calls"] < 1:
+        # If a city is known, go try tools (forced weather after think).
+        if state["city"]:
+            return "tools"
+        # No city yet → end so the assistant can ask the user for a destination (prevents recursion).
+        return "end"
+
+    # After first weather call, run tools if requested; otherwise end.
+    return "end"
+
+
+# ---------------------------
+# Build the graph
+# ---------------------------
+workflow = StateGraph(AgentState)
+
+workflow.add_node("agent", agent_node)
+workflow.add_node("tools", tools_node)
+
+workflow.set_entry_point("agent")
+workflow.add_conditional_edges(
+    "agent",
+    route_after_agent,
+    {"tools": "tools", "agent": "agent", "end": END}
+)
+workflow.add_edge("tools", "agent")
+
+graph = workflow.compile()
+
+
+# ---------------------------
+# Example run
+# ---------------------------
+if __name__ == "__main__":
+    todays_date = date.today().strftime("%B %d, %Y")
+
+    # No default city globally; just set for the example run
+    city = "Boston"
+
+    user_question = "What to do in Boston?"
+
+    init_state: AgentState = {
+        "messages": [HumanMessage(content=user_question)],
+        "did_think": False,
+        "weather_calls": 0,
+        "last_tool": None,
+        "search_unlocked": False,
+        "city": city,
+        "todays_date": todays_date,
+    }
+    # Stream if you want to watch steps:
+    # for event in graph.stream(init_state, stream_mode="values"):
+    #     print(event)
+    result = graph.invoke(init_state)
+    # Final assistant message is the last AI message
+    final_msgs = [m for m in result["messages"] if isinstance(m, AIMessage)]
+    print(final_msgs[-1].content if final_msgs else "No final response produced.")
+
+```
+
+### Conclusion
+Multi-agent systems don’t have to be unpredictable, brittle, or exhausting to manage. With the RequirementAgent, you get reliable and flexible agents that respect your rules, avoid common pitfalls, and still leverage the full reasoning power of language models.
+
+Whether you want to enforce a strict research sequence or give your agent just enough guardrails to stay on track, RequirementAgent makes it simple. And because requirements are **easy to implement**, you can adjust them quickly as your needs evolve.
+
+Ready to try RequirementAgent? Check out the [official documentation]((https://framework.beeai.dev/experimental/requirement-agent)) and explore the wide range of built-in and custom tools to start building more reliable AI agents today.
+
+*Note: The code examples in this post demonstrate RequirementAgent's capabilities and concepts. Some specific API details may vary—always refer to the latest documentation for the most current implementation details.*

@@ -55,6 +55,12 @@
         ]
       },
       {
+        "group": "Blog",
+        "pages": [
+          "blog/Reliable-AI-Agents"
+        ]
+      },
+      {
         "group": "Community",
         "pages": [
           "community/contribute"

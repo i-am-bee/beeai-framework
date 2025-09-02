@@ -1,0 +1,9 @@
+export const Author = ({ name, avatar, subtitle }) => (
+  <div className="flex items-center gap-3 -mt-2 mb-6">
+    <img src={avatar} alt={name} className="w-9 h-9 rounded-full object-cover" />
+    <div className="text-sm">
+      <div className="font-medium">{name}</div>
+      {subtitle ? <div className="opacity-70">{subtitle}</div> : null}
+    </div>
+  </div>
+)
