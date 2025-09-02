@@ -54,7 +54,7 @@ class ACPAgent(BaseAgent[ACPAgentOutput]):
     ) -> ACPAgentOutput:
         async def handler(context: RunContext) -> ACPAgentOutput:
             async with (
-                acp_client.Client(base_url=self._url, session=self._session) as client,
+                acp_client.Client(base_url=self._url, manage_client=False, session=self._session) as client,
             ):
                 inputs = (
                     [self._convert_to_platform_message(i) for i in input]

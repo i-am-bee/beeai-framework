@@ -13,10 +13,11 @@ from beeai_framework.adapters.watsonx_orchestrate.serve.agent import (
 )
 from beeai_framework.agents.experimental import RequirementAgent
 from beeai_framework.agents.experimental.utils._tool import FinalAnswerTool, FinalAnswerToolSchema
-from beeai_framework.backend import AnyMessage, AssistantMessage
+from beeai_framework.backend import AnyMessage
 from beeai_framework.emitter import EmitterOptions, EventMeta
 from beeai_framework.tools import Tool, ToolStartEvent, ToolSuccessEvent
 from beeai_framework.tools.think import ThinkSchema, ThinkTool
+from beeai_framework.utils.cloneable import Cloneable
 
 
 class WatsonxOrchestrateServerRequirementAgent(WatsonxOrchestrateServerAgent[RequirementAgent]):
@@ -24,19 +25,8 @@ class WatsonxOrchestrateServerRequirementAgent(WatsonxOrchestrateServerAgent[Req
     def model_id(self) -> str:
         return self._agent._llm.model_id
 
-    async def _run(self, input: list[AnyMessage]) -> AssistantMessage:
-        if input or not self._agent.memory.is_empty():
-            input = self._agent.memory.messages[-1:]
-            response = await self._agent.run(input)
-            return response.last_message  # type: ignore
-        else:
-            raise ValueError("Agent invoked with empty memory.")
-
     async def _stream(self, input: list[AnyMessage], emit: WatsonxOrchestrateServerAgentEmitFn) -> None:
-        if not input and self._agent.memory.is_empty():
-            raise ValueError("Agent invoked with empty memory.")
-
-        input = self._agent.memory.messages[-1:]
+        cloned_agent = await self._agent.clone() if isinstance(self._agent, Cloneable) else self._agent
 
         async def on_tool_success(data: ToolSuccessEvent, meta: EventMeta) -> None:
             assert meta.trace, "ToolSuccessEvent must have trace"
@@ -85,7 +75,7 @@ class WatsonxOrchestrateServerRequirementAgent(WatsonxOrchestrateServerAgent[Req
                 )
 
         await (
-            self._agent.run(input)
+            cloned_agent.run(input)
             .on(
                 lambda event: isinstance(event.creator, Tool) and event.name == "start",
                 on_tool_start,

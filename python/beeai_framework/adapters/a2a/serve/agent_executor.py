@@ -1,13 +1,13 @@
 # Copyright 2025 © BeeAI a Series of LF Projects, LLC
 # SPDX-License-Identifier: Apache-2.0
 
-from typing_extensions import override
+from typing_extensions import TypeVar, override
 
 from beeai_framework.adapters.a2a.agents._utils import convert_a2a_to_framework_message
-from beeai_framework.agents.errors import AgentError
 from beeai_framework.agents.experimental.events import RequirementAgentSuccessEvent
 from beeai_framework.serve import MemoryManager, init_agent_memory
 from beeai_framework.utils.cancellation import AbortController
+from beeai_framework.utils.cloneable import Cloneable
 
 try:
     import a2a.server as a2a_server
@@ -29,32 +29,18 @@ from beeai_framework.backend.message import (
 )
 from beeai_framework.logger import Logger
 
+AnyAgentLike = TypeVar("AnyAgentLike", bound=AnyAgent, default=AnyAgent)
+
 logger = Logger(__name__)
 
 
 class BaseA2AAgentExecutor(a2a_agent_execution.AgentExecutor):
-    def __init__(self, agent: AnyAgent, agent_card: a2a_types.AgentCard, *, memory_manager: MemoryManager) -> None:
+    def __init__(self, agent: AnyAgentLike, agent_card: a2a_types.AgentCard, *, memory_manager: MemoryManager) -> None:
         super().__init__()
         self._agent = agent
         self.agent_card = agent_card
         self._abort_controller = AbortController()
         self._memory_manager = memory_manager
-
-    async def _initialize_memory(self, context: a2a_agent_execution.RequestContext) -> None:
-        await init_agent_memory(self._agent, self._memory_manager, context.context_id)
-
-    def _messages(self, context: a2a_agent_execution.RequestContext) -> list[AnyMessage]:
-        return [
-            convert_a2a_to_framework_message(message)
-            for message in (
-                (context.current_task.history or [])
-                if context.current_task
-                else [context.message]
-                if context.message
-                else []
-            )
-            if all(isinstance(part.root, a2a_types.TextPart) for part in message.parts)
-        ]
 
     @override
     async def execute(
@@ -62,24 +48,24 @@ class BaseA2AAgentExecutor(a2a_agent_execution.AgentExecutor):
         context: a2a_agent_execution.RequestContext,
         event_queue: a2a_server.events.EventQueue,
     ) -> None:
-        if not context.message:
-            raise AgentError("No message provided")
-
         updater = a2a_server_tasks.TaskUpdater(event_queue, context.task_id, context.context_id)  # type: ignore[arg-type]
         if not context.current_task:
+            if not context.message:
+                raise ValueError("No message found in the request context.")
             context.current_task = a2a_utils.new_task(context.message)
             await updater.submit()
 
-        await self._initialize_memory(context)
-        messages = self._messages(context)
+        cloned_agent = await self._agent.clone() if isinstance(self._agent, Cloneable) else self._agent
+        await init_agent_memory(cloned_agent, self._memory_manager, context.context_id)
+        new_messages = _extract_request_messages(context)
 
         await updater.start_work()
         try:
-            response = await self._agent.run(messages, signal=self._abort_controller.signal)
+            response = await cloned_agent.run(new_messages, signal=self._abort_controller.signal)
 
             await updater.complete(
                 a2a_utils.new_agent_text_message(
-                    response.message.text,
+                    response.last_message.text,
                     context.context_id,
                     context.task_id,
                 )
@@ -106,23 +92,22 @@ class TollCallingAgentExecutor(BaseA2AAgentExecutor):
         context: a2a_agent_execution.RequestContext,
         event_queue: a2a_server.events.EventQueue,
     ) -> None:
-        if not context.message:
-            raise AgentError("No message provided")
-
         updater = a2a_server_tasks.TaskUpdater(event_queue, context.task_id, context.context_id)  # type: ignore[arg-type]
         if not context.current_task:
+            if not context.message:
+                raise ValueError("No message found in the request context.")
             context.current_task = a2a_utils.new_task(context.message)
             await updater.submit()
 
-        await self._initialize_memory(context)
+        cloned_agent = await self._agent.clone() if isinstance(self._agent, Cloneable) else self._agent
+        await init_agent_memory(cloned_agent, self._memory_manager, context.context_id)
+        new_messages = _extract_request_messages(context)
 
         await updater.start_work()
 
         last_msg: AnyMessage | None = None
         try:
-            async for data, _ in self._agent.run(
-                [convert_a2a_to_framework_message(context.message)], signal=self._abort_controller.signal
-            ):
+            async for data, _ in cloned_agent.run(new_messages, signal=self._abort_controller.signal):
                 messages = data.state.memory.messages
                 if last_msg is None:
                     last_msg = messages[-1]
@@ -148,3 +133,16 @@ class TollCallingAgentExecutor(BaseA2AAgentExecutor):
             await updater.failed(
                 message=a2a_utils.new_agent_text_message(str(e)),
             )
+
+
+def _extract_request_messages(context: a2a_agent_execution.RequestContext) -> list[AnyMessage]:
+    return [
+        convert_a2a_to_framework_message(message)
+        for message in (
+            context.current_task.history
+            if context.current_task and context.current_task.history
+            else [context.message]
+            if context.message
+            else []
+        )
+    ]

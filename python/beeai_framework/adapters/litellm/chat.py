@@ -240,11 +240,11 @@ class LiteLLMChatModel(ChatModel, ABC):
         )
 
     def _transform_output(self, chunk: ModelResponse | ModelResponseStream) -> ChatModelOutput:
-        choice = chunk.choices[0]
-        finish_reason = choice.finish_reason
         model = chunk.get("model")  # type: ignore
         usage = chunk.get("usage")  # type: ignore
-        update = choice.delta if isinstance(choice, StreamingChoices) else choice.message
+        choice = chunk.choices[0] if chunk.choices else None
+        finish_reason = choice.finish_reason if choice else None
+        update = (choice.delta if isinstance(choice, StreamingChoices) else choice.message) if choice else None
 
         cost: ChatModelCost | None = None
         with contextlib.suppress(Exception):
@@ -280,7 +280,7 @@ class LiteLLMChatModel(ChatModel, ABC):
                         else AssistantMessage(update.content, id=chunk.id)  # type: ignore
                     )
                 ]
-                if update.model_dump(exclude_none=True)
+                if update and update.model_dump(exclude_none=True)
                 else []
             ),
             finish_reason=finish_reason,

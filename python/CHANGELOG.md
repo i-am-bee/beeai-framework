@@ -67,6 +67,18 @@ print(response.output_structured) # structured output, if any
 - Removed `RAGAgentInput`
 
 
+## python_v0.1.41 (2025-09-01)
+
+### Bug Fixes
+
+- **backend**: handle empty responses for Gemini (#1061)
+
+### Features
+
+- **serve**: interception support in BeeAI Platform (#1063)
+- **serve**: support parallel agent runs (#1060)
+- **serve**: add support for streamable-http in MCP (#1062)
+
 ## python_v0.1.40 (2025-08-29)
 
 ### Bug Fixes

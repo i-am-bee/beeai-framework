@@ -83,7 +83,9 @@ class MCPSettings(mcp_server.Settings[LifespanResultT]):
 class MCPServerConfig(BaseModel):
     """Configuration for the MCPServer."""
 
-    transport: Literal["stdio", "sse"] = "stdio"
+    transport: Literal["stdio", "sse", "streamable-http"] = Field(
+        "stdio", description="The transport protocol to use. Can be 'stdio', 'sse', or 'streamable-http'."
+    )
     name: str = "MCP Server"
     instructions: str | None = None
     settings: MCPSettings | mcp_server.Settings = Field(default_factory=lambda: MCPSettings())
@@ -142,7 +144,8 @@ def _tool_factory(
     tool: AnyTool,
 ) -> MCPNativeTool:
     async def run(**kwargs: Any) -> ToolOutput:
-        result: ToolOutput = await tool.run(kwargs)
+        cloned_tool = await tool.clone()
+        result: ToolOutput = await cloned_tool.run(kwargs)
         return result
 
     class CustomToolSchema(tool.input_schema):  # type: ignore
