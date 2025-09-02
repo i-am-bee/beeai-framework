@@ -1,15 +1,13 @@
 # Copyright 2025 © BeeAI a Series of LF Projects, LLC
 # SPDX-License-Identifier: Apache-2.0
-
-
 from beeai_framework.backend.message import (
     AnyMessage,
     AssistantMessage,
-    CustomMessage,
     CustomMessageContent,
-    Role,
+    MessageTextContent,
     UserMessage,
 )
+from beeai_framework.utils.strings import to_json
 
 try:
     import a2a.types as a2a_types
@@ -20,26 +18,35 @@ except ModuleNotFoundError as e:
 
 
 def convert_a2a_to_framework_message(input: a2a_types.Message | a2a_types.Artifact) -> AnyMessage:
-    if all(isinstance(part.root, a2a_types.TextPart) for part in input.parts):
-        content = "".join(part.root.text for part in input.parts)  # type: ignore[union-attr]
-        if isinstance(input, a2a_types.Artifact) or input.role == a2a_types.Role.agent:
-            return AssistantMessage(
-                content,
-                meta={"event": input},
+    msg = (
+        UserMessage([])
+        if isinstance(input, a2a_types.Message) and input.role == a2a_types.Role.user
+        else AssistantMessage([])
+    )
+    for _part in input.parts:
+        part = _part.root
+        msg.meta.update(part.metadata or {})
+        if isinstance(part, a2a_types.TextPart):
+            msg.content.append(MessageTextContent(text=part.text))
+        elif isinstance(part, a2a_types.DataPart):
+            msg.content.append(MessageTextContent(text=to_json(part.data, sort_keys=False, indent=2)))
+        elif isinstance(part, a2a_types.FilePart):
+            # TODO: handle non-publicly accessible URLs (always convert to base64)
+            msg.content.append(
+                CustomMessageContent.model_validate(  # type: ignore
+                    {
+                        "type": "file",
+                        "file": {
+                            "file_data": part.file.bytes,
+                            "format": part.file.mime_type,
+                            "filename": part.file.name,
+                        }
+                        if isinstance(part.file, a2a_types.FileWithBytes)
+                        else {"file_data": part.file.uri, "format": part.file.mime_type, "filename": part.file.name},
+                    }
+                )
             )
-        else:
-            return UserMessage(
-                content,
-                meta={"event": input},
-            )
-    else:
-        return CustomMessage(
-            role=Role.ASSISTANT
-            if isinstance(input, a2a_types.Artifact) or input.role == a2a_types.Role.agent
-            else Role.USER,
-            content=[CustomMessageContent(**part.model_dump()) for part in input.parts],
-            meta={"event": input},
-        )
+    return msg
 
 
 def has_content(event: a2a_types.SendStreamingMessageResponse) -> bool:
