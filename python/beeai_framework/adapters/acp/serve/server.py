@@ -168,10 +168,9 @@ def _tool_calling_agent_factory(
     ) -> AsyncGenerator[acp_types.RunYield, acp_types.RunYieldResume]:
         cloned_agent = await agent.clone() if isinstance(agent, Cloneable) else agent
         await init_agent_memory(cloned_agent, memory_manager, str(context.session.id))
-        await cloned_agent.memory.add_many(acp_msgs_to_framework_msgs(input))
 
         last_msg: AnyMessage | None = None
-        async for data, _ in cloned_agent.run():
+        async for data, _ in cloned_agent.run(acp_msgs_to_framework_msgs(input)):
             messages = data.state.memory.messages
             if last_msg is None:
                 last_msg = messages[-1]
