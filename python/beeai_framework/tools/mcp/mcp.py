@@ -7,7 +7,7 @@ from beeai_framework.tools.mcp.utils.session_provider import MCPClient, MCPSessi
 
 try:
     from mcp import ClientSession
-    from mcp.types import CallToolResult, TextContent
+    from mcp.types import CallToolResult
     from mcp.types import Tool as MCPToolInfo
 except ModuleNotFoundError as e:
     raise ModuleNotFoundError(
@@ -22,7 +22,7 @@ from beeai_framework.logger import Logger
 from beeai_framework.tools.tool import Tool
 from beeai_framework.tools.types import JSONToolOutput, ToolRunOptions
 from beeai_framework.utils.models import JSONSchemaModel
-from beeai_framework.utils.strings import to_safe_word
+from beeai_framework.utils.strings import to_json, to_safe_word
 
 logger = Logger(__name__)
 
@@ -64,9 +64,7 @@ class MCPTool(Tool[BaseModel, ToolRunOptions, JSONToolOutput]):
         )
         logger.debug(f"Tool result: {result}")
         if result.isError:
-            if result.content and isinstance(result.content[0], TextContent):
-                raise ToolError(result.content[0].text)
-            raise ToolError(JSONToolOutput(result.content).get_text_content(), context=result.structuredContent)
+            raise ToolError(to_json(result.content, indent=4, sort_keys=False), context=result.structuredContent)
         return JSONToolOutput(result.content)
 
     @classmethod
