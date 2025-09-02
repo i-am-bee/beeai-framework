@@ -178,7 +178,6 @@ from beeai_framework.adapters.acp.serve.agent import ACPServerAgent
 from beeai_framework.adapters.acp.serve.server import ACPServerMetadata, to_acp_agent_metadata
 from beeai_framework.agents import AgentOptions, AgentOutput, BaseAgent
 from beeai_framework.backend.message import AnyMessage, AssistantMessage, UserMessage
-from beeai_framework.context import RunContext
 from beeai_framework.emitter.emitter import Emitter
 from beeai_framework.errors import FrameworkError
 from beeai_framework.memory import UnconstrainedMemory
@@ -202,15 +201,15 @@ class EchoAgent(BaseAgent):
 
     @runnable_entry
     async def run(self, input: str | list[AnyMessage], /, **kwargs: Unpack[AgentOptions]) -> AgentOutput:
-        text_input = input if isinstance(input, str) else (input[-1].text if input else "")
+        assert self.memory is not None
 
-        async def handler(context: RunContext) -> AgentOutput:
-            assert self.memory is not None
-            if text_input:
-                await self.memory.add(UserMessage(content=text_input))
-            return AgentOutput(output=[AssistantMessage(text_input)])
+        if isinstance(input, str):
+            await self.memory.add(UserMessage(input))
+        elif isinstance(input, list):
+            await self.memory.add_many(input)
 
-        return await handler(RunContext.get())
+        text_input = self.memory.messages[-1].text if self.memory.messages else ""
+        return AgentOutput(output=[AssistantMessage(text_input)])
 
 
 def main() -> None:

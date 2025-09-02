@@ -39,6 +39,7 @@ from beeai_framework.backend import AnyMessage
 from beeai_framework.backend.chat import ChatModel
 from beeai_framework.backend.message import (
     AssistantMessage,
+    MessageTextContent,
     MessageToolCallContent,
     MessageToolResultContent,
     ToolMessage,
@@ -125,11 +126,7 @@ class RequirementAgent(BaseAgent[RequirementAgentOutput]):
             raise ValueError(
                 "Invalid input. The input must be a non-empty string or list of messages when memory is empty."
             )
-        text_input = (
-            input
-            if isinstance(input, str)
-            else (input[-1].text if input and isinstance(input[-1], UserMessage) else "")
-        )
+
         run_config = AgentExecutionConfig(
             max_retries_per_step=kwargs.get("max_retries_per_step", 3),
             total_max_retries=kwargs.get("total_max_retries", 20),
@@ -142,18 +139,29 @@ class RequirementAgent(BaseAgent[RequirementAgentOutput]):
                 memory=UnconstrainedMemory(), steps=[], iteration=0, answer=None, result=None
             )
             await state.memory.add_many(self.memory.messages)
-            if isinstance(input, list):
-                await state.memory.add_many(input[:-1])
 
-            user_message: UserMessage | None = None
-            if text_input:
-                task_input = RequirementAgentTaskPromptInput(
-                    prompt=text_input,
-                    context=kwargs.get("backstory"),
-                    expected_output=expected_output if isinstance(expected_output, str) else None,  # TODO: validate
+            *msgs, last_message = [UserMessage(input)] if isinstance(input, str) else input
+            await state.memory.add_many(msgs)
+            if isinstance(last_message, UserMessage) and last_message.text:
+                user_message = UserMessage(
+                    self._templates.task.render(
+                        RequirementAgentTaskPromptInput(
+                            prompt=last_message.text,
+                            context=kwargs.get("backstory"),
+                            expected_output=expected_output
+                            if isinstance(expected_output, str)
+                            else None,  # TODO: validate
+                        )
+                    ),
+                    meta=last_message.meta.copy(),
                 )
-                user_message = UserMessage(self._templates.task.render(task_input))
+                user_message.content.extend(
+                    [content for content in last_message.content if not isinstance(content, MessageTextContent)]
+                )
                 await state.memory.add(user_message)
+            else:
+                await state.memory.add(last_message)
+                user_message = None
 
             return state, user_message
 

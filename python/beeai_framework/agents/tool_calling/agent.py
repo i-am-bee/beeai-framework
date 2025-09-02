@@ -97,11 +97,6 @@ class ToolCallingAgent(BaseAgent[ToolCallingAgentOutput]):
             raise ValueError(
                 "Invalid input. The input must be a non-empty string or list of messages when memory is empty."
             )
-        text_input = (
-            input
-            if isinstance(input, str)
-            else (input[-1].text if input and isinstance(input[-1], UserMessage) else "")
-        )
 
         run_config = AgentExecutionConfig(
             max_retries_per_step=kwargs.get("max_retries_per_step", 3),
@@ -114,13 +109,14 @@ class ToolCallingAgent(BaseAgent[ToolCallingAgentOutput]):
         state = ToolCallingAgentRunState(memory=UnconstrainedMemory(), result=None, iteration=0)
         await state.memory.add(SystemMessage(self._templates.system.render()))
         await state.memory.add_many(self.memory.messages)
+
         if isinstance(input, list):
-            await state.memory.add_many(input[:-1])
+            await state.memory.add_many(input)
 
         user_message: UserMessage | None = None
-        if text_input:
+        if isinstance(input, str) and input:
             task_input = ToolCallingAgentTaskPromptInput(
-                prompt=text_input,
+                prompt=input,
                 context=kwargs.get("backstory"),
                 expected_output=expected_output if isinstance(expected_output, str) else None,
             )

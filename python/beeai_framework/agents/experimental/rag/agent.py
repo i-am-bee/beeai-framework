@@ -58,15 +58,13 @@ class RAGAgent(BaseAgent):
             raise ValueError(
                 "Invalid input. The input must be a non-empty string or list of messages when memory is empty."
             )
-        text_input = (
-            input
-            if isinstance(input, str)
-            else (input[-1].text if input and isinstance(input[-1], UserMessage) else "")
-        )
 
-        if isinstance(input, list):
-            await self.memory.add_many(input[:-1])
-        await self.memory.add(UserMessage(content=text_input))
+        if isinstance(input, str):
+            text_input = input
+            await self.memory.add(UserMessage(text_input))
+        else:
+            await self.memory.add_many(input)
+            text_input = input[-1].text if input else ""
 
         context = RunContext.get()
 
