@@ -2,11 +2,12 @@
 # SPDX-License-Identifier: Apache-2.0
 from typing import Any, Self
 
+from beeai_framework.tools import ToolError
 from beeai_framework.tools.mcp.utils.session_provider import MCPClient, MCPSessionProvider
 
 try:
     from mcp import ClientSession
-    from mcp.types import CallToolResult
+    from mcp.types import CallToolResult, TextContent
     from mcp.types import Tool as MCPToolInfo
 except ModuleNotFoundError as e:
     raise ModuleNotFoundError(
@@ -62,6 +63,10 @@ class MCPTool(Tool[BaseModel, ToolRunOptions, JSONToolOutput]):
             name=self._tool.name, arguments=input_data.model_dump(exclude_none=True, exclude_unset=True)
         )
         logger.debug(f"Tool result: {result}")
+        if result.isError:
+            if result.content and isinstance(result.content[0], TextContent):
+                raise ToolError(result.content[0].text)
+            raise ToolError(JSONToolOutput(result.content).get_text_content(), context=result.structuredContent)
         return JSONToolOutput(result.content)
 
     @classmethod
