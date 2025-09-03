@@ -4,11 +4,15 @@ import uuid
 from collections.abc import Sequence
 from typing import Any
 
-from pydantic import BaseModel
-from typing_extensions import TypeVar
+from typing_extensions import Unpack
 
-from beeai_framework.agents import AgentError, AgentExecutionConfig, AgentMeta
-from beeai_framework.agents.base import BaseAgent
+from beeai_framework.agents import (
+    AgentError,
+    AgentExecutionConfig,
+    AgentMeta,
+    AgentOptions,
+    BaseAgent,
+)
 from beeai_framework.agents.experimental._utils import _create_system_message
 from beeai_framework.agents.experimental.events import (
     RequirementAgentStartEvent,
@@ -21,7 +25,7 @@ from beeai_framework.agents.experimental.prompts import (
 )
 from beeai_framework.agents.experimental.requirements.requirement import Requirement, Rule
 from beeai_framework.agents.experimental.types import (
-    RequirementAgentRunOutput,
+    RequirementAgentOutput,
     RequirementAgentRunState,
     RequirementAgentRunStateStep,
     RequirementAgentTemplateFactory,
@@ -29,25 +33,27 @@ from beeai_framework.agents.experimental.types import (
     RequirementAgentTemplatesKeys,
 )
 from beeai_framework.agents.experimental.utils._llm import RequirementsReasoner
-from beeai_framework.agents.experimental.utils._tool import FinalAnswerTool, FinalAnswerToolSchema, _run_tools
+from beeai_framework.agents.experimental.utils._tool import FinalAnswerTool, _run_tools
 from beeai_framework.agents.tool_calling.utils import ToolCallChecker, ToolCallCheckerConfig
+from beeai_framework.backend import AnyMessage
 from beeai_framework.backend.chat import ChatModel
 from beeai_framework.backend.message import (
     AssistantMessage,
+    MessageTextContent,
     MessageToolCallContent,
     MessageToolResultContent,
     ToolMessage,
     UserMessage,
 )
 from beeai_framework.backend.utils import parse_broken_json
-from beeai_framework.context import Run, RunContext, RunMiddlewareType
+from beeai_framework.context import RunContext, RunMiddlewareType
 from beeai_framework.emitter import Emitter
 from beeai_framework.memory.base_memory import BaseMemory
 from beeai_framework.memory.unconstrained_memory import UnconstrainedMemory
 from beeai_framework.memory.utils import extract_last_tool_call_pair
+from beeai_framework.runnable import runnable_entry
 from beeai_framework.template import PromptTemplate
 from beeai_framework.tools import AnyTool
-from beeai_framework.utils import AbortSignal
 from beeai_framework.utils.counter import RetryCounter
 from beeai_framework.utils.dicts import exclude_none
 from beeai_framework.utils.lists import cast_list
@@ -55,10 +61,9 @@ from beeai_framework.utils.models import update_model
 from beeai_framework.utils.strings import find_first_pair, generate_random_string, to_json
 
 RequirementAgentRequirement = Requirement[RequirementAgentRunState]
-TOutput = TypeVar("TOutput", bound=BaseModel, default=FinalAnswerToolSchema)
 
 
-class RequirementAgent(BaseAgent[RequirementAgentRunOutput]):
+class RequirementAgent(BaseAgent[RequirementAgentOutput]):
     def __init__(
         self,
         *,
@@ -77,9 +82,9 @@ class RequirementAgent(BaseAgent[RequirementAgentRunOutput]):
         templates: dict[RequirementAgentTemplatesKeys, PromptTemplate[Any] | RequirementAgentTemplateFactory]
         | RequirementAgentTemplates
         | None = None,
-        middlewares: Sequence[RunMiddlewareType] | None = None,
+        middlewares: list[RunMiddlewareType] | None = None,
     ) -> None:
-        super().__init__()
+        super().__init__(middlewares=middlewares)
         self._llm = llm
         self._memory = memory or UnconstrainedMemory()
         self._templates = self._generate_templates(templates)
@@ -99,22 +104,35 @@ class RequirementAgent(BaseAgent[RequirementAgentRunOutput]):
         self._tools = list(tools or [])
         self._requirements = list(requirements or [])
         self._meta = AgentMeta(name=name or "", description=description or "", tools=self._tools)
-        self.middlewares.extend(middlewares or [])
 
-    def run(
-        self,
-        prompt: str | None = None,
-        *,
-        context: str | None = None,
-        expected_output: str | type[TOutput] | None = None,
-        execution: AgentExecutionConfig | None = None,
-        signal: AbortSignal | None = None,
-    ) -> Run[RequirementAgentRunOutput[TOutput]]:
-        run_config = execution or AgentExecutionConfig(
-            max_retries_per_step=3,
-            total_max_retries=3,
-            max_iterations=20,
+    @runnable_entry
+    async def run(self, input: str | list[AnyMessage], /, **kwargs: Unpack[AgentOptions]) -> RequirementAgentOutput:
+        """Execute the agent.
+
+        Args:
+            input: The input to the agent (if list of messages, uses the last message as input)
+            expected_output: Pydantic model or instruction for steering the agent towards an expected output format.
+            total_max_retries: Maximum number of model retries.
+            max_retries_per_step: Maximum number of model retries per step.
+            max_iterations: Maximum number of iterations.
+            backstory: Additional piece of information or background for the agent.
+            signal: The agent abort signal
+            context: A dictionary that can be used to pass additional context to the agent
+
+        Returns:
+            The agent output.
+        """
+        if not input and self._memory.is_empty():
+            raise ValueError(
+                "Invalid input. The input must be a non-empty string or list of messages when memory is empty."
+            )
+
+        run_config = AgentExecutionConfig(
+            max_retries_per_step=kwargs.get("max_retries_per_step", 3),
+            total_max_retries=kwargs.get("total_max_retries", 20),
+            max_iterations=kwargs.get("max_iterations", 20),
         )
+        expected_output = kwargs.get("expected_output")
 
         async def init_state() -> tuple[RequirementAgentRunState, UserMessage | None]:
             state = RequirementAgentRunState(
@@ -122,19 +140,32 @@ class RequirementAgent(BaseAgent[RequirementAgentRunOutput]):
             )
             await state.memory.add_many(self.memory.messages)
 
-            user_message: UserMessage | None = None
-            if prompt:
-                task_input = RequirementAgentTaskPromptInput(
-                    prompt=prompt,
-                    context=context,
-                    expected_output=expected_output if isinstance(expected_output, str) else None,  # TODO: validate
+            *msgs, last_message = [UserMessage(input)] if isinstance(input, str) else input
+            await state.memory.add_many(msgs)
+            if isinstance(last_message, UserMessage) and last_message.text:
+                user_message = UserMessage(
+                    self._templates.task.render(
+                        RequirementAgentTaskPromptInput(
+                            prompt=last_message.text,
+                            context=kwargs.get("backstory"),
+                            expected_output=expected_output
+                            if isinstance(expected_output, str)
+                            else None,  # TODO: validate
+                        )
+                    ),
+                    meta=last_message.meta.copy(),
                 )
-                user_message = UserMessage(self._templates.task.render(task_input))
+                user_message.content.extend(
+                    [content for content in last_message.content if not isinstance(content, MessageTextContent)]
+                )
                 await state.memory.add(user_message)
+            else:
+                await state.memory.add(last_message)
+                user_message = None
 
             return state, user_message
 
-        async def handler(run_context: RunContext) -> RequirementAgentRunOutput[TOutput]:
+        async def handler(run_context: RunContext) -> RequirementAgentOutput:
             state, user_message = await init_state()
 
             reasoner = RequirementsReasoner(
@@ -275,20 +306,9 @@ class RequirementAgent(BaseAgent[RequirementAgentRunOutput]):
 
                 await self.memory.add_many(extract_last_tool_call_pair(state.memory) or [])
 
-            return RequirementAgentRunOutput(
-                answer=state.answer, memory=state.memory, state=state, answer_structured=state.result
-            )
+            return RequirementAgentOutput(output=[state.answer], output_structured=state.result, state=state)
 
-        return self._to_run(
-            handler,
-            signal=signal,
-            run_params={
-                "prompt": prompt,
-                "context": context,
-                "expected_output": expected_output,
-                "execution": execution,
-            },
-        )
+        return await handler(RunContext.get())
 
     def _create_emitter(self) -> Emitter:
         return Emitter.root().child(

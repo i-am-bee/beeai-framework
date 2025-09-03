@@ -9,11 +9,8 @@ except ModuleNotFoundError as e:
     ) from e
 
 
-from pydantic import BaseModel, InstanceOf
-
-from beeai_framework.backend.message import AnyMessage
+from beeai_framework.agents import AgentOutput
 
 
-class A2AAgentRunOutput(BaseModel):
-    result: InstanceOf[AnyMessage]
+class A2AAgentOutput(AgentOutput):
     event: a2a_types.SendStreamingMessageResponse | a2a_types.SendMessageResponse

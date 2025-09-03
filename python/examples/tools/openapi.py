@@ -36,7 +36,7 @@ async def main() -> None:
 
     response = await agent.run("How many repositories are in 'i-am-bee' org?")
 
-    print("Agent 🤖 : ", response.result.text)
+    print("Agent 🤖 : ", response.last_message.text)
 
 
 if __name__ == "__main__":

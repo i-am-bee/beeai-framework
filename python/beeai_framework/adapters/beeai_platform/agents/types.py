@@ -1,6 +1,7 @@
 # Copyright 2025 © BeeAI a Series of LF Projects, LLC
 # SPDX-License-Identifier: Apache-2.0
 
+
 try:
     import a2a.types as a2a_types
 except ModuleNotFoundError as e:
@@ -9,11 +10,8 @@ except ModuleNotFoundError as e:
     ) from e
 
 
-from pydantic import BaseModel, InstanceOf
-
-from beeai_framework.backend.message import AnyMessage
+from beeai_framework.agents import AgentOutput
 
 
-class BeeAIPlatformAgentRunOutput(BaseModel):
-    result: InstanceOf[AnyMessage]
+class BeeAIPlatformAgentOutput(AgentOutput):
     event: a2a_types.SendStreamingMessageResponse | a2a_types.SendMessageResponse

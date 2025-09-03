@@ -23,7 +23,7 @@ async def main() -> None:
     )
 
     response = await agent.run("What to do in Boston?").middleware(GlobalTrajectoryMiddleware(excluded=[]))
-    print(response.answer.text)
+    print(response.last_message.text)
 
 
 if __name__ == "__main__":

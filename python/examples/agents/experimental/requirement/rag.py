@@ -110,7 +110,7 @@ async def main() -> None:
 
     query = "What types of agents are available in BeeAI?"
     response = await agent.run(query)
-    print(f"query: {query}\nResponse: {response.answer.text}")
+    print(f"query: {query}\nResponse: {response.last_message.text}")
 
 
 if __name__ == "__main__":

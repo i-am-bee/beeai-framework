@@ -127,14 +127,13 @@ def _react_agent_factory(
     ) -> AsyncGenerator[beeai_types.RunYield, beeai_types.RunYieldResume]:
         cloned_agent = await agent.clone() if isinstance(agent, Cloneable) else agent
         await init_agent_memory(cloned_agent, memory_manager, context.context_id)
-        await cloned_agent.memory.add(convert_a2a_to_framework_message(message))
 
         with BeeAIPlatformIOContext(context):
             artifact_id = uuid.uuid4()
             append = False
             last_key = None
             last_update = None
-            async for data, event in cloned_agent.run():
+            async for data, event in cloned_agent.run([convert_a2a_to_framework_message(message)]):
                 match (data, event.name):
                     case (ReActAgentUpdateEvent(), "partial_update"):
                         match data.update.key:
@@ -196,11 +195,10 @@ def _tool_calling_agent_factory(
     ) -> AsyncGenerator[beeai_types.RunYield, beeai_types.RunYieldResume]:
         cloned_agent = await agent.clone() if isinstance(agent, Cloneable) else agent
         await init_agent_memory(cloned_agent, memory_manager, context.context_id)
-        await cloned_agent.memory.add(convert_a2a_to_framework_message(message))
 
         with BeeAIPlatformIOContext(context):
             last_msg: AnyMessage | None = None
-            async for data, _ in cloned_agent.run():
+            async for data, _ in cloned_agent.run([convert_a2a_to_framework_message(message)]):
                 messages = data.state.memory.messages
                 if last_msg is None:
                     last_msg = messages[-1]
@@ -233,11 +231,10 @@ def _requirement_agent_factory(
     ) -> AsyncGenerator[beeai_types.RunYield, beeai_types.RunYieldResume]:
         cloned_agent = await agent.clone() if isinstance(agent, Cloneable) else agent
         await init_agent_memory(cloned_agent, memory_manager, context.context_id)
-        await cloned_agent.memory.add(convert_a2a_to_framework_message(message))
 
         with BeeAIPlatformIOContext(context):
             last_msg: AnyMessage | None = None
-            async for data, _ in cloned_agent.run():
+            async for data, _ in cloned_agent.run([convert_a2a_to_framework_message(message)]):
                 messages = data.state.memory.messages
                 if last_msg is None:
                     last_msg = messages[-1]
