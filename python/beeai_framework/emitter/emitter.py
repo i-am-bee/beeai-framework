@@ -197,7 +197,7 @@ class Emitter:
             matchers.append(lambda _: True)
         elif isinstance(matcher, re.Pattern):
             match_nested = True if match_nested is None else match_nested
-            matchers.append(lambda event: matcher.on(event.path) is not None)
+            matchers.append(lambda event: matcher.match(event.path) is not None)
         elif callable(matcher):
             match_nested = False if match_nested is None else match_nested
             matchers.append(matcher)
