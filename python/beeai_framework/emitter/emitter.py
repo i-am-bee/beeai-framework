@@ -136,13 +136,23 @@ class Emitter:
     def on(
         self, event: Matcher | None = None, callback: Callback | None = None, options: EmitterOptions | None = None
     ) -> CleanupFn | Callable[[Callback], Any]:
+        """Registers an event listener for all matched events. Can be used as a decorator.
+
+        Args:
+            event: The name or pattern that the every event is tested against.
+            callback: Function to be called when the event is triggered.
+            options: Additional options for the event listener such as persistence, blocking, etc.
+
+        Returns:
+            Either a cleanup function or a decorator function depending on the usage of the method.
+        """
         if callback is None or event is None:
 
-            def factory(fn: Callback) -> Any:
+            def decorator(fn: Callback) -> CleanupFn:
                 name = event or str(fn.__name__).removeprefix("on_").removeprefix("handle_")
                 return self._match(name, fn, options)
 
-            return factory
+            return decorator
         else:
             return self._match(event, callback, options)
 
@@ -163,7 +173,7 @@ class Emitter:
                 matchers.append(lambda _: True)
             elif isinstance(matcher, re.Pattern):
                 match_nested = True if match_nested is None else match_nested
-                matchers.append(lambda event: matcher.match(event.path) is not None)
+                matchers.append(lambda event: matcher.on(event.path) is not None)
             elif callable(matcher):
                 match_nested = False if match_nested is None else match_nested
                 matchers.append(matcher)

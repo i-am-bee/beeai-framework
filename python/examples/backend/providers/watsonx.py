@@ -114,7 +114,7 @@ async def watson_tool_calling() -> None:
 
 async def watsonx_debug() -> None:
     # Log every request
-    llm.emitter.match(
+    llm.emitter.on(
         "*",
         lambda data, event: print(
             f"Time: {event.created_at.time().isoformat()}",

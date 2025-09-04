@@ -58,7 +58,7 @@ class Run(Generic[R]):
         async def add_to_queue(data: Any, event: EventMeta) -> None:
             await self._events.put((data, event))
 
-        self._run_context.emitter.match(
+        self._run_context.emitter.on(
             "*", add_to_queue, EmitterOptions(persistent=True, is_blocking=True, match_nested=False)
         )
 

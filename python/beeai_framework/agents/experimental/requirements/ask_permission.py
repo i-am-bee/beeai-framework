@@ -70,7 +70,7 @@ class AskPermissionRequirement(Requirement[RequirementAgentRunState]):
             async def handler(data: Any, _: EventMeta) -> None:
                 await self._ask(tool, data)
 
-            ctx.emitter.match(
+            ctx.emitter.on(
                 create_internal_event_matcher("start", tool, parent_run_id=ctx.run_id),
                 handler,
                 EmitterOptions(is_blocking=True, persistent=True, match_nested=True),
