@@ -1,6 +1,7 @@
 # Copyright 2025 © BeeAI a Series of LF Projects, LLC
 # SPDX-License-Identifier: Apache-2.0
 
+from collections.abc import Sequence
 from typing import Unpack
 from uuid import uuid4
 
@@ -164,7 +165,7 @@ class A2AAgent(BaseAgent[A2AAgentOutput]):
                     if self._task_id and self._task_id not in self._reference_task_ids:
                         self._reference_task_ids.append(self._task_id)
 
-                    results: list[a2a_types.Message] | list[a2a_types.Artifact]
+                    results: Sequence[a2a_types.Message | a2a_types.Artifact]
                     if task.artifacts:
                         results = task.artifacts
                     elif task.history:
