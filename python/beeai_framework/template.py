@@ -69,7 +69,13 @@ class PromptTemplate(Generic[T]):
         self._config = (
             config
             if config is not None
-            else PromptTemplateInput[T](schema=schema, template=template, functions=functions, defaults=defaults)  # type: ignore
+            else PromptTemplateInput(
+                # validation is done in the model
+                schema=schema,  # type: ignore
+                template=template,  # type: ignore
+                functions=functions or {},
+                defaults=defaults or {},
+            )
         )
 
     def render(self, template_input: ModelLike[T] | None = None, /, **kwargs: Any) -> str:
