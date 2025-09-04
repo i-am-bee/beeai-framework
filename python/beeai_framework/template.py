@@ -5,8 +5,8 @@ from collections.abc import Callable
 from typing import Any, Generic, Self, TypeVar, overload
 
 import chevron
+from deprecated import deprecated
 from pydantic import BaseModel, Field
-from typing_extensions import deprecated
 
 from beeai_framework.errors import FrameworkError
 from beeai_framework.utils.models import ModelLike, to_model_optional
@@ -54,7 +54,7 @@ class PromptTemplate(Generic[T]):
         ...
 
     @overload
-    @deprecated("Use keyword arguments instead.")
+    @deprecated(reason="Use keyword arguments instead.")
     def __init__(self, config: PromptTemplateInput[T]) -> None: ...
 
     def __init__(

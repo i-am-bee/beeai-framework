@@ -44,6 +44,7 @@ uvicorn = {version = "^0.35.0", optional = true}
 wikipedia-api = {version = "^0.8.1", optional = true}
 beeai-sdk = {version = "^0.3.2", optional = true}
 langgraph-prebuilt = {version = "^0.6.4", optional = true}
+deprecated = "^1.2.18"
 
 [tool.poetry.group.dev.dependencies]
 commitizen = "^4.2.1"
@@ -65,6 +66,7 @@ types-chevron = "^0.14.2.20250103"
 types-PyYAML = "^6.0.12.20250402"
 types-requests = "^2.32.0.20241016"
 syrupy = "^4.9.1"
+types-deprecated = "^1.2.15.20250304"
 
 [tool.poetry.extras]
 huggingface = ["datasets", "transformers"]
