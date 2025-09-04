@@ -40,7 +40,7 @@ from beeai_framework.context import Run, RunContext, RunMiddlewareType
 from beeai_framework.emitter import Emitter
 from beeai_framework.logger import Logger
 from beeai_framework.retryable import Retryable, RetryableConfig, RetryableInput
-from beeai_framework.template import PromptTemplate, PromptTemplateInput
+from beeai_framework.template import PromptTemplate
 from beeai_framework.tools.tool import AnyTool, Tool
 from beeai_framework.utils import AbortController, AbortSignal, ModelLike
 from beeai_framework.utils.asynchronous import to_async_generator
@@ -163,17 +163,15 @@ class ChatModel(ABC):
             input_schema: type[str] = Field(..., alias="schema")
 
         system_template = PromptTemplate(
-            PromptTemplateInput(
-                schema=DefaultChatModelStructureSchema,
-                template=(
-                    """You are a helpful assistant that generates only valid JSON """
-                    """adhering to the following JSON Schema.
+            schema=DefaultChatModelStructureSchema,
+            template=(
+                """You are a helpful assistant that generates only valid JSON """
+                """adhering to the following JSON Schema.
 ```
 {{schema}}
 ```
 IMPORTANT: You MUST answer with a JSON object that matches the JSON schema above."""
-                ),
-            )
+            ),
         )
 
         input_messages = input.messages
