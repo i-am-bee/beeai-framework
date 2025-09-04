@@ -1,7 +1,6 @@
 # Copyright 2025 © BeeAI a Series of LF Projects, LLC
 # SPDX-License-Identifier: Apache-2.0
 
-
 import asyncio
 import uuid
 from asyncio import Queue
@@ -89,24 +88,9 @@ class Run(Generic[R]):
         self._tasks.append((fn, [self._run_context.emitter]))
         return self
 
-    @overload
-    def on(
-        self, matcher: None = None, callback: None = None, options: EmitterOptions | None = None
-    ) -> Callable[[Callback], Self]: ...
-    @overload
-    def on(self, matcher: Matcher, callback: Callback, options: EmitterOptions | None = None) -> Self: ...
-    def on(
-        self, matcher: Matcher | None = None, callback: Callback | None = None, options: EmitterOptions | None = None
-    ) -> Self | Callable[[Callback], Self]:
-        def factory(new_callback: Callback) -> Self:  # type: ignore
-            new_matcher = matcher or new_callback.__name__.removeprefix("on_") or "*"
-            self._tasks.append((self._run_context.emitter.match, [new_matcher, new_callback, options]))
-            return self
-
-        if matcher is None or callback is None:
-            return factory
-        else:
-            return factory(callback)
+    def on(self, matcher: Matcher, callback: Callback, options: EmitterOptions | None = None) -> Self:
+        self._tasks.append((self._run_context.emitter.on, [matcher, callback, options]))
+        return self
 
     def context(self, context: dict[str, Any]) -> Self:
         if context:

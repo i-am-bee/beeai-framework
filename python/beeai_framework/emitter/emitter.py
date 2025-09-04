@@ -10,6 +10,7 @@ from collections.abc import Callable
 from datetime import UTC, datetime
 from typing import Any, TypeAlias, overload
 
+from deprecated import deprecated
 from pydantic import BaseModel, ConfigDict, InstanceOf
 
 from beeai_framework.emitter.errors import EmitterError
@@ -128,24 +129,28 @@ class Emitter:
 
     @overload
     def on(
-        self, event: str | None = None, callback: None = None, options: EmitterOptions | None = None
+        self, event: Matcher | None = None, callback: None = None, options: EmitterOptions | None = None
     ) -> Callable[[Callback], Any]: ...
     @overload
-    def on(self, event: str, callback: Callback, options: EmitterOptions | None = None) -> CleanupFn: ...
+    def on(self, event: Matcher, callback: Callback, options: EmitterOptions | None = None) -> CleanupFn: ...
     def on(
-        self, event: str | None = None, callback: Callback | None = None, options: EmitterOptions | None = None
+        self, event: Matcher | None = None, callback: Callback | None = None, options: EmitterOptions | None = None
     ) -> CleanupFn | Callable[[Callback], Any]:
         if callback is None or event is None:
 
             def factory(fn: Callback) -> Any:
-                name = event or str(fn.__name__).removeprefix("on_")
-                return self.match(name, fn, options)
+                name = event or str(fn.__name__).removeprefix("on_").removeprefix("handle_")
+                return self._match(name, fn, options)
 
             return factory
         else:
-            return self.match(event, callback, options)
+            return self._match(event, callback, options)
 
+    @deprecated(reason="Use `on` instead.")
     def match(self, matcher: Matcher, callback: Callback, options: EmitterOptions | None = None) -> CleanupFn:
+        return self.on(matcher, callback, options)
+
+    def _match(self, matcher: Matcher, callback: Callback, options: EmitterOptions | None = None) -> CleanupFn:
         def create_matcher() -> MatcherFn:
             matchers: list[MatcherFn] = []
             match_nested = options.match_nested if options else None
