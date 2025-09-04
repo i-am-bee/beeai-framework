@@ -116,17 +116,7 @@ class A2AServer(
         elif self._config.protocol == "grpc":
             executor.agent_card.url = f"localhost:{self._config.port}"
             executor.agent_card.preferred_transport = a2a_types.TransportProtocol.grpc
-            try:
-                loop = asyncio.get_running_loop()
-                if loop.is_running():
-                    tasks = set()
-                    task = loop.create_task(self._start_grpc_server(executor.agent_card, request_handler))
-                    tasks.add(task)
-                    task.add_done_callback(tasks.discard)
-                else:
-                    asyncio.run(self._start_grpc_server(executor.agent_card, request_handler))
-            except RuntimeError:
-                asyncio.run(self._start_grpc_server(executor.agent_card, request_handler))
+            asyncio.run(self._start_grpc_server(executor.agent_card, request_handler))
         else:
             raise ValueError(f"Unsupported protocol {self._config.protocol}")
 

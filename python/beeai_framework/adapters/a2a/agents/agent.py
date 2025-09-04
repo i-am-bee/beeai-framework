@@ -183,13 +183,14 @@ class A2AAgent(BaseAgent[A2AAgentOutput]):
                     err.message if hasattr(err, "message") else err.error if hasattr(err, "error") else "Unknown error"
                 )
                 await context.emitter.emit("error", A2AAgentErrorEvent(message=message))
+                error_context = None
+                if isinstance(last_event, a2a_types.Message):
+                    error_context = last_event.model_dump(mode="json", exclude_none=True)
+                elif isinstance(last_event, tuple) and last_event[1]:
+                    error_context = last_event[1].model_dump(mode="json", exclude_none=True)
                 raise AgentError(
                     message,
-                    context=(last_event if isinstance(last_event, a2a_types.Message) else last_event[1]).model_dump(
-                        mode="json", exclude_none=True
-                    )
-                    if isinstance(last_event, tuple) and last_event[1]
-                    else None,
+                    context=error_context if isinstance(last_event, tuple) and last_event[1] else None,
                     cause=err,
                 )
 

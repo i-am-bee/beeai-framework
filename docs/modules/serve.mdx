@@ -51,7 +51,9 @@ def main() -> None:
     # For the ToolCallingAgent, we don't need to specify ACPAgent factory method
     # because it is already registered in the A2AServer
     # we use LRU memory manager to keep limited amount of sessions in the memory
-    A2AServer(config=A2AServerConfig(port=9999), memory_manager=LRUMemoryManager(maxsize=100)).register(agent).serve()
+    A2AServer(
+        config=A2AServerConfig(port=9999, protocol="jsonrpc"), memory_manager=LRUMemoryManager(maxsize=100)
+    ).register(agent).serve()
 
 
 if __name__ == "__main__":
