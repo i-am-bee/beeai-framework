@@ -59,6 +59,7 @@ class A2AAgent(BaseAgent[A2AAgentOutput]):
         agent_card_url: str | None = None,
         agent_card: a2a_types.AgentCard | None = None,
         memory: BaseMemory,
+        grpc_client_credentials: grpc.ChannelCredentials | None = None,
     ) -> None:
         super().__init__()
         self._agent_card_url = agent_card_url
@@ -77,6 +78,7 @@ class A2AAgent(BaseAgent[A2AAgentOutput]):
         self._context_id: str | None = None
         self._task_id: str | None = None
         self._reference_task_ids: list[str] = []
+        self._grpc_client_credentials = grpc_client_credentials
 
     @property
     def name(self) -> str:
@@ -115,7 +117,11 @@ class A2AAgent(BaseAgent[A2AAgentOutput]):
                     streaming=True,
                     polling=True,
                     httpx_client=httpx_client,
-                    grpc_channel_factory=(lambda url: grpc.aio.insecure_channel(url)),
+                    grpc_channel_factory=(
+                        lambda url: grpc.aio.secure_channel(url, self._grpc_client_credentials)
+                        if self._grpc_client_credentials
+                        else grpc.aio.insecure_channel(url)
+                    ),
                     supported_transports=[
                         TransportProtocol.jsonrpc,
                         TransportProtocol.grpc,

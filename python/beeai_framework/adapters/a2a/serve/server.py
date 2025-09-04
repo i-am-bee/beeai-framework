@@ -8,7 +8,7 @@ from collections.abc import Sequence
 from typing import Literal, Self
 
 import uvicorn
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 from typing_extensions import TypedDict, TypeVar, Unpack, override
 
 from beeai_framework.agents.experimental import RequirementAgent
@@ -52,10 +52,13 @@ AnyAgentLike = TypeVar("AnyAgentLike", bound=AnyAgent, default=AnyAgent)
 class A2AServerConfig(BaseModel):
     """Configuration for the A2AServer."""
 
+    model_config = ConfigDict(arbitrary_types_allowed=True)
+
     host: str = "0.0.0.0"
     port: int = 9999
     protocol: Literal["jsonrpc", "grpc", "http_json"] = "jsonrpc"
     agent_card_port: int | None = None
+    server_credentials: grpc.ServerCredentials | None = None
 
 
 class A2AServerMetadata(TypedDict, total=False):
@@ -167,7 +170,9 @@ class A2AServer(
         )
         reflection.enable_server_reflection(service_names, grpc_server)
         port = f"{self._config.host}:{self._config.port}"
-        grpc_server.add_insecure_port(port)
+        grpc_server.add_secure_port(
+            port, self._config.server_credentials
+        ) if self._config.server_credentials else grpc_server.add_insecure_port(port)
         logger.info(f"grpc server started at {port}")
 
         loop = asyncio.get_running_loop()
