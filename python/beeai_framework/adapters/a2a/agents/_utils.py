@@ -47,22 +47,3 @@ def convert_a2a_to_framework_message(input: a2a_types.Message | a2a_types.Artifa
                 )
             )
     return msg
-
-
-def has_content(event: a2a_types.SendStreamingMessageResponse) -> bool:
-    """Check if the event has content."""
-    if isinstance(event.root, a2a_types.SendStreamingMessageSuccessResponse):
-        response = event.root.result
-        if isinstance(response, a2a_types.Message):
-            return True
-        elif isinstance(response, a2a_types.TaskArtifactUpdateEvent):
-            return response.last_chunk or False
-        elif isinstance(response, a2a_types.TaskStatusUpdateEvent):
-            return bool(response.status.message)
-        elif isinstance(response, a2a_types.Task):
-            return bool(response.status.message) or bool(response.artifacts and len(response.artifacts) > 0)
-        else:
-            return False
-    elif isinstance(event.root, a2a_types.JSONRPCErrorResponse):
-        return True
-    return False

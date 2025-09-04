@@ -52,7 +52,7 @@ class BeeAIPlatformAgent(BaseAgent[BeeAIPlatformAgentOutput]):
             async def update_event(data: A2AAgentUpdateEvent, event: EventMeta) -> None:
                 await context.emitter.emit(
                     "update",
-                    BeeAIPlatformAgentUpdateEvent(key="update", value=data.value),
+                    BeeAIPlatformAgentUpdateEvent(value=data.value),
                 )
 
             async def error_event(data: A2AAgentErrorEvent, event: EventMeta) -> None:

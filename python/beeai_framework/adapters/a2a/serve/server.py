@@ -1,12 +1,14 @@
 # Copyright 2025 © BeeAI a Series of LF Projects, LLC
 # SPDX-License-Identifier: Apache-2.0
 
+import asyncio
 import contextlib
+import signal
 from collections.abc import Sequence
-from typing import Self
+from typing import Literal, Self
 
 import uvicorn
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 from typing_extensions import TypedDict, TypeVar, Unpack, override
 
 from beeai_framework.agents.experimental import RequirementAgent
@@ -21,6 +23,14 @@ try:
     import a2a.server.request_handlers as a2a_request_handlers
     import a2a.server.tasks as a2a_server_tasks
     import a2a.types as a2a_types
+    import a2a.utils as a2a_utils
+    import grpc
+    from a2a.grpc import a2a_pb2, a2a_pb2_grpc
+    from grpc_reflection.v1alpha import reflection
+    from starlette.applications import Starlette
+    from starlette.requests import Request
+    from starlette.responses import JSONResponse, Response
+    from starlette.routing import Route
 except ModuleNotFoundError as e:
     raise ModuleNotFoundError(
         "Optional module [a2a] not found.\nRun 'pip install \"beeai-framework[a2a]\"' to install."
@@ -29,9 +39,12 @@ except ModuleNotFoundError as e:
 from beeai_framework.adapters.a2a.serve.agent_executor import BaseA2AAgentExecutor, TollCallingAgentExecutor
 from beeai_framework.agents import AnyAgent
 from beeai_framework.agents.tool_calling.agent import ToolCallingAgent
+from beeai_framework.logger import Logger
 from beeai_framework.serve.server import Server
 from beeai_framework.utils import ModelLike
 from beeai_framework.utils.models import to_model
+
+logger = Logger(__name__)
 
 AnyAgentLike = TypeVar("AnyAgentLike", bound=AnyAgent, default=AnyAgent)
 
@@ -39,8 +52,13 @@ AnyAgentLike = TypeVar("AnyAgentLike", bound=AnyAgent, default=AnyAgent)
 class A2AServerConfig(BaseModel):
     """Configuration for the A2AServer."""
 
+    model_config = ConfigDict(arbitrary_types_allowed=True)
+
     host: str = "0.0.0.0"
     port: int = 9999
+    protocol: Literal["jsonrpc", "grpc", "http_json"] = "jsonrpc"
+    agent_card_port: int | None = None
+    server_credentials: grpc.ServerCredentials | None = None
 
 
 class A2AServerMetadata(TypedDict, total=False):
@@ -87,8 +105,23 @@ class A2AServer(
             request_context_builder=config.get("request_context_builder", None),
         )
 
-        server = a2a_apps.A2AStarletteApplication(agent_card=executor.agent_card, http_handler=request_handler)
-        uvicorn.run(server.build(), host=self._config.host, port=self._config.port)
+        server: a2a_apps.A2ARESTFastAPIApplication | a2a_apps.A2AStarletteApplication
+        if self._config.protocol == "jsonrpc":
+            executor.agent_card.url = f"http://localhost:{self._config.port}"
+            executor.agent_card.preferred_transport = a2a_types.TransportProtocol.jsonrpc
+            server = a2a_apps.A2AStarletteApplication(agent_card=executor.agent_card, http_handler=request_handler)
+            uvicorn.run(server.build(), host=self._config.host, port=self._config.port)
+        elif self._config.protocol == "http_json":
+            executor.agent_card.url = f"http://localhost:{self._config.port}"
+            executor.agent_card.preferred_transport = a2a_types.TransportProtocol.http_json
+            server = a2a_apps.A2ARESTFastAPIApplication(agent_card=executor.agent_card, http_handler=request_handler)
+            uvicorn.run(server.build(), host=self._config.host, port=self._config.port)
+        elif self._config.protocol == "grpc":
+            executor.agent_card.url = f"localhost:{self._config.port}"
+            executor.agent_card.preferred_transport = a2a_types.TransportProtocol.grpc
+            asyncio.run(self._start_grpc_server(executor.agent_card, request_handler))
+        else:
+            raise ValueError(f"Unsupported protocol {self._config.protocol}")
 
     @override
     def register(self, input: AnyAgentLike, **metadata: Unpack[A2AServerMetadata]) -> Self:
@@ -102,6 +135,60 @@ class A2AServer(
     @override
     def register_many(self, input: Sequence[AnyAgentLike]) -> Self:
         raise NotImplementedError("register_many is not implemented for A2AServer")
+
+    async def _start_grpc_server(
+        self, agent_card: a2a_types.AgentCard, request_handler: a2a_request_handlers.DefaultRequestHandler
+    ) -> None:
+        """Creates the Starlette app for the agent card server."""
+
+        def get_agent_card_http(request: Request) -> Response:
+            return JSONResponse(agent_card.model_dump(mode="json", exclude_none=True))
+
+        routes = [Route(a2a_utils.constants.AGENT_CARD_WELL_KNOWN_PATH, endpoint=get_agent_card_http)]
+        app = Starlette(routes=routes)
+
+        # Create uvicorn server for agent card
+        agent_card_port = self._config.agent_card_port or 11000
+        config = uvicorn.Config(
+            app,
+            host=self._config.host,
+            port=agent_card_port,
+            log_config=None,
+        )
+        logger.info(f"HTTP server started at port {agent_card_port}. Serving Agent Card.")
+        http_server = uvicorn.Server(config)
+
+        """Creates the gRPC server."""
+        grpc_server = grpc.aio.server()
+        a2a_pb2_grpc.add_A2AServiceServicer_to_server(
+            a2a_request_handlers.GrpcHandler(agent_card, request_handler),
+            grpc_server,
+        )  # type: ignore[no-untyped-call]
+        service_names = (
+            a2a_pb2.DESCRIPTOR.services_by_name["A2AService"].full_name,
+            reflection.SERVICE_NAME,
+        )
+        reflection.enable_server_reflection(service_names, grpc_server)
+        port = f"{self._config.host}:{self._config.port}"
+        grpc_server.add_secure_port(
+            port, self._config.server_credentials
+        ) if self._config.server_credentials else grpc_server.add_insecure_port(port)
+        logger.info(f"grpc server started at {port}")
+
+        loop = asyncio.get_running_loop()
+
+        async def shutdown(sig: signal.Signals) -> None:
+            """Gracefully shutdown the servers."""
+            http_server.should_exit = True
+
+            await grpc_server.stop(5)
+
+        for sig in (signal.SIGINT, signal.SIGTERM):
+            loop.add_signal_handler(sig, lambda s=sig: asyncio.create_task(shutdown(s)))  # type: ignore[misc]
+
+        await grpc_server.start()
+
+        await asyncio.gather(http_server.serve(), grpc_server.wait_for_termination())
 
 
 def _tool_calling_agent_factory(
