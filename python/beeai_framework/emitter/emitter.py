@@ -15,10 +15,7 @@ from pydantic import BaseModel, ConfigDict, InstanceOf
 
 from beeai_framework.emitter.errors import EmitterError
 from beeai_framework.emitter.types import EmitterOptions, EventTrace
-from beeai_framework.emitter.utils import (
-    assert_valid_name,
-    assert_valid_namespace,
-)
+from beeai_framework.emitter.utils import assert_valid_name, assert_valid_namespace
 from beeai_framework.utils.asynchronous import ensure_async
 from beeai_framework.utils.types import MaybeAsync
 
@@ -164,14 +161,8 @@ class Emitter:
         If no criteria is provided, all listeners will be removed."""
 
         for listener in list(self._listeners):
-            if callback is not None and listener.callback is not callback:
-                continue
-            if event is not None and listener.raw != event:
-                continue
-            if options is not None and listener.options != options:
-                continue
-
-            self._listeners.remove(listener)
+            if _match_listener(listener, matcher=event, callback=callback, options=options):
+                self._listeners.remove(listener)
 
     @deprecated(reason="Use `on` instead.")
     def match(self, matcher: Matcher, callback: Callback, options: EmitterOptions | None = None) -> CleanupFn:
@@ -287,3 +278,33 @@ class Emitter:
         cloned._cleanups = self._cleanups
         cloned._listeners = {listener.model_copy() for listener in self._listeners}
         return cloned
+
+
+def _match_listener(
+    listener: Listener,
+    *,
+    matcher: Matcher | None = None,
+    callback: Callback | None = None,
+    options: EmitterOptions | None = None,
+) -> bool:
+    if callback is not None and listener.callback is not callback:
+        return False
+
+    if options is not None and listener.options != options:
+        return False
+
+    if matcher is not None:
+        if type(matcher) is not type(listener.raw):
+            return False
+
+        if isinstance(matcher, re.Pattern) and isinstance(listener.raw, re.Pattern):
+            if matcher.pattern != listener.raw.pattern and matcher.flags != listener.raw.flags:
+                print("fuck")
+                return False
+        elif callable(matcher) and callable(listener.raw):
+            if matcher is not listener.raw:
+                return False
+        elif matcher != listener.raw:
+            return False
+
+    return True

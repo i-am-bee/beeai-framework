@@ -5,8 +5,8 @@ from typing import Any
 
 import pytest
 
-from beeai_framework.emitter import EventMeta
-from beeai_framework.emitter.emitter import Emitter
+from beeai_framework.emitter import EmitterOptions
+from beeai_framework.emitter.emitter import Emitter, EventMeta
 from beeai_framework.emitter.errors import EmitterError
 
 
@@ -25,6 +25,7 @@ class TestEmitter:
     @pytest.mark.unit
     def test_root_initialization(self) -> None:
         emitter = Emitter.root()
+        assert emitter is Emitter.root()  # caching
         assert emitter.creator is not None
         assert emitter._group_id is None
         assert emitter.namespace == []
@@ -52,59 +53,6 @@ class TestEmitter:
 
     @pytest.mark.unit
     @pytest.mark.asyncio
-    async def test_emit_valid_event(self) -> None:
-        emitter = Emitter()
-        callback_called = False
-
-        def callback(data: Any, event: EventMeta) -> None:
-            nonlocal callback_called
-            callback_called = True
-
-        emitter.on("test_event", callback)
-        await emitter.emit("test_event", None)
-        assert callback_called
-
-    @pytest.mark.unit
-    @pytest.mark.asyncio
-    async def test_emit_valid_event_decorator(self) -> None:
-        emitter = Emitter()
-        callback_called = False
-
-        @emitter.on("test_event")
-        async def callback(data: Any, event: EventMeta) -> None:
-            nonlocal callback_called
-            callback_called = True
-
-        await emitter.emit("test_event", None)
-        assert callback_called
-
-    @pytest.mark.unit
-    @pytest.mark.asyncio
-    async def test_deregistration(self) -> None:
-        emitter = Emitter()
-        calls = []
-
-        emitter.on("a", lambda data, __: calls.append(data))
-        emitter.off("a")
-        await emitter.emit("a", "a")
-
-        @emitter.on("b")
-        def handler(data: Any, __: Any) -> None:
-            calls.append(data)
-
-        emitter.off(callback=handler)
-        await emitter.emit("b", "b")
-
-        emitter.on(lambda _: True, lambda data, __: calls.append(data))
-        emitter.on("*", lambda data, __: calls.append(data))
-        emitter.on("*.*", lambda data, __: calls.append(data))
-        emitter.off()
-        await emitter.emit("c", "c")
-
-        assert not calls, "No callbacks should have been called"
-
-    @pytest.mark.unit
-    @pytest.mark.asyncio
     async def test_clone(self) -> None:
         emitter = Emitter(group_id="test_group", namespace=["namespace"], context={"key": "value"})
         clone = await emitter.clone()
@@ -113,3 +61,129 @@ class TestEmitter:
         assert clone.namespace == emitter.namespace
         assert clone.context == emitter.context
         assert clone.events == emitter.events
+
+
+class TestEventsPropagation:
+    @pytest.mark.unit
+    @pytest.mark.asyncio
+    async def test_by_name(self) -> None:
+        emitter, calls = Emitter(), []
+
+        emitter.on("a", lambda data, __: calls.append(data))
+        await emitter.emit("a", 1)
+        assert calls == [1], "No events matched"
+
+        emitter.off("a")
+        await emitter.emit("a", 1)
+
+        assert calls == [1]
+
+    @pytest.mark.unit
+    @pytest.mark.asyncio
+    async def test_by_function_decorator(self) -> None:
+        emitter, calls = Emitter(), []
+
+        @emitter.on("a")
+        def handler(data: Any, __: Any) -> None:
+            calls.append(data)
+
+        await emitter.emit("a", 1)
+        assert calls == [1]
+
+        emitter.off(callback=handler)
+        await emitter.emit("a", 1)
+
+        assert calls == [1]
+
+    @pytest.mark.unit
+    @pytest.mark.asyncio
+    async def test_no_params(self) -> None:
+        emitter, calls = Emitter(), []
+
+        emitter.on(lambda _: True, lambda _, __: calls.append(1))
+        emitter.on("*", lambda _, __: calls.append(2))
+        emitter.on("*.*", lambda _, __: calls.append(3))
+
+        await emitter.emit("a", "a")
+        calls.sort()
+        assert calls == [1, 2, 3]
+
+        emitter.off()
+        await emitter.emit("a", "a")
+
+        assert calls == [1, 2, 3]
+
+    @pytest.mark.unit
+    @pytest.mark.asyncio
+    async def test_destroy(self) -> None:
+        emitter, calls = Emitter(), []
+
+        emitter.on(lambda _: True, lambda _, __: calls.append(1))
+        await emitter.emit("c", "c")
+        assert calls == [1]
+
+        emitter.destroy()
+        await emitter.emit("c", "c")
+        assert calls == [1]
+
+    @pytest.mark.unit
+    @pytest.mark.asyncio
+    async def test_function_bypass(self) -> None:
+        emitter, calls = Emitter(), []
+
+        def matcher(_: EventMeta) -> bool:
+            return True
+
+        def callback(data: Any, meta: EventMeta) -> None:
+            nonlocal calls
+            calls.append(data)
+
+        emitter.on(matcher, callback)
+        emitter.off(lambda _: True)  # matchers are different
+
+        await emitter.emit("a", 1)
+        assert calls == [1]
+
+        emitter.on(matcher, callback)
+        emitter.off(matcher, callback=lambda data, __: calls.append(data))  # callbacks are different
+        await emitter.emit("a", 2)
+
+        assert calls == [1, 2, 2]
+
+    @pytest.mark.unit
+    @pytest.mark.asyncio
+    async def test_regex(self) -> None:
+        emitter, calls = Emitter(), []
+
+        emitter.on(r"c", lambda data, __: calls.append(data))
+        await emitter.emit("c", 1)
+
+        assert calls == [1]
+        emitter.off(r"c")
+
+        await emitter.emit("c", "c")
+        assert calls == [1]
+
+    @pytest.mark.unit
+    @pytest.mark.asyncio
+    async def test_options(self) -> None:
+        emitter, calls = Emitter(), []
+
+        emitter.on(
+            "*.*",
+            lambda data, __: calls.append(data),
+            options=EmitterOptions(match_nested=False, is_blocking=False, once=False),
+        )
+        emitter.off(
+            options=EmitterOptions(match_nested=True, is_blocking=True, once=True),
+        )
+        emitter.off(options=EmitterOptions())
+        await emitter.emit("c", 1)
+        assert calls == [1]
+
+        emitter.off(
+            options=EmitterOptions(match_nested=False, is_blocking=False, once=False),
+        )
+
+        await emitter.emit("c", 1)
+        assert calls == [1]
