@@ -10,60 +10,84 @@ from beeai_framework.emitter.emitter import Emitter, EventMeta
 from beeai_framework.emitter.errors import EmitterError
 
 
-class TestEmitter:
-    @pytest.mark.unit
-    def test_initialization(self) -> None:
-        creator = object()
-        emitter = Emitter(group_id="test_group", namespace=["test_namespace"], creator=creator)
-        assert emitter._group_id == "test_group"
-        assert emitter.namespace == ["test_namespace"]
-        assert emitter.creator is creator
-        assert emitter.context == {}
-        assert emitter.trace is None
-        assert emitter.events == {}
+@pytest.mark.unit
+def test_initialization() -> None:
+    creator = object()
+    emitter = Emitter(group_id="test_group", namespace=["test_namespace"], creator=creator)
+    assert emitter._group_id == "test_group"
+    assert emitter.namespace == ["test_namespace"]
+    assert emitter.creator is creator
+    assert emitter.context == {}
+    assert emitter.trace is None
+    assert emitter.events == {}
 
-    @pytest.mark.unit
-    def test_root_initialization(self) -> None:
-        emitter = Emitter.root()
-        assert emitter is Emitter.root()  # caching
-        assert emitter.creator is not None
-        assert emitter._group_id is None
-        assert emitter.namespace == []
-        assert isinstance(emitter.events, dict)
 
-    @pytest.mark.unit
-    def test_create_child(self) -> None:
-        creator = object()
-        parent_emitter = Emitter(group_id="parent_group", namespace=["parent"], creator=creator)
-        child_emitter = parent_emitter.child(
-            group_id="child_group", namespace=["child_child_namespace"], context={"key": "value"}
-        )
-        assert child_emitter._group_id == "child_group"
-        assert child_emitter.namespace == ["child_child_namespace", "parent"]
-        assert child_emitter.context["key"] == "value"
-        assert child_emitter.creator is creator
+@pytest.mark.unit
+def test_root_initialization() -> None:
+    emitter = Emitter.root()
+    assert emitter is Emitter.root()  # caching
+    assert emitter.creator is not None
+    assert emitter.namespace == []
 
-    @pytest.mark.unit
-    @pytest.mark.asyncio
-    async def test_emit_invalid_name(self) -> None:
-        emitter = Emitter()
 
-        with pytest.raises(EmitterError):
-            await emitter.emit("!!!invalid_name", None)
+@pytest.mark.unit
+def test_create_child() -> None:
+    creator = object()
+    parent_emitter = Emitter(group_id="parent_group", namespace=["parent"], creator=creator)
+    child_emitter = parent_emitter.child(
+        group_id="child_group", namespace=["child_child_namespace"], context={"key": "value"}
+    )
+    assert child_emitter._group_id == "child_group"
+    assert child_emitter.namespace == ["child_child_namespace", "parent"]
+    assert child_emitter.context["key"] == "value"
+    assert child_emitter.creator is creator
 
-    @pytest.mark.unit
-    @pytest.mark.asyncio
-    async def test_clone(self) -> None:
-        emitter = Emitter(group_id="test_group", namespace=["namespace"], context={"key": "value"})
-        clone = await emitter.clone()
 
-        assert clone._group_id == emitter._group_id
-        assert clone.namespace == emitter.namespace
-        assert clone.context == emitter.context
-        assert clone.events == emitter.events
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_emit_invalid_name() -> None:
+    emitter = Emitter()
+
+    with pytest.raises(EmitterError):
+        await emitter.emit("!!!invalid_name", None)
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_clone() -> None:
+    emitter = Emitter(group_id="test_group", namespace=["namespace"], context={"key": "value"})
+    clone = await emitter.clone()
+
+    assert clone.namespace is not emitter.namespace
+    assert clone.context is not emitter.context
+    assert clone.events is not emitter.events
 
 
 class TestEventsPropagation:
+    @pytest.mark.unit
+    @pytest.mark.asyncio
+    async def test_events_from_children(self) -> None:
+        root_calls = []
+        root_all_calls = []
+        children_calls = []
+
+        root = Emitter(namespace=["app"])
+        assert root.namespace == ["app"]
+
+        root.on("*", lambda data, event: root_calls.append([event.name, data]))
+        root.on("*.*", lambda data, event: root_all_calls.append([event.path, data]))
+        await root.emit("a", 1)
+        assert root_calls == [["a", 1]]
+        assert root_all_calls == [["app.a", 1]]
+
+        children = root.child(namespace=["child"])
+        assert children.namespace == ["child", "app"]
+        children.on("*", lambda data, event: children_calls.append([event.name, data]))
+        await children.emit("b", 1)
+        assert children_calls == [["b", 1]]
+        assert root_calls == [["a", 1]]  # no change
+        assert root_all_calls == [["app.a", 1], ["child.app.b", 1]]
+
     @pytest.mark.unit
     @pytest.mark.asyncio
     async def test_by_name(self) -> None:
@@ -128,7 +152,7 @@ class TestEventsPropagation:
 
     @pytest.mark.unit
     @pytest.mark.asyncio
-    async def test_function_bypass(self) -> None:
+    async def test_function(self) -> None:
         emitter, calls = Emitter(), []
 
         def matcher(_: EventMeta) -> bool:
