@@ -146,7 +146,7 @@ class Emitter:
         Returns:
             Either a cleanup function or a decorator function depending on the usage of the method.
         """
-        if callback is None or event is None:
+        if callback is None:
 
             def decorator(fn: Callback) -> Callback:
                 name = event or str(fn.__name__).removeprefix("on_").removeprefix("handle_")
@@ -177,7 +177,12 @@ class Emitter:
     def match(self, matcher: Matcher, callback: Callback, options: EmitterOptions | None = None) -> CleanupFn:
         return self.on(matcher, callback, options)
 
-    def _register(self, matcher: Matcher, callback: Callback, options: EmitterOptions | None = None) -> CleanupFn:
+    def _register(
+        self, matcher: Matcher | None, callback: Callback, options: EmitterOptions | None = None
+    ) -> CleanupFn:
+        if not matcher:
+            raise ValueError("Cannot listen to events without specifying a matcher.")
+
         listener = Listener(
             match=self._create_matcher(matcher, options), raw=matcher, callback=callback, options=options
         )
@@ -185,7 +190,7 @@ class Emitter:
 
         return lambda: self._listeners.remove(listener) if listener in self._listeners else None
 
-    def _create_matcher(self, matcher: Matcher | None, options: EmitterOptions | None) -> MatcherFn:
+    def _create_matcher(self, matcher: Matcher, options: EmitterOptions | None) -> MatcherFn:
         matchers: list[MatcherFn] = []
         match_nested = options.match_nested if options else None
 
