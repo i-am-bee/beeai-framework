@@ -1,3 +1,14 @@
+## python_v0.1.43 (2025-09-05)
+
+### Bug Fixes
+
+- **agents**: handle an empty list of messages in RequirementAgent
+
+### Features
+
+- simplify and extend PromptTemplate (#1082)
+- **tools**: propagate MCP errors (#1065)
+
 ## python_v0.1.42 (2025-09-02)
 
 Converted all `beeai_framework.agents` into “runnables,” modifying their `run` method signatures (#1013).
