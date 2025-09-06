@@ -76,7 +76,7 @@ class GlobalTrajectoryMiddleware(RunMiddlewareProtocol):
             self.on_internal_start(data, meta)
 
         self._cleanups.append(
-            emitter.match(
+            emitter.on(
                 matcher,
                 handler,
                 EmitterOptions(match_nested=True, is_blocking=True),
@@ -86,7 +86,7 @@ class GlobalTrajectoryMiddleware(RunMiddlewareProtocol):
     def _bind_emitter(self, emitter: Emitter) -> None:
         # must be last to be executed as first
         self._cleanups.append(
-            emitter.match("*.*", lambda _, event: self._log_trace_id(event), EmitterOptions(match_nested=True))
+            emitter.on("*.*", lambda _, event: self._log_trace_id(event), EmitterOptions(match_nested=True))
         )
 
         def bind_internal_event(name: str) -> None:

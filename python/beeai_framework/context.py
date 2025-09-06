@@ -58,7 +58,7 @@ class Run(Generic[R]):
         async def add_to_queue(data: Any, event: EventMeta) -> None:
             await self._events.put((data, event))
 
-        self._run_context.emitter.match(
+        self._run_context.emitter.on(
             "*", add_to_queue, EmitterOptions(persistent=True, is_blocking=True, match_nested=False)
         )
 
@@ -89,7 +89,7 @@ class Run(Generic[R]):
         return self
 
     def on(self, matcher: Matcher, callback: Callback, options: EmitterOptions | None = None) -> Self:
-        self._tasks.append((self._run_context.emitter.match, [matcher, callback, options]))
+        self._tasks.append((self._run_context.emitter.on, [matcher, callback, options]))
         return self
 
     def context(self, context: dict[str, Any]) -> Self:

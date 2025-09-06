@@ -9,7 +9,7 @@ from beeai_framework.errors import FrameworkError
 async def main() -> None:
     first: Emitter = Emitter(namespace=["app"])
 
-    first.match(
+    first.on(
         "*.*",
         lambda data, event: print(
             f"'first' has retrieved the following event '{event.path}', isDirect: {event.source == first}"
@@ -18,7 +18,7 @@ async def main() -> None:
 
     second: Emitter = Emitter(namespace=["app", "llm"])
 
-    second.match(
+    second.on(
         "*.*",
         lambda data, event: print(
             f"'second' has retrieved the following event '{event.path}', isDirect: {event.source == second}"
