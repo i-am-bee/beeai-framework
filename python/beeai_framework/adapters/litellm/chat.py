@@ -3,7 +3,7 @@
 import contextlib
 import os
 from abc import ABC
-from collections.abc import AsyncGenerator
+from collections.abc import AsyncGenerator, Iterable
 from itertools import chain
 from typing import Any, Self
 
@@ -91,16 +91,109 @@ class LiteLLMChatModel(ChatModel, ABC):
         set_attr_if_none(litellm_input, ["stream_options", "include_usage"], value=True)
         response = await acompletion(**litellm_input)
 
+        # In-memory state to aggregate tool-call deltas across chunks
+        tool_buffers: dict[int, dict[str, Any]] = {}
+        last_usage = None
+        last_model = None
+
         is_empty = True
+
         async for chunk in response:
             is_empty = False
-            response_output = self._transform_output(chunk)
-            if response_output:
-                yield response_output
+            last_model = chunk.get("model", last_model)
+            usage = chunk.get("usage")
+            if usage:
+                last_usage = usage
+
+            choice = chunk.choices[0] if chunk.choices else None
+            finish_reason = getattr(choice, "finish_reason", None)
+
+            # We abstracted so the rest of the code can treat them uniformly
+            update = (choice.delta if isinstance(choice, StreamingChoices) else choice.message) if choice else None
+
+            # Buffer tool-call deltas (https://github.com/i-am-bee/beeai-framework/issues/1076)
+            tool_calls: Iterable[Any] | None = getattr(update, "tool_calls", None)
+            if tool_calls:
+                for tc in tool_calls:
+                    idx = getattr(tc, "index", 0)
+                    fn = getattr(tc, "function", None)
+                    name = getattr(fn, "name", "") if fn else ""
+                    args_piece = getattr(fn, "arguments", "") if fn else ""
+                    tc_id = getattr(tc, "id", "") or ""
+
+                    buf = tool_buffers.get(idx)
+                    if buf is None:
+                        buf = tool_buffers[idx] = {"id": tc_id, "name": name, "args_parts": []}
+                    else:
+                        if name and not buf["name"]:
+                            buf["name"] = name
+                        if tc_id and not buf["id"]:
+                            buf["id"] = tc_id
+                    if args_piece:
+                        buf["args_parts"].append(args_piece)
+
+            # No tool-call delta in this chunk
+            else:
+                out = self._transform_output(chunk)
+                if out and out.messages:
+                    yield out
+
+            # When the model indicates tool-calls are finished, merge one consolidated message
+            if finish_reason in ("tool_calls", "stop") and tool_buffers:
+                tool_msgs = []
+                for idx in sorted(tool_buffers.keys()):
+                    buf = tool_buffers[idx]
+                    tool_msgs.append(
+                        MessageToolCallContent(
+                            id=buf["id"],
+                            tool_name=buf["name"],
+                            args="".join(buf["args_parts"]),
+                        )
+                    )
+
+                usage_obj = ChatModelUsage(**last_usage.model_dump()) if last_usage else None
+                cost_obj = None
+                if last_usage:
+                    with contextlib.suppress(Exception):
+                        prompt_cost, completion_cost = cost_per_token(
+                            model=last_model,
+                            custom_llm_provider=self._litellm_provider_id,
+                            prompt_tokens=last_usage.prompt_tokens,
+                            completion_tokens=last_usage.completion_tokens,
+                        )
+                        cost_obj = ChatModelCost(
+                            prompt_tokens_usd=prompt_cost,
+                            completion_tokens_cost_usd=completion_cost,
+                            total_cost_usd=prompt_cost + completion_cost,
+                        )
+
+                yield ChatModelOutput(
+                    messages=[AssistantMessage(tool_msgs, id=chunk.id)],  # type: ignore
+                    finish_reason="tool_calls",
+                    usage=usage_obj,
+                    cost=cost_obj,
+                )
+                tool_buffers.clear()
 
         if is_empty:
-            # TODO: issue https://github.com/BerriAI/litellm/issues/8868
             raise ChatModelError("Stream response is empty.")
+
+        # If the provider never set finish_reason to a tool stop, any accumulated tools are still emitted
+        if tool_buffers:
+            tool_msgs = []
+            for idx in sorted(tool_buffers.keys()):
+                buf = tool_buffers[idx]
+                tool_msgs.append(
+                    MessageToolCallContent(
+                        id=buf["id"],
+                        tool_name=buf["name"],
+                        args="".join(buf["args_parts"]),
+                    )
+                )
+            yield ChatModelOutput(
+                messages=[AssistantMessage(tool_msgs)],  # type: ignore
+                finish_reason="tool_calls",
+            )
 
     async def _create_structure(self, input: ChatModelStructureInput[Any], run: RunContext) -> ChatModelStructureOutput:
         if "response_format" not in self.supported_params:
