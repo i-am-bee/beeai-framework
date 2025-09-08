@@ -7,7 +7,7 @@ from typing import Self
 from pydantic import BaseModel
 
 from beeai_framework.agents.experimental.utils._tool import ToolInvocationResult
-from beeai_framework.template import PromptTemplate, PromptTemplateInput
+from beeai_framework.template import PromptTemplate
 from beeai_framework.tools import AnyTool
 from beeai_framework.utils.strings import to_json
 
@@ -38,11 +38,10 @@ class RequirementAgentSystemPromptInput(BaseModel):
 
 
 RequirementAgentSystemPrompt = PromptTemplate(
-    PromptTemplateInput(
-        schema=RequirementAgentSystemPromptInput,
-        functions={"formatDate": lambda data: datetime.now(tz=UTC).strftime("%Y-%m-%d")},
-        defaults={"role": "a helpful AI assistant", "instructions": ""},
-        template="""# Role
+    schema=RequirementAgentSystemPromptInput,
+    functions={"formatDate": lambda data: datetime.now(tz=UTC).strftime("%Y-%m-%d")},
+    defaults={"role": "a helpful AI assistant", "instructions": ""},
+    template="""# Role
 Assume the role of {{role}}.
 
 # Instructions
@@ -90,7 +89,6 @@ Allowed: {{allowed}}
 {{&.}}
 {{/notes}}
 """,  # noqa: E501
-    )
 )
 
 
@@ -101,9 +99,8 @@ class RequirementAgentTaskPromptInput(BaseModel):
 
 
 RequirementAgentTaskPrompt = PromptTemplate(
-    PromptTemplateInput(
-        schema=RequirementAgentTaskPromptInput,
-        template="""{{#context}}This is the context relevant to the task:
+    schema=RequirementAgentTaskPromptInput,
+    template="""{{#context}}This is the context relevant to the task:
 {{&.}}
 
 {{/context}}
@@ -113,7 +110,6 @@ This is the expected criteria for your output:
 
 {{/expected_output}}
 Your task: {{prompt}}""",
-    )
 )
 
 
@@ -122,12 +118,10 @@ class RequirementAgentToolErrorPromptInput(BaseModel):
 
 
 RequirementAgentToolErrorPrompt = PromptTemplate(
-    PromptTemplateInput(
-        schema=RequirementAgentToolErrorPromptInput,
-        template="""The tool has failed; the error log is shown below. If the tool cannot accomplish what you want, use a different tool or explain why you can't use it.
+    schema=RequirementAgentToolErrorPromptInput,
+    template="""The tool has failed; the error log is shown below. If the tool cannot accomplish what you want, use a different tool or explain why you can't use it.
 
 {{&reason}}""",  # noqa: E501
-    )
 )
 
 
@@ -136,8 +130,6 @@ class RequirementAgentToolNoResultTemplateInput(BaseModel):
 
 
 RequirementAgentToolNoResultPrompt = PromptTemplate(
-    PromptTemplateInput(
-        schema=RequirementAgentToolNoResultTemplateInput,
-        template="""No results were found! Try to reformulate your query or use a different tool.""",
-    )
+    schema=RequirementAgentToolNoResultTemplateInput,
+    template="""No results were found! Try to reformulate your query or use a different tool.""",
 )

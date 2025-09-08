@@ -140,6 +140,9 @@ class RequirementAgent(BaseAgent[RequirementAgentOutput]):
             )
             await state.memory.add_many(self.memory.messages)
 
+            if not input:
+                return state, None
+
             *msgs, last_message = [UserMessage(input)] if isinstance(input, str) else input
             await state.memory.add_many(msgs)
             if isinstance(last_message, UserMessage) and last_message.text:

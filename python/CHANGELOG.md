@@ -1,3 +1,14 @@
+## python_v0.1.43 (2025-09-05)
+
+### Bug Fixes
+
+- **agents**: handle an empty list of messages in RequirementAgent
+
+### Features
+
+- simplify and extend PromptTemplate (#1082)
+- **tools**: propagate MCP errors (#1065)
+
 ## python_v0.1.42 (2025-09-02)
 
 Converted all `beeai_framework.agents` into “runnables,” modifying their `run` method signatures (#1013).
@@ -18,7 +29,8 @@ Key changes:
 response: RequirementAgentRunOutput = await agent.run(
     prompt="Write a step-by-step tutorial on how to bake bread",
     expected_output="The output should be an ordered list of steps. Each step should ideally be one sentence.",
-    context="Assume that the user has no prior knowledge of baking."
+    context="Assume that the user has no prior knowledge of baking.",
+    execution=AgentExecutionConfig(max_iterations=8, max_retries_per_step=3, total_max_retries=10)
 )
 print(response.result.text) # the result is a message
 print(response.answer_structured) # the result is a structured response (if the expected_output is a Pydantic model)
@@ -35,7 +47,8 @@ print(response.answer_structured) # the result is a structured response (if the 
 response: RequirementAgentOutput = await agent.run(
     "Write a step-by-step tutorial on how to bake bread",
     expected_output="The output should be an ordered list of steps. Each step should ideally be one sentence.",
-    backstory="Assume that the user has no prior knowledge of baking."
+    backstory="Assume that the user has no prior knowledge of baking.",
+    max_iterations=8, max_retries_per_step=3, total_max_retries=10
 )
 print(response.last_message.text) # the result is a message
 # print(response.output) # a list of all messages that the agent produced

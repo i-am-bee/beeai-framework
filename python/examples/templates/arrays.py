@@ -4,7 +4,7 @@ import traceback
 from pydantic import BaseModel, Field
 
 from beeai_framework.errors import FrameworkError
-from beeai_framework.template import PromptTemplate, PromptTemplateInput
+from beeai_framework.template import PromptTemplate
 
 
 def main() -> None:
@@ -12,10 +12,8 @@ def main() -> None:
         colors: list[str] = Field(..., min_length=1)
 
     template: PromptTemplate[ColorsObject] = PromptTemplate(
-        PromptTemplateInput(
-            schema=ColorsObject,
-            template="""Colors: {{#colors}}{{.}}, {{/colors}}""",
-        )
+        schema=ColorsObject,
+        template="""Colors: {{#colors}}{{.}}, {{/colors}}""",
     )
 
     # Colors: Green, Yellow,

@@ -5,7 +5,7 @@ from datetime import UTC, datetime
 
 from pydantic import BaseModel
 
-from beeai_framework.template import PromptTemplate, PromptTemplateInput
+from beeai_framework.template import PromptTemplate
 
 
 class ToolCallingAgentSystemPromptInput(BaseModel):
@@ -14,11 +14,10 @@ class ToolCallingAgentSystemPromptInput(BaseModel):
 
 
 ToolCallingAgentSystemPrompt = PromptTemplate(
-    PromptTemplateInput(
-        schema=ToolCallingAgentSystemPromptInput,
-        functions={"formatDate": lambda data: datetime.now(tz=UTC).strftime("%Y-%m-%dT%H:%M:%SZ")},
-        defaults={"role": "A helpful AI assistant", "instructions": ""},
-        template="""Assume the role of {{role}}.
+    schema=ToolCallingAgentSystemPromptInput,
+    functions={"formatDate": lambda data: datetime.now(tz=UTC).strftime("%Y-%m-%dT%H:%M:%SZ")},
+    defaults={"role": "A helpful AI assistant", "instructions": ""},
+    template="""Assume the role of {{role}}.
 {{#instructions}}
 
 Your instructions are:
@@ -38,7 +37,6 @@ Before you call the 'final_answer' tool, ensure that you have gathered sufficien
 The current date and time is: {{formatDate}}
 You do not need a tool to get the current Date and Time. Use the information available here.
 """,  # noqa: E501
-    )
 )
 
 
@@ -49,9 +47,8 @@ class ToolCallingAgentTaskPromptInput(BaseModel):
 
 
 ToolCallingAgentTaskPrompt = PromptTemplate(
-    PromptTemplateInput(
-        schema=ToolCallingAgentTaskPromptInput,
-        template="""{{#context}}This is the context that you are working with:
+    schema=ToolCallingAgentTaskPromptInput,
+    template="""{{#context}}This is the context that you are working with:
 {{.}}
 
 {{/context}}
@@ -62,7 +59,6 @@ This is the expected criteria for your output:
 {{/expected_output}}
 Your task: {{prompt}}
 """,
-    )
 )
 
 
@@ -71,12 +67,10 @@ class ToolCallingAgentToolErrorPromptInput(BaseModel):
 
 
 ToolCallingAgentToolErrorPrompt = PromptTemplate(
-    PromptTemplateInput(
-        schema=ToolCallingAgentToolErrorPromptInput,
-        template="""The tool has failed; the error log is shown below. If the tool cannot accomplish what you want, use a different tool or explain why you can't use it.
+    schema=ToolCallingAgentToolErrorPromptInput,
+    template="""The tool has failed; the error log is shown below. If the tool cannot accomplish what you want, use a different tool or explain why you can't use it.
 
 {{&reason}}""",  # noqa: E501
-    )
 )
 
 
@@ -87,8 +81,6 @@ class ToolCallingAgentCycleDetectionPromptInput(BaseModel):
 
 
 ToolCallingAgentCycleDetectionPrompt = PromptTemplate(
-    PromptTemplateInput(
-        schema=ToolCallingAgentCycleDetectionPromptInput,
-        template="""I can't see your answer. You must use the '{{final_answer_tool}}' tool to send me a message.""",
-    )
+    schema=ToolCallingAgentCycleDetectionPromptInput,
+    template="""I can't see your answer. You must use the '{{final_answer_tool}}' tool to send me a message.""",
 )
