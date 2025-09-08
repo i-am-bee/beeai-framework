@@ -299,7 +299,6 @@ def _match_listener(
 
         if isinstance(matcher, re.Pattern) and isinstance(listener.raw, re.Pattern):
             if matcher.pattern != listener.raw.pattern and matcher.flags != listener.raw.flags:
-                print("fuck")
                 return False
         elif callable(matcher) and callable(listener.raw):
             if matcher is not listener.raw:
