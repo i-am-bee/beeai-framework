@@ -92,15 +92,26 @@ class LiteLLMChatModel(ChatModel, ABC):
         response = await acompletion(**litellm_input)
 
         is_empty = True
-        async for chunk in response:
+        tmp_chunk: ChatModelOutput | None = None
+        async for _chunk in response:
             is_empty = False
-            response_output = self._transform_output(chunk)
-            if response_output:
-                yield response_output
+            chunk = self._transform_output(_chunk)
+
+            if tmp_chunk is None:
+                tmp_chunk = chunk
+            else:
+                tmp_chunk.merge(chunk)
+
+            if tmp_chunk.is_valid():
+                yield tmp_chunk
+                tmp_chunk = None
 
         if is_empty:
             # TODO: issue https://github.com/BerriAI/litellm/issues/8868
             raise ChatModelError("Stream response is empty.")
+
+        if tmp_chunk:
+            raise ChatModelError("Failed to merge intermediate responses.")
 
     async def _create_structure(self, input: ChatModelStructureInput[Any], run: RunContext) -> ChatModelStructureOutput:
         if "response_format" not in self.supported_params:

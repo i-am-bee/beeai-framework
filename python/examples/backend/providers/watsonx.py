@@ -93,12 +93,10 @@ async def watson_structure() -> None:
 
 
 async def watson_tool_calling() -> None:
-    watsonx_llm = ChatModel.from_name(
-        "watsonx:ibm/granite-3-3-8b-instruct",
-    )
+    watsonx_llm = ChatModel.from_name("watsonx:ibm/granite-3-3-8b-instruct")
     user_message = UserMessage(f"What is the current weather in Boston? Current date is {datetime.datetime.today()}.")
     weather_tool = OpenMeteoTool()
-    response = await watsonx_llm.create(messages=[user_message], tools=[weather_tool])
+    response = await watsonx_llm.create(messages=[user_message], tools=[weather_tool], stream=True)
     tool_call_msg = response.get_tool_calls()[0]
     print(tool_call_msg.model_dump())
     tool_response = await weather_tool.run(json.loads(tool_call_msg.args))
@@ -108,7 +106,7 @@ async def watson_tool_calling() -> None:
         )
     )
     print(tool_response_msg.to_plain())
-    final_response = await watsonx_llm.create(messages=[user_message, tool_response_msg], tools=[])
+    final_response = await watsonx_llm.create(messages=[user_message, *response.messages, tool_response_msg], tools=[])
     print(final_response.get_text_content())
 
 
