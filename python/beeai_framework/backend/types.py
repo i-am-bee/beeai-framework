@@ -82,10 +82,12 @@ class ChatModelOutput(BaseModel):
 
     def is_valid(self) -> bool:
         for msg in self.messages:
-            if isinstance(msg, AssistantMessage):
-                for tool_call in msg.get_tool_calls():
-                    if not tool_call.id or not tool_call.tool_name or not tool_call.args:
-                        return False
+            if not isinstance(msg, AssistantMessage):
+                continue
+
+            for tool_call in msg.get_tool_calls():
+                if not tool_call.is_valid():
+                    return False
 
         return True
 

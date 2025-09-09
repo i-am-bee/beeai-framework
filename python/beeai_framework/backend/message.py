@@ -64,6 +64,16 @@ class MessageToolCallContent(BaseModel):
     tool_name: str
     args: str
 
+    def is_valid(self) -> bool:
+        if not self.id or not self.tool_name or not self.args:
+            return False
+
+        try:
+            json.loads(self.args)
+            return True
+        except Exception:
+            return False
+
 
 class Message(ABC, Generic[T]):
     id: str | None
