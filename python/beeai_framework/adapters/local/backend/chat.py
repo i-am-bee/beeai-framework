@@ -31,6 +31,7 @@ from beeai_framework.backend.message import (
 from beeai_framework.backend.types import (
     ChatModelInput,
     ChatModelOutput,
+    ChatModelParameters,
     ChatModelStructureInput,
     ChatModelStructureOutput,
 )
@@ -50,7 +51,7 @@ from beeai_framework.utils.strings import to_json
 logger = Logger(__name__)
 
 
-def get_do_sample(input: ChatModelInput) -> bool:
+def get_do_sample(input: ChatModelParameters) -> bool:
     return bool(
         input.temperature > 0.0
         or (input.top_k is not None and input.top_k > 1)
@@ -59,7 +60,7 @@ def get_do_sample(input: ChatModelInput) -> bool:
     )
 
 
-def get_num_beams(input: ChatModelInput) -> int:
+def get_num_beams(input: ChatModelParameters) -> int:
     return input.n if input.n is not None else 1
 
 
@@ -190,7 +191,22 @@ class LocalChatModel(ChatModel):
         llm_input = self._transform_input(ChatModelInput(messages=input.messages)) | {"stream": False}
         prompt_chat_history = get_prompt_chat_history(llm_input["messages"])
         generator = outlines.Generator(self.model_structured, JsonSchema(json_schema))
-        text_response = await asyncio.to_thread(generator, prompt_chat_history)
+
+        if input.seed is not None:
+            set_seed(input.seed)
+
+        text_response = await asyncio.to_thread(
+            generator,
+            prompt_chat_history,
+            max_new_tokens=input.max_tokens,
+            temperature=input.temperature,
+            top_k=input.top_k,
+            top_p=input.top_p,
+            num_beams=get_num_beams(input),
+            frequency_penalty=input.frequency_penalty,
+            presence_penalty=input.presence_penalty,
+            do_sample=get_do_sample(input),
+        )
         result = parse_broken_json(text_response)
 
         # TODO: validate result matches expected schema
@@ -392,7 +408,6 @@ class LocalChatModel(ChatModel):
 
     async def _get_model_output(self, input: ChatModelInput, stream: bool) -> tuple[Any, int]:
         inputs_on_device, prompt_tokens = self._get_inputs_on_device(input=input, stream=stream)
-        do_sample = get_do_sample(input)
 
         if input.seed is not None:
             set_seed(input.seed)
@@ -408,7 +423,7 @@ class LocalChatModel(ChatModel):
             num_beams=get_num_beams(input),
             frequency_penalty=input.frequency_penalty,
             presence_penalty=input.presence_penalty,
-            do_sample=do_sample,
+            do_sample=get_do_sample(input),
             stopping_criteria=self._get_stopping_criteria(input, prompt_tokens),
         )
 
