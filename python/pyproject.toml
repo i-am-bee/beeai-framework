@@ -197,3 +197,7 @@ convention = "google"
 [tool.ruff.lint.flake8-tidy-imports]
 # Disallow all relative imports, "parents" | "all"
 ban-relative-imports = "all"
+
+[[tool.mypy.overrides]]
+module = "llama_index.*"
+ignore_missing_imports = true

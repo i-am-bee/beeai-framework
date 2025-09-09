@@ -199,14 +199,9 @@ def _agent_factory(
     return MCPNativeTool.from_function(run, name=agent.meta.name, description=agent.meta.description)
 
 
-with contextlib.suppress(FactoryAlreadyRegisteredError):
-    MCPServer.register_factory(RequirementAgent, _agent_factory)
-
-with contextlib.suppress(FactoryAlreadyRegisteredError):
-    MCPServer.register_factory(ToolCallingAgent, _agent_factory)
-
-with contextlib.suppress(FactoryAlreadyRegisteredError):
-    MCPServer.register_factory(ReActAgent, _agent_factory)
+for agent_type in (RequirementAgent, ToolCallingAgent, ReActAgent):
+    with contextlib.suppress(FactoryAlreadyRegisteredError):
+        MCPServer.register_factory(agent_type, _agent_factory)
 
 with contextlib.suppress(FactoryAlreadyRegisteredError):
     MCPServer.register_factory(mcp_resources.Resource, identity)
