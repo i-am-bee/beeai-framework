@@ -40,7 +40,7 @@ async def main() -> None:
         "A farmer has 10 cows, 5 chickens, and 2 horses. "
         "If we count all the animals' legs together, how many legs are there in total?"
     )
-    print(response.answer.text)
+    print(response.last_message.text)
 
 
 if __name__ == "__main__":

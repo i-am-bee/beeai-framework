@@ -72,8 +72,8 @@ class HandoffTool(Tool[HandoffSchema, ToolRunOptions, StringToolOutput]):
             fallback=-1,
         )
         await target.memory.add_many(non_system_messages[: last_valid_msg_index + 1])
-        response = await target.run(input.task if self._propagate_inputs else None)
-        return StringToolOutput(response.result.text)
+        response = await target.run(input.task if self._propagate_inputs else [])
+        return StringToolOutput(response.last_message.text)
 
     def _create_emitter(self) -> Emitter:
         return Emitter.root().child(

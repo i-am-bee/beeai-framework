@@ -19,7 +19,6 @@ from langchain_ollama import ChatOllama
 from langgraph.prebuilt import create_react_agent
 from pydantic import BaseModel, InstanceOf
 
-from beeai_framework.agents import AgentExecutionConfig
 from beeai_framework.agents.react import ReActAgent
 from beeai_framework.backend import AnyMessage, AssistantMessage, ChatModel, Role, UserMessage
 from beeai_framework.errors import FrameworkError
@@ -49,8 +48,8 @@ async def main() -> None:
         agent = ReActAgent(
             llm=ChatModel.from_name("ollama:llama3.1"), tools=[DuckDuckGoSearchTool()], memory=state.memory
         )
-        response = await agent.run(execution=AgentExecutionConfig(max_iterations=5))
-        state.answer = response.result.text
+        response = await agent.run(state.memory.messages, max_iterations=5)
+        state.answer = response.last_message.text
         return Workflow.END
 
     def langgraph_step(state: Schema) -> str:

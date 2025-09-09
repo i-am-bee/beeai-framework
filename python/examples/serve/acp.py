@@ -13,12 +13,12 @@ def main() -> None:
         tools=[DuckDuckGoSearchTool(), OpenMeteoTool()],
         memory=UnconstrainedMemory(),
         # specify the agent's name and other metadata
-        name="my_agent",
+        name="chat",
         description="A simple agent",
     )
 
     # Register the agent with the ACP server and run the HTTP server
-    # For the ToolCallingAgent and ReActAgent, we dont need to specify ACPAgent factory method
+    # For the ToolCallingAgent and ReActAgent, we don't need to specify ACPAgent factory method
     # because they are already registered in the ACPServer
     ACPServer(config=ACPServerConfig(port=8001)).register(agent, tags=["example"]).serve()
 

@@ -6,7 +6,7 @@ from typing import Any
 from pydantic import BaseModel
 
 from beeai_framework.errors import FrameworkError
-from beeai_framework.template import PromptTemplate, PromptTemplateInput
+from beeai_framework.template import PromptTemplate
 
 
 def main() -> None:
@@ -25,13 +25,11 @@ def main() -> None:
         return f"\nThis message was created at {created_at} by {author}."
 
     template: PromptTemplate[AuthorMessage] = PromptTemplate(
-        PromptTemplateInput(
-            schema=AuthorMessage,
-            functions={
-                "format_meta": lambda data: format_meta(data),
-            },
-            template="""Message: {{text}}{{format_meta}}""",
-        )
+        schema=AuthorMessage,
+        functions={
+            "format_meta": lambda data: format_meta(data),
+        },
+        template="""Message: {{text}}{{format_meta}}""",
     )
 
     # Message: Hello from 2024!

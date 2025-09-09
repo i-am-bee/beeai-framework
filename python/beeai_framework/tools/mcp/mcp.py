@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 from typing import Any, Self
 
+from beeai_framework.tools import ToolError
 from beeai_framework.tools.mcp.utils.session_provider import MCPClient, MCPSessionProvider
 
 try:
@@ -21,7 +22,7 @@ from beeai_framework.logger import Logger
 from beeai_framework.tools.tool import Tool
 from beeai_framework.tools.types import JSONToolOutput, ToolRunOptions
 from beeai_framework.utils.models import JSONSchemaModel
-from beeai_framework.utils.strings import to_safe_word
+from beeai_framework.utils.strings import to_json, to_safe_word
 
 logger = Logger(__name__)
 
@@ -62,6 +63,8 @@ class MCPTool(Tool[BaseModel, ToolRunOptions, JSONToolOutput]):
             name=self._tool.name, arguments=input_data.model_dump(exclude_none=True, exclude_unset=True)
         )
         logger.debug(f"Tool result: {result}")
+        if result.isError:
+            raise ToolError(to_json(result.content, indent=4, sort_keys=False), context=result.structuredContent)
         return JSONToolOutput(result.content)
 
     @classmethod

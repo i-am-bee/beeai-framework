@@ -2,11 +2,12 @@
 # SPDX-License-Identifier: Apache-2.0
 
 from collections.abc import Callable
-from typing import Annotated, Any, Generic
+from typing import Annotated, Any
 
 from pydantic import BaseModel, ConfigDict, Field, InstanceOf
 from typing_extensions import TypeVar
 
+from beeai_framework.agents import AgentOutput
 from beeai_framework.agents.experimental.prompts import (
     RequirementAgentSystemPrompt,
     RequirementAgentSystemPromptInput,
@@ -76,27 +77,8 @@ class RequirementAgentRunState(BaseModel):
 TAnswer = TypeVar("TAnswer", bound=BaseModel, default=Any)
 
 
-class RequirementAgentRunOutput(BaseModel, Generic[TAnswer]):
-    answer: InstanceOf[AssistantMessage]
-    answer_structured: TAnswer
-    memory: InstanceOf[BaseMemory]
+class RequirementAgentOutput(AgentOutput):
     state: RequirementAgentRunState
-
-    @property
-    def result(self) -> AssistantMessage:
-        """
-        This property is provided for compatibility reasons only.
-        Use 'answer' instead.
-        """
-        return self.answer
-
-    @result.setter
-    def result(self, value: AssistantMessage) -> None:
-        """
-        This setter is provided for compatibility reasons only.
-        Sets the 'answer' attribute.
-        """
-        self.answer = value
 
 
 class RequirementAgentRequest(BaseModel):

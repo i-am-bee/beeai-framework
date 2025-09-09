@@ -169,8 +169,7 @@ from dotenv import load_dotenv
 
 from beeai_framework.adapters.beeai.backend.vector_store import TemporalVectorStore
 from beeai_framework.adapters.langchain.backend.vector_store import LangChainVectorStore
-from beeai_framework.agents.experimental.rag import RAGAgent, RagAgentRunInput
-from beeai_framework.backend import UserMessage
+from beeai_framework.agents.experimental.rag import RAGAgent
 from beeai_framework.backend.chat import ChatModel
 from beeai_framework.backend.document_loader import DocumentLoader
 from beeai_framework.backend.document_processor import DocumentProcessor
@@ -249,8 +248,8 @@ async def main() -> None:
 
     agent = RAGAgent(llm=llm, memory=UnconstrainedMemory(), vector_store=vector_store, reranker=reranker)
 
-    response = await agent.run(RagAgentRunInput(message=UserMessage("What agents are available in BeeAI?")))
-    print(response.message.text)
+    response = await agent.run("What agents are available in BeeAI?")
+    print(response.last_message.text)
 
 
 if __name__ == "__main__":

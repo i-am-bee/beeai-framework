@@ -11,9 +11,10 @@ from beeai_framework.adapters.watsonx_orchestrate.serve.agent import (
     WatsonxOrchestrateServerAgentToolResponse,
 )
 from beeai_framework.agents.tool_calling import ToolCallingAgent
-from beeai_framework.backend import AssistantMessage
+from beeai_framework.backend import AnyMessage
 from beeai_framework.emitter import EmitterOptions, EventMeta
 from beeai_framework.tools import Tool, ToolStartEvent, ToolSuccessEvent
+from beeai_framework.utils.cloneable import Cloneable
 
 
 class WatsonxOrchestrateServerToolCallingAgent(WatsonxOrchestrateServerAgent[ToolCallingAgent]):
@@ -21,11 +22,9 @@ class WatsonxOrchestrateServerToolCallingAgent(WatsonxOrchestrateServerAgent[Too
     def model_id(self) -> str:
         return self._agent._llm.model_id
 
-    async def _run(self) -> AssistantMessage:
-        response = await self._agent.run(prompt=None)
-        return response.result
+    async def _stream(self, input: list[AnyMessage], emit: WatsonxOrchestrateServerAgentEmitFn) -> None:
+        cloned_agent = await self._agent.clone() if isinstance(self._agent, Cloneable) else self._agent
 
-    async def _stream(self, emit: WatsonxOrchestrateServerAgentEmitFn) -> None:
         async def on_tool_success(data: ToolSuccessEvent, meta: EventMeta) -> None:
             assert meta.trace, "ToolSuccessEvent must have trace"
             assert isinstance(meta.creator, Tool)
@@ -55,7 +54,7 @@ class WatsonxOrchestrateServerToolCallingAgent(WatsonxOrchestrateServerAgent[Too
             )
 
         response = await (
-            self._agent.run(prompt=None)
+            cloned_agent.run(input)
             .on(
                 lambda event: isinstance(event.creator, Tool) and event.name == "start",
                 on_tool_start,
@@ -67,4 +66,4 @@ class WatsonxOrchestrateServerToolCallingAgent(WatsonxOrchestrateServerAgent[Too
                 EmitterOptions(match_nested=True),
             )
         )
-        await emit(WatsonxOrchestrateServerAgentMessageEvent(text=response.result.text))
+        await emit(WatsonxOrchestrateServerAgentMessageEvent(text=response.last_message.text))

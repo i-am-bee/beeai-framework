@@ -1,10 +1,11 @@
 [project]
 name = "beeai-framework"
-version="0.1.39"
+version="0.1.43"
 license = "Apache-2.0"
 readme = "README.md"
 authors = [{ name = "IBM Corp." }]
 maintainers = [
+    { name = "Fred Araujo", email = "frederico.araujo@ibm.com" },
     { name = "Tomas Dvorak", email = "toomas2d@gmail.com" },
     { name = "Lukáš Janeček", email = "xjacka@gmail.com" },
     { name = "Anton Puzanov", email = "antonp@il.ibm.com" }
@@ -18,8 +19,8 @@ documentation = "https://i-am-bee.github.io/beeai-framework/#/python/"
 
 [tool.poetry.dependencies]
 python = ">= 3.11,<3.14"
-a2a-sdk = {version = "^0.3.2", optional = true, extras = ["telemetry"]}
-acp-sdk = {version = "^1.0.0", optional = true}
+a2a-sdk = {version = "^0.3.4", optional = true, extras = ["telemetry", "grpc"]}
+acp-sdk = {version = "^1.0.3", optional = true}
 aiofiles = "^24.1.0"
 boto3 = {version = "^1.37.5", optional = true}
 cachetools = "^5.5.2"
@@ -40,9 +41,12 @@ pydantic-settings = "^2.9.0"
 requests = "^2.32"
 unstructured = {version = "^0.17.2", optional = true}
 uvicorn = {version = "^0.35.0", optional = true}
+types-grpcio = {version = "1.0.0.20250703", optional = true}
+types-grpcio-reflection = {version = "1.0.0.20250506", optional = true}
 wikipedia-api = {version = "^0.8.1", optional = true}
-beeai-sdk = {version = "^0.3.2", optional = true}
+beeai-sdk = {version = "^0.3.3", optional = true}
 langgraph-prebuilt = {version = "^0.6.4", optional = true}
+deprecated = "^1.2.18"
 
 [tool.poetry.group.dev.dependencies]
 commitizen = "^4.2.1"
@@ -64,6 +68,7 @@ types-chevron = "^0.14.2.20250103"
 types-PyYAML = "^6.0.12.20250402"
 types-requests = "^2.32.0.20241016"
 syrupy = "^4.9.1"
+types-deprecated = "^1.2.15.20250304"
 
 [tool.poetry.extras]
 local = ["transformers", "torch", "peft", "outlines"]
@@ -77,7 +82,7 @@ langchain = ["langchain-core", "langchain-community", "langchain-ollama"]
 rag = ["llama-index", "langchain-core", "langchain-community", "langchain-ollama", "markdown", "unstructured"]
 acp = ["acp-sdk", "uvicorn"]
 beeai-platform = ["beeai-sdk", "a2a-sdk", "uvicorn"]
-a2a = ["a2a-sdk", "uvicorn"]
+a2a = ["a2a-sdk", "uvicorn", "types-grpcio", "types-grpcio-reflection"]
 watsonx-orchestrate = ["uvicorn", "fastapi"]
 all = [
     "langchain-core",
