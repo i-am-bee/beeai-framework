@@ -10,10 +10,16 @@ from typing import Any, Literal
 
 from pydantic import BaseModel, Field
 
+from beeai_framework.agents import AgentOutput, AnyAgent
+from beeai_framework.agents.experimental import RequirementAgent
+from beeai_framework.agents.react import ReActAgent
+from beeai_framework.agents.tool_calling import ToolCallingAgent
+from beeai_framework.backend import Role
 from beeai_framework.serve import MemoryManager
 from beeai_framework.serve.errors import FactoryAlreadyRegisteredError
 from beeai_framework.tools.tool import AnyTool, Tool
 from beeai_framework.tools.types import ToolOutput
+from beeai_framework.utils.cloneable import Cloneable
 from beeai_framework.utils.funcs import identity
 from beeai_framework.utils.types import MaybeAsync
 
@@ -176,6 +182,31 @@ def _tool_factory(
 
 with contextlib.suppress(FactoryAlreadyRegisteredError):
     MCPServer.register_factory(Tool, _tool_factory)
+
+
+def _agent_factory(
+    agent: AnyAgent,
+) -> MCPNativeTool:
+    class Msg(BaseModel):
+        role: Role | str
+        result: str
+
+    async def run(input: str) -> Msg:
+        cloned_agent = await agent.clone() if isinstance(agent, Cloneable) else agent
+        result: AgentOutput = await cloned_agent.run(input)
+        return Msg(role=result.last_message.role, result=result.last_message.text)
+
+    return MCPNativeTool.from_function(run, name=agent.meta.name, description=agent.meta.description)
+
+
+with contextlib.suppress(FactoryAlreadyRegisteredError):
+    MCPServer.register_factory(RequirementAgent, _agent_factory)
+
+with contextlib.suppress(FactoryAlreadyRegisteredError):
+    MCPServer.register_factory(ToolCallingAgent, _agent_factory)
+
+with contextlib.suppress(FactoryAlreadyRegisteredError):
+    MCPServer.register_factory(ReActAgent, _agent_factory)
 
 with contextlib.suppress(FactoryAlreadyRegisteredError):
     MCPServer.register_factory(mcp_resources.Resource, identity)
