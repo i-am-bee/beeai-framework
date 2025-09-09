@@ -14,7 +14,7 @@ from beeai_framework.agents import AgentOutput, AnyAgent
 from beeai_framework.agents.experimental import RequirementAgent
 from beeai_framework.agents.react import ReActAgent
 from beeai_framework.agents.tool_calling import ToolCallingAgent
-from beeai_framework.backend import Role
+from beeai_framework.backend import AnyMessage, AssistantMessage, Role, SystemMessage, UserMessage
 from beeai_framework.serve import MemoryManager
 from beeai_framework.serve.errors import FactoryAlreadyRegisteredError
 from beeai_framework.tools.tool import AnyTool, Tool
@@ -189,12 +189,24 @@ def _agent_factory(
 ) -> MCPNativeTool:
     class Msg(BaseModel):
         role: Role | str
-        result: str
+        content: str
 
-    async def run(input: str) -> Msg:
+    async def run(input: str | list[Msg]) -> Msg:
         cloned_agent = await agent.clone() if isinstance(agent, Cloneable) else agent
-        result: AgentOutput = await cloned_agent.run(input)
-        return Msg(role=result.last_message.role, result=result.last_message.text)
+        message: list[AnyMessage] | str = (
+            [
+                AssistantMessage(m.content)
+                if m.role == Role.ASSISTANT
+                else SystemMessage(m.content)
+                if m.role == Role.SYSTEM
+                else UserMessage(m.content)
+                for m in input
+            ]
+            if isinstance(input, list)
+            else input
+        )
+        result: AgentOutput = await cloned_agent.run(message)
+        return Msg(role=result.last_message.role, content=result.last_message.text)
 
     return MCPNativeTool.from_function(run, name=agent.meta.name, description=agent.meta.description)
 
