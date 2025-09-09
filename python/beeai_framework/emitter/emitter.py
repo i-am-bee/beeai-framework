@@ -158,7 +158,13 @@ class Emitter:
         self, event: Matcher | None = None, callback: Callback | None = None, options: EmitterOptions | None = None
     ) -> None:
         """Removes all listeners based on the provided criteria.
-        If no criteria is provided, all listeners will be removed."""
+        If no criteria is provided, all listeners will be removed.
+
+        Args:
+            event: The name or pattern that the every event is tested against.
+            callback: Function to be called when the event is triggered.
+            options: Additional options for the event listener such as persistence, blocking, etc.
+        """
 
         for listener in list(self._listeners):
             if _match_listener(listener, matcher=event, callback=callback, options=options):

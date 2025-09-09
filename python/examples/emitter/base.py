@@ -20,6 +20,8 @@ async def main() -> None:
     await root.emit("start", {"id": 123})
     await root.emit("end", {"id": 123})
 
+    root.off(callback=handle_new_event)  # deregister a listener
+
 
 if __name__ == "__main__":
     try:
