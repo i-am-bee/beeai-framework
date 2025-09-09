@@ -74,7 +74,7 @@ async def main():
     )
 
     response = await agent.run("Hello! Can you help me?")
-    print(response.answer.text)
+    print(response.last_message.text)
 
 if __name__ == "__main__":
     asyncio.run(main())
@@ -99,7 +99,7 @@ async def main():
     )
 
     response = await agent.run("Hello! Can you help me?")
-    print(response.answer.text)
+    print(response.last_message.text)
 
 if __name__ == "__main__":
     asyncio.run(main())
@@ -157,13 +157,13 @@ async def main():
     # 2. Sliding Memory - keeps only recent messages
     agent_sliding = RequirementAgent(
         llm=ChatModel.from_name("ollama:granite3.3:8b"),
-        memory=SlidingMemory(size=10),  # Keep only last 10 messages
+        memory=SlidingMemory(SlidingMemoryConfig(size=10))
     )
     
     # 3. Token Memory - manages memory based on token count
     agent_token = RequirementAgent(
         llm=ChatModel.from_name("ollama:granite3.3:8b"),
-        memory=TokenMemory(max_tokens=2000),  # Keep conversation under 2000 tokens
+        memory=TokenMemory(max_tokens=2000,llm=ChatModel.from_name("ollama:granite3.3:8b")),  # Keep conversation under 2000 tokens
     )
     
     # Test different memory strategies
@@ -222,7 +222,7 @@ async def main():
 
     # Test the tools
     response = await agent.run("What's the current weather in New York and tell me about the history of the city?")
-    print(response.answer.text)
+    print(response.last_message.text)
 
 if __name__ == "__main__":
     asyncio.run(main())
@@ -307,7 +307,7 @@ Remember: Always be {{personality}} and use your available tools when needed."""
     )
     
     response = await agent.run("Tell me about quantum computing")
-    print(response.answer.text)
+    print(response.last_message.text)
 
 if __name__ == "__main__":
     asyncio.run(main())
@@ -355,7 +355,7 @@ async def main():
     )
     
     response = await agent.run("I'm planning a trip to Paris next month. Help me understand what to expect.")
-    print(response.answer.text)
+    print(response.last_message.text)
 
 if __name__ == "__main__":
     asyncio.run(main())
@@ -388,7 +388,7 @@ async def main():
     )
     
     response = await agent.run("What's the weather in Tokyo?")
-    print(response.answer.text)
+    print(response.last_message.text)
 
 if __name__ == "__main__":
     asyncio.run(main())
@@ -515,7 +515,7 @@ async def main():
     )
     
     response = await agent.run("What types of agents are available in BeeAI?")
-    print(response.answer.text)
+    print(response.last_message.text)
 
 if __name__ == "__main__":
     asyncio.run(main())
@@ -590,7 +590,7 @@ async def main():
     )
     
     response = await coordinator_agent.run("What's the weather in Paris and tell me about its history?")
-    print(response.answer.text)
+    print(response.last_message.text)
 
 if __name__ == "__main__":
     asyncio.run(main())
@@ -676,8 +676,7 @@ from beeai_framework.cache import UnconstrainedCache
 
 async def main():
     # Create a cached weather tool to avoid repeated API calls
-    weather_tool = OpenMeteoTool()
-    weather_tool.cache = UnconstrainedCache()
+    weather_tool = OpenMeteoTool(options={"cache": UnconstrainedCache()})
     
     agent = RequirementAgent(
         llm=ChatModel.from_name("ollama:granite3.3:8b"),
@@ -725,7 +724,7 @@ async def main():
         )
 
         response = await agent.run("What's the weather in Invalid-City-Name?")
-        print(response.answer.text)
+        print(response.last_message.text)
         
     except FrameworkError as e:
         print(f"Framework error occurred: {e.explain()}")
@@ -762,7 +761,7 @@ async def main():
 
     # Have a conversation
     response1 = await agent.run("My favorite color is blue")
-    print("Agent:", response1.answer.text)
+    print("Agent:", response1.last_message.text)
     
     # Save the agent's memory state
     memory_state = agent.memory.create_snapshot()
@@ -785,7 +784,7 @@ async def main():
     
     # In practice, you'd properly deserialize the messages
     response2 = await new_agent.run("What's my favorite color?")
-    print("New agent:", response2.answer.text)
+    print("New agent:", response2.last_message.text)
 
 if __name__ == "__main__":
     asyncio.run(main())
@@ -849,7 +848,7 @@ New Module: [Serve](https://framework.beeai.dev/modules/serve)
 
         # Runs HTTP server that registers to BeeAI platform
         server = BeeAIPlatformServer()
-        server.register()
+        server.register(agent)
         server.serve()
 
     if __name__ == "__main__":
