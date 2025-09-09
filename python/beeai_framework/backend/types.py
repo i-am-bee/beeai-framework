@@ -116,11 +116,12 @@ class ChatModelOutput(BaseModel):
                         messages_by_tool_call_id[chunk.id] = msg
                         filtered_chunks.append(chunk)
 
-                if not filtered_chunks:
-                    continue
-
                 msg.content.clear()
                 msg.content.extend(filtered_chunks)
+
+                if not filtered_chunks:
+                    # nothing to be processed
+                    continue
 
             if msg_id not in messages_by_id:
                 messages_by_id[msg_id] = [msg]
