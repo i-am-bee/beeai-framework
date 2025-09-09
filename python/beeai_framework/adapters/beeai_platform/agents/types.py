@@ -3,6 +3,7 @@
 
 
 try:
+    import a2a.client as a2a_client
     import a2a.types as a2a_types
 except ModuleNotFoundError as e:
     raise ModuleNotFoundError(
@@ -14,4 +15,4 @@ from beeai_framework.agents import AgentOutput
 
 
 class BeeAIPlatformAgentOutput(AgentOutput):
-    event: a2a_types.SendStreamingMessageResponse | a2a_types.SendMessageResponse
+    event: a2a_client.ClientEvent | a2a_types.Message

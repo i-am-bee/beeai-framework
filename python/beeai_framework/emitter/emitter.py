@@ -8,16 +8,14 @@ import re
 import uuid
 from collections.abc import Callable
 from datetime import UTC, datetime
-from typing import Any, TypeAlias
+from typing import Any, TypeAlias, overload
 
+from deprecated import deprecated
 from pydantic import BaseModel, ConfigDict, InstanceOf
 
 from beeai_framework.emitter.errors import EmitterError
 from beeai_framework.emitter.types import EmitterOptions, EventTrace
-from beeai_framework.emitter.utils import (
-    assert_valid_name,
-    assert_valid_namespace,
-)
+from beeai_framework.emitter.utils import assert_valid_name, assert_valid_namespace
 from beeai_framework.utils.asynchronous import ensure_async
 from beeai_framework.utils.types import MaybeAsync
 
@@ -126,53 +124,107 @@ class Emitter:
             cleanup()
         self._cleanups.clear()
 
-    def on(self, event: str, callback: Callback, options: EmitterOptions | None = None) -> CleanupFn:
-        return self.match(event, callback, options)
+    @overload
+    def on(
+        self, event: Matcher | None = None, callback: None = None, options: EmitterOptions | None = None
+    ) -> Callable[[Callback], Callback]: ...
+    @overload
+    def on(self, event: Matcher, callback: Callback, options: EmitterOptions | None = None) -> CleanupFn: ...
+    def on(
+        self, event: Matcher | None = None, callback: Callback | None = None, options: EmitterOptions | None = None
+    ) -> CleanupFn | Callable[[Callback], Callback]:
+        """Registers an event listener for all matched events. Can be used as a decorator.
 
+        Args:
+            event: The name or pattern that the every event is tested against.
+            callback: Function to be called when the event is triggered.
+            options: Additional options for the event listener such as persistence, blocking, etc.
+
+        Returns:
+            Either a cleanup function or a decorator function depending on the usage of the method.
+        """
+        if callback is None:
+
+            def decorator(fn: Callback) -> Callback:
+                name = event or str(fn.__name__).removeprefix("on_").removeprefix("handle_")
+                self._register(name, fn, options)
+                return fn
+
+            return decorator
+        else:
+            return self._register(event, callback, options)
+
+    def off(
+        self, event: Matcher | None = None, callback: Callback | None = None, options: EmitterOptions | None = None
+    ) -> None:
+        """Removes all listeners based on the provided criteria.
+        If no criteria is provided, all listeners will be removed.
+
+        Args:
+            event: The name or pattern that the every event is tested against.
+            callback: Function to be called when the event is triggered.
+            options: Additional options for the event listener such as persistence, blocking, etc.
+        """
+
+        for listener in list(self._listeners):
+            if _match_listener(listener, matcher=event, callback=callback, options=options):
+                self._listeners.remove(listener)
+
+    @deprecated(reason="Use `on` instead.")
     def match(self, matcher: Matcher, callback: Callback, options: EmitterOptions | None = None) -> CleanupFn:
-        def create_matcher() -> MatcherFn:
-            matchers: list[MatcherFn] = []
-            match_nested = options.match_nested if options else None
+        return self.on(matcher, callback, options)
 
-            if matcher == "*":
-                match_nested = False if match_nested is None else match_nested
-                matchers.append(lambda event: event.path == ".".join([*self.namespace, event.name]))
-            elif matcher == "*.*":
-                match_nested = True if match_nested is None else match_nested
-                matchers.append(lambda _: True)
-            elif isinstance(matcher, re.Pattern):
-                match_nested = True if match_nested is None else match_nested
-                matchers.append(lambda event: matcher.match(event.path) is not None)
-            elif callable(matcher):
-                match_nested = False if match_nested is None else match_nested
-                matchers.append(matcher)
-            elif isinstance(matcher, str):
-                if "." in matcher:
-                    match_nested = True if match_nested is None else match_nested
-                    matchers.append(lambda event: event.path == matcher)
-                else:
-                    match_nested = False if match_nested is None else match_nested
-                    matchers.append(
-                        lambda event: event.name == matcher and event.path == ".".join([*self.namespace, event.name])
-                    )
-            else:
-                raise EmitterError("Invalid matcher provided!")
+    def _register(
+        self, matcher: Matcher | None, callback: Callback, options: EmitterOptions | None = None
+    ) -> CleanupFn:
+        if not matcher:
+            raise ValueError("Cannot listen to events without specifying a matcher.")
 
-            if not match_nested:
-
-                def match_same_run(event: EventMeta) -> bool:
-                    return self.trace is None or (
-                        self.trace.run_id == event.trace.run_id if event.trace is not None else False
-                    )
-
-                matchers.insert(0, match_same_run)
-
-            return lambda event: all(match_fn(event) for match_fn in matchers)
-
-        listener = Listener(match=create_matcher(), raw=matcher, callback=callback, options=options)
+        listener = Listener(
+            match=self._create_matcher(matcher, options), raw=matcher, callback=callback, options=options
+        )
         self._listeners.add(listener)
 
         return lambda: self._listeners.remove(listener) if listener in self._listeners else None
+
+    def _create_matcher(self, matcher: Matcher, options: EmitterOptions | None) -> MatcherFn:
+        matchers: list[MatcherFn] = []
+        match_nested = options.match_nested if options else None
+
+        if matcher == "*":
+            match_nested = False if match_nested is None else match_nested
+            matchers.append(lambda event: event.path == ".".join([*self.namespace, event.name]))
+        elif matcher == "*.*":
+            match_nested = True if match_nested is None else match_nested
+            matchers.append(lambda _: True)
+        elif isinstance(matcher, re.Pattern):
+            match_nested = True if match_nested is None else match_nested
+            matchers.append(lambda event: matcher.match(event.path) is not None)
+        elif callable(matcher):
+            match_nested = False if match_nested is None else match_nested
+            matchers.append(matcher)
+        elif isinstance(matcher, str):
+            if "." in matcher:
+                match_nested = True if match_nested is None else match_nested
+                matchers.append(lambda event: event.path == matcher)
+            else:
+                match_nested = False if match_nested is None else match_nested
+                matchers.append(
+                    lambda event: event.name == matcher and event.path == ".".join([*self.namespace, event.name])
+                )
+        else:
+            raise EmitterError("Invalid matcher provided!")
+
+        if not match_nested:
+
+            def match_same_run(event: EventMeta) -> bool:
+                return self.trace is None or (
+                    self.trace.run_id == event.trace.run_id if event.trace is not None else False
+                )
+
+            matchers.insert(0, match_same_run)
+
+        return lambda event: all(match_fn(event) for match_fn in matchers)
 
     async def emit(self, name: str, value: Any) -> None:
         try:
@@ -232,3 +284,32 @@ class Emitter:
         cloned._cleanups = self._cleanups
         cloned._listeners = {listener.model_copy() for listener in self._listeners}
         return cloned
+
+
+def _match_listener(
+    listener: Listener,
+    *,
+    matcher: Matcher | None = None,
+    callback: Callback | None = None,
+    options: EmitterOptions | None = None,
+) -> bool:
+    if callback is not None and listener.callback is not callback:
+        return False
+
+    if options is not None and listener.options != options:
+        return False
+
+    if matcher is not None:
+        if type(matcher) is not type(listener.raw):
+            return False
+
+        if isinstance(matcher, re.Pattern) and isinstance(listener.raw, re.Pattern):
+            if matcher.pattern != listener.raw.pattern and matcher.flags != listener.raw.flags:
+                return False
+        elif callable(matcher) and callable(listener.raw):
+            if matcher is not listener.raw:
+                return False
+        elif matcher != listener.raw:
+            return False
+
+    return True

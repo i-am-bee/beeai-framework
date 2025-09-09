@@ -15,7 +15,7 @@ async def main() -> None:
 
     for prompt in reader:
         response = await llm.create(messages=[UserMessage(prompt)]).observe(
-            lambda emitter: emitter.match(
+            lambda emitter: emitter.on(
                 "*", lambda data, event: reader.write(f"LLM 🤖 (event: {event.name})", str(data))
             )
         )
