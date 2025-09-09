@@ -66,6 +66,7 @@ types-requests = "^2.32.0.20241016"
 syrupy = "^4.9.1"
 
 [tool.poetry.extras]
+local = ["transformers", "torch", "peft", "outlines"]
 huggingface = ["datasets", "transformers"]
 search = ["ddgs", "wikipedia-api"]
 duckduckgo = ["ddgs"]
@@ -93,7 +94,11 @@ all = [
     "fastapi",
     "llama-index",
     "beeai-sdk",
-    "langgraph-prebuilt"
+    "langgraph-prebuilt",
+    "transformers",
+    "torch",
+    "peft",
+    "outlines"
 ]
 
 
