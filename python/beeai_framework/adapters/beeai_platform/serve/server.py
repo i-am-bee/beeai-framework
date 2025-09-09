@@ -96,11 +96,13 @@ class BeeAIPlatformServer(
 
     def serve(self) -> None:
         self._setup_member()
-        self._server.run(**self._config.model_dump(exclude_none=True))
+        with contextlib.suppress(KeyboardInterrupt):
+            self._server.run(**self._config.model_dump(exclude_none=True))
 
     async def aserve(self) -> None:
         self._setup_member()
-        await self._server.serve(**self._config.model_dump(exclude_none=True))
+        with contextlib.suppress(KeyboardInterrupt):
+            await self._server.serve(**self._config.model_dump(exclude_none=True))
 
     @override
     def register(self, input: AnyAgentLike, **metadata: Unpack[BeeAIPlatformServerMetadata]) -> Self:
