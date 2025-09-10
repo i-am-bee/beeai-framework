@@ -16,7 +16,7 @@ def main() -> None:
         middlewares=[GlobalTrajectoryMiddleware()],
     )
 
-    MCPServer(config=MCPServerConfig(transport="sse")).register(agent).serve()
+    MCPServer(config=MCPServerConfig(transport="streamable-http")).register(agent).serve()
 
 
 if __name__ == "__main__":
