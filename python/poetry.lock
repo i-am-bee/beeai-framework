@@ -14,6 +14,7 @@ files = [
 ]
 
 [package.dependencies]
+fastapi = {version = ">=0.115.2", optional = true, markers = "extra == \"http-server\""}
 google-api-core = ">=1.26.0"
 grpcio = {version = ">=1.60", optional = true, markers = "extra == \"grpc\""}
 grpcio-reflection = {version = ">=1.7.0", optional = true, markers = "extra == \"grpc\""}
@@ -24,6 +25,8 @@ opentelemetry-api = {version = ">=1.33.0", optional = true, markers = "extra == 
 opentelemetry-sdk = {version = ">=1.33.0", optional = true, markers = "extra == \"telemetry\""}
 protobuf = ">=5.29.5"
 pydantic = ">=2.11.3"
+sse-starlette = {version = "*", optional = true, markers = "extra == \"http-server\""}
+starlette = {version = "*", optional = true, markers = "extra == \"http-server\""}
 
 [package.extras]
 encryption = ["cryptography (>=43.0.0)"]
@@ -461,19 +464,19 @@ lxml = ["lxml"]
 
 [[package]]
 name = "beeai-sdk"
-version = "0.3.2"
+version = "0.3.3"
 description = "BeeAI SDK"
 optional = true
 python-versions = ">=3.11"
 groups = ["main"]
 markers = "extra == \"beeai-platform\" or extra == \"all\""
 files = [
-    {file = "beeai_sdk-0.3.2-py3-none-any.whl", hash = "sha256:6948cc32e2038059f01a81cda618d6b33f8eaca0780b8fc7f37d829a3c80d4ba"},
-    {file = "beeai_sdk-0.3.2.tar.gz", hash = "sha256:1ce6be3204eb0592402307a81ca0d78962d800f57326b7f15b6b764064359efd"},
+    {file = "beeai_sdk-0.3.3-py3-none-any.whl", hash = "sha256:e4790f09bf6cec5c747c5b6cf6712fe7dd11ea7973295f8cfc1605ead7d345f0"},
+    {file = "beeai_sdk-0.3.3.tar.gz", hash = "sha256:65967ff78cbcd17709be5996e4956d417b531a3d996bd5c79db45d4aebc3f9d1"},
 ]
 
 [package.dependencies]
-a2a-sdk = ">=0.3.1,<0.4.0"
+a2a-sdk = ">=0.3.4,<0.4.0"
 anyio = ">=4.9.0"
 asyncclick = ">=8.1.8"
 fastapi = ">=0.116.1"
@@ -489,7 +492,6 @@ sse-starlette = ">=2.2.1"
 starlette = ">=0.47.2"
 tenacity = ">=9.1.2"
 uvicorn = ">=0.35.0"
-uvloop = ">=0.21.0"
 
 [[package]]
 name = "boto3"
@@ -1210,7 +1212,7 @@ description = "FastAPI framework, high performance, easy to learn, fast to code,
 optional = true
 python-versions = ">=3.8"
 groups = ["main"]
-markers = "extra == \"acp\" or extra == \"all\" or extra == \"watsonx-orchestrate\" or extra == \"beeai-platform\""
+markers = "extra == \"beeai-platform\" or extra == \"a2a\" or extra == \"all\" or extra == \"acp\" or extra == \"watsonx-orchestrate\""
 files = [
     {file = "fastapi-0.116.1-py3-none-any.whl", hash = "sha256:c46ac7c312df840f0c9e220f7964bada936781bc4e2e6eb71f1c4d7553786565"},
     {file = "fastapi-0.116.1.tar.gz", hash = "sha256:ed52cbf946abfd70c5a0dccb24673f0670deeb517a88b3544d03c2a6bf283143"},
@@ -6319,7 +6321,7 @@ description = "SSE plugin for Starlette"
 optional = true
 python-versions = ">=3.9"
 groups = ["main"]
-markers = "extra == \"mcp\" or extra == \"all\" or extra == \"beeai-platform\""
+markers = "extra == \"beeai-platform\" or extra == \"a2a\" or extra == \"all\" or extra == \"mcp\""
 files = [
     {file = "sse_starlette-2.4.1-py3-none-any.whl", hash = "sha256:08b77ea898ab1a13a428b2b6f73cfe6d0e607a7b4e15b9bb23e4a37b087fd39a"},
     {file = "sse_starlette-2.4.1.tar.gz", hash = "sha256:7c8a800a1ca343e9165fc06bbda45c78e4c6166320707ae30b416c42da070926"},
@@ -6341,7 +6343,7 @@ description = "The little ASGI library that shines."
 optional = true
 python-versions = ">=3.9"
 groups = ["main"]
-markers = "extra == \"acp\" or extra == \"all\" or extra == \"watsonx-orchestrate\" or extra == \"beeai-platform\" or extra == \"mcp\""
+markers = "extra == \"beeai-platform\" or extra == \"a2a\" or extra == \"all\" or extra == \"acp\" or extra == \"watsonx-orchestrate\" or extra == \"mcp\""
 files = [
     {file = "starlette-0.47.2-py3-none-any.whl", hash = "sha256:c5847e96134e5c5371ee9fac6fdf1a67336d5815e09eb2a01fdb57a351ef915b"},
     {file = "starlette-0.47.2.tar.gz", hash = "sha256:6ae9aa5db235e4846decc1e7b79c4f346adf41e9777aebeb49dfd09bbd7023d8"},
@@ -6911,7 +6913,7 @@ description = "Fast implementation of asyncio event loop on top of libuv"
 optional = true
 python-versions = ">=3.8.0"
 groups = ["main"]
-markers = "sys_platform != \"win32\" and sys_platform != \"cygwin\" and platform_python_implementation != \"PyPy\" and (extra == \"acp\" or extra == \"all\") or extra == \"beeai-platform\" or extra == \"all\""
+markers = "sys_platform != \"win32\" and sys_platform != \"cygwin\" and platform_python_implementation != \"PyPy\" and (extra == \"acp\" or extra == \"all\")"
 files = [
     {file = "uvloop-0.21.0-cp310-cp310-macosx_10_9_universal2.whl", hash = "sha256:ec7e6b09a6fdded42403182ab6b832b71f4edaf7f37a9a0e371a01db5f0cb45f"},
     {file = "uvloop-0.21.0-cp310-cp310-macosx_10_9_x86_64.whl", hash = "sha256:196274f2adb9689a289ad7d65700d37df0c0930fd8e4e743fa4834e850d7719d"},
@@ -7593,4 +7595,4 @@ wikipedia = ["wikipedia-api"]
 [metadata]
 lock-version = "2.1"
 python-versions = ">= 3.11,<3.14"
-content-hash = "ce905818440d361ba8f42a259b746ce5f16f29dc71e5b80bcd832d088ca46780"
+content-hash = "eda968f2cb3fd46d56e6fede9ce5d39435da60de8b1964304295605f215f5797"
