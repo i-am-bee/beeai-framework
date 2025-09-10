@@ -14,6 +14,7 @@ files = [
 ]
 
 [package.dependencies]
+fastapi = {version = ">=0.115.2", optional = true, markers = "extra == \"http-server\""}
 google-api-core = ">=1.26.0"
 grpcio = {version = ">=1.60", optional = true, markers = "extra == \"grpc\""}
 grpcio-reflection = {version = ">=1.7.0", optional = true, markers = "extra == \"grpc\""}
@@ -24,6 +25,8 @@ opentelemetry-api = {version = ">=1.33.0", optional = true, markers = "extra == 
 opentelemetry-sdk = {version = ">=1.33.0", optional = true, markers = "extra == \"telemetry\""}
 protobuf = ">=5.29.5"
 pydantic = ">=2.11.3"
+sse-starlette = {version = "*", optional = true, markers = "extra == \"http-server\""}
+starlette = {version = "*", optional = true, markers = "extra == \"http-server\""}
 
 [package.extras]
 encryption = ["cryptography (>=43.0.0)"]
@@ -1214,7 +1217,7 @@ description = "FastAPI framework, high performance, easy to learn, fast to code,
 optional = true
 python-versions = ">=3.8"
 groups = ["main"]
-markers = "extra == \"acp\" or extra == \"all\" or extra == \"watsonx-orchestrate\" or extra == \"beeai-platform\""
+markers = "extra == \"beeai-platform\" or extra == \"a2a\" or extra == \"all\" or extra == \"acp\" or extra == \"watsonx-orchestrate\""
 files = [
     {file = "fastapi-0.116.1-py3-none-any.whl", hash = "sha256:c46ac7c312df840f0c9e220f7964bada936781bc4e2e6eb71f1c4d7553786565"},
     {file = "fastapi-0.116.1.tar.gz", hash = "sha256:ed52cbf946abfd70c5a0dccb24673f0670deeb517a88b3544d03c2a6bf283143"},
@@ -6394,7 +6397,7 @@ description = "SSE plugin for Starlette"
 optional = true
 python-versions = ">=3.9"
 groups = ["main"]
-markers = "extra == \"mcp\" or extra == \"all\" or extra == \"beeai-platform\""
+markers = "extra == \"beeai-platform\" or extra == \"a2a\" or extra == \"all\" or extra == \"mcp\""
 files = [
     {file = "sse_starlette-3.0.2-py3-none-any.whl", hash = "sha256:16b7cbfddbcd4eaca11f7b586f3b8a080f1afe952c15813455b162edea619e5a"},
     {file = "sse_starlette-3.0.2.tar.gz", hash = "sha256:ccd60b5765ebb3584d0de2d7a6e4f745672581de4f5005ab31c3a25d10b52b3a"},
@@ -6416,7 +6419,7 @@ description = "The little ASGI library that shines."
 optional = true
 python-versions = ">=3.9"
 groups = ["main"]
-markers = "extra == \"acp\" or extra == \"all\" or extra == \"watsonx-orchestrate\" or extra == \"beeai-platform\" or extra == \"mcp\""
+markers = "extra == \"beeai-platform\" or extra == \"a2a\" or extra == \"all\" or extra == \"acp\" or extra == \"watsonx-orchestrate\" or extra == \"mcp\""
 files = [
     {file = "starlette-0.47.3-py3-none-any.whl", hash = "sha256:89c0778ca62a76b826101e7c709e70680a1699ca7da6b44d38eb0a7e61fe4b51"},
     {file = "starlette-0.47.3.tar.gz", hash = "sha256:6bc94f839cc176c4858894f1f8908f0ab79dfec1a6b8402f6da9be26ebea52e9"},
