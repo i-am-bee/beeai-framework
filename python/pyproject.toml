@@ -100,7 +100,6 @@ all = [
     "llama-index",
     "beeai-sdk",
     "langgraph-prebuilt",
-    "transformers",
     "torch",
     "peft",
     "outlines"

@@ -21,6 +21,12 @@ from transformers import (
 )
 
 from beeai_framework.adapters.litellm.utils import to_strict_json_schema
+from beeai_framework.adapters.local.backend.utils import (
+    CustomStoppingCriteria,
+    get_do_sample,
+    get_num_beams,
+    get_prompt_chat_history,
+)
 from beeai_framework.backend.chat import ChatModel, ChatModelKwargs, T
 from beeai_framework.backend.constants import ProviderName
 from beeai_framework.backend.message import (
@@ -31,7 +37,6 @@ from beeai_framework.backend.message import (
 from beeai_framework.backend.types import (
     ChatModelInput,
     ChatModelOutput,
-    ChatModelParameters,
     ChatModelStructureInput,
     ChatModelStructureOutput,
 )
@@ -49,49 +54,6 @@ from beeai_framework.utils.dicts import (
 from beeai_framework.utils.strings import to_json
 
 logger = Logger(__name__)
-
-
-def get_do_sample(input: ChatModelParameters) -> bool:
-    return bool(
-        input.temperature > 0.0
-        or (input.top_k is not None and input.top_k > 1)
-        or input.top_p is not None
-        or (input.n is not None and input.n > 1)
-    )
-
-
-def get_num_beams(input: ChatModelParameters) -> int:
-    return input.n if input.n is not None else 1
-
-
-def get_prompt_chat_history(chat_history: list[dict[str, Any]]) -> str:
-    prompt_elements: list[str] = []
-    for turn in chat_history:
-        role = turn["role"].capitalize()
-        if "content" in turn:
-            text_elements: list[str] = []
-            for element in turn["content"]:
-                if (element["type"] == "text") and ("text" in element):
-                    text_elements.append(element["text"])
-            content = " ".join(text_elements)
-            prompt_elements.append(f"{role}: {content}")
-
-    prompt_elements.append("Assistant: ")
-
-    return "\n".join(prompt_elements)
-
-
-class CustomStoppingCriteria(StoppingCriteria):
-    def __init__(self, stop_token_id: int, prompt_tokens: int) -> None:
-        super().__init__()
-        self.stop_token_id = stop_token_id
-        self.prompt_tokens = prompt_tokens
-
-    def __call__(self, input_ids: torch.LongTensor, scores: torch.FloatTensor, **kwargs: Any) -> bool:
-        if input_ids.shape[1] < self.prompt_tokens:
-            return False
-        # Stop if the last generated token is the specified stop_token_id
-        return input_ids[0][-1] == self.stop_token_id  # type: ignore
 
 
 class LocalChatModel(ChatModel):
