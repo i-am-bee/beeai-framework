@@ -84,8 +84,8 @@ acp = ["acp-sdk", "uvicorn"]
 beeai-platform = ["beeai-sdk", "a2a-sdk", "uvicorn"]
 a2a = ["a2a-sdk", "uvicorn", "types-grpcio", "types-grpcio-reflection"]
 watsonx-orchestrate = ["uvicorn", "fastapi"]
-vertexai = ["google-auth"]
 bedrock = ["boto3"]
+vertexai = ["google-auth"]
 all = [
     "langchain-core",
     "langchain-community",
