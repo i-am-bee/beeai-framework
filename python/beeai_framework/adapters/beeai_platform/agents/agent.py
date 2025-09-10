@@ -1,14 +1,26 @@
 # Copyright 2025 © BeeAI a Series of LF Projects, LLC
 # SPDX-License-Identifier: Apache-2.0
 
-from typing import Unpack
+from typing import Any, Unpack
 
 import httpx
 
 try:
     import a2a.types as a2a_types
+    from beeai_sdk.a2a.extensions import (
+        EmbeddingFulfillment,
+        EmbeddingServiceExtensionClient,
+        EmbeddingServiceExtensionSpec,
+        LLMFulfillment,
+        LLMServiceExtensionClient,
+        LLMServiceExtensionSpec,
+    )
+    from beeai_sdk.platform import ModelProvider
+    from beeai_sdk.platform.context import Context, ContextPermissions, Permissions
+    from beeai_sdk.platform.model_provider import ModelCapability
 
     from beeai_framework.adapters.a2a.agents import A2AAgent, A2AAgentErrorEvent, A2AAgentUpdateEvent
+
 except ModuleNotFoundError as e:
     raise ModuleNotFoundError(
         "Optional module [beeai-platform] not found.\nRun 'pip install \"beeai-framework[beeai-platform]\"' to install."
@@ -61,8 +73,11 @@ class BeeAIPlatformAgent(BaseAgent[BeeAIPlatformAgentOutput]):
                     BeeAIPlatformAgentErrorEvent(message=data.message),
                 )
 
+            message = self._agent._convert_to_a2a_message(input)
+            message.metadata = await self._get_metadata()
+
             response = await (
-                self._agent.run(input, signal=kwargs.get("signal", AbortSignal()))
+                self._agent.run(message, signal=kwargs.get("signal", AbortSignal()))
                 .on("update", update_event)
                 .on("error", error_event)
             )
@@ -79,6 +94,61 @@ class BeeAIPlatformAgent(BaseAgent[BeeAIPlatformAgentOutput]):
         except Exception as e:
             raise AgentError("Can't connect to beeai platform agent.", cause=e)
 
+    async def _get_metadata(self) -> dict[str, Any] | None:
+        if not self._agent.agent_card:
+            await self._agent.check_agent_exists()
+
+        if self._agent.agent_card is None:
+            raise AgentError("Agent card is empty.")
+
+        context = await Context.create()
+        context_token = await context.generate_token(
+            grant_global_permissions=Permissions(llm={"*"}, embeddings={"*"}, a2a_proxy={"*"}),
+            grant_context_permissions=ContextPermissions(files={"*"}, vector_stores={"*"}),
+        )
+        llm_spec = LLMServiceExtensionSpec.from_agent_card(self._agent.agent_card)
+        embedding_spec = EmbeddingServiceExtensionSpec.from_agent_card(self._agent.agent_card)
+
+        metadata = (
+            LLMServiceExtensionClient(llm_spec).fulfillment_metadata(
+                llm_fulfillments={
+                    key: LLMFulfillment(
+                        api_base="{platform_url}/api/v1/openai/",
+                        api_key=context_token.token.get_secret_value(),
+                        api_model=(
+                            await ModelProvider.match(
+                                suggested_models=demand.suggested,
+                                capability=ModelCapability.LLM,
+                            )
+                        )[0].model_id,
+                    )
+                    for key, demand in llm_spec.params.llm_demands.items()
+                }
+            )
+            if llm_spec
+            else {}
+        ) | (
+            EmbeddingServiceExtensionClient(embedding_spec).fulfillment_metadata(
+                embedding_fulfillments={
+                    key: EmbeddingFulfillment(
+                        api_base="{platform_url}/api/v1/openai/",
+                        api_key=context_token.token.get_secret_value(),
+                        api_model=(
+                            await ModelProvider.match(
+                                suggested_models=demand.suggested,
+                                capability=ModelCapability.EMBEDDING,
+                            )
+                        )[0].model_id,
+                    )
+                    for key, demand in embedding_spec.params.embedding_demands.items()
+                }
+            )
+            if embedding_spec
+            else {}
+        )
+
+        return metadata
+
     @classmethod
     async def from_platform(cls, url: str, memory: BaseMemory) -> list["BeeAIPlatformAgent"]:
         async with httpx.AsyncClient() as client:
@@ -94,7 +164,7 @@ class BeeAIPlatformAgent(BaseAgent[BeeAIPlatformAgentOutput]):
 
     def _create_emitter(self) -> Emitter:
         return Emitter.root().child(
-            namespace=["beeai_platform", "agent", to_safe_word(self._agent._name)],
+            namespace=["beeai_platform", "agent", to_safe_word(self._agent.name)],
             creator=self,
             events=beeai_platform_agent_event_types,
         )

@@ -57,25 +57,20 @@ class A2AAgent(BaseAgent[A2AAgentOutput]):
         self,
         *,
         url: str | None = None,
-        agent_card_url: str | None = None,
         agent_card: a2a_types.AgentCard | None = None,
         memory: BaseMemory,
         grpc_client_credentials: grpc.ChannelCredentials | None = None,
     ) -> None:
         super().__init__()
-        self._agent_card_url = agent_card_url
         if agent_card:
-            self._name: str = agent_card.name
-            self._url: str = agent_card.url
+            self._agent_card: a2a_types.AgentCard | None = agent_card
         elif url:
-            self._name = f"agent_{url.split(':')[-1]}"
             self._url = url
         else:
             raise ValueError("Either url or agent_card must be provided.")
         if not memory.is_empty():
             raise ValueError("Memory must be empty before setting.")
         self._memory: BaseMemory = memory
-        self._agent_card: a2a_types.AgentCard | None = agent_card
         self._context_id: str | None = None
         self._task_id: str | None = None
         self._reference_task_ids: list[str] = []
@@ -83,7 +78,7 @@ class A2AAgent(BaseAgent[A2AAgentOutput]):
 
     @property
     def name(self) -> str:
-        return self._name
+        return self._agent_card.name if self._agent_card else f"agent_{self._url.split(':')[-1]}"
 
     @runnable_entry
     async def run(
@@ -96,22 +91,14 @@ class A2AAgent(BaseAgent[A2AAgentOutput]):
             self._reference_task_ids.clear()
 
         context = RunContext.get()
+
+        if self._agent_card is None:
+            await self._load_agent_card()
+
+        if self._agent_card is None:
+            raise AgentError("Agent card is empty.")
+
         async with httpx.AsyncClient() as httpx_client:
-            card_resolver = a2a_client.A2ACardResolver(httpx_client, self._agent_card_url or self._url)
-
-            # get agent card
-            try:
-                self._agent_card = await card_resolver.get_agent_card()
-            except Exception as e:
-                raise RuntimeError("Failed to fetch the public agent card. Cannot continue.") from e
-
-            if self._agent_card.supports_authenticated_extended_card:
-                logger.warning("\nPublic card supports authenticated extended card but this is not supported yet.")
-
-            if not self._agent_card:
-                card_resolver = a2a_client.A2ACardResolver(httpx_client, self._agent_card_url or self._url)
-                self._agent_card = await card_resolver.get_agent_card()
-
             # create client
             client: a2a_client.Client = a2a_client.ClientFactory(
                 config=a2a_client.ClientConfig(
@@ -130,6 +117,9 @@ class A2AAgent(BaseAgent[A2AAgentOutput]):
                     ],
                 )
             ).create(self._agent_card)
+
+            if self._agent_card.supports_authenticated_extended_card:
+                self._agent_card = await client.get_card()
 
             last_event: a2a_client.ClientEvent | a2a_types.Message | None = None
             messages: list[a2a_types.Message] = []
@@ -201,22 +191,29 @@ class A2AAgent(BaseAgent[A2AAgentOutput]):
                     cause=err,
                 )
 
-    async def check_agent_exists(self) -> None:
+    async def _load_agent_card(self) -> None:
         try:
             async with httpx.AsyncClient() as httpx_client:
-                card_resolver = a2a_client.A2ACardResolver(httpx_client, self._agent_card_url or self._url)
-                agent_card = await card_resolver.get_agent_card()
-                if not agent_card:
-                    raise AgentError(f"Agent {self._name} does not exist.")
+                card_resolver = a2a_client.A2ACardResolver(httpx_client, self._url)
+                self._agent_card = await card_resolver.get_agent_card()
         except Exception as e:
-            raise AgentError("Can't connect to ACP agent.", cause=e)
+            raise AgentError("Can't load agent card.", cause=e)
+
+    async def check_agent_exists(self) -> None:
+        await self._load_agent_card()
+        if not self._agent_card:
+            raise AgentError(f"Agent {self.name} does not exist.")
 
     def _create_emitter(self) -> Emitter:
         return Emitter.root().child(
-            namespace=["a2a", "agent", to_safe_word(self._name)],
+            namespace=["a2a", "agent", to_safe_word(self.name)],
             creator=self,
             events=a2a_agent_event_types,
         )
+
+    @property
+    def agent_card(self) -> a2a_types.AgentCard | None:
+        return self._agent_card
 
     @property
     def memory(self) -> BaseMemory:
@@ -231,7 +228,6 @@ class A2AAgent(BaseAgent[A2AAgentOutput]):
     async def clone(self) -> "A2AAgent":
         cloned = A2AAgent(
             url=self._url,
-            agent_card_url=self._agent_card_url,
             agent_card=self._agent_card,
             memory=await self.memory.clone(),
         )
