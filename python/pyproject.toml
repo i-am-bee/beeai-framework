@@ -102,8 +102,8 @@ all = [
     "llama-index",
     "beeai-sdk",
     "langgraph-prebuilt",
-    "google-auth",
-    "boto3"
+    "boto3",
+    "google-auth"
 ]
 
 
