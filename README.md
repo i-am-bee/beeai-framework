@@ -42,7 +42,7 @@ BeeAI Framework is a comprehensive toolkit for building intelligent, autonomous 
 
 | Feature | Description |
 |---------|-------------|
-| 🤖 [**Requirement Agent**](https://framework.beeai.dev/modules/agents) | Create predictable, controlled behavior across different LLMs by setting rules the agent must follow.  |
+| 🤖 [**Requirement Agent**](https://framework.beeai.dev/modules/agents) | Create predictable, controlled behavior across different LLMs by setting rules the agent must follow. |
 | 🤖 [**Agents**](https://framework.beeai.dev/modules/agents) | Create intelligent agents that can reason, act, and adapt |
 | 🔌 [**Backend**](https://framework.beeai.dev/modules/backend) | Connect to any LLM provider with unified interfaces |
 | 🔧 [**Tools**](https://framework.beeai.dev/modules/tools) | Extend agents with built in tools (web search, weather, code execution, and more) or custom tools |
