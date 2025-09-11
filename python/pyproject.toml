@@ -27,6 +27,7 @@ cachetools = "^5.5.2"
 chevron = "^0.14.0"
 ddgs = { version="^9.3.1", optional = true }
 fastapi = {version = "^0.116.0", optional = true }
+google-auth = { version = ">=2.14,<3.0.0", optional = true }
 json-repair = "^0.39.0"
 jsonref = "^1.1.0"
 langchain-community = {version = "^0.3.19", optional = true}
@@ -83,6 +84,8 @@ acp = ["acp-sdk", "uvicorn"]
 beeai-platform = ["beeai-sdk", "a2a-sdk", "uvicorn"]
 a2a = ["a2a-sdk", "uvicorn", "types-grpcio", "types-grpcio-reflection"]
 watsonx-orchestrate = ["uvicorn", "fastapi"]
+bedrock = ["boto3"]
+vertexai = ["google-auth"]
 all = [
     "langchain-core",
     "langchain-community",
@@ -98,7 +101,9 @@ all = [
     "fastapi",
     "llama-index",
     "beeai-sdk",
-    "langgraph-prebuilt"
+    "langgraph-prebuilt",
+    "boto3",
+    "google-auth"
 ]
 
 
