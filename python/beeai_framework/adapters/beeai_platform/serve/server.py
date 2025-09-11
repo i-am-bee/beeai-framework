@@ -10,7 +10,6 @@ from typing_extensions import TypedDict, TypeVar, Unpack, override
 
 from beeai_framework.adapters.beeai_platform.backend.chat import BeeAIPlatformChatModel
 from beeai_framework.adapters.beeai_platform.serve.io import BeeAIPlatformIOContext
-from beeai_framework.adapters.openai import OpenAIChatModel
 from beeai_framework.agents.experimental import RequirementAgent
 from beeai_framework.agents.experimental.events import RequirementAgentSuccessEvent
 from beeai_framework.agents.react import ReActAgent, ReActAgentUpdateEvent
@@ -248,8 +247,8 @@ def _requirement_agent_factory(
             if not llm_conf:
                 raise ValueError("BeeAIPlatform not provided llm configuration")
 
-            cloned_agent._llm = OpenAIChatModel(
-                model_id=llm_conf.api_model,
+            cloned_agent.llm = BeeAIPlatformChatModel(
+                model_ids=[llm_conf.api_model],
                 api_key=llm_conf.api_key,
                 base_url=llm_conf.api_base,
             )
