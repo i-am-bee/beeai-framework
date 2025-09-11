@@ -98,8 +98,7 @@ class BeeAIPlatformAgent(BaseAgent[BeeAIPlatformAgentOutput]):
         if not self._agent.agent_card:
             await self._agent.check_agent_exists()
 
-        if self._agent.agent_card is None:
-            raise AgentError("Agent card is empty.")
+        assert self._agent.agent_card is not None, "Agent card should not be empty after loading."
 
         context = await Context.create()
         context_token = await context.generate_token(

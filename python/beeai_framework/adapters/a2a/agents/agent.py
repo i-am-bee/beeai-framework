@@ -95,8 +95,7 @@ class A2AAgent(BaseAgent[A2AAgentOutput]):
         if self._agent_card is None:
             await self._load_agent_card()
 
-        if self._agent_card is None:
-            raise AgentError("Agent card is empty.")
+        assert self._agent_card is not None, "Agent card should not be empty after loading."
 
         async with httpx.AsyncClient() as httpx_client:
             # create client
