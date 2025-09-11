@@ -6,25 +6,24 @@ from typing import Unpack
 from uuid import uuid4
 
 import httpx
-from a2a.types import TransportProtocol
 
 from beeai_framework.adapters.a2a.agents._utils import convert_a2a_to_framework_message
+from beeai_framework.adapters.a2a.agents.events import (
+    A2AAgentErrorEvent,
+    A2AAgentUpdateEvent,
+    a2a_agent_event_types,
+)
+from beeai_framework.adapters.a2a.agents.types import (
+    A2AAgentOutput,
+)
 from beeai_framework.backend import UserMessage
 from beeai_framework.utils.strings import to_safe_word
 
 try:
     import a2a.client as a2a_client
     import a2a.types as a2a_types
+    import a2a.utils as a2a_utils
     import grpc
-
-    from beeai_framework.adapters.a2a.agents.events import (
-        A2AAgentErrorEvent,
-        A2AAgentUpdateEvent,
-        a2a_agent_event_types,
-    )
-    from beeai_framework.adapters.a2a.agents.types import (
-        A2AAgentOutput,
-    )
 except ModuleNotFoundError as e:
     raise ModuleNotFoundError(
         "Optional module [a2a] not found.\nRun 'pip install \"beeai-framework[a2a]\"' to install."
@@ -57,6 +56,7 @@ class A2AAgent(BaseAgent[A2AAgentOutput]):
         self,
         *,
         url: str | None = None,
+        agent_card_path: str = a2a_utils.AGENT_CARD_WELL_KNOWN_PATH,
         agent_card: a2a_types.AgentCard | None = None,
         memory: BaseMemory,
         grpc_client_credentials: grpc.ChannelCredentials | None = None,
@@ -70,6 +70,8 @@ class A2AAgent(BaseAgent[A2AAgentOutput]):
             raise ValueError("Either url or agent_card must be provided.")
         if not memory.is_empty():
             raise ValueError("Memory must be empty before setting.")
+
+        self._agent_card_path = agent_card_path
         self._memory: BaseMemory = memory
         self._context_id: str | None = None
         self._task_id: str | None = None
@@ -110,9 +112,9 @@ class A2AAgent(BaseAgent[A2AAgentOutput]):
                         else grpc.aio.insecure_channel(url)
                     ),
                     supported_transports=[
-                        TransportProtocol.jsonrpc,
-                        TransportProtocol.grpc,
-                        TransportProtocol.http_json,
+                        a2a_types.TransportProtocol.jsonrpc,
+                        a2a_types.TransportProtocol.grpc,
+                        a2a_types.TransportProtocol.http_json,
                     ],
                 )
             ).create(self._agent_card)
@@ -193,7 +195,9 @@ class A2AAgent(BaseAgent[A2AAgentOutput]):
     async def _load_agent_card(self) -> None:
         try:
             async with httpx.AsyncClient() as httpx_client:
-                card_resolver = a2a_client.A2ACardResolver(httpx_client, self._url)
+                card_resolver = a2a_client.A2ACardResolver(
+                    httpx_client, self._url, agent_card_path=self._agent_card_path
+                )
                 self._agent_card = await card_resolver.get_agent_card()
         except Exception as e:
             raise AgentError("Can't load agent card.", cause=e)
@@ -227,8 +231,10 @@ class A2AAgent(BaseAgent[A2AAgentOutput]):
     async def clone(self) -> "A2AAgent":
         cloned = A2AAgent(
             url=self._url,
+            agent_card_path=self._agent_card_path,
             agent_card=self._agent_card,
             memory=await self.memory.clone(),
+            grpc_client_credentials=self._grpc_client_credentials,
         )
         cloned.emitter = await self.emitter.clone()
         return cloned
