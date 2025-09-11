@@ -5,7 +5,7 @@ icon: "robot"
 
 ## Overview
 
-An **AI Agent** is a system built on language models (LLMs or SLMs) that can solve complex tasks through structured reasoning and autonomous or human assisted actions. The BeeAI Framework serves as the orchestration layer that enables agents to do this and more:
+An **AI Agent** is a system built on language models (LLMs or SLMs) that can solve complex tasks through structured reasoning and autonomous or human-assisted actions. The BeeAI Framework serves as the orchestration layer that enables agents to do this and more:
 
 - Coordinate with LLMs: Manages communication between your agent and language models
 - Tool Management: Provides agents with access to external tools and handles their execution
@@ -98,10 +98,10 @@ COMING SOON
 - `role`: Defines the agent's persona and primary function
 - `instructions`: List of specific behavioral guidelines 
 - `notes`: Additional context or special considerations
-- `name` and `description`: Help identify the agent's purpose and are helpful when using the `HandoffTool` , `Serve` module, and when you need to access agent metadata via `agent.meta`
+- `name` and `description`: Help identify the agent's purpose and are helpful when using the `HandoffTool`, `Serve` module, and when you need to access agent metadata via `agent.meta`
 
 
-Setting instructions, notes, role will be integrated into the framework provided system prompt template.  If you want to completely override the framework provided system prompt template, you can provide a custom [prompt template](./templates) 
+Setting instructions, notes, role will be integrated into the framework provided system prompt template.  If you want to completely override the framework provided system prompt template, you can provide a custom [prompt template](./templates). 
 
 ### 3. Configuring Agent Run Options
 When executing an agent, you can provide additional options to guide its behavior and execution settings:
@@ -283,7 +283,7 @@ print(f"Final Answer: {response.answer.text}")
 ### ReAct Agent
 
 <Tip>
-The ReAct Agent is available in both python and type script, but no longer actively supported in Python.
+The ReAct Agent is available in both Python and TypeScript, but no longer actively supported in Python.
 </Tip>
 
 
@@ -576,7 +576,7 @@ try {
 ### Tool Calling Agent
 
 <Tip>
-The Tool Calling Agent is available in both python and type script, but no longer actively supported in Python.
+The Tool Calling Agent is available in both Python and TypeScript, but no longer actively supported in Python.
 </Tip>
 
 The ToolCallingAgent is optimized for scenarios where tool usage is the primary focus. It handles tool calls more efficiently and can execute multiple tools in parallel.
@@ -959,7 +959,7 @@ console.info(response.state);
 
 <Warning>
 <strong>Upcoming change:</strong><br />
-Workflows are under construction to support more dynamic multi-agent patterns. If you'd like to participate in shaping the vision, contribute to this [V2 Workflow Proposal](https://github.com/i-am-bee/beeai-framework/discussions/1005) github discussion.
+Workflows are under construction to support more dynamic multi-agent patterns. If you'd like to participate in shaping the vision, contribute to the discussion in this [V2 Workflow Proposal](https://github.com/i-am-bee/beeai-framework/discussions/1005).
 </Warning>
 
 For complex applications, you can create multi-agent workflows where specialized agents collaborate.
