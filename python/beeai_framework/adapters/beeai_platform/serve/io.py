@@ -4,10 +4,15 @@
 from collections.abc import Callable
 from typing import Annotated, Any, Self
 
-from beeai_sdk.a2a.extensions import FormExtensionServer, FormExtensionSpec, FormRender, TextField
-from beeai_sdk.server.context import RunContext
-
 from beeai_framework.utils.io import setup_io_context
+
+try:
+    from beeai_sdk.a2a.extensions import FormExtensionServer, FormExtensionSpec, FormRender, TextField
+    from beeai_sdk.server.context import RunContext
+except ModuleNotFoundError as e:
+    raise ModuleNotFoundError(
+        "Optional module [beeai-platform] not found.\nRun 'pip install \"beeai-framework[beeai-platform]\"' to install."
+    ) from e
 
 
 class BeeAIPlatformIOContext:
@@ -27,6 +32,7 @@ class BeeAIPlatformIOContext:
         self._cleanup = lambda: None
 
     async def _read(self, prompt: str) -> str:
+        answer_field_id = "answer"
         form_data = await self._form.request_form(
             form=FormRender(
                 id="form",
@@ -36,7 +42,7 @@ class BeeAIPlatformIOContext:
                 submit_label="Send",
                 fields=[
                     TextField(
-                        id="answer",
+                        id=answer_field_id,
                         label="Answer",
                         required=True,
                         placeholder="",
@@ -47,4 +53,4 @@ class BeeAIPlatformIOContext:
                 ],
             )
         )
-        return form_data.values["answer"].value
+        return form_data.values[answer_field_id].value
