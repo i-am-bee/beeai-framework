@@ -8,7 +8,9 @@ from typing import Annotated, Self
 from pydantic import BaseModel
 from typing_extensions import TypedDict, TypeVar, Unpack, override
 
+from beeai_framework.adapters.beeai_platform.backend.chat import BeeAIPlatformChatModel
 from beeai_framework.adapters.beeai_platform.serve.io import BeeAIPlatformIOContext
+from beeai_framework.adapters.openai import OpenAIChatModel
 from beeai_framework.agents.experimental import RequirementAgent
 from beeai_framework.agents.experimental.events import RequirementAgentSuccessEvent
 from beeai_framework.agents.react import ReActAgent, ReActAgentUpdateEvent
@@ -225,13 +227,33 @@ with contextlib.suppress(FactoryAlreadyRegisteredError):
 def _requirement_agent_factory(
     agent: RequirementAgent, *, metadata: BeeAIPlatformServerMetadata | None = None, memory_manager: MemoryManager
 ) -> beeai_agent.Agent:
+    llm = agent.llm
+    models = llm.model_ids if isinstance(llm, BeeAIPlatformChatModel) else []
+
     async def run(
         message: a2a_types.Message,
         context: beeai_context.RunContext,
         trajectory: Annotated[beeai_extensions.TrajectoryExtensionServer, beeai_extensions.TrajectoryExtensionSpec()],
         citation: Annotated[beeai_extensions.CitationExtensionServer, beeai_extensions.CitationExtensionSpec()],
+        llm_ext: Annotated[
+            beeai_extensions.LLMServiceExtensionServer,
+            beeai_extensions.LLMServiceExtensionSpec.single_demand(suggested=tuple(models)),
+        ],
     ) -> AsyncGenerator[beeai_types.RunYield, beeai_types.RunYieldResume]:
         cloned_agent = await agent.clone() if isinstance(agent, Cloneable) else agent
+        if isinstance(cloned_agent.llm, BeeAIPlatformChatModel):
+            llm_conf = None
+            if llm_ext and llm_ext.data:
+                [llm_conf] = llm_ext.data.llm_fulfillments.values()
+            if not llm_conf:
+                raise ValueError("BeeAIPlatform not provided llm configuration")
+
+            cloned_agent._llm = OpenAIChatModel(
+                model_id=llm_conf.api_model,
+                api_key=llm_conf.api_key,
+                base_url=llm_conf.api_base,
+            )
+
         await init_agent_memory(cloned_agent, memory_manager, context.context_id)
 
         with BeeAIPlatformIOContext(context):
