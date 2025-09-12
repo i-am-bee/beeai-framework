@@ -1,6 +1,6 @@
+from beeai_framework.adapters.beeai_platform.backend.chat import BeeAIPlatformChatModel
 from beeai_framework.adapters.beeai_platform.serve.server import BeeAIPlatformServer
 from beeai_framework.agents.experimental import RequirementAgent
-from beeai_framework.backend import ChatModel
 from beeai_framework.memory import UnconstrainedMemory
 from beeai_framework.middleware.trajectory import GlobalTrajectoryMiddleware
 from beeai_framework.tools.search.duckduckgo import DuckDuckGoSearchTool
@@ -15,9 +15,8 @@ except ModuleNotFoundError as e:
 
 
 def main() -> None:
-    llm = ChatModel.from_name("ollama:granite3.3:8b")
     agent = RequirementAgent(
-        llm=llm,
+        llm=BeeAIPlatformChatModel(preferred_models=["ollama/granite3.3:8b", "openai/gpt-5"]),
         tools=[DuckDuckGoSearchTool(), OpenMeteoTool()],
         memory=UnconstrainedMemory(),
         middlewares=[GlobalTrajectoryMiddleware()],
