@@ -1,14 +1,15 @@
 # Copyright 2025 © BeeAI a Series of LF Projects, LLC
 # SPDX-License-Identifier: Apache-2.0
-
+import contextlib
 from typing import ClassVar
 
 from dotenv import load_dotenv
 from typing_extensions import Unpack
 
 from beeai_framework.adapters.litellm.chat import LiteLLMChatModel
-from beeai_framework.backend.chat import ChatModelKwargs, ToolChoiceType
+from beeai_framework.backend.chat import ChatModel, ChatModelKwargs, ToolChoiceType
 from beeai_framework.backend.constants import ProviderName
+from beeai_framework.backend.utils import load_model
 from beeai_framework.logger import Logger
 
 logger = Logger(__name__)
@@ -31,6 +32,12 @@ class BeeAIPlatformChatModel(LiteLLMChatModel):
         **kwargs: Unpack[ChatModelKwargs],
     ) -> None:
         self.model_ids = model_ids
+
+        # Set provider specific configuration
+        with contextlib.suppress(Exception):
+            target_provider: type[ChatModel] = load_model(model_ids[0], "chat")
+            kwargs["tool_choice_support"] = target_provider.tool_choice_support
+
         super().__init__(
             model_ids[0],
             provider_id="openai",
