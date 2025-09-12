@@ -73,7 +73,7 @@ class BeeAIPlatformAgent(BaseAgent[BeeAIPlatformAgentOutput]):
                     BeeAIPlatformAgentErrorEvent(message=data.message),
                 )
 
-            message = self._agent._convert_to_a2a_message(input)
+            message = self._agent.convert_to_a2a_message(input)
             message.metadata = await self._get_metadata()
 
             response = await (
@@ -163,7 +163,7 @@ class BeeAIPlatformAgent(BaseAgent[BeeAIPlatformAgentOutput]):
 
     def _create_emitter(self) -> Emitter:
         return Emitter.root().child(
-            namespace=["beeai_platform", "agent", to_safe_word(self._agent.name)],
+            namespace=["beeai_platform", "agent", to_safe_word(self.name)],
             creator=self,
             events=beeai_platform_agent_event_types,
         )
@@ -177,6 +177,8 @@ class BeeAIPlatformAgent(BaseAgent[BeeAIPlatformAgentOutput]):
         self._agent.memory = memory
 
     async def clone(self) -> "BeeAIPlatformAgent":
-        cloned = BeeAIPlatformAgent(url=self._agent._url, memory=await self._agent.memory.clone())
+        cloned = BeeAIPlatformAgent(
+            url=self._agent._url, agent_card=self._agent.agent_card, memory=await self._agent.memory.clone()
+        )
         cloned.emitter = await self.emitter.clone()
         return cloned

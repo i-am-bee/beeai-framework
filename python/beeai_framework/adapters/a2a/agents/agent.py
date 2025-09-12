@@ -128,7 +128,7 @@ class A2AAgent(BaseAgent[A2AAgentOutput]):
 
             # send request
             try:
-                async for event in client.send_message(self._convert_to_a2a_message(input)):
+                async for event in client.send_message(self.convert_to_a2a_message(input)):
                     last_event = event
 
                     if isinstance(event, a2a_types.Message):
@@ -239,7 +239,7 @@ class A2AAgent(BaseAgent[A2AAgentOutput]):
         cloned.emitter = await self.emitter.clone()
         return cloned
 
-    def _convert_to_a2a_message(
+    def convert_to_a2a_message(
         self, input: str | list[AnyMessage] | AnyMessage | a2a_types.Message
     ) -> a2a_types.Message:
         if isinstance(input, str):
