@@ -27,15 +27,15 @@
           "modules/memory",
           "modules/rag",
           "modules/observability",
+          "modules/emitter",
+          "modules/serve",
           "modules/cache",
           "modules/logger",
-          "modules/emitter",
           "modules/events",
           "modules/serialization",
           "modules/errors",
           "modules/templates",
-          "modules/workflows",
-          "modules/serve"
+          "modules/workflows"
 
         ]
       },
