@@ -105,14 +105,6 @@ class RequirementAgent(BaseAgent[RequirementAgentOutput]):
         self._requirements = list(requirements or [])
         self._meta = AgentMeta(name=name or "", description=description or "", tools=self._tools)
 
-    @property
-    def llm(self) -> ChatModel:
-        return self._llm
-
-    @llm.setter
-    def llm(self, llm: ChatModel) -> None:
-        self._llm = llm
-
     @runnable_entry
     async def run(self, input: str | list[AnyMessage], /, **kwargs: Unpack[AgentOptions]) -> RequirementAgentOutput:
         """Execute the agent.

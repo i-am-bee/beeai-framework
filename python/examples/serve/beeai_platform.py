@@ -16,7 +16,7 @@ except ModuleNotFoundError as e:
 
 def main() -> None:
     agent = RequirementAgent(
-        llm=BeeAIPlatformChatModel(model_ids=["ollama/granite3.3:8b", "openai/gpt-5"]),
+        llm=BeeAIPlatformChatModel(preferred_models=["ollama/granite3.3:8b", "openai/gpt-5"]),
         tools=[DuckDuckGoSearchTool(), OpenMeteoTool()],
         memory=UnconstrainedMemory(),
         middlewares=[GlobalTrajectoryMiddleware()],
