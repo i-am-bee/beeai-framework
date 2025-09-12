@@ -83,7 +83,7 @@ class BeeAIPlatformAgent(BaseAgent[BeeAIPlatformAgentOutput]):
                 )
 
             message = self._agent.convert_to_a2a_message(input)
-            message.metadata = await self._get_metadata()
+            message.metadata = (message.metadata or {}) | await self._get_metadata()
 
             response = await self._agent.run(message, **kwargs).on("update", update_event).on("error", error_event)
 
@@ -99,7 +99,7 @@ class BeeAIPlatformAgent(BaseAgent[BeeAIPlatformAgentOutput]):
         except Exception as e:
             raise AgentError("Can't connect to beeai platform agent.", cause=e)
 
-    async def _get_metadata(self) -> dict[str, Any] | None:
+    async def _get_metadata(self) -> dict[str, Any]:
         if not self._agent.agent_card:
             await self._agent.check_agent_exists()
 
