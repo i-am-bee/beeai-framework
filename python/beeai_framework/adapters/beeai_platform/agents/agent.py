@@ -69,27 +69,26 @@ class BeeAIPlatformAgent(BaseAgent[BeeAIPlatformAgentOutput]):
             clear_context=kwargs.get("clear_context"),
         )
 
-        async def handler(context: RunContext) -> BeeAIPlatformAgentOutput:
-            async def update_event(data: A2AAgentUpdateEvent, event: EventMeta) -> None:
-                await context.emitter.emit(
-                    "update",
-                    BeeAIPlatformAgentUpdateEvent(value=data.value),
-                )
+        context = RunContext.get()
 
-            async def error_event(data: A2AAgentErrorEvent, event: EventMeta) -> None:
-                await context.emitter.emit(
-                    "error",
-                    BeeAIPlatformAgentErrorEvent(message=data.message),
-                )
+        async def update_event(data: A2AAgentUpdateEvent, event: EventMeta) -> None:
+            await context.emitter.emit(
+                "update",
+                BeeAIPlatformAgentUpdateEvent(value=data.value),
+            )
 
-            message = self._agent.convert_to_a2a_message(input)
-            message.metadata = (message.metadata or {}) | await self._get_metadata()
+        async def error_event(data: A2AAgentErrorEvent, event: EventMeta) -> None:
+            await context.emitter.emit(
+                "error",
+                BeeAIPlatformAgentErrorEvent(message=data.message),
+            )
 
-            response = await self._agent.run(message, **kwargs).on("update", update_event).on("error", error_event)
+        message = self._agent.convert_to_a2a_message(input)
+        message.metadata = (message.metadata or {}) | await self._get_metadata()
 
-            return BeeAIPlatformAgentOutput(output=response.output, event=response.event)
+        response = await self._agent.run(message, **kwargs).on("update", update_event).on("error", error_event)
 
-        return await handler(RunContext.get())
+        return BeeAIPlatformAgentOutput(output=response.output, event=response.event)
 
     async def check_agent_exists(
         self,
@@ -101,7 +100,7 @@ class BeeAIPlatformAgent(BaseAgent[BeeAIPlatformAgentOutput]):
 
     async def _get_metadata(self) -> dict[str, Any]:
         if not self._agent.agent_card:
-            await self._agent.check_agent_exists()
+            await self._agent._load_agent_card()
 
         assert self._agent.agent_card is not None, "Agent card should not be empty after loading."
 
