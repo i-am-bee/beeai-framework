@@ -3,13 +3,13 @@
 <h1>BeeAI Framework</h1>
 
 **Build production-ready multi-agent systems in <a href="https://github.com/i-am-bee/beeai-framework/tree/main/python">Python</a> or <a href="https://github.com/i-am-bee/beeai-framework/tree/main/typescript">TypeScript</a>.**
-
+[![Documentation](https://img.shields.io/badge/Documentation-Read%20the%20docs-2f7bb6?style=plastic&logo=readthedocs&logoColor=white)](https://framework.beeai.dev/introduction/welcome)
 [![Python library](https://img.shields.io/badge/Python-306998?style=plastic&logo=python&logoColor=white)](https://github.com/i-am-bee/beeai-framework/tree/main/python)
 [![Typescript library](https://img.shields.io/badge/TypeScript-2f7bb6?style=plastic&logo=typescript&logoColor=white)](https://github.com/i-am-bee/beeai-framework/tree/main/typescript)
 [![Apache 2.0](https://img.shields.io/badge/Apache%202.0-License-EA7826?style=plastic&logo=apache&logoColor=white)](https://github.com/i-am-bee/beeai-framework?tab=Apache-2.0-1-ov-file#readme)
-[![Follow on Bluesky](https://img.shields.io/badge/Follow%20on%20Bluesky-0285FF?style=plastic&logo=bluesky&logoColor=white)](https://bsky.app/profile/beeaiagents.bsky.social)
 [![Join our Discord](https://img.shields.io/badge/Join%20our%20Discord-7289DA?style=plastic&logo=discord&logoColor=white)](https://discord.com/invite/NradeA6ZNF)
 [![LF AI & Data](https://img.shields.io/badge/LF%20AI%20%26%20Data-0072C6?style=plastic&logo=linuxfoundation&logoColor=white)](https://lfaidata.foundation/projects/)
+[![Follow on Bluesky](https://img.shields.io/badge/Follow%20on%20Bluesky-0285FF?style=plastic&logo=bluesky&logoColor=white)](https://bsky.app/profile/beeaiagents.bsky.social)
 
 </div>
 
@@ -42,17 +42,18 @@ BeeAI Framework is a comprehensive toolkit for building intelligent, autonomous 
 
 | Feature | Description |
 |---------|-------------|
+| 🤖 [**Requirement Agent**](https://framework.beeai.dev/modules/agents) | Create predictable, controlled behavior across different LLMs by setting rules the agent must follow. |
 | 🤖 [**Agents**](https://framework.beeai.dev/modules/agents) | Create intelligent agents that can reason, act, and adapt |
-| 🔄 [**Workflows**](https://framework.beeai.dev/modules/workflows) | Orchestrate multi-agent systems with complex execution flows |
 | 🔌 [**Backend**](https://framework.beeai.dev/modules/backend) | Connect to any LLM provider with unified interfaces |
-| 🔧 [**Tools**](https://framework.beeai.dev/modules/tools) | Extend agents with web search, weather, code execution, and more |
+| 🔧 [**Tools**](https://framework.beeai.dev/modules/tools) | Extend agents with built in tools (web search, weather, code execution, and more) or custom tools |
 | 🔍 [**RAG**](https://framework.beeai.dev/modules/rag) | Build retrieval-augmented generation systems with vector stores and document processing |
 | 📝 [**Templates**](https://framework.beeai.dev/modules/templates) | Build dynamic prompts with enhanced Mustache syntax |
-| 🧠 [**Memory**](https://framework.beeai.dev/modules/memory) | Manage conversation history with flexible memory strategies |
+| 🧠 [**Memory**](https://framework.beeai.dev/modules/memory) | Manage conversation history with built in memory strategies |
 | 📊 **Observability** | Monitor agent behavior with [events](), [logging](), and robust [error handling]() |
 | 🚀 [**Serve**](https://framework.beeai.dev/modules/serve) | Host agents in servers with support for multiple protocols such as [A2A](https://framework.beeai.dev/integrations/a2a) and [MCP](https://framework.beeai.dev/integrations/mcp) |
 | 💾 [**Cache**](https://framework.beeai.dev/modules/cache) | Optimize performance and reduce costs with intelligent caching |
 | 💿 [**Serialization**](https://framework.beeai.dev/modules/serialization) | Save and load agent state for persistence across sessions |
+| 🔄 [**Workflows**](https://framework.beeai.dev/modules/workflows) | Orchestrate multi-agent systems with complex execution flows |
 
 ## Quickstart
 

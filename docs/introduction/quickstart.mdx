@@ -3,11 +3,10 @@ title: "Quickstart"
 description: "Get up and running with the BeeAI framework"
 icon: "rocket"
 ---
-
 <Steps>
-   <Step title="Clone a starter repo">
+   <Step title="Clone the starter repo">
 
-  Quickly get started with the BeeAI Framework starter template:
+  Chose your prefered programming language and get started with the BeeAI Framework starter template.
 
   <CodeGroup>
   ```bash Python
@@ -18,6 +17,23 @@ icon: "rocket"
   ```bash TypeScript
   git clone https://github.com/i-am-bee/beeai-framework-ts-starter.git
   cd beeai-framework-ts-starter
+  ```
+
+  </CodeGroup>
+
+  </Step>
+
+   <Step title="Install the dependencies">
+
+   If you're using python, make sure you have [uv](https://docs.astral.sh/uv/getting-started/installation/) installed.
+
+  <CodeGroup>
+
+  ```bash Python
+  uv sync
+  ```
+
+  ```bash TypeScript
   nvm install && nvm use
   npm ci
   ```
@@ -26,177 +42,77 @@ icon: "rocket"
 
   </Step>
 
-   <Step title="Install BeeAI framework">
+  <Step title="Configure your Enviorment Variables">
+
+  Create an `.env` file with the contents from `.env.template`
 
   <CodeGroup>
 
+  ```bash macOS/Linux
+  cp .env.template .env  
+  ```
+
+  ```bash Windows (PowerShell)
+  Copy-Item .env.template .env
+  ```
+
+  ```bash Windows (CMD) 
+  copy .env.template .env 
+  ```
+  </CodeGroup>
+
+
+  </Step>
+
+  <Step title="Configure your LLM Backend">
+
+   If you choose to run a local model, [Ollama](https://ollama.com/) must be installed and running, with the [granite3.3](https://ollama.com/library/granite3.3) model pulled.
+  
+  ```bash shell
+  ollama pull granite3.3:8b
+  ```
+
+  or
+
+  If you chose to use a hosted model, edit the `LLM_CHAT_MODEL_NAME` in the `.env` file.
+  
+  ```bash example
+  # Examples (pick one that matches your provider/account):
+  LLM_CHAT_MODEL_NAME="openai:gpt-5-mini-2025-08-07"
+  ```
+
+  
+  Add your API key for your preferred provider to your `.env` file and uncomment the line.
+
+  ```bash example
+  # Examples (pick one that matches your provider/account):
+  OPENAI_API_KEY="YOUR API KEY"
+  ```
+
+  </Step>
+
+  <Step title="Run the Agent">
+
+  This agent is an activity planner that can help you plan your day. Prompt it with your task and location. Exit the loop by typing "q" and enter.
+  
+  Take a look inside the code file to understand the example agent.
+
+  <CodeGroup>
   ```bash Python
-  pip install beeai-framework
+  uv run agent.py
   ```
 
   ```bash TypeScript
-  npm install beeai-framework
+  npm run start src/agent.ts
   ```
 
   </CodeGroup>
 
-   </Step>
-   <Step title="Create your project file">
+  Congradulations! You've ran your first BeeAI agent.
 
-   Copy the following code into a file named quickstart.py for Python or quickstart.ts for TypeScript.
 
-  <CodeGroup>
+  </Step>
 
-  {/* <!-- embedme python/examples/agents/experimental/requirement/handoff.py --> */}
-  ```py Python
-  import asyncio
-  
-  from beeai_framework.agents.experimental import RequirementAgent
-  from beeai_framework.agents.experimental.requirements.conditional import ConditionalRequirement
-  from beeai_framework.backend import ChatModel
-  from beeai_framework.errors import FrameworkError
-  from beeai_framework.middleware.trajectory import GlobalTrajectoryMiddleware
-  from beeai_framework.tools import Tool
-  from beeai_framework.tools.handoff import HandoffTool
-  from beeai_framework.tools.search.wikipedia import WikipediaTool
-  from beeai_framework.tools.think import ThinkTool
-  from beeai_framework.tools.weather import OpenMeteoTool
-  
-  
-  async def main() -> None:
-      knowledge_agent = RequirementAgent(
-          llm=ChatModel.from_name("ollama:granite3.3:8b"),
-          tools=[ThinkTool(), WikipediaTool()],
-          requirements=[ConditionalRequirement(ThinkTool, force_at_step=1)],
-          role="Knowledge Specialist",
-          instructions="Provide answers to general questions about the world.",
-      )
-  
-      weather_agent = RequirementAgent(
-          llm=ChatModel.from_name("ollama:granite3.3:8b"),
-          tools=[OpenMeteoTool()],
-          role="Weather Specialist",
-          instructions="Provide weather forecast for a given destination.",
-      )
-  
-      main_agent = RequirementAgent(
-          name="MainAgent",
-          llm=ChatModel.from_name("ollama:granite3.3:8b"),
-          tools=[
-              ThinkTool(),
-              HandoffTool(
-                  knowledge_agent,
-                  name="KnowledgeLookup",
-                  description="Consult the Knowledge Agent for general questions.",
-              ),
-              HandoffTool(
-                  weather_agent,
-                  name="WeatherLookup",
-                  description="Consult the Weather Agent for forecasts.",
-              ),
-          ],
-          requirements=[ConditionalRequirement(ThinkTool, force_at_step=1)],
-          # Log all tool calls to the console for easier debugging
-          middlewares=[GlobalTrajectoryMiddleware(included=[Tool])],
-      )
-  
-      question = "If I travel to Rome next weekend, what should I expect in terms of weather, and also tell me one famous historical landmark there?"
-      print(f"User: {question}")
-  
-      try:
-          response = await main_agent.run(question, expected_output="Helpful and clear response.")
-          print("Agent:", response.last_message.text)
-      except FrameworkError as err:
-          print("Error:", err.explain())
-  
-  
-  if __name__ == "__main__":
-      asyncio.run(main())
-  
-  ```
-
-  {/* <!-- embedme typescript/examples/workflows/multiAgents.ts --> */}
-  ```ts TypeScript
-  import "dotenv/config";
-  import { createConsoleReader } from "examples/helpers/io.js";
-  import { OpenMeteoTool } from "beeai-framework/tools/weather/openMeteo";
-  import { WikipediaTool } from "beeai-framework/tools/search/wikipedia";
-  import { AgentWorkflow } from "beeai-framework/workflows/agent";
-  import { OllamaChatModel } from "beeai-framework/adapters/ollama/backend/chat";
-  
-  const workflow = new AgentWorkflow("Smart assistant");
-  const llm = new OllamaChatModel("llama3.1");
-  
-  workflow.addAgent({
-    name: "Researcher",
-    role: "A diligent researcher",
-    instructions: "You look up and provide information about a specific topic.",
-    tools: [new WikipediaTool()],
-    llm,
-  });
-  workflow.addAgent({
-    name: "WeatherForecaster",
-    role: "A weather reporter",
-    instructions: "You provide detailed weather reports.",
-    tools: [new OpenMeteoTool()],
-    llm,
-  });
-  workflow.addAgent({
-    name: "DataSynthesizer",
-    role: "A meticulous and creative data synthesizer",
-    instructions: "You can combine disparate information into a final coherent summary.",
-    llm,
-  });
-  
-  const reader = createConsoleReader();
-  reader.write("Assistant 🤖 : ", "What location do you want to learn about?");
-  for await (const { prompt } of reader) {
-    const { result } = await workflow
-      .run([
-        { prompt: "Provide a short history of the location.", context: prompt },
-        {
-          prompt: "Provide a comprehensive weather summary for the location today.",
-          expectedOutput:
-            "Essential weather details such as chance of rain, temperature and wind. Only report information that is available.",
-        },
-        {
-          prompt: "Summarize the historical and weather data for the location.",
-          expectedOutput:
-            "A paragraph that describes the history of the location, followed by the current weather conditions.",
-        },
-      ])
-      .observe((emitter) => {
-        emitter.on("success", (data) => {
-          reader.write(
-            `Step '${data.step}' has been completed with the following outcome:\n`,
-            data.state?.finalAnswer ?? "-",
-          );
-        });
-      });
-  
-    reader.write(`Assistant 🤖`, result.finalAnswer);
-    reader.write("Assistant 🤖 : ", "What location do you want to learn about?");
-  }
-  
-  ```
-  </CodeGroup>
-
-   </Step>
-   <Step title="Run the example">
-
-  <CodeGroup>
-
-  ```py Python
-  python quickstart.py
-  ```
-
-  ```ts TypeScript
-  npm exec tsx quickstart.ts
-  ```
-
-  </CodeGroup>
-
-   </Step>
 </Steps>
 
 Explore more examples in our [Python](https://github.com/i-am-bee/beeai-framework/tree/main/python/examples) and [TypeScript](https://github.com/i-am-bee/beeai-framework/tree/main/typescript/examples) libraries.
