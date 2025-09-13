@@ -30,7 +30,7 @@ Supported in Python and TypeScript.
 You can customize your agent's behavior in several key ways:
 
 ### 1. Configuring the Language Model Backend
-The backend system manages your connection to different language model providers. The BeeAI Framework supports multiple LLM providers through a unified interface. Learn more about available backends in our [backend documentation](./backend).
+The backend system manages your connection to different language model providers. The BeeAI Framework supports multiple LLM providers through a unified interface. Learn more about available backends and how to set their parameters in our [backend documentation](./backend).
 
 <CodeGroup>
 
@@ -38,13 +38,13 @@ The backend system manages your connection to different language model providers
 from beeai_framework.backend import ChatModel
 
 # Using Ollama (local models)
-llm = ChatModel.from_name("ollama:llama3.1")
+llm = ChatModel.from_name("ollama:granite3.3:8b")
 
 # Using OpenAI
-llm = ChatModel.from_name("openai:gpt-4")
+llm = ChatModel.from_name("openai:gpt-5-mini-2025-08-07")
 
 # Using Anthropic
-llm = ChatModel.from_name("anthropic:claude-3-sonnet")
+llm = ChatModel.from_name("anthropic:claude-sonnet-4-20250514")
 
 agent = RequirementAgent(
     llm=llm,
@@ -106,42 +106,7 @@ Setting instructions, notes, role will be integrated into the framework provided
 ### 3. Configuring Agent Run Options
 When executing an agent, you can provide additional options to guide its behavior and execution settings:
 
-#### Setting Execution Settings with `AgentExecutionConfig`
-
-<CodeGroup>
-
-```py Python [expandable]
-from beeai_framework.agents.types import AgentExecutionConfig
-
-execution_config = AgentExecutionConfig(
-    total_max_retries=10,        # Maximum total retries across all steps
-    max_retries_per_step=3,      # Maximum retries for each individual step
-    max_iterations=20            # Maximum iterations
-)
-
-response = await agent.run(
-    prompt="What's the weather like today?",
-    execution=execution_config
-)
-```
-
-```ts TypeScript [expandable]
-COMING SOON
-```
-
-</CodeGroup>
-
-**Execution Parameters:**
-- `total_max_retries`: Controls the total number of retry attempts across the entire agent execution
-- `max_retries_per_step`: Limits retries for individual steps (like tool calls or model responses)  
-- `max_iterations`: Sets the maximum number of reasoning cycles the agent can perform
-
-<Tip>
-The default is zero retries and no iteration limit. For complex tasks, increasing max_iterations is recommended to allow thorough reasoning.
-</Tip>
-
-####  Guiding Agent Run Behavior
-When executing an agent, you can provide additional options to guide its behavior:
+#### Setting Execution Settings and Guiding Agent Run Behavior
 
 <CodeGroup>
 
@@ -149,11 +114,15 @@ When executing an agent, you can provide additional options to guide its behavio
 response = await agent.run(
     prompt="Analyze the latest AI research trends",
     expected_output="A structured summary with key findings and recommendations",
+  # expected_output= #insert pydantic data model for structured output
+    backstory="The user is preparing for a conference presentation on AI trends",
     total_max_retries=5,
     max_retries_per_step=2,
     max_iterations=15,
-    backstory="The user is preparing for a conference presentation on AI trends"
 )
+
+#structured outputs can be accessed like this:
+print(response.output_structured)
 ```
 
 ```ts TypeScript [expandable]
@@ -163,9 +132,18 @@ COMING SOON
 </CodeGroup>
 
 **Available Options:**
-- `expected_output`: Guides the agent toward a specific output format (can also be a Pydantic model for structured output)
+- `expected_output`: Guides the agent toward a specific output format (can also be a Pydantic model for structured output).
 - `backstory`: Provides additional context to help the agent understand the user's situation
-- Execution settings can also be set directly in the run call
+- `total_max_retries`: Controls the total number of retry attempts across the entire agent execution
+- `max_retries_per_step`: Limits retries for individual steps (like tool calls or model responses)  
+- `max_iterations`: Sets the maximum number of reasoning cycles the agent can perform
+
+<Tip>
+The are defualts set for `max_iterations`, `total_max_retries`, and `max_retries_per_step`, but you can override them by setting your own preferences.
+</Tip>
+
+
+
 
 ### 4. Adding Tools
 
@@ -315,7 +293,7 @@ During execution, the agent emits partial updates as it generates each line, fol
 </Note>
 
 <CodeGroup>
-
+{/* <!-- embedme python/examples/agents/react.py --> */}
 ```py Python [expandable]
 import asyncio
 import logging
@@ -440,7 +418,7 @@ if __name__ == "__main__":
         sys.exit(e.explain())
 
 ```
-
+{/* <!-- embedme typescript/examples/agents/react.ts --> */}
 ```ts TypeScript [expandable]
 import "dotenv/config.js";
 import { ReActAgent } from "beeai-framework/agents/react/agent";
@@ -582,7 +560,7 @@ The Tool Calling Agent is available in both Python and TypeScript, but no longer
 The ToolCallingAgent is optimized for scenarios where tool usage is the primary focus. It handles tool calls more efficiently and can execute multiple tools in parallel.
 
 <CodeGroup>
-
+{/* <!-- embedme python/examples/agents/tool_calling.py --> */}
 ```py Python [expandable]
 import asyncio
 import logging
@@ -647,7 +625,7 @@ if __name__ == "__main__":
         sys.exit(e.explain())
 
 ```
-
+{/* <!-- embedme typescript/examples/agents/toolCalling/agent.ts --> */}
 ```ts TypeScript [expandable]
 import "dotenv/config.js";
 import { createConsoleReader } from "../../helpers/io.js";
