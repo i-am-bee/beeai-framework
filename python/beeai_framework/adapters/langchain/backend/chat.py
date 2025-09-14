@@ -31,7 +31,13 @@ class LangChainChatModel(ChatModel):
 
     @property
     def model_id(self) -> str:
-        return self._model._llm_type
+        # copied from the LC Base Class
+        if hasattr(self._model, "model") and isinstance(self._model, str):
+            return self._model.model
+        elif hasattr(self._model, "model_name") and isinstance(self._model.model_name, str):
+            return self._model.model_name
+        else:
+            return "unknown"
 
     @property
     def provider_id(self) -> ProviderName:
