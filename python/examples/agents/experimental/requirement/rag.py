@@ -1,6 +1,25 @@
 import asyncio
 import os
 
+## Observability
+from openinference.instrumentation.beeai import BeeAIInstrumentor
+from opentelemetry import trace as trace_api
+from opentelemetry.exporter.otlp.proto.http.trace_exporter import OTLPSpanExporter
+from opentelemetry.sdk import trace as trace_sdk
+from opentelemetry.sdk.resources import Resource
+from opentelemetry.sdk.trace.export import SimpleSpanProcessor
+
+def setup_observability() -> None:
+    resource = Resource(attributes={})
+    tracer_provider = trace_sdk.TracerProvider(resource=resource)
+    tracer_provider.add_span_processor(SimpleSpanProcessor(OTLPSpanExporter()))
+    trace_api.set_tracer_provider(tracer_provider)
+
+    BeeAIInstrumentor().instrument()
+# setup_observability()
+## Observability
+
+
 from beeai_framework.agents.experimental import RequirementAgent
 from beeai_framework.backend import ChatModel
 from beeai_framework.backend.document_loader import DocumentLoader
@@ -13,7 +32,7 @@ from beeai_framework.tools import Tool
 from beeai_framework.tools.search.retrieval import VectorStoreSearchTool
 
 POPULATE_VECTOR_DB = True
-VECTOR_DB_PATH_4_DUMP = ""  # Set this path for persistency
+VECTOR_DB_PATH_4_DUMP = "/Users/antonp/code/tmp/vector.db"  # Set this path for persistency
 
 
 async def setup_vector_store() -> VectorStore | None:

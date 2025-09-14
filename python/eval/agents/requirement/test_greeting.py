@@ -74,7 +74,7 @@ async def test_greeting() -> None:
             LLMTestCaseParams.EXPECTED_TOOLS,
         ],
         verbose_mode=True,
-        model=DeepEvalLLM.from_name(os.environ["EVAL_CHAT_MODEL_NAME"]),
+        model="ollama:llama3.2:latest",#DeepEvalLLM.from_name(os.environ["EVAL_CHAT_MODEL_NAME"]),
         threshold=0.65,
     )
     metrics: list[BaseMetric] = [correctness_metric]
