@@ -1,6 +1,6 @@
 [project]
 name = "beeai-framework"
-version="0.1.43"
+version="0.1.45"
 license = "Apache-2.0"
 readme = "README.md"
 authors = [{ name = "IBM Corp." }]
@@ -19,7 +19,7 @@ documentation = "https://i-am-bee.github.io/beeai-framework/#/python/"
 
 [tool.poetry.dependencies]
 python = ">= 3.11,<3.14"
-a2a-sdk = {version = "^0.3.4", optional = true, extras = ["telemetry", "grpc"]}
+a2a-sdk = {version = "^0.3.4", optional = true, extras = ["grpc", "http-server", "telemetry"]}
 acp-sdk = {version = "^1.0.3", optional = true}
 aiofiles = "^24.1.0"
 boto3 = {version = "^1.37.5", optional = true}
@@ -109,7 +109,7 @@ plugins = ["pydantic.mypy"]
 strict = true
 
 [[tool.mypy.overrides]]
-module = ["deepeval.*", "deepeval"]
+module = ["deepeval.*", "deepeval", "llama_index.*"]
 implicit_reexport = true
 
 [tool.pydantic-mypy]

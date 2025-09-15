@@ -8,6 +8,7 @@ from typing import Annotated, Self
 from pydantic import BaseModel
 from typing_extensions import TypedDict, TypeVar, Unpack, override
 
+from beeai_framework.adapters.beeai_platform.backend.chat import BeeAIPlatformChatModel
 from beeai_framework.adapters.beeai_platform.serve.io import BeeAIPlatformIOContext
 from beeai_framework.agents.experimental import RequirementAgent
 from beeai_framework.agents.experimental.events import RequirementAgentSuccessEvent
@@ -34,6 +35,7 @@ except ModuleNotFoundError as e:
     ) from e
 
 from beeai_framework.agents import AnyAgent
+from beeai_framework.backend.chat import ChatModel
 from beeai_framework.backend.message import AnyMessage
 from beeai_framework.serve import MemoryManager, Server, init_agent_memory
 from beeai_framework.utils.models import ModelLike, to_model
@@ -125,12 +127,12 @@ def _react_agent_factory(
         message: a2a_types.Message,
         context: beeai_context.RunContext,
         trajectory: Annotated[beeai_extensions.TrajectoryExtensionServer, beeai_extensions.TrajectoryExtensionSpec()],
-        citation: Annotated[beeai_extensions.CitationExtensionServer, beeai_extensions.CitationExtensionSpec()],
+        form: Annotated[beeai_extensions.FormExtensionServer, beeai_extensions.FormExtensionSpec(params=None)],
     ) -> AsyncGenerator[beeai_types.RunYield, beeai_types.RunYieldResume]:
         cloned_agent = await agent.clone() if isinstance(agent, Cloneable) else agent
         await init_agent_memory(cloned_agent, memory_manager, context.context_id)
 
-        with BeeAIPlatformIOContext(context):
+        with BeeAIPlatformIOContext(context, form=form):
             artifact_id = uuid.uuid4()
             append = False
             last_key = None
@@ -189,16 +191,24 @@ with contextlib.suppress(FactoryAlreadyRegisteredError):
 def _tool_calling_agent_factory(
     agent: ToolCallingAgent, *, metadata: BeeAIPlatformServerMetadata | None = None, memory_manager: MemoryManager
 ) -> beeai_agent.Agent:
+    llm = agent._llm
+    preferred_models = llm.preferred_models if isinstance(llm, BeeAIPlatformChatModel) else []
+
     async def run(
         message: a2a_types.Message,
         context: beeai_context.RunContext,
         trajectory: Annotated[beeai_extensions.TrajectoryExtensionServer, beeai_extensions.TrajectoryExtensionSpec()],
-        citation: Annotated[beeai_extensions.CitationExtensionServer, beeai_extensions.CitationExtensionSpec()],
+        form: Annotated[beeai_extensions.FormExtensionServer, beeai_extensions.FormExtensionSpec(params=None)],
+        llm_ext: Annotated[
+            beeai_extensions.LLMServiceExtensionServer,
+            beeai_extensions.LLMServiceExtensionSpec.single_demand(suggested=tuple(preferred_models)),
+        ],
     ) -> AsyncGenerator[beeai_types.RunYield, beeai_types.RunYieldResume]:
         cloned_agent = await agent.clone() if isinstance(agent, Cloneable) else agent
+        configure_beeai_platform_model(cloned_agent._llm, llm_ext)
         await init_agent_memory(cloned_agent, memory_manager, context.context_id)
 
-        with BeeAIPlatformIOContext(context):
+        with BeeAIPlatformIOContext(context, form=form):
             last_msg: AnyMessage | None = None
             async for data, _ in cloned_agent.run([convert_a2a_to_framework_message(message)]):
                 messages = data.state.memory.messages
@@ -225,16 +235,27 @@ with contextlib.suppress(FactoryAlreadyRegisteredError):
 def _requirement_agent_factory(
     agent: RequirementAgent, *, metadata: BeeAIPlatformServerMetadata | None = None, memory_manager: MemoryManager
 ) -> beeai_agent.Agent:
+    llm = agent._llm
+    preferred_models = llm.preferred_models if isinstance(llm, BeeAIPlatformChatModel) else []
+
     async def run(
         message: a2a_types.Message,
         context: beeai_context.RunContext,
         trajectory: Annotated[beeai_extensions.TrajectoryExtensionServer, beeai_extensions.TrajectoryExtensionSpec()],
-        citation: Annotated[beeai_extensions.CitationExtensionServer, beeai_extensions.CitationExtensionSpec()],
+        form: Annotated[
+            beeai_extensions.FormExtensionServer,
+            beeai_extensions.FormExtensionSpec(params=None),
+        ],
+        llm_ext: Annotated[
+            beeai_extensions.LLMServiceExtensionServer,
+            beeai_extensions.LLMServiceExtensionSpec.single_demand(suggested=tuple(preferred_models)),
+        ],
     ) -> AsyncGenerator[beeai_types.RunYield, beeai_types.RunYieldResume]:
         cloned_agent = await agent.clone() if isinstance(agent, Cloneable) else agent
-        await init_agent_memory(cloned_agent, memory_manager, context.context_id)
+        configure_beeai_platform_model(cloned_agent._llm, llm_ext)
 
-        with BeeAIPlatformIOContext(context):
+        await init_agent_memory(cloned_agent, memory_manager, context.context_id)
+        with BeeAIPlatformIOContext(context, form=form):
             last_msg: AnyMessage | None = None
             async for data, _ in cloned_agent.run([convert_a2a_to_framework_message(message)]):
                 messages = data.state.memory.messages
@@ -290,3 +311,18 @@ def _init_metadata(
     if not copy.get("description"):
         copy["description"] = agent.meta.description
     return copy
+
+
+def configure_beeai_platform_model(llm: ChatModel, llm_ext: beeai_extensions.LLMServiceExtensionServer) -> None:
+    if isinstance(llm, BeeAIPlatformChatModel):
+        llm_conf = None
+        if llm_ext and llm_ext.data:
+            [llm_conf] = llm_ext.data.llm_fulfillments.values()
+        if not llm_conf:
+            raise ValueError("BeeAIPlatform not provided llm configuration")
+
+        llm.configure(
+            model_id=llm_conf.api_model,
+            api_key=llm_conf.api_key,
+            base_url=llm_conf.api_base,
+        )
