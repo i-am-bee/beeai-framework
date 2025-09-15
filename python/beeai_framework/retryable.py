@@ -121,7 +121,7 @@ class Retryable(Generic[T]):
                 or (config and config.group_signal and config.group_signal.aborted)
                 or (self._config.signal and self._config.signal.aborted)
             )
-            logger.debug("Retryable run should retry:", should_retry)
+            logger.debug("Retryable run should retry: %s", should_retry)
             return should_retry
 
         async def _on_failed_attempt(e: FrameworkError, meta: Meta) -> None:

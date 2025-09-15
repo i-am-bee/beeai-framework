@@ -127,12 +127,12 @@ def _react_agent_factory(
         message: a2a_types.Message,
         context: beeai_context.RunContext,
         trajectory: Annotated[beeai_extensions.TrajectoryExtensionServer, beeai_extensions.TrajectoryExtensionSpec()],
-        citation: Annotated[beeai_extensions.CitationExtensionServer, beeai_extensions.CitationExtensionSpec()],
+        form: Annotated[beeai_extensions.FormExtensionServer, beeai_extensions.FormExtensionSpec(params=None)],
     ) -> AsyncGenerator[beeai_types.RunYield, beeai_types.RunYieldResume]:
         cloned_agent = await agent.clone() if isinstance(agent, Cloneable) else agent
         await init_agent_memory(cloned_agent, memory_manager, context.context_id)
 
-        with BeeAIPlatformIOContext(context):
+        with BeeAIPlatformIOContext(context, form=form):
             artifact_id = uuid.uuid4()
             append = False
             last_key = None
@@ -198,7 +198,7 @@ def _tool_calling_agent_factory(
         message: a2a_types.Message,
         context: beeai_context.RunContext,
         trajectory: Annotated[beeai_extensions.TrajectoryExtensionServer, beeai_extensions.TrajectoryExtensionSpec()],
-        citation: Annotated[beeai_extensions.CitationExtensionServer, beeai_extensions.CitationExtensionSpec()],
+        form: Annotated[beeai_extensions.FormExtensionServer, beeai_extensions.FormExtensionSpec(params=None)],
         llm_ext: Annotated[
             beeai_extensions.LLMServiceExtensionServer,
             beeai_extensions.LLMServiceExtensionSpec.single_demand(suggested=tuple(preferred_models)),
@@ -208,7 +208,7 @@ def _tool_calling_agent_factory(
         configure_beeai_platform_model(cloned_agent._llm, llm_ext)
         await init_agent_memory(cloned_agent, memory_manager, context.context_id)
 
-        with BeeAIPlatformIOContext(context):
+        with BeeAIPlatformIOContext(context, form=form):
             last_msg: AnyMessage | None = None
             async for data, _ in cloned_agent.run([convert_a2a_to_framework_message(message)]):
                 messages = data.state.memory.messages
@@ -242,7 +242,10 @@ def _requirement_agent_factory(
         message: a2a_types.Message,
         context: beeai_context.RunContext,
         trajectory: Annotated[beeai_extensions.TrajectoryExtensionServer, beeai_extensions.TrajectoryExtensionSpec()],
-        citation: Annotated[beeai_extensions.CitationExtensionServer, beeai_extensions.CitationExtensionSpec()],
+        form: Annotated[
+            beeai_extensions.FormExtensionServer,
+            beeai_extensions.FormExtensionSpec(params=None),
+        ],
         llm_ext: Annotated[
             beeai_extensions.LLMServiceExtensionServer,
             beeai_extensions.LLMServiceExtensionSpec.single_demand(suggested=tuple(preferred_models)),
@@ -252,8 +255,7 @@ def _requirement_agent_factory(
         configure_beeai_platform_model(cloned_agent._llm, llm_ext)
 
         await init_agent_memory(cloned_agent, memory_manager, context.context_id)
-
-        with BeeAIPlatformIOContext(context):
+        with BeeAIPlatformIOContext(context, form=form):
             last_msg: AnyMessage | None = None
             async for data, _ in cloned_agent.run([convert_a2a_to_framework_message(message)]):
                 messages = data.state.memory.messages

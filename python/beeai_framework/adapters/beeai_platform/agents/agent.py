@@ -5,12 +5,16 @@ from typing import Any, Unpack
 
 import httpx
 
+from beeai_framework.adapters.a2a.agents.agent import A2AAgentOptions
+
 try:
     import a2a.types as a2a_types
     from beeai_sdk.a2a.extensions import (
+        EmbeddingDemand,
         EmbeddingFulfillment,
         EmbeddingServiceExtensionClient,
         EmbeddingServiceExtensionSpec,
+        LLMDemand,
         LLMFulfillment,
         LLMServiceExtensionClient,
         LLMServiceExtensionSpec,
@@ -34,14 +38,13 @@ from beeai_framework.adapters.beeai_platform.agents.events import (
 from beeai_framework.adapters.beeai_platform.agents.types import (
     BeeAIPlatformAgentOutput,
 )
-from beeai_framework.agents import AgentError, AgentOptions, BaseAgent
+from beeai_framework.agents import AgentError, BaseAgent
 from beeai_framework.backend.message import AnyMessage
 from beeai_framework.context import RunContext
 from beeai_framework.emitter import Emitter
 from beeai_framework.emitter.emitter import EventMeta
 from beeai_framework.memory import BaseMemory
 from beeai_framework.runnable import runnable_entry
-from beeai_framework.utils import AbortSignal
 from beeai_framework.utils.strings import to_safe_word
 
 
@@ -58,33 +61,34 @@ class BeeAIPlatformAgent(BaseAgent[BeeAIPlatformAgentOutput]):
 
     @runnable_entry
     async def run(
-        self, input: str | AnyMessage | list[AnyMessage] | a2a_types.Message, /, **kwargs: Unpack[AgentOptions]
+        self, input: str | AnyMessage | list[AnyMessage] | a2a_types.Message, /, **kwargs: Unpack[A2AAgentOptions]
     ) -> BeeAIPlatformAgentOutput:
-        async def handler(context: RunContext) -> BeeAIPlatformAgentOutput:
-            async def update_event(data: A2AAgentUpdateEvent, event: EventMeta) -> None:
-                await context.emitter.emit(
-                    "update",
-                    BeeAIPlatformAgentUpdateEvent(value=data.value),
-                )
+        self._agent.set_run_params(
+            context_id=kwargs.get("context_id"),
+            task_id=kwargs.get("task_id"),
+            clear_context=kwargs.get("clear_context"),
+        )
 
-            async def error_event(data: A2AAgentErrorEvent, event: EventMeta) -> None:
-                await context.emitter.emit(
-                    "error",
-                    BeeAIPlatformAgentErrorEvent(message=data.message),
-                )
+        context = RunContext.get()
 
-            message = self._agent._convert_to_a2a_message(input)
-            message.metadata = await self._get_metadata()
-
-            response = await (
-                self._agent.run(message, signal=kwargs.get("signal", AbortSignal()))
-                .on("update", update_event)
-                .on("error", error_event)
+        async def update_event(data: A2AAgentUpdateEvent, event: EventMeta) -> None:
+            await context.emitter.emit(
+                "update",
+                BeeAIPlatformAgentUpdateEvent(value=data.value),
             )
 
-            return BeeAIPlatformAgentOutput(output=response.output, event=response.event)
+        async def error_event(data: A2AAgentErrorEvent, event: EventMeta) -> None:
+            await context.emitter.emit(
+                "error",
+                BeeAIPlatformAgentErrorEvent(message=data.message),
+            )
 
-        return await handler(RunContext.get())
+        message = self._agent.convert_to_a2a_message(input)
+        message.metadata = (message.metadata or {}) | await self._get_metadata()
+
+        response = await self._agent.run(message, **kwargs).on("update", update_event).on("error", error_event)
+
+        return BeeAIPlatformAgentOutput(output=response.output, event=response.event)
 
     async def check_agent_exists(
         self,
@@ -94,9 +98,9 @@ class BeeAIPlatformAgent(BaseAgent[BeeAIPlatformAgentOutput]):
         except Exception as e:
             raise AgentError("Can't connect to beeai platform agent.", cause=e)
 
-    async def _get_metadata(self) -> dict[str, Any] | None:
+    async def _get_metadata(self) -> dict[str, Any]:
         if not self._agent.agent_card:
-            await self._agent.check_agent_exists()
+            await self._agent._load_agent_card()
 
         assert self._agent.agent_card is not None, "Agent card should not be empty after loading."
 
@@ -108,19 +112,27 @@ class BeeAIPlatformAgent(BaseAgent[BeeAIPlatformAgentOutput]):
         llm_spec = LLMServiceExtensionSpec.from_agent_card(self._agent.agent_card)
         embedding_spec = EmbeddingServiceExtensionSpec.from_agent_card(self._agent.agent_card)
 
+        async def get_fulfillemnt_args(
+            capability: ModelCapability, demand: LLMDemand | EmbeddingDemand
+        ) -> dict[str, Any]:
+            matches = await ModelProvider.match(
+                suggested_models=demand.suggested,
+                capability=capability,
+            )
+
+            if not matches:
+                raise AgentError(f"No matching model found for {capability}.")
+
+            return {
+                "api_base": "{platform_url}/api/v1/openai/",
+                "api_key": context_token.token.get_secret_value(),
+                "api_model": matches[0].model_id,
+            }
+
         metadata = (
             LLMServiceExtensionClient(llm_spec).fulfillment_metadata(
                 llm_fulfillments={
-                    key: LLMFulfillment(
-                        api_base="{platform_url}/api/v1/openai/",
-                        api_key=context_token.token.get_secret_value(),
-                        api_model=(
-                            await ModelProvider.match(
-                                suggested_models=demand.suggested,
-                                capability=ModelCapability.LLM,
-                            )
-                        )[0].model_id,
-                    )
+                    key: LLMFulfillment(**(await get_fulfillemnt_args(ModelCapability.LLM, demand)))
                     for key, demand in llm_spec.params.llm_demands.items()
                 }
             )
@@ -129,16 +141,7 @@ class BeeAIPlatformAgent(BaseAgent[BeeAIPlatformAgentOutput]):
         ) | (
             EmbeddingServiceExtensionClient(embedding_spec).fulfillment_metadata(
                 embedding_fulfillments={
-                    key: EmbeddingFulfillment(
-                        api_base="{platform_url}/api/v1/openai/",
-                        api_key=context_token.token.get_secret_value(),
-                        api_model=(
-                            await ModelProvider.match(
-                                suggested_models=demand.suggested,
-                                capability=ModelCapability.EMBEDDING,
-                            )
-                        )[0].model_id,
-                    )
+                    key: EmbeddingFulfillment(**(await get_fulfillemnt_args(ModelCapability.EMBEDDING, demand)))
                     for key, demand in embedding_spec.params.embedding_demands.items()
                 }
             )
@@ -163,7 +166,7 @@ class BeeAIPlatformAgent(BaseAgent[BeeAIPlatformAgentOutput]):
 
     def _create_emitter(self) -> Emitter:
         return Emitter.root().child(
-            namespace=["beeai_platform", "agent", to_safe_word(self._agent.name)],
+            namespace=["beeai_platform", "agent", to_safe_word(self.name)],
             creator=self,
             events=beeai_platform_agent_event_types,
         )
@@ -177,6 +180,8 @@ class BeeAIPlatformAgent(BaseAgent[BeeAIPlatformAgentOutput]):
         self._agent.memory = memory
 
     async def clone(self) -> "BeeAIPlatformAgent":
-        cloned = BeeAIPlatformAgent(url=self._agent._url, memory=await self._agent.memory.clone())
+        cloned = BeeAIPlatformAgent(
+            url=self._agent._url, agent_card=self._agent.agent_card, memory=await self._agent.memory.clone()
+        )
         cloned.emitter = await self.emitter.clone()
         return cloned

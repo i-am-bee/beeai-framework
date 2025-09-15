@@ -86,11 +86,11 @@ class A2AAgent(BaseAgent[A2AAgentOutput]):
     async def run(
         self, input: str | list[AnyMessage] | AnyMessage | a2a_types.Message, /, **kwargs: Unpack[A2AAgentOptions]
     ) -> A2AAgentOutput:
-        self._context_id = kwargs.get("context_id") or self._context_id
-        self._task_id = kwargs.get("task_id")
-        if kwargs.get("clear_context"):
-            self._context_id = None
-            self._reference_task_ids.clear()
+        self.set_run_params(
+            context_id=kwargs.get("context_id"),
+            task_id=kwargs.get("task_id"),
+            clear_context=kwargs.get("clear_context"),
+        )
 
         context = RunContext.get()
 
@@ -128,7 +128,7 @@ class A2AAgent(BaseAgent[A2AAgentOutput]):
 
             # send request
             try:
-                async for event in client.send_message(self._convert_to_a2a_message(input)):
+                async for event in client.send_message(self.convert_to_a2a_message(input)):
                     last_event = event
 
                     if isinstance(event, a2a_types.Message):
@@ -178,7 +178,11 @@ class A2AAgent(BaseAgent[A2AAgentOutput]):
 
             except a2a_client.A2AClientError as err:
                 message = (
-                    err.message if hasattr(err, "message") else err.error if hasattr(err, "error") else "Unknown error"
+                    err.message
+                    if hasattr(err, "message")
+                    else str(err.error)
+                    if hasattr(err, "error")
+                    else "Unknown error"
                 )
                 await context.emitter.emit("error", A2AAgentErrorEvent(message=message))
                 error_context = None
@@ -192,7 +196,19 @@ class A2AAgent(BaseAgent[A2AAgentOutput]):
                     cause=err,
                 )
 
+    def set_run_params(
+        self, *, context_id: str | None, task_id: str | None, clear_context: bool | None = False
+    ) -> None:
+        self._context_id = context_id or self._context_id
+        self._task_id = task_id
+        if clear_context:
+            self._context_id = None
+            self._reference_task_ids.clear()
+
     async def _load_agent_card(self) -> None:
+        if self._agent_card:
+            return
+
         try:
             async with httpx.AsyncClient() as httpx_client:
                 card_resolver = a2a_client.A2ACardResolver(
@@ -239,7 +255,7 @@ class A2AAgent(BaseAgent[A2AAgentOutput]):
         cloned.emitter = await self.emitter.clone()
         return cloned
 
-    def _convert_to_a2a_message(
+    def convert_to_a2a_message(
         self, input: str | list[AnyMessage] | AnyMessage | a2a_types.Message
     ) -> a2a_types.Message:
         if isinstance(input, str):
