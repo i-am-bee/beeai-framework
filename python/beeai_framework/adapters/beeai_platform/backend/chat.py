@@ -3,7 +3,6 @@
 import contextlib
 from collections.abc import AsyncGenerator
 
-from dotenv import load_dotenv
 from typing_extensions import Unpack
 
 from beeai_framework.adapters.openai import OpenAIChatModel
@@ -13,10 +12,6 @@ from beeai_framework.backend.constants import ProviderName
 from beeai_framework.backend.types import ChatModelInput, ChatModelStructureInput
 from beeai_framework.backend.utils import load_model
 from beeai_framework.context import RunContext
-from beeai_framework.logger import Logger
-
-logger = Logger(__name__)
-load_dotenv()
 
 
 class BeeAIPlatformChatModel(ChatModel):
@@ -44,26 +39,24 @@ class BeeAIPlatformChatModel(ChatModel):
             **self._kwargs,
         )
 
+    @property
+    def _initialized_model(self) -> OpenAIChatModel:
+        if self._model is None:
+            raise ChatModelError("Chat model has not been initialized")
+        return self._model
+
     async def _create(self, input: ChatModelInput, run: RunContext) -> ChatModelOutput:
-        if self._model:
-            return await self._model._create(input, run)
-        raise ChatModelError("Chat model has not been initialized")
+        return await self._initialized_model._create(input, run)
 
     def _create_stream(self, input: ChatModelInput, run: RunContext) -> AsyncGenerator[ChatModelOutput]:
-        if self._model:
-            return self._model._create_stream(input, run)
-        raise ChatModelError("Chat model has not been initialized")
+        return self._initialized_model._create_stream(input, run)
 
     async def _create_structure(self, input: ChatModelStructureInput[T], run: RunContext) -> ChatModelStructureOutput:
-        if self._model:
-            return await self._model._create_structure(input, run)
-        raise ChatModelError("Chat model has not been initialized")
+        return await self._initialized_model._create_structure(input, run)
 
     @property
     def model_id(self) -> str:
-        if self._model:
-            return self._model.model_id
-        raise ChatModelError("Chat model has not been initialized")
+        return self._initialized_model.model_id
 
     @property
     def provider_id(self) -> ProviderName:
