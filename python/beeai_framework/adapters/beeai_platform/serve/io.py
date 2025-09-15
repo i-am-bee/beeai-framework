@@ -2,18 +2,25 @@
 # SPDX-License-Identifier: Apache-2.0
 
 from collections.abc import Callable
-from typing import Any, Self
-
-from a2a.types import TextPart
-from beeai_sdk.a2a.types import InputRequired
-from beeai_sdk.server.context import RunContext
+from typing import Annotated, Any, Self
 
 from beeai_framework.utils.io import setup_io_context
 
+try:
+    from beeai_sdk.a2a.extensions import FormExtensionServer, FormExtensionSpec, FormRender, TextField
+    from beeai_sdk.server.context import RunContext
+except ModuleNotFoundError as e:
+    raise ModuleNotFoundError(
+        "Optional module [beeai-platform] not found.\nRun 'pip install \"beeai-framework[beeai-platform]\"' to install."
+    ) from e
+
 
 class BeeAIPlatformIOContext:
-    def __init__(self, context: RunContext) -> None:
+    def __init__(
+        self, context: RunContext, *, form: Annotated[FormExtensionServer, FormExtensionSpec(params=None)]
+    ) -> None:
         self.context = context
+        self._form = form
         self._cleanup: Callable[[], None] = lambda: None
 
     def __enter__(self) -> Self:
@@ -25,11 +32,25 @@ class BeeAIPlatformIOContext:
         self._cleanup = lambda: None
 
     async def _read(self, prompt: str) -> str:
-        response = await self.context.yield_async(InputRequired(text=prompt))
-        parts = response.parts if response else []
-
-        for part in parts:
-            if isinstance(part.root, TextPart):
-                return part.root.text
-
-        return ""
+        answer_field_id = "answer"
+        form_data = await self._form.request_form(
+            form=FormRender(
+                id="form",
+                title=prompt,
+                description="",
+                columns=1,
+                submit_label="Send",
+                fields=[
+                    TextField(
+                        id=answer_field_id,
+                        label="Answer",
+                        required=True,
+                        placeholder="",
+                        type="text",
+                        default_value="",
+                        col_span=1,
+                    )
+                ],
+            )
+        )
+        return str(form_data.values[answer_field_id].value)

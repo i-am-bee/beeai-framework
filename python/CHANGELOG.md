@@ -1,3 +1,18 @@
+## python_v0.1.44 (2025-09-11)
+
+### Bug Fixes
+
+- type cast
+- **logging**: prevent TypeError when during retry (#1093)
+- **backend**: watsonx tool call streaming (#1085)
+
+### Features
+
+- **adapters**: use FormExtension in BeeAI Platform (#1099)
+- **adapters**: support agents in MCP server (#1086)
+- **emitter**: improve register/deregister mechanism (#849)
+- **adapters**: add support for running the A2A server on multiple protocols (#1077)
+
 ## python_v0.1.43 (2025-09-05)
 
 ### Bug Fixes

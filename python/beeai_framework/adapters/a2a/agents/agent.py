@@ -6,25 +6,24 @@ from typing import Unpack
 from uuid import uuid4
 
 import httpx
-from a2a.types import TransportProtocol
 
 from beeai_framework.adapters.a2a.agents._utils import convert_a2a_to_framework_message
+from beeai_framework.adapters.a2a.agents.events import (
+    A2AAgentErrorEvent,
+    A2AAgentUpdateEvent,
+    a2a_agent_event_types,
+)
+from beeai_framework.adapters.a2a.agents.types import (
+    A2AAgentOutput,
+)
 from beeai_framework.backend import UserMessage
 from beeai_framework.utils.strings import to_safe_word
 
 try:
     import a2a.client as a2a_client
     import a2a.types as a2a_types
+    import a2a.utils as a2a_utils
     import grpc
-
-    from beeai_framework.adapters.a2a.agents.events import (
-        A2AAgentErrorEvent,
-        A2AAgentUpdateEvent,
-        a2a_agent_event_types,
-    )
-    from beeai_framework.adapters.a2a.agents.types import (
-        A2AAgentOutput,
-    )
 except ModuleNotFoundError as e:
     raise ModuleNotFoundError(
         "Optional module [a2a] not found.\nRun 'pip install \"beeai-framework[a2a]\"' to install."
@@ -57,25 +56,23 @@ class A2AAgent(BaseAgent[A2AAgentOutput]):
         self,
         *,
         url: str | None = None,
-        agent_card_url: str | None = None,
+        agent_card_path: str = a2a_utils.AGENT_CARD_WELL_KNOWN_PATH,
         agent_card: a2a_types.AgentCard | None = None,
         memory: BaseMemory,
         grpc_client_credentials: grpc.ChannelCredentials | None = None,
     ) -> None:
         super().__init__()
-        self._agent_card_url = agent_card_url
         if agent_card:
-            self._name: str = agent_card.name
-            self._url: str = agent_card.url
+            self._agent_card: a2a_types.AgentCard | None = agent_card
         elif url:
-            self._name = f"agent_{url.split(':')[-1]}"
             self._url = url
         else:
             raise ValueError("Either url or agent_card must be provided.")
         if not memory.is_empty():
             raise ValueError("Memory must be empty before setting.")
+
+        self._agent_card_path = agent_card_path
         self._memory: BaseMemory = memory
-        self._agent_card: a2a_types.AgentCard | None = agent_card
         self._context_id: str | None = None
         self._task_id: str | None = None
         self._reference_task_ids: list[str] = []
@@ -83,35 +80,26 @@ class A2AAgent(BaseAgent[A2AAgentOutput]):
 
     @property
     def name(self) -> str:
-        return self._name
+        return self._agent_card.name if self._agent_card else f"agent_{self._url.split(':')[-1]}"
 
     @runnable_entry
     async def run(
         self, input: str | list[AnyMessage] | AnyMessage | a2a_types.Message, /, **kwargs: Unpack[A2AAgentOptions]
     ) -> A2AAgentOutput:
-        self._context_id = kwargs.get("context_id") or self._context_id
-        self._task_id = kwargs.get("task_id")
-        if kwargs.get("clear_context"):
-            self._context_id = None
-            self._reference_task_ids.clear()
+        self.set_run_params(
+            context_id=kwargs.get("context_id"),
+            task_id=kwargs.get("task_id"),
+            clear_context=kwargs.get("clear_context"),
+        )
 
         context = RunContext.get()
+
+        if self._agent_card is None:
+            await self._load_agent_card()
+
+        assert self._agent_card is not None, "Agent card should not be empty after loading."
+
         async with httpx.AsyncClient() as httpx_client:
-            card_resolver = a2a_client.A2ACardResolver(httpx_client, self._agent_card_url or self._url)
-
-            # get agent card
-            try:
-                self._agent_card = await card_resolver.get_agent_card()
-            except Exception as e:
-                raise RuntimeError("Failed to fetch the public agent card. Cannot continue.") from e
-
-            if self._agent_card.supports_authenticated_extended_card:
-                logger.warning("\nPublic card supports authenticated extended card but this is not supported yet.")
-
-            if not self._agent_card:
-                card_resolver = a2a_client.A2ACardResolver(httpx_client, self._agent_card_url or self._url)
-                self._agent_card = await card_resolver.get_agent_card()
-
             # create client
             client: a2a_client.Client = a2a_client.ClientFactory(
                 config=a2a_client.ClientConfig(
@@ -124,12 +112,15 @@ class A2AAgent(BaseAgent[A2AAgentOutput]):
                         else grpc.aio.insecure_channel(url)
                     ),
                     supported_transports=[
-                        TransportProtocol.jsonrpc,
-                        TransportProtocol.grpc,
-                        TransportProtocol.http_json,
+                        a2a_types.TransportProtocol.jsonrpc,
+                        a2a_types.TransportProtocol.grpc,
+                        a2a_types.TransportProtocol.http_json,
                     ],
                 )
             ).create(self._agent_card)
+
+            if self._agent_card.supports_authenticated_extended_card:
+                self._agent_card = await client.get_card()
 
             last_event: a2a_client.ClientEvent | a2a_types.Message | None = None
             messages: list[a2a_types.Message] = []
@@ -137,7 +128,7 @@ class A2AAgent(BaseAgent[A2AAgentOutput]):
 
             # send request
             try:
-                async for event in client.send_message(self._convert_to_a2a_message(input)):
+                async for event in client.send_message(self.convert_to_a2a_message(input)):
                     last_event = event
 
                     if isinstance(event, a2a_types.Message):
@@ -187,7 +178,11 @@ class A2AAgent(BaseAgent[A2AAgentOutput]):
 
             except a2a_client.A2AClientError as err:
                 message = (
-                    err.message if hasattr(err, "message") else err.error if hasattr(err, "error") else "Unknown error"
+                    err.message
+                    if hasattr(err, "message")
+                    else str(err.error)
+                    if hasattr(err, "error")
+                    else "Unknown error"
                 )
                 await context.emitter.emit("error", A2AAgentErrorEvent(message=message))
                 error_context = None
@@ -201,22 +196,43 @@ class A2AAgent(BaseAgent[A2AAgentOutput]):
                     cause=err,
                 )
 
-    async def check_agent_exists(self) -> None:
+    def set_run_params(
+        self, *, context_id: str | None, task_id: str | None, clear_context: bool | None = False
+    ) -> None:
+        self._context_id = context_id or self._context_id
+        self._task_id = task_id
+        if clear_context:
+            self._context_id = None
+            self._reference_task_ids.clear()
+
+    async def _load_agent_card(self) -> None:
+        if self._agent_card:
+            return
+
         try:
             async with httpx.AsyncClient() as httpx_client:
-                card_resolver = a2a_client.A2ACardResolver(httpx_client, self._agent_card_url or self._url)
-                agent_card = await card_resolver.get_agent_card()
-                if not agent_card:
-                    raise AgentError(f"Agent {self._name} does not exist.")
+                card_resolver = a2a_client.A2ACardResolver(
+                    httpx_client, self._url, agent_card_path=self._agent_card_path
+                )
+                self._agent_card = await card_resolver.get_agent_card()
         except Exception as e:
-            raise AgentError("Can't connect to ACP agent.", cause=e)
+            raise AgentError("Can't load agent card.", cause=e)
+
+    async def check_agent_exists(self) -> None:
+        await self._load_agent_card()
+        if not self._agent_card:
+            raise AgentError(f"Agent {self.name} does not exist.")
 
     def _create_emitter(self) -> Emitter:
         return Emitter.root().child(
-            namespace=["a2a", "agent", to_safe_word(self._name)],
+            namespace=["a2a", "agent", to_safe_word(self.name)],
             creator=self,
             events=a2a_agent_event_types,
         )
+
+    @property
+    def agent_card(self) -> a2a_types.AgentCard | None:
+        return self._agent_card
 
     @property
     def memory(self) -> BaseMemory:
@@ -231,14 +247,15 @@ class A2AAgent(BaseAgent[A2AAgentOutput]):
     async def clone(self) -> "A2AAgent":
         cloned = A2AAgent(
             url=self._url,
-            agent_card_url=self._agent_card_url,
+            agent_card_path=self._agent_card_path,
             agent_card=self._agent_card,
             memory=await self.memory.clone(),
+            grpc_client_credentials=self._grpc_client_credentials,
         )
         cloned.emitter = await self.emitter.clone()
         return cloned
 
-    def _convert_to_a2a_message(
+    def convert_to_a2a_message(
         self, input: str | list[AnyMessage] | AnyMessage | a2a_types.Message
     ) -> a2a_types.Message:
         if isinstance(input, str):
