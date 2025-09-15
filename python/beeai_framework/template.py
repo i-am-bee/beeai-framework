@@ -119,6 +119,10 @@ class PromptTemplate(Generic[T]):
         self._config.defaults.update(defaults or {})
         return self
 
+    @property
+    def schema(self) -> type[T]:
+        return self._config.input_schema
+
 
 class PromptTemplateError(FrameworkError):
     """Represents an error related to prompt templates."""

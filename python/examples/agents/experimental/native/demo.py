@@ -18,7 +18,7 @@ async def main() -> None:
         name="DestinationExpert",
         llm=ChatModel.from_name("ollama:llama3.1:8b"),
         tools=[ThinkTool(), OpenMeteoTool(), DuckDuckGoSearchTool()],
-        instructions="Plan activities for a given destination based on current weather and events.",
+        # instructions="Plan activities for a given destination based on current weather and events.",
         middlewares=[GlobalTrajectoryMiddleware(excluded=[])],
     )
 
