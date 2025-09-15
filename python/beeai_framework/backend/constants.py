@@ -20,7 +20,7 @@ ProviderName = Literal[
     "mistralai",
     "langchain",
     "llamaindex",
-    "local",
+    "transformers",
 ]
 ProviderHumanName = Literal[
     "BeeAI",
@@ -37,7 +37,7 @@ ProviderHumanName = Literal[
     "MistralAI",
     "LangChain",
     "LlamaIndex",
-    "Local",
+    "Transformers",
 ]
 
 ModelTypes = Literal["embedding", "chat"]
@@ -85,5 +85,5 @@ BackendProviders = {
     "Langchain": ProviderDef(name="LangChain", module="langchain", aliases=["langchain", "LangChain"]),
     "Llamaindex": ProviderDef(name="LlamaIndex", module="llamaindex", aliases=["llamaindex", "LlamaIndex"]),
     "BeeAI": ProviderDef(name="BeeAI", module="beeai", aliases=["BeeAI", "Beeai", "BAI"]),
-    "Local": ProviderDef(name="Local", module="local", aliases=["Local", "local"]),
+    "Transformers": ProviderDef(name="Transformers", module="transformers", aliases=["Transformers", "transformers"]),
 }

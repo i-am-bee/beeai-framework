@@ -3,7 +3,6 @@
 import asyncio
 import os
 from collections.abc import AsyncGenerator
-from itertools import chain
 from typing import Any, Unpack
 
 import outlines
@@ -21,7 +20,7 @@ from transformers import (
 )
 
 from beeai_framework.adapters.litellm.utils import to_strict_json_schema
-from beeai_framework.adapters.local.backend.utils import (
+from beeai_framework.adapters.transformers.backend._utils import (
     CustomStoppingCriteria,
     get_do_sample,
     get_num_beams,
@@ -56,10 +55,10 @@ from beeai_framework.utils.strings import to_json
 logger = Logger(__name__)
 
 
-class LocalChatModel(ChatModel):
+class TransformersChatModel(ChatModel):
     model: Any
     model_structured: Any
-    id_model: str
+    _model_id: str
     device_first_layer: torch.device
     tokenizer: Any
     streamer: TextStreamer
@@ -67,11 +66,11 @@ class LocalChatModel(ChatModel):
     @property
     def model_id(self) -> str:
         """The ID for Causal Language Model at https://huggingface.co/models."""
-        return self.id_model
+        return self._model_id
 
     @property
     def provider_id(self) -> ProviderName:
-        return "local"
+        return "transformers"
 
     def __init__(
         self,
@@ -83,21 +82,13 @@ class LocalChatModel(ChatModel):
     ) -> None:
         # TODO: handle quantization config
         super().__init__(**kwargs)
-        self._assert_setting_value("api_key", hf_token, envs=["HF_TOKEN"])
-        self.supported_params = [
-            "stream",
-            "frequency_penalty",
-            "max_tokens",
-            "presence_penalty",
-            "n",
-            "temperature",
-            "top_p",
-            "tools",
-            "tool_choice",
-        ]
+        if hf_token is None:
+            hf_token = os.getenv("HF_TOKEN", None)
         self.model_supports_tool_calling = False
+        self.allow_parallel_tool_calls = False
+        self.ignore_parallel_tool_calls = True
         self.use_strict_tool_schema = True
-        self.id_model = model_id
+        self._model_id = model_id
         self.tokenizer = AutoTokenizer.from_pretrained(model_id, token=hf_token)  # type: ignore
         model_base = AutoModelForCausalLM.from_pretrained(
             model_id,
@@ -252,10 +243,21 @@ class LocalChatModel(ChatModel):
             for tool in input.tools or []
         ]
 
+        supported_params = [
+            "stream",
+            "frequency_penalty",
+            "max_tokens",
+            "presence_penalty",
+            "n",
+            "temperature",
+            "top_p",
+            "tools",
+            "tool_choice",
+        ]
         settings = exclude_keys(
             self._settings | input.model_dump(exclude_unset=True),
             {
-                *self.supported_params,
+                *supported_params,
                 "abort_signal",
                 "model",
                 "messages",
@@ -268,7 +270,7 @@ class LocalChatModel(ChatModel):
             | self._settings  # get constructor overrides
             | self.parameters.model_dump(exclude_unset=True)  # get default parameters
             | input.model_dump(exclude_none=True, exclude_unset=True),  # get custom manually set parameters
-            set(self.supported_params),
+            set(supported_params),
         )
 
         tool_choice: dict[str, Any] | str | AnyTool | None = input.tool_choice
@@ -318,42 +320,6 @@ class LocalChatModel(ChatModel):
         inputs_on_device = {k: v.to(self.device_first_layer) for k, v in inputs.items()}
 
         return inputs_on_device, prompt_tokens
-
-    def _assert_setting_value(
-        self,
-        name: str,
-        value: Any | None = None,
-        *,
-        display_name: str | None = None,
-        aliases: list[str] | None = None,
-        envs: list[str],
-        fallback: str | None = None,
-        allow_empty: bool = False,
-    ) -> None:
-        aliases = aliases or []
-        assert aliases is not None
-
-        value = value or self._settings.get(name)
-        if not value:
-            value = next(
-                chain(
-                    (self._settings[alias] for alias in aliases if self._settings.get(alias)),
-                    (os.environ[env] for env in envs if os.environ.get(env)),
-                ),
-                fallback,
-            )
-
-        for alias in aliases:
-            self._settings[alias] = None
-
-        if not value and not allow_empty:
-            raise ValueError(
-                f"Setting {display_name or name} is required for {type(self).__name__}. "
-                f"Either pass the {display_name or name} explicitly or set one of the "
-                f"following environment variables: {', '.join(envs)}."
-            )
-
-        self._settings[name] = value or None
 
     def _get_stopping_criteria(self, input: ChatModelInput, prompt_tokens: int) -> list[StoppingCriteria]:
         return (
