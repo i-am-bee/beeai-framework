@@ -9,11 +9,11 @@ from langchain_core.messages import HumanMessage as LCUserMessage
 from langchain_core.messages import SystemMessage as LCSystemMessage
 from langchain_core.messages import ToolCall as LCToolCall
 from langchain_core.messages import ToolMessage as LCToolMessage
+from langchain_core.tools import StructuredTool
 
 from beeai_framework.backend import (
     AnyMessage,
     AssistantMessage,
-    AssistantMessageContent,
     MessageImageContent,
     MessageTextContent,
     MessageToolCallContent,
@@ -23,7 +23,8 @@ from beeai_framework.backend import (
     UserMessage,
 )
 from beeai_framework.backend.message import MessageImageContentImageUrl
-from beeai_framework.utils.lists import remove_falsy
+from beeai_framework.tools import AnyTool
+from beeai_framework.utils.lists import cast_list, remove_falsy
 from beeai_framework.utils.strings import to_json
 
 
@@ -48,31 +49,35 @@ def to_beeai_message_content(
 def to_beeai_messages(messages: list[LCBaseMessage]) -> list[AnyMessage]:
     output_messages: list[AnyMessage] = []
     for message in messages:
+        content = remove_falsy([to_beeai_message_content(content) for content in cast_list(message.content)])  # type: ignore
+
         if isinstance(message, LCUserMessage):
-            output_messages.append(UserMessage(message.content, message.response_metadata, id=message.id))  # type: ignore
+            output_messages.append(UserMessage(content, message.response_metadata, id=message.id))
         elif isinstance(message, LCAIMessage):
-            parts: list[AssistantMessageContent] = []
-            if message.content:
-                if isinstance(message.content, list):
-                    parts.extend(message.content)  # type: ignore
-                elif message.content:
-                    parts.append(MessageTextContent(text=message.content))
-            for tool_call in message.tool_calls:
-                parts.append(
-                    MessageToolCallContent(
-                        id=tool_call["id"] or "",
-                        tool_name=tool_call["name"],
-                        args=to_json(tool_call["args"], sort_keys=False),
-                    )
+            output_messages.append(
+                AssistantMessage(
+                    [
+                        *content,
+                        *[
+                            MessageToolCallContent(
+                                id=tool_call["id"] or "",
+                                tool_name=tool_call["name"],
+                                args=to_json(tool_call["args"], sort_keys=False),
+                            )
+                            for tool_call in message.tool_calls
+                        ],
+                    ],
+                    message.response_metadata,
+                    id=message.id,
                 )
-            output_messages.append(AssistantMessage(parts, message.response_metadata, id=message.id))
+            )
         elif isinstance(message, LCSystemMessage):
-            output_messages.append(SystemMessage(message.text(), message.response_metadata, id=message.id))
+            output_messages.append(SystemMessage(content, message.response_metadata, id=message.id))
         elif isinstance(message, LCToolMessage):
             output_messages.append(
                 ToolMessage(
                     MessageToolResultContent(
-                        result=message.text(),
+                        result=message.text() or to_json(message.artifact),
                         tool_name=message.response_metadata.get("tool_name") or "",
                         tool_call_id=message.tool_call_id,
                     ),
@@ -85,7 +90,7 @@ def to_beeai_messages(messages: list[LCBaseMessage]) -> list[AnyMessage]:
     return output_messages
 
 
-def to_langchain_message_content(
+def to_lc_message_content(
     content: Any,
 ) -> dict[Any, Any] | None:
     if isinstance(content, MessageTextContent):
@@ -96,12 +101,12 @@ def to_langchain_message_content(
         return None
 
 
-def to_langchain_messages(messages: list[AnyMessage]) -> list[LCBaseMessage]:
+def to_lc_messages(messages: list[AnyMessage]) -> list[LCBaseMessage]:
     output_messages: list[LCBaseMessage] = []
     for message in messages:
         # Note: type extended to satisfy mypy
         content: list[str | dict[Any, Any]] = remove_falsy(
-            [to_langchain_message_content(content) for content in message.content]
+            [to_lc_message_content(content) for content in message.content]
         )
 
         if isinstance(message, UserMessage):
@@ -132,3 +137,19 @@ def to_langchain_messages(messages: list[AnyMessage]) -> list[LCBaseMessage]:
             raise ValueError(f"Unsupported message type: {type(message)}")
 
     return output_messages
+
+
+def beeai_tool_to_lc_tool(tool: AnyTool) -> StructuredTool:
+    async def wrapper(**kwargs: Any) -> Any:
+        return await tool.run(kwargs)
+
+    return StructuredTool.from_function(
+        coroutine=wrapper,
+        name=tool.name,
+        description=tool.description,
+        args_schema=tool.input_schema,
+        infer_schema=False,
+        response_format="content",
+        parse_docstring=False,
+        error_on_invalid_docstring=False,
+    )

@@ -7,10 +7,9 @@ from typing import Any, Unpack
 from langchain_core.language_models import BaseChatModel, LanguageModelInput
 from langchain_core.messages import AIMessage, BaseMessage
 from langchain_core.runnables import Runnable as LCRunnable
-from langchain_core.tools import StructuredTool
 from pydantic import BaseModel
 
-from beeai_framework.adapters.langchain.backend._utils import to_beeai_messages, to_langchain_messages
+from beeai_framework.adapters.langchain.backend._utils import beeai_tool_to_lc_tool, to_beeai_messages, to_lc_messages
 from beeai_framework.backend import (
     ChatModel,
     ChatModelError,
@@ -21,7 +20,6 @@ from beeai_framework.backend.chat import ChatModelKwargs, T
 from beeai_framework.backend.constants import ProviderName
 from beeai_framework.backend.types import ChatModelInput, ChatModelStructureInput, ChatModelUsage
 from beeai_framework.context import RunContext
-from beeai_framework.tools import AnyTool
 
 
 class LangChainChatModel(ChatModel):
@@ -43,21 +41,6 @@ class LangChainChatModel(ChatModel):
     def provider_id(self) -> ProviderName:
         return "langchain"
 
-    def _create_lc_tool(self, tool: AnyTool) -> StructuredTool:
-        async def wrapper(**kwargs: Any) -> Any:
-            return await tool.run(kwargs)
-
-        return StructuredTool.from_function(
-            coroutine=wrapper,
-            name=tool.name,
-            description=tool.description,
-            args_schema=tool.input_schema,
-            infer_schema=False,
-            response_format="content",
-            parse_docstring=False,
-            error_on_invalid_docstring=False,
-        )
-
     def _prepare_model(self, input: ChatModelInput) -> LCRunnable[LanguageModelInput, BaseMessage]:
         parameters = self.parameters.model_dump(exclude_none=True, exclude={"stop_sequences", "stream", "tool_choice"})
         parameters["stop"] = input.stop_sequences
@@ -67,18 +50,18 @@ class LangChainChatModel(ChatModel):
             if hasattr(self._model, key):
                 setattr(self._model, key, value)
 
-        tools = [self._create_lc_tool(tool) for tool in (input.tools or [])]
+        tools = [beeai_tool_to_lc_tool(tool) for tool in (input.tools or [])]
         tool_choice = str(input.tool_choice) if input.tool_choice else None
         return self._model.bind_tools(tools, tool_choice=tool_choice)
 
     async def _create(self, input: ChatModelInput, run: RunContext) -> ChatModelOutput:
-        input_messages = to_langchain_messages(input.messages)
+        input_messages = to_lc_messages(input.messages)
         model = self._prepare_model(input)
         lc_response = await model.ainvoke(input=input_messages, stop=input.stop_sequences)
         return self._transform_output(lc_response)
 
     async def _create_stream(self, input: ChatModelInput, run: RunContext) -> AsyncGenerator[ChatModelOutput]:
-        input_messages = to_langchain_messages(input.messages)
+        input_messages = to_lc_messages(input.messages)
         model = self._prepare_model(input)
 
         tmp_chunk: ChatModelOutput | None = None
@@ -102,7 +85,7 @@ class LangChainChatModel(ChatModel):
 
     async def _create_structure(self, input: ChatModelStructureInput[T], run: RunContext) -> ChatModelStructureOutput:
         response = await self._model.with_structured_output(schema=input.input_schema, include_raw=True).ainvoke(
-            to_langchain_messages(input.messages),
+            to_lc_messages(input.messages),
             stop=input.stop_sequences,
         )
         assert isinstance(response, dict), "Response must be a dictionary because include_raw was set to True."
