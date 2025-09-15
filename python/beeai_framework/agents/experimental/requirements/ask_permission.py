@@ -111,4 +111,4 @@ async def _default_handler(tool: AnyTool, input: dict[str, Any]) -> bool:
     response = await io_read(
         f"The agent wants to use the '{tool.name} tool.'\nInput: {input}\nDo you allow it? (yes/no): "
     )
-    return response.strip().startswith("yes")
+    return response.strip().lower().startswith("yes")
