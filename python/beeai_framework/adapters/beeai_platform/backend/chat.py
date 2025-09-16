@@ -10,10 +10,10 @@ from beeai_sdk.a2a.extensions import LLMServiceExtensionServer
 from typing_extensions import Unpack
 
 from beeai_framework.adapters.openai import OpenAIChatModel
-from beeai_framework.backend import ChatModelOutput, ChatModelStructureOutput
-from beeai_framework.backend.chat import ChatModel, ChatModelKwargs, T, ToolChoiceType
+from beeai_framework.backend import ChatModelOutput
+from beeai_framework.backend.chat import ChatModel, ChatModelKwargs, ToolChoiceType
 from beeai_framework.backend.constants import ProviderName
-from beeai_framework.backend.types import ChatModelInput, ChatModelStructureInput
+from beeai_framework.backend.types import ChatModelInput
 from beeai_framework.backend.utils import load_model
 from beeai_framework.context import RunContext
 
@@ -67,9 +67,6 @@ class BeeAIPlatformChatModel(ChatModel):
 
     def _create_stream(self, input: ChatModelInput, run: RunContext) -> AsyncGenerator[ChatModelOutput]:
         return self._model._create_stream(input, run)
-
-    async def _create_structure(self, input: ChatModelStructureInput[T], run: RunContext) -> ChatModelStructureOutput:
-        return await self._model._create_structure(input, run)
 
     @property
     def model_id(self) -> str:

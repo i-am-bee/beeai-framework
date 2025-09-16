@@ -1,3 +1,97 @@
+## Unreleased
+
+### Features
+
+- Converted `ChatModel` into `Runnable` (#1019)
+
+**Migration Guide**
+
+The `ChatModel` class has undergone significant refactoring to implement the `Runnable` interface, requiring changes to how you interact with chat models.
+
+**Key Changes:**
+
+- `ChatModel` now extends `Runnable[ChatModelOutput]` instead of being a standalone class
+- The `create()` method has been renamed to `run()`
+- The `create_structure()` method has been collapsed into `run()` and it now supports streaming
+- Method signatures have changed to align with the runnable pattern
+- New `ChatModelOptions` typed dictionary for optional parameters
+
+### Method Signature Changes
+
+**Before**
+
+```python
+from beeai_framework.adapters.ollama import OllamaChatModel
+from beeai_framework.backend import UserMessage
+
+llm = OllamaChatModel("llama3.1")
+
+# Old create method with keyword arguments
+response = await llm.create(
+    messages=[UserMessage("Hello")],
+    tools=None,
+    tool_choice=None,
+    stream=False,
+    max_tokens=1000,
+    temperature=0.7
+)
+```
+
+**After**
+
+```python
+from beeai_framework.adapters.ollama import OllamaChatModel
+from beeai_framework.backend import UserMessage
+
+llm = OllamaChatModel("llama3.1")
+
+# New run method with positional messages argument
+response = await llm.run(
+    [UserMessage("Hello")],  # First positional argument
+    tools=None,
+    tool_choice=None,
+    stream=False,
+    max_tokens=1000,
+    temperature=0.7
+)
+```
+
+### Structured Generation Changes
+
+**Before**
+
+```python
+# Old create_structure method
+response = await llm.create_structure(
+    schema=MyModel,
+    messages=[UserMessage("Generate structured data")],
+    max_retries=3
+)
+print(response.output_structured)
+```
+
+**After**
+
+```python
+# New run method with response_format
+response = await llm.run(
+    [UserMessage("Generate structured data")],
+    response_format=MyModel,
+    max_retries=3
+)
+print(response.output_structured)
+```
+
+IMPORTANT: If `response_format` is a Pydantic model, the `output_structured` will be the instance of it. Previously there was no such step.  
+
+### Breaking Changes Summary
+
+- **Method rename**: `create()` → `run()`, `create_structure()` → `run()`
+- **Parameter structure**: Messages are now the first positional argument, `abort_signal` is now `signal`
+- **Structured generation**: Use `response_format` parameter instead in the `run` method instead of `create_structure()` method
+- **Class hierarchy**: `ChatModel` now extends `Runnable[ChatModelOutput]`
+- **Type annotations**: New `ChatModelOptions` for optional parameters
+
 ## python_v0.1.46 (2025-09-17)
 
 ### Bug Fixes
@@ -45,7 +139,9 @@
 
 ## python_v0.1.42 (2025-09-02)
 
-Converted all `beeai_framework.agents` into “runnables,” modifying their `run` method signatures (#1013).
+### Features
+
+- Converted all `beeai_framework.agents` into “runnables,” modifying their `run` method signatures (#1013).
 
 **Migration Guide**
 

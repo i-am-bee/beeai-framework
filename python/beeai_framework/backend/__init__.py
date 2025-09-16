@@ -34,7 +34,6 @@ from beeai_framework.backend.message import (
 from beeai_framework.backend.types import (
     ChatModelOutput,
     ChatModelParameters,
-    ChatModelStructureOutput,
     EmbeddingModelOutput,
 )
 
@@ -51,7 +50,6 @@ __all__ = [
     "ChatModelOutput",
     "ChatModelParameters",
     "ChatModelStartEvent",
-    "ChatModelStructureOutput",
     "ChatModelSuccessEvent",
     "CustomMessage",
     "CustomMessage",

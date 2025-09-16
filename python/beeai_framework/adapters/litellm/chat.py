@@ -22,7 +22,7 @@ from litellm.types.utils import StreamingChoices
 from pydantic import BaseModel
 from typing_extensions import Unpack
 
-from beeai_framework.adapters.litellm.utils import litellm_debug, to_strict_json_schema
+from beeai_framework.adapters.litellm.utils import litellm_debug, process_structured_output, to_strict_json_schema
 from beeai_framework.backend.chat import (
     ChatModel,
     ChatModelKwargs,
@@ -39,11 +39,8 @@ from beeai_framework.backend.types import (
     ChatModelInput,
     ChatModelOutput,
     ChatModelParameters,
-    ChatModelStructureInput,
-    ChatModelStructureOutput,
     ChatModelUsage,
 )
-from beeai_framework.backend.utils import parse_broken_json
 from beeai_framework.cache.null_cache import NullCache
 from beeai_framework.context import RunContext
 from beeai_framework.logger import Logger
@@ -81,8 +78,12 @@ class LiteLLMChatModel(ChatModel, ABC):
         run: RunContext,
     ) -> ChatModelOutput:
         litellm_input = self._transform_input(input) | {"stream": False}
-        response = await acompletion(**litellm_input)
-        response_output = self._transform_output(response)
+        raw = await acompletion(**litellm_input)
+        response_output = self._transform_output(raw)
+        if input.response_format and not response_output.output_structured:
+            text = response_output.get_text_content()
+            response_output.output_structured = process_structured_output(input.response_format, text)
+
         logger.debug(f"Inference response output:\n{response_output}")
         return response_output
 
@@ -91,6 +92,7 @@ class LiteLLMChatModel(ChatModel, ABC):
         set_attr_if_none(litellm_input, ["stream_options", "include_usage"], value=True)
         response = await acompletion(**litellm_input)
 
+        text = ""
         is_empty = True
         tmp_chunk: ChatModelOutput | None = None
         async for _chunk in response:
@@ -103,6 +105,7 @@ class LiteLLMChatModel(ChatModel, ABC):
                 tmp_chunk.merge(chunk)
 
             if tmp_chunk.is_valid():
+                text += tmp_chunk.get_text_content()
                 yield tmp_chunk
                 tmp_chunk = None
 
@@ -113,24 +116,9 @@ class LiteLLMChatModel(ChatModel, ABC):
         if tmp_chunk:
             raise ChatModelError("Failed to merge intermediate responses.")
 
-    async def _create_structure(self, input: ChatModelStructureInput[Any], run: RunContext) -> ChatModelStructureOutput:
-        if "response_format" not in self.supported_params:
-            logger.warning(f"{self.provider_id} model {self.model_id} does not support structured data.")
-            return await super()._create_structure(input, run)
-        else:
-            response = await self._create(
-                ChatModelInput(
-                    messages=input.messages, response_format=input.input_schema, abort_signal=input.abort_signal
-                ),
-                run,
-            )
-
-            logger.debug(f"Structured response received:\n{response}")
-
-            text_response = response.get_text_content()
-            result = parse_broken_json(text_response)
-            # TODO: validate result matches expected schema
-            return ChatModelStructureOutput(object=result)
+        if input.response_format:
+            output_structured = process_structured_output(input.response_format, text)
+            yield ChatModelOutput(output=[], output_structured=output_structured, finish_reason="stop")
 
     def _transform_input(self, input: ChatModelInput) -> dict[str, Any]:
         messages: list[dict[str, Any]] = []
@@ -209,7 +197,7 @@ class LiteLLMChatModel(ChatModel, ABC):
 
         settings = exclude_keys(
             self._settings | input.model_dump(exclude_unset=True),
-            {*self.supported_params, "abort_signal", "model", "messages", "tools", "supports_top_level_unions"},
+            {*self.supported_params, "signal", "model", "messages", "tools", "supports_top_level_unions"},
         )
         params = include_keys(
             input.model_dump(exclude_none=True)  # get all parameters with default values
@@ -273,27 +261,27 @@ class LiteLLMChatModel(ChatModel, ABC):
                 )
 
         return ChatModelOutput(
-            messages=(
+            output=(
                 [
-                    (
-                        AssistantMessage(
-                            [
-                                MessageToolCallContent(
-                                    id=call.id or "",
-                                    tool_name=call.function.name or "",
-                                    args=call.function.arguments,
-                                )
-                                for call in update.tool_calls
-                            ],
-                            id=chunk.id,
-                        )
-                        if update.tool_calls
-                        else AssistantMessage(update.content, id=chunk.id)  # type: ignore
+                    AssistantMessage(
+                        [
+                            MessageToolCallContent(
+                                id=call.id or "",
+                                tool_name=call.function.name or "",
+                                args=call.function.arguments,
+                            )
+                            for call in update.tool_calls
+                        ],
+                        id=chunk.id,
                     )
+                    if update.tool_calls
+                    else AssistantMessage(update.content, id=chunk.id)  # type: ignore
                 ]
-                if update and update.model_dump(exclude_none=True)
+                if (update and update.model_dump(exclude_none=True))
                 else []
             ),
+            # Will be set later
+            output_structured=None,
             finish_reason=finish_reason,
             usage=ChatModelUsage(**usage.model_dump()) if usage else None,
             cost=cost,

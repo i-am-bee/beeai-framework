@@ -91,11 +91,9 @@ Do not use this tool multiple times in a row, always write the full code you wan
     ) -> PythonToolOutput:
         async def get_source_code() -> str:
             if self._preprocess:
-                response = await self._preprocess.llm.create(
-                    messages=[
-                        UserMessage(self._preprocess.prompt_template.render(PythonToolTemplate(input=tool_input.code)))
-                    ],
-                    abort_signal=context.signal,
+                response = await self._preprocess.llm.run(
+                    [UserMessage(self._preprocess.prompt_template.render(PythonToolTemplate(input=tool_input.code)))],
+                    signal=context.signal,
                 )
                 return response.get_text_content()
             return tool_input.code

@@ -16,7 +16,7 @@ async def main() -> None:
         first_name: str = Field(..., min_length=1)
         last_name: str = Field(..., min_length=1)
         address: str
-        age: int = Field(..., min_length=1)
+        age: int
         hobby: str
 
     class ErrorSchema(BaseModel):
@@ -25,16 +25,12 @@ async def main() -> None:
     class SchemUnion(ProfileSchema, ErrorSchema):
         pass
 
-    response = await model.create_structure(
-        schema=SchemUnion,
-        messages=[UserMessage("Generate a profile of a citizen of Europe.")],
+    response = await model.run(
+        [UserMessage("Generate a profile of a citizen of Europe.")],
+        response_format=SchemUnion,
     )
-
-    print(
-        json.dumps(
-            response.object.model_dump() if isinstance(response.object, BaseModel) else response.object, indent=4
-        )
-    )
+    assert isinstance(response.output_structured, ProfileSchema)
+    print(json.dumps(response.output_structured.model_dump(), indent=4))
 
 
 if __name__ == "__main__":
