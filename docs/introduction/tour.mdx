@@ -44,7 +44,7 @@ Here’s a quick map of the stages and modules:
   </Card>
 </CardGroup>
 
-## Prerequisites
+## Before You Start
 
 - **Python 3.11++**
 - **BeeAI Framework**: `pip install beeai-framework`
@@ -59,7 +59,7 @@ You can also use other LLM providers like OpenAI, Anthropic, or watsonx - see [B
 
 ## Foundation
 
-### Build Your First Agent
+### Your First Agent
 
 <Info>
 **New Modules**: [Agent](https://framework.beeai.dev/modules/agents), [Backend](https://framework.beeai.dev/modules/backend)
@@ -111,7 +111,7 @@ if __name__ == "__main__":
   </Accordion>
 </AccordionGroup>
 
-### Tools for External Capabilities
+### Add Real-World Knowledge
 
 <Info>
 New Module: [Tools](https://framework.beeai.dev/modules/tools)
@@ -150,9 +150,9 @@ Try these prompts:
 
 ## Observability
 
-Now let's see what your agent is doing...
+Let’s take a closer look at your agent in action.
 
-Understanding what your agent is doing is crucial from day one. The BeeAI Framework provides four complementary ways to observe your agents:
+Knowing what your agent is doing is essential from the very start. The BeeAI Framework gives you four powerful, complementary ways to monitor and understand your agents:
 
 | **What** | **When to Use** | **What You Get** |
 |:----------|:-----------------|:------------------|
@@ -163,7 +163,7 @@ Understanding what your agent is doing is crucial from day one. The BeeAI Framew
 
 Let's see each one in action...
 
-### Middleware
+### Framework Insights
 
 <Info>
 **New Feature**: GlobalTrajectoryMiddleware (part of the framework's middleware system)
@@ -201,7 +201,7 @@ if __name__ == "__main__":
 
 **What you see**: Visual execution tree showing exactly what your agent did
 
-### Logger
+### Application Logging
 
 <Info>
 **New Module**: [Logger](https://framework.beeai.dev/modules/logger)
@@ -260,7 +260,7 @@ if __name__ == "__main__":
 2024-01-15 10:30:47 | INFO | my-agent - Agent response generated successfully
 ```
 
-### Events + Emitter
+### Custom Events
 
 <Info>
 **New Modules**: [Events](https://framework.beeai.dev/modules/events), [Emitter](https://framework.beeai.dev/modules/emitter)
@@ -389,9 +389,9 @@ In practice, you'll often use multiple obeservability approaches together. For t
 
 ## Requirements
 
-### Control Execution Flow
+### Guide Your Agent
 
-Use **Requirements** to guide how your agent thinks and acts. Let’s add the Think Tool and set up some conditional requirements to decide when tools should run.
+Use **Requirements** to control your agent's behavior. Let’s add the Think Tool and set up some conditional requirements to decide when tools should run.
 
 ```python
 import asyncio 
@@ -439,7 +439,7 @@ if __name__ == "__main__":
 Learn more about Requirements and see examples in [documentation](https://framework.beeai.dev/experimental/requirement-agent)
 </Tip>
 
-### Ask for Permission
+### Request User Permission
 
 Here is how to add user permission for sensitive operations:
 
@@ -492,7 +492,7 @@ if __name__ == "__main__":
 
 Now it’s time to give your agent a memory, so it can remember past conversations and reuse patterns through templates.
 
-### Memory Management Strategies
+### Add Memory
 
 <Info>
 New Module: [Memory](https://framework.beeai.dev/modules/memory)
@@ -879,7 +879,7 @@ Learn more: https://github.com/i-am-bee/beeai-framework/discussions/1005
 
 Now it's time for production-grade features.
 
-### Intelligent Caching System
+### Caching for Speed & Efficiency
 
 <Info>
 New Module: [Cache](https://framework.beeai.dev/modules/cache)
@@ -932,7 +932,7 @@ if __name__ == "__main__":
     asyncio.run(main())
 ```
 
-### Error Handling
+### Handle Errors Gracefully
 
 <Info>
 New Module: [Errors](https://framework.beeai.dev/modules/errors)
