@@ -500,6 +500,7 @@ description = "The AWS SDK for Python"
 optional = true
 python-versions = ">=3.9"
 groups = ["main"]
+markers = "extra == \"bedrock\" or extra == \"all\""
 files = [
     {file = "boto3-1.39.10-py3-none-any.whl", hash = "sha256:5b2aa5b7d075491c7c6cb539255a44f0ebd70ffc540e32dfd56eb8a361390e5e"},
     {file = "boto3-1.39.10.tar.gz", hash = "sha256:62a1623c8c9495625c88778869b75b692a7ef226fcbb96ea58365b9f043a2ae2"},
@@ -520,6 +521,7 @@ description = "Low-level, data-driven core of boto 3."
 optional = true
 python-versions = ">=3.9"
 groups = ["main"]
+markers = "extra == \"bedrock\" or extra == \"all\""
 files = [
     {file = "botocore-1.39.10-py3-none-any.whl", hash = "sha256:d279f252a37bfa7d8a628404ea745c0163ed6260e037d813ce0aef2996ffea28"},
     {file = "botocore-1.39.10.tar.gz", hash = "sha256:7fe00007304fe4627d7dd7b8605c6666a560651e91100f47391ae40a310dc092"},
@@ -1556,7 +1558,7 @@ files = [
     {file = "google_auth-2.40.3-py2.py3-none-any.whl", hash = "sha256:1370d4593e86213563547f97a92752fc658456fe4514c809544f330fed45a7ca"},
     {file = "google_auth-2.40.3.tar.gz", hash = "sha256:500c3a29adedeb36ea9cf24b8d10858e152f2412e3ca37829b3fa18e33d63b77"},
 ]
-markers = {main = "extra == \"beeai-platform\" or extra == \"a2a\" or extra == \"all\""}
+markers = {main = "extra == \"beeai-platform\" or extra == \"a2a\" or extra == \"all\" or extra == \"vertexai\""}
 
 [package.dependencies]
 cachetools = ">=2.0.0,<6.0"
@@ -2256,6 +2258,7 @@ description = "JSON Matching Expressions"
 optional = true
 python-versions = ">=3.7"
 groups = ["main"]
+markers = "extra == \"bedrock\" or extra == \"all\""
 files = [
     {file = "jmespath-1.0.1-py3-none-any.whl", hash = "sha256:02e2e4cc71b5bcab88332eebf907519190dd9e6e82107fa7f83b1003a6252980"},
     {file = "jmespath-1.0.1.tar.gz", hash = "sha256:90261b206d6defd58fdd5e85f478bf633a2901798906be2ad389150c5c60edbe"},
@@ -4802,7 +4805,7 @@ files = [
     {file = "pyasn1-0.6.1-py3-none-any.whl", hash = "sha256:0d632f46f2ba09143da3a8afe9e33fb6f92fa2320ab7e886e2d0f7672af84629"},
     {file = "pyasn1-0.6.1.tar.gz", hash = "sha256:6f580d2bdd84365380830acf45550f2511469f673cb4a5ae3857a3170128b034"},
 ]
-markers = {main = "extra == \"beeai-platform\" or extra == \"a2a\" or extra == \"all\""}
+markers = {main = "extra == \"beeai-platform\" or extra == \"a2a\" or extra == \"all\" or extra == \"vertexai\""}
 
 [[package]]
 name = "pyasn1-modules"
@@ -4815,7 +4818,7 @@ files = [
     {file = "pyasn1_modules-0.4.2-py3-none-any.whl", hash = "sha256:29253a9207ce32b64c3ac6600edc75368f98473906e8fd1043bd6b5b1de2c14a"},
     {file = "pyasn1_modules-0.4.2.tar.gz", hash = "sha256:677091de870a80aae844b1ca6134f54652fa2c8c5a52aa396440ac3106e941e6"},
 ]
-markers = {main = "extra == \"beeai-platform\" or extra == \"a2a\" or extra == \"all\""}
+markers = {main = "extra == \"beeai-platform\" or extra == \"a2a\" or extra == \"all\" or extra == \"vertexai\""}
 
 [package.dependencies]
 pyasn1 = ">=0.6.1,<0.7.0"
@@ -5211,6 +5214,7 @@ files = [
     {file = "python-dateutil-2.9.0.post0.tar.gz", hash = "sha256:37dd54208da7e1cd875388217d5e00ebd4179249f90fb72437e91a35459a0ad3"},
     {file = "python_dateutil-2.9.0.post0-py2.py3-none-any.whl", hash = "sha256:a8b2bc7bffae282281c8140a97d3aa9c14da0b136dfe83f850eea9a5f7470427"},
 ]
+markers = {main = "extra == \"bedrock\" or extra == \"all\" or extra == \"llama-index\" or extra == \"rag\""}
 
 [package.dependencies]
 six = ">=1.5"
@@ -6036,7 +6040,7 @@ files = [
     {file = "rsa-4.9.1-py3-none-any.whl", hash = "sha256:68635866661c6836b8d39430f97a996acbd61bfa49406748ea243539fe239762"},
     {file = "rsa-4.9.1.tar.gz", hash = "sha256:e7bdbfdb5497da4c07dfd35530e1a902659db6ff241e39d9953cad06ebd0ae75"},
 ]
-markers = {main = "extra == \"beeai-platform\" or extra == \"a2a\" or extra == \"all\""}
+markers = {main = "extra == \"beeai-platform\" or extra == \"a2a\" or extra == \"all\" or extra == \"vertexai\""}
 
 [package.dependencies]
 pyasn1 = ">=0.1.3"
@@ -6076,6 +6080,7 @@ description = "An Amazon S3 Transfer Manager"
 optional = true
 python-versions = ">=3.9"
 groups = ["main"]
+markers = "extra == \"bedrock\" or extra == \"all\""
 files = [
     {file = "s3transfer-0.13.1-py3-none-any.whl", hash = "sha256:a981aa7429be23fe6dfc13e80e4020057cbab622b08c0315288758d67cabc724"},
     {file = "s3transfer-0.13.1.tar.gz", hash = "sha256:c3fdba22ba1bd367922f27ec8032d6a1cf5f10c934fb5d68cf60fd5a23d936cf"},
@@ -6191,6 +6196,7 @@ files = [
     {file = "six-1.17.0-py2.py3-none-any.whl", hash = "sha256:4721f391ed90541fddacab5acf947aa0d3dc7d27b2e1e8eda2be8970586c3274"},
     {file = "six-1.17.0.tar.gz", hash = "sha256:ff70335d468e7eb6ec65b95b99d3a2836546063f63acc5171de367e834932a81"},
 ]
+markers = {main = "extra == \"bedrock\" or extra == \"all\" or extra == \"llama-index\" or extra == \"rag\""}
 
 [[package]]
 name = "sniffio"
@@ -7580,7 +7586,8 @@ cffi = ["cffi (>=1.11)"]
 [extras]
 a2a = ["a2a-sdk", "types-grpcio", "types-grpcio-reflection", "uvicorn"]
 acp = ["acp-sdk", "uvicorn"]
-all = ["a2a-sdk", "acp-sdk", "beeai-sdk", "ddgs", "fastapi", "langchain-community", "langchain-core", "langchain-ollama", "langgraph-prebuilt", "llama-index", "mcp", "uvicorn", "wikipedia-api"]
+all = ["a2a-sdk", "acp-sdk", "beeai-sdk", "boto3", "ddgs", "fastapi", "google-auth", "langchain-community", "langchain-core", "langchain-ollama", "langgraph-prebuilt", "llama-index", "mcp", "uvicorn", "wikipedia-api"]
+bedrock = ["boto3"]
 beeai-platform = ["a2a-sdk", "beeai-sdk", "uvicorn"]
 duckduckgo = ["ddgs"]
 huggingface = []
@@ -7589,10 +7596,11 @@ llama-index = ["llama-index"]
 mcp = ["mcp"]
 rag = ["langchain-community", "langchain-core", "langchain-ollama", "llama-index", "markdown", "unstructured"]
 search = ["ddgs", "wikipedia-api"]
+vertexai = ["google-auth"]
 watsonx-orchestrate = ["fastapi", "uvicorn"]
 wikipedia = ["wikipedia-api"]
 
 [metadata]
 lock-version = "2.1"
 python-versions = ">= 3.11,<3.14"
-content-hash = "eda968f2cb3fd46d56e6fede9ce5d39435da60de8b1964304295605f215f5797"
+content-hash = "725200a0267e70094a31a152ceb2130072095b857004c517ba803fd4e98f1925"

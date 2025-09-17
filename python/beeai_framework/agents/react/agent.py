@@ -3,6 +3,7 @@
 
 from collections.abc import Callable
 from datetime import UTC, datetime
+from functools import cached_property
 from typing import Any, Unpack
 
 from beeai_framework.agents import AgentOptions, BaseAgent
@@ -46,8 +47,6 @@ logger = Logger(__name__)
 
 
 class ReActAgent(BaseAgent[ReActAgentOutput]):
-    _runner: Callable[..., BaseRunner]
-
     def __init__(
         self,
         llm: ChatModel,
@@ -62,16 +61,19 @@ class ReActAgent(BaseAgent[ReActAgentOutput]):
         self._input = ReActAgentInput(
             llm=llm, tools=tools, memory=memory, meta=meta, templates=templates, execution=execution, stream=stream
         )
-        if "granite" in self._input.llm.model_id:
-            self._runner = GraniteRunner
-        else:
-            self._runner = DefaultRunner
 
     def _create_emitter(self) -> Emitter:
         return Emitter.root().child(
             namespace=["agent", "react"],
             creator=self,
         )
+
+    @cached_property
+    def _runner(self) -> Callable[..., BaseRunner]:
+        if "granite" in self._input.llm.model_id:
+            return GraniteRunner
+        else:
+            return DefaultRunner
 
     @property
     def memory(self) -> BaseMemory:
