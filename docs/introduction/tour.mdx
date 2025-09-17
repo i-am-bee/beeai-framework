@@ -23,7 +23,7 @@ Here’s a quick map of the stages and modules:
     Add reasoning rules, guardrails, and user permissions
   </Card>
 
-  <Card title="Context" icon="brain" href="#context">
+  <Card title="Intelligence" icon="brain" href="#intelligence">
     Add memory and templates for smarter agents
   </Card>
 
@@ -68,7 +68,7 @@ You can also use other LLM providers like OpenAI, Anthropic, or watsonx - see [B
 Let's start with the simplest possible agent - one that can respond to messages.
     
 ```python
-import asyncio
+import asyncio 
 from beeai_framework.agents.experimental import RequirementAgent
 from beeai_framework.backend import ChatModel
 
@@ -120,21 +120,20 @@ New Module: [Tools](https://framework.beeai.dev/modules/tools)
 Give your agent the ability to access real-world information:
 
 ```python
-import asyncio
+import asyncio 
 from beeai_framework.agents.experimental import RequirementAgent
 from beeai_framework.backend import ChatModel
 from beeai_framework.tools.search.wikipedia import WikipediaTool
 from beeai_framework.tools.weather import OpenMeteoTool
 
 async def main():
-    # Enhanced agent with tools
     agent = RequirementAgent(
         llm=ChatModel.from_name("ollama:granite3.3:8b"),
-        tools=[WikipediaTool(), OpenMeteoTool()],
-        instructions="You are a helpful research assistant. Use your tools to find accurate, current information."
+        role="friendly AI assistant",
+        instructions="Be helpful and conversational in all your interactions. Use your tools to find accurate, current information.",
+        tools=[WikipediaTool(), OpenMeteoTool()]
     )
 
-    # Test the tools
     response = await agent.run("What's the current weather in New York and tell me about the history of the city?")
     print(response.last_message.text)
 
@@ -157,56 +156,12 @@ Understanding what your agent is doing is crucial from day one. The BeeAI Framew
 
 | **What** | **When to Use** | **What You Get** |
 |:----------|:-----------------|:------------------|
-| **Logger** | Application-level debugging | Human-readable timestamped messages |
 | **Middleware** | Framework-level debugging | Visual execution flow |
+| **Logger** | Application-level debugging | Human-readable timestamped messages |
 | **Events + Emitter** | Custom reactions to agent behavior | Real-time programmatic event handling |
 | **Observability** | Production monitoring | External platform integration (dashboards, metrics) |
 
 Let's see each one in action...
-
-### Logger
-
-<Info>
-**New Module**: [Logger](https://framework.beeai.dev/modules/logger)
-</Info>
-
-**Use this for**: When you want to log specific events in your application code
-
-**How it works**: You manually write logging statements wherever you want them
-
-```python
-import asyncio
-from beeai_framework.agents.experimental import RequirementAgent
-from beeai_framework.backend import ChatModel
-from beeai_framework.logger import Logger
-
-async def main():
-    # You create the logger and decide what to log
-    logger = Logger("my-agent", level="TRACE")
-    
-    logger.info("Starting agent application")
-    
-    agent = RequirementAgent(
-        llm=ChatModel.from_name("ollama:granite3.3:8b"),
-        instructions="You are a helpful AI assistant."
-    )
-
-    logger.debug("About to process user message")
-    response = await agent.run("Hello! What can you help me with today?")
-    logger.info("Agent response generated")
-    
-    print(f"Agent: {response.last_message.text}")
-
-if __name__ == "__main__":
-    asyncio.run(main())
-```
-
-**What you see**: Traditional log messages with timestamps
-```
-2024-01-15 10:30:45 | INFO | my-agent - Starting agent application
-2024-01-15 10:30:45 | DEBUG | my-agent - About to process user message  
-2024-01-15 10:30:47 | INFO | my-agent - Agent response generated successfully
-```
 
 ### Middleware
 
@@ -219,7 +174,7 @@ if __name__ == "__main__":
 **How it works**: Framework automatically intercepts and displays all internal operations
 
 ```python
-import asyncio
+import asyncio 
 from beeai_framework.agents.experimental import RequirementAgent
 from beeai_framework.backend import ChatModel
 from beeai_framework.tools.search.wikipedia import WikipediaTool
@@ -230,29 +185,79 @@ from beeai_framework.tools import Tool
 async def main():
     agent = RequirementAgent(
         llm=ChatModel.from_name("ollama:granite3.3:8b"),
-        tools=[WikipediaTool(), OpenMeteoTool()],
-        instructions="You are a research assistant."
+        role="friendly AI assistant",
+        instructions="Be helpful and conversational in all your interactions. Use your tools to find accurate, current information.",
+        tools=[WikipediaTool(), OpenMeteoTool()]
     )
 
-    # Show visual execution flow - like a debugger trace
     response = await agent.run(
         "What's the weather in Paris and tell me about the Eiffel Tower?"
     ).middleware(GlobalTrajectoryMiddleware(included=[Tool]))
-    
-    print(f"\nFinal Response: {response.last_message.text}")
+    print(response.last_message.text)
 
 if __name__ == "__main__":
     asyncio.run(main())
 ```
 
 **What you see**: Visual execution tree showing exactly what your agent did
+
+### Logger
+
+<Info>
+**New Module**: [Logger](https://framework.beeai.dev/modules/logger)
+</Info>
+
+**Use this for**: When you want to log specific events in your application code
+
+**How it works**: You manually write logging statements wherever you want them
+
+```python
+import asyncio 
+from beeai_framework.agents.experimental import RequirementAgent
+from beeai_framework.backend import ChatModel
+from beeai_framework.tools.search.wikipedia import WikipediaTool
+from beeai_framework.tools.weather import OpenMeteoTool
+from beeai_framework.middleware.trajectory import GlobalTrajectoryMiddleware
+from beeai_framework.tools import Tool
+from beeai_framework.logger import Logger
+
+async def main():
+    # You create the logger and decide what to log
+    logger = Logger("my-agent", level="TRACE")
+    
+    logger.info("Starting agent application")
+
+    agent = RequirementAgent(
+        llm=ChatModel.from_name("ollama:granite3.3:8b"),
+        role="friendly AI assistant",
+        instructions="Be helpful and conversational in all your interactions. Use your tools to find accurate, current information.",
+        tools=[WikipediaTool(), OpenMeteoTool()]
+    )
+
+    logger.debug("About to process user message")
+
+    # The `included` parameter filters what types of operations to trace:
+    # - [Tool]: Show only tool executions (function calls, API calls, etc.)
+    # - [ChatModel]: Show only LLM calls (model inference, token usage)
+    # - [Tool, ChatModel]: Show both tools and LLM interactions
+    # - [] or None: Show everything (agents, tools, models, requirements)
+    response = await agent.run(
+        "What's the weather in Paris and tell me about the Eiffel Tower?"
+    ).middleware(GlobalTrajectoryMiddleware(included=[Tool])) 
+
+    logger.info("Agent response generated")
+    
+    print(response.last_message.text)
+
+if __name__ == "__main__":
+    asyncio.run(main())
 ```
-🤖 RequirementAgent[start]: processing user input
-  🛠️ OpenMeteoTool[start]: {"location": "Paris"}
-  🛠️ OpenMeteoTool[success]: {"temperature": "15°C", "condition": "cloudy"}
-  🛠️ WikipediaTool[start]: {"query": "Eiffel Tower"}
-  🛠️ WikipediaTool[success]: {"summary": "The Eiffel Tower is..."}
-🤖 RequirementAgent[success]: response generated
+
+**What you see**: Traditional log messages with timestamps
+```
+2024-01-15 10:30:45 | INFO | my-agent - Starting agent application
+2024-01-15 10:30:45 | DEBUG | my-agent - About to process user message  
+2024-01-15 10:30:47 | INFO | my-agent - Agent response generated successfully
 ```
 
 ### Events + Emitter
@@ -267,39 +272,78 @@ if __name__ == "__main__":
 import asyncio
 from beeai_framework.agents.experimental import RequirementAgent
 from beeai_framework.backend import ChatModel
+from beeai_framework.tools.search.wikipedia import WikipediaTool
 from beeai_framework.tools.weather import OpenMeteoTool
+from beeai_framework.middleware.trajectory import GlobalTrajectoryMiddleware
+from beeai_framework.tools import Tool
+from beeai_framework.logger import Logger
+from beeai_framework.emitter import Emitter, EventMeta
+from typing import Any
 
 async def main():
-    agent = RequirementAgent(
-        llm=ChatModel.from_name("ollama:granite3.3:8b"),
-        tools=[OpenMeteoTool()],
-        instructions="You provide weather information."
+    logger = Logger("my-agent", level="TRACE")
+    logger.info("Starting agent application")
+
+    # Create a standalone emitter for custom events
+    custom_emitter = Emitter.root().child(
+        namespace=["my_agent", "custom"],
+        creator={},
+        context={"session_id": "demo-123"}
     )
 
-    # Set up custom event handlers - like event listeners in JavaScript
-    def track_tool_usage(data, event):
-        if event.name == "tool_start":
-            print(f"🔧 Starting tool: {data.get('tool_name', 'unknown')}")
-        elif event.name == "tool_success":
-            print(f"✅ Tool completed successfully")
-        elif event.name == "error":
-            print(f"❌ Error occurred: {data}")
+    # Define event handlers as regular functions first
+    async def on_analysis_start(data: dict[str, Any], event: EventMeta) -> None:
+        logger.info(f"Starting analysis: {data.get('query', 'unknown')}")
 
-    # Listen to all agent events and react accordingly
-    response = await agent.run("What's the weather in Tokyo?").on("*", track_tool_usage)
+    async def on_analysis_complete(data: dict[str, Any], event: EventMeta) -> None:
+        logger.info(f"Analysis complete: Found {data.get('sources', 0)} sources")
+
+    # Register the handlers using direct method calls
+    custom_emitter.on("analysis_start", on_analysis_start)
+    custom_emitter.on("analysis_complete", on_analysis_complete)
+
+    agent = RequirementAgent(
+        llm=ChatModel.from_name("ollama:granite3.3:8b"),
+        role="friendly AI assistant",
+        instructions="Be helpful and conversational in all your interactions. Use your tools to find accurate, current information.",
+        tools=[WikipediaTool(), OpenMeteoTool()]
+    )
+
+    # Framework event handlers (using observe)
+    def track_framework_events(data, event):
+        if event.name == "start" and "tool" in event.path:
+            logger.debug(f"Framework: Tool starting - {event.creator.__class__.__name__}")
+        elif event.name == "success" and "tool" in event.path:
+            logger.debug(f"Framework: Tool completed - {event.creator.__class__.__name__}")
+
+    query = "What's the weather in Paris and tell me about the Eiffel Tower?"
     
-    print(f"Final answer: {response.last_message.text}")
+    # Emit custom events
+    await custom_emitter.emit("analysis_start", {"query": query})
+    
+    logger.debug("About to process user message")
+
+    # Use both framework events (observe) and custom emitter
+    response = await agent.run(query).middleware(
+        GlobalTrajectoryMiddleware(included=[Tool])
+    ).observe(lambda emitter: 
+        emitter.match("*.tool.*", track_framework_events)
+    )
+
+    # Emit completion event
+    await custom_emitter.emit("analysis_complete", {
+        "sources": 2,  # Wikipedia + Weather
+        "response_length": len(response.last_message.text)
+    })
+
+    logger.info("Agent response generated")
+    print(f"\nFinal Response:\n{response.last_message.text}")
 
 if __name__ == "__main__":
     asyncio.run(main())
 ```
 
 **What you see**: Custom reactions to events as they happen
-```
-🔧 Starting tool: OpenMeteoTool
-✅ Tool completed successfully
-Final answer: The weather in Tokyo is currently...
-```
 
 ### Production Monitoring
 
@@ -307,79 +351,69 @@ Final answer: The weather in Tokyo is currently...
 **New Module**: [Observability](https://framework.beeai.dev/modules/observability)
 </Info>
 
+<Note>
+Install the extras if you haven't already: `pip install openinference-instrumentation-beeai'`
+</Note>
+
 **Use this for**: Production monitoring with external platforms (Arize Phoenix, LangFuse, LangSmith)
 
 ```python
-import asyncio
-from beeai_framework.agents.experimental import RequirementAgent
-from beeai_framework.backend import ChatModel
-from beeai_framework.tools.weather import OpenMeteoTool
-
-# Enable OpenTelemetry tracing (do this once at app startup)
 from openinference.instrumentation.beeai import BeeAIInstrumentor
 from opentelemetry import trace as trace_api
 from opentelemetry.exporter.otlp.proto.http.trace_exporter import OTLPSpanExporter
 from opentelemetry.sdk import trace as trace_sdk
+from opentelemetry.sdk.resources import Resource
 from opentelemetry.sdk.trace.export import SimpleSpanProcessor
 
-def setup_production_monitoring():
-    tracer_provider = trace_sdk.TracerProvider()
+
+def setup_observability() -> None:
+    resource = Resource(attributes={})
+    tracer_provider = trace_sdk.TracerProvider(resource=resource)
     tracer_provider.add_span_processor(SimpleSpanProcessor(OTLPSpanExporter()))
     trace_api.set_tracer_provider(tracer_provider)
+
     BeeAIInstrumentor().instrument()
+```
 
-async def main():
-    # Enable production monitoring
-    setup_production_monitoring()
-    
-    # Your agent runs normally - monitoring happens automatically
-    agent = RequirementAgent(
-        llm=ChatModel.from_name("ollama:granite3.3:8b"),
-        tools=[OpenMeteoTool()],
-        instructions="You provide weather information."
-    )
+Call the setup function before running any BeeAI Framework code:
 
-    response = await agent.run("What's the weather in London?")
-    print(response.last_message.text)
-    
-    # All traces are automatically sent to your monitoring platform
-
-if __name__ == "__main__":
-    asyncio.run(main())
+```python
+setup_observability()
 ```
 
 **What you get**: Traces and metrics in external monitoring platforms like Arize Phoenix or LangFuse for production analytics.
 
-In practice, you'll often use multiple approaches together.
+In practice, you'll often use multiple obeservability approaches together. For the remainder of this lesson, we will stick to the middleware and logger modules.
 
 ---
 
 ## Requirements
 
-### Add Reasoning
+### Control Execution Flow
 
-Control how your agent thinks and acts using Requirements:
+Use **Requirements** to guide how your agent thinks and acts. Let’s add the Think Tool and set up some conditional requirements to decide when tools should run.
 
 ```python
-import asyncio
+import asyncio 
 from beeai_framework.agents.experimental import RequirementAgent
 from beeai_framework.agents.experimental.requirements.conditional import ConditionalRequirement
 from beeai_framework.backend import ChatModel
 from beeai_framework.tools.search.wikipedia import WikipediaTool
 from beeai_framework.tools.weather import OpenMeteoTool
 from beeai_framework.tools.think import ThinkTool
-from beeai_framework.tools import Tool
 from beeai_framework.middleware.trajectory import GlobalTrajectoryMiddleware
+from beeai_framework.tools import Tool
 from beeai_framework.logger import Logger
 
-# Configure logging to show thinking process
-logger = Logger("agent", level="DEBUG")
-
 async def main():
-    # Create a ReAct agent (Reasoning + Acting)
+    logger = Logger("my-agent", level="TRACE")
+    logger.info("Starting agent application")
+
     agent = RequirementAgent(
         llm=ChatModel.from_name("ollama:granite3.3:8b"),
-        tools=[ThinkTool(), WikipediaTool(), OpenMeteoTool()],
+        role="friendly AI assistant",
+        instructions="Be helpful and conversational in all your interactions. Use your tools to find accurate, current information.",
+        tools=[WikipediaTool(), OpenMeteoTool(), ThinkTool()],
         requirements=[
             # Force agent to think before acting, and after each tool use
             ConditionalRequirement(
@@ -388,13 +422,13 @@ async def main():
                 force_after=Tool,  # Think after using any tool
                 consecutive_allowed=False  # Don't think twice in a row
             )
-        ],
-        instructions="You are a methodical research assistant. Always think through problems step by step."
-        # Add middleware to log tool executions including thinking
-        middlewares=[GlobalTrajectoryMiddleware(included=[Tool])]
+        ]
     )
-    
-    response = await agent.run("I'm planning a trip to Paris next month. Help me understand what to expect.")
+    logger.debug("About to process user message")
+    response = await agent.run(
+        "What's the weather in Paris and tell me about the Eiffel Tower?"
+    ).middleware(GlobalTrajectoryMiddleware(included=[Tool])) 
+    logger.info("Agent response generated")
     print(response.last_message.text)
 
 if __name__ == "__main__":
@@ -402,7 +436,7 @@ if __name__ == "__main__":
 ```
 
 <Tip>
-Learn more about Requirements and see examples at [Requirement Agent Documentation](https://framework.beeai.dev/experimental/requirement-agent)
+Learn more about Requirements and see examples in [documentation](https://framework.beeai.dev/experimental/requirement-agent)
 </Tip>
 
 ### Ask for Permission
@@ -410,24 +444,42 @@ Learn more about Requirements and see examples at [Requirement Agent Documentati
 Here is how to add user permission for sensitive operations:
 
 ```python
-import asyncio
+import asyncio 
 from beeai_framework.agents.experimental import RequirementAgent
+from beeai_framework.agents.experimental.requirements.conditional import ConditionalRequirement
 from beeai_framework.agents.experimental.requirements.ask_permission import AskPermissionRequirement
 from beeai_framework.backend import ChatModel
+from beeai_framework.tools.search.wikipedia import WikipediaTool
 from beeai_framework.tools.weather import OpenMeteoTool
+from beeai_framework.tools.think import ThinkTool
+from beeai_framework.middleware.trajectory import GlobalTrajectoryMiddleware
+from beeai_framework.tools import Tool
+from beeai_framework.logger import Logger
 
 async def main():
-    # Agent that asks permission before using weather tool
+    logger = Logger("my-agent", level="TRACE")
+    logger.info("Starting agent application")
+
     agent = RequirementAgent(
         llm=ChatModel.from_name("ollama:granite3.3:8b"),
-        tools=[OpenMeteoTool()],
+        role="friendly AI assistant",
+        instructions="Be helpful and conversational in all your interactions. Use your tools to find accurate, current information.",
+        tools=[WikipediaTool(), OpenMeteoTool(), ThinkTool()],
         requirements=[
+            ConditionalRequirement(
+                ThinkTool, 
+                force_at_step=1,
+                force_after=Tool,
+                consecutive_allowed=False
+            ),
             AskPermissionRequirement([OpenMeteoTool])  # Ask before using weather API
-        ],
-        instructions="You provide weather information, but ask permission first."
+        ]
     )
-    
-    response = await agent.run("What's the weather in Tokyo?")
+    logger.debug("About to process user message")
+    response = await agent.run(
+        "What's the weather in Paris?"
+    ).middleware(GlobalTrajectoryMiddleware(included=[Tool])) 
+    logger.info("Agent response generated")
     print(response.last_message.text)
 
 if __name__ == "__main__":
@@ -436,9 +488,9 @@ if __name__ == "__main__":
 
 ---
 
-## Context
+## Intelligence
 
-Now it's time to add capabilities to your agent.
+Now it’s time to give your agent a memory, so it can remember past conversations and reuse patterns through templates.
 
 ### Memory Management Strategies
 
@@ -449,77 +501,51 @@ New Module: [Memory](https://framework.beeai.dev/modules/memory)
 While the agent comes with memory by default, you can customize how it manages conversation history:
 
 ```python
-import asyncio
+import asyncio 
 from beeai_framework.agents.experimental import RequirementAgent
+from beeai_framework.agents.experimental.requirements.conditional import ConditionalRequirement
+from beeai_framework.agents.experimental.requirements.ask_permission import AskPermissionRequirement
 from beeai_framework.backend import ChatModel
-from beeai_framework.memory import UnconstrainedMemory, SlidingMemory, TokenMemory
+from beeai_framework.tools.search.wikipedia import WikipediaTool
+from beeai_framework.tools.weather import OpenMeteoTool
+from beeai_framework.tools.think import ThinkTool
+from beeai_framework.middleware.trajectory import GlobalTrajectoryMiddleware
+from beeai_framework.tools import Tool
+from beeai_framework.logger import Logger
+from beeai_framework.memory import UnconstrainedMemory
 
 async def main():
-    # Different memory strategies
-    
-    # 1. Unconstrained Memory (default) - remembers everything
-    agent_unlimited = RequirementAgent(
+    logger = Logger("my-agent", level="TRACE")
+    logger.info("Starting agent application")
+
+    agent = RequirementAgent(
         llm=ChatModel.from_name("ollama:granite3.3:8b"),
+        role="friendly AI assistant",
+        instructions="Be helpful and conversational in all your interactions. Use your tools to find accurate, current information.",
+        tools=[WikipediaTool(), OpenMeteoTool(), ThinkTool()],
+        requirements=[
+            ConditionalRequirement(
+                ThinkTool, 
+                force_at_step=1,
+                force_after=Tool,
+                consecutive_allowed=False
+            ),
+            AskPermissionRequirement([OpenMeteoTool])
+        ],
+        # Using unconstrained memory here for simplicity
+        # Other options include SlidingMemory and TokenMemory
         memory=UnconstrainedMemory()
     )
-    
-    # 2. Sliding Memory - keeps only recent messages
-    agent_sliding = RequirementAgent(
-        llm=ChatModel.from_name("ollama:granite3.3:8b"),
-        memory=SlidingMemory(SlidingMemoryConfig(size=10))
-    )
-    
-    # 3. Token Memory - manages memory based on token count
-    agent_token = RequirementAgent(
-        llm=ChatModel.from_name("ollama:granite3.3:8b"),
-        memory=TokenMemory(max_tokens=2000,llm=ChatModel.from_name("ollama:granite3.3:8b")),  # Keep conversation under 2000 tokens
-    )
-    
-    # Test different memory strategies
-    long_conversation = [
-        "My name is Alice and I'm 25 years old.",
-        "I work as a software engineer in San Francisco.",
-        "I love hiking and photography in my free time.",
-        "My favorite programming language is Python.",
-        "I'm currently learning about AI and machine learning.",
-        "I have a pet dog named Max who loves to play fetch.",
-        "I graduated from Stanford University with a CS degree.",
-        "I enjoy cooking Italian food on weekends.",
-        "I'm planning to visit Japan next summer for vacation.",
-        "I drive a Tesla Model 3 and love the autonomous features.",
-        "My favorite book is 'The Pragmatic Programmer'.",
-        "I practice yoga every morning to start my day.",
-        "I'm working on a side project involving computer vision.",
-        "I grew up in a small town in Oregon.",
-        "I speak English, Spanish, and a little bit of Japanese.",
-        "My favorite movie genre is science fiction.",
-        "I volunteer at the local animal shelter on weekends.",
-        "I'm interested in renewable energy and sustainability.",
-        "I play the guitar and have been learning for 5 years.",
-        "I prefer tea over coffee and drink green tea daily."
-    ]
-    
-    # Test with sliding memory
-    print("=== Testing Sliding Memory ===")
-    for message in long_conversation:
-        response = await agent_sliding.run(message)
-        print(f"User: {message}")
-        print(f"Agent: {response.last_message.text}\n")
-    
-    # Ask about early conversation - sliding memory might forget
-    response = await agent_sliding.run("What's my name and age?")
-    print(f"Final test - User: What's my name and age?")
-    print(f"Agent: {response.last_message.text}")
+    logger.debug("About to process user message")
+    response = await agent.run(
+        "What's the weather in Paris?"
+    ).middleware(GlobalTrajectoryMiddleware(included=[Tool])) 
+    logger.info("Agent response generated")
+    print(response.last_message.text)
 
 if __name__ == "__main__":
     asyncio.run(main())
 ```
-
-**Test memory retention**
-
-1. Compare how different memory strategies handle long conversations
-2. Test what happens when memory limits are reached
-3. Observe how agents behave when they "forget" early parts of conversations
 
 ### Prompt Templates
 
@@ -530,16 +556,25 @@ New Module: [Templates](https://framework.beeai.dev/modules/templates)
 Create reusable, type-safe prompt templates using Mustache syntax:
 
 ```python
-import asyncio
+import asyncio 
 from beeai_framework.agents.experimental import RequirementAgent
+from beeai_framework.agents.experimental.requirements.conditional import ConditionalRequirement
+from beeai_framework.agents.experimental.requirements.ask_permission import AskPermissionRequirement
 from beeai_framework.backend import ChatModel
+from beeai_framework.tools.search.wikipedia import WikipediaTool
+from beeai_framework.tools.weather import OpenMeteoTool
+from beeai_framework.tools.think import ThinkTool
+from beeai_framework.middleware.trajectory import GlobalTrajectoryMiddleware
+from beeai_framework.tools import Tool
+from beeai_framework.logger import Logger
+from beeai_framework.memory import UnconstrainedMemory
 from beeai_framework.template import PromptTemplate
 from pydantic import BaseModel
 
 class MessageSchema(BaseModel):
     user_name: str
     task: str
-    
+
 # Create a custom template for agent instructions
 instruction_template = PromptTemplate(
     schema=MessageSchema,
@@ -554,15 +589,33 @@ async def main():
     # Render the template with specific data
     custom_instructions = instruction_template.render(
         user_name="Alice",
-        task="analyzing financial reports"
+        task="researching weather in Paris"
     )
-    
+
+    logger = Logger("my-agent", level="TRACE")
+    logger.info("Starting agent application")
+
     agent = RequirementAgent(
         llm=ChatModel.from_name("ollama:granite3.3:8b"),
-        instructions=custom_instructions
+        role="friendly AI assistant",
+        instructions=custom_instructions,
+        tools=[WikipediaTool(), OpenMeteoTool(), ThinkTool()],
+        requirements=[
+            ConditionalRequirement(
+                ThinkTool, 
+                force_at_step=1,
+                force_after=Tool,
+                consecutive_allowed=False
+            ),
+            AskPermissionRequirement([OpenMeteoTool])
+        ],
+        memory=UnconstrainedMemory()
     )
-    
-    response = await agent.run("What should I look for in quarterly earnings?")
+    logger.debug("About to process user message")
+    response = await agent.run(
+        "What's the weather in Paris?"
+    ).middleware(GlobalTrajectoryMiddleware(included=[Tool])) 
+    logger.info("Agent response generated")
     print(response.last_message.text)
 
 if __name__ == "__main__":
