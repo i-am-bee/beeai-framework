@@ -4,11 +4,13 @@ description: "A guided journey through BeeAI Framework’s modular architecture"
 icon: "route"
 ---
 
-This guide takes you step by step, starting with your first agent and leading up to a production-ready system. Each section adds a single new capability, so you can see how everything fits together. Follow the full path, or skip ahead to the parts most useful to you.
+This guide walks you step by step: you’ll start by running your very first agent, then add new skills one at a time. By the end, you’ll have a production-ready system that can scale, integrate, and coordinate with other agents.
+
+Follow the whole path for the full tour, or jump into the stage you need most.
 
 ## Journey Overview
 
-Here’s a quick map of the stages and modules:
+Here’s the roadmap from the most basic to the most advanced concepts:
 
 <CardGroup cols={2}>
   <Card title="Foundation" icon="layer-group" href="#foundation">
@@ -16,23 +18,27 @@ Here’s a quick map of the stages and modules:
   </Card>
 
   <Card title="Observability" icon="eyes" href="#observability">
-    Add logging and monitoring to debug your agent's behavior
+    Learn to see inside your agent with logs, traces, and metrics
   </Card>
   
   <Card title="Intelligence" icon="brain" href="#intelligence">
-    Add memory, tools, and templates for smarter agents
+    Make your agent smarter with memory, tools, and prompt templates
+  </Card>
+
+  <Card title="Requirements" icon="check-circle" href="#requirements">  
+    Add reasoning rules, guardrails, and user permissions
   </Card>
   
   <Card title="Knowledge" icon="book-open" href="#knowledge">
-    Ground your agent in data with RAG capabilities
+    Ground your agent in real data with RAG and document search
   </Card>
   
   <Card title="Orchestration" icon="sitemap" href="#orchestration">
-    Coordinate teams of specialized agents with Workflows
+    Coordinate teams of specialized agents with handoffs
   </Card>
   
   <Card title="Production" icon="gears" href="#production">
-    Scale with caching, monitoring, and error handling
+    Scale with caching, error handling, and reliability patterns
   </Card>
   
   <Card title="Integration" icon="server" href="#integration">
@@ -61,7 +67,12 @@ You can also use other LLM providers like OpenAI, Anthropic, or watsonx - see [B
 **New Modules**: [Agent](https://framework.beeai.dev/modules/agents), [Backend](https://framework.beeai.dev/modules/backend)
 </Info>
 
-Let's start with the simplest possible agent - one that can respond to messages.
+Get started with the basics.
+
+Your first agent doesn’t need to be complex — just something that responds to you.
+	•	Build a minimal chat agent
+	•	Wire together Agent + Backend modules
+	•	Run your agent locally
     
 ```python
 import asyncio
