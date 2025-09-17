@@ -21,6 +21,7 @@ from beeai_framework.backend.types import EmbeddingModelInput, EmbeddingModelOut
 from beeai_framework.backend.utils import load_model, parse_model
 from beeai_framework.context import Run, RunContext, RunMiddlewareType
 from beeai_framework.emitter import Emitter
+from beeai_framework.retryable import Retryable, RetryableConfig, RetryableInput
 from beeai_framework.utils import AbortSignal
 from beeai_framework.utils.dicts import exclude_non_annotated
 
@@ -70,21 +71,36 @@ class EmbeddingModel(ABC):
         model_input = EmbeddingModelInput(values=values, abort_signal=abort_signal, max_retries=max_retries or 0)
 
         async def handler(context: RunContext) -> EmbeddingModelOutput:
-            try:
-                await context.emitter.emit("start", EmbeddingModelStartEvent(input=model_input))
-                result: EmbeddingModelOutput = await self._create(model_input, context)
-                await context.emitter.emit("success", EmbeddingModelSuccessEvent(value=result))
-                return result
-            except Exception as ex:
-                error = EmbeddingModelError.ensure(ex, model=self)
-                await context.emitter.emit("error", EmbeddingModelErrorEvent(input=model_input, error=error))
-                raise error
-            finally:
-                await context.emitter.emit("finish", None)
+            return await Retryable(
+                RetryableInput(
+                    executor=lambda _: self._run_create(model_input, context),
+                    config=RetryableConfig(
+                        max_retries=(
+                            model_input.max_retries
+                            if model_input is not None and model_input.max_retries is not None
+                            else 0
+                        ),
+                        signal=context.signal,
+                    ),
+                )
+            ).get()
 
         return RunContext.enter(self, handler, signal=abort_signal, run_params=model_input.model_dump()).middleware(
             *self.middlewares
         )
+
+    async def _run_create(self, model_input: EmbeddingModelInput, context: RunContext) -> EmbeddingModelOutput:
+        try:
+            await context.emitter.emit("start", EmbeddingModelStartEvent(input=model_input))
+            result: EmbeddingModelOutput = await self._create(model_input, context)
+            await context.emitter.emit("success", EmbeddingModelSuccessEvent(value=result))
+            return result
+        except Exception as ex:
+            error = EmbeddingModelError.ensure(ex, model=self)
+            await context.emitter.emit("error", EmbeddingModelErrorEvent(input=model_input, error=error))
+            raise error
+        finally:
+            await context.emitter.emit("finish", None)
 
     @staticmethod
     def from_name(name: str | ProviderName, **kwargs: Any) -> "EmbeddingModel":

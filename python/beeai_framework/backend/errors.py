@@ -55,7 +55,7 @@ class EmbeddingModelError(BackendError):
         cause: Exception | None = None,
         context: dict[str, Any] | None = None,
     ) -> None:
-        super().__init__(message, is_fatal=True, is_retryable=False, cause=cause, context=context)
+        super().__init__(message, is_fatal=True, is_retryable=True, cause=cause, context=context)
 
     @classmethod
     def ensure(
