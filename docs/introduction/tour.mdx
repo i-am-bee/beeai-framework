@@ -4,41 +4,39 @@ description: "A guided journey through BeeAI Framework’s modular architecture"
 icon: "route"
 ---
 
-This guide walks you step by step: you’ll start by running your very first agent, then add new skills one at a time. By the end, you’ll have a production-ready system that can scale, integrate, and coordinate with other agents.
-
-Follow the whole path for the full tour, or jump into the stage you need most.
+This guide takes you step by step, starting with your first agent and leading up to a production-ready system. Each section adds a single new capability, so you can see how everything fits together. Follow the full path, or skip ahead to the parts most useful to you.
 
 ## Journey Overview
 
-Here’s the roadmap from the most basic to the most advanced concepts:
+Here’s a quick map of the stages and modules:
 
 <CardGroup cols={2}>
   <Card title="Foundation" icon="layer-group" href="#foundation">
-    Your first simple chat agent using Agent and Backend modules
+    Your first chat agent using Agent, Backend, and Tool modules
   </Card>
 
   <Card title="Observability" icon="eyes" href="#observability">
-    Learn to see inside your agent with logs, traces, and metrics
+    Add logging and monitoring to debug your agent's behavior
   </Card>
   
-  <Card title="Intelligence" icon="brain" href="#intelligence">
-    Make your agent smarter with memory, tools, and prompt templates
-  </Card>
-
-  <Card title="Requirements" icon="check-circle" href="#requirements">  
+  <Card title="Requirements" icon="check" href="#requirements">  
     Add reasoning rules, guardrails, and user permissions
   </Card>
-  
+
+  <Card title="Context" icon="brain" href="#context">
+    Add memory and templates for smarter agents
+  </Card>
+
   <Card title="Knowledge" icon="book-open" href="#knowledge">
-    Ground your agent in real data with RAG and document search
+    Ground your agent in data with RAG capabilities
   </Card>
   
   <Card title="Orchestration" icon="sitemap" href="#orchestration">
-    Coordinate teams of specialized agents with handoffs
+    Coordinate teams of specialized agents with Workflows
   </Card>
   
   <Card title="Production" icon="gears" href="#production">
-    Scale with caching, error handling, and reliability patterns
+    Scale with caching, monitoring, and error handling
   </Card>
   
   <Card title="Integration" icon="server" href="#integration">
@@ -67,7 +65,7 @@ You can also use other LLM providers like OpenAI, Anthropic, or watsonx - see [B
 **New Modules**: [Agent](https://framework.beeai.dev/modules/agents), [Backend](https://framework.beeai.dev/modules/backend)
 </Info>
 
-Start by creating the simplest possible agent. This example uses only the `Agent` and `Backend` modules to send a prompt and get a response.
+Let's start with the simplest possible agent - one that can respond to messages.
     
 ```python
 import asyncio
@@ -77,7 +75,8 @@ from beeai_framework.backend import ChatModel
 async def main():
     agent = RequirementAgent(
         llm=ChatModel.from_name("ollama:granite3.3:8b"),
-        instructions="You are a friendly AI assistant. Be helpful and conversational."
+        role="friendly AI assistant",
+        instructions="Be helpful and conversational in all your interactions."
     )
 
     response = await agent.run("Hello! What can you help me with?")
@@ -112,9 +111,47 @@ if __name__ == "__main__":
   </Accordion>
 </AccordionGroup>
 
+### Tools for External Capabilities
+
+<Info>
+New Module: [Tools](https://framework.beeai.dev/modules/tools)
+</Info>
+
+Give your agent the ability to access real-world information:
+
+```python
+import asyncio
+from beeai_framework.agents.experimental import RequirementAgent
+from beeai_framework.backend import ChatModel
+from beeai_framework.tools.search.wikipedia import WikipediaTool
+from beeai_framework.tools.weather import OpenMeteoTool
+
+async def main():
+    # Enhanced agent with tools
+    agent = RequirementAgent(
+        llm=ChatModel.from_name("ollama:granite3.3:8b"),
+        tools=[WikipediaTool(), OpenMeteoTool()],
+        instructions="You are a helpful research assistant. Use your tools to find accurate, current information."
+    )
+
+    # Test the tools
+    response = await agent.run("What's the current weather in New York and tell me about the history of the city?")
+    print(response.last_message.text)
+
+if __name__ == "__main__":
+    asyncio.run(main())
+```
+
+Try these prompts:
+- "What's the weather in different cities around the world?"
+- "Tell me about quantum computing and the current weather in CERN's location"
+- "Compare the weather in New York and London, then tell me about their historical relationship"
+
 ---
 
 ## Observability
+
+Now let's see what your agent is doing...
 
 Understanding what your agent is doing is crucial from day one. The BeeAI Framework provides four complementary ways to observe your agents:
 
@@ -202,7 +239,7 @@ async def main():
         "What's the weather in Paris and tell me about the Eiffel Tower?"
     ).middleware(GlobalTrajectoryMiddleware(included=[Tool]))
     
-    print(f"\nFinal Response: {response.answer.text}")
+    print(f"\nFinal Response: {response.last_message.text}")
 
 if __name__ == "__main__":
     asyncio.run(main())
@@ -315,163 +352,6 @@ if __name__ == "__main__":
 
 In practice, you'll often use multiple approaches together.
 
-
----
-
-## Intelligence
-
-Now it's time to add capabilities to your agent.
-
-### Memory Management Strategies
-
-<Info>
-New Module: [Memory](https://framework.beeai.dev/modules/memory)
-</Info>
-
-While the agent comes with memory by default, you can customize how it manages conversation history:
-
-```python
-import asyncio
-from beeai_framework.agents.experimental import RequirementAgent
-from beeai_framework.backend import ChatModel
-from beeai_framework.memory import UnconstrainedMemory, SlidingMemory, TokenMemory
-
-async def main():
-    # Different memory strategies
-    
-    # 1. Unconstrained Memory (default) - remembers everything
-    agent_unlimited = RequirementAgent(
-        llm=ChatModel.from_name("ollama:granite3.3:8b"),
-        memory=UnconstrainedMemory()
-    )
-    
-    # 2. Sliding Memory - keeps only recent messages
-    agent_sliding = RequirementAgent(
-        llm=ChatModel.from_name("ollama:granite3.3:8b"),
-        memory=SlidingMemory(SlidingMemoryConfig(size=10))
-    )
-    
-    # 3. Token Memory - manages memory based on token count
-    agent_token = RequirementAgent(
-        llm=ChatModel.from_name("ollama:granite3.3:8b"),
-        memory=TokenMemory(max_tokens=2000,llm=ChatModel.from_name("ollama:granite3.3:8b")),  # Keep conversation under 2000 tokens
-    )
-    
-    # Test different memory strategies
-    long_conversation = [
-        "My name is Alice and I'm 25 years old.",
-        "I work as a software engineer in San Francisco.",
-        "I love hiking and photography in my free time.",
-        "My favorite programming language is Python.",
-        "I'm currently learning about AI and machine learning."
-    ]
-    
-    # Test with sliding memory
-    print("=== Testing Sliding Memory ===")
-    for message in long_conversation:
-        response = await agent_sliding.run(message)
-        print(f"User: {message}")
-        print(f"Agent: {response.answer.text}\n")
-    
-    # Ask about early conversation - sliding memory might forget
-    response = await agent_sliding.run("What's my name and age?")
-    print(f"Final test - User: What's my name and age?")
-    print(f"Agent: {response.answer.text}")
-
-if __name__ == "__main__":
-    asyncio.run(main())
-```
-
-**Test memory retention**
-
-1. Compare how different memory strategies handle long conversations
-2. Test what happens when memory limits are reached
-3. Observe how agents behave when they "forget" early parts of conversations
-
-### Tools for External Capabilities
-
-<Info>
-New Module: [Tools](https://framework.beeai.dev/modules/tools)
-</Info>
-
-Give your agent the ability to access real-world information:
-
-```python
-import asyncio
-from beeai_framework.agents.experimental import RequirementAgent
-from beeai_framework.backend import ChatModel
-from beeai_framework.tools.search.wikipedia import WikipediaTool
-from beeai_framework.tools.weather import OpenMeteoTool
-
-async def main():
-    # Enhanced agent with tools
-    agent = RequirementAgent(
-        llm=ChatModel.from_name("ollama:granite3.3:8b"),
-        tools=[WikipediaTool(), OpenMeteoTool()],
-        instructions="You are a helpful research assistant. Use your tools to find accurate, current information."
-    )
-
-    # Test the tools
-    response = await agent.run("What's the current weather in New York and tell me about the history of the city?")
-    print(response.last_message.text)
-
-if __name__ == "__main__":
-    asyncio.run(main())
-```
-
-Try these prompts:
-- "What's the weather in different cities around the world?"
-- "Tell me about quantum computing and the current weather in CERN's location"
-- "Compare the weather in New York and London, then tell me about their historical relationship"
-
-### Prompt Templates
-
-<Info>
-New Module: [Templates](https://framework.beeai.dev/modules/templates)
-</Info>
-
-Create reusable, type-safe prompt templates using Mustache syntax:
-
-```python
-import asyncio
-from beeai_framework.agents.experimental import RequirementAgent
-from beeai_framework.backend import ChatModel
-from beeai_framework.template import PromptTemplate
-from pydantic import BaseModel
-
-class MessageSchema(BaseModel):
-    user_name: str
-    task: str
-    
-# Create a custom template for agent instructions
-instruction_template = PromptTemplate(
-    schema=MessageSchema,
-    template="""You are an AI assistant helping {{user_name}}. 
-Your current task is: {{task}}
-
-Be helpful, accurate, and concise in your responses.""",
-    defaults={"user_name": "User"}
-)
-
-async def main():
-    # Render the template with specific data
-    custom_instructions = instruction_template.render(
-        user_name="Alice",
-        task="analyzing financial reports"
-    )
-    
-    agent = RequirementAgent(
-        llm=ChatModel.from_name("ollama:granite3.3:8b"),
-        instructions=custom_instructions
-    )
-    
-    response = await agent.run("What should I look for in quarterly earnings?")
-    print(response.last_message.text)
-
-if __name__ == "__main__":
-    asyncio.run(main())
-```
-
 ---
 
 ## Requirements
@@ -556,6 +436,141 @@ if __name__ == "__main__":
 
 ---
 
+## Context
+
+Now it's time to add capabilities to your agent.
+
+### Memory Management Strategies
+
+<Info>
+New Module: [Memory](https://framework.beeai.dev/modules/memory)
+</Info>
+
+While the agent comes with memory by default, you can customize how it manages conversation history:
+
+```python
+import asyncio
+from beeai_framework.agents.experimental import RequirementAgent
+from beeai_framework.backend import ChatModel
+from beeai_framework.memory import UnconstrainedMemory, SlidingMemory, TokenMemory
+
+async def main():
+    # Different memory strategies
+    
+    # 1. Unconstrained Memory (default) - remembers everything
+    agent_unlimited = RequirementAgent(
+        llm=ChatModel.from_name("ollama:granite3.3:8b"),
+        memory=UnconstrainedMemory()
+    )
+    
+    # 2. Sliding Memory - keeps only recent messages
+    agent_sliding = RequirementAgent(
+        llm=ChatModel.from_name("ollama:granite3.3:8b"),
+        memory=SlidingMemory(SlidingMemoryConfig(size=10))
+    )
+    
+    # 3. Token Memory - manages memory based on token count
+    agent_token = RequirementAgent(
+        llm=ChatModel.from_name("ollama:granite3.3:8b"),
+        memory=TokenMemory(max_tokens=2000,llm=ChatModel.from_name("ollama:granite3.3:8b")),  # Keep conversation under 2000 tokens
+    )
+    
+    # Test different memory strategies
+    long_conversation = [
+        "My name is Alice and I'm 25 years old.",
+        "I work as a software engineer in San Francisco.",
+        "I love hiking and photography in my free time.",
+        "My favorite programming language is Python.",
+        "I'm currently learning about AI and machine learning.",
+        "I have a pet dog named Max who loves to play fetch.",
+        "I graduated from Stanford University with a CS degree.",
+        "I enjoy cooking Italian food on weekends.",
+        "I'm planning to visit Japan next summer for vacation.",
+        "I drive a Tesla Model 3 and love the autonomous features.",
+        "My favorite book is 'The Pragmatic Programmer'.",
+        "I practice yoga every morning to start my day.",
+        "I'm working on a side project involving computer vision.",
+        "I grew up in a small town in Oregon.",
+        "I speak English, Spanish, and a little bit of Japanese.",
+        "My favorite movie genre is science fiction.",
+        "I volunteer at the local animal shelter on weekends.",
+        "I'm interested in renewable energy and sustainability.",
+        "I play the guitar and have been learning for 5 years.",
+        "I prefer tea over coffee and drink green tea daily."
+    ]
+    
+    # Test with sliding memory
+    print("=== Testing Sliding Memory ===")
+    for message in long_conversation:
+        response = await agent_sliding.run(message)
+        print(f"User: {message}")
+        print(f"Agent: {response.last_message.text}\n")
+    
+    # Ask about early conversation - sliding memory might forget
+    response = await agent_sliding.run("What's my name and age?")
+    print(f"Final test - User: What's my name and age?")
+    print(f"Agent: {response.last_message.text}")
+
+if __name__ == "__main__":
+    asyncio.run(main())
+```
+
+**Test memory retention**
+
+1. Compare how different memory strategies handle long conversations
+2. Test what happens when memory limits are reached
+3. Observe how agents behave when they "forget" early parts of conversations
+
+### Prompt Templates
+
+<Info>
+New Module: [Templates](https://framework.beeai.dev/modules/templates)
+</Info>
+
+Create reusable, type-safe prompt templates using Mustache syntax:
+
+```python
+import asyncio
+from beeai_framework.agents.experimental import RequirementAgent
+from beeai_framework.backend import ChatModel
+from beeai_framework.template import PromptTemplate
+from pydantic import BaseModel
+
+class MessageSchema(BaseModel):
+    user_name: str
+    task: str
+    
+# Create a custom template for agent instructions
+instruction_template = PromptTemplate(
+    schema=MessageSchema,
+    template="""You are an AI assistant helping {{user_name}}. 
+Your current task is: {{task}}
+
+Be helpful, accurate, and concise in your responses.""",
+    defaults={"user_name": "User"}
+)
+
+async def main():
+    # Render the template with specific data
+    custom_instructions = instruction_template.render(
+        user_name="Alice",
+        task="analyzing financial reports"
+    )
+    
+    agent = RequirementAgent(
+        llm=ChatModel.from_name("ollama:granite3.3:8b"),
+        instructions=custom_instructions
+    )
+    
+    response = await agent.run("What should I look for in quarterly earnings?")
+    print(response.last_message.text)
+
+if __name__ == "__main__":
+    asyncio.run(main())
+```
+
+---
+
 ## Knowledge
 
 Now it's time to integrate external data.
@@ -563,6 +578,10 @@ Now it's time to integrate external data.
 <Info>
 New Module: [RAG](https://framework.beeai.dev/modules/rag)
 </Info>
+
+<Note>
+Install the RAG extras if you haven't already: `pip install 'beeai-framework[rag]'`
+</Note>
 
 Let's give your agent access to a knowledge base of documents. We'll split this into manageable steps:
 
@@ -813,7 +832,7 @@ Now it's time for production-grade features.
 New Module: [Cache](https://framework.beeai.dev/modules/cache)
 </Info>
 
-Speed up responses and reduce costs with smart caching:
+Speed up responses and reduce costs with smart caching. Note that caching works best for LLMs and tools rather than complete agent workflows, since agent inputs are typically unique:
 
 ```python
 import asyncio
@@ -821,26 +840,40 @@ from beeai_framework.agents.experimental import RequirementAgent
 from beeai_framework.backend import ChatModel
 from beeai_framework.memory import UnconstrainedMemory
 from beeai_framework.tools.weather import OpenMeteoTool
-from beeai_framework.cache import UnconstrainedCache
+from beeai_framework.cache import SlidingCache, UnconstrainedCache
 
 async def main():
+    # Create an LLM with caching enabled
+    llm = ChatModel.from_name("ollama:granite3.3:8b")
+    llm.config(cache=SlidingCache(size=50))  # Cache the 50 most recent LLM calls
+    
     # Create a cached weather tool to avoid repeated API calls
     weather_tool = OpenMeteoTool(options={"cache": UnconstrainedCache()})
     
     agent = RequirementAgent(
-        llm=ChatModel.from_name("ollama:granite3.3:8b"),
+        llm=llm,
         memory=UnconstrainedMemory(),
         tools=[weather_tool],
-        instructions="You provide weather information efficiently."
+        role="efficient weather information provider",
+        instructions="Provide weather information efficiently using cached data when appropriate."
     )
 
-    # First call will hit the API
-    response1 = await agent.run("What's the weather in New York?")
-    print("First call:", response1.answer.text)
+    print("=== Testing Caching Performance ===")
     
-    # Second call will use cached result
+    # First call will hit the API and cache results
+    print("First call (cache miss):")
+    response1 = await agent.run("What's the weather in New York?")
+    print("Response:", response1.last_message.text[:100] + "...\n")
+    
+    # Second call with identical location should use cached weather data
+    print("Second identical call (cache hit expected for weather API):")
     response2 = await agent.run("What's the weather in New York?")
-    print("Cached call:", response2.answer.text)
+    print("Response:", response2.last_message.text[:100] + "...\n")
+    
+    # Third call with similar but different phrasing may benefit from LLM cache
+    print("Third call with different phrasing (potential LLM cache benefit):")
+    response3 = await agent.run("Tell me about New York's current weather conditions")
+    print("Response:", response3.last_message.text[:100] + "...")
 
 if __name__ == "__main__":
     asyncio.run(main())
