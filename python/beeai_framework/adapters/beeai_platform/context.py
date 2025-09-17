@@ -1,6 +1,7 @@
 # Copyright 2025 © BeeAI a Series of LF Projects, LLC
 # SPDX-License-Identifier: Apache-2.0
 
+import contextlib
 from collections.abc import Callable
 from typing import Annotated, Any, Self
 
@@ -41,8 +42,10 @@ class BeeAIPlatformContext:
         return self
 
     def __exit__(self, exc_type: Any, exc_val: Any, exc_tb: Any) -> None:
-        for cleanup in self._cleanup:
-            cleanup()
+        while self._cleanup:
+            cleanup = self._cleanup.pop(0)
+            with contextlib.suppress(Exception):
+                cleanup()
 
     async def _read(self, prompt: str) -> str:
         answer_field_id = "answer"

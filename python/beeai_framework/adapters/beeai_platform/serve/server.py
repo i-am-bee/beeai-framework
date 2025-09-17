@@ -9,7 +9,7 @@ from pydantic import BaseModel
 from typing_extensions import TypedDict, TypeVar, Unpack, override
 
 from beeai_framework.adapters.beeai_platform.backend.chat import BeeAIPlatformChatModel
-from beeai_framework.adapters.beeai_platform.serve.io import BeeAIPlatformContext
+from beeai_framework.adapters.beeai_platform.context import BeeAIPlatformContext
 from beeai_framework.agents.experimental import RequirementAgent
 from beeai_framework.agents.experimental.events import RequirementAgentSuccessEvent
 from beeai_framework.agents.react import ReActAgent, ReActAgentUpdateEvent
