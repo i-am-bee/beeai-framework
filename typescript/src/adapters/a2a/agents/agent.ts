@@ -113,8 +113,8 @@ export class A2AAgent extends BaseAgent<A2AAgentRunInput, A2AAgentRunOutput> {
       }
 
       // add input messages to memory
-      const imputMessages = Array.isArray(input.input) ? input.input : [input.input];
-      await this.memory.addMany(imputMessages.map(this.convertToFrameworkMessage));
+      const inputMessages = Array.isArray(input.input) ? input.input : [input.input];
+      await this.memory.addMany(inputMessages.map(this.convertToFrameworkMessage));
 
       let results: (A2AMessage | Artifact)[];
       if (task) {
@@ -128,7 +128,7 @@ export class A2AAgent extends BaseAgent<A2AAgentRunInput, A2AAgentRunOutput> {
           results = [];
         }
       } else {
-        results = messages || [];
+        results = messages;
       }
 
       // retrieve the assistant's response
@@ -191,7 +191,7 @@ export class A2AAgent extends BaseAgent<A2AAgentRunInput, A2AAgentRunOutput> {
       });
       this.agentCard = await client.getAgentCard();
     } catch (error) {
-      throw new AgentError(`Can not load agent card: ${error.message}`, [], {
+      throw new AgentError(`Can not load agent card: ${error.message}`, [error], {
         isFatal: true,
       });
     }
@@ -263,7 +263,7 @@ export class A2AAgent extends BaseAgent<A2AAgentRunInput, A2AAgentRunOutput> {
     }
   }
 
-  protected convertToFrameworkMessage(input: string | Message | A2AMessage | Artifact): any {
+  protected convertToFrameworkMessage(input: string | Message | A2AMessage | Artifact): Message {
     if (typeof input === "string") {
       return new UserMessage(input);
     } else if (input instanceof Message) {

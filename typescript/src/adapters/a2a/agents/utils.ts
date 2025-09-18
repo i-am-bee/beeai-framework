@@ -5,7 +5,7 @@
 
 import { AssistantMessage, Message, UserMessage } from "@/backend/message.js";
 import { Message as A2AMessage, Artifact } from "@a2a-js/sdk";
-import { FilePart, TextPart } from "ai";
+import { FilePart } from "ai";
 
 export function convert_a2a_to_framework_message(input: A2AMessage | Artifact): Message {
   const msg =
@@ -15,9 +15,9 @@ export function convert_a2a_to_framework_message(input: A2AMessage | Artifact): 
 
   for (const part of input.parts) {
     if (part.kind === "text") {
-      msg.content.push({ type: "text", text: part.text } as TextPart);
+      msg.content.push({ type: "text", text: part.text });
     } else if (part.kind === "data") {
-      msg.content.push({ type: "text", text: JSON.stringify(part.data, null, 2) } as TextPart);
+      msg.content.push({ type: "text", text: JSON.stringify(part.data, null, 2) });
     } else if (part.kind === "file") {
       // TODO: handle non-publicly accessible URLs (always convert to base64)
       const fileData: FilePart =

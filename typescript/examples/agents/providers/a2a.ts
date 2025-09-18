@@ -25,5 +25,5 @@ try {
     reader.write(`Agent 🤖 : `, result.result.text);
   }
 } catch (error) {
-  reader.write("Agent (error)  🤖", FrameworkError.ensure(error).dump());
+  reader.write("Agent (error) 🤖", FrameworkError.ensure(error).dump());
 }
