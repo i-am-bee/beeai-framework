@@ -448,6 +448,7 @@ IMPORTANT: You MUST answer with a JSON object that matches the JSON schema above
             settings=self._settings.copy(),
             use_strict_model_schema=self.use_strict_model_schema,
             use_strict_tool_schema=self.use_strict_tool_schema,
+            tool_choice_support=self._tool_choice_support.copy(),
         )
         return cloned
 

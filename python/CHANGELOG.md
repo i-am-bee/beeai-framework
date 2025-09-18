@@ -1,3 +1,13 @@
+## python_v0.1.46 (2025-09-17)
+
+### Bug Fixes
+
+- **backend**: include tool_choice_support when cloning
+
+### Features
+
+- **adapters**: handle nested initialization of BeeAIPlatformChatModel (#1109)
+
 ## python_v0.1.45 (2025-09-15)
 
 ### Features
