@@ -719,15 +719,15 @@ Now it's time for production-grade features.
 Relevant Module: [Cache](https://framework.beeai.dev/modules/cache)
 </Info>
 
-Speed up responses and reduce costs with smart caching. 
+Caching helps you cut costs, reduce latency, and deliver consistent results by reusing previous computations. In BeeAI Framework, you can cache LLM responses and tool outputs.
 
-<Tip>
-Caching works for LLM calls and individual tools, not for entire agents, because agent inputs are usually unique.
-</Tip>
+<Note>
+Caching the entire agent isn’t practical—every agent run is usually unique. Instead, focus on caching the components inside your agent.
+</Note>
 
-**1. Enable LLM Caching**
+**1. Caching LLM Calls**
 
-You need to explicitly configure a cache for your LLM:
+Configure a cache on your LLM to avoid paying for repeated queries:
 
 ```python
 import asyncio
@@ -735,24 +735,24 @@ from beeai_framework.backend import ChatModel
 from beeai_framework.cache import SlidingCache
 
 async def main():
-    # Create an LLM with caching enabled
+    # LLM with caching enabled
     llm = ChatModel.from_name("ollama:granite3.3:8b")
-    llm.config(cache=SlidingCache(size=50))  # Cache the 50 most recent LLM calls
+    llm.config(cache=SlidingCache(size=50))  # Cache up to 50 responses
 
-    # Example usage
-    response1 = await llm.chat("Hello! How are you today?")
-    response2 = await llm.chat("Hello! How are you today?")  # Should hit the cache
+    # First call (miss)
+    res1 = await llm.chat("Hello! How are you today?")
+    # Second call with identical input (hit)
+    res2 = await llm.chat("Hello! How are you today?")
 
-    print("First response:", response1.text)
-    print("Second response (cached):", response2.text)
+    print("First:", res1.text)
+    print("Second (cached):", res2.text)
 
-if __name__ == "__main__":
-    asyncio.run(main())
+asyncio.run(main())
 ```
 
-**2. Enable Tool Caching**
+**2. Caching Tool Outputs**
 
-Tools that make API calls can also be cached to avoid repeated requests:
+Many tools query APIs or perform expensive lookups. You can attach a cache directly:
 
 ```python
 from beeai_framework.tools.weather import OpenMeteoTool
@@ -762,25 +762,21 @@ from beeai_framework.cache import UnconstrainedCache
 weather_tool = OpenMeteoTool(options={"cache": UnconstrainedCache()})
 ```
 
-**3. Using Cached LLMs & Tools in an Agent**
+**3. Using Cached Components in an Agent**
 
 ```python
 from beeai_framework.agents.experimental import RequirementAgent
 from beeai_framework.memory import UnconstrainedMemory
 
 agent = RequirementAgent(
-    llm=llm,  # LLM with caching enabled
+    llm=llm,  # LLM with cache
+    tools=[weather_tool],  # Tool with cache
     memory=UnconstrainedMemory(),
-    tools=[weather_tool],
-    instructions="Provide weather information efficiently using cached data when appropriate."
+    instructions="Provide answers efficiently using cached results when possible."
 )
 
-# Test caching behavior
 response1 = await agent.run("What's the weather in New York?")
 response2 = await agent.run("What's the weather in New York?")  # Weather tool cache should hit
-
-print(response1.last_message.text[:100] + "...")
-print(response2.last_message.text[:100] + "...")
 ```
 
 <Tip>
