@@ -43,6 +43,7 @@ exclude = list(
             "serve/beeai_platform_await.py",
             "serve/a2a_server.py",
             "serve/acp_with_custom_agent.py",
+            "serve/mcp_agent.py",
             "serve/mcp_tool.py",
             "serve/watsonx_orchestrate.py",
             "tools/python_tool.py" if os.getenv("CODE_INTERPRETER_URL") is None else None,
