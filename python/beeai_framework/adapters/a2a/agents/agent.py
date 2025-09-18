@@ -64,6 +64,7 @@ class A2AAgent(BaseAgent[A2AAgentOutput]):
         super().__init__()
         if agent_card:
             self._agent_card: a2a_types.AgentCard | None = agent_card
+            self._url = None
         elif url:
             self._url = url
             self._agent_card = None
@@ -81,7 +82,7 @@ class A2AAgent(BaseAgent[A2AAgentOutput]):
 
     @property
     def name(self) -> str:
-        return self._agent_card.name if self._agent_card else f"agent_{self._url.split(':')[-1]}"
+        return self._agent_card.name if self._agent_card else f"agent_{(self._url or '').split(':')[-1]}"
 
     @runnable_entry
     async def run(
@@ -225,7 +226,8 @@ class A2AAgent(BaseAgent[A2AAgentOutput]):
     async def _load_agent_card(self) -> None:
         if self._agent_card:
             return
-
+        if not self._url:
+            raise AgentError("No url provided.")
         try:
             async with httpx.AsyncClient() as httpx_client:
                 card_resolver = a2a_client.A2ACardResolver(
