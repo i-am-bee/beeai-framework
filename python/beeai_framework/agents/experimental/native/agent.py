@@ -14,6 +14,7 @@ from beeai_framework.backend import (
     AnyMessage,
     AssistantMessage,
     ChatModel,
+    CustomMessage,
     MessageToolResultContent,
     ToolMessage,
     UserMessage,
@@ -24,7 +25,6 @@ from beeai_framework.logger import Logger
 from beeai_framework.memory import BaseMemory, UnconstrainedMemory
 from beeai_framework.runnable import runnable_entry
 from beeai_framework.tools import AnyTool
-from beeai_framework.utils.dicts import exclude_none
 from beeai_framework.utils.strings import to_json
 
 logger = Logger(__name__)
@@ -34,7 +34,7 @@ class NativeAgent(BaseAgent):
     """
     Agent that uses a language model and set of tools to solve problems without defining a custom system prompt.
 
-    Ideal for exploring the capabilities of a given larguage model without being biased by a framework system prompt.
+    Ideal for exploring the capabilities of a given large language model without being biased by a framework system prompt.
     """
 
     def __init__(
@@ -133,11 +133,12 @@ class NativeAgent(BaseAgent):
                 raise AgentError(f"Agent was not able to resolve the task in {max_iterations} iterations.")
 
             response = await self._llm.create(
-                messages=run_memory.messages,
+                messages=[CustomMessage(role="developer", content=instructions), *run_memory.messages]
+                if instructions
+                else run_memory.messages,
                 tools=self._tools,
                 abort_signal=ctx.signal,
                 max_retries=max_retries_per_step,
-                **exclude_none({"instructions": instructions}),
             )
 
             await run_memory.add_many(response.messages)
