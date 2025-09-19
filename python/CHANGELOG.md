@@ -1,3 +1,22 @@
+## python_v0.1.46 (2025-09-17)
+
+### Bug Fixes
+
+- **backend**: include tool_choice_support when cloning
+
+### Features
+
+- **adapters**: handle nested initialization of BeeAIPlatformChatModel (#1109)
+
+## python_v0.1.45 (2025-09-15)
+
+### Features
+
+- **adapter**: add LangChain ChatModel integration (#1104)
+- make yes/no in AskPermissionRequirement case-insensitive
+- **adapters**: support BeeAIPlatform adapter and llm extension (#1098)
+- support extensions in BeeAIPlatformAgent (#1091)
+
 ## python_v0.1.44 (2025-09-11)
 
 ### Bug Fixes
