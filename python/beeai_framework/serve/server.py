@@ -17,7 +17,7 @@ TConfig = TypeVar("TConfig", bound=BaseModel, default=BaseModel)
 
 
 class Server(Generic[TInput, TInternal, TConfig], ABC):
-    _factories: ClassVar[dict[Any, Callable[[Any], Any]]] = {}
+    _factories: ClassVar[dict[type[TInput], Callable[[TInput], TInternal]]] = {}
 
     # TODO: later remove config property
     def __init__(self, *, config: TConfig, memory_manager: MemoryManager | None) -> None:

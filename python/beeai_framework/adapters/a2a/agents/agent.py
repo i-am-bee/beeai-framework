@@ -150,13 +150,13 @@ class A2AAgent(BaseAgent[A2AAgentOutput]):
                         messages.append(event)
 
                     elif isinstance(event, tuple):
-                        task = event[0]
+                        task, update_event = event
 
                         if (
-                            event[1]
-                            and isinstance(event[1], a2a_types.TaskStatusUpdateEvent)
-                            and event[1].final
-                            and event[1].status.state is not a2a_types.TaskState.input_required
+                            update_event
+                            and isinstance(update_event, a2a_types.TaskStatusUpdateEvent)
+                            and update_event.final
+                            and update_event.status.state is not a2a_types.TaskState.input_required
                         ):
                             self._task_id = None
 

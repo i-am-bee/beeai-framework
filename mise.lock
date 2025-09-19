@@ -1,23 +1,23 @@
-[[tools.fd]]
+[tools.fd]
 version = "10.2.0"
 backend = "aqua:sharkdp/fd"
 
-[[tools.node]]
+[tools.node]
 version = "20.15.1"
 backend = "core:node"
 
-[[tools."pipx:poetry"]]
+[tools."pipx:poetry"]
 version = "2.1.1"
 backend = "pipx:poetry"
 
-[[tools.python]]
+[tools.python]
 version = "3.11.13"
 backend = "core:python"
 
-[[tools."ubi:google/addlicense"]]
+[tools."ubi:google/addlicense"]
 version = "1.1.1"
 backend = "ubi:google/addlicense"
 
-[[tools.yarn]]
+[tools.yarn]
 version = "4.9.1"
 backend = "asdf:yarn"
