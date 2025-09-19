@@ -3,7 +3,7 @@
 
 from collections.abc import Callable
 
-from beeai_framework.workflows.v2.workflow_types import AsyncFunc, DependencyType
+from beeai_framework.workflows.v2.types import AsyncFunc, DependencyType
 
 Dependency = str | AsyncFunc
 
