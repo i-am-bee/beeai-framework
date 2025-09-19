@@ -19,9 +19,9 @@ except ModuleNotFoundError as e:
 
 def convert_a2a_to_framework_message(input: a2a_types.Message | a2a_types.Artifact) -> AnyMessage:
     msg = (
-        UserMessage([])
+        UserMessage([], input.metadata)
         if isinstance(input, a2a_types.Message) and input.role == a2a_types.Role.user
-        else AssistantMessage([])
+        else AssistantMessage([], input.metadata)
     )
     for _part in input.parts:
         part = _part.root
