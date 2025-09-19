@@ -71,15 +71,18 @@ class BeeAIPlatformChatModel(ChatModel):
 
     @override
     def _create_stream(self, *args: Any, **kwargs: Any) -> Any:
-        return self._model._create_stream(*args, **kwargs)
+        # This method should not be called directly as the public `create` method is delegated.
+        raise NotImplementedError()
 
     @override
-    def _create(self, *args: Any, **kwargs: Any) -> Any:
-        return self._model._create(*args, **kwargs)
+    async def _create(self, *args: Any, **kwargs: Any) -> Any:
+        # This method should not be called directly as the public `create` method is delegated.
+        raise NotImplementedError()
 
     @override
-    def _create_structure(self, *args: Any, **kwargs: Any) -> Any:
-        return self._model._create_structure(*args, **kwargs)
+    async def _create_structure(self, *args: Any, **kwargs: Any) -> Any:
+        # This method should not be called directly as the public `create_structure` method is delegated.
+        raise NotImplementedError()
 
     @property
     def model_id(self) -> str:
