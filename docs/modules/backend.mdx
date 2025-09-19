@@ -95,19 +95,19 @@ async def watsonx_from_name() -> None:
         # },
     )
     user_message = UserMessage("what states are part of New England?")
-    response = await watsonx_llm.create(messages=[user_message])
+    response = await watsonx_llm.run([user_message])
     print(response.get_text_content())
 
 
 async def watsonx_sync() -> None:
     user_message = UserMessage("what is the capital of Massachusetts?")
-    response = await llm.create(messages=[user_message])
+    response = await llm.run([user_message])
     print(response.get_text_content())
 
 
 async def watsonx_stream() -> None:
     user_message = UserMessage("How many islands make up the country of Cape Verde?")
-    response = await llm.create(messages=[user_message], stream=True)
+    response = await llm.run([user_message], stream=True)
     print(response.get_text_content())
 
 
@@ -115,8 +115,8 @@ async def watsonx_images() -> None:
     image_llm = ChatModel.from_name(
         "watsonx:meta-llama/llama-3-2-11b-vision-instruct",
     )
-    response = await image_llm.create(
-        messages=[
+    response = await image_llm.run(
+        [
             UserMessage("What is the dominant color in the picture?"),
             UserMessage.from_image(
                 "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAIAAACQkWg2AAAAHUlEQVR4nGI5Y6bFQApgIkn1qIZRDUNKAyAAAP//0ncBT3KcmKoAAAAASUVORK5CYII="
@@ -130,7 +130,7 @@ async def watsonx_stream_abort() -> None:
     user_message = UserMessage("What is the smallest of the Cape Verde islands?")
 
     try:
-        response = await llm.create(messages=[user_message], stream=True, abort_signal=AbortSignal.timeout(0.5))
+        response = await llm.run([user_message], stream=True, signal=AbortSignal.timeout(0.5))
 
         if response is not None:
             print(response.get_text_content())
@@ -145,15 +145,15 @@ async def watson_structure() -> None:
         answer: str = Field(description="your final answer")
 
     user_message = UserMessage("How many islands make up the country of Cape Verde?")
-    response = await llm.create_structure(schema=TestSchema, messages=[user_message])
-    print(response.object)
+    response = await llm.run([user_message], response_format=TestSchema)
+    print(response.output_structured)
 
 
 async def watson_tool_calling() -> None:
     watsonx_llm = ChatModel.from_name("watsonx:ibm/granite-3-3-8b-instruct")
     user_message = UserMessage(f"What is the current weather in Boston? Current date is {datetime.datetime.today()}.")
     weather_tool = OpenMeteoTool()
-    response = await watsonx_llm.create(messages=[user_message], tools=[weather_tool], stream=True)
+    response = await watsonx_llm.run([user_message], tools=[weather_tool], stream=True)
     tool_call_msg = response.get_tool_calls()[0]
     print(tool_call_msg.model_dump())
     tool_response = await weather_tool.run(json.loads(tool_call_msg.args))
@@ -163,7 +163,7 @@ async def watson_tool_calling() -> None:
         )
     )
     print(tool_response_msg.to_plain())
-    final_response = await watsonx_llm.create(messages=[user_message, *response.messages, tool_response_msg], tools=[])
+    final_response = await watsonx_llm.run([user_message, *response.output, tool_response_msg], tools=[])
     print(final_response.get_text_content())
 
 
@@ -178,10 +178,10 @@ async def watsonx_debug() -> None:
         ),
     )
 
-    response = await llm.create(
-        messages=[UserMessage("Hello world!")],
+    response = await llm.run(
+        [UserMessage("Hello world!")],
     )
-    print(response.messages[0].to_plain())
+    print(response.output[0].to_plain())
 
 
 async def watsonx_embedding() -> None:
@@ -456,9 +456,9 @@ async def main() -> None:
     reader = ConsoleReader()
 
     for prompt in reader:
-        response = await llm.create(messages=[UserMessage(prompt)])
+        response = await llm.run([UserMessage(prompt)])
         reader.write("LLM 🤖 (txt) : ", response.get_text_content())
-        reader.write("LLM 🤖 (raw) : ", "\n".join([str(msg.to_plain()) for msg in response.messages]))
+        reader.write("LLM 🤖 (raw) : ", "\n".join([str(msg.to_plain()) for msg in response.output]))
 
 
 if __name__ == "__main__":
@@ -627,7 +627,7 @@ async def main() -> None:
         first_name: str = Field(..., min_length=1)
         last_name: str = Field(..., min_length=1)
         address: str
-        age: int = Field(..., min_length=1)
+        age: int
         hobby: str
 
     class ErrorSchema(BaseModel):
@@ -636,16 +636,12 @@ async def main() -> None:
     class SchemUnion(ProfileSchema, ErrorSchema):
         pass
 
-    response = await model.create_structure(
-        schema=SchemUnion,
-        messages=[UserMessage("Generate a profile of a citizen of Europe.")],
+    response = await model.run(
+        [UserMessage("Generate a profile of a citizen of Europe.")],
+        response_format=SchemUnion,
     )
-
-    print(
-        json.dumps(
-            response.object.model_dump() if isinstance(response.object, BaseModel) else response.object, indent=4
-        )
-    )
+    assert isinstance(response.output_structured, ProfileSchema)
+    print(json.dumps(response.output_structured.model_dump(), indent=4))
 
 
 if __name__ == "__main__":
@@ -722,13 +718,13 @@ async def main() -> None:
     ]
 
     while True:
-        response = await model.create(
-            messages=messages,
+        response = await model.run(
+            messages,
             tools=tools,
         )
 
         tool_calls = response.get_tool_calls()
-        messages.extend(response.messages)
+        messages.extend(response.output)
 
         tool_results: list[ToolMessage] = []
 
@@ -960,7 +956,7 @@ async def langchain_ollama_from_name() -> None:
     langchain_llm = LangChainOllamaChat(model="granite3.3:8b")
     llm = LangChainChatModel(langchain_llm)
     user_message = UserMessage("what states are part of New England?")
-    response = await llm.create(messages=[user_message])
+    response = await llm.run([user_message])
     print(response.get_text_content())
 
 
@@ -968,7 +964,7 @@ async def langchain_ollama_granite_from_name() -> None:
     langchain_llm = LangChainOllamaChat(model="granite3.3:8b")
     llm = LangChainChatModel(langchain_llm)
     user_message = UserMessage("what states are part of New England?")
-    response = await llm.create(messages=[user_message])
+    response = await llm.run([user_message])
     print(response.get_text_content())
 
 
@@ -976,7 +972,7 @@ async def langchain_ollama_sync() -> None:
     langchain_llm = LangChainOllamaChat(model="granite3.3:8b")
     llm = LangChainChatModel(langchain_llm)
     user_message = UserMessage("what is the capital of Massachusetts?")
-    response = await llm.create(messages=[user_message])
+    response = await llm.run([user_message])
     print(response.get_text_content())
 
 
@@ -984,7 +980,7 @@ async def langchain_ollama_stream() -> None:
     langchain_llm = LangChainOllamaChat(model="granite3.3:8b")
     llm = LangChainChatModel(langchain_llm)
     user_message = UserMessage("How many islands make up the country of Cape Verde?")
-    response = await llm.create(messages=[user_message], stream=True)
+    response = await llm.run([user_message], stream=True)
     print(response.get_text_content())
 
 
@@ -994,7 +990,7 @@ async def langchain_ollama_stream_abort() -> None:
     user_message = UserMessage("What is the smallest of the Cape Verde islands?")
 
     try:
-        response = await llm.create(messages=[user_message], stream=True, abort_signal=AbortSignal.timeout(0.5))
+        response = await llm.run([user_message], stream=True, signal=AbortSignal.timeout(0.5))
 
         if response is not None:
             print(response.get_text_content())
@@ -1011,8 +1007,8 @@ async def langchain_ollama_structure() -> None:
     langchain_llm = LangChainOllamaChat(model="granite3.3:8b")
     llm = LangChainChatModel(langchain_llm)
     user_message = UserMessage("How many islands make up the country of Cape Verde?")
-    response = await llm.create_structure(schema=TestSchema, messages=[user_message])
-    print(response.object)
+    response = await llm.run([user_message], response_format=TestSchema)
+    print(response.output_structured)
 
 
 async def langchain_ollama_stream_parser() -> None:
@@ -1031,9 +1027,7 @@ async def langchain_ollama_stream_parser() -> None:
         await parser.add(data.value.get_text_content())
 
     user_message = UserMessage("Produce 3 lines each starting with 'Prefix: ' followed by a sentence and a new line.")
-    await llm.create(messages=[user_message], stream=True).observe(
-        lambda emitter: emitter.on("new_token", on_new_token)
-    )
+    await llm.run([user_message], stream=True).observe(lambda emitter: emitter.on("new_token", on_new_token))
     result = await parser.end()
     print(result)
 
@@ -1051,8 +1045,8 @@ Current date is {datetime.now(tz=UTC).date()!s}
         ),
         UserMessage("What is the current weather in Berlin?"),
     ]
-    response = await llm.create(messages=messages, tools=[weather_tool], tool_choice="required")
-    messages.extend(response.messages)
+    response = await llm.run(messages, tools=[weather_tool], tool_choice="required")
+    messages.extend(response.output)
     tool_call_msg = response.get_tool_calls()[0]
     print(tool_call_msg.model_dump())
     tool_response = await weather_tool.run(json.loads(tool_call_msg.args))
@@ -1062,7 +1056,7 @@ Current date is {datetime.now(tz=UTC).date()!s}
         )
     )
     print(tool_response_msg.to_plain())
-    final_response = await llm.create(messages=[*messages, tool_response_msg], tools=[])
+    final_response = await llm.run([*messages, tool_response_msg], tools=[])
     print(final_response.get_text_content())
 
 

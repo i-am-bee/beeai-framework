@@ -49,24 +49,28 @@ class CustomAgent(BaseAgent):
                     description="Here you should provide concise answer to the original question."
                 )
 
-            response = await self.model.create_structure(
-                schema=CustomSchema,
-                messages=[
+            response = await self.model.run(
+                [
                     SystemMessage("You are a helpful assistant. Always use JSON format for your responses."),
                     *(self.memory.messages if self.memory is not None else []),
                     *([UserMessage(input)] if isinstance(input, str) else input),
                 ],
+                response_format=CustomSchema,
                 max_retries=kwargs.get("total_max_retries", 3),
-                abort_signal=context.signal,
+                signal=context.signal,
             )
+            assert isinstance(response.output_structured, CustomSchema)
 
-            result = AssistantMessage(response.object["final_answer"])
+            result = AssistantMessage(response.output_structured.final_answer)
             await self.memory.add(result) if self.memory else None
 
             return AgentOutput(
                 output=[result],
                 context={
-                    "state": State(thought=response.object["thought"], final_answer=response.object["final_answer"])
+                    "state": State(
+                        thought=response.output_structured.thought,
+                        final_answer=response.output_structured.final_answer,
+                    )
                 },
             )
 

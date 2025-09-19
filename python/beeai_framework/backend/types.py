@@ -13,6 +13,7 @@ from beeai_framework.backend.message import (
     dedupe_tool_calls,
 )
 from beeai_framework.cache.base import BaseCache
+from beeai_framework.runnable import RunnableOutput
 from beeai_framework.tools.tool import AnyTool
 from beeai_framework.utils import AbortSignal
 from beeai_framework.utils.lists import flatten
@@ -37,12 +38,8 @@ class ChatModelParameters(BaseModel):
 class ChatModelStructureInput(ChatModelParameters, Generic[T]):
     input_schema: type[T] | dict[str, Any] = Field(..., alias="schema")
     messages: list[InstanceOf[AnyMessage]] = Field(..., min_length=1)
-    abort_signal: AbortSignal | None = None
+    signal: AbortSignal | None = None
     max_retries: int | None = None
-
-
-class ChatModelStructureOutput(BaseModel):
-    object: dict[str, Any]  # | type[BaseModel]
 
 
 class ChatModelInput(ChatModelParameters):
@@ -50,7 +47,7 @@ class ChatModelInput(ChatModelParameters):
 
     tools: list[InstanceOf[AnyTool]] | None = None
     tool_choice: InstanceOf[AnyTool] | Literal["required"] | Literal["auto"] | Literal["none"] | None = None
-    abort_signal: AbortSignal | None = None
+    signal: AbortSignal | None = None
     max_retries: int | None = None
     stop_sequences: list[str] | None = None
     response_format: dict[str, Any] | type[BaseModel] | None = None
@@ -74,14 +71,14 @@ class ChatModelCost(BaseModel):
     total_cost_usd: float
 
 
-class ChatModelOutput(BaseModel):
-    messages: list[InstanceOf[AnyMessage]]
+class ChatModelOutput(RunnableOutput):
     usage: InstanceOf[ChatModelUsage] | None = None
     cost: ChatModelCost | None = None
     finish_reason: str | None = None
+    output_structured: Any | BaseModel | None = None
 
     def is_valid(self) -> bool:
-        for msg in self.messages:
+        for msg in self.output:
             if not isinstance(msg, AssistantMessage):
                 continue
 
@@ -95,7 +92,7 @@ class ChatModelOutput(BaseModel):
         messages_by_id = dict[str, list[AnyMessage]]()
         messages_by_tool_call_id = dict[str, AssistantMessage]()
 
-        for msg in self.messages:
+        for msg in self.output:
             msg_id = msg.id or ""
 
             # Group partial tool calls
@@ -128,15 +125,15 @@ class ChatModelOutput(BaseModel):
             else:
                 messages_by_id[msg_id].append(msg)
 
-        self.messages.clear()
+        self.output.clear()
 
         for messages in messages_by_id.values():
             main = messages.pop(0)
             for other in messages:
                 main.merge(other)
-            self.messages.append(main)
+            self.output.append(main)
 
-        for msg in self.messages:
+        for msg in self.output:
             if isinstance(msg, AssistantMessage):
                 dedupe_tool_calls(msg)
 
@@ -145,15 +142,18 @@ class ChatModelOutput(BaseModel):
 
     @classmethod
     def from_chunks(cls, chunks: list[Self]) -> Self:
-        final = cls(messages=[])
+        final = cls(output=[])
         for cur in chunks:
             final.merge(cur)
         return final
 
     def merge(self, other: Self) -> None:
-        if other.messages:
-            self.messages.extend(other.messages)
+        if other.output:
+            self.output.extend(other.output)
             self.dedupe()
+
+        if other.output_structured is not None:
+            self.output_structured = other.output_structured
 
         if other.finish_reason:
             self.finish_reason = other.finish_reason
@@ -181,14 +181,14 @@ class ChatModelOutput(BaseModel):
             self.usage = other.usage.model_copy()
 
     def get_tool_calls(self) -> list[MessageToolCallContent]:
-        assistant_message = [msg for msg in self.messages if isinstance(msg, AssistantMessage)]
+        assistant_message = [msg for msg in self.output if isinstance(msg, AssistantMessage)]
         return flatten([x.get_tool_calls() for x in assistant_message])
 
     def get_text_messages(self) -> list[AssistantMessage]:
-        return [msg for msg in self.messages if isinstance(msg, AssistantMessage) and msg.text]
+        return [msg for msg in self.output if isinstance(msg, AssistantMessage) and msg.text]
 
     def get_text_content(self) -> str:
-        return "".join([x.text for x in list(filter(lambda x: isinstance(x, AssistantMessage), self.messages))])
+        return "".join([x.text for x in list(filter(lambda x: isinstance(x, AssistantMessage), self.output))])
 
 
 ChatModelCache = BaseCache[list[ChatModelOutput]]
@@ -202,7 +202,7 @@ class EmbeddingModelUsage(BaseModel):
 
 class EmbeddingModelInput(BaseModel):
     values: list[str]
-    abort_signal: AbortSignal | None = None
+    signal: AbortSignal | None = None
     max_retries: int | None = None
 
 

@@ -46,7 +46,7 @@ types-grpcio = {version = "1.0.0.20250703", optional = true}
 types-grpcio-reflection = {version = "1.0.0.20250506", optional = true}
 wikipedia-api = {version = "^0.8.1", optional = true}
 beeai-sdk = {version = "^0.3.3", optional = true}
-langgraph-prebuilt = {version = "^0.6.4", optional = true}
+langgraph = {version = "^0.6.4", optional = true}
 deprecated = "^1.2.18"
 
 [tool.poetry.group.dev.dependencies]
@@ -78,7 +78,7 @@ duckduckgo = ["ddgs"]
 wikipedia = ["wikipedia-api"]
 mcp = ["mcp"]
 llama_index = ["llama-index"]
-langchain = ["langchain-core", "langchain-community", "langchain-ollama"]
+langchain = ["langchain-core", "langchain-community", "langchain-ollama", "langgraph"]
 rag = ["llama-index", "langchain-core", "langchain-community", "langchain-ollama", "markdown", "unstructured"]
 acp = ["acp-sdk", "uvicorn"]
 beeai-platform = ["beeai-sdk", "a2a-sdk", "uvicorn"]
@@ -101,7 +101,7 @@ all = [
     "fastapi",
     "llama-index",
     "beeai-sdk",
-    "langgraph-prebuilt",
+    "langgraph",
     "boto3",
     "google-auth"
 ]
@@ -120,6 +120,7 @@ implicit_reexport = true
 [[tool.mypy.overrides]]
 module = ["llama-index", "llama-index.*", "llama_index", "llama_index.*"]
 ignore_errors = true
+ignore_missing_imports = true
 
 [tool.pydantic-mypy]
 init_forbid_extra = true

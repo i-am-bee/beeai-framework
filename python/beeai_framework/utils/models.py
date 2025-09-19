@@ -7,7 +7,7 @@ from abc import ABC
 from collections.abc import Generator, Sequence
 from contextlib import suppress
 from logging import Logger
-from typing import Any, Generic, Literal, Optional, Self, TypeVar, Union
+from typing import Any, Generic, Literal, Optional, Self, TypeGuard, TypeVar, Union
 
 from pydantic import BaseModel, ConfigDict, Field, GetJsonSchemaHandler, RootModel, ValidationError, create_model
 from pydantic.fields import FieldInfo
@@ -225,3 +225,7 @@ class WrappedRootModel(BaseModel, Generic[T]):
             with contextlib.suppress(ValidationError):
                 return cls(item=obj)
             raise e
+
+
+def is_pydantic_model(obj: Any) -> TypeGuard[type[BaseModel]]:
+    return isinstance(obj, type) and issubclass(obj, BaseModel)

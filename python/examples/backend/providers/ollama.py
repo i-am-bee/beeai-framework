@@ -27,34 +27,34 @@ from beeai_framework.utils import AbortSignal
 async def ollama_from_name() -> None:
     llm = ChatModel.from_name("ollama:llama3.1")
     user_message = UserMessage("what states are part of New England?")
-    response = await llm.create(messages=[user_message])
+    response = await llm.run([user_message])
     print(response.get_text_content())
 
 
 async def ollama_granite_from_name() -> None:
     llm = ChatModel.from_name("ollama:granite3.3:8b")
     user_message = UserMessage("what states are part of New England?")
-    response = await llm.create(messages=[user_message])
+    response = await llm.run([user_message])
     print(response.get_text_content())
 
 
 async def ollama_text_completion() -> None:
     llm = OllamaChatModel("granite3.3:8b", text_completion=True)
-    response = await llm.create(messages=[UserMessage("hello")])
+    response = await llm.run([UserMessage("hello")])
     print(response.get_text_content())
 
 
 async def ollama_sync() -> None:
     llm = OllamaChatModel("llama3.1")
     user_message = UserMessage("what is the capital of Massachusetts?")
-    response = await llm.create(messages=[user_message])
+    response = await llm.run([user_message])
     print(response.get_text_content())
 
 
 async def ollama_stream() -> None:
     llm = OllamaChatModel("llama3.1")
     user_message = UserMessage("How many islands make up the country of Cape Verde?")
-    response = await llm.create(messages=[user_message], stream=True)
+    response = await llm.run([user_message], stream=True)
     print(response.get_text_content())
 
 
@@ -63,7 +63,7 @@ async def ollama_stream_abort() -> None:
     user_message = UserMessage("What is the smallest of the Cape Verde islands?")
 
     try:
-        response = await llm.create(messages=[user_message], stream=True, abort_signal=AbortSignal.timeout(0.5))
+        response = await llm.run([user_message], stream=True, signal=AbortSignal.timeout(0.5))
 
         if response is not None:
             print(response.get_text_content())
@@ -79,8 +79,8 @@ async def ollama_structure() -> None:
 
     llm = OllamaChatModel("llama3.1")
     user_message = UserMessage("How many islands make up the country of Cape Verde?")
-    response = await llm.create_structure(schema=TestSchema, messages=[user_message])
-    print(response.object)
+    response = await llm.run([user_message], response_format=TestSchema)
+    print(response.output_structured)
 
 
 async def ollama_stream_parser() -> None:
@@ -98,9 +98,7 @@ async def ollama_stream_parser() -> None:
         await parser.add(data.value.get_text_content())
 
     user_message = UserMessage("Produce 3 lines each starting with 'Prefix: ' followed by a sentence and a new line.")
-    await llm.create(messages=[user_message], stream=True).observe(
-        lambda emitter: emitter.on("new_token", on_new_token)
-    )
+    await llm.run([user_message], stream=True).observe(lambda emitter: emitter.on("new_token", on_new_token))
     result = await parser.end()
     print(result)
 
@@ -117,8 +115,8 @@ Current date is {datetime.now(tz=UTC).date()!s}
         ),
         UserMessage("What is the current weather in Berlin?"),
     ]
-    response = await llm.create(messages=messages, tools=[weather_tool], tool_choice="required")
-    messages.extend(response.messages)
+    response = await llm.run(messages, tools=[weather_tool], tool_choice="required")
+    messages.extend(response.output)
     tool_call_msg = response.get_tool_calls()[0]
     print(tool_call_msg.model_dump())
     tool_response = await weather_tool.run(json.loads(tool_call_msg.args))
@@ -128,7 +126,7 @@ Current date is {datetime.now(tz=UTC).date()!s}
         )
     )
     print(tool_response_msg.to_plain())
-    final_response = await llm.create(messages=[*messages, tool_response_msg], tools=[])
+    final_response = await llm.run([*messages, tool_response_msg], tools=[])
     print(final_response.get_text_content())
 
 

@@ -22,7 +22,7 @@ async def main() -> None:
     llm = ChatModel.from_name("ollama:granite3.3:8b")
 
     response = (
-        await llm.create(messages=memory.messages, stream=True)
+        await llm.run(memory.messages, stream=True)
         .observe(
             lambda emitter: emitter.on(
                 "start",
@@ -35,7 +35,7 @@ async def main() -> None:
             lambda emitter: emitter.on(
                 "new_token",
                 lambda data, event: print(
-                    "On new_token", *(message.to_plain() for message in data.value.messages), sep="\n"
+                    "On new_token", *(message.to_plain() for message in data.value.output), sep="\n"
                 ),
             )
         )
@@ -43,7 +43,7 @@ async def main() -> None:
             lambda emitter: emitter.on(
                 "success",
                 lambda data, event: print(
-                    "On success", *(message.to_plain() for message in data.value.messages), sep="\n"
+                    "On success", *(message.to_plain() for message in data.value.output), sep="\n"
                 ),
             )
         )

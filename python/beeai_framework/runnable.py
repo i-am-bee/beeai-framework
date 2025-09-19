@@ -9,7 +9,7 @@ from typing import Any, Generic, TypeAlias, TypedDict, Unpack
 from pydantic import BaseModel, ConfigDict, InstanceOf
 from typing_extensions import ParamSpec, TypeVar
 
-from beeai_framework.backend import AnyMessage, AssistantMessage
+from beeai_framework.backend.message import AnyMessage, AssistantMessage
 from beeai_framework.context import Run, RunContext, RunMiddlewareType
 from beeai_framework.emitter import Emitter
 from beeai_framework.utils import AbortSignal
@@ -45,7 +45,7 @@ class RunnableOutput(BaseModel):
         return last_message or AssistantMessage("")
 
 
-R = TypeVar("R", default=RunnableOutput, bound=RunnableOutput)
+R = TypeVar("R", bound=RunnableOutput)
 P = ParamSpec("P")
 
 
@@ -108,6 +108,9 @@ def runnable_entry(handler: Callable[P, Awaitable[R]]) -> Callable[P, Run[R]]:
         self = args[0] if args else None
         if not isinstance(self, Runnable):
             raise TypeError("The first argument of a runnable's run method must be a Runnable instance.")
+
+        if len(args) < 2:
+            raise ValueError("The positional input argument is required.")
 
         runnable_kwargs: RunnableOptions = kwargs  # type: ignore
         return (

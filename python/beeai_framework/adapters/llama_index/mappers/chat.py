@@ -37,8 +37,8 @@ class LlamaIndexChatModel(CustomLLM):
     async def acomplete(self, prompt: str, formatted: bool = False, **kwargs: Any) -> CompletionResponse:
         messages: list[AnyMessage] = [UserMessage(prompt)]
         # Formatted argument is neglected as no structure is enforced
-        response: ChatModelOutput = await self.llm.create(messages=messages)
-        completion_response = CompletionResponse(text=response.messages[-1].text)
+        response: ChatModelOutput = await self.llm.run(messages)
+        completion_response = CompletionResponse(text=response.output[-1].text)
         return completion_response
 
     @llm_completion_callback()

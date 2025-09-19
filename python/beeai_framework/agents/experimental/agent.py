@@ -199,8 +199,8 @@ class RequirementAgent(BaseAgent[RequirementAgentOutput]):
                     RequirementAgentStartEvent(state=state, request=request),
                 )
 
-                response = await self._llm.create(
-                    messages=[
+                response = await self._llm.run(
+                    [
                         _create_system_message(
                             template=self._templates.system,
                             request=request,
@@ -210,13 +210,13 @@ class RequirementAgent(BaseAgent[RequirementAgentOutput]):
                     tools=request.allowed_tools,
                     tool_choice=request.tool_choice,
                 )
-                await state.memory.add_many(response.messages)
+                await state.memory.add_many(response.output)
 
                 text_messages = response.get_text_messages()
                 tool_call_messages = response.get_tool_calls()
 
                 if not tool_call_messages and text_messages and request.can_stop:
-                    await state.memory.delete_many(response.messages)
+                    await state.memory.delete_many(response.output)
 
                     full_text = "".join(msg.text for msg in text_messages)
                     json_object_pair = find_first_pair(full_text, ("{", "}"))
@@ -242,7 +242,7 @@ class RequirementAgent(BaseAgent[RequirementAgentOutput]):
                 for tool_call_msg in tool_call_messages:
                     tool_call_cycle_checker.register(tool_call_msg)
                     if cycle_found := tool_call_cycle_checker.cycle_found:
-                        await state.memory.delete_many(response.messages)
+                        await state.memory.delete_many(response.output)
                         tmp_rules.append(Rule(target=tool_call_msg.tool_name, allowed=False, hidden=False))
                         tool_call_cycle_checker.reset()
                         break

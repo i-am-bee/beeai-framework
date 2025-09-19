@@ -34,8 +34,8 @@ class DeepEvalLLM(DeepEvalBaseLLM):
 
     async def a_generate(self, prompt: str, schema: TSchema | None = None) -> str:
         input_msg = UserMessage(prompt)
-        response = await self._model.create(
-            messages=[input_msg],
+        response = await self._model.run(
+            [input_msg],
             response_format=schema.model_json_schema(mode="serialization") if schema is not None else None,
             stream=False,
             temperature=0,
