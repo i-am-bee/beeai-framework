@@ -7,7 +7,7 @@ import { AssistantMessage, Message, UserMessage } from "@/backend/message.js";
 import { Message as A2AMessage, Artifact } from "@a2a-js/sdk";
 import { FilePart } from "ai";
 
-export function convert_a2a_to_framework_message(input: A2AMessage | Artifact): Message {
+export function convertA2AMessageToFrameworkMessage(input: A2AMessage | Artifact): Message {
   const msg =
     "kind" in input && input.kind === "message" && input.role === "user"
       ? new UserMessage([], input.metadata)

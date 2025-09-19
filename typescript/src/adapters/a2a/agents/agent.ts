@@ -7,16 +7,25 @@ import { v4 as uuid4 } from "uuid";
 import { Emitter } from "@/emitter/emitter.js";
 import { AgentError, BaseAgent } from "@/agents/base.js";
 import { GetRunContext } from "@/context.js";
-import { AssistantMessage, UserMessage } from "@/backend/message.js";
+import { AssistantMessage, MessageContentPart, UserMessage } from "@/backend/message.js";
 import { BaseMemory } from "@/memory/base.js";
 import { shallowCopy } from "@/serializer/utils.js";
 import { A2AAgentInput, A2AAgentRunInput, A2AAgentRunOutput, A2AAgentRunOptions } from "./types.js";
 import { A2AAgentEvents } from "./events.js";
 import { toCamelCase } from "remeda";
-import { AGENT_CARD_PATH, AgentCard, Message as A2AMessage, Task, Artifact } from "@a2a-js/sdk";
+import {
+  AGENT_CARD_PATH,
+  AgentCard,
+  Message as A2AMessage,
+  Task,
+  Artifact,
+  Part,
+  FileWithUri,
+  FileWithBytes,
+} from "@a2a-js/sdk";
 import { A2AClient } from "@a2a-js/sdk/client";
 import { Message } from "@/backend/message.js";
-import { convert_a2a_to_framework_message } from "./utils.js";
+import { convertA2AMessageToFrameworkMessage } from "./utils.js";
 
 export class A2AAgent extends BaseAgent<A2AAgentRunInput, A2AAgentRunOutput> {
   private _memory!: BaseMemory;
@@ -240,15 +249,11 @@ export class A2AAgent extends BaseAgent<A2AAgentRunInput, A2AAgentRunOutput> {
         referenceTaskIds: this.referenceTaskIds,
       };
     } else if (input instanceof Message) {
+      const parts = input.content.map(convertFrameworkContentoA2APart);
       return {
         kind: "message",
         role: input.role == "assistant" ? "agent" : "user",
-        parts: [
-          {
-            kind: "text",
-            text: input.text,
-          },
-        ],
+        parts: parts,
         messageId: uuid4(),
         contextId: this.contextId,
         taskId: this.taskId,
@@ -269,9 +274,45 @@ export class A2AAgent extends BaseAgent<A2AAgentRunInput, A2AAgentRunOutput> {
     } else if (input instanceof Message) {
       return input;
     } else if (("kind" in input && input.kind === "message") || "artifactId" in input) {
-      return convert_a2a_to_framework_message(input);
+      return convertA2AMessageToFrameworkMessage(input);
     } else {
       throw new AgentError("Unsupported input type");
     }
+  }
+}
+
+function convertFrameworkContentoA2APart(content: MessageContentPart): Part {
+  const { type, ...rest } = content;
+  switch (type) {
+    case "text":
+      return { kind: "text", text: content.text };
+    case "file":
+    case "image": {
+      const data = type === "file" ? content.data : content.image;
+      const decoder = new TextDecoder("utf-8");
+      const file =
+        data instanceof URL
+          ? ({ uri: data.href } as FileWithUri)
+          : ({
+              bytes: typeof data === "string" ? data : decoder.decode(data),
+            } as FileWithBytes);
+      return {
+        kind: "file",
+        file: {
+          ...file,
+          mimeType: content.mimeType,
+          name: "filename" in content ? content.filename : undefined,
+        },
+        metadata: {
+          providerOptions: content.providerOptions,
+        },
+      };
+    }
+    case "tool-call":
+    case "tool-result":
+      return {
+        kind: "data",
+        data: rest,
+      };
   }
 }
