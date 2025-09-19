@@ -435,7 +435,7 @@ IMPORTANT: You MUST answer with a JSON object that matches the JSON schema above
             else tool_choice in self._tool_choice_support
         )
 
-        return not self.model_supports_tool_calling or not tool_choice_supported
+        return not self.model_supports_tool_calling and not tool_choice_supported
 
     async def clone(self) -> Self:
         cloned = type(self)(
