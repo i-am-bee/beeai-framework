@@ -1,21 +1,20 @@
 # Copyright 2025 © BeeAI a Series of LF Projects, LLC
 # SPDX-License-Identifier: Apache-2.0
 import contextlib
-from collections.abc import AsyncGenerator, Callable
+from collections.abc import Callable
 from contextvars import ContextVar
 from functools import cached_property
-from typing import ClassVar, Self
+from typing import Any, ClassVar, Self
 
 from beeai_sdk.a2a.extensions import LLMServiceExtensionServer
-from typing_extensions import Unpack
+from typing_extensions import Unpack, override
 
 from beeai_framework.adapters.openai import OpenAIChatModel
 from beeai_framework.backend import ChatModelOutput, ChatModelStructureOutput
-from beeai_framework.backend.chat import ChatModel, ChatModelKwargs, T, ToolChoiceType
+from beeai_framework.backend.chat import ChatModel, ChatModelKwargs, ToolChoiceType
 from beeai_framework.backend.constants import ProviderName
-from beeai_framework.backend.types import ChatModelInput, ChatModelStructureInput
 from beeai_framework.backend.utils import load_model
-from beeai_framework.context import RunContext
+from beeai_framework.context import Run
 
 __all__ = ["BeeAIPlatformChatModel"]
 
@@ -62,14 +61,28 @@ class BeeAIPlatformChatModel(ChatModel):
             **kwargs,
         )
 
-    async def _create(self, input: ChatModelInput, run: RunContext) -> ChatModelOutput:
-        return await self._model._create(input, run)
+    @override
+    def create(self, *args: Any, **kwargs: Any) -> Run[ChatModelOutput]:
+        return self._model.create(*args, **kwargs)
 
-    def _create_stream(self, input: ChatModelInput, run: RunContext) -> AsyncGenerator[ChatModelOutput]:
-        return self._model._create_stream(input, run)
+    @override
+    def create_structure(self, *args: Any, **kwargs: Any) -> Run[ChatModelStructureOutput]:
+        return self._model.create_structure(*args, **kwargs)
 
-    async def _create_structure(self, input: ChatModelStructureInput[T], run: RunContext) -> ChatModelStructureOutput:
-        return await self._model._create_structure(input, run)
+    @override
+    def _create_stream(self, *args: Any, **kwargs: Any) -> Any:
+        # This method should not be called directly as the public `create` method is delegated.
+        raise NotImplementedError()
+
+    @override
+    async def _create(self, *args: Any, **kwargs: Any) -> Any:
+        # This method should not be called directly as the public `create` method is delegated.
+        raise NotImplementedError()
+
+    @override
+    async def _create_structure(self, *args: Any, **kwargs: Any) -> Any:
+        # This method should not be called directly as the public `create_structure` method is delegated.
+        raise NotImplementedError()
 
     @property
     def model_id(self) -> str:
