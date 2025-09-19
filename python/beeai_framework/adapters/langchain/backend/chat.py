@@ -59,7 +59,7 @@ class LangChainChatModel(ChatModel):
                 lambda data: LCModelResponse(output=data, output_structured=None)
             )
         elif input.response_format:
-            return self._model.with_structured_output(schema=input.response_format, include_raw=False) | RunnableLambda(
+            return self._model.with_structured_output(schema=input.response_format, include_raw=True) | RunnableLambda(
                 lambda data: LCModelResponse(output=data["raw"], output_structured=data["parsed"])
             )
         else:
