@@ -21,6 +21,7 @@ from beeai_framework.backend.types import EmbeddingModelInput, EmbeddingModelOut
 from beeai_framework.backend.utils import load_model, parse_model
 from beeai_framework.context import Run, RunContext, RunMiddlewareType
 from beeai_framework.emitter import Emitter
+from beeai_framework.retryable import Retryable, RetryableConfig, RetryableInput
 from beeai_framework.utils import AbortSignal
 from beeai_framework.utils.dicts import exclude_non_annotated
 
@@ -72,7 +73,21 @@ class EmbeddingModel(ABC):
         async def handler(context: RunContext) -> EmbeddingModelOutput:
             try:
                 await context.emitter.emit("start", EmbeddingModelStartEvent(input=model_input))
-                result: EmbeddingModelOutput = await self._create(model_input, context)
+
+                result = await Retryable(
+                    RetryableInput(
+                        executor=lambda _: self._create(model_input, context),
+                        config=RetryableConfig(
+                            max_retries=(
+                                model_input.max_retries
+                                if model_input is not None and model_input.max_retries is not None
+                                else 0
+                            ),
+                            signal=context.signal,
+                        ),
+                    )
+                ).get()
+
                 await context.emitter.emit("success", EmbeddingModelSuccessEvent(value=result))
                 return result
             except Exception as ex:

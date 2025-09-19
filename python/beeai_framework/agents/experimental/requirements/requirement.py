@@ -75,7 +75,7 @@ class Requirement(ABC, Generic[T]):
     def run(self, state: T) -> Run[list[Rule]]: ...
 
     async def init(self, *, tools: list[AnyTool], ctx: RunContext) -> None:
-        await ctx.emitter.emit("init", RequirementInitEvent(tools=tools))
+        await self.emitter.emit("init", RequirementInitEvent(tools=tools))
 
     async def clone(self) -> Self:
         instance = type(self).__new__(self.__class__)

@@ -7,8 +7,7 @@ icon: "rocket"
 <Steps>
    <Step title="Clone a starter repo">
 
-  Get started quickly with the a BeeAI Framework starter template.
-  for [Python](https://github.com/i-am-bee/beeai-framework-py-starter) or [Typescript](https://github.com/i-am-bee/beeai-framework-ts-starter).
+  Quickly get started with the BeeAI Framework starter template:
 
   <CodeGroup>
   ```bash Python
@@ -106,7 +105,7 @@ icon: "rocket"
   
       try:
           response = await main_agent.run(question, expected_output="Helpful and clear response.")
-          print("Agent:", response.answer.text)
+          print("Agent:", response.last_message.text)
       except FrameworkError as err:
           print("Error:", err.explain())
   

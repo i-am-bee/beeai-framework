@@ -8,14 +8,16 @@ from typing import Annotated, Self
 from pydantic import BaseModel
 from typing_extensions import TypedDict, TypeVar, Unpack, override
 
+from beeai_framework.adapters.beeai_platform.backend.chat import BeeAIPlatformChatModel
+from beeai_framework.adapters.beeai_platform.context import BeeAIPlatformContext
 from beeai_framework.agents.experimental import RequirementAgent
 from beeai_framework.agents.experimental.events import RequirementAgentSuccessEvent
 from beeai_framework.agents.react import ReActAgent, ReActAgentUpdateEvent
 from beeai_framework.agents.tool_calling import ToolCallingAgent, ToolCallingAgentSuccessEvent
 from beeai_framework.backend import AssistantMessage, MessageTextContent, MessageToolCallContent, ToolMessage
 from beeai_framework.serve.errors import FactoryAlreadyRegisteredError
+from beeai_framework.utils.cloneable import Cloneable
 from beeai_framework.utils.lists import find_index
-from beeai_framework.utils.strings import to_json
 
 try:
     import a2a.types as a2a_types
@@ -95,11 +97,13 @@ class BeeAIPlatformServer(
 
     def serve(self) -> None:
         self._setup_member()
-        self._server.run(**self._config.model_dump(exclude_none=True))
+        with contextlib.suppress(KeyboardInterrupt):
+            self._server.run(**self._config.model_dump(exclude_none=True))
 
     async def aserve(self) -> None:
         self._setup_member()
-        await self._server.serve(**self._config.model_dump(exclude_none=True))
+        with contextlib.suppress(KeyboardInterrupt):
+            await self._server.serve(**self._config.model_dump(exclude_none=True))
 
     @override
     def register(self, input: AnyAgentLike, **metadata: Unpack[BeeAIPlatformServerMetadata]) -> Self:
@@ -118,59 +122,71 @@ class BeeAIPlatformServer(
 def _react_agent_factory(
     agent: ReActAgent, *, metadata: BeeAIPlatformServerMetadata | None = None, memory_manager: MemoryManager
 ) -> beeai_agent.Agent:
+    llm = agent._input.llm
+    preferred_models = llm.preferred_models if isinstance(llm, BeeAIPlatformChatModel) else []
+
     async def run(
         message: a2a_types.Message,
         context: beeai_context.RunContext,
         trajectory: Annotated[beeai_extensions.TrajectoryExtensionServer, beeai_extensions.TrajectoryExtensionSpec()],
-        citation: Annotated[beeai_extensions.CitationExtensionServer, beeai_extensions.CitationExtensionSpec()],
+        form: Annotated[beeai_extensions.FormExtensionServer, beeai_extensions.FormExtensionSpec(params=None)],
+        llm_ext: Annotated[
+            beeai_extensions.LLMServiceExtensionServer,
+            beeai_extensions.LLMServiceExtensionSpec.single_demand(suggested=tuple(preferred_models)),
+        ],
     ) -> AsyncGenerator[beeai_types.RunYield, beeai_types.RunYieldResume]:
-        await init_agent_memory(agent, memory_manager, context.context_id)
-        await agent.memory.add(convert_a2a_to_framework_message(message))
+        cloned_agent = await agent.clone() if isinstance(agent, Cloneable) else agent
+        await init_agent_memory(cloned_agent, memory_manager, context.context_id)
 
-        artifact_id = uuid.uuid4()
-        append = False
-        last_key = None
-        last_update = None
-        async for data, event in agent.run():
-            match (data, event.name):
-                case (ReActAgentUpdateEvent(), "partial_update"):
-                    match data.update.key:
-                        case "thought" | "tool_name" | "tool_input" | "tool_output":
-                            update = data.update.parsed_value
-                            update = update.get_text_content() if hasattr(update, "get_text_content") else str(update)
-                            if last_key and last_key != data.update.key:
-                                yield trajectory.trajectory_metadata(title=last_key, content=last_update)
-                            last_key = data.update.key
-                            last_update = update
-                        case "final_answer":
-                            update = data.update.value
-                            update = update.get_text_content() if hasattr(update, "get_text_content") else str(update)
-                            yield a2a_types.TaskArtifactUpdateEvent(
-                                append=append,
-                                context_id=context.context_id,
-                                task_id=context.task_id,
-                                last_chunk=False,
-                                artifact=a2a_types.Artifact(
-                                    name="final_answer",
-                                    artifact_id=str(artifact_id),
-                                    parts=[a2a_types.Part(root=a2a_types.TextPart(text=update))],
-                                ),
-                            )
-                            append = True
+        with BeeAIPlatformContext(context, form=form, llm=llm_ext):
+            artifact_id = uuid.uuid4()
+            append = False
+            last_key = None
+            last_update = None
+            async for data, event in cloned_agent.run([convert_a2a_to_framework_message(message)]):
+                match (data, event.name):
+                    case (ReActAgentUpdateEvent(), "partial_update"):
+                        match data.update.key:
+                            case "thought" | "tool_name" | "tool_input" | "tool_output":
+                                update = data.update.parsed_value
+                                update = (
+                                    update.get_text_content() if hasattr(update, "get_text_content") else str(update)
+                                )
+                                if last_key and last_key != data.update.key:
+                                    yield trajectory.trajectory_metadata(title=last_key, content=last_update)
+                                last_key = data.update.key
+                                last_update = update
+                            case "final_answer":
+                                update = data.update.value
+                                update = (
+                                    update.get_text_content() if hasattr(update, "get_text_content") else str(update)
+                                )
+                                yield a2a_types.TaskArtifactUpdateEvent(
+                                    append=append,
+                                    context_id=context.context_id,
+                                    task_id=context.task_id,
+                                    last_chunk=False,
+                                    artifact=a2a_types.Artifact(
+                                        name="final_answer",
+                                        artifact_id=str(artifact_id),
+                                        parts=[a2a_types.Part(root=a2a_types.TextPart(text=update))],
+                                    ),
+                                )
+                                append = True
 
-        yield a2a_types.TaskArtifactUpdateEvent(
-            append=True,
-            context_id=context.context_id,
-            task_id=context.task_id,
-            last_chunk=True,
-            artifact=a2a_types.Artifact(
-                name="final_answer",
-                artifact_id=str(artifact_id),
-                parts=[a2a_types.Part(root=a2a_types.TextPart(text=""))],
-            ),
-        )
+            yield a2a_types.TaskArtifactUpdateEvent(
+                append=True,
+                context_id=context.context_id,
+                task_id=context.task_id,
+                last_chunk=True,
+                artifact=a2a_types.Artifact(
+                    name="final_answer",
+                    artifact_id=str(artifact_id),
+                    parts=[a2a_types.Part(root=a2a_types.TextPart(text=""))],
+                ),
+            )
 
-    metadata = metadata or {}
+    metadata = _init_metadata(agent, metadata)
     return beeai_agent.agent(**metadata)(run)
 
 
@@ -181,31 +197,39 @@ with contextlib.suppress(FactoryAlreadyRegisteredError):
 def _tool_calling_agent_factory(
     agent: ToolCallingAgent, *, metadata: BeeAIPlatformServerMetadata | None = None, memory_manager: MemoryManager
 ) -> beeai_agent.Agent:
+    llm = agent._llm
+    preferred_models = llm.preferred_models if isinstance(llm, BeeAIPlatformChatModel) else []
+
     async def run(
         message: a2a_types.Message,
         context: beeai_context.RunContext,
         trajectory: Annotated[beeai_extensions.TrajectoryExtensionServer, beeai_extensions.TrajectoryExtensionSpec()],
-        citation: Annotated[beeai_extensions.CitationExtensionServer, beeai_extensions.CitationExtensionSpec()],
+        form: Annotated[beeai_extensions.FormExtensionServer, beeai_extensions.FormExtensionSpec(params=None)],
+        llm_ext: Annotated[
+            beeai_extensions.LLMServiceExtensionServer,
+            beeai_extensions.LLMServiceExtensionSpec.single_demand(suggested=tuple(preferred_models)),
+        ],
     ) -> AsyncGenerator[beeai_types.RunYield, beeai_types.RunYieldResume]:
-        await init_agent_memory(agent, memory_manager, context.context_id)
-        await agent.memory.add(convert_a2a_to_framework_message(message))
+        cloned_agent = await agent.clone() if isinstance(agent, Cloneable) else agent
+        await init_agent_memory(cloned_agent, memory_manager, context.context_id)
 
-        last_msg: AnyMessage | None = None
-        async for data, _ in agent.run():
-            messages = data.state.memory.messages
-            if last_msg is None:
-                last_msg = messages[-1]
+        with BeeAIPlatformContext(context, form=form, llm=llm_ext):
+            last_msg: AnyMessage | None = None
+            async for data, _ in cloned_agent.run([convert_a2a_to_framework_message(message)]):
+                messages = data.state.memory.messages
+                if last_msg is None:
+                    last_msg = messages[-1]
 
-            cur_index = find_index(messages, lambda msg: msg is last_msg, fallback=-1, reverse_traversal=True)  # noqa: B023
-            for msg in messages[cur_index + 1 :]:
-                for value in send_message_trajectory(msg, trajectory):
-                    yield value
-                last_msg = msg
+                cur_index = find_index(messages, lambda msg: msg is last_msg, fallback=-1, reverse_traversal=True)  # noqa: B023
+                for msg in messages[cur_index + 1 :]:
+                    for value in send_message_trajectory(msg, trajectory):
+                        yield value
+                    last_msg = msg
 
-            if isinstance(data, ToolCallingAgentSuccessEvent) and data.state.result is not None:
-                yield beeai_types.AgentMessage(text=data.state.result.text)
+                if isinstance(data, ToolCallingAgentSuccessEvent) and data.state.result is not None:
+                    yield beeai_types.AgentMessage(text=data.state.result.text)
 
-    metadata = metadata or {}
+    metadata = _init_metadata(agent, metadata)
     return beeai_agent.agent(**metadata)(run)
 
 
@@ -216,31 +240,41 @@ with contextlib.suppress(FactoryAlreadyRegisteredError):
 def _requirement_agent_factory(
     agent: RequirementAgent, *, metadata: BeeAIPlatformServerMetadata | None = None, memory_manager: MemoryManager
 ) -> beeai_agent.Agent:
+    llm = agent._llm
+    preferred_models = llm.preferred_models if isinstance(llm, BeeAIPlatformChatModel) else []
+
     async def run(
         message: a2a_types.Message,
         context: beeai_context.RunContext,
         trajectory: Annotated[beeai_extensions.TrajectoryExtensionServer, beeai_extensions.TrajectoryExtensionSpec()],
-        citation: Annotated[beeai_extensions.CitationExtensionServer, beeai_extensions.CitationExtensionSpec()],
+        form: Annotated[
+            beeai_extensions.FormExtensionServer,
+            beeai_extensions.FormExtensionSpec(params=None),
+        ],
+        llm_ext: Annotated[
+            beeai_extensions.LLMServiceExtensionServer,
+            beeai_extensions.LLMServiceExtensionSpec.single_demand(suggested=tuple(preferred_models)),
+        ],
     ) -> AsyncGenerator[beeai_types.RunYield, beeai_types.RunYieldResume]:
-        await init_agent_memory(agent, memory_manager, context.context_id)
-        await agent.memory.add(convert_a2a_to_framework_message(message))
+        cloned_agent = await agent.clone() if isinstance(agent, Cloneable) else agent
+        await init_agent_memory(cloned_agent, memory_manager, context.context_id)
+        with BeeAIPlatformContext(context, form=form, llm=llm_ext):
+            last_msg: AnyMessage | None = None
+            async for data, _ in cloned_agent.run([convert_a2a_to_framework_message(message)]):
+                messages = data.state.memory.messages
+                if last_msg is None:
+                    last_msg = messages[-1]
 
-        last_msg: AnyMessage | None = None
-        async for data, _ in agent.run():
-            messages = data.state.memory.messages
-            if last_msg is None:
-                last_msg = messages[-1]
+                cur_index = find_index(messages, lambda msg: msg is last_msg, fallback=-1, reverse_traversal=True)  # noqa: B023
+                for msg in messages[cur_index + 1 :]:
+                    for value in send_message_trajectory(msg, trajectory):
+                        yield value
+                    last_msg = msg
 
-            cur_index = find_index(messages, lambda msg: msg is last_msg, fallback=-1, reverse_traversal=True)  # noqa: B023
-            for msg in messages[cur_index + 1 :]:
-                for value in send_message_trajectory(msg, trajectory):
-                    yield value
-                last_msg = msg
+                if isinstance(data, RequirementAgentSuccessEvent) and data.state.answer is not None:
+                    yield beeai_types.AgentMessage(text=data.state.answer.text)
 
-            if isinstance(data, RequirementAgentSuccessEvent) and data.state.answer is not None:
-                yield beeai_types.AgentMessage(text=data.state.answer.text)
-
-    metadata = metadata or {}
+    metadata = _init_metadata(agent, metadata)
     return beeai_agent.agent(**metadata)(run)
 
 
@@ -259,11 +293,24 @@ def send_message_trajectory(
             elif isinstance(content, MessageToolCallContent):
                 if content.tool_name == "final_answer":
                     continue
-                yield trajectory.trajectory_metadata(
-                    title=content.tool_name, content=to_json({"id": content.id, "args": content.args}, sort_keys=False)
-                )
+                yield trajectory.trajectory_metadata(title=f"{content.tool_name} (request)", content=content.args)
     elif isinstance(msg, ToolMessage):
-        for result in msg.get_tool_results():
-            if result.tool_name == "final_answer":
+        for tool_call in msg.get_tool_results():
+            if tool_call.tool_name == "final_answer":
                 continue
-            yield trajectory.trajectory_metadata(title="tool result", content=str(result.result))
+
+            yield trajectory.trajectory_metadata(
+                title=f"{tool_call.tool_name} (response)", content=str(tool_call.result)
+            )
+
+
+def _init_metadata(
+    agent: AnyAgentLike,
+    base: BeeAIPlatformServerMetadata | None = None,
+) -> BeeAIPlatformServerMetadata:
+    copy = (base or {}).copy()
+    if not copy.get("name"):
+        copy["name"] = agent.meta.name
+    if not copy.get("description"):
+        copy["description"] = agent.meta.description
+    return copy

@@ -47,7 +47,7 @@ from beeai_framework.backend.utils import parse_broken_json
 from beeai_framework.cache.null_cache import NullCache
 from beeai_framework.context import RunContext
 from beeai_framework.logger import Logger
-from beeai_framework.tools.tool import Tool
+from beeai_framework.tools.tool import AnyTool, Tool
 from beeai_framework.utils.dicts import exclude_keys, exclude_none, include_keys, set_attr_if_none
 from beeai_framework.utils.strings import to_json
 
@@ -92,15 +92,26 @@ class LiteLLMChatModel(ChatModel, ABC):
         response = await acompletion(**litellm_input)
 
         is_empty = True
-        async for chunk in response:
+        tmp_chunk: ChatModelOutput | None = None
+        async for _chunk in response:
             is_empty = False
-            response_output = self._transform_output(chunk)
-            if response_output:
-                yield response_output
+            chunk = self._transform_output(_chunk)
+
+            if tmp_chunk is None:
+                tmp_chunk = chunk
+            else:
+                tmp_chunk.merge(chunk)
+
+            if tmp_chunk.is_valid():
+                yield tmp_chunk
+                tmp_chunk = None
 
         if is_empty:
             # TODO: issue https://github.com/BerriAI/litellm/issues/8868
             raise ChatModelError("Stream response is empty.")
+
+        if tmp_chunk:
+            raise ChatModelError("Failed to merge intermediate responses.")
 
     async def _create_structure(self, input: ChatModelStructureInput[Any], run: RunContext) -> ChatModelStructureOutput:
         if "response_format" not in self.supported_params:
@@ -208,6 +219,7 @@ class LiteLLMChatModel(ChatModel, ABC):
             set(self.supported_params),
         )
 
+        tool_choice: dict[str, Any] | str | AnyTool | None = input.tool_choice
         if input.tool_choice == "none" and input.tool_choice not in self._tool_choice_support:
             tool_choice = None
             tools = []
@@ -218,7 +230,7 @@ class LiteLLMChatModel(ChatModel, ABC):
         elif input.tool_choice not in self._tool_choice_support:
             tool_choice = None
 
-        if input.response_format is not None:
+        if input.response_format:
             tools = []
             tool_choice = None
 
@@ -232,17 +244,18 @@ class LiteLLMChatModel(ChatModel, ABC):
                 "response_format": self._format_response_model(input.response_format)
                 if input.response_format
                 else None,
+                "max_retries": 0,
                 "tool_choice": tool_choice if tools else None,
                 "parallel_tool_calls": bool(input.parallel_tool_calls) if tools else None,
             }
         )
 
     def _transform_output(self, chunk: ModelResponse | ModelResponseStream) -> ChatModelOutput:
-        choice = chunk.choices[0]
-        finish_reason = choice.finish_reason
         model = chunk.get("model")  # type: ignore
         usage = chunk.get("usage")  # type: ignore
-        update = choice.delta if isinstance(choice, StreamingChoices) else choice.message
+        choice = chunk.choices[0] if chunk.choices else None
+        finish_reason = choice.finish_reason if choice else None
+        update = (choice.delta if isinstance(choice, StreamingChoices) else choice.message) if choice else None
 
         cost: ChatModelCost | None = None
         with contextlib.suppress(Exception):
@@ -278,7 +291,7 @@ class LiteLLMChatModel(ChatModel, ABC):
                         else AssistantMessage(update.content, id=chunk.id)  # type: ignore
                     )
                 ]
-                if update.model_dump(exclude_none=True)
+                if update and update.model_dump(exclude_none=True)
                 else []
             ),
             finish_reason=finish_reason,

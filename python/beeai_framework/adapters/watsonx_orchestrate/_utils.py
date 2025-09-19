@@ -108,7 +108,8 @@ T = TypeVar("T")
 
 
 async def create_emitter(
-    handler: Callable[[Callable[[T], Awaitable[None]]], Any],
+    handler: Callable[[list[AnyMessage], Callable[[T], Awaitable[None]]], Any],
+    input: list[AnyMessage],
 ) -> AsyncGenerator[T, None]:
     queue = Queue[T | None]()
 
@@ -117,7 +118,7 @@ async def create_emitter(
 
     async def wrapper() -> None:
         try:
-            await handler(emit)
+            await handler(input, emit)
         finally:
             await queue.put(None)
 

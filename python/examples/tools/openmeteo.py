@@ -15,7 +15,7 @@ async def main() -> None:
 
     result = await agent.run("What's the current weather in London?")
 
-    print(result.result.text)
+    print(result.last_message.text)
 
 
 if __name__ == "__main__":

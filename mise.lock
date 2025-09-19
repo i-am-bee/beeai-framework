@@ -1,32 +1,23 @@
-[tools.fd]
+[[tools.fd]]
 version = "10.2.0"
 backend = "aqua:sharkdp/fd"
 
-[tools.fd.checksums]
-"fd-v10.2.0-aarch64-apple-darwin.tar.gz" = "sha256:ae6327ba8c9a487cd63edd8bddd97da0207887a66d61e067dfe80c1430c5ae36"
-
-[tools.node]
+[[tools.node]]
 version = "20.15.1"
 backend = "core:node"
 
-[tools.node.checksums]
-"node-v20.15.1-darwin-arm64.tar.gz" = "sha256:4743bc042f90ba5d9edf09403207290a9cdd2f6061bdccf7caaa0bbfd49f343e"
-
-[tools."pipx:poetry"]
+[[tools."pipx:poetry"]]
 version = "2.1.1"
 backend = "pipx:poetry"
 
-[tools.python]
+[[tools.python]]
 version = "3.11.13"
 backend = "core:python"
 
-[tools."ubi:google/addlicense"]
+[[tools."ubi:google/addlicense"]]
 version = "1.1.1"
 backend = "ubi:google/addlicense"
 
-[tools."ubi:google/addlicense".checksums]
-addlicense-macos-aarch64 = "sha256:ce5830d1efd60c71f4b51071c12fa2be927ee13c5058f587a57be69eee1d8ab4"
-
-[tools.yarn]
+[[tools.yarn]]
 version = "4.9.1"
 backend = "asdf:yarn"

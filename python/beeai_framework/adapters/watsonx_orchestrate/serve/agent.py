@@ -16,7 +16,8 @@ from typing_extensions import TypeVar
 import beeai_framework.adapters.watsonx_orchestrate._api as watsonx_orchestrate_api
 from beeai_framework.adapters.watsonx_orchestrate._utils import create_emitter
 from beeai_framework.agents import AnyAgent
-from beeai_framework.backend import AssistantMessage
+from beeai_framework.backend import AnyMessage
+from beeai_framework.utils.cloneable import Cloneable
 from beeai_framework.utils.strings import to_json
 
 T = TypeVar("T", bound=AnyAgent, default=AnyAgent)
@@ -31,8 +32,9 @@ class WatsonxOrchestrateServerAgent(ABC, Generic[T]):
     @abstractmethod
     def model_id(self) -> str: ...
 
-    async def run(self) -> watsonx_orchestrate_api.ChatCompletionResponse:
-        message = await self._run()
+    async def run(self, input: list[AnyMessage]) -> watsonx_orchestrate_api.ChatCompletionResponse:
+        cloned_agent = await self._agent.clone() if isinstance(self._agent, Cloneable) else self._agent
+        response = await cloned_agent.run(input)
 
         return watsonx_orchestrate_api.ChatCompletionResponse(
             id=str(uuid.uuid4()),
@@ -42,14 +44,16 @@ class WatsonxOrchestrateServerAgent(ABC, Generic[T]):
             choices=[
                 watsonx_orchestrate_api.ChatCompletionChoice(
                     index=0,
-                    message=watsonx_orchestrate_api.ChatMessageResponse(role="assistant", content=message.text),
+                    message=watsonx_orchestrate_api.ChatMessageResponse(
+                        role="assistant", content=response.last_message.text
+                    ),
                     finish_reason="stop",  # TODO
                 )
             ],
         )
 
-    async def stream(self, thread_id: str | None) -> AsyncIterable[ServerSentEvent]:
-        async for event in create_emitter(self._stream):
+    async def stream(self, input: list[AnyMessage], thread_id: str | None) -> AsyncIterable[ServerSentEvent]:
+        async for event in create_emitter(self._stream, input):
             match event:
                 case WatsonxOrchestrateServerAgentMessageEvent():
                     yield self._create_message_event(event.text, thread_id)
@@ -89,10 +93,7 @@ class WatsonxOrchestrateServerAgent(ABC, Generic[T]):
                     raise ValueError(f"Unexpected event type: {event}")
 
     @abstractmethod
-    async def _run(self) -> AssistantMessage: ...
-
-    @abstractmethod
-    async def _stream(self, emit: WatsonxOrchestrateServerAgentEmitFn) -> None: ...
+    async def _stream(self, input: list[AnyMessage], emit: WatsonxOrchestrateServerAgentEmitFn) -> None: ...
 
     def _create_tool_event(self, content: Any, thread_id: str | None) -> ServerSentEvent:
         data: dict[str, Any] = {

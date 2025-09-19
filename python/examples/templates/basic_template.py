@@ -4,7 +4,7 @@ import traceback
 from pydantic import BaseModel
 
 from beeai_framework.errors import FrameworkError
-from beeai_framework.template import PromptTemplate, PromptTemplateInput
+from beeai_framework.template import PromptTemplate
 
 
 def main() -> None:
@@ -13,10 +13,8 @@ def main() -> None:
         input: str
 
     template: PromptTemplate[UserMessage] = PromptTemplate(
-        PromptTemplateInput(
-            schema=UserMessage,
-            template="""{{label}}: {{input}}""",
-        )
+        schema=UserMessage,
+        template="""{{label}}: {{input}}""",
     )
 
     prompt = template.render(label="Query", input="What interesting things happened on this day in history?")

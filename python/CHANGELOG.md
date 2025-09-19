@@ -1,3 +1,154 @@
+## python_v0.1.47 (2025-09-19)
+
+### Bug Fixes
+
+- **adapters**: update A2A Agent (#1112)
+- **adapters**: correctly wrap the inner model in BeeAIPlatformChatModel (#1115)
+- add missing retry for embeddings (#1110)
+
+## python_v0.1.46 (2025-09-17)
+
+### Bug Fixes
+
+- **backend**: include tool_choice_support when cloning
+
+### Features
+
+- **adapters**: handle nested initialization of BeeAIPlatformChatModel (#1109)
+
+## python_v0.1.45 (2025-09-15)
+
+### Features
+
+- **adapter**: add LangChain ChatModel integration (#1104)
+- make yes/no in AskPermissionRequirement case-insensitive
+- **adapters**: support BeeAIPlatform adapter and llm extension (#1098)
+- support extensions in BeeAIPlatformAgent (#1091)
+
+## python_v0.1.44 (2025-09-11)
+
+### Bug Fixes
+
+- type cast
+- **logging**: prevent TypeError when during retry (#1093)
+- **backend**: watsonx tool call streaming (#1085)
+
+### Features
+
+- **adapters**: use FormExtension in BeeAI Platform (#1099)
+- **adapters**: support agents in MCP server (#1086)
+- **emitter**: improve register/deregister mechanism (#849)
+- **adapters**: add support for running the A2A server on multiple protocols (#1077)
+
+## python_v0.1.43 (2025-09-05)
+
+### Bug Fixes
+
+- **agents**: handle an empty list of messages in RequirementAgent
+
+### Features
+
+- simplify and extend PromptTemplate (#1082)
+- **tools**: propagate MCP errors (#1065)
+
+## python_v0.1.42 (2025-09-02)
+
+Converted all `beeai_framework.agents` into “runnables,” modifying their `run` method signatures (#1013).
+
+**Migration Guide**
+
+This guide will help you update your codebase to the latest version. It outlines breaking changes and new features that may require updates to your application.  Agents now subclass a common `Runnable` interface.
+
+Key changes:
+
+- Agents require a positional `input: str | list[AnyMessage]` (first argument).
+- Optional keyword options are defined in the new `AgentOptions` typed dictionary.
+- Agent return types all derive from `AgentOutput`. This object contains a field `output: list[AnyMessage]` and a convenience property `last_message` that returns the last message in the output, with a fallback if none is defined.
+
+**Before**
+
+```python
+response: RequirementAgentRunOutput = await agent.run(
+    prompt="Write a step-by-step tutorial on how to bake bread",
+    expected_output="The output should be an ordered list of steps. Each step should ideally be one sentence.",
+    context="Assume that the user has no prior knowledge of baking.",
+    execution=AgentExecutionConfig(max_iterations=8, max_retries_per_step=3, total_max_retries=10)
+)
+print(response.result.text) # the result is a message
+print(response.answer_structured) # the result is a structured response (if the expected_output is a Pydantic model)
+```
+
+- The following return types have been renamed and should be updated as follows:
+    - `TooCallingAgentRunOutput` → `TooCallingAgentOutput`
+    - `ReActAgentRunOutput` → `ReActAgentOutput`
+    - `RequirementsAgentRunOutput` → `RequirementsAgentOutput`
+
+**After**
+
+```python
+response: RequirementAgentOutput = await agent.run(
+    "Write a step-by-step tutorial on how to bake bread",
+    expected_output="The output should be an ordered list of steps. Each step should ideally be one sentence.",
+    backstory="Assume that the user has no prior knowledge of baking.",
+    max_iterations=8, max_retries_per_step=3, total_max_retries=10
+)
+print(response.last_message.text) # the result is a message
+# print(response.output) # a list of all messages that the agent produced
+print(response.output_structured) # structured output, if any
+```
+
+### Adapters
+
+- The internal BeeAI Platform agent factories were refactored to align with the new runnable input contract that the framework agents now implement. This affects agent initialization logic: instead of adding the messages from the task context to memory during agent memory initialization, these are now passed directly to the agent’s `run` interface, allowing agents to manage their own memory. Adapters are responsible only for creating and configuring memory.
+- The following return types have been renamed and should be updated as follows:
+    - `BeeAIPlatformAgentRunOutput` → `BeeAIPlatformAgentOutput`
+    - `ACPAgentRunOutput` → `ACPAgentOutput`
+    - `A2AAgentRunOutput` → `A2AAgentOutput`
+    - `WatsonxOrchestrateAgentRunOutput` → `WatsonxOrchestrateAgentOutput`
+
+### Other Changes
+
+- Removed `ReActAgentRunOutput`, `RAGAgentOutput` (switched to `AgentOutput`)
+- Removed `RAGAgentInput`
+
+
+## python_v0.1.41 (2025-09-01)
+
+### Bug Fixes
+
+- **backend**: handle empty responses for Gemini (#1061)
+
+### Features
+
+- **serve**: interception support in BeeAI Platform (#1063)
+- **serve**: support parallel agent runs (#1060)
+- **serve**: add support for streamable-http in MCP (#1062)
+
+## python_v0.1.40 (2025-08-29)
+
+### Bug Fixes
+
+- match nested events in GlobalTrajectoryMiddleware (#1057)
+
+## python_v0.1.39 (2025-08-28)
+
+### Features
+
+- add retry logic to ChatModel (#1043)
+- **tools**: improve Handoff tool (#1051)
+
+## python_v0.1.38 (2025-08-27)
+
+### Bug Fixes
+
+- **backend**: initialize tool_choice in LiteLLM chat adapter (#1040)
+
+### Features
+
+- **adapters**: update agent's trajectory in BeeAI Platform (#1042)
+- **agents**: improve tool error propagation in the RequirementAgent (#1041)
+
+
 ## python_v0.1.37 (2025-08-26)
 
 ### Bug Fixes
@@ -314,7 +465,7 @@
 
 ### BREAKING CHANGE
 
-- - Removed ability to import classes from beeai_framework without a path
+- Removed ability to import classes from beeai_framework without a path
 - Moved AbortSignal from beeai_framework.cancellation to beeai_framework.utils
 - Moved MCPTool from beeai_framework.tools.mcp_tools to beeai_framework.tools.mcp
 

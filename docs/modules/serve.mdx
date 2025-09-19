@@ -18,7 +18,7 @@ The following table lists the currently supported providers:
 
 | Name                                                  | Dependency                                   | Location                    |
 |:-----------------------------------------------------|:--------------------------------------------|:---------------------------|
-| [A2A](https://a2aprotocol.ai/)       | `beeai_framework.adapters.a2a.serve`         | `beeai-platform[a2a]`       |
+| [A2A](https://a2a-protocol.org/)       | `beeai_framework.adapters.a2a.serve`         | `beeai-platform[a2a]`       |
 | [BeeAI Platform](https://beeai.dev/)                | `beeai_framework.adapters.beeai_platform.serve` | `beeai-platform[beeai-platform]` |
 | [MCP](https://modelcontextprotocol.io/) | `beeai_framework.adapters.mcp.serve`         | `beeai-platform[mcp]`       |
 
@@ -51,7 +51,9 @@ def main() -> None:
     # For the ToolCallingAgent, we don't need to specify ACPAgent factory method
     # because it is already registered in the A2AServer
     # we use LRU memory manager to keep limited amount of sessions in the memory
-    A2AServer(config=A2AServerConfig(port=9999), memory_manager=LRUMemoryManager(maxsize=100)).register(agent).serve()
+    A2AServer(
+        config=A2AServerConfig(port=9999, protocol="jsonrpc"), memory_manager=LRUMemoryManager(maxsize=100)
+    ).register(agent).serve()
 
 
 if __name__ == "__main__":

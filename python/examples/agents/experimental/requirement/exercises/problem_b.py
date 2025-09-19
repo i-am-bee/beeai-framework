@@ -44,7 +44,7 @@ async def main() -> None:
     )
 
     response = await agent.run("Tell me something about Greek history.")
-    print(response.answer.text)
+    print(response.last_message.text)
 
 
 if __name__ == "__main__":

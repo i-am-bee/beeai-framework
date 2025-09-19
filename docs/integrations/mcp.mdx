@@ -41,7 +41,7 @@ Key benefits
 	
 	
 	def main() -> None:
-	    # create a MCP server with custom config, register ReverseTool and OpenMeteoTool to the MCP server and run it
+	    # create an MCP server with custom config, register ReverseTool and OpenMeteoTool to the MCP server and run it
 	    MCPServer(config=MCPServerConfig(transport="sse", settings=MCPSettings(port=8001))).register_many(
 	        [reverse_tool, OpenMeteoTool()]
 	    ).serve()
@@ -96,7 +96,7 @@ The MCP adapter uses the MCPServerConfig class to configure the MCP server:
 	```py Python
 	class MCPServerConfig(BaseModel):
 	"""Configuration for the MCPServer."""
-	transport: Literal["stdio", "sse"] = "stdio"  # Transport protocol (stdio or server-sent events)
+	transport: Literal["stdio", "sse", "streamable-http"] = "stdio"  # Transport protocol
 	name: str = "MCP Server"                     # Name of the MCP server
 	instructions: str | None = None              # Optional instructions for the server
 	settings: mcp_server.Settings[Any] = Field(default_factory=lambda: mcp_server.Settings())

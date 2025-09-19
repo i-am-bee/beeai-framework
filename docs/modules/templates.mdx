@@ -41,7 +41,7 @@ import traceback
 from pydantic import BaseModel
 
 from beeai_framework.errors import FrameworkError
-from beeai_framework.template import PromptTemplate, PromptTemplateInput
+from beeai_framework.template import PromptTemplate
 
 
 def main() -> None:
@@ -50,10 +50,8 @@ def main() -> None:
         input: str
 
     template: PromptTemplate[UserMessage] = PromptTemplate(
-        PromptTemplateInput(
-            schema=UserMessage,
-            template="""{{label}}: {{input}}""",
-        )
+        schema=UserMessage,
+        template="""{{label}}: {{input}}""",
     )
 
     prompt = template.render(label="Query", input="What interesting things happened on this day in history?")
@@ -108,7 +106,7 @@ from typing import Any
 from pydantic import BaseModel
 
 from beeai_framework.errors import FrameworkError
-from beeai_framework.template import PromptTemplate, PromptTemplateInput
+from beeai_framework.template import PromptTemplate
 
 
 def main() -> None:
@@ -127,13 +125,11 @@ def main() -> None:
         return f"\nThis message was created at {created_at} by {author}."
 
     template: PromptTemplate[AuthorMessage] = PromptTemplate(
-        PromptTemplateInput(
-            schema=AuthorMessage,
-            functions={
-                "format_meta": lambda data: format_meta(data),
-            },
-            template="""Message: {{text}}{{format_meta}}""",
-        )
+        schema=AuthorMessage,
+        functions={
+            "format_meta": lambda data: format_meta(data),
+        },
+        template="""Message: {{text}}{{format_meta}}""",
     )
 
     # Message: Hello from 2024!
@@ -224,7 +220,7 @@ import traceback
 from pydantic import BaseModel
 
 from beeai_framework.errors import FrameworkError
-from beeai_framework.template import PromptTemplate, PromptTemplateInput
+from beeai_framework.template import PromptTemplate
 
 
 def main() -> None:
@@ -236,11 +232,9 @@ def main() -> None:
         responses: list[Response]
 
     template: PromptTemplate[ExpectedDuration] = PromptTemplate(
-        PromptTemplateInput(
-            schema=ExpectedDuration,
-            template="""Expected Duration: {{expected}}ms; Retrieved: {{#responses}}{{duration}}ms {{/responses}}""",
-            defaults={"expected": 5},
-        )
+        schema=ExpectedDuration,
+        template="""Expected Duration: {{expected}}ms; Retrieved: {{#responses}}{{duration}}ms {{/responses}}""",
+        defaults={"expected": 5},
     )
 
     # Expected Duration: 5ms; Retrieved: 3ms 5ms 6ms
@@ -298,7 +292,7 @@ import traceback
 from pydantic import BaseModel, Field
 
 from beeai_framework.errors import FrameworkError
-from beeai_framework.template import PromptTemplate, PromptTemplateInput
+from beeai_framework.template import PromptTemplate
 
 
 def main() -> None:
@@ -306,10 +300,8 @@ def main() -> None:
         colors: list[str] = Field(..., min_length=1)
 
     template: PromptTemplate[ColorsObject] = PromptTemplate(
-        PromptTemplateInput(
-            schema=ColorsObject,
-            template="""Colors: {{#colors}}{{.}}, {{/colors}}""",
-        )
+        schema=ColorsObject,
+        template="""Colors: {{#colors}}{{.}}, {{/colors}}""",
     )
 
     # Colors: Green, Yellow,
@@ -378,10 +370,8 @@ def main() -> None:
         objective: str
 
     original: PromptTemplate[OriginalSchema] = PromptTemplate(
-        PromptTemplateInput(
-            schema=OriginalSchema,
-            template="""You are a helpful assistant called {{name}}. Your objective is to {{objective}}.""",
-        )
+        schema=OriginalSchema,
+        template="""You are a helpful assistant called {{name}}. Your objective is to {{objective}}.""",
     )
 
     def customizer(temp_input: PromptTemplateInput[Any]) -> PromptTemplateInput[Any]:

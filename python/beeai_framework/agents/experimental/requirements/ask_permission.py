@@ -70,7 +70,7 @@ class AskPermissionRequirement(Requirement[RequirementAgentRunState]):
             async def handler(data: Any, _: EventMeta) -> None:
                 await self._ask(tool, data)
 
-            ctx.emitter.match(
+            ctx.emitter.on(
                 create_internal_event_matcher("start", tool, parent_run_id=ctx.run_id),
                 handler,
                 EmitterOptions(is_blocking=True, persistent=True, match_nested=True),
@@ -111,4 +111,4 @@ async def _default_handler(tool: AnyTool, input: dict[str, Any]) -> bool:
     response = await io_read(
         f"The agent wants to use the '{tool.name} tool.'\nInput: {input}\nDo you allow it? (yes/no): "
     )
-    return response.strip().startswith("yes")
+    return response.strip().lower().startswith("yes")

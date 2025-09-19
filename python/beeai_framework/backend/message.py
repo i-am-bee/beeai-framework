@@ -64,6 +64,16 @@ class MessageToolCallContent(BaseModel):
     tool_name: str
     args: str
 
+    def is_valid(self) -> bool:
+        if not self.id or not self.tool_name or not self.args:
+            return False
+
+        try:
+            json.loads(self.args)
+            return True
+        except Exception:
+            return False
+
 
 class Message(ABC, Generic[T]):
     id: str | None
@@ -150,7 +160,11 @@ class ToolMessage(Message[MessageToolResultContent]):
     role = Role.TOOL
 
     def __init__(
-        self, content: list[MessageToolResultContent] | MessageToolResultContent | str, meta: MessageMeta | None = None
+        self,
+        content: list[MessageToolResultContent] | MessageToolResultContent | str,
+        meta: MessageMeta | None = None,
+        *,
+        id: str | None = None,
     ) -> None:
         super().__init__(
             [
@@ -160,6 +174,7 @@ class ToolMessage(Message[MessageToolResultContent]):
                 for c in cast_list(content)
             ],
             meta,
+            id=id,
         )
 
     def get_tool_results(self) -> list[MessageToolResultContent]:
@@ -170,7 +185,11 @@ class SystemMessage(Message[MessageTextContent]):
     role = Role.SYSTEM
 
     def __init__(
-        self, content: list[MessageTextContent] | MessageTextContent | str, meta: MessageMeta | None = None
+        self,
+        content: list[MessageTextContent] | MessageTextContent | str,
+        meta: MessageMeta | None = None,
+        *,
+        id: str | None = None,
     ) -> None:
         super().__init__(
             [
@@ -180,6 +199,7 @@ class SystemMessage(Message[MessageTextContent]):
                 for c in cast_list(content)
             ],
             meta,
+            id=id,
         )
 
     def to_plain(self) -> dict[str, Any]:
@@ -196,7 +216,11 @@ class UserMessage(Message[UserMessageContent]):
     role = Role.USER
 
     def __init__(
-        self, content: list[UserMessageContent] | UserMessageContent | str, meta: MessageMeta | None = None
+        self,
+        content: list[UserMessageContent] | UserMessageContent | str,
+        meta: MessageMeta | None = None,
+        *,
+        id: str | None = None,
     ) -> None:
         super().__init__(
             [
@@ -206,6 +230,7 @@ class UserMessage(Message[UserMessageContent]):
                 for c in cast_list(content)
             ],
             meta,
+            id=id,
         )
 
     @classmethod
@@ -226,6 +251,8 @@ class CustomMessage(Message[CustomMessageContent]):
         role: str,
         content: list[CustomMessageContent] | CustomMessageContent | str,
         meta: MessageMeta | None = None,
+        *,
+        id: str | None = None,
     ) -> None:
         super().__init__(
             [
@@ -235,6 +262,7 @@ class CustomMessage(Message[CustomMessageContent]):
                 for c in cast_list(content)
             ],
             meta,
+            id=id,
         )
         self.role = role
         if not self.role:

@@ -4,7 +4,7 @@ import traceback
 from pydantic import BaseModel
 
 from beeai_framework.errors import FrameworkError
-from beeai_framework.template import PromptTemplate, PromptTemplateInput
+from beeai_framework.template import PromptTemplate
 
 
 def main() -> None:
@@ -16,11 +16,9 @@ def main() -> None:
         responses: list[Response]
 
     template: PromptTemplate[ExpectedDuration] = PromptTemplate(
-        PromptTemplateInput(
-            schema=ExpectedDuration,
-            template="""Expected Duration: {{expected}}ms; Retrieved: {{#responses}}{{duration}}ms {{/responses}}""",
-            defaults={"expected": 5},
-        )
+        schema=ExpectedDuration,
+        template="""Expected Duration: {{expected}}ms; Retrieved: {{#responses}}{{duration}}ms {{/responses}}""",
+        defaults={"expected": 5},
     )
 
     # Expected Duration: 5ms; Retrieved: 3ms 5ms 6ms

@@ -65,7 +65,7 @@ Here's a simple example that uses the built-in `chat` agent:
 	            lambda data, event: (reader.write("Agent 🤖 (debug) : ", data)),
 	        )
 	
-	        reader.write("Agent 🤖 : ", response.result.text)
+	        reader.write("Agent 🤖 : ", response.last_message.text)
 	
 	
 	if __name__ == "__main__":
@@ -127,7 +127,7 @@ async def main() -> None:
             "update",
             lambda data, _: (reader.write("Agent 🤖 (debug) : ", data)),
         )
-        state.research = response.result.text
+        state.research = response.last_message.text
 
     async def podcast(state: State) -> None:
         # Run the agent and observe events
@@ -139,7 +139,7 @@ async def main() -> None:
             "update",
             lambda data, _: (reader.write("Agent 🤖 (debug) : ", data)),
         )
-        state.output = response.result.text
+        state.output = response.last_message.text
 
     # Define the structure of the workflow graph
     workflow = Workflow(State)
@@ -180,9 +180,9 @@ The `BeeAIPlatformServer` class exposes agents built with the BeeAI Framework as
 	{/* <!-- embedme python/examples/serve/beeai_platform.py --> */}
 
 	```py Python
+	from beeai_framework.adapters.beeai_platform.backend.chat import BeeAIPlatformChatModel
 	from beeai_framework.adapters.beeai_platform.serve.server import BeeAIPlatformServer
 	from beeai_framework.agents.experimental import RequirementAgent
-	from beeai_framework.backend import ChatModel
 	from beeai_framework.memory import UnconstrainedMemory
 	from beeai_framework.middleware.trajectory import GlobalTrajectoryMiddleware
 	from beeai_framework.tools.search.duckduckgo import DuckDuckGoSearchTool
@@ -197,9 +197,8 @@ The `BeeAIPlatformServer` class exposes agents built with the BeeAI Framework as
 	
 	
 	def main() -> None:
-	    llm = ChatModel.from_name("ollama:granite3.3:8b")
 	    agent = RequirementAgent(
-	        llm=llm,
+	        llm=BeeAIPlatformChatModel(preferred_models=["ollama/granite3.3:8b", "openai/gpt-5"]),
 	        tools=[DuckDuckGoSearchTool(), OpenMeteoTool()],
 	        memory=UnconstrainedMemory(),
 	        middlewares=[GlobalTrajectoryMiddleware()],
