@@ -46,9 +46,7 @@ from beeai_framework.context import RunContext
 from beeai_framework.logger import Logger
 from beeai_framework.tools.tool import AnyTool, Tool
 from beeai_framework.utils.dicts import (
-    exclude_keys,
     exclude_none,
-    include_keys,
 )
 from beeai_framework.utils.strings import to_json
 
@@ -56,12 +54,12 @@ logger = Logger(__name__)
 
 
 class TransformersChatModel(ChatModel):
-    model: Any
-    model_structured: Any
+    _model: Any
+    _model_structured: Any
     _model_id: str
-    device_first_layer: torch.device
+    _device_first_layer: torch.device
     tokenizer: Any
-    streamer: TextStreamer
+    _streamer: TextStreamer
 
     @property
     def model_id(self) -> str:
@@ -95,17 +93,17 @@ class TransformersChatModel(ChatModel):
             device_map="auto",
             token=hf_token,
         )
-        self.model = (  # use peft if qlora_adapter_id is provided
+        self._model = (  # use peft if qlora_adapter_id is provided
             model_base
             if qlora_adapter_id is None
             else PeftModel.from_pretrained(model_base, qlora_adapter_id, device_map="auto", token=hf_token)
         )
-        self.model.eval()
-        self.model_structured = outlines.from_transformers(self.model, self.tokenizer)
+        self._model.eval()
+        self.model_structured = outlines.from_transformers(self._model, self.tokenizer)
 
-        first_layer_name = next(iter(self.model.hf_device_map.keys()))
-        self.device_first_layer = self.model.hf_device_map[first_layer_name]
-        self.streamer = TextIteratorStreamer(self.tokenizer, skip_prompt=True, skip_special_tokens=True)
+        first_layer_name = next(iter(self._model.hf_device_map.keys()))
+        self._device_first_layer = self._model.hf_device_map[first_layer_name]
+        self._streamer = TextIteratorStreamer(self.tokenizer, skip_prompt=True, skip_special_tokens=True)
 
     async def _create(
         self,
@@ -127,7 +125,7 @@ class TransformersChatModel(ChatModel):
         await self._get_model_output(input=input, stream=True)
 
         chunk: tuple[int, str]
-        for chunk in enumerate(self.streamer):  # type: ignore
+        for chunk in enumerate(self._streamer):  # type: ignore
             if len(chunk[1]) > 0:
                 yield ChatModelOutput(messages=[AssistantMessage(chunk[1])])
 
@@ -243,36 +241,6 @@ class TransformersChatModel(ChatModel):
             for tool in input.tools or []
         ]
 
-        supported_params = [
-            "stream",
-            "frequency_penalty",
-            "max_tokens",
-            "presence_penalty",
-            "n",
-            "temperature",
-            "top_p",
-            "tools",
-            "tool_choice",
-        ]
-        settings = exclude_keys(
-            self._settings | input.model_dump(exclude_unset=True),
-            {
-                *supported_params,
-                "abort_signal",
-                "model",
-                "messages",
-                "tools",
-                "supports_top_level_unions",
-            },
-        )
-        params = include_keys(
-            input.model_dump(exclude_none=True)  # get all parameters with default values
-            | self._settings  # get constructor overrides
-            | self.parameters.model_dump(exclude_unset=True)  # get default parameters
-            | input.model_dump(exclude_none=True, exclude_unset=True),  # get custom manually set parameters
-            set(supported_params),
-        )
-
         tool_choice: dict[str, Any] | str | AnyTool | None = input.tool_choice
         if input.tool_choice == "none" and input.tool_choice not in self._tool_choice_support:
             tool_choice = None
@@ -291,21 +259,15 @@ class TransformersChatModel(ChatModel):
             tools = []
             tool_choice = None
 
-        return exclude_none(
-            exclude_none(settings)
-            | exclude_none(params)
-            | {
-                "model": f"{self.provider_id}/{self.model_id}",
-                "messages": messages,
-                "tools": tools if tools else None,
-                "response_format": (
-                    self._format_response_model(input.response_format) if input.response_format else None
-                ),
-                "max_retries": 0,
-                "tool_choice": tool_choice if tools else None,
-                "parallel_tool_calls": (bool(input.parallel_tool_calls) if tools else None),
-            }
-        )
+        return {
+            "model": f"{self.provider_id}/{self.model_id}",
+            "messages": messages,
+            "tools": tools if tools else None,
+            "response_format": (self._format_response_model(input.response_format) if input.response_format else None),
+            "max_retries": 0,
+            "tool_choice": tool_choice if tools else None,
+            "parallel_tool_calls": (bool(input.parallel_tool_calls) if tools else None),
+        }
 
     def _get_inputs_on_device(self, input: ChatModelInput, stream: bool) -> tuple[dict[str, Any], int]:
         llm_input = self._transform_input(input) | {"stream": stream}
@@ -317,7 +279,7 @@ class TransformersChatModel(ChatModel):
             add_generation_prompt=True,
         )
         prompt_tokens = inputs["input_ids"].shape[1]
-        inputs_on_device = {k: v.to(self.device_first_layer) for k, v in inputs.items()}
+        inputs_on_device = {k: v.to(self._device_first_layer) for k, v in inputs.items()}
 
         return inputs_on_device, prompt_tokens
 
@@ -341,9 +303,9 @@ class TransformersChatModel(ChatModel):
             set_seed(input.seed)
 
         model_output = await asyncio.to_thread(
-            self.model.generate,
+            self._model.generate,
             **inputs_on_device,
-            streamer=(self.streamer if stream else None),
+            streamer=(self._streamer if stream else None),
             max_new_tokens=input.max_tokens,
             temperature=input.temperature,
             top_k=input.top_k,

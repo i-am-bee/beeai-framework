@@ -21,14 +21,14 @@ from beeai_framework.tools import AnyTool, ToolOutput
 from beeai_framework.tools.weather.openmeteo import OpenMeteoTool
 
 
-@pytest.mark.e2e
-@pytest.mark.asyncio
 class TestTransformersChatModel:
     chat_model: ChatModel
 
     def setup_method(self) -> None:
         self.chat_model = ChatModel.from_name("transformers:google/gemma-3-4b-it", ChatModelParameters(temperature=0))
 
+    @pytest.mark.e2e
+    @pytest.mark.asyncio
     async def test_local_llm_chat_model_create_user_message(self) -> None:
         response = await self.chat_model.create(
             messages=[UserMessage("How many islands make up the country of Cape Verde?")],
@@ -39,6 +39,8 @@ class TestTransformersChatModel:
         assert all(isinstance(message, AssistantMessage) for message in response.messages)
         assert "10" in response.messages[0].text
 
+    @pytest.mark.e2e
+    @pytest.mark.asyncio
     async def test_local_llm_chat_model_create_tool_message(self) -> None:
         tools: list[AnyTool] = [OpenMeteoTool()]
         tool_messages: list[AnyMessage] = [
@@ -49,6 +51,8 @@ class TestTransformersChatModel:
 
         assert len(answer) > 0
 
+    @pytest.mark.e2e
+    @pytest.mark.asyncio
     async def test_local_llm_chat_model_create_stream(self) -> None:
         response = await self.chat_model.create(
             messages=[UserMessage("How many islands make up the country of Cape Verde?")],
@@ -60,6 +64,8 @@ class TestTransformersChatModel:
         assert all(isinstance(message, AssistantMessage) for message in response.messages)
         assert "10" in response.messages[0].text
 
+    @pytest.mark.e2e
+    @pytest.mark.asyncio
     async def test_local_llm_chat_model_create_structure(self) -> None:
         user_message = UserMessage("tell me something interesting")
         custom_message = CustomMessage(role="custom", content="this is a custom message")
