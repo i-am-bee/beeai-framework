@@ -45,7 +45,7 @@ class RunnableOutput(BaseModel):
         return last_message or AssistantMessage("")
 
 
-R = TypeVar("R", default=RunnableOutput, bound=RunnableOutput)
+R = TypeVar("R", bound=RunnableOutput)
 P = ParamSpec("P")
 
 
