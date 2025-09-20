@@ -1,3 +1,21 @@
+## python_v0.1.47 (2025-09-19)
+
+### Bug Fixes
+
+- **adapters**: update A2A Agent (#1112)
+- **adapters**: correctly wrap the inner model in BeeAIPlatformChatModel (#1115)
+- add missing retry for embeddings (#1110)
+
+## python_v0.1.46 (2025-09-17)
+
+### Bug Fixes
+
+- **backend**: include tool_choice_support when cloning
+
+### Features
+
+- **adapters**: handle nested initialization of BeeAIPlatformChatModel (#1109)
+
 ## python_v0.1.45 (2025-09-15)
 
 ### Features
