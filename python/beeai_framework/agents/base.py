@@ -73,6 +73,11 @@ class BaseAgent(Runnable[R]):
 
         Args:
             input: The input to the agent
+            expected_output: Pydantic model or instruction for steering the agent towards an expected output format.
+            total_max_retries: Maximum number of model retries.
+            max_retries_per_step: Maximum number of model retries per step.
+            max_iterations: Maximum number of iterations.
+            backstory: Additional piece of information or background for the agent.
             signal: The agent abort signal
             context: A dictionary that can be used to pass additional context to the agent
 

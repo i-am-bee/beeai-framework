@@ -15,7 +15,7 @@ Utility functions and classes
 """
 
 
-class MyRunnable(Runnable):
+class MyRunnable(Runnable[RunnableOutput]):
     def __init__(self, middlewares: list[RunMiddlewareType] | None = None) -> None:
         super().__init__(middlewares)
 

@@ -18,21 +18,21 @@ MODEL_NAME: Final[str] = "mistral-small-latest"
 async def mistralai_from_name() -> None:
     llm = ChatModel.from_name(f"mistralai:{MODEL_NAME}")
     user_message = UserMessage("what states are part of New England?")
-    response = await llm.create(messages=[user_message])
+    response = await llm.run([user_message])
     print(response.get_text_content())
 
 
 async def mistralai_sync() -> None:
     llm = MistralAIChatModel(MODEL_NAME)
     user_message = UserMessage("what is the capital of Massachusetts?")
-    response = await llm.create(messages=[user_message])
+    response = await llm.run([user_message])
     print(response.get_text_content())
 
 
 async def mistralai_stream() -> None:
     llm = MistralAIChatModel(MODEL_NAME)
     user_message = UserMessage("How many islands make up the country of Cape Verde?")
-    response = await llm.create(messages=[user_message], stream=True)
+    response = await llm.run([user_message], stream=True)
     print(response.get_text_content())
 
 
@@ -41,7 +41,7 @@ async def mistralai_stream_abort() -> None:
     user_message = UserMessage("What is the smallest of the Cape Verde islands?")
 
     try:
-        response = await llm.create(messages=[user_message], stream=True, abort_signal=AbortSignal.timeout(0.5))
+        response = await llm.run([user_message], stream=True, signal=AbortSignal.timeout(0.5))
 
         if response is not None:
             print(response.get_text_content())
@@ -57,8 +57,8 @@ async def mistralai_structure() -> None:
 
     llm = MistralAIChatModel(MODEL_NAME)
     user_message = UserMessage("How many islands make up the country of Cape Verde?")
-    response = await llm.create_structure(schema=TestSchema, messages=[user_message])
-    print(response.object)
+    response = await llm.run([user_message], response_format=TestSchema)
+    print(response.output_structured)
 
 
 async def mistralai_stream_parser() -> None:
@@ -79,9 +79,7 @@ async def mistralai_stream_parser() -> None:
         await parser.add(chunk=data.value.get_text_content())
 
     user_message = UserMessage("Produce 3 lines each starting with 'Prefix: ' followed by a sentence and a new line.")
-    await llm.create(messages=[user_message], stream=True).observe(
-        lambda emitter: emitter.on("new_token", on_new_token)
-    )
+    await llm.run([user_message], stream=True).observe(lambda emitter: emitter.on("new_token", on_new_token))
     result = await parser.end()
     print(result)
 

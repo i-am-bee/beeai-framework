@@ -66,9 +66,9 @@ class EmbeddingModel(ABC):
         self.middlewares: list[RunMiddlewareType] = [*kwargs.get("middlewares", [])]
 
     def create(
-        self, values: list[str], *, abort_signal: AbortSignal | None = None, max_retries: int | None = None
+        self, values: list[str], *, signal: AbortSignal | None = None, max_retries: int | None = None
     ) -> Run[EmbeddingModelOutput]:
-        model_input = EmbeddingModelInput(values=values, abort_signal=abort_signal, max_retries=max_retries or 0)
+        model_input = EmbeddingModelInput(values=values, signal=signal, max_retries=max_retries or 0)
 
         async def handler(context: RunContext) -> EmbeddingModelOutput:
             try:
@@ -97,7 +97,7 @@ class EmbeddingModel(ABC):
             finally:
                 await context.emitter.emit("finish", None)
 
-        return RunContext.enter(self, handler, signal=abort_signal, run_params=model_input.model_dump()).middleware(
+        return RunContext.enter(self, handler, signal=signal, run_params=model_input.model_dump()).middleware(
             *self.middlewares
         )
 

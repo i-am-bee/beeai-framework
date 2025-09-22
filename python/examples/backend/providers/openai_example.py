@@ -25,28 +25,28 @@ from beeai_framework.utils import AbortSignal
 async def openai_from_name() -> None:
     llm = ChatModel.from_name("openai:gpt-4.1-mini")
     user_message = UserMessage("what states are part of New England?")
-    response = await llm.create(messages=[user_message])
+    response = await llm.run([user_message])
     print(response.get_text_content())
 
 
 async def openai_granite_from_name() -> None:
     llm = ChatModel.from_name("openai:gpt-4.1-mini")
     user_message = UserMessage("what states are part of New England?")
-    response = await llm.create(messages=[user_message])
+    response = await llm.run([user_message])
     print(response.get_text_content())
 
 
 async def openai_sync() -> None:
     llm = OpenAIChatModel("gpt-4.1-mini")
     user_message = UserMessage("what is the capital of Massachusetts?")
-    response = await llm.create(messages=[user_message])
+    response = await llm.run([user_message])
     print(response.get_text_content())
 
 
 async def openai_stream() -> None:
     llm = OpenAIChatModel("gpt-4.1-mini")
     user_message = UserMessage("How many islands make up the country of Cape Verde?")
-    response = await llm.create(messages=[user_message], stream=True)
+    response = await llm.run([user_message], stream=True)
     print(response.get_text_content())
 
 
@@ -55,7 +55,7 @@ async def openai_stream_abort() -> None:
     user_message = UserMessage("What is the smallest of the Cape Verde islands?")
 
     try:
-        response = await llm.create(messages=[user_message], stream=True, abort_signal=AbortSignal.timeout(0.5))
+        response = await llm.run([user_message], stream=True, signal=AbortSignal.timeout(0.5))
 
         if response is not None:
             print(response.get_text_content())
@@ -71,11 +71,8 @@ async def openai_structure() -> None:
 
     llm = OpenAIChatModel("gpt-4.1-mini")
     user_message = UserMessage("How many islands make up the country of Cape Verde?")
-    response = await llm.create_structure(
-        schema=TestSchema,
-        messages=[user_message],
-    )
-    print(response.object)
+    response = await llm.run([user_message], response_format=TestSchema, stream=True)
+    print(response.output_structured)
 
 
 async def openai_stream_parser() -> None:
@@ -93,9 +90,7 @@ async def openai_stream_parser() -> None:
         await parser.add(data.value.get_text_content())
 
     user_message = UserMessage("Produce 3 lines each starting with 'Prefix: ' followed by a sentence and a new line.")
-    await llm.create(messages=[user_message], stream=True).observe(
-        lambda emitter: emitter.on("new_token", on_new_token)
-    )
+    await llm.run([user_message], stream=True).observe(lambda emitter: emitter.on("new_token", on_new_token))
     result = await parser.end()
     print(result)
 
@@ -104,7 +99,7 @@ async def openai_tool_calling() -> None:
     watsonx_llm = ChatModel.from_name("openai:gpt-4.1-mini", ChatModelParameters(stream=True, temperature=0))
     user_message = UserMessage(f"What is the current weather in Boston? Current date is {datetime.datetime.today()}.")
     weather_tool = OpenMeteoTool()
-    response = await watsonx_llm.create(messages=[user_message], tools=[weather_tool])
+    response = await watsonx_llm.run([user_message], tools=[weather_tool])
     tool_call_msg = response.get_tool_calls()[0]
     print(tool_call_msg.model_dump())
     tool_response = await weather_tool.run(OpenMeteoToolInput(location_name="Boston"))
@@ -116,7 +111,7 @@ async def openai_tool_calling() -> None:
         )
     )
     print(tool_response_msg.to_plain())
-    final_response = await watsonx_llm.create(messages=[user_message, *response.messages, tool_response_msg], tools=[])
+    final_response = await watsonx_llm.run([user_message, *response.output, tool_response_msg], tools=[])
     print(final_response.get_text_content())
 
 

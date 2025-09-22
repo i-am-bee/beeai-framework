@@ -38,14 +38,14 @@ async def main() -> None:
                 reader.write("LLM 🤖 (usage)", str(data.value.usage.model_dump()))
 
         response = (
-            await llm.create(messages=[UserMessage(prompt)], stream=True)
+            await llm.run([UserMessage(prompt)], stream=True)
             .on("start", on_start)
             .on("error", on_error)
             .on("success", on_success)
             .on("new_token", on_new_token)
         )
 
-        reader.write("ℹ️", f"Received {len(response.messages)} chunks.")
+        reader.write("ℹ️", f"Received {len(response.output)} chunks.")
 
 
 if __name__ == "__main__":

@@ -43,7 +43,7 @@ RunMiddlewareFn = Callable[["RunContext"], None]
 RunMiddlewareType: TypeAlias = RunMiddlewareFn | RunMiddlewareProtocol
 
 
-class Run(Generic[R]):
+class Run(Generic[R], Awaitable[R]):
     def __init__(
         self,
         handler: Callable[[], R | Awaitable[R]],
