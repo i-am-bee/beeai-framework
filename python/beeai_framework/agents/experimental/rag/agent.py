@@ -88,10 +88,10 @@ class RAGAgent(BaseAgent):
                 *self.memory.messages,
                 input_message,
             ]
-            response = await self.model.create(
-                messages=messages,
+            response = await self.model.run(
+                messages,
                 max_retries=kwargs.get("total_max_retries"),
-                abort_signal=context.signal,
+                signal=context.signal,
             )
 
         except FrameworkError as error:
@@ -99,7 +99,7 @@ class RAGAgent(BaseAgent):
             await self.memory.add(error_message)
             raise error
 
-        result = response.messages[-1]
+        result = response.output[-1]
         await self.memory.add(result)
         return AgentOutput(output=[result])
 

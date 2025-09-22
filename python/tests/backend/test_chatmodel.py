@@ -3,7 +3,6 @@
 
 import asyncio
 from collections.abc import AsyncGenerator
-from typing import Any
 
 import pytest
 import pytest_asyncio
@@ -23,11 +22,10 @@ from beeai_framework.backend import (
     AssistantMessage,
     ChatModel,
     ChatModelOutput,
-    ChatModelStructureOutput,
     CustomMessage,
     UserMessage,
 )
-from beeai_framework.backend.types import ChatModelInput, ChatModelStructureInput
+from beeai_framework.backend.types import ChatModelInput
 from beeai_framework.context import RunContext
 from beeai_framework.errors import AbortError
 from beeai_framework.utils import AbortSignal
@@ -53,7 +51,10 @@ class ReverseWordsDummyModel(ChatModel):
 
     async def _create(self, input: ChatModelInput, _: RunContext) -> ChatModelOutput:
         reversed_words_messages = self.reverse_message_words(input.messages)
-        return ChatModelOutput(messages=[AssistantMessage(w) for w in reversed_words_messages])
+        return ChatModelOutput(
+            output=[AssistantMessage(w) for w in reversed_words_messages],
+            output_structured={"reversed": "".join(reversed_words_messages)} if input.response_format else None,
+        )
 
     async def _create_stream(self, input: ChatModelInput, context: RunContext) -> AsyncGenerator[ChatModelOutput]:
         words = self.reverse_message_words(input.messages)[0].split(" ")
@@ -63,12 +64,7 @@ class ReverseWordsDummyModel(ChatModel):
             if context.signal.aborted:
                 break
             await asyncio.sleep(5)
-            yield ChatModelOutput(messages=[AssistantMessage(f"{chunk} " if count != last else chunk)])
-
-    async def _create_structure(self, input: ChatModelStructureInput[Any], run: RunContext) -> ChatModelStructureOutput:
-        reversed_words_messages = self.reverse_message_words(input.messages)
-        response_object = {"reversed": "".join(reversed_words_messages)}
-        return ChatModelStructureOutput(object=response_object)
+            yield ChatModelOutput(output=[AssistantMessage(f"{chunk} " if count != last else chunk)])
 
 
 @pytest_asyncio.fixture
@@ -91,11 +87,11 @@ Unit Tests
 @pytest.mark.asyncio
 @pytest.mark.unit
 async def test_chat_model_create(reverse_words_chat: ChatModel, chat_messages_list: list[AnyMessage]) -> None:
-    response = await reverse_words_chat.create(messages=chat_messages_list)
+    response = await reverse_words_chat.run(chat_messages_list)
 
-    assert len(response.messages) == 1
-    assert all(isinstance(message, AssistantMessage) for message in response.messages)
-    assert response.messages[0].get_texts()[0].text == "llet em gnihtemos gnitseretni"
+    assert len(response.output) == 1
+    assert all(isinstance(message, AssistantMessage) for message in response.output)
+    assert response.output[0].get_texts()[0].text == "llet em gnihtemos gnitseretni"
 
 
 @pytest.mark.asyncio
@@ -105,30 +101,29 @@ async def test_chat_model_structure(reverse_words_chat: ChatModel, chat_messages
         reversed: str
 
     reverse_words_chat = ReverseWordsDummyModel()
-    response = await reverse_words_chat.create_structure(schema=ReverseWordsSchema, messages=chat_messages_list)
-
-    ReverseWordsSchema.model_validate(response.object)
+    response = await reverse_words_chat.run(chat_messages_list, response_format=ReverseWordsSchema)
+    ReverseWordsSchema.model_validate(response.output_structured)
 
 
 @pytest.mark.asyncio
 @pytest.mark.unit
 async def test_chat_model_stream(reverse_words_chat: ChatModel, chat_messages_list: list[AnyMessage]) -> None:
-    response = await reverse_words_chat.create(messages=chat_messages_list, stream=True)
+    response = await reverse_words_chat.run(chat_messages_list, stream=True)
 
-    assert len(response.messages) == 1
-    assert len(response.messages[0].content) == 4
-    assert all(isinstance(message, AssistantMessage) for message in response.messages)
-    assert response.messages[0].text == "llet em gnihtemos gnitseretni"
+    assert len(response.output) == 1
+    assert len(response.output[0].content) == 4
+    assert all(isinstance(message, AssistantMessage) for message in response.output)
+    assert response.output[0].text == "llet em gnihtemos gnitseretni"
 
 
 @pytest.mark.asyncio
 @pytest.mark.unit
 async def test_chat_model_abort(reverse_words_chat: ChatModel, chat_messages_list: list[AnyMessage]) -> None:
     with pytest.raises(AbortError):
-        await reverse_words_chat.create(
-            messages=chat_messages_list,
+        await reverse_words_chat.run(
+            chat_messages_list,
             stream=True,
-            abort_signal=AbortSignal.timeout(1),
+            signal=AbortSignal.timeout(1),
         )
 
 

@@ -22,18 +22,18 @@ async def main() -> None:
     llm = ChatModel.from_name("ollama:granite3.3:8b")
 
     response = (
-        await llm.create(messages=memory.messages, stream=True)
+        await llm.run(memory.messages, stream=True)
         .on(
             "start",
             lambda data, event: print(event.name, *(message.to_plain() for message in data.input.messages), sep="\n"),
         )
         .on(
             "new_token",
-            lambda data, event: print(event.name, *(message.to_plain() for message in data.value.messages), sep="\n"),
+            lambda data, event: print(event.name, *(message.to_plain() for message in data.value.output), sep="\n"),
         )
         .on(
             "success",
-            lambda data, event: print(event.name, *(message.to_plain() for message in data.value.messages), sep="\n"),
+            lambda data, event: print(event.name, *(message.to_plain() for message in data.value.output), sep="\n"),
         )
         .on("error", lambda data, event: print(event.name, data.error))
         .on("finish", lambda data, event: print(event.name, data))

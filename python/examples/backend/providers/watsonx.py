@@ -38,19 +38,19 @@ async def watsonx_from_name() -> None:
         # },
     )
     user_message = UserMessage("what states are part of New England?")
-    response = await watsonx_llm.create(messages=[user_message])
+    response = await watsonx_llm.run([user_message])
     print(response.get_text_content())
 
 
 async def watsonx_sync() -> None:
     user_message = UserMessage("what is the capital of Massachusetts?")
-    response = await llm.create(messages=[user_message])
+    response = await llm.run([user_message])
     print(response.get_text_content())
 
 
 async def watsonx_stream() -> None:
     user_message = UserMessage("How many islands make up the country of Cape Verde?")
-    response = await llm.create(messages=[user_message], stream=True)
+    response = await llm.run([user_message], stream=True)
     print(response.get_text_content())
 
 
@@ -58,8 +58,8 @@ async def watsonx_images() -> None:
     image_llm = ChatModel.from_name(
         "watsonx:meta-llama/llama-3-2-11b-vision-instruct",
     )
-    response = await image_llm.create(
-        messages=[
+    response = await image_llm.run(
+        [
             UserMessage("What is the dominant color in the picture?"),
             UserMessage.from_image(
                 "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAIAAACQkWg2AAAAHUlEQVR4nGI5Y6bFQApgIkn1qIZRDUNKAyAAAP//0ncBT3KcmKoAAAAASUVORK5CYII="
@@ -73,7 +73,7 @@ async def watsonx_stream_abort() -> None:
     user_message = UserMessage("What is the smallest of the Cape Verde islands?")
 
     try:
-        response = await llm.create(messages=[user_message], stream=True, abort_signal=AbortSignal.timeout(0.5))
+        response = await llm.run([user_message], stream=True, signal=AbortSignal.timeout(0.5))
 
         if response is not None:
             print(response.get_text_content())
@@ -88,15 +88,15 @@ async def watson_structure() -> None:
         answer: str = Field(description="your final answer")
 
     user_message = UserMessage("How many islands make up the country of Cape Verde?")
-    response = await llm.create_structure(schema=TestSchema, messages=[user_message])
-    print(response.object)
+    response = await llm.run([user_message], response_format=TestSchema)
+    print(response.output_structured)
 
 
 async def watson_tool_calling() -> None:
     watsonx_llm = ChatModel.from_name("watsonx:ibm/granite-3-3-8b-instruct")
     user_message = UserMessage(f"What is the current weather in Boston? Current date is {datetime.datetime.today()}.")
     weather_tool = OpenMeteoTool()
-    response = await watsonx_llm.create(messages=[user_message], tools=[weather_tool], stream=True)
+    response = await watsonx_llm.run([user_message], tools=[weather_tool], stream=True)
     tool_call_msg = response.get_tool_calls()[0]
     print(tool_call_msg.model_dump())
     tool_response = await weather_tool.run(json.loads(tool_call_msg.args))
@@ -106,7 +106,7 @@ async def watson_tool_calling() -> None:
         )
     )
     print(tool_response_msg.to_plain())
-    final_response = await watsonx_llm.create(messages=[user_message, *response.messages, tool_response_msg], tools=[])
+    final_response = await watsonx_llm.run([user_message, *response.output, tool_response_msg], tools=[])
     print(final_response.get_text_content())
 
 
@@ -121,10 +121,10 @@ async def watsonx_debug() -> None:
         ),
     )
 
-    response = await llm.create(
-        messages=[UserMessage("Hello world!")],
+    response = await llm.run(
+        [UserMessage("Hello world!")],
     )
-    print(response.messages[0].to_plain())
+    print(response.output[0].to_plain())
 
 
 async def watsonx_embedding() -> None:
