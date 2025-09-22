@@ -2,15 +2,15 @@
 
 [[package]]
 name = "a2a-sdk"
-version = "0.3.4"
+version = "0.3.6"
 description = "A2A Python SDK"
 optional = true
 python-versions = ">=3.10"
 groups = ["main"]
 markers = "extra == \"beeai-platform\" or extra == \"a2a\" or extra == \"all\""
 files = [
-    {file = "a2a_sdk-0.3.4-py3-none-any.whl", hash = "sha256:423f72334b4a4b34cb4da07d5db3b786975de2fbc527236e3ca713b0d08c27e1"},
-    {file = "a2a_sdk-0.3.4.tar.gz", hash = "sha256:79db4c287cab1235a0b0c5af9a3a58eedd8a037b51a87bed2e89f5e5e8977f65"},
+    {file = "a2a_sdk-0.3.6-py3-none-any.whl", hash = "sha256:f006c9aee2a2f9b235eb884273e572b7b09e1220d00f5789432a156fcd9dfe4c"},
+    {file = "a2a_sdk-0.3.6.tar.gz", hash = "sha256:d5d1b8de940435b1df9b58e95c3a375a8e53a650b0307a3cf90865b1dec69968"},
 ]
 
 [package.dependencies]
@@ -29,12 +29,13 @@ sse-starlette = {version = "*", optional = true, markers = "extra == \"http-serv
 starlette = {version = "*", optional = true, markers = "extra == \"http-server\""}
 
 [package.extras]
+all = ["cryptography (>=43.0.0)", "fastapi (>=0.115.2)", "grpcio (>=1.60)", "grpcio-reflection (>=1.7.0)", "grpcio-tools (>=1.60)", "opentelemetry-api (>=1.33.0)", "opentelemetry-sdk (>=1.33.0)", "sqlalchemy[aiomysql,asyncio] (>=2.0.0)", "sqlalchemy[aiosqlite,asyncio] (>=2.0.0)", "sqlalchemy[asyncio,postgresql-asyncpg] (>=2.0.0)", "sse-starlette", "starlette"]
 encryption = ["cryptography (>=43.0.0)"]
 grpc = ["grpcio (>=1.60)", "grpcio-reflection (>=1.7.0)", "grpcio-tools (>=1.60)"]
 http-server = ["fastapi (>=0.115.2)", "sse-starlette", "starlette"]
 mysql = ["sqlalchemy[aiomysql,asyncio] (>=2.0.0)"]
 postgresql = ["sqlalchemy[asyncio,postgresql-asyncpg] (>=2.0.0)"]
-sql = ["sqlalchemy[aiomysql,aiosqlite,asyncio,postgresql-asyncpg] (>=2.0.0)"]
+sql = ["sqlalchemy[aiomysql,asyncio] (>=2.0.0)", "sqlalchemy[aiosqlite,asyncio] (>=2.0.0)", "sqlalchemy[asyncio,postgresql-asyncpg] (>=2.0.0)"]
 sqlite = ["sqlalchemy[aiosqlite,asyncio] (>=2.0.0)"]
 telemetry = ["opentelemetry-api (>=1.33.0)", "opentelemetry-sdk (>=1.33.0)"]
 
@@ -464,19 +465,19 @@ lxml = ["lxml"]
 
 [[package]]
 name = "beeai-sdk"
-version = "0.3.3"
+version = "0.3.4"
 description = "BeeAI SDK"
 optional = true
 python-versions = ">=3.11"
 groups = ["main"]
 markers = "extra == \"beeai-platform\" or extra == \"all\""
 files = [
-    {file = "beeai_sdk-0.3.3-py3-none-any.whl", hash = "sha256:e4790f09bf6cec5c747c5b6cf6712fe7dd11ea7973295f8cfc1605ead7d345f0"},
-    {file = "beeai_sdk-0.3.3.tar.gz", hash = "sha256:65967ff78cbcd17709be5996e4956d417b531a3d996bd5c79db45d4aebc3f9d1"},
+    {file = "beeai_sdk-0.3.4-py3-none-any.whl", hash = "sha256:7ac7aab58341f48c998541966712c13d13b50c27e861c01ec0dd7db31c7f3f2a"},
+    {file = "beeai_sdk-0.3.4.tar.gz", hash = "sha256:744b7c12e364e5e190e47aa3b6c4c76b56846e51f2a6e89b5938d3621de7faf3"},
 ]
 
 [package.dependencies]
-a2a-sdk = ">=0.3.4,<0.4.0"
+a2a-sdk = ">=0.3.5,<0.4.0"
 anyio = ">=4.9.0"
 asyncclick = ">=8.1.8"
 fastapi = ">=0.116.1"
@@ -7841,4 +7842,4 @@ wikipedia = ["wikipedia-api"]
 [metadata]
 lock-version = "2.1"
 python-versions = ">= 3.11,<3.14"
-content-hash = "45334cedf9b54ed9c5398546548e8f16b0a3c28e1dd48fd8d20446eccc59dd36"
+content-hash = "1b8d7d479a8315bca76f7bc2544bda5302e5d380f48ae236d79164b12d0dad0f"

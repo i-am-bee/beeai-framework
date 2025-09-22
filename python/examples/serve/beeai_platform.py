@@ -1,5 +1,5 @@
 from beeai_framework.adapters.beeai_platform.backend.chat import BeeAIPlatformChatModel
-from beeai_framework.adapters.beeai_platform.serve.server import BeeAIPlatformServer
+from beeai_framework.adapters.beeai_platform.serve.server import BeeAIPlatformMemoryManager, BeeAIPlatformServer
 from beeai_framework.agents.experimental import RequirementAgent
 from beeai_framework.memory import UnconstrainedMemory
 from beeai_framework.middleware.trajectory import GlobalTrajectoryMiddleware
@@ -23,7 +23,7 @@ def main() -> None:
     )
 
     # Runs HTTP server that registers to BeeAI platform
-    server = BeeAIPlatformServer(config={"configure_telemetry": False})
+    server = BeeAIPlatformServer(config={"configure_telemetry": False}, memory_manager=BeeAIPlatformMemoryManager())
     server.register(
         agent,
         name="Granite chat agent",

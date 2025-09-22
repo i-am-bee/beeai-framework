@@ -1,10 +1,15 @@
 # Copyright 2025 © BeeAI a Series of LF Projects, LLC
 # SPDX-License-Identifier: Apache-2.0
-import contextlib
-import uuid
-from collections.abc import AsyncGenerator, Generator
-from typing import Annotated, Self
 
+import asyncio
+import contextlib
+import os
+import uuid
+from collections.abc import AsyncGenerator, AsyncIterator, Awaitable, Callable, Generator
+from datetime import timedelta
+from typing import Annotated, Any, Self
+
+import uvicorn
 from pydantic import BaseModel
 from typing_extensions import TypedDict, TypeVar, Unpack, override
 
@@ -15,6 +20,7 @@ from beeai_framework.agents.experimental.events import RequirementAgentSuccessEv
 from beeai_framework.agents.react import ReActAgent, ReActAgentUpdateEvent
 from beeai_framework.agents.tool_calling import ToolCallingAgent, ToolCallingAgentSuccessEvent
 from beeai_framework.backend import AssistantMessage, MessageTextContent, MessageToolCallContent, ToolMessage
+from beeai_framework.memory import BaseMemory
 from beeai_framework.serve.errors import FactoryAlreadyRegisteredError
 from beeai_framework.utils.cloneable import Cloneable
 from beeai_framework.utils.lists import find_index
@@ -26,7 +32,10 @@ try:
     import beeai_sdk.server as beeai_server
     import beeai_sdk.server.agent as beeai_agent
     import beeai_sdk.server.context as beeai_context
+    import beeai_sdk.server.store.context_store as beeai_context_store
+    import beeai_sdk.server.store.platform_context_store as beeai_platform_context_store
     from beeai_sdk.a2a.extensions.ui.agent_detail import AgentDetail
+    from beeai_sdk.server.dependencies import Dependency
 
     from beeai_framework.adapters.a2a.agents._utils import convert_a2a_to_framework_message
 except ModuleNotFoundError as e:
@@ -42,12 +51,92 @@ from beeai_framework.utils.models import ModelLike, to_model
 AnyAgentLike = TypeVar("AnyAgentLike", bound=AnyAgent, default=AnyAgent)
 
 
+class BeeAIPlatformMemoryManager(MemoryManager):
+    async def set(self, key: str, value: BaseMemory) -> None:
+        pass
+
+    async def get(self, key: str) -> BaseMemory:  # type: ignore[empty-body]
+        pass
+
+    async def contains(self, key: str) -> bool:  # type: ignore[empty-body]
+        pass
+
+
+class DummyContextStoreInstance(beeai_context_store.ContextStoreInstance):
+    async def load_history(self) -> AsyncIterator[a2a_types.Message | a2a_types.Artifact]:  # type: ignore
+        pass
+
+    async def store(self, data: a2a_types.Message | a2a_types.Artifact) -> None:
+        pass
+
+
+class DummyContextStore(beeai_context_store.ContextStore):
+    _cs = DummyContextStoreInstance()
+
+    async def create(
+        self,
+        context_id: str,
+        initialized_dependencies: list[Dependency],  # type: ignore[type-arg]
+    ) -> beeai_context_store.ContextStoreInstance:
+        return self._cs
+
+
 class BeeAIPlatformServerConfig(BaseModel):
     """Configuration for the BeeAIServer."""
 
     host: str = "127.0.0.1"
     port: int = 9999
     configure_telemetry: bool = True
+
+    configure_logger: bool | None = None
+    self_registration: bool | None = True
+    run_limit: int | None = None
+    run_ttl: timedelta | None = None
+    uds: str | None = None
+    fd: int | None = None
+    loop: uvicorn.config.LoopSetupType | None = None
+    http: type[asyncio.Protocol] | uvicorn.config.HTTPProtocolType | None = None
+    ws: type[asyncio.Protocol] | uvicorn.config.WSProtocolType | None = None
+    ws_max_size: int | None = None
+    ws_max_queue: int | None = None
+    ws_ping_interval: float | None = None
+    ws_ping_timeout: float | None = None
+    ws_per_message_deflate: bool | None = None
+    lifespan: uvicorn.config.LifespanType | None = None
+    env_file: str | os.PathLike[str] | None = None
+    log_config: dict[str, Any] | str | None = None
+    log_level: str | int | None = None
+    access_log: bool | None = None
+    use_colors: bool | None = None
+    interface: uvicorn.config.InterfaceType | None = None
+    reload: bool | None = None
+    reload_dirs: list[str] | str | None = None
+    reload_delay: float | None = None
+    reload_includes: list[str] | str | None = None
+    reload_excludes: list[str] | str | None = None
+    workers: int | None = None
+    proxy_headers: bool | None = None
+    server_header: bool | None = None
+    date_header: bool | None = None
+    forwarded_allow_ips: list[str] | str | None = None
+    root_path: str | None = None
+    limit_concurrency: int | None = None
+    limit_max_requests: int | None = None
+    backlog: int | None = None
+    timeout_keep_alive: int | None = None
+    timeout_notify: int | None = None
+    timeout_graceful_shutdown: int | None = None
+    callback_notify: Callable[..., Awaitable[None]] | None = None
+    ssl_keyfile: str | os.PathLike[str] | None = None
+    ssl_certfile: str | os.PathLike[str] | None = None
+    ssl_keyfile_password: str | None = None
+    ssl_version: int | None = None
+    ssl_cert_reqs: int | None = None
+    ssl_ca_certs: str | None = None
+    ssl_ciphers: str | None = None
+    headers: list[tuple[str, str]] | None = None
+    factory: bool | None = None
+    h11_max_incomplete_event_size: int | None = None
 
 
 class BeeAIPlatformServerMetadata(TypedDict, total=False):
@@ -72,7 +161,7 @@ class BeeAIPlatformServerMetadata(TypedDict, total=False):
 class BeeAIPlatformServer(
     Server[
         AnyAgentLike,
-        beeai_agent.Agent,
+        beeai_agent.AgentFactory,
         BeeAIPlatformServerConfig,
     ],
 ):
@@ -81,29 +170,40 @@ class BeeAIPlatformServer(
     ) -> None:
         super().__init__(
             config=to_model(BeeAIPlatformServerConfig, config or BeeAIPlatformServerConfig()),
-            memory_manager=memory_manager,
+            memory_manager=memory_manager or BeeAIPlatformMemoryManager(),
         )
         self._metadata_by_agent: dict[AnyAgentLike, BeeAIPlatformServerMetadata] = {}
         self._server = beeai_server.Server()
 
-    def _setup_member(self) -> None:
+    def _setup_member(self) -> beeai_context_store.ContextStore:
         if not self._members:
             raise ValueError("No agents registered to the server.")
 
         member = self._members[0]
         factory = type(self)._factories[type(member)]
-        config = self._metadata_by_agent.get(member, BeeAIPlatformServerConfig())
-        self._server._agent = factory(member, metadata=config, memory_manager=self._memory_manager)  # type: ignore[call-arg]
+        config = self._metadata_by_agent.get(member, BeeAIPlatformServerMetadata())
+        self._server._agent_factory = factory(member, metadata=config, memory_manager=self._memory_manager)  # type: ignore[call-arg]
+        return (
+            beeai_platform_context_store.PlatformContextStore()
+            if isinstance(self._memory_manager, BeeAIPlatformMemoryManager)
+            else DummyContextStore()
+        )
 
     def serve(self) -> None:
-        self._setup_member()
+        context_store = self._setup_member()
         with contextlib.suppress(KeyboardInterrupt):
-            self._server.run(**self._config.model_dump(exclude_none=True))
+            self._server.run(
+                **self._config.model_dump(exclude_none=True, exclude={"context_store": True}),
+                context_store=context_store,
+            )
 
     async def aserve(self) -> None:
-        self._setup_member()
+        context_store = self._setup_member()
         with contextlib.suppress(KeyboardInterrupt):
-            await self._server.serve(**self._config.model_dump(exclude_none=True))
+            await self._server.serve(
+                **self._config.model_dump(exclude_none=True, exclude={"context_store": True}),
+                context_store=context_store,
+            )
 
     @override
     def register(self, input: AnyAgentLike, **metadata: Unpack[BeeAIPlatformServerMetadata]) -> Self:
@@ -121,7 +221,7 @@ class BeeAIPlatformServer(
 
 def _react_agent_factory(
     agent: ReActAgent, *, metadata: BeeAIPlatformServerMetadata | None = None, memory_manager: MemoryManager
-) -> beeai_agent.Agent:
+) -> beeai_agent.AgentFactory:
     llm = agent._input.llm
     preferred_models = llm.preferred_models if isinstance(llm, BeeAIPlatformChatModel) else []
 
@@ -136,7 +236,7 @@ def _react_agent_factory(
         ],
     ) -> AsyncGenerator[beeai_types.RunYield, beeai_types.RunYieldResume]:
         cloned_agent = await agent.clone() if isinstance(agent, Cloneable) else agent
-        await init_agent_memory(cloned_agent, memory_manager, context.context_id)
+        await init_beeai_platform_memory(cloned_agent, memory_manager, context)
 
         with BeeAIPlatformContext(context, form=form, llm=llm_ext):
             artifact_id = uuid.uuid4()
@@ -196,7 +296,7 @@ with contextlib.suppress(FactoryAlreadyRegisteredError):
 
 def _tool_calling_agent_factory(
     agent: ToolCallingAgent, *, metadata: BeeAIPlatformServerMetadata | None = None, memory_manager: MemoryManager
-) -> beeai_agent.Agent:
+) -> beeai_agent.AgentFactory:
     llm = agent._llm
     preferred_models = llm.preferred_models if isinstance(llm, BeeAIPlatformChatModel) else []
 
@@ -211,7 +311,7 @@ def _tool_calling_agent_factory(
         ],
     ) -> AsyncGenerator[beeai_types.RunYield, beeai_types.RunYieldResume]:
         cloned_agent = await agent.clone() if isinstance(agent, Cloneable) else agent
-        await init_agent_memory(cloned_agent, memory_manager, context.context_id)
+        await init_beeai_platform_memory(cloned_agent, memory_manager, context)
 
         with BeeAIPlatformContext(context, form=form, llm=llm_ext):
             last_msg: AnyMessage | None = None
@@ -239,7 +339,7 @@ with contextlib.suppress(FactoryAlreadyRegisteredError):
 
 def _requirement_agent_factory(
     agent: RequirementAgent, *, metadata: BeeAIPlatformServerMetadata | None = None, memory_manager: MemoryManager
-) -> beeai_agent.Agent:
+) -> beeai_agent.AgentFactory:
     llm = agent._llm
     preferred_models = llm.preferred_models if isinstance(llm, BeeAIPlatformChatModel) else []
 
@@ -257,7 +357,7 @@ def _requirement_agent_factory(
         ],
     ) -> AsyncGenerator[beeai_types.RunYield, beeai_types.RunYieldResume]:
         cloned_agent = await agent.clone() if isinstance(agent, Cloneable) else agent
-        await init_agent_memory(cloned_agent, memory_manager, context.context_id)
+        await init_beeai_platform_memory(cloned_agent, memory_manager, context)
         with BeeAIPlatformContext(context, form=form, llm=llm_ext):
             last_msg: AnyMessage | None = None
             async for data, _ in cloned_agent.run([convert_a2a_to_framework_message(message)]):
@@ -314,3 +414,15 @@ def _init_metadata(
     if not copy.get("description"):
         copy["description"] = agent.meta.description
     return copy
+
+
+async def init_beeai_platform_memory(
+    agent: AnyAgent, memory_manager: MemoryManager, context: beeai_context.RunContext
+) -> None:
+    if isinstance(memory_manager, BeeAIPlatformMemoryManager):
+        history = [message async for message in context.store.load_history() if message.parts]
+        agent.memory.reset()
+        # last message is provided directly to the run method
+        await agent.memory.add_many([convert_a2a_to_framework_message(message) for message in history[:-1]])
+    else:
+        await init_agent_memory(agent, memory_manager, context.context_id)
