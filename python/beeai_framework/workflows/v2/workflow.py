@@ -138,7 +138,7 @@ class Workflow:
 
             if dep.type == "AND":
                 dep.completed_dependencies.append(step)
-                if dep.completed_dependencies == dep.dependencies:
+                if set(dep.completed_dependencies) == set(dep.dependencies):
                     await self.queue.put(dep)  # All dependencies are done, proceed
             elif dep.type == "OR":
                 await self.queue.put(dep)  # Can proceed without checks for OR
