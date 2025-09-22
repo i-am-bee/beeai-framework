@@ -64,8 +64,10 @@ class A2AAgent(BaseAgent[A2AAgentOutput]):
         super().__init__()
         if agent_card:
             self._agent_card: a2a_types.AgentCard | None = agent_card
+            self._url = None
         elif url:
             self._url = url
+            self._agent_card = None
         else:
             raise ValueError("Either url or agent_card must be provided.")
         if not memory.is_empty():
@@ -80,7 +82,7 @@ class A2AAgent(BaseAgent[A2AAgentOutput]):
 
     @property
     def name(self) -> str:
-        return self._agent_card.name if self._agent_card else f"agent_{self._url.split(':')[-1]}"
+        return self._agent_card.name if self._agent_card else f"agent_{(self._url or '').split(':')[-1]}"
 
     @runnable_entry
     async def run(
@@ -131,11 +133,32 @@ class A2AAgent(BaseAgent[A2AAgentOutput]):
                 async for event in client.send_message(self.convert_to_a2a_message(input)):
                     last_event = event
 
+                    [task_id, context_id] = (
+                        [event.task_id, event.context_id]
+                        if isinstance(event, a2a_types.Message)
+                        else [event[0].id, event[0].context_id]
+                    )
+
+                    if task_id and task_id != self._task_id:
+                        self._task_id = task_id
+                    if context_id and context_id != self._context_id:
+                        self._context_id = context_id
+                    if task_id and task_id not in self._reference_task_ids:
+                        self._reference_task_ids.append(task_id)
+
                     if isinstance(event, a2a_types.Message):
                         messages.append(event)
 
                     elif isinstance(event, tuple):
-                        task = event[0]
+                        task, update_event = event
+
+                        if (
+                            update_event
+                            and isinstance(update_event, a2a_types.TaskStatusUpdateEvent)
+                            and update_event.final
+                            and update_event.status.state is not a2a_types.TaskState.input_required
+                        ):
+                            self._task_id = None
 
                     await context.emitter.emit("update", A2AAgentUpdateEvent(value=event))
 
@@ -144,17 +167,12 @@ class A2AAgent(BaseAgent[A2AAgentOutput]):
                     raise AgentError("No result received from agent.")
 
                 # insert input into memory
-                input_messages = _convert_messages_to_framework_messages(input)
-                await self.memory.add_many(input_messages)
+                input_messages = [input] if not isinstance(input, list) else input
+                await self.memory.add_many([_convert_to_framework_message(m) for m in input_messages])
 
                 if task:
                     if task.status.state is not a2a_types.TaskState.completed:
                         logger.warning(f"Task status ({task.status.state}) is not complete.")
-
-                    self._context_id = task.context_id
-                    self._task_id = task.id
-                    if self._task_id and self._task_id not in self._reference_task_ids:
-                        self._reference_task_ids.append(self._task_id)
 
                     results: Sequence[a2a_types.Message | a2a_types.Artifact]
                     if task.artifacts:
@@ -208,7 +226,8 @@ class A2AAgent(BaseAgent[A2AAgentOutput]):
     async def _load_agent_card(self) -> None:
         if self._agent_card:
             return
-
+        if not self._url:
+            raise AgentError("No url provided.")
         try:
             async with httpx.AsyncClient() as httpx_client:
                 card_resolver = a2a_client.A2ACardResolver(
@@ -277,27 +296,14 @@ class A2AAgent(BaseAgent[A2AAgentOutput]):
                 reference_task_ids=self._reference_task_ids,
             )
         elif isinstance(input, list) and input and isinstance(input[-1], Message):
-            return a2a_types.Message(
-                role=a2a_types.Role.agent if input[-1].role == Role.ASSISTANT else a2a_types.Role.user,
-                parts=[a2a_types.Part(root=a2a_types.TextPart(text=input[-1].text))],
-                message_id=uuid4().hex,
-                context_id=self._context_id,
-                task_id=self._task_id,
-                reference_task_ids=self._reference_task_ids,
-            )
+            return self.convert_to_a2a_message(input[-1])
         elif isinstance(input, a2a_types.Message):
             return input
         else:
             raise ValueError("Unsupported input type")
 
 
-def _convert_messages_to_framework_messages(
-    input: str | list[AnyMessage] | AnyMessage | a2a_types.Message | a2a_types.Artifact,
-) -> list[AnyMessage]:
-    return input if isinstance(input, list) else [_convert_message_to_framework_message(input)]
-
-
-def _convert_message_to_framework_message(
+def _convert_to_framework_message(
     input: str | AnyMessage | a2a_types.Message | a2a_types.Artifact,
 ) -> AnyMessage:
     if isinstance(input, str):
