@@ -69,7 +69,7 @@ class DummyContextStoreInstance(beeai_context_store.ContextStoreInstance):
             yield
 
     async def store(self, data: a2a_types.Message | a2a_types.Artifact) -> None:
-        raise NotImplementedError("This method is not supported by BeeAIPlatformMemoryManager.")
+        pass
 
 
 class DummyContextStore(beeai_context_store.ContextStore):
