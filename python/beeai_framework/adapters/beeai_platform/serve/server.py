@@ -51,23 +51,25 @@ from beeai_framework.utils.models import ModelLike, to_model
 AnyAgentLike = TypeVar("AnyAgentLike", bound=AnyAgent, default=AnyAgent)
 
 
+# this class is only placeholder to use ContextStore from the beeai-sdk
 class BeeAIPlatformMemoryManager(MemoryManager):
     async def set(self, key: str, value: BaseMemory) -> None:
-        pass
+        raise NotImplementedError("This method is not supported by BeeAIPlatformMemoryManager.")
 
-    async def get(self, key: str) -> BaseMemory:  # type: ignore[empty-body]
-        pass
+    async def get(self, key: str) -> BaseMemory:
+        raise NotImplementedError("This method is not supported by BeeAIPlatformMemoryManager.")
 
-    async def contains(self, key: str) -> bool:  # type: ignore[empty-body]
-        pass
+    async def contains(self, key: str) -> bool:
+        raise NotImplementedError("This method is not supported by BeeAIPlatformMemoryManager.")
 
 
 class DummyContextStoreInstance(beeai_context_store.ContextStoreInstance):
-    async def load_history(self) -> AsyncIterator[a2a_types.Message | a2a_types.Artifact]:  # type: ignore
-        pass
+    async def load_history(self) -> AsyncIterator[a2a_types.Message | a2a_types.Artifact]:
+        if False:
+            yield
 
     async def store(self, data: a2a_types.Message | a2a_types.Artifact) -> None:
-        pass
+        raise NotImplementedError("This method is not supported by BeeAIPlatformMemoryManager.")
 
 
 class DummyContextStore(beeai_context_store.ContextStore):
