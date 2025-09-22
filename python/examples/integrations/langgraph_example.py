@@ -12,9 +12,9 @@ import random
 import sys
 import traceback
 
-from langchain_community.tools import DuckDuckGoSearchRun
 from langchain_core.messages import AIMessage, BaseMessage, HumanMessage, SystemMessage, ToolMessage
 from langchain_core.runnables import RunnableConfig
+from langchain_core.tools import StructuredTool
 from langchain_ollama import ChatOllama
 from langgraph.prebuilt import create_react_agent
 from pydantic import BaseModel, InstanceOf
@@ -23,7 +23,7 @@ from beeai_framework.agents.react import ReActAgent
 from beeai_framework.backend import AnyMessage, AssistantMessage, ChatModel, Role, UserMessage
 from beeai_framework.errors import FrameworkError
 from beeai_framework.memory import ReadOnlyMemory, UnconstrainedMemory
-from beeai_framework.tools.search.duckduckgo import DuckDuckGoSearchTool
+from beeai_framework.tools.search.wikipedia import WikipediaTool
 from beeai_framework.workflows import Workflow, WorkflowRun
 from examples.helpers.io import ConsoleReader
 
@@ -45,16 +45,23 @@ async def main() -> None:
         answer: str = ""
 
     async def bee_step(state: Schema) -> str:
-        agent = ReActAgent(
-            llm=ChatModel.from_name("ollama:llama3.1"), tools=[DuckDuckGoSearchTool()], memory=state.memory
-        )
+        agent = ReActAgent(llm=ChatModel.from_name("ollama:llama3.1"), tools=[WikipediaTool()], memory=state.memory)
         response = await agent.run(state.memory.messages, max_iterations=5)
         state.answer = response.last_message.text
         return Workflow.END
 
-    def langgraph_step(state: Schema) -> str:
-        langgraph_agent = create_react_agent(ChatOllama(model="llama3.1", temperature=0), tools=[DuckDuckGoSearchRun()])
-        response = langgraph_agent.invoke(
+    async def langgraph_step(state: Schema) -> str:
+        async def wikipedia(query: str) -> str:
+            """Search Wikipedia for a query."""
+
+            data = await WikipediaTool().run({"query": query})
+            return data.get_text_content()
+
+        langgraph_agent = create_react_agent(
+            ChatOllama(model="llama3.1", temperature=0),
+            tools=[StructuredTool.from_function(coroutine=wikipedia)],
+        )
+        response = await langgraph_agent.ainvoke(
             {"messages": [_convert_message(msg) for msg in state.memory.messages]},
             RunnableConfig(recursion_limit=5),
         )
