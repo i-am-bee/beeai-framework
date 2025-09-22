@@ -2,7 +2,7 @@
 
 ### Features
 
-- Converted `ChatModel` into `Runnable` (#1019)
+- Convert `ChatModel` into `Runnable` (#1019)
 
 **Migration Guide**
 
@@ -10,13 +10,12 @@ The `ChatModel` class has undergone significant refactoring to implement the `Ru
 
 **Key Changes:**
 
-- `ChatModel` now extends `Runnable[ChatModelOutput]` instead of being a standalone class
-- The `create()` method has been renamed to `run()`
-- The `create_structure()` method has been collapsed into `run()` and it now supports streaming
-- Method signatures have changed to align with the runnable pattern
-- New `ChatModelOptions` typed dictionary for optional parameters
+- `ChatModel` now extends `Runnable[ChatModelOutput]` instead of being a standalone class.
+- The `ChatModel.create()` method has been renamed to `ChatModel.run()`. Keyword arguments are defined in `ChatModelOptions` typed dictionary.
+- The `ChatModel.create_structure()` method has been collapsed into `ChatModel.run()`, and it now supports streaming.
+- Method signatures have changed to align with the runnable pattern.
 
-### Method Signature Changes
+#### Method Signature Changes
 
 **Before**
 
@@ -56,41 +55,40 @@ response = await llm.run(
 )
 ```
 
-### Structured Generation Changes
+#### Structured Generation Changes
 
 **Before**
 
 ```python
-# Old create_structure method
+class PersonModel(BaseModel):
+    name: str
+    age: int
+
 response = await llm.create_structure(
-    schema=MyModel,
-    messages=[UserMessage("Generate structured data")],
-    max_retries=3
+    messages=[UserMessage("Generate a person profile")],
+    schema=PersonModel
 )
-print(response.output_structured)
+person = PersonModel.model_validate(response.output_structured)
+print(response.name, person.age)
 ```
 
 **After**
 
 ```python
-# New run method with response_format
+class PersonModel(BaseModel):
+    name: str
+    age: int
+
 response = await llm.run(
     [UserMessage("Generate structured data")],
     response_format=MyModel,
     max_retries=3
 )
-print(response.output_structured)
+person = response.output_structured
+print(response.name, person.age)
 ```
 
 IMPORTANT: If `response_format` is a Pydantic model, the `output_structured` will be the instance of it. Previously there was no such step.  
-
-### Breaking Changes Summary
-
-- **Method rename**: `create()` → `run()`, `create_structure()` → `run()`
-- **Parameter structure**: Messages are now the first positional argument, `abort_signal` is now `signal`
-- **Structured generation**: Use `response_format` parameter instead in the `run` method instead of `create_structure()` method
-- **Class hierarchy**: `ChatModel` now extends `Runnable[ChatModelOutput]`
-- **Type annotations**: New `ChatModelOptions` for optional parameters
 
 
 ## python_v0.1.48 (2025-09-22)
