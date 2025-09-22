@@ -5,13 +5,17 @@ icon: "robot"
 
 ## Overview
 
-An AI agent is a system built on large language models (LLMs) that can solve complex tasks through structured reasoning and autonomous actions. Unlike basic chatbots, agents can:
-- Perform multi-step reasoning
-- Use tools to interact with external systems
-- Maintain context across interactions
-- Adapt based on feedback
+An **AI Agent** is a system built on language models (LLMs or SLMs) that can solve complex tasks through structured reasoning and autonomous or human-assisted actions. The BeeAI Framework serves as the orchestration layer that enables agents to do this and more:
 
-These capabilities make them ideal for planning, research, analysis, and complex execution.
+- Coordinate with LLMs: Manages communication between your agent and language models
+- Tool Management: Provides agents with access to external tools and handles their execution
+- Response Processing: Processes and validates tool outputs and model responses
+- Memory Management: Maintains conversation context and state across interactions
+- Error Handling: Manages retries, timeouts, and graceful failure recovery
+- Event Orchestration: Emits detailed events for monitoring and debugging agent behavior
+
+Unlike basic chatbots, agents built with this framework can perform multi-step reasoning, use tools to interact with external systems, maintain context across interactions, and adapt based on feedback. 
+These capabilities make them ideal for planning, research, analysis, and complex execution tasks.
 
 <Tip>
 Dive deeper into the concepts behind AI agents in this [research article](https://research.ibm.com/blog/what-are-ai-agents-llm) from IBM.
@@ -21,17 +25,245 @@ Dive deeper into the concepts behind AI agents in this [research article](https:
 Supported in Python and TypeScript.
 </Note>
 
-## Agent Types
+## Customizing Agent Behavior
 
-BeeAI Framework provides several agent implementations for different use cases.
+You can customize your agent's behavior in several key ways:
+
+### 1. Configuring the Language Model Backend
+The backend system manages your connection to different language model providers. The BeeAI Framework supports multiple LLM providers through a unified interface. Learn more about available backends and how to set their parameters in our [backend documentation](./backend).
+
+<CodeGroup>
+
+```py Python [expandable]
+from beeai_framework.backend import ChatModel
+
+# Using Ollama (local models)
+llm = ChatModel.from_name("ollama:granite3.3:8b")
+
+# Using OpenAI
+llm = ChatModel.from_name("openai:gpt-5-mini-2025-08-07")
+
+# Using Anthropic
+llm = ChatModel.from_name("anthropic:claude-sonnet-4-20250514")
+
+agent = RequirementAgent(
+    llm=llm,
+    # ... other configuration
+)
+```
+
+```ts TypeScript [expandable]
+COMING SOON
+```
+
+</CodeGroup>
+
+**Backend Features:**
+- Unified Interface: Work with different providers using the same API
+- Model Parameters: Configure temperature, max tokens, and other model settings
+- Provider Support: OpenAI, Anthropic, Ollama, Groq, and more
+- Local & Cloud: Support for both local and cloud-hosted models
+
+### 2. Setting the System Prompt
+
+The system prompt defines your agent's behavior, personality, and capabilities. You can configure this through several parameters when initializing an agent:
+
+<CodeGroup>
+
+```py Python [expandable]
+agent = RequirementAgent(
+    llm=llm,
+    role="You are a helpful research assistant specializing in academic papers",
+    instructions=[
+        "Always provide citations for your sources",
+        "Focus on peer-reviewed research when possible",
+        "Explain complex concepts in simple terms"
+    ],
+    notes=[
+        "Be especially careful about medical or legal advice",
+        "If unsure about a fact, acknowledge the uncertainty"
+    ],
+    name="Research Assistant",
+    description="An AI agent that helps with academic research tasks"
+)
+```
+
+```ts TypeScript [expandable]
+COMING SOON
+```
+
+</CodeGroup>
+
+**Prompt Parameters:**
+- `role`: Defines the agent's persona and primary function
+- `instructions`: List of specific behavioral guidelines 
+- `notes`: Additional context or special considerations
+- `name` and `description`: Help identify the agent's purpose and are helpful when using the `HandoffTool`, `Serve` module, and when you need to access agent metadata via `agent.meta`
+
+
+Setting instructions, notes, role will be integrated into the framework provided system prompt template.  If you want to completely override the framework provided system prompt template, you can provide a custom [prompt template](./templates). 
+
+### 3. Configuring Agent Run Options
+When executing an agent, you can provide additional options to guide its behavior and execution settings:
+
+#### Setting Execution Settings and Guiding Agent Run Behavior
+
+<CodeGroup>
+
+```py Python [expandable]
+response = await agent.run(
+    prompt="Analyze the latest AI research trends",
+    expected_output="A structured summary with key findings and recommendations",
+  # expected_output= #insert pydantic data model for structured output
+    backstory="The user is preparing for a conference presentation on AI trends",
+    total_max_retries=5,
+    max_retries_per_step=2,
+    max_iterations=15,
+)
+
+#structured outputs can be accessed like this:
+print(response.output_structured)
+```
+
+```ts TypeScript [expandable]
+COMING SOON
+```
+
+</CodeGroup>
+
+**Available Options:**
+- `expected_output`: Guides the agent toward a specific output format (can also be a Pydantic model for structured output).
+- `backstory`: Provides additional context to help the agent understand the user's situation
+- `total_max_retries`: Controls the total number of retry attempts across the entire agent execution
+- `max_retries_per_step`: Limits retries for individual steps (like tool calls or model responses)  
+- `max_iterations`: Sets the maximum number of reasoning cycles the agent can perform
 
 <Tip>
-Check out our new experimental [`RequirementAgent`](/experimental/requirement-agent) that combines the power of LLMs, tools, and requirements, all wrapped in a declarative interface.
-
-**This approach will soon become a default building block for building agents and will replace the others.**
+The are defualts set for `max_iterations`, `total_max_retries`, and `max_retries_per_step`, but you can override them by setting your own preferences.
 </Tip>
 
+
+
+
+### 4. Adding Tools
+
+Enhance your agent's capabilities by providing it with tools to interact with external systems. Learn more about beeai provided tools and creating custom tools in our [tools documentation](./tools).
+
+<CodeGroup>
+
+```py Python [expandable]
+from beeai_framework.tools.search.duckduckgo import DuckDuckGoSearchTool
+from beeai_framework.tools.weather import OpenMeteoTool
+
+agent = RequirementAgent(
+    llm=llm,
+    tools=[
+        DuckDuckGoSearchTool(),
+        OpenMeteoTool(),
+        # Add more tools as needed
+    ]
+)
+```
+
+```ts TypeScript [expandable]
+COMING SOON
+```
+
+</CodeGroup>
+
+### 5. Configuring Memory
+
+Memory allows your agent to maintain context across multiple interactions. Different memory types serve different use cases. Learn more about our built in options in the [memory documentation](./memory).
+
+<CodeGroup>
+
+```py Python [expandable]
+from beeai_framework.memory import TokenMemory, UnconstrainedMemory
+
+# For unlimited conversation history
+agent = RequirementAgent(
+    llm=llm,
+    memory=UnconstrainedMemory()
+)
+```
+
+```ts TypeScript [expandable]
+COMING SOON
+```
+
+</CodeGroup>
+
+### Additional Agent Options
+- [Observability & Debugging](./observability): Monitor agent behavior with detailed event tracking and logging systems
+- [MCP (Model Context Protocol)](../integrations/mcp): Connect to external services and data sources
+- [A2A (Agent-to-Agent)](../integrations/a2a): Enable multi-agent communication and coordination
+- [Caching](./cache): Improve performance by caching LLM responses and tool outputs
+- [Event System](./events): Build reactive applications using the comprehensive emitter framework
+- [RAG Integration](./rag): Connect your agents to knowledge bases and document stores
+- [Serialization](./serialization): Save and restore agent state for persistence and deployment
+- [Error Handling](./errors): Implement robust error recovery and debugging strategies
+
+
+## Agent Types
+
+BeeAI Framework provides several agent implementations:
+
+<Warning>
+<strong>Upcoming change:</strong><br />
+For the Python framework, the <em>Requirement agent</em> will become the primary supported agent. The <em>ReAct</em> and <em>tool-calling</em> agents will not be actively supported.
+
+For the TypeScript framework, the <em>ReAct</em> and <em>tool-calling</em> agents will continue to be supported.
+</Warning>
+
+
+### Requirement Agent
+
+<Note>
+This is the recommended agent. Currently only supported in Python.
+</Note>
+
+This agent provides the reliability needed for production scenarios through a rule system that defines execution constraints while keeping problem-solving flexibility intact. Unlike traditional approaches that require complex orchestration code, RequirementAgent uses a declarative interface where you define requirements and let the framework enforce them automatically.
+
+Learn more about RequirementAgent in our [RequirementAgent documentation](experimental/requirement-agent) and [blog post](https://beeai.dev/blog/reliable-ai-agents).
+
+```py Python [expandable]
+from beeai_framework.agents.experimental import RequirementAgent
+from beeai_framework.agents.experimental.requirements.conditional import ConditionalRequirement
+from beeai_framework.tools.search.duckduckgo import DuckDuckGoSearchTool
+from beeai_framework.tools.think import ThinkTool
+from beeai_framework.tools.weather import OpenMeteoTool
+from beeai_framework.backend import ChatModel
+from beeai_framework.middleware.trajectory import GlobalTrajectoryMiddleware
+
+agent = RequirementAgent(
+    llm=ChatModel.from_name("ollama:granite3.3:8b"),
+    tools=[
+        ThinkTool(),             # to reason
+        OpenMeteoTool(),         # retrieve weather data
+        DuckDuckGoSearchTool()   # search web
+    ],
+    instructions="Plan activities for a given destination based on current weather and events.",
+    requirements=[
+        # Force thinking first
+        ConditionalRequirement(ThinkTool, force_at_step=1),
+        # Search only after getting weather and at least once
+        ConditionalRequirement(DuckDuckGoSearchTool, only_after=[OpenMeteoTool], min_invocations=1),
+        # Weather tool be used at least once but not consecutively
+        ConditionalRequirement(OpenMeteoTool, consecutive_allowed=False, min_invocations=1),
+    ])
+# Run with execution logging
+response = await agent.run("What to do in Boston?").middleware(GlobalTrajectoryMiddleware())
+print(f"Final Answer: {response.answer.text}")
+
+```
+
+
 ### ReAct Agent
+
+<Tip>
+The ReAct Agent is available in both Python and TypeScript, but no longer actively supported in Python.
+</Tip>
+
 
 The ReActAgent implements the ReAct ([Reasoning and Acting](https://arxiv.org/abs/2210.03629)) pattern, which structures agent behavior into a cyclical process of reasoning, action, and observation.
 
@@ -61,7 +293,6 @@ During execution, the agent emits partial updates as it generates each line, fol
 </Note>
 
 <CodeGroup>
-
 {/* <!-- embedme python/examples/agents/react.py --> */}
 ```py Python [expandable]
 import asyncio
@@ -187,7 +418,6 @@ if __name__ == "__main__":
         sys.exit(e.explain())
 
 ```
-
 {/* <!-- embedme typescript/examples/agents/react.ts --> */}
 ```ts TypeScript [expandable]
 import "dotenv/config.js";
@@ -323,10 +553,13 @@ try {
 
 ### Tool Calling Agent
 
+<Tip>
+The Tool Calling Agent is available in both Python and TypeScript, but no longer actively supported in Python.
+</Tip>
+
 The ToolCallingAgent is optimized for scenarios where tool usage is the primary focus. It handles tool calls more efficiently and can execute multiple tools in parallel.
 
 <CodeGroup>
-
 {/* <!-- embedme python/examples/agents/tool_calling.py --> */}
 ```py Python [expandable]
 import asyncio
@@ -392,7 +625,6 @@ if __name__ == "__main__":
         sys.exit(e.explain())
 
 ```
-
 {/* <!-- embedme typescript/examples/agents/toolCalling/agent.ts --> */}
 ```ts TypeScript [expandable]
 import "dotenv/config.js";
@@ -479,7 +711,6 @@ For advanced use cases, you can create your own agent implementation by extendin
 
 <CodeGroup>
 
-{/* <!-- embedme python/examples/agents/custom_agent.py --> */}
 ```py Python [expandable]
 import asyncio
 import sys
@@ -583,7 +814,6 @@ if __name__ == "__main__":
 
 ```
 
-{/* <!-- embedme typescript/examples/agents/custom_agent.ts --> */}
 ```ts TypeScript [expandable]
 import { BaseAgent, BaseAgentRunOptions } from "beeai-framework/agents/base";
 import {
@@ -703,304 +933,17 @@ console.info(response.state);
 
 </CodeGroup>
 
-## Customizing Agent Behavior
-
-You can customize your agent's behavior in five ways:
-
-### 1. Setting Execution Policy
-
-Control how the agent runs by configuring retries, timeouts, and iteration limits.
-
-<CodeGroup>
-
-```py Python
-response = await agent.run(
-     prompt=prompt,
-     execution=AgentExecutionConfig(max_retries_per_step=3, total_max_retries=10, max_iterations=20),
-).on("*", process_agent_events, EmitterOptions(match_nested=False))
-```
-
-```ts TypeScript
-for await (const { prompt } of reader) {
-  const response = await agent
-    .run(
-      { prompt },
-      {
-        execution: {
-          maxRetriesPerStep: 3,
-          totalMaxRetries: 10,
-          maxIterations: 20,
-        },
-      },
-    )
-```
-
-</CodeGroup>
-
-<Tip>
-  The default is zero retries and no timeout. For complex tasks, increasing the max_iterations is recommended.
-</Tip>
-
-### 2. Overriding Prompt Templates
-
-Customize how the agent formats prompts, including the system prompt that defines its behavior.
-
-The agent uses several templates that you can override:
-
-1. **System Prompt** - Defines the agent's behavior and capabilities
-2. **User Prompt** - Formats the user's input
-3. **Tool Error** - Handles tool execution errors
-4. **Tool Input Error** - Handles validation errors
-5. **Tool No Result Error** - Handles empty results
-6. **Tool Not Found Error** - Handles references to missing tools
-7. **Invalid Schema Error** - Handles parsing errors
-
-<CodeGroup>
-
-{/* <!-- embedme python/examples/templates/system_prompt.py --> */}
-```py Python
-import sys
-import traceback
-
-from beeai_framework.agents.react.runners.default.prompts import (
-    SystemPromptTemplate,
-    ToolDefinition,
-)
-from beeai_framework.errors import FrameworkError
-from beeai_framework.tools.weather import OpenMeteoTool
-from beeai_framework.utils.strings import to_json
-
-
-def main() -> None:
-    tool = OpenMeteoTool()
-
-    tool_def = ToolDefinition(
-        name=tool.name,
-        description=tool.description,
-        input_schema=to_json(tool.input_schema.model_json_schema()),
-    )
-
-    # Render the granite system prompt
-    prompt = SystemPromptTemplate.render(
-        instructions="You are a helpful AI assistant!", tools=[tool_def], tools_length=1
-    )
-
-    print(prompt)
-
-
-if __name__ == "__main__":
-    try:
-        main()
-    except FrameworkError as e:
-        traceback.print_exc()
-        sys.exit(e.explain())
-
-```
-
-{/* <!-- todo typescript/examples/templates/system_prompt.ts --> */}
-```ts TypeScript
-Example coming soon
-```
-
-</CodeGroup>
-
-### 3. Adding Tools
-
-Enhance your agent's capabilities by providing it with tools to interact with external systems.
-
-<CodeGroup>
-
-```py Python
-agent = ReActAgent(
-    llm=llm,
-    tools=[DuckDuckGoSearchTool(), OpenMeteoTool()],
-    memory=UnconstrainedMemory()
-)
-```
-
-```ts TypeScript
-const agent = new ReActAgent({
-  llm,
-  memory: new TokenMemory(),
-  tools: [new DuckDuckGoSearchTool(), new OpenMeteoTool()],
-});
-```
-
-</CodeGroup>
-
-**Available tools include:**
-
-- Search tools (`DuckDuckGoSearchTool`)
-- Weather tools (`OpenMeteoTool`)
-- Knowledge tools (`LangChainWikipediaTool`)
-- And many more in the `beeai_framework.tools` module
-
-### 4. Configuring Memory
-
-Memory allows your agent to maintain context across multiple interactions.
-
-Several memory types are available for different use cases:
-- UnconstrainedMemory - For unlimited storage
-- SlidingMemory - For keeping only the most recent messages
-- TokenMemory - For managing token limits
-- SummarizeMemory - For summarizing previous conversations
-
-<CodeGroup>
-
-```py Python
-agent = ReActAgent(
-    llm=llm,
-    tools=[DuckDuckGoSearchTool(), OpenMeteoTool()],
-    memory=UnconstrainedMemory()
-)
-```
-
-```ts TypeScript
-const agent = new ReActAgent({
-  llm,
-  memory: new TokenMemory(),
-  tools: [new DuckDuckGoSearchTool(), new OpenMeteoTool()],
-});
-```
-
-</CodeGroup>
-
-<CodeGroup>
-
-{/* <!-- embedme python/examples/memory/agent_memory.py --> */}
-```py Python [expandable]
-import asyncio
-import sys
-import traceback
-
-from beeai_framework.agents.react import ReActAgent
-from beeai_framework.backend import AssistantMessage, ChatModel, UserMessage
-from beeai_framework.errors import FrameworkError
-from beeai_framework.memory import UnconstrainedMemory
-
-# Initialize the memory and LLM
-memory = UnconstrainedMemory()
-
-
-def create_agent() -> ReActAgent:
-    llm = ChatModel.from_name("ollama:granite3.3:8b")
-
-    # Initialize the agent
-    agent = ReActAgent(llm=llm, memory=memory, tools=[])
-
-    return agent
-
-
-async def main() -> None:
-    # Create user message
-    user_input = "Hello world!"
-    user_message = UserMessage(user_input)
-
-    # Await adding user message to memory
-    await memory.add(user_message)
-    print("Added user message to memory")
-
-    # Create agent
-    agent = create_agent()
-
-    response = await agent.run(
-        user_input,
-        max_retries_per_step=3,
-        total_max_retries=10,
-        max_iterations=20,
-    )
-    print(f"Received response: {response}")
-
-    # Create and store assistant's response
-    assistant_message = AssistantMessage(response.last_message.text)
-
-    # Await adding assistant message to memory
-    await memory.add(assistant_message)
-    print("Added assistant message to memory")
-
-    # Print results
-    print(f"\nMessages in memory: {len(agent.memory.messages)}")
-
-    if len(agent.memory.messages) >= 1:
-        user_msg = agent.memory.messages[0]
-        print(f"User: {user_msg.text}")
-
-    if len(agent.memory.messages) >= 2:
-        agent_msg = agent.memory.messages[1]
-        print(f"Agent: {agent_msg.text}")
-    else:
-        print("No agent message found in memory")
-
-
-if __name__ == "__main__":
-    try:
-        asyncio.run(main())
-    except FrameworkError as e:
-        traceback.print_exc()
-        sys.exit(e.explain())
-
-```
-
-{/* <!-- embedme typescript/examples/memory/agentMemory.ts --> */}
-```ts TypeScript [expandable]
-import { UnconstrainedMemory } from "beeai-framework/memory/unconstrainedMemory";
-import { ReActAgent } from "beeai-framework/agents/react/agent";
-import { OllamaChatModel } from "beeai-framework/adapters/ollama/backend/chat";
-
-const agent = new ReActAgent({
-  memory: new UnconstrainedMemory(),
-  llm: new OllamaChatModel("llama3.1"),
-  tools: [],
-});
-await agent.run({ prompt: "Hello world!" });
-
-console.info(agent.memory.messages.length); // 2
-
-const userMessage = agent.memory.messages[0];
-console.info(`User: ${userMessage.text}`); // User: Hello world!
-
-const agentMessage = agent.memory.messages[1];
-console.info(`Agent: ${agentMessage.text}`); // Agent: Hello! It's nice to chat with you.
-
-```
-
-</CodeGroup>
-
-### 5. Event Observation
-
-Monitor the agent's execution by observing events it emits. This allows you to track its reasoning process, handle errors, or implement custom logging.
-
-<CodeGroup>
-
-```py Python
-def update_callback(data: Any, event: EventMeta) -> None:
-    print(f"Agent({data.update.key}) 🤖 : ", data.update.parsed_value)
-
-def on_update(emitter: Emitter) -> None:
-    emitter.on("update", update_callback)
-
-output: BeeRunOutput = await agent.run("What's the current weather in Las Vegas?").observe(on_update)
-```
-
-```ts TypeScript
-const response = await agent
-  .run({ prompt: "What's the current weather in Las Vegas?" })
-  .observe((emitter) => {
-    emitter.on("update", async ({ data, update, meta }) => {
-      console.log(`Agent (${update.key}) 🤖 : `, update.value);
-    });
-  });
-```
-
-</CodeGroup>
-
 ## Agent Workflows
+
+<Warning>
+<strong>Upcoming change:</strong><br />
+Workflows are under construction to support more dynamic multi-agent patterns. If you'd like to participate in shaping the vision, contribute to the discussion in this [V2 Workflow Proposal](https://github.com/i-am-bee/beeai-framework/discussions/1005).
+</Warning>
 
 For complex applications, you can create multi-agent workflows where specialized agents collaborate.
 
 <CodeGroup>
 
-{/* <!-- embedme python/examples/workflows/multi_agents.py --> */}
 ```py Python [expandable]
 import asyncio
 import sys
@@ -1091,7 +1034,6 @@ if __name__ == "__main__":
 
 ```
 
-{/* <!-- embedme typescript/examples/workflows/multiAgents.ts --> */}
 ```ts TypeScript [expandable]
 import "dotenv/config";
 import { createConsoleReader } from "examples/helpers/io.js";

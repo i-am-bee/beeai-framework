@@ -33,7 +33,7 @@ jsonref = "^1.1.0"
 langchain-community = {version = "^0.3.19", optional = true}
 langchain-core = {version = "^0.3.41", optional = true}
 langchain-ollama={version = "^0.3.1", optional = true}
-litellm = "^1.69.3"
+litellm = ">=1.76.1,<2.0.0"
 llama-index = {version = "^0.12.42", optional = true}
 markdown = {version = "^3.8.2", optional = true}
 mcp = {version = "^1.10.1", optional = true}
