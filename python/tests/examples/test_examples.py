@@ -53,7 +53,7 @@ exclude = list(
             "playground/*/*.py",
             "playground/*/*/*.py",
             "agents/experimental/requirement/exercises/*",
-            "integrations/langgraph_example.py" if os.getenv("OLLAMA_API_BASE") else None,
+            "integrations/langgraph_example.py",
             "agents/rag_agent.py",
             "agents/experimental/requirement/rag.py",
             "backend/module_loading.py",

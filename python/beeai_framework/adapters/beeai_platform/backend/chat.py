@@ -1,24 +1,24 @@
 # Copyright 2025 © BeeAI a Series of LF Projects, LLC
 # SPDX-License-Identifier: Apache-2.0
+
 import contextlib
-from collections.abc import AsyncGenerator, Callable
+from collections.abc import Callable
 from contextvars import ContextVar
 from functools import cached_property
-from typing import ClassVar, Self
+from typing import Any, ClassVar, Self
 
 from beeai_sdk.a2a.extensions import LLMServiceExtensionServer
-from typing_extensions import Unpack
+from typing_extensions import Unpack, override
 
 from beeai_framework.adapters.openai import OpenAIChatModel
-from beeai_framework.backend import ChatModelOutput
-from beeai_framework.backend.chat import ChatModel, ChatModelKwargs, ToolChoiceType
+from beeai_framework.backend import AnyMessage, ChatModelOutput
+from beeai_framework.backend.chat import ChatModel, ChatModelKwargs, ChatModelOptions, ToolChoiceType
 from beeai_framework.backend.constants import ProviderName
-from beeai_framework.backend.types import ChatModelInput
 from beeai_framework.backend.utils import load_model
-from beeai_framework.context import RunContext
 
 __all__ = ["BeeAIPlatformChatModel"]
 
+from beeai_framework.context import Run
 
 _storage = ContextVar[LLMServiceExtensionServer]("beeai_chat_model_storage")
 
@@ -52,8 +52,9 @@ class BeeAIPlatformChatModel(ChatModel):
 
         kwargs = self._kwargs.copy()
         if kwargs.get("tool_choice_support") is None:
-            target_provider: type[ChatModel] = load_model(llm_conf.api_model.replace("beeai:", ""), "chat")
-            kwargs["tool_choice_support"] = target_provider.tool_choice_support.copy()
+            with contextlib.suppress(Exception):
+                target_provider: type[ChatModel] = load_model(llm_conf.api_model.replace("beeai:", ""), "chat")
+                kwargs["tool_choice_support"] = target_provider.tool_choice_support.copy()
 
         return OpenAIChatModel(
             model_id=llm_conf.api_model,
@@ -62,11 +63,19 @@ class BeeAIPlatformChatModel(ChatModel):
             **kwargs,
         )
 
-    async def _create(self, input: ChatModelInput, run: RunContext) -> ChatModelOutput:
-        return await self._model._create(input, run)
+    @override
+    def run(self, input: list[AnyMessage], /, **kwargs: Unpack[ChatModelOptions]) -> Run[ChatModelOutput]:
+        return self._model.run(input, **kwargs)
 
-    def _create_stream(self, input: ChatModelInput, run: RunContext) -> AsyncGenerator[ChatModelOutput]:
-        return self._model._create_stream(input, run)
+    @override
+    def _create_stream(self, *args: Any, **kwargs: Any) -> Any:
+        # This method should not be called directly as the public `create` method is delegated.
+        raise NotImplementedError()
+
+    @override
+    async def _create(self, *args: Any, **kwargs: Any) -> Any:
+        # This method should not be called directly as the public `create` method is delegated.
+        raise NotImplementedError()
 
     @property
     def model_id(self) -> str:

@@ -92,6 +92,16 @@ IMPORTANT: If `response_format` is a Pydantic model, the `output_structured` wil
 - **Class hierarchy**: `ChatModel` now extends `Runnable[ChatModelOutput]`
 - **Type annotations**: New `ChatModelOptions` for optional parameters
 
+
+## python_v0.1.47 (2025-09-19)
+
+### Bug Fixes
+
+- **adapters**: update A2A Agent (#1112)
+- **adapters**: correctly wrap the inner model in BeeAIPlatformChatModel (#1115)
+- add missing retry for embeddings (#1110)
+
+
 ## python_v0.1.46 (2025-09-17)
 
 ### Bug Fixes
