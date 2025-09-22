@@ -1,6 +1,7 @@
 # Copyright 2025 © BeeAI a Series of LF Projects, LLC
 # SPDX-License-Identifier: Apache-2.0
 import json
+import os
 import re
 
 import pytest
@@ -21,6 +22,10 @@ from beeai_framework.tools import AnyTool, ToolOutput
 from beeai_framework.tools.weather.openmeteo import OpenMeteoTool
 
 
+@pytest.mark.skipif(
+    not os.getenv("TRANSFORMERS_CHAT_MODEL"),
+    reason="The model for Transformers was not set.",
+)
 class TestTransformersChatModel:
     chat_model: ChatModel
 
