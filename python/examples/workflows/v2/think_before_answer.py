@@ -39,14 +39,14 @@ class ThinkBeforeAnswerWorkflow(Workflow):
     async def think(self, user_message: AnyMessage) -> str:
         print("Thinking")
         prompt = thinking_prompt(user_message)
-        output: ChatModelOutput = await self.chat_model.create(messages=[UserMessage(content=prompt)])
+        output: ChatModelOutput = await self.chat_model.run([UserMessage(content=prompt)])
         return output.get_text_content()
 
     @after(start, think)
     async def answer(self, user_message: AnyMessage, thoughts: str) -> AssistantMessage:
         print("Answering")
         prompt = answer_prompt(user_message, thoughts)
-        output: ChatModelOutput = await self.chat_model.create(messages=[UserMessage(content=prompt)])
+        output: ChatModelOutput = await self.chat_model.run([UserMessage(content=prompt)])
         return AssistantMessage(output.get_text_content())
 
     @after(answer)
