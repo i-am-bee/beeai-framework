@@ -120,6 +120,7 @@ implicit_reexport = true
 [[tool.mypy.overrides]]
 module = ["llama-index", "llama-index.*", "llama_index", "llama_index.*"]
 ignore_errors = true
+ignore_missing_imports = true
 
 [tool.pydantic-mypy]
 init_forbid_extra = true
