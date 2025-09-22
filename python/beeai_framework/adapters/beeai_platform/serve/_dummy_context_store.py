@@ -32,6 +32,3 @@ class DummyContextStore(beeai_context_store.ContextStore):
         initialized_dependencies: list[Dependency],  # type: ignore[type-arg]
     ) -> beeai_context_store.ContextStoreInstance:
         return self._cs
-
-
-__all__ = []

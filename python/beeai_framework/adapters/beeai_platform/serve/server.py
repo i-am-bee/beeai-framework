@@ -12,7 +12,7 @@ import uvicorn
 from pydantic import BaseModel
 from typing_extensions import TypedDict, TypeVar, Unpack, override
 
-from beeai_framework.adapters.beeai_platform.serve.dummy_context_store import (
+from beeai_framework.adapters.beeai_platform.serve._dummy_context_store import (
     DummyContextStore,
 )
 from beeai_framework.agents.experimental import RequirementAgent
