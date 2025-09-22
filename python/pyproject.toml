@@ -1,6 +1,6 @@
 [project]
 name = "beeai-framework"
-version="0.1.47"
+version="0.1.48"
 license = "Apache-2.0"
 readme = "README.md"
 authors = [{ name = "IBM Corp." }]
@@ -45,8 +45,8 @@ uvicorn = {version = "^0.35.0", optional = true}
 types-grpcio = {version = "1.0.0.20250703", optional = true}
 types-grpcio-reflection = {version = "1.0.0.20250506", optional = true}
 wikipedia-api = {version = "^0.8.1", optional = true}
-beeai-sdk = {version = "^0.3.3", optional = true}
-langgraph = {version = "^0.6.4", optional = true}
+beeai-sdk = {version = "^0.3.4", optional = true}
+langgraph-prebuilt = {version = "^0.6.4", optional = true}
 deprecated = "^1.2.18"
 
 [tool.poetry.group.dev.dependencies]
@@ -78,7 +78,7 @@ duckduckgo = ["ddgs"]
 wikipedia = ["wikipedia-api"]
 mcp = ["mcp"]
 llama_index = ["llama-index"]
-langchain = ["langchain-core", "langchain-community", "langchain-ollama", "langgraph"]
+langchain = ["langchain-core", "langchain-community", "langchain-ollama"]
 rag = ["llama-index", "langchain-core", "langchain-community", "langchain-ollama", "markdown", "unstructured"]
 acp = ["acp-sdk", "uvicorn"]
 beeai-platform = ["beeai-sdk", "a2a-sdk", "uvicorn"]
@@ -101,7 +101,7 @@ all = [
     "fastapi",
     "llama-index",
     "beeai-sdk",
-    "langgraph",
+    "langgraph-prebuilt",
     "boto3",
     "google-auth"
 ]

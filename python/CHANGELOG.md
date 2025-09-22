@@ -93,6 +93,17 @@ IMPORTANT: If `response_format` is a Pydantic model, the `output_structured` wil
 - **Type annotations**: New `ChatModelOptions` for optional parameters
 
 
+## python_v0.1.48 (2025-09-22)
+
+### Bug Fixes
+
+- **backend**: correctly serialize response_format (#1121)
+- **adapters**: handle unknown providers in BeeAIPlatformChatModel
+
+### Features
+
+- **adapters**: handle form cancellation in BeeAIPlatformServer (#1118)
+
 ## python_v0.1.47 (2025-09-19)
 
 ### Bug Fixes
