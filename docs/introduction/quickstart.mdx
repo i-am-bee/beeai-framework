@@ -66,10 +66,10 @@ icon: "rocket"
 
   <Step title="Configure your LLM Backend">
 
-   If you choose to run a local model, [Ollama](https://ollama.com/) must be installed and running, with the [granite3.3](https://ollama.com/library/granite3.3) model pulled.
+   If you choose to run a local model, [Ollama](https://ollama.com/) must be installed and running, with the [granite3.3](https://ollama.com/library/granite3.3) model pulled. If you run into issues, run `ollama list` to verify the model name and ensure `granite3.3` is installed or that your alias points to it.
   
   ```bash shell
-  ollama pull granite3.3:8b
+  ollama pull granite3.3
   ```
 
   or
@@ -78,7 +78,7 @@ icon: "rocket"
   
   ```bash example
   # Examples (pick one that matches your provider/account):
-  LLM_CHAT_MODEL_NAME="openai:gpt-5-mini-2025-08-07"
+  LLM_CHAT_MODEL_NAME="openai:gpt-5-mini"
   ```
 
   

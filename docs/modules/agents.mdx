@@ -38,13 +38,13 @@ The backend system manages your connection to different language model providers
 from beeai_framework.backend import ChatModel
 
 # Using Ollama (local models)
-llm = ChatModel.from_name("ollama:granite3.3:8b")
+llm = ChatModel.from_name("ollama:granite3.3")
 
 # Using OpenAI
-llm = ChatModel.from_name("openai:gpt-5-mini-2025-08-07")
+llm = ChatModel.from_name("openai:gpt-5-mini")
 
 # Using Anthropic
-llm = ChatModel.from_name("anthropic:claude-sonnet-4-20250514")
+llm = ChatModel.from_name("anthropic:claude-sonnet-4")
 
 agent = RequirementAgent(
     llm=llm,
@@ -132,7 +132,7 @@ COMING SOON
 </CodeGroup>
 
 **Available Options:**
-- `expected_output`: Guides the agent toward a specific output format (can also be a Pydantic model for structured output).
+- `expected_output`: Guides the agent toward a specific unstructured or structured output format. `output_structured` is defined only when `expected_output` is a Pydantic model or a JSON schema. However, the text representation is always available via `response.output`.
 - `backstory`: Provides additional context to help the agent understand the user's situation
 - `total_max_retries`: Controls the total number of retry attempts across the entire agent execution
 - `max_retries_per_step`: Limits retries for individual steps (like tool calls or model responses)  
@@ -210,9 +210,7 @@ BeeAI Framework provides several agent implementations:
 
 <Warning>
 <strong>Upcoming change:</strong><br />
-For the Python framework, the <em>Requirement agent</em> will become the primary supported agent. The <em>ReAct</em> and <em>tool-calling</em> agents will not be actively supported.
-
-For the TypeScript framework, the <em>ReAct</em> and <em>tool-calling</em> agents will continue to be supported.
+The <em>Requirement agent</em> will become the primary supported agent. The <em>ReAct</em> and <em>tool-calling</em> agents will not be actively supported.
 </Warning>
 
 
@@ -236,7 +234,7 @@ from beeai_framework.backend import ChatModel
 from beeai_framework.middleware.trajectory import GlobalTrajectoryMiddleware
 
 agent = RequirementAgent(
-    llm=ChatModel.from_name("ollama:granite3.3:8b"),
+    llm=ChatModel.from_name("ollama:granite3.3"),
     tools=[
         ThinkTool(),             # to reason
         OpenMeteoTool(),         # retrieve weather data
@@ -261,7 +259,7 @@ print(f"Final Answer: {response.answer.text}")
 ### ReAct Agent
 
 <Tip>
-The ReAct Agent is available in both Python and TypeScript, but no longer actively supported in Python.
+The ReAct Agent is available in both Python and TypeScript, but no longer actively supported.
 </Tip>
 
 
@@ -332,11 +330,11 @@ def create_agent() -> ReActAgent:
 
     # Other models to try:
     # "llama3.1"
-    # "granite3.3:8b"
+    # "granite3.3"
     # "deepseek-r1"
     # ensure the model is pulled before running
     llm = ChatModel.from_name(
-        "ollama:granite3.3:8b",
+        "ollama:granite3.3",
         ChatModelParameters(temperature=0),
     )
 
@@ -554,7 +552,7 @@ try {
 ### Tool Calling Agent
 
 <Tip>
-The Tool Calling Agent is available in both Python and TypeScript, but no longer actively supported in Python.
+The Tool Calling Agent is available in both Python and TypeScript, but no longer actively supported.
 </Tip>
 
 The ToolCallingAgent is optimized for scenarios where tool usage is the primary focus. It handles tool calls more efficiently and can execute multiple tools in parallel.
@@ -801,7 +799,7 @@ class CustomAgent(BaseAgent):
 
 async def main() -> None:
     agent = CustomAgent(
-        llm=OllamaChatModel("granite3.3:8b"),
+        llm=OllamaChatModel("granite3.3"),
         memory=UnconstrainedMemory(),
     )
 
