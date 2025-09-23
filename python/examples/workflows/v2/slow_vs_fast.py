@@ -4,8 +4,9 @@
 import asyncio
 from typing import Any
 
-from beeai_framework.backend.message import AnyMessage, UserMessage
+from beeai_framework.backend.message import AnyMessage, AssistantMessage, UserMessage
 from beeai_framework.workflows.v2.decorators.after import after
+from beeai_framework.workflows.v2.decorators.end import end
 from beeai_framework.workflows.v2.decorators.start import start
 from beeai_framework.workflows.v2.decorators.when import when
 from beeai_framework.workflows.v2.workflow import Workflow
@@ -35,8 +36,9 @@ class SlowVsFastWorkflow(Workflow):
         print("Fast complete!")
 
     @after(slow, fast)
-    async def end(self, slow: Any, fast: Any) -> None:
-        print("Fast and slow complete!")
+    @end
+    async def end(self, slow: Any, fast: Any) -> list[AnyMessage]:
+        return [AssistantMessage("Fast and slow complete!")]
 
 
 # Async main function

@@ -6,6 +6,7 @@ import re
 
 from beeai_framework.backend.message import AnyMessage, AssistantMessage, UserMessage
 from beeai_framework.workflows.v2.decorators.after import after
+from beeai_framework.workflows.v2.decorators.end import end
 from beeai_framework.workflows.v2.decorators.start import start
 from beeai_framework.workflows.v2.decorators.when import when
 from beeai_framework.workflows.v2.workflow import Workflow
@@ -33,7 +34,10 @@ class CalculateTokensWorkflow(Workflow):
         return len(tokens)
 
     @after(count_tokens_by_whitespaces, count_tokens_regex, type="OR")
-    async def finalize(self, white_space_tokens: int | None = None, count_regex_tokens: int | None = None) -> None:
+    @end
+    async def finalize(
+        self, white_space_tokens: int | None = None, count_regex_tokens: int | None = None
+    ) -> list[AnyMessage]:
         token_count = 0
 
         if white_space_tokens is not None:
@@ -41,7 +45,7 @@ class CalculateTokensWorkflow(Workflow):
         elif count_regex_tokens is not None:
             token_count = count_regex_tokens
 
-        self._messages.append(AssistantMessage(f"Total tokens: {token_count}"))
+        return [AssistantMessage(f"Total tokens: {token_count}")]
 
 
 # Async main function

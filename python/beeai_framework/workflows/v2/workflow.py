@@ -3,19 +3,36 @@
 
 import asyncio
 import inspect
+import time
 from collections.abc import Callable
+from datetime import UTC, datetime
 from itertools import zip_longest
 from typing import Any
+
+from pydantic import BaseModel, ConfigDict
 
 from beeai_framework.backend.message import AnyMessage
 from beeai_framework.workflows.v2.types import AsyncFunc, DependencyType
 
 
+class WorkflowStepExecution(BaseModel):
+    inputs: tuple[Any | None, ...]
+    output: Any | None
+    error: Exception | None
+    started_at: datetime | None
+    ended_at: datetime | None
+    duration: float
+
+    model_config = ConfigDict(arbitrary_types_allowed=True)
+
+
+# Todo inherit from runnable
 class WorkflowStep:
     def __init__(self, func: AsyncFunc) -> None:
         self.func = func
         self.name = func.__name__
         self._is_start = False
+        self._is_end = False
         self._is_fork = False
         self._is_join = False
         self.forked: list[WorkflowStep] = []
@@ -25,11 +42,10 @@ class WorkflowStep:
         self.inputs: list[Any | None] = []
 
         self.type: DependencyType = "AND"
-        self.last_result: Any = None
-        self.iterations = 0
-        self.max_iterations = 10
         self.completed_event = asyncio.Event()
+        # TODO: multiple predicates
         self.predicate: Callable[..., bool] | None = None
+        self.executions: list[WorkflowStepExecution] = []
 
     def add_dependency(self, dep: "WorkflowStep") -> None:
         self.dependencies.append(dep)
@@ -38,12 +54,17 @@ class WorkflowStep:
     def add_dependent(self, dep: "WorkflowStep") -> None:
         self.dependents.append(dep)
 
+    def last_execution(self) -> WorkflowStepExecution | None:
+        return self.executions[-1] if self.executions else None
+
 
 class Workflow:
     def __init__(self) -> None:
-        self._messages: list[AnyMessage] = []
+        self._input: list[AnyMessage] = []
+        self._output: list[AnyMessage] = []
+
         self._start_step: WorkflowStep | None = None
-        self._end_step: WorkflowStep | None = None
+        self._end_steps: set[WorkflowStep] = set()
         self._steps: dict[str, WorkflowStep] = {}
         self.running_tasks: set[asyncio.Task[Any]] = set()
         self.queue: asyncio.Queue[WorkflowStep] = asyncio.Queue()
@@ -59,6 +80,9 @@ class Workflow:
                 if hasattr(method, "_is_start") and method._is_start:
                     self._start_step = step
                     self._start_step._is_start = True
+                if hasattr(method, "_is_end") and method._is_end:
+                    self._end_steps.add(step)
+                    step._is_end = True
 
         for name, method in methods:
             if hasattr(method, "_is_fork"):
@@ -95,8 +119,6 @@ class Workflow:
             # Start all tasks in queue concurrently
             while not self.queue.empty():
                 step = await self.queue.get()
-                if step.iterations >= step.max_iterations:
-                    continue
                 task = asyncio.create_task(self._run_step(step))
                 self.running_tasks.add(task)
                 task.add_done_callback(self.running_tasks.discard)
@@ -110,8 +132,11 @@ class Workflow:
         if step.predicate and step.predicate(self, *step.inputs) is False:
             return
 
+        started_at = datetime.now(UTC)
+        start_perf = time.perf_counter()
+
         if step._is_start:
-            result = await step.func(self._messages)
+            result = await step.func(self._input)
         else:
             if step._is_fork:
                 safe_params = [i if i is not None else [] for i in step.inputs]
@@ -127,23 +152,35 @@ class Workflow:
             else:
                 result = await step.func(*step.inputs)
 
-        step.last_result = result
-        step.iterations += 1
+        step.executions.append(
+            WorkflowStepExecution(
+                inputs=tuple(step.inputs),
+                output=result,
+                error=None,
+                started_at=started_at,
+                ended_at=datetime.now(UTC),
+                duration=time.perf_counter() - start_perf,
+            )
+        )
+
+        if step._is_end:
+            self._output = result
 
         # Enqueue dependents (that are waiting on the completion of this step)
         for dep in step.dependents:
             # Insert this result into the inputs at correct index
             idx = dep.dependencies.index(step)
+            # Set the input at the correct dependency index
             dep.inputs[idx] = result
 
             if dep.type == "AND":
                 dep.completed_dependencies.append(step)
                 if set(dep.completed_dependencies) == set(dep.dependencies):
-                    await self.queue.put(dep)  # All dependencies are done, proceed
+                    await self.queue.put(dep)  # All dependencies are done, queue dependent
             elif dep.type == "OR":
-                await self.queue.put(dep)  # Can proceed without checks for OR
+                await self.queue.put(dep)  # Can queue immediately for OR
 
     async def run(self, input: list[AnyMessage]) -> list[AnyMessage]:
-        self._messages = input
+        self._input = input
         await self._run()
-        return self._messages
+        return self._input + self._output

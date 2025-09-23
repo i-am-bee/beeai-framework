@@ -7,6 +7,7 @@ from pydantic import BaseModel
 
 from beeai_framework.backend.message import AnyMessage, AssistantMessage, UserMessage
 from beeai_framework.workflows.v2.decorators.after import after
+from beeai_framework.workflows.v2.decorators.end import end
 from beeai_framework.workflows.v2.decorators.fork import fork
 from beeai_framework.workflows.v2.decorators.join import join
 from beeai_framework.workflows.v2.decorators.start import start
@@ -47,9 +48,10 @@ class WebScrapperWorkflow(Workflow):
         return [Page(link=link, content=content) for link, content in zip(links, content, strict=False)]
 
     @after(post_process)
-    async def finalize(self, pages: list[Page]) -> None:
+    @end
+    async def finalize(self, pages: list[Page]) -> list[AnyMessage]:
         pages_txt = "\n\n".join([f"Link: {p.link}\n# Content: {p.content}" for p in pages])
-        self._messages.append(AssistantMessage(f"Here are all scrapped pages\n{pages_txt}"))
+        return [AssistantMessage(f"Here are all scrapped pages\n{pages_txt}")]
 
 
 # Async main function

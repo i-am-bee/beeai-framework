@@ -7,6 +7,7 @@ from beeai_framework.backend.chat import ChatModel
 from beeai_framework.backend.message import AnyMessage, AssistantMessage, UserMessage
 from beeai_framework.backend.types import ChatModelOutput
 from beeai_framework.workflows.v2.decorators.after import after
+from beeai_framework.workflows.v2.decorators.end import end
 from beeai_framework.workflows.v2.decorators.start import start
 from beeai_framework.workflows.v2.workflow import Workflow
 
@@ -50,9 +51,10 @@ class ThinkBeforeAnswerWorkflow(Workflow):
         return AssistantMessage(output.get_text_content())
 
     @after(answer)
-    async def end(self, msg: AssistantMessage) -> None:
+    @end
+    async def end(self, msg: AssistantMessage) -> list[AnyMessage]:
         print("End")
-        self._messages.append(msg)
+        return [msg]
 
 
 # Async main function
