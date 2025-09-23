@@ -78,7 +78,6 @@ class TransformersChatModel(ChatModel):
         hf_token: str | None = None,
         **kwargs: Unpack[ChatModelKwargs],
     ) -> None:
-        # TODO: handle quantization config
         super().__init__(**kwargs)
         if hf_token is None:
             hf_token = os.getenv("HF_TOKEN", None)
