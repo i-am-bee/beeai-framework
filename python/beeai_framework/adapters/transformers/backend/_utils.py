@@ -30,7 +30,7 @@ def get_prompt_chat_history(chat_history: list[dict[str, Any]]) -> str:
     for turn in chat_history:
         role = turn["role"].capitalize()
         if "content" in turn:
-            content= turn["content"]
+            content = turn["content"]
             if isinstance(turn["content"], str):
                 prompt_elements.append(f"{role}: {content}")
             else:
