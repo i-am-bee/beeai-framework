@@ -169,8 +169,8 @@ class ToolCallingAgent(BaseAgent[ToolCallingAgentOutput]):
                 "start",
                 ToolCallingAgentStartEvent(state=state),
             )
-            response = await self._llm.create(
-                messages=state.memory.messages,
+            response = await self._llm.run(
+                state.memory.messages,
                 tools=tools,
                 tool_choice=("required" if len(tools) > 1 else tools[0]) if final_answer_as_tool else "auto",
             )
@@ -199,7 +199,7 @@ class ToolCallingAgent(BaseAgent[ToolCallingAgentOutput]):
                 tool_call_messages.append(tool_call_message)
                 await state.memory.add(AssistantMessage(tool_call_message))
             else:
-                await state.memory.add_many(response.messages)
+                await state.memory.add_many(response.output)
 
             for tool_call in tool_call_messages:
                 try:
@@ -209,7 +209,7 @@ class ToolCallingAgent(BaseAgent[ToolCallingAgentOutput]):
 
                     tool_call_checker.register(tool_call)
                     if tool_call_checker.cycle_found:
-                        await state.memory.delete_many(response.messages)
+                        await state.memory.delete_many(response.output)
                         await state.memory.add(
                             UserMessage(
                                 self._templates.cycle_detection.render(

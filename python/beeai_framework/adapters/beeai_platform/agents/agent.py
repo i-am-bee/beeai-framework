@@ -18,6 +18,8 @@ try:
         LLMFulfillment,
         LLMServiceExtensionClient,
         LLMServiceExtensionSpec,
+        PlatformApiExtensionClient,
+        PlatformApiExtensionSpec,
     )
     from beeai_sdk.platform import ModelProvider
     from beeai_sdk.platform.context import Context, ContextPermissions, Permissions
@@ -107,10 +109,11 @@ class BeeAIPlatformAgent(BaseAgent[BeeAIPlatformAgentOutput]):
         context = await Context.create()
         context_token = await context.generate_token(
             grant_global_permissions=Permissions(llm={"*"}, embeddings={"*"}, a2a_proxy={"*"}),
-            grant_context_permissions=ContextPermissions(files={"*"}, vector_stores={"*"}),
+            grant_context_permissions=ContextPermissions(files={"*"}, vector_stores={"*"}, context_data={"*"}),
         )
         llm_spec = LLMServiceExtensionSpec.from_agent_card(self._agent.agent_card)
         embedding_spec = EmbeddingServiceExtensionSpec.from_agent_card(self._agent.agent_card)
+        platform_extension_spec = PlatformApiExtensionSpec.from_agent_card(self._agent.agent_card)
 
         async def get_fulfillemnt_args(
             capability: ModelCapability, demand: LLMDemand | EmbeddingDemand
@@ -130,23 +133,33 @@ class BeeAIPlatformAgent(BaseAgent[BeeAIPlatformAgentOutput]):
             }
 
         metadata = (
-            LLMServiceExtensionClient(llm_spec).fulfillment_metadata(
-                llm_fulfillments={
-                    key: LLMFulfillment(**(await get_fulfillemnt_args(ModelCapability.LLM, demand)))
-                    for key, demand in llm_spec.params.llm_demands.items()
-                }
+            (
+                LLMServiceExtensionClient(llm_spec).fulfillment_metadata(
+                    llm_fulfillments={
+                        key: LLMFulfillment(**(await get_fulfillemnt_args(ModelCapability.LLM, demand)))
+                        for key, demand in llm_spec.params.llm_demands.items()
+                    }
+                )
+                if llm_spec
+                else {}
             )
-            if llm_spec
-            else {}
-        ) | (
-            EmbeddingServiceExtensionClient(embedding_spec).fulfillment_metadata(
-                embedding_fulfillments={
-                    key: EmbeddingFulfillment(**(await get_fulfillemnt_args(ModelCapability.EMBEDDING, demand)))
-                    for key, demand in embedding_spec.params.embedding_demands.items()
-                }
+            | (
+                EmbeddingServiceExtensionClient(embedding_spec).fulfillment_metadata(
+                    embedding_fulfillments={
+                        key: EmbeddingFulfillment(**(await get_fulfillemnt_args(ModelCapability.EMBEDDING, demand)))
+                        for key, demand in embedding_spec.params.embedding_demands.items()
+                    }
+                )
+                if embedding_spec
+                else {}
             )
-            if embedding_spec
-            else {}
+            | (
+                PlatformApiExtensionClient(platform_extension_spec).api_auth_metadata(
+                    auth_token=context_token.token, expires_at=context_token.expires_at
+                )
+                if platform_extension_spec
+                else {}
+            )
         )
 
         return metadata

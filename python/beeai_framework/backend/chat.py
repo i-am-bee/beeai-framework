@@ -1,13 +1,13 @@
 # Copyright 2025 © BeeAI a Series of LF Projects, LLC
 # SPDX-License-Identifier: Apache-2.0
 
-from abc import ABC, abstractmethod
-from collections.abc import AsyncGenerator, Callable, Sequence
+from abc import abstractmethod
+from collections.abc import AsyncGenerator, Callable
 from functools import cached_property
 from typing import Any, ClassVar, Literal, Self
 
-from pydantic import BaseModel, ConfigDict, Field, InstanceOf, TypeAdapter, ValidationError
-from typing_extensions import TypedDict, TypeVar, Unpack
+from pydantic import BaseModel, ConfigDict, InstanceOf, TypeAdapter, ValidationError
+from typing_extensions import TypedDict, TypeVar, Unpack, override
 
 from beeai_framework.backend.constants import ProviderName
 from beeai_framework.backend.errors import ChatModelError
@@ -18,14 +18,12 @@ from beeai_framework.backend.events import (
     ChatModelSuccessEvent,
     chat_model_event_types,
 )
-from beeai_framework.backend.message import AnyMessage, AssistantMessage, MessageToolCallContent, SystemMessage
+from beeai_framework.backend.message import AnyMessage, AssistantMessage, MessageToolCallContent
 from beeai_framework.backend.types import (
     ChatModelCache,
     ChatModelInput,
     ChatModelOutput,
     ChatModelParameters,
-    ChatModelStructureInput,
-    ChatModelStructureOutput,
     ChatModelToolChoice,
 )
 from beeai_framework.backend.utils import (
@@ -36,15 +34,15 @@ from beeai_framework.backend.utils import (
     parse_model,
 )
 from beeai_framework.cache.null_cache import NullCache
-from beeai_framework.context import Run, RunContext, RunMiddlewareType
+from beeai_framework.context import RunContext, RunMiddlewareType
 from beeai_framework.emitter import Emitter
 from beeai_framework.logger import Logger
 from beeai_framework.retryable import Retryable, RetryableConfig, RetryableInput
-from beeai_framework.template import PromptTemplate
+from beeai_framework.runnable import Runnable, RunnableOptions, runnable_entry
 from beeai_framework.tools.tool import AnyTool, Tool
-from beeai_framework.utils import AbortController, AbortSignal, ModelLike
+from beeai_framework.utils import AbortController, ModelLike
 from beeai_framework.utils.asynchronous import to_async_generator
-from beeai_framework.utils.dicts import exclude_non_annotated
+from beeai_framework.utils.dicts import exclude_keys, exclude_non_annotated
 from beeai_framework.utils.lists import cast_list
 from beeai_framework.utils.models import WrappedRootModel, to_model, update_model
 from beeai_framework.utils.strings import generate_random_string, to_json
@@ -67,16 +65,91 @@ class ChatModelKwargs(TypedDict, total=False):
     parameters: InstanceOf[ChatModelParameters]
     cache: InstanceOf[ChatModelCache]
     settings: dict[str, Any]
-    middlewares: Sequence[RunMiddlewareType]
+    middlewares: list[RunMiddlewareType]
     tool_choice_support: set[ToolChoiceType]
 
     __pydantic_config__ = ConfigDict(extra="forbid", arbitrary_types_allowed=True)  # type: ignore
 
 
+class ChatModelOptions(RunnableOptions, total=False):
+    """Optional options for ChatModel's run method."""
+
+    tools: list[AnyTool] | None
+    """Tools available to the model."""
+
+    tool_choice: ChatModelToolChoice | None
+    """Controls how an LLM selects and uses tools (auto, required, none, tool name)."""
+
+    max_retries: int | None
+    """
+    Maximum number of retries.
+    """
+
+    stop_sequences: list[str] | None
+    """
+    Stop words where the model should stop generation.
+    """
+
+    response_format: dict[str, Any] | type[BaseModel] | None
+    """
+    Structured output format.
+    """
+
+    stream: bool | None
+    """
+    Flag that indicates whether streaming is enabled.
+    """
+
+    parallel_tool_calls: bool | None
+    """
+    Flag that indicates if concurrent tool call is enabled.
+    """
+
+    max_tokens: int | None
+    """
+    Model parameter that limits the maximum number of generated tokens.
+    """
+
+    frequency_penalty: float | None
+    """
+    Model parameter that discourages the repetition of words by decreasing the likelihood of a token being selected.
+    """
+
+    temperature: float | None
+    """
+    Model paramater that controls the randomness of the generated text.
+    """
+
+    top_p: float | None
+    """
+    Model parameter (nucleous sampling) that decides how many possible words to consider.
+    """
+
+    top_k: int | None
+    """
+    Model parameter that restricts the pool of possible next words to a fixed number of the most probable tokens.
+    """
+
+    n: int | None
+    """
+    Model parameter that controls the number of model completions (generations).
+    """
+
+    presence_penalty: float | None
+    """
+    Model parameter that controls how much the model penalizes new tokens that are already present in the conversation.
+    """
+
+    seed: int | None
+    """
+    Model parameter that controls deterministic sampling.
+    """
+
+
 _ChatModelKwargsAdapter = TypeAdapter(ChatModelKwargs)
 
 
-class ChatModel(ABC):
+class ChatModel(Runnable[ChatModelOutput]):
     tool_choice_support: ClassVar[set[ToolChoiceType]] = {"required", "none", "single", "auto"}
     tool_call_fallback_via_response_format: bool
     model_supports_tool_calling: bool
@@ -94,11 +167,11 @@ class ChatModel(ABC):
         pass
 
     def __init__(self, **kwargs: Unpack[ChatModelKwargs]) -> None:
+        super().__init__(middlewares=kwargs.get("middlewares", []))
         self._settings = kwargs.get("settings", {})
         self._settings.update(**exclude_non_annotated(kwargs, ChatModelKwargs))
 
         kwargs = _ChatModelKwargsAdapter.validate_python(kwargs)
-        self.middlewares = [*kwargs.get("middlewares", [])]
 
         parameters = type(self).get_default_parameters()
         update_model(parameters, sources=[kwargs.get("parameters")])
@@ -147,65 +220,40 @@ class ChatModel(ABC):
     ) -> AsyncGenerator[ChatModelOutput]:
         raise NotImplementedError
 
-    @abstractmethod
-    async def _create_structure(
-        self,
-        input: ChatModelStructureInput[T],
-        run: RunContext,
-    ) -> ChatModelStructureOutput:
-        json_schema: dict[str, Any] = (
-            input.input_schema
-            if isinstance(input.input_schema, dict)
-            else input.input_schema.model_json_schema(mode="serialization")
-        )
+    @override
+    @runnable_entry
+    async def run(self, input: list[AnyMessage], /, **kwargs: Unpack[ChatModelOptions]) -> ChatModelOutput:
+        """Execute the chat model.
 
-        class DefaultChatModelStructureSchema(BaseModel):
-            input_schema: type[str] = Field(..., alias="schema")
+        Args:
+            input: The input to the chat model
+            tools: Tools available to the model
+            tool_choice: Controls how an LLM selects and uses tools (auto, required, none, tool name)
+            max_retries: Maximum number of retries
+            stop_sequences: Stop words where the model should stop generation
+            response_format: Structured output format
+            stream: Flag that indicates whether streaming is enabled
+            parallel_tool_calls: Flag that indicates if concurrent tool call is enabled
+            max_tokens: Limits the maximum number of generated tokens
+            frequency_penalty: Discourages the repetition of words
+            temperature: Controls the randomness of the generated text
+            top_p: Sampling parameter that decides how many possible words to consider
+            top_k: Restricts the pool of possible next words
+            n: Controls the number of model completions (generations)
+            presence_penalty: Controls how much the model penalizes previously generated tokens
+            seed: Controls deterministic sampling
+            signal: The chat model abort signal
+            context: A dictionary that can be used to pass additional context to the chat model
 
-        system_template = PromptTemplate(
-            schema=DefaultChatModelStructureSchema,
-            template=(
-                """You are a helpful assistant that generates only valid JSON """
-                """adhering to the following JSON Schema.
-```
-{{schema}}
-```
-IMPORTANT: You MUST answer with a JSON object that matches the JSON schema above."""
-            ),
-        )
+        Returns:
+            The chat model output.
+        """
+        tools = kwargs.get("tools")
+        tool_choice = kwargs.get("tool_choice")
+        response_format = kwargs.get("response_format")
+        stream = kwargs.get("stream", self.parameters.stream)
+        parallel_tool_calls = kwargs.get("parallel_tool_calls")
 
-        input_messages = input.messages
-        messages: list[AnyMessage] = [
-            SystemMessage(system_template.render({"schema": to_json(json_schema, indent=4, sort_keys=False)})),
-            *input_messages,
-        ]
-
-        response = await self._create(
-            ChatModelInput(messages=messages, response_format={"type": "object-json"}, abort_signal=input.abort_signal),
-            run,
-        )
-
-        logger.debug(f"Recieved structured response:\n{response}")
-
-        text_response = response.get_text_content()
-        result = parse_broken_json(text_response)
-        # TODO: validate result matches expected schema
-        return ChatModelStructureOutput(object=result)
-
-    def create(
-        self,
-        *,
-        messages: list[AnyMessage],
-        tools: list[AnyTool] | None = None,
-        tool_choice: ChatModelToolChoice | None = None,
-        abort_signal: AbortSignal | None = None,
-        max_retries: int | None = None,
-        stop_sequences: list[str] | None = None,
-        response_format: dict[str, Any] | type[BaseModel] | None = None,
-        stream: bool | None = None,
-        parallel_tool_calls: bool | None = None,
-        **kwargs: Any,
-    ) -> Run[ChatModelOutput]:
         force_tool_call_via_response_format = self._force_tool_call_via_response_format(
             tool_choice=tool_choice,
             tools=tools or [],
@@ -229,160 +277,112 @@ IMPORTANT: You MUST answer with a JSON object that matches the JSON schema above
         )
 
         model_input = ChatModelInput(
-            messages=messages,
+            messages=input,
             tools=tools if self.model_supports_tool_calling else None,
-            tool_choice=tool_choice,
-            abort_signal=abort_signal,
-            max_retries=max_retries,
-            stop_sequences=stop_sequences,
             response_format=response_format_final,
             stream=stream if stream is not None else self.parameters.stream,
-            parallel_tool_calls=parallel_tool_calls,
-            **kwargs,
+            **exclude_keys(dict(kwargs), {"tools", "response_format", "stream"}),
         )
 
-        async def handler(context: RunContext) -> ChatModelOutput:
-            cache_key = self.cache.generate_key(model_input, {"messages": [m.to_plain() for m in model_input.messages]})
-            cache_hit = await self.cache.get(cache_key)
+        context = RunContext.get()
+        cache_key = self.cache.generate_key(model_input, {"messages": [m.to_plain() for m in model_input.messages]})
+        cache_hit = await self.cache.get(cache_key)
 
-            try:
-                await context.emitter.emit("start", ChatModelStartEvent(input=model_input))
-                chunks: list[ChatModelOutput] = []
+        try:
+            await context.emitter.emit("start", ChatModelStartEvent(input=model_input))
+            chunks: list[ChatModelOutput] = []
 
-                if model_input.stream:
-                    generator = (
-                        to_async_generator(cache_hit) if cache_hit else self._create_stream(model_input, context)
+            if model_input.stream:
+                generator = to_async_generator(cache_hit) if cache_hit else self._create_stream(model_input, context)
+                abort_controller: AbortController = AbortController()
+                async for value in generator:
+                    chunks.append(value)
+                    await context.emitter.emit(
+                        "new_token", ChatModelNewTokenEvent(value=value, abort=lambda: abort_controller.abort())
                     )
-                    abort_controller: AbortController = AbortController()
-                    async for value in generator:
-                        chunks.append(value)
-                        await context.emitter.emit(
-                            "new_token", ChatModelNewTokenEvent(value=value, abort=lambda: abort_controller.abort())
-                        )
-                        if abort_controller.signal.aborted:
-                            break
+                    if abort_controller.signal.aborted:
+                        break
 
-                    if not cache_hit:
-                        await self.cache.set(cache_key, chunks)
-                    result = ChatModelOutput.from_chunks(chunks)
-                else:
-                    if cache_hit:
-                        result = cache_hit[0].model_copy()
-                    else:
-                        result = await Retryable(
-                            RetryableInput(
-                                executor=lambda _: self._create(model_input, context),
-                                config=RetryableConfig(
-                                    max_retries=(
-                                        model_input.max_retries
-                                        if model_input is not None and model_input.max_retries is not None
-                                        else 0
-                                    ),
-                                    signal=context.signal,
-                                ),
-                            )
-                        ).get()
-
-                        await self.cache.set(cache_key, [result])
-
-                if force_tool_call_via_response_format and not result.get_tool_calls():
-                    assert response_format_schema and issubclass(response_format_schema, BaseModel)
-
-                    final_message = AssistantMessage.from_chunks(result.messages)
-                    final_message.content.clear()
-
-                    text = result.get_text_content()
-                    tool_calls_raw = parse_broken_json(text)
-                    if isinstance(tool_calls_raw, list) and self.ignore_parallel_tool_calls:
-                        tool_calls_raw = tool_calls_raw[0]
-
-                    try:
-                        tool_calls = response_format_schema.model_validate(tool_calls_raw)
-                        if isinstance(tool_calls, WrappedRootModel):
-                            tool_calls = tool_calls.item
-                    except ValidationError as ex:
-                        raise ChatModelError("Failed to produce a valid tool call.") from ex
-
-                    for tool_call in cast_list(tool_calls.model_dump()):
-                        if not tool_call or not tool_call.get("name") or tool_call.get("parameters") is None:
-                            raise ChatModelError(
-                                "Failed to produce a valid tool call.\n"
-                                "Try to increase max new tokens for your chat model.\n"
-                                f"Generated output: {text}",
-                            )
-
-                        tool_call_content = MessageToolCallContent(
-                            id=f"call_{generate_random_string(8).lower()}",
-                            tool_name=tool_call["name"],
-                            args=to_json(tool_call["parameters"], sort_keys=False, indent=None),
-                        )
-                        final_message.content.append(tool_call_content)
-
-                    result.messages.clear()
-                    result.messages.append(final_message)
-
-                while self.ignore_parallel_tool_calls and len(result.get_tool_calls()) > 1:
-                    tool_call_to_remove = result.get_tool_calls()[-1]
-                    for msg in reversed(result.messages):
-                        if isinstance(msg, AssistantMessage):
-                            msg.content.remove(tool_call_to_remove)
-                            if not msg.content:
-                                result.messages.remove(msg)
-                            break
-
-                self._assert_tool_response(input=model_input, output=result)
-
-                await context.emitter.emit("success", ChatModelSuccessEvent(value=result))
-                return result
-            except Exception as ex:
-                error = ChatModelError.ensure(ex, model=self)
+                if not cache_hit:
+                    await self.cache.set(cache_key, chunks)
+                result = ChatModelOutput.from_chunks(chunks)
+            else:
                 if cache_hit:
-                    await self.cache.delete(cache_key)
-                await context.emitter.emit("error", ChatModelErrorEvent(input=model_input, error=error))
-                raise error
-            finally:
-                await context.emitter.emit("finish", None)
+                    result = cache_hit[0].model_copy()
+                else:
+                    result = await Retryable(
+                        RetryableInput(
+                            executor=lambda _: self._create(model_input, context),
+                            config=RetryableConfig(
+                                max_retries=(
+                                    model_input.max_retries
+                                    if model_input is not None and model_input.max_retries is not None
+                                    else 0
+                                ),
+                                signal=context.signal,
+                            ),
+                        )
+                    ).get()
 
-        return RunContext.enter(
-            self,
-            handler,
-            signal=abort_signal,
-            run_params=model_input.model_dump(),
-        ).middleware(*self.middlewares)
+                    await self.cache.set(cache_key, [result])
 
-    def create_structure(
-        self,
-        *,
-        schema: type[T] | dict[str, Any],
-        messages: list[AnyMessage],
-        abort_signal: AbortSignal | None = None,
-        max_retries: int | None = None,
-    ) -> Run[ChatModelStructureOutput]:
-        model_input = ChatModelStructureInput[T](
-            schema=schema, messages=messages, abort_signal=abort_signal, max_retries=max_retries
-        )
+            if force_tool_call_via_response_format and not result.get_tool_calls():
+                assert response_format_schema and issubclass(response_format_schema, BaseModel)
 
-        async def handler(context: RunContext) -> ChatModelStructureOutput:
-            return await Retryable(
-                RetryableInput(
-                    executor=lambda _: self._create_structure(model_input, context),
-                    config=RetryableConfig(
-                        max_retries=(
-                            model_input.max_retries
-                            if model_input is not None and model_input.max_retries is not None
-                            else 0
-                        ),
-                        signal=context.signal,
-                    ),
-                )
-            ).get()
+                final_message = AssistantMessage.from_chunks(result.output)
+                final_message.content.clear()
 
-        return RunContext.enter(
-            self,
-            handler,
-            signal=abort_signal,
-            run_params=model_input.model_dump(),
-        ).middleware(*self.middlewares)
+                text = result.get_text_content()
+                tool_calls_raw = parse_broken_json(text)
+                if isinstance(tool_calls_raw, list) and self.ignore_parallel_tool_calls:
+                    tool_calls_raw = tool_calls_raw[0]
+
+                try:
+                    tool_calls = response_format_schema.model_validate(tool_calls_raw)
+                    if isinstance(tool_calls, WrappedRootModel):
+                        tool_calls = tool_calls.item
+                except ValidationError as ex:
+                    raise ChatModelError("Failed to produce a valid tool call.") from ex
+
+                for tool_call in cast_list(tool_calls.model_dump()):
+                    if not tool_call or not tool_call.get("name") or tool_call.get("parameters") is None:
+                        raise ChatModelError(
+                            "Failed to produce a valid tool call.\n"
+                            "Try to increase max new tokens for your chat model.\n"
+                            f"Generated output: {text}",
+                        )
+
+                    tool_call_content = MessageToolCallContent(
+                        id=f"call_{generate_random_string(8).lower()}",
+                        tool_name=tool_call["name"],
+                        args=to_json(tool_call["parameters"], sort_keys=False, indent=None),
+                    )
+                    final_message.content.append(tool_call_content)
+
+                result.output.clear()
+                result.output.append(final_message)
+
+            while self.ignore_parallel_tool_calls and len(result.get_tool_calls()) > 1:
+                tool_call_to_remove = result.get_tool_calls()[-1]
+                for msg in reversed(result.output):
+                    if isinstance(msg, AssistantMessage):
+                        msg.content.remove(tool_call_to_remove)
+                        if not msg.content:
+                            result.output.remove(msg)
+                        break
+
+            self._assert_tool_response(input=model_input, output=result)
+
+            await context.emitter.emit("success", ChatModelSuccessEvent(value=result))
+            return result
+        except Exception as ex:
+            error = ChatModelError.ensure(ex, model=self)
+            if cache_hit:
+                await self.cache.delete(cache_key)
+            await context.emitter.emit("error", ChatModelErrorEvent(input=model_input, error=error))
+            raise error
+        finally:
+            await context.emitter.emit("finish", None)
 
     def config(
         self,

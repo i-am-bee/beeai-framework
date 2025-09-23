@@ -1,5 +1,6 @@
 # Copyright 2025 © BeeAI a Series of LF Projects, LLC
 # SPDX-License-Identifier: Apache-2.0
+
 import contextlib
 from collections.abc import Callable
 from contextvars import ContextVar
@@ -10,14 +11,14 @@ from beeai_sdk.a2a.extensions import LLMServiceExtensionServer
 from typing_extensions import Unpack, override
 
 from beeai_framework.adapters.openai import OpenAIChatModel
-from beeai_framework.backend import ChatModelOutput, ChatModelStructureOutput
-from beeai_framework.backend.chat import ChatModel, ChatModelKwargs, ToolChoiceType
+from beeai_framework.backend import AnyMessage, ChatModelOutput
+from beeai_framework.backend.chat import ChatModel, ChatModelKwargs, ChatModelOptions, ToolChoiceType
 from beeai_framework.backend.constants import ProviderName
 from beeai_framework.backend.utils import load_model
-from beeai_framework.context import Run
 
 __all__ = ["BeeAIPlatformChatModel"]
 
+from beeai_framework.context import Run
 
 _storage = ContextVar[LLMServiceExtensionServer]("beeai_chat_model_storage")
 
@@ -63,12 +64,8 @@ class BeeAIPlatformChatModel(ChatModel):
         )
 
     @override
-    def create(self, *args: Any, **kwargs: Any) -> Run[ChatModelOutput]:
-        return self._model.create(*args, **kwargs)
-
-    @override
-    def create_structure(self, *args: Any, **kwargs: Any) -> Run[ChatModelStructureOutput]:
-        return self._model.create_structure(*args, **kwargs)
+    def run(self, input: list[AnyMessage], /, **kwargs: Unpack[ChatModelOptions]) -> Run[ChatModelOutput]:
+        return self._model.run(input, **kwargs)
 
     @override
     def _create_stream(self, *args: Any, **kwargs: Any) -> Any:
@@ -78,11 +75,6 @@ class BeeAIPlatformChatModel(ChatModel):
     @override
     async def _create(self, *args: Any, **kwargs: Any) -> Any:
         # This method should not be called directly as the public `create` method is delegated.
-        raise NotImplementedError()
-
-    @override
-    async def _create_structure(self, *args: Any, **kwargs: Any) -> Any:
-        # This method should not be called directly as the public `create_structure` method is delegated.
         raise NotImplementedError()
 
     @property

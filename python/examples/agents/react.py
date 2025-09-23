@@ -35,11 +35,11 @@ def create_agent() -> ReActAgent:
 
     # Other models to try:
     # "llama3.1"
-    # "granite3.3:8b"
+    # "granite3.3"
     # "deepseek-r1"
     # ensure the model is pulled before running
     llm = ChatModel.from_name(
-        "ollama:granite3.3:8b",
+        "ollama:granite3.3",
         ChatModelParameters(temperature=0),
     )
 
