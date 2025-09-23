@@ -83,9 +83,6 @@ class TransformersChatModel(ChatModel):
         if hf_token is None:
             hf_token = os.getenv("HF_TOKEN", None)
         self.model_supports_tool_calling = False
-        self.allow_parallel_tool_calls = False
-        self.ignore_parallel_tool_calls = True
-        self.use_strict_tool_schema = True
         self._model_id = model_id
         self.tokenizer = AutoTokenizer.from_pretrained(model_id, token=hf_token)  # type: ignore
         model_base = AutoModelForCausalLM.from_pretrained(
