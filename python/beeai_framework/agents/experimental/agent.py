@@ -64,10 +64,20 @@ RequirementAgentRequirement = Requirement[RequirementAgentRunState]
 
 
 class RequirementAgent(BaseAgent[RequirementAgentOutput]):
+    """
+    The RequirementAgent is a declarative AI agent implementation that provides predictable,
+    controlled execution behavior across different language models through rule-based constraints.
+    Language models vary significantly in their reasoning capabilities and tool-calling sophistication, but
+    RequirementAgent normalizes these differences by enforcing consistent execution patterns
+    regardless of the underlying model's strengths or weaknesses.
+    Rules can be configured as strict or flexible as necessary, adapting to task requirements while ensuring consistent
+    execution regardless of the underlying model's reasoning or tool-calling capabilities.
+    """
+
     def __init__(
         self,
         *,
-        llm: ChatModel,
+        llm: ChatModel | str,
         memory: BaseMemory | None = None,
         tools: Sequence[AnyTool] | None = None,
         requirements: Sequence[RequirementAgentRequirement] | None = None,
@@ -84,8 +94,61 @@ class RequirementAgent(BaseAgent[RequirementAgentOutput]):
         | None = None,
         middlewares: list[RunMiddlewareType] | None = None,
     ) -> None:
+        """
+        Initializes an instance of the RequirementAgent class.
+
+        Args:
+            llm:
+                The language model to be used for chat functionality. Can be provided as
+                an instance of ChatModel or as a string representing the model name.
+
+            memory:
+                The memory instance to store conversation history or state. If none is
+                provided, a default UnconstrainedMemory instance will be used.
+
+            tools:
+                A sequence of tools that the agent can use during the execution. Default is an empty list.
+
+            name:
+                A name of the agent which should emphasize its purpose.
+                This property is used in multi-agent components like HandoffTool or when exposing the agent as a server.
+
+            description:
+                A brief description of the agent abilities.
+                This property is used in multi-agent components like HandoffTool or when exposing the agent as a server.
+
+            role:
+                Role for the agent. Will be part of the system prompt.
+
+            instructions:
+                Instructions for the agents. Will be part of the system prompt. Can be a single string or a list of
+                strings. If a list is provided, it will be formatted as a single newline-separated string.
+
+            save_intermediate_steps:
+                Determines whether intermediate steps during execution should be preserved between individual turns.
+                If enabled (default), the agent can reuse existing tool results and might provide a better result
+                  but consumes more tokens.
+
+            middlewares:
+                A list of middleware functions or objects to be applied during execution.
+                Useful for logging and altering the agent's behavior.
+
+            templates:
+                Templates define prompts that the model will work with. Use to customize the prompts.
+
+            final_answer_as_tool:
+                Whether the final output is communicated as a tool call (default is True).
+                Disable when your outputs are truncated or low-quality.
+
+            tool_call_checker:
+                Configuration for a component that detects a situation when LLM generates tool calls in a cycle.
+
+            notes:
+                Additional notes for the agents. The only difference from `instructions` is that notes are at the very
+                end of the system prompt and should be more related to the output and its formatting.
+        """
         super().__init__(middlewares=middlewares)
-        self._llm = llm
+        self._llm = ChatModel.from_name(llm) if isinstance(llm, str) else llm
         self._memory = memory or UnconstrainedMemory()
         self._templates = self._generate_templates(templates)
         self._save_intermediate_steps = save_intermediate_steps
