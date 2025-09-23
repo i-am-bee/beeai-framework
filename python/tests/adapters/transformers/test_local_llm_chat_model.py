@@ -22,8 +22,8 @@ class TestTransformersChatModel:
     chat_model: ChatModel
 
     def setup_method(self) -> None:
-        models = ["transformers:google/gemma-3-4b-it", "transformers:ibm-granite/granite-3.3-2b-instruct"]
-        self.chat_model = ChatModel.from_name(models[-1], ChatModelParameters(temperature=0))
+        model_name = "transformers:" + os.getenv("TRANSFORMERS_CHAT_MODEL")
+        self.chat_model = ChatModel.from_name(model_name, ChatModelParameters(temperature=0))
 
     @pytest.mark.e2e
     @pytest.mark.asyncio
