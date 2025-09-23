@@ -60,36 +60,41 @@ class TransformersChatModel(ChatModel):
         *,
         qlora_adapter_id: str | None = None,
         hf_token: str | None = None,
+        tokenizer_kwargs: dict[str, Any] | None = None,
+        model_kwargs: dict[str, Any] | None = None,
+        qlora_kwargs: dict[str, Any] | None = None,
         **kwargs: Unpack[ChatModelKwargs],
     ) -> None:
         super().__init__(**kwargs)
         if hf_token is None:
             hf_token = os.getenv("HF_TOKEN", None)
         self._model_id = model_id
-        self.tokenizer = AutoTokenizer.from_pretrained(model_id, token=hf_token)  # type: ignore
+        self.tokenizer = AutoTokenizer.from_pretrained(model_id, token=hf_token, **(tokenizer_kwargs or {}))  # type: ignore
         model_base = AutoModelForCausalLM.from_pretrained(
             model_id,
             device_map="auto",
             token=hf_token,
+            **(model_kwargs or {}),
         )
-        self._model = (  # use peft if qlora_adapter_id is provided
+        self._model: Any = (
             model_base
             if qlora_adapter_id is None
-            else PeftModel.from_pretrained(model_base, qlora_adapter_id, device_map="auto", token=hf_token)
+            else PeftModel.from_pretrained(
+                model_base, qlora_adapter_id, device_map="auto", token=hf_token, **(qlora_kwargs or {})
+            )
         )
         self._model.eval()
-        self.model_structured = outlines.from_transformers(self._model, self.tokenizer)
+        self.model_structured = outlines.from_transformers(self._model, self.tokenizer)  # type: ignore
 
-        first_layer_name = next(iter(self._model.hf_device_map.keys()))
-        self._device_first_layer = self._model.hf_device_map[first_layer_name]
-        self._streamer = TextIteratorStreamer(self.tokenizer, skip_prompt=True, skip_special_tokens=True)
+        first_layer_name = next(iter(self._model.hf_device_map.keys()))  # type: ignore
+        self._device_first_layer = self._model.hf_device_map[first_layer_name]  # type: ignore
 
     async def _create(
         self,
         input: ChatModelInput,
         run: RunContext,
     ) -> ChatModelOutput:
-        model_output, prompt_tokens = await self._get_model_output(input=input, stream=False)
+        model_output, prompt_tokens = await self._get_model_output(input, streamer=None)
         generated_tokens = model_output[0, prompt_tokens:]
         generated_text = self.tokenizer.decode(generated_tokens)
         logger.debug(f"Inference response output:\n{generated_text}")
@@ -101,12 +106,12 @@ class TransformersChatModel(ChatModel):
         input: ChatModelInput,
         run: RunContext,
     ) -> AsyncGenerator[ChatModelOutput]:
-        await self._get_model_output(input=input, stream=True)
+        streamer = TextIteratorStreamer(self.tokenizer, skip_prompt=True, skip_special_tokens=True)
+        await self._get_model_output(input, streamer)
 
-        chunk: tuple[int, str]
-        for chunk in enumerate(self._streamer):  # type: ignore
-            if len(chunk[1]) > 0:
-                yield ChatModelOutput(output=[AssistantMessage(chunk[1])])
+        for chunk in streamer:
+            if len(chunk) > 0:
+                yield ChatModelOutput(output=[AssistantMessage(chunk)])
 
     def _transform_input(self, input: ChatModelInput) -> dict[str, Any]:
         messages: list[dict[str, Any]] = []
@@ -171,6 +176,7 @@ class TransformersChatModel(ChatModel):
 
                 messages.append(exclude_none(new_msg))
             else:
+                # TODO: might incorrectly handle some non-text messages
                 messages.append({"role": message.role, "content": message.text})
 
         tools = [
@@ -214,10 +220,11 @@ class TransformersChatModel(ChatModel):
             "parallel_tool_calls": (bool(input.parallel_tool_calls) if tools else None),
         }
 
-    def _get_inputs_on_device(self, input: ChatModelInput, stream: bool) -> tuple[dict[str, Any], int]:
-        llm_input = self._transform_input(input) | {"stream": stream}
+    def _get_inputs_on_device(self, input: ChatModelInput) -> tuple[dict[str, Any], int]:
+        llm_input = self._transform_input(input)
         inputs = self.tokenizer.apply_chat_template(
             llm_input["messages"],
+            tools=llm_input["tools"],
             tokenize=True,
             return_tensors="pt",
             return_dict=True,
@@ -241,8 +248,8 @@ class TransformersChatModel(ChatModel):
             else []
         )
 
-    async def _get_model_output(self, input: ChatModelInput, stream: bool) -> tuple[Any, int]:
-        inputs_on_device, prompt_tokens = self._get_inputs_on_device(input=input, stream=stream)
+    async def _get_model_output(self, input: ChatModelInput, streamer: TextIteratorStreamer | None) -> tuple[Any, int]:
+        inputs_on_device, prompt_tokens = self._get_inputs_on_device(input)
 
         if input.seed is not None:
             set_seed(input.seed)
@@ -250,7 +257,7 @@ class TransformersChatModel(ChatModel):
         model_output = await asyncio.to_thread(
             self._model.generate,
             **inputs_on_device,
-            streamer=(self._streamer if stream else None),
+            streamer=streamer,
             max_new_tokens=input.max_tokens,
             temperature=input.temperature,
             top_k=input.top_k,
