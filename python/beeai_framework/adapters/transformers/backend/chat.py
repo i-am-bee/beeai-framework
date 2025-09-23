@@ -226,7 +226,7 @@ class TransformersChatModel(ChatModel):
 
                 messages.append(exclude_none(new_msg))
             else:
-                messages.append(message.to_plain())
+                messages.append({"role": message.role, "content": message.text})
 
         tools = [
             {

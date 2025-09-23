@@ -21,31 +21,32 @@
       {
         "group": "Core Concepts",
         "pages": [
-          "modules/agents",
           "experimental/requirement-agent",
-          "modules/workflows",
+          "modules/agents",
           "modules/backend",
-          "modules/templates",
-          "modules/memory",
-          "modules/emitter",
-          "modules/serialization",
           "modules/tools",
+          "modules/memory",
           "modules/rag",
+          "modules/observability",
+          "modules/emitter",
           "modules/serve",
           "modules/cache",
           "modules/logger",
-          "modules/errors",
           "modules/events",
-          "modules/observability"
+          "modules/serialization",
+          "modules/errors",
+          "modules/templates",
+          "modules/workflows"
+
         ]
       },
       {
         "group": "Integrations",
         "pages": [
           "integrations/beeai-platform",
-          "integrations/watsonx-orchestrate",
           "integrations/mcp",
-          "integrations/a2a"
+          "integrations/a2a",
+          "integrations/watsonx-orchestrate"
         ]
       },
 

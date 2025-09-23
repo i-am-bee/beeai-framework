@@ -30,12 +30,16 @@ def get_prompt_chat_history(chat_history: list[dict[str, Any]]) -> str:
     for turn in chat_history:
         role = turn["role"].capitalize()
         if "content" in turn:
-            text_elements: list[str] = []
-            for element in turn["content"]:
-                if (element["type"] == "text") and ("text" in element):
-                    text_elements.append(element["text"])
-            content = " ".join(text_elements)
-            prompt_elements.append(f"{role}: {content}")
+            content= turn["content"]
+            if isinstance(turn["content"], str):
+                prompt_elements.append(f"{role}: {content}")
+            else:
+                text_elements: list[str] = []
+                for element in content:
+                    if (element["type"] == "text") and ("text" in element):
+                        text_elements.append(element["text"])
+                tmp_content = " ".join(text_elements)
+                prompt_elements.append(f"{role}: {tmp_content}")
 
     prompt_elements.append("Assistant: ")
 

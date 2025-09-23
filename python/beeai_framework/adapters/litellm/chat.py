@@ -306,17 +306,19 @@ class LiteLLMChatModel(ChatModel, ABC):
         if isinstance(model, dict) and model.get("type") in ["json_schema", "json_object"]:
             return model
 
+        strict = self.use_strict_model_schema
+
         json_schema = (
             {
-                "schema": to_strict_json_schema(model) if self.use_strict_tool_schema else model,
+                "schema": to_strict_json_schema(model) if strict else model,
                 "name": "schema",
-                "strict": self.use_strict_model_schema,
+                "strict": strict,
             }
             if isinstance(model, dict)
             else {
-                "schema": to_strict_json_schema(model) if self.use_strict_tool_schema else model.model_json_schema(),
+                "schema": to_strict_json_schema(model) if strict else model.model_json_schema(),
                 "name": model.__name__,
-                "strict": self.use_strict_model_schema,
+                "strict": strict,
             }
         )
 

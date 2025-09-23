@@ -115,7 +115,7 @@ export abstract class Message<
   }
 }
 
-export class AssistantMessage extends Message<TextPart | ToolCallPart> {
+export class AssistantMessage extends Message<TextPart | ToolCallPart | FilePart> {
   public readonly role = "assistant";
 
   static {

@@ -51,8 +51,9 @@ class BeeAIPlatformChatModel(ChatModel):
 
         kwargs = self._kwargs.copy()
         if kwargs.get("tool_choice_support") is None:
-            target_provider: type[ChatModel] = load_model(llm_conf.api_model.replace("beeai:", ""), "chat")
-            kwargs["tool_choice_support"] = target_provider.tool_choice_support.copy()
+            with contextlib.suppress(Exception):
+                target_provider: type[ChatModel] = load_model(llm_conf.api_model.replace("beeai:", ""), "chat")
+                kwargs["tool_choice_support"] = target_provider.tool_choice_support.copy()
 
         return OpenAIChatModel(
             model_id=llm_conf.api_model,
