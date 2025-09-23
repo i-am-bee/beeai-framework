@@ -3,12 +3,10 @@
 import os
 
 import pytest
-from pydantic import BaseModel
 
 from beeai_framework.backend import (
     AssistantMessage,
     ChatModelParameters,
-    CustomMessage,
     UserMessage,
 )
 from beeai_framework.backend.chat import ChatModel
@@ -28,40 +26,27 @@ class TestTransformersChatModel:
     @pytest.mark.e2e
     @pytest.mark.asyncio
     async def test_local_llm_chat_model_create_user_message(self) -> None:
-        response = await self.chat_model.create(
-            messages=[UserMessage("How many islands make up the country of Cape Verde?")],
+        response = await self.chat_model.run(
+            [UserMessage("How many islands make up the country of Cape Verde?")],
+            tools=None,
+            tool_choice=None,
             stream=False,
+            max_tokens=1000,
+            temperature=0.7,
         )
-        assert len(response.messages) == 1
-        assert len(response.messages[0].content) > 0
-        assert all(isinstance(message, AssistantMessage) for message in response.messages)
-        assert "10" in response.messages[0].text
+        assert len(response.output) == 1
+        assert len(response.output[0].content) > 0
+        assert all(isinstance(message, AssistantMessage) for message in response.output)
+        assert "10" in response.output[0].text
 
     @pytest.mark.e2e
     @pytest.mark.asyncio
     async def test_local_llm_chat_model_create_stream(self) -> None:
-        response = await self.chat_model.create(
-            messages=[UserMessage("How many islands make up the country of Cape Verde?")],
-            stream=True,
+        response = await self.chat_model.run(
+            [UserMessage("How many islands make up the country of Cape Verde?")], stream=True
         )
 
-        assert len(response.messages) == 1
-        assert len(response.messages[0].content) > 0
-        assert all(isinstance(message, AssistantMessage) for message in response.messages)
-        assert "10" in response.messages[0].text
-
-    @pytest.mark.e2e
-    @pytest.mark.asyncio
-    async def test_local_llm_chat_model_create_structure(self) -> None:
-        user_message = UserMessage("tell me something interesting")
-        custom_message = CustomMessage(role="custom", content="this is a custom message")
-
-        class ReverseWordsSchema(BaseModel):
-            reversed: str
-
-        response = await self.chat_model.create_structure(
-            schema=ReverseWordsSchema,
-            messages=[user_message, custom_message],
-        )
-
-        assert isinstance(response.object, dict)
+        assert len(response.output) == 1
+        assert len(response.output[0].content) > 0
+        assert all(isinstance(message, AssistantMessage) for message in response.output)
+        assert "10" in response.output[0].text

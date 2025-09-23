@@ -6,8 +6,6 @@ from collections.abc import AsyncGenerator
 from typing import Any, Unpack
 
 import outlines
-import torch
-from outlines.types import JsonSchema
 from peft import PeftModel
 from pydantic import BaseModel
 from transformers import (
@@ -15,7 +13,6 @@ from transformers import (
     AutoTokenizer,
     StoppingCriteria,
     TextIteratorStreamer,
-    TextStreamer,
     set_seed,
 )
 
@@ -24,9 +21,8 @@ from beeai_framework.adapters.transformers.backend._utils import (
     CustomStoppingCriteria,
     get_do_sample,
     get_num_beams,
-    get_prompt_chat_history,
 )
-from beeai_framework.backend.chat import ChatModel, ChatModelKwargs, T
+from beeai_framework.backend.chat import ChatModel, ChatModelKwargs
 from beeai_framework.backend.constants import ProviderName
 from beeai_framework.backend.message import (
     AssistantMessage,
@@ -36,11 +32,6 @@ from beeai_framework.backend.message import (
 from beeai_framework.backend.types import (
     ChatModelInput,
     ChatModelOutput,
-    ChatModelStructureInput,
-    ChatModelStructureOutput,
-)
-from beeai_framework.backend.utils import (
-    parse_broken_json,
 )
 from beeai_framework.context import RunContext
 from beeai_framework.logger import Logger
@@ -54,13 +45,6 @@ logger = Logger(__name__)
 
 
 class TransformersChatModel(ChatModel):
-    _model: Any
-    _model_structured: Any
-    _model_id: str
-    _device_first_layer: torch.device
-    tokenizer: Any
-    _streamer: TextStreamer
-
     @property
     def model_id(self) -> str:
         """The ID for Causal Language Model at https://huggingface.co/models."""
@@ -110,7 +94,7 @@ class TransformersChatModel(ChatModel):
         generated_text = self.tokenizer.decode(generated_tokens)
         logger.debug(f"Inference response output:\n{generated_text}")
 
-        return ChatModelOutput(messages=[AssistantMessage(generated_text)])
+        return ChatModelOutput(output=[AssistantMessage(generated_text)])
 
     async def _create_stream(
         self,
@@ -122,41 +106,7 @@ class TransformersChatModel(ChatModel):
         chunk: tuple[int, str]
         for chunk in enumerate(self._streamer):  # type: ignore
             if len(chunk[1]) > 0:
-                yield ChatModelOutput(messages=[AssistantMessage(chunk[1])])
-
-    async def _create_structure(
-        self,
-        input: ChatModelStructureInput[T],
-        run: RunContext,
-    ) -> ChatModelStructureOutput:
-        json_schema: dict[str, Any] = (
-            input.input_schema
-            if isinstance(input.input_schema, dict)
-            else input.input_schema.model_json_schema(mode="serialization")
-        )
-        llm_input = self._transform_input(ChatModelInput(messages=input.messages)) | {"stream": False}
-        prompt_chat_history = get_prompt_chat_history(llm_input["messages"])
-        generator = outlines.Generator(self.model_structured, JsonSchema(json_schema))
-
-        if input.seed is not None:
-            set_seed(input.seed)
-
-        text_response = await asyncio.to_thread(
-            generator,
-            prompt_chat_history,
-            max_new_tokens=input.max_tokens,
-            temperature=input.temperature,
-            top_k=input.top_k,
-            top_p=input.top_p,
-            num_beams=get_num_beams(input),
-            frequency_penalty=input.frequency_penalty,
-            presence_penalty=input.presence_penalty,
-            do_sample=get_do_sample(input),
-        )
-        result = parse_broken_json(text_response)
-
-        # TODO: validate result matches expected schema
-        return ChatModelStructureOutput(object=result)
+                yield ChatModelOutput(output=[AssistantMessage(chunk[1])])
 
     def _transform_input(self, input: ChatModelInput) -> dict[str, Any]:
         messages: list[dict[str, Any]] = []

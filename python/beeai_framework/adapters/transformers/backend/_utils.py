@@ -25,27 +25,6 @@ def get_num_beams(input: ChatModelParameters) -> int:
     return input.n if input.n is not None else 1
 
 
-def get_prompt_chat_history(chat_history: list[dict[str, Any]]) -> str:
-    prompt_elements: list[str] = []
-    for turn in chat_history:
-        role = turn["role"].capitalize()
-        if "content" in turn:
-            content = turn["content"]
-            if isinstance(content, str):
-                prompt_elements.append(f"{role}: {content}")
-            else:
-                text_elements: list[str] = []
-                for element in content:
-                    if (element["type"] == "text") and ("text" in element):
-                        text_elements.append(element["text"])
-                tmp_content = " ".join(text_elements)
-                prompt_elements.append(f"{role}: {tmp_content}")
-
-    prompt_elements.append("Assistant: ")
-
-    return "\n".join(prompt_elements)
-
-
 class CustomStoppingCriteria(StoppingCriteria):
     def __init__(self, stop_token_ids: list[int], prompt_tokens: int) -> None:
         super().__init__()
