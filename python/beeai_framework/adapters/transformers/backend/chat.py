@@ -81,7 +81,6 @@ class TransformersChatModel(ChatModel):
         super().__init__(**kwargs)
         if hf_token is None:
             hf_token = os.getenv("HF_TOKEN", None)
-        self.model_supports_tool_calling = False
         self._model_id = model_id
         self.tokenizer = AutoTokenizer.from_pretrained(model_id, token=hf_token)  # type: ignore
         model_base = AutoModelForCausalLM.from_pretrained(
