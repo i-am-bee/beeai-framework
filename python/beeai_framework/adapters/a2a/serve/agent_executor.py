@@ -4,10 +4,17 @@
 from typing_extensions import TypeVar, override
 
 from beeai_framework.adapters.a2a.agents._utils import convert_a2a_to_framework_message
-from beeai_framework.agents.experimental.events import RequirementAgentSuccessEvent
+from beeai_framework.agents.experimental.events import RequirementAgentStartEvent, RequirementAgentSuccessEvent
+from beeai_framework.agents.react import ReActAgentUpdateEvent
+from beeai_framework.agents.react.types import ReActAgentIterationResult
+from beeai_framework.agents.tool_calling import ToolCallingAgentSuccessEvent
+from beeai_framework.backend import AssistantMessage, MessageToolCallContent, ToolMessage
+from beeai_framework.emitter import Emitter, EventMeta
 from beeai_framework.serve import MemoryManager, init_agent_memory
 from beeai_framework.utils.cancellation import AbortController
 from beeai_framework.utils.cloneable import Cloneable
+from beeai_framework.utils.lists import find_index
+from beeai_framework.utils.strings import to_json
 
 try:
     import a2a.server as a2a_server
@@ -21,9 +28,6 @@ except ModuleNotFoundError as e:
     ) from e
 
 from beeai_framework.agents import AnyAgent
-from beeai_framework.agents.tool_calling.events import (
-    ToolCallingAgentSuccessEvent,
-)
 from beeai_framework.backend.message import (
     AnyMessage,
 )
@@ -61,7 +65,9 @@ class BaseA2AAgentExecutor(a2a_agent_execution.AgentExecutor):
 
         await updater.start_work()
         try:
-            response = await cloned_agent.run(new_messages, signal=self._abort_controller.signal)
+            response = await cloned_agent.run(new_messages, signal=self._abort_controller.signal).observe(
+                lambda emitter: self._process_events(emitter, context, updater)
+            )
 
             await updater.complete(
                 a2a_utils.new_agent_text_message(
@@ -72,6 +78,7 @@ class BaseA2AAgentExecutor(a2a_agent_execution.AgentExecutor):
             )
 
         except Exception as e:
+            logger.exception("Exception during execution")
             await updater.failed(
                 message=a2a_utils.new_agent_text_message(str(e)),
             )
@@ -84,55 +91,107 @@ class BaseA2AAgentExecutor(a2a_agent_execution.AgentExecutor):
     ) -> None:
         self._abort_controller.abort()
 
+    async def _process_events(
+        self, emitter: Emitter, context: a2a_agent_execution.RequestContext, updater: a2a_server_tasks.TaskUpdater
+    ) -> None:
+        pass
+
+
+class ReActAgentExecutor(BaseA2AAgentExecutor):
+    @override
+    async def _process_events(
+        self,
+        emitter: Emitter,
+        context: a2a_agent_execution.RequestContext,
+        updater: a2a_server_tasks.TaskUpdater,
+    ) -> None:
+        async def process_event(data: ReActAgentUpdateEvent, event: EventMeta) -> None:
+            await updater.start_work(
+                a2a_utils.new_agent_text_message(
+                    data.data.final_answer
+                    if data.data.final_answer
+                    else data.data.tool_output
+                    if data.data.tool_output
+                    else to_json({"tool_name": data.data.tool_name, "tool_input": data.data.tool_input})
+                    if data.data.tool_name or data.data.tool_input
+                    else data.data.thought
+                    if data.data.thought
+                    else "",
+                    context.context_id,
+                    context.task_id,
+                )
+                if isinstance(data.data, ReActAgentIterationResult)
+                else a2a_utils.new_agent_parts_message(parts=[a2a_types.Part(root=a2a_types.DataPart(data=data.data))]),
+            )
+
+        emitter.on("update", process_event)
+
 
 class TollCallingAgentExecutor(BaseA2AAgentExecutor):
     @override
-    async def execute(
+    async def _process_events(
         self,
+        emitter: Emitter,
         context: a2a_agent_execution.RequestContext,
-        event_queue: a2a_server.events.EventQueue,
+        updater: a2a_server_tasks.TaskUpdater,
     ) -> None:
-        updater = a2a_server_tasks.TaskUpdater(event_queue, context.task_id, context.context_id)  # type: ignore[arg-type]
-        if not context.current_task:
-            if not context.message:
-                raise ValueError("No message found in the request context.")
-            context.current_task = a2a_utils.new_task(context.message)
-            await updater.submit()
+        last_msg = None
 
-        cloned_agent = await self._agent.clone() if isinstance(self._agent, Cloneable) else self._agent
-        await init_agent_memory(cloned_agent, self._memory_manager, context.context_id)
-        new_messages = _extract_request_messages(context)
+        async def process_event(
+            data: ToolCallingAgentSuccessEvent | ToolCallingAgentSuccessEvent, event: EventMeta
+        ) -> None:
+            nonlocal last_msg
+            messages = data.state.memory.messages
+            if last_msg is None:
+                last_msg = messages[-1]
 
-        await updater.start_work()
+            cur_index = find_index(messages, lambda msg: msg is last_msg, fallback=-1, reverse_traversal=True)
+            for message in messages[cur_index + 1 :]:
+                if (isinstance(message, ToolMessage) and message.content[0].tool_name == "final_answer") or (
+                    isinstance(message, AssistantMessage)
+                    and isinstance(message.content[0], MessageToolCallContent)
+                    and message.content[0].tool_name == "final_answer"
+                ):
+                    continue
 
-        last_msg: AnyMessage | None = None
-        try:
-            async for data, _ in cloned_agent.run(new_messages, signal=self._abort_controller.signal):
-                messages = data.state.memory.messages
-                if last_msg is None:
-                    last_msg = messages[-1]
+                await updater.start_work(
+                    a2a_utils.new_agent_parts_message(
+                        parts=[
+                            a2a_types.Part(
+                                root=a2a_types.TextPart(text=content)
+                                if isinstance(content, str)
+                                else a2a_types.DataPart(data=content.model_dump())
+                            )
+                            for content in message.content
+                        ]
+                    ),
+                )
+                last_msg = message
 
-                if isinstance(data, ToolCallingAgentSuccessEvent) and data.state.result is not None:
-                    await updater.complete(
-                        a2a_utils.new_agent_text_message(
-                            data.state.result.text,
-                            context.context_id,
-                            context.task_id,
-                        )
+        emitter.match("*", process_event)
+
+
+class RequirementAgentExecutor(BaseA2AAgentExecutor):
+    @override
+    async def _process_events(
+        self,
+        emitter: Emitter,
+        context: a2a_agent_execution.RequestContext,
+        updater: a2a_server_tasks.TaskUpdater,
+    ) -> None:
+        async def process_event(
+            data: RequirementAgentSuccessEvent | RequirementAgentStartEvent, event: EventMeta
+        ) -> None:
+            if data.state.answer:
+                await updater.start_work(
+                    a2a_utils.new_agent_text_message(
+                        data.state.answer.text,
+                        context.context_id,
+                        context.task_id,
                     )
-                if isinstance(data, RequirementAgentSuccessEvent) and data.state.answer is not None:
-                    await updater.complete(
-                        a2a_utils.new_agent_text_message(
-                            data.state.answer.text,
-                            context.context_id,
-                            context.task_id,
-                        )
-                    )
+                )
 
-        except Exception as e:
-            await updater.failed(
-                message=a2a_utils.new_agent_text_message(str(e)),
-            )
+        emitter.match("*", process_event)
 
 
 def _extract_request_messages(context: a2a_agent_execution.RequestContext) -> list[AnyMessage]:
