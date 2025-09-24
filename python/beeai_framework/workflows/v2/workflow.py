@@ -6,12 +6,17 @@ import inspect
 import time
 from collections.abc import Callable
 from datetime import UTC, datetime
+from functools import cached_property
 from itertools import zip_longest
-from typing import Any
+from typing import Any, Unpack
 
 from pydantic import BaseModel, ConfigDict
 
 from beeai_framework.backend.message import AnyMessage
+from beeai_framework.context import RunMiddlewareType
+from beeai_framework.emitter.emitter import Emitter
+from beeai_framework.runnable import Runnable, RunnableOptions, RunnableOutput, runnable_entry
+from beeai_framework.workflows.v2.events import workflow_event_types
 from beeai_framework.workflows.v2.types import AsyncFunc, DependencyType
 
 
@@ -26,7 +31,6 @@ class WorkflowStepExecution(BaseModel):
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
 
-# Todo inherit from runnable
 class WorkflowStep:
     def __init__(self, func: AsyncFunc) -> None:
         self.func = func
@@ -58,8 +62,11 @@ class WorkflowStep:
         return self.executions[-1] if self.executions else None
 
 
-class Workflow:
-    def __init__(self) -> None:
+class Workflow(Runnable[RunnableOutput]):
+    def __init__(self, middlewares: list[RunMiddlewareType] | None = None) -> None:
+        super().__init__(middlewares=middlewares)
+
+        self._is_running = False
         self._input: list[AnyMessage] = []
         self._output: list[AnyMessage] = []
 
@@ -180,7 +187,18 @@ class Workflow:
             elif dep.type == "OR":
                 await self.queue.put(dep)  # Can queue immediately for OR
 
-    async def run(self, input: list[AnyMessage]) -> list[AnyMessage]:
+    def _create_emitter(self) -> Emitter:
+        return Emitter.root().child(namespace=["agent", "requirement"], creator=self, events=workflow_event_types)
+
+    @cached_property
+    def emitter(self) -> Emitter:
+        return self._create_emitter()
+
+    @runnable_entry
+    async def run(self, input: list[AnyMessage], /, **kwargs: Unpack[RunnableOptions]) -> RunnableOutput:
+        # ctx = RunContext.get()
+        # ctx.emitter.emit()
+
         self._input = input
         await self._run()
-        return self._input + self._output
+        return RunnableOutput(output=self._output)

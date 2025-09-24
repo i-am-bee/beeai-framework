@@ -59,15 +59,15 @@ class ThinkBeforeAnswerWorkflow(Workflow):
 
 # Async main function
 async def main() -> None:
-    flow = ThinkBeforeAnswerWorkflow()
-    messages = await flow.run(
+    workflow = ThinkBeforeAnswerWorkflow()
+    output = await workflow.run(
         [
             UserMessage(
                 "Imagine we receive a signal from an intelligent extraterrestrial civilization. How should we interpret it, what assumptions should we question, and what could be the global implications of responding?"
             )
         ]
     )
-    print(messages[-1].text)
+    print(output.last_message.text)
 
 
 # Entry point

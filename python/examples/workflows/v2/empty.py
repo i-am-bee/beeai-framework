@@ -23,13 +23,13 @@ class WebScrapperWorkflow(Workflow):
     @start
     @end
     async def identity(self, messages: list[AnyMessage]) -> list[AnyMessage]:
-        return []
+        return messages
 
 
 # Async main function
 async def main() -> None:
-    flow = WebScrapperWorkflow()
-    messages = await flow.run(
+    workflow = WebScrapperWorkflow()
+    output = await workflow.run(
         [
             UserMessage(
                 "Imagine we receive a signal from an intelligent extraterrestrial civilization. How should we interpret it, what assumptions should we question, and what could be the global implications of responding?"
@@ -37,7 +37,7 @@ async def main() -> None:
         ]
     )
 
-    for m in messages:
+    for m in output.output:
         print(f"{m.role}: {m.text}")
 
 
