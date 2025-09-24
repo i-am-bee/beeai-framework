@@ -12,7 +12,7 @@ import {
   DefaultRequestHandler,
   PushNotificationSender,
 } from "@a2a-js/sdk/server";
-import { ToolCallingAgentExecutor } from "./agent_executor.js";
+import { ReActAgentExecutor, ToolCallingAgentExecutor } from "./agent_executor.js";
 import {
   AGENT_CARD_PATH,
   AgentCapabilities,
@@ -25,6 +25,7 @@ import express from "express";
 import { ToolCallingAgent } from "@/agents/toolCalling/agent.js";
 import { ValueError } from "@/errors.js";
 import { Logger } from "@/logger/logger.js";
+import { ReActAgent } from "@/agents/react/agent.js";
 
 const logger = Logger.root.child({
   name: "A2A server",
@@ -125,8 +126,20 @@ export class A2AServer extends Server<AnyAgent, AgentExecutor, A2AServerConfig, 
   }
 }
 
-const toolCallingAgentFactory = (agent: ToolCallingAgent, _: A2AServerMetadata): AgentExecutor => {
+const toolCallingAgentFactory = async (
+  agent: AnyAgent,
+  _?: A2AServerMetadata,
+): Promise<ToolCallingAgentExecutor> => {
   return new ToolCallingAgentExecutor(agent);
 };
 
-A2AServer.registerFactory(ToolCallingAgent, toolCallingAgentFactory as any);
+A2AServer.registerFactory(ToolCallingAgent, toolCallingAgentFactory);
+
+const ReActAgentFactory = async (
+  agent: AnyAgent,
+  _?: A2AServerMetadata,
+): Promise<ReActAgentExecutor> => {
+  return new ReActAgentExecutor(agent);
+};
+
+A2AServer.registerFactory(ReActAgent, ReActAgentFactory);

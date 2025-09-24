@@ -10,6 +10,10 @@ import { AgentExecutor, RequestContext, ExecutionEventBus } from "@a2a-js/sdk/se
 import { Message, TaskStatusUpdateEvent } from "@a2a-js/sdk";
 import { Logger } from "@/logger/logger.js";
 import { convertA2AMessageToFrameworkMessage } from "@/adapters/a2a/agents/utils.js";
+import { Callback, Emitter } from "@/emitter/emitter.js";
+import { ToolCallingAgentCallbacks, ToolCallingAgentRunState } from "@/agents/toolCalling/types.js";
+import { ReActAgentCallbacks } from "@/agents/react/types.js";
+import { Message as FrameworkMessage } from "@/backend/message.js";
 
 const logger = Logger.root.child({
   name: "A2A server",
@@ -20,28 +24,6 @@ export abstract class BaseA2AAgentExecutor implements AgentExecutor {
 
   constructor(protected agent: AnyAgent) {}
 
-  abstract execute(requestContext: RequestContext, eventBus: ExecutionEventBus): Promise<void>;
-
-  public cancelTask = async (taskId: string, eventBus: ExecutionEventBus): Promise<void> => {
-    if (this.abortControllers.has(taskId)) {
-      const [contextId, abortController] = this.abortControllers.get(taskId)!;
-      const cancelledUpdate: TaskStatusUpdateEvent = {
-        kind: "status-update",
-        taskId: taskId,
-        contextId: contextId,
-        status: {
-          state: "canceled",
-          timestamp: new Date().toISOString(),
-        },
-        final: true,
-      };
-      eventBus.publish(cancelledUpdate);
-      abortController.abort();
-    }
-  };
-}
-
-export class ToolCallingAgentExecutor extends BaseA2AAgentExecutor {
   async execute(requestContext: RequestContext, eventBus: ExecutionEventBus): Promise<void> {
     const userMessage = requestContext.userMessage;
     const existingTask = requestContext.task || {
@@ -80,12 +62,16 @@ export class ToolCallingAgentExecutor extends BaseA2AAgentExecutor {
 
     try {
       // run the agent
-      const response = await this.agent.run(
-        convertA2AMessageToFrameworkMessage(requestContext.userMessage),
-        {
-          signal: abortController.signal,
-        },
-      );
+      const response = await this.agent
+        .run(
+          { prompt: convertA2AMessageToFrameworkMessage(requestContext.userMessage).text },
+          {
+            signal: abortController.signal,
+          },
+        )
+        .observe(async (emitter) => {
+          await this.process_events(emitter, requestContext, eventBus);
+        });
 
       const agentMessage: Message = {
         kind: "message",
@@ -119,7 +105,7 @@ export class ToolCallingAgentExecutor extends BaseA2AAgentExecutor {
 
       eventBus.finished();
     } catch (error) {
-      logger.error("Agent execution error:", error);
+      logger.error("Agent execution error:", { error });
       // Publish failed status update
       const errorUpdate: TaskStatusUpdateEvent = {
         kind: "status-update",
@@ -142,5 +128,103 @@ export class ToolCallingAgentExecutor extends BaseA2AAgentExecutor {
       eventBus.publish(errorUpdate);
       eventBus.finished();
     }
+  }
+
+  async process_events(
+    _emitter: Emitter,
+    _requestContext: RequestContext,
+    _eventBus: ExecutionEventBus,
+  ): Promise<void> {
+    return;
+  }
+
+  public cancelTask = async (taskId: string, eventBus: ExecutionEventBus): Promise<void> => {
+    if (this.abortControllers.has(taskId)) {
+      const [contextId, abortController] = this.abortControllers.get(taskId)!;
+      const cancelledUpdate: TaskStatusUpdateEvent = {
+        kind: "status-update",
+        taskId: taskId,
+        contextId: contextId,
+        status: {
+          state: "canceled",
+          timestamp: new Date().toISOString(),
+        },
+        final: true,
+      };
+      eventBus.publish(cancelledUpdate);
+      abortController.abort();
+    }
+  };
+}
+
+export class ToolCallingAgentExecutor extends BaseA2AAgentExecutor {
+  async process_events(
+    emitter: Emitter<ToolCallingAgentCallbacks>,
+    requestContext: RequestContext,
+    eventBus: ExecutionEventBus,
+  ): Promise<void> {
+    let lastMsg: FrameworkMessage | undefined = undefined;
+
+    const processEvent: Callback<{ state: ToolCallingAgentRunState }> = async ({ state }) => {
+      const messages = state.memory.messages;
+      if (lastMsg === undefined) {
+        lastMsg = messages[messages.length - 1];
+      }
+
+      const index = messages.lastIndexOf(lastMsg);
+      for (const message of messages.slice(index + 1)) {
+        const update: TaskStatusUpdateEvent = {
+          kind: "status-update",
+          taskId: requestContext.taskId,
+          contextId: requestContext.contextId,
+          status: {
+            state: "working",
+            message: {
+              kind: "message",
+              role: "agent",
+              messageId: uuidv4(),
+              parts: [{ kind: "text", text: JSON.stringify(message.toPlain()) }],
+              taskId: requestContext.taskId,
+              contextId: requestContext.contextId,
+            },
+            timestamp: new Date().toISOString(),
+          },
+          final: false,
+        };
+        eventBus.publish(update);
+      }
+    };
+    emitter.on("start", processEvent);
+    emitter.on("success", processEvent);
+  }
+}
+
+export class ReActAgentExecutor extends BaseA2AAgentExecutor {
+  async process_events(
+    emitter: Emitter<ReActAgentCallbacks>,
+    requestContext: RequestContext,
+    eventBus: ExecutionEventBus,
+  ): Promise<void> {
+    emitter.on("update", async ({ update }) => {
+      const updateEvent: TaskStatusUpdateEvent = {
+        kind: "status-update",
+        taskId: requestContext.taskId,
+        contextId: requestContext.contextId,
+        status: {
+          state: "working",
+          message: {
+            kind: "message",
+            role: "agent",
+            messageId: uuidv4(),
+            parts: [{ kind: "text", text: update.value }],
+            taskId: requestContext.taskId,
+            contextId: requestContext.contextId,
+          },
+          timestamp: new Date().toISOString(),
+        },
+        final: false,
+      };
+      eventBus.publish(updateEvent);
+    });
   }
 }
