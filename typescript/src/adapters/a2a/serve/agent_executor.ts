@@ -60,11 +60,20 @@ export abstract class BaseA2AAgentExecutor implements AgentExecutor {
     const abortController = new AbortController();
     this.abortControllers.set(taskId, [contextId, abortController]);
 
+    const agent = await this.agent.clone();
+    agent.memory = await agent.memory.clone();
+    agent.memory.reset();
+    await agent.memory.addMany(
+      (existingTask.history || [requestContext.userMessage]).map(
+        convertA2AMessageToFrameworkMessage,
+      ) || [],
+    );
+
     try {
       // run the agent
-      const response = await this.agent
+      const response = await agent
         .run(
-          { prompt: convertA2AMessageToFrameworkMessage(requestContext.userMessage).text },
+          {},
           {
             signal: abortController.signal,
           },
@@ -106,6 +115,7 @@ export abstract class BaseA2AAgentExecutor implements AgentExecutor {
       eventBus.finished();
     } catch (error) {
       logger.error("Agent execution error:", { error });
+      const errorMessage = error instanceof Error ? error.message : String(error);
       // Publish failed status update
       const errorUpdate: TaskStatusUpdateEvent = {
         kind: "status-update",
@@ -117,7 +127,7 @@ export abstract class BaseA2AAgentExecutor implements AgentExecutor {
             kind: "message",
             role: "agent",
             messageId: uuidv4(),
-            parts: [{ kind: "text", text: `Agent error: ${error.message}` }],
+            parts: [{ kind: "text", text: `Agent error: ${errorMessage}` }],
             taskId: taskId,
             contextId: contextId,
           },
@@ -192,6 +202,7 @@ export class ToolCallingAgentExecutor extends BaseA2AAgentExecutor {
           final: false,
         };
         eventBus.publish(update);
+        lastMsg = message;
       }
     };
     emitter.on("start", processEvent);

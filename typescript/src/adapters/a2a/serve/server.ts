@@ -11,6 +11,8 @@ import {
   AgentExecutor,
   DefaultRequestHandler,
   PushNotificationSender,
+  ExecutionEventBusManager,
+  PushNotificationStore,
 } from "@a2a-js/sdk/server";
 import { ReActAgentExecutor, ToolCallingAgentExecutor } from "./agent_executor.js";
 import {
@@ -43,12 +45,14 @@ interface A2AServerMetadata {
   url?: string;
   version?: string;
   provider?: AgentProvider;
-  defaultInputModes?: [string];
-  defaultOutputModes?: [string];
+  defaultInputModes?: string[];
+  defaultOutputModes?: string[];
   capabilities?: AgentCapabilities;
-  skills?: [AgentSkill];
+  skills?: AgentSkill[];
   taskStore?: TaskStore;
-  pushNotifier?: PushNotificationSender;
+  eventBusManager?: ExecutionEventBusManager;
+  pushNotificationStore?: PushNotificationStore;
+  pushNotificationSender?: PushNotificationSender;
 }
 
 export class A2AServer extends Server<AnyAgent, AgentExecutor, A2AServerConfig, A2AServerMetadata> {
@@ -80,9 +84,16 @@ export class A2AServer extends Server<AnyAgent, AgentExecutor, A2AServerConfig, 
     const executor = await factory(member, config);
     const agentCard = this.createAgentCard(config, member);
 
-    const taskStore: TaskStore = new InMemoryTaskStore();
+    const taskStore: TaskStore = config.taskStore || new InMemoryTaskStore();
 
-    const requestHandler = new DefaultRequestHandler(agentCard, taskStore, executor);
+    const requestHandler = new DefaultRequestHandler(
+      agentCard,
+      taskStore,
+      executor,
+      config.eventBusManager,
+      config.pushNotificationStore,
+      config.pushNotificationSender,
+    );
 
     const appBuilder = new A2AExpressApp(requestHandler);
     const expressApp = appBuilder.setupRoutes(express());
