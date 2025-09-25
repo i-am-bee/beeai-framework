@@ -67,7 +67,7 @@ class MCPTool(Tool[BaseModel, ToolRunOptions, JSONToolOutput]):
         if result.structuredContent is not None:
             data_result = result.structuredContent
         else:
-            data_result = result.content[0] if len(result.content) > 0 else result.content
+            data_result = result.content[0] if len(result.content) == 1 else result.content
 
         if result.isError:
             raise ToolError(to_json(data_result, indent=4, sort_keys=False))
