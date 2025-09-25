@@ -58,6 +58,8 @@ class MCPSessionProvider:
                     await _session.initialize()
                     self._session_initialized.set()
                     await self._session_stopping.wait()
+            except Exception:
+                self._session_initialized.set()
             finally:
                 self._session = None
 
