@@ -40,8 +40,7 @@ except ModuleNotFoundError as e:
 from beeai_framework.adapters.a2a.serve.agent_executor import (
     BaseA2AAgentExecutor,
     ReActAgentExecutor,
-    RequirementAgentExecutor,
-    TollCallingAgentExecutor,
+    ToolCallingAgentExecutor,
 )
 from beeai_framework.agents import AnyAgent
 from beeai_framework.agents.tool_calling.agent import ToolCallingAgent
@@ -80,6 +79,7 @@ class A2AServerMetadata(TypedDict, total=False):
     queue_manager: a2a_server_events.QueueManager | None
     push_notifier: a2a_server_tasks.PushNotificationSender | None
     request_context_builder: a2a_agent_execution.RequestContextBuilder | None
+    send_trajectory: bool
 
 
 class A2AServer(
@@ -205,6 +205,7 @@ def _react_agent_factory(
         agent=agent,
         agent_card=_create_agent_card(metadata or {}, agent),
         memory_manager=memory_manager,
+        send_trajectory=metadata.get("send_trajectory", None) if metadata is not None else None,
     )
 
 
@@ -214,11 +215,12 @@ with contextlib.suppress(FactoryAlreadyRegisteredError):
 
 def _tool_calling_agent_factory(
     agent: ToolCallingAgent, *, metadata: A2AServerMetadata | None = None, memory_manager: MemoryManager
-) -> TollCallingAgentExecutor:
-    return TollCallingAgentExecutor(
+) -> ToolCallingAgentExecutor:
+    return ToolCallingAgentExecutor(
         agent=agent,
         agent_card=_create_agent_card(metadata or {}, agent),
         memory_manager=memory_manager,
+        send_trajectory=metadata.get("send_trajectory", None) if metadata is not None else None,
     )
 
 
@@ -228,11 +230,12 @@ with contextlib.suppress(FactoryAlreadyRegisteredError):
 
 def _requirement_agent_factory(
     agent: RequirementAgent, *, metadata: A2AServerMetadata | None = None, memory_manager: MemoryManager
-) -> RequirementAgentExecutor:
-    return RequirementAgentExecutor(
+) -> ToolCallingAgentExecutor:
+    return ToolCallingAgentExecutor(
         agent=agent,
         agent_card=_create_agent_card(metadata or {}, agent),
         memory_manager=memory_manager,
+        send_trajectory=metadata.get("send_trajectory", None) if metadata is not None else None,
     )
 
 

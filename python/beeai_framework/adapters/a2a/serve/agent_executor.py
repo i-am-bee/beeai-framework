@@ -39,12 +39,20 @@ logger = Logger(__name__)
 
 
 class BaseA2AAgentExecutor(a2a_agent_execution.AgentExecutor):
-    def __init__(self, agent: AnyAgentLike, agent_card: a2a_types.AgentCard, *, memory_manager: MemoryManager) -> None:
+    def __init__(
+        self,
+        agent: AnyAgentLike,
+        agent_card: a2a_types.AgentCard,
+        *,
+        memory_manager: MemoryManager,
+        send_trajectory: bool | None = True,
+    ) -> None:
         super().__init__()
         self._agent = agent
         self.agent_card = agent_card
         self._abort_controller = AbortController()
         self._memory_manager = memory_manager
+        self._send_trajectory = send_trajectory
 
     @override
     async def execute(
@@ -66,7 +74,7 @@ class BaseA2AAgentExecutor(a2a_agent_execution.AgentExecutor):
         await updater.start_work()
         try:
             response = await cloned_agent.run(new_messages, signal=self._abort_controller.signal).observe(
-                lambda emitter: self._process_events(emitter, context, updater)
+                lambda emitter: self._process_events(emitter, context, updater) if self._send_trajectory else ...
             )
 
             await updater.complete(
@@ -127,7 +135,7 @@ class ReActAgentExecutor(BaseA2AAgentExecutor):
         emitter.on("update", process_event)
 
 
-class TollCallingAgentExecutor(BaseA2AAgentExecutor):
+class ToolCallingAgentExecutor(BaseA2AAgentExecutor):
     @override
     async def _process_events(
         self,
@@ -138,7 +146,11 @@ class TollCallingAgentExecutor(BaseA2AAgentExecutor):
         last_msg = None
 
         async def process_event(
-            data: ToolCallingAgentSuccessEvent | ToolCallingAgentSuccessEvent, event: EventMeta
+            data: RequirementAgentStartEvent
+            | RequirementAgentSuccessEvent
+            | ToolCallingAgentSuccessEvent
+            | ToolCallingAgentSuccessEvent,
+            event: EventMeta,
         ) -> None:
             nonlocal last_msg
             messages = data.state.memory.messages
@@ -167,29 +179,6 @@ class TollCallingAgentExecutor(BaseA2AAgentExecutor):
                     ),
                 )
                 last_msg = message
-
-        emitter.match("*", process_event)
-
-
-class RequirementAgentExecutor(BaseA2AAgentExecutor):
-    @override
-    async def _process_events(
-        self,
-        emitter: Emitter,
-        context: a2a_agent_execution.RequestContext,
-        updater: a2a_server_tasks.TaskUpdater,
-    ) -> None:
-        async def process_event(
-            data: RequirementAgentSuccessEvent | RequirementAgentStartEvent, event: EventMeta
-        ) -> None:
-            if data.state.answer:
-                await updater.start_work(
-                    a2a_utils.new_agent_text_message(
-                        data.state.answer.text,
-                        context.context_id,
-                        context.task_id,
-                    )
-                )
 
         emitter.match("*", process_event)
 

@@ -140,7 +140,7 @@ The **[Agent2Agent (A2A) Protocol](https://a2a-protocol.org/)** is the open stan
 	    # we use LRU memory manager to keep limited amount of sessions in the memory
 	    A2AServer(
 	        config=A2AServerConfig(port=9999, protocol="jsonrpc"), memory_manager=LRUMemoryManager(maxsize=100)
-	    ).register(agent).serve()
+	    ).register(agent, send_trajectory=True).serve()
 	
 	
 	if __name__ == "__main__":
