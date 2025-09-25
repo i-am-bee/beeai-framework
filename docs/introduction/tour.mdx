@@ -194,8 +194,7 @@ async def main():
     )
 
     response = await agent.run("What's the current weather in Paris?").middleware(
-        GlobalTrajectoryMiddleware(included=[Tool],  # Only show tool executions
-        ))
+        GlobalTrajectoryMiddleware(included=[Tool]))  # Only show tool executions
 
     print(response.last_message.text)
 
@@ -244,7 +243,7 @@ COMING SOON
 ```
 
 </CodeGroup>
-
+Tool
 <Tip>
 Listening for all events can be noisy. Filter to the events you are interested in capturing. 
 </Tip>
@@ -259,8 +258,6 @@ import asyncio
 from beeai_framework.agents.experimental import RequirementAgent
 from beeai_framework.backend import ChatModel
 from beeai_framework.tools.weather import OpenMeteoTool
-from beeai_framework.middleware.trajectory import GlobalTrajectoryMiddleware
-from beeai_framework.tools import Tool
 from typing import Any
 from beeai_framework.emitter import EventMeta
 
@@ -299,7 +296,7 @@ COMING SOON
 **Relevant Module**: [Logger](../modules/logger)
 </Info>
 
-Logging is a way to provide visbaility into the state of your application. Set the `Logger` level of granularity and place logging statements at key points throughout your agent process.
+Logging is a way to provide visibility into the state of your application. Set the `Logger` level of granularity and place logging statements at key points throughout your agent process.
 
 <CodeGroup>
 
@@ -364,7 +361,7 @@ Logging to the console is great for development, but it's not enough for product
 the framework send traces and metrics to external platforms like Arize Phoenix, LangFuse, LangSmith, and more.
 
 <Note>
-  To run this step: `pip install openinference-instrumentation-beeai openinference-instrumentation-beeai opentelemetry-sdk opentelemetry-exporter-otlp`
+  To run this step: `pip install openinference-instrumentation-beeai opentelemetry-sdk opentelemetry-exporter-otlp`
 </Note>
 
 #### Set the Endpoint
@@ -710,7 +707,7 @@ COMING SOON
 
 1. Add some markdown files with information about your company/project
 2. Ask questions that should be answered from your documents
-3. Compare how responses differ with vs. without the knowledge base or when using differnt pre-processing strategies
+3. Compare how responses differ with vs. without the knowledge base or when using different pre-processing strategies
 
 ## Orchestration
 
@@ -839,7 +836,7 @@ Configure a cache on your LLM to avoid paying for repeated queries:
 
 ```py Python
 import asyncio
-from beeai_framework.backend import ChatModel
+from beeai_framework.backend import ChatModel, UserMessage
 from beeai_framework.cache import SlidingCache
 
 async def main():
@@ -847,13 +844,16 @@ async def main():
     llm = ChatModel.from_name("ollama:granite3.3")
     llm.config(cache=SlidingCache(size=50))  # Cache up to 50 responses
 
-    # First call (miss)
-    res1 = llm.run("Hello! How are you today?")
-    # Second call with identical input (hit)
-    res2 = llm.run("Hello! How are you today?")
+    # Must send a list of messages to the llm
+    messages = [UserMessage("Hello, how are you?")]
 
-    print("First:", res1.context)
-    print("Second (cached):", res2.context)
+    # First call (miss)
+    res1 = await llm.run(messages)
+    # Second call with identical input (hit)
+    res2 = await llm.run(messages)
+
+    print("First:", res1.last_message.text)
+    print("Second (cached):", res2.last_message.text)
 
 asyncio.run(main())
 ```
