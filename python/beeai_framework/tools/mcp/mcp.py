@@ -64,6 +64,7 @@ class MCPTool(Tool[BaseModel, ToolRunOptions, JSONToolOutput]):
         )
         logger.debug(f"Tool result: {result}")
 
+        data_result: Any = None
         if result.structuredContent is not None:
             data_result = result.structuredContent
         else:
