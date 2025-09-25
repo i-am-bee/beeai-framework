@@ -7,7 +7,7 @@ from beeai_framework.adapters.a2a.agents._utils import convert_a2a_to_framework_
 from beeai_framework.agents.experimental.events import RequirementAgentStartEvent, RequirementAgentSuccessEvent
 from beeai_framework.agents.react import ReActAgentUpdateEvent
 from beeai_framework.agents.react.types import ReActAgentIterationResult
-from beeai_framework.agents.tool_calling import ToolCallingAgentSuccessEvent
+from beeai_framework.agents.tool_calling import ToolCallingAgentStartEvent, ToolCallingAgentSuccessEvent
 from beeai_framework.backend import AssistantMessage, MessageToolCallContent, ToolMessage
 from beeai_framework.emitter import Emitter, EventMeta
 from beeai_framework.serve import MemoryManager, init_agent_memory
@@ -114,17 +114,20 @@ class ReActAgentExecutor(BaseA2AAgentExecutor):
         updater: a2a_server_tasks.TaskUpdater,
     ) -> None:
         async def process_event(data: ReActAgentUpdateEvent, event: EventMeta) -> None:
+            text = ""
+            if isinstance(data.data, ReActAgentIterationResult):
+                if data.data.final_answer:
+                    text = data.data.final_answer
+                elif data.data.tool_output:
+                    text = data.data.tool_output
+                elif data.data.tool_name or data.data.tool_input:
+                    text = to_json({"tool_name": data.data.tool_name, "tool_input": data.data.tool_input})
+                elif data.data.thought:
+                    text = data.data.thought
+
             await updater.start_work(
                 a2a_utils.new_agent_text_message(
-                    data.data.final_answer
-                    if data.data.final_answer
-                    else data.data.tool_output
-                    if data.data.tool_output
-                    else to_json({"tool_name": data.data.tool_name, "tool_input": data.data.tool_input})
-                    if data.data.tool_name or data.data.tool_input
-                    else data.data.thought
-                    if data.data.thought
-                    else "",
+                    text,
                     context.context_id,
                     context.task_id,
                 )
@@ -148,7 +151,7 @@ class ToolCallingAgentExecutor(BaseA2AAgentExecutor):
         async def process_event(
             data: RequirementAgentStartEvent
             | RequirementAgentSuccessEvent
-            | ToolCallingAgentSuccessEvent
+            | ToolCallingAgentStartEvent
             | ToolCallingAgentSuccessEvent,
             event: EventMeta,
         ) -> None:
@@ -180,7 +183,8 @@ class ToolCallingAgentExecutor(BaseA2AAgentExecutor):
                 )
                 last_msg = message
 
-        emitter.match("*", process_event)
+        emitter.on("start", process_event)
+        emitter.on("success", process_event)
 
 
 def _extract_request_messages(context: a2a_agent_execution.RequestContext) -> list[AnyMessage]:
