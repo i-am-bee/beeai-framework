@@ -32,7 +32,7 @@ async def main() -> None:
     llm = ChatModel.from_name("ollama:granite3.1-dense:8b")
     agent = RequirementAgent(
         llm=llm,
-        tools=[OpenMeteoTool(), ThinkTool(), get_user],
+        tools=[ThinkTool(), OpenMeteoTool(), get_user],
         # Log all tool calls to the console for easier debugging
         middlewares=[GlobalTrajectoryMiddleware(included=[Tool])],
         requirements=[
