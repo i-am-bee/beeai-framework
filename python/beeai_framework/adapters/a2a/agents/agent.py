@@ -294,6 +294,7 @@ class A2AAgent(BaseAgent[A2AAgentOutput]):
                 context_id=self._context_id,
                 task_id=self._task_id,
                 reference_task_ids=self._reference_task_ids,
+                metadata=input.meta or None,
             )
         elif isinstance(input, list) and input and isinstance(input[-1], Message):
             return self.convert_to_a2a_message(input[-1])
