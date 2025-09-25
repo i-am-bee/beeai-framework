@@ -65,6 +65,8 @@ class MCPSessionProvider:
             except Exception as e:
                 logger.error(f"Failed to initialize MCP session: {e}")
                 self._session_initialized.set()
+                if isinstance(e, asyncio.CancelledError):
+                    raise
             finally:
                 self._session = None
 
