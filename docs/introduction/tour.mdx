@@ -1017,7 +1017,13 @@ COMING SOON
 ### BeeAI Platform
 
 Expose your agent as a **BeeAI Platform server**:
-    
+
+<Tip>
+Make sure you have done the following:
+
+pip install `'beeai-framework[a2a]' 'beeai-framework[beeai-platform]'`  and you have a compatible version of `uvicorn` installed.
+</Tip>
+
 <CodeGroup>
 
 ```py Python
@@ -1030,7 +1036,7 @@ from beeai_framework.tools.search.wikipedia import WikipediaTool
 from beeai_framework.tools.weather import OpenMeteoTool
 
 def main():
-    llm = ChatModel.from_name("ollama:granite3.3:8b")
+    llm = ChatModel.from_name("ollama:granite3.3")
     agent = RequirementAgent(
         llm=llm,
         tools=[WikipediaTool(), OpenMeteoTool()],
@@ -1040,7 +1046,7 @@ def main():
     )
 
     # Runs HTTP server that registers to BeeAI platform
-    server = BeeAIPlatformServer()
+    server = BeeAIPlatformServer(config={"configure_telemetry": False})
     server.register(agent)
     server.serve()
 
@@ -1057,6 +1063,12 @@ COMING SOON
 ### Agent2Agent (A2A) Protocol
 
 Expose your agent as an **A2A server**:
+
+<Tip>
+Make sure you have done the following:
+
+pip install `'beeai-framework[a2a]'`  and you have a compatible version of `uvicorn` installed.
+</Tip>
     
 <CodeGroup>
 
@@ -1071,7 +1083,7 @@ from beeai_framework.tools.weather import OpenMeteoTool
 
 
 def main() -> None:
-    llm = ChatModel.from_name("ollama:granite3.3:8b")
+    llm = ChatModel.from_name("ollama:granite3.3")
     agent = RequirementAgent(
         llm=llm,
         tools=[DuckDuckGoSearchTool(), OpenMeteoTool()],
@@ -1108,7 +1120,7 @@ from beeai_framework.serve.utils import LRUMemoryManager
 from beeai_framework.tools.weather import OpenMeteoTool
 
 def main() -> None:
-    llm = ChatModel.from_name("ollama:granite3.3:8b")
+    llm = ChatModel.from_name("ollama:granite3.3")
     agent = RequirementAgent(
         llm=llm, 
         tools=[OpenMeteoTool()], 
@@ -1146,4 +1158,4 @@ Each module page includes detailed guides, examples, and best practices. Here ar
 2. **Scale Your System:** Add more agents, tools, and knowledge bases
 3. **Custom Tools:** Build your own tools for domain-specific functionality
 
-The framework is designed to scale with you—start small, then grow your system step by step as your needs evolve. You now have all the building blocks to create sophisticated AI agent systems!
+The framework is designed to scale with you. Start simple, then grow your system step by step as your needs evolve. You now have all the building blocks to create sophisticated and reliable AI agent systems!
