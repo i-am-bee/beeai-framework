@@ -6,9 +6,9 @@ from typing import Any, TypeVar
 from deepeval.test_case import ConversationalTestCase, LLMTestCase, ToolCall, Turn
 from pydantic import BaseModel
 
-from beeai_framework.agents.experimental import RequirementAgent
-from beeai_framework.agents.experimental.types import RequirementAgentRunStateStep
-from beeai_framework.agents.experimental.utils._tool import FinalAnswerTool
+from beeai_framework.agents.requirement import RequirementAgent
+from beeai_framework.agents.requirement.types import RequirementAgentRunStateStep
+from beeai_framework.agents.requirement.utils._tool import FinalAnswerTool
 from beeai_framework.tools.think import ThinkTool
 from beeai_framework.tools.tool import Tool
 from beeai_framework.utils.strings import to_json
