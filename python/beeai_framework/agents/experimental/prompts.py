@@ -1,5 +1,6 @@
 import sys
 import warnings
+
 import beeai_framework.agents.requirement.prompts as _new_module
 
 warnings.warn(

@@ -1,5 +1,6 @@
 import sys
 import warnings
+
 import beeai_framework.agents.requirement.requirements.conditional as _new_module
 
 warnings.warn(
