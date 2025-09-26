@@ -8,7 +8,7 @@ from deepeval.dataset import EvaluationDataset, Golden
 from deepeval.metrics import BaseMetric, GEval
 from deepeval.test_case import LLMTestCaseParams
 
-from beeai_framework.agents.experimental import RequirementAgent
+from beeai_framework.agents.requirement import RequirementAgent
 from beeai_framework.backend import ChatModel
 from beeai_framework.memory import UnconstrainedMemory
 from beeai_framework.tools.search.duckduckgo import DuckDuckGoSearchTool

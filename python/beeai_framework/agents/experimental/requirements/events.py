@@ -1,15 +1,16 @@
 # Copyright 2025 © BeeAI a Series of LF Projects, LLC
 # SPDX-License-Identifier: Apache-2.0
 
-from pydantic import BaseModel, ConfigDict, InstanceOf
+import sys
+import warnings
 
-from beeai_framework.tools import AnyTool
+import beeai_framework.agents.requirement.requirements.events as _new_module
 
+warnings.warn(
+    "beeai_framework.agents.experimental.requirements.events is deprecated and will be removed in a future release. "
+    "Please use beeai_framework.agents.requirement.requirements.events instead.",
+    DeprecationWarning,
+    stacklevel=2,
+)
 
-class RequirementInitEvent(BaseModel):
-    model_config = ConfigDict(extra="allow")
-
-    tools: list[InstanceOf[AnyTool]]
-
-
-requirement_event_types: dict[str, type] = {"init": RequirementInitEvent}
+sys.modules[__name__] = _new_module

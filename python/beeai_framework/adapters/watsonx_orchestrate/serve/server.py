@@ -13,8 +13,8 @@ import beeai_framework.adapters.watsonx_orchestrate.serve._factories as factorie
 from beeai_framework.adapters.watsonx_orchestrate.serve.agent import WatsonxOrchestrateServerAgent
 from beeai_framework.adapters.watsonx_orchestrate.serve.api import WatsonxOrchestrateAPI
 from beeai_framework.agents import AnyAgent
-from beeai_framework.agents.experimental import RequirementAgent
 from beeai_framework.agents.react import ReActAgent
+from beeai_framework.agents.requirement import RequirementAgent
 from beeai_framework.agents.tool_calling import ToolCallingAgent
 from beeai_framework.logger import Logger
 from beeai_framework.serve import MemoryManager
