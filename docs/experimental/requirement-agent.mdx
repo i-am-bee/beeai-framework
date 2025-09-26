@@ -7,173 +7,133 @@ icon: "microscope"
 This is an **experimental** feature and will evolve based on community feedback.
 </Note>
 
+The `RequirementAgent` is a declarative AI agent implementation that provides predictable, controlled execution behavior across different language models through rule-based constraints. Language models vary significantly in their reasoning capabilities and tool-calling sophistication, but RequirementAgent normalizes these differences by enforcing consistent execution patterns regardless of the underlying model's strengths or weaknesses. Rules can be configured as strict or flexible as necessary, adapting to task requirements while ensuring consistent execution regardless of the underlying model's reasoning or tool-calling capabilities.
 
-The `RequirementAgent` is a declarative AI agent that combines language models, tools, and execution requirements to create predictable, controlled behavior across different LLMs.
+### Core Problems Addressed
 
-<Tip>
-	Curious to see it in the action?
-	Explore our [interactive exercises](https://github.com/i-am-bee/beeai-framework/tree/main/python/examples/agents/experimental/requirement/exercises) to discover how the agent solves real problems step by step!
-</Tip>
+**Traditional AI agents exhibit unpredictable behavior** in production environments:
+- Execution inconsistency: Agents may skip critical steps, terminate prematurely, or use inappropriate tools
+- Model variability: Different LLMs produce different execution patterns for the same task
+- Debugging complexity: Non-deterministic behavior makes troubleshooting difficult
+- Production reliability: Lack of guarantees makes agents unsuitable for critical workflows
 
-## Why Use Requirement Agent?
-
-Building agents that work reliably across multiple LLMs is difficult. Most agents are tightly tuned to specific models, with rigid prompts that cause models to misinterpret instructions, skip tools, or hallucinate facts.
-
-`RequirementAgent` provides a declarative framework for designing agents that strikes a balance between flexibility and control. It allows for agent behavior that is both predictable and adaptable, without the complexity and limitations of more rigid systems.
-
-## Core Concepts
-
-**💡 Everything is a Tool**
-- Data retrieval, web search, reasoning, and final answers are all implemented as tools
-- This structure ensures valid responses with structured outputs and eliminates parsing errors
-
-**💡 Requirements Control Tool Usage**
-> You can define rules that control when and how tools are used.
-
-- "Only use tool A after tool B has been called"
-- "Tool D must be used exactly twice, but not two times in a row"
-- "Tool E can only be used after both tool A and tool B have been used"
-- "Tool F must be called immediately after tool D"
-- "You must call tool C at least once before giving a final answer"
+### Value of `RequirementAgent`
+RequirementAgent ensures consistent agent behavior through declarative rules that define when and how tools are used, delivering reliable agents that:
+- Complete essential tasks systematically by enforcing proper execution sequences
+- Validate data and results comprehensively through mandatory verification steps
+- Select appropriate tools intelligently based on context and task requirements
+- Execute efficiently and safely with built-in protection against infinite loops and runaway processes
 
 ## Quickstart
 
-This example demonstrates how to create an agent with enforced tool execution order:
-
-```py
-from beeai_framework.agents.experimental import RequirementAgent
-from beeai_framework.agents.experimental.requirements.conditional import ConditionalRequirement
-
-# Create an agent that plans activities based on weather and events
-agent = RequirementAgent(
-    llm=ChatModel.from_name("ollama:granite3.3:8b"),
-    tools=[
-        ThinkTool(),             # to reason
-        OpenMeteoTool(),         # retrieve weather data
-        DuckDuckGoSearchTool()   # search web
-    ],
-    instructions="Plan activities for a given destination based on current weather and events.",
-    requirements=[
-        # Force thinking first
-        ConditionalRequirement(ThinkTool, force_at_step=1),
-        # Search only after getting weather, at least once
-        ConditionalRequirement(DuckDuckGoSearchTool, only_after=[OpenMeteoTool], min_invocations=1),
-    ],
-)
-
-# Run with execution logging
-response = await agent.run("What to do in Boston?").middleware(GlobalTrajectoryMiddleware())
-print(response.answer.text)
-```
+This example demonstrates how to create an agent with enforced tool execution order. 
 
 This agent will:
-1. First use `ThinkTool` to reason about the request
-2. Check weather using `OpenMeteoTool`
-3. Search for events using `DuckDuckGoSearchTool` (at least once)
+1. First use `ThinkTool` to reason about the request enabling a "Re-Act" pattern
+2. Check weather using `OpenMeteoTool`, which it must call at least once but not consecutively
+3. Search for events using `DuckDuckGoSearchTool` at least once
 4. Provide recommendations based on the gathered information
 
-**➡️ Check out the following examples**
 
-- [Multi-agent](https://github.com/i-am-bee/beeai-framework/blob/main/python/examples/agents/experimental/requirement/multi_agent.py) system via handoffs.
-- [ReAct](https://github.com/i-am-bee/beeai-framework/blob/main/python/examples/agents/experimental/requirement/multi_agent.py) loop in a second.
-- Generating [text](https://github.com/i-am-bee/beeai-framework/blob/main/python/examples/agents/experimental/requirement/structured_output.py) and [structured](https://github.com/i-am-bee/beeai-framework/blob/main/python/examples/agents/experimental/requirement/text_output.py) output.
-- [Advanced](https://github.com/i-am-bee/beeai-framework/blob/main/python/examples/agents/experimental/requirement/complex.py) (detailed configuration).
+<CodeGroup>
+
+{/* <!-- embedme python/examples/agents/experimental/requirement/quickstart_requirement.py --> */}
+```py Python
+import asyncio
+
+from beeai_framework.agents.experimental import RequirementAgent
+from beeai_framework.agents.experimental.requirements.conditional import (
+    ConditionalRequirement,
+)
+from beeai_framework.backend import ChatModel
+from beeai_framework.middleware.trajectory import GlobalTrajectoryMiddleware
+from beeai_framework.tools.search.duckduckgo import DuckDuckGoSearchTool
+from beeai_framework.tools.think import ThinkTool
+from beeai_framework.tools.weather import OpenMeteoTool
 
 
-## Requirements and Rules
+# Create an agent that plans activities based on weather and events
+async def main() -> None:
+    agent = RequirementAgent(
+        llm=ChatModel.from_name("ollama:granite3.3"),
+        tools=[
+            ThinkTool(),  # to reason
+            OpenMeteoTool(),  # retrieve weather data
+            DuckDuckGoSearchTool(),  # search web
+        ],
+        instructions="Plan activities for a given destination based on current weather and events.",
+        requirements=[
+            # Force thinking first
+            ConditionalRequirement(ThinkTool, force_at_step=1),
+            # Search only after getting weather and at least once
+            ConditionalRequirement(DuckDuckGoSearchTool, only_after=[OpenMeteoTool], min_invocations=1),
+            # Weather tool be used at least once but not consecutively
+            ConditionalRequirement(OpenMeteoTool, consecutive_allowed=False, min_invocations=1),
+        ],
+    )
+    # Run with execution logging
+    response = await agent.run("What to do in Boston?").middleware(GlobalTrajectoryMiddleware())
+    print(f"Final Answer: {response.last_message.text}")
 
-**Requirements** are functions that evaluate the current agent state and produce a list of rules. The system evaluates requirements before each LLM call to determine which tools are available.
 
-**Rules** define specific constraints on tool usage. Each rule contains the following attributes:
+if __name__ == "__main__":
+    asyncio.run(main())
 
-| Attribute      | Description                                           |
-|:---------------|:------------------------------------------------------|
-| `target`       | The tool the rule applies to                          |
-| `allowed`      | Whether the tool can be used                          |
-| `hidden`       | Whether the tool’s definition is visible to the agent |
-| `prevent_stop` | Whether the rule blocks termination                   |
-| `forced`       | Whether the tool must be invoked                      |
+```
+
+```ts TypeScript
+COMING SOON
+```
+
+</CodeGroup>
+
+
+## How it Works
+
+`RequirementAgent` operates on a simple principle: developers declare rules on specific tools using `ConditionalRequirement` objects, while the framework automatically handles all orchestration logic behind the scenes. The developer can modify agent behavior by adjusting rule parameters, not rewriting complex state management logic. This creates clear separation between business logic (rules) and execution control (framework-managed).
+
+In `RequirementAgent`, **all capabilities (including data retrieval, web search, reasoning patterns, and `final_answer`) are implemented as tools** to ensure structured, reliable execution. Each `ConditionalRequirement` returns a `Rule` where each rule is bound to a single tool:
+
+| Attribute | Purpose | Value |
+|-----------|---------|-------|
+| `target` | Which tool the rule applies to for a given turn | String |
+| `allowed` | Whether the tool can be used for a given turn and is present in the system prompt| Boolean |
+| `hidden` | Whether the tool definition is visible to the agent for a given turn and in the system prompt | Boolean |
+| `prevent_stop` | Whether rule prevents the agent from terminating for a given turn| Boolean |
+| `forced` | Whether tool must be invoked on a given turn | Boolean |
 
 When requirements generate conflicting rules, the system applies this precedence:
-- **Forbidden takes precedence:** If any rule forbids a tool, it cannot be used
-- **Highest priority forced rule wins:** Among forced rules, the highest priority requirement determines the forced tool
-- **Multiple prevention rules combine:** All `prevent_stop` rules are respected
+- **Forbidden overrides all**: If any requirement forbids a tool, that tool cannot be used.
+- **Highest priority forced rule wins**: If multiple requirements force tools, the highest-priority requirement decides which tool is forced.
+- **Prevention rules accumulate**: All `prevent_stop` rules apply simultaneously
 
-<Warning>
-Requirements are evaluated on every iteration before calling the LLM.
-</Warning>
+### Execution Flow
+1. **State Initialization**: Creates `RequirementAgentRunState` with `UnconstrainedMemory`, execution steps, and iteration tracking
+2. **Requirements Processing**: `RequirementsReasoner` analyzes requirements and determines allowed tools, tool choice preferences, and termination conditions
+3. **Request Creation**: Creates a structured request with `allowed_tools`, `tool_choice`, and `can_stop` flags based on current state and requirements. The system evaluates requirements before each LLM call to determine which tools to make available to the LLM
+4. **LLM Interaction**: Calls language model with system message, conversation history, and constrained tool set
+5. **Tool Execution**: Executes requested tools via `_run_tools`, handles errors, and updates conversation memory
+6. **Cycle Detection**: `ToolCallChecker` prevents infinite loops by detecting repeated tool call patterns
+7. **Iteration Control**: Continues until requirements are satisfied or maximum iterations reached
 
-<Tip>
-Start with a single requirement and add more as needed.
-</Tip>
+### Basic Rule Definition
+Developers declare rules by creating `ConditionalRequirement` objects that target specific tools. The framework automatically handles all orchestration:
 
-## Conditional Requirement
+```python
+# Declare: agent must think before acting
+ConditionalRequirement(ThinkTool, force_at_step=1)
 
-The conditional requirement controls when tools can be used based on specific conditions.
+# Declare: require weather check before web search  
+ConditionalRequirement(DuckDuckGoSearchTool, only_after=[OpenMeteoTool])
 
-### Force Execution Order
-
-This example forces the agent to use `ThinkTool` for reasoning followed by `DuckDuckGoSearchTool` to retrieve data. This trajectory ensures that even a small model can arrive at the correct answer by preventing it from skipping tool calls entirely.
-
-```py
-RequirementAgent(
-  llm=ChatModel.from_name("ollama:granite3.3:8b"),
-  tools=[ThinkTool(), DuckDuckGoSearchTool()],
-  requirements=[
-      ConditionalRequirement(ThinkTool, force_at_step=1), # Force ThinkTool at the first step
-      ConditionalRequirement(DuckDuckGoSearchTool, force_at_step=2), # Force DuckDuckGo at the second step
-  ],
-)
-```
-
-### Creating a ReAct Agent
-
-A ReAct Agent (Reason and Act) follows this trajectory:
-
-```text
-Think -> Use a tool -> Think -> Use a tool -> Think -> ... -> End
-```
-
-You can achieve this by forcing the execution of the `Think` tool after every other tool:
-
-```py
-RequirementAgent(
-  llm=ChatModel.from_name("ollama:granite3.3:8b"),
-  tools=[ThinkTool(), WikipediaTool(), OpenMeteoTool()],
-  requirements=[ConditionalRequirement(ThinkTool, force_at_step=1, force_after=[OpenMeteoTool, WikipediaTool])],
-)
-```
-
-<Tip>
-For a more general approach, use `ConditionalRequirement(ThinkTool, force_at_step=1, force_after=Tool, consecutive_allowed=False)`, where the option `consecutive_allowed=False` prevents `ThinkTool` from being used multiple times in a row.
-</Tip>
-
-### ReAct Agent + Custom Conditions
-
-You may want an agent that works like ReAct but skips the "reasoning" step under certain conditions. This example uses the priority option to tell the agent to send an email after creating an order, while calling `ThinkTool` after every other action.
-
-```py
-RequirementAgent(
-  llm=ChatModel.from_name("ollama:granite3.3:8b"),
-  tools=[ThinkTool(), retrieve_basket(), create_order(), send_email()],
-  requirements=[
-    ConditionalRequirement(ThinkTool, force_at_step=1, force_after=Tool, priority=10),
-    ConditionalRequirement(send_email, only_after=create_order, force_after=create_order, priority=20, max_invocations=1),
-  ],
-)
-```
-
-### Prevent Early Termination
-
-The following requirement prevents the agent from providing a final answer before it calls the `my_tool`.
-
-```py
-ConditionalRequirement(my_tool, min_invocations=1)
+# Declare: prevent consecutive uses of same tool
+ConditionalRequirement(OpenMeteoTool(), consecutive_allowed=False)
 ```
 
 ### Complete Parameter Reference
 
-```py
+<CodeGroup>
+```py Python
 ConditionalRequirement(
   target_tool, # Tool class, instance, or name (can also be specified as `target=...`)
   name="", # (optional) Name, useful for logging
@@ -184,7 +144,7 @@ ConditionalRequirement(
   max_invocations=10, # (optional) Maximum times the tool can be called before being disabled
   force_at_step=1, # (optional) Step number at which the tool must be invoked
   only_success_invocations=True, # (optional) Whether 'force_at_step' counts only successful invocations
-  priority=10, # (optional) Higher number means higher priority for requirement enforcement
+  priority=10, # (optional) Higher relative number means higher priority for requirement enforcement
   consecutive_allowed=True, # (optional) Whether the tool can be invoked twice in a row
   force_prevent_stop=False,  # (optional) If True, prevents the agent from giving a final answer when a forced target_tool call occurs.
   enabled=True, # (optional) Whether to skip this requirement’s execution
@@ -196,26 +156,111 @@ ConditionalRequirement(
 )
 ```
 
-➡️ See the [full example](https://github.com/i-am-bee/beeai-framework/blob/main/python/examples/agents/experimental/requirement/complex.py#L56-L82).
+```ts TypeScript
+COMING SOON
+```
+
+</CodeGroup>
+
 
 <Tip>
-Pass a class instance (e.g., `weather_tool = ...`) or a class (`OpenMeteoTool`) rather than a tool's name. Some tools may have dynamically generated names.
+Start with a single requirement and add more as needed.
 </Tip>
 
-<Note>
-The reasoner throws an error if it detects contradictory rules or a rule without an existing target.
-</Note>
 
-## Ask Permission Requirement
+<Tip>
+	Curious to see it in action?
+	Explore our [interactive exercises](https://github.com/i-am-bee/beeai-framework/tree/main/python/examples/agents/experimental/requirement/exercises) to discover how the agent solves real problems step by step!
+</Tip>
+
+
+## Example Agents 
+
+### Forced Execution Order
+
+This example forces the agent to use `ThinkTool` for reasoning followed by `DuckDuckGoSearchTool` to retrieve data. This trajectory ensures that even a small model can arrive at the correct answer by preventing it from skipping tool calls entirely.
+
+<CodeGroup>
+```py Python
+RequirementAgent(
+  llm=ChatModel.from_name("ollama:granite3.3"),
+  tools=[ThinkTool(), DuckDuckGoSearchTool()],
+  requirements=[
+      ConditionalRequirement(ThinkTool, force_at_step=1), # Force ThinkTool at the first step
+      ConditionalRequirement(DuckDuckGoSearchTool, force_at_step=2), # Force DuckDuckGo at the second step
+  ],
+)
+```
+
+```ts TypeScript
+COMING SOON
+```
+
+</CodeGroup>
+
+### Creating a ReAct Agent
+
+A ReAct Agent (Reason and Act) follows this trajectory:
+
+```text
+Think -> Use a tool -> Think -> Use a tool -> Think -> ... -> End
+```
+
+You can achieve this by forcing the execution of the `Think` tool after every tool:
+
+<CodeGroup>
+```py Python
+RequirementAgent(
+  llm=ChatModel.from_name("ollama:granite3.3"),
+  tools=[ThinkTool(), WikipediaTool(), OpenMeteoTool()],
+  requirements=[ConditionalRequirement(ThinkTool, force_at_step=1, force_after=Tool)],
+)
+```
+
+```ts TypeScript
+COMING SOON
+```
+
+</CodeGroup>
+
+<Tip>
+For a more general approach, use `ConditionalRequirement(ThinkTool, force_at_step=1, force_after=Tool, consecutive_allowed=False)`, where the option `consecutive_allowed=False` prevents `ThinkTool` from being used multiple times in a row.
+</Tip>
+
+### ReAct Agent with Custom Conditions
+
+You may want an agent that works like ReAct but skips the "reasoning" step under certain conditions. This example uses the priority option to tell the agent to send an email after creating an order, while calling `ThinkTool` as the first step and after `retrieve_basket`.
+
+<CodeGroup>
+```py Python
+RequirementAgent(
+  llm=ChatModel.from_name("ollama:granite3.3"),
+  tools=[ThinkTool(), retrieve_basket(), create_order(), send_email()],
+  requirements=[
+    ConditionalRequirement(ThinkTool, force_at_step=1, force_after=retrieve_basket, priority=10),
+    ConditionalRequirement(send_email, only_after=create_order, force_after=create_order, priority=20, max_invocations=1),
+  ],
+)
+```
+
+```ts TypeScript
+COMING SOON
+```
+
+</CodeGroup>
+
+
+### Ask Permission Requirement
 
 Some tools may be expensive to run or have destructive effects.
 For these tools, you may want to get **approval from an external system or directly from the user**.
 
-The following agent firstly asks the user before it runs the `remove_data` or the `get_data` tool.
+The following agent first asks the user before it runs the `remove_data` or the `get_data` tool.
 
-```py
+<CodeGroup>
+```py Python
 RequirementAgent(
-  llm=ChatModel.from_name("ollama:granite3.3:8b"),
+  llm=ChatModel.from_name("ollama:granite3.3"),
   tools=[get_data, remove_data, update_data],
   requirements=[
     AskPermissionRequirement([remove_data, get_data])
@@ -223,12 +268,19 @@ RequirementAgent(
 )
 ```
 
-### Using a Custom Handler
+```ts TypeScript
+COMING SOON
+```
+
+</CodeGroup>
+
+#### Using a Custom `handler` for Human In the Loop Requirements
 
 By default, the approval process is done as a simple prompt in terminal.
 The framework provides a simple way to provide a custom implementation.
 
-```py
+<CodeGroup>
+```py Python
 async def handler(tool: Tool, input: dict[str, Any]) -> bool:
   # your implementation
   return True
@@ -236,9 +288,17 @@ async def handler(tool: Tool, input: dict[str, Any]) -> bool:
 AskPermissionRequirement(..., handler=handler)
 ```
 
-### Complete Parameter Reference
+```ts TypeScript
+COMING SOON
+```
 
-```py
+</CodeGroup>
+
+
+#### Complete `AskPermissionRequirement` Parameter Reference
+
+<CodeGroup>
+```py Python
 AskPermissionRequirement(
   include=[...], # (optional) List of targets (tool name, instance, or class) requiring explicit approval
   exclude=[...], # (optional) List of targets to exclude
@@ -249,11 +309,17 @@ AskPermissionRequirement(
 )
 ```
 
+```ts TypeScript
+COMING SOON
+```
+
+</CodeGroup>
+
 <Note>
 If no targets are specified, permission is required for all tools.
 </Note>
 
-## Custom Requirement
+## Custom Requirements
 
 You can create a custom requirement by implementing the base Requirement class.
 The Requirement class has the following lifecycle:
@@ -269,13 +335,13 @@ The Requirement class has the following lifecycle:
 - This method is called multiple times, typically before an LLM call.
 - The return type of the `run` method is a list of rules.
 
-### Premature Stop Requirement
+### Custom Premature Stop Requirement
 
 This example demonstrates how to write a requirement that prevents the agent from answering if the question contains a specific phrase:
 
+<CodeGroup>
 {/* <!-- embedme python/examples/agents/experimental/requirement/custom_requirement.py --> */}
-
-```py
+```py Python
 import asyncio
 
 from beeai_framework.agents.experimental import RequirementAgent
@@ -340,7 +406,21 @@ if __name__ == "__main__":
 
 ```
 
-## Examples
+```ts TypeScript
+COMING SOON
+```
+
+</CodeGroup>
+
+## More Code Examples
+
+**➡️ Check out the following additional examples**
+
+- [Multi-agent](https://github.com/i-am-bee/beeai-framework/blob/main/python/examples/agents/experimental/requirement/multi_agent.py) system via handoffs.
+- [ReAct](https://github.com/i-am-bee/beeai-framework/blob/main/python/examples/agents/experimental/requirement/react.py) loop in a second.
+- Generating [structured output](https://github.com/i-am-bee/beeai-framework/blob/main/python/examples/agents/experimental/requirement/text_output.py) output.
+- [Advanced](https://github.com/i-am-bee/beeai-framework/blob/main/python/examples/agents/experimental/requirement/complex.py) (detailed configuration).
+
 
 <CardGroup cols={2}>
 	<Card title="Python" icon="python" href="https://github.com/i-am-bee/beeai-framework/tree/main/python/examples/agents/experimental/requirement">

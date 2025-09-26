@@ -6,10 +6,10 @@ icon: "gear"
 
 ## Overview
 
-Backend is an umbrella module that encapsulates a unified way to work with the following functionalities:
+`Backend` is an umbrella module that encapsulates a unified way to work with the following functionalities:
 
-- Chat Models via (`ChatModel` class)
-- Embedding Models (coming soon)
+- Chat Models (`ChatModel` class)
+- Embedding Models (`EmbeddingModel` class)
 - Audio Models (coming soon)
 - Image Models (coming soon)
 
@@ -30,103 +30,95 @@ The following table depicts supported providers. Each provider requires specific
 | Ollama         |  ✅  |     ✅     | OLLAMA_CHAT_MODEL<br/>OLLAMA_BASE_URL                                                                                                       |
 | OpenAI         |  ✅  |     ✅     | OPENAI_CHAT_MODEL<br/>OPENAI_EMBEDDING_MODEL<br/>OPENAI_API_BASE<br/>OPENAI_API_KEY<br/>OPENAI_ORGANIZATION<br/>OPENAI_API_HEADERS                                                                                                       |
 | Watsonx        |  ✅  |     ✅     | WATSONX_CHAT_MODEL<br/>WATSONX_API_KEY<br/>WATSONX_PROJECT_ID<br/>WATSONX_SPACE_ID<br/>WATSONX_TOKEN<br/>WATSONX_ZENAPIKEY<br/>WATSONX_URL<br/>WATSONX_REGION |
+| Anthropic      |  ✅  |     ✅     | ANTHROPIC_CHAT_MODEL<br/>ANTHROPIC_API_KEY<br/>ANTHROPIC_API_HEADERS |
 | Groq           |  ✅  |     ✅     | GROQ_CHAT_MODEL<br/>GROQ_EMBEDDING_MODEL<br/>GROQ_API_KEY |
-| Amazon Bedrock |  ✅  |     ✅  *(TS only)*    | AWS_CHAT_MODEL<br/>AWS_ACCESS_KEY_ID<br/>AWS_SECRET_ACCESS_KEY<br/>AWS_REGION<br/>AWS_API_HEADERS |
-| Google Vertex  |  ✅  |     ✅  *(TS only)*    | GOOGLE_VERTEX_CHAT_MODEL<br/>GOOGLE_VERTEX_PROJECT<br/>GOOGLE_APPLICATION_CREDENTIALS<br/>GOOGLE_APPLICATION_CREDENTIALS_JSON<br/>GOOGLE_CREDENTIALS<br/>GOOGLE_VERTEX_API_HEADERS |
+| Amazon Bedrock |  ✅  |     ✅     | AWS_CHAT_MODEL<br/>AWS_ACCESS_KEY_ID<br/>AWS_SECRET_ACCESS_KEY<br/>AWS_REGION<br/>AWS_API_HEADERS |
+| Google Vertex  |  ✅  |     ✅     | GOOGLE_VERTEX_CHAT_MODEL<br/>GOOGLE_VERTEX_PROJECT<br/>GOOGLE_APPLICATION_CREDENTIALS<br/>GOOGLE_APPLICATION_CREDENTIALS_JSON<br/>GOOGLE_CREDENTIALS<br/>GOOGLE_VERTEX_API_HEADERS |
+| Azure OpenAI   |  ✅  |     ✅     | AZURE_OPENAI_CHAT_MODEL<br/>AZURE_OPENAI_API_KEY<br/>AZURE_OPENAI_API_BASE<br/>AZURE_OPENAI_API_VERSION<br/>AZURE_AD_TOKEN<br/>AZURE_API_TYPE<br/>AZURE_API_HEADERS |
+| xAI            |  ✅  |     ✅  | XAI_CHAT_MODEL<br/>XAI_API_KEY |
 | Google Gemini  |  ✅  |     ✅  *(Py only)*    | GEMINI_CHAT_MODEL<br/>GEMINI_API_KEY<br/>GEMINI_API_HEADERS |
-| Azure OpenAI   |  ✅  |     ✅  *(TS only)*    | AZURE_OPENAI_CHAT_MODEL<br/>AZURE_OPENAI_API_KEY<br/>AZURE_OPENAI_API_BASE<br/>AZURE_OPENAI_API_VERSION<br/>AZURE_AD_TOKEN<br/>AZURE_API_TYPE<br/>AZURE_API_HEADERS |
-| Anthropic      |  ✅  |     ✅  *(TS only)*    | ANTHROPIC_CHAT_MODEL<br/>ANTHROPIC_API_KEY<br/>ANTHROPIC_API_HEADERS |
-| xAI            |  ✅  |     ✅  *(TS only)*    | XAI_CHAT_MODEL<br/>XAI_API_KEY |
 | MistralAI      |  ✅  |     ✅  *(Py only)*    | MISTRALAI_CHAT_MODEL<br/>MISTRALAI_EMBEDDING_MODEL<br />MISTRALAI_API_KEY<br />MISTRALAI_API_BASE |
 
 <Tip>
 If you don't see your provider raise an issue [here](https://github.com/i-am-bee/beeai-framework/issues).
-Meanwhile, you can use the Ollama adapter in [Python](https://github.com/i-am-bee/beeai-framework/blob/main/python/examples/backend/providers/ollama.py).
-or [TypeScript](https://github.com/i-am-bee/beeai-framework/blob/main/typescript/examples/backend/providers/ollama.ts).
+Meanwhile, you can use the Ollama for local models in [Python](https://github.com/i-am-bee/beeai-framework/blob/main/python/examples/backend/providers/ollama.py)
+or [TypeScript](https://github.com/i-am-bee/beeai-framework/blob/main/typescript/examples/backend/providers/ollama.ts) or the [Langchain adapter](#adding-a-provider-using-the-langchain-adapter) for hosted providers.
 </Tip>
 
 ---
 
 ### Backend initialization
 
-The `Backend` class serves as a central entry point to access models from your chosen provider.
+The `Backend` class serves as a central entry point to access models from your chosen provider. This example illustrate how to leverage the framework's unified interface for different provider model operations by showcasing various interaction patterns including:
+- Basic chat completion
+- Streaming responses with abort functionality
+- Structured output generation
+- Real-time response parsing
+- Tool calling with external APIs
+- Text embedding generation
+
+<Tip>
+Explore more provider examples in [Python](https://github.com/i-am-bee/beeai-framework/tree/main/python/examples/backend/providers) or [TypeScript](https://github.com/i-am-bee/beeai-framework/tree/main/typescript/examples/backend/providers)
+</Tip>
 
 <CodeGroup>
 
-{/* <!-- embedme python/examples/backend/providers/watsonx.py --> */}
+{/* <!-- embedme python/examples/backend/providers/openai_example.py --> */}
 ```py Python [expandable]
 import asyncio
 import datetime
-import json
 import sys
 import traceback
 
-from dotenv import load_dotenv
 from pydantic import BaseModel, Field
 
-from beeai_framework.adapters.watsonx import WatsonxChatModel
-from beeai_framework.adapters.watsonx.backend.embedding import WatsonxEmbeddingModel
-from beeai_framework.backend import ChatModel, MessageToolResultContent, ToolMessage, UserMessage
+from beeai_framework.adapters.openai import OpenAIChatModel, OpenAIEmbeddingModel
+from beeai_framework.backend import (
+    ChatModel,
+    ChatModelNewTokenEvent,
+    ChatModelParameters,
+    MessageToolResultContent,
+    ToolMessage,
+    UserMessage,
+)
+from beeai_framework.emitter import EventMeta
 from beeai_framework.errors import AbortError, FrameworkError
-from beeai_framework.tools.weather import OpenMeteoTool
+from beeai_framework.parsers.field import ParserField
+from beeai_framework.parsers.line_prefix import LinePrefixParser, LinePrefixParserNode
+from beeai_framework.tools.weather import OpenMeteoTool, OpenMeteoToolInput
 from beeai_framework.utils import AbortSignal
 
-# Load environment variables
-load_dotenv()
 
-# Setting can be passed here during initiation or pre-configured via environment variables
-llm = WatsonxChatModel(
-    "ibm/granite-3-8b-instruct",
-    # settings={
-    #     "project_id": "WATSONX_PROJECT_ID",
-    #     "api_key": "WATSONX_API_KEY",
-    #     "base_url": "WATSONX_API_URL",
-    # },
-)
-
-
-async def watsonx_from_name() -> None:
-    watsonx_llm = ChatModel.from_name(
-        "watsonx:ibm/granite-3-8b-instruct",
-        # {
-        #     "project_id": "WATSONX_PROJECT_ID",
-        #     "api_key": "WATSONX_API_KEY",
-        #     "base_url": "WATSONX_API_URL",
-        # },
-    )
+async def openai_from_name() -> None:
+    llm = ChatModel.from_name("openai:gpt-4.1-mini")
     user_message = UserMessage("what states are part of New England?")
-    response = await watsonx_llm.run([user_message])
+    response = await llm.run([user_message])
     print(response.get_text_content())
 
 
-async def watsonx_sync() -> None:
+async def openai_granite_from_name() -> None:
+    llm = ChatModel.from_name("openai:gpt-4.1-mini")
+    user_message = UserMessage("what states are part of New England?")
+    response = await llm.run([user_message])
+    print(response.get_text_content())
+
+
+async def openai_sync() -> None:
+    llm = OpenAIChatModel("gpt-4.1-mini")
     user_message = UserMessage("what is the capital of Massachusetts?")
     response = await llm.run([user_message])
     print(response.get_text_content())
 
 
-async def watsonx_stream() -> None:
+async def openai_stream() -> None:
+    llm = OpenAIChatModel("gpt-4.1-mini")
     user_message = UserMessage("How many islands make up the country of Cape Verde?")
     response = await llm.run([user_message], stream=True)
     print(response.get_text_content())
 
 
-async def watsonx_images() -> None:
-    image_llm = ChatModel.from_name(
-        "watsonx:meta-llama/llama-3-2-11b-vision-instruct",
-    )
-    response = await image_llm.run(
-        [
-            UserMessage("What is the dominant color in the picture?"),
-            UserMessage.from_image(
-                "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAIAAACQkWg2AAAAHUlEQVR4nGI5Y6bFQApgIkn1qIZRDUNKAyAAAP//0ncBT3KcmKoAAAAASUVORK5CYII="
-            ),
-        ],
-    )
-    print(response.get_text_content())
-
-
-async def watsonx_stream_abort() -> None:
+async def openai_stream_abort() -> None:
+    llm = OpenAIChatModel("gpt-4.1-mini")
     user_message = UserMessage("What is the smallest of the Cape Verde islands?")
 
     try:
@@ -140,52 +132,58 @@ async def watsonx_stream_abort() -> None:
         print(f"Aborted: {err}")
 
 
-async def watson_structure() -> None:
+async def openai_structure() -> None:
     class TestSchema(BaseModel):
         answer: str = Field(description="your final answer")
 
+    llm = OpenAIChatModel("gpt-4.1-mini")
     user_message = UserMessage("How many islands make up the country of Cape Verde?")
-    response = await llm.run([user_message], response_format=TestSchema)
+    response = await llm.run([user_message], response_format=TestSchema, stream=True)
     print(response.output_structured)
 
 
-async def watson_tool_calling() -> None:
-    watsonx_llm = ChatModel.from_name("watsonx:ibm/granite-3-3-8b-instruct")
+async def openai_stream_parser() -> None:
+    llm = OpenAIChatModel("gpt-4.1-mini")
+
+    parser = LinePrefixParser(
+        nodes={
+            "test": LinePrefixParserNode(
+                prefix="Prefix: ", field=ParserField.from_type(str), is_start=True, is_end=True
+            )
+        }
+    )
+
+    async def on_new_token(data: ChatModelNewTokenEvent, event: EventMeta) -> None:
+        await parser.add(data.value.get_text_content())
+
+    user_message = UserMessage("Produce 3 lines each starting with 'Prefix: ' followed by a sentence and a new line.")
+    await llm.run([user_message], stream=True).observe(lambda emitter: emitter.on("new_token", on_new_token))
+    result = await parser.end()
+    print(result)
+
+
+async def openai_tool_calling() -> None:
+    llm = ChatModel.from_name("openai:gpt-4.1-mini", ChatModelParameters(stream=True, temperature=0))
     user_message = UserMessage(f"What is the current weather in Boston? Current date is {datetime.datetime.today()}.")
     weather_tool = OpenMeteoTool()
-    response = await watsonx_llm.run([user_message], tools=[weather_tool], stream=True)
+    response = await llm.run([user_message], tools=[weather_tool])
     tool_call_msg = response.get_tool_calls()[0]
     print(tool_call_msg.model_dump())
-    tool_response = await weather_tool.run(json.loads(tool_call_msg.args))
+    tool_response = await weather_tool.run(OpenMeteoToolInput(location_name="Boston"))
     tool_response_msg = ToolMessage(
         MessageToolResultContent(
-            result=tool_response.get_text_content(), tool_name=tool_call_msg.tool_name, tool_call_id=tool_call_msg.id
+            result=tool_response.get_text_content(),
+            tool_name=weather_tool.name,
+            tool_call_id=response.get_tool_calls()[0].id,
         )
     )
     print(tool_response_msg.to_plain())
-    final_response = await watsonx_llm.run([user_message, *response.output, tool_response_msg], tools=[])
+    final_response = await llm.run([user_message, *response.output, tool_response_msg], tools=[])
     print(final_response.get_text_content())
 
 
-async def watsonx_debug() -> None:
-    # Log every request
-    llm.emitter.on(
-        "*",
-        lambda data, event: print(
-            f"Time: {event.created_at.time().isoformat()}",
-            f"Event: {event.name}",
-            f"Data: {str(data)[:90]}...",
-        ),
-    )
-
-    response = await llm.run(
-        [UserMessage("Hello world!")],
-    )
-    print(response.output[0].to_plain())
-
-
-async def watsonx_embedding() -> None:
-    embedding_llm = WatsonxEmbeddingModel()
+async def openai_embedding() -> None:
+    embedding_llm = OpenAIEmbeddingModel()
 
     response = await embedding_llm.create(["Text", "to", "embed"])
 
@@ -194,24 +192,24 @@ async def watsonx_embedding() -> None:
 
 
 async def main() -> None:
-    print("*" * 10, "watsonx_from_name")
-    await watsonx_from_name()
-    print("*" * 10, "watsonx_images")
-    await watsonx_images()
-    print("*" * 10, "watsonx_sync")
-    await watsonx_sync()
-    print("*" * 10, "watsonx_stream")
-    await watsonx_stream()
-    print("*" * 10, "watsonx_stream_abort")
-    await watsonx_stream_abort()
-    print("*" * 10, "watson_structure")
-    await watson_structure()
-    print("*" * 10, "watson_tool_calling")
-    await watson_tool_calling()
-    print("*" * 10, "watsonx_debug")
-    await watsonx_debug()
-    print("*" * 10, "watsonx_embedding")
-    await watsonx_embedding()
+    print("*" * 10, "openai_from_name")
+    await openai_from_name()
+    print("*" * 10, "openai_granite_from_name")
+    await openai_granite_from_name()
+    print("*" * 10, "openai_sync")
+    await openai_sync()
+    print("*" * 10, "openai_stream")
+    await openai_stream()
+    print("*" * 10, "openai_stream_abort")
+    await openai_stream_abort()
+    print("*" * 10, "openai_structure")
+    await openai_structure()
+    print("*" * 10, "openai_stream_parser")
+    await openai_stream_parser()
+    print("*" * 10, "openai_tool_calling")
+    await openai_tool_calling()
+    print("*" * 10, "openai_embedding")
+    await openai_embedding()
 
 
 if __name__ == "__main__":
@@ -223,61 +221,51 @@ if __name__ == "__main__":
 
 ```
 
-{/* <!-- embedme typescript/examples/backend/providers/watsonx.ts --> */}
+{/* <!-- embedme typescript/examples/backend/providers/openai.ts --> */}
 ```ts TypeScript [expandable]
 import "dotenv/config.js";
-import { CustomMessage, ToolMessage, UserMessage } from "beeai-framework/backend/message";
-import { WatsonxChatModel } from "beeai-framework/adapters/watsonx/backend/chat";
+import { OpenAIChatModel } from "beeai-framework/adapters/openai/backend/chat";
+import { ToolMessage, UserMessage } from "beeai-framework/backend/message";
 import { ChatModel } from "beeai-framework/backend/chat";
-import { AbortError } from "beeai-framework/errors";
 import { z } from "zod";
+import { ChatModelError } from "beeai-framework/backend/errors";
 import { OpenMeteoTool } from "beeai-framework/tools/weather/openMeteo";
 
-const llm = new WatsonxChatModel(
-  "ibm/granite-3-3-8b-instruct",
+const llm = new OpenAIChatModel(
+  "gpt-4o",
+  {},
   // {
-  //   apiKey: "WATSONX_API_KEY",
-  //   baseUrl: "WATSONX_BASE_URL",
-  //   projectId: "WATSONX_PROJECT_ID",
-  // }
+  //   baseURL: "OPENAI_BASE_URL",
+  //   apiKey: "OPENAI_API_KEY",
+  //   organization: "OPENAI_ORGANIZATION",
+  //   project: "OPENAI_PROJECT",
+  // },
 );
 
 llm.config({
   parameters: {
+    topK: 1,
     temperature: 0,
     topP: 1,
   },
 });
 
-async function watsonxFromName() {
-  const watsonxLLM = await ChatModel.fromName("watsonx:ibm/granite-3-3-8b-instruct");
-  const response = await watsonxLLM.create({
+async function openaiFromName() {
+  const openaiLLM = await ChatModel.fromName("openai:gpt-4o");
+  const response = await openaiLLM.create({
     messages: [new UserMessage("what states are part of New England?")],
   });
   console.info(response.getTextContent());
 }
 
-async function watsonxCustomMessage() {
-  const watsonxLLM = await ChatModel.fromName("watsonx:ibm/granite-3-3-8b-instruct");
-  const response = await watsonxLLM.create({
-    messages: [
-      new UserMessage(
-        "A farmer has 10 cows, 5 chickens, and 2 horses. If we count all the animals' legs together, how many legs are there in total?",
-      ),
-      new CustomMessage("control", "thinking"),
-    ],
-  });
-  console.info(response.getTextContent());
-}
-
-async function watsonxSync() {
+async function openaiSync() {
   const response = await llm.create({
     messages: [new UserMessage("what is the capital of Massachusetts?")],
   });
   console.info(response.getTextContent());
 }
 
-async function watsonxStream() {
+async function openaiStream() {
   const response = await llm.create({
     messages: [new UserMessage("How many islands make up the country of Cape Verde?")],
     stream: true,
@@ -285,22 +273,22 @@ async function watsonxStream() {
   console.info(response.getTextContent());
 }
 
-async function watsonxAbort() {
+async function openaiAbort() {
   try {
     const response = await llm.create({
       messages: [new UserMessage("What is the smallest of the Cape Verde islands?")],
       stream: true,
-      abortSignal: AbortSignal.timeout(5 * 1000),
+      abortSignal: AbortSignal.timeout(1 * 500),
     });
     console.info(response.getTextContent());
   } catch (err) {
-    if (err instanceof AbortError) {
+    if (err instanceof ChatModelError) {
       console.log("Aborted", { err });
     }
   }
 }
 
-async function watsonxStructure() {
+async function openaiStructure() {
   const response = await llm.createStructure({
     schema: z.object({
       answer: z.string({ description: "your final answer" }),
@@ -310,9 +298,10 @@ async function watsonxStructure() {
   console.info(response.object);
 }
 
-async function watsonxToolCalling() {
-  const currentDate = new Date().toISOString();
-  const userMessage = new UserMessage(`What is the current weather (${currentDate}) in Boston?`);
+async function openaiToolCalling() {
+  const userMessage = new UserMessage(
+    `What is the current weather in Boston? Current date is ${new Date().toISOString().split("T")[0]}.`,
+  );
   const weatherTool = new OpenMeteoTool({ retryOptions: { maxRetries: 3 } });
   const response = await llm.create({
     messages: [userMessage],
@@ -336,13 +325,13 @@ async function watsonxToolCalling() {
   console.info(finalResponse.getTextContent());
 }
 
-async function watsonxDebug() {
+async function openaiDebug() {
   // Log every request
   llm.emitter.match("*", (value, event) =>
     console.debug(
       `Time: ${event.createdAt.toISOString()}`,
       `Event: ${event.name}`,
-      `Data: ${value}`,
+      `Data: ${JSON.stringify(value)}`,
     ),
   );
 
@@ -352,43 +341,37 @@ async function watsonxDebug() {
   console.info(response.messages[0].toPlain());
 }
 
-console.info("watsonxFromName".padStart(25, "*"));
-await watsonxFromName();
-console.info("watsonxCustomMessage".padStart(25, "*"));
-await watsonxCustomMessage();
-console.info("watsonxSync".padStart(25, "*"));
-await watsonxSync();
-console.info("watsonxStream".padStart(25, "*"));
-await watsonxStream();
-console.info("watsonxAbort".padStart(25, "*"));
-await watsonxAbort();
-console.info("watsonxStructure".padStart(25, "*"));
-await watsonxStructure();
-console.info("watsonxToolCalling".padStart(25, "*"));
-await watsonxToolCalling();
-console.info("watsonxDebug".padStart(25, "*"));
-await watsonxDebug();
+console.info(" openaiFromName".padStart(25, "*"));
+await openaiFromName();
+console.info(" openaiSync".padStart(25, "*"));
+await openaiSync();
+console.info(" openaiStream".padStart(25, "*"));
+await openaiStream();
+console.info(" openaiAbort".padStart(25, "*"));
+await openaiAbort();
+console.info(" openaiStructure".padStart(25, "*"));
+await openaiStructure();
+console.info(" openaiToolCalling".padStart(25, "*"));
+await openaiToolCalling();
+console.info(" openaiDebug".padStart(25, "*"));
+await openaiDebug();
 
 ```
 
 </CodeGroup>
 
-<Note>
-Explore the providers examples in [Python](https://github.com/i-am-bee/beeai-framework/tree/main/python/beeai_framework/backend) or
-[TypeScript](https://github.com/i-am-bee/beeai-framework/tree/main/typescript/src/backend).
-</Note>
 
-<Tip>
+<Note>
 See the [events documentation](/modules/events) for more information on standard emitter events.
-</Tip>
+</Note>
 
 ---
 
 ## Chat model
 
-The `ChatModel` class represents a Chat Large Language Model and provides methods for text generation, streaming responses, and more. You can initialize a chat model in multiple ways:
+The `ChatModel` class represents a Chat Language Model and provides methods for text generation, streaming responses, and more. You can initialize a chat model in multiple ways:
 
-**Method 1: Using the generic factory method**
+**Method 1: Using the `from_name` method**
 
 <CodeGroup>
 ```py Python
@@ -404,7 +387,7 @@ const model = await ChatModel.fromName("ollama:granite3.3:8b");
 ```
 </CodeGroup>
 
-**Method 2: Creating a specific provider model directly**
+**Method 2: Directly specifying the provider class**
 
 <CodeGroup>
 ```py Python
@@ -422,7 +405,7 @@ const model = new OllamaChatModel("llama3.1");
 
 ### Chat model configuration
 
-You can configure various parameters for your chat model:
+You can configure various parameters for your chat model.
 
 <CodeGroup>
 
@@ -545,7 +528,7 @@ console.log(response.getTextContent());
 
 
 <Note>
-Execution parameters (those passed to `model.create({...})`) are superior to ones defined via `config`.
+Execution parameters (those passed to `model.create({...})`) take precedent over ones defined via `config`.
 </Note>
 
 ### Streaming responses
@@ -834,7 +817,7 @@ The `EmbedingModel` class provides functionality for generating vector embedding
 
 You can initialize an embedding model in multiple ways:
 
-**Method 1: Using the generic factory method**
+**Method 1: Using the `from_name` method**
 
 <CodeGroup>
 ```py Python
@@ -850,7 +833,7 @@ const model = await EmbeddingModel.fromName("ollama:nomic-embed-text");
 ```
 </CodeGroup>
 
-**Method 2: Creating a specific provider model directly**
+**Method 2: Directly specifying the provider class**
 
 <CodeGroup>
 ```py Python
@@ -910,11 +893,9 @@ console.log(response.embeddings);
 
 ---
 
-## Others
+## Adding a Provider Using the LangChain Adapter
 
-If your preferred provider isn't directly supported, you can use the LangChain adapter as a bridge.
-
-This allows you to leverage any provider that has LangChain compatibility.
+If your preferred provider isn't directly supported, you can use the LangChain adapter as a bridge as long as that provider has LangChain compatibility.
 
 <CodeGroup>
 
