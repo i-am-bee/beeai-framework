@@ -48,6 +48,18 @@ wikipedia-api = {version = "^0.8.1", optional = true}
 beeai-sdk = {version = "^0.3.4", optional = true}
 langgraph-prebuilt = {version = "^0.6.4", optional = true}
 deprecated = "^1.2.18"
+torch = [
+  {version = ">=2.4.1", markers = "sys_platform == 'darwin' and platform_machine == 'arm64'", optional = true},
+  {version = "2.2.2", markers = "sys_platform == 'darwin' and platform_machine == 'x86_64'", optional = true},
+  {version = ">=2.4.1", markers = "sys_platform != 'darwin'", optional = true}
+]
+transformers = [
+  {version = ">=4.49.0", markers = "sys_platform == 'darwin' and platform_machine == 'arm64'", optional = true},
+  {version = ">=4.49.0,<=4.51.3", markers = "sys_platform == 'darwin' and platform_machine == 'x86_64'", optional = true},
+  {version = ">=4.49.0", markers = "sys_platform != 'darwin'", optional = true}
+]
+peft = {version = "^0.17.1", optional = true}
+outlines = {version = "^1.2.4", python = ">=3.11,<3.13", optional = true}
 
 [tool.poetry.group.dev.dependencies]
 commitizen = "^4.2.1"
@@ -72,6 +84,7 @@ syrupy = "^4.9.1"
 types-deprecated = "^1.2.15.20250304"
 
 [tool.poetry.extras]
+transformers = ["transformers", "torch", "peft", "outlines"]
 huggingface = ["datasets", "transformers"]
 search = ["ddgs", "wikipedia-api"]
 duckduckgo = ["ddgs"]
@@ -102,6 +115,9 @@ all = [
     "llama-index",
     "beeai-sdk",
     "langgraph-prebuilt",
+    "torch",
+    "peft",
+    "outlines",
     "boto3",
     "google-auth"
 ]
