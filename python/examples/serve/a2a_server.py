@@ -21,7 +21,7 @@ def main() -> None:
     # we use LRU memory manager to keep limited amount of sessions in the memory
     A2AServer(
         config=A2AServerConfig(port=9999, protocol="jsonrpc"), memory_manager=LRUMemoryManager(maxsize=100)
-    ).register(agent).serve()
+    ).register(agent, send_trajectory=True).serve()
 
 
 if __name__ == "__main__":

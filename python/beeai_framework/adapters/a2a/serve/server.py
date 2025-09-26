@@ -12,6 +12,7 @@ from pydantic import BaseModel, ConfigDict
 from typing_extensions import TypedDict, TypeVar, Unpack, override
 
 from beeai_framework.agents.experimental import RequirementAgent
+from beeai_framework.agents.react import ReActAgent
 from beeai_framework.serve import MemoryManager
 from beeai_framework.serve.errors import FactoryAlreadyRegisteredError
 
@@ -36,7 +37,11 @@ except ModuleNotFoundError as e:
         "Optional module [a2a] not found.\nRun 'pip install \"beeai-framework[a2a]\"' to install."
     ) from e
 
-from beeai_framework.adapters.a2a.serve.agent_executor import BaseA2AAgentExecutor, TollCallingAgentExecutor
+from beeai_framework.adapters.a2a.serve.agent_executor import (
+    BaseA2AAgentExecutor,
+    ReActAgentExecutor,
+    ToolCallingAgentExecutor,
+)
 from beeai_framework.agents import AnyAgent
 from beeai_framework.agents.tool_calling.agent import ToolCallingAgent
 from beeai_framework.logger import Logger
@@ -66,13 +71,15 @@ class A2AServerMetadata(TypedDict, total=False):
     description: str
     url: str
     version: str
-    defaultInputModes: list[str]
-    defaultOutputModes: list[str]
+    default_input_modes: list[str]
+    default_output_modes: list[str]
     capabilities: a2a_types.AgentCapabilities
     skills: list[a2a_types.AgentSkill]
+    task_store: a2a_server_tasks.TaskStore | None
     queue_manager: a2a_server_events.QueueManager | None
     push_notifier: a2a_server_tasks.PushNotificationSender | None
     request_context_builder: a2a_agent_execution.RequestContextBuilder | None
+    send_trajectory: bool
 
 
 class A2AServer(
@@ -99,7 +106,7 @@ class A2AServer(
 
         request_handler = a2a_request_handlers.DefaultRequestHandler(
             agent_executor=executor,
-            task_store=a2a_server.tasks.InMemoryTaskStore(),
+            task_store=config.get("task_store", None) or a2a_server.tasks.InMemoryTaskStore(),
             queue_manager=config.get("queue_manager", None),
             push_sender=config.get("push_sender", config.get("push_notifier", None)),  # type: ignore
             request_context_builder=config.get("request_context_builder", None),
@@ -191,35 +198,29 @@ class A2AServer(
         await asyncio.gather(http_server.serve(), grpc_server.wait_for_termination())
 
 
+def _react_agent_factory(
+    agent: ReActAgent, *, metadata: A2AServerMetadata | None = None, memory_manager: MemoryManager
+) -> ReActAgentExecutor:
+    return ReActAgentExecutor(
+        agent=agent,
+        agent_card=_create_agent_card(metadata or {}, agent),
+        memory_manager=memory_manager,
+        send_trajectory=metadata.get("send_trajectory", None) if metadata is not None else None,
+    )
+
+
+with contextlib.suppress(FactoryAlreadyRegisteredError):
+    A2AServer.register_factory(ReActAgent, _react_agent_factory)  # type: ignore[arg-type]
+
+
 def _tool_calling_agent_factory(
     agent: ToolCallingAgent, *, metadata: A2AServerMetadata | None = None, memory_manager: MemoryManager
-) -> BaseA2AAgentExecutor:
-    if metadata is None:
-        metadata = {}
-
-    return TollCallingAgentExecutor(
+) -> ToolCallingAgentExecutor:
+    return ToolCallingAgentExecutor(
         agent=agent,
-        agent_card=a2a_types.AgentCard(
-            name=metadata.get("name", agent.meta.name),
-            description=metadata.get("description", agent.meta.description),
-            url=metadata.get("url", "http://localhost:9999"),
-            version=metadata.get("version", "1.0.0"),
-            default_input_modes=metadata.get("defaultInputModes", ["text"]),
-            default_output_modes=metadata.get("defaultOutputModes", ["text"]),
-            capabilities=metadata.get("capabilities", a2a_types.AgentCapabilities(streaming=True)),
-            skills=metadata.get(
-                "skills",
-                [
-                    a2a_types.AgentSkill(
-                        id=metadata.get("name", agent.meta.name),
-                        description=metadata.get("description", agent.meta.description),
-                        name=metadata.get("name", agent.meta.name),
-                        tags=[],
-                    )
-                ],
-            ),
-        ),
+        agent_card=_create_agent_card(metadata or {}, agent),
         memory_manager=memory_manager,
+        send_trajectory=metadata.get("send_trajectory", None) if metadata is not None else None,
     )
 
 
@@ -229,34 +230,37 @@ with contextlib.suppress(FactoryAlreadyRegisteredError):
 
 def _requirement_agent_factory(
     agent: RequirementAgent, *, metadata: A2AServerMetadata | None = None, memory_manager: MemoryManager
-) -> BaseA2AAgentExecutor:
-    metadata = metadata or {}
-
-    return TollCallingAgentExecutor(
+) -> ToolCallingAgentExecutor:
+    return ToolCallingAgentExecutor(
         agent=agent,
-        agent_card=a2a_types.AgentCard(
-            name=metadata.get("name", agent.meta.name),
-            description=metadata.get("description", agent.meta.description),
-            url=metadata.get("url", "http://localhost:9999"),
-            version=metadata.get("version", "1.0.0"),
-            default_input_modes=metadata.get("defaultInputModes", ["text"]),
-            default_output_modes=metadata.get("defaultOutputModes", ["text"]),
-            capabilities=metadata.get("capabilities", a2a_types.AgentCapabilities(streaming=True)),
-            skills=metadata.get(
-                "skills",
-                [
-                    a2a_types.AgentSkill(
-                        id=metadata.get("name", agent.meta.name),
-                        description=metadata.get("description", agent.meta.description),
-                        name=metadata.get("name", agent.meta.name),
-                        tags=[],
-                    )
-                ],
-            ),
-        ),
+        agent_card=_create_agent_card(metadata or {}, agent),
         memory_manager=memory_manager,
+        send_trajectory=metadata.get("send_trajectory", None) if metadata is not None else None,
     )
 
 
 with contextlib.suppress(FactoryAlreadyRegisteredError):
     A2AServer.register_factory(RequirementAgent, _requirement_agent_factory)  # type: ignore[arg-type]
+
+
+def _create_agent_card(metadata: A2AServerMetadata, agent: AnyAgent) -> a2a_types.AgentCard:
+    return a2a_types.AgentCard(
+        name=metadata.get("name", agent.meta.name),
+        description=metadata.get("description", agent.meta.description),
+        url=metadata.get("url", "http://localhost:9999"),
+        version=metadata.get("version", "1.0.0"),
+        default_input_modes=metadata.get("default_input_modes", ["text"]),
+        default_output_modes=metadata.get("default_output_modes", ["text"]),
+        capabilities=metadata.get("capabilities", a2a_types.AgentCapabilities(streaming=True)),
+        skills=metadata.get(
+            "skills",
+            [
+                a2a_types.AgentSkill(
+                    id=metadata.get("name", agent.meta.name),
+                    description=metadata.get("description", agent.meta.description),
+                    name=metadata.get("name", agent.meta.name),
+                    tags=[],
+                )
+            ],
+        ),
+    )
