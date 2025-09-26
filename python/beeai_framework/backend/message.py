@@ -51,6 +51,36 @@ class MessageImageContent(BaseModel):
     image_url: MessageImageContentImageUrl
 
 
+class MessageFileContentFile(TypedDict, total=False):
+    """Represents a file content reference compatible with LiteLLM 'file' content part.
+
+    One of `file_id` (remote or previously uploaded id/url) or `file_data` (data URI / base64) MUST be provided.
+    Optionally a `format` (MIME type) can be specified to give the backend extra context.
+    """
+
+    file_id: str
+    file_data: str
+    format: str
+
+
+class MessageFileContent(BaseModel):
+    """File content part (e.g. PDF or other document) for multimodal user messages.
+
+    Mirrors the shape expected by LiteLLM / OpenAI style APIs:
+    {"type": "file", "file": {"file_id": "..."}}
+    or
+    {"type": "file", "file": {"file_data": "data:application/pdf;base64,..."}}
+    """
+
+    type: Literal["file"] = "file"
+    file: MessageFileContentFile
+
+    def model_post_init(self, __context: Any) -> None:
+        # simple validation ensuring one of file_id/file_data is present
+        if not (self.file.get("file_id") or self.file.get("file_data")):
+            raise ValueError("Either 'file_id' or 'file_data' must be provided for MessageFileContent.file")
+
+
 class MessageToolResultContent(BaseModel):
     type: Literal["tool-result"] = "tool-result"
     result: Any
@@ -209,7 +239,7 @@ class SystemMessage(Message[MessageTextContent]):
         }
 
 
-UserMessageContent = MessageTextContent | MessageImageContent
+UserMessageContent = MessageTextContent | MessageImageContent | MessageFileContent
 
 
 class UserMessage(Message[UserMessageContent]):
