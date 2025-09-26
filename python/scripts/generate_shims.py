@@ -35,16 +35,16 @@ def to_import_path(path: str) -> str:
     return dotted
 
 
-def make_shim(old: str, new: str, path: Path) -> None:
-    code = textwrap.dedent(
+def create_shim(*, old_module: str, new_module: str) -> str:
+    return textwrap.dedent(
         f"""\
         import sys
         import warnings
-        import {new} as _new_module
+        import {new_module} as _new_module
 
         warnings.warn(
-            "{old} is deprecated and will be removed in a future release. "
-            "Please use {new} instead.",
+            "{old_module} is deprecated and will be removed in a future release. "
+            "Please use {new_module} instead.",
             DeprecationWarning,
             stacklevel=2,
         )
@@ -53,32 +53,30 @@ def make_shim(old: str, new: str, path: Path) -> None:
         """
     )
 
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(code)
-
 
 def main() -> None:
     root = Path(__file__).parent.parent
+    project_name = "beeai_framework"
 
     for _old_path, _new_path in MAPPINGS.items():
-        # Check for a presence
-        new = to_import_path(f"beeai_framework/{_new_path}")
-        new_path = Path(root, "beeai_framework", _new_path)
+        new = to_import_path(f"{project_name}/{_new_path}")
+        new_path = Path(root, project_name, _new_path)
 
         if not new_path.exists():
             raise FileNotFoundError(f"File {new_path} does not exist")
 
-        old_path = Path(root, "beeai_framework", _old_path)
-        old = to_import_path(f"beeai_framework/{_old_path}")
+        old_path = Path(root, project_name, _old_path)
+        old = to_import_path(f"{project_name}/{_old_path}")
 
         # Clean any existing shim
         if old_path.exists():
             for p in old_path.rglob("__init__.py"):
                 p.unlink()
 
-        # Generate new shim
         print(f"Generating shim: {old} -> {new}")
-        make_shim(old, new, old_path)
+        code = create_shim(old_module=old, new_module=new)
+        old_path.parent.mkdir(parents=True, exist_ok=True)
+        old_path.write_text(code)
 
 
 if __name__ == "__main__":
