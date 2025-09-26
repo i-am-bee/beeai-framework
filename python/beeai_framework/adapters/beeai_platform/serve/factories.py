@@ -3,17 +3,19 @@
 
 import uuid
 from collections.abc import AsyncGenerator
-from typing import Annotated
+from typing import Annotated, Any
 
 from beeai_framework.adapters.beeai_platform.backend.chat import BeeAIPlatformChatModel
 from beeai_framework.adapters.beeai_platform.context import BeeAIPlatformContext
-from beeai_framework.adapters.beeai_platform.serve.server import BeeAIPlatformServerMetadata
+from beeai_framework.adapters.beeai_platform.serve.server import BeeAIPlatformMemoryManager, BeeAIPlatformServerMetadata
 from beeai_framework.adapters.beeai_platform.serve.utils import init_beeai_platform_memory, send_message_trajectory
 from beeai_framework.agents import AnyAgent
 from beeai_framework.agents.experimental import RequirementAgent
 from beeai_framework.agents.experimental.events import RequirementAgentSuccessEvent
 from beeai_framework.agents.react import ReActAgent, ReActAgentUpdateEvent
 from beeai_framework.agents.tool_calling import ToolCallingAgent, ToolCallingAgentSuccessEvent
+from beeai_framework.memory import UnconstrainedMemory
+from beeai_framework.runnable import Runnable
 from beeai_framework.utils.cloneable import Cloneable
 from beeai_framework.utils.lists import find_index
 
@@ -183,6 +185,41 @@ def _requirement_agent_factory(
 
     metadata = _init_metadata(agent, metadata)
     return beeai_agent.agent(**metadata)(run)
+
+
+def _runnable_factory(
+    runnable: Runnable[Any], *, metadata: BeeAIPlatformServerMetadata | None = None, memory_manager: MemoryManager
+) -> beeai_agent.AgentFactory:
+    async def run(
+        message: a2a_types.Message,
+        context: beeai_context.RunContext,
+    ) -> AsyncGenerator[beeai_types.RunYield, beeai_types.RunYieldResume]:
+        cloned_runnable = await runnable.clone() if isinstance(runnable, Cloneable) else runnable
+        memory = None
+        if isinstance(memory_manager, BeeAIPlatformMemoryManager):
+            history = [msg async for msg in context.store.load_history() if msg.parts]
+            messages = [convert_a2a_to_framework_message(msg) for msg in history]
+        else:
+            try:
+                memory = await memory_manager.get(context.context_id)
+            except KeyError:
+                memory = UnconstrainedMemory()
+                await memory_manager.set(context.context_id, memory)
+
+            await memory.add(convert_a2a_to_framework_message(message))
+            messages = memory.messages
+
+        data = await cloned_runnable.run(messages)
+        if memory is not None:
+            await memory.add(data.last_message)
+        yield beeai_types.AgentMessage(
+            text=data.last_message.text,
+            context_id=context.context_id,
+            task_id=context.task_id,
+            reference_task_ids=[task.id for task in (context.related_tasks or [])],
+        )
+
+    return beeai_agent.agent(**(metadata or {}))(run)
 
 
 def _init_metadata(
