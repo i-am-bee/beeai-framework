@@ -4,9 +4,9 @@
 from typing_extensions import TypeVar, override
 
 from beeai_framework.adapters.a2a.agents._utils import convert_a2a_to_framework_message
-from beeai_framework.agents.experimental.events import RequirementAgentStartEvent, RequirementAgentSuccessEvent
 from beeai_framework.agents.react import ReActAgentUpdateEvent
 from beeai_framework.agents.react.types import ReActAgentIterationResult
+from beeai_framework.agents.requirement.events import RequirementAgentStartEvent, RequirementAgentSuccessEvent
 from beeai_framework.agents.tool_calling import ToolCallingAgentStartEvent, ToolCallingAgentSuccessEvent
 from beeai_framework.backend import AssistantMessage, MessageToolCallContent, ToolMessage
 from beeai_framework.emitter import Emitter, EventMeta

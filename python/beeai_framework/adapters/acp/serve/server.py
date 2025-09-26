@@ -8,8 +8,8 @@ from collections.abc import AsyncGenerator, Awaitable, Callable
 from datetime import UTC, datetime, timedelta
 from typing import Any, Generic, Self
 
-from beeai_framework.agents.experimental import RequirementAgent
-from beeai_framework.agents.experimental.events import RequirementAgentSuccessEvent
+from beeai_framework.agents.requirement import RequirementAgent
+from beeai_framework.agents.requirement.events import RequirementAgentSuccessEvent
 from beeai_framework.serve import MemoryManager, init_agent_memory
 from beeai_framework.serve.errors import FactoryAlreadyRegisteredError
 from beeai_framework.utils.cloneable import Cloneable

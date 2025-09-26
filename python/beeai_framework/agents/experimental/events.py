@@ -1,23 +1,12 @@
-# Copyright 2025 © BeeAI a Series of LF Projects, LLC
-# SPDX-License-Identifier: Apache-2.0
+import sys
+import warnings
+import beeai_framework.agents.requirement.events as _new_module
 
-from pydantic import BaseModel
+warnings.warn(
+    "beeai_framework.agents.experimental.events is deprecated and will be removed in a future release. "
+    "Please use beeai_framework.agents.requirement.events instead.",
+    DeprecationWarning,
+    stacklevel=2,
+)
 
-from beeai_framework.agents.experimental.types import RequirementAgentRequest, RequirementAgentRunState
-from beeai_framework.backend import ChatModelOutput
-
-
-class RequirementAgentStartEvent(BaseModel):
-    state: RequirementAgentRunState
-    request: RequirementAgentRequest
-
-
-class RequirementAgentSuccessEvent(BaseModel):
-    state: RequirementAgentRunState
-    response: ChatModelOutput
-
-
-requirement_agent_event_types: dict[str, type] = {
-    "start": RequirementAgentStartEvent,
-    "success": RequirementAgentSuccessEvent,
-}
+sys.modules[__name__] = _new_module

@@ -2,7 +2,7 @@ import asyncio
 
 from pydantic import BaseModel, Field
 
-from beeai_framework.agents.experimental import RequirementAgent
+from beeai_framework.agents.requirement import RequirementAgent
 from beeai_framework.backend import ChatModel
 from beeai_framework.middleware.trajectory import GlobalTrajectoryMiddleware
 from beeai_framework.utils.models import to_list_model

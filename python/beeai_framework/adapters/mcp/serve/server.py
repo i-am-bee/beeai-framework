@@ -11,8 +11,8 @@ from typing import Any, Literal
 from pydantic import BaseModel, Field
 
 from beeai_framework.agents import AgentOutput, AnyAgent
-from beeai_framework.agents.experimental import RequirementAgent
 from beeai_framework.agents.react import ReActAgent
+from beeai_framework.agents.requirement import RequirementAgent
 from beeai_framework.agents.tool_calling import ToolCallingAgent
 from beeai_framework.backend import Role
 from beeai_framework.serve import MemoryManager

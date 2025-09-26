@@ -3,17 +3,17 @@ import math
 
 from typing_extensions import override
 
-from beeai_framework.agents.experimental import RequirementAgent
-from beeai_framework.agents.experimental.prompts import (
+from beeai_framework.agents.requirement import RequirementAgent, RequirementAgentRunState
+from beeai_framework.agents.requirement.prompts import (
     RequirementAgentSystemPrompt,
     RequirementAgentTaskPrompt,
     RequirementAgentToolErrorPrompt,
     RequirementAgentToolNoResultPrompt,
 )
-from beeai_framework.agents.experimental.requirements import Requirement, Rule
-from beeai_framework.agents.experimental.requirements.conditional import ConditionalRequirement
-from beeai_framework.agents.experimental.requirements.requirement import run_with_context
-from beeai_framework.agents.experimental.types import RequirementAgentRunState, RequirementAgentTemplates
+from beeai_framework.agents.requirement.requirements import Requirement, Rule
+from beeai_framework.agents.requirement.requirements.conditional import ConditionalRequirement
+from beeai_framework.agents.requirement.requirements.requirement import run_with_context
+from beeai_framework.agents.requirement.types import RequirementAgentTemplates
 from beeai_framework.backend import ChatModel
 from beeai_framework.context import RunContext
 from beeai_framework.memory import UnconstrainedMemory

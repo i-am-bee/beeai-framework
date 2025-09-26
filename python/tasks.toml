@@ -14,6 +14,11 @@ outputs = { auto = true }
 dir = "{{config_root}}/python"
 run = "test -f .env || cp .env.example .env"
 
+# scripts
+["python:scripts:generate-shims"]
+dir = "{{config_root}}/python"
+run = "poetry run python scripts/generate_shims.py"
+
 # check
 
 ["python:check"]

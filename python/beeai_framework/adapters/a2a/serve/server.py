@@ -11,8 +11,8 @@ import uvicorn
 from pydantic import BaseModel, ConfigDict
 from typing_extensions import TypedDict, TypeVar, Unpack, override
 
-from beeai_framework.agents.experimental import RequirementAgent
 from beeai_framework.agents.react import ReActAgent
+from beeai_framework.agents.requirement import RequirementAgent
 from beeai_framework.serve import MemoryManager
 from beeai_framework.serve.errors import FactoryAlreadyRegisteredError
 

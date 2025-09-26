@@ -1,5 +1,5 @@
 from beeai_framework.adapters.acp import ACPServer, ACPServerConfig
-from beeai_framework.agents.experimental import RequirementAgent
+from beeai_framework.agents.requirement import RequirementAgent
 from beeai_framework.backend import ChatModel
 from beeai_framework.memory import UnconstrainedMemory
 from beeai_framework.tools.search.duckduckgo import DuckDuckGoSearchTool

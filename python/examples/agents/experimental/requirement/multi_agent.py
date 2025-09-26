@@ -2,10 +2,10 @@ import asyncio
 import sys
 import traceback
 
-from beeai_framework.agents.experimental import RequirementAgent
-from beeai_framework.agents.experimental.requirements import Requirement
-from beeai_framework.agents.experimental.requirements.ask_permission import AskPermissionRequirement
-from beeai_framework.agents.experimental.requirements.conditional import ConditionalRequirement
+from beeai_framework.agents.requirement import RequirementAgent
+from beeai_framework.agents.requirement.requirements import Requirement
+from beeai_framework.agents.requirement.requirements.ask_permission import AskPermissionRequirement
+from beeai_framework.agents.requirement.requirements.conditional import ConditionalRequirement
 from beeai_framework.backend import ChatModel
 from beeai_framework.errors import FrameworkError
 from beeai_framework.memory import UnconstrainedMemory
