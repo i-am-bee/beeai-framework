@@ -172,7 +172,7 @@ def test_chat_model_from(monkeypatch: pytest.MonkeyPatch) -> None:
     assert isinstance(xai_chat_model, XAIChatModel)
 
     monkeypatch.setenv("GOOGLE_VERTEX_PROJECT", "myproject")
-    vertexai_chat_model = ChatModel.from_name("vertexai:gemini-2.0-flash-lite-001", vertexai_location="test")
+    vertexai_chat_model = ChatModel.from_name("vertexai:gemini-2.0-flash-lite-001", vertex_location="test")
     assert isinstance(vertexai_chat_model, VertexAIChatModel)
 
     monkeypatch.setenv("ANTHROPIC_API_KEY", "apikey")
