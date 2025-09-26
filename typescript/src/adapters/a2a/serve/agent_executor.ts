@@ -178,10 +178,10 @@ export class ToolCallingAgentExecutor extends BaseA2AAgentExecutor {
     const processEvent: Callback<{ state: ToolCallingAgentRunState }> = async ({ state }) => {
       const messages = state.memory.messages;
       if (lastMsg === undefined) {
-        lastMsg = messages[messages.length - 1];
+        lastMsg = messages.at(-1);
       }
 
-      const index = messages.lastIndexOf(lastMsg);
+      const index = lastMsg ? messages.lastIndexOf(lastMsg) : -1;
       for (const message of messages.slice(index + 1)) {
         const update: TaskStatusUpdateEvent = {
           kind: "status-update",

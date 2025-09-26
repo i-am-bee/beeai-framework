@@ -63,7 +63,12 @@ export abstract class Server<
   }
 
   protected getFactory(input: TInput): ServerFactory<TInput, TInternal> {
-    const factory = (this.constructor as typeof Server).factories.get(input.constructor);
+    let factory = undefined;
+    let obj: FactoryMember<TInput> = Object.getPrototypeOf(input);
+    do {
+      factory = (this.constructor as typeof Server).factories.get(obj.constructor);
+      obj = Object.getPrototypeOf(obj);
+    } while (factory === undefined && obj !== Object.prototype.constructor);
     if (!factory) {
       throw new Error(`No factory registered for ${input.constructor.name}.`);
     }
