@@ -67,16 +67,10 @@ class Server(Generic[TInput, TInternal, TConfig], ABC):
 
     @classmethod
     def _get_factory(cls, input: TInput) -> Callable[[TInput], TInternal]:
-        obj_type: type | None = type(input)
-        factory = None
-        while obj_type is not None:
-            factory = cls._factories.get(obj_type)
-            if factory:
-                break
-            obj_type = obj_type.__base__
-        if factory is None:
-            raise ValueError(f"No factory registered for {type(input)}.")
-        return factory
+        for obj_type in type(input).__mro__:
+            if factory := cls._factories.get(obj_type):
+                return factory
+        raise ValueError(f"No factory registered for {type(input)}.")
 
     @property
     def members(self) -> list[TInput]:
