@@ -75,7 +75,7 @@ export class MCPServerConfig {
   }
 }
 
-export class MCPServer extends Server<any, MCPServerEntry, MCPServerConfig> {
+export class MCPServer extends Server<any, MCPServerEntry, MCPServerConfig, never> {
   protected server: McpServer;
 
   constructor(config?: MCPServerConfig) {

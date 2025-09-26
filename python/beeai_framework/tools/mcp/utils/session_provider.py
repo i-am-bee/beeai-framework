@@ -11,6 +11,10 @@ from anyio.streams.memory import MemoryObjectReceiveStream, MemoryObjectSendStre
 from mcp.client.session import ClientSession
 from mcp.shared.message import SessionMessage
 
+from beeai_framework.logger import Logger
+
+logger = Logger(__name__)
+
 MCPClient = contextlib._AsyncGeneratorContextManager[
     tuple[MemoryObjectReceiveStream[SessionMessage | Exception], MemoryObjectSendStream[SessionMessage]], None
 ]
@@ -58,6 +62,11 @@ class MCPSessionProvider:
                     await _session.initialize()
                     self._session_initialized.set()
                     await self._session_stopping.wait()
+            except Exception as e:
+                logger.error(f"Failed to initialize MCP session: {e}")
+                self._session_initialized.set()
+                if isinstance(e, asyncio.CancelledError):
+                    raise
             finally:
                 self._session = None
 

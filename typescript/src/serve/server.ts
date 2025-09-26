@@ -4,8 +4,12 @@
  */
 
 import { removeFromArray } from "@/internals/helpers/array.js";
+import { traversePrototypeChain } from "@/internals/helpers/prototype.js";
 
-type ServerFactory<TInput, TInternal> = (input: TInput) => Promise<TInternal>;
+type ServerFactory<TInput, TInternal> = (
+  input: TInput,
+  config?: Record<string, any>,
+) => Promise<TInternal>;
 export type FactoryMember<TInput> = abstract new (
   ...args: any[]
 ) => TInput | (new (...args: any[]) => TInput) | ((...args: any[]) => TInput);
@@ -14,11 +18,13 @@ export abstract class Server<
   TInput extends object = object,
   TInternal extends object = object,
   TConfig extends object = object,
+  TMetadata extends object = object,
 > {
   // @ts-expect-error
   public static readonly factories = new Map<object, ServerFactory<TInput, TInternal>>();
 
   public readonly members: TInput[] = [];
+  protected readonly metadataByInput = new Map<TInput, TMetadata>();
 
   constructor(protected config: TConfig) {}
 
@@ -35,11 +41,14 @@ export abstract class Server<
     }
   }
 
-  public register(input: TInput): this {
+  public register(input: TInput, metadata?: TMetadata): this {
     // check if the type has a factory registered
     this.getFactory(input);
     if (!this.members.includes(input)) {
       this.members.push(input);
+      if (metadata) {
+        this.metadataByInput.set(input, metadata);
+      }
     }
     return this;
   }
@@ -55,11 +64,15 @@ export abstract class Server<
   }
 
   protected getFactory(input: TInput): ServerFactory<TInput, TInternal> {
-    const factory = (this.constructor as typeof Server).factories.get(input);
-    if (!factory) {
-      throw new Error(`No factory registered for ${input.constructor.name}.`);
+    for (const obj of traversePrototypeChain(input)) {
+      const factory = (this.constructor as typeof Server).factories.get(
+        (obj as FactoryMember<TInput>).constructor,
+      );
+      if (factory) {
+        return factory;
+      }
     }
-    return factory;
+    throw new Error(`No factory registered for ${input.constructor.name}.`);
   }
 
   public abstract serve(): void;

@@ -1,3 +1,9 @@
+## Unreleased
+
+**Migration Guide**
+
+Rename `defaultInputModes` and `defaultOutputModes` to  `default_input_modes` and `default_output_modes` in the `A2AServerMetadata`.
+
 ## python_v0.1.49 (2025-09-22)
 
 ### Features
