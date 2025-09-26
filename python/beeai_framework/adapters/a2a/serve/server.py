@@ -11,6 +11,9 @@ import uvicorn
 from pydantic import BaseModel, ConfigDict
 from typing_extensions import TypedDict, TypeVar, Unpack, override
 
+from beeai_framework.adapters.a2a.serve.executors.base_a2a_executor import BaseA2AExecutor
+from beeai_framework.adapters.a2a.serve.executors.react_agent_executor import ReActAgentExecutor
+from beeai_framework.adapters.a2a.serve.executors.tool_calling_agent_executor import ToolCallingAgentExecutor
 from beeai_framework.agents.experimental import RequirementAgent
 from beeai_framework.agents.react import ReActAgent
 from beeai_framework.runnable import Runnable
@@ -38,11 +41,6 @@ except ModuleNotFoundError as e:
         "Optional module [a2a] not found.\nRun 'pip install \"beeai-framework[a2a]\"' to install."
     ) from e
 
-from beeai_framework.adapters.a2a.serve.agent_executor import (
-    BaseA2AExecutor,
-    ReActAgentExecutor,
-    ToolCallingAgentExecutor,
-)
 from beeai_framework.agents import BaseAgent
 from beeai_framework.agents.tool_calling.agent import ToolCallingAgent
 from beeai_framework.logger import Logger
@@ -259,12 +257,15 @@ with contextlib.suppress(FactoryAlreadyRegisteredError):
 
 
 def _create_agent_card(metadata: A2AServerMetadata, runnable: Runnable[Any]) -> a2a_types.AgentCard:
-    name = runnable.meta.name if isinstance(runnable, BaseAgent) else runnable.__class__.__name__
-    description = runnable.meta.description if isinstance(runnable, BaseAgent) else runnable.__class__.__doc__ or ""
+    name = metadata.get("name", runnable.meta.name if isinstance(runnable, BaseAgent) else runnable.__class__.__name__)
+    description = metadata.get(
+        "description",
+        runnable.meta.description if isinstance(runnable, BaseAgent) else runnable.__class__.__doc__ or "",
+    )
 
     return a2a_types.AgentCard(
-        name=metadata.get("name", name),
-        description=metadata.get("description", description),
+        name=name,
+        description=description,
         url=metadata.get("url", "http://localhost:9999"),
         version=metadata.get("version", "1.0.0"),
         default_input_modes=metadata.get("default_input_modes", ["text"]),
@@ -274,9 +275,9 @@ def _create_agent_card(metadata: A2AServerMetadata, runnable: Runnable[Any]) -> 
             "skills",
             [
                 a2a_types.AgentSkill(
-                    id=metadata.get("name", name),
-                    description=metadata.get("description", description),
-                    name=metadata.get("name", name),
+                    id=name,
+                    description=description,
+                    name=name,
                     tags=[],
                 )
             ],
