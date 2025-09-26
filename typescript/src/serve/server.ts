@@ -4,6 +4,7 @@
  */
 
 import { removeFromArray } from "@/internals/helpers/array.js";
+import { traversePrototypeChain } from "@/internals/helpers/prototype.js";
 
 type ServerFactory<TInput, TInternal> = (
   input: TInput,
@@ -63,16 +64,15 @@ export abstract class Server<
   }
 
   protected getFactory(input: TInput): ServerFactory<TInput, TInternal> {
-    let factory = undefined;
-    let obj: FactoryMember<TInput> = Object.getPrototypeOf(input);
-    do {
-      factory = (this.constructor as typeof Server).factories.get(obj.constructor);
-      obj = Object.getPrototypeOf(obj);
-    } while (factory === undefined && obj !== Object.prototype.constructor);
-    if (!factory) {
-      throw new Error(`No factory registered for ${input.constructor.name}.`);
+    for (const obj of traversePrototypeChain(input)) {
+      const factory = (this.constructor as typeof Server).factories.get(
+        (obj as FactoryMember<TInput>).constructor,
+      );
+      if (factory) {
+        return factory;
+      }
     }
-    return factory;
+    throw new Error(`No factory registered for ${input.constructor.name}.`);
   }
 
   public abstract serve(): void;
