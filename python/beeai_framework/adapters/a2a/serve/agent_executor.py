@@ -1,5 +1,6 @@
 # Copyright 2025 © BeeAI a Series of LF Projects, LLC
 # SPDX-License-Identifier: Apache-2.0
+from typing import Any, Generic
 
 from typing_extensions import TypeVar, override
 
@@ -10,6 +11,8 @@ from beeai_framework.agents.react.types import ReActAgentIterationResult
 from beeai_framework.agents.tool_calling import ToolCallingAgentStartEvent, ToolCallingAgentSuccessEvent
 from beeai_framework.backend import AssistantMessage, MessageToolCallContent, ToolMessage
 from beeai_framework.emitter import Emitter, EventMeta
+from beeai_framework.memory import UnconstrainedMemory
+from beeai_framework.runnable import Runnable
 from beeai_framework.serve import MemoryManager, init_agent_memory
 from beeai_framework.utils.cancellation import AbortController
 from beeai_framework.utils.cloneable import Cloneable
@@ -34,11 +37,77 @@ from beeai_framework.backend.message import (
 from beeai_framework.logger import Logger
 
 AnyAgentLike = TypeVar("AnyAgentLike", bound=AnyAgent, default=AnyAgent)
+AnyRunnable = TypeVar("AnyRunnable", bound=Runnable[Any], default=Runnable[Any])
 
 logger = Logger(__name__)
 
 
-class BaseA2AAgentExecutor(a2a_agent_execution.AgentExecutor):
+class BaseA2AExecutor(a2a_agent_execution.AgentExecutor, Generic[AnyRunnable]):
+    def __init__(
+        self,
+        runnable: AnyRunnable,
+        agent_card: a2a_types.AgentCard,
+        *,
+        memory_manager: MemoryManager,
+    ) -> None:
+        super().__init__()
+        self._runnable = runnable
+        self.agent_card = agent_card
+        self._abort_controller = AbortController()
+        self._memory_manager = memory_manager
+
+    @override
+    async def execute(
+        self,
+        context: a2a_agent_execution.RequestContext,
+        event_queue: a2a_server.events.EventQueue,
+    ) -> None:
+        if not context.message:
+            raise ValueError("No message found in the request context.")
+
+        cloned_runnable = await self._runnable.clone() if isinstance(self._runnable, Cloneable) else self._runnable
+        memory = None
+        if context.context_id:
+            try:
+                memory = await self._memory_manager.get(context.context_id)
+            except KeyError:
+                memory = UnconstrainedMemory()
+                await self._memory_manager.set(context.context_id, memory)
+
+            await memory.add(convert_a2a_to_framework_message(context.message))
+
+        messages = memory.messages if memory else [convert_a2a_to_framework_message(context.message)]
+
+        try:
+            data = await cloned_runnable.run(messages, signal=self._abort_controller.signal)
+            if memory is not None:
+                await memory.add(data.last_message)
+
+            await event_queue.enqueue_event(
+                a2a_utils.new_agent_text_message(
+                    text=data.last_message.text, context_id=context.context_id, task_id=context.task_id
+                )
+            )
+
+        except Exception as e:
+            logger.exception("Exception during execution")
+            await event_queue.enqueue_event(a2a_utils.new_agent_text_message(str(e)))
+
+    @override
+    async def cancel(
+        self,
+        context: a2a_agent_execution.RequestContext,
+        event_queue: a2a_server.events.EventQueue,
+    ) -> None:
+        self._abort_controller.abort()
+
+    async def _process_events(
+        self, emitter: Emitter, context: a2a_agent_execution.RequestContext, updater: a2a_server_tasks.TaskUpdater
+    ) -> None:
+        pass
+
+
+class BaseA2AAgentExecutor(BaseA2AExecutor[AnyAgentLike]):
     def __init__(
         self,
         agent: AnyAgentLike,
@@ -47,11 +116,7 @@ class BaseA2AAgentExecutor(a2a_agent_execution.AgentExecutor):
         memory_manager: MemoryManager,
         send_trajectory: bool | None = True,
     ) -> None:
-        super().__init__()
-        self._agent = agent
-        self.agent_card = agent_card
-        self._abort_controller = AbortController()
-        self._memory_manager = memory_manager
+        super().__init__(runnable=agent, agent_card=agent_card, memory_manager=memory_manager)
         self._send_trajectory = send_trajectory
 
     @override
@@ -60,6 +125,7 @@ class BaseA2AAgentExecutor(a2a_agent_execution.AgentExecutor):
         context: a2a_agent_execution.RequestContext,
         event_queue: a2a_server.events.EventQueue,
     ) -> None:
+        agent: AnyAgentLike = self._runnable
         updater = a2a_server_tasks.TaskUpdater(event_queue, context.task_id, context.context_id)  # type: ignore[arg-type]
         if not context.current_task:
             if not context.message:
@@ -67,7 +133,7 @@ class BaseA2AAgentExecutor(a2a_agent_execution.AgentExecutor):
             context.current_task = a2a_utils.new_task(context.message)
             await updater.submit()
 
-        cloned_agent = await self._agent.clone() if isinstance(self._agent, Cloneable) else self._agent
+        cloned_agent = await agent.clone() if isinstance(agent, Cloneable) else agent
         await init_agent_memory(cloned_agent, self._memory_manager, context.context_id)
         new_messages = _extract_request_messages(context)
 
@@ -90,19 +156,6 @@ class BaseA2AAgentExecutor(a2a_agent_execution.AgentExecutor):
             await updater.failed(
                 message=a2a_utils.new_agent_text_message(str(e)),
             )
-
-    @override
-    async def cancel(
-        self,
-        context: a2a_agent_execution.RequestContext,
-        event_queue: a2a_server.events.EventQueue,
-    ) -> None:
-        self._abort_controller.abort()
-
-    async def _process_events(
-        self, emitter: Emitter, context: a2a_agent_execution.RequestContext, updater: a2a_server_tasks.TaskUpdater
-    ) -> None:
-        pass
 
 
 class ReActAgentExecutor(BaseA2AAgentExecutor):

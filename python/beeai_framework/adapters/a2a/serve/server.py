@@ -5,7 +5,7 @@ import asyncio
 import contextlib
 import signal
 from collections.abc import Sequence
-from typing import Literal, Self
+from typing import Any, Literal, Self
 
 import uvicorn
 from pydantic import BaseModel, ConfigDict
@@ -13,6 +13,7 @@ from typing_extensions import TypedDict, TypeVar, Unpack, override
 
 from beeai_framework.agents.experimental import RequirementAgent
 from beeai_framework.agents.react import ReActAgent
+from beeai_framework.runnable import Runnable
 from beeai_framework.serve import MemoryManager
 from beeai_framework.serve.errors import FactoryAlreadyRegisteredError
 
@@ -38,11 +39,11 @@ except ModuleNotFoundError as e:
     ) from e
 
 from beeai_framework.adapters.a2a.serve.agent_executor import (
-    BaseA2AAgentExecutor,
+    BaseA2AExecutor,
     ReActAgentExecutor,
     ToolCallingAgentExecutor,
 )
-from beeai_framework.agents import AnyAgent
+from beeai_framework.agents import BaseAgent
 from beeai_framework.agents.tool_calling.agent import ToolCallingAgent
 from beeai_framework.logger import Logger
 from beeai_framework.serve.server import Server
@@ -51,7 +52,7 @@ from beeai_framework.utils.models import to_model
 
 logger = Logger(__name__)
 
-AnyAgentLike = TypeVar("AnyAgentLike", bound=AnyAgent, default=AnyAgent)
+AnyRunnable = TypeVar("AnyRunnable", bound=Runnable[Any], default=Runnable[Any])
 
 
 class A2AServerConfig(BaseModel):
@@ -84,8 +85,8 @@ class A2AServerMetadata(TypedDict, total=False):
 
 class A2AServer(
     Server[
-        AnyAgentLike,
-        BaseA2AAgentExecutor,
+        AnyRunnable,
+        BaseA2AExecutor,
         A2AServerConfig,
     ],
 ):
@@ -93,14 +94,14 @@ class A2AServer(
         self, *, config: ModelLike[A2AServerConfig] | None = None, memory_manager: MemoryManager | None = None
     ) -> None:
         super().__init__(config=to_model(A2AServerConfig, config or A2AServerConfig()), memory_manager=memory_manager)
-        self._metadata_by_agent: dict[AnyAgentLike, A2AServerMetadata] = {}
+        self._metadata_by_agent: dict[AnyRunnable, A2AServerMetadata] = {}
 
     def serve(self) -> None:
         if len(self._members) == 0:
             raise ValueError("No agents registered to the server.")
 
         member = self._members[0]
-        factory = type(self)._factories[type(member)]
+        factory = type(self)._get_factory(member)
         config = self._metadata_by_agent.get(member, {})
         executor = factory(member, metadata=config, memory_manager=self._memory_manager)  # type: ignore[call-arg]
 
@@ -131,7 +132,7 @@ class A2AServer(
             raise ValueError(f"Unsupported protocol {self._config.protocol}")
 
     @override
-    def register(self, input: AnyAgentLike, **metadata: Unpack[A2AServerMetadata]) -> Self:
+    def register(self, input: AnyRunnable, **metadata: Unpack[A2AServerMetadata]) -> Self:
         if len(self._members) != 0:
             raise ValueError("A2AServer only supports one agent.")
         else:
@@ -140,7 +141,7 @@ class A2AServer(
             return self
 
     @override
-    def register_many(self, input: Sequence[AnyAgentLike]) -> Self:
+    def register_many(self, input: Sequence[AnyRunnable]) -> Self:
         raise NotImplementedError("register_many is not implemented for A2AServer")
 
     async def _start_grpc_server(
@@ -243,10 +244,27 @@ with contextlib.suppress(FactoryAlreadyRegisteredError):
     A2AServer.register_factory(RequirementAgent, _requirement_agent_factory)  # type: ignore[arg-type]
 
 
-def _create_agent_card(metadata: A2AServerMetadata, agent: AnyAgent) -> a2a_types.AgentCard:
+def _runnable_factory(
+    runnable: Runnable[Any], *, metadata: A2AServerMetadata | None = None, memory_manager: MemoryManager
+) -> BaseA2AExecutor[Runnable[Any]]:
+    return BaseA2AExecutor(
+        runnable=runnable,
+        agent_card=_create_agent_card(metadata or {}, runnable),
+        memory_manager=memory_manager,
+    )
+
+
+with contextlib.suppress(FactoryAlreadyRegisteredError):
+    A2AServer.register_factory(Runnable, _runnable_factory)  # type: ignore
+
+
+def _create_agent_card(metadata: A2AServerMetadata, runnable: Runnable[Any]) -> a2a_types.AgentCard:
+    name = runnable.meta.name if isinstance(runnable, BaseAgent) else runnable.__class__.__name__
+    description = runnable.meta.description if isinstance(runnable, BaseAgent) else runnable.__class__.__doc__ or ""
+
     return a2a_types.AgentCard(
-        name=metadata.get("name", agent.meta.name),
-        description=metadata.get("description", agent.meta.description),
+        name=metadata.get("name", name),
+        description=metadata.get("description", description),
         url=metadata.get("url", "http://localhost:9999"),
         version=metadata.get("version", "1.0.0"),
         default_input_modes=metadata.get("default_input_modes", ["text"]),
@@ -256,9 +274,9 @@ def _create_agent_card(metadata: A2AServerMetadata, agent: AnyAgent) -> a2a_type
             "skills",
             [
                 a2a_types.AgentSkill(
-                    id=metadata.get("name", agent.meta.name),
-                    description=metadata.get("description", agent.meta.description),
-                    name=metadata.get("name", agent.meta.name),
+                    id=metadata.get("name", name),
+                    description=metadata.get("description", description),
+                    name=metadata.get("name", name),
                     tags=[],
                 )
             ],
