@@ -196,7 +196,9 @@ def _agent_factory(
         result: AgentOutput = await cloned_agent.run(input)
         return Msg(role=result.last_message.role, content=result.last_message.text)
 
-    return MCPNativeTool.from_function(run, name=agent.meta.name, description=agent.meta.description)
+    return MCPNativeTool.from_function(
+        run, name=agent.meta.name, description=agent.meta.description, structured_output=True
+    )
 
 
 for agent_type in (RequirementAgent, ToolCallingAgent, ReActAgent):
