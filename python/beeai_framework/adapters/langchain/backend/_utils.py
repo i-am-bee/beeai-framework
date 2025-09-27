@@ -22,7 +22,7 @@ from beeai_framework.backend import (
     ToolMessage,
     UserMessage,
 )
-from beeai_framework.backend.message import MessageImageContentImageUrl
+from beeai_framework.backend.message import MessageImageContentImageUrl, MessageFileContent, MessageFileContentFile
 from beeai_framework.tools import AnyTool
 from beeai_framework.utils.lists import cast_list, remove_falsy
 from beeai_framework.utils.strings import to_json
@@ -30,7 +30,15 @@ from beeai_framework.utils.strings import to_json
 
 def to_beeai_message_content(
     content: str | dict[str, Any],
-) -> MessageTextContent | MessageImageContent | None:
+) -> MessageTextContent | MessageImageContent | MessageFileContent | None:
+    """Convert a raw LangChain message content entry to a BeeAI message content model.
+
+    Args:
+        content: Raw content (string or LC dict representation)
+
+    Returns:
+        A concrete content part model or None if unsupported.
+    """
     if isinstance(content, str):
         return MessageTextContent(text=content)
     elif content.get("type") == "text":
@@ -42,6 +50,18 @@ def to_beeai_message_content(
                 format=content.get("mime_type") or "",
             )
         )
+    elif content.get("type") == "file":
+        # Build file dictionary only from declared TypedDict keys
+        file_dict: MessageFileContentFile = {}
+        for field in ("file_id", "file_data", "format"):
+            value = content.get(field)
+            if value is not None:
+                # mypy: field is a literal from the tuple so safe to assign
+                file_dict[field] = value  # type: ignore[literal-required]
+        if not (file_dict.get("file_id") or file_dict.get("file_data")):
+            return None
+        return MessageFileContent(file=file_dict)
+        
     else:
         return None
 
@@ -92,11 +112,15 @@ def to_beeai_messages(messages: list[LCBaseMessage]) -> list[AnyMessage]:
 
 def to_lc_message_content(
     content: Any,
-) -> dict[Any, Any] | None:
+) -> dict[str, Any] | None:
     if isinstance(content, MessageTextContent):
         return {"type": "text", "text": content.text}
     elif isinstance(content, MessageImageContent):
         return {"type": "image", "source_type": "url", "url": content.image_url}
+    elif isinstance(content, MessageFileContent):
+        # Flatten for langchain simple pass-through; they can reconstruct if needed
+        file_payload = {**content.file}
+        return {"type": "file", **file_payload}
     else:
         return None
 
