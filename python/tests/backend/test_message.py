@@ -94,3 +94,12 @@ def test_user_message_with_file_data() -> None:
     assert isinstance(message.content[0], MessageFileContent)
     assert message.content[0].file["file_data"].startswith("data:application/pdf")
     assert message.to_plain()["content"][0]["type"] == "file"
+
+
+@pytest.mark.unit
+def test_user_message_with_file_dict() -> None:
+    file_part = {"type": "file", "file": {"file_id": "https://example.com/file.pdf", "format": "application/pdf"}}
+    message = UserMessage([file_part])
+    assert isinstance(message.content[0], MessageFileContent)
+    assert message.content[0].file["file_id"].endswith("file.pdf")
+    assert message.to_plain()["content"][0]["type"] == "file"
