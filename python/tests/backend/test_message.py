@@ -103,3 +103,9 @@ def test_user_message_with_file_dict() -> None:
     assert isinstance(message.content[0], MessageFileContent)
     assert message.content[0].file["file_id"].endswith("file.pdf")
     assert message.to_plain()["content"][0]["type"] == "file"
+
+
+@pytest.mark.unit
+def test_message_file_content_validation_error() -> None:
+    with pytest.raises(ValueError, match="Either 'file_id' or 'file_data' must be provided for MessageFileContent.file"):
+        MessageFileContent(file={})
