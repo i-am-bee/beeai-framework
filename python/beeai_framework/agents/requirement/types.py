@@ -25,7 +25,7 @@ from beeai_framework.backend import (
 )
 from beeai_framework.backend.types import ChatModelToolChoice
 from beeai_framework.errors import FrameworkError
-from beeai_framework.memory import BaseMemory
+from beeai_framework.memory import BaseMemory, UnconstrainedMemory
 from beeai_framework.template import PromptTemplate
 from beeai_framework.tools import AnyTool, Tool, ToolOutput
 
@@ -62,9 +62,9 @@ class RequirementAgentRunStateStep(BaseModel):
 
 class RequirementAgentRunState(BaseModel):
     answer: InstanceOf[AssistantMessage] | None = None
-    result: Any  # TODO
-    memory: InstanceOf[BaseMemory]
-    iteration: int
+    result: Any = ""
+    memory: InstanceOf[BaseMemory] = Field(default_factory=lambda: UnconstrainedMemory())
+    iteration: int = 0
     steps: list[RequirementAgentRunStateStep] = []
 
     @property
@@ -78,7 +78,7 @@ TAnswer = TypeVar("TAnswer", bound=BaseModel, default=Any)
 
 
 class RequirementAgentOutput(AgentOutput):
-    state: RequirementAgentRunState
+    state: RequirementAgentRunState = Field(default_factory=lambda: RequirementAgentRunState())
 
 
 class RequirementAgentRequest(BaseModel):
