@@ -45,18 +45,19 @@ logger = Logger(__name__)
 
 
 class TransformersChatModel(ChatModel):
-    @property
-    def model_id(self) -> str:
-        """The ID for Causal Language Model at https://huggingface.co/models."""
-        return self._model_id
+    """
+    Represents a Transformers-based chat model for processing and responding to conversational inputs.
 
-    @property
-    def provider_id(self) -> ProviderName:
-        return "transformers"
+    This class is built upon the Hugging Face Transformers library and integrates with a local
+    pre-trained language models and tokenizer utilities. It is designed to handle conversion of
+    structured chat input into the language model's input format, generate responses, and optionally
+    support streaming of the output for applications requiring incremental response delivery.
+    The class also allows for the integration of QLoRA adapters to enable fine-tuned models.
+    """
 
     def __init__(
         self,
-        model_id: str,
+        model_id: str | None = None,
         *,
         qlora_adapter_id: str | None = None,
         hf_token: str | None = None,
@@ -66,12 +67,13 @@ class TransformersChatModel(ChatModel):
         **kwargs: Unpack[ChatModelKwargs],
     ) -> None:
         super().__init__(**kwargs)
-        if hf_token is None:
-            hf_token = os.getenv("HF_TOKEN", None)
-        self._model_id = model_id
+        hf_token = hf_token or os.getenv("HF_TOKEN", None)
+        self._model_id = (
+            model_id if model_id else os.getenv("TRANSFORMERS_CHAT_MODEL", "ibm-granite/granite-3.3-8b-instruct")
+        )
         self.tokenizer = AutoTokenizer.from_pretrained(model_id, token=hf_token, **(tokenizer_kwargs or {}))  # type: ignore
         model_base = AutoModelForCausalLM.from_pretrained(
-            model_id,
+            self._model_id,
             device_map="auto",
             token=hf_token,
             **(model_kwargs or {}),
@@ -88,6 +90,15 @@ class TransformersChatModel(ChatModel):
 
         first_layer_name = next(iter(self._model.hf_device_map.keys()))
         self._device_first_layer = self._model.hf_device_map[first_layer_name]
+
+    @property
+    def model_id(self) -> str:
+        """The ID for Causal Language Model at https://huggingface.co/models."""
+        return self._model_id
+
+    @property
+    def provider_id(self) -> ProviderName:
+        return "transformers"
 
     async def _create(
         self,
