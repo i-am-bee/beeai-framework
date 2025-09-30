@@ -28,6 +28,7 @@ exclude = list(
             "backend/providers/amazon_bedrock.py" if os.getenv("AWS_ACCESS_KEY_ID") is None else None,
             "backend/providers/anthropic.py" if os.getenv("ANTHROPIC_API_KEY") is None else None,
             "backend/providers/azure_openai.py" if os.getenv("AZURE_API_KEY") is None else None,
+            "backend/providers/transformers_hf.py" if os.getenv("TRANSFORMERS_CHAT_MODEL") is None else None,
             "backend/providers/langchain_compatible.py",
             "tools/mcp_agent.py" if os.getenv("SLACK_BOT_TOKEN") is None else None,
             "tools/mcp_tool_creation.py" if os.getenv("SLACK_BOT_TOKEN") is None else None,

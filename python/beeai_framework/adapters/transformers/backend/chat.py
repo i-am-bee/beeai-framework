@@ -6,6 +6,8 @@ from collections.abc import AsyncGenerator
 from typing import Any, Unpack
 
 import outlines
+from outlines.inputs import Chat
+from outlines.types import JsonSchema
 from peft import PeftModel
 from pydantic import BaseModel
 from transformers import (  # type: ignore [attr-defined]
@@ -33,12 +35,14 @@ from beeai_framework.backend.types import (
     ChatModelInput,
     ChatModelOutput,
 )
+from beeai_framework.backend.utils import parse_broken_json
 from beeai_framework.context import RunContext
 from beeai_framework.logger import Logger
 from beeai_framework.tools.tool import AnyTool, Tool
 from beeai_framework.utils.dicts import (
     exclude_none,
 )
+from beeai_framework.utils.models import is_pydantic_model
 from beeai_framework.utils.strings import to_json
 
 logger = Logger(__name__)
@@ -86,7 +90,7 @@ class TransformersChatModel(ChatModel):
             )
         )
         self._model.eval()
-        self.model_structured = outlines.from_transformers(self._model, self.tokenizer)  # type: ignore
+        self._model_structured = outlines.from_transformers(self._model, self.tokenizer)  # type: ignore
 
         first_layer_name = next(iter(self._model.hf_device_map.keys()))
         self._device_first_layer = self._model.hf_device_map[first_layer_name]
@@ -105,12 +109,9 @@ class TransformersChatModel(ChatModel):
         input: ChatModelInput,
         run: RunContext,
     ) -> ChatModelOutput:
-        model_output, prompt_tokens = await self._get_model_output(input, streamer=None)
-        generated_tokens = model_output[0, prompt_tokens:]
-        generated_text = self.tokenizer.decode(generated_tokens)
-        logger.debug(f"Inference response output:\n{generated_text}")
-
-        return ChatModelOutput(output=[AssistantMessage(generated_text)])
+        model_output, model_output_structured = await self._get_model_output(input, streamer=None)
+        logger.debug(f"Inference response output:\n{model_output}")
+        return ChatModelOutput(output=[AssistantMessage(model_output)], output_structured=model_output_structured)
 
     async def _create_stream(
         self,
@@ -118,11 +119,14 @@ class TransformersChatModel(ChatModel):
         run: RunContext,
     ) -> AsyncGenerator[ChatModelOutput]:
         streamer = TextIteratorStreamer(self.tokenizer, skip_prompt=True, skip_special_tokens=True)
-        await self._get_model_output(input, streamer)
+        _, model_output_structured = await self._get_model_output(input, streamer)
 
         for chunk in streamer:
             if len(chunk) > 0:
                 yield ChatModelOutput(output=[AssistantMessage(chunk)])
+
+        if input.response_format:
+            yield ChatModelOutput(output=[], output_structured=model_output_structured)
 
     def _transform_input(self, input: ChatModelInput) -> dict[str, Any]:
         messages: list[dict[str, Any]] = []
@@ -231,21 +235,6 @@ class TransformersChatModel(ChatModel):
             "parallel_tool_calls": (bool(input.parallel_tool_calls) if tools else None),
         }
 
-    def _get_inputs_on_device(self, input: ChatModelInput) -> tuple[dict[str, Any], int]:
-        llm_input = self._transform_input(input)
-        inputs = self.tokenizer.apply_chat_template(
-            llm_input["messages"],
-            tools=llm_input["tools"],
-            tokenize=True,
-            return_tensors="pt",
-            return_dict=True,
-            add_generation_prompt=True,
-        )
-        prompt_tokens = inputs["input_ids"].shape[1]
-        inputs_on_device = {k: v.to(self._device_first_layer) for k, v in inputs.items()}
-
-        return inputs_on_device, prompt_tokens
-
     def _get_stopping_criteria(self, input: ChatModelInput, prompt_tokens: int) -> list[StoppingCriteria]:
         return (
             [
@@ -259,28 +248,63 @@ class TransformersChatModel(ChatModel):
             else []
         )
 
-    async def _get_model_output(self, input: ChatModelInput, streamer: TextIteratorStreamer | None) -> tuple[Any, int]:
-        inputs_on_device, prompt_tokens = self._get_inputs_on_device(input)
+    async def _get_model_output(
+        self, input: ChatModelInput, streamer: TextIteratorStreamer | None
+    ) -> tuple[str, Any | None]:
+        llm_input = self._transform_input(input)
+        inputs = self.tokenizer.apply_chat_template(
+            llm_input["messages"],
+            tools=llm_input["tools"],
+            tokenize=True,
+            return_tensors="pt",
+            return_dict=True,
+            add_generation_prompt=True,
+        )
+        prompt_tokens = inputs["input_ids"].shape[1]
+        inputs_on_device = {k: v.to(self._device_first_layer) for k, v in inputs.items()}
 
         if input.seed is not None:
             set_seed(input.seed)
 
-        model_output = await asyncio.to_thread(
-            self._model.generate,
-            **inputs_on_device,
-            streamer=streamer,
-            max_new_tokens=input.max_tokens,
-            temperature=input.temperature,
-            top_k=input.top_k,
-            top_p=input.top_p,
-            num_beams=get_num_beams(input),
-            frequency_penalty=input.frequency_penalty,
-            presence_penalty=input.presence_penalty,
-            do_sample=get_do_sample(input),
-            stopping_criteria=self._get_stopping_criteria(input, prompt_tokens),
-        )
-
-        return model_output, prompt_tokens
+        kwargs = {
+            "streamer": streamer,
+            "max_new_tokens": input.max_tokens,
+            "temperature": input.temperature,
+            "top_k": input.top_k,
+            "top_p": input.top_p,
+            "num_beams": get_num_beams(input),
+            "frequency_penalty": input.frequency_penalty,
+            "presence_penalty": input.presence_penalty,
+            "do_sample": get_do_sample(input),
+            "stopping_criteria": self._get_stopping_criteria(input, prompt_tokens),
+        }
+        if input.response_format:
+            generator = outlines.Generator(
+                self._model_structured,
+                JsonSchema(
+                    input.response_format
+                    if isinstance(input.response_format, dict)
+                    else input.response_format.model_json_schema(mode="serialization")
+                ),
+            )
+            model_output = await asyncio.to_thread(
+                generator,  # type: ignore
+                Chat(llm_input["messages"]),
+                **kwargs,
+            )
+            model_parsed_output = parse_broken_json(model_output)
+            if is_pydantic_model(input.response_format):
+                model_parsed_output = input.response_format.model_validate(model_parsed_output)
+            return model_output, model_parsed_output
+        else:
+            model_output = await asyncio.to_thread(
+                self._model.generate,
+                **inputs_on_device,
+                **kwargs,
+            )
+            generated_tokens = model_output[0, prompt_tokens:]
+            generated_text = self.tokenizer.decode(generated_tokens, skip_special_tokens=True)
+            return generated_text, None
 
     def _format_tool_model(self, model: type[BaseModel]) -> dict[str, Any]:
         return to_strict_json_schema(model) if self.use_strict_tool_schema else model.model_json_schema()
