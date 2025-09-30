@@ -82,7 +82,9 @@ class LiteLLMChatModel(ChatModel, ABC):
         response_output = self._transform_output(raw)
         if input.response_format and not response_output.output_structured:
             text = response_output.get_text_content()
-            response_output.output_structured = process_structured_output(input.response_format, text)
+            response_output.output_structured = process_structured_output(
+                input.response_format if input.validate_response_format else None, text
+            )
 
         logger.debug(f"Inference response output:\n{response_output}")
         return response_output
@@ -117,7 +119,9 @@ class LiteLLMChatModel(ChatModel, ABC):
             raise ChatModelError("Failed to merge intermediate responses.")
 
         if input.response_format:
-            output_structured = process_structured_output(input.response_format, text)
+            output_structured = process_structured_output(
+                input.response_format if input.validate_response_format else None, text
+            )
             yield ChatModelOutput(output=[], output_structured=output_structured, finish_reason="stop")
 
     def _transform_input(self, input: ChatModelInput) -> dict[str, Any]:
