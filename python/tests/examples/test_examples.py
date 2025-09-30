@@ -41,6 +41,7 @@ exclude = list(
             "serve/acp.py",
             "serve/beeai_platform.py",
             "serve/beeai_platform_await.py",
+            "serve/beeai_platform_llm.py",
             "serve/a2a_server.py",
             "serve/acp_with_custom_agent.py",
             "serve/mcp_agent.py",

@@ -63,7 +63,7 @@ type MCPServerEntry = MCPServerPrompt | MCPServerResource | MCPServerTool;
 export class MCPServerConfig {
   transport: "stdio" | "sse" = "stdio";
   hostname = "127.0.0.1";
-  port = 3000;
+  port = 8000;
   name = "MCP Server";
   version = "1.0.0";
   settings?: ServerOptions;

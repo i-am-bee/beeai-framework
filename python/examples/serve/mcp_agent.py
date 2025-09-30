@@ -16,7 +16,8 @@ def main() -> None:
         middlewares=[GlobalTrajectoryMiddleware()],
     )
 
-    MCPServer(config=MCPServerConfig(transport="streamable-http")).register(agent).serve()
+    # All Runnables are supported, including Agents, ChatModels, Tools, and custom Runnables
+    MCPServer(config=MCPServerConfig(transport="streamable-http")).register_many([agent, llm]).serve()
 
 
 if __name__ == "__main__":
