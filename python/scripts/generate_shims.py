@@ -7,7 +7,7 @@ from pathlib import Path
 
 MAPPINGS = {
     "agents/experimental/__init__.py": "agents/requirement/__init__.py",
-    "agents/experimental/_utils.py": "agents/requirement/utils/__init__.py",
+    "agents/experimental/_utils.py": "agents/requirement/_utils.py",
     "agents/experimental/agent.py": "agents/requirement/agent.py",
     "agents/experimental/events.py": "agents/requirement/events.py",
     "agents/experimental/prompts.py": "agents/requirement/prompts.py",
@@ -38,6 +38,9 @@ def to_import_path(path: str) -> str:
     return dotted
 
 
+SHIM_FOOTER = "sys.modules[__name__] = _new_module"
+
+
 def create_shim(*, old_module: str, new_module: str) -> str:
     return textwrap.dedent(
         f"""\
@@ -52,7 +55,7 @@ def create_shim(*, old_module: str, new_module: str) -> str:
             stacklevel=2,
         )
 
-        sys.modules[__name__] = _new_module
+        {SHIM_FOOTER}
         """
     )
 
@@ -61,20 +64,30 @@ def main() -> None:
     root = Path(__file__).parent.parent
     project_name = "beeai_framework"
 
+    _existing_new_paths = set(MAPPINGS.values())
     for _old_path, _new_path in MAPPINGS.items():
-        new = to_import_path(f"{project_name}/{_new_path}")
-        new_path = Path(root, project_name, _new_path)
-
-        if not new_path.exists():
-            raise FileNotFoundError(f"File {new_path} does not exist")
+        # Check for uniqueness
+        try:
+            _existing_new_paths.remove(_new_path)
+        except KeyError:
+            raise ValueError(f"The '{_new_path}' is defined at least twice in the mapping!")
 
         old_path = Path(root, project_name, _old_path)
         old = to_import_path(f"{project_name}/{_old_path}")
 
-        # Clean any existing shim
         if old_path.exists():
-            for p in old_path.rglob("__init__.py"):
-                p.unlink()
+            content = old_path.read_text()
+            if SHIM_FOOTER in content:
+                print(f"Skipping shim: {old} -> {old_path}")
+                continue
+        else:
+            raise FileNotFoundError(f"File {old_path} does not exist")
+
+        new = to_import_path(f"{project_name}/{_new_path}")
+        new_path = Path(root, project_name, _new_path)
+
+        if new_path.exists():
+            new_path.unlink()
 
         print(f"Generating shim: {old} -> {new}")
         code = create_shim(old_module=old, new_module=new)
