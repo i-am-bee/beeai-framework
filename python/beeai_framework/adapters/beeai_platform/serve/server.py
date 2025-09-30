@@ -19,6 +19,7 @@ from beeai_framework.agents.experimental import RequirementAgent
 from beeai_framework.agents.react import ReActAgent
 from beeai_framework.agents.tool_calling import ToolCallingAgent
 from beeai_framework.memory import BaseMemory
+from beeai_framework.runnable import Runnable
 from beeai_framework.serve.errors import FactoryAlreadyRegisteredError
 
 try:
@@ -33,11 +34,10 @@ except ModuleNotFoundError as e:
         "Optional module [beeai-platform] not found.\nRun 'pip install \"beeai-framework[beeai-platform]\"' to install."
     ) from e
 
-from beeai_framework.agents import AnyAgent
 from beeai_framework.serve import MemoryManager, Server
 from beeai_framework.utils.models import ModelLike, to_model
 
-AnyAgentLike = TypeVar("AnyAgentLike", bound=AnyAgent, default=AnyAgent)
+AnyAgentLike = TypeVar("AnyAgentLike", bound=Runnable[Any], default=Runnable[Any])
 
 
 # this class is only placeholder to use ContextStore from the beeai-sdk
@@ -151,7 +151,7 @@ class BeeAIPlatformServer(
             raise ValueError("No agents registered to the server.")
 
         member = self._members[0]
-        factory = type(self)._factories[type(member)]
+        factory = type(self)._get_factory(member)
         config = self._metadata_by_agent.get(member, BeeAIPlatformServerMetadata())
         self._server._agent_factory = factory(member, metadata=config, memory_manager=self._memory_manager)  # type: ignore[call-arg]
         return (
@@ -194,6 +194,7 @@ def register() -> None:
     from beeai_framework.adapters.beeai_platform.serve.factories import (
         _react_agent_factory,
         _requirement_agent_factory,
+        _runnable_factory,
         _tool_calling_agent_factory,
     )
 
@@ -205,6 +206,9 @@ def register() -> None:
 
     with contextlib.suppress(FactoryAlreadyRegisteredError):
         BeeAIPlatformServer.register_factory(RequirementAgent, _requirement_agent_factory)  # type: ignore[arg-type]
+
+    with contextlib.suppress(FactoryAlreadyRegisteredError):
+        BeeAIPlatformServer.register_factory(Runnable, _runnable_factory)  # type: ignore
 
 
 register()

@@ -10,11 +10,9 @@ from typing import Any, Literal
 
 from pydantic import BaseModel, Field
 
-from beeai_framework.agents import AgentOutput, AnyAgent
-from beeai_framework.agents.experimental import RequirementAgent
-from beeai_framework.agents.react import ReActAgent
-from beeai_framework.agents.tool_calling import ToolCallingAgent
-from beeai_framework.backend import Role
+from beeai_framework.agents import BaseAgent
+from beeai_framework.backend import Role, UserMessage
+from beeai_framework.runnable import Runnable, RunnableOutput
 from beeai_framework.serve import MemoryManager
 from beeai_framework.serve.errors import FactoryAlreadyRegisteredError
 from beeai_framework.tools.tool import AnyTool, Tool
@@ -184,26 +182,26 @@ with contextlib.suppress(FactoryAlreadyRegisteredError):
     MCPServer.register_factory(Tool, _tool_factory)
 
 
-def _agent_factory(
-    agent: AnyAgent,
+def _runnable_factory(
+    runnable: Runnable[Any],
 ) -> MCPNativeTool:
     class Msg(BaseModel):
         role: Role | str
         content: str
 
     async def run(input: str) -> Msg:
-        cloned_agent = await agent.clone() if isinstance(agent, Cloneable) else agent
-        result: AgentOutput = await cloned_agent.run(input)
+        cloned_runnable = await runnable.clone() if isinstance(runnable, Cloneable) else runnable
+        result: RunnableOutput = await cloned_runnable.run([UserMessage(input)])
         return Msg(role=result.last_message.role, content=result.last_message.text)
 
-    return MCPNativeTool.from_function(
-        run, name=agent.meta.name, description=agent.meta.description, structured_output=True
-    )
+    name = runnable.meta.name if isinstance(runnable, BaseAgent) else runnable.__class__.__name__
+    description = runnable.meta.description if isinstance(runnable, BaseAgent) else runnable.__class__.__doc__ or None
+
+    return MCPNativeTool.from_function(run, name=name, description=description, structured_output=True)
 
 
-for agent_type in (RequirementAgent, ToolCallingAgent, ReActAgent):
-    with contextlib.suppress(FactoryAlreadyRegisteredError):
-        MCPServer.register_factory(agent_type, _agent_factory)
+with contextlib.suppress(FactoryAlreadyRegisteredError):
+    MCPServer.register_factory(Runnable, _runnable_factory)
 
 with contextlib.suppress(FactoryAlreadyRegisteredError):
     MCPServer.register_factory(mcp_resources.Resource, identity)
