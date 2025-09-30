@@ -1,3 +1,16 @@
+## python_v0.1.50 (2025-09-26)
+
+### Bug Fixes
+
+- temporary pin uvicorn version (#1141)
+- **tools**: fix MCP tool hanging when server not running (#1137)
+
+### Features
+
+- **agents**: updates to RequirementAgent (#1128)
+- **adapters**: update A2AServer and events (#1130)
+- **tools**: flatten outputs from the MCP servers (#1138)
+
 ## python_v0.1.49 (2025-09-22)
 
 ### Features

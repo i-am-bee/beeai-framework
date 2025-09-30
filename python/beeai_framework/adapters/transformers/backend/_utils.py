@@ -27,7 +27,6 @@ def get_num_beams(input: ChatModelParameters) -> int:
 
 class CustomStoppingCriteria(StoppingCriteria):
     def __init__(self, stop_token_ids: list[int], prompt_tokens: int) -> None:
-        super().__init__()
         self.stop_token_ids = torch.tensor(stop_token_ids, dtype=torch.long)
         self.prompt_tokens = prompt_tokens
 

@@ -96,10 +96,10 @@ async def openai_stream_parser() -> None:
 
 
 async def openai_tool_calling() -> None:
-    watsonx_llm = ChatModel.from_name("openai:gpt-4.1-mini", ChatModelParameters(stream=True, temperature=0))
+    llm = ChatModel.from_name("openai:gpt-4.1-mini", ChatModelParameters(stream=True, temperature=0))
     user_message = UserMessage(f"What is the current weather in Boston? Current date is {datetime.datetime.today()}.")
     weather_tool = OpenMeteoTool()
-    response = await watsonx_llm.run([user_message], tools=[weather_tool])
+    response = await llm.run([user_message], tools=[weather_tool])
     tool_call_msg = response.get_tool_calls()[0]
     print(tool_call_msg.model_dump())
     tool_response = await weather_tool.run(OpenMeteoToolInput(location_name="Boston"))
@@ -111,7 +111,7 @@ async def openai_tool_calling() -> None:
         )
     )
     print(tool_response_msg.to_plain())
-    final_response = await watsonx_llm.run([user_message, *response.output, tool_response_msg], tools=[])
+    final_response = await llm.run([user_message, *response.output, tool_response_msg], tools=[])
     print(final_response.get_text_content())
 
 

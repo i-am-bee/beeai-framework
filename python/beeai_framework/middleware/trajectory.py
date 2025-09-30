@@ -6,7 +6,7 @@ from collections.abc import Callable
 from typing import Any, Protocol, runtime_checkable
 
 from beeai_framework.agents import BaseAgent
-from beeai_framework.agents.experimental.requirements.requirement import Requirement
+from beeai_framework.agents.requirement.requirements import Requirement
 from beeai_framework.backend import AnyMessage, ChatModel
 from beeai_framework.context import RunContext, RunContextFinishEvent, RunContextStartEvent, RunMiddlewareProtocol
 from beeai_framework.emitter import Emitter, EmitterOptions, EventMeta

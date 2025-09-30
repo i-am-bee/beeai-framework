@@ -8,7 +8,7 @@ from typing import Any, Unpack
 import outlines
 from peft import PeftModel
 from pydantic import BaseModel
-from transformers import (
+from transformers import (  # type: ignore [attr-defined]
     AutoModelForCausalLM,
     AutoTokenizer,
     StoppingCriteria,
@@ -86,8 +86,8 @@ class TransformersChatModel(ChatModel):
         self._model.eval()
         self.model_structured = outlines.from_transformers(self._model, self.tokenizer)  # type: ignore
 
-        first_layer_name = next(iter(self._model.hf_device_map.keys()))  # type: ignore
-        self._device_first_layer = self._model.hf_device_map[first_layer_name]  # type: ignore
+        first_layer_name = next(iter(self._model.hf_device_map.keys()))
+        self._device_first_layer = self._model.hf_device_map[first_layer_name]
 
     async def _create(
         self,

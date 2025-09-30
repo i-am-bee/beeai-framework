@@ -1,8 +1,8 @@
 import asyncio
 from typing import Any
 
-from beeai_framework.agents.experimental import RequirementAgent
-from beeai_framework.agents.experimental.requirements.conditional import ConditionalRequirement  # noqa: F401
+from beeai_framework.agents.requirement import RequirementAgent
+from beeai_framework.agents.requirement.requirements.conditional import ConditionalRequirement  # noqa: F401
 from beeai_framework.backend import ChatModel
 from beeai_framework.middleware.trajectory import GlobalTrajectoryMiddleware
 from beeai_framework.tools import Tool, tool
@@ -32,7 +32,7 @@ async def main() -> None:
     llm = ChatModel.from_name("ollama:granite3.1-dense:8b")
     agent = RequirementAgent(
         llm=llm,
-        tools=[OpenMeteoTool(), ThinkTool(), get_user],
+        tools=[ThinkTool(), OpenMeteoTool(), get_user],
         # Log all tool calls to the console for easier debugging
         middlewares=[GlobalTrajectoryMiddleware(included=[Tool])],
         requirements=[

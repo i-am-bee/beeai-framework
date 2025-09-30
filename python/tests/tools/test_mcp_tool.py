@@ -146,8 +146,7 @@ class TestMCPTool:
             # We test _run directly to isolate the change
             await tool._run(input_data=Input(), options=None, context=context)
 
-        assert exc_info.value.message == to_json(error_result.content, indent=4, sort_keys=False)
-        assert exc_info.value.context == error_result.structuredContent
+        assert exc_info.value.message == to_json(error_result.structuredContent, indent=4, sort_keys=False)
         mock_client_session.call_tool.assert_awaited_once()
 
 

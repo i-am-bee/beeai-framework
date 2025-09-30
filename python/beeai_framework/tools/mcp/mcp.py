@@ -63,9 +63,17 @@ class MCPTool(Tool[BaseModel, ToolRunOptions, JSONToolOutput]):
             name=self._tool.name, arguments=input_data.model_dump(exclude_none=True, exclude_unset=True)
         )
         logger.debug(f"Tool result: {result}")
+
+        data_result: Any = None
+        if result.structuredContent is not None:
+            data_result = result.structuredContent
+        else:
+            data_result = result.content[0] if len(result.content) == 1 else result.content
+
         if result.isError:
-            raise ToolError(to_json(result.content, indent=4, sort_keys=False), context=result.structuredContent)
-        return JSONToolOutput(result.content)
+            raise ToolError(to_json(data_result, indent=4, sort_keys=False))
+
+        return JSONToolOutput(data_result)
 
     @classmethod
     async def from_client(cls, client: MCPClient | ClientSession) -> list["MCPTool"]:

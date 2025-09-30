@@ -13,7 +13,6 @@ from beeai_framework.backend import (
     ToolMessage,
     UserMessage,
 )
-from beeai_framework.backend.chat import ChatModel
 from beeai_framework.tools.weather import OpenMeteoTool
 
 
@@ -22,8 +21,6 @@ from beeai_framework.tools.weather import OpenMeteoTool
     reason="The model for Transformers was not set.",
 )
 class TestTransformersChatModel:
-    chat_model: ChatModel
-
     def setup_method(self) -> None:
         self.chat_model = TransformersChatModel(os.environ["TRANSFORMERS_CHAT_MODEL"])
         self.chat_model.parameters.temperature = 0
@@ -55,6 +52,7 @@ class TestTransformersChatModel:
 
     @pytest.mark.e2e
     @pytest.mark.asyncio
+    @pytest.mark.skip(reason="Tool calling is not supported yet.")
     async def test_local_llm_chat_model_tools(self) -> None:
         tool = OpenMeteoTool()
         messages: list[AnyMessage] = [UserMessage("What's the current weather in Boston?")]

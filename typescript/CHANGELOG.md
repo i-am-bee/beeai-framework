@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.1.18](https://github.com/i-am-bee/beeai-framework/compare/typescript_v0.1.17...typescript_v0.1.18) (2025-09-26)
+
+### Features
+
+- **adapters:** add A2AAgent to TS ([#1113](https://github.com/i-am-bee/beeai-framework/issues/1113)) ([3aaf6f7](https://github.com/i-am-bee/beeai-framework/commit/3aaf6f790bbada09a26016191ffbd5966a077c76)), closes [#1029](https://github.com/i-am-bee/beeai-framework/issues/1029)
+- **adapters:** add A2AServer ([#1129](https://github.com/i-am-bee/beeai-framework/issues/1129)) ([cbbf7d0](https://github.com/i-am-bee/beeai-framework/commit/cbbf7d0b9c6bfd97b3357d9097ff2960018e9787)), closes [#1029](https://github.com/i-am-bee/beeai-framework/issues/1029)
+- **serve:** switch BeeAIPlatform agent and server to beeai-sdk and a2a ([#1004](https://github.com/i-am-bee/beeai-framework/issues/1004)) ([1ecc69e](https://github.com/i-am-bee/beeai-framework/commit/1ecc69ecfc880f9edec363650b1b577e8406f900))
+
 ## [0.1.17](https://github.com/i-am-bee/beeai-framework/compare/typescript_v0.1.16...typescript_v0.1.17) (2025-07-28)
 
 ### Features

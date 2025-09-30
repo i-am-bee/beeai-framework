@@ -63,7 +63,7 @@ type MCPServerEntry = MCPServerPrompt | MCPServerResource | MCPServerTool;
 export class MCPServerConfig {
   transport: "stdio" | "sse" = "stdio";
   hostname = "127.0.0.1";
-  port = 3000;
+  port = 8000;
   name = "MCP Server";
   version = "1.0.0";
   settings?: ServerOptions;
@@ -75,7 +75,7 @@ export class MCPServerConfig {
   }
 }
 
-export class MCPServer extends Server<any, MCPServerEntry, MCPServerConfig> {
+export class MCPServer extends Server<any, MCPServerEntry, MCPServerConfig, never> {
   protected server: McpServer;
 
   constructor(config?: MCPServerConfig) {
