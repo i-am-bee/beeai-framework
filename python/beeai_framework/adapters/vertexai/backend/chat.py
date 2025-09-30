@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import os
+from typing import Any
 
 from typing_extensions import Unpack
 
@@ -25,6 +26,7 @@ class VertexAIChatModel(LiteLLMChatModel):
         *,
         project: str | None = None,
         location: str | None = None,
+        credentials: str | dict[str, Any] | None = None,
         **kwargs: Unpack[ChatModelKwargs],
     ) -> None:
         super().__init__(
@@ -35,7 +37,7 @@ class VertexAIChatModel(LiteLLMChatModel):
 
         self._assert_setting_value(
             "vertex_credentials",
-            project,
+            credentials,
             display_name="credentials",
             envs=["GOOGLE_VERTEX_CREDENTIALS"],
             allow_empty=True,
