@@ -7,8 +7,10 @@ from beeai_framework.workflows.v2.types import AsyncFunc
 
 Dependency = str | AsyncFunc
 
+Predicate = Callable[..., bool]
 
-def when(predicate: Callable[..., bool]) -> Callable[[AsyncFunc], AsyncFunc]:
+
+def when(predicate: Predicate) -> Callable[[AsyncFunc], AsyncFunc]:
     """
     Async decorator: runs the async function only if `predicate` returns True.
     """

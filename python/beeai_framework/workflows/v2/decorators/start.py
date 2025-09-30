@@ -9,8 +9,8 @@ from beeai_framework.backend.message import AnyMessage
 from beeai_framework.workflows.v2.workflow import Workflow
 
 S = TypeVar("S", bound=Workflow)
-
-StartMethod = Callable[[S, list[AnyMessage]], Coroutine[Any, Any, Any]]
+AnyCoroutine = Coroutine[Any, Any, Any]
+StartMethod = Callable[[S, list[AnyMessage]], AnyCoroutine]
 
 
 def start(func: StartMethod[S]) -> StartMethod[S]:

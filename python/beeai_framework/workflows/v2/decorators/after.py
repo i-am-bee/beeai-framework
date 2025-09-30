@@ -2,9 +2,12 @@
 # SPDX-License-Identifier: Apache-2.0
 
 from collections.abc import Callable
+from typing import TypeVar
 
 from beeai_framework.workflows.v2.types import AsyncFunc, DependencyType
+from beeai_framework.workflows.v2.workflow import Workflow
 
+S = TypeVar("S", bound=Workflow, contravariant=True)
 Dependency = str | AsyncFunc
 
 
