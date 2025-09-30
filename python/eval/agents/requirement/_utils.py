@@ -1,17 +1,24 @@
 # Copyright 2025 © BeeAI a Series of LF Projects, LLC
 # SPDX-License-Identifier: Apache-2.0
 
+import json
+import logging
+import os
+from datetime import UTC, datetime
 from typing import Any, TypeVar
 
 from deepeval.test_case import ConversationalTestCase, LLMTestCase, ToolCall, Turn
 from pydantic import BaseModel
 
 from beeai_framework.agents.experimental import RequirementAgent
-from beeai_framework.agents.experimental.types import RequirementAgentRunStateStep
+from beeai_framework.agents.experimental.types import RequirementAgentOutput, RequirementAgentRunStateStep
 from beeai_framework.agents.experimental.utils._tool import FinalAnswerTool
+from beeai_framework.logger import Logger
 from beeai_framework.tools.think import ThinkTool
 from beeai_framework.tools.tool import Tool
 from beeai_framework.utils.strings import to_json
+
+logger = Logger("trajectory-utils", level=logging.INFO)
 
 
 def to_eval_tool_call(step: RequirementAgentRunStateStep, *, reasoning: str | None = None) -> ToolCall:
@@ -71,3 +78,47 @@ def to_conversation_test_case(agent: RequirementAgent, turns: list[Turn]) -> Con
             "agent_name": agent.meta.name,
         },
     )
+
+
+def dump_trajectory(
+    response: RequirementAgentOutput, filename: str, query: str | None = None, folder: str = "previous_executions"
+) -> str | None:
+    """
+    Dump the trajectory of the RequirementsAgent execution and save to file.
+
+    Args:
+        response: Agent execution result containing state.memory.messages
+        filename: Name of the file to save the trajectory (without path)
+        query: The original query/question asked to the agent
+        folder: Folder name to save trajectories (defaults to 'previous_executions')
+
+    Returns:
+        str | None: File path where the trajectory was saved, or None if failed
+    """
+    if not (
+        hasattr(response, "state")
+        and hasattr(response.state, "memory")
+        and hasattr(response.state.memory, "messages")
+        and response.state.memory.messages
+    ):
+        logger.error("Invalid response structure: missing state.memory.messages or empty messages")
+        return None
+
+    messages = response.state.memory.messages
+    trajectory = [message.to_json_safe() for message in messages]
+    if hasattr(response.state, "result") and hasattr(response.state.result, "response"):
+        final_answer = {"role": "assistant", "content": [{"type": "text", "text": response.state.result.response}]}
+        trajectory.append(final_answer)
+
+    execution_data = {
+        "timestamp": datetime.now(tz=UTC).isoformat(),
+        "query": query,
+        "trajectory": trajectory,
+        "total_messages": len(trajectory),
+    }
+
+    os.makedirs(folder, exist_ok=True)
+    file_path = os.path.join(folder, filename)
+    with open(file_path, "w", encoding="utf-8") as f:
+        json.dump(execution_data, f, indent=2, ensure_ascii=False)
+    return file_path
