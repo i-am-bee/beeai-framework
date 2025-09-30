@@ -1,5 +1,5 @@
 from beeai_framework.adapters.a2a import A2AServer, A2AServerConfig
-from beeai_framework.agents.experimental import RequirementAgent
+from beeai_framework.agents.requirement import RequirementAgent
 from beeai_framework.backend import ChatModel
 from beeai_framework.memory import UnconstrainedMemory
 from beeai_framework.serve.utils import LRUMemoryManager
@@ -21,7 +21,7 @@ def main() -> None:
     # we use LRU memory manager to keep limited amount of sessions in the memory
     A2AServer(
         config=A2AServerConfig(port=9999, protocol="jsonrpc"), memory_manager=LRUMemoryManager(maxsize=100)
-    ).register(agent).serve()
+    ).register(agent, send_trajectory=True).serve()
 
 
 if __name__ == "__main__":

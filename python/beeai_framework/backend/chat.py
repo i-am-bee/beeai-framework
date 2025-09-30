@@ -95,6 +95,11 @@ class ChatModelOptions(RunnableOptions, total=False):
     Structured output format.
     """
 
+    validate_response_format: bool | None
+    """
+    Whether the generated output should be validated against the given response format.
+    """
+
     stream: bool | None
     """
     Flag that indicates whether streaming is enabled.
@@ -276,12 +281,14 @@ class ChatModel(Runnable[ChatModelOutput]):
             else (response_format, None)
         )
 
+        validate_response_format = kwargs.get("validate_response_format")
         model_input = ChatModelInput(
             messages=input,
             tools=tools if self.model_supports_tool_calling else None,
             response_format=response_format_final,
+            validate_response_format=True if validate_response_format is None else validate_response_format,
             stream=stream if stream is not None else self.parameters.stream,
-            **exclude_keys(dict(kwargs), {"tools", "response_format", "stream"}),
+            **exclude_keys(dict(kwargs), {"tools", "response_format", "stream", "validate_response_format"}),
         )
 
         context = RunContext.get()

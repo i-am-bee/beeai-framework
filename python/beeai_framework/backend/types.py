@@ -51,6 +51,7 @@ class ChatModelInput(ChatModelParameters):
     max_retries: int | None = None
     stop_sequences: list[str] | None = None
     response_format: dict[str, Any] | type[BaseModel] | None = None
+    validate_response_format: bool | None = None
     messages: list[InstanceOf[AnyMessage]] = Field(
         ...,
         min_length=1,

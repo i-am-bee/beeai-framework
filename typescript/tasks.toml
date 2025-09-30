@@ -126,7 +126,7 @@ outputs = { auto = true }
 ["typescript:release"]
 depends = ["typescript:check", "typescript:test", "typescript:build"]
 dir = "{{config_root}}/typescript"
-run = "yarn release-it"
+run = "yarn release-it patch"
 
 # git hooks
 
