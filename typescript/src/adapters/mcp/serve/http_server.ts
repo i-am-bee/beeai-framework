@@ -153,7 +153,11 @@ export function runServer(server: McpServer, hostname = "127.0.0.1", port = 3000
   });
 
   // Start the server
-  app.listen(port, hostname, () => {
+  app.listen(port, hostname, (error) => {
+    if (error) {
+      logger.error(`Error starting server: ${error?.message}`);
+      return;
+    }
     logger.info(`Backwards compatible MCP server listening on port ${hostname}:${port}`);
     logger.debug(`
     ==============================================
