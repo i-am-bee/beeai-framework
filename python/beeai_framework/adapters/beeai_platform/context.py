@@ -13,8 +13,6 @@ from beeai_framework.utils.io import setup_io_context
 
 try:
     from beeai_sdk.a2a.extensions import (
-        FormExtensionServer,
-        FormExtensionSpec,
         FormRender,
         LLMServiceExtensionServer,
         TextField,

@@ -40,9 +40,9 @@ def _react_agent_factory(
     agent: ReActAgent, *, metadata: BeeAIPlatformServerMetadata | None = None, memory_manager: MemoryManager
 ) -> beeai_agent.AgentFactory:
     metadata = _init_metadata(agent, metadata)
-    extensions: BaseBeeAIPlatformExtensions = metadata.pop("extensions")
+    extensions: type[BaseBeeAIPlatformExtensions] = metadata.pop("extensions")
 
-    llm = agent._llm
+    llm = agent._input.llm
     if isinstance(llm, BeeAIPlatformChatModel):
         extensions.__annotations__["llm_ext"] = Annotated[
             beeai_extensions.LLMServiceExtensionServer,
@@ -119,7 +119,7 @@ def _tool_calling_agent_factory(
     agent: ToolCallingAgent, *, metadata: BeeAIPlatformServerMetadata | None = None, memory_manager: MemoryManager
 ) -> beeai_agent.AgentFactory:
     metadata = _init_metadata(agent, metadata)
-    extensions: BaseBeeAIPlatformExtensions = metadata.pop("extensions")
+    extensions: type[BaseBeeAIPlatformExtensions] = metadata.pop("extensions")
 
     llm = agent._llm
     if isinstance(llm, BeeAIPlatformChatModel):
@@ -163,7 +163,7 @@ def _requirement_agent_factory(
     agent: RequirementAgent, *, metadata: BeeAIPlatformServerMetadata | None = None, memory_manager: MemoryManager
 ) -> beeai_agent.AgentFactory:
     metadata = _init_metadata(agent, metadata)
-    extensions: BaseBeeAIPlatformExtensions = metadata.pop("extensions")
+    extensions: type[BaseBeeAIPlatformExtensions] = metadata.pop("extensions")
 
     llm = agent._llm
     if isinstance(llm, BeeAIPlatformChatModel):

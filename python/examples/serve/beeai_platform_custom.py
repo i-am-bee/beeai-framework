@@ -1,10 +1,14 @@
+from typing import Annotated
+
+from beeai_sdk.a2a.extensions import CitationExtensionServer, CitationExtensionSpec
+
 from beeai_framework.adapters.beeai_platform.backend.chat import BeeAIPlatformChatModel
+from beeai_framework.adapters.beeai_platform.context import BeeAIPlatformContext
 from beeai_framework.adapters.beeai_platform.serve.server import BeeAIPlatformMemoryManager, BeeAIPlatformServer
+from beeai_framework.adapters.beeai_platform.serve.types import BaseBeeAIPlatformExtensions
 from beeai_framework.agents.requirement import RequirementAgent
-from beeai_framework.memory import UnconstrainedMemory
+from beeai_framework.context import RunContext, RunMiddlewareProtocol
 from beeai_framework.middleware.trajectory import GlobalTrajectoryMiddleware
-from beeai_framework.tools.search.duckduckgo import DuckDuckGoSearchTool
-from beeai_framework.tools.weather import OpenMeteoTool
 
 try:
     from beeai_sdk.a2a.extensions.ui.agent_detail import AgentDetail
@@ -15,12 +19,18 @@ except ModuleNotFoundError as e:
 
 
 def main() -> None:
+    class PlatformMiddleware(RunMiddlewareProtocol):
+        def bind(self, ctx: RunContext) -> None:
+            platform_ctx = BeeAIPlatformContext.get()
+            print(platform_ctx.extensions.get("citation"))
+
     agent = RequirementAgent(
         llm=BeeAIPlatformChatModel(preferred_models=["ollama/granite3.3:8b", "openai/gpt-5"]),
-        tools=[DuckDuckGoSearchTool(), OpenMeteoTool()],
-        memory=UnconstrainedMemory(),
-        middlewares=[GlobalTrajectoryMiddleware()],
+        middlewares=[GlobalTrajectoryMiddleware(), PlatformMiddleware()],
     )
+
+    class MyCustomExtensions(BaseBeeAIPlatformExtensions):
+        citation: Annotated[CitationExtensionServer, CitationExtensionSpec()]
 
     # Runs HTTP server that registers to BeeAI platform
     server = BeeAIPlatformServer(config={"configure_telemetry": False}, memory_manager=BeeAIPlatformMemoryManager())
@@ -29,6 +39,7 @@ def main() -> None:
         name="Granite chat agent",
         description="Simple chat agent",  # (optional)
         detail=AgentDetail(interaction_mode="multi-turn"),  # default is multi-turn (optional)
+        extensions=MyCustomExtensions,
     )
     server.serve()
 
