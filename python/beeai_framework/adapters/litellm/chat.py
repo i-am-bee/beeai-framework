@@ -201,7 +201,15 @@ class LiteLLMChatModel(ChatModel, ABC):
 
         settings = exclude_keys(
             self._settings | input.model_dump(exclude_unset=True),
-            {*self.supported_params, "signal", "model", "messages", "tools", "supports_top_level_unions"},
+            {
+                *self.supported_params,
+                "signal",
+                "model",
+                "messages",
+                "tools",
+                "supports_top_level_unions",
+                "validate_response_format",
+            },
         )
         params = include_keys(
             input.model_dump(exclude_none=True)  # get all parameters with default values

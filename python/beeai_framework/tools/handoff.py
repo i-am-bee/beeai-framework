@@ -2,14 +2,16 @@
 # SPDX-License-Identifier: Apache-2.0
 
 from functools import cached_property
+from typing import Any
 
 from pydantic import BaseModel, Field
 
-from beeai_framework.agents import AnyAgent
-from beeai_framework.backend import AssistantMessage, SystemMessage
+from beeai_framework.agents import BaseAgent
+from beeai_framework.backend import AnyMessage, AssistantMessage, SystemMessage, UserMessage
 from beeai_framework.context import RunContext
 from beeai_framework.emitter import Emitter
 from beeai_framework.memory import BaseMemory
+from beeai_framework.runnable import Runnable
 from beeai_framework.tools import StringToolOutput, Tool, ToolError, ToolRunOptions
 from beeai_framework.utils.cloneable import Cloneable
 from beeai_framework.utils.lists import find_index
@@ -24,7 +26,7 @@ class HandoffTool(Tool[HandoffSchema, ToolRunOptions, StringToolOutput]):
 
     def __init__(
         self,
-        target: AnyAgent,
+        target: Runnable[Any],
         *,
         name: str | None = None,
         description: str | None = None,
@@ -40,8 +42,12 @@ class HandoffTool(Tool[HandoffSchema, ToolRunOptions, StringToolOutput]):
         """
         super().__init__()
         self._target = target
-        self._name = name or target.meta.name
-        self._description = description or target.meta.description
+        if isinstance(target, BaseAgent):
+            self._name = name or target.meta.name
+            self._description = description or target.meta.description
+        else:
+            self._name = name or target.__class__.__name__
+            self._description = description or (target.__class__.__doc__ or "")
         self._propagate_inputs = propagate_inputs
 
     @property
@@ -61,8 +67,7 @@ class HandoffTool(Tool[HandoffSchema, ToolRunOptions, StringToolOutput]):
         if not memory or not isinstance(memory, BaseMemory):
             raise ToolError("No memory found in context.")
 
-        target: AnyAgent = await self._target.clone() if isinstance(self._target, Cloneable) else self._target
-        target.memory.reset()
+        target: Runnable[Any] = await self._target.clone() if isinstance(self._target, Cloneable) else self._target
 
         non_system_messages = [msg for msg in memory.messages if not isinstance(msg, SystemMessage)]
         last_valid_msg_index = find_index(
@@ -71,8 +76,17 @@ class HandoffTool(Tool[HandoffSchema, ToolRunOptions, StringToolOutput]):
             reverse_traversal=True,
             fallback=-1,
         )
-        await target.memory.add_many(non_system_messages[: last_valid_msg_index + 1])
-        response = await target.run(input.task if self._propagate_inputs else [])
+        messages: list[AnyMessage] = []
+        if isinstance(target, BaseAgent):
+            target.memory.reset()
+            await target.memory.add_many(non_system_messages[: last_valid_msg_index + 1])
+        else:
+            messages = non_system_messages[: last_valid_msg_index + 1]
+
+        if self._propagate_inputs:
+            messages.append(UserMessage(content=input.task))
+
+        response = await target.run(messages)
         return StringToolOutput(response.last_message.text)
 
     def _create_emitter(self) -> Emitter:
