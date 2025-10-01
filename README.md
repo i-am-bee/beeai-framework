@@ -15,17 +15,17 @@
 
 ## Latest updates
 
-| Date       | Language      | Update Description                                                                 
-|------------|---------------|-------------------------------------------------------------------------------------|
-| 2025/08/25 | Python        | 🚀 ACP is now part of A2A under the Linux Foundation! 👉 [Learn more](https://github.com/orgs/i-am-bee/discussions/5) |
-| 2025/06/03 | Python        | Release experimental [Requirement Agent](https://framework.beeai.dev/experimental/requirement-agent).           |
-| 2025/05/15 | Python        | New protocol integrations: [ACP](https://framework.beeai.dev/integrations/acp) and [MCP](https://framework.beeai.dev/integrations/mcp).           |
-| 2025/02/19 | Python        | Launched Python library alpha. See [getting started guide](https://github.com/i-am-bee/beeai-framework/tree/main#installation).               |
-| 2025/02/07 | TypeScript    | Introduced [Backend](https://framework.beeai.dev/modules/backend) module to simplify working with AI services (chat, embedding). |
-| 2025/01/28 | TypeScript    | Added support for DeepSeek R1, check out the [Competitive Analysis Workflow example](https://github.com/i-am-bee/beeai-framework/tree/main/typescript/examples/workflows/competitive-analysis). |
-| 2025/01/09 | TypeScript    | Introduced [Workflows](https://framework.beeai.dev/modules/workflows), a way of building multi-agent systems. Added support for [Model Context Protocol](https://framework.beeai.dev/modules/tools#mcp-tool). |
-| 2024/12/09 | TypeScript    | Added support for LLaMa 3.3. See [multi-agent workflow example using watsonx](https://github.com/i-am-bee/beeai-framework/tree/main/typescript/examples/workflows/multiAgents.ts) or explore [other available providers](https://framework.beeai.dev/modules/backend#supported-providers).        |
-| 2024/11/21 | TypeScript    | Added an experimental [Streamlit agent](https://github.com/i-am-bee/beeai-framework/tree/main/typescript/examples/agents/experimental/streamlit.ts). |
+| Date       | Language   | Update Description                                                                                                                                                                                                                                                                         |
+| ---------- | ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| 2025/08/25 | Python     | 🚀 ACP is now part of A2A under the Linux Foundation! 👉 [Learn more](https://github.com/orgs/i-am-bee/discussions/5)                                                                                                                                                                      |
+| 2025/06/03 | Python     | Release experimental [Requirement Agent](https://framework.beeai.dev/experimental/requirement-agent).                                                                                                                                                                                      |
+| 2025/05/15 | Python     | New protocol integrations: [ACP](https://framework.beeai.dev/integrations/acp) and [MCP](https://framework.beeai.dev/integrations/mcp).                                                                                                                                                    |
+| 2025/02/19 | Python     | Launched Python library alpha. See [getting started guide](https://github.com/i-am-bee/beeai-framework/tree/main#installation).                                                                                                                                                            |
+| 2025/02/07 | TypeScript | Introduced [Backend](https://framework.beeai.dev/modules/backend) module to simplify working with AI services (chat, embedding).                                                                                                                                                           |
+| 2025/01/28 | TypeScript | Added support for DeepSeek R1, check out the [Competitive Analysis Workflow example](https://github.com/i-am-bee/beeai-framework/tree/main/typescript/examples/workflows/competitive-analysis).                                                                                            |
+| 2025/01/09 | TypeScript | Introduced [Workflows](https://framework.beeai.dev/modules/workflows), a way of building multi-agent systems. Added support for [Model Context Protocol](https://framework.beeai.dev/modules/tools#mcp-tool).                                                                              |
+| 2024/12/09 | TypeScript | Added support for LLaMa 3.3. See [multi-agent workflow example using watsonx](https://github.com/i-am-bee/beeai-framework/tree/main/typescript/examples/workflows/multiAgents.ts) or explore [other available providers](https://framework.beeai.dev/modules/backend#supported-providers). |
+| 2024/11/21 | TypeScript | Added an experimental [Streamlit agent](https://github.com/i-am-bee/beeai-framework/tree/main/typescript/examples/agents/experimental/streamlit.ts).                                                                                                                                       |
 
 For a full changelog, see our [releases page](https://github.com/i-am-bee/beeai-framework/releases).
 
@@ -40,31 +40,33 @@ BeeAI Framework is a comprehensive toolkit for building intelligent, autonomous 
 
 ## Key Features
 
-| Feature | Description |
-|---------|-------------|
-| 🤖 [**Requirement Agent**](https://framework.beeai.dev/modules/agents) | Create predictable, controlled behavior across different LLMs by setting rules the agent must follow. |
-| 🤖 [**Agents**](https://framework.beeai.dev/modules/agents) | Create intelligent agents that can reason, act, and adapt |
-| 🔌 [**Backend**](https://framework.beeai.dev/modules/backend) | Connect to any LLM provider with unified interfaces |
-| 🔧 [**Tools**](https://framework.beeai.dev/modules/tools) | Extend agents with built in tools (web search, weather, code execution, and more) or custom tools |
-| 🔍 [**RAG**](https://framework.beeai.dev/modules/rag) | Build retrieval-augmented generation systems with vector stores and document processing |
-| 📝 [**Templates**](https://framework.beeai.dev/modules/templates) | Build dynamic prompts with enhanced Mustache syntax |
-| 🧠 [**Memory**](https://framework.beeai.dev/modules/memory) | Manage conversation history with built in memory strategies |
-| 📊 **Observability** | Monitor agent behavior with [events](), [logging](), and robust [error handling]() |
-| 🚀 [**Serve**](https://framework.beeai.dev/modules/serve) | Host agents in servers with support for multiple protocols such as [A2A](https://framework.beeai.dev/integrations/a2a) and [MCP](https://framework.beeai.dev/integrations/mcp) |
-| 💾 [**Cache**](https://framework.beeai.dev/modules/cache) | Optimize performance and reduce costs with intelligent caching |
-| 💿 [**Serialization**](https://framework.beeai.dev/modules/serialization) | Save and load agent state for persistence across sessions |
-| 🔄 [**Workflows**](https://framework.beeai.dev/modules/workflows) | Orchestrate multi-agent systems with complex execution flows |
+| Feature                                                                   | Description                                                                                                                                                                    |
+| ------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| 🤖 [**Requirement Agent**](https://framework.beeai.dev/modules/agents)    | Create predictable, controlled behavior across different LLMs by setting rules the agent must follow.                                                                          |
+| 🤖 [**Agents**](https://framework.beeai.dev/modules/agents)               | Create intelligent agents that can reason, act, and adapt                                                                                                                      |
+| 🔌 [**Backend**](https://framework.beeai.dev/modules/backend)             | Connect to any LLM provider with unified interfaces                                                                                                                            |
+| 🔧 [**Tools**](https://framework.beeai.dev/modules/tools)                 | Extend agents with built in tools (web search, weather, code execution, and more) or custom tools                                                                              |
+| 🔍 [**RAG**](https://framework.beeai.dev/modules/rag)                     | Build retrieval-augmented generation systems with vector stores and document processing                                                                                        |
+| 📝 [**Templates**](https://framework.beeai.dev/modules/templates)         | Build dynamic prompts with enhanced Mustache syntax                                                                                                                            |
+| 🧠 [**Memory**](https://framework.beeai.dev/modules/memory)               | Manage conversation history with built in memory strategies                                                                                                                    |
+| 📊 **Observability**                                                      | Monitor agent behavior with [events](), [logging](), and robust [error handling]()                                                                                             |
+| 🚀 [**Serve**](https://framework.beeai.dev/modules/serve)                 | Host agents in servers with support for multiple protocols such as [A2A](https://framework.beeai.dev/integrations/a2a) and [MCP](https://framework.beeai.dev/integrations/mcp) |
+| 💾 [**Cache**](https://framework.beeai.dev/modules/cache)                 | Optimize performance and reduce costs with intelligent caching                                                                                                                 |
+| 💿 [**Serialization**](https://framework.beeai.dev/modules/serialization) | Save and load agent state for persistence across sessions                                                                                                                      |
+| 🔄 [**Workflows**](https://framework.beeai.dev/modules/workflows)         | Orchestrate multi-agent systems with complex execution flows                                                                                                                   |
 
 ## Quickstart
 
 ### Installation
 
 To install the Python library:
+
 ```shell
 pip install beeai-framework
 ```
 
 To install the TypeScript library:
+
 ```shell
 npm install beeai-framework
 ```
@@ -74,7 +76,7 @@ npm install beeai-framework
 ```py
 import asyncio
 
-from beeai_framework.agents.experimental import RequirementAgent
+from beeai_framework.agents.requirement import RequirementAgent
 from beeai_framework.agents.experimental.requirements.conditional import ConditionalRequirement
 from beeai_framework.backend import ChatModel
 from beeai_framework.errors import FrameworkError
@@ -160,6 +162,7 @@ Explore more in our examples for [Python](https://github.com/i-am-bee/beeai-fram
 BeeAI framework is open-source and we ❤️ contributions.<br>
 
 To help build BeeAI, take a look at our:
+
 - [Python contribution guidelines](https://github.com/i-am-bee/beeai-framework/tree/main/python/CONTRIBUTING.md)
 - [TypeScript contribution guidelines](https://github.com/i-am-bee/beeai-framework/tree/main/typescript/CONTRIBUTING.md)
 
