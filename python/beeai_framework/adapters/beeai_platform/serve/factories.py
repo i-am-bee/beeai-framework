@@ -1,13 +1,13 @@
 # Copyright 2025 © BeeAI a Series of LF Projects, LLC
 # SPDX-License-Identifier: Apache-2.0
-
 import uuid
 from collections.abc import AsyncGenerator
-from typing import Annotated, Any
+from typing import Annotated, Any, Unpack
 
 from beeai_framework.adapters.beeai_platform.backend.chat import BeeAIPlatformChatModel
 from beeai_framework.adapters.beeai_platform.context import BeeAIPlatformContext
 from beeai_framework.adapters.beeai_platform.serve.server import BeeAIPlatformMemoryManager, BeeAIPlatformServerMetadata
+from beeai_framework.adapters.beeai_platform.serve.types import BaseBeeAIPlatformExtensions
 from beeai_framework.adapters.beeai_platform.serve.utils import init_beeai_platform_memory, send_message_trajectory
 from beeai_framework.agents import AnyAgent
 from beeai_framework.agents.react import ReActAgent, ReActAgentUpdateEvent
@@ -39,23 +39,29 @@ from beeai_framework.serve import MemoryManager
 def _react_agent_factory(
     agent: ReActAgent, *, metadata: BeeAIPlatformServerMetadata | None = None, memory_manager: MemoryManager
 ) -> beeai_agent.AgentFactory:
-    llm = agent._input.llm
-    preferred_models = llm.preferred_models if isinstance(llm, BeeAIPlatformChatModel) else []
+    metadata = _init_metadata(agent, metadata)
+    extensions: BaseBeeAIPlatformExtensions = metadata.pop("extensions")
+
+    llm = agent._llm
+    if isinstance(llm, BeeAIPlatformChatModel):
+        extensions.__annotations__["llm_ext"] = Annotated[
+            beeai_extensions.LLMServiceExtensionServer,
+            beeai_extensions.LLMServiceExtensionSpec.single_demand(suggested=llm.preferred_models),
+        ]
 
     async def run(
         message: a2a_types.Message,
         context: beeai_context.RunContext,
-        trajectory: Annotated[beeai_extensions.TrajectoryExtensionServer, beeai_extensions.TrajectoryExtensionSpec()],
-        form: Annotated[beeai_extensions.FormExtensionServer, beeai_extensions.FormExtensionSpec(params=None)],
-        llm_ext: Annotated[
-            beeai_extensions.LLMServiceExtensionServer,
-            beeai_extensions.LLMServiceExtensionSpec.single_demand(suggested=tuple(preferred_models)),
-        ],
+        **extra_extensions: Unpack[extensions],
     ) -> AsyncGenerator[beeai_types.RunYield, beeai_types.RunYieldResume]:
         cloned_agent = await agent.clone() if isinstance(agent, Cloneable) else agent
         await init_beeai_platform_memory(cloned_agent, memory_manager, context)
 
-        with BeeAIPlatformContext(context, form=form, llm=llm_ext):
+        with BeeAIPlatformContext(
+            context,
+            llm=extra_extensions.get("llm_ext"),
+            extra_extensions=extra_extensions,
+        ):
             artifact_id = uuid.uuid4()
             append = False
             last_key = None
@@ -70,7 +76,9 @@ def _react_agent_factory(
                                     update.get_text_content() if hasattr(update, "get_text_content") else str(update)
                                 )
                                 if last_key and last_key != data.update.key:
-                                    yield trajectory.trajectory_metadata(title=last_key, content=last_update)
+                                    yield extra_extensions["trajectory"].trajectory_metadata(
+                                        title=last_key, content=last_update
+                                    )
                                 last_key = data.update.key
                                 last_update = update
                             case "final_answer":
@@ -110,23 +118,29 @@ def _react_agent_factory(
 def _tool_calling_agent_factory(
     agent: ToolCallingAgent, *, metadata: BeeAIPlatformServerMetadata | None = None, memory_manager: MemoryManager
 ) -> beeai_agent.AgentFactory:
+    metadata = _init_metadata(agent, metadata)
+    extensions: BaseBeeAIPlatformExtensions = metadata.pop("extensions")
+
     llm = agent._llm
-    preferred_models = llm.preferred_models if isinstance(llm, BeeAIPlatformChatModel) else []
+    if isinstance(llm, BeeAIPlatformChatModel):
+        extensions.__annotations__["llm_ext"] = Annotated[
+            beeai_extensions.LLMServiceExtensionServer,
+            beeai_extensions.LLMServiceExtensionSpec.single_demand(suggested=llm.preferred_models),
+        ]
 
     async def run(
         message: a2a_types.Message,
         context: beeai_context.RunContext,
-        trajectory: Annotated[beeai_extensions.TrajectoryExtensionServer, beeai_extensions.TrajectoryExtensionSpec()],
-        form: Annotated[beeai_extensions.FormExtensionServer, beeai_extensions.FormExtensionSpec(params=None)],
-        llm_ext: Annotated[
-            beeai_extensions.LLMServiceExtensionServer,
-            beeai_extensions.LLMServiceExtensionSpec.single_demand(suggested=tuple(preferred_models)),
-        ],
+        **extra_extensions: Unpack[extensions],
     ) -> AsyncGenerator[beeai_types.RunYield, beeai_types.RunYieldResume]:
         cloned_agent = await agent.clone() if isinstance(agent, Cloneable) else agent
         await init_beeai_platform_memory(cloned_agent, memory_manager, context)
 
-        with BeeAIPlatformContext(context, form=form, llm=llm_ext):
+        with BeeAIPlatformContext(
+            context,
+            llm=extra_extensions.get("llm_ext"),
+            extra_extensions=extra_extensions,
+        ):
             last_msg: AnyMessage | None = None
             async for data, _ in cloned_agent.run([convert_a2a_to_framework_message(message)]):
                 messages = data.state.memory.messages
@@ -135,39 +149,41 @@ def _tool_calling_agent_factory(
 
                 cur_index = find_index(messages, lambda msg: msg is last_msg, fallback=-1, reverse_traversal=True)  # noqa: B023
                 for msg in messages[cur_index + 1 :]:
-                    for value in send_message_trajectory(msg, trajectory):
+                    for value in send_message_trajectory(msg, extra_extensions["trajectory"]):
                         yield value
                     last_msg = msg
 
                 if isinstance(data, ToolCallingAgentSuccessEvent) and data.state.result is not None:
                     yield beeai_types.AgentMessage(text=data.state.result.text)
 
-    metadata = _init_metadata(agent, metadata)
     return beeai_agent.agent(**metadata)(run)
 
 
 def _requirement_agent_factory(
     agent: RequirementAgent, *, metadata: BeeAIPlatformServerMetadata | None = None, memory_manager: MemoryManager
 ) -> beeai_agent.AgentFactory:
+    metadata = _init_metadata(agent, metadata)
+    extensions: BaseBeeAIPlatformExtensions = metadata.pop("extensions")
+
     llm = agent._llm
-    preferred_models = llm.preferred_models if isinstance(llm, BeeAIPlatformChatModel) else []
+    if isinstance(llm, BeeAIPlatformChatModel):
+        extensions.__annotations__["llm_ext"] = Annotated[
+            beeai_extensions.LLMServiceExtensionServer,
+            beeai_extensions.LLMServiceExtensionSpec.single_demand(suggested=llm.preferred_models),
+        ]
 
     async def run(
         message: a2a_types.Message,
         context: beeai_context.RunContext,
-        trajectory: Annotated[beeai_extensions.TrajectoryExtensionServer, beeai_extensions.TrajectoryExtensionSpec()],
-        form: Annotated[
-            beeai_extensions.FormExtensionServer,
-            beeai_extensions.FormExtensionSpec(params=None),
-        ],
-        llm_ext: Annotated[
-            beeai_extensions.LLMServiceExtensionServer,
-            beeai_extensions.LLMServiceExtensionSpec.single_demand(suggested=tuple(preferred_models)),
-        ],
+        **extra_extensions: Unpack[extensions],
     ) -> AsyncGenerator[beeai_types.RunYield, beeai_types.RunYieldResume]:
         cloned_agent = await agent.clone() if isinstance(agent, Cloneable) else agent
         await init_beeai_platform_memory(cloned_agent, memory_manager, context)
-        with BeeAIPlatformContext(context, form=form, llm=llm_ext):
+        with BeeAIPlatformContext(
+            context,
+            llm=extra_extensions.get("llm_ext"),
+            extra_extensions=extra_extensions,
+        ):
             last_msg: AnyMessage | None = None
             async for data, _ in cloned_agent.run([convert_a2a_to_framework_message(message)]):
                 messages = data.state.memory.messages
@@ -176,14 +192,13 @@ def _requirement_agent_factory(
 
                 cur_index = find_index(messages, lambda msg: msg is last_msg, fallback=-1, reverse_traversal=True)  # noqa: B023
                 for msg in messages[cur_index + 1 :]:
-                    for value in send_message_trajectory(msg, trajectory):
+                    for value in send_message_trajectory(msg, extra_extensions["trajectory"]):
                         yield value
                     last_msg = msg
 
                 if isinstance(data, RequirementAgentSuccessEvent) and data.state.answer is not None:
                     yield beeai_types.AgentMessage(text=data.state.answer.text)
 
-    metadata = _init_metadata(agent, metadata)
     return beeai_agent.agent(**metadata)(run)
 
 
@@ -231,4 +246,10 @@ def _init_metadata(
         copy["name"] = agent.meta.name
     if not copy.get("description"):
         copy["description"] = agent.meta.description
+
+    class CustomBeeAIPlatformExtensions(copy.pop("extensions", None) or BaseBeeAIPlatformExtensions):  # type: ignore
+        pass
+
+    copy["extensions"] = CustomBeeAIPlatformExtensions
+
     return copy

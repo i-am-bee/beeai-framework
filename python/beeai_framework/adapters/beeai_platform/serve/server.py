@@ -15,6 +15,7 @@ from typing_extensions import TypedDict, TypeVar, Unpack, override
 from beeai_framework.adapters.beeai_platform.serve._dummy_context_store import (
     DummyContextStore,
 )
+from beeai_framework.adapters.beeai_platform.serve.types import BaseBeeAIPlatformExtensions
 from beeai_framework.agents.react import ReActAgent
 from beeai_framework.agents.requirement import RequirementAgent
 from beeai_framework.agents.tool_calling import ToolCallingAgent
@@ -127,6 +128,7 @@ class BeeAIPlatformServerMetadata(TypedDict, total=False):
     skills: list[a2a_types.AgentSkill]
     supports_authenticated_extended_card: bool
     version: str
+    extensions: type[BaseBeeAIPlatformExtensions]
 
 
 class BeeAIPlatformServer(

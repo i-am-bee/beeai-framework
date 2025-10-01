@@ -4,7 +4,7 @@
 from collections.abc import Generator
 from typing import Annotated
 
-from beeai_framework.adapters.beeai_platform.serve.server import BeeAIPlatformMemoryManager, BeeAIPlatformServerMetadata
+from beeai_framework.adapters.beeai_platform.serve.server import BeeAIPlatformMemoryManager
 from beeai_framework.agents import AnyAgent
 from beeai_framework.backend import AssistantMessage, MessageTextContent, MessageToolCallContent, ToolMessage
 from beeai_framework.backend.message import AnyMessage
@@ -42,18 +42,6 @@ def send_message_trajectory(
             yield trajectory.trajectory_metadata(
                 title=f"{tool_call.tool_name} (response)", content=str(tool_call.result)
             )
-
-
-def _init_metadata(
-    agent: AnyAgent,
-    base: BeeAIPlatformServerMetadata | None = None,
-) -> BeeAIPlatformServerMetadata:
-    copy = (base or {}).copy()
-    if not copy.get("name"):
-        copy["name"] = agent.meta.name
-    if not copy.get("description"):
-        copy["description"] = agent.meta.description
-    return copy
 
 
 async def init_beeai_platform_memory(
