@@ -59,7 +59,8 @@ def to_json_serializable(input: Any, *, exclude_none: bool = False) -> Any:
     elif isinstance(input, dict):
         return {k: apply_child(v) for k, v in input.items() if v is not None} if exclude_none else input
     elif isinstance(input, set):
-        return {apply_child(v) for v in input}
+        # set is not JSON serializable, convert to list
+        return [apply_child(v) for v in input]
     elif isinstance(input, str | bool | int | float):
         return input
     else:
