@@ -15,7 +15,7 @@
 
 ## Latest updates
 
-| Date       | Language      | Update Description                                                                 
+| Date       | Language      | Update Description
 |------------|---------------|-------------------------------------------------------------------------------------|
 | 2025/08/25 | Python        | 🚀 ACP is now part of A2A under the Linux Foundation! 👉 [Learn more](https://github.com/orgs/i-am-bee/discussions/5) |
 | 2025/06/03 | Python        | Release experimental [Requirement Agent](https://framework.beeai.dev/experimental/requirement-agent).           |
@@ -74,7 +74,7 @@ npm install beeai-framework
 ```py
 import asyncio
 
-from beeai_framework.agents.experimental import RequirementAgent
+from beeai_framework.agents.requirement import RequirementAgent
 from beeai_framework.agents.experimental.requirements.conditional import ConditionalRequirement
 from beeai_framework.backend import ChatModel
 from beeai_framework.errors import FrameworkError
