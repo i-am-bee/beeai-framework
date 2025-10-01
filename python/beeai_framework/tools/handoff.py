@@ -42,12 +42,12 @@ class HandoffTool(Tool[HandoffSchema, ToolRunOptions, StringToolOutput]):
         """
         super().__init__()
         self._target = target
-        self._name = name or target.meta.name if isinstance(target, BaseAgent) else target.__class__.__name__
-        self._description = (
-            description or target.meta.description
-            if isinstance(target, BaseAgent)
-            else (target.__class__.__doc__ or "")
-        )
+        if isinstance(target, BaseAgent):
+            self._name = name or target.meta.name
+            self._description = description or target.meta.description
+        else:
+            self._name = name or target.__class__.__name__
+            self._description = description or (target.__class__.__doc__ or "")
         self._propagate_inputs = propagate_inputs
 
     @property
