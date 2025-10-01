@@ -1,3 +1,16 @@
+## python_v0.1.51 (2025-09-30)
+
+### Bug Fixes
+
+- **adapters**: correctly propagate Google VertexAI parameters (#1146)
+
+### Features
+
+- **adapters**: add Transformers ChatModel support (#1087)
+- **backend**: add validate_response_format flag for structured outputs in ChatModel (#1156)
+- **agents**: make RequirementAgent stable (#1143)
+- **adapters**: add serve factories for Runnables (#1139)
+
 ## python_v0.1.50 (2025-09-26)
 
 ### Bug Fixes

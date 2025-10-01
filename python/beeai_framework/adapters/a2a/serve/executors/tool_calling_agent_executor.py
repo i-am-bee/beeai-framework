@@ -6,7 +6,7 @@ from typing import Any
 from typing_extensions import TypeVar, override
 
 from beeai_framework.adapters.a2a.serve.executors.base_a2a_agent_executor import BaseA2AAgentExecutor
-from beeai_framework.agents.experimental.events import RequirementAgentStartEvent, RequirementAgentSuccessEvent
+from beeai_framework.agents.requirement.events import RequirementAgentStartEvent, RequirementAgentSuccessEvent
 from beeai_framework.agents.tool_calling import ToolCallingAgentStartEvent, ToolCallingAgentSuccessEvent
 from beeai_framework.backend import AssistantMessage, MessageToolCallContent, ToolMessage
 from beeai_framework.emitter import Emitter, EventMeta

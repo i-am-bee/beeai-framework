@@ -25,25 +25,30 @@ Supported in Python and TypeScript.
 
 The following table depicts supported providers. Each provider requires specific configuration through environment variables. Ensure all required variables are set before initializing a provider.
 
-| Name           | Chat | Embedding |  Environment Variables                                                                                                                                                 |
-| :------------- | :--- | :-------- | :-------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Ollama         |  ✅  |     ✅     | OLLAMA_CHAT_MODEL<br/>OLLAMA_BASE_URL                                                                                                       |
-| OpenAI         |  ✅  |     ✅     | OPENAI_CHAT_MODEL<br/>OPENAI_EMBEDDING_MODEL<br/>OPENAI_API_BASE<br/>OPENAI_API_KEY<br/>OPENAI_ORGANIZATION<br/>OPENAI_API_HEADERS                                                                                                       |
-| Watsonx        |  ✅  |     ✅     | WATSONX_CHAT_MODEL<br/>WATSONX_API_KEY<br/>WATSONX_PROJECT_ID<br/>WATSONX_SPACE_ID<br/>WATSONX_TOKEN<br/>WATSONX_ZENAPIKEY<br/>WATSONX_URL<br/>WATSONX_REGION |
-| Anthropic      |  ✅  |     ✅     | ANTHROPIC_CHAT_MODEL<br/>ANTHROPIC_API_KEY<br/>ANTHROPIC_API_HEADERS |
-| Groq           |  ✅  |     ✅     | GROQ_CHAT_MODEL<br/>GROQ_EMBEDDING_MODEL<br/>GROQ_API_KEY |
-| Amazon Bedrock |  ✅  |     ✅     | AWS_CHAT_MODEL<br/>AWS_ACCESS_KEY_ID<br/>AWS_SECRET_ACCESS_KEY<br/>AWS_REGION<br/>AWS_API_HEADERS |
-| Google Vertex  |  ✅  |     ✅     | GOOGLE_VERTEX_CHAT_MODEL<br/>GOOGLE_VERTEX_PROJECT<br/>GOOGLE_APPLICATION_CREDENTIALS<br/>GOOGLE_APPLICATION_CREDENTIALS_JSON<br/>GOOGLE_CREDENTIALS<br/>GOOGLE_VERTEX_API_HEADERS |
-| Azure OpenAI   |  ✅  |     ✅     | AZURE_OPENAI_CHAT_MODEL<br/>AZURE_OPENAI_API_KEY<br/>AZURE_OPENAI_API_BASE<br/>AZURE_OPENAI_API_VERSION<br/>AZURE_AD_TOKEN<br/>AZURE_API_TYPE<br/>AZURE_API_HEADERS |
-| xAI            |  ✅  |     ✅  | XAI_CHAT_MODEL<br/>XAI_API_KEY |
-| Google Gemini  |  ✅  |     ✅  *(Py only)*    | GEMINI_CHAT_MODEL<br/>GEMINI_API_KEY<br/>GEMINI_API_HEADERS |
-| MistralAI      |  ✅  |     ✅  *(Py only)*    | MISTRALAI_CHAT_MODEL<br/>MISTRALAI_EMBEDDING_MODEL<br />MISTRALAI_API_KEY<br />MISTRALAI_API_BASE |
+| Name           | Chat | Embedding                  |  Environment Variables                                                                                                                                                 |
+| :------------- | :--- |:---------------------------| :-------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Ollama         |  ✅  | ✅                          | OLLAMA_CHAT_MODEL<br/>OLLAMA_BASE_URL                                                                                                       |
+| OpenAI         |  ✅  | ✅                          | OPENAI_CHAT_MODEL<br/>OPENAI_EMBEDDING_MODEL<br/>OPENAI_API_BASE<br/>OPENAI_API_KEY<br/>OPENAI_ORGANIZATION<br/>OPENAI_API_HEADERS                                                                                                       |
+| Watsonx        |  ✅  | ✅                          | WATSONX_CHAT_MODEL<br/>WATSONX_API_KEY<br/>WATSONX_PROJECT_ID<br/>WATSONX_SPACE_ID<br/>WATSONX_TOKEN<br/>WATSONX_ZENAPIKEY<br/>WATSONX_URL<br/>WATSONX_REGION |
+| Anthropic      |  ✅  | ✅                          | ANTHROPIC_CHAT_MODEL<br/>ANTHROPIC_API_KEY<br/>ANTHROPIC_API_HEADERS |
+| Groq           |  ✅  | ✅                          | GROQ_CHAT_MODEL<br/>GROQ_EMBEDDING_MODEL<br/>GROQ_API_KEY |
+| Amazon Bedrock |  ✅  | ✅                          | AWS_CHAT_MODEL<br/>AWS_ACCESS_KEY_ID<br/>AWS_SECRET_ACCESS_KEY<br/>AWS_REGION<br/>AWS_API_HEADERS |
+| Google Vertex  |  ✅  | ✅                          | GOOGLE_VERTEX_CHAT_MODEL<br/>GOOGLE_VERTEX_PROJECT<br/>GOOGLE_APPLICATION_CREDENTIALS<br/>GOOGLE_APPLICATION_CREDENTIALS_JSON<br/>GOOGLE_CREDENTIALS<br/>GOOGLE_VERTEX_API_HEADERS |
+| Azure OpenAI   |  ✅  | ✅                          | AZURE_OPENAI_CHAT_MODEL<br/>AZURE_OPENAI_API_KEY<br/>AZURE_OPENAI_API_BASE<br/>AZURE_OPENAI_API_VERSION<br/>AZURE_AD_TOKEN<br/>AZURE_API_TYPE<br/>AZURE_API_HEADERS |
+| xAI            |  ✅  | ✅                          | XAI_CHAT_MODEL<br/>XAI_API_KEY |
+| Google Gemini  |  ✅  | ✅               | GEMINI_CHAT_MODEL<br/>GEMINI_API_KEY<br/>GEMINI_API_HEADERS |
+| MistralAI      |  ✅  | ✅               | MISTRALAI_CHAT_MODEL<br/>MISTRALAI_EMBEDDING_MODEL<br />MISTRALAI_API_KEY<br />MISTRALAI_API_BASE |
+| Transformers      |  ✅  | ✅        | TRANSFORMERS_CHAT_MODEL<br/>HF_TOKEN|
 
 <Tip>
 If you don't see your provider raise an issue [here](https://github.com/i-am-bee/beeai-framework/issues).
 Meanwhile, you can use the Ollama for local models in [Python](https://github.com/i-am-bee/beeai-framework/blob/main/python/examples/backend/providers/ollama.py)
 or [TypeScript](https://github.com/i-am-bee/beeai-framework/blob/main/typescript/examples/backend/providers/ollama.ts) or the [Langchain adapter](#adding-a-provider-using-the-langchain-adapter) for hosted providers.
 </Tip>
+
+<Note>
+	Google Gemini, MistralAI, and Transformers are supported in Python only. The Transformers chat model does not support tool calling.
+</Note>
 
 ---
 

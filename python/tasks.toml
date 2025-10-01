@@ -14,6 +14,13 @@ outputs = { auto = true }
 dir = "{{config_root}}/python"
 run = "test -f .env || cp .env.example .env"
 
+# scripts
+["python:scripts:generate-shims"]
+depends = ["python:setup:*"]
+dir = "{{config_root}}/python"
+run = "poetry run python scripts/generate_shims.py"
+depends_post = ["common:fix:license"]
+
 # check
 
 ["python:check"]

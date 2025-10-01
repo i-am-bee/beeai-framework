@@ -10,9 +10,9 @@ from beeai_framework.adapters.beeai_platform.context import BeeAIPlatformContext
 from beeai_framework.adapters.beeai_platform.serve.server import BeeAIPlatformMemoryManager, BeeAIPlatformServerMetadata
 from beeai_framework.adapters.beeai_platform.serve.utils import init_beeai_platform_memory, send_message_trajectory
 from beeai_framework.agents import AnyAgent
-from beeai_framework.agents.experimental import RequirementAgent
-from beeai_framework.agents.experimental.events import RequirementAgentSuccessEvent
 from beeai_framework.agents.react import ReActAgent, ReActAgentUpdateEvent
+from beeai_framework.agents.requirement import RequirementAgent
+from beeai_framework.agents.requirement.events import RequirementAgentSuccessEvent
 from beeai_framework.agents.tool_calling import ToolCallingAgent, ToolCallingAgentSuccessEvent
 from beeai_framework.memory import UnconstrainedMemory
 from beeai_framework.runnable import Runnable

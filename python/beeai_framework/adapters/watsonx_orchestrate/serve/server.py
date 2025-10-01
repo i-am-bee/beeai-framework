@@ -12,8 +12,8 @@ from typing_extensions import TypedDict, TypeVar, override
 import beeai_framework.adapters.watsonx_orchestrate.serve._factories as factories
 from beeai_framework.adapters.watsonx_orchestrate.serve.agent import WatsonxOrchestrateServerAgent
 from beeai_framework.adapters.watsonx_orchestrate.serve.api import WatsonxOrchestrateAPI
-from beeai_framework.agents.experimental import RequirementAgent
 from beeai_framework.agents.react import ReActAgent
+from beeai_framework.agents.requirement import RequirementAgent
 from beeai_framework.agents.tool_calling import ToolCallingAgent
 from beeai_framework.logger import Logger
 from beeai_framework.runnable import Runnable

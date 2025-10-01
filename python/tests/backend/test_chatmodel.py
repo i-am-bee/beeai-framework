@@ -3,6 +3,7 @@
 
 import asyncio
 from collections.abc import AsyncGenerator
+from typing import Any
 
 import pytest
 import pytest_asyncio
@@ -51,9 +52,14 @@ class ReverseWordsDummyModel(ChatModel):
 
     async def _create(self, input: ChatModelInput, _: RunContext) -> ChatModelOutput:
         reversed_words_messages = self.reverse_message_words(input.messages)
+
+        output_structured: Any = {"reversed": "".join(reversed_words_messages)} if input.response_format else None
+        if isinstance(input.response_format, type) and issubclass(input.response_format, BaseModel):
+            output_structured = input.response_format.model_validate(output_structured)
+
         return ChatModelOutput(
             output=[AssistantMessage(w) for w in reversed_words_messages],
-            output_structured={"reversed": "".join(reversed_words_messages)} if input.response_format else None,
+            output_structured=output_structured,
         )
 
     async def _create_stream(self, input: ChatModelInput, context: RunContext) -> AsyncGenerator[ChatModelOutput]:
@@ -102,7 +108,7 @@ async def test_chat_model_structure(reverse_words_chat: ChatModel, chat_messages
 
     reverse_words_chat = ReverseWordsDummyModel()
     response = await reverse_words_chat.run(chat_messages_list, response_format=ReverseWordsSchema)
-    ReverseWordsSchema.model_validate(response.output_structured)
+    assert isinstance(response.output_structured, ReverseWordsSchema)
 
 
 @pytest.mark.asyncio

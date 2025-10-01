@@ -15,8 +15,8 @@ from typing_extensions import TypedDict, TypeVar, Unpack, override
 from beeai_framework.adapters.beeai_platform.serve._dummy_context_store import (
     DummyContextStore,
 )
-from beeai_framework.agents.experimental import RequirementAgent
 from beeai_framework.agents.react import ReActAgent
+from beeai_framework.agents.requirement import RequirementAgent
 from beeai_framework.agents.tool_calling import ToolCallingAgent
 from beeai_framework.memory import BaseMemory
 from beeai_framework.runnable import Runnable
