@@ -46,13 +46,13 @@ def _react_agent_factory(
     if isinstance(llm, BeeAIPlatformChatModel):
         extensions.__annotations__["llm_ext"] = Annotated[
             beeai_extensions.LLMServiceExtensionServer,
-            beeai_extensions.LLMServiceExtensionSpec.single_demand(suggested=llm.preferred_models),
+            beeai_extensions.LLMServiceExtensionSpec.single_demand(suggested=tuple(llm.preferred_models)),
         ]
 
     async def run(
         message: a2a_types.Message,
         context: beeai_context.RunContext,
-        **extra_extensions: Unpack[extensions],
+        **extra_extensions: Unpack[extensions],  # type: ignore
     ) -> AsyncGenerator[beeai_types.RunYield, beeai_types.RunYieldResume]:
         cloned_agent = await agent.clone() if isinstance(agent, Cloneable) else agent
         await init_beeai_platform_memory(cloned_agent, memory_manager, context)
@@ -60,12 +60,13 @@ def _react_agent_factory(
         with BeeAIPlatformContext(
             context,
             llm=extra_extensions.get("llm_ext"),
-            extra_extensions=extra_extensions,
+            extra_extensions=extra_extensions,  # type: ignore[arg-type]
         ):
             artifact_id = uuid.uuid4()
             append = False
             last_key = None
             last_update = None
+            accumulated_text = ""
             async for data, event in cloned_agent.run([convert_a2a_to_framework_message(message)]):
                 match (data, event.name):
                     case (ReActAgentUpdateEvent(), "partial_update"):
@@ -86,6 +87,7 @@ def _react_agent_factory(
                                 update = (
                                     update.get_text_content() if hasattr(update, "get_text_content") else str(update)
                                 )
+                                accumulated_text += update
                                 yield a2a_types.TaskArtifactUpdateEvent(
                                     append=append,
                                     context_id=context.context_id,
@@ -111,8 +113,14 @@ def _react_agent_factory(
                 ),
             )
 
+            if isinstance(memory_manager, BeeAIPlatformMemoryManager):
+                if message.metadata and message.metadata["createdAt"]:
+                    message.metadata["createdAt"] = message.metadata["createdAt"].isoformat()
+                await context.store(message)
+                await context.store(beeai_types.AgentMessage(text=accumulated_text))
+
     metadata = _init_metadata(agent, metadata)
-    return beeai_agent.agent(**metadata)(run)
+    return beeai_agent.agent(**metadata)(run)  # type: ignore[misc]
 
 
 def _tool_calling_agent_factory(
@@ -125,13 +133,13 @@ def _tool_calling_agent_factory(
     if isinstance(llm, BeeAIPlatformChatModel):
         extensions.__annotations__["llm_ext"] = Annotated[
             beeai_extensions.LLMServiceExtensionServer,
-            beeai_extensions.LLMServiceExtensionSpec.single_demand(suggested=llm.preferred_models),
+            beeai_extensions.LLMServiceExtensionSpec.single_demand(suggested=tuple(llm.preferred_models)),
         ]
 
     async def run(
         message: a2a_types.Message,
         context: beeai_context.RunContext,
-        **extra_extensions: Unpack[extensions],
+        **extra_extensions: Unpack[extensions],  # type: ignore
     ) -> AsyncGenerator[beeai_types.RunYield, beeai_types.RunYieldResume]:
         cloned_agent = await agent.clone() if isinstance(agent, Cloneable) else agent
         await init_beeai_platform_memory(cloned_agent, memory_manager, context)
@@ -139,7 +147,7 @@ def _tool_calling_agent_factory(
         with BeeAIPlatformContext(
             context,
             llm=extra_extensions.get("llm_ext"),
-            extra_extensions=extra_extensions,
+            extra_extensions=extra_extensions,  # type: ignore[arg-type]
         ):
             last_msg: AnyMessage | None = None
             async for data, _ in cloned_agent.run([convert_a2a_to_framework_message(message)]):
@@ -154,9 +162,16 @@ def _tool_calling_agent_factory(
                     last_msg = msg
 
                 if isinstance(data, ToolCallingAgentSuccessEvent) and data.state.result is not None:
-                    yield beeai_types.AgentMessage(text=data.state.result.text)
+                    agent_response = beeai_types.AgentMessage(text=data.state.result.text)
+                    if isinstance(memory_manager, BeeAIPlatformMemoryManager):
+                        if message.metadata and message.metadata["createdAt"]:
+                            message.metadata["createdAt"] = message.metadata["createdAt"].isoformat()
+                        await context.store(message)
+                        await context.store(agent_response)
 
-    return beeai_agent.agent(**metadata)(run)
+                    yield agent_response
+
+    return beeai_agent.agent(**metadata)(run)  # type: ignore[misc]
 
 
 def _requirement_agent_factory(
@@ -169,20 +184,20 @@ def _requirement_agent_factory(
     if isinstance(llm, BeeAIPlatformChatModel):
         extensions.__annotations__["llm_ext"] = Annotated[
             beeai_extensions.LLMServiceExtensionServer,
-            beeai_extensions.LLMServiceExtensionSpec.single_demand(suggested=llm.preferred_models),
+            beeai_extensions.LLMServiceExtensionSpec.single_demand(suggested=tuple(llm.preferred_models)),
         ]
 
     async def run(
         message: a2a_types.Message,
         context: beeai_context.RunContext,
-        **extra_extensions: Unpack[extensions],
+        **extra_extensions: Unpack[extensions],  # type: ignore
     ) -> AsyncGenerator[beeai_types.RunYield, beeai_types.RunYieldResume]:
         cloned_agent = await agent.clone() if isinstance(agent, Cloneable) else agent
         await init_beeai_platform_memory(cloned_agent, memory_manager, context)
         with BeeAIPlatformContext(
             context,
             llm=extra_extensions.get("llm_ext"),
-            extra_extensions=extra_extensions,
+            extra_extensions=extra_extensions,  # type: ignore[arg-type]
         ):
             last_msg: AnyMessage | None = None
             async for data, _ in cloned_agent.run([convert_a2a_to_framework_message(message)]):
@@ -197,9 +212,16 @@ def _requirement_agent_factory(
                     last_msg = msg
 
                 if isinstance(data, RequirementAgentSuccessEvent) and data.state.answer is not None:
-                    yield beeai_types.AgentMessage(text=data.state.answer.text)
+                    agent_response = beeai_types.AgentMessage(text=data.state.answer.text)
+                    if isinstance(memory_manager, BeeAIPlatformMemoryManager):
+                        if message.metadata and message.metadata["createdAt"]:
+                            message.metadata["createdAt"] = message.metadata["createdAt"].isoformat()
+                        await context.store(message)
+                        await context.store(agent_response)
 
-    return beeai_agent.agent(**metadata)(run)
+                    yield agent_response
+
+    return beeai_agent.agent(**metadata)(run)  # type: ignore[misc]
 
 
 def _runnable_factory(
@@ -212,7 +234,7 @@ def _runnable_factory(
         cloned_runnable = await runnable.clone() if isinstance(runnable, Cloneable) else runnable
         memory = None
         if isinstance(memory_manager, BeeAIPlatformMemoryManager):
-            history = [msg async for msg in context.store.load_history() if msg.parts]
+            history = [msg async for msg in context.load_history() if msg.parts]
             messages = [convert_a2a_to_framework_message(msg) for msg in history]
         else:
             try:
@@ -227,14 +249,22 @@ def _runnable_factory(
         data = await cloned_runnable.run(messages)
         if memory is not None:
             await memory.add(data.last_message)
-        yield beeai_types.AgentMessage(
+
+        agent_response = beeai_types.AgentMessage(
             text=data.last_message.text,
             context_id=context.context_id,
             task_id=context.task_id,
             reference_task_ids=[task.id for task in (context.related_tasks or [])],
         )
+        if isinstance(memory_manager, BeeAIPlatformMemoryManager):
+            if message.metadata and message.metadata["createdAt"]:
+                message.metadata["createdAt"] = message.metadata["createdAt"].isoformat()
+            await context.store(message)
+            await context.store(agent_response)
 
-    return beeai_agent.agent(**(metadata or {}))(run)
+        yield agent_response
+
+    return beeai_agent.agent(**(metadata or {}))(run)  # type: ignore[misc]
 
 
 def _init_metadata(

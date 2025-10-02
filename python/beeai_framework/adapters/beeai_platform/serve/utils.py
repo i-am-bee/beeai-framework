@@ -48,7 +48,7 @@ async def init_beeai_platform_memory(
     agent: AnyAgent, memory_manager: MemoryManager, context: beeai_context.RunContext
 ) -> None:
     if isinstance(memory_manager, BeeAIPlatformMemoryManager):
-        history = [message async for message in context.store.load_history() if message.parts]
+        history = [message async for message in context.load_history() if message.parts]
         agent.memory.reset()
         # last message is provided directly to the run method
         await agent.memory.add_many([convert_a2a_to_framework_message(message) for message in history[:-1]])
