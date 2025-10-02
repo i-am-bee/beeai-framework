@@ -159,7 +159,7 @@ class JSONSchemaModel(ABC, BaseModel):
                 if (not is_required and not default) or explicitly_nullable:
                     target_type = Optional[target_type] if target_type else type(None)  # noqa: UP007
 
-            return (
+            return (  # type: ignore
                 target_type,
                 target_field,
             )
