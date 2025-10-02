@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 from types import NoneType
-from typing import Any, Literal, Optional, get_args
+from typing import Any, Literal, get_args
 
 import pytest
 from pydantic import ValidationError
@@ -95,6 +95,7 @@ def arrays_of_things() -> dict[str, list[str] | str | Any]:
             "fruits": {"type": "array", "items": {"type": "string"}},
             "vegetables": {"type": "array", "items": {"$ref": "#/$defs/veggie"}},
         },
+        "required": ["fruits", "vegetables"],
         "$defs": {
             "veggie": {
                 "type": "object",
@@ -116,6 +117,7 @@ def enumareted_values() -> dict[str, list[str] | str | Any]:
         "title": "Enumerated Values",
         "type": "object",
         "properties": {"data": {"enum": [42, True, "hello", None, (1, 2, 3)]}},
+        "required": ["data"],
     }
 
 
@@ -151,6 +153,10 @@ def complex_object_with_nested_properties() -> dict[str, list[str] | str | Any]:
                 "required": ["street", "city", "state", "postalCode"],
             },
             "hobbies": {"type": "array", "items": {"type": "string"}},
+            "size": {
+                "enum": ["XS", "S", "M", "L", "XL"],
+                "type": "string",
+            },
         },
         "required": ["name", "age"],
     }
@@ -237,18 +243,17 @@ def test_json_schema_model(test_json_schema: dict[str, list[str] | str | Any]) -
         "contact": "name@email.com",
     }
 
-    assert model.model_fields["object"].annotation is Literal["user"], "Expected annotation to be `Literal['user']`"  # type: ignore
+    assert str(model.model_fields["object"].annotation) == "typing.Optional[typing.Literal['user']]"
     assert model.model_fields["name"].annotation is str, "Expected annotation to be `str`"
     assert model.model_fields["age"].annotation is int, "Expected annotation to be `int`"
     assert model.model_fields["is_active"].annotation is bool, "Expected annotation to be `bool`"
-    # ruff: noqa: UP007, E501
-    assert model.model_fields["roles"].annotation is Optional[list[Literal[("admin", "user", "guest")]]], (  # type: ignore
-        "Expected correct type"
+    assert (
+        str(model.model_fields["roles"].annotation) == "typing.Optional[list[typing.Literal['admin', 'user', 'guest']]]"
     )
     assert get_args(model.model_fields["address"].annotation)[0].model_fields["city"].annotation is str
     assert get_args(model.model_fields["address"].annotation)[0].model_fields["street"].annotation == str | NoneType
     assert get_args(model.model_fields["address"].annotation)[0].model_fields["zipcode"].annotation == int | NoneType
-    assert model.model_fields["hobby"].annotation == str | NoneType, "Expected annotation to be `Optional[str]`"
+    assert str(model.model_fields["hobby"].annotation) == "typing.Optional[str]"
     assert model.model_fields["contact"].annotation == str | int, "Expected annotation to be `Union[str, int]`"
 
 
@@ -267,9 +272,8 @@ def test_arrays_of_things_schema(arrays_of_things: dict[str, list[str] | str | A
     model = JSONSchemaModel.create("arrays_of_things", arrays_of_things)
     assert model.model_json_schema()
 
-    assert model.model_fields["fruits"].annotation == Optional[list[Optional[str]]]  # type: ignore[comparison-overlap]
-    vegetables = get_args(model.model_fields["vegetables"].annotation)[0]
-    vegetable = get_args(get_args(vegetables)[0])[0]
+    assert model.model_fields["fruits"].annotation == list[str]
+    vegetable = get_args(model.model_fields["vegetables"].annotation)[0]
     assert vegetable.model_fields["veggieName"].annotation is str
     assert vegetable.model_fields["veggieLike"].annotation is bool
 

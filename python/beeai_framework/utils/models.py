@@ -82,7 +82,7 @@ class JSONSchemaModel(ABC, BaseModel):
             "boolean": bool,
             "object": dict,
             "array": list,
-            "null": None,
+            "null": type(None),
         }
 
         fields: dict[str, tuple[type, FieldInfo]] = {}
@@ -110,7 +110,13 @@ class JSONSchemaModel(ABC, BaseModel):
                 return create_field(param_name, remap_key(param, source="oneOf", target="anyOf"))
 
             if any_of:
-                target_types: list[type] = [create_field(param_name, t)[0] for t in param["anyOf"]]
+                target_types: list[type] = []
+                for idx, t in enumerate(param["anyOf"]):
+                    tmp_name = f"{param_name}_{idx}"
+                    required.add(tmp_name)
+                    target_types.append(create_field(tmp_name, t)[0])
+                    required.discard(tmp_name)
+
                 if len(target_types) == 1:
                     return create_field(param_name, remap_key(param, source="anyOf", target="type"))
                 else:
@@ -124,9 +130,12 @@ class JSONSchemaModel(ABC, BaseModel):
 
                 if target_type is dict and param.get("properties") is not None:
                     target_type = cls.create(param_name, param)
-
-                if target_type is list:
-                    target_type = list[create_field(param_name, param.get("items"))[0]]  # type: ignore
+                elif target_type is list and param.get("items"):
+                    tmp_name = f"{param_name}_tmp"
+                    required.add(tmp_name)
+                    given_field, given_field_info = create_field(tmp_name, param.get("items"))  # type: ignore
+                    required.discard(tmp_name)
+                    target_type = list[given_field]  # type: ignore
 
                 is_required = param_name in required
                 explicitly_nullable = (
@@ -135,8 +144,6 @@ class JSONSchemaModel(ABC, BaseModel):
                     or (any_of and any(t.get("type") == "null" for t in any_of))
                     or (one_of and any(t.get("type") == "null" for t in one_of))
                 )
-                if (not is_required and not default) or explicitly_nullable:
-                    target_type = Optional[target_type] if target_type else type(None)  # noqa: UP007
 
                 if enum is not None and isinstance(enum, list):
                     target_type = Literal[tuple(enum)]
@@ -148,6 +155,9 @@ class JSONSchemaModel(ABC, BaseModel):
                         f" Using 'Any' as a fallback."
                     )
                     target_type = type
+
+                if (not is_required and not default) or explicitly_nullable:
+                    target_type = Optional[target_type] if target_type else type(None)  # noqa: UP007
 
             return (
                 target_type,
