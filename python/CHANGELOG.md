@@ -1,3 +1,16 @@
+## python_v0.1.52 (2025-10-01)
+
+### Bug Fixes
+
+- **internals**: fix serialization of lists/sets
+- **internals**: fix serialization of lists/sets (#1161)
+- **tools**: adjust typings for MCPTool to accept streamablehttp_client
+- **backend**: prevent propagating internal parameters to the request
+
+### Features
+
+- **tools**: allow HandoffTool to accept any runnable (#1158)
+
 ## python_v0.1.51 (2025-09-30)
 
 ### Bug Fixes
