@@ -420,7 +420,7 @@ Learn more about the [RequirementAgent](../experimental/requirement-agent)
 ```py Python
 import asyncio 
 from beeai_framework.agents.requirement import RequirementAgent
-from beeai_framework.agents.experimental.requirements.conditional import ConditionalRequirement
+from beeai_framework.agents.requirement.requirements.conditional import ConditionalRequirement
 from beeai_framework.backend import ChatModel
 from beeai_framework.tools.search.wikipedia import WikipediaTool
 from beeai_framework.tools.weather import OpenMeteoTool
@@ -479,7 +479,7 @@ Add user permission for when you want an action to be human validated before bei
 ```py Python
 import asyncio 
 from beeai_framework.agents.requirement import RequirementAgent
-from beeai_framework.agents.experimental.requirements.conditional import ConditionalRequirement
+from beeai_framework.agents.requirement.requirements.conditional import ConditionalRequirement
 from beeai_framework.agents.experimental.requirements.ask_permission import AskPermissionRequirement
 from beeai_framework.backend import ChatModel
 from beeai_framework.tools.search.wikipedia import WikipediaTool
