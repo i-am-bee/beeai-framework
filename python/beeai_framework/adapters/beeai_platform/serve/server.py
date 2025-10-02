@@ -15,6 +15,7 @@ from typing_extensions import TypedDict, TypeVar, Unpack, override
 from beeai_framework.adapters.beeai_platform.serve._dummy_context_store import (
     DummyContextStore,
 )
+from beeai_framework.agents import BaseAgent
 from beeai_framework.agents.react import ReActAgent
 from beeai_framework.agents.requirement import RequirementAgent
 from beeai_framework.agents.tool_calling import ToolCallingAgent
@@ -191,7 +192,7 @@ class BeeAIPlatformServer(
                     name=tool.name,
                     description=tool.description,
                 )
-                for tool in getattr(getattr(input, "_input", {}), "tools", getattr(input, "_tools", []))
+                for tool in (input.meta.tools if isinstance(input, BaseAgent) else [])
             ]
 
             self._metadata_by_agent[input] = metadata
