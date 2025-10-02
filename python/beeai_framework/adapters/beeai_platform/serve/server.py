@@ -15,6 +15,7 @@ from typing_extensions import TypedDict, TypeVar, Unpack, override
 from beeai_framework.adapters.beeai_platform.serve._dummy_context_store import (
     DummyContextStore,
 )
+from beeai_framework.agents import BaseAgent
 from beeai_framework.agents.react import ReActAgent
 from beeai_framework.agents.requirement import RequirementAgent
 from beeai_framework.agents.tool_calling import ToolCallingAgent
@@ -24,6 +25,7 @@ from beeai_framework.serve.errors import FactoryAlreadyRegisteredError
 
 try:
     import a2a.types as a2a_types
+    import beeai_sdk.a2a.extensions as beeai_extensions
     import beeai_sdk.server as beeai_server
     import beeai_sdk.server.agent as beeai_agent
     import beeai_sdk.server.store.context_store as beeai_context_store
@@ -185,6 +187,13 @@ class BeeAIPlatformServer(
             metadata = metadata or BeeAIPlatformServerMetadata()
             detail = metadata.setdefault("detail", AgentDetail(interaction_mode="multi-turn"))
             detail.framework = detail.framework or "BeeAI"
+            detail.tools = detail.tools or [
+                beeai_extensions.AgentDetailTool(
+                    name=tool.name,
+                    description=tool.description,
+                )
+                for tool in (input.meta.tools if isinstance(input, BaseAgent) else [])
+            ]
 
             self._metadata_by_agent[input] = metadata
             return self
