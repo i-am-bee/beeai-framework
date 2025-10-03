@@ -3,6 +3,7 @@
 <h1>BeeAI Framework</h1>
 
 **Build production-ready multi-agent systems in <a href="https://github.com/i-am-bee/beeai-framework/tree/main/python">Python</a> or <a href="https://github.com/i-am-bee/beeai-framework/tree/main/typescript">TypeScript</a>.**
+
 [![Documentation](https://img.shields.io/badge/Documentation-Read%20the%20docs-2f7bb6?style=plastic&logo=readthedocs&logoColor=white)](https://framework.beeai.dev/introduction/welcome)
 [![Python library](https://img.shields.io/badge/Python-306998?style=plastic&logo=python&logoColor=white)](https://github.com/i-am-bee/beeai-framework/tree/main/python)
 [![Typescript library](https://img.shields.io/badge/TypeScript-2f7bb6?style=plastic&logo=typescript&logoColor=white)](https://github.com/i-am-bee/beeai-framework/tree/main/typescript)
