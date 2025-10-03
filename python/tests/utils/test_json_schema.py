@@ -6,8 +6,10 @@ from typing import Any, Literal, get_args
 
 import pytest
 from pydantic import ValidationError
+from pydantic._internal._model_construction import ModelMetaclass
 
 from beeai_framework.utils import JSONSchemaModel
+from beeai_framework.utils.schema import simplify_json_schema
 
 """
 Utility functions and classes
@@ -193,7 +195,11 @@ def test_schema_with_additional_properties(schema_with_additional_properties: di
     assert model.model_validate({"input": {"query": "test"}})
     assert model.model_validate({"input": {"query": "test"}}).model_dump()["input"] == {"query": "test"}
 
-    assert model.model_fields["input"].annotation is dict
+    input_field = model.model_fields["input"].annotation
+    assert type(input_field) is ModelMetaclass
+    assert input_field.model_config["title"] == "Input"
+    assert input_field.model_config["extra"] == "allow"
+    assert input_field.model_config["arbitrary_types_allowed"] is True
     assert get_args(model.model_fields["config"].annotation)[0].model_fields["max_retries"].annotation is int
     assert model.model_validate({"input": {"query": "test query"}})
 
@@ -272,7 +278,7 @@ def test_arrays_of_things_schema(arrays_of_things: dict[str, list[str] | str | A
     model = JSONSchemaModel.create("arrays_of_things", arrays_of_things)
     assert model.model_json_schema()
 
-    assert model.model_fields["fruits"].annotation == list[str]
+    assert str(model.model_fields["fruits"].annotation) == "list[str]"
     vegetable = get_args(model.model_fields["vegetables"].annotation)[0]
     assert vegetable.model_fields["veggieName"].annotation is str
     assert vegetable.model_fields["veggieLike"].annotation is bool
@@ -353,3 +359,50 @@ def test_preserve_default_type_not_optional() -> None:
 
     # should not mark the field as required
     assert not field_info.is_required(), "Expected field to be optional due to default value"
+
+
+@pytest.mark.unit
+def test_simplify_schema() -> None:
+    schema = {
+        "additionalProperties": False,
+        "properties": {
+            "parameters": {
+                "$schema": "http://json-schema.org/draft-07/schema#",
+                "additionalProperties": False,
+                "properties": {
+                    "namespace": {
+                        "anyOf": [
+                            {"anyOf": [{"not": {}}, {"type": "string"}]},
+                            {"type": "number", "min": 5},
+                        ]
+                    },
+                },
+                "type": "object",
+            },
+        },
+        "required": ["parameters"],
+        "title": "list_application_needs",
+        "type": "object",
+    }
+    simplify_json_schema(schema)
+    assert schema == {
+        "additionalProperties": False,
+        "properties": {
+            "parameters": {
+                "$schema": "http://json-schema.org/draft-07/schema#",
+                "additionalProperties": False,
+                "properties": {
+                    "namespace": {
+                        "anyOf": [
+                            {"type": "string"},
+                            {"type": "number", "min": 5},
+                        ]
+                    },
+                },
+                "type": "object",
+            },
+        },
+        "required": ["parameters"],
+        "title": "list_application_needs",
+        "type": "object",
+    }

@@ -1,85 +1,56 @@
-from typing import Any, Union
+# Copyright 2025 © BeeAI a Series of LF Projects, LLC
+# SPDX-License-Identifier: Apache-2.0
 
+from typing import Any
+
+from beeai_framework.logger import Logger
+from beeai_framework.utils.dicts import exclude_none
 from beeai_framework.utils.lists import remove_falsy
 
-JSONType = Union[dict[str, Any], list[Any], str, int, float, bool, None]
+JSONType = dict[str, Any] | list[Any] | str | int | float | bool | None
 Schema = dict[str, JSONType]
 
+logger = Logger(__name__)
 
-def simplify_schema(top_schema: Schema) -> None:
-    """
-    Simplify a JSON Schema by:
-    - Flattening nested anyOf/oneOf
-    - Removing impossible {"not": {}}
-    - Collapsing multiple type expressions
-    - Normalizing number/string constraints with missing "type"
-    - Merging basic `allOf` objects
-    - Deduplicating types
-    """
-
-    def _simplify(schema: Schema) -> Any:
-        for key in ("anyOf", "oneOf", "not"):
-            if schema.get(key) == {}:
-                del schema[key]
-
-        if schema.get("type") == "object":
-            properties = schema.get("properties", {})
-            for k, v in schema.get("properties", {}).items():
-                properties[k] = _simplify(v)
-            schema["properties"] = properties
-
-        if schema.get("type") == "array":
-            items = [_simplify(v) for v in schema["items"]]
-            schema["items"] = remove_falsy(items)
-
-        for key in ("anyOf", "oneOf"):
-            value = schema.get(key)
-            if value and isinstance(value, list):
-                value = remove_falsy([_simplify(v) for v in value])
-
-                if len(value) == 1:
-                    return value[0]
-
-                if all([v.keys() == {"type"} for v in value]):
-                    return {"type": [v["type"] for v in value]}
-
-        return schema
-
-    _simplify(top_schema)
+__all__ = ["simplify_json_schema"]
 
 
-x = {
-    "additionalProperties": False,
-    "properties": {
-        "name": {
-            "const": "list_application_needs",
-            "description": "Tool Name",
-            "title": "Name",
-            "type": "string",
-        },
-        "parameters": {
-            "$schema": "http://json-schema.org/draft-07/schema#",
-            "additionalProperties": False,
-            "properties": {
-                "namespace": {
-                    "anyOf": [
-                        {"anyOf": [{"not": {}}, {"type": "string"}]},
-                        # {"type": "null"},
-                        {"type": "number", "min": 5},
-                    ]
-                },
-            },
-            "type": "object",
-            "description": "Tool Parameters",
-        },
-    },
-    "required": ["name", "parameters"],
-    "title": "list_application_needs",
-    "type": "object",
-}
+def _simplify(schema: Schema, path: list[str]) -> Any:
+    logger.debug("Visiting:", ".".join(path))
+    if not isinstance(schema, dict) or not schema:
+        return
 
-simplify_schema(x)
+    for key in ("anyOf", "oneOf", "not"):
+        if schema.get(key) == {}:
+            del schema[key]
 
-from beeai_framework.utils.strings import to_json
+    if schema.get("type") == "object":
+        properties = {k: _simplify(v, [*path, k]) for k, v in schema.get("properties", {}).items()}
+        schema["properties"] = properties
 
-print(to_json(x, indent=4, sort_keys=False))
+    if schema.get("type") == "array":
+        items = _simplify(schema.get("items", {}), [*path, "items"])
+        schema["items"] = exclude_none(items)
+
+    for key in ("anyOf", "oneOf"):
+        values = schema.get(key)
+        if values and isinstance(values, list):
+            values = remove_falsy([_simplify(v, [*path, key, f"{[idx]}"]) for idx, v in enumerate(values)])
+
+            if len(values) == 1:
+                logger.debug("<-", values[0])
+                return values[0]
+
+            # Not supported by certain providers
+            # if values and all([v.keys() == {"type"} for v in values]):
+            #     print("<-", "collapse types")
+            #     return {"type": [v["type"] for v in values]}
+
+            schema[key] = values
+
+    logger.debug("<-", schema)
+    return schema
+
+
+def simplify_json_schema(schema: Schema) -> None:
+    _simplify(schema, ["."])

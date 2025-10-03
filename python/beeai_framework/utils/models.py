@@ -15,8 +15,7 @@ from pydantic.json_schema import JsonSchemaValue
 from pydantic_core import CoreSchema, SchemaValidator
 
 from beeai_framework.utils.dicts import remap_key
-from beeai_framework.utils.schema import simplify_schema
-from beeai_framework.utils.strings import to_json
+from beeai_framework.utils.schema import simplify_json_schema
 
 logger = Logger(__name__)
 
@@ -77,9 +76,7 @@ class JSONSchemaModel(ABC, BaseModel):
         from beeai_framework.backend.utils import inline_schema_refs
 
         schema = inline_schema_refs(copy.deepcopy(schema))
-        simplify_schema(schema)
-        with open("/tmp/schema.json", "w") as f:
-            f.write(to_json(schema, indent=4, sort_keys=True, exclude_none=False))
+        simplify_json_schema(schema)
 
         type_mapping: dict[str, Any] = {
             "string": str,
@@ -129,19 +126,22 @@ class JSONSchemaModel(ABC, BaseModel):
                     return Union[*target_types], target_field  # type: ignore
 
             else:
-                raw_type = param.get("type")
                 enum = param.get("enum")
+                raw_type = param.get("type")
+                if isinstance(raw_type, list):
+                    fields = [type_mapping.get(v) for v in raw_type]
+                    target_type = list[*fields]
+                else:
+                    target_type: type | Any = type_mapping.get(raw_type)  # type: ignore[arg-type]
 
-                target_type: type | Any = type_mapping.get(raw_type)  # type: ignore[arg-type]
-
-                if target_type is dict and param.get("properties") is not None:
-                    target_type = cls.create(param_name, param)
-                elif target_type is list and param.get("items"):
-                    tmp_name = f"{param_name}_tmp"
-                    required.add(tmp_name)
-                    given_field, given_field_info = create_field(tmp_name, param.get("items"))  # type: ignore
-                    required.discard(tmp_name)
-                    target_type = list[given_field]  # type: ignore
+                    if target_type is dict and param.get("properties") is not None:
+                        target_type = cls.create(param_name, param)
+                    elif target_type is list and param.get("items"):
+                        tmp_name = f"{param_name}_tmp"
+                        required.add(tmp_name)
+                        given_field, given_field_info = create_field(tmp_name, param.get("items"))  # type: ignore
+                        required.discard(tmp_name)
+                        target_type = list[given_field]  # type: ignore
 
                 is_required = param_name in required
                 explicitly_nullable = (
@@ -171,8 +171,11 @@ class JSONSchemaModel(ABC, BaseModel):
             )
 
         properties = schema.get("properties", {})
-        updated_config = ConfigDict(**cls.model_config)
+        updated_config = ConfigDict(
+            **cls.model_config, title=schema.get("title", None), description=schema.get("description", None)
+        )
         updated_config["extra"] = "allow" if schema.get("additionalProperties") else "forbid"
+        updated_config["arbitrary_types_allowed"] = True
 
         if not properties and schema.get("type") != "object":
             properties["root"] = schema
