@@ -211,3 +211,19 @@ class TestEventsPropagation:
 
         await emitter.emit("c", 1)
         assert calls == [1]
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_emitter_listener_priority() -> None:
+    emitter = Emitter()
+    arr = []
+    emitter.on("*.*", lambda _, __: arr.append(5), EmitterOptions(priority=4))
+    emitter.on("*.*", lambda _, __: arr.append(1), EmitterOptions(priority=1))
+    emitter.on("*.*", lambda _, __: arr.append(2), EmitterOptions(priority=2))
+    emitter.on("*.*", lambda _, __: arr.append(4), EmitterOptions(priority=3))
+    emitter.on("*.*", lambda _, __: arr.append(3), EmitterOptions(priority=3))
+    emitter.on("*.*", lambda _, __: arr.append(-1), EmitterOptions(priority=-1))
+    emitter.on("*.*", lambda _, __: arr.append(0))
+    await emitter.emit("event", None)
+    assert arr == [5, 4, 3, 2, 1, 0, -1]

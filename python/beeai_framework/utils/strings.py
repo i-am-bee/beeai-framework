@@ -54,12 +54,10 @@ def to_json_serializable(input: Any, *, exclude_none: bool = False) -> Any:
         return apply_child(input.to_json_safe())
     elif isinstance(input, BaseModel):
         return apply_child(input.model_dump(exclude_none=exclude_none))
-    elif isinstance(input, list):
-        return [apply_child(v) for v in input if input is not None] if exclude_none else input
+    elif isinstance(input, list | set):  # set is not JSON serializable
+        return [apply_child(v) for v in input if v is not None] if exclude_none else [apply_child(v) for v in input]
     elif isinstance(input, dict):
         return {k: apply_child(v) for k, v in input.items() if v is not None} if exclude_none else input
-    elif isinstance(input, set):
-        return {apply_child(v) for v in input}
     elif isinstance(input, str | bool | int | float):
         return input
     else:

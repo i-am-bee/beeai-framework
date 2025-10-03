@@ -1,6 +1,6 @@
 [project]
 name = "beeai-framework"
-version="0.1.51"
+version="0.1.53"
 license = "Apache-2.0"
 readme = "README.md"
 authors = [{ name = "IBM Corp." }]
@@ -19,7 +19,7 @@ documentation = "https://i-am-bee.github.io/beeai-framework/#/python/"
 
 [tool.poetry.dependencies]
 python = ">= 3.11,<3.14"
-a2a-sdk = {version = "^0.3.4", optional = true, extras = ["grpc", "http-server", "telemetry"]}
+a2a-sdk = {version = "^0.3.7", optional = true, extras = ["grpc", "http-server", "telemetry"]}
 acp-sdk = {version = "^1.0.3", optional = true}
 aiofiles = "^24.1.0"
 boto3 = {version = "^1.37.5", optional = true}
@@ -45,7 +45,7 @@ uvicorn = {version = "^0.35.0, <0.36.0", optional = true}  # Pinned to avoid bre
 types-grpcio = {version = "1.0.0.20250703", optional = true}
 types-grpcio-reflection = {version = "1.0.0.20250506", optional = true}
 wikipedia-api = {version = "^0.8.1", optional = true}
-beeai-sdk = {version = "^0.3.4", optional = true}
+beeai-sdk = {version = "^0.3.5", optional = true}
 langgraph-prebuilt = {version = "^0.6.4", optional = true}
 deprecated = "^1.2.18"
 torch = [
@@ -134,7 +134,7 @@ module = ["deepeval.*", "deepeval"]
 implicit_reexport = true
 
 [[tool.mypy.overrides]]
-module = ["llama-index", "llama-index.*", "llama_index", "llama_index.*"]
+module = ["llama-index", "llama-index.*", "llama-index.core.llama_dataset", "llama_index", "llama_index.*"]
 ignore_errors = true
 ignore_missing_imports = true
 

@@ -2,21 +2,30 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import asyncio
-import contextlib
 from collections.abc import Callable
+from contextlib import AbstractAsyncContextManager
 from typing import ClassVar
 from weakref import WeakKeyDictionary
 
 from anyio.streams.memory import MemoryObjectReceiveStream, MemoryObjectSendStream
 from mcp.client.session import ClientSession
+from mcp.client.streamable_http import GetSessionIdCallback
 from mcp.shared.message import SessionMessage
 
 from beeai_framework.logger import Logger
 
 logger = Logger(__name__)
 
-MCPClient = contextlib._AsyncGeneratorContextManager[
-    tuple[MemoryObjectReceiveStream[SessionMessage | Exception], MemoryObjectSendStream[SessionMessage]], None
+MCPClient = AbstractAsyncContextManager[
+    tuple[
+        MemoryObjectReceiveStream[SessionMessage | Exception],
+        MemoryObjectSendStream[SessionMessage],
+    ]
+    | tuple[
+        MemoryObjectReceiveStream[SessionMessage | Exception],
+        MemoryObjectSendStream[SessionMessage],
+        GetSessionIdCallback,  # for streamable http
+    ]
 ]
 
 CleanupFn = Callable[[], None]

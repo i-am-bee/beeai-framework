@@ -1,3 +1,28 @@
+## python_v0.1.53 (2025-10-03)
+
+### Bug Fixes
+
+- **internals**: handle conversion of more complex schemas (#1168)
+
+### Features
+
+- **adapters**: add dynamic registration of BeeAI Platform extensions (#1162)
+- **emitter**: allow to set priorities for listeners (#1170)
+- **adapters**: add tools metadata to BeeAIPlatformServer (#1166)
+
+## python_v0.1.52 (2025-10-01)
+
+### Bug Fixes
+
+- **internals**: fix serialization of lists/sets
+- **internals**: fix serialization of lists/sets (#1161)
+- **tools**: adjust typings for MCPTool to accept streamablehttp_client
+- **backend**: prevent propagating internal parameters to the request
+
+### Features
+
+- **tools**: allow HandoffTool to accept any runnable (#1158)
+
 ## python_v0.1.51 (2025-09-30)
 
 ### Bug Fixes

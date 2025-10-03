@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import asyncio
+import bisect
 import copy
 import functools
 import re
@@ -59,7 +60,7 @@ class Emitter:
     ) -> None:
         super().__init__()
 
-        self._listeners: set[Listener] = set()
+        self._listeners: list[Listener] = []
         self._group_id: str | None = group_id
         self.namespace: list[str] = namespace or []
         self.creator: object | None = creator
@@ -166,7 +167,7 @@ class Emitter:
             options: Additional options for the event listener such as persistence, blocking, etc.
         """
 
-        for listener in list(self._listeners):
+        for listener in reversed(list(self._listeners)):
             if _match_listener(listener, matcher=event, callback=callback, options=options):
                 self._listeners.remove(listener)
 
@@ -183,7 +184,12 @@ class Emitter:
         listener = Listener(
             match=self._create_matcher(matcher, options), raw=matcher, callback=callback, options=options
         )
-        self._listeners.add(listener)
+
+        bisect.insort_left(
+            self._listeners,
+            listener,
+            key=lambda ln: ln.options.priority if ln.options else 0,
+        )
 
         return lambda: self._listeners.remove(listener) if listener in self._listeners else None
 
@@ -247,7 +253,7 @@ class Emitter:
                 )
 
         async with asyncio.TaskGroup() as tg:
-            for listener in list(self._listeners):
+            for listener in reversed(list(self._listeners)):
                 if not listener.match(event):
                     continue
 
@@ -282,7 +288,7 @@ class Emitter:
             self._events.copy(),
         )
         cloned._cleanups = self._cleanups
-        cloned._listeners = {listener.model_copy() for listener in self._listeners}
+        cloned._listeners = [listener.model_copy() for listener in self._listeners]
         return cloned
 
 
