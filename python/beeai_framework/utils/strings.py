@@ -48,7 +48,6 @@ class CustomJsonDump(Protocol):
 
 def to_json_serializable(input: Any, *, exclude_none: bool = False) -> Any:
     def apply_child(value: Any) -> Any:
-        print("handle", value, type(value))
         return to_json_serializable(value, exclude_none=exclude_none)
 
     if isinstance(input, CustomJsonDump):

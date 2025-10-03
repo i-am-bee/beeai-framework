@@ -66,7 +66,7 @@ Let's start with the simplest possible agent - one that can respond to messages.
 <CodeGroup>
 ```py Python
 import asyncio 
-from beeai_framework.agents.experimental import RequirementAgent
+from beeai_framework.agents.requirement import RequirementAgent
 from beeai_framework.backend import ChatModel
 
 async def main():
@@ -126,7 +126,7 @@ Give your agent the ability to access real-world information, external systems, 
 
 ```py Python
 import asyncio 
-from beeai_framework.agents.experimental import RequirementAgent
+from beeai_framework.agents.requirement import RequirementAgent
 from beeai_framework.backend import ChatModel
 from beeai_framework.tools.search.wikipedia import WikipediaTool
 from beeai_framework.tools.weather import OpenMeteoTool
@@ -181,7 +181,7 @@ The most simple way to see what's happening in your application is by using `Glo
 
 ```py Python
 import asyncio
-from beeai_framework.agents.experimental import RequirementAgent
+from beeai_framework.agents.requirement import RequirementAgent
 from beeai_framework.backend import ChatModel
 from beeai_framework.tools.weather import OpenMeteoTool
 from beeai_framework.middleware.trajectory import GlobalTrajectoryMiddleware
@@ -219,7 +219,7 @@ Sometimes you want to react to specific events. To see which events are emitted,
 
 ```py Python
 import asyncio
-from beeai_framework.agents.experimental import RequirementAgent
+from beeai_framework.agents.requirement import RequirementAgent
 from beeai_framework.backend import ChatModel
 from beeai_framework.tools.weather import OpenMeteoTool
 from beeai_framework.middleware.trajectory import GlobalTrajectoryMiddleware
@@ -255,7 +255,7 @@ Alternatively, you can listen for events on the class itself rather than for a s
 
 ```py Python
 import asyncio
-from beeai_framework.agents.experimental import RequirementAgent
+from beeai_framework.agents.requirement import RequirementAgent
 from beeai_framework.backend import ChatModel
 from beeai_framework.tools.weather import OpenMeteoTool
 from typing import Any
@@ -302,7 +302,7 @@ Logging is a way to provide visibility into the state of your application. Set t
 
 ```py Python
 import asyncio 
-from beeai_framework.agents.experimental import RequirementAgent
+from beeai_framework.agents.requirement import RequirementAgent
 from beeai_framework.backend import ChatModel
 from beeai_framework.tools.search.wikipedia import WikipediaTool
 from beeai_framework.tools.weather import OpenMeteoTool
@@ -419,8 +419,8 @@ Learn more about the [RequirementAgent](../experimental/requirement-agent)
 
 ```py Python
 import asyncio 
-from beeai_framework.agents.experimental import RequirementAgent
-from beeai_framework.agents.experimental.requirements.conditional import ConditionalRequirement
+from beeai_framework.agents.requirement import RequirementAgent
+from beeai_framework.agents.requirement.requirements.conditional import ConditionalRequirement
 from beeai_framework.backend import ChatModel
 from beeai_framework.tools.search.wikipedia import WikipediaTool
 from beeai_framework.tools.weather import OpenMeteoTool
@@ -478,8 +478,8 @@ Add user permission for when you want an action to be human validated before bei
 
 ```py Python
 import asyncio 
-from beeai_framework.agents.experimental import RequirementAgent
-from beeai_framework.agents.experimental.requirements.conditional import ConditionalRequirement
+from beeai_framework.agents.requirement import RequirementAgent
+from beeai_framework.agents.requirement.requirements.conditional import ConditionalRequirement
 from beeai_framework.agents.experimental.requirements.ask_permission import AskPermissionRequirement
 from beeai_framework.backend import ChatModel
 from beeai_framework.tools.search.wikipedia import WikipediaTool
@@ -651,7 +651,7 @@ COMING SOON
 
 ```py Python
 import asyncio
-from beeai_framework.agents.experimental import RequirementAgent
+from beeai_framework.agents.requirement import RequirementAgent
 from beeai_framework.backend import ChatModel
 from beeai_framework.tools.search.wikipedia import WikipediaTool
 from beeai_framework.tools.weather import OpenMeteoTool
@@ -723,7 +723,7 @@ Create a team of specialized agents that can collaborate:
 
 ```py Python
 import asyncio
-from beeai_framework.agents.experimental import RequirementAgent
+from beeai_framework.agents.requirement import RequirementAgent
 from beeai_framework.backend import ChatModel
 from beeai_framework.memory import UnconstrainedMemory
 from beeai_framework.tools.search.wikipedia import WikipediaTool
@@ -889,7 +889,7 @@ COMING SOON
 <CodeGroup>
 
 ```py Python
-from beeai_framework.agents.experimental import RequirementAgent
+from beeai_framework.agents.requirement import RequirementAgent
 from beeai_framework.tools.weather import OpenMeteoTool
 from beeai_framework.cache import UnconstrainedCache
 from beeai_framework.memory import UnconstrainedMemory
@@ -938,7 +938,7 @@ Make your system robust with comprehensive error management:
 ```py Python
 import asyncio
 import traceback
-from beeai_framework.agents.experimental import RequirementAgent
+from beeai_framework.agents.requirement import RequirementAgent
 from beeai_framework.backend import ChatModel
 from beeai_framework.memory import UnconstrainedMemory
 from beeai_framework.tools.weather import OpenMeteoTool
@@ -1028,7 +1028,7 @@ pip install `'beeai-framework[a2a]' 'beeai-framework[beeai-platform]'`  and you 
 
 ```py Python
 from beeai_framework.adapters.beeai_platform.serve.server import BeeAIPlatformServer
-from beeai_framework.agents.experimental import RequirementAgent
+from beeai_framework.agents.requirement import RequirementAgent
 from beeai_framework.backend import ChatModel
 from beeai_framework.memory import UnconstrainedMemory
 from beeai_framework.middleware.trajectory import GlobalTrajectoryMiddleware
@@ -1074,7 +1074,7 @@ pip install `'beeai-framework[a2a]'`  and you have a compatible version of `uvic
 
 ```py Python
 from beeai_framework.adapters.a2a import A2AServer, A2AServerConfig
-from beeai_framework.agents.experimental import RequirementAgent
+from beeai_framework.agents.requirement import RequirementAgent
 from beeai_framework.backend import ChatModel
 from beeai_framework.memory import UnconstrainedMemory
 from beeai_framework.serve.utils import LRUMemoryManager
@@ -1113,7 +1113,7 @@ Expose your agent as an **IBM watsonx Orchestrate server**:
 
 ```py Python
 from beeai_framework.adapters.watsonx_orchestrate import WatsonxOrchestrateServer, WatsonxOrchestrateServerConfig
-from beeai_framework.agents.experimental import RequirementAgent
+from beeai_framework.agents.requirement import RequirementAgent
 from beeai_framework.backend import ChatModel
 from beeai_framework.memory import UnconstrainedMemory
 from beeai_framework.serve.utils import LRUMemoryManager
