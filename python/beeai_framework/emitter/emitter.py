@@ -167,7 +167,7 @@ class Emitter:
             options: Additional options for the event listener such as persistence, blocking, etc.
         """
 
-        for listener in list(self._listeners):
+        for listener in list(self._listeners).reverse():
             if _match_listener(listener, matcher=event, callback=callback, options=options):
                 self._listeners.remove(listener)
 
@@ -254,7 +254,7 @@ class Emitter:
                 )
 
         async with asyncio.TaskGroup() as tg:
-            for listener in list(self._listeners):
+            for listener in reversed(list(self._listeners)):
                 if not listener.match(event):
                     continue
 
