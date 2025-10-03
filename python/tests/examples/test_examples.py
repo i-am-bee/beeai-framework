@@ -41,6 +41,7 @@ exclude = list(
             "workflows/remote.py",
             "serve/acp.py",
             "serve/beeai_platform.py",
+            "serve/beeai_platform_custom.py",
             "serve/beeai_platform_await.py",
             "serve/beeai_platform_llm.py",
             "serve/a2a_server.py",

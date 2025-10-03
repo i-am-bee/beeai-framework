@@ -1,8 +1,10 @@
 # Copyright 2025 © BeeAI a Series of LF Projects, LLC
 # SPDX-License-Identifier: Apache-2.0
-
+import asyncio
 import re
-from typing import Annotated, Any
+import sys
+import traceback
+from typing import Annotated
 
 from beeai_sdk.a2a.extensions import CitationExtensionServer, CitationExtensionSpec
 
@@ -15,9 +17,9 @@ from beeai_framework.agents.requirement.events import RequirementAgentSuccessEve
 from beeai_framework.agents.requirement.requirements.conditional import ConditionalRequirement
 from beeai_framework.backend import AssistantMessage
 from beeai_framework.context import RunContext, RunMiddlewareProtocol
-from beeai_framework.emitter import EmitterOptions
+from beeai_framework.emitter import EmitterOptions, EventMeta
+from beeai_framework.errors import FrameworkError
 from beeai_framework.middleware.trajectory import GlobalTrajectoryMiddleware
-from beeai_framework.tools.search.duckduckgo import DuckDuckGoSearchTool
 from beeai_framework.tools.search.wikipedia import WikipediaTool
 from beeai_framework.tools.think import ThinkTool
 
@@ -25,43 +27,41 @@ try:
     from beeai_sdk.a2a.extensions import Citation
     from beeai_sdk.a2a.extensions.ui.agent_detail import AgentDetail
     from beeai_sdk.a2a.types import AgentMessage
-    from beeai_sdk.server.context import RunContext as BeeAIRunContext
 except ModuleNotFoundError as e:
     raise ModuleNotFoundError(
         "Optional module [beeai-platform] not found.\nRun 'pip install \"beeai-framework[beeai-platform]\"' to install."
     ) from e
 
 
+class PlatformCitationMiddleware(RunMiddlewareProtocol):
+    def __init__(self) -> None:
+        self._context: BeeAIPlatformContext | None = None
+
+    def bind(self, ctx: RunContext) -> None:
+        self._context = BeeAIPlatformContext.get()
+        # add emitter with the highest priority to ensure citations are sent before any other event handling
+        ctx.emitter.on("success", self._handle_success, options=EmitterOptions(priority=10, is_blocking=True))
+
+    async def _handle_success(self, data: RequirementAgentSuccessEvent, meta: EventMeta) -> None:
+        assert self._context is not None
+        citation_ext = self._context.extensions.get("citation")
+
+        # check it is the final step
+        if data.state.answer is not None:
+            citations, clean_text = extract_citations(data.state.answer.text)
+
+            if citations:
+                await self._context.context.yield_async(
+                    AgentMessage(metadata=citation_ext.citation_metadata(citations=citations))  # type: ignore[attr-defined]
+                )
+                # replace an assistant message with an updated text without citation links
+                data.state.answer = AssistantMessage(content=clean_text)
+
+
 def main() -> None:
-    class PlatformMiddleware(RunMiddlewareProtocol):
-        def bind(self, ctx: RunContext) -> None:
-            try:
-                context = BeeAIPlatformContext.get()
-
-                def send_citation(data: Any, event: Any) -> None:
-                    # get citation extension
-                    citation_ext = context.extensions.get("citation")
-                    platform_context: BeeAIRunContext = context.context
-
-                    # check it is the final step
-                    if isinstance(data, RequirementAgentSuccessEvent) and data.state.answer is not None:
-                        citations, clean_text = extract_citations(data.state.answer.text)
-
-                        if citations:
-                            platform_context.yield_sync(
-                                AgentMessage(metadata=citation_ext.citation_metadata(citations=citations))  # type: ignore[attr-defined]
-                            )
-                            # replace assistant message with an updated text without citation links
-                            data.state.answer = AssistantMessage(content=clean_text)
-
-                # add emitter with the highest priority to ensure citations are sent before any other event handling
-                ctx.emitter.on("success", send_citation, options=EmitterOptions(priority=10, is_blocking=True))
-            except Exception as e:
-                print(e)
-
     agent = RequirementAgent(
-        llm=BeeAIPlatformChatModel(preferred_models=["openai/gpt-5", "ollama/granite3.3:8b"]),
-        tools=[WikipediaTool(), DuckDuckGoSearchTool(), ThinkTool()],
+        llm=BeeAIPlatformChatModel(preferred_models=["openai/gpt-5"]),
+        tools=[WikipediaTool(), ThinkTool()],
         instructions=(
             "You are an AI assistant focused on retrieving information from online sources."
             "Mandatory Search: Always search for the topic on Wikipedia and always search for related current news."
@@ -73,13 +73,12 @@ def main() -> None:
         requirements=[
             ConditionalRequirement(ThinkTool, force_at_step=1, consecutive_allowed=False),
             ConditionalRequirement(WikipediaTool, min_invocations=1),
-            ConditionalRequirement(DuckDuckGoSearchTool, min_invocations=1),
         ],
         description="Search for information based on a given phrase.",
         middlewares=[
             GlobalTrajectoryMiddleware(),
-            PlatformMiddleware(),
-        ],  # add platform middleware to obtain citations from the platform
+            PlatformCitationMiddleware(),
+        ],  # add platform middleware to get citations from the platform
     )
 
     # define custom extensions
@@ -123,4 +122,8 @@ def extract_citations(text: str) -> tuple[list[Citation], str]:
 
 
 if __name__ == "__main__":
-    main()
+    try:
+        asyncio.run(main())
+    except FrameworkError as e:
+        traceback.print_exc()
+        sys.exit(e.explain())
