@@ -78,6 +78,8 @@ class LiteLLMChatModel(ChatModel, ABC):
         run: RunContext,
     ) -> ChatModelOutput:
         litellm_input = self._transform_input(input) | {"stream": False}
+        with open("/tmp/dump.json", "w") as f:
+            f.write(to_json(litellm_input, indent=4, sort_keys=False))
         raw = await acompletion(**litellm_input)
         response_output = self._transform_output(raw)
         if input.response_format and not response_output.output_structured:

@@ -15,6 +15,8 @@ from pydantic.json_schema import JsonSchemaValue
 from pydantic_core import CoreSchema, SchemaValidator
 
 from beeai_framework.utils.dicts import remap_key
+from beeai_framework.utils.schema import simplify_schema
+from beeai_framework.utils.strings import to_json
 
 logger = Logger(__name__)
 
@@ -75,6 +77,10 @@ class JSONSchemaModel(ABC, BaseModel):
         from beeai_framework.backend.utils import inline_schema_refs
 
         schema = inline_schema_refs(copy.deepcopy(schema))
+        simplify_schema(schema)
+        with open("/tmp/schema.json", "w") as f:
+            f.write(to_json(schema, indent=4, sort_keys=True, exclude_none=False))
+
         type_mapping: dict[str, Any] = {
             "string": str,
             "integer": int,
