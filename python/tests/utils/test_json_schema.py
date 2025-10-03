@@ -373,8 +373,9 @@ def test_simplify_schema() -> None:
                     "namespace": {
                         "anyOf": [
                             {"anyOf": [{"not": {}}, {"type": "string"}]},
+                            {"anyOf": [{"not": {}}, {"type": "bool"}]},
                             {"type": "number", "min": 5},
-                        ]
+                        ],
                     },
                 },
                 "type": "object",
@@ -395,6 +396,7 @@ def test_simplify_schema() -> None:
                     "namespace": {
                         "anyOf": [
                             {"type": "string"},
+                            {"type": "bool"},
                             {"type": "number", "min": 5},
                         ]
                     },

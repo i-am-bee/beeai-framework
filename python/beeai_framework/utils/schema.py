@@ -7,8 +7,7 @@ from beeai_framework.logger import Logger
 from beeai_framework.utils.dicts import exclude_none
 from beeai_framework.utils.lists import remove_falsy
 
-JSONType = dict[str, Any] | list[Any] | str | int | float | bool | None
-Schema = dict[str, JSONType]
+Schema = dict[str, Any]
 
 logger = Logger(__name__)
 
@@ -18,15 +17,15 @@ __all__ = ["simplify_json_schema"]
 def _simplify(schema: Schema, path: list[str]) -> Any:
     logger.debug("Visiting:", ".".join(path))
     if not isinstance(schema, dict) or not schema:
-        return
+        return schema
 
-    for key in ("anyOf", "oneOf", "not"):
+    for key in ("not",):
         if schema.get(key) == {}:
             del schema[key]
 
     if schema.get("type") == "object":
         properties = {k: _simplify(v, [*path, k]) for k, v in schema.get("properties", {}).items()}
-        schema["properties"] = properties
+        schema["properties"] = exclude_none(properties)
 
     if schema.get("type") == "array":
         items = _simplify(schema.get("items", {}), [*path, "items"])

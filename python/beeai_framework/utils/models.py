@@ -89,9 +89,8 @@ class JSONSchemaModel(ABC, BaseModel):
         }
 
         fields: dict[str, tuple[type, FieldInfo]] = {}
-        required = set(schema.get("required", []))
 
-        def create_field(param_name: str, param: dict[str, Any]) -> tuple[type, Any]:
+        def create_field(param_name: str, param: dict[str, Any], required: set[str]) -> tuple[type, Any]:
             any_of = param.get("anyOf")
             one_of = param.get("oneOf")
             default = param.get("default")
@@ -110,37 +109,34 @@ class JSONSchemaModel(ABC, BaseModel):
                     f"{JSONSchemaModel.__name__}: does not support 'oneOf' modifier found in {param_name} attribute."
                     f" Will use 'anyOf' instead."
                 )
-                return create_field(param_name, remap_key(param, source="oneOf", target="anyOf"))
+                return create_field(param_name, remap_key(param, source="oneOf", target="anyOf"), required)
 
             if any_of:
                 target_types: list[type] = []
                 for idx, t in enumerate(param["anyOf"]):
                     tmp_name = f"{param_name}_{idx}"
-                    required.add(tmp_name)
-                    target_types.append(create_field(tmp_name, t)[0])
-                    required.discard(tmp_name)
+                    field, _ = create_field(tmp_name, t, {tmp_name})
+                    target_types.append(field)
 
                 if len(target_types) == 1:
-                    return create_field(param_name, remap_key(param, source="anyOf", target="type"))
+                    return create_field(param_name, remap_key(param, source="anyOf", target="type"), required)
                 else:
                     return Union[*target_types], target_field  # type: ignore
 
             else:
                 enum = param.get("enum")
                 raw_type = param.get("type")
+                target_type: type | Any
                 if isinstance(raw_type, list):
-                    fields = [type_mapping.get(v) for v in raw_type]
-                    target_type = list[*fields]
+                    target_type = list[*[type_mapping.get(v) for v in raw_type]]  # type: ignore
                 else:
-                    target_type: type | Any = type_mapping.get(raw_type)  # type: ignore[arg-type]
+                    target_type = type_mapping.get(raw_type)  # type: ignore[arg-type]
 
                     if target_type is dict and param.get("properties") is not None:
                         target_type = cls.create(param_name, param)
                     elif target_type is list and param.get("items"):
                         tmp_name = f"{param_name}_tmp"
-                        required.add(tmp_name)
-                        given_field, given_field_info = create_field(tmp_name, param.get("items"))  # type: ignore
-                        required.discard(tmp_name)
+                        given_field, given_field_info = create_field(tmp_name, param.get("items"), {tmp_name})  # type: ignore
                         target_type = list[given_field]  # type: ignore
 
                 is_required = param_name in required
@@ -171,9 +167,7 @@ class JSONSchemaModel(ABC, BaseModel):
             )
 
         properties = schema.get("properties", {})
-        updated_config = ConfigDict(
-            **cls.model_config, title=schema.get("title", None), description=schema.get("description", None)
-        )
+        updated_config = ConfigDict(**cls.model_config, title=schema.get("title", None))
         updated_config["extra"] = "allow" if schema.get("additionalProperties") else "forbid"
         updated_config["arbitrary_types_allowed"] = True
 
@@ -181,7 +175,7 @@ class JSONSchemaModel(ABC, BaseModel):
             properties["root"] = schema
 
         for param_name, param in properties.items():
-            fields[param_name] = create_field(param_name, param)
+            fields[param_name] = create_field(param_name, param, set(schema.get("required", [])))
 
         model: type[JSONSchemaModel] = create_model(  # type: ignore
             schema_name, __base__=cls, **fields, __config__=updated_config
