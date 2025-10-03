@@ -1,6 +1,5 @@
 # Copyright 2025 © BeeAI a Series of LF Projects, LLC
 # SPDX-License-Identifier: Apache-2.0
-import asyncio
 import re
 import sys
 import traceback
@@ -123,7 +122,7 @@ def extract_citations(text: str) -> tuple[list[Citation], str]:
 
 if __name__ == "__main__":
     try:
-        asyncio.run(main())
+        main()
     except FrameworkError as e:
         traceback.print_exc()
         sys.exit(e.explain())
