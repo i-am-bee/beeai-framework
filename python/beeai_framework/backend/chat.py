@@ -333,12 +333,6 @@ class ChatModel(Runnable[ChatModelOutput]):
 
                     await self.cache.set(cache_key, [result])
 
-            if not result.get_tool_calls() and not result.get_text_content():
-                print("empty")
-                return await self.run(
-                    [*input, AssistantMessage("I will generate a valid JSON object based on the schema.")], **kwargs
-                )
-
             if force_tool_call_via_response_format and not result.get_tool_calls():
                 assert response_format_schema and issubclass(response_format_schema, BaseModel)
 
