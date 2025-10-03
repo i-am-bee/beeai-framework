@@ -80,32 +80,32 @@ def test_custom_message() -> None:
 
 @pytest.mark.unit
 def test_user_message_with_file_id() -> None:
-    file_part = MessageFileContent(file={"file_id": "https://example.com/file.pdf", "format": "application/pdf"})
+    file_part = MessageFileContent(file_id="https://example.com/file.pdf", format="application/pdf")
     message = UserMessage([file_part])
     assert isinstance(message.content[0], MessageFileContent)
-    assert message.content[0].file["file_id"].endswith("file.pdf")
+    assert message.content[0].file_id.endswith("file.pdf")
     assert message.to_plain()["content"][0]["type"] == "file"
 
 
 @pytest.mark.unit
 def test_user_message_with_file_data() -> None:
-    file_part = MessageFileContent(file={"file_data": "data:application/pdf;base64,AAA", "format": "application/pdf"})
+    file_part = MessageFileContent(file_data="data:application/pdf;base64,AAA", format="application/pdf")
     message = UserMessage([file_part])
     assert isinstance(message.content[0], MessageFileContent)
-    assert message.content[0].file["file_data"].startswith("data:application/pdf")
+    assert message.content[0].file_data.startswith("data:application/pdf")
     assert message.to_plain()["content"][0]["type"] == "file"
 
 
 @pytest.mark.unit
 def test_user_message_with_file_dict() -> None:
-    file_part = {"type": "file", "file": {"file_id": "https://example.com/file.pdf", "format": "application/pdf"}}
-    message = UserMessage([file_part])
+    file_part = {"type": "file", "file_id": "https://example.com/file.pdf", "format": "application/pdf"}
+    message = UserMessage([MessageFileContent.model_validate(file_part)])
     assert isinstance(message.content[0], MessageFileContent)
-    assert message.content[0].file["file_id"].endswith("file.pdf")
+    assert message.content[0].file_id.endswith("file.pdf")
     assert message.to_plain()["content"][0]["type"] == "file"
 
 
 @pytest.mark.unit
 def test_message_file_content_validation_error() -> None:
-    with pytest.raises(ValueError, match="Either 'file_id' or 'file_data' must be provided for MessageFileContent.file"):
-        MessageFileContent(file={})
+    with pytest.raises(ValueError, match="Either 'file_id' or 'file_data' must be provided for MessageFileContent"):
+        MessageFileContent()

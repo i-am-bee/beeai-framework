@@ -136,6 +136,22 @@ async def watsonx_embedding() -> None:
         print(*row)
 
 
+async def watsonx_file_example() -> None:
+    """Example of sending a file as part of a user message.
+
+    Uses the new factory method UserMessage.from_file. For demonstration we use a tiny
+    base64 encoded plain text data URI; in real usage you could pass a file_id referencing
+    an uploaded file or another supported format (pdf, markdown, etc.).
+    """
+
+    # Minimal inline text file ("Hello Watsonx") as data URI
+    data_uri = "data:text/plain;base64,SGVsbG8gV2F0c29ueCAh"
+
+    file_message = UserMessage.from_file(file_data=data_uri, format="txt")
+    response = await llm.run([file_message])
+    print(response.get_text_content())
+
+
 async def main() -> None:
     print("*" * 10, "watsonx_from_name")
     await watsonx_from_name()
@@ -155,6 +171,8 @@ async def main() -> None:
     await watsonx_debug()
     print("*" * 10, "watsonx_embedding")
     await watsonx_embedding()
+    print("*" * 10, "watsonx_file_example")
+    await watsonx_file_example()
 
 
 if __name__ == "__main__":

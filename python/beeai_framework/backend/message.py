@@ -51,34 +51,22 @@ class MessageImageContent(BaseModel):
     image_url: MessageImageContentImageUrl
 
 
-class MessageFileContentFile(TypedDict, total=False):
-    """Represents a file content reference compatible with LiteLLM 'file' content part.
-
-    One of `file_id` (remote or previously uploaded id/url) or `file_data` (data URI / base64) MUST be provided.
-    Optionally a `format` (MIME type) can be specified to give the backend extra context.
-    """
-
-    file_id: str
-    file_data: str
-    format: str
-
-
 class MessageFileContent(BaseModel):
     """File content part (e.g. PDF or other document) for multimodal user messages.
 
-    Mirrors the shape expected by LiteLLM / OpenAI style APIs:
-    {"type": "file", "file": {"file_id": "..."}}
-    or
-    {"type": "file", "file": {"file_data": "data:application/pdf;base64,..."}}
+    Flattened shape is supported:
+        MessageFileContent(file_id="...", format="application/pdf")
+        MessageFileContent(file_data="data:application/pdf;base64,...", format="application/pdf")
     """
 
     type: Literal["file"] = "file"
-    file: MessageFileContentFile
+    file_id: str | None = None
+    file_data: str | None = None
+    format: str | None = None
 
-    def model_post_init(self, __context: Any) -> None:
-        # simple validation ensuring one of file_id/file_data is present
-        if not (self.file.get("file_id") or self.file.get("file_data")):
-            raise ValueError("Either 'file_id' or 'file_data' must be provided for MessageFileContent.file")
+    def model_post_init(self, __context: Any) -> None:  # type: ignore[override]
+        if not (self.file_id or self.file_data):
+            raise ValueError("Either 'file_id' or 'file_data' must be provided for MessageFileContent")
 
 
 class MessageToolResultContent(BaseModel):
@@ -265,8 +253,43 @@ class UserMessage(Message[UserMessageContent]):
 
     @classmethod
     def from_image(cls, data: MessageImageContentImageUrl | str) -> Self:
+        """Factory helper to create a user message containing a single image content part.
+
+        Args:
+            data: The image content for the user message, either as a URL or a MessageImageContentImageUrl object.
+        """
         image_url = MessageImageContentImageUrl(url=data) if isinstance(data, str) else data
         return cls(MessageImageContent(image_url=image_url))
+
+    @classmethod
+    def from_file(
+        cls,
+        *,
+        file_id: str | None = None,
+        file_data: str | None = None,
+        format: str | None = None,
+    ) -> Self:
+        """Factory helper to create a user message containing a single file content part.
+
+        Provide either file_id (for previously uploaded/reference files) or file_data (data URI / base64 encoded).
+        Optionally pass format (e.g. "pdf", "txt", "markdown").
+        """
+        return cls(
+            MessageFileContent(
+                file_id=file_id,
+                file_data=file_data,
+                format=format,
+            )
+        )
+
+    @classmethod
+    def from_text(cls, text: str) -> Self:
+        """Factory helper to create a user message containing a single text content part.
+
+        Args:
+            text: The textual content for the user message.
+        """
+        return cls(MessageTextContent(text=text))
 
 
 class CustomMessageContent(BaseModel):
