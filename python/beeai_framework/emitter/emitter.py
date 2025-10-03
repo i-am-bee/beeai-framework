@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import asyncio
+import bisect
 import copy
 import functools
 import re
@@ -59,7 +60,7 @@ class Emitter:
     ) -> None:
         super().__init__()
 
-        self._listeners: set[Listener] = set()
+        self._listeners: list[Listener] = []
         self._group_id: str | None = group_id
         self.namespace: list[str] = namespace or []
         self.creator: object | None = creator
@@ -183,7 +184,13 @@ class Emitter:
         listener = Listener(
             match=self._create_matcher(matcher, options), raw=matcher, callback=callback, options=options
         )
-        self._listeners.add(listener)
+
+        bisect.insort_right(
+            self._listeners,
+            listener,
+            lo=0,
+            key=lambda ln: ln.options.priority if ln.options else 0,
+        )
 
         return lambda: self._listeners.remove(listener) if listener in self._listeners else None
 
@@ -282,7 +289,7 @@ class Emitter:
             self._events.copy(),
         )
         cloned._cleanups = self._cleanups
-        cloned._listeners = {listener.model_copy() for listener in self._listeners}
+        cloned._listeners = [listener.model_copy() for listener in self._listeners]
         return cloned
 
 
