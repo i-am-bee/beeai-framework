@@ -17,7 +17,6 @@ class EmitterOptions(BaseModel):
     match_nested: bool | None = None
     priority: int = Field(
         default=0,
-        ge=0,
         description="Defines the priority in which the callback gets executed. A higher value means earlier execution.",
     )
 
