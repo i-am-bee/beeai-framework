@@ -185,10 +185,9 @@ class Emitter:
             match=self._create_matcher(matcher, options), raw=matcher, callback=callback, options=options
         )
 
-        bisect.insort_right(
+        bisect.insort_left(
             self._listeners,
             listener,
-            lo=0,
             key=lambda ln: ln.options.priority if ln.options else 0,
         )
 
