@@ -167,7 +167,7 @@ class Emitter:
             options: Additional options for the event listener such as persistence, blocking, etc.
         """
 
-        for listener in list(self._listeners).reverse():
+        for listener in reversed(list(self._listeners)):
             if _match_listener(listener, matcher=event, callback=callback, options=options):
                 self._listeners.remove(listener)
 
