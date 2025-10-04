@@ -22,7 +22,7 @@ from beeai_framework.backend import (
     ToolMessage,
     UserMessage,
 )
-from beeai_framework.backend.message import MessageImageContentImageUrl
+from beeai_framework.backend.message import MessageImageContentImageUrl, MessageFileContent
 from beeai_framework.tools import AnyTool
 from beeai_framework.utils.lists import cast_list, remove_falsy
 from beeai_framework.utils.strings import to_json
@@ -30,7 +30,15 @@ from beeai_framework.utils.strings import to_json
 
 def to_beeai_message_content(
     content: str | dict[str, Any],
-) -> MessageTextContent | MessageImageContent | None:
+) -> MessageTextContent | MessageImageContent | MessageFileContent | None:
+    """Convert a raw LangChain message content entry to a BeeAI message content model.
+
+    Args:
+        content: Raw content (string or LC dict representation)
+
+    Returns:
+        A concrete content part model or None if unsupported.
+    """
     if isinstance(content, str):
         return MessageTextContent(text=content)
     elif content.get("type") == "text":
@@ -42,6 +50,14 @@ def to_beeai_message_content(
                 format=content.get("mime_type") or "",
             )
         )
+    elif content.get("type") == "file":
+        file_id = content.get("file_id")
+        file_data = content.get("file_data")
+        format_ = content.get("format")
+        if not (file_id or file_data):
+            return None
+        return MessageFileContent(file_id=file_id, file_data=file_data, format=format_)
+        
     else:
         return None
 
@@ -92,11 +108,20 @@ def to_beeai_messages(messages: list[LCBaseMessage]) -> list[AnyMessage]:
 
 def to_lc_message_content(
     content: Any,
-) -> dict[Any, Any] | None:
+) -> dict[str, Any] | None:
     if isinstance(content, MessageTextContent):
         return {"type": "text", "text": content.text}
     elif isinstance(content, MessageImageContent):
         return {"type": "image", "source_type": "url", "url": content.image_url}
+    elif isinstance(content, MessageFileContent):
+        payload: dict[str, Any] = {"type": "file"}
+        if content.file_id:
+            payload["file_id"] = content.file_id
+        if content.file_data:
+            payload["file_data"] = content.file_data
+        if content.format:
+            payload["format"] = content.format
+        return payload
     else:
         return None
 

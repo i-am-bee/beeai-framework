@@ -51,6 +51,24 @@ class MessageImageContent(BaseModel):
     image_url: MessageImageContentImageUrl
 
 
+class MessageFileContent(BaseModel):
+    """File content part (e.g. PDF or other document) for multimodal user messages.
+
+    Flattened shape is supported:
+        MessageFileContent(file_id="...", format="application/pdf")
+        MessageFileContent(file_data="data:application/pdf;base64,...", format="application/pdf")
+    """
+
+    type: Literal["file"] = "file"
+    file_id: str | None = None
+    file_data: str | None = None
+    format: str | None = None
+
+    def model_post_init(self, __context: Any) -> None:  # type: ignore[override]
+        if not (self.file_id or self.file_data):
+            raise ValueError("Either 'file_id' or 'file_data' must be provided for MessageFileContent")
+
+
 class MessageToolResultContent(BaseModel):
     type: Literal["tool-result"] = "tool-result"
     result: Any
@@ -209,7 +227,7 @@ class SystemMessage(Message[MessageTextContent]):
         }
 
 
-UserMessageContent = MessageTextContent | MessageImageContent
+UserMessageContent = MessageTextContent | MessageImageContent | MessageFileContent
 
 
 class UserMessage(Message[UserMessageContent]):
@@ -226,7 +244,7 @@ class UserMessage(Message[UserMessageContent]):
             [
                 MessageTextContent(text=c)
                 if isinstance(c, str)
-                else to_any_model([MessageImageContent, MessageTextContent], cast(UserMessageContent, c))
+                else to_any_model([MessageImageContent, MessageTextContent, MessageFileContent], cast(UserMessageContent, c))
                 for c in cast_list(content)
             ],
             meta,
@@ -235,8 +253,43 @@ class UserMessage(Message[UserMessageContent]):
 
     @classmethod
     def from_image(cls, data: MessageImageContentImageUrl | str) -> Self:
+        """Factory helper to create a user message containing a single image content part.
+
+        Args:
+            data: The image content for the user message, either as a URL or a MessageImageContentImageUrl object.
+        """
         image_url = MessageImageContentImageUrl(url=data) if isinstance(data, str) else data
         return cls(MessageImageContent(image_url=image_url))
+
+    @classmethod
+    def from_file(
+        cls,
+        *,
+        file_id: str | None = None,
+        file_data: str | None = None,
+        format: str | None = None,
+    ) -> Self:
+        """Factory helper to create a user message containing a single file content part.
+
+        Provide either file_id (for previously uploaded/reference files) or file_data (data URI / base64 encoded).
+        Optionally pass format (e.g. "pdf", "txt", "markdown").
+        """
+        return cls(
+            MessageFileContent(
+                file_id=file_id,
+                file_data=file_data,
+                format=format,
+            )
+        )
+
+    @classmethod
+    def from_text(cls, text: str) -> Self:
+        """Factory helper to create a user message containing a single text content part.
+
+        Args:
+            text: The textual content for the user message.
+        """
+        return cls(MessageTextContent(text=text))
 
 
 class CustomMessageContent(BaseModel):
