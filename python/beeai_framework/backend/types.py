@@ -150,7 +150,8 @@ class ChatModelOutput(RunnableOutput):
 
     def merge(self, other: Self) -> None:
         if other.output:
-            self.output.extend(other.output)
+            cloned_output = (part.clone() for part in other.output)
+            self.output.extend(cloned_output)
             self.dedupe()
 
         if other.output_structured is not None:

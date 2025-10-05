@@ -8,6 +8,7 @@ from typing_extensions import Unpack
 
 from beeai_framework.agents import AgentError, AgentExecutionConfig, AgentMeta, AgentOptions, BaseAgent
 from beeai_framework.agents.requirement.events import (
+    RequirementAgentFinalAnswerEvent,
     RequirementAgentStartEvent,
     RequirementAgentSuccessEvent,
     requirement_agent_event_types,
@@ -19,6 +20,7 @@ from beeai_framework.agents.requirement.prompts import (
 from beeai_framework.agents.requirement.requirements.requirement import Requirement, Rule
 from beeai_framework.agents.requirement.types import (
     RequirementAgentOutput,
+    RequirementAgentRequest,
     RequirementAgentRunState,
     RequirementAgentRunStateStep,
     RequirementAgentTemplateFactory,
@@ -39,11 +41,12 @@ from beeai_framework.backend.message import (
     UserMessage,
 )
 from beeai_framework.backend.utils import parse_broken_json
-from beeai_framework.context import RunContext, RunMiddlewareType
-from beeai_framework.emitter import Emitter
+from beeai_framework.context import RunContext, RunMiddlewareProtocol, RunMiddlewareType
+from beeai_framework.emitter import Emitter, EventMeta
 from beeai_framework.memory.base_memory import BaseMemory
 from beeai_framework.memory.unconstrained_memory import UnconstrainedMemory
 from beeai_framework.memory.utils import extract_last_tool_call_pair
+from beeai_framework.middleware.stream_tool_call import StreamToolCallMiddleware, UpdateEvent
 from beeai_framework.runnable import runnable_entry
 from beeai_framework.template import PromptTemplate
 from beeai_framework.tools import AnyTool
@@ -263,7 +266,7 @@ class RequirementAgent(BaseAgent[RequirementAgentOutput]):
                 ],
                 tools=request.allowed_tools,
                 tool_choice=request.tool_choice,
-            )
+            ).middleware(self._stream_final_answer(request, run_context, state))
             await state.memory.add_many(response.output)
 
             text_messages = response.get_text_messages()
@@ -440,3 +443,19 @@ class RequirementAgent(BaseAgent[RequirementAgentOutput]):
         instance = ToolCallChecker(config)
         instance.enabled = self._tool_call_checker is not False
         return instance
+
+    def _stream_final_answer(
+        self, request: RequirementAgentRequest, ctx: RunContext, state: RequirementAgentRunState
+    ) -> RunMiddlewareProtocol:
+        middleware = StreamToolCallMiddleware(request.final_answer, "response")  # from the default schema
+
+        @middleware.emitter.on("update")
+        async def send_update(data: UpdateEvent, meta: EventMeta) -> None:
+            await ctx.emitter.emit(
+                "final_answer",
+                RequirementAgentFinalAnswerEvent(
+                    state=state, output=data.output, delta=data.delta, output_structured=data.output_structured
+                ),
+            )
+
+        return middleware
