@@ -15,12 +15,12 @@ from typing_extensions import TypeVar
 
 import beeai_framework.adapters.watsonx_orchestrate._api as watsonx_orchestrate_api
 from beeai_framework.adapters.watsonx_orchestrate._utils import create_emitter
-from beeai_framework.agents import AnyAgent
 from beeai_framework.backend import AnyMessage
+from beeai_framework.runnable import Runnable
 from beeai_framework.utils.cloneable import Cloneable
 from beeai_framework.utils.strings import to_json
 
-T = TypeVar("T", bound=AnyAgent, default=AnyAgent)
+T = TypeVar("T", bound=Runnable[Any], default=Runnable[Any])
 
 
 class WatsonxOrchestrateServerAgent(ABC, Generic[T]):

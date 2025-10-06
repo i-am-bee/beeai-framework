@@ -1,8 +1,53 @@
-## Unreleased
+## python_v0.1.53 (2025-10-03)
 
-**Migration Guide**
+### Bug Fixes
 
-Rename `defaultInputModes` and `defaultOutputModes` to  `default_input_modes` and `default_output_modes` in the `A2AServerMetadata`.
+- **internals**: handle conversion of more complex schemas (#1168)
+
+### Features
+
+- **adapters**: add dynamic registration of BeeAI Platform extensions (#1162)
+- **emitter**: allow to set priorities for listeners (#1170)
+- **adapters**: add tools metadata to BeeAIPlatformServer (#1166)
+
+## python_v0.1.52 (2025-10-01)
+
+### Bug Fixes
+
+- **internals**: fix serialization of lists/sets
+- **internals**: fix serialization of lists/sets (#1161)
+- **tools**: adjust typings for MCPTool to accept streamablehttp_client
+- **backend**: prevent propagating internal parameters to the request
+
+### Features
+
+- **tools**: allow HandoffTool to accept any runnable (#1158)
+
+## python_v0.1.51 (2025-09-30)
+
+### Bug Fixes
+
+- **adapters**: correctly propagate Google VertexAI parameters (#1146)
+
+### Features
+
+- **adapters**: add Transformers ChatModel support (#1087)
+- **backend**: add validate_response_format flag for structured outputs in ChatModel (#1156)
+- **agents**: make RequirementAgent stable (#1143)
+- **adapters**: add serve factories for Runnables (#1139)
+
+## python_v0.1.50 (2025-09-26)
+
+### Bug Fixes
+
+- temporary pin uvicorn version (#1141)
+- **tools**: fix MCP tool hanging when server not running (#1137)
+
+### Features
+
+- **agents**: updates to RequirementAgent (#1128)
+- **adapters**: update A2AServer and events (#1130)
+- **tools**: flatten outputs from the MCP servers (#1138)
 
 ## python_v0.1.49 (2025-09-22)
 

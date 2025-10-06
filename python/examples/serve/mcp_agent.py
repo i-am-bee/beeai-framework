@@ -1,5 +1,5 @@
 from beeai_framework.adapters.mcp.serve.server import MCPServer, MCPServerConfig
-from beeai_framework.agents.experimental import RequirementAgent
+from beeai_framework.agents.requirement import RequirementAgent
 from beeai_framework.backend import ChatModel
 from beeai_framework.memory import UnconstrainedMemory
 from beeai_framework.middleware.trajectory import GlobalTrajectoryMiddleware
@@ -16,7 +16,8 @@ def main() -> None:
         middlewares=[GlobalTrajectoryMiddleware()],
     )
 
-    MCPServer(config=MCPServerConfig(transport="streamable-http")).register(agent).serve()
+    # All Runnables are supported, including Agents, ChatModels, Tools, and custom Runnables
+    MCPServer(config=MCPServerConfig(transport="streamable-http")).register_many([agent, llm]).serve()
 
 
 if __name__ == "__main__":

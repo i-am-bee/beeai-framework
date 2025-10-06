@@ -11,8 +11,8 @@ from beeai_framework.adapters.watsonx_orchestrate.serve.agent import (
     WatsonxOrchestrateServerAgentToolCallEvent,
     WatsonxOrchestrateServerAgentToolResponse,
 )
-from beeai_framework.agents.experimental import RequirementAgent
-from beeai_framework.agents.experimental.utils._tool import FinalAnswerTool, FinalAnswerToolSchema
+from beeai_framework.agents.requirement import RequirementAgent
+from beeai_framework.agents.requirement.utils._tool import FinalAnswerTool, FinalAnswerToolSchema
 from beeai_framework.backend import AnyMessage
 from beeai_framework.emitter import EmitterOptions, EventMeta
 from beeai_framework.tools import Tool, ToolStartEvent, ToolSuccessEvent

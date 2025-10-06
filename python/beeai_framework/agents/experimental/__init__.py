@@ -1,11 +1,16 @@
 # Copyright 2025 © BeeAI a Series of LF Projects, LLC
 # SPDX-License-Identifier: Apache-2.0
 
+import sys
+import warnings
 
-from beeai_framework.agents.experimental.agent import RequirementAgent
-from beeai_framework.agents.experimental.types import (
-    RequirementAgentOutput,
-    RequirementAgentRunState,
+import beeai_framework.agents.requirement as _new_module
+
+warnings.warn(
+    "beeai_framework.agents.experimental is deprecated and will be removed in a future release. "
+    "Please use beeai_framework.agents.requirement instead.",
+    DeprecationWarning,
+    stacklevel=2,
 )
 
-__all__ = ["RequirementAgent", "RequirementAgentOutput", "RequirementAgentRunState"]
+sys.modules[__name__] = _new_module

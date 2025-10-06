@@ -1,7 +1,7 @@
 import asyncio
 
-from beeai_framework.agents.experimental import RequirementAgent
-from beeai_framework.agents.experimental.requirements.conditional import ConditionalRequirement
+from beeai_framework.agents.requirement import RequirementAgent
+from beeai_framework.agents.requirement.requirements.conditional import ConditionalRequirement
 from beeai_framework.backend import ChatModel, ChatModelParameters
 from beeai_framework.middleware.trajectory import GlobalTrajectoryMiddleware
 from beeai_framework.tools.search.duckduckgo import DuckDuckGoSearchTool
@@ -22,7 +22,7 @@ async def main() -> None:
         ],
     )
 
-    response = await agent.run("What to do in Boston today?").middleware(GlobalTrajectoryMiddleware(excluded=[]))
+    response = await agent.run("What to do in Boston today?").middleware(GlobalTrajectoryMiddleware())
     print(response.last_message.text)
 
 

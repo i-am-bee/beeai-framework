@@ -1,6 +1,6 @@
 [project]
 name = "beeai-framework"
-version="0.1.49"
+version="0.1.53"
 license = "Apache-2.0"
 readme = "README.md"
 authors = [{ name = "IBM Corp." }]
@@ -19,7 +19,7 @@ documentation = "https://i-am-bee.github.io/beeai-framework/#/python/"
 
 [tool.poetry.dependencies]
 python = ">= 3.11,<3.14"
-a2a-sdk = {version = "^0.3.4", optional = true, extras = ["grpc", "http-server", "telemetry"]}
+a2a-sdk = {version = "^0.3.7", optional = true, extras = ["grpc", "http-server", "telemetry"]}
 acp-sdk = {version = "^1.0.3", optional = true}
 aiofiles = "^24.1.0"
 boto3 = {version = "^1.37.5", optional = true}
@@ -45,9 +45,21 @@ uvicorn = {version = "^0.35.0, <0.36.0", optional = true}  # Pinned to avoid bre
 types-grpcio = {version = "1.0.0.20250703", optional = true}
 types-grpcio-reflection = {version = "1.0.0.20250506", optional = true}
 wikipedia-api = {version = "^0.8.1", optional = true}
-beeai-sdk = {version = "^0.3.4", optional = true}
+beeai-sdk = {version = "^0.3.5", optional = true}
 langgraph-prebuilt = {version = "^0.6.4", optional = true}
 deprecated = "^1.2.18"
+torch = [
+  {version = ">=2.4.1", markers = "sys_platform == 'darwin' and platform_machine == 'arm64'", optional = true},
+  {version = "2.2.2", markers = "sys_platform == 'darwin' and platform_machine == 'x86_64'", optional = true},
+  {version = ">=2.4.1", markers = "sys_platform != 'darwin'", optional = true}
+]
+transformers = [
+  {version = ">=4.49.0", markers = "sys_platform == 'darwin' and platform_machine == 'arm64'", optional = true},
+  {version = ">=4.49.0,<=4.51.3", markers = "sys_platform == 'darwin' and platform_machine == 'x86_64'", optional = true},
+  {version = ">=4.49.0", markers = "sys_platform != 'darwin'", optional = true}
+]
+peft = {version = "^0.17.1", optional = true}
+outlines = {version = "^1.2.4", python = ">=3.11,<3.13", optional = true}
 
 [tool.poetry.group.dev.dependencies]
 commitizen = "^4.2.1"
@@ -72,6 +84,7 @@ syrupy = "^4.9.1"
 types-deprecated = "^1.2.15.20250304"
 
 [tool.poetry.extras]
+transformers = ["transformers", "torch", "peft", "outlines"]
 huggingface = ["datasets", "transformers"]
 search = ["ddgs", "wikipedia-api"]
 duckduckgo = ["ddgs"]
@@ -102,6 +115,9 @@ all = [
     "llama-index",
     "beeai-sdk",
     "langgraph-prebuilt",
+    "torch",
+    "peft",
+    "outlines",
     "boto3",
     "google-auth"
 ]
@@ -118,7 +134,7 @@ module = ["deepeval.*", "deepeval"]
 implicit_reexport = true
 
 [[tool.mypy.overrides]]
-module = ["llama-index", "llama-index.*", "llama_index", "llama_index.*"]
+module = ["llama-index", "llama-index.*", "llama-index.core.llama_dataset", "llama_index", "llama_index.*"]
 ignore_errors = true
 ignore_missing_imports = true
 
@@ -200,6 +216,7 @@ line-length = 120
 [tool.ruff.lint.per-file-ignores]
 "*.ipynb" = ["E501", "ANN001", "ANN201"]
 "examples/**/*.py" = ["E501"]
+"beeai_framework/agents/experimental/**/*.py" = ["E501"]
 
 [tool.ruff.lint.pydocstyle]
 convention = "google"
