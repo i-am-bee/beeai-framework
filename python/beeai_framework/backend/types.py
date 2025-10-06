@@ -58,6 +58,7 @@ class ChatModelInput(ChatModelParameters):
         frozen=True,
     )
     parallel_tool_calls: bool | None = None
+    stream_partial_tool_calls: bool = False
 
 
 class ChatModelUsage(BaseModel):

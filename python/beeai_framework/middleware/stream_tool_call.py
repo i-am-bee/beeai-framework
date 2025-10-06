@@ -66,8 +66,7 @@ class StreamToolCallMiddleware(RunMiddlewareProtocol):
         self._output.merge(data.value)
 
         tool_calls = self._output.get_tool_calls()
-        if tool_calls:
-            tool_call = tool_calls[0]
+        for tool_call in tool_calls:
             await self._process(tool_call.tool_name, tool_call.args)
         else:
             tool_call = parse_broken_json(self._output.get_text_content(), fallback={})

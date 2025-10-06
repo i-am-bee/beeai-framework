@@ -266,6 +266,7 @@ class RequirementAgent(BaseAgent[RequirementAgentOutput]):
                 ],
                 tools=request.allowed_tools,
                 tool_choice=request.tool_choice,
+                stream_partial_tool_calls=True,
             ).middleware(self._stream_final_answer(request, run_context, state))
             await state.memory.add_many(response.output)
 

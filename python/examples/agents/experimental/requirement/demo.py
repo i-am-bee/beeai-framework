@@ -1,23 +1,29 @@
 import asyncio
 
 from beeai_framework.agents.requirement import RequirementAgent
-from beeai_framework.agents.requirement.events import RequirementAgentFinalAnswerEvent
-from beeai_framework.backend import ChatModel
-from beeai_framework.emitter import EventMeta
+from beeai_framework.agents.requirement.requirements.conditional import ConditionalRequirement
+from beeai_framework.backend import ChatModel, ChatModelParameters
+from beeai_framework.middleware.trajectory import GlobalTrajectoryMiddleware
+from beeai_framework.tools.search.duckduckgo import DuckDuckGoSearchTool
+from beeai_framework.tools.think import ThinkTool
+from beeai_framework.tools.weather import OpenMeteoTool
 
 
 async def main() -> None:
-    llm = ChatModel.from_name("ollama:granite4:latest")
-    llm.parameters.stream = True
     agent = RequirementAgent(
-        llm=llm,
-        instructions="Try to always respond in one sentence.",
+        llm=ChatModel.from_name("ollama:granite3.3:8b", ChatModelParameters(stream=True)),
+        tools=[ThinkTool(), OpenMeteoTool(), DuckDuckGoSearchTool()],
+        instructions="Plan activities for a given destination based on current weather and events.",
+        requirements=[
+            ConditionalRequirement(ThinkTool, force_at_step=1, max_invocations=3),
+            ConditionalRequirement(
+                DuckDuckGoSearchTool, only_after=[OpenMeteoTool], min_invocations=1, max_invocations=2
+            ),
+        ],
     )
 
-    def on_new_token(data: RequirementAgentFinalAnswerEvent, meta: EventMeta) -> None:
-        print("Update", data.delta, len(data.delta))
-
-    response = await agent.run("Calculate 4+5").on("final_answer", on_new_token)
+    response = await agent.run("What to do in Boston today?").middleware(GlobalTrajectoryMiddleware(excluded=[]))
+    response = await agent.run("What to do in Boston today?").middleware(GlobalTrajectoryMiddleware())
     print(response.last_message.text)
 
 
