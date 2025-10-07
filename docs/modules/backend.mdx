@@ -408,6 +408,56 @@ const model = new OllamaChatModel("llama3.1");
 ```
 </CodeGroup>
 
+### File / Document Inputs (PDF etc.)
+
+You can attach files (e.g. PDFs) to a `UserMessage` using the `MessageFileContent` part or the convenience factory `UserMessage.from_file`. Provide either a remote `file_id`/URL or an inline base64 data URI (`file_data`). Optionally specify a MIME `format`.
+
+```py Python
+from beeai_framework.backend import UserMessage, MessageFileContent
+
+# Using a remote / previously uploaded file URL or id (flattened API)
+msg_with_file_id = UserMessage([
+  MessageFileContent(
+    file_id="https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf",
+    format="application/pdf",
+  ),
+  "What's this file about?",
+])
+
+# Same using the factory helper
+msg_with_file_id_factory = UserMessage.from_file(
+  file_id="https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf",
+  format="application/pdf",
+)
+
+# Using inline base64 data (shortened example)
+msg_with_file_data = UserMessage([
+  MessageFileContent(
+    file_data="data:application/pdf;base64,AAA...",
+    format="application/pdf",
+  ),
+  "Summarize the document",
+])
+
+# Inline base64 with factory
+msg_with_file_data_factory = UserMessage.from_file(
+  file_data="data:application/pdf;base64,AAA...",
+  format="application/pdf",
+)
+```
+
+These content parts serialize to the flattened schema (legacy nested `{ "file": {...} }` removed):
+
+```json
+{
+  "type": "file",
+  "file_id": "https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf",
+  "format": "application/pdf"
+}
+```
+
+If neither `file_id` nor `file_data` is supplied a validation error is raised.
+
 ### Chat model configuration
 
 You can configure various parameters for your chat model.

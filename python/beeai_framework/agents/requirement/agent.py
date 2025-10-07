@@ -264,6 +264,7 @@ class RequirementAgent(BaseAgent[RequirementAgentOutput]):
                     ),
                     *state.memory.messages,
                 ],
+                max_retries=run_config.max_retries_per_step,
                 tools=request.allowed_tools,
                 tool_choice=request.tool_choice,
                 stream_partial_tool_calls=True,
