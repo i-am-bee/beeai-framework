@@ -64,7 +64,7 @@ class MessageFileContent(BaseModel):
     file_data: str | None = None
     format: str | None = None
 
-    def model_post_init(self, __context: Any) -> None:  # type: ignore[override]
+    def model_post_init(self, __context: Any) -> None:
         if not (self.file_id or self.file_data):
             raise ValueError("Either 'file_id' or 'file_data' must be provided for MessageFileContent")
 
@@ -158,9 +158,11 @@ class AssistantMessage(Message[AssistantMessageContent]):
     ) -> None:
         super().__init__(
             [
-                MessageTextContent(text=c)
-                if isinstance(c, str)
-                else to_any_model([MessageToolCallContent, MessageTextContent], cast(AssistantMessageContent, c))
+                (
+                    MessageTextContent(text=c)
+                    if isinstance(c, str)
+                    else to_any_model([MessageToolCallContent, MessageTextContent], cast(AssistantMessageContent, c))
+                )
                 for c in cast_list(content)
             ],
             meta,
@@ -186,9 +188,11 @@ class ToolMessage(Message[MessageToolResultContent]):
     ) -> None:
         super().__init__(
             [
-                MessageToolResultContent.model_validate(json.loads(c))
-                if isinstance(c, str)
-                else to_model(MessageToolResultContent, cast(MessageToolResultContent, c))
+                (
+                    MessageToolResultContent.model_validate(json.loads(c))
+                    if isinstance(c, str)
+                    else to_model(MessageToolResultContent, cast(MessageToolResultContent, c))
+                )
                 for c in cast_list(content)
             ],
             meta,
@@ -211,9 +215,11 @@ class SystemMessage(Message[MessageTextContent]):
     ) -> None:
         super().__init__(
             [
-                MessageTextContent(text=c)
-                if isinstance(c, str)
-                else to_model(MessageTextContent, cast(MessageTextContent, c))
+                (
+                    MessageTextContent(text=c)
+                    if isinstance(c, str)
+                    else to_model(MessageTextContent, cast(MessageTextContent, c))
+                )
                 for c in cast_list(content)
             ],
             meta,
@@ -242,10 +248,12 @@ class UserMessage(Message[UserMessageContent]):
     ) -> None:
         super().__init__(
             [
-                MessageTextContent(text=c)
-                if isinstance(c, str)
-                else to_any_model(
-                    [MessageImageContent, MessageTextContent, MessageFileContent], cast(UserMessageContent, c)
+                (
+                    MessageTextContent(text=c)
+                    if isinstance(c, str)
+                    else to_any_model(
+                        [MessageImageContent, MessageTextContent, MessageFileContent], cast(UserMessageContent, c)
+                    )
                 )
                 for c in cast_list(content)
             ],
@@ -311,9 +319,11 @@ class CustomMessage(Message[CustomMessageContent]):
     ) -> None:
         super().__init__(
             [
-                CustomMessageContent.model_validate(MessageTextContent(text=c).model_dump())
-                if isinstance(c, str)
-                else to_model(CustomMessageContent, cast(CustomMessageContent, c))
+                (
+                    CustomMessageContent.model_validate(MessageTextContent(text=c).model_dump())
+                    if isinstance(c, str)
+                    else to_model(CustomMessageContent, cast(CustomMessageContent, c))
+                )
                 for c in cast_list(content)
             ],
             meta,
