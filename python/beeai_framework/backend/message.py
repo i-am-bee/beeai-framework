@@ -64,7 +64,7 @@ class MessageFileContent(BaseModel):
     file_data: str | None = None
     format: str | None = None
 
-    def model_post_init(self, __context: Any) -> None:  # type: ignore[override]
+    def model_post_init(self, __context: Any) -> None:
         if not (self.file_id or self.file_data):
             raise ValueError("Either 'file_id' or 'file_data' must be provided for MessageFileContent")
 
