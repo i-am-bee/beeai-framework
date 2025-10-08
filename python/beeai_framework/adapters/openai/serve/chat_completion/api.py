@@ -3,12 +3,13 @@
 
 import time
 import uuid
-from collections.abc import Callable
+from collections.abc import AsyncIterable, Callable
 from functools import cached_property
 from typing import Any
 
 from fastapi import APIRouter, FastAPI, Header, HTTPException, status
 from fastapi.responses import JSONResponse
+from sse_starlette import ServerSentEvent
 from sse_starlette.sse import EventSourceResponse
 
 import beeai_framework.adapters.openai.serve.chat_completion._types as chat_completion_types
@@ -16,6 +17,7 @@ from beeai_framework.adapters.openai._utils import openai_message_to_beeai_messa
 from beeai_framework.adapters.openai.serve.openai_runnable import OpenAIRunnable
 from beeai_framework.backend import AnyMessage, AssistantMessage, ChatModelOutput, SystemMessage, ToolMessage
 from beeai_framework.logger import Logger
+from beeai_framework.utils.strings import to_json
 
 logger = Logger(__name__)
 
@@ -68,8 +70,26 @@ class ChatCompletionAPI:
 
         runnable = self._get_runnable(request.model)
         if request.stream:
-            stream = runnable.stream(messages)
-            return EventSourceResponse(stream)
+            id = f"chatcmpl-{uuid.uuid4()!s}"
+
+            async def stream_events() -> AsyncIterable[ServerSentEvent]:
+                async for message in runnable.stream(messages):
+                    data: dict[str, Any] = {
+                        "id": id,
+                        "object": "chat.completion.chunk",
+                        "model": runnable.model_id,
+                        "created": int(time.time()),
+                        "choices": [
+                            {
+                                "index": 0,
+                                "delta": {"role": message.role, "content": message.text},
+                                "finish_reason": message.finish_reason,
+                            }
+                        ],
+                    }
+                    yield ServerSentEvent(data=to_json(data, sort_keys=False), id=data["id"], event=data["object"])
+
+            return EventSourceResponse(stream_events())
         else:
             content = await runnable.run(messages)
             response = chat_completion_types.ChatCompletionResponse(

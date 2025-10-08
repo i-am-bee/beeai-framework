@@ -7,12 +7,14 @@ from typing import Any, Literal, Self
 
 import uvicorn
 from pydantic import BaseModel
-from sse_starlette import ServerSentEvent
 from typing_extensions import TypedDict, TypeVar, Unpack, override
 
+from beeai_framework.adapters.openai.serve._types import OpenAIEvent
 from beeai_framework.adapters.openai.serve.chat_completion.api import ChatCompletionAPI
 from beeai_framework.adapters.openai.serve.openai_runnable import OpenAIRunnable
 from beeai_framework.agents import BaseAgent
+from beeai_framework.agents.react import ReActAgent
+from beeai_framework.agents.requirement.events import RequirementAgentSuccessEvent
 from beeai_framework.backend import AnyMessage, ChatModel
 from beeai_framework.logger import Logger
 from beeai_framework.runnable import Runnable
@@ -103,11 +105,27 @@ def _runnable_factory(
         else runnable.__class__.__name__,
     )
 
-    def handler(input: list[AnyMessage]) -> AsyncIterable[ServerSentEvent]:  # type: ignore[empty-body]
-        pass
-
-    return OpenAIRunnable(runnable, model_id=name, handler=handler)
+    return OpenAIRunnable(runnable, model_id=name)
 
 
 with contextlib.suppress(FactoryAlreadyRegisteredError):
     OpenAIServer.register_factory(Runnable, _runnable_factory)  # type: ignore
+
+
+def _react_factory(
+    agent: ReActAgent, *, metadata: OpenAIServerMetadata | None = None, memory_manager: MemoryManager
+) -> OpenAIRunnable:
+    if metadata is None:
+        metadata = {}
+
+    async def stream(input: list[AnyMessage]) -> AsyncIterable[OpenAIEvent]:
+        cloned_agent = await agent.clone()
+        async for data, _ in cloned_agent.run(input):
+            if isinstance(data, RequirementAgentSuccessEvent) and data.state.answer is not None:
+                yield OpenAIEvent(text=data.state.answer.text, finish_reason="stop")
+
+    return OpenAIRunnable(agent, model_id=metadata.get("name", agent.meta.name), stream=stream)
+
+
+with contextlib.suppress(FactoryAlreadyRegisteredError):
+    OpenAIServer.register_factory(ReActAgent, _react_factory)  # type: ignore
