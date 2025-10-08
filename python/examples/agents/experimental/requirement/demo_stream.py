@@ -9,6 +9,7 @@ from beeai_framework.emitter import EventMeta
 async def main() -> None:
     llm = ChatModel.from_name("ollama:granite3.3:8b")
     llm.parameters.stream = True
+
     agent = RequirementAgent(
         llm=llm,
         instructions="Try to always respond in one sentence.",

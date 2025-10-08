@@ -6,7 +6,7 @@ from typing import Any
 
 from pydantic import BaseModel
 
-from beeai_framework.backend import ChatModel, ChatModelNewTokenEvent, ChatModelOutput
+from beeai_framework.backend import ChatModel, ChatModelNewTokenEvent, ChatModelOutput, ChatModelStartEvent
 from beeai_framework.backend.utils import parse_broken_json
 from beeai_framework.context import RunContext, RunMiddlewareProtocol
 from beeai_framework.emitter import Emitter, EmitterOptions, EventMeta
@@ -14,28 +14,54 @@ from beeai_framework.tools import AnyTool
 
 
 class StreamToolCallMiddleware(RunMiddlewareProtocol):
-    def __init__(self, target: AnyTool, key: str, *, emitter_options: EmitterOptions | None = None) -> None:
+    """
+    Middleware for handling streaming tool calls in a ChatModel.
+
+    This middleware observes, listens to Chat Model stream updates and parses the tool calls on demand so that
+    they can be consumed as soon as possible.
+    """
+
+    def __init__(self, target: AnyTool, key: str, *, match_nested: bool = False, force_streaming: bool = False) -> None:
+        """
+        Args:
+            target: The tool that we are waiting for to be called.
+            key: Refers to the name of the attribute in the tool's schema that we want to stream
+            match_nested: Whether the middleware should be applied only to the top level.
+            force_streaming: Set's the stream flag on the ChatModel.
+        """
+
         self._target = target
         self._key = key
         self._output = ChatModelOutput(output=[])
         self._buffer = ""
         self._delta = ""
-        self._emitter_options = emitter_options
+        self._match_nested = match_nested
+        self._force_streaming = force_streaming
 
     def bind(self, ctx: "RunContext") -> None:
         self._output = ChatModelOutput(output=[])
         self._buffer = ""
         self._delta = ""
 
-        # could be more general
-        if not isinstance(ctx.instance, ChatModel):
-            raise ValueError("Middleware is intended to be used with a ChatModel")
+        ctx.instance.emitter.off(callback=self._handle_start)
+        ctx.instance.emitter.off(callback=self._handle_new_token)
+        ctx.instance.emitter.on(
+            lambda meta: isinstance(meta.creator, ChatModel) and meta.name == "start",
+            callback=self._handle_start,
+            options=self._create_emitter_options(),
+        )
+        ctx.instance.emitter.on(
+            lambda meta: isinstance(meta.creator, ChatModel) and meta.name == "new_token",
+            callback=self._handle_new_token,
+            options=self._create_emitter_options(),
+        )
 
-        ctx.emitter.on("new_token", self.handler, self._emitter_options)
+    def _create_emitter_options(self) -> EmitterOptions:
+        return EmitterOptions(match_nested=self._match_nested, is_blocking=True)
 
     @cached_property
     def emitter(self) -> Emitter:
-        return Emitter.root().child(namespace=["middleware", "stream"])
+        return Emitter.root().child(namespace=["middleware", "stream_tool_call"])
 
     async def _process(self, tool_name: str, args: Any) -> None:
         if tool_name != self._target.name:
@@ -59,10 +85,15 @@ class StreamToolCallMiddleware(RunMiddlewareProtocol):
 
         await self.emitter.emit(
             "update",
-            UpdateEvent(output_structured=output_structured, delta=self._delta, output=output),
+            StreamToolCallMiddlewareUpdateEvent(output_structured=output_structured, delta=self._delta, output=output),
         )
 
-    async def handler(self, data: ChatModelNewTokenEvent, meta: EventMeta) -> None:
+    async def _handle_start(self, data: ChatModelStartEvent, meta: EventMeta) -> None:
+        if self._force_streaming:
+            data.input.stream = True
+            data.input.stream_partial_tool_calls = True
+
+    async def _handle_new_token(self, data: ChatModelNewTokenEvent, meta: EventMeta) -> None:
         self._output.merge(data.value)
 
         tool_calls = self._output.get_tool_calls()
@@ -80,7 +111,7 @@ class StreamToolCallMiddleware(RunMiddlewareProtocol):
             await self._process(tool_call.get("name", ""), tool_call.get("parameters"))
 
 
-class UpdateEvent(BaseModel):
+class StreamToolCallMiddlewareUpdateEvent(BaseModel):
     output_structured: BaseModel | Any
     output: str
     delta: str

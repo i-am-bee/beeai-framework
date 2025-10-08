@@ -46,7 +46,7 @@ from beeai_framework.emitter import Emitter, EventMeta
 from beeai_framework.memory.base_memory import BaseMemory
 from beeai_framework.memory.unconstrained_memory import UnconstrainedMemory
 from beeai_framework.memory.utils import extract_last_tool_call_pair
-from beeai_framework.middleware.stream_tool_call import StreamToolCallMiddleware, UpdateEvent
+from beeai_framework.middleware.stream_tool_call import StreamToolCallMiddleware, StreamToolCallMiddlewareUpdateEvent
 from beeai_framework.runnable import runnable_entry
 from beeai_framework.template import PromptTemplate
 from beeai_framework.tools import AnyTool
@@ -449,10 +449,15 @@ class RequirementAgent(BaseAgent[RequirementAgentOutput]):
     def _stream_final_answer(
         self, request: RequirementAgentRequest, ctx: RunContext, state: RequirementAgentRunState
     ) -> RunMiddlewareProtocol:
-        middleware = StreamToolCallMiddleware(request.final_answer, "response")  # from the default schema
+        middleware = StreamToolCallMiddleware(
+            request.final_answer,
+            "response",  # from the default schema
+            match_nested=False,
+            force_streaming=False,
+        )
 
         @middleware.emitter.on("update")
-        async def send_update(data: UpdateEvent, meta: EventMeta) -> None:
+        async def send_update(data: StreamToolCallMiddlewareUpdateEvent, meta: EventMeta) -> None:
             await ctx.emitter.emit(
                 "final_answer",
                 RequirementAgentFinalAnswerEvent(
