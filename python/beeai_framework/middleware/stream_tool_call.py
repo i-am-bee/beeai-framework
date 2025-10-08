@@ -74,6 +74,9 @@ class StreamToolCallMiddleware(RunMiddlewareProtocol):
                 return
 
             tool_call = tool_call.get("item", tool_call)  # WrappedRootModel was used
+            if not isinstance(tool_call, dict):
+                return
+
             await self._process(tool_call.get("name", ""), tool_call.get("parameters"))
 
 
