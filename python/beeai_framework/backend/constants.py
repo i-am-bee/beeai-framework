@@ -64,7 +64,7 @@ class ProviderModuleDef(BaseModel):
 
 BackendProviders = {
     "Ollama": ProviderDef(name="Ollama", module="ollama", aliases=[]),
-    "OpenAI": ProviderDef(name="OpenAI", module="openai", aliases=["openai"]),
+    "OpenAI": ProviderDef(name="OpenAI", module="openai", aliases=["openai", "vllm"]),
     "watsonx": ProviderDef(name="Watsonx", module="watsonx", aliases=["watsonx", "ibm"]),
     "Groq": ProviderDef(name="Groq", module="groq", aliases=["groq"]),
     "xAI": ProviderDef(name="XAI", module="xai", aliases=["xai", "grok"]),
