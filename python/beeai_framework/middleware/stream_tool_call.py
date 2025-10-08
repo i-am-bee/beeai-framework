@@ -69,7 +69,7 @@ class StreamToolCallMiddleware(RunMiddlewareProtocol):
         for tool_call in tool_calls:
             await self._process(tool_call.tool_name, tool_call.args)
         else:
-            tool_call = parse_broken_json(self._output.get_text_content(), fallback={})
+            tool_call = parse_broken_json(self._output.get_text_content(), fallback={}, stream_stable=True)
             if not isinstance(tool_call, dict):
                 return
 

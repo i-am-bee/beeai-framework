@@ -102,9 +102,9 @@ def load_module(name: ProviderName | str, module_type: ModuleTypes = "vector_sto
     return getattr(module, class_name)  # type: ignore
 
 
-def parse_broken_json(input: str, fallback: Any | None = None) -> Any:
+def parse_broken_json(input: str, fallback: Any | None = None, *, stream_stable: bool = False) -> Any:
     try:
-        return json_repair.loads(input, stream_stable=True)
+        return json_repair.loads(input, stream_stable=stream_stable)
     except Exception:
         if fallback is not None:
             return fallback
