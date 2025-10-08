@@ -41,7 +41,7 @@ pydantic = "^2.10"
 pydantic-settings = "^2.9.0"
 requests = "^2.32"
 unstructured = {version = "^0.17.2", optional = true}
-uvicorn = {version = "^0.35.0, <0.36.0", optional = true}  # Pinned to avoid breaking changes in >=0.36.0
+uvicorn = {version = "^0.37.0", optional = true}
 types-grpcio = {version = "1.0.0.20250703", optional = true}
 types-grpcio-reflection = {version = "1.0.0.20250506", optional = true}
 wikipedia-api = {version = "^0.8.1", optional = true}
