@@ -12,7 +12,7 @@ from fastapi.responses import JSONResponse
 from sse_starlette import ServerSentEvent
 from sse_starlette.sse import EventSourceResponse
 
-import beeai_framework.adapters.openai.serve.chat_completion._types as chat_completion_types
+import beeai_framework.adapters.openai.serve.responses._types as responses_types
 from beeai_framework.adapters.openai.serve._utils import openai_message_to_beeai_message
 from beeai_framework.adapters.openai.serve.openai_runnable import OpenAIRunnable
 from beeai_framework.backend import AnyMessage, AssistantMessage, ChatModelOutput, SystemMessage, ToolMessage
@@ -22,7 +22,7 @@ from beeai_framework.utils.strings import to_json
 logger = Logger(__name__)
 
 
-class ChatCompletionAPI:
+class ResponsesAPI:
     def __init__(
         self,
         *,
@@ -36,15 +36,15 @@ class ChatCompletionAPI:
 
         self._router = APIRouter()
         self._router.add_api_route(
-            "/chat/completions",
+            "/responses",
             self.handler,
             methods=["POST"],
-            response_model=chat_completion_types.ChatCompletionResponse,
+            response_model=responses_types.ResponsesResponse,
         )
 
     @cached_property
     def app(self) -> FastAPI:
-        config: dict[str, Any] = {"title": "BeeAI Framework / OpenAI Chat Completion API", "version": "0.0.1"}
+        config: dict[str, Any] = {"title": "BeeAI Framework / Responses API", "version": "0.0.1"}
         config.update(self._fast_api_kwargs)
 
         app = FastAPI(**config)
@@ -54,7 +54,7 @@ class ChatCompletionAPI:
 
     async def handler(
         self,
-        request: chat_completion_types.ChatCompletionRequestBody,
+        request: responses_types.RequestsRequestBody,
         api_key: str | None = Header(None, alias="Authorization"),
     ) -> Any:
         logger.debug(f"Received request\n{request.model_dump_json()}")
@@ -70,46 +70,32 @@ class ChatCompletionAPI:
 
         runnable = self._get_runnable(request.model)
         if request.stream:
-            id = f"chatcmpl-{uuid.uuid4()!s}"
+            id = f"resp-{uuid.uuid4()!s}"
 
             async def stream_events() -> AsyncIterable[ServerSentEvent]:
-                async for message in runnable.stream(messages):
-                    data: dict[str, Any] = {
-                        "id": id,
-                        "object": "chat.completion.chunk",
-                        "model": runnable.model_id,
-                        "created": int(time.time()),
-                        "choices": [
-                            {
-                                "index": 0,
-                                "delta": {"role": message.role, "content": message.text},
-                                "finish_reason": message.finish_reason,
-                            }
-                        ],
-                    }
+                async for _message in runnable.stream(messages):
+                    data = {id: id}  # TODO
                     yield ServerSentEvent(data=to_json(data, sort_keys=False), id=data["id"], event=data["object"])
 
             return EventSourceResponse(stream_events())
         else:
             content = await runnable.run(messages)
-            response = chat_completion_types.ChatCompletionResponse(
+            response = responses_types.ResponsesResponse(
                 id=str(uuid.uuid4()),
-                object="chat.completion",
+                object="response",
                 created=int(time.time()),
                 model=runnable.model_id,
-                choices=[
-                    chat_completion_types.ChatCompletionChoice(
-                        index=0,
-                        message=chat_completion_types.ChatMessageResponse(
-                            role="assistant", content=content.last_message.text
-                        ),
-                        finish_reason=content.finish_reason if isinstance(content, ChatModelOutput) else "stop",
-                    )
-                ],
+                output=responses_types.ResponsesOutput(
+                    type="message",
+                    id=str(uuid.uuid4()),
+                    status="completed",
+                    role="assistant",
+                    content=responses_types.ResponsesContent(type="output_text", text=content.last_message.text),
+                ),
                 usage=(
-                    chat_completion_types.ChatCompletionUsage(
-                        prompt_tokens=content.usage.prompt_tokens,
-                        completion_tokens=content.usage.completion_tokens,
+                    responses_types.ResponsesUsage(
+                        input_tokens=content.usage.prompt_tokens,
+                        output_tokens=content.usage.completion_tokens,
                         total_tokens=content.usage.total_tokens,
                     )
                     if isinstance(content, ChatModelOutput) and content.usage is not None
@@ -120,10 +106,11 @@ class ChatCompletionAPI:
 
 
 def _transform_request_messages(
-    inputs: list[chat_completion_types.ChatMessage],
+    inputs: list[responses_types.ChatMessage],
 ) -> list[AnyMessage]:
     messages: list[AnyMessage] = []
-    converted_messages = [openai_message_to_beeai_message(msg) for msg in inputs]
+    # TODO
+    converted_messages = [openai_message_to_beeai_message(msg) for msg in inputs]  # type: ignore[arg-type]
 
     for msg, next_msg, next_next_msg in zip(
         converted_messages,

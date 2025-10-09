@@ -1,12 +1,8 @@
 # Copyright 2025 © BeeAI a Series of LF Projects, LLC
 # SPDX-License-Identifier: Apache-2.0
 
-import asyncio
-import contextlib
 import json
-from asyncio import Queue
-from collections.abc import AsyncGenerator, Awaitable, Callable
-from typing import Any, TypeVar
+from typing import TypeVar
 
 import beeai_framework.adapters.openai.serve.chat_completion._types as openai_api
 from beeai_framework.backend import AssistantMessage, SystemMessage, ToolMessage
@@ -101,40 +97,6 @@ def openai_message_to_beeai_message(message: openai_api.ChatMessage) -> AnyMessa
 
 
 T = TypeVar("T")
-
-
-async def create_emitter(
-    handler: Callable[[list[AnyMessage], Callable[[T], Awaitable[None]]], Any],
-    input: list[AnyMessage],
-) -> AsyncGenerator[T, None]:
-    queue = Queue[T | None]()
-
-    async def emit(data: T) -> None:
-        await queue.put(data)
-
-    async def wrapper() -> None:
-        try:
-            await handler(input, emit)
-        finally:
-            await queue.put(None)
-
-    task = asyncio.create_task(wrapper())
-
-    try:
-        while True:
-            try:
-                item = await queue.get()
-                if item is not None:
-                    yield item
-                queue.task_done()
-                if item is None:
-                    break
-            except asyncio.CancelledError:
-                task.cancel()
-                raise
-    finally:
-        with contextlib.suppress(asyncio.CancelledError):
-            await task
 
 
 def map_openai_agent_input_to_bee_messages(

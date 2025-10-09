@@ -1,24 +1,18 @@
 # Copyright 2025 © BeeAI a Series of LF Projects, LLC
 # SPDX-License-Identifier: Apache-2.0
-
 import contextlib
-from collections.abc import AsyncIterable
 from typing import Any, Literal, Self
 
 import uvicorn
 from pydantic import BaseModel
 from typing_extensions import TypedDict, TypeVar, Unpack, override
 
-from beeai_framework.adapters.openai.serve._types import OpenAIEvent
 from beeai_framework.adapters.openai.serve.chat_completion.api import ChatCompletionAPI
 from beeai_framework.adapters.openai.serve.openai_runnable import OpenAIRunnable
-from beeai_framework.agents import BaseAgent
+from beeai_framework.adapters.openai.serve.responses.api import ResponsesAPI
 from beeai_framework.agents.react import ReActAgent
-from beeai_framework.agents.requirement.events import RequirementAgentSuccessEvent
-from beeai_framework.backend import AnyMessage, ChatModel
 from beeai_framework.logger import Logger
 from beeai_framework.runnable import Runnable
-from beeai_framework.serve import MemoryManager
 from beeai_framework.serve.errors import FactoryAlreadyRegisteredError
 from beeai_framework.serve.server import Server
 from beeai_framework.utils import ModelLike
@@ -52,20 +46,15 @@ class OpenAIServer(
         OpenAIServerConfig,
     ],
 ):
-    def __init__(
-        self, *, config: ModelLike[OpenAIServerConfig] | None = None, memory_manager: MemoryManager | None = None
-    ) -> None:
-        super().__init__(
-            config=to_model(OpenAIServerConfig, config or OpenAIServerConfig()), memory_manager=memory_manager
-        )
+    def __init__(self, *, config: ModelLike[OpenAIServerConfig] | None = None) -> None:
+        super().__init__(config=to_model(OpenAIServerConfig, config or OpenAIServerConfig()), memory_manager=None)
         self._metadata_by_agent: dict[AnyRunnable, OpenAIServerMetadata] = {}
 
     def serve(self) -> None:
         internals = [
             type(self)._get_factory(member)(
                 member,
-                metadata=self._metadata_by_agent.get(member, {}),
-                memory_manager=self._memory_manager,  # type: ignore[call-arg]
+                metadata=self._metadata_by_agent.get(member, {}),  # type: ignore[call-arg]
             )
             for member in self._members
         ]
@@ -78,10 +67,12 @@ class OpenAIServer(
                 get_runnable=get_runnable, api_key=self._config.api_key, fast_api_kwargs=self._config.fast_api_kwargs
             )
             if self._config.api == "chat-completion"
-            else None
+            else ResponsesAPI(
+                get_runnable=get_runnable, api_key=self._config.api_key, fast_api_kwargs=self._config.fast_api_kwargs
+            )
         )
 
-        uvicorn.run(api.app, host=self._config.host, port=self._config.port)  # type: ignore[union-attr]
+        uvicorn.run(api.app, host=self._config.host, port=self._config.port)
 
     @override
     def register(self, input: AnyRunnable, **metadata: Unpack[OpenAIServerMetadata]) -> Self:
@@ -90,42 +81,14 @@ class OpenAIServer(
         return self
 
 
-def _runnable_factory(
-    runnable: Runnable[Any], *, metadata: OpenAIServerMetadata | None = None, memory_manager: MemoryManager
-) -> OpenAIRunnable:
-    if metadata is None:
-        metadata = {}
+def register() -> None:
+    from beeai_framework.adapters.openai.serve._facroties import _react_factory, _runnable_factory
 
-    name = metadata.get(
-        "name",
-        runnable.meta.name
-        if isinstance(runnable, BaseAgent)
-        else runnable.model_id
-        if isinstance(runnable, ChatModel)
-        else runnable.__class__.__name__,
-    )
+    with contextlib.suppress(FactoryAlreadyRegisteredError):
+        OpenAIServer.register_factory(Runnable, _runnable_factory)  # type: ignore
 
-    return OpenAIRunnable(runnable, model_id=name)
+    with contextlib.suppress(FactoryAlreadyRegisteredError):
+        OpenAIServer.register_factory(ReActAgent, _react_factory)
 
 
-with contextlib.suppress(FactoryAlreadyRegisteredError):
-    OpenAIServer.register_factory(Runnable, _runnable_factory)  # type: ignore
-
-
-def _react_factory(
-    agent: ReActAgent, *, metadata: OpenAIServerMetadata | None = None, memory_manager: MemoryManager
-) -> OpenAIRunnable:
-    if metadata is None:
-        metadata = {}
-
-    async def stream(input: list[AnyMessage]) -> AsyncIterable[OpenAIEvent]:
-        cloned_agent = await agent.clone()
-        async for data, _ in cloned_agent.run(input):
-            if isinstance(data, RequirementAgentSuccessEvent) and data.state.answer is not None:
-                yield OpenAIEvent(text=data.state.answer.text, finish_reason="stop")
-
-    return OpenAIRunnable(agent, model_id=metadata.get("name", agent.meta.name), stream=stream)
-
-
-with contextlib.suppress(FactoryAlreadyRegisteredError):
-    OpenAIServer.register_factory(ReActAgent, _react_factory)  # type: ignore
+register()
