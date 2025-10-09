@@ -171,6 +171,9 @@ def test_chat_model_from(monkeypatch: pytest.MonkeyPatch) -> None:
     openai_chat_model = ChatModel.from_name("openai:gpt-4o", api_key="test")
     assert isinstance(openai_chat_model, OpenAIChatModel)
 
+    vllm_chat_model = ChatModel.from_name("vllm:gpt-4o", api_key="test")
+    assert isinstance(vllm_chat_model, OpenAIChatModel)
+
     groq_chat_model = ChatModel.from_name("groq:gemma2-9b-it", api_key="test")
     assert isinstance(groq_chat_model, GroqChatModel)
 
