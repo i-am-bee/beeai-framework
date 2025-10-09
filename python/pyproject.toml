@@ -1,6 +1,6 @@
 [project]
 name = "beeai-framework"
-version="0.1.53"
+version="0.1.54"
 license = "Apache-2.0"
 readme = "README.md"
 authors = [{ name = "IBM Corp." }]
