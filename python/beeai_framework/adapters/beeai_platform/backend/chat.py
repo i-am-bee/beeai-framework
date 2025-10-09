@@ -7,8 +7,16 @@ from contextvars import ContextVar
 from functools import cached_property
 from typing import Any, ClassVar, Self
 
-from beeai_sdk.a2a.extensions import LLMServiceExtensionServer
-from beeai_sdk.platform import ModelProviderType
+try:
+    from beeai_sdk.a2a.extensions import LLMServiceExtensionServer
+    from beeai_sdk.platform import ModelProviderType
+
+except ModuleNotFoundError as e:
+    raise ModuleNotFoundError(
+        "Optional module [beeai-platform] not found.\nRun 'pip install \"beeai-framework[beeai-platform]\"' to install."
+    ) from e
+
+
 from typing_extensions import Unpack, override
 
 from beeai_framework.adapters.openai import OpenAIChatModel
