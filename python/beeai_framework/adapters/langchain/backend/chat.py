@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 from collections.abc import AsyncGenerator
-from typing import Any, TypedDict, Unpack
+from typing import Any, Self, TypedDict, Unpack
 
 from langchain_core.language_models import BaseChatModel, LanguageModelInput
 from langchain_core.messages import BaseMessage
@@ -109,3 +109,17 @@ class LangChainChatModel(ChatModel):
             if usage_metadata
             else None,
         )
+
+    async def clone(self) -> Self:
+        cloned = LangChainChatModel(
+            self._model,
+            parameters=self.parameters.model_copy(),
+            cache=await self.cache.clone() if self.cache else NullCache[list[ChatModelOutput]](),
+            tool_call_fallback_via_response_format=self.tool_call_fallback_via_response_format,
+            model_supports_tool_calling=self.model_supports_tool_calling,
+            settings=self._settings.copy(),
+            use_strict_model_schema=self.use_strict_model_schema,
+            use_strict_tool_schema=self.use_strict_tool_schema,
+            tool_choice_support=self._tool_choice_support.copy(),
+        )
+        return cloned
