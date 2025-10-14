@@ -100,6 +100,9 @@ class LiteLLMChatModel(ChatModel, ABC):
         async for _chunk in response:
             is_empty = False
             chunk = self._transform_output(_chunk)
+            if input.stream_partial_tool_calls:
+                yield chunk
+                continue
 
             if tmp_chunk is None:
                 tmp_chunk = chunk
@@ -209,6 +212,7 @@ class LiteLLMChatModel(ChatModel, ABC):
                 "tools",
                 "supports_top_level_unions",
                 "validate_response_format",
+                "stream_partial_tool_calls",
             },
         )
         params = include_keys(

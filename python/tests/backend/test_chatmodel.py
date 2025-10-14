@@ -148,7 +148,7 @@ def test_chat_model_from(monkeypatch: pytest.MonkeyPatch) -> None:
 
     # Watsonx with Granite model and settings specified in code
     watsonx_chat_model = ChatModel.from_name(
-        "watsonx:ibm/granite-3-8b-instruct",
+        "watsonx:ibm/granite-3-3-8b-instruct",
         {
             "base_url": "http://somewhere",
             "project_id": "proj_id_123",
@@ -165,7 +165,7 @@ def test_chat_model_from(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("WATSONX_PROJECT_ID", "proj_id_456")
     monkeypatch.setenv("WATSONX_API_KEY", "api_key_456")
 
-    watsonx_chat_model = ChatModel.from_name("watsonx:ibm/granite-3-8b-instruct")
+    watsonx_chat_model = ChatModel.from_name("watsonx:ibm/granite-3-3-8b-instruct")
     assert isinstance(watsonx_chat_model, WatsonxChatModel)
 
     openai_chat_model = ChatModel.from_name("openai:gpt-4o", api_key="test")

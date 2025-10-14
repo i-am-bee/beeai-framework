@@ -101,7 +101,7 @@ class A2AAgent(BaseAgent[A2AAgentOutput]):
 
         assert self._agent_card is not None, "Agent card should not be empty after loading."
 
-        async with httpx.AsyncClient() as httpx_client:
+        async with httpx.AsyncClient(timeout=httpx.Timeout(30.0, read=None)) as httpx_client:
             # create client
             client: a2a_client.Client = a2a_client.ClientFactory(
                 config=a2a_client.ClientConfig(

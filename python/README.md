@@ -105,7 +105,7 @@ async def main() -> None:
 
     try:
         response = await main_agent.run(question, expected_output="Helpful and clear response.")
-        print("Agent:", response.answer.text)
+        print("Agent:", response.last_message.text)
     except FrameworkError as err:
         print("Error:", err.explain())
 
@@ -115,6 +115,34 @@ if __name__ == "__main__":
 ```
 
 _Source: [python/examples/agents/experimental/requirement/handoff.py](https://github.com/i-am-bee/beeai-framework/tree/main/python/examples/agents/experimental/requirement/handoff.py)_
+
+### Message Content Helpers (Text / Image / File)
+
+You can build multimodal user messages with simple factory helpers:
+
+```py
+from beeai_framework.backend import UserMessage
+
+# Plain text
+msg_text = UserMessage.from_text("Explain the solar eclipse")
+
+# Image (data URI or URL)
+msg_image = UserMessage.from_image("data:image/png;base64,iVBORw0KGgoAAA...")
+
+# File (either file_id OR file_data)
+msg_file = UserMessage.from_file(
+    file_id="https://example.com/sample.pdf",
+    format="application/pdf",
+)
+
+# Inline base64 file
+msg_inline_pdf = UserMessage.from_file(
+    file_data="data:application/pdf;base64,AAA...",
+    format="application/pdf",
+)
+```
+
+The file message API is now flattened (no nested `file={...}` structure). Use `file_id` for remote/previously uploaded resources or `file_data` for a data URI.
 
 ### Running the Example
 

@@ -150,6 +150,11 @@ class ChatModelOptions(RunnableOptions, total=False):
     Model parameter that controls deterministic sampling.
     """
 
+    stream_partial_tool_calls: bool | None
+    """
+    Generated chunks will be streamed without validation of the produced tool calls.
+    """
+
 
 _ChatModelKwargsAdapter = TypeAdapter(ChatModelKwargs)
 
