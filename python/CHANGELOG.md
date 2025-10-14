@@ -1,3 +1,15 @@
+## python_v0.1.56 (2025-10-14)
+
+### Bug Fixes
+
+- **backend**: remove property decorator from computed_field (#1191)
+- **agents**: prevent duplications of tokens while streaming an answer (#1188)
+
+### Features
+
+- **adapters**: add tool choice mapping to all providers in the platform (#1185)
+- **adapters**: update clone method in LangChainChatModel (#1189)
+
 ## python_v0.1.55 (2025-10-09)
 
 ### Bug Fixes
