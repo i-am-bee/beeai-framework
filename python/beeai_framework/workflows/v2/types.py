@@ -4,5 +4,13 @@
 from collections.abc import Callable, Coroutine
 from typing import Any, Literal
 
-AsyncFunc = Callable[..., Coroutine[Any, Any, Any]]
-DependencyType = Literal["AND", "OR"]
+from pydantic import BaseModel
+
+AsyncMethod = Callable[..., Coroutine[Any, Any, Any]]
+
+ExecutionCondition = Literal["and", "or"]
+
+
+class AsyncMethodSet(BaseModel):
+    methods: list[str] = []
+    condition: ExecutionCondition = "and"

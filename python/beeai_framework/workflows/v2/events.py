@@ -1,14 +1,12 @@
 # Copyright 2025 © BeeAI a Series of LF Projects, LLC
 # SPDX-License-Identifier: Apache-2.0
 
-from enum import Enum
-
 from pydantic import BaseModel, ConfigDict
 
 from beeai_framework.workflows.v2.step import WorkflowStep
 
 
-class StartWorkflowEvent(BaseModel): ...
+class WorkflowStartEvent(BaseModel): ...
 
 
 class WorkflowStepEvent(BaseModel):
@@ -16,16 +14,16 @@ class WorkflowStepEvent(BaseModel):
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
 
-class StartWorkflowStepEvent(WorkflowStepEvent):
+class WorkflowStartStepEvent(WorkflowStepEvent):
     pass
 
 
-class ErrorWorkflowEvent(WorkflowStepEvent):
+class WorkflowErrorEvent(WorkflowStepEvent):
     error: Exception
     attempt: int
 
 
-class RetryWorkflowStepEvent(WorkflowStepEvent):
+class WorkflowRetryStepEvent(WorkflowStepEvent):
     error: Exception
     attempt: int
 
@@ -33,18 +31,10 @@ class RetryWorkflowStepEvent(WorkflowStepEvent):
 class WorkflowSuccessEvent(BaseModel): ...
 
 
-class WorkflowEventNames(str, Enum):
-    START_WORKFLOW = "start"
-    START_WORKFLOW_STEP = "start_step"
-    WORKFLOW_ERROR = "error"
-    RETRY_WORKFLOW_STEP = "retry_step"
-    WORKFLOW_SUCCESS = "success"
-
-
-workflow_event_types: dict[str, type] = {
-    WorkflowEventNames.START_WORKFLOW: StartWorkflowEvent,
-    WorkflowEventNames.START_WORKFLOW_STEP: StartWorkflowStepEvent,
-    WorkflowEventNames.WORKFLOW_ERROR: ErrorWorkflowEvent,
-    WorkflowEventNames.RETRY_WORKFLOW_STEP: RetryWorkflowStepEvent,
-    WorkflowEventNames.WORKFLOW_SUCCESS: WorkflowSuccessEvent,
+workflow_v2_event_types: dict[str, type] = {
+    "start": WorkflowStartEvent,
+    "start_step": WorkflowStartStepEvent,
+    "error": WorkflowErrorEvent,
+    "retry_step": WorkflowRetryStepEvent,
+    "success": WorkflowSuccessEvent,
 }

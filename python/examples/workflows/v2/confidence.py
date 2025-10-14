@@ -13,14 +13,6 @@ from beeai_framework.workflows.v2.decorators.start import start
 from beeai_framework.workflows.v2.workflow import Workflow
 
 
-def answer_prompt(user_message: AnyMessage, thoughts: str) -> str:
-    return f""""You have access to the internal reasoning about the user's message.
-Generate a clear, concise, and contextually appropriate reply based on that reasoning.
-Do not introduce unrelated ideas; your answer should directly reflect the thought process that was internally generated.
-Internal reasoning: {thoughts}
-User's Message: {user_message.text}"""
-
-
 class ResponseWithConfidence(BaseModel):
     response: str
     confidence: int = Field(ge=1, le=10, description="Confidence in the correctness of your response between 1 and 10.")
@@ -29,7 +21,7 @@ class ResponseWithConfidence(BaseModel):
 class RespondWithConfidenceWorkflow(Workflow):
     def __init__(self) -> None:
         super().__init__()
-        self.chat_model: ChatModel = ChatModel.from_name("ollama:granite3.3:8b")
+        self.chat_model: ChatModel = ChatModel.from_name("ollama:ibm/granite4")
         self.retries: int = 3
 
     @start
@@ -42,8 +34,7 @@ class RespondWithConfidenceWorkflow(Workflow):
         print("Generating response")
         output = await self.chat_model.run(messages, response_format=ResponseWithConfidence)
         assert output.output_structured is not None
-        response = ResponseWithConfidence(**output.output_structured.model_dump())
-        return response
+        return ResponseWithConfidence(**output.output_structured.model_dump())
 
     @after(answer)
     @end

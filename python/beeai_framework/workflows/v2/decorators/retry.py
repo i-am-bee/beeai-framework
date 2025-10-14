@@ -4,11 +4,11 @@
 
 from collections.abc import Callable
 
-from beeai_framework.workflows.v2.types import AsyncFunc
+from beeai_framework.workflows.v2.types import AsyncMethod
 
 
-def retry(n: int = 1) -> Callable[[AsyncFunc], AsyncFunc]:
-    def decorator(func: AsyncFunc) -> AsyncFunc:
+def retry(n: int = 1) -> Callable[[AsyncMethod], AsyncMethod]:
+    def decorator(func: AsyncMethod) -> AsyncMethod:
         func._retries = n  # type: ignore[attr-defined]
         return func
 

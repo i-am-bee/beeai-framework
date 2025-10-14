@@ -5,6 +5,7 @@ import asyncio
 import re
 
 from beeai_framework.backend.message import AnyMessage, AssistantMessage, UserMessage
+from beeai_framework.workflows.v2.decorators._or import _or
 from beeai_framework.workflows.v2.decorators.after import after
 from beeai_framework.workflows.v2.decorators.end import end
 from beeai_framework.workflows.v2.decorators.start import start
@@ -33,7 +34,7 @@ class CalculateTokensWorkflow(Workflow):
         tokens = re.findall(r"\w+|[^\w\s]", text, re.UNICODE)
         return len(tokens)
 
-    @after(count_tokens_by_whitespaces, count_tokens_regex, type="OR")
+    @after(_or(count_tokens_by_whitespaces, count_tokens_regex))
     @end
     async def finalize(
         self, white_space_tokens: int | None = None, count_regex_tokens: int | None = None
@@ -51,13 +52,7 @@ class CalculateTokensWorkflow(Workflow):
 # Async main function
 async def main() -> None:
     workflow = CalculateTokensWorkflow()
-    output = await workflow.run(
-        [
-            UserMessage(
-                "Imagine we receive a signal from an intelligent extraterrestrial civilization. How should we interpret it, what assumptions should we question, and what could be the global implications of responding?"
-            )
-        ]
-    )
+    output = await workflow.run([UserMessage("Hello")])
 
     print(output.last_message.text)
 

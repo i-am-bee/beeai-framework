@@ -12,16 +12,16 @@ from typing import Any, Unpack
 from beeai_framework.backend.message import AnyMessage
 from beeai_framework.context import RunContext, RunMiddlewareType
 from beeai_framework.emitter.emitter import Emitter
-from beeai_framework.retryable import Retryable, RetryableConfig, RetryableInput
+from beeai_framework.retryable import Retryable, RetryableConfig, RetryableContext, RetryableInput
 from beeai_framework.runnable import Runnable, RunnableOptions, RunnableOutput, runnable_entry
 from beeai_framework.workflows.v2.events import (
-    StartWorkflowEvent,
-    StartWorkflowStepEvent,
-    WorkflowEventNames,
-    workflow_event_types,
+    WorkflowRetryStepEvent,
+    WorkflowStartEvent,
+    WorkflowStartStepEvent,
+    workflow_v2_event_types,
 )
 from beeai_framework.workflows.v2.step import WorkflowStep, WorkflowStepExecution
-from beeai_framework.workflows.v2.types import AsyncFunc
+from beeai_framework.workflows.v2.types import AsyncMethod, AsyncMethodSet
 
 
 class Workflow(Runnable[RunnableOutput]):
@@ -39,7 +39,7 @@ class Workflow(Runnable[RunnableOutput]):
     def add_running_task(self, task: asyncio.Task[Any]) -> None:
         self._running_tasks.add(task)
 
-    def inspect(self, step: AsyncFunc | str) -> WorkflowStep:
+    def inspect(self, step: AsyncMethod | str) -> WorkflowStep:
         key = step if isinstance(step, str) else step.__name__
         return self._steps[key]
 
@@ -54,7 +54,7 @@ class Workflow(Runnable[RunnableOutput]):
                 is_end = hasattr(method, "_is_end") and method._is_end
                 is_fork = hasattr(method, "_is_fork") and method._is_fork
                 is_join = hasattr(method, "_is_join") and method._is_join
-                retries = hasattr(method, "_retries")
+                retries = method._retries if hasattr(method, "_retries") else 0
 
                 step = WorkflowStep(method, start=is_start, end=is_end, fork=is_fork, join=is_join, retries=retries)
                 self._steps[name] = step
@@ -71,25 +71,22 @@ class Workflow(Runnable[RunnableOutput]):
 
         # Once all steps have been created build dependency graph
         for name, method in methods:
-            if hasattr(method, "_dependencies") and hasattr(method, "_dependency_type"):
-                dependency_type = method._dependency_type
-                dependencies = method._dependencies
-                self._steps[name].type = dependency_type
-
-                for dep in dependencies:
-                    if isinstance(dep, str):
-                        dep = dict(methods).get(dep)
-
-                    self._steps[name].add_dependency(self._steps[dep.__name__])
+            if hasattr(method, "_dependency"):
+                dependency = method._dependency
+                if isinstance(dependency, str):
+                    m = dict(methods).get(dependency)
+                    if m is not None:
+                        self._steps[name].add_dependency(self._steps[m.__name__])
+                elif isinstance(dependency, AsyncMethodSet):
+                    for method_name in dependency.methods:
+                        m = dict(methods).get(method_name)
+                        if m is not None:
+                            self._steps[name].add_dependency(self._steps[m.__name__])
+                    self._steps[name].condition = dependency.condition
+                elif callable(dependency):
+                    self._steps[name].add_dependency(self._steps[dependency.__name__])
 
     async def _run(self) -> None:
-        run_context = RunContext.get()
-
-        await run_context.emitter.emit(
-            WorkflowEventNames.START_WORKFLOW,
-            StartWorkflowEvent(),
-        )
-
         assert self._start_step is not None
         await self._queue.put(self._start_step)
 
@@ -103,7 +100,13 @@ class Workflow(Runnable[RunnableOutput]):
 
             if self._running_tasks:
                 # Wait until any task completes
-                await asyncio.wait(self._running_tasks, return_when=asyncio.FIRST_COMPLETED)
+                done, _ = await asyncio.wait(self._running_tasks, return_when=asyncio.FIRST_COMPLETED)
+
+                # Raise exceptions for any finished tasks
+                for task in done:
+                    exception = task.exception()
+                    if exception:
+                        raise exception  # re-raise the exception from the task
 
     async def _run_step(self, step: WorkflowStep) -> None:
         # If predicates exists and any one is false then bail
@@ -113,23 +116,31 @@ class Workflow(Runnable[RunnableOutput]):
         started_at = datetime.now(UTC)
         start_perf = time.perf_counter()
 
+        async def on_retry(ctx: RetryableContext, exc: Exception) -> None:
+            await RunContext.get().emitter.emit(
+                "retry_step",
+                WorkflowRetryStepEvent(step=step, error=exc, attempt=ctx.attempt),
+            )
+
         await RunContext.get().emitter.emit(
-            WorkflowEventNames.START_WORKFLOW_STEP,
-            StartWorkflowStepEvent(step=step),
+            "start_step",
+            WorkflowStartStepEvent(step=step),
         )
+
         if step.is_start:
             result = await Retryable(
                 RetryableInput(
                     executor=lambda _: step.func(self._input),
                     config=RetryableConfig(max_retries=step.retries),
-                )
+                    on_retry=on_retry,
+                ),
             ).get()
         else:
             if step.is_fork:
                 safe_params = [i if i is not None else [] for i in step.inputs]
                 params = list(zip_longest(*safe_params, fillvalue=None))
                 tasks = [step.func(*p) for p in params]
-
+                # TODO Retry forked
                 result = await asyncio.gather(*tasks)
             elif step.is_join:
                 # Include the inputs to the original fork
@@ -141,6 +152,7 @@ class Workflow(Runnable[RunnableOutput]):
                     RetryableInput(
                         executor=lambda _: step.func(*inputs),
                         config=RetryableConfig(max_retries=step.retries),
+                        on_retry=on_retry,
                     )
                 ).get()
             else:
@@ -148,6 +160,7 @@ class Workflow(Runnable[RunnableOutput]):
                     RetryableInput(
                         executor=lambda _: step.func(*step.inputs),
                         config=RetryableConfig(max_retries=step.retries),
+                        on_retry=on_retry,
                     )
                 ).get()
 
@@ -163,7 +176,7 @@ class Workflow(Runnable[RunnableOutput]):
         )
 
         if step._is_end:
-            self._output = result
+            self._output = result or []
 
         # Enqueue dependents (that are waiting on the completion of this step)
         for dep in step.dependents:
@@ -172,15 +185,15 @@ class Workflow(Runnable[RunnableOutput]):
             # Set the input at the correct dependency index
             dep.inputs[idx] = result
 
-            if dep.type == "AND":
+            if dep.condition == "and":
                 dep.completed_dependencies.append(step)
                 if set(dep.completed_dependencies) == set(dep.dependencies):
                     await self._queue.put(dep)  # All dependencies are done, queue dependent
-            elif dep.type == "OR":
+            elif dep.condition == "or":
                 await self._queue.put(dep)  # Can queue immediately for OR
 
     def _create_emitter(self) -> Emitter:
-        return Emitter.root().child(namespace=["workflow", "v2"], creator=self, events=workflow_event_types)
+        return Emitter.root().child(namespace=["workflow", "v2"], creator=self, events=workflow_v2_event_types)
 
     @cached_property
     def emitter(self) -> Emitter:
@@ -188,6 +201,13 @@ class Workflow(Runnable[RunnableOutput]):
 
     @runnable_entry
     async def run(self, input: list[AnyMessage], /, **kwargs: Unpack[RunnableOptions]) -> RunnableOutput:
+        run_context = RunContext.get()
+
+        await run_context.emitter.emit(
+            "start",
+            WorkflowStartEvent(),
+        )
+
         self._input = input
         await self._run()
         return RunnableOutput(output=self._output)

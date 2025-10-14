@@ -6,6 +6,7 @@ import asyncio
 from beeai_framework.backend.chat import ChatModel
 from beeai_framework.backend.message import AnyMessage, AssistantMessage, UserMessage
 from beeai_framework.backend.types import ChatModelOutput
+from beeai_framework.workflows.v2.decorators._and import _and
 from beeai_framework.workflows.v2.decorators.after import after
 from beeai_framework.workflows.v2.decorators.end import end
 from beeai_framework.workflows.v2.decorators.start import start
@@ -29,7 +30,7 @@ User's Message: {user_message.text}"""
 class ThinkBeforeAnswerWorkflow(Workflow):
     def __init__(self) -> None:
         super().__init__()
-        self.chat_model: ChatModel = ChatModel.from_name("ollama:granite3.3:8b")
+        self.chat_model: ChatModel = ChatModel.from_name("ollama:ibm/granite4")
 
     @start
     async def start(self, input: list[AnyMessage]) -> AnyMessage:
@@ -43,7 +44,7 @@ class ThinkBeforeAnswerWorkflow(Workflow):
         output: ChatModelOutput = await self.chat_model.run([UserMessage(content=prompt)])
         return output.get_text_content()
 
-    @after(start, think)
+    @after(_and(start, think))
     async def answer(self, user_message: AnyMessage, thoughts: str) -> AssistantMessage:
         print("Answering")
         prompt = answer_prompt(user_message, thoughts)

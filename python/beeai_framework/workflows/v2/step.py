@@ -8,7 +8,7 @@ from typing import Any
 from pydantic import BaseModel, ConfigDict
 
 from beeai_framework.workflows.v2.decorators.when import Predicate
-from beeai_framework.workflows.v2.types import AsyncFunc, DependencyType
+from beeai_framework.workflows.v2.types import AsyncMethod, ExecutionCondition
 
 
 class WorkflowStepExecution(BaseModel):
@@ -25,7 +25,7 @@ class WorkflowStepExecution(BaseModel):
 class WorkflowStep:
     def __init__(
         self,
-        func: AsyncFunc,
+        func: AsyncMethod,
         start: bool = False,
         end: bool = False,
         fork: bool = False,
@@ -41,13 +41,13 @@ class WorkflowStep:
         self._is_join = join
         self._retries = retries
 
+        self._condition: ExecutionCondition = "and"
         self.forked: list[WorkflowStep] = []
         self._dependencies: list[WorkflowStep] = []
         self._dependents: list[WorkflowStep] = []
         self.completed_dependencies: list[WorkflowStep] = []
         self.inputs: list[Any | None] = []
 
-        self.type: DependencyType = "AND"
         self.completed_event = asyncio.Event()
         self._predicates: list[Predicate] = []
         self._executions: list[WorkflowStepExecution] = []
@@ -57,7 +57,7 @@ class WorkflowStep:
         return self._name
 
     @property
-    def func(self) -> AsyncFunc:
+    def func(self) -> AsyncMethod:
         return self._func
 
     @property
@@ -79,6 +79,14 @@ class WorkflowStep:
     @property
     def retries(self) -> int:
         return self._retries
+
+    @property
+    def condition(self) -> ExecutionCondition:
+        return self._condition
+
+    @condition.setter
+    def condition(self, value: ExecutionCondition) -> None:
+        self._condition = value
 
     def add_predicate(self, predicate: Predicate) -> None:
         self._predicates.append(predicate)

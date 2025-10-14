@@ -2,20 +2,14 @@
 # SPDX-License-Identifier: Apache-2.0
 
 from collections.abc import Callable
-from typing import TypeVar
 
-from beeai_framework.workflows.v2.types import AsyncFunc, DependencyType
-from beeai_framework.workflows.v2.workflow import Workflow
-
-S = TypeVar("S", bound=Workflow, contravariant=True)
-Dependency = str | AsyncFunc
+from beeai_framework.workflows.v2.types import AsyncMethod, AsyncMethodSet
 
 
-def after(*dependencies: Dependency, type: DependencyType = "AND") -> Callable[[AsyncFunc], AsyncFunc]:
-    def decorator(func: AsyncFunc) -> AsyncFunc:
+def after(dependency: str | AsyncMethod | AsyncMethodSet) -> Callable[[AsyncMethod], AsyncMethod]:
+    def decorator(func: AsyncMethod) -> AsyncMethod:
         func._is_step = True  # type: ignore[attr-defined]
-        func._dependencies = list(dependencies)  # type: ignore[attr-defined]
-        func._dependency_type = type  # type: ignore[attr-defined]
+        func._dependency = dependency  # type: ignore[attr-defined]
         return func
 
     return decorator
