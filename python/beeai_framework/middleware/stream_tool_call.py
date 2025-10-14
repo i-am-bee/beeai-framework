@@ -1,6 +1,7 @@
 # Copyright 2025 © BeeAI a Series of LF Projects, LLC
 # SPDX-License-Identifier: Apache-2.0
 
+from collections.abc import Callable
 from functools import cached_property
 from typing import Any
 
@@ -37,24 +38,32 @@ class StreamToolCallMiddleware(RunMiddlewareProtocol):
         self._delta = ""
         self._match_nested = match_nested
         self._force_streaming = force_streaming
+        self._cleanups: list[Callable[[], None]] = []
 
     def bind(self, ctx: "RunContext") -> None:
         self._output = ChatModelOutput(output=[])
         self._buffer = ""
         self._delta = ""
 
-        ctx.instance.emitter.off(callback=self._handle_start)
-        ctx.instance.emitter.off(callback=self._handle_new_token)
-        ctx.instance.emitter.on(
-            lambda meta: isinstance(meta.creator, ChatModel) and meta.name == "start",
-            callback=self._handle_start,
-            options=self._create_emitter_options(),
+        self._cleanups.append(
+            ctx.instance.emitter.on(
+                lambda meta: isinstance(meta.creator, ChatModel) and meta.name == "start",
+                callback=self._handle_start,
+                options=self._create_emitter_options(),
+            )
         )
-        ctx.instance.emitter.on(
-            lambda meta: isinstance(meta.creator, ChatModel) and meta.name == "new_token",
-            callback=self._handle_new_token,
-            options=self._create_emitter_options(),
+        self._cleanups.append(
+            ctx.instance.emitter.on(
+                lambda meta: isinstance(meta.creator, ChatModel) and meta.name == "new_token",
+                callback=self._handle_new_token,
+                options=self._create_emitter_options(),
+            )
         )
+
+    def unbind(self) -> None:
+        while self._cleanups:
+            fn = self._cleanups.pop(0)
+            fn()
 
     def _create_emitter_options(self) -> EmitterOptions:
         return EmitterOptions(match_nested=self._match_nested, is_blocking=True)

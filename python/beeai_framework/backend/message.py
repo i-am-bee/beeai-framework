@@ -68,7 +68,6 @@ class MessageFileContent(BaseModel):
     format: str | None = Field(None, exclude=True)
 
     @computed_field
-    @property
     def file(self) -> dict[str, Any]:
         return exclude_none(
             {"file_id": self.file_id, "file_data": self.file_data, "filename": self.filename, "format": self.format}

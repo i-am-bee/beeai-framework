@@ -41,7 +41,7 @@ from beeai_framework.backend.message import (
     UserMessage,
 )
 from beeai_framework.backend.utils import parse_broken_json
-from beeai_framework.context import RunContext, RunMiddlewareProtocol, RunMiddlewareType
+from beeai_framework.context import RunContext, RunMiddlewareType
 from beeai_framework.emitter import Emitter, EventMeta
 from beeai_framework.memory.base_memory import BaseMemory
 from beeai_framework.memory.unconstrained_memory import UnconstrainedMemory
@@ -256,6 +256,7 @@ class RequirementAgent(BaseAgent[RequirementAgentOutput]):
                 RequirementAgentStartEvent(state=state, request=request),
             )
 
+            stream_middleware = self._stream_final_answer(request, run_context, state)
             response = await self._llm.run(
                 [
                     _create_system_message(
@@ -268,7 +269,9 @@ class RequirementAgent(BaseAgent[RequirementAgentOutput]):
                 tools=request.allowed_tools,
                 tool_choice=request.tool_choice,
                 stream_partial_tool_calls=True,
-            ).middleware(self._stream_final_answer(request, run_context, state))
+            ).middleware(stream_middleware)
+            stream_middleware.unbind()
+
             await state.memory.add_many(response.output)
 
             text_messages = response.get_text_messages()
@@ -448,7 +451,7 @@ class RequirementAgent(BaseAgent[RequirementAgentOutput]):
 
     def _stream_final_answer(
         self, request: RequirementAgentRequest, ctx: RunContext, state: RequirementAgentRunState
-    ) -> RunMiddlewareProtocol:
+    ) -> StreamToolCallMiddleware:
         middleware = StreamToolCallMiddleware(
             request.final_answer,
             "response",  # from the default schema
