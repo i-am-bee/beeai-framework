@@ -13,7 +13,7 @@ from sse_starlette import ServerSentEvent
 from sse_starlette.sse import EventSourceResponse
 
 import beeai_framework.adapters.openai.serve.chat_completion._types as chat_completion_types
-from beeai_framework.adapters.openai.serve._utils import openai_message_to_beeai_message
+from beeai_framework.adapters.openai.serve.chat_completion._utils import openai_message_to_beeai_message
 from beeai_framework.adapters.openai.serve.openai_runnable import OpenAIRunnable
 from beeai_framework.backend import AnyMessage, AssistantMessage, ChatModelOutput, SystemMessage, ToolMessage
 from beeai_framework.logger import Logger

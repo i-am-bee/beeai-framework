@@ -1,5 +1,6 @@
 # Copyright 2025 © BeeAI a Series of LF Projects, LLC
 # SPDX-License-Identifier: Apache-2.0
+
 import contextlib
 from typing import Any, Literal, Self
 
@@ -13,6 +14,7 @@ from beeai_framework.adapters.openai.serve.responses.api import ResponsesAPI
 from beeai_framework.agents.react import ReActAgent
 from beeai_framework.logger import Logger
 from beeai_framework.runnable import Runnable
+from beeai_framework.serve import MemoryManager
 from beeai_framework.serve.errors import FactoryAlreadyRegisteredError
 from beeai_framework.serve.server import Server
 from beeai_framework.utils import ModelLike
@@ -46,8 +48,14 @@ class OpenAIServer(
         OpenAIServerConfig,
     ],
 ):
-    def __init__(self, *, config: ModelLike[OpenAIServerConfig] | None = None) -> None:
-        super().__init__(config=to_model(OpenAIServerConfig, config or OpenAIServerConfig()), memory_manager=None)
+    def __init__(
+        self, *, config: ModelLike[OpenAIServerConfig] | None = None, memory_manager: MemoryManager | None = None
+    ) -> None:
+        config = to_model(OpenAIServerConfig, config or OpenAIServerConfig())
+        if config is not None and config.api == "chat-completion" and memory_manager is not None:
+            logger.warning("Memory is not supported for chat-completion")
+
+        super().__init__(config=config, memory_manager=memory_manager)
         self._metadata_by_agent: dict[AnyRunnable, OpenAIServerMetadata] = {}
 
     def serve(self) -> None:
@@ -60,7 +68,10 @@ class OpenAIServer(
         ]
 
         def get_runnable(model_id: str) -> OpenAIRunnable:
-            return next(iter([internal for internal in internals if model_id == internal.model_id]))
+            try:
+                return next(iter([internal for internal in internals if model_id == internal.model_id]))
+            except StopIteration:
+                raise RuntimeError(f"Model {model_id} not registered")
 
         api = (
             ChatCompletionAPI(
@@ -68,7 +79,10 @@ class OpenAIServer(
             )
             if self._config.api == "chat-completion"
             else ResponsesAPI(
-                get_runnable=get_runnable, api_key=self._config.api_key, fast_api_kwargs=self._config.fast_api_kwargs
+                get_runnable=get_runnable,
+                api_key=self._config.api_key,
+                fast_api_kwargs=self._config.fast_api_kwargs,
+                memory_manager=self._memory_manager,
             )
         )
 

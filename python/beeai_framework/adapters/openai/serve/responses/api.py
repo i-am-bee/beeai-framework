@@ -13,10 +13,13 @@ from sse_starlette import ServerSentEvent
 from sse_starlette.sse import EventSourceResponse
 
 import beeai_framework.adapters.openai.serve.responses._types as responses_types
-from beeai_framework.adapters.openai.serve._utils import openai_message_to_beeai_message
 from beeai_framework.adapters.openai.serve.openai_runnable import OpenAIRunnable
-from beeai_framework.backend import AnyMessage, AssistantMessage, ChatModelOutput, SystemMessage, ToolMessage
+from beeai_framework.adapters.openai.serve.responses._utils import openai_input_to_beeai_message
+from beeai_framework.agents import AgentError, BaseAgent
+from beeai_framework.backend import AnyMessage, ChatModelOutput, SystemMessage, UserMessage
 from beeai_framework.logger import Logger
+from beeai_framework.memory import UnconstrainedMemory
+from beeai_framework.serve import MemoryManager, init_agent_memory
 from beeai_framework.utils.strings import to_json
 
 logger = Logger(__name__)
@@ -29,10 +32,12 @@ class ResponsesAPI:
         get_runnable: Callable[[str], OpenAIRunnable],
         api_key: str | None = None,
         fast_api_kwargs: dict[str, Any] | None = None,
+        memory_manager: MemoryManager,
     ) -> None:
         self._get_runnable = get_runnable
         self._api_key = api_key
         self._fast_api_kwargs = fast_api_kwargs or {}
+        self._memory_manager = memory_manager
 
         self._router = APIRouter()
         self._router.add_api_route(
@@ -54,7 +59,7 @@ class ResponsesAPI:
 
     async def handler(
         self,
-        request: responses_types.RequestsRequestBody,
+        request: responses_types.ResponsesRequestBody,
         api_key: str | None = Header(None, alias="Authorization"),
     ) -> Any:
         logger.debug(f"Received request\n{request.model_dump_json()}")
@@ -66,73 +71,91 @@ class ResponsesAPI:
                 detail="Missing or invalid API key",
             )
 
-        messages = _transform_request_messages(request.messages)
+        instructions = [SystemMessage(request.instructions)] if request.instructions else []
+        messages = _transform_request_input(request.input)
+        context_id = (
+            (
+                request.conversation.id
+                if isinstance(request.conversation, responses_types.ResponsesRequestConversation)
+                else request.conversation
+            )
+            if request.conversation
+            else None
+        )
 
         runnable = self._get_runnable(request.model)
+
+        history = []
+        memory = None
+        if context_id:
+            if isinstance(runnable, BaseAgent):
+                await init_agent_memory(runnable, self._memory_manager, context_id)
+                memory = runnable.memory
+            else:
+                try:
+                    memory = await self._memory_manager.get(context_id)
+                except KeyError:
+                    memory = UnconstrainedMemory()
+                    await self._memory_manager.set(context_id, memory)
+
+                history = memory.messages
+
         if request.stream:
             id = f"resp-{uuid.uuid4()!s}"
 
             async def stream_events() -> AsyncIterable[ServerSentEvent]:
-                async for _message in runnable.stream(messages):
+                async for _message in runnable.stream(instructions + history + messages):
                     data = {id: id}  # TODO
                     yield ServerSentEvent(data=to_json(data, sort_keys=False), id=data["id"], event=data["object"])
 
             return EventSourceResponse(stream_events())
         else:
-            content = await runnable.run(messages)
-            response = responses_types.ResponsesResponse(
-                id=str(uuid.uuid4()),
-                object="response",
-                created=int(time.time()),
-                model=runnable.model_id,
-                output=responses_types.ResponsesOutput(
-                    type="message",
+            try:
+                content = await runnable.run(instructions + history + messages)
+
+                if memory:
+                    await memory.add_many(messages)
+                    await memory.add(content.last_message)
+
+                response = responses_types.ResponsesResponse(
                     id=str(uuid.uuid4()),
+                    created=int(time.time()),
                     status="completed",
-                    role="assistant",
-                    content=responses_types.ResponsesContent(type="output_text", text=content.last_message.text),
-                ),
-                usage=(
-                    responses_types.ResponsesUsage(
-                        input_tokens=content.usage.prompt_tokens,
-                        output_tokens=content.usage.completion_tokens,
-                        total_tokens=content.usage.total_tokens,
-                    )
-                    if isinstance(content, ChatModelOutput) and content.usage is not None
-                    else None
-                ),
-            )
+                    model=runnable.model_id,
+                    output=[
+                        responses_types.ResponsesMessageOutput(
+                            type="message",
+                            id=str(uuid.uuid4()),
+                            status="completed",
+                            role="assistant",
+                            content=responses_types.ResponsesMessageContent(text=content.last_message.text),
+                        )
+                    ],
+                    usage=(
+                        responses_types.ResponsesUsage(
+                            input_tokens=content.usage.prompt_tokens,
+                            output_tokens=content.usage.completion_tokens,
+                            total_tokens=content.usage.total_tokens,
+                        )
+                        if isinstance(content, ChatModelOutput) and content.usage is not None
+                        else None
+                    ),
+                )
+            except AgentError as e:
+                response = responses_types.ResponsesResponse(
+                    id=str(uuid.uuid4()),
+                    created=int(time.time()),
+                    status="failed",
+                    error=e.message,
+                    model=runnable.model_id,
+                )
             return JSONResponse(content=response.model_dump())
 
 
-def _transform_request_messages(
-    inputs: list[responses_types.ChatMessage],
+def _transform_request_input(
+    inputs: str | list[responses_types.ResponsesRequestInputMessage],
 ) -> list[AnyMessage]:
-    messages: list[AnyMessage] = []
-    # TODO
-    converted_messages = [openai_message_to_beeai_message(msg) for msg in inputs]  # type: ignore[arg-type]
-
-    for msg, next_msg, next_next_msg in zip(
-        converted_messages,
-        converted_messages[1:] + [None],
-        converted_messages[2:] + [None, None],
-        strict=False,
-    ):
-        if isinstance(msg, SystemMessage):
-            continue
-
-        # Remove a handoff tool call
-        if (
-            next_next_msg is None  # last pair
-            and isinstance(msg, AssistantMessage)
-            and msg.get_tool_calls()
-            and isinstance(next_msg, ToolMessage)
-            and next_msg.get_tool_results()
-            and msg.get_tool_calls()[0].id == next_msg.get_tool_results()[0].tool_call_id
-            and msg.get_tool_calls()[0].tool_name.lower().startswith("transfer_to_")
-        ):
-            break
-
-        messages.append(msg)
-
-    return messages
+    if isinstance(inputs, str):
+        return [UserMessage(inputs)]
+    else:
+        return [openai_input_to_beeai_message(i) for i in inputs]

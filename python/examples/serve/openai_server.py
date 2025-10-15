@@ -13,7 +13,9 @@ def main() -> None:
         tools=[DuckDuckGoSearchTool(), OpenMeteoTool()],
         memory=UnconstrainedMemory(),
     )
-    OpenAIServer(config=OpenAIServerConfig(port=9998, api="chat-completion")).register(agent, name="agent").serve()
+    OpenAIServer(config=OpenAIServerConfig(port=9998, api="responses")).register(agent, name="agent").register(
+        llm
+    ).serve()
 
 
 if __name__ == "__main__":
