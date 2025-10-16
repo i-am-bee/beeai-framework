@@ -43,7 +43,7 @@ class ChatModelStructureInput(ChatModelParameters, Generic[T]):
 
 
 class ChatModelInput(ChatModelParameters):
-    model_config = ConfigDict(frozen=True, extra="allow")
+    model_config = ConfigDict(frozen=False, extra="allow")
 
     tools: list[InstanceOf[AnyTool]] | None = None
     tool_choice: InstanceOf[AnyTool] | Literal["required"] | Literal["auto"] | Literal["none"] | None = None
@@ -58,6 +58,7 @@ class ChatModelInput(ChatModelParameters):
         frozen=True,
     )
     parallel_tool_calls: bool | None = None
+    stream_partial_tool_calls: bool = False
 
 
 class ChatModelUsage(BaseModel):
@@ -150,7 +151,8 @@ class ChatModelOutput(RunnableOutput):
 
     def merge(self, other: Self) -> None:
         if other.output:
-            self.output.extend(other.output)
+            cloned_output = (part.clone() for part in other.output)
+            self.output.extend(cloned_output)
             self.dedupe()
 
         if other.output_structured is not None:

@@ -12,28 +12,28 @@ from beeai_framework.utils import AbortSignal
 
 
 async def groq_from_name() -> None:
-    llm = ChatModel.from_name("groq:gemma2-9b-it")
+    llm = ChatModel.from_name("groq:llama-3.1-8b-instant")
     user_message = UserMessage("what states are part of New England?")
     response = await llm.run([user_message])
     print(response.get_text_content())
 
 
 async def groq_sync() -> None:
-    llm = GroqChatModel("gemma2-9b-it")
+    llm = GroqChatModel("llama-3.1-8b-instant")
     user_message = UserMessage("what is the capital of Massachusetts?")
     response = await llm.run([user_message])
     print(response.get_text_content())
 
 
 async def groq_stream() -> None:
-    llm = GroqChatModel("gemma2-9b-it")
+    llm = GroqChatModel("llama-3.1-8b-instant")
     user_message = UserMessage("How many islands make up the country of Cape Verde?")
     response = await llm.run([user_message], stream=True)
     print(response.get_text_content())
 
 
 async def groq_stream_abort() -> None:
-    llm = GroqChatModel("gemma2-9b-it")
+    llm = GroqChatModel("llama-3.1-8b-instant")
     user_message = UserMessage("What is the smallest of the Cape Verde islands?")
 
     try:
@@ -51,14 +51,14 @@ async def groq_structure() -> None:
     class TestSchema(BaseModel):
         answer: str = Field(description="your final answer")
 
-    llm = GroqChatModel("gemma2-9b-it")
+    llm = GroqChatModel("llama-3.1-8b-instant")
     user_message = UserMessage("How many islands make up the country of Cape Verde?")
     response = await llm.run([user_message], response_format=TestSchema)
     print(response.output_structured)
 
 
 async def groq_stream_parser() -> None:
-    llm = GroqChatModel("gemma2-9b-it")
+    llm = GroqChatModel("llama-3.1-8b-instant")
 
     parser = LinePrefixParser(
         nodes={

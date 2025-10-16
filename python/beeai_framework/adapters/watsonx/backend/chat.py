@@ -34,7 +34,7 @@ class WatsonxChatModel(LiteLLMChatModel):
         **kwargs: Unpack[ChatModelKwargs],
     ) -> None:
         super().__init__(
-            model_id if model_id else os.getenv("WATSONX_CHAT_MODEL", "ibm/granite-3-8b-instruct"),
+            model_id if model_id else os.getenv("WATSONX_CHAT_MODEL", "ibm/granite-3-3-8b-instruct"),
             provider_id="watsonx",
             **kwargs,
         )

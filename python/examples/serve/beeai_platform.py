@@ -1,6 +1,7 @@
 from beeai_framework.adapters.beeai_platform.backend.chat import BeeAIPlatformChatModel
 from beeai_framework.adapters.beeai_platform.serve.server import BeeAIPlatformMemoryManager, BeeAIPlatformServer
 from beeai_framework.agents.requirement import RequirementAgent
+from beeai_framework.backend import ChatModelParameters
 from beeai_framework.memory import UnconstrainedMemory
 from beeai_framework.middleware.trajectory import GlobalTrajectoryMiddleware
 from beeai_framework.tools.search.duckduckgo import DuckDuckGoSearchTool
@@ -16,7 +17,9 @@ except ModuleNotFoundError as e:
 
 def main() -> None:
     agent = RequirementAgent(
-        llm=BeeAIPlatformChatModel(preferred_models=["ollama/granite3.3:8b", "openai/gpt-5"]),
+        llm=BeeAIPlatformChatModel(
+            preferred_models=["openai:gpt-4o", "ollama:llama3.1:8b"], parameters=ChatModelParameters(stream=True)
+        ),
         tools=[DuckDuckGoSearchTool(), OpenMeteoTool()],
         memory=UnconstrainedMemory(),
         middlewares=[GlobalTrajectoryMiddleware()],
@@ -26,7 +29,7 @@ def main() -> None:
     server = BeeAIPlatformServer(config={"configure_telemetry": False}, memory_manager=BeeAIPlatformMemoryManager())
     server.register(
         agent,
-        name="Granite chat agent",
+        name="Framework chat agent",
         description="Simple chat agent",  # (optional)
         detail=AgentDetail(interaction_mode="multi-turn"),  # default is multi-turn (optional)
     )

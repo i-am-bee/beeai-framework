@@ -7,7 +7,16 @@ from contextvars import ContextVar
 from functools import cached_property
 from typing import Any, ClassVar, Self
 
-from beeai_sdk.a2a.extensions import LLMServiceExtensionServer
+try:
+    from beeai_sdk.a2a.extensions import LLMServiceExtensionServer
+    from beeai_sdk.platform import ModelProviderType
+
+except ModuleNotFoundError as e:
+    raise ModuleNotFoundError(
+        "Optional module [beeai-platform] not found.\nRun 'pip install \"beeai-framework[beeai-platform]\"' to install."
+    ) from e
+
+
 from typing_extensions import Unpack, override
 
 from beeai_framework.adapters.openai import OpenAIChatModel
@@ -25,6 +34,29 @@ _storage = ContextVar[LLMServiceExtensionServer]("beeai_chat_model_storage")
 
 class BeeAIPlatformChatModel(ChatModel):
     tool_choice_support: ClassVar[set[ToolChoiceType]] = set()
+    providers_mapping: ClassVar[dict[ModelProviderType, Callable[[], set[ToolChoiceType]]]] = {
+        ModelProviderType.ANTHROPIC: lambda: _extract_provider_tool_choice_support("anthropic"),
+        ModelProviderType.CEREBRAS: lambda: set(),
+        ModelProviderType.CHUTES: lambda: set(),
+        ModelProviderType.COHERE: lambda: set(),
+        ModelProviderType.DEEPSEEK: lambda: set(),
+        ModelProviderType.GEMINI: lambda: _extract_provider_tool_choice_support("gemini"),
+        ModelProviderType.GITHUB: lambda: set(),
+        ModelProviderType.GROQ: lambda: _extract_provider_tool_choice_support("groq"),
+        ModelProviderType.WATSONX: lambda: _extract_provider_tool_choice_support("watsonx"),
+        ModelProviderType.JAN: lambda: set(),
+        ModelProviderType.MISTRAL: lambda: _extract_provider_tool_choice_support("mistralai"),
+        ModelProviderType.MOONSHOT: lambda: set(),
+        ModelProviderType.NVIDIA: lambda: set(),
+        ModelProviderType.OLLAMA: lambda: _extract_provider_tool_choice_support("ollama"),
+        ModelProviderType.OPENAI: lambda: _extract_provider_tool_choice_support("openai"),
+        ModelProviderType.OPENROUTER: lambda: set(),
+        ModelProviderType.PERPLEXITY: lambda: set(),
+        ModelProviderType.TOGETHER: lambda: set(),
+        ModelProviderType.VOYAGE: lambda: set(),
+        ModelProviderType.RITS: lambda: {"none", "single", "auto"},
+        ModelProviderType.OTHER: lambda: set(),
+    }
 
     def __init__(
         self,
@@ -52,9 +84,9 @@ class BeeAIPlatformChatModel(ChatModel):
 
         kwargs = self._kwargs.copy()
         if kwargs.get("tool_choice_support") is None:
-            with contextlib.suppress(Exception):
-                target_provider: type[ChatModel] = load_model(llm_conf.api_model.replace("beeai:", ""), "chat")
-                kwargs["tool_choice_support"] = target_provider.tool_choice_support.copy()
+            provider_name = llm_conf.api_model.replace("beeai:", "")
+            tool_choice_support = type(self).providers_mapping.get(provider_name, lambda: set())()
+            kwargs["tool_choice_support"] = tool_choice_support
 
         return OpenAIChatModel(
             model_id=llm_conf.api_model,
@@ -90,3 +122,8 @@ class BeeAIPlatformChatModel(ChatModel):
         cloned.preferred_models = self.preferred_models
         cloned._kwargs = self._kwargs.copy()
         return cloned
+
+
+def _extract_provider_tool_choice_support(name: ProviderName) -> set[ToolChoiceType]:
+    target_provider: type[ChatModel] = load_model(name, "chat")
+    return target_provider.tool_choice_support.copy()

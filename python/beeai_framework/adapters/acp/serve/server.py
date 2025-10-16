@@ -244,7 +244,7 @@ class ACPServerConfig(BaseModel):
     port: int | None = None
     uds: str | None = None
     fd: int | None = None
-    loop: uvicorn.config.LoopSetupType | None = None
+    loop: uvicorn.config.LoopFactoryType | None = None
     http: type[asyncio.Protocol] | uvicorn.config.HTTPProtocolType | None = None
     ws: type[asyncio.Protocol] | uvicorn.config.WSProtocolType | None = None
     ws_max_size: int | None = None

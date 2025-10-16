@@ -9,7 +9,7 @@ from beeai_framework.memory import UnconstrainedMemory
 
 LLMS = {
     "ollama": "ollama:llama3.1",
-    "watsonx": "watsonx:ibm/granite-3-8b-instruct",
+    "watsonx": "watsonx:ibm/granite-3-3-8b-instruct",
 }
 
 HELP = """

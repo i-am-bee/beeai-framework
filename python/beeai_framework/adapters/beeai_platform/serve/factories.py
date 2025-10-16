@@ -16,7 +16,7 @@ from beeai_framework.adapters.beeai_platform.serve.utils import init_beeai_platf
 from beeai_framework.agents import BaseAgent
 from beeai_framework.agents.react import ReActAgent, ReActAgentUpdateEvent
 from beeai_framework.agents.requirement import RequirementAgent
-from beeai_framework.agents.requirement.events import RequirementAgentSuccessEvent
+from beeai_framework.agents.requirement.events import RequirementAgentFinalAnswerEvent, RequirementAgentSuccessEvent
 from beeai_framework.agents.tool_calling import ToolCallingAgent, ToolCallingAgentSuccessEvent
 from beeai_framework.memory import UnconstrainedMemory
 from beeai_framework.runnable import Runnable
@@ -199,6 +199,9 @@ def _requirement_agent_factory(
             llm=extra_extensions.get("llm_ext"),
             extra_extensions=extra_extensions,  # type: ignore[arg-type]
         ):
+            artifact_id = uuid.uuid4()
+            append = False
+
             last_msg: AnyMessage | None = None
             async for data, _ in cloned_agent.run([convert_a2a_to_framework_message(message)]):
                 messages = data.state.memory.messages
@@ -219,7 +222,36 @@ def _requirement_agent_factory(
                         await context.store(message)
                         await context.store(agent_response)
 
-                    yield agent_response
+                    if not append:
+                        yield agent_response
+
+                if isinstance(data, RequirementAgentFinalAnswerEvent):
+                    update = data.delta
+                    yield a2a_types.TaskArtifactUpdateEvent(
+                        append=append,
+                        context_id=context.context_id,
+                        task_id=context.task_id,
+                        last_chunk=False,
+                        artifact=a2a_types.Artifact(
+                            name="final_answer",
+                            artifact_id=str(artifact_id),
+                            parts=[a2a_types.Part(root=a2a_types.TextPart(text=update))],
+                        ),
+                    )
+                    append = True
+
+            if append:
+                yield a2a_types.TaskArtifactUpdateEvent(
+                    append=True,
+                    context_id=context.context_id,
+                    task_id=context.task_id,
+                    last_chunk=True,
+                    artifact=a2a_types.Artifact(
+                        name="final_answer",
+                        artifact_id=str(artifact_id),
+                        parts=[a2a_types.Part(root=a2a_types.TextPart(text=""))],
+                    ),
+                )
 
     return beeai_agent.agent(**agent_metadata)(run)
 

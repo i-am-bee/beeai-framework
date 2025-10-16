@@ -1,3 +1,29 @@
+## python_v0.1.56 (2025-10-14)
+
+### Bug Fixes
+
+- **backend**: remove property decorator from computed_field (#1191)
+- **agents**: prevent duplications of tokens while streaming an answer (#1188)
+
+### Features
+
+- **adapters**: add tool choice mapping to all providers in the platform (#1185)
+- **adapters**: update clone method in LangChainChatModel (#1189)
+
+## python_v0.1.55 (2025-10-09)
+
+### Bug Fixes
+
+- **backend**: properly propagate file content type
+- **adapters**: set default timeout for A2A Client (#1184)
+- update uvicorn version (#1180)
+
+### Features
+
+- **agents**: stream final answer in the RequirementAgent (#1178)
+- **agents**: propagate retry parameters to the LLM in the RequirementAgent
+- support more message content types (#1150)
+
 ## python_v0.1.53 (2025-10-03)
 
 ### Bug Fixes

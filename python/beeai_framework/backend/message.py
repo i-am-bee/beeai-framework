@@ -9,9 +9,10 @@ from datetime import UTC, datetime
 from enum import Enum
 from typing import Any, Generic, Literal, Required, Self, TypeAlias, TypeVar, cast
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field, computed_field
 from typing_extensions import TypedDict
 
+from beeai_framework.utils.dicts import exclude_none
 from beeai_framework.utils.lists import cast_list
 from beeai_framework.utils.models import to_any_model, to_model
 from beeai_framework.utils.strings import to_json
@@ -49,6 +50,33 @@ class MessageImageContentImageUrl(TypedDict, total=False):
 class MessageImageContent(BaseModel):
     type: Literal["image_url"] = "image_url"
     image_url: MessageImageContentImageUrl
+
+
+class MessageFileContent(BaseModel):
+    """File content part (e.g. PDF or other document) for multimodal user messages.
+
+    Flattened shape is supported:
+        MessageFileContent(file_id="...", format="application/pdf")
+        MessageFileContent(file_data="data:application/pdf;base64,...", format="application/pdf")
+    """
+
+    type: Literal["file"] = "file"
+
+    file_id: str | None = Field(None, exclude=True)
+    file_data: str | None = Field(None, exclude=True)
+    filename: str | None = Field(None, exclude=True)
+    format: str | None = Field(None, exclude=True)
+
+    @computed_field  # type: ignore[prop-decorator]
+    @property
+    def file(self) -> dict[str, Any]:
+        return exclude_none(
+            {"file_id": self.file_id, "file_data": self.file_data, "filename": self.filename, "format": self.format}
+        )
+
+    def model_post_init(self, __context: Any) -> None:
+        if not (self.file_id or self.file_data):
+            raise ValueError("Either 'file_id' or 'file_data' must be provided for MessageFileContent")
 
 
 class MessageToolResultContent(BaseModel):
@@ -140,9 +168,11 @@ class AssistantMessage(Message[AssistantMessageContent]):
     ) -> None:
         super().__init__(
             [
-                MessageTextContent(text=c)
-                if isinstance(c, str)
-                else to_any_model([MessageToolCallContent, MessageTextContent], cast(AssistantMessageContent, c))
+                (
+                    MessageTextContent(text=c)
+                    if isinstance(c, str)
+                    else to_any_model([MessageToolCallContent, MessageTextContent], cast(AssistantMessageContent, c))
+                )
                 for c in cast_list(content)
             ],
             meta,
@@ -168,9 +198,11 @@ class ToolMessage(Message[MessageToolResultContent]):
     ) -> None:
         super().__init__(
             [
-                MessageToolResultContent.model_validate(json.loads(c))
-                if isinstance(c, str)
-                else to_model(MessageToolResultContent, cast(MessageToolResultContent, c))
+                (
+                    MessageToolResultContent.model_validate(json.loads(c))
+                    if isinstance(c, str)
+                    else to_model(MessageToolResultContent, cast(MessageToolResultContent, c))
+                )
                 for c in cast_list(content)
             ],
             meta,
@@ -193,9 +225,11 @@ class SystemMessage(Message[MessageTextContent]):
     ) -> None:
         super().__init__(
             [
-                MessageTextContent(text=c)
-                if isinstance(c, str)
-                else to_model(MessageTextContent, cast(MessageTextContent, c))
+                (
+                    MessageTextContent(text=c)
+                    if isinstance(c, str)
+                    else to_model(MessageTextContent, cast(MessageTextContent, c))
+                )
                 for c in cast_list(content)
             ],
             meta,
@@ -209,7 +243,7 @@ class SystemMessage(Message[MessageTextContent]):
         }
 
 
-UserMessageContent = MessageTextContent | MessageImageContent
+UserMessageContent = MessageTextContent | MessageImageContent | MessageFileContent
 
 
 class UserMessage(Message[UserMessageContent]):
@@ -224,9 +258,13 @@ class UserMessage(Message[UserMessageContent]):
     ) -> None:
         super().__init__(
             [
-                MessageTextContent(text=c)
-                if isinstance(c, str)
-                else to_any_model([MessageImageContent, MessageTextContent], cast(UserMessageContent, c))
+                (
+                    MessageTextContent(text=c)
+                    if isinstance(c, str)
+                    else to_any_model(
+                        [MessageImageContent, MessageTextContent, MessageFileContent], cast(UserMessageContent, c)
+                    )
+                )
                 for c in cast_list(content)
             ],
             meta,
@@ -235,8 +273,45 @@ class UserMessage(Message[UserMessageContent]):
 
     @classmethod
     def from_image(cls, data: MessageImageContentImageUrl | str) -> Self:
+        """Factory helper to create a user message containing a single image content part.
+
+        Args:
+            data: The image content for the user message, either as a URL or a MessageImageContentImageUrl object.
+        """
         image_url = MessageImageContentImageUrl(url=data) if isinstance(data, str) else data
         return cls(MessageImageContent(image_url=image_url))
+
+    @classmethod
+    def from_file(
+        cls,
+        *,
+        file_id: str | None = None,
+        file_data: str | None = None,
+        format: str | None = None,
+        filename: str | None = None,
+    ) -> Self:
+        """Factory helper to create a user message containing a single file content part.
+
+        Provide either file_id (for previously uploaded/reference files) or file_data (data URI / base64 encoded).
+        Optionally pass format (e.g. "pdf", "txt", "markdown").
+        """
+        return cls(
+            MessageFileContent(
+                file_id=file_id,
+                file_data=file_data,
+                format=format,
+                filename=filename,
+            )
+        )
+
+    @classmethod
+    def from_text(cls, text: str) -> Self:
+        """Factory helper to create a user message containing a single text content part.
+
+        Args:
+            text: The textual content for the user message.
+        """
+        return cls(MessageTextContent(text=text))
 
 
 class CustomMessageContent(BaseModel):
@@ -256,9 +331,11 @@ class CustomMessage(Message[CustomMessageContent]):
     ) -> None:
         super().__init__(
             [
-                CustomMessageContent.model_validate(MessageTextContent(text=c).model_dump())
-                if isinstance(c, str)
-                else to_model(CustomMessageContent, cast(CustomMessageContent, c))
+                (
+                    CustomMessageContent.model_validate(MessageTextContent(text=c).model_dump())
+                    if isinstance(c, str)
+                    else to_model(CustomMessageContent, cast(CustomMessageContent, c))
+                )
                 for c in cast_list(content)
             ],
             meta,
