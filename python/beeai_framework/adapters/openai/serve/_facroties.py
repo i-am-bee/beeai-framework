@@ -10,8 +10,11 @@ from beeai_framework.adapters.openai.serve.server import OpenAIServerMetadata
 from beeai_framework.agents import BaseAgent
 from beeai_framework.agents.react import ReActAgent, ReActAgentSuccessEvent, ReActAgentUpdateEvent
 from beeai_framework.agents.react.types import ReActAgentIterationResult
-from beeai_framework.backend import AnyMessage, ChatModel
+from beeai_framework.agents.requirement import RequirementAgent
+from beeai_framework.agents.requirement.events import RequirementAgentSuccessEvent
+from beeai_framework.backend import AnyMessage, ChatModel, ToolMessage
 from beeai_framework.runnable import Runnable
+from beeai_framework.utils.lists import find_index
 
 
 def _runnable_factory(runnable: Runnable[Any], *, metadata: OpenAIServerMetadata | None = None) -> OpenAIRunnable:
@@ -46,5 +49,33 @@ def _react_factory(agent: ReActAgent, *, metadata: OpenAIServerMetadata | None =
                 yield OpenAIEvent(text=data.update.value)
             if isinstance(data, ReActAgentSuccessEvent):
                 yield OpenAIEvent(finish_reason=data.iterations[-1].raw.finish_reason)
+
+    return OpenAIRunnable(agent, model_id=metadata.get("name", agent.meta.name), stream=stream)
+
+
+def _requirement_factory(agent: RequirementAgent, *, metadata: OpenAIServerMetadata | None = None) -> OpenAIRunnable:
+    if metadata is None:
+        metadata = {}
+
+    async def stream(input: list[AnyMessage]) -> AsyncIterable[OpenAIEvent]:
+        cloned_agent = await agent.clone()
+        last_msg = None
+        async for data, _ in cloned_agent.run(input):
+            messages = data.state.memory.messages
+            if last_msg is None:
+                last_msg = messages[-1]
+
+            cur_index = find_index(messages, lambda msg: msg is last_msg, fallback=-1, reverse_traversal=True)  # noqa: B023
+            for message in messages[cur_index + 1 :]:
+                last_msg = message
+                if isinstance(message, ToolMessage) and message.content[0].tool_name == "final_answer":
+                    continue
+                if isinstance(data, RequirementAgentSuccessEvent) and data.state.answer is not None:
+                    yield OpenAIEvent(text=data.state.answer.text, type="message", append=False)
+                    continue
+
+                yield OpenAIEvent(
+                    text=str([m.model_dump() for m in message.content]), type="custom_tool_call", append=False
+                )
 
     return OpenAIRunnable(agent, model_id=metadata.get("name", agent.meta.name), stream=stream)

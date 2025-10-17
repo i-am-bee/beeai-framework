@@ -1,13 +1,18 @@
 # Copyright 2025 © BeeAI a Series of LF Projects, LLC
 # SPDX-License-Identifier: Apache-2.0
-from typing import TypeAlias
+from typing import Any, TypeAlias
 
 from pydantic import BaseModel, Field
+
+
+class BaseEvent(BaseModel):
+    type: str = ""
+
 
 # request
 
 
-class ResponsesRequestInputMessage(BaseModel):
+class ResponsesRequestInputMessage(BaseEvent):
     role: str = Field(
         ...,
         description="The role of the message input. One of 'user', 'assistant', 'system', or 'developer'.",
@@ -20,11 +25,11 @@ class ResponsesRequestInputMessage(BaseModel):
     type: str = Field("message", description="The type of the message input. Always 'message.")
 
 
-class ResponsesRequestConversation(BaseModel):
+class ResponsesRequestConversation(BaseEvent):
     id: str = Field(..., description="The unique ID of the conversation.")
 
 
-class ResponsesRequestBody(BaseModel):
+class ResponsesRequestBody(BaseEvent):
     model: str = Field(description="Model ID used to generate the response")
     input: str | list[ResponsesRequestInputMessage] = Field(
         ..., description="Text inputs to the model, used to generate a response."
@@ -48,7 +53,7 @@ class ResponsesRequestBody(BaseModel):
 # response
 
 
-class ResponsesCustomToolCallOutput(BaseModel):
+class ResponsesCustomToolCallOutput(BaseEvent):
     type: str = Field("custom_tool_call", description="The type of the custom tool call. Always 'custom_tool_call'.")
     id: str = Field(..., description="The unique ID of the custom tool call in the platform.")
     name: str = Field(..., description="The name of the custom tool being called.")
@@ -56,42 +61,43 @@ class ResponsesCustomToolCallOutput(BaseModel):
     call_id: str = Field(..., description="An identifier used to map this custom tool call to a tool call output.")
 
 
-class ResponsesReasoningSummary(BaseModel):
+class ResponsesReasoningSummary(BaseEvent):
     type: str = Field("summary_text", description="The type of the object. Always 'summary_text.")
     text: str = Field(..., description="A summary of the reasoning output from the model so far.")
 
 
-class ResponsesReasoningContent(BaseModel):
+class ResponsesReasoningContent(BaseEvent):
     type: str = Field("reasoning_text", description="The type of the reasoning text. Always 'reasoning_text'.")
     text: str = Field(..., description="The reasoning text from the model.")
 
 
-class ResponsesReasoningOutput(BaseModel):
+class ResponsesReasoningOutput(BaseEvent):
     type: str = Field("reasoning", description="The type of the object. Always 'reasoning'.")
     id: str = Field(..., description="The unique identifier of the reasoning content.")
     status: str = Field(
         ..., description="The status of the message input. One of 'in_progress', 'completed', or 'incomplete'."
     )
-    summary: ResponsesReasoningSummary = Field(..., description="Reasoning summary content.")
-    content: ResponsesReasoningContent = Field(..., description="Reasoning text content.")
+    summary: ResponsesReasoningSummary | None = Field(None, description="Reasoning summary content.")
+    content: ResponsesReasoningContent | None = Field(None, description="Reasoning text content.")
 
 
-class ResponsesMessageContent(BaseModel):
+class ResponsesMessageContent(BaseEvent):
     type: str = Field("output_text", description="The type of the output text. Always output_text.")
     text: str = Field(..., description="The text output from the model.")
 
 
-class ResponsesMessageOutput(BaseModel):
+class ResponsesMessageOutput(BaseEvent):
     type: str = Field("message", description="The type of the output message")
     id: str = Field(..., description="The unique ID of the output message.")
     status: str = Field(
-        ..., description="The status of the message input. One of 'in_progress', 'completed', or 'incomplete'."
+        "in_progress",
+        description="The status of the message input. One of 'in_progress', 'completed', or 'incomplete'.",
     )
-    role: str = Field(..., description="The role of the output message. Always 'assistant'.")
-    content: ResponsesMessageContent = Field(..., description="The content of the output message.")
+    role: str = Field("assistant", description="The role of the output message. Always 'assistant'.")
+    content: list[ResponsesMessageContent] = Field([], description="The content of the output message.")
 
 
-class ResponsesUsage(BaseModel):
+class ResponsesUsage(BaseEvent):
     input_tokens: int = Field(..., description="The number of input tokens.")
     output_tokens: int = Field(..., description="The number of output tokens.")
     total_tokens: int = Field(..., description="The total number of tokens used.")
@@ -100,7 +106,7 @@ class ResponsesUsage(BaseModel):
 ResponsesResponseOutput: TypeAlias = ResponsesMessageOutput | ResponsesReasoningOutput | ResponsesCustomToolCallOutput
 
 
-class ResponsesResponse(BaseModel):
+class ResponsesResponse(BaseEvent):
     id: str = Field(..., description="Unique identifier for this Response.")
     object: str = Field(
         "response",
@@ -125,3 +131,126 @@ class ResponsesResponse(BaseModel):
         description="Represents token usage details including input tokens, output tokens, "
         "a breakdown of output tokens, and the total tokens used.",
     )
+
+
+# stream
+
+
+class ResponsesStreamResponse(BaseEvent):
+    response: ResponsesResponse = Field(..., description="The response that was created.")
+    sequence_number: int = Field(..., description="The sequence number for this event.")
+    type: str = Field("response", description="The type of the event.")
+
+
+class ResponsesStreamResponseCreated(ResponsesStreamResponse):
+    type: str = "response.created"
+
+
+class ResponsesStreamResponseInProgress(ResponsesStreamResponse):
+    type: str = "response.in_progress"
+
+
+class ResponsesStreamResponseCompleted(ResponsesStreamResponse):
+    type: str = "response.completed"
+
+
+class ResponsesStreamResponseFailed(ResponsesStreamResponse):
+    type: str = "response.failed"
+
+
+class ResponsesStreamResponseIncomplete(ResponsesStreamResponse):
+    type: str = "response.incomplete"
+
+
+class ResponsesStreamOutputItemAdded(BaseEvent):
+    item: ResponsesMessageOutput | ResponsesReasoningOutput | ResponsesCustomToolCallOutput = Field(
+        ..., description="The output item."
+    )
+    output_index: int = Field(..., description="The index of the output item.")
+    sequence_number: int = Field(..., description="The sequence number for this event.")
+    type: str = Field("response.output_item.added", description="The type of the event.")
+
+
+class ResponsesStreamOutputItemDone(ResponsesStreamOutputItemAdded):
+    type: str = "response.output_item.done"
+
+
+class ResponsesStreamPartOutputText(BaseEvent):
+    text: str = Field(..., description="The text output from the model.")
+    type: str = Field("response.output_text.done", description="The type of the output text.")
+    annotations: list[Any] = Field([], description="The annotations of the text output.")
+
+
+class ResponsesStreamPartReasoningText(BaseEvent):
+    text: str = Field(..., description="The reasoning text from the model.")
+    type: str = Field("reasoning", description="The type of the reasoning text.")
+
+
+class ResponsesStreamPartRefusal(BaseEvent):
+    refusal: str = Field(..., description="The refusal explanation from the model.")
+    type: str = Field("refusal", description="The type of the refusal.")
+
+
+class ResponsesStreamContentPartAdded(BaseEvent):
+    content_index: int = Field(0, description="The index of the content part.")
+    item_id: str = Field(..., description="The ID of the output item that the content part was added to.")
+    output_index: int = Field(0, description="The index of the output item that the content part was added to.")
+    part: ResponsesStreamPartOutputText | ResponsesStreamPartReasoningText | ResponsesStreamPartRefusal = Field(
+        ..., description="The content part."
+    )
+    sequence_number: int = Field(..., description="The sequence number for this event.")
+    type: str = Field("response.content_part.added", description="The type of the event.")
+
+
+class ResponsesStreamContentPartDone(ResponsesStreamContentPartAdded):
+    type: str = "response.content_part.done"
+
+
+class ResponsesStreamOutputTextDelta(BaseEvent):
+    content_index: int = Field(0, description="The index of the content part that the text delta was added to.")
+    delta: str = Field(..., description="The text delta that was added.")
+    item_id: str = Field(..., description="The ID of the output item that the text delta was added to.")
+    output_index: int = Field(..., description="The index of the output item that the text delta was added to.")
+    sequence_number: int = Field(..., description="The sequence number for this event.")
+    type: str = Field("response.output_text.delta", description="The type of the event.")
+
+
+class ResponsesStreamOutputTextDone(BaseEvent):
+    content_index: int = Field(0, description="The index of the content part that the text delta was added to.")
+    text: str = Field(..., description="The text content that is finalized.")
+    item_id: str = Field(..., description="The ID of the output item that the text delta was added to.")
+    output_index: int = Field(..., description="The index of the output item that the text delta was added to.")
+    sequence_number: int = Field(..., description="The sequence number for this event.")
+    type: str = Field("response.output_text.done", description="The type of the event.")
+
+
+class ResponsesStreamRefusalDelta(ResponsesStreamOutputTextDelta):
+    type: str = "response.refusal.delta"
+
+
+class ResponsesStreamRefusalDone(ResponsesStreamOutputTextDone):
+    type: str = "response.refusal.done"
+
+
+class ResponsesStreamCustomToolCallDelta(BaseEvent):
+    delta: str = Field(..., description="The incremental input data (delta) for the custom tool call.")
+    item_id: str = Field(..., description="Unique identifier for the API item associated with this event.")
+    output_index: int = Field(..., description="The index of the output item that the text delta was added to.")
+    sequence_number: int = Field(..., description="The sequence number for this event.")
+    type: str = Field("response.custom_tool_call_input.delta", description="The type of the event.")
+
+
+class ResponsesStreamCustomToolCallDone(BaseEvent):
+    input: str = Field(..., description="The complete input data for the custom tool call.")
+    item_id: str = Field(..., description="Unique identifier for the API item associated with this event.")
+    output_index: int = Field(..., description="The index of the output item that the text delta was added to.")
+    sequence_number: int = Field(..., description="The sequence number for this event.")
+    type: str = Field("response.custom_tool_call_input.done", description="The type of the event.")
+
+
+class ResponsesStreamError(BaseEvent):
+    code: str = Field(..., description="The error code.")
+    message: str = Field(..., description="The error message.")
+    param: str = Field(..., description="The error parameter.")
+    sequence_number: int = Field(..., description="The sequence number for this event.")
+    type: str = Field("error", description="The type of the event.")

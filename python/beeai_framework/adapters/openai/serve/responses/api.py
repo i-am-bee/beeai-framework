@@ -100,13 +100,196 @@ class ResponsesAPI:
 
                 history = memory.messages
 
+        response_id = f"resp_{uuid.uuid4()!s}"
         if request.stream:
-            id = f"resp-{uuid.uuid4()!s}"
+            sequence_number = 0
+            outputs: list[responses_types.ResponsesResponseOutput] = []
 
             async def stream_events() -> AsyncIterable[ServerSentEvent]:
-                async for _message in runnable.stream(instructions + history + messages):
-                    data = {id: id}  # TODO
-                    yield ServerSentEvent(data=to_json(data, sort_keys=False), id=data["id"], event=data["object"])
+                output: responses_types.ResponsesResponseOutput
+                last_type = None
+                output_index = 0
+                text = ""
+                output_item_id = None
+
+                def create_event(data: responses_types.BaseEvent, *, event_name: str | None = None) -> ServerSentEvent:
+                    nonlocal sequence_number
+                    sequence_number += 1
+                    return ServerSentEvent(data=to_json(data, sort_keys=False), event=event_name or data.type)
+
+                yield create_event(
+                    responses_types.ResponsesStreamResponseCreated(
+                        sequence_number=sequence_number,
+                        response=responses_types.ResponsesResponse(
+                            id=response_id,
+                            created=int(time.time()),
+                            status="in_progress",
+                            model=runnable.model_id,
+                        ),
+                    )
+                )
+                yield create_event(
+                    responses_types.ResponsesStreamResponseInProgress(
+                        sequence_number=sequence_number,
+                        response=responses_types.ResponsesResponse(
+                            id=response_id,
+                            created=int(time.time()),
+                            status="in_progress",
+                            model=runnable.model_id,
+                        ),
+                    )
+                )
+
+                async for message in runnable.stream(instructions + history + messages):
+                    if output_item_id is None or message.append is False:
+                        if output_item_id is not None:
+                            output = responses_types.ResponsesMessageOutput(
+                                id=output_item_id,
+                                status="completed",
+                                content=[responses_types.ResponsesMessageContent(text=text)],
+                            )
+                            yield create_event(
+                                responses_types.ResponsesStreamOutputItemDone(
+                                    sequence_number=sequence_number,
+                                    output_index=output_index,
+                                    item=output,
+                                )
+                            )
+                            outputs.append(output)
+                            text = ""
+                            output_index += 1
+
+                            if last_type == "message":
+                                yield create_event(
+                                    responses_types.ResponsesStreamOutputTextDone(
+                                        sequence_number=sequence_number,
+                                        output_index=output_index,
+                                        item_id=output_item_id,
+                                        text=text,
+                                    )
+                                )
+                                yield create_event(
+                                    responses_types.ResponsesStreamContentPartDone(
+                                        sequence_number=sequence_number,
+                                        item_id=output_item_id,
+                                        output_index=output_index,
+                                        part=responses_types.ResponsesStreamPartOutputText(text=text),
+                                    )
+                                )
+
+                        match message.type:
+                            case "message":
+                                output_item_id = f"msg_{uuid.uuid4()!s}"
+                                yield create_event(
+                                    responses_types.ResponsesStreamOutputItemAdded(
+                                        sequence_number=sequence_number,
+                                        output_index=output_index,
+                                        item=responses_types.ResponsesMessageOutput(id=output_item_id),
+                                    )
+                                )
+                                yield create_event(
+                                    responses_types.ResponsesStreamContentPartAdded(
+                                        sequence_number=sequence_number,
+                                        item_id=output_item_id,
+                                        output_index=output_index,
+                                        part=responses_types.ResponsesStreamPartOutputText(text=""),
+                                    )
+                                )
+                            case "reasoning":
+                                output_item_id = f"rs_{uuid.uuid4()!s}"
+                                output = responses_types.ResponsesReasoningOutput(
+                                    id=output_item_id,
+                                    status="status",
+                                    content=responses_types.ResponsesReasoningContent(text=message.text),
+                                )
+                                yield create_event(
+                                    responses_types.ResponsesStreamOutputItemAdded(
+                                        sequence_number=sequence_number,
+                                        output_index=output_index,
+                                        item=output,
+                                    )
+                                )
+                                outputs.append(output)
+                            case "custom_tool_call":
+                                output_item_id = f"ctc_{uuid.uuid4()!s}"
+                                output = responses_types.ResponsesCustomToolCallOutput(
+                                    id=output_item_id, name="tools_call", input=message.text, call_id=str(uuid.uuid4())
+                                )
+                                yield create_event(
+                                    responses_types.ResponsesStreamOutputItemAdded(
+                                        sequence_number=sequence_number,
+                                        output_index=output_index,
+                                        item=output,
+                                    )
+                                )
+                                outputs.append(output)
+                            case _:
+                                raise RuntimeError(f"Unknown message type: {message.type}")
+                        last_type = message.type
+
+                    if message.type == "message":
+                        yield create_event(
+                            responses_types.ResponsesStreamOutputTextDelta(
+                                sequence_number=sequence_number,
+                                output_index=output_index,
+                                item_id=output_item_id,
+                                delta=message.text,
+                            )
+                        )
+                        text += message.text
+
+                assert output_item_id is not None
+
+                yield create_event(
+                    responses_types.ResponsesStreamOutputTextDone(
+                        sequence_number=sequence_number,
+                        output_index=output_index,
+                        item_id=output_item_id,
+                        text=text,
+                    )
+                )
+                yield create_event(
+                    responses_types.ResponsesStreamContentPartDone(
+                        sequence_number=sequence_number,
+                        item_id=output_item_id,
+                        output_index=output_index,
+                        part=responses_types.ResponsesStreamPartOutputText(text=text),
+                    )
+                )
+                yield create_event(
+                    responses_types.ResponsesStreamOutputItemDone(
+                        sequence_number=sequence_number,
+                        output_index=output_index,
+                        item=responses_types.ResponsesMessageOutput(
+                            id=output_item_id,
+                            status="completed",
+                            content=[responses_types.ResponsesMessageContent(text=text)],
+                        ),
+                    )
+                )
+                outputs.append(
+                    responses_types.ResponsesMessageOutput(
+                        id=output_item_id,
+                        status="completed",
+                        content=[responses_types.ResponsesMessageContent(text=text)],
+                    )
+                )
+                yield create_event(
+                    responses_types.ResponsesStreamResponseCompleted(
+                        sequence_number=sequence_number,
+                        response=responses_types.ResponsesResponse(
+                            id=response_id,
+                            created=int(time.time()),
+                            status="completed",
+                            model=runnable.model_id,
+                            output=outputs,
+                        ),
+                    )
+                )
+
+            if memory:
+                await memory.add_many(messages)
+                # await memory.add(content.last_message) TODO
 
             return EventSourceResponse(stream_events())
         else:
@@ -118,17 +301,17 @@ class ResponsesAPI:
                     await memory.add(content.last_message)
 
                 response = responses_types.ResponsesResponse(
-                    id=str(uuid.uuid4()),
+                    id=response_id,
                     created=int(time.time()),
                     status="completed",
                     model=runnable.model_id,
                     output=[
                         responses_types.ResponsesMessageOutput(
                             type="message",
-                            id=str(uuid.uuid4()),
+                            id=f"msg_{uuid.uuid4()!s}",
                             status="completed",
                             role="assistant",
-                            content=responses_types.ResponsesMessageContent(text=content.last_message.text),
+                            content=[responses_types.ResponsesMessageContent(text=content.last_message.text)],
                         )
                     ],
                     usage=(
@@ -143,7 +326,7 @@ class ResponsesAPI:
                 )
             except AgentError as e:
                 response = responses_types.ResponsesResponse(
-                    id=str(uuid.uuid4()),
+                    id=response_id,
                     created=int(time.time()),
                     status="failed",
                     error=e.message,
