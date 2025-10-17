@@ -3,6 +3,7 @@
 
 import asyncio
 import re
+from pathlib import Path
 
 from beeai_framework.backend.message import AnyMessage, AssistantMessage, UserMessage
 from beeai_framework.workflows.v2.decorators._or import _or
@@ -52,8 +53,8 @@ class CalculateTokensWorkflow(Workflow):
 # Async main function
 async def main() -> None:
     workflow = CalculateTokensWorkflow()
+    workflow.print_html(Path(__file__).resolve().parent / "workflow.html")
     output = await workflow.run([UserMessage("Hello")])
-
     print(output.last_message.text)
 
 

@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import asyncio
+from pathlib import Path
 
 from pydantic import BaseModel
 
@@ -29,6 +30,7 @@ class WebScrapperWorkflow(Workflow):
 # Async main function
 async def main() -> None:
     workflow = WebScrapperWorkflow()
+    workflow.print_html(Path(__file__).resolve().parent / "workflow.html")
     output = await workflow.run(
         [
             UserMessage(

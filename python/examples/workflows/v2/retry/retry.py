@@ -3,6 +3,7 @@
 
 import asyncio
 import random
+from pathlib import Path
 from typing import Any
 
 from beeai_framework.backend.message import AnyMessage, UserMessage
@@ -37,6 +38,7 @@ class RetryWorkflow(Workflow):
 
 async def main() -> None:
     workflow = RetryWorkflow()
+    workflow.print_html(Path(__file__).resolve().parent / "workflow.html")
     output = await workflow.run([UserMessage("Hello")])
     print(output.last_message.text)
 

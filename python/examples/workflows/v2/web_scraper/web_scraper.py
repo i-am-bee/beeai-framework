@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import asyncio
+from pathlib import Path
 
 from pydantic import BaseModel
 
@@ -31,10 +32,10 @@ class WebScrapperWorkflow(Workflow):
         }
 
     @start
-    async def extract_links(self, messages: list[AnyMessage]) -> list[str]:
+    async def start(self, messages: list[AnyMessage]) -> list[str]:
         return list(self.url_to_content.keys())
 
-    @after(extract_links)
+    @after(start)
     @fork
     async def scrape_link(self, link: str) -> str:
         print(f"Scrape {link}")
@@ -57,6 +58,7 @@ class WebScrapperWorkflow(Workflow):
 # Async main function
 async def main() -> None:
     workflow = WebScrapperWorkflow()
+    workflow.print_html(Path(__file__).resolve().parent / "workflow.html")
     output = await workflow.run(
         [
             UserMessage(

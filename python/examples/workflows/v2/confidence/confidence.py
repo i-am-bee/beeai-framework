@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import asyncio
+from pathlib import Path
 
 from pydantic import BaseModel, Field
 
@@ -46,6 +47,7 @@ class RespondWithConfidenceWorkflow(Workflow):
 # Async main function
 async def main() -> None:
     workflow = RespondWithConfidenceWorkflow()
+    workflow.print_html(Path(__file__).resolve().parent / "workflow.html")
     output = await workflow.run([UserMessage("What is at the center of a black hole?")])
     print(output.last_message.text)
 

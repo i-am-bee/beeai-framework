@@ -7,6 +7,7 @@ import time
 from datetime import UTC, datetime
 from functools import cached_property
 from itertools import zip_longest
+from pathlib import Path
 from typing import Any, Unpack
 
 from beeai_framework.backend.message import AnyMessage
@@ -36,8 +37,92 @@ class Workflow(Runnable[RunnableOutput]):
         self._queue: asyncio.Queue[WorkflowStep] = asyncio.Queue()
         self._scan()
 
-    def add_running_task(self, task: asyncio.Task[Any]) -> None:
-        self._running_tasks.add(task)
+    def print_html(self, path: Path | str | None = None) -> None:
+        def to_mermaid(direction: str = "TD") -> list[str]:
+            lines = [f"flowchart-elk {direction}"]
+            visited = set()
+
+            def dfs(step: WorkflowStep) -> None:
+                if step in visited:
+                    return
+                visited.add(step)
+                dependents = step.dependents
+                for dep in dependents:
+                    lines.append(f"\t_{step.name}({step.name}) --> _{dep.name}({dep.name})")
+                    dfs(dep)
+                if not dependents:
+                    lines.append(f"\t_{step.name}({step.name})")
+
+            if self._start_step:
+                dfs(self._start_step)
+
+            return lines
+
+        mermaid_code_list = to_mermaid()
+        mermaid_code_list.append("classDef _cls_start fill:#ffe5e5,stroke:#d32f2f,color:#b71c1c")
+        mermaid_code_list.append("classDef _cls_end fill:#e0f7fa,stroke:#00796B,color:#004d40")
+
+        if self._start_step:
+            mermaid_code_list.append(f"class _{self._start_step.name} _cls_start")
+
+        for step in self._end_steps:
+            mermaid_code_list.append(f"class _{step.name} _cls_end")
+
+        mermaid_code = "\n".join(mermaid_code_list)
+        default_filename = f"{self.__class__.__name__.lower()}.html"
+
+        # If no path provided, write next to current module file
+        if path is None:
+            file_path = Path(__file__).parent / default_filename
+        else:
+            path = Path(path)
+            # If path is a directory, append default filename
+            file_path = path / default_filename if path.is_dir() or not path.suffix else path
+
+        file_path.parent.mkdir(parents=True, exist_ok=True)
+
+        html_template = f"""
+            <!DOCTYPE html>
+            <html lang="en">
+            <head>
+                <meta charset="UTF-8">
+                <title>Mermaid Diagram</title>
+                <style>
+                    html, body {{
+                        height: 100%;
+                        margin: 0;
+                    }}
+
+                    body {{
+                        display: flex;
+                        justify-content: center;
+                        align-items: center;
+                    }}
+
+                    .diagram-container {{
+                        text-align: center;
+                        width: 100%;
+                    }}
+                </style>
+            </head>
+            <body>
+                <div class="diagram-container">
+                    <pre class="mermaid">
+                        {mermaid_code}
+                    </pre>
+                </div>
+
+                <script type="module">
+                    import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';
+                    import elkLayouts from 'https://cdn.jsdelivr.net/npm/@mermaid-js/layout-elk@0/dist/mermaid-layout-elk.esm.min.mjs';
+                    mermaid.registerLayoutLoaders(elkLayouts);
+                    mermaid.initialize({{startOnLoad: true}});
+                </script>
+            </body>
+            </html>
+            """
+
+        file_path.write_text(html_template, encoding="utf-8")
 
     def inspect(self, step: AsyncMethod | str) -> WorkflowStep:
         key = step if isinstance(step, str) else step.__name__
@@ -166,7 +251,7 @@ class Workflow(Runnable[RunnableOutput]):
 
         step.executions.append(
             WorkflowStepExecution(
-                inputs=tuple(step.inputs),
+                inputs=tuple(step.inputs) if not step.is_start else (self._input,),
                 output=result,
                 error=None,
                 started_at=started_at,

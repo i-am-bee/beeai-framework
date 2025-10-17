@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import asyncio
+from pathlib import Path
 
 from beeai_framework.backend.chat import ChatModel
 from beeai_framework.backend.message import AnyMessage, AssistantMessage, UserMessage
@@ -33,21 +34,21 @@ class ThinkBeforeAnswerWorkflow(Workflow):
         self.chat_model: ChatModel = ChatModel.from_name("ollama:ibm/granite4")
 
     @start
-    async def start(self, input: list[AnyMessage]) -> AnyMessage:
+    async def start(self, input: list[AnyMessage]) -> list[AnyMessage]:
         print("Start")
-        return input[-1]
+        return input
 
     @after(start)
-    async def think(self, user_message: AnyMessage) -> str:
+    async def think(self, messages: list[AnyMessage]) -> str:
         print("Thinking")
-        prompt = thinking_prompt(user_message)
+        prompt = thinking_prompt(messages[-1])
         output: ChatModelOutput = await self.chat_model.run([UserMessage(content=prompt)])
         return output.get_text_content()
 
     @after(_and(start, think))
-    async def answer(self, user_message: AnyMessage, thoughts: str) -> AssistantMessage:
+    async def answer(self, messages: list[AnyMessage], thoughts: str) -> AssistantMessage:
         print("Answering")
-        prompt = answer_prompt(user_message, thoughts)
+        prompt = answer_prompt(messages[-1], thoughts)
         output: ChatModelOutput = await self.chat_model.run([UserMessage(content=prompt)])
         return AssistantMessage(output.get_text_content())
 
@@ -61,6 +62,7 @@ class ThinkBeforeAnswerWorkflow(Workflow):
 # Async main function
 async def main() -> None:
     workflow = ThinkBeforeAnswerWorkflow()
+    workflow.print_html(Path(__file__).resolve().parent / "workflow.html")
     output = await workflow.run(
         [
             UserMessage(

@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import asyncio
+from pathlib import Path
 from typing import Any
 
 from beeai_framework.backend.message import AnyMessage, AssistantMessage, UserMessage
@@ -46,6 +47,7 @@ class SlowVsFastWorkflow(Workflow):
 # Async main function
 async def main() -> None:
     workflow = SlowVsFastWorkflow()
+    workflow.print_html(Path(__file__).resolve().parent / "workflow.html")
     output = await workflow.run([UserMessage("Hello")])
     print(output.last_message.text)
 

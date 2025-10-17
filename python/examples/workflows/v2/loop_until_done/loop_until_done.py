@@ -3,6 +3,7 @@
 
 import asyncio
 import random
+from pathlib import Path
 from typing import Any
 
 from beeai_framework.backend.message import AnyMessage, AssistantMessage, UserMessage
@@ -24,7 +25,7 @@ class LoopUntilDoneWorkflow(Workflow):
         print("Start")
         return input
 
-    @after(_or(start, "loops"))
+    @after(_or(start, "loop"))
     @when(lambda self, messages, _: not self.complete)
     async def loop(self, messages: list[AnyMessage], _: Any) -> None:
         num = random.random()
@@ -41,6 +42,7 @@ class LoopUntilDoneWorkflow(Workflow):
 # Async main function
 async def main() -> None:
     workflow = LoopUntilDoneWorkflow()
+    workflow.print_html(Path(__file__).resolve().parent / "workflow.html")
     output = await workflow.run([UserMessage("Hello!")])
     print(output.last_message.text)
 
