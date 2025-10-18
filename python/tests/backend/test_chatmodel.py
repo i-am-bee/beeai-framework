@@ -26,9 +26,11 @@ from beeai_framework.backend import (
     CustomMessage,
     UserMessage,
 )
+from beeai_framework.backend.errors import ChatModelError
 from beeai_framework.backend.types import ChatModelInput
 from beeai_framework.context import RunContext
 from beeai_framework.errors import AbortError
+from beeai_framework.tools import tool
 from beeai_framework.utils import AbortSignal
 
 """
@@ -71,6 +73,11 @@ class ReverseWordsDummyModel(ChatModel):
                 break
             await asyncio.sleep(5)
             yield ChatModelOutput(output=[AssistantMessage(f"{chunk} " if count != last else chunk)])
+
+
+@tool(description="A dummy tool used for tests.")
+def dummy_tool(value: str | None = None) -> str:
+    return "unused"
 
 
 @pytest_asyncio.fixture
@@ -131,6 +138,34 @@ async def test_chat_model_abort(reverse_words_chat: ChatModel, chat_messages_lis
             stream=True,
             signal=AbortSignal.timeout(1),
         )
+
+
+@pytest.mark.asyncio
+@pytest.mark.unit
+async def test_chat_model_enforces_tool_choice_requirement(chat_messages_list: list[AnyMessage]) -> None:
+    model = ReverseWordsDummyModel()
+
+    with pytest.raises(ChatModelError):
+        await model.run(
+            chat_messages_list,
+            tools=[dummy_tool],
+            tool_choice="required",
+        )
+
+
+@pytest.mark.asyncio
+@pytest.mark.unit
+async def test_chat_model_tool_choice_assertion_can_be_disabled(chat_messages_list: list[AnyMessage]) -> None:
+    model = ReverseWordsDummyModel(enforce_tool_choice_assertion=False)
+
+    response = await model.run(
+        chat_messages_list,
+        tools=[dummy_tool],
+        tool_choice="required",
+    )
+
+    assert len(response.output) == 1
+    assert response.output[0].get_texts()[0].text == "llet em gnihtemos gnitseretni"
 
 
 @pytest.mark.unit

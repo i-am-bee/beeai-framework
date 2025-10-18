@@ -334,6 +334,7 @@ class LiteLLMChatModel(ChatModel, ABC):
         cloned.cache = await self.cache.clone() if self.cache else NullCache[list[ChatModelOutput]]()
         cloned.tool_call_fallback_via_response_format = self.tool_call_fallback_via_response_format
         cloned.model_supports_tool_calling = self.model_supports_tool_calling
+        cloned.enforce_tool_choice_assertion = self.enforce_tool_choice_assertion
         cloned.use_strict_model_schema = self.use_strict_model_schema
         cloned.use_strict_tool_schema = self.use_strict_tool_schema
         return cloned

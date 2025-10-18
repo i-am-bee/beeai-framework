@@ -26,6 +26,8 @@ class GeminiChatModel(LiteLLMChatModel):
         api_key: str | None = None,
         **kwargs: Unpack[ChatModelKwargs],
     ) -> None:
+        kwargs.setdefault("enforce_tool_choice_assertion", False)
+
         super().__init__(
             model_id if model_id else os.getenv("GEMINI_CHAT_MODEL", "gemini-2.5-flash"),
             provider_id="gemini",
