@@ -1,12 +1,14 @@
 import asyncio
 import sys
+import traceback
 from typing import Any
 
-from beeai_framework.agents.experimental import RequirementAgent
-from beeai_framework.agents.experimental.events import RequirementAgentStartEvent
+from beeai_framework.agents.requirement import RequirementAgent
+from beeai_framework.agents.requirement.events import RequirementAgentStartEvent
 from beeai_framework.backend import ChatModel, UserMessage
 from beeai_framework.context import RunContext, RunMiddlewareProtocol
 from beeai_framework.emitter import EventMeta
+from beeai_framework.errors import FrameworkError
 from beeai_framework.memory import UnconstrainedMemory
 
 
@@ -73,6 +75,6 @@ async def main() -> None:
 if __name__ == "__main__":
     try:
         asyncio.run(main())
-    except Exception as e:
-        print(f"Error: {e}")
-        sys.exit(1)
+    except FrameworkError as e:
+        traceback.print_exc()
+        sys.exit(e.explain())
