@@ -287,8 +287,9 @@ class Emitter:
             self.trace.model_copy() if self.trace else None,
             self._events.copy(),
         )
-        cloned._cleanups = self._cleanups
-        cloned._listeners = [listener.model_copy() for listener in self._listeners]
+        for listener in self._listeners:
+            cloned.on(listener.raw, listener.callback, listener.options.model_copy() if listener.options else None)
+
         return cloned
 
 
