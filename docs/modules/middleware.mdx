@@ -78,6 +78,8 @@ print(data.url) # "https://mywebsite.com"
 emitter.off(callback=handle_event)
 ```
 
+<Note>The `emitter.on` can be used directly and not just as a decorator. Example: `emitter.on("fetch_data", callback)`.</Note>
+
 ## Processing events
 
 Events can be observed on three different levels.
