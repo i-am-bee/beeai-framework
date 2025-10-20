@@ -18,6 +18,7 @@ from beeai_framework.emitter.errors import EmitterError
 from beeai_framework.emitter.types import EmitterOptions, EventTrace
 from beeai_framework.emitter.utils import assert_valid_name, assert_valid_namespace
 from beeai_framework.utils.asynchronous import ensure_async
+from beeai_framework.utils.funcs import is_same_function
 from beeai_framework.utils.types import MaybeAsync
 
 MatcherFn: TypeAlias = Callable[["EventMeta"], bool]
@@ -287,8 +288,9 @@ class Emitter:
             self.trace.model_copy() if self.trace else None,
             self._events.copy(),
         )
-        cloned._cleanups = self._cleanups
-        cloned._listeners = [listener.model_copy() for listener in self._listeners]
+        for listener in self._listeners:
+            cloned.on(listener.raw, listener.callback, listener.options.model_copy() if listener.options else None)
+
         return cloned
 
 
@@ -299,7 +301,7 @@ def _match_listener(
     callback: Callback | None = None,
     options: EmitterOptions | None = None,
 ) -> bool:
-    if callback is not None and listener.callback is not callback:
+    if callback is not None and not is_same_function(listener.callback, callback):
         return False
 
     if options is not None and listener.options != options:
@@ -313,7 +315,7 @@ def _match_listener(
             if matcher.pattern != listener.raw.pattern and matcher.flags != listener.raw.flags:
                 return False
         elif callable(matcher) and callable(listener.raw):
-            if matcher is not listener.raw:
+            if not is_same_function(matcher, listener.raw):
                 return False
         elif matcher != listener.raw:
             return False
