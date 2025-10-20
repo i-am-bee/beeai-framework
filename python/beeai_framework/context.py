@@ -26,7 +26,7 @@ logger = Logger(__name__)
 storage: ContextVar["RunContext"] = ContextVar("storage")
 
 
-class Observable(Protocol):
+class RunInstance(Protocol):
     @property
     def emitter(self) -> Emitter:
         pass
@@ -126,7 +126,7 @@ class Run(Generic[R], Awaitable[R]):
 class RunContext:
     def __init__(
         self,
-        instance: Observable,
+        instance: RunInstance,
         *,
         parent: Self | None = None,
         signal: AbortSignal | None,
@@ -182,7 +182,7 @@ class RunContext:
 
     @staticmethod
     def enter(
-        instance: Observable,
+        instance: RunInstance,
         fn: Callable[["RunContext"], Awaitable[R]],
         *,
         signal: AbortSignal | None = None,
@@ -305,6 +305,7 @@ __all__ = [
     "RunContextFinishEvent",
     "RunContextStartEvent",
     "RunContextSuccessEvent",
+    "RunMiddlewareProtocol",
     "RunMiddlewareType",
     "run_context_event_types",
 ]

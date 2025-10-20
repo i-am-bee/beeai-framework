@@ -43,6 +43,17 @@ class GlobalTrajectoryMiddleware(RunMiddlewareProtocol):
         enabled: bool = True,
         match_nested: bool = True,
     ) -> None:
+        """
+        Args:
+            target: Specify a file or stream to write the trajectory to.
+            included: List of classes to include in the trajectory.
+            excluded: List of classes to exclude from the trajectory.
+            pretty: Use pretty formatting for the trajectory.
+            prefix_by_type: Customize how instances of individual classes should be printed.
+            exclude_none: Exclude None values from the printing.
+            enabled: Enable/Disable the logging.
+            match_nested: Whether to observe trajectories of nested run contexts.
+        """
         super().__init__()
         self.enabled = enabled
         self._included = included or []

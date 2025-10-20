@@ -33,11 +33,11 @@ The emitter has the following traits:
 
 and the following methods:
 
-- `on` for registering a new callback for a given event
+- `on` for registering a new event listener
   - callback can be sync/async
-  - takes an event name (or a matcher function), callback and configuration options (priority, etc.)
+  - takes a matcher (event name, callback, regex), callback and configuration options (priority, etc.)
   - method can be used as a decorator or as a standalone function
-- `off` for deregistering a callback
+- `off` for deregistering an event listener
 - `pipe` for propagating all captured events to another emitter
 - `child` for creating a child emitter
 
@@ -48,7 +48,7 @@ The following example depicts a minimal application that does the following:
 
 1. defines a data object for the `fetch_data` event,
 2. creates an emitter from the root one,
-3. registers a callback listing to the `fetch_data` event, which modifies its content,
+3. registers a callback listening to the `fetch_data` event, which modifies its content,
 4. fires the `fetch_data` event,
 5. logs the modified event's data.
 
@@ -84,6 +84,8 @@ Events can be observed on three different levels.
 
 **1. Global Level**
 
+Every emitter provided by the out-of-the-box modules is a child of the root emitter, which means we can listen to all events directly from the root emitter.
+
 ```python
 from beeai_framework.emitter import Emitter, EventMeta
 from typing import Any
@@ -92,14 +94,16 @@ root = Emitter.root()
 
 @root.on("*.*")
 def capture_all_events(data: Any, meta: EventMeta):
-    print(f"Received event ({meta.id}) with name {meta.name} and path {meta.path}. \
-          The event was created by {type(meta.creator)}.")
+  print(f"Received event ({meta.id}) with name {meta.name} and path {meta.path}. \
+        The event was created by {type(meta.creator)} and is a type of {type(data)}.")
 ```
 
 As all components in the framework are children of the root emitter, we can listen to all events from that point.
-Note that listeners that are bound "closer" to the source are executed earlier. Priority for a given execution level can be altered by setting a `priority` value.
+Note that listeners that are bound "closer" to the source are executed earlier. For those that residue at the same level, the order can be altered by setting a `priority` value which is part of the `EmitterOptions` class.
 
 **2. Instance Level**
+
+On the other hand, we can listen to events emitted by a specific instance of a class.
 
 ```python
 from beeai_framework.backend.chat import ChatModel, ChatModelStartEvent
@@ -121,6 +125,8 @@ The following example registers a callback to the class's emitter.
 Therefore, all events in a given class will be captured.
 
 **3. Run (Invocation) Level**
+
+Sometimes we might want to listen to events emitted by a single run of a class.
 
 ```python
 from beeai_framework.backend.chat import ChatModel, ChatModelStartEvent
@@ -158,14 +164,14 @@ emitter.on("fetch_data", callback, EmitterOptions(match_nested=True)) # will als
 
 The default value of the `match_nested` depends on the `matcher` value.
 
-| Matcher Type            | Default `match_nested` |
-|----------------------------|------------------------|
-| String without `"."`       | `False`                |
-| String with `"."` (path)          | `True`                 |
-| `"*"` (match all top-level events)                     | `False`                |
-| `"*.*"` (match all events)                    | `True`                 |
-| Rregex       | `True`                 |
-| Function      | `False`                |
+| Matcher Type                       | Default `match_nested` |
+|------------------------------------|------------------------|
+| String without `.`                 | `False`                |
+| String with `.` (path)             | `True`                 |
+| `"*"` (match all top-level events) | `False`                |
+| `"*.*"` (match all events)         | `True`                 |
+| Regex                              | `True`                 |
+| Function                           | `False`                |
 
 <Note>If two events have the same priority, they are executed in the order they were added.</Note>
 
@@ -267,7 +273,7 @@ await second.emit("d", {});
 
 ## Observing in a context
 
-Internally almost every component (`Agent`, `ChatModel`, `Tool`, `Workflow`, ...) has a `run` method that returns `Run[R]` instance, where `Run` refers to a class and `R` refers to the output (for `ChatModel` that `R` is `ChatModelOutput`).
+Internally almost every component (`Agent`, `ChatModel`, `Tool`, `Workflow`, ...) has a `run` method that returns `Run[R]` instance, where `Run` refers to a class and `R` refers to its output (for `ChatModel` that `R` is `ChatModelOutput`).
 The `Run` class is an `Awaitable` and acts as a wrapper of the target implementation that exposes a set of methods, namely `middleware`, `on`, and `context`.
 
 - The `middleware` method expects one or more callbacks that retrieve `RunContext` as a first parameter or one or more classes with a `bind` method that retrieve the `RunContext` as a first parameter.
@@ -276,21 +282,16 @@ The `Run` class is an `Awaitable` and acts as a wrapper of the target implementa
 
 In addition, the target implementation (handler) becomes part of the shared context (`RunContext`) and internally creates a tree hierarchy.
 In other words, calling a runnable (eg, `ChatModel`) within a runnable (eg: `Agent`), attaches the second call (`ChatModel`) under the context of the first one (`Agent`).
-It has its own emitter that is a direct child of the target class instance emitter, and it additionally emits the following events.
 
-The current context can be retrieved anytime by calling `RunContext.get()`.
+The wrapper (`Run`) has its own emitter that emits the following events before the target implementation is executed. Thanks to this you can listen to these events and modify the input or output of the target.
 
-```python
-from beeai_framework.context import RunContext, RunContextFinishEvent, RunContextStartEvent, RunContextSuccessEvent
-from beeai_framework.errors import FrameworkError
 
-events = {
-    "start": RunContextStartEvent,
-    "success": RunContextSuccessEvent,
-    "error": FrameworkError,
-    "finish": RunContextFinishEvent,
-}
-```
+| Event     | Data Type                | Description                                                                                                                                                                                                  |
+| :-------- |:-------------------------|:-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `start`   | `RunContextStartEvent`   | Triggered when the run starts. Has `input` (positional/keyword argument with which the function was run) and `output` property. Set `output` property to prevent an execution of the target handler. |
+| `success` | `RunContextSuccessEvent` | Triggered when the run succeeds. |
+| `error`   | `FrameworkError`         | Triggered when an error occurs. |
+| `finish`  | `RunContextFinishEvent`  | Triggered when the run finishes. |
 
 See how you can listen to these events.
 
@@ -304,7 +305,7 @@ from beeai_framework.context import RunContextStartEvent
 from beeai_framework.emitter import EventMeta
 from beeai_framework.emitter.utils import create_internal_event_matcher
 
-model = ChatModel.from_name("ollama:granite4")
+model = ChatModel.from_name("ollama:granite3.3")
 
 def change_temperature(data: RunContextStartEvent, meta: EventMeta) -> None:
     """Modify the input of the model.run()"""
@@ -335,30 +336,27 @@ response = await (
 print("Agent:", response.get_text_content())
 ```
 
+<Note>In this example we are using `create_internal_event_matcher` which correctly matches the correct event.</Note>
+
+<Tip>The current context can be retrieved anytime by calling `RunContext.get()` within a callback.</Tip>
+
 ## Debugging
 
 To see which events get emitted in your case, the best way is to register a log-all callback for your run.
 
 ```python
 agent = RequirementAgent("ollama:granite3:3", tools=[OpenMeteoTool()])
-response = await agent.run("What's the current weather in Miami?").on("*.*", lambda data, event: print(event.path, 'by', type(event.creator)))
+response = await agent
+  .run("What's the current weather in Miami?")
+  .on("*.*", lambda data, meta: print(meta.path, 'by', type(meta.creator)))
 ```
 
-Alternatively you can use one out of the box `GlobalTrajectoryMiddleware` that captures all events (even deeply nested) and prints them to the console.
-
-```python
-from beeai_framework.middleware.trajectory import GlobalTrajectoryMiddleware
-
-agent = RequirementAgent("ollama:granite3:3", tools=[OpenMeteoTool()])
-response = await agent.run("What's the current weather in Miami?").middleware(GlobalTrajectoryMiddleware())
-```
 
 ## Grouping functionality (middlewares)
 
 We just showed you how you can alter the component's behaviour by listening to events that the target emits and modifying them.
 To make this concept more general, the middleware concept comes to the game. Similarly, how callbacks are registered via the `on` method, middlewares are registered via the  `middleware` method. Sometimes they can also be set on the class itself via a constructor.
 The middleware is a function that will retrieve `RunContext` to which one can attach desired callbacks. Middleware can also be a class with a public `bind` method that retrieves `RunContext` as a first parameter before the handler runs.
-Note that this concept is built on top of the run instance and is not available on the standalone emitter.
 
 {/* <!-- embedme python/examples/middlewares/override.py --> */}
 
@@ -405,25 +403,107 @@ if __name__ == "__main__":
 
 ```
 
-Such middleware can be applied to an arbitrary class, just ensure that the mocked response matches the expected output type (eg, if you override the response for a ChatModel, then the return type should be of ChatModelOutput). The middleware can be both stateful and stateless, depending on the use case.
+<Note>Note that this concept is built on top of the run instance and is not available on the standalone emitter.</Note>
+
+<Important>Such middleware can be applied to an arbitrary class, just ensure that the mocked response matches the expected output type (eg, if you override the response for a `ChatModel`, then the return type should be of `ChatModelOutput`). The middleware can be both stateful and stateless, depending on the use case.</Important>
 
 **When to use middleware vs simple callback registration?**
 
 A rule of thumb is: create middleware if the desired functionality consists of multiple pieces that must be used together or when the functionality is more complex.
 
+### Existing middlewares
+
+### GlobalTrajectoryMiddleware
+
+The fastest way to see what's happening in your code (who is calling what) is by using the `GlobalTrajectoryMiddleware`. It captures all events (even deeply nested) and prints them to the console while visualizing nested calls with indentation.
+
+**Example**
+
+```python
+from beeai_framework.middleware.trajectory import GlobalTrajectoryMiddleware
+
+agent = RequirementAgent("ollama:granite3:3", tools=[OpenMeteoTool()])
+response = await agent.run("What's the current weather in Miami?").middleware(GlobalTrajectoryMiddleware())
+```
+
+See which parameters can be passed to the constructor.
+
+| Parameter        | Description                                                                 |
+|------------------|------------------------------------------------------------------------------|
+| `target`         | Specify a file or stream to write the trajectory to.                         |
+| `included`       | List of classes to include in the trajectory.                                |
+| `excluded`       | List of classes to exclude from the trajectory.                              |
+| `pretty`         | Use pretty formatting for the trajectory.                                    |
+| `prefix_by_type` | Customize how instances of individual classes should be printed.             |
+| `exclude_none`   | Exclude `None` values from the printing.                                     |
+| `enabled`        | Enable/Disable the logging.                                                  |
+| `match_nested`   | Whether to observe trajectories of nested run contexts.                      |
+
+**Example**
+
+```python
+from beeai_framework.middleware.trajectory import GlobalTrajectoryMiddleware
+from beeai_framework.tools.tool import Tool
+from beeai_framework.backend.chat import ChatModel
+from beeai_framework.tools.weather.openmeteo import OpenMeteoTool
+from beeai_framework.agents.base import BaseAgent
+
+GlobalTrajectoryMiddleware(target=[Tool]) # log only tool calls
+GlobalTrajectoryMiddleware(target=[Tool], excluded=[OpenMeteoTool]) # log only tool calls except OpenMeteoTool
+GlobalTrajectoryMiddleware(target=[ChatModel]) # log only tool calls except OpenMeteoTool
+GlobalTrajectoryMiddleware(prefix_by_type={BaseAgent: "🐝 "}) # use Bee Emoji for agents
+```
 
 
+### StreamToolCallMiddleware
+
+Middleware for handling streaming tool calls in a ChatModel. This middleware observes, listens to Chat Model stream updates and parses the tool calls on demand so that
+    they can be consumed as soon as possible.
+
+**Example**
+
+{/* <!-- embedme python/examples/middlewares/llm_streaming.py --> */}
+```py Python
+import asyncio
+
+from beeai_framework.backend import ChatModel, UserMessage
+from beeai_framework.emitter import EventMeta
+from beeai_framework.middleware.stream_tool_call import StreamToolCallMiddleware, StreamToolCallMiddlewareUpdateEvent
+from beeai_framework.tools.weather import OpenMeteoTool
 
 
+async def main() -> None:
+    llm = ChatModel.from_name("ollama:granite3.3:8b")
+    weather_tool = OpenMeteoTool()
+    middleware = StreamToolCallMiddleware(
+        weather_tool,
+        key="location_name",  # name is taken from the OpenMeteoToolInput schema
+        match_nested=False,  # we are applying the middleware to the model directly
+        force_streaming=True,  # we want to let middleware enable streaming on the model
+    )
+
+    @middleware.emitter.on("update")
+    def log_thoughts(event: StreamToolCallMiddlewareUpdateEvent, meta: EventMeta) -> None:
+        print(
+            "Received update", event.delta, event.output_structured
+        )  # event.delta contains an update of the 'location_name' field
+
+    await llm.run([UserMessage("What's the current weather in New York?")], tools=[weather_tool]).middleware(middleware)
 
 
+if __name__ == "__main__":
+    asyncio.run(main())
 
+```
 
+See which parameters can be passed to the constructor.
 
-
-
-
-
+| Parameter         | Description                                                                 |
+|-------------------|------------------------------------------------------------------------------|
+| `target`          | The tool that we are waiting for to be called.                              |
+| `key`             | Refers to the name of the attribute in the tool's schema that we want to stream. |
+| `match_nested`    | Whether the middleware should be applied only to the top level.              |
+| `force_streaming` | Sets the stream flag on the `ChatModel`.                                     |
 
 
 ## List of all used events
@@ -441,7 +521,7 @@ The following events can be observed by calling `ReActAgent.run`.
 | `success`                     | `ReActAgentSuccessEvent` | Triggered when the agent successfully completes execution. |
 | `update` and `partial_update` | `ReActAgentUpdateEvent`  | Triggered when the agent updates its state.                |
 
-[Check out the in-code definition](https://github.com/i-am-bee/beeai-framework/blob/main/python/beeai_framework/agents/react/events.py) the in-code definition.
+[Check out the in-code definition](https://github.com/i-am-bee/beeai-framework/blob/main/python/beeai_framework/agents/react/events.py)
 
 
 ### ChatModel events
@@ -451,12 +531,12 @@ The following events can be observed when calling `ChatModel.run`.
 | Event        | Data Type                | Description                                                                |
 | :----------- | :----------------------- | :------------------------------------------------------------------------- |
 | `start`      | `ChatModelStartEvent`    | Triggered when model generation begins.                                    |
-| `new_token`  | `ChatModelNewTokenEvent` | Triggered when a new token is generated during streaming. Streaming must be enabled.                  |
+| `new_token`  | `ChatModelNewTokenEvent` | Triggered when a new token is generated during streaming. Streaming must be enabled. |
 | `success`    | `ChatModelSuccessEvent`  | Triggered when the model generation completes successfully.                |
 | `error`      | `ChatModelErrorEvent`    | Triggered when model generation encounters an error.                       |
 | `finish`     | `None`                   | Triggered when model generation finishes (regardless of success or error). |
 
-[Check out the in-code definition](https://github.com/i-am-bee/beeai-framework/blob/main/python/beeai_framework/backend/events.py) the in-code definition.
+[Check out the in-code definition](https://github.com/i-am-bee/beeai-framework/blob/main/python/beeai_framework/backend/events.py)
 
 ### Tool events
 
@@ -470,7 +550,7 @@ The following events can be observed when calling `Tool.run`.
 | `retry`   | `ToolRetryEvent`   | Triggered when a tool operation is being retried.                        |
 | `finish`  | `None`             | Triggered when tool execution finishes (regardless of success or error). |
 
-[Check out the in-code definition](https://github.com/i-am-bee/beeai-framework/blob/main/python/beeai_framework/tools/events.py) the in-code definition.
+[Check out the in-code definition](https://github.com/i-am-bee/beeai-framework/blob/main/python/beeai_framework/tools/events.py).
 
 
 ### Workflow events
@@ -483,7 +563,7 @@ The following events can be observed when calling `Workflow.run`.
 | `success` | `WorkflowSuccessEvent` | Triggered when a workflow step completes successfully. |
 | `error`   | `WorkflowErrorEvent`   | Triggered when a workflow step encounters an error.    |
 
-[Check out the in-code definition](https://github.com/i-am-bee/beeai-framework/blob/main/python/beeai_framework/workflows/events.py) the in-code definition.
+[Check out the in-code definition](https://github.com/i-am-bee/beeai-framework/blob/main/python/beeai_framework/workflows/events.py).
 
 ### ToolCallingAgent events
 
@@ -495,7 +575,7 @@ The following events can be observed calling `ToolCallingAgent.run`.
 | `start`   | `ToolCallingAgentStartEvent`   | Triggered when the agent begins execution.                 |
 | `success` | `ToolCallingAgentSuccessEvent` | Triggered when the agent successfully completes execution. |
 
-[Check out the in-code definition](https://github.com/i-am-bee/beeai-framework/blob/main/python/beeai_framework/agents/tool_calling/events.py) the in-code definition.
+[Check out the in-code definition](https://github.com/i-am-bee/beeai-framework/blob/main/python/beeai_framework/agents/tool_calling/events.py).
 
 
 ### RequirementAgent events
@@ -506,7 +586,7 @@ The following events can be observed calling `ToolCallingAgent.run`.
 | `start`   | `RequirementAgentStartEvent`   | Triggered when the agent begins execution.                 |
 | `success` | `RequirementAgentSuccessEvent` | Triggered when the agent successfully completes execution. |
 
-[Check out the in-code definition](https://github.com/i-am-bee/beeai-framework/blob/main/python/beeai_framework/agents/experimental/events.py) the in-code definition.
+[Check out the in-code definition](https://github.com/i-am-bee/beeai-framework/blob/main/python/beeai_framework/agents/experimental/events.py).
 
 
 ### LinePrefixParser events
@@ -526,7 +606,7 @@ The following events are caught internally by the StreamToolCallMiddleware.
 | :--------------- | :----------------------- | :-------------------------------------- |
 | `update`         | `StreamToolCallMiddlewareUpdateEvent` | Triggered when an update occurs.        |
 
-[Check out the in-code definition](https://github.com/i-am-bee/beeai-framework/blob/main/python/beeai_framework/middlewares/stream_tool_call.py) the in-code definition.
+[Check out the in-code definition](https://github.com/i-am-bee/beeai-framework/blob/main/python/beeai_framework/middlewares/stream_tool_call.py).
 
 
 ### RunContext events (internal)
@@ -534,11 +614,11 @@ The following events are caught internally by the StreamToolCallMiddleware.
 Special events that are emitted before the target's handler gets executed.
 A run event contains `.run.` in its event's path and has `internal` set to true in event's context object.
 
-| Event     | Data Type                             | Description                                                                                                                                                                                                       |
-| :-------- |:--------------------------------------|:------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `start`   | `RunContextStartEvent`                | Triggered when the run starts. Has `input` (positional/keyword argument with witch the function was run) and `output` property. Set `output` property to prevent an execution of the target handler.                                                         |
-| `success` | `RunContextSuccessEvent`                                   | Triggered when the run succeeds.                                                                                                                                                                                  |
-| `error`   | `FrameworkError`                      | Triggered when an error occurs.                                                                                                                                                                                   |
-| `finish`  | `RunContextFinishEvent`                                | Triggered when the run finishes.                                                                                                                                                                                  |
+| Event     | Data Type                | Description                                                                                                                                                                                                  |
+| :-------- |:-------------------------|:-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `start`   | `RunContextStartEvent`   | Triggered when the run starts. Has `input` (positional/keyword argument with which the function was run) and `output` property. Set `output` property to prevent an execution of the target handler. |
+| `success` | `RunContextSuccessEvent` | Triggered when the run succeeds. |
+| `error`   | `FrameworkError`         | Triggered when an error occurs. |
+| `finish`  | `RunContextFinishEvent`  | Triggered when the run finishes. |
 
-[Check out the in-code definition](https://github.com/i-am-bee/beeai-framework/blob/main/python/beeai_framework/context.py#L260-L273) the in-code definition.
+[Check out the in-code definition](https://github.com/i-am-bee/beeai-framework/blob/main/python/beeai_framework/context.py#L260-L273).
