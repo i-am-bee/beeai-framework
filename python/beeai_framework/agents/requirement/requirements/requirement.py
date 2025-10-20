@@ -12,7 +12,7 @@ from typing_extensions import TypeVar, override
 
 from beeai_framework.agents.requirement.requirements._utils import (
     MultiTargetType,
-    _assert_targets_exist,
+    _assert_all_rules_found,
     _extract_targets,
 )
 from beeai_framework.agents.requirement.requirements.events import RequirementInitEvent, requirement_event_types
@@ -137,7 +137,7 @@ def requirement(
             async def init(self, *, tools: list[AnyTool], ctx: RunContext) -> None:
                 await super().init(tools=tools, ctx=ctx)
 
-                _assert_targets_exist(targets=tools, allowed=req_targets)
+                _assert_all_rules_found(targets=req_targets, tools=tools)
 
         return FunctionRequirement()
 
