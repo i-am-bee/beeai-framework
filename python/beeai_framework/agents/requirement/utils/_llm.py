@@ -111,7 +111,7 @@ class RequirementsReasoner:
                 if rule.prevent_stop:
                     is_prevent_stop = True
 
-            if is_allowed and hidden:
+            if is_allowed and is_hidden:
                 is_allowed = False
 
             if is_allowed:
