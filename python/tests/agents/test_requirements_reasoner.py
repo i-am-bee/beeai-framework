@@ -1,9 +1,15 @@
+# Copyright 2025 © BeeAI a Series of LF Projects, LLC
+# SPDX-License-Identifier: Apache-2.0
+from functools import cached_property
+
 import pytest
+
 from beeai_framework.agents.requirement.requirements.requirement import Rule, requirement
 from beeai_framework.agents.requirement.types import RequirementAgentRunState
 from beeai_framework.agents.requirement.utils._llm import RequirementsReasoner
 from beeai_framework.agents.requirement.utils._tool import FinalAnswerTool
 from beeai_framework.context import RunContext
+from beeai_framework.emitter import Emitter
 from beeai_framework.memory.unconstrained_memory import UnconstrainedMemory
 from beeai_framework.tools import tool
 
@@ -43,19 +49,21 @@ async def test_hidden_tool_does_not_disable_other_tools() -> None:
         steps=[],
     )
 
-    async def handler(context: RunContext) -> None:
-        reasoner = RequirementsReasoner(
-            tools=[alpha_tool, beta_tool],
-            final_answer=FinalAnswerTool(expected_output=None, state=state),
-            context=context,
-        )
+    class RunContextInstance:
+        @cached_property
+        def emitter(self) -> Emitter:
+            return Emitter.root().child()
 
-        await reasoner.update([allow_alpha_requirement, hide_beta_requirement])
-        request = await reasoner.create_request(state, force_tool_call=False)
+    reasoner = RequirementsReasoner(
+        tools=[alpha_tool, beta_tool],
+        final_answer=FinalAnswerTool(expected_output=None, state=state),
+        context=RunContext(instance=RunContextInstance(), signal=None),
+    )
 
-        assert alpha_tool in request.allowed_tools
-        assert beta_tool not in request.allowed_tools
-        assert reasoner.final_answer in request.allowed_tools
-        assert beta_tool in request.hidden_tools
+    await reasoner.update([allow_alpha_requirement, hide_beta_requirement])
+    request = await reasoner.create_request(state, force_tool_call=False)
 
-    await RunContext.enter(object(), handler)
+    assert alpha_tool in request.allowed_tools
+    assert beta_tool not in request.allowed_tools
+    assert reasoner.final_answer in request.allowed_tools
+    assert beta_tool in request.hidden_tools
