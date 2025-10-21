@@ -180,6 +180,9 @@ class RunContext:
         self.emitter.destroy()
         self._controller.abort("Context has been destroyed.")
 
+    def abort(self, reason: str | None = None) -> None:
+        self._controller.abort(reason)
+
     @staticmethod
     def enter(
         instance: RunInstance,

@@ -37,7 +37,7 @@ class StrictContentFilterMiddleware(RunMiddlewareProtocol):
             for message in data.state.memory.messages:
                 if isinstance(message, UserMessage) and message.text and self._contains_banned_content(message.text):
                     print("🛑 StrictContentFilter: Aborting due to inappropriate content")
-                    ctx.signal._abort("Content policy violation")
+                    ctx.abort("Content policy violation")
                     return
 
     def _contains_banned_content(self, text: str) -> bool:
