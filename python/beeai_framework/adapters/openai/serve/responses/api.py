@@ -16,7 +16,15 @@ import beeai_framework.adapters.openai.serve.responses._types as responses_types
 from beeai_framework.adapters.openai.serve.openai_model import OpenAIModel
 from beeai_framework.adapters.openai.serve.responses._utils import openai_input_to_beeai_message
 from beeai_framework.agents import AgentError, BaseAgent
-from beeai_framework.backend import AnyMessage, ChatModelOutput, SystemMessage, UserMessage
+from beeai_framework.backend import (
+    AnyMessage,
+    AssistantMessage,
+    ChatModelOutput,
+    MessageTextContent,
+    MessageToolCallContent,
+    SystemMessage,
+    UserMessage,
+)
 from beeai_framework.logger import Logger
 from beeai_framework.memory import UnconstrainedMemory
 from beeai_framework.serve import MemoryManager, init_agent_memory
@@ -126,7 +134,8 @@ class ResponsesAPI:
                             status="in_progress",
                             model=runnable.model_id,
                         ),
-                    )
+                    ),
+                    event_name="response.created",
                 )
                 yield create_event(
                     responses_types.ResponsesStreamResponseInProgress(
@@ -139,157 +148,170 @@ class ResponsesAPI:
                         ),
                     )
                 )
+                try:
+                    async for message in runnable.stream(instructions + history + messages):
+                        if output_item_id is None or message.append is False:
+                            if output_item_id is not None:
+                                output = responses_types.ResponsesMessageOutput(
+                                    id=output_item_id,
+                                    status="completed",
+                                    content=[responses_types.ResponsesMessageContent(text=text)],
+                                )
+                                yield create_event(
+                                    responses_types.ResponsesStreamOutputItemDone(
+                                        sequence_number=sequence_number,
+                                        output_index=output_index,
+                                        item=output,
+                                    )
+                                )
+                                outputs.append(output)
+                                text = ""
+                                output_index += 1
 
-                async for message in runnable.stream(instructions + history + messages):
-                    if output_item_id is None or message.append is False:
-                        if output_item_id is not None:
-                            output = responses_types.ResponsesMessageOutput(
+                                if last_type == "message":
+                                    yield create_event(
+                                        responses_types.ResponsesStreamOutputTextDone(
+                                            sequence_number=sequence_number,
+                                            output_index=output_index,
+                                            item_id=output_item_id,
+                                            text=text,
+                                        )
+                                    )
+                                    yield create_event(
+                                        responses_types.ResponsesStreamContentPartDone(
+                                            sequence_number=sequence_number,
+                                            item_id=output_item_id,
+                                            output_index=output_index,
+                                            part=responses_types.ResponsesStreamPartOutputText(text=text),
+                                        )
+                                    )
+
+                            match message.type:
+                                case "message":
+                                    output_item_id = f"msg_{uuid.uuid4()!s}"
+                                    yield create_event(
+                                        responses_types.ResponsesStreamOutputItemAdded(
+                                            sequence_number=sequence_number,
+                                            output_index=output_index,
+                                            item=responses_types.ResponsesMessageOutput(id=output_item_id),
+                                        )
+                                    )
+                                    yield create_event(
+                                        responses_types.ResponsesStreamContentPartAdded(
+                                            sequence_number=sequence_number,
+                                            item_id=output_item_id,
+                                            output_index=output_index,
+                                            part=responses_types.ResponsesStreamPartOutputText(text=""),
+                                        )
+                                    )
+                                case "reasoning":
+                                    output_item_id = f"rs_{uuid.uuid4()!s}"
+                                    output = responses_types.ResponsesReasoningOutput(
+                                        id=output_item_id,
+                                        status="status",
+                                        content=responses_types.ResponsesReasoningContent(text=message.text),
+                                    )
+                                    yield create_event(
+                                        responses_types.ResponsesStreamOutputItemAdded(
+                                            sequence_number=sequence_number,
+                                            output_index=output_index,
+                                            item=output,
+                                        )
+                                    )
+                                    outputs.append(output)
+                                case "custom_tool_call":
+                                    output_item_id = f"ctc_{uuid.uuid4()!s}"
+                                    output = responses_types.ResponsesCustomToolCallOutput(
+                                        id=output_item_id,
+                                        name="tools_call",
+                                        input=message.text,
+                                        call_id=str(uuid.uuid4()),
+                                    )
+                                    yield create_event(
+                                        responses_types.ResponsesStreamOutputItemAdded(
+                                            sequence_number=sequence_number,
+                                            output_index=output_index,
+                                            item=output,
+                                        )
+                                    )
+                                    outputs.append(output)
+                                case _:
+                                    raise RuntimeError(f"Unknown message type: {message.type}")
+                            last_type = message.type
+
+                        if message.type == "message":
+                            yield create_event(
+                                responses_types.ResponsesStreamOutputTextDelta(
+                                    sequence_number=sequence_number,
+                                    output_index=output_index,
+                                    item_id=output_item_id,
+                                    delta=message.text,
+                                )
+                            )
+                            text += message.text
+
+                    assert output_item_id is not None
+
+                    yield create_event(
+                        responses_types.ResponsesStreamOutputTextDone(
+                            sequence_number=sequence_number,
+                            output_index=output_index,
+                            item_id=output_item_id,
+                            text=text,
+                        )
+                    )
+                    yield create_event(
+                        responses_types.ResponsesStreamContentPartDone(
+                            sequence_number=sequence_number,
+                            item_id=output_item_id,
+                            output_index=output_index,
+                            part=responses_types.ResponsesStreamPartOutputText(text=text),
+                        )
+                    )
+                    yield create_event(
+                        responses_types.ResponsesStreamOutputItemDone(
+                            sequence_number=sequence_number,
+                            output_index=output_index,
+                            item=responses_types.ResponsesMessageOutput(
                                 id=output_item_id,
                                 status="completed",
                                 content=[responses_types.ResponsesMessageContent(text=text)],
-                            )
-                            yield create_event(
-                                responses_types.ResponsesStreamOutputItemDone(
-                                    sequence_number=sequence_number,
-                                    output_index=output_index,
-                                    item=output,
-                                )
-                            )
-                            outputs.append(output)
-                            text = ""
-                            output_index += 1
-
-                            if last_type == "message":
-                                yield create_event(
-                                    responses_types.ResponsesStreamOutputTextDone(
-                                        sequence_number=sequence_number,
-                                        output_index=output_index,
-                                        item_id=output_item_id,
-                                        text=text,
-                                    )
-                                )
-                                yield create_event(
-                                    responses_types.ResponsesStreamContentPartDone(
-                                        sequence_number=sequence_number,
-                                        item_id=output_item_id,
-                                        output_index=output_index,
-                                        part=responses_types.ResponsesStreamPartOutputText(text=text),
-                                    )
-                                )
-
-                        match message.type:
-                            case "message":
-                                output_item_id = f"msg_{uuid.uuid4()!s}"
-                                yield create_event(
-                                    responses_types.ResponsesStreamOutputItemAdded(
-                                        sequence_number=sequence_number,
-                                        output_index=output_index,
-                                        item=responses_types.ResponsesMessageOutput(id=output_item_id),
-                                    )
-                                )
-                                yield create_event(
-                                    responses_types.ResponsesStreamContentPartAdded(
-                                        sequence_number=sequence_number,
-                                        item_id=output_item_id,
-                                        output_index=output_index,
-                                        part=responses_types.ResponsesStreamPartOutputText(text=""),
-                                    )
-                                )
-                            case "reasoning":
-                                output_item_id = f"rs_{uuid.uuid4()!s}"
-                                output = responses_types.ResponsesReasoningOutput(
-                                    id=output_item_id,
-                                    status="status",
-                                    content=responses_types.ResponsesReasoningContent(text=message.text),
-                                )
-                                yield create_event(
-                                    responses_types.ResponsesStreamOutputItemAdded(
-                                        sequence_number=sequence_number,
-                                        output_index=output_index,
-                                        item=output,
-                                    )
-                                )
-                                outputs.append(output)
-                            case "custom_tool_call":
-                                output_item_id = f"ctc_{uuid.uuid4()!s}"
-                                output = responses_types.ResponsesCustomToolCallOutput(
-                                    id=output_item_id, name="tools_call", input=message.text, call_id=str(uuid.uuid4())
-                                )
-                                yield create_event(
-                                    responses_types.ResponsesStreamOutputItemAdded(
-                                        sequence_number=sequence_number,
-                                        output_index=output_index,
-                                        item=output,
-                                    )
-                                )
-                                outputs.append(output)
-                            case _:
-                                raise RuntimeError(f"Unknown message type: {message.type}")
-                        last_type = message.type
-
-                    if message.type == "message":
-                        yield create_event(
-                            responses_types.ResponsesStreamOutputTextDelta(
-                                sequence_number=sequence_number,
-                                output_index=output_index,
-                                item_id=output_item_id,
-                                delta=message.text,
-                            )
+                            ),
                         )
-                        text += message.text
-
-                assert output_item_id is not None
-
-                yield create_event(
-                    responses_types.ResponsesStreamOutputTextDone(
-                        sequence_number=sequence_number,
-                        output_index=output_index,
-                        item_id=output_item_id,
-                        text=text,
                     )
-                )
-                yield create_event(
-                    responses_types.ResponsesStreamContentPartDone(
-                        sequence_number=sequence_number,
-                        item_id=output_item_id,
-                        output_index=output_index,
-                        part=responses_types.ResponsesStreamPartOutputText(text=text),
-                    )
-                )
-                yield create_event(
-                    responses_types.ResponsesStreamOutputItemDone(
-                        sequence_number=sequence_number,
-                        output_index=output_index,
-                        item=responses_types.ResponsesMessageOutput(
+                    outputs.append(
+                        responses_types.ResponsesMessageOutput(
                             id=output_item_id,
                             status="completed",
                             content=[responses_types.ResponsesMessageContent(text=text)],
-                        ),
+                        )
                     )
-                )
-                outputs.append(
-                    responses_types.ResponsesMessageOutput(
-                        id=output_item_id,
-                        status="completed",
-                        content=[responses_types.ResponsesMessageContent(text=text)],
+                    yield create_event(
+                        responses_types.ResponsesStreamResponseCompleted(
+                            sequence_number=sequence_number,
+                            response=responses_types.ResponsesResponse(
+                                id=response_id,
+                                created=int(time.time()),
+                                status="completed",
+                                model=runnable.model_id,
+                                output=outputs,
+                            ),
+                        )
                     )
-                )
-                yield create_event(
-                    responses_types.ResponsesStreamResponseCompleted(
-                        sequence_number=sequence_number,
-                        response=responses_types.ResponsesResponse(
-                            id=response_id,
-                            created=int(time.time()),
-                            status="completed",
-                            model=runnable.model_id,
-                            output=outputs,
-                        ),
-                    )
-                )
 
-            if memory:
-                await memory.add_many(messages)
-                # await memory.add(content.last_message) TODO
+                    if memory:
+                        await memory.add_many(messages)
+                        await memory.add_many([_response_output_to_message(output) for output in outputs])
+
+                except AgentError as err:
+                    yield create_event(
+                        responses_types.ResponsesStreamError(
+                            sequence_number=sequence_number,
+                            code="500",
+                            message=err.message,
+                            param=to_json(err.context, sort_keys=False),
+                        )
+                    )
 
             return EventSourceResponse(stream_events())
         else:
@@ -342,3 +364,25 @@ def _transform_request_input(
         return [UserMessage(inputs)]
     else:
         return [openai_input_to_beeai_message(i) for i in inputs]
+
+
+def _response_output_to_message(output: responses_types.ResponsesResponseOutput) -> AnyMessage:
+    match output:
+        case responses_types.ResponsesMessageOutput():
+            return AssistantMessage(content=[MessageTextContent(text=content.text) for content in output.content])
+        case responses_types.ResponsesReasoningOutput():
+            return AssistantMessage(
+                content=MessageTextContent(
+                    text=output.content.text
+                    if output.content
+                    else None or output.summary.text
+                    if output.summary
+                    else ""
+                )
+            )
+        case responses_types.ResponsesCustomToolCallOutput():
+            return AssistantMessage(
+                content=MessageToolCallContent(id=output.call_id, tool_name=output.name, args=output.input)
+            )
+        case _:
+            raise RuntimeError(f"Unsupported response type: {type(output)}")

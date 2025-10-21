@@ -13,6 +13,7 @@ from beeai_framework.adapters.openai.serve.openai_model import OpenAIModel
 from beeai_framework.adapters.openai.serve.responses.api import ResponsesAPI
 from beeai_framework.agents.react import ReActAgent
 from beeai_framework.agents.requirement import RequirementAgent
+from beeai_framework.backend import ChatModel
 from beeai_framework.logger import Logger
 from beeai_framework.runnable import Runnable
 from beeai_framework.serve import MemoryManager
@@ -98,6 +99,7 @@ class OpenAIServer(
 
 def register() -> None:
     from beeai_framework.adapters.openai.serve._factories import (
+        _chat_model_factory,
         _react_factory,
         _requirement_agent_factory,
         _runnable_factory,
@@ -111,6 +113,9 @@ def register() -> None:
 
     with contextlib.suppress(FactoryAlreadyRegisteredError):
         OpenAIServer.register_factory(RequirementAgent, _requirement_agent_factory)
+
+    with contextlib.suppress(FactoryAlreadyRegisteredError):
+        OpenAIServer.register_factory(ChatModel, _chat_model_factory)  # type: ignore[type-abstract]
 
 
 register()

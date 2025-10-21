@@ -13,7 +13,7 @@ from beeai_framework.agents.react.types import ReActAgentIterationResult
 from beeai_framework.agents.requirement import RequirementAgent
 from beeai_framework.agents.requirement.events import RequirementAgentSuccessEvent
 from beeai_framework.agents.requirement.utils._tool import FinalAnswerTool
-from beeai_framework.backend import AnyMessage, ChatModel
+from beeai_framework.backend import AnyMessage, ChatModel, ChatModelNewTokenEvent, ChatModelSuccessEvent
 from beeai_framework.runnable import Runnable
 from beeai_framework.utils.lists import find_index
 
@@ -80,3 +80,18 @@ def _requirement_agent_factory(agent: RequirementAgent, *, metadata: OpenAIServe
                 )
 
     return OpenAIModel(agent, model_id=metadata.get("name") or agent.meta.name, stream=stream)
+
+
+def _chat_model_factory(llm: ChatModel, *, metadata: OpenAIServerMetadata | None = None) -> OpenAIModel:
+    if metadata is None:
+        metadata = {}
+
+    async def stream(input: list[AnyMessage]) -> AsyncIterable[OpenAIEvent]:
+        cloned_llm = await llm.clone()
+        async for data, event in cloned_llm.run(input, stream=True):
+            if isinstance(data, ChatModelNewTokenEvent):
+                yield OpenAIEvent(text=data.value.last_message.text)
+            if isinstance(event, ChatModelSuccessEvent):
+                yield OpenAIEvent(append=False, finish_reason=data.value.finish_reason)
+
+    return OpenAIModel(llm, model_id=metadata.get("name") or llm.model_id, stream=stream)
