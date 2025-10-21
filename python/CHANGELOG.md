@@ -1,3 +1,15 @@
+## python_v0.1.57 (2025-10-20)
+
+### Bug Fixes
+
+- **emitter**: class method reference matching (#1209)
+- **agents**: requirement tool visibility regression (#1204)
+- **emitter**: handle cleanups when cloning (#1211)
+
+### Features
+
+- **adapters**: add A2A server context (#1207)
+
 ## python_v0.1.56 (2025-10-14)
 
 ### Bug Fixes
