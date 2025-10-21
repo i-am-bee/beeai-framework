@@ -3,13 +3,19 @@ import random
 import sys
 import time
 import traceback
-from typing import Awaitable, Callable, Generic, ParamSpec, TypeVar
+from collections.abc import Awaitable, Callable
+from typing import Generic, ParamSpec, TypedDict, TypeVar
 
 from beeai_framework.cache import BaseCache
 from beeai_framework.errors import FrameworkError
 
 P = ParamSpec("P")
 R = TypeVar("R")
+
+
+class TokenResponse(TypedDict):
+    token: str
+    expires_in: float
 
 
 class CacheFn(Generic[P, R]):
@@ -51,7 +57,7 @@ class CacheFn(Generic[P, R]):
 
 async def main() -> None:
     async def fetch_api_token() -> str:
-        response = {"token": f"TOKEN-{random.randint(1000, 9999)}", "expires_in": 0.2}
+        response: TokenResponse = {"token": f"TOKEN-{random.randint(1000, 9999)}", "expires_in": 0.2}
         get_token.update_ttl(response["expires_in"])
         await asyncio.sleep(0.05)
         return response["token"]

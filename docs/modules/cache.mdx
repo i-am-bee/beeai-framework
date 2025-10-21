@@ -422,8 +422,9 @@ import tempfile
 import time
 import traceback
 from collections import OrderedDict
+from collections.abc import Mapping
 from pathlib import Path
-from typing import Generic, Mapping, MutableMapping, TypeVar
+from typing import Generic, TypeVar
 
 from beeai_framework.cache import BaseCache
 from beeai_framework.errors import FrameworkError
@@ -439,7 +440,7 @@ class JsonFileCache(BaseCache[T], Generic[T]):
         self._path = path
         self._size = size
         self._ttl = ttl
-        self._items: MutableMapping[str, tuple[T, float | None]] = OrderedDict()
+        self._items: OrderedDict[str, tuple[T, float | None]] = OrderedDict()
         self._load_from_disk()
 
     @property
@@ -518,7 +519,6 @@ class JsonFileCache(BaseCache[T], Generic[T]):
     async def _enforce_capacity(self) -> None:
         while len(self._items) > self._size:
             oldest_key, _ = self._items.popitem(last=False)
-            del oldest_key
 
     def _load_from_disk(self) -> None:
         if not self._path.exists():
@@ -538,10 +538,7 @@ class JsonFileCache(BaseCache[T], Generic[T]):
 
     def _dump_to_disk(self) -> None:
         self._path.parent.mkdir(parents=True, exist_ok=True)
-        data = {
-            key: {"value": value, "expires_at": expires_at}
-            for key, (value, expires_at) in self._items.items()
-        }
+        data = {key: {"value": value, "expires_at": expires_at} for key, (value, expires_at) in self._items.items()}
         self._path.write_text(json.dumps(data, indent=2))
 
 
@@ -557,7 +554,7 @@ async def main() -> None:
         await cache.set("session", {"token": "abc123"})
         print(await cache.has("profile"))  # False -> evicted when capacity exceeded
 
-        reloaded = JsonFileCache(path, size=2, ttl=1.5)
+        reloaded: JsonFileCache[dict[str, str]] = JsonFileCache(path, size=2, ttl=1.5)
         print(await reloaded.get("settings"))  # {'theme': 'dark'}
 
         await asyncio.sleep(1.6)
@@ -571,6 +568,7 @@ if __name__ == "__main__":
     except FrameworkError as e:
         traceback.print_exc()
         sys.exit(e.explain())
+
 ```
 
 {/* <!-- embedme typescript/examples/cache/fileCache.ts --> */}
@@ -606,7 +604,7 @@ from typing import TypeVar
 from beeai_framework.cache import UnconstrainedCache
 from beeai_framework.errors import FrameworkError
 
-from file_cache import JsonFileCache
+from .file_cache import JsonFileCache  # noqa: TID252
 
 T = TypeVar("T")
 
@@ -633,7 +631,7 @@ async def main() -> None:
         await file_cache.set("tasks:stale", 1)
         print(await file_cache.size())  # 3
 
-        reloaded = JsonFileCache(path, size=10, ttl=10)
+        reloaded: JsonFileCache[int] = JsonFileCache(path, size=10, ttl=10)
         print(await reloaded.get("tasks:closed"))  # 12
 
 
@@ -643,6 +641,7 @@ if __name__ == "__main__":
     except FrameworkError as e:
         traceback.print_exc()
         sys.exit(e.explain())
+
 ```
 
 {/* <!-- embedme typescript/examples/cache/fileCacheCustomProvider.ts --> */}
@@ -686,7 +685,8 @@ import asyncio
 import sys
 import time
 import traceback
-from typing import Any, Awaitable, Callable, ParamSpec, TypeVar
+from collections.abc import Awaitable, Callable
+from typing import Any, ParamSpec, TypeVar
 
 from beeai_framework.cache import BaseCache, SlidingCache
 from beeai_framework.errors import FrameworkError
@@ -754,6 +754,7 @@ if __name__ == "__main__":
     except FrameworkError as e:
         traceback.print_exc()
         sys.exit(e.explain())
+
 ```
 
 {/* <!-- embedme typescript/examples/cache/decoratorCache.ts --> */}
@@ -785,11 +786,12 @@ Use custom key builders to partition cache entries per tenant or time window, an
 {/* <!-- embedme python/examples/cache/decorator_cache_complex.py --> */}
 ```py Python [expandable]
 import asyncio
+import datetime as dt
 import random
 import sys
 import traceback
-from datetime import datetime
-from typing import Any, Awaitable, Callable, ParamSpec, TypeVar
+from collections.abc import Awaitable, Callable
+from typing import Any, ParamSpec, TypeVar
 
 from beeai_framework.cache import BaseCache, SlidingCache
 from beeai_framework.errors import FrameworkError
@@ -844,7 +846,9 @@ class FeatureFlagService:
         self._db_hits = 0
 
     @cached(activity_cache, enabled=True, key_fn=session_cache_key)
-    async def load_flags(self, user_id: str, scope: str = "default", minute_bucket: int | None = None) -> dict[str, Any]:
+    async def load_flags(
+        self, user_id: str, scope: str = "default", minute_bucket: int | None = None
+    ) -> dict[str, Any]:
         self._db_hits += 1
         await asyncio.sleep(0.05)
         return {
@@ -852,13 +856,13 @@ class FeatureFlagService:
             "scope": scope,
             "db_hits": self._db_hits,
             "flags": {"beta_search": random.choice([True, False])},
-            "refreshed_at": datetime.utcnow().isoformat(timespec="seconds"),
+            "refreshed_at": dt.datetime.now(dt.UTC).isoformat(timespec="seconds"),
         }
 
 
 async def main() -> None:
     service = FeatureFlagService()
-    bucket = int(datetime.utcnow().timestamp() // 60)
+    bucket = int(dt.datetime.now(dt.UTC).timestamp() // 60)
 
     first = await service.load_flags("42", scope="admin", minute_bucket=bucket)
     second = await service.load_flags("42", scope="admin", minute_bucket=bucket)
@@ -879,6 +883,7 @@ if __name__ == "__main__":
     except FrameworkError as e:
         traceback.print_exc()
         sys.exit(e.explain())
+
 ```
 
 {/* <!-- embedme typescript/examples/cache/decoratorCacheComplex.ts --> */}
@@ -925,13 +930,19 @@ import random
 import sys
 import time
 import traceback
-from typing import Awaitable, Callable, Generic, ParamSpec, TypeVar
+from collections.abc import Awaitable, Callable
+from typing import Generic, ParamSpec, TypedDict, TypeVar
 
 from beeai_framework.cache import BaseCache
 from beeai_framework.errors import FrameworkError
 
 P = ParamSpec("P")
 R = TypeVar("R")
+
+
+class TokenResponse(TypedDict):
+    token: str
+    expires_in: float
 
 
 class CacheFn(Generic[P, R]):
@@ -973,7 +984,7 @@ class CacheFn(Generic[P, R]):
 
 async def main() -> None:
     async def fetch_api_token() -> str:
-        response = {"token": f"TOKEN-{random.randint(1000, 9999)}", "expires_in": 0.2}
+        response: TokenResponse = {"token": f"TOKEN-{random.randint(1000, 9999)}", "expires_in": 0.2}
         get_token.update_ttl(response["expires_in"])
         await asyncio.sleep(0.05)
         return response["token"]
@@ -995,6 +1006,7 @@ if __name__ == "__main__":
     except FrameworkError as e:
         traceback.print_exc()
         sys.exit(e.explain())
+
 ```
 
 {/* <!-- embedme typescript/examples/cache/cacheFn.ts --> */}

@@ -2,7 +2,8 @@ import asyncio
 import sys
 import time
 import traceback
-from typing import Any, Awaitable, Callable, ParamSpec, TypeVar
+from collections.abc import Awaitable, Callable
+from typing import Any, ParamSpec, TypeVar
 
 from beeai_framework.cache import BaseCache, SlidingCache
 from beeai_framework.errors import FrameworkError

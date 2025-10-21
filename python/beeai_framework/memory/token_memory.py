@@ -2,10 +2,11 @@
 # SPDX-License-Identifier: Apache-2.0
 
 from math import ceil
-from typing import Any
+from typing import Any, Self
 
 from beeai_framework.backend.message import AnyMessage
 from beeai_framework.memory.base_memory import BaseMemory
+from beeai_framework.serialization import Serializable
 
 
 def simple_estimate(msg: AnyMessage) -> int:
@@ -16,12 +17,12 @@ def simple_tokenize(msgs: list[AnyMessage]) -> int:
     return sum(map(simple_estimate, msgs))
 
 
-class TokenMemory(BaseMemory):
+class TokenMemory(Serializable[dict[str, Any]], BaseMemory):
     """Memory implementation that respects token limits."""
 
     def __init__(
         self,
-        llm: Any,
+        llm: Any | None = None,
         max_tokens: int | None = None,
         sync_threshold: float = 0.25,
         capacity_threshold: float = 0.75,
@@ -117,8 +118,12 @@ class TokenMemory(BaseMemory):
         self._tokens_by_message.clear()
 
     async def clone(self) -> "TokenMemory":
+        llm = self.llm
+        llm_clone = llm
+        if llm is not None and hasattr(llm, "clone"):
+            llm_clone = llm.clone()
         cloned = TokenMemory(
-            self.llm.clone(),
+            llm_clone,
             self._max_tokens,
             self._sync_threshold,
             self._threshold,
@@ -127,3 +132,37 @@ class TokenMemory(BaseMemory):
         cloned._messages = self._messages.copy()
         cloned._tokens_by_message = self._tokens_by_message.copy()
         return cloned
+
+    def create_snapshot(self) -> dict[str, Any]:
+        return {
+            "messages": list(self._messages),
+            "max_tokens": self._max_tokens,
+            "capacity_threshold": self._threshold,
+            "sync_threshold": self._sync_threshold,
+        }
+
+    def load_snapshot(self, snapshot: dict[str, Any]) -> None:
+        self._messages = list(snapshot.get("messages", []))
+        self._max_tokens = snapshot.get("max_tokens")
+        self._threshold = snapshot.get("capacity_threshold", self._threshold)
+        self._sync_threshold = snapshot.get("sync_threshold", self._sync_threshold)
+        self._tokens_by_message.clear()
+
+        for message in self._messages:
+            key = self._get_message_key(message)
+            estimated_tokens = self.handlers["estimate"](message)
+            self._tokens_by_message[key] = {
+                "tokens_count": estimated_tokens,
+                "dirty": True,
+            }
+
+    @classmethod
+    def from_snapshot(cls, snapshot: dict[str, Any]) -> Self:
+        instance = cls(
+            llm=None,
+            max_tokens=snapshot.get("max_tokens"),
+            sync_threshold=snapshot.get("sync_threshold", 0.25),
+            capacity_threshold=snapshot.get("capacity_threshold", 0.75),
+        )
+        instance.load_snapshot(snapshot)
+        return instance

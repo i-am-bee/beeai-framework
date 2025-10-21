@@ -5,8 +5,9 @@ import tempfile
 import time
 import traceback
 from collections import OrderedDict
+from collections.abc import Mapping
 from pathlib import Path
-from typing import Generic, Mapping, MutableMapping, TypeVar
+from typing import Generic, TypeVar
 
 from beeai_framework.cache import BaseCache
 from beeai_framework.errors import FrameworkError
@@ -22,7 +23,7 @@ class JsonFileCache(BaseCache[T], Generic[T]):
         self._path = path
         self._size = size
         self._ttl = ttl
-        self._items: MutableMapping[str, tuple[T, float | None]] = OrderedDict()
+        self._items: OrderedDict[str, tuple[T, float | None]] = OrderedDict()
         self._load_from_disk()
 
     @property
@@ -120,10 +121,7 @@ class JsonFileCache(BaseCache[T], Generic[T]):
 
     def _dump_to_disk(self) -> None:
         self._path.parent.mkdir(parents=True, exist_ok=True)
-        data = {
-            key: {"value": value, "expires_at": expires_at}
-            for key, (value, expires_at) in self._items.items()
-        }
+        data = {key: {"value": value, "expires_at": expires_at} for key, (value, expires_at) in self._items.items()}
         self._path.write_text(json.dumps(data, indent=2))
 
 
@@ -139,7 +137,7 @@ async def main() -> None:
         await cache.set("session", {"token": "abc123"})
         print(await cache.has("profile"))  # False -> evicted when capacity exceeded
 
-        reloaded = JsonFileCache(path, size=2, ttl=1.5)
+        reloaded: JsonFileCache[dict[str, str]] = JsonFileCache(path, size=2, ttl=1.5)
         print(await reloaded.get("settings"))  # {'theme': 'dark'}
 
         await asyncio.sleep(1.6)

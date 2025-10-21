@@ -1,9 +1,10 @@
 import asyncio
+import datetime as dt
 import random
 import sys
 import traceback
-from datetime import datetime
-from typing import Any, Awaitable, Callable, ParamSpec, TypeVar
+from collections.abc import Awaitable, Callable
+from typing import Any, ParamSpec, TypeVar
 
 from beeai_framework.cache import BaseCache, SlidingCache
 from beeai_framework.errors import FrameworkError
@@ -58,7 +59,9 @@ class FeatureFlagService:
         self._db_hits = 0
 
     @cached(activity_cache, enabled=True, key_fn=session_cache_key)
-    async def load_flags(self, user_id: str, scope: str = "default", minute_bucket: int | None = None) -> dict[str, Any]:
+    async def load_flags(
+        self, user_id: str, scope: str = "default", minute_bucket: int | None = None
+    ) -> dict[str, Any]:
         self._db_hits += 1
         await asyncio.sleep(0.05)
         return {
@@ -66,13 +69,13 @@ class FeatureFlagService:
             "scope": scope,
             "db_hits": self._db_hits,
             "flags": {"beta_search": random.choice([True, False])},
-            "refreshed_at": datetime.utcnow().isoformat(timespec="seconds"),
+            "refreshed_at": dt.datetime.now(dt.UTC).isoformat(timespec="seconds"),
         }
 
 
 async def main() -> None:
     service = FeatureFlagService()
-    bucket = int(datetime.utcnow().timestamp() // 60)
+    bucket = int(dt.datetime.now(dt.UTC).timestamp() // 60)
 
     first = await service.load_flags("42", scope="admin", minute_bucket=bucket)
     second = await service.load_flags("42", scope="admin", minute_bucket=bucket)

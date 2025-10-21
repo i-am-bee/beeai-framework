@@ -8,7 +8,7 @@ from typing import TypeVar
 from beeai_framework.cache import UnconstrainedCache
 from beeai_framework.errors import FrameworkError
 
-from file_cache import JsonFileCache
+from .file_cache import JsonFileCache  # noqa: TID252
 
 T = TypeVar("T")
 
@@ -35,7 +35,7 @@ async def main() -> None:
         await file_cache.set("tasks:stale", 1)
         print(await file_cache.size())  # 3
 
-        reloaded = JsonFileCache(path, size=10, ttl=10)
+        reloaded: JsonFileCache[int] = JsonFileCache(path, size=10, ttl=10)
         print(await reloaded.get("tasks:closed"))  # 12
 
 
