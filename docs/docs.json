@@ -8,6 +8,16 @@
     "dark": "#000000"
   },
   "favicon": "/favicon.svg",
+  "redirects": [
+    {
+      "source": "/modules/events",
+      "destination": "/modules/middleware"
+    },
+    {
+      "source": "/modules/emitter",
+      "destination": "/modules/middleware"
+    }
+  ],
   "navigation": {
     "groups": [
       {
@@ -22,17 +32,16 @@
         "group": "Core Concepts",
         "pages": [
           "experimental/requirement-agent",
+          "modules/middleware",
           "modules/agents",
           "modules/backend",
           "modules/tools",
           "modules/memory",
           "modules/rag",
           "modules/observability",
-          "modules/emitter",
           "modules/serve",
           "modules/cache",
           "modules/logger",
-          "modules/events",
           "modules/serialization",
           "modules/errors",
           "modules/templates",

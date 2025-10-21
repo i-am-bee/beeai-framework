@@ -308,6 +308,7 @@ __all__ = [
     "RunContextFinishEvent",
     "RunContextStartEvent",
     "RunContextSuccessEvent",
+    "RunMiddlewareProtocol",
     "RunMiddlewareType",
     "run_context_event_types",
 ]
