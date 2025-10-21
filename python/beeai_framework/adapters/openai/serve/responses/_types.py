@@ -6,7 +6,7 @@ from pydantic import BaseModel, Field
 
 
 class BaseEvent(BaseModel):
-    type: str = ""
+    type: str
 
 
 # request
@@ -25,11 +25,11 @@ class ResponsesRequestInputMessage(BaseEvent):
     type: str = Field("message", description="The type of the message input. Always 'message.")
 
 
-class ResponsesRequestConversation(BaseEvent):
+class ResponsesRequestConversation(BaseModel):
     id: str = Field(..., description="The unique ID of the conversation.")
 
 
-class ResponsesRequestBody(BaseEvent):
+class ResponsesRequestBody(BaseModel):
     model: str = Field(description="Model ID used to generate the response")
     input: str | list[ResponsesRequestInputMessage] = Field(
         ..., description="Text inputs to the model, used to generate a response."
@@ -97,7 +97,7 @@ class ResponsesMessageOutput(BaseEvent):
     content: list[ResponsesMessageContent] = Field([], description="The content of the output message.")
 
 
-class ResponsesUsage(BaseEvent):
+class ResponsesUsage(BaseModel):
     input_tokens: int = Field(..., description="The number of input tokens.")
     output_tokens: int = Field(..., description="The number of output tokens.")
     total_tokens: int = Field(..., description="The total number of tokens used.")
@@ -106,7 +106,7 @@ class ResponsesUsage(BaseEvent):
 ResponsesResponseOutput: TypeAlias = ResponsesMessageOutput | ResponsesReasoningOutput | ResponsesCustomToolCallOutput
 
 
-class ResponsesResponse(BaseEvent):
+class ResponsesResponse(BaseModel):
     id: str = Field(..., description="Unique identifier for this Response.")
     object: str = Field(
         "response",

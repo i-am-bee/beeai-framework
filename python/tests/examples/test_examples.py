@@ -49,6 +49,7 @@ exclude = list(
             "serve/mcp_agent.py",
             "serve/mcp_tool.py",
             "serve/watsonx_orchestrate.py",
+            "serve/openai_server.py",
             "tools/python_tool.py" if os.getenv("CODE_INTERPRETER_URL") is None else None,
             "tools/custom/sandbox.py" if os.getenv("CODE_INTERPRETER_URL") is None else None,
             "workflows/travel_advisor.py",

@@ -11,7 +11,7 @@ from beeai_framework.runnable import AnyRunnable, RunnableOutput
 from beeai_framework.utils.cloneable import Cloneable
 
 
-class OpenAIRunnable:
+class OpenAIModel:
     def __init__(
         self,
         runnable: AnyRunnable,

@@ -13,7 +13,7 @@ from sse_starlette import ServerSentEvent
 from sse_starlette.sse import EventSourceResponse
 
 import beeai_framework.adapters.openai.serve.responses._types as responses_types
-from beeai_framework.adapters.openai.serve.openai_runnable import OpenAIRunnable
+from beeai_framework.adapters.openai.serve.openai_model import OpenAIModel
 from beeai_framework.adapters.openai.serve.responses._utils import openai_input_to_beeai_message
 from beeai_framework.agents import AgentError, BaseAgent
 from beeai_framework.backend import AnyMessage, ChatModelOutput, SystemMessage, UserMessage
@@ -29,7 +29,7 @@ class ResponsesAPI:
     def __init__(
         self,
         *,
-        get_runnable: Callable[[str], OpenAIRunnable],
+        get_runnable: Callable[[str], OpenAIModel],
         api_key: str | None = None,
         fast_api_kwargs: dict[str, Any] | None = None,
         memory_manager: MemoryManager,

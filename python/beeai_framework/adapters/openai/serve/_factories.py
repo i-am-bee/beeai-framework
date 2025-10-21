@@ -5,19 +5,20 @@ from collections.abc import AsyncIterable
 from typing import Any
 
 from beeai_framework.adapters.openai.serve._types import OpenAIEvent
-from beeai_framework.adapters.openai.serve.openai_runnable import OpenAIRunnable
+from beeai_framework.adapters.openai.serve.openai_model import OpenAIModel
 from beeai_framework.adapters.openai.serve.server import OpenAIServerMetadata
 from beeai_framework.agents import BaseAgent
 from beeai_framework.agents.react import ReActAgent, ReActAgentSuccessEvent, ReActAgentUpdateEvent
 from beeai_framework.agents.react.types import ReActAgentIterationResult
 from beeai_framework.agents.requirement import RequirementAgent
 from beeai_framework.agents.requirement.events import RequirementAgentSuccessEvent
-from beeai_framework.backend import AnyMessage, ChatModel, ToolMessage
+from beeai_framework.agents.requirement.utils._tool import FinalAnswerTool
+from beeai_framework.backend import AnyMessage, ChatModel
 from beeai_framework.runnable import Runnable
 from beeai_framework.utils.lists import find_index
 
 
-def _runnable_factory(runnable: Runnable[Any], *, metadata: OpenAIServerMetadata | None = None) -> OpenAIRunnable:
+def _runnable_factory(runnable: Runnable[Any], *, metadata: OpenAIServerMetadata | None = None) -> OpenAIModel:
     if metadata is None:
         metadata = {}
 
@@ -30,10 +31,10 @@ def _runnable_factory(runnable: Runnable[Any], *, metadata: OpenAIServerMetadata
         else runnable.__class__.__name__,
     )
 
-    return OpenAIRunnable(runnable, model_id=name)
+    return OpenAIModel(runnable, model_id=name)
 
 
-def _react_factory(agent: ReActAgent, *, metadata: OpenAIServerMetadata | None = None) -> OpenAIRunnable:
+def _react_factory(agent: ReActAgent, *, metadata: OpenAIServerMetadata | None = None) -> OpenAIModel:
     if metadata is None:
         metadata = {}
 
@@ -50,10 +51,10 @@ def _react_factory(agent: ReActAgent, *, metadata: OpenAIServerMetadata | None =
             if isinstance(data, ReActAgentSuccessEvent):
                 yield OpenAIEvent(finish_reason=data.iterations[-1].raw.finish_reason)
 
-    return OpenAIRunnable(agent, model_id=metadata.get("name", agent.meta.name), stream=stream)
+    return OpenAIModel(agent, model_id=metadata.get("name") or agent.meta.name, stream=stream)
 
 
-def _requirement_factory(agent: RequirementAgent, *, metadata: OpenAIServerMetadata | None = None) -> OpenAIRunnable:
+def _requirement_agent_factory(agent: RequirementAgent, *, metadata: OpenAIServerMetadata | None = None) -> OpenAIModel:
     if metadata is None:
         metadata = {}
 
@@ -68,7 +69,7 @@ def _requirement_factory(agent: RequirementAgent, *, metadata: OpenAIServerMetad
             cur_index = find_index(messages, lambda msg: msg is last_msg, fallback=-1, reverse_traversal=True)  # noqa: B023
             for message in messages[cur_index + 1 :]:
                 last_msg = message
-                if isinstance(message, ToolMessage) and message.content[0].tool_name == "final_answer":
+                if isinstance(message, FinalAnswerTool):
                     continue
                 if isinstance(data, RequirementAgentSuccessEvent) and data.state.answer is not None:
                     yield OpenAIEvent(text=data.state.answer.text, type="message", append=False)
@@ -78,4 +79,4 @@ def _requirement_factory(agent: RequirementAgent, *, metadata: OpenAIServerMetad
                     text=str([m.model_dump() for m in message.content]), type="custom_tool_call", append=False
                 )
 
-    return OpenAIRunnable(agent, model_id=metadata.get("name", agent.meta.name), stream=stream)
+    return OpenAIModel(agent, model_id=metadata.get("name") or agent.meta.name, stream=stream)

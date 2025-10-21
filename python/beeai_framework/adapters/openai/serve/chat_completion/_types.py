@@ -6,6 +6,8 @@ from typing import Any
 
 from pydantic import BaseModel, Field, field_validator
 
+from beeai_framework.backend.utils import parse_broken_json
+
 
 class ChatToolFunctionDefinition(BaseModel):
     name: str
@@ -16,7 +18,7 @@ class ChatToolFunctionDefinition(BaseModel):
     def parse_arguments(cls, value: Any) -> Any:
         if isinstance(value, str):
             try:
-                value = json.loads(value)
+                value = parse_broken_json(value)
             except json.JSONDecodeError:
                 raise ValueError("Invalid JSON format for arguments")
         return value

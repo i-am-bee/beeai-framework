@@ -14,7 +14,7 @@ from sse_starlette.sse import EventSourceResponse
 
 import beeai_framework.adapters.openai.serve.chat_completion._types as chat_completion_types
 from beeai_framework.adapters.openai.serve.chat_completion._utils import openai_message_to_beeai_message
-from beeai_framework.adapters.openai.serve.openai_runnable import OpenAIRunnable
+from beeai_framework.adapters.openai.serve.openai_model import OpenAIModel
 from beeai_framework.backend import AnyMessage, AssistantMessage, ChatModelOutput, SystemMessage, ToolMessage
 from beeai_framework.logger import Logger
 from beeai_framework.utils.strings import to_json
@@ -26,7 +26,7 @@ class ChatCompletionAPI:
     def __init__(
         self,
         *,
-        get_runnable: Callable[[str], OpenAIRunnable],
+        get_runnable: Callable[[str], OpenAIModel],
         api_key: str | None = None,
         fast_api_kwargs: dict[str, Any] | None = None,
     ) -> None:

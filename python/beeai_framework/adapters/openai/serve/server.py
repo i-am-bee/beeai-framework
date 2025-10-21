@@ -9,7 +9,7 @@ from pydantic import BaseModel
 from typing_extensions import TypedDict, TypeVar, Unpack, override
 
 from beeai_framework.adapters.openai.serve.chat_completion.api import ChatCompletionAPI
-from beeai_framework.adapters.openai.serve.openai_runnable import OpenAIRunnable
+from beeai_framework.adapters.openai.serve.openai_model import OpenAIModel
 from beeai_framework.adapters.openai.serve.responses.api import ResponsesAPI
 from beeai_framework.agents.react import ReActAgent
 from beeai_framework.agents.requirement import RequirementAgent
@@ -45,7 +45,7 @@ class OpenAIServerMetadata(TypedDict, total=False):
 class OpenAIServer(
     Server[
         AnyRunnable,
-        OpenAIRunnable,
+        OpenAIModel,
         OpenAIServerConfig,
     ],
 ):
@@ -68,7 +68,7 @@ class OpenAIServer(
             for member in self._members
         ]
 
-        def get_runnable(model_id: str) -> OpenAIRunnable:
+        def get_runnable(model_id: str) -> OpenAIModel:
             try:
                 return next(iter([internal for internal in internals if model_id == internal.model_id]))
             except StopIteration:
@@ -97,7 +97,11 @@ class OpenAIServer(
 
 
 def register() -> None:
-    from beeai_framework.adapters.openai.serve._facroties import _react_factory, _requirement_factory, _runnable_factory
+    from beeai_framework.adapters.openai.serve._factories import (
+        _react_factory,
+        _requirement_agent_factory,
+        _runnable_factory,
+    )
 
     with contextlib.suppress(FactoryAlreadyRegisteredError):
         OpenAIServer.register_factory(Runnable, _runnable_factory)  # type: ignore
@@ -106,7 +110,7 @@ def register() -> None:
         OpenAIServer.register_factory(ReActAgent, _react_factory)
 
     with contextlib.suppress(FactoryAlreadyRegisteredError):
-        OpenAIServer.register_factory(RequirementAgent, _requirement_factory)
+        OpenAIServer.register_factory(RequirementAgent, _requirement_agent_factory)
 
 
 register()
