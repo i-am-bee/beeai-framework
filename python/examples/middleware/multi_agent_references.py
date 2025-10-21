@@ -1,12 +1,9 @@
-# Copyright 2025 © BeeAI a Series of LF Projects, LLC
-# SPDX-License-Identifier: Apache-2.0
-
 import asyncio
 
 from beeai_framework.agents import AgentOutput, BaseAgent
 from beeai_framework.agents.requirement import RequirementAgent
 from beeai_framework.backend import MessageTextContent
-from beeai_framework.backend.chat import AnyMessage
+from beeai_framework.backend.message import AnyMessage
 from beeai_framework.context import RunContext, RunContextStartEvent, RunContextSuccessEvent, RunMiddlewareProtocol
 from beeai_framework.emitter import EmitterOptions, EventMeta
 from beeai_framework.emitter.utils import create_internal_event_matcher
@@ -19,6 +16,15 @@ from beeai_framework.tools.weather import OpenMeteoTool
 
 
 class ReferenceResultMiddleware(RunMiddlewareProtocol):
+    """
+    Middleware for managing reference results in agent responses.
+
+    Handle intermediate reference results in a multi-agent system. It captures the results of handoff tools and replaces
+    placeholder variables in agent responses with actual output values retrieved from a store.
+    The process includes binding the middleware to events, updating stored values, and ensuring
+    placeholders are accurately replaced in messages.
+    """
+
     def __init__(self) -> None:
         self._store: dict[str, str] = {}  # store intermediate results
         self._last_id: int = 0
@@ -93,7 +99,9 @@ async def main() -> None:
     agent_a = RequirementAgent(
         llm="ollama:granite3.3",
         tools=[HandoffTool(agent_b), HandoffTool(agent_c)],
-        instructions="""You are a manager agent. Results from managed agent will be stored as variables like $result1, $result2, $result3 and so on. Treat them as plain strings.""",  # noqa: E501
+        instructions="You are a manager agent. "
+        + "Results from managed agent will be stored as variables like $result1, $result2, $result3 and so on. "
+        + "Treat them as plain strings.",
     )
 
     middleware = ReferenceResultMiddleware()
