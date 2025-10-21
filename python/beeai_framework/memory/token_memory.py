@@ -7,6 +7,7 @@ from typing import Any, Self
 from beeai_framework.backend.message import AnyMessage
 from beeai_framework.memory.base_memory import BaseMemory
 from beeai_framework.serialization import Serializable
+from beeai_framework.utils.cloneable import Cloneable
 
 
 def simple_estimate(msg: AnyMessage) -> int:
@@ -120,8 +121,8 @@ class TokenMemory(Serializable[dict[str, Any]], BaseMemory):
     async def clone(self) -> "TokenMemory":
         llm = self.llm
         llm_clone = llm
-        if llm is not None and hasattr(llm, "clone"):
-            llm_clone = llm.clone()
+        if isinstance(llm, Cloneable):
+            llm_clone = await llm.clone()
         cloned = TokenMemory(
             llm_clone,
             self._max_tokens,
