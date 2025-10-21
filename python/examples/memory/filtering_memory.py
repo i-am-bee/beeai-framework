@@ -1,4 +1,5 @@
 import asyncio
+import re
 import sys
 import traceback
 
@@ -21,6 +22,7 @@ class FilteringMemory(UnconstrainedMemory):
         elif isinstance(banned_words, str):
             banned_words = [banned_words]
         self.banned_words = [word.lower() for word in banned_words]
+        self.baneed_patterns = [re.compile(re.escape(w), re.IGNORECASE) for w in self.banned_words]
 
     async def add(self, message: AnyMessage, index: int | None = None) -> None:
         """Override add to filter user messages."""
@@ -42,12 +44,9 @@ class FilteringMemory(UnconstrainedMemory):
 
     def _filter_text(self, text: str) -> str:
         """Filter out banned words from text (case-insensitive)."""
-        import re
-
         filtered_text = text
         # Use regex to replace each banned word case-insensitively
-        for banned_word in self.banned_words:
-            pattern = re.compile(re.escape(banned_word), re.IGNORECASE)
+        for pattern in self.baneed_patterns:
             filtered_text = pattern.sub("[FILTERED]", filtered_text)
         return filtered_text
 

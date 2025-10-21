@@ -73,7 +73,7 @@ async def main() -> None:
         ],
     )
 
-    print("=== Testing Content Filter (Custom Response) ===")
+    print("=== Testing Content Filter ===")
     try:
         result = await agent.run("This crap weather is making me sad. What is 2 + 2?")
         print("Response:", result.last_message.text)
