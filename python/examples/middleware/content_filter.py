@@ -1,4 +1,5 @@
 import asyncio
+import re
 import sys
 import traceback
 from typing import Any
@@ -21,6 +22,7 @@ class ContentFilterMiddleware(RunMiddlewareProtocol):
     def __init__(self, banned_words: list[str] | None = None, custom_response: str | None = None) -> None:
         super().__init__()
         self.banned_words = [word.lower() for word in (banned_words or ["inappropriate"])]
+        self._banned_pattern = re.compile("|".join(map(re.escape, self.banned_words)))
         self.custom_response = custom_response or "I cannot process that request due to content policy restrictions."
         self._cleanup_functions: list[Any] = []
 
@@ -54,7 +56,7 @@ class ContentFilterMiddleware(RunMiddlewareProtocol):
     def _contains_banned_content(self, text: str) -> bool:
         """Check if text contains any banned words."""
         text_lower = text.lower()
-        return any(banned_word in text_lower for banned_word in self.banned_words)
+        return bool(self._banned_pattern.search(text_lower))
 
 
 async def main() -> None:
