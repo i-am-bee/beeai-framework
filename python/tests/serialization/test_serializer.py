@@ -5,7 +5,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import UTC, datetime
-from typing import Any
+from typing import Any, cast
 
 import pytest
 
@@ -90,7 +90,7 @@ async def test_deserialize_with_extra_classes() -> None:
     try:
         restored = UnconstrainedMemory.from_serialized(payload, extra_classes=[UserMessage])
     finally:
-        UserMessage.register()
+        cast(Any, UserMessage).register()
 
     assert len(restored.messages) == 1
     assert isinstance(restored.messages[0], UserMessage)

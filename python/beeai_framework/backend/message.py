@@ -4,7 +4,7 @@
 import enum
 import json
 from abc import ABC
-from collections.abc import Mapping, Sequence
+from collections.abc import Iterable, Mapping, Sequence
 from datetime import UTC, datetime
 from enum import Enum
 from typing import Any, Generic, Literal, Required, Self, TypeAlias, TypeVar, cast
@@ -423,7 +423,11 @@ def _register_message_class(
         )
 
     _registrar()
-    message_cls.register = classmethod(lambda cls: _registrar())  # type: ignore[attr-defined]
+
+    def _register_method(cls: type[Message[Any]], *, aliases: Iterable[str] | None = None) -> None:
+        _registrar()
+
+    type.__setattr__(message_cls, "register", classmethod(_register_method))
 
 
 _register_message_class(

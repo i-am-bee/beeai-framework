@@ -21,6 +21,9 @@ The Python example prints the serialized payload, the restored ISO timestamp, an
 
 {/* <!-- embedme python/examples/serialization/base.py --> */}
 ```py Python [expandable]
+# Copyright 2025 © BeeAI a Series of LF Projects, LLC
+# SPDX-License-Identifier: Apache-2.0
+
 from datetime import UTC, datetime
 
 from beeai_framework.serialization import Serializer
@@ -38,6 +41,7 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
+
 ```
 
 {/* <!-- embedme typescript/examples/serialization/base.ts --> */}
@@ -93,6 +97,9 @@ Running the Python snippet restores the memory, appends an assistant reply, and 
 
 {/* <!-- embedme python/examples/serialization/memory.py --> */}
 ```py Python [expandable]
+# Copyright 2025 © BeeAI a Series of LF Projects, LLC
+# SPDX-License-Identifier: Apache-2.0
+
 import asyncio
 
 from beeai_framework.backend import AssistantMessage, UserMessage
@@ -114,6 +121,7 @@ async def main() -> None:
 
 if __name__ == "__main__":
     asyncio.run(main())
+
 ```
 
 {/* <!-- embedme typescript/examples/serialization/memory.ts --> */}
@@ -153,6 +161,9 @@ This example registers a lightweight data class and prints the reconstructed tok
 
 {/* <!-- embedme python/examples/serialization/custom_external.py --> */}
 ```py Python [expandable]
+# Copyright 2025 © BeeAI a Series of LF Projects, LLC
+# SPDX-License-Identifier: Apache-2.0
+
 from dataclasses import dataclass
 from datetime import UTC, datetime
 
@@ -189,6 +200,7 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
+
 ```
 
 {/* <!-- embedme typescript/examples/serialization/customExternal.ts --> */}
@@ -233,6 +245,9 @@ The Python variant increments a counter, serializes it, and prints both the live
 
 {/* <!-- embedme python/examples/serialization/custom_internal.py --> */}
 ```py Python [expandable]
+# Copyright 2025 © BeeAI a Series of LF Projects, LLC
+# SPDX-License-Identifier: Apache-2.0
+
 from beeai_framework.serialization import Serializable
 
 
@@ -263,6 +278,7 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
+
 ```
 
 {/* <!-- embedme typescript/examples/serialization/customInternal.ts --> */}
@@ -307,25 +323,29 @@ Failure to register a class that the `Serializer` does not know will result in t
 
 ## Context matters
 
-Deserialize with the `extraClasses` equivalent to make sure message factories are registered; the Python snippet prints every restored user utterance.
+Deserialize with the `extraClasses` equivalent to make sure message factories are registered; the Python snippet imports both `UserMessage` and `AssistantMessage` so the serializer can hydrate their content and then prints every restored user utterance.
 
 <CodeGroup>
 
 {/* <!-- embedme python/examples/serialization/context.py --> */}
 ```py Python [expandable]
-from beeai_framework.backend import UserMessage
+# Copyright 2025 © BeeAI a Series of LF Projects, LLC
+# SPDX-License-Identifier: Apache-2.0
+
+from beeai_framework.backend import AssistantMessage, UserMessage
 from beeai_framework.memory import UnconstrainedMemory
 
-SERIALIZED_MEMORY = ""
+SERIALIZED_MEMORY = """{"__version":"0.0.0","__root":{"__serializer":true,"__class":"UnconstrainedMemory","__value":{"messages":[{"__serializer":true,"__class":"UserMessage","__value":{"id":null,"meta":{"createdAt":{"__serializer":true,"__class":"datetime","__value":"2025-10-18T19:38:37.859543+00:00"}},"role":"user","content":[{"type":"text","text":"Hello!"}]}},{"__serializer":true,"__class":"AssistantMessage","__value":{"id":null,"meta":{"createdAt":{"__serializer":true,"__class":"datetime","__value":"2025-10-18T19:38:37.859665+00:00"}},"role":"assistant","content":[{"type":"text","text":"Hello, how can I help you?"}]}}]}}}"""
 
 
 def main() -> None:
-    memory = UnconstrainedMemory.from_serialized(SERIALIZED_MEMORY, extra_classes=[UserMessage])
+    memory = UnconstrainedMemory.from_serialized(SERIALIZED_MEMORY, extra_classes=[UserMessage, AssistantMessage])
     print([message.text for message in memory.messages])
 
 
 if __name__ == "__main__":
     main()
+
 ```
 
 {/* <!-- embedme typescript/examples/serialization/context.ts --> */}

@@ -89,7 +89,7 @@ class Serializer:
             ref,
             to_plain=lambda instance: instance.create_snapshot(),
             from_plain=lambda snapshot: ref.from_snapshot(snapshot),
-            create_empty=lambda: ref.__new__(ref),  # type: ignore[misc]
+            create_empty=lambda: object.__new__(ref),
             update_instance=lambda instance, snapshot: instance.load_snapshot(snapshot),
             aliases=aliases,
         )
@@ -182,10 +182,10 @@ class Serializer:
 
     @classmethod
     def _encode(cls, value: Any, seen: dict[int, str], ref_counter: Iterator[int]) -> Any:
-        if value is None or isinstance(value, (bool, int, float, str)):
+        if value is None or isinstance(value, bool | int | float | str):
             return value
 
-        if isinstance(value, (list, tuple, set)):
+        if isinstance(value, list | tuple | set):
             return [cls._encode(item, seen, ref_counter) for item in value]
 
         if isinstance(value, dict):
@@ -292,7 +292,7 @@ class Serializable(Generic[T]):
 
     @classmethod
     def from_snapshot(cls: type[SerializableT], snapshot: T) -> SerializableT:
-        instance = cls.__new__(cls)  # type: ignore[misc]
+        instance = object.__new__(cls)
         instance.load_snapshot(snapshot)
         return instance
 

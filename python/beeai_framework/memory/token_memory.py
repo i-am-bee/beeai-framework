@@ -118,7 +118,8 @@ class TokenMemory(Serializable[dict[str, Any]], BaseMemory):
         self._tokens_by_message.clear()
 
     async def clone(self) -> "TokenMemory":
-        llm_clone = self.llm.clone() if hasattr(self.llm, "clone") else self.llm
+        llm = self.llm
+        llm_clone = llm.clone() if llm is not None and hasattr(llm, "clone") else llm
         cloned = TokenMemory(
             llm_clone,
             self._max_tokens,
