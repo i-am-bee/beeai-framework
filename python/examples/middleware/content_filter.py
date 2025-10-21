@@ -5,7 +5,7 @@ import traceback
 from typing import Any
 
 from beeai_framework.agents.requirement import RequirementAgent
-from beeai_framework.agents.requirement.types import RequirementAgentOutput
+from beeai_framework.agents.requirement.types import RequirementAgentOutput, RequirementAgentRunState
 from beeai_framework.backend import AssistantMessage, ChatModel
 from beeai_framework.context import RunContext, RunContextStartEvent, RunMiddlewareProtocol
 from beeai_framework.emitter import EventMeta
@@ -47,7 +47,9 @@ class ContentFilterMiddleware(RunMiddlewareProtocol):
 
                 # Create a custom output to short-circuit execution
                 custom_output = RequirementAgentOutput(
-                    output=[AssistantMessage(self.custom_response)], output_structured=None
+                    output=[AssistantMessage(self.custom_response)],
+                    output_structured=None,
+                    state=RequirementAgentRunState(result="", memory=UnconstrainedMemory(), iteration=0),
                 )
 
                 # Set the output on the event to prevent normal execution
