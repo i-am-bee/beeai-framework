@@ -1,19 +1,16 @@
 ---
 title: "Middleware"
-description: ""
+description: "The BeeAI framework core and its parts can be easily extended via the underlying concept of events and run contexts."
 icon: "bell"
 ---
 
 ## Overview
 
-The BeeAI framework core and its parts can be easily extended via the underlying concept of events and context nesting.
-An event refers to an action triggered by a component. Every event has a name (string), value (pydantic model), and associated metadata (`EventMeta` class).
-Events are emitted via the `Emitter` component, which is part of most components found in the framework.
-Events can be observed and modified by registering a synchronous/asynchronous callback.
+The BeeAI framework core and its parts can be easily extended via the underlying concept of events and run contexts.
 
 ## Modules
 
-The following section describes the modules that are important to understand to get the whole picture.
+The following section describes essential modules that are important to understand the whole concept.
 
 ### Event
 
