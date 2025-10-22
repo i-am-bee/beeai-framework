@@ -37,7 +37,10 @@ def _simplify(schema: Schema, path: list[str], config: SimplifyJsonSchemaConfig)
             del schema[key]
 
     schema_type = schema.get("type")
-    if not schema_type or not isinstance(schema_type, str):
+    schema_type = schema.get("type")
+    if not isinstance(schema_type, str):
+        if schema_type:
+            logger.warning(f"Unexpected schema_type: {schema_type}, skipping type-specific exclusions")
         return schema
 
     excluded_keys = config.excluded_properties_by_type.get(schema_type) or set[str]()
