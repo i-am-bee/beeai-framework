@@ -1,6 +1,6 @@
 # Copyright 2025 © BeeAI a Series of LF Projects, LLC
 # SPDX-License-Identifier: Apache-2.0
-
+import json
 from collections.abc import AsyncIterable
 from typing import Any
 
@@ -76,7 +76,7 @@ def _requirement_agent_factory(agent: RequirementAgent, *, metadata: OpenAIServe
                     continue
 
                 yield OpenAIEvent(
-                    text=str([m.model_dump() for m in message.content]), type="custom_tool_call", append=False
+                    text=json.dumps([m.model_dump() for m in message.content]), type="custom_tool_call", append=False
                 )
 
     return OpenAIModel(agent, model_id=metadata.get("name") or agent.meta.name, stream=stream)

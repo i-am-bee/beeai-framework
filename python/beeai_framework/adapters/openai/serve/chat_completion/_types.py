@@ -143,17 +143,17 @@ class AssistantMessage(BaseModel):
         "assistant",
         description="The role of the messages author, in this case 'assistant'.",
     )
-    name: str = Field(
-        ...,
+    name: str | None = Field(
+        None,
         description="An optional name for the participant. "
         "Provides the model information to differentiate between participants of the same role.",
     )
-    content: str | list[TextContentPart | RefusalContentPart] = Field(
-        ...,
+    content: str | list[TextContentPart | RefusalContentPart] | None = Field(
+        None,
         description="The contents of the user message.",
     )
-    refusal: str = Field(
-        ...,
+    refusal: str | None = Field(
+        None,
         description="The refusal message by the assistant.",
     )
     tool_calls: list[ChatToolCall] | None = Field(

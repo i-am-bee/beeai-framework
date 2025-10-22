@@ -81,7 +81,7 @@ class OpenAIServer(
             )
             if self._config.api == "chat-completion"
             else ResponsesAPI(
-                get_runnable=get_runnable,
+                get_openai_model=get_runnable,
                 api_key=self._config.api_key,
                 fast_api_kwargs=self._config.fast_api_kwargs,
                 memory_manager=self._memory_manager,

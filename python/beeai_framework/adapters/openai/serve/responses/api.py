@@ -37,12 +37,12 @@ class ResponsesAPI:
     def __init__(
         self,
         *,
-        get_runnable: Callable[[str], OpenAIModel],
+        get_openai_model: Callable[[str], OpenAIModel],
         api_key: str | None = None,
         fast_api_kwargs: dict[str, Any] | None = None,
         memory_manager: MemoryManager,
     ) -> None:
-        self._get_runnable = get_runnable
+        self._get_openai_model = get_openai_model
         self._api_key = api_key
         self._fast_api_kwargs = fast_api_kwargs or {}
         self._memory_manager = memory_manager
@@ -91,14 +91,14 @@ class ResponsesAPI:
             else None
         )
 
-        runnable = self._get_runnable(request.model)
+        openai_model = self._get_openai_model(request.model)
 
         history = []
         memory = None
         if context_id:
-            if isinstance(runnable, BaseAgent):
-                await init_agent_memory(runnable, self._memory_manager, context_id)
-                memory = runnable.memory
+            if isinstance(openai_model.runnable, BaseAgent):
+                await init_agent_memory(openai_model.runnable, self._memory_manager, context_id)
+                memory = openai_model.runnable.memory
             else:
                 try:
                     memory = await self._memory_manager.get(context_id)
@@ -132,7 +132,7 @@ class ResponsesAPI:
                             id=response_id,
                             created=int(time.time()),
                             status="in_progress",
-                            model=runnable.model_id,
+                            model=openai_model.model_id,
                         ),
                     ),
                     event_name="response.created",
@@ -144,12 +144,12 @@ class ResponsesAPI:
                             id=response_id,
                             created=int(time.time()),
                             status="in_progress",
-                            model=runnable.model_id,
+                            model=openai_model.model_id,
                         ),
                     )
                 )
                 try:
-                    async for message in runnable.stream(instructions + history + messages):
+                    async for message in openai_model.stream(instructions + history + messages):
                         if output_item_id is None or message.append is False:
                             if output_item_id is not None:
                                 output = responses_types.ResponsesMessageOutput(
@@ -208,7 +208,7 @@ class ResponsesAPI:
                                     output_item_id = f"rs_{uuid.uuid4()!s}"
                                     output = responses_types.ResponsesReasoningOutput(
                                         id=output_item_id,
-                                        status="status",
+                                        status="completed",
                                         content=responses_types.ResponsesReasoningContent(text=message.text),
                                     )
                                     yield create_event(
@@ -293,7 +293,7 @@ class ResponsesAPI:
                                 id=response_id,
                                 created=int(time.time()),
                                 status="completed",
-                                model=runnable.model_id,
+                                model=openai_model.model_id,
                                 output=outputs,
                             ),
                         )
@@ -316,7 +316,7 @@ class ResponsesAPI:
             return EventSourceResponse(stream_events())
         else:
             try:
-                content = await runnable.run(instructions + history + messages)
+                content = await openai_model.run(instructions + history + messages)
 
                 if memory:
                     await memory.add_many(messages)
@@ -326,7 +326,7 @@ class ResponsesAPI:
                     id=response_id,
                     created=int(time.time()),
                     status="completed",
-                    model=runnable.model_id,
+                    model=openai_model.model_id,
                     output=[
                         responses_types.ResponsesMessageOutput(
                             type="message",
@@ -352,7 +352,7 @@ class ResponsesAPI:
                     created=int(time.time()),
                     status="failed",
                     error=e.message,
-                    model=runnable.model_id,
+                    model=openai_model.model_id,
                 )
             return JSONResponse(content=response.model_dump())
 
@@ -373,11 +373,7 @@ def _response_output_to_message(output: responses_types.ResponsesResponseOutput)
         case responses_types.ResponsesReasoningOutput():
             return AssistantMessage(
                 content=MessageTextContent(
-                    text=output.content.text
-                    if output.content
-                    else None or output.summary.text
-                    if output.summary
-                    else ""
+                    text=output.content.text if output.content else (output.summary.text if output.summary else "")
                 )
             )
         case responses_types.ResponsesCustomToolCallOutput():
