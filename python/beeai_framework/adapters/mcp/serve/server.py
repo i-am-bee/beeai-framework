@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import contextlib
+import json
 from collections.abc import Callable
 from contextlib import (
     AbstractAsyncContextManager,
@@ -19,6 +20,7 @@ from beeai_framework.tools.tool import AnyTool, Tool
 from beeai_framework.tools.types import ToolOutput
 from beeai_framework.utils.cloneable import Cloneable
 from beeai_framework.utils.funcs import identity
+from beeai_framework.utils.strings import CustomJsonDump, to_json
 from beeai_framework.utils.types import MaybeAsync
 
 try:
@@ -27,9 +29,10 @@ try:
     import mcp.server.fastmcp.server as mcp_server
     from mcp.server.auth.settings import AuthSettings
     from mcp.server.fastmcp.tools.base import Tool as MCPNativeTool
-    from mcp.server.fastmcp.utilities.func_metadata import ArgModelBase, FuncMetadata
     from mcp.server.lowlevel.server import LifespanResultT
     from mcp.server.transport_security import TransportSecuritySettings
+    from mcp.types import CallToolResult as MCPCallToolResult
+    from mcp.types import TextContent as MCPTextContent
 except ModuleNotFoundError as e:
     raise ModuleNotFoundError(
         "Optional module [mcp] not found.\nRun 'pip install \"beeai-framework[mcp]\"' to install."
@@ -144,13 +147,24 @@ class MCPServer(
         )
 
 
+class Person(BaseModel):
+    name: str
+
+
 def _tool_factory(
     tool: AnyTool,
 ) -> MCPNativeTool:
-    async def run(**kwargs: Any) -> ToolOutput:
+    async def run(**kwargs: Any) -> MCPCallToolResult:
         cloned_tool = await tool.clone()
-        result: ToolOutput = await cloned_tool.run(kwargs)
-        return result
+        output: ToolOutput = await cloned_tool.run(kwargs)
+
+        return MCPCallToolResult(
+            content=[MCPTextContent(type="text", text=output.get_text_content())],
+            structuredContent=json.loads(to_json(output, sort_keys=False))
+            if isinstance(output, CustomJsonDump)  # (eg: JSONToolOutput/SearchToolOutput)
+            else None,
+            _meta={"is_empty": output.is_empty()},
+        )
 
     class CustomToolSchema(tool.input_schema):  # type: ignore
         def model_dump_one_level(self) -> dict[str, Any]:
@@ -159,23 +173,19 @@ def _tool_factory(
                 kwargs[field_name] = getattr(self, field_name)
             return kwargs
 
-    def custom_tool_subclasscheck(cls: Any, subclass: type[Any]) -> Any:
-        if cls is ArgModelBase and subclass is CustomToolSchema:
-            return True
-
-        return original_subclass_check(cls, subclass)
-
-    original_subclass_check = ArgModelBase.__class__.__subclasscheck__  # type: ignore
-    ArgModelBase.__class__.__subclasscheck__ = custom_tool_subclasscheck  # type: ignore
-
-    return MCPNativeTool(
-        fn=run,
-        name=tool.name,
-        description=tool.description,
-        parameters=tool.input_schema.model_json_schema(),
-        fn_metadata=FuncMetadata(arg_model=CustomToolSchema, wrap_output=False),
-        is_async=True,
+    mcp_tool = MCPNativeTool.from_function(run, name=tool.name, description=tool.description, structured_output=False)
+    mcp_tool.parameters = tool.input_schema.model_json_schema()
+    mcp_tool.fn_metadata.arg_model = CustomToolSchema
+    object.__setattr__(
+        mcp_tool.fn_metadata,
+        "convert_result",
+        # The FastMCP server allows either returning a structured output or a message. We want to support both.
+        # Based on https://github.com/modelcontextprotocol/python-sdk
+        # ... return a tuple of (content, structured_data)
+        lambda result: (result.content, result.structuredContent),
     )
+
+    return mcp_tool
 
 
 with contextlib.suppress(FactoryAlreadyRegisteredError):

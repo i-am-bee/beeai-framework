@@ -242,3 +242,7 @@ class WrappedRootModel(BaseModel, Generic[T]):
 
 def is_pydantic_model(obj: Any) -> TypeGuard[type[BaseModel]]:
     return isinstance(obj, type) and issubclass(obj, BaseModel)
+
+
+class AnyModel(BaseModel):
+    model_config = ConfigDict(extra="allow", arbitrary_types_allowed=True)
