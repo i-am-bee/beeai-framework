@@ -2,7 +2,8 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import contextlib
-from typing import Any, Literal, Self
+from enum import StrEnum
+from typing import Any, Self
 
 import uvicorn
 from pydantic import BaseModel
@@ -27,13 +28,18 @@ logger = Logger(__name__)
 AnyRunnable = TypeVar("AnyRunnable", bound=Runnable[Any], default=Runnable[Any])
 
 
+class APIType(StrEnum):
+    CHAT_COMPLETION = "chat-completion"
+    RESPONSES = "responses"
+
+
 class OpenAIServerConfig(BaseModel):
     """Configuration for the OpenAIServerConfig."""
 
     host: str = "0.0.0.0"
     port: int = 9999
 
-    api: Literal["chat-completion", "responses"] = "chat-completion"
+    api: APIType = APIType.CHAT_COMPLETION
     api_key: str | None = None
     fast_api_kwargs: dict[str, Any] | None = None
 
@@ -54,7 +60,7 @@ class OpenAIServer(
         self, *, config: ModelLike[OpenAIServerConfig] | None = None, memory_manager: MemoryManager | None = None
     ) -> None:
         config = to_model(OpenAIServerConfig, config or OpenAIServerConfig())
-        if config is not None and config.api == "chat-completion" and memory_manager is not None:
+        if config is not None and config.api == APIType.CHAT_COMPLETION and memory_manager is not None:
             logger.warning("Memory is not supported for chat-completion")
 
         super().__init__(config=config, memory_manager=memory_manager)
@@ -79,7 +85,7 @@ class OpenAIServer(
             ChatCompletionAPI(
                 get_runnable=get_runnable, api_key=self._config.api_key, fast_api_kwargs=self._config.fast_api_kwargs
             )
-            if self._config.api == "chat-completion"
+            if self._config.api == APIType.CHAT_COMPLETION
             else ResponsesAPI(
                 get_openai_model=get_runnable,
                 api_key=self._config.api_key,

@@ -1,4 +1,4 @@
-from beeai_framework.adapters.openai.serve.server import OpenAIServer, OpenAIServerConfig
+from beeai_framework.adapters.openai.serve.server import APIType, OpenAIServer, OpenAIServerConfig
 from beeai_framework.agents.requirement import RequirementAgent
 from beeai_framework.backend import ChatModel
 from beeai_framework.memory import UnconstrainedMemory
@@ -13,12 +13,11 @@ def main() -> None:
         tools=[DuckDuckGoSearchTool(), OpenMeteoTool()],
         memory=UnconstrainedMemory(),
     )
-    (
-        OpenAIServer(config=OpenAIServerConfig(port=9998, api="responses"))
-        .register(agent, name="agent")
-        .register(llm)
-        .serve()
-    )
+
+    server = OpenAIServer(config=OpenAIServerConfig(port=9998, api=APIType.RESPONSES))
+    server.register(agent, name="agent")
+    server.register(llm)
+    server.serve()
 
 
 if __name__ == "__main__":
