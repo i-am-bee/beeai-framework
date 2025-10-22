@@ -66,11 +66,11 @@ class AudioContentPart(BaseModel):
 
 class File(BaseModel):
     file_data: str | None = Field(
-        ..., description="The base64 encoded file data, used when passing the file to the model as a string."
+        None, description="The base64 encoded file data, used when passing the file to the model as a string."
     )
-    file_id: str | None = Field(..., description="The ID of an uploaded file to use as input.")
+    file_id: str | None = Field(None, description="The ID of an uploaded file to use as input.")
     filename: str | None = Field(
-        ..., description="The name of the file, used when passing the file to the model as a string."
+        None, description="The name of the file, used when passing the file to the model as a string."
     )
 
 
@@ -95,8 +95,8 @@ class DeveloperMessage(BaseModel):
         "developer",
         description="The role of the messages author, in this case 'developer'.",
     )
-    name: str = Field(
-        ...,
+    name: str | None = Field(
+        None,
         description="An optional name for the participant. "
         "Provides the model information to differentiate between participants of the same role.",
     )
@@ -111,8 +111,8 @@ class SystemMessage(BaseModel):
         "system",
         description="The role of the messages author, in this case 'system'.",
     )
-    name: str = Field(
-        ...,
+    name: str | None = Field(
+        None,
         description="An optional name for the participant. "
         "Provides the model information to differentiate between participants of the same role.",
     )
@@ -127,8 +127,8 @@ class UserMessage(BaseModel):
         "user",
         description="The role of the messages author, in this case 'user'.",
     )
-    name: str = Field(
-        ...,
+    name: str | None = Field(
+        None,
         description="An optional name for the participant. "
         "Provides the model information to differentiate between participants of the same role.",
     )
