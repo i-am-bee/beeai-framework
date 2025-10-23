@@ -1,8 +1,6 @@
 # Copyright 2025 © BeeAI a Series of LF Projects, LLC
 # SPDX-License-Identifier: Apache-2.0
 
-from typing import Any
-
 from typing_extensions import TypeVar, override
 
 from beeai_framework.adapters.a2a.agents._utils import convert_a2a_to_framework_message
@@ -10,7 +8,6 @@ from beeai_framework.adapters.a2a.serve.executors.base_a2a_executor import BaseA
 from beeai_framework.backend.message import (
     AnyMessage,
 )
-from beeai_framework.runnable import Runnable
 from beeai_framework.serve import MemoryManager, init_agent_memory
 from beeai_framework.utils.cloneable import Cloneable
 
@@ -29,7 +26,6 @@ from beeai_framework.agents import AnyAgent
 from beeai_framework.logger import Logger
 
 AnyAgentLike = TypeVar("AnyAgentLike", bound=AnyAgent, default=AnyAgent)
-AnyRunnable = TypeVar("AnyRunnable", bound=Runnable[Any], default=Runnable[Any])
 
 logger = Logger(__name__)
 

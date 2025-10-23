@@ -9,14 +9,14 @@ from typing import Any, Literal, Self
 
 import uvicorn
 from pydantic import BaseModel, ConfigDict
-from typing_extensions import TypedDict, TypeVar, Unpack, override
+from typing_extensions import TypedDict, Unpack, override
 
 from beeai_framework.adapters.a2a.serve.executors.base_a2a_executor import BaseA2AExecutor
 from beeai_framework.adapters.a2a.serve.executors.react_agent_executor import ReActAgentExecutor
 from beeai_framework.adapters.a2a.serve.executors.tool_calling_agent_executor import ToolCallingAgentExecutor
 from beeai_framework.agents.react import ReActAgent
 from beeai_framework.agents.requirement import RequirementAgent
-from beeai_framework.runnable import Runnable
+from beeai_framework.runnable import AnyRunnable, AnyRunnableTypeVar, Runnable
 from beeai_framework.serve import MemoryManager
 from beeai_framework.serve.errors import FactoryAlreadyRegisteredError
 
@@ -50,8 +50,6 @@ from beeai_framework.utils.models import to_model
 
 logger = Logger(__name__)
 
-AnyRunnable = TypeVar("AnyRunnable", bound=Runnable[Any], default=Runnable[Any])
-
 
 class A2AServerConfig(BaseModel):
     """Configuration for the A2AServer."""
@@ -83,7 +81,7 @@ class A2AServerMetadata(TypedDict, total=False):
 
 class A2AServer(
     Server[
-        AnyRunnable,
+        AnyRunnableTypeVar,
         BaseA2AExecutor,
         A2AServerConfig,
     ],
@@ -130,7 +128,7 @@ class A2AServer(
             raise ValueError(f"Unsupported protocol {self._config.protocol}")
 
     @override
-    def register(self, input: AnyRunnable, **metadata: Unpack[A2AServerMetadata]) -> Self:
+    def register(self, input: AnyRunnableTypeVar, **metadata: Unpack[A2AServerMetadata]) -> Self:
         if len(self._members) != 0:
             raise ValueError("A2AServer only supports one agent.")
         else:

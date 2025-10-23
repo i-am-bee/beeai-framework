@@ -1,16 +1,14 @@
 # Copyright 2025 © BeeAI a Series of LF Projects, LLC
 # SPDX-License-Identifier: Apache-2.0
 
-from typing import Any
 
-from typing_extensions import TypeVar, override
+from typing_extensions import override
 
 from beeai_framework.adapters.a2a.serve.executors.base_a2a_agent_executor import BaseA2AAgentExecutor
 from beeai_framework.agents.requirement.events import RequirementAgentStartEvent, RequirementAgentSuccessEvent
 from beeai_framework.agents.tool_calling import ToolCallingAgentStartEvent, ToolCallingAgentSuccessEvent
 from beeai_framework.backend import AssistantMessage, MessageToolCallContent, ToolMessage
 from beeai_framework.emitter import Emitter, EventMeta
-from beeai_framework.runnable import Runnable
 from beeai_framework.utils.lists import find_index
 
 try:
@@ -22,11 +20,6 @@ except ModuleNotFoundError as e:
     raise ModuleNotFoundError(
         "Optional module [a2a] not found.\nRun 'pip install \"beeai-framework[a2a]\"' to install."
     ) from e
-
-from beeai_framework.agents import AnyAgent
-
-AnyAgentLike = TypeVar("AnyAgentLike", bound=AnyAgent, default=AnyAgent)
-AnyRunnable = TypeVar("AnyRunnable", bound=Runnable[Any], default=Runnable[Any])
 
 
 class ToolCallingAgentExecutor(BaseA2AAgentExecutor):

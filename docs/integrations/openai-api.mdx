@@ -1,0 +1,87 @@
+---
+title: "OpenAI API"
+icon: "server"
+---
+
+The [OpenAI API](https://platform.openai.com/docs/quickstart) provides a simple interface to state-of-the-art AI models for text generation, natural language processing, computer vision, and more.
+
+---
+
+### OpenAI Server
+
+OpenAIServer allows you to expose your agents and LLMs to external systems that support the Chat completion or Responses API.
+
+Key benefits
+- Fast setup with minimal configuration
+- Support for [Chat completion](https://platform.openai.com/docs/api-reference/chat) and [Responses](https://platform.openai.com/docs/api-reference/responses) API
+- Register multiple agents and LLMs on a single server
+- Custom server settings
+
+<CodeGroup>
+
+	{/* <!-- embedme python/examples/serve/openai_server.py --> */}
+	```py Python
+	from beeai_framework.adapters.openai.serve.server import OpenAIAPIType, OpenAIServer, OpenAIServerConfig
+	from beeai_framework.agents.requirement import RequirementAgent
+	from beeai_framework.backend import ChatModel
+	from beeai_framework.memory import UnconstrainedMemory
+	from beeai_framework.tools.search.duckduckgo import DuckDuckGoSearchTool
+	from beeai_framework.tools.weather import OpenMeteoTool
+	
+	
+	def main() -> None:
+	    llm = ChatModel.from_name("ollama:granite3.3:8b")
+	    agent = RequirementAgent(
+	        llm=llm,
+	        tools=[DuckDuckGoSearchTool(), OpenMeteoTool()],
+	        memory=UnconstrainedMemory(),
+	    )
+	
+	    server = OpenAIServer(config=OpenAIServerConfig(port=9998, api=OpenAIAPIType.RESPONSES))
+	    server.register(agent, name="agent")
+	    server.register(llm)
+	    server.serve()
+	
+	
+	if __name__ == "__main__":
+	    main()
+	
+	```
+
+	```ts TypeScript
+	 // coming soon
+	```
+
+</CodeGroup>
+
+You can easily call the exposed entities via cURL.
+
+<CodeGroup>
+
+	```sh Responses
+curl --location 'http://0.0.0.0:9998/responses' \
+--header 'Content-Type: application/json' \
+--data '{
+    "model": "agent",
+    "conversation": "123",
+    "stream": false,
+    "input": "Hello, how are you?"
+}'
+	```
+
+	```sh Chat Completion
+curl --location 'http://0.0.0.0:9998/chat/completions' \
+--header 'Content-Type: application/json' \
+--data '{
+    "model": "agent",
+    "stream": false,
+    "messages": [
+        {
+            "role": "user",
+            "content": "Hello, how are you?"
+        }
+    ]
+}'
+	```
+
+</CodeGroup>
