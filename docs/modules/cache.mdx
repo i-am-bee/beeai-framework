@@ -685,42 +685,9 @@ import asyncio
 import sys
 import time
 import traceback
-from collections.abc import Awaitable, Callable
-from typing import Any, ParamSpec, TypeVar
 
-from beeai_framework.cache import BaseCache, SlidingCache
+from beeai_framework.cache import SlidingCache, cached
 from beeai_framework.errors import FrameworkError
-
-P = ParamSpec("P")
-R = TypeVar("R")
-
-
-def cached(
-    cache: SlidingCache[R],
-    *,
-    enabled: bool = True,
-    key_fn: Callable[[tuple[Any, ...], dict[str, Any]], str] | None = None,
-) -> Callable[[Callable[P, Awaitable[R]]], Callable[P, Awaitable[R]]]:
-    """Basic async caching decorator that reuses SlidingCache."""
-
-    def decorator(fn: Callable[P, Awaitable[R]]) -> Callable[P, Awaitable[R]]:
-        async def wrapper(*args: P.args, **kwargs: P.kwargs) -> R:
-            if not enabled:
-                return await fn(*args, **kwargs)
-
-            key = key_fn(args, kwargs) if key_fn else BaseCache.generate_key({"args": args, "kwargs": kwargs})
-            cached_value = await cache.get(key)
-            if cached_value is not None or await cache.has(key):
-                return cached_value  # type: ignore[return-value]
-
-            result = await fn(*args, **kwargs)
-            await cache.set(key, result)
-            return result
-
-        return wrapper
-
-    return decorator
-
 
 request_cache: SlidingCache[str] = SlidingCache(size=8, ttl=2)
 
@@ -790,42 +757,10 @@ import datetime as dt
 import random
 import sys
 import traceback
-from collections.abc import Awaitable, Callable
-from typing import Any, ParamSpec, TypeVar
+from typing import Any
 
-from beeai_framework.cache import BaseCache, SlidingCache
+from beeai_framework.cache import BaseCache, SlidingCache, cached
 from beeai_framework.errors import FrameworkError
-
-P = ParamSpec("P")
-R = TypeVar("R")
-
-
-def cached(
-    cache: SlidingCache[R],
-    *,
-    enabled: bool = True,
-    key_fn: Callable[[tuple[Any, ...], dict[str, Any]], str] | None = None,
-) -> Callable[[Callable[P, Awaitable[R]]], Callable[P, Awaitable[R]]]:
-    """Async caching decorator that enables custom cache key builders."""
-
-    def decorator(fn: Callable[P, Awaitable[R]]) -> Callable[P, Awaitable[R]]:
-        async def wrapper(*args: P.args, **kwargs: P.kwargs) -> R:
-            if not enabled:
-                return await fn(*args, **kwargs)
-
-            key = key_fn(args, kwargs) if key_fn else BaseCache.generate_key({"args": args, "kwargs": kwargs})
-            cached_value = await cache.get(key)
-            if cached_value is not None or await cache.has(key):
-                return cached_value  # type: ignore[return-value]
-
-            result = await fn(*args, **kwargs)
-            await cache.set(key, result)
-            return result
-
-        return wrapper
-
-    return decorator
-
 
 activity_cache: SlidingCache[dict[str, Any]] = SlidingCache(size=16, ttl=5)
 
@@ -928,58 +863,16 @@ It is well-suited for API tokens or other resources that return an expiry with e
 import asyncio
 import random
 import sys
-import time
 import traceback
-from collections.abc import Awaitable, Callable
-from typing import Generic, ParamSpec, TypedDict, TypeVar
+from typing import TypedDict
 
-from beeai_framework.cache import BaseCache
+from beeai_framework.cache import CacheFn
 from beeai_framework.errors import FrameworkError
-
-P = ParamSpec("P")
-R = TypeVar("R")
 
 
 class TokenResponse(TypedDict):
     token: str
     expires_in: float
-
-
-class CacheFn(Generic[P, R]):
-    """Callable wrapper that memoizes async functions with adjustable TTL."""
-
-    def __init__(self, fn: Callable[P, Awaitable[R]], *, default_ttl: float | None = None) -> None:
-        self._fn = fn
-        self._entries: dict[str, tuple[R, float | None]] = {}
-        self._default_ttl = default_ttl
-        self._pending_ttl: float | None = None
-
-    @classmethod
-    def create(cls, fn: Callable[P, Awaitable[R]], *, default_ttl: float | None = None) -> "CacheFn[P, R]":
-        return cls(fn, default_ttl=default_ttl)
-
-    def update_ttl(self, ttl: float | None) -> None:
-        """Adjust TTL for the next value written to the cache."""
-        self._pending_ttl = ttl
-
-    def clear(self) -> None:
-        self._entries.clear()
-
-    async def __call__(self, *args: P.args, **kwargs: P.kwargs) -> R:
-        key = BaseCache.generate_key({"args": args, "kwargs": kwargs})
-        entry = self._entries.get(key)
-        now = time.time()
-        if entry:
-            value, expires_at = entry
-            if expires_at is None or expires_at > now:
-                return value
-
-        result = await self._fn(*args, **kwargs)
-        ttl = self._pending_ttl if self._pending_ttl is not None else self._default_ttl
-        self._pending_ttl = None
-        expires_at = now + ttl if ttl is not None else None
-        self._entries[key] = (result, expires_at)
-        return result
 
 
 async def main() -> None:

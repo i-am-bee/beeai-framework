@@ -2,42 +2,9 @@ import asyncio
 import sys
 import time
 import traceback
-from collections.abc import Awaitable, Callable
-from typing import Any, ParamSpec, TypeVar
 
-from beeai_framework.cache import BaseCache, SlidingCache
+from beeai_framework.cache import SlidingCache, cached
 from beeai_framework.errors import FrameworkError
-
-P = ParamSpec("P")
-R = TypeVar("R")
-
-
-def cached(
-    cache: SlidingCache[R],
-    *,
-    enabled: bool = True,
-    key_fn: Callable[[tuple[Any, ...], dict[str, Any]], str] | None = None,
-) -> Callable[[Callable[P, Awaitable[R]]], Callable[P, Awaitable[R]]]:
-    """Basic async caching decorator that reuses SlidingCache."""
-
-    def decorator(fn: Callable[P, Awaitable[R]]) -> Callable[P, Awaitable[R]]:
-        async def wrapper(*args: P.args, **kwargs: P.kwargs) -> R:
-            if not enabled:
-                return await fn(*args, **kwargs)
-
-            key = key_fn(args, kwargs) if key_fn else BaseCache.generate_key({"args": args, "kwargs": kwargs})
-            cached_value = await cache.get(key)
-            if cached_value is not None or await cache.has(key):
-                return cached_value  # type: ignore[return-value]
-
-            result = await fn(*args, **kwargs)
-            await cache.set(key, result)
-            return result
-
-        return wrapper
-
-    return decorator
-
 
 request_cache: SlidingCache[str] = SlidingCache(size=8, ttl=2)
 

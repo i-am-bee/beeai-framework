@@ -6,7 +6,6 @@ from typing import Any, Self
 
 from beeai_framework.backend.message import AnyMessage
 from beeai_framework.memory.base_memory import BaseMemory
-from beeai_framework.serialization import Serializable
 from beeai_framework.utils.cloneable import Cloneable
 
 
@@ -18,12 +17,12 @@ def simple_tokenize(msgs: list[AnyMessage]) -> int:
     return sum(map(simple_estimate, msgs))
 
 
-class TokenMemory(Serializable[dict[str, Any]], BaseMemory):
+class TokenMemory(BaseMemory):
     """Memory implementation that respects token limits."""
 
     def __init__(
         self,
-        llm: Any | None = None,
+        llm: Cloneable | None = None,
         max_tokens: int | None = None,
         sync_threshold: float = 0.25,
         capacity_threshold: float = 0.75,
@@ -119,10 +118,7 @@ class TokenMemory(Serializable[dict[str, Any]], BaseMemory):
         self._tokens_by_message.clear()
 
     async def clone(self) -> "TokenMemory":
-        llm = self.llm
-        llm_clone = llm
-        if isinstance(llm, Cloneable):
-            llm_clone = await llm.clone()
+        llm_clone = await self.llm.clone() if self.llm is not None else None
         cloned = TokenMemory(
             llm_clone,
             self._max_tokens,

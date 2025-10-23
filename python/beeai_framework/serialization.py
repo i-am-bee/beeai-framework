@@ -1,21 +1,20 @@
-"""Lightweight serialization protocol shared by stateful components."""
-
-from __future__ import annotations
+# Copyright 2025 © BeeAI a Series of LF Projects, LLC
+# SPDX-License-Identifier: Apache-2.0
 
 from collections.abc import Awaitable
 from typing import Protocol, Self, TypeVar
 
-SnapshotT = TypeVar("SnapshotT")
+from beeai_framework.utils.cloneable import Cloneable
+
+T = TypeVar("T")
 
 
-class Serializable(Protocol[SnapshotT]):
-    """Minimal contract for classes that can persist and restore their state."""
+class Serializable(Cloneable, Protocol[T]):
+    """Lightweight serialization protocol shared by stateful components."""
 
-    def create_snapshot(self) -> SnapshotT | Awaitable[SnapshotT]: ...
+    def create_snapshot(self) -> T | Awaitable[T]: ...
 
-    def load_snapshot(self, snapshot: SnapshotT) -> None | Awaitable[None]: ...
+    def load_snapshot(self, snapshot: T) -> None | Awaitable[None]: ...
 
     @classmethod
-    def from_snapshot(cls, snapshot: SnapshotT) -> Self | Awaitable[Self]: ...
-
-    async def clone(self) -> Self: ...
+    def from_snapshot(cls, snapshot: T) -> Self | Awaitable[Self]: ...
