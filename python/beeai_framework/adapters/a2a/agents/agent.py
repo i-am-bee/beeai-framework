@@ -200,6 +200,9 @@ class A2AAgent(BaseAgent[A2AAgentOutput]):
                         ):
                             self._task_id = None
 
+                            if update_event.status.message:
+                                messages.append(update_event.status.message)
+
                     await context.emitter.emit("update", A2AAgentUpdateEvent(value=event))
 
                 # check if we received any event
