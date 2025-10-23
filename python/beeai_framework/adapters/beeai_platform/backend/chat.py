@@ -92,15 +92,14 @@ class BeeAIPlatformChatModel(ChatModel):
         if not llm_conf:
             raise ValueError("BeeAIPlatform not provided llm configuration")
 
-        cls: type[ChatModel] = OpenAIChatModel
+        provider_name = llm_conf.api_model.replace("beeai:", "").split(":")[0]
+        config = (self.providers_mapping.get(provider_name) or (lambda: ProviderConfig()))()
+
         kwargs = self._kwargs.copy()
         if kwargs.get("tool_choice_support") is None:
-            provider_name = llm_conf.api_model.replace("beeai:", "").split(":")[0]
-            config = (self.providers_mapping.get(provider_name) or (lambda: ProviderConfig()))()
             kwargs["tool_choice_support"] = config.tool_choice_support
-            if config.openai_native:
-                cls = config.cls
 
+        cls = config.cls if config.openai_native else OpenAIChatModel
         return cls(  # type: ignore
             model_id=llm_conf.api_model,
             api_key=llm_conf.api_key,
@@ -141,7 +140,7 @@ def _extract_provider_config(name: ProviderName, *, openai_native: bool = False)
     target_provider: type[ChatModel] = load_model(name, "chat")
     return ProviderConfig(
         name=name,
-        cls=target_provider if openai_native else OpenAIChatModel,
-        tool_choice_support=target_provider.tool_choice_support,
+        cls=target_provider,
+        tool_choice_support=target_provider.tool_choice_support.copy(),
         openai_native=openai_native,
     )
