@@ -18,6 +18,7 @@ from beeai_framework.agents.react import ReActAgent, ReActAgentUpdateEvent
 from beeai_framework.agents.requirement import RequirementAgent
 from beeai_framework.agents.requirement.events import RequirementAgentFinalAnswerEvent, RequirementAgentSuccessEvent
 from beeai_framework.agents.tool_calling import ToolCallingAgent, ToolCallingAgentSuccessEvent
+from beeai_framework.logger import Logger
 from beeai_framework.memory import UnconstrainedMemory
 from beeai_framework.runnable import Runnable
 from beeai_framework.utils.cloneable import Cloneable, clone_class
@@ -39,6 +40,8 @@ except ModuleNotFoundError as e:
 from beeai_framework.backend.message import AnyMessage
 from beeai_framework.serve import MemoryManager
 
+logger = Logger(__name__)
+
 
 def _react_agent_factory(
     agent: ReActAgent, *, metadata: BeeAIPlatformServerMetadata | None = None, memory_manager: MemoryManager
@@ -59,6 +62,22 @@ def _react_agent_factory(
     ) -> AsyncGenerator[beeai_types.RunYield, beeai_types.RunYieldResume]:
         cloned_agent = await agent.clone() if isinstance(agent, Cloneable) else agent
         await init_beeai_platform_memory(cloned_agent, memory_manager, context)
+
+        settings = extra_extensions.get("settings")
+        if settings:
+            try:
+                parsed_settings = settings.parse_settings_response()
+
+                tools_settings = parsed_settings.values.get("tools")
+                if tools_settings and tools_settings.type == "checkbox_group":
+                    cloned_agent._input.tools = [
+                        tool
+                        for tool in cloned_agent._input.tools
+                        if tool.name in [key for key, value in tools_settings.values.items() if value.value]
+                    ]
+
+            except Exception:
+                logger.exception("Failed to parse settings response")
 
         with BeeAIPlatformContext(
             context,
@@ -145,6 +164,22 @@ def _tool_calling_agent_factory(
         cloned_agent = await agent.clone() if isinstance(agent, Cloneable) else agent
         await init_beeai_platform_memory(cloned_agent, memory_manager, context)
 
+        settings = extra_extensions.get("settings")
+        if settings:
+            try:
+                parsed_settings = settings.parse_settings_response()
+
+                tools_settings = parsed_settings.values.get("tools")
+                if tools_settings and tools_settings.type == "checkbox_group":
+                    cloned_agent._tools = [
+                        tool
+                        for tool in cloned_agent._tools
+                        if tool.name in [key for key, value in tools_settings.values.items() if value.value]
+                    ]
+
+            except Exception:
+                logger.exception("Failed to parse settings response")
+
         with BeeAIPlatformContext(
             context,
             llm=extra_extensions.get("llm_ext"),
@@ -194,6 +229,19 @@ def _requirement_agent_factory(
     ) -> AsyncGenerator[beeai_types.RunYield, beeai_types.RunYieldResume]:
         cloned_agent = await agent.clone() if isinstance(agent, Cloneable) else agent
         await init_beeai_platform_memory(cloned_agent, memory_manager, context)
+
+        settings = extra_extensions.get("settings")
+        if settings:
+            try:
+                parsed_settings = settings.parse_settings_response()
+
+                tools_settings = parsed_settings.values.get("tools")
+                if tools_settings:
+                    logger.warning("Tools settings is ignored for the RequirementAgent")
+
+            except Exception:
+                logger.exception("Failed to parse settings response")
+
         with BeeAIPlatformContext(
             context,
             llm=extra_extensions.get("llm_ext"),
@@ -314,6 +362,30 @@ def _init_metadata(
     base_copy: BeeAIPlatformServerMetadata = base.copy() if base else BeeAIPlatformServerMetadata()
     base_extension: type[BaseBeeAIPlatformExtensions] = base_copy.pop("extensions", BaseBeeAIPlatformExtensions)
     extensions = clone_class(base_extension)
+
+    if base_copy.pop("tools_setting", True) and isinstance(runnable, ToolCallingAgent | ReActAgent):
+        extensions.__annotations__["settings"] = Annotated[
+            beeai_extensions.SettingsExtensionServer,
+            beeai_extensions.SettingsExtensionSpec(
+                params=beeai_extensions.SettingsRender(
+                    fields=[
+                        beeai_extensions.CheckboxGroupField(
+                            id="tools",
+                            fields=[
+                                beeai_extensions.ui.settings.CheckboxField(
+                                    id=tool.name,
+                                    label=tool.name,
+                                    default_value=True,
+                                )
+                                for tool in (
+                                    runnable.meta.tools if isinstance(runnable, ReActAgent) else runnable._tools
+                                )
+                            ],
+                        )
+                    ],
+                ),
+            ),
+        ]
 
     metadata = BaseBeeAIPlatformServerMetadata(**base_copy)  # type: ignore
     if isinstance(runnable, BaseAgent):
