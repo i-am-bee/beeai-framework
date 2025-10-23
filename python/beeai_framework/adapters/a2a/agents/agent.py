@@ -72,12 +72,12 @@ class HttpxAsyncClientParameters(BaseModel):
     http1: bool = True
     http2: bool = False
     proxy: httpx_types.ProxyTypes | None = None
-    mounts: None | (Mapping[str, AsyncBaseTransport | None]) = None
+    mounts: Mapping[str, AsyncBaseTransport | None] | None = None
     timeout: httpx_types.TimeoutTypes = httpx.Timeout(30.0, read=None)
     follow_redirects: bool = False
     limits: httpx.Limits = httpx._config.DEFAULT_LIMITS
     max_redirects: int = httpx._config.DEFAULT_MAX_REDIRECTS
-    event_hooks: None | (Mapping[str, list[httpx._client.EventHook]]) = None
+    event_hooks: Mapping[str, list[httpx._client.EventHook]] | None = None
     base_url: httpx._urls.URL | str = ""
     transport: AsyncBaseTransport | None = None
     trust_env: bool = True
@@ -225,7 +225,7 @@ class A2AAgent(BaseAgent[A2AAgentOutput]):
                         else:
                             results = []
                     else:
-                        results = messages if messages else []
+                        results = messages
                 else:
                     match self._parameters.extract_messages_from:
                         case "task-artifacts":
@@ -244,7 +244,7 @@ class A2AAgent(BaseAgent[A2AAgentOutput]):
                             else:
                                 logger.error("Cannot extract status message from task, because task is not provided.")
                         case "messages":
-                            results = messages if messages else []
+                            results = messages
 
                 # retrieve the assistant's response
                 if results:
