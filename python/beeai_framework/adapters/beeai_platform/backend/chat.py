@@ -137,7 +137,7 @@ class BeeAIPlatformChatModel(ChatModel):
         return cloned
 
 
-def _extract_provider_config(name: ProviderName, *, openai_native: bool = True) -> ProviderConfig:
+def _extract_provider_config(name: ProviderName, *, openai_native: bool = False) -> ProviderConfig:
     target_provider: type[ChatModel] = load_model(name, "chat")
     return ProviderConfig(
         name=name,
