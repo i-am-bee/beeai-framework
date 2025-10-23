@@ -118,6 +118,7 @@ class LangChainChatModel(ChatModel):
             tool_call_fallback_via_response_format=self.tool_call_fallback_via_response_format,
             model_supports_tool_calling=self.model_supports_tool_calling,
             settings=self._settings.copy(),
+            enforce_tool_choice_assertion=self.enforce_tool_choice_assertion,
             use_strict_model_schema=self.use_strict_model_schema,
             use_strict_tool_schema=self.use_strict_tool_schema,
             tool_choice_support=self._tool_choice_support.copy(),

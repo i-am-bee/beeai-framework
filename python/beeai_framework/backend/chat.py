@@ -59,6 +59,7 @@ class ChatModelKwargs(TypedDict, total=False):
     model_supports_tool_calling: bool
     allow_parallel_tool_calls: bool
     ignore_parallel_tool_calls: bool
+    enforce_tool_choice_assertion: bool
     use_strict_tool_schema: bool
     use_strict_model_schema: bool
     supports_top_level_unions: bool
@@ -192,6 +193,7 @@ class ChatModel(Runnable[ChatModelOutput]):
         self.model_supports_tool_calling = kwargs.get("model_supports_tool_calling", True)
         self.allow_parallel_tool_calls = kwargs.get("allow_parallel_tool_calls", False)
         self.ignore_parallel_tool_calls = kwargs.get("ignore_parallel_tool_calls", False)
+        self.enforce_tool_choice_assertion = kwargs.get("enforce_tool_choice_assertion", True)
         self.use_strict_tool_schema = kwargs.get("use_strict_tool_schema", True)
         self.use_strict_model_schema = kwargs.get("use_strict_model_schema", False)
         self.supports_top_level_unions = kwargs.get("supports_top_level_unions", True)
@@ -458,6 +460,7 @@ class ChatModel(Runnable[ChatModelOutput]):
             tool_call_fallback_via_response_format=self.tool_call_fallback_via_response_format,
             model_supports_tool_calling=self.model_supports_tool_calling,
             settings=self._settings.copy(),
+            enforce_tool_choice_assertion=self.enforce_tool_choice_assertion,
             use_strict_model_schema=self.use_strict_model_schema,
             use_strict_tool_schema=self.use_strict_tool_schema,
             tool_choice_support=self._tool_choice_support.copy(),
@@ -469,6 +472,9 @@ class ChatModel(Runnable[ChatModelOutput]):
         return ChatModelParameters(temperature=0)
 
     def _assert_tool_response(self, *, input: ChatModelInput, output: ChatModelOutput) -> None:
+        if not self.enforce_tool_choice_assertion:
+            return
+
         if input.tool_choice is None or input.tool_choice == "auto" or self.model_supports_tool_calling is False:
             return
 
