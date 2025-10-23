@@ -2,7 +2,6 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import contextlib
-import json
 from collections.abc import Callable
 from contextlib import (
     AbstractAsyncContextManager,
@@ -20,7 +19,7 @@ from beeai_framework.tools.tool import AnyTool, Tool
 from beeai_framework.tools.types import ToolOutput
 from beeai_framework.utils.cloneable import Cloneable
 from beeai_framework.utils.funcs import identity
-from beeai_framework.utils.strings import CustomJsonDump, to_json
+from beeai_framework.utils.strings import CustomJsonDump, to_json_serializable
 from beeai_framework.utils.types import MaybeAsync
 
 try:
@@ -147,10 +146,6 @@ class MCPServer(
         )
 
 
-class Person(BaseModel):
-    name: str
-
-
 def _tool_factory(
     tool: AnyTool,
 ) -> MCPNativeTool:
@@ -160,7 +155,7 @@ def _tool_factory(
 
         return MCPCallToolResult(
             content=[MCPTextContent(type="text", text=output.get_text_content())],
-            structuredContent=json.loads(to_json(output, sort_keys=False))
+            structuredContent=to_json_serializable(output)
             if isinstance(output, CustomJsonDump)  # (eg: JSONToolOutput/SearchToolOutput)
             else None,
             _meta={"is_empty": output.is_empty()},
