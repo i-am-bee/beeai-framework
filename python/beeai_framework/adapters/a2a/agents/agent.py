@@ -1,11 +1,19 @@
 # Copyright 2025 © BeeAI a Series of LF Projects, LLC
 # SPDX-License-Identifier: Apache-2.0
 
-from collections.abc import Sequence
-from typing import Unpack
+import ssl
+from collections.abc import Callable, Mapping, Sequence
+from typing import Literal, Unpack
 from uuid import uuid4
 
 import httpx
+import httpx._types as httpx_types
+from httpx import AsyncBaseTransport
+from httpx._auth import Auth  # noqa: F401
+from httpx._config import Proxy, Timeout  # noqa: F401
+from httpx._models import Cookies, Headers, Request  # noqa: F401
+from httpx._urls import URL, QueryParams  # noqa: F401
+from pydantic import BaseModel, ConfigDict
 
 from beeai_framework.adapters.a2a.agents._utils import convert_a2a_to_framework_message
 from beeai_framework.adapters.a2a.agents.events import (
@@ -49,6 +57,36 @@ class A2AAgentOptions(AgentOptions, total=False):
     context_id: str
     task_id: str
     clear_context: bool
+    a2a_context: a2a_client.ClientCallContext | None
+
+
+class HttpxAsyncClientParameters(BaseModel):
+    model_config = ConfigDict(arbitrary_types_allowed=True)
+
+    auth: httpx_types.AuthTypes | None = None
+    params: httpx_types.QueryParamTypes | None = None
+    headers: httpx_types.HeaderTypes | None = None
+    cookies: httpx_types.CookieTypes | None = None
+    verify: ssl.SSLContext | str | bool = True
+    cert: httpx_types.CertTypes | None = None
+    http1: bool = True
+    http2: bool = False
+    proxy: httpx_types.ProxyTypes | None = None
+    mounts: Mapping[str, AsyncBaseTransport | None] | None = None
+    timeout: httpx_types.TimeoutTypes = httpx.Timeout(30.0, read=None)
+    follow_redirects: bool = False
+    limits: httpx.Limits = httpx._config.DEFAULT_LIMITS
+    max_redirects: int = httpx._config.DEFAULT_MAX_REDIRECTS
+    event_hooks: Mapping[str, list[httpx._client.EventHook]] | None = None
+    base_url: httpx._urls.URL | str = ""
+    transport: AsyncBaseTransport | None = None
+    trust_env: bool = True
+    default_encoding: str | Callable[[bytes], str] = "utf-8"
+
+
+class A2AAgentParameters(BaseModel):
+    httpx_async_client: HttpxAsyncClientParameters = HttpxAsyncClientParameters()
+    extract_messages_from: Literal["task-artifacts", "task-history", "task-status", "messages"] | None = None
 
 
 class A2AAgent(BaseAgent[A2AAgentOutput]):
@@ -60,6 +98,7 @@ class A2AAgent(BaseAgent[A2AAgentOutput]):
         agent_card: a2a_types.AgentCard | None = None,
         memory: BaseMemory,
         grpc_client_credentials: grpc.ChannelCredentials | None = None,
+        parameters: A2AAgentParameters | None = None,
     ) -> None:
         super().__init__()
         if agent_card:
@@ -79,6 +118,7 @@ class A2AAgent(BaseAgent[A2AAgentOutput]):
         self._task_id: str | None = None
         self._reference_task_ids: list[str] = []
         self._grpc_client_credentials = grpc_client_credentials
+        self._parameters = parameters or A2AAgentParameters()
 
     @property
     def name(self) -> str:
@@ -101,7 +141,7 @@ class A2AAgent(BaseAgent[A2AAgentOutput]):
 
         assert self._agent_card is not None, "Agent card should not be empty after loading."
 
-        async with httpx.AsyncClient(timeout=httpx.Timeout(30.0, read=None)) as httpx_client:
+        async with httpx.AsyncClient(**self._parameters.httpx_async_client.model_dump()) as httpx_client:
             # create client
             client: a2a_client.Client = a2a_client.ClientFactory(
                 config=a2a_client.ClientConfig(
@@ -160,6 +200,9 @@ class A2AAgent(BaseAgent[A2AAgentOutput]):
                         ):
                             self._task_id = None
 
+                            if update_event.status.message:
+                                messages.append(update_event.status.message)
+
                     await context.emitter.emit("update", A2AAgentUpdateEvent(value=event))
 
                 # check if we received any event
@@ -170,21 +213,41 @@ class A2AAgent(BaseAgent[A2AAgentOutput]):
                 input_messages = [input] if not isinstance(input, list) else input
                 await self.memory.add_many([_convert_to_framework_message(m) for m in input_messages])
 
-                if task:
-                    if task.status.state is not a2a_types.TaskState.completed:
-                        logger.warning(f"Task status ({task.status.state}) is not complete.")
+                results: Sequence[a2a_types.Message | a2a_types.Artifact] = []
+                if self._parameters.extract_messages_from is None:
+                    if task:
+                        if task.status.state is not a2a_types.TaskState.completed:
+                            logger.warning(f"Task status ({task.status.state}) is not complete.")
 
-                    results: Sequence[a2a_types.Message | a2a_types.Artifact]
-                    if task.artifacts:
-                        results = task.artifacts
-                    elif task.history:
-                        results = task.history
-                    elif task.status.message:
-                        results = [task.status.message]
+                        if task.artifacts:
+                            results = task.artifacts
+                        elif task.history:
+                            results = task.history
+                        elif task.status.message:
+                            results = [task.status.message]
+                        else:
+                            results = []
                     else:
-                        results = []
+                        results = messages
                 else:
-                    results = messages if messages else []
+                    match self._parameters.extract_messages_from:
+                        case "task-artifacts":
+                            if task:
+                                results = task.artifacts or []
+                            else:
+                                logger.error("Cannot extract artifact from task, because task is not provided.")
+                        case "task-history":
+                            if task:
+                                results = task.history or []
+                            else:
+                                logger.error("Cannot extract history from task, because task is not provided.")
+                        case "task-status":
+                            if task:
+                                results = [task.status.message] if task.status.message else []
+                            else:
+                                logger.error("Cannot extract status message from task, because task is not provided.")
+                        case "messages":
+                            results = messages
 
                 # retrieve the assistant's response
                 if results:

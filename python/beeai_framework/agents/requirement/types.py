@@ -62,7 +62,7 @@ class RequirementAgentRunStateStep(BaseModel):
 
 class RequirementAgentRunState(BaseModel):
     answer: InstanceOf[AssistantMessage] | None = None
-    result: Any  # TODO
+    result: Any
     memory: InstanceOf[BaseMemory]
     iteration: int
     steps: list[RequirementAgentRunStateStep] = []

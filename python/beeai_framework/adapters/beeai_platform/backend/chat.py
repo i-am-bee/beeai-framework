@@ -84,7 +84,7 @@ class BeeAIPlatformChatModel(ChatModel):
 
         kwargs = self._kwargs.copy()
         if kwargs.get("tool_choice_support") is None:
-            provider_name = llm_conf.api_model.replace("beeai:", "")
+            provider_name = llm_conf.api_model.replace("beeai:", "").split(":")[0]
             tool_choice_support = type(self).providers_mapping.get(provider_name, lambda: set())()
             kwargs["tool_choice_support"] = tool_choice_support
 
