@@ -45,7 +45,7 @@ def _openai_content_part_to_beeai_content_part(
                 image_url=MessageImageContentImageUrl(url=part.image_url.url, detail=part.image_url.detail or "auto")
             )
         case _:
-            raise Exception(f"unknown part type: {part}")
+            raise ValueError(f"unknown part type: {part}")
 
 
 def openai_message_to_beeai_message(message: openai_api.ChatMessage) -> AnyMessage:

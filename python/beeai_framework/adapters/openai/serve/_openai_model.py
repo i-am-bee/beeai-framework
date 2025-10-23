@@ -20,17 +20,16 @@ class OpenAIModel:
         stream: Callable[[list[AnyMessage]], AsyncIterable[OpenAIEvent]] | None = None,
     ) -> None:
         super().__init__()
-        self.runnable: AnyRunnable = runnable
-        self.model_id: str = model_id
-        self.stream: Callable[[list[AnyMessage]], AsyncIterable[OpenAIEvent]] = stream or self._stream
+        self._runnable = runnable
+        self.model_id = model_id
+        self.stream = stream or self._stream
 
     async def run(self, input: list[AnyMessage]) -> RunnableOutput:
-        cloned_runnable = await self.runnable.clone() if isinstance(self.runnable, Cloneable) else self.runnable
-        response: RunnableOutput = await cloned_runnable.run(input)
-        return response
+        cloned_runnable = await self._runnable.clone() if isinstance(self._runnable, Cloneable) else self._runnable
+        return await cloned_runnable.run(input)  # type: ignore[no-any-return]
 
     async def _stream(self, input: list[AnyMessage]) -> AsyncIterable[OpenAIEvent]:
-        cloned_runnable = await self.runnable.clone() if isinstance(self.runnable, Cloneable) else self.runnable
+        cloned_runnable = await self._runnable.clone() if isinstance(self._runnable, Cloneable) else self._runnable
         if isinstance(cloned_runnable, ChatModel):
             cloned_runnable.parameters.stream = True
 

@@ -128,3 +128,4 @@ def runnable_entry(handler: Callable[P, Awaitable[R]]) -> Callable[P, Run[R]]:
 
 
 AnyRunnable: TypeAlias = Runnable[Any]
+AnyRunnableTypeVar = TypeVar("AnyRunnableTypeVar", bound=Runnable[Any], default=Runnable[Any])

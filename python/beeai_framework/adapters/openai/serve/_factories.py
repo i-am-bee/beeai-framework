@@ -4,8 +4,8 @@ import json
 from collections.abc import AsyncIterable
 from typing import Any
 
+from beeai_framework.adapters.openai.serve._openai_model import OpenAIModel
 from beeai_framework.adapters.openai.serve._types import OpenAIEvent
-from beeai_framework.adapters.openai.serve.openai_model import OpenAIModel
 from beeai_framework.adapters.openai.serve.server import OpenAIServerMetadata
 from beeai_framework.agents import BaseAgent
 from beeai_framework.agents.react import ReActAgent, ReActAgentSuccessEvent, ReActAgentUpdateEvent

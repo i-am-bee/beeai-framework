@@ -1,4 +1,4 @@
-from beeai_framework.adapters.openai.serve.server import APIType, OpenAIServer, OpenAIServerConfig
+from beeai_framework.adapters.openai.serve.server import OpenAIAPIType, OpenAIServer, OpenAIServerConfig
 from beeai_framework.agents.requirement import RequirementAgent
 from beeai_framework.backend import ChatModel
 from beeai_framework.memory import UnconstrainedMemory
@@ -14,7 +14,7 @@ def main() -> None:
         memory=UnconstrainedMemory(),
     )
 
-    server = OpenAIServer(config=OpenAIServerConfig(port=9998, api=APIType.RESPONSES))
+    server = OpenAIServer(config=OpenAIServerConfig(port=9998, api=OpenAIAPIType.RESPONSES))
     server.register(agent, name="agent")
     server.register(llm)
     server.serve()

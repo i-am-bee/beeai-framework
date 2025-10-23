@@ -13,7 +13,7 @@ from sse_starlette import ServerSentEvent
 from sse_starlette.sse import EventSourceResponse
 
 import beeai_framework.adapters.openai.serve.responses._types as responses_types
-from beeai_framework.adapters.openai.serve.openai_model import OpenAIModel
+from beeai_framework.adapters.openai.serve._openai_model import OpenAIModel
 from beeai_framework.adapters.openai.serve.responses._utils import openai_input_to_beeai_message
 from beeai_framework.agents import AgentError, BaseAgent
 from beeai_framework.backend import (
@@ -96,9 +96,9 @@ class ResponsesAPI:
         history = []
         memory = None
         if context_id:
-            if isinstance(openai_model.runnable, BaseAgent):
-                await init_agent_memory(openai_model.runnable, self._memory_manager, context_id)
-                memory = openai_model.runnable.memory
+            if isinstance(openai_model._runnable, BaseAgent):
+                await init_agent_memory(openai_model._runnable, self._memory_manager, context_id)
+                memory = openai_model._runnable.memory
             else:
                 try:
                     memory = await self._memory_manager.get(context_id)
