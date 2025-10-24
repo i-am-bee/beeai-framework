@@ -15,11 +15,33 @@ BeeAI framework provides robust serialization capabilities through its built-in 
 - 📦 Snapshots: Create point-in-time captures of component state
 - 🔧 Reconstruction: Rebuild objects from their serialized representation
 
+The Python example prints the serialized payload, the restored ISO timestamp, and a boolean confirming the round trip.
+
 <CodeGroup>
 
-{/* <!-- comingsoon python/examples/serialization/base.py --> */}
+{/* <!-- embedme python/examples/serialization/base.py --> */}
 ```py Python [expandable]
-Example coming soon
+# Copyright 2025 © BeeAI a Series of LF Projects, LLC
+# SPDX-License-Identifier: Apache-2.0
+
+from datetime import UTC, datetime
+
+from beeai_framework.serialization import Serializer
+
+
+def main() -> None:
+    original = datetime(2024, 1, 1, tzinfo=UTC)
+    serialized = Serializer.serialize(original)
+    restored = Serializer.deserialize(serialized, expected_type=datetime)
+
+    print(serialized)
+    print(restored.isoformat())
+    print(restored == original)
+
+
+if __name__ == "__main__":
+    main()
+
 ```
 
 {/* <!-- embedme typescript/examples/serialization/base.ts --> */}
@@ -69,11 +91,37 @@ The serialization process involves:
 
 Most BeeAI components can be serialized out of the box. Here's an example using memory:
 
+Running the Python snippet restores the memory, appends an assistant reply, and prints the message count plus the first question.
+
 <CodeGroup>
 
-{/* <!-- comingsoon python/examples/serialization/memory.py --> */}
+{/* <!-- embedme python/examples/serialization/memory.py --> */}
 ```py Python [expandable]
-Example coming soon
+# Copyright 2025 © BeeAI a Series of LF Projects, LLC
+# SPDX-License-Identifier: Apache-2.0
+
+import asyncio
+
+from beeai_framework.backend import AssistantMessage, UserMessage
+from beeai_framework.memory import UnconstrainedMemory
+
+
+async def main() -> None:
+    memory = UnconstrainedMemory()
+    await memory.add(UserMessage("What is your name?"))
+
+    serialized = memory.serialize()
+    restored = UnconstrainedMemory.from_serialized(serialized)
+
+    await restored.add(AssistantMessage("Bee"))
+
+    print(len(restored.messages))
+    print(restored.messages[0].text)
+
+
+if __name__ == "__main__":
+    asyncio.run(main())
+
 ```
 
 {/* <!-- embedme typescript/examples/serialization/memory.ts --> */}
@@ -107,11 +155,52 @@ If you want to serialize a class that the `Serializer` does not know, you may re
 
 You can register external classes with the serializer:
 
+This example registers a lightweight data class and prints the reconstructed token along with its expiry timestamp.
+
 <CodeGroup>
 
-{/* <!-- comingsoon python/examples/serialization/custom_external.py --> */}
+{/* <!-- embedme python/examples/serialization/custom_external.py --> */}
 ```py Python [expandable]
-Example coming soon
+# Copyright 2025 © BeeAI a Series of LF Projects, LLC
+# SPDX-License-Identifier: Apache-2.0
+
+from dataclasses import dataclass
+from datetime import UTC, datetime
+
+from beeai_framework.serialization import Serializer
+
+
+@dataclass
+class ApiToken:
+    value: str
+    expires_at: datetime
+
+
+Serializer.register(
+    ApiToken,
+    to_plain=lambda token: {
+        "value": token.value,
+        "expires_at": token.expires_at,
+    },
+    from_plain=lambda payload: ApiToken(
+        value=payload["value"],
+        expires_at=payload["expires_at"],
+    ),
+)
+
+
+def main() -> None:
+    token = ApiToken("example-token", datetime(2025, 1, 1, tzinfo=UTC))
+    serialized = Serializer.serialize(token)
+    restored = Serializer.deserialize(serialized, expected_type=ApiToken)
+
+    print(restored)
+    print(restored.expires_at.isoformat())
+
+
+if __name__ == "__main__":
+    main()
+
 ```
 
 {/* <!-- embedme typescript/examples/serialization/customExternal.ts --> */}
@@ -150,11 +239,46 @@ console.info(deserialized);
 
 For deeper integration, extend the Serializable class:
 
+The Python variant increments a counter, serializes it, and prints both the live and restored values.
+
 <CodeGroup>
 
-{/* <!-- comingsoon python/examples/serialization/custom_internal.py --> */}
+{/* <!-- embedme python/examples/serialization/custom_internal.py --> */}
 ```py Python [expandable]
-Example coming soon
+# Copyright 2025 © BeeAI a Series of LF Projects, LLC
+# SPDX-License-Identifier: Apache-2.0
+
+from beeai_framework.serialization import Serializable
+
+
+class Counter(Serializable[dict[str, int]]):
+    def __init__(self, value: int = 0) -> None:
+        self.value = value
+
+    def increment(self) -> None:
+        self.value += 1
+
+    def create_snapshot(self) -> dict[str, int]:
+        return {"value": self.value}
+
+    def load_snapshot(self, snapshot: dict[str, int]) -> None:
+        self.value = snapshot["value"]
+
+
+def main() -> None:
+    counter = Counter(3)
+    counter.increment()
+
+    serialized = counter.serialize()
+    restored = Counter.from_serialized(serialized)
+
+    print(counter.value)
+    print(restored.value)
+
+
+if __name__ == "__main__":
+    main()
+
 ```
 
 {/* <!-- embedme typescript/examples/serialization/customInternal.ts --> */}
@@ -199,11 +323,29 @@ Failure to register a class that the `Serializer` does not know will result in t
 
 ## Context matters
 
+Deserialize with the `extraClasses` equivalent to make sure message factories are registered; the Python snippet imports both `UserMessage` and `AssistantMessage` so the serializer can hydrate their content and then prints every restored user utterance.
+
 <CodeGroup>
 
-{/* <!-- comingsoon python/examples/serialization/context.py --> */}
+{/* <!-- embedme python/examples/serialization/context.py --> */}
 ```py Python [expandable]
-Example coming soon
+# Copyright 2025 © BeeAI a Series of LF Projects, LLC
+# SPDX-License-Identifier: Apache-2.0
+
+from beeai_framework.backend import AssistantMessage, UserMessage
+from beeai_framework.memory import UnconstrainedMemory
+
+SERIALIZED_MEMORY = """{"__version":"0.0.0","__root":{"__serializer":true,"__class":"UnconstrainedMemory","__value":{"messages":[{"__serializer":true,"__class":"UserMessage","__value":{"id":null,"meta":{"createdAt":{"__serializer":true,"__class":"datetime","__value":"2025-10-18T19:38:37.859543+00:00"}},"role":"user","content":[{"type":"text","text":"Hello!"}]}},{"__serializer":true,"__class":"AssistantMessage","__value":{"id":null,"meta":{"createdAt":{"__serializer":true,"__class":"datetime","__value":"2025-10-18T19:38:37.859665+00:00"}},"role":"assistant","content":[{"type":"text","text":"Hello, how can I help you?"}]}}]}}}"""
+
+
+def main() -> None:
+    memory = UnconstrainedMemory.from_serialized(SERIALIZED_MEMORY, extra_classes=[UserMessage, AssistantMessage])
+    print([message.text for message in memory.messages])
+
+
+if __name__ == "__main__":
+    main()
+
 ```
 
 {/* <!-- embedme typescript/examples/serialization/context.ts --> */}

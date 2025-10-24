@@ -1,11 +1,14 @@
 # Copyright 2025 © BeeAI a Series of LF Projects, LLC
 # SPDX-License-Identifier: Apache-2.0
 
+from typing import Any
+
 from beeai_framework.backend.message import AnyMessage
 from beeai_framework.memory.base_memory import BaseMemory
+from beeai_framework.serialization import Serializable
 
 
-class UnconstrainedMemory(BaseMemory):
+class UnconstrainedMemory(Serializable[dict[str, Any]], BaseMemory):
     """Simple memory implementation with no constraints."""
 
     def __init__(self) -> None:
@@ -33,3 +36,9 @@ class UnconstrainedMemory(BaseMemory):
         cloned = UnconstrainedMemory()
         cloned._messages = self._messages.copy()
         return cloned
+
+    def create_snapshot(self) -> dict[str, Any]:
+        return {"messages": list(self._messages)}
+
+    def load_snapshot(self, snapshot: dict[str, Any]) -> None:
+        self._messages = list(snapshot.get("messages", []))
