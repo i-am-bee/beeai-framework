@@ -1,0 +1,63 @@
+# Copyright 2025 © BeeAI a Series of LF Projects, LLC
+# SPDX-License-Identifier: Apache-2.0
+
+import asyncio
+import re
+from pathlib import Path
+
+from beeai_framework.backend.message import AnyMessage, AssistantMessage, UserMessage
+from beeai_framework.workflows.v2.decorators._or import _or
+from beeai_framework.workflows.v2.decorators.after import after
+from beeai_framework.workflows.v2.decorators.end import end
+from beeai_framework.workflows.v2.decorators.start import start
+from beeai_framework.workflows.v2.decorators.when import when
+from beeai_framework.workflows.v2.workflow import Workflow
+
+
+class CalculateTokensWorkflow(Workflow):
+    def __init__(self) -> None:
+        super().__init__()
+
+    @start
+    async def convert_to_text(self, messages: list[AnyMessage]) -> str:
+        return "".join(msg.text for msg in messages)
+
+    @after(convert_to_text)
+    @when(lambda _, text: len(text) < 1000)
+    async def count_tokens_by_whitespaces(self, text: str) -> int:
+        print("count_tokens_by_whitespaces")
+        return len(text.split(" "))
+
+    @after(convert_to_text)
+    @when(lambda _, text: len(text) >= 1000)
+    async def count_tokens_regex(self, text: str) -> int:
+        print("count_tokens_regex")
+        tokens = re.findall(r"\w+|[^\w\s]", text, re.UNICODE)
+        return len(tokens)
+
+    @after(_or(count_tokens_by_whitespaces, count_tokens_regex))
+    @end
+    async def finalize(
+        self, white_space_tokens: int | None = None, count_regex_tokens: int | None = None
+    ) -> list[AnyMessage]:
+        token_count = 0
+
+        if white_space_tokens is not None:
+            token_count = white_space_tokens
+        elif count_regex_tokens is not None:
+            token_count = count_regex_tokens
+
+        return [AssistantMessage(f"Total tokens: {token_count}")]
+
+
+# Async main function
+async def main() -> None:
+    workflow = CalculateTokensWorkflow()
+    workflow.print_html(Path(__file__).resolve().parent / "workflow.html")
+    output = await workflow.run([UserMessage("Hello")])
+    print(output.last_message.text)
+
+
+# Entry point
+if __name__ == "__main__":
+    asyncio.run(main())
