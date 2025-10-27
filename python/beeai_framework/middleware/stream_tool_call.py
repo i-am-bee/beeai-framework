@@ -76,7 +76,7 @@ class StreamToolCallMiddleware(RunMiddlewareProtocol):
         if tool_name != self._target.name:
             return
 
-        parsed_args = parse_broken_json(args, fallback={}) if isinstance(args, str) else args
+        parsed_args = parse_broken_json(args, fallback={}, stream_stable=True) if isinstance(args, str) else args
 
         try:
             output_structured = self._target.input_schema.model_validate(parsed_args)
