@@ -1,4 +1,4 @@
-"""Module for MistralAI chat model integration."""
+"""Module for MistralAI embedding model integration."""
 # Copyright 2025 © BeeAI a Series of LF Projects, LLC
 # SPDX-License-Identifier: Apache-2.0
 
