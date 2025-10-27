@@ -330,7 +330,7 @@ class A2AAgent(BaseAgent[A2AAgentOutput]):
     def meta(self) -> AgentMeta:
         return AgentMeta(
             name=self.name,
-            description=self._agent_card.description if self._agent_card else "",
+            description=(self._agent_card.description or "") if self._agent_card else "",
             tools=[],
             extra_description=None,
         )
