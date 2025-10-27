@@ -91,7 +91,7 @@ class Run(Generic[R], Awaitable[R]):
         await task
 
     def observe(self, fn: Callable[[Emitter], Any]) -> Self:
-        """Register an function to observe the emitter."""
+        """Register a function to observe the emitter."""
         self._tasks.append((fn, [self._run_context.emitter]))
         return self
 
