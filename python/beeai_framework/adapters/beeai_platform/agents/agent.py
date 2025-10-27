@@ -41,7 +41,7 @@ from beeai_framework.adapters.beeai_platform.agents.events import (
 from beeai_framework.adapters.beeai_platform.agents.types import (
     BeeAIPlatformAgentOutput,
 )
-from beeai_framework.agents import AgentError, BaseAgent
+from beeai_framework.agents import AgentError, AgentMeta, BaseAgent
 from beeai_framework.backend.message import AnyMessage
 from beeai_framework.context import RunContext
 from beeai_framework.emitter import Emitter
@@ -216,6 +216,10 @@ class BeeAIPlatformAgent(BaseAgent[BeeAIPlatformAgentOutput]):
             creator=self,
             events=beeai_platform_agent_event_types,
         )
+
+    @property
+    def meta(self) -> AgentMeta:
+        return self._agent.meta
 
     @property
     def memory(self) -> BaseMemory:
