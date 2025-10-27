@@ -40,7 +40,7 @@ class PrematureStopRequirement(Requirement[RequirementAgentRunState]):
 
 async def main() -> None:
     agent = RequirementAgent(
-        llm=ChatModel.from_name("ollama:granite3.3:8b"),
+        llm=ChatModel.from_name("ollama:granite4:micro"),
         tools=[DuckDuckGoSearchTool()],
         requirements=[
             PrematureStopRequirement(phrase="value of x", reason="algebraic expressions are not allowed"),

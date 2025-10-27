@@ -14,7 +14,7 @@ from beeai_framework.tools.weather import OpenMeteoTool
 
 async def main() -> None:
     knowledge_agent = RequirementAgent(
-        llm=ChatModel.from_name("ollama:granite3.3:8b"),
+        llm=ChatModel.from_name("ollama:granite4:micro"),
         tools=[ThinkTool(), WikipediaTool()],
         requirements=[ConditionalRequirement(ThinkTool, force_at_step=1)],
         role="Knowledge Specialist",
@@ -22,7 +22,7 @@ async def main() -> None:
     )
 
     weather_agent = RequirementAgent(
-        llm=ChatModel.from_name("ollama:granite3.3:8b"),
+        llm=ChatModel.from_name("ollama:granite4:micro"),
         tools=[OpenMeteoTool()],
         role="Weather Specialist",
         instructions="Provide weather forecast for a given destination.",
@@ -30,7 +30,7 @@ async def main() -> None:
 
     main_agent = RequirementAgent(
         name="MainAgent",
-        llm=ChatModel.from_name("ollama:granite3.3:8b"),
+        llm=ChatModel.from_name("ollama:granite4:micro"),
         tools=[
             ThinkTool(),
             HandoffTool(

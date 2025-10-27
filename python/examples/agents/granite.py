@@ -12,7 +12,7 @@ from examples.helpers.io import ConsoleReader
 
 
 async def main() -> None:
-    chat_model: ChatModel = ChatModel.from_name("ollama:granite3.3:8b")
+    chat_model: ChatModel = ChatModel.from_name("ollama:granite4:micro")
 
     agent = ReActAgent(
         llm=chat_model, tools=[OpenMeteoTool(), DuckDuckGoSearchTool(max_results=3)], memory=UnconstrainedMemory()

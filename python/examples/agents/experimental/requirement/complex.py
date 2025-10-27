@@ -58,7 +58,7 @@ class RepeatIfEmptyRequirement(Requirement[RequirementAgentRunState]):
 
 async def main() -> None:
     agent = RequirementAgent(
-        llm=ChatModel.from_name("ollama:granite3.3:8b"),
+        llm=ChatModel.from_name("ollama:granite4:micro"),
         tools=[ThinkTool(), WikipediaTool(), OpenMeteoTool()],
         role="a trip planner",
         instructions=[

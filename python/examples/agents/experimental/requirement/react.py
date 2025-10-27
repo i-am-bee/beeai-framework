@@ -12,7 +12,7 @@ from beeai_framework.tools.weather import OpenMeteoTool
 
 async def main() -> None:
     agent = RequirementAgent(
-        llm=ChatModel.from_name("ollama:granite3.3:8b"),
+        llm=ChatModel.from_name("ollama:granite4:micro"),
         tools=[ThinkTool(), WikipediaTool(), OpenMeteoTool()],
         requirements=[ConditionalRequirement(ThinkTool, force_at_step=1, force_after=Tool, consecutive_allowed=False)],
     )

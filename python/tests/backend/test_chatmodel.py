@@ -142,7 +142,7 @@ def test_chat_model_from(monkeypatch: pytest.MonkeyPatch) -> None:
 
     # Ollama with Granite model and base_url specified in env var
     monkeypatch.setenv("OLLAMA_API_BASE", "http://somewhere-else:12345")
-    ollama_chat_model = ChatModel.from_name("ollama:granite3.3:8b")
+    ollama_chat_model = ChatModel.from_name("ollama:granite4:micro")
     assert isinstance(ollama_chat_model, OllamaChatModel)
     assert ollama_chat_model._settings["base_url"] == "http://somewhere-else:12345/v1"
 

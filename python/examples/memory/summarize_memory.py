@@ -10,7 +10,7 @@ from beeai_framework.memory import SummarizeMemory
 async def main() -> None:
     # Initialize the LLM with parameters
     llm = ChatModel.from_name(
-        "ollama:granite3.3:8b",
+        "ollama:granite4:micro",
         # ChatModelParameters(temperature=0),
     )
 

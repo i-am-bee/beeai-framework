@@ -1,9 +1,13 @@
+from openinference.instrumentation.beeai import BeeAIInstrumentor
+
 from beeai_framework.adapters.beeai_platform.serve.server import BeeAIPlatformServer
 from beeai_framework.agents.requirement import RequirementAgent
 from beeai_framework.agents.requirement.requirements.ask_permission import AskPermissionRequirement
 from beeai_framework.backend import ChatModel
 from beeai_framework.middleware.trajectory import GlobalTrajectoryMiddleware
 from beeai_framework.tools.weather import OpenMeteoTool
+
+BeeAIInstrumentor().instrument()
 
 try:
     from beeai_sdk.a2a.extensions.ui.agent_detail import AgentDetail
@@ -14,7 +18,7 @@ except ModuleNotFoundError as e:
 
 
 def main() -> None:
-    llm = ChatModel.from_name("ollama:granite3.3:8b")
+    llm = ChatModel.from_name("ollama:granite4:micro")
     agent = RequirementAgent(
         llm=llm,
         tools=[OpenMeteoTool()],

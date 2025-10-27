@@ -7,7 +7,7 @@ from beeai_framework.emitter import EventMeta
 
 
 async def main() -> None:
-    llm = ChatModel.from_name("ollama:granite3.3:8b")
+    llm = ChatModel.from_name("ollama:granite4:micro")
     llm.parameters.stream = True
 
     agent = RequirementAgent(
