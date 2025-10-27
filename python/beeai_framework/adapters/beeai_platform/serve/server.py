@@ -136,7 +136,7 @@ class BaseBeeAIPlatformServerMetadata(TypedDict, total=False):
 
 
 class BeeAIPlatformServerMetadata(BaseBeeAIPlatformServerMetadata, total=False):
-    """Metadata for BeeAI Platform Server."""
+    """Metadata for BeeAI Platform Server with extensions."""
 
     extensions: type[BaseBeeAIPlatformExtensions]
 
