@@ -1,3 +1,4 @@
+"""Module for the A2A server implementation."""
 # Copyright 2025 © BeeAI a Series of LF Projects, LLC
 # SPDX-License-Identifier: Apache-2.0
 
@@ -64,6 +65,8 @@ class A2AServerConfig(BaseModel):
 
 
 class A2AServerMetadata(TypedDict, total=False):
+    """Metadata for configuring the A2A agent server."""
+
     name: str
     description: str
     url: str
@@ -86,6 +89,8 @@ class A2AServer(
         A2AServerConfig,
     ],
 ):
+    """A2A Server for serving agents over various protocols."""
+
     def __init__(
         self, *, config: ModelLike[A2AServerConfig] | None = None, memory_manager: MemoryManager | None = None
     ) -> None:

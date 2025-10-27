@@ -1,3 +1,4 @@
+"""Module for ACP agent integration."""
 # Copyright 2025 © BeeAI a Series of LF Projects, LLC
 # SPDX-License-Identifier: Apache-2.0
 
@@ -32,6 +33,8 @@ from beeai_framework.runnable import runnable_entry
 
 
 class ACPAgent(BaseAgent[ACPAgentOutput]):
+    """Agent that interacts with ACP platform agents."""
+
     def __init__(
         self, agent_name: str, *, url: str, memory: BaseMemory, session: acp_models.Session | None = None
     ) -> None:
@@ -52,6 +55,18 @@ class ACPAgent(BaseAgent[ACPAgentOutput]):
         /,
         **kwargs: Unpack[AgentOptions],
     ) -> ACPAgentOutput:
+        """
+        Execute the ACP agent with the given input.
+
+        Args:
+            input: The input to send to the agent. Can be a string, framework message,
+                ACP message, or a list of any of these types.
+            **kwargs: Additional agent options.
+        Returns:
+            ACPAgentOutput containing the agent's response and the last event.
+        Raises:
+            AgentError: If no event is received or if the agent run fails.
+        """
         async def handler(context: RunContext) -> ACPAgentOutput:
             async with (
                 acp_client.Client(base_url=self._url, manage_client=False, session=self._session) as client,
@@ -106,6 +121,12 @@ class ACPAgent(BaseAgent[ACPAgentOutput]):
     async def check_agent_exists(
         self,
     ) -> None:
+        """
+        Verify that the agent exists on the ACP platform.
+
+        Raises:
+            AgentError: If the agent does not exist or if connection to ACP fails.
+        """
         try:
             async with acp_client.Client(base_url=self._url) as client:
                 agents = [agent async for agent in client.agents()]
@@ -131,6 +152,12 @@ class ACPAgent(BaseAgent[ACPAgentOutput]):
         self._memory = memory
 
     async def clone(self) -> "ACPAgent":
+        """
+        Create a deep copy of the ACP agent.
+
+        Returns:
+            A new ACPAgent instance with cloned memory and emitter.
+        """
         cloned = ACPAgent(self._name, url=self._url, memory=await self.memory.clone())
         cloned.emitter = await self.emitter.clone()
         return cloned

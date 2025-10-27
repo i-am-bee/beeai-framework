@@ -1,3 +1,4 @@
+"""Module for ACP I/O context management."""
 # Copyright 2025 © BeeAI a Series of LF Projects, LLC
 # SPDX-License-Identifier: Apache-2.0
 
@@ -11,6 +12,8 @@ from beeai_framework.utils.io import setup_io_context
 
 
 class ACPIOContext:
+    """Context manager for handling I/O in ACP server context."""
+
     def __init__(self, context: Context) -> None:
         self.context = context
         self._cleanup: Callable[[], None] = lambda: None

@@ -1,3 +1,4 @@
+"""Module for Watsonx Orchestrate Agent implementation."""
 # Copyright 2025 © BeeAI a Series of LF Projects, LLC
 # SPDX-License-Identifier: Apache-2.0
 
@@ -29,6 +30,7 @@ from beeai_framework.utils.strings import to_safe_word
 
 
 class WatsonxOrchestrateAgent(BaseAgent[WatsonxOrchestrateAgentOutput]):
+    """Agent that interacts with IBM Watsonx Orchestrate."""
     def __init__(
         self,
         *,
@@ -57,6 +59,18 @@ class WatsonxOrchestrateAgent(BaseAgent[WatsonxOrchestrateAgentOutput]):
     async def run(
         self, input: str | list[str] | AnyMessage | list[AnyMessage] | None, /, **kwargs: Unpack[AgentOptions]
     ) -> WatsonxOrchestrateAgentOutput:
+        """
+        Execute the Watsonx Orchestrate agent with the given input.
+
+        Args:
+            input: The input to send to the agent. Can be a string, message,
+                list of strings/messages, or None.
+            **kwargs: Additional agent execution options.
+        Returns:
+            WatsonxOrchestrateAgentOutput containing the agent's response and raw data.
+        Raises:
+            AgentError: If the request to Watsonx Orchestrate fails.
+        """
         async def handler(_: RunContext) -> WatsonxOrchestrateAgentOutput:
             async with self._create_client() as client:
                 input_messages = map_watsonx_orchestrate_agent_input_to_bee_messages(input)
@@ -96,6 +110,12 @@ class WatsonxOrchestrateAgent(BaseAgent[WatsonxOrchestrateAgentOutput]):
     async def check_agent_exists(
         self,
     ) -> None:
+        """
+        Verify that the agent exists in Watsonx Orchestrate.
+
+        Raises:
+            AgentError: If the agent does not exist or if the request fails.
+        """
         async with self._create_client() as client:
             response = await client.get("agents")
             response.raise_for_status()
@@ -113,6 +133,12 @@ class WatsonxOrchestrateAgent(BaseAgent[WatsonxOrchestrateAgentOutput]):
         self._memory = memory
 
     async def clone(self) -> "WatsonxOrchestrateAgent":
+        """
+        Create a deep copy of the Watsonx Orchestrate agent.
+
+        Returns:
+            A new WatsonxOrchestrateAgent instance with cloned memory and emitter.
+        """
         cloned = WatsonxOrchestrateAgent(
             agent_id=self._agent_id,
             instance_url=self._instance_url,

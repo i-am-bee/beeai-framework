@@ -1,3 +1,4 @@
+"""Module for Amazon Bedrock Chat Model integration."""
 # Copyright 2025 © BeeAI a Series of LF Projects, LLC
 # SPDX-License-Identifier: Apache-2.0
 
@@ -15,6 +16,8 @@ logger = Logger(__name__)
 
 
 class AmazonBedrockChatModel(LiteLLMChatModel):
+    """Chat model implementation for Amazon Bedrock."""
+
     @property
     def provider_id(self) -> ProviderName:
         return "amazon_bedrock"

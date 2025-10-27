@@ -1,3 +1,4 @@
+"""Module for ReAct agent executor in A2A framework."""
 # Copyright 2025 © BeeAI a Series of LF Projects, LLC
 # SPDX-License-Identifier: Apache-2.0
 
@@ -28,6 +29,8 @@ logger = Logger(__name__)
 
 
 class ReActAgentExecutor(BaseA2AAgentExecutor):
+    """Executor for ReAct agents in the A2A framework."""
+
     @override
     async def _process_events(
         self,

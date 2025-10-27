@@ -1,3 +1,4 @@
+"""Module for BeeAI Platform Agent integration."""
 # Copyright 2025 © BeeAI a Series of LF Projects, LLC
 # SPDX-License-Identifier: Apache-2.0
 
@@ -51,6 +52,8 @@ from beeai_framework.utils.strings import to_safe_word
 
 
 class BeeAIPlatformAgent(BaseAgent[BeeAIPlatformAgentOutput]):
+    """Agent that interacts with BeeAI Platform."""
+
     def __init__(
         self, *, url: str | None = None, agent_card: a2a_types.AgentCard | None = None, memory: BaseMemory
     ) -> None:
@@ -65,6 +68,19 @@ class BeeAIPlatformAgent(BaseAgent[BeeAIPlatformAgentOutput]):
     async def run(
         self, input: str | AnyMessage | list[AnyMessage] | a2a_types.Message, /, **kwargs: Unpack[A2AAgentOptions]
     ) -> BeeAIPlatformAgentOutput:
+        """
+        Execute the BeeAI Platform agent with the given input.
+
+        Args:
+            input: The input to send to the agent. Can be a string, message,
+                list of messages, or an A2A message.
+            **kwargs: Additional agent execution options including context_id,
+                task_id, and clear_context.
+        Returns:
+            BeeAIPlatformAgentOutput containing the agent's response and event data.
+        Raises:
+            AgentError: If the agent execution fails.
+        """
         self._agent.set_run_params(
             context_id=kwargs.get("context_id"),
             task_id=kwargs.get("task_id"),
@@ -95,6 +111,12 @@ class BeeAIPlatformAgent(BaseAgent[BeeAIPlatformAgentOutput]):
     async def check_agent_exists(
         self,
     ) -> None:
+        """
+        Verify that the agent exists on the BeeAI Platform.
+
+        Raises:
+            AgentError: If the agent does not exist or connection fails.
+        """
         try:
             await self._agent.check_agent_exists()
         except Exception as e:
@@ -166,6 +188,17 @@ class BeeAIPlatformAgent(BaseAgent[BeeAIPlatformAgentOutput]):
 
     @classmethod
     async def from_platform(cls, url: str, memory: BaseMemory) -> list["BeeAIPlatformAgent"]:
+        """
+        Create BeeAIPlatformAgent instances from all agents available at the given URL.
+
+        Args:
+            url: The base URL of the BeeAI Platform.
+            memory: The memory instance to be cloned for each agent.
+        Returns:
+            A list of BeeAIPlatformAgent instances, one for each provider.
+        Raises:
+            httpx.HTTPStatusError: If the request to fetch providers fails.
+        """
         async with httpx.AsyncClient() as client:
             response = await client.get(f"{url}/api/v1/providers")
 
@@ -193,6 +226,12 @@ class BeeAIPlatformAgent(BaseAgent[BeeAIPlatformAgentOutput]):
         self._agent.memory = memory
 
     async def clone(self) -> "BeeAIPlatformAgent":
+        """
+        Create a deep clone of the agent.
+
+        Returns:
+            A new BeeAIPlatformAgent instance with cloned memory and emitter.
+        """
         cloned = BeeAIPlatformAgent(
             url=self._agent._url, agent_card=self._agent.agent_card, memory=await self._agent.memory.clone()
         )

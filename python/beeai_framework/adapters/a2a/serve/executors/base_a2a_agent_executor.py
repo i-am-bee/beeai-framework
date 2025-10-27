@@ -1,3 +1,4 @@
+"""Module containing the base A2A agent executor."""
 # Copyright 2025 © BeeAI a Series of LF Projects, LLC
 # SPDX-License-Identifier: Apache-2.0
 
@@ -31,6 +32,8 @@ logger = Logger(__name__)
 
 
 class BaseA2AAgentExecutor(BaseA2AExecutor[AnyAgentLike]):
+    """Base A2A agent executor."""
+
     def __init__(
         self,
         agent: AnyAgentLike,
@@ -48,6 +51,16 @@ class BaseA2AAgentExecutor(BaseA2AExecutor[AnyAgentLike]):
         context: a2a_agent_execution.RequestContext,
         event_queue: a2a_server.events.EventQueue,
     ) -> None:
+        """
+        Execute the A2A agent with the given context and event queue.
+
+        Args:
+            context: The request context containing the task, message, and session information.
+            event_queue: The queue for emitting task status and progress events.
+        Raises:
+            ValueError: If no message is found in the request context when initializing a new task.
+            Exception: If any error occurs during agent execution.
+        """
         agent: AnyAgentLike = self._runnable
         updater = a2a_server_tasks.TaskUpdater(event_queue, context.task_id, context.context_id)  # type: ignore[arg-type]
         if not context.current_task:

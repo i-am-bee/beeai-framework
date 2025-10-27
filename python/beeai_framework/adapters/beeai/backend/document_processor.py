@@ -1,3 +1,4 @@
+"""Module for BeeAI document processor integration."""
 # Copyright 2025 © BeeAI a Series of LF Projects, LLC
 # SPDX-License-Identifier: Apache-2.0
 
@@ -24,6 +25,8 @@ except ModuleNotFoundError as e:
 
 
 class BeeAIDocumentProcessor(DocumentProcessor, ABC):
+    """Base class for BeeAI document processors."""
+
     @classmethod
     def _class_from_name(cls, class_name: str, **kwargs: Any) -> BeeAIDocumentProcessor:
         """Create an instance from class name (required by DocumentProcessor base class)."""
@@ -43,6 +46,8 @@ class BeeAIDocumentProcessor(DocumentProcessor, ABC):
 
 
 class LLMDocumentReranker(BeeAIDocumentProcessor):
+    """Document processor that reranks documents using an LLM."""
+
     def __init__(self, llm: ChatModel, *, choice_batch_size: int = 5, top_n: int = 5) -> None:
         self.llm = llm
         self.reranker = LLMRerank(

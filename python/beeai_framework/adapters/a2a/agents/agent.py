@@ -1,3 +1,4 @@
+"""A2A Agent implementation for BeeAI Framework."""
 # Copyright 2025 © BeeAI a Series of LF Projects, LLC
 # SPDX-License-Identifier: Apache-2.0
 
@@ -54,6 +55,8 @@ logger = Logger(__name__)
 
 
 class A2AAgentOptions(AgentOptions, total=False):
+    """Options for running the A2AAgent."""
+
     context_id: str
     task_id: str
     clear_context: bool
@@ -61,6 +64,8 @@ class A2AAgentOptions(AgentOptions, total=False):
 
 
 class HttpxAsyncClientParameters(BaseModel):
+    """Parameters for configuring an httpx.AsyncClient."""
+
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
     auth: httpx_types.AuthTypes | None = None
@@ -85,11 +90,15 @@ class HttpxAsyncClientParameters(BaseModel):
 
 
 class A2AAgentParameters(BaseModel):
+    """Parameters for configuring the A2AAgent."""
+
     httpx_async_client: HttpxAsyncClientParameters = HttpxAsyncClientParameters()
     extract_messages_from: Literal["task-artifacts", "task-history", "task-status", "messages"] | None = None
 
 
 class A2AAgent(BaseAgent[A2AAgentOutput]):
+    """Agent that interacts with an A2A-compatible agent via BeeAI A2A SDK."""
+
     def __init__(
         self,
         *,
@@ -128,6 +137,20 @@ class A2AAgent(BaseAgent[A2AAgentOutput]):
     async def run(
         self, input: str | list[AnyMessage] | AnyMessage | a2a_types.Message, /, **kwargs: Unpack[A2AAgentOptions]
     ) -> A2AAgentOutput:
+        """
+        Execute the agent with the given input message(s).
+
+        Args:
+            input: The input message(s) to send to the agent. Can be a string,
+                a single message, or a list of messages.
+            **kwargs: Additional options for agent execution including context_id,
+                task_id, and clear_context.
+        Returns:
+            A2AAgentOutput: The output from the agent containing the response message(s) and the last event.
+        Raises:
+            AgentError: If no result is received from the agent or if an A2A
+                client error occurs during execution
+        """
         self.set_run_params(
             context_id=kwargs.get("context_id"),
             task_id=kwargs.get("task_id"),
@@ -280,6 +303,14 @@ class A2AAgent(BaseAgent[A2AAgentOutput]):
     def set_run_params(
         self, *, context_id: str | None, task_id: str | None, clear_context: bool | None = False
     ) -> None:
+        """
+        Set the run parameters for the agent.
+
+        Args:
+            context_id: The context ID to set.
+            task_id: The task ID to set.
+            clear_context: Whether to clear the context.
+        """
         self._context_id = context_id or self._context_id
         self._task_id = task_id
         if clear_context:
@@ -301,6 +332,12 @@ class A2AAgent(BaseAgent[A2AAgentOutput]):
             raise AgentError("Can't load agent card.", cause=e)
 
     async def check_agent_exists(self) -> None:
+        """
+        Check if the agent exists by loading its agent card.
+
+        Raises:
+            AgentError: If the agent does not exist.
+        """
         await self._load_agent_card()
         if not self._agent_card:
             raise AgentError(f"Agent {self.name} does not exist.")
@@ -327,6 +364,12 @@ class A2AAgent(BaseAgent[A2AAgentOutput]):
         self._memory = memory
 
     async def clone(self) -> "A2AAgent":
+        """
+        Create a clone of the agent with cloned memory and emitter.
+
+        Returns:
+            A2AAgent: A new instance of A2AAgent with cloned memory and emitter.
+        """
         cloned = A2AAgent(
             url=self._url,
             agent_card_path=self._agent_card_path,
@@ -340,6 +383,17 @@ class A2AAgent(BaseAgent[A2AAgentOutput]):
     def convert_to_a2a_message(
         self, input: str | list[AnyMessage] | AnyMessage | a2a_types.Message
     ) -> a2a_types.Message:
+        """
+        Convert various input types to an A2A message format.
+
+        Args:
+            input: The input to convert. Can be a string, a framework message,
+                a list of messages, or an existing A2A message.
+        Returns:
+            a2a_types.Message: The converted A2A message with appropriate metadata.
+        Raises:
+            ValueError: If the input type is unsupported.
+        """
         if isinstance(input, str):
             return a2a_types.Message(
                 role=a2a_types.Role.user,

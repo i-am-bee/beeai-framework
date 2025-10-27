@@ -1,3 +1,4 @@
+"""Module for Tool Calling Agent Executor in A2A framework."""
 # Copyright 2025 © BeeAI a Series of LF Projects, LLC
 # SPDX-License-Identifier: Apache-2.0
 
@@ -23,6 +24,8 @@ except ModuleNotFoundError as e:
 
 
 class ToolCallingAgentExecutor(BaseA2AAgentExecutor):
+    """Executor for Tool Calling Agent in A2A framework."""
+
     @override
     async def _process_events(
         self,

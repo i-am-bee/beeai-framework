@@ -1,3 +1,4 @@
+"""Module for OpenAI embedding model adapter using LiteLLM."""
 # Copyright 2025 © BeeAI a Series of LF Projects, LLC
 # SPDX-License-Identifier: Apache-2.0
 
@@ -12,6 +13,9 @@ from beeai_framework.backend.embedding import EmbeddingModelKwargs
 
 
 class OpenAIEmbeddingModel(LiteLLMEmbeddingModel):
+    """
+    An embedding model implementation for the OpenAI provider, leveraging LiteLLM.
+    """
     @property
     def provider_id(self) -> ProviderName:
         return "openai"
@@ -24,6 +28,15 @@ class OpenAIEmbeddingModel(LiteLLMEmbeddingModel):
         base_url: str | None = None,
         **kwargs: Unpack[EmbeddingModelKwargs],
     ) -> None:
+        """
+        Initializes the OpenAIEmbeddingModel.
+
+        Args:
+            model_id: The ID of the OpenAI embedding model to use. If not provided,
+                it falls back to the OPENAI_EMBEDDING_MODEL environment variable,
+                and then defaults to 'text-embedding-3-small'.
+            **kwargs: A dictionary of settings to configure the provider.
+        """
         super().__init__(
             model_id if model_id else os.getenv("OPENAI_EMBEDDING_MODEL", "text-embedding-3-small"),
             provider_id="openai",

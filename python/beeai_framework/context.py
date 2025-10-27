@@ -1,3 +1,4 @@
+"""Module for managing execution contexts."""
 # Copyright 2025 © BeeAI a Series of LF Projects, LLC
 # SPDX-License-Identifier: Apache-2.0
 
@@ -27,14 +28,18 @@ storage: ContextVar["RunContext"] = ContextVar("storage")
 
 
 class RunInstance(Protocol):
+    """Protocol for run instances."""
     @property
     def emitter(self) -> Emitter:
+        """Get the root emitter."""
         pass
 
 
 @runtime_checkable
 class RunMiddlewareProtocol(Protocol):
+    """Protocol for run middleware."""
     def bind(self, ctx: "RunContext") -> None:
+        """Bind the middleware to the run context."""
         pass
 
 
@@ -44,6 +49,7 @@ RunMiddlewareType: TypeAlias = RunMiddlewareFn | RunMiddlewareProtocol
 
 
 class Run(Generic[R], Awaitable[R]):
+    """Class representing a run execution context."""
     def __init__(
         self,
         handler: Callable[[], R | Awaitable[R]],
@@ -85,19 +91,23 @@ class Run(Generic[R], Awaitable[R]):
         await task
 
     def observe(self, fn: Callable[[Emitter], Any]) -> Self:
+        """Register an function to observe the emitter."""
         self._tasks.append((fn, [self._run_context.emitter]))
         return self
 
     def on(self, matcher: Matcher, callback: Callback, options: EmitterOptions | None = None) -> Self:
+        """Register an event listener on the emitter."""
         self._tasks.append((self._run_context.emitter.on, [matcher, callback, options]))
         return self
 
     def context(self, context: dict[str, Any]) -> Self:
+        """Set the context for the run."""
         if context:
             self._tasks.append((self._set_context, [context]))
         return self
 
     def middleware(self, *fns: RunMiddlewareProtocol | RunMiddlewareFn) -> Self:
+        """Add middleware functions to the run."""
         for fn in fns:
             if isinstance(fn, RunMiddlewareProtocol):
                 self._tasks.append((lambda ctx, _fn=fn: _fn.bind(ctx), [self._run_context]))
@@ -124,6 +134,7 @@ class Run(Generic[R], Awaitable[R]):
 
 
 class RunContext:
+    """Class representing the execution context of a run."""
     def __init__(
         self,
         instance: RunInstance,
@@ -174,13 +185,16 @@ class RunContext:
 
     @property
     def signal(self) -> AbortSignal:
+        """Get the abort signal for the run context."""
         return self._controller.signal
 
     def destroy(self) -> None:
+        """Destroy the run context."""
         self.emitter.destroy()
         self._controller.abort("Context has been destroyed.")
 
     def abort(self, reason: str | None = None) -> None:
+        """Abort the run context."""
         self._controller.abort(reason)
 
     @staticmethod
@@ -191,6 +205,17 @@ class RunContext:
         signal: AbortSignal | None = None,
         run_params: dict[str, Any] | None = None,
     ) -> Run[R]:
+        """
+        Create and enter a new run context.
+
+        Args:
+            instance: The run instance that provides the emitter.
+            fn: The Callable to execute within the run context.
+            signal: An optional abort signal to associate with the run context.
+            run_params: Optional parameters for the run.
+        Returns:
+            Run[R]: An awaitable Run object wrapping the execution handler and context.
+        """
         parent = storage.get(None)
         context = RunContext(instance, parent=parent, signal=signal, run_params=run_params)
 
@@ -267,6 +292,7 @@ class RunContext:
         return Run(handler, context)
 
     async def clone(self) -> "RunContext":
+        """Clone the current run context."""
         cloned = RunContext(self.instance, signal=None, run_params=self.run_params.copy())
         cloned.run_id = self.run_id
         cloned.parent_id = self.parent_id
@@ -279,16 +305,19 @@ class RunContext:
 
 
 class RunContextStartEvent(BaseModel):
+    """Event emitted when a run context starts execution."""
     input: dict[str, Any]
     output: Any
 
 
 class RunContextSuccessEvent(BaseModel):
+    """Event emitted when a run context completes successfully."""
     input: dict[str, Any]
     output: Any
 
 
 class RunContextFinishEvent(BaseModel):
+    """Event emitted when a run context finishes execution."""
     output: Any | None
     error: InstanceOf[FrameworkError] | None
     input: dict[str, Any]

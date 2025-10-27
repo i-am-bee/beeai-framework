@@ -1,3 +1,4 @@
+"""Module for serving BeeAI agents via BeeAI Platform."""
 # Copyright 2025 © BeeAI a Series of LF Projects, LLC
 # SPDX-License-Identifier: Apache-2.0
 
@@ -114,6 +115,8 @@ class BeeAIPlatformServerConfig(BaseModel):
 
 
 class BaseBeeAIPlatformServerMetadata(TypedDict, total=False):
+    """Metadata for BeeAI Platform Server."""
+
     name: str
     description: str
     additional_interfaces: list[a2a_types.AgentInterface]
@@ -133,6 +136,8 @@ class BaseBeeAIPlatformServerMetadata(TypedDict, total=False):
 
 
 class BeeAIPlatformServerMetadata(BaseBeeAIPlatformServerMetadata, total=False):
+    """Metadata for BeeAI Platform Server."""
+
     extensions: type[BaseBeeAIPlatformExtensions]
 
 
@@ -143,6 +148,8 @@ class BeeAIPlatformServer(
         BeeAIPlatformServerConfig,
     ],
 ):
+    """Server to serve BeeAI agents via BeeAI Platform."""
+
     def __init__(
         self, *, config: ModelLike[BeeAIPlatformServerConfig] | None = None, memory_manager: MemoryManager | None = None
     ) -> None:

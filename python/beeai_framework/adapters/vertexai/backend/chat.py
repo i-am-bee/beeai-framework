@@ -1,3 +1,4 @@
+"""Module for Vertex AI chat model adapter."""
 # Copyright 2025 © BeeAI a Series of LF Projects, LLC
 # SPDX-License-Identifier: Apache-2.0
 
@@ -16,6 +17,8 @@ logger = Logger(__name__)
 
 
 class VertexAIChatModel(LiteLLMChatModel):
+    """Adapter for Vertex AI chat models."""
+
     @property
     def provider_id(self) -> ProviderName:
         return "vertexai"

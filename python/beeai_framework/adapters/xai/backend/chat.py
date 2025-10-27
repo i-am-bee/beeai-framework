@@ -1,3 +1,4 @@
+"""Module for XAI chat model integration."""
 # Copyright 2025 © BeeAI a Series of LF Projects, LLC
 # SPDX-License-Identifier: Apache-2.0
 
@@ -14,6 +15,7 @@ logger = Logger(__name__)
 
 
 class XAIChatModel(LiteLLMChatModel):
+    """Chat model integration for XAI."""
     @property
     def provider_id(self) -> ProviderName:
         return "xai"
