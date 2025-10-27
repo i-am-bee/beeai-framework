@@ -23,8 +23,19 @@ export function runServer(server: McpServer, hostname = "127.0.0.1", port = 3000
   const app = express();
   app.use(express.json());
 
+  // Track server readiness
+  let ready = false;
+
   // Store transports by session ID
   const transports: Record<string, StreamableHTTPServerTransport | SSEServerTransport> = {};
+
+  //=============================================================================
+  // HEALTH CHECK ENDPOINT
+  //=============================================================================
+
+  app.get("/health", (_req: any, res: any) => {
+    res.status(200).send(ready ? "ok" : "not ready");
+  });
 
   //=============================================================================
   // STREAMABLE HTTP TRANSPORT (PROTOCOL VERSION 2025-03-26)
@@ -158,6 +169,7 @@ export function runServer(server: McpServer, hostname = "127.0.0.1", port = 3000
       logger.error(error, "Error starting server");
       process.exit(1);
     }
+    ready = true;
     logger.info(`Backwards compatible MCP server listening on port ${hostname}:${port}`);
     logger.debug(`
     ==============================================
