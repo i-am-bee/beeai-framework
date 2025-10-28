@@ -12,7 +12,7 @@ from examples.helpers.io import ConsoleReader
 
 
 async def main() -> None:
-    chat_model: ChatModel = ChatModel.from_name("ollama:granite4:micro")
+    chat_model: ChatModel = ChatModel.from_name("ollama:granite4")
 
     agent = ReActAgent(
         llm=chat_model, tools=[OpenMeteoTool(), DuckDuckGoSearchTool(max_results=3)], memory=UnconstrainedMemory()
@@ -27,8 +27,7 @@ async def main() -> None:
             "update",
             lambda data, event: reader.write(f"Agent({data.update.key}) 🤖 : ", data.update.parsed_value),
         )
-
-    reader.write("Agent 🤖 : ", output.last_message.text)
+        reader.write("Agent 🤖 : ", output.last_message.text)
 
 
 if __name__ == "__main__":

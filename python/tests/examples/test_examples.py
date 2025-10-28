@@ -1,3 +1,4 @@
+import logging
 import os
 import pathlib
 import runpy
@@ -7,6 +8,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
+MAX_RETRIES = max(0, int(os.getenv("TEST_RETRY_COUNT", 0)))
 EXAMPLES_DIR = (pathlib.Path(__file__).parent.parent.parent / "examples").resolve()
 all_examples = list(EXAMPLES_DIR.rglob("*.py"))
 
@@ -98,4 +100,15 @@ def test_finds_examples() -> None:
 def test_example_execution(example: pathlib.Path, monkeypatch: pytest.MonkeyPatch) -> None:
     inputs = iter(["Hello world", "q"])
     monkeypatch.setattr("builtins.input", lambda _: next(inputs))
-    runpy.run_path(str(example.resolve()), run_name="__main__")
+
+    remaining_attempts = MAX_RETRIES + 1
+    while remaining_attempts > 0:
+        remaining_attempts -= 1
+        try:
+            runpy.run_path(str(example.resolve()), run_name="__main__")
+            break
+        except Exception as e:
+            if remaining_attempts <= 0:
+                raise e
+
+            logging.warning(f"Retrying {example} after error ({remaining_attempts} remaining)", exc_info=e)

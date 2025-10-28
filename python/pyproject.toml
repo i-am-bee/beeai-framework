@@ -50,7 +50,7 @@ deprecated = "^1.2.18"
 torch = [
   {version = ">=2.4.1", markers = "sys_platform == 'darwin' and platform_machine == 'arm64'", optional = true},
   {version = "2.2.2", markers = "sys_platform == 'darwin' and platform_machine == 'x86_64'", optional = true},
-  {version = ">=2.4.1", markers = "sys_platform != 'darwin'", optional = true}
+  {version = "2.7.1", source = "pytorch-cpu", markers = "sys_platform != 'darwin'", optional = true}
 ]
 transformers = [
   {version = ">=4.49.0", markers = "sys_platform == 'darwin' and platform_machine == 'arm64'", optional = true},
@@ -223,3 +223,8 @@ convention = "google"
 [tool.ruff.lint.flake8-tidy-imports]
 # Disallow all relative imports, "parents" | "all"
 ban-relative-imports = "all"
+
+[[tool.poetry.source]]
+name = "pytorch-cpu"
+url = "https://download.pytorch.org/whl/cpu"
+priority = "explicit"

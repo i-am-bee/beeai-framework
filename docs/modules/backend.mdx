@@ -672,7 +672,7 @@ from beeai_framework.errors import FrameworkError
 
 
 async def main() -> None:
-    model = ChatModel.from_name("ollama:llama3.1")
+    model = ChatModel.from_name("ollama:granite4:micro")
 
     class ProfileSchema(BaseModel):
         first_name: str = Field(..., min_length=1)
@@ -681,15 +681,8 @@ async def main() -> None:
         age: int
         hobby: str
 
-    class ErrorSchema(BaseModel):
-        error: str
-
-    class SchemUnion(ProfileSchema, ErrorSchema):
-        pass
-
     response = await model.run(
-        [UserMessage("Generate a profile of a citizen of Europe.")],
-        response_format=SchemUnion,
+        [UserMessage("Generate a profile of a citizen of Europe.")], response_format=ProfileSchema
     )
     assert isinstance(response.output_structured, ProfileSchema)
     print(json.dumps(response.output_structured.model_dump(), indent=4))

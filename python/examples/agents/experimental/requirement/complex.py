@@ -74,7 +74,7 @@ async def main() -> None:
         ],
         save_intermediate_steps=True,  # store tool calls between individual starts (default: true)
         tool_call_checker=True,  # detects and resolve cycles (default: true)
-        final_answer_as_tool=False,  # produces the final answer as a tool call (default: true)
+        final_answer_as_tool=True,  # produces the final answer as a tool call (default: true)
         memory=UnconstrainedMemory(),
         templates=RequirementAgentTemplates(
             system=RequirementAgentSystemPrompt,
@@ -89,7 +89,7 @@ async def main() -> None:
         backstory="I already visited Freedom Trail.",
         # one can pass a Pydantic model to get a structured output
         expected_output="Detailed plan on what to do from morning to evening, split in sections each with a time range.",
-    ).middleware(GlobalTrajectoryMiddleware())
+    ).middleware(GlobalTrajectoryMiddleware(included=[Tool]))
 
     print(response.last_message.text)
     # print(response.memory)  # temp memory created
