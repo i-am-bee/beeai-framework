@@ -51,7 +51,7 @@ from beeai_framework.tools.weather import OpenMeteoTool
 # Create an agent that plans activities based on weather and events
 async def main() -> None:
     agent = RequirementAgent(
-        llm=ChatModel.from_name("ollama:granite3.3"),
+        llm=ChatModel.from_name("ollama:granite4:micro"),
         tools=[
             ThinkTool(),  # to reason
             OpenMeteoTool(),  # retrieve weather data
@@ -380,7 +380,7 @@ class PrematureStopRequirement(Requirement[RequirementAgentRunState]):
 
 async def main() -> None:
     agent = RequirementAgent(
-        llm=ChatModel.from_name("ollama:granite3.3:8b"),
+        llm=ChatModel.from_name("ollama:granite4:micro"),
         tools=[DuckDuckGoSearchTool()],
         requirements=[
             PrematureStopRequirement(phrase="value of x", reason="algebraic expressions are not allowed"),

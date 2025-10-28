@@ -14,7 +14,7 @@ from beeai_framework.tools.weather import OpenMeteoTool
 # Create an agent that plans activities based on weather and events
 async def main() -> None:
     agent = RequirementAgent(
-        llm=ChatModel.from_name("ollama:granite3.3"),
+        llm=ChatModel.from_name("ollama:granite4:micro"),
         tools=[
             ThinkTool(),  # to reason
             OpenMeteoTool(),  # retrieve weather data

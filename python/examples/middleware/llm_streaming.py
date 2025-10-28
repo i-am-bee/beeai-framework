@@ -7,7 +7,7 @@ from beeai_framework.tools.weather import OpenMeteoTool
 
 
 async def main() -> None:
-    llm = ChatModel.from_name("ollama:granite3.3:8b")
+    llm = ChatModel.from_name("ollama:granite4:micro")
     weather_tool = OpenMeteoTool()
     middleware = StreamToolCallMiddleware(
         weather_tool,
@@ -16,13 +16,22 @@ async def main() -> None:
         force_streaming=True,  # we want to let middleware enable streaming on the model
     )
 
+    # With Streaming
+    # "{\n  \"New York\",\n  \"country\": \"United States\",\n  \"start_date\": null,\n  \"end_date\": null,\n  \"temperature_unit\": \"celsius\"\n}"
+
+    # No-streaming
+    # "{\n  \"location_name\": \"New York\",\n  \"country\": \"United States\",\n  \"start_date\": null,\n  \"end_date\": null,\n  \"temperature_unit\": \"celsius\"\n}"
+
     @middleware.emitter.on("update")
     def log_thoughts(event: StreamToolCallMiddlewareUpdateEvent, meta: EventMeta) -> None:
         print(
             "Received update", event.delta, event.output_structured
         )  # event.delta contains an update of the 'location_name' field
 
-    await llm.run([UserMessage("What's the current weather in New York?")], tools=[weather_tool]).middleware(middleware)
+    response = await llm.run([UserMessage("What's the current weather in New York?")], tools=[weather_tool]).middleware(
+        middleware
+    )
+    print(response.get_tool_calls()[0].args)
 
 
 if __name__ == "__main__":

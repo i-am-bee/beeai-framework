@@ -3,6 +3,7 @@ from typing import Any
 
 from beeai_framework.agents.requirement import RequirementAgent
 from beeai_framework.agents.requirement.requirements.conditional import ConditionalRequirement  # noqa: F401
+from beeai_framework.agents.requirement.utils._tool import FinalAnswerTool
 from beeai_framework.backend import ChatModel
 from beeai_framework.middleware.trajectory import GlobalTrajectoryMiddleware
 from beeai_framework.tools import Tool, tool
@@ -34,7 +35,7 @@ async def main() -> None:
         llm=llm,
         tools=[ThinkTool(), OpenMeteoTool(), get_user],
         # Log all tool calls to the console for easier debugging
-        middlewares=[GlobalTrajectoryMiddleware(included=[Tool])],
+        middlewares=[GlobalTrajectoryMiddleware(included=[Tool], excluded=[FinalAnswerTool])],
         requirements=[
             # 💡 Solution 1: Force the agent to call 'get_user' at the start
             # ConditionalRequirement(target=get_user, force_at_step=1),

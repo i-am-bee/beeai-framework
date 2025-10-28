@@ -56,7 +56,7 @@ async def main() -> None:
     Example demonstrating the FilteringMemory with RequirementAgent.
     Tests with both a clean input and an input containing banned words.
     """
-    chat_model = ChatModel.from_name("ollama:granite3.3:8b")
+    chat_model = ChatModel.from_name("ollama:granite4:micro")
 
     # Create agent with filtering memory
     agent = RequirementAgent(
