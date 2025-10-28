@@ -1,3 +1,4 @@
+"""Module for the ACP server implementation."""
 # Copyright 2025 © BeeAI a Series of LF Projects, LLC
 # SPDX-License-Identifier: Apache-2.0
 
@@ -47,6 +48,8 @@ AnyAgentLike = TypeVar("AnyAgentLike", bound=AnyAgent, default=AnyAgent)
 
 
 class ACPServerMetadata(TypedDict, total=False):
+    """Metadata for the ACP server."""
+
     name: str
     description: str
     annotations: acp_models.Annotations
@@ -69,6 +72,8 @@ class ACPServerMetadata(TypedDict, total=False):
 
 
 class ACPServer(Generic[AnyAgentLike], Server[AnyAgentLike, ACPServerAgent, "ACPServerConfig"]):
+    """ACP Server to host agents via the ACP protocol."""
+
     def __init__(
         self, *, config: ModelLike["ACPServerConfig"] | None = None, memory_manager: MemoryManager | None = None
     ) -> None:
@@ -112,6 +117,14 @@ class ACPServer(Generic[AnyAgentLike], Server[AnyAgentLike, ACPServerAgent, "ACP
 
 
 def to_acp_agent_metadata(metadata: ACPServerMetadata) -> acp_models.Metadata:
+    """
+    Convert ACPServerMetadata to acp_models.Metadata.
+
+    Args:
+        metadata (ACPServerMetadata): The metadata to convert.
+    Returns:
+        acp_models.Metadata: The converted metadata.
+    """
     copy = metadata.copy()
     copy.pop("name", None)
     copy.pop("description", None)

@@ -1,3 +1,4 @@
+"""Module for managing A2A server context."""
 # Copyright 2025 © BeeAI a Series of LF Projects, LLC
 # SPDX-License-Identifier: Apache-2.0
 
@@ -20,6 +21,8 @@ _storage = ContextVar["A2AContext"]("a2a_server_storage")
 
 
 class A2AContext:
+    """Context manager for A2A server operations."""
+
     def __init__(
         self,
         *,

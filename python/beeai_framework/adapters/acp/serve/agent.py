@@ -1,3 +1,4 @@
+"""Module for the ACP server agent."""
 # Copyright 2025 © BeeAI a Series of LF Projects, LLC
 # SPDX-License-Identifier: Apache-2.0
 
@@ -51,6 +52,17 @@ class ACPServerAgent(ACPBaseAgent):
     async def run(
         self, input: list[acp_models.Message], context: acp_context.Context
     ) -> AsyncGenerator[acp_types.RunYield, acp_types.RunYieldResume]:
+        """
+        Execute the agent with the given input messages and context.
+
+        Args:
+            input (list[acp_models.Message]): A list of ACP messages to process.
+            context (acp_context.Context): The ACP server context.
+        Yields:
+            RunYield values produced by the agent during execution.
+        Receives:
+            RunYieldResume values to continue execution after yielding.
+        """
         with ACPIOContext(context), contextlib.suppress(StopAsyncIteration):
             gen = self.fn(input, context)
             value = None

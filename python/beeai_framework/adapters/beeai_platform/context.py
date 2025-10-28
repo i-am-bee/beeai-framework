@@ -1,3 +1,4 @@
+"""Module for BeeAI Platform specific context management."""
 # Copyright 2025 © BeeAI a Series of LF Projects, LLC
 # SPDX-License-Identifier: Apache-2.0
 
@@ -31,6 +32,8 @@ _storage: ContextVar["BeeAIPlatformContext"] = ContextVar("beeai_platform")
 
 
 class BeeAIPlatformContext:
+    """Context manager for BeeAI Platform specific context."""
+
     def __init__(
         self,
         context: RunContext,

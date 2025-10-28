@@ -1,3 +1,4 @@
+"""Module for OpenAI Chat Completion API serving."""
 # Copyright 2025 © BeeAI a Series of LF Projects, LLC
 # SPDX-License-Identifier: Apache-2.0
 
@@ -23,6 +24,7 @@ logger = Logger(__name__)
 
 
 class ChatCompletionAPI:
+    """A FastAPI-based implementation of the OpenAI Chat Completion API."""
     def __init__(
         self,
         *,
@@ -44,6 +46,7 @@ class ChatCompletionAPI:
 
     @cached_property
     def app(self) -> FastAPI:
+        """A FastAPI application instance for the Chat Completion API."""
         config: dict[str, Any] = {"title": "BeeAI Framework / OpenAI Chat Completion API", "version": "0.0.1"}
         config.update(self._fast_api_kwargs)
 
@@ -57,6 +60,17 @@ class ChatCompletionAPI:
         request: chat_completion_types.ChatCompletionRequestBody,
         api_key: str | None = Header(None, alias="Authorization"),
     ) -> Any:
+        """
+        Handles chat completion requests.
+
+        Args:
+            request: The chat completion request body.
+            api_key: The API key provided in the Authorization header.
+        Returns:
+            A chat completion response or a streaming response.
+        Raises:
+            HTTPException: If the API key is missing or invalid.
+        """
         logger.debug(f"Received request\n{request.model_dump_json()}")
 
         # API key validation

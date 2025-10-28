@@ -1,3 +1,4 @@
+"""Module for BeeAI Platform chat model adapter."""
 # Copyright 2025 © BeeAI a Series of LF Projects, LLC
 # SPDX-License-Identifier: Apache-2.0
 
@@ -35,6 +36,8 @@ _storage = ContextVar[LLMServiceExtensionServer]("beeai_chat_model_storage")
 
 
 class ProviderConfig(BaseModel):
+    """Configuration for a specific model provider."""
+
     name: ProviderName = "openai"
     cls: type[ChatModel] = OpenAIChatModel
     tool_choice_support: set[ToolChoiceType] = Field(default_factory=set)
@@ -42,6 +45,8 @@ class ProviderConfig(BaseModel):
 
 
 class BeeAIPlatformChatModel(ChatModel):
+    """Chat model adapter for BeeAI Platform."""
+
     tool_choice_support: ClassVar[set[ToolChoiceType]] = set()
     providers_mapping: ClassVar[dict[ModelProviderType, Callable[[], ProviderConfig] | None]] = {
         ModelProviderType.ANTHROPIC: lambda: _extract_provider_config("anthropic"),

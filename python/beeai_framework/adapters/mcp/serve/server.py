@@ -1,3 +1,4 @@
+"""Module for MCP server integration."""
 # Copyright 2025 © BeeAI a Series of LF Projects, LLC
 # SPDX-License-Identifier: Apache-2.0
 
@@ -104,6 +105,7 @@ class MCPServer(
         MCPServerConfig,
     ],
 ):
+    """MCP Server implementation."""
     def __init__(
         self, *, config: ModelLike[MCPServerConfig] | None = None, memory_manager: MemoryManager | None = None
     ) -> None:
@@ -115,6 +117,12 @@ class MCPServer(
         )
 
     def serve(self) -> None:
+        """
+        Start the MCP server and register all members.
+
+        Raises:
+            ValueError: If a member type is not supported by the server.
+        """
         for member in self.members:
             factory = type(self)._get_factory(member)
             entry = factory(member)

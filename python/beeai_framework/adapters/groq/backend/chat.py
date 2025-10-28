@@ -1,3 +1,4 @@
+"""Module for Groq chat model adapter."""
 # Copyright 2025 © BeeAI a Series of LF Projects, LLC
 # SPDX-License-Identifier: Apache-2.0
 
@@ -25,6 +26,8 @@ logger = Logger(__name__)
 
 
 class GroqChatModel(LiteLLMChatModel):
+    """Groq chat model integration."""
+
     @property
     def provider_id(self) -> ProviderName:
         return "groq"

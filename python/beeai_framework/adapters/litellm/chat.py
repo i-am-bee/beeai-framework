@@ -1,3 +1,4 @@
+"""Module for LiteLLM chat model adapter."""
 # Copyright 2025 © BeeAI a Series of LF Projects, LLC
 # SPDX-License-Identifier: Apache-2.0
 import contextlib
@@ -57,6 +58,8 @@ logger = Logger(__name__)
 
 
 class LiteLLMChatModel(ChatModel, ABC):
+    """Base adapter for LiteLLM chat models."""
+
     @property
     def model_id(self) -> str:
         return self._model_id

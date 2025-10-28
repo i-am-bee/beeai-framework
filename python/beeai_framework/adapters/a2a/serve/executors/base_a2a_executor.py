@@ -1,3 +1,4 @@
+"""Module for the base A2A executor implementation."""
 # Copyright 2025 © BeeAI a Series of LF Projects, LLC
 # SPDX-License-Identifier: Apache-2.0
 
@@ -34,6 +35,8 @@ logger = Logger(__name__)
 
 
 class BaseA2AExecutor(a2a_agent_execution.AgentExecutor, Generic[AnyRunnableTypeVar]):
+    """Base A2A Executor implementation."""
+
     def __init__(
         self,
         runnable: AnyRunnableTypeVar,
@@ -53,6 +56,15 @@ class BaseA2AExecutor(a2a_agent_execution.AgentExecutor, Generic[AnyRunnableType
         context: a2a_agent_execution.RequestContext,
         event_queue: a2a_server.events.EventQueue,
     ) -> None:
+        """
+        Execute the agent with the given context and event queue.
+
+        Args:
+            context: The request context containing the message and context ID.
+            event_queue: The event queue to enqueue events during execution.
+        Raises:
+            ValueError: If no message is found in the request context.
+        """
         if not context.message:
             raise ValueError("No message found in the request context.")
 

@@ -1,3 +1,4 @@
+"""Module for LiteLLM embedding model adapter."""
 # Copyright 2025 © BeeAI a Series of LF Projects, LLC
 # SPDX-License-Identifier: Apache-2.0
 
@@ -23,10 +24,12 @@ logger = Logger(__name__)
 
 
 class LiteLLMEmbeddingModelOutput(EmbeddingModelOutput):
+    """Output model for LiteLLM embedding responses."""
     response: Any
 
 
 class LiteLLMEmbeddingModel(EmbeddingModel, ABC):
+    """LiteLLM Embedding Model Adapter."""
     def __init__(
         self,
         model_id: str,

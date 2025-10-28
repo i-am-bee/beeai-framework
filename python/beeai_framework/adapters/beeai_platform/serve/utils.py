@@ -1,3 +1,4 @@
+"""Module for BeeAI Platform serve utilities."""
 # Copyright 2025 © BeeAI a Series of LF Projects, LLC
 # SPDX-License-Identifier: Apache-2.0
 
@@ -26,6 +27,15 @@ def send_message_trajectory(
     msg: AnyMessage,
     trajectory: Annotated[beeai_extensions.TrajectoryExtensionServer, beeai_extensions.TrajectoryExtensionSpec()],
 ) -> Generator[beeai_types.Metadata[str, beeai_extensions.Trajectory]]:
+    """
+    Generate trajectory metadata from a message for BeeAI Platform.
+
+    Args:
+        msg: The message to extract trajectory data from.
+        trajectory: The trajectory extension server for creating metadata.
+    Yields:
+        Metadata objects containing trajectory information for each message component.
+    """
     if isinstance(msg, AssistantMessage):
         for content in msg.content:
             if isinstance(content, MessageTextContent):
@@ -47,6 +57,14 @@ def send_message_trajectory(
 async def init_beeai_platform_memory(
     agent: AnyAgent, memory_manager: MemoryManager, context: beeai_context.RunContext
 ) -> None:
+    """
+    Initialize agent memory for BeeAI Platform execution.
+
+    Args:
+        agent: The agent whose memory will be initialized.
+        memory_manager: The memory manager handling persistence.
+        context: The BeeAI Platform run context containing conversation history.
+    """
     if isinstance(memory_manager, BeeAIPlatformMemoryManager):
         history = [message async for message in context.load_history() if message.parts]
         agent.memory.reset()

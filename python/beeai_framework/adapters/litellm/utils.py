@@ -1,3 +1,4 @@
+"""Module with utility functions for LiteLLM adapter."""
 # Copyright 2025 © BeeAI a Series of LF Projects, LLC
 # SPDX-License-Identifier: Apache-2.0
 import json

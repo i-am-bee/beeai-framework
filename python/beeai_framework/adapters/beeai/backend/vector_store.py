@@ -1,3 +1,4 @@
+"""Module for BeeAI vector store integration."""
 # Copyright 2025 © BeeAI a Series of LF Projects, LLC
 # SPDX-License-Identifier: Apache-2.0
 
@@ -23,6 +24,8 @@ except ModuleNotFoundError as e:
 
 
 class BeeAIVectorStore(VectorStore, ABC):
+    """Base class for BeeAI vector stores."""
+
     @classmethod
     def _class_from_name(cls, class_name: str, embedding_model: EmbeddingModel, **kwargs: Any) -> BeeAIVectorStore:
         """Create an instance from class name (required by VectorStore base class)."""

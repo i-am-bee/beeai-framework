@@ -1,3 +1,4 @@
+"""Module for Gemini embedding model integration."""
 # Copyright 2025 © BeeAI a Series of LF Projects, LLC
 # SPDX-License-Identifier: Apache-2.0
 
@@ -12,6 +13,8 @@ from beeai_framework.backend.embedding import EmbeddingModelKwargs
 
 
 class GeminiEmbeddingModel(LiteLLMEmbeddingModel):
+    """Gemini embedding model integration."""
+
     @property
     def provider_id(self) -> ProviderName:
         return "gemini"

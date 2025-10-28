@@ -1,3 +1,4 @@
+"""Module for Ollama embedding model adapter."""
 # Copyright 2025 © BeeAI a Series of LF Projects, LLC
 # SPDX-License-Identifier: Apache-2.0
 
@@ -11,6 +12,7 @@ from beeai_framework.backend.embedding import EmbeddingModelKwargs
 
 
 class OllamaEmbeddingModel(LiteLLMEmbeddingModel):
+    """Ollama embedding model adapter leveraging LiteLLM."""
     @property
     def provider_id(self) -> ProviderName:
         return "ollama"

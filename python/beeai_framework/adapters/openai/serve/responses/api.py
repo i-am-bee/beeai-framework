@@ -1,3 +1,4 @@
+"""Module defining the Responses API for BeeAI Framework's OpenAI adapter."""
 # Copyright 2025 © BeeAI a Series of LF Projects, LLC
 # SPDX-License-Identifier: Apache-2.0
 
@@ -34,6 +35,7 @@ logger = Logger(__name__)
 
 
 class ResponsesAPI:
+    """Responses API for handling response generation requests."""
     def __init__(
         self,
         *,
@@ -57,6 +59,7 @@ class ResponsesAPI:
 
     @cached_property
     def app(self) -> FastAPI:
+        """Create and return the FastAPI application."""
         config: dict[str, Any] = {"title": "BeeAI Framework / Responses API", "version": "0.0.1"}
         config.update(self._fast_api_kwargs)
 
@@ -70,6 +73,29 @@ class ResponsesAPI:
         request: responses_types.ResponsesRequestBody,
         api_key: str | None = Header(None, alias="Authorization"),
     ) -> Any:
+        """
+        Handle incoming response requests with support for both streaming and non-streaming modes.
+
+        Args:
+            request (responses_types.ResponsesRequestBody): The incoming request body containing:
+                - instructions: Optional system instructions for the model
+                - input: User messages to process
+                - conversation: Optional conversation context ID
+                - model: Model identifier to use
+                - stream: Boolean flag for streaming vs. non-streaming response
+            api_key (str | None): Authorization header containing the API key (optional).
+                Extracted from the "Authorization" header with "Bearer " prefix.
+
+        Returns:
+            Any: Either an EventSourceResponse for streaming requests or a JSONResponse for
+                non-streaming requests. The response format follows the ResponsesResponse schema.
+
+        Raises:
+            HTTPException: With 401 status code if API key validation fails when an API key
+                is configured but missing or invalid in the request.
+            AgentError: Captured and returned in the error field of the response for non-streaming
+                requests, or as a stream error event for streaming requests.
+        """
         logger.debug(f"Received request\n{request.model_dump_json()}")
 
         # API key validation

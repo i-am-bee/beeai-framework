@@ -1,3 +1,4 @@
+"""Module for Ollama chat model adapter using LiteLLM."""
 # Copyright 2025 © BeeAI a Series of LF Projects, LLC
 # SPDX-License-Identifier: Apache-2.0
 
@@ -16,6 +17,7 @@ logger = Logger(__name__)
 
 
 class OllamaChatModel(LiteLLMChatModel):
+    """A chat model implementation for the Ollama provider, leveraging LiteLLM."""
     tool_choice_support: ClassVar[set[ToolChoiceType]] = set()
 
     @property

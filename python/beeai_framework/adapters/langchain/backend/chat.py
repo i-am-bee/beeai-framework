@@ -1,3 +1,4 @@
+"""Module for chat model adapter for LangChain."""
 # Copyright 2025 © BeeAI a Series of LF Projects, LLC
 # SPDX-License-Identifier: Apache-2.0
 
@@ -20,11 +21,13 @@ __all__ = ["LangChainChatModel"]
 
 
 class LCModelResponse(TypedDict):
+    """Type definition for LangChain model response."""
     output: BaseMessage
     output_structured: Any | None
 
 
 class LangChainChatModel(ChatModel):
+    """Adapter for LangChain chat models."""
     def __init__(self, model: BaseChatModel, **kwargs: Unpack[ChatModelKwargs]) -> None:
         super().__init__(**kwargs)
         self._model = model
