@@ -88,6 +88,11 @@ class LiteLLMChatModel(ChatModel, ABC):
         if not response_output.is_valid():
             fix_double_escaped_tool_calls(response_output.get_tool_calls())
 
+        if not response_output.is_valid():
+            raise ChatModelError(
+                "Response could not be produced because it is invalid.", context={"output": response_output}
+            )
+
         if input.response_format and not response_output.output_structured:
             text = response_output.get_text_content()
             response_output.output_structured = process_structured_output(
@@ -132,7 +137,9 @@ class LiteLLMChatModel(ChatModel, ABC):
                 yield last_chunk
                 last_chunk = None
             else:
-                raise ChatModelError("Failed to merge intermediate responses.")
+                raise ChatModelError(
+                    "Response could not be produced because it is invalid.", context={"output": last_chunk}
+                )
 
         if input.response_format:
             output_structured = process_structured_output(
