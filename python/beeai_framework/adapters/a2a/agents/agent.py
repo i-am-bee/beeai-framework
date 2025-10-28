@@ -37,7 +37,7 @@ except ModuleNotFoundError as e:
         "Optional module [a2a] not found.\nRun 'pip install \"beeai-framework[a2a]\"' to install."
     ) from e
 
-from beeai_framework.agents import AgentError, AgentOptions, BaseAgent
+from beeai_framework.agents import AgentError, AgentMeta, AgentOptions, BaseAgent
 from beeai_framework.backend.message import (
     AnyMessage,
     AssistantMessage,
@@ -325,6 +325,15 @@ class A2AAgent(BaseAgent[A2AAgentOutput]):
         if not memory.is_empty():
             raise ValueError("Memory must be empty before setting.")
         self._memory = memory
+
+    @property
+    def meta(self) -> AgentMeta:
+        return AgentMeta(
+            name=self.name,
+            description=(self._agent_card.description or "") if self._agent_card else "",
+            tools=[],
+            extra_description=None,
+        )
 
     async def clone(self) -> "A2AAgent":
         cloned = A2AAgent(

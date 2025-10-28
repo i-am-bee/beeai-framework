@@ -1,3 +1,16 @@
+## python_v0.1.59 (2025-10-27)
+
+### Bug Fixes
+
+- **adapters**: add missing meta property for A2A/BeeAI Platform Agents (#1243)
+- **adapters**: handle missing messages in BeeAIPlatform (#1237)
+- parse streamed tool calls with stream_stable=True
+- **adapters**: correct decorator order in ChatToolFunctionDefinition (#1234)
+
+### Features
+
+- **adapters**: update BeeAI SDK (#1231)
+
 ## python_v0.1.58 (2025-10-23)
 
 ### Bug Fixes
