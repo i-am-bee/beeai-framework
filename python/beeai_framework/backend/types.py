@@ -79,16 +79,21 @@ class ChatModelOutput(RunnableOutput):
         if self.output_structured is not None:
             return False
 
+        if self.get_text_content():
+            return False
+
         if self.get_tool_calls():
             return False
 
         for msg in self.output:
             for chunk in msg.content:
-                if isinstance(chunk, BaseModel):
-                    if chunk.model_dump(exclude_none=True, exclude_defaults=True, exclude_unset=True):
-                        return True
-                elif chunk:
-                    return True
+                chunk_unpacked = (
+                    chunk.model_dump(exclude_none=True, exclude_defaults=True, exclude_unset=True)
+                    if isinstance(chunk, BaseModel)
+                    else chunk
+                )
+                if chunk_unpacked:
+                    return False
 
         return True
 
