@@ -1,6 +1,5 @@
 # Copyright 2025 © BeeAI a Series of LF Projects, LLC
 # SPDX-License-Identifier: Apache-2.0
-import typing
 from typing import Any, Literal, Unpack
 
 import httpx
@@ -14,8 +13,6 @@ try:
         EmbeddingFulfillment,
         EmbeddingServiceExtensionClient,
         EmbeddingServiceExtensionSpec,
-        FormExtensionSpec,
-        FormResponse,
         LLMDemand,
         LLMFulfillment,
         LLMServiceExtensionClient,
@@ -172,11 +169,6 @@ class BeeAIPlatformAgent(BaseAgent[BeeAIPlatformAgentOutput]):
                     }
                 )
                 if embedding_spec
-                else {}
-            )
-            | (
-                {FormExtensionSpec.URI: typing.cast(FormResponse, input).model_dump(mode="json")}
-                if isinstance(input, FormResponse)
                 else {}
             )
         )
