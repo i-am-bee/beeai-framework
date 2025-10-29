@@ -51,6 +51,9 @@ from beeai_framework.utils.strings import to_safe_word
 
 class BeeAIPlatformAgentOptions(AgentOptions, total=False):
     platform_context: Context | None | Literal["clear"]
+    """
+    User can specify custom context for the request. Can be used to support multiple users in one client.
+    """
 
 
 class BeeAIPlatformAgent(BaseAgent[BeeAIPlatformAgentOutput]):
@@ -74,6 +77,7 @@ class BeeAIPlatformAgent(BaseAgent[BeeAIPlatformAgentOutput]):
     ) -> BeeAIPlatformAgentOutput:
         context_param = kwargs.pop("platform_context", None)
         try:
+            # try to extract existing platform context
             beeai_platform_context = BeeAIPlatformContext.get()
         except LookupError:
             beeai_platform_context = None
@@ -96,6 +100,7 @@ class BeeAIPlatformAgent(BaseAgent[BeeAIPlatformAgentOutput]):
             )
 
         message = self._agent.convert_to_a2a_message(input)
+        # Use existing message metadata or create new
         message.metadata = (message.metadata or {}) | (
             beeai_platform_context.metadata
             if (beeai_platform_context and beeai_platform_context.metadata)
