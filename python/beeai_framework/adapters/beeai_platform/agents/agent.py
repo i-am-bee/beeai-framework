@@ -99,17 +99,17 @@ class BeeAIPlatformAgent(BaseAgent[BeeAIPlatformAgentOutput]):
                 BeeAIPlatformAgentErrorEvent(message=data.message),
             )
 
-        message = self._agent.convert_to_a2a_message(input)
-        # Use existing message metadata or create new
-        message.metadata = (message.metadata or {}) | (
-            beeai_platform_context.metadata
-            if (beeai_platform_context and beeai_platform_context.metadata)
-            else await self._get_metadata()
-        )
-        message.context_id = (
+        context_id = (
             self._platform_context.id
             if self._platform_context
             else (beeai_platform_context.context.context_id if beeai_platform_context else None)
+        )
+        message = self._agent.convert_to_a2a_message(
+            input,
+            context_id=context_id,
+            metadata=beeai_platform_context.metadata
+            if (beeai_platform_context and beeai_platform_context.metadata)
+            else await self._get_metadata(),
         )
 
         response = await self._agent.run(message, **kwargs).on("update", update_event).on("error", error_event)  # type: ignore[misc]
