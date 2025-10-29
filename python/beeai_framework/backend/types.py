@@ -79,6 +79,9 @@ class ChatModelOutput(RunnableOutput):
         if self.output_structured is not None:
             return False
 
+        if self.get_tool_calls():
+            return False
+
         for msg in self.output:
             for chunk in msg.content:
                 if isinstance(chunk, BaseModel):
