@@ -3,7 +3,7 @@
 
 import ssl
 from collections.abc import Callable, Mapping, Sequence
-from typing import Literal, Unpack
+from typing import Any, Literal, Unpack
 from uuid import uuid4
 
 import httpx
@@ -347,30 +347,37 @@ class A2AAgent(BaseAgent[A2AAgentOutput]):
         return cloned
 
     def convert_to_a2a_message(
-        self, input: str | list[AnyMessage] | AnyMessage | a2a_types.Message
+        self,
+        input: str | list[AnyMessage] | AnyMessage | a2a_types.Message,
+        *,
+        context_id: str | None = None,
+        metadata: dict[str, Any] | None = None,
     ) -> a2a_types.Message:
         if isinstance(input, str):
             return a2a_types.Message(
                 role=a2a_types.Role.user,
                 parts=[a2a_types.Part(root=a2a_types.TextPart(text=input))],
                 message_id=uuid4().hex,
-                context_id=self._context_id,
-                task_id=self._task_id,
-                reference_task_ids=self._reference_task_ids,
+                context_id=context_id or self._context_id,
+                task_id=self._task_id if not context_id else None,
+                reference_task_ids=self._reference_task_ids if not context_id else None,
+                metadata=metadata,
             )
         elif isinstance(input, Message):
             return a2a_types.Message(
                 role=a2a_types.Role.agent if input.role == Role.ASSISTANT else a2a_types.Role.user,
                 parts=[a2a_types.Part(root=a2a_types.TextPart(text=input.text))],
                 message_id=uuid4().hex,
-                context_id=self._context_id,
-                task_id=self._task_id,
-                reference_task_ids=self._reference_task_ids,
-                metadata=input.meta or None,
+                context_id=context_id or self._context_id,
+                task_id=self._task_id if not context_id else None,
+                reference_task_ids=self._reference_task_ids if not context_id else None,
+                metadata=(metadata or {}) | input.meta or None,
             )
         elif isinstance(input, list) and input and isinstance(input[-1], Message):
-            return self.convert_to_a2a_message(input[-1])
+            return self.convert_to_a2a_message(input[-1], context_id=context_id, metadata=metadata)
         elif isinstance(input, a2a_types.Message):
+            input.metadata = (input.metadata or {}) | (metadata or {})
+            input.context_id = context_id or input.context_id or self._context_id
             return input
         else:
             raise ValueError("Unsupported input type")

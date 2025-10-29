@@ -44,7 +44,7 @@ uvicorn = {version = "^0.37.0", optional = true}
 types-grpcio = {version = "1.0.0.20250703", optional = true}
 types-grpcio-reflection = {version = "1.0.0.20250506", optional = true}
 wikipedia-api = {version = "^0.8.1", optional = true}
-beeai-sdk = {version = "^0.3.7", optional = true}
+beeai-sdk = {version = "0.3.7", optional = true}
 langgraph-prebuilt = {version = "^0.6.4", optional = true}
 deprecated = "^1.2.18"
 torch = [

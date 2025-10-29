@@ -62,6 +62,7 @@ def _react_agent_factory(
 
         with BeeAIPlatformContext(
             context,
+            metadata=message.metadata,
             llm=extra_extensions.get("llm_ext"),
             extra_extensions=extra_extensions,  # type: ignore[arg-type]
         ):
@@ -117,8 +118,6 @@ def _react_agent_factory(
             )
 
             if isinstance(memory_manager, BeeAIPlatformMemoryManager):
-                if message.metadata and message.metadata.get("createdAt"):
-                    message.metadata["createdAt"] = message.metadata["createdAt"].isoformat()
                 await context.store(message)
                 await context.store(beeai_types.AgentMessage(text=accumulated_text))
 
@@ -147,6 +146,7 @@ def _tool_calling_agent_factory(
 
         with BeeAIPlatformContext(
             context,
+            metadata=message.metadata,
             llm=extra_extensions.get("llm_ext"),
             extra_extensions=extra_extensions,  # type: ignore[arg-type]
         ):
@@ -165,8 +165,6 @@ def _tool_calling_agent_factory(
                 if isinstance(data, ToolCallingAgentSuccessEvent) and data.state.result is not None:
                     agent_response = beeai_types.AgentMessage(text=data.state.result.text)
                     if isinstance(memory_manager, BeeAIPlatformMemoryManager):
-                        if message.metadata and message.metadata.get("createdAt"):
-                            message.metadata["createdAt"] = message.metadata["createdAt"].isoformat()
                         await context.store(message)
                         await context.store(agent_response)
 
@@ -196,6 +194,7 @@ def _requirement_agent_factory(
         await init_beeai_platform_memory(cloned_agent, memory_manager, context)
         with BeeAIPlatformContext(
             context,
+            metadata=message.metadata,
             llm=extra_extensions.get("llm_ext"),
             extra_extensions=extra_extensions,  # type: ignore[arg-type]
         ):
@@ -217,8 +216,6 @@ def _requirement_agent_factory(
                 if isinstance(data, RequirementAgentSuccessEvent) and data.state.answer is not None:
                     agent_response = beeai_types.AgentMessage(text=data.state.answer.text)
                     if isinstance(memory_manager, BeeAIPlatformMemoryManager):
-                        if message.metadata and message.metadata.get("createdAt"):
-                            message.metadata["createdAt"] = message.metadata["createdAt"].isoformat()
                         await context.store(message)
                         await context.store(agent_response)
 
@@ -283,6 +280,7 @@ def _runnable_factory(
 
         with BeeAIPlatformContext(
             context,
+            metadata=message.metadata,
             llm=extra_extensions.get("llm_ext"),
             extra_extensions=extra_extensions,  # type: ignore[arg-type]
         ):
@@ -297,8 +295,6 @@ def _runnable_factory(
                 reference_task_ids=[task.id for task in (context.related_tasks or [])],
             )
             if isinstance(memory_manager, BeeAIPlatformMemoryManager):
-                if message.metadata and message.metadata.get("createdAt"):
-                    message.metadata["createdAt"] = message.metadata["createdAt"].isoformat()
                 await context.store(message)
                 await context.store(agent_response)
 

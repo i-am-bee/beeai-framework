@@ -1,11 +1,10 @@
 # Copyright 2025 © BeeAI a Series of LF Projects, LLC
 # SPDX-License-Identifier: Apache-2.0
-
-from typing import Any, Unpack
+from typing import Any, Literal, Unpack
 
 import httpx
 
-from beeai_framework.adapters.a2a.agents.agent import A2AAgentOptions
+from beeai_framework.adapters.beeai_platform.context import BeeAIPlatformContext
 
 try:
     import a2a.types as a2a_types
@@ -40,7 +39,7 @@ from beeai_framework.adapters.beeai_platform.agents.events import (
 from beeai_framework.adapters.beeai_platform.agents.types import (
     BeeAIPlatformAgentOutput,
 )
-from beeai_framework.agents import AgentError, AgentMeta, BaseAgent
+from beeai_framework.agents import AgentError, AgentMeta, AgentOptions, BaseAgent
 from beeai_framework.backend.message import AnyMessage
 from beeai_framework.context import RunContext
 from beeai_framework.emitter import Emitter
@@ -50,11 +49,19 @@ from beeai_framework.runnable import runnable_entry
 from beeai_framework.utils.strings import to_safe_word
 
 
+class BeeAIPlatformAgentOptions(AgentOptions, total=False):
+    platform_context: Context | None | Literal["clear"]
+    """
+    User can specify custom context for the request. Can be used to support multiple users in one client.
+    """
+
+
 class BeeAIPlatformAgent(BaseAgent[BeeAIPlatformAgentOutput]):
     def __init__(
         self, *, url: str | None = None, agent_card: a2a_types.AgentCard | None = None, memory: BaseMemory
     ) -> None:
         super().__init__()
+        self._platform_context: Context | None = None
         self._agent = A2AAgent(url=url, agent_card=agent_card, memory=memory)
 
     @property
@@ -63,13 +70,20 @@ class BeeAIPlatformAgent(BaseAgent[BeeAIPlatformAgentOutput]):
 
     @runnable_entry
     async def run(
-        self, input: str | AnyMessage | list[AnyMessage] | a2a_types.Message, /, **kwargs: Unpack[A2AAgentOptions]
+        self,
+        input: str | AnyMessage | list[AnyMessage] | a2a_types.Message,
+        /,
+        **kwargs: Unpack[BeeAIPlatformAgentOptions],
     ) -> BeeAIPlatformAgentOutput:
-        self._agent.set_run_params(
-            context_id=kwargs.get("context_id"),
-            task_id=kwargs.get("task_id"),
-            clear_context=kwargs.get("clear_context"),
-        )
+        context_param = kwargs.pop("platform_context", None)
+        try:
+            # try to extract existing platform context
+            beeai_platform_context = BeeAIPlatformContext.get()
+        except LookupError:
+            beeai_platform_context = None
+
+        if context_param:
+            self._platform_context = None if context_param == "clear" else context_param
 
         context = RunContext.get()
 
@@ -85,10 +99,20 @@ class BeeAIPlatformAgent(BaseAgent[BeeAIPlatformAgentOutput]):
                 BeeAIPlatformAgentErrorEvent(message=data.message),
             )
 
-        message = self._agent.convert_to_a2a_message(input)
-        message.metadata = (message.metadata or {}) | await self._get_metadata()
+        context_id = (
+            self._platform_context.id
+            if self._platform_context
+            else (beeai_platform_context.context.context_id if beeai_platform_context else None)
+        )
+        message = self._agent.convert_to_a2a_message(
+            input,
+            context_id=context_id,
+            metadata=beeai_platform_context.metadata
+            if (beeai_platform_context and beeai_platform_context.metadata)
+            else await self._get_metadata(),
+        )
 
-        response = await self._agent.run(message, **kwargs).on("update", update_event).on("error", error_event)
+        response = await self._agent.run(message, **kwargs).on("update", update_event).on("error", error_event)  # type: ignore[misc]
 
         return BeeAIPlatformAgentOutput(output=response.output, event=response.event)
 
@@ -106,8 +130,10 @@ class BeeAIPlatformAgent(BaseAgent[BeeAIPlatformAgentOutput]):
 
         assert self._agent.agent_card is not None, "Agent card should not be empty after loading."
 
-        context = await Context.create()
-        context_token = await context.generate_token(
+        if not self._platform_context:
+            self._platform_context = await Context.create()
+
+        context_token = await self._platform_context.generate_token(
             grant_global_permissions=Permissions(llm={"*"}, embeddings={"*"}, a2a_proxy={"*"}),
             grant_context_permissions=ContextPermissions(files={"*"}, vector_stores={"*"}, context_data={"*"}),
         )
@@ -134,6 +160,13 @@ class BeeAIPlatformAgent(BaseAgent[BeeAIPlatformAgentOutput]):
 
         metadata = (
             (
+                PlatformApiExtensionClient(platform_extension_spec).api_auth_metadata(
+                    auth_token=context_token.token, expires_at=context_token.expires_at
+                )
+                if platform_extension_spec
+                else {}
+            )
+            | (
                 LLMServiceExtensionClient(llm_spec).fulfillment_metadata(
                     llm_fulfillments={
                         key: LLMFulfillment(**(await get_fulfillemnt_args(ModelCapability.LLM, demand)))
@@ -151,13 +184,6 @@ class BeeAIPlatformAgent(BaseAgent[BeeAIPlatformAgentOutput]):
                     }
                 )
                 if embedding_spec
-                else {}
-            )
-            | (
-                PlatformApiExtensionClient(platform_extension_spec).api_auth_metadata(
-                    auth_token=context_token.token, expires_at=context_token.expires_at
-                )
-                if platform_extension_spec
                 else {}
             )
         )
