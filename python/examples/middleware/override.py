@@ -31,7 +31,7 @@ class OverrideResponseMiddleware(RunMiddlewareProtocol):
 
 async def main() -> None:
     middleware = OverrideResponseMiddleware(ChatModelOutput(output=[AssistantMessage("BeeAI is the best!")]))
-    response = await ChatModel.from_name("ollama:granite3.3").run([UserMessage("Hello!")]).middleware(middleware)
+    response = await ChatModel.from_name("ollama:granite4:micro").run([UserMessage("Hello!")]).middleware(middleware)
     print(response.get_text_content())  # "BeeAI is the best!"
 
 

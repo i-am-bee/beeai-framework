@@ -6,7 +6,7 @@ from beeai_framework.middleware.trajectory import GlobalTrajectoryMiddleware
 
 
 async def main() -> None:
-    agent = RequirementAgent(llm=ChatModel.from_name("ollama:granite3.3:8b"))
+    agent = RequirementAgent(llm=ChatModel.from_name("ollama:granite4:micro"))
 
     response = await agent.run(
         # pass the task

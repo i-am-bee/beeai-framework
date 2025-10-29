@@ -12,7 +12,7 @@ async def main() -> None:
     reader = ConsoleReader()
 
     agents = await BeeAIPlatformAgent.from_platform(url="http://127.0.0.1:8333", memory=UnconstrainedMemory())
-    agent_name = "Granite chat agent"
+    agent_name = "Framework chat agent"
     try:
         agent = next(agent for agent in agents if agent.name == agent_name)
     except StopIteration:

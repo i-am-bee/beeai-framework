@@ -31,7 +31,7 @@ from langchain_ollama.chat_models import ChatOllama as LangChainOllamaChat  # no
 
 
 async def langchain_ollama_from_name() -> None:
-    langchain_llm = LangChainOllamaChat(model="granite3.3:8b")
+    langchain_llm = LangChainOllamaChat(model="granite4:micro")
     llm = LangChainChatModel(langchain_llm)
     user_message = UserMessage("what states are part of New England?")
     response = await llm.run([user_message])
@@ -39,7 +39,7 @@ async def langchain_ollama_from_name() -> None:
 
 
 async def langchain_ollama_granite_from_name() -> None:
-    langchain_llm = LangChainOllamaChat(model="granite3.3:8b")
+    langchain_llm = LangChainOllamaChat(model="granite4:micro")
     llm = LangChainChatModel(langchain_llm)
     user_message = UserMessage("what states are part of New England?")
     response = await llm.run([user_message])
@@ -47,7 +47,7 @@ async def langchain_ollama_granite_from_name() -> None:
 
 
 async def langchain_ollama_sync() -> None:
-    langchain_llm = LangChainOllamaChat(model="granite3.3:8b")
+    langchain_llm = LangChainOllamaChat(model="granite4:micro")
     llm = LangChainChatModel(langchain_llm)
     user_message = UserMessage("what is the capital of Massachusetts?")
     response = await llm.run([user_message])
@@ -55,7 +55,7 @@ async def langchain_ollama_sync() -> None:
 
 
 async def langchain_ollama_stream() -> None:
-    langchain_llm = LangChainOllamaChat(model="granite3.3:8b")
+    langchain_llm = LangChainOllamaChat(model="granite4:micro")
     llm = LangChainChatModel(langchain_llm)
     user_message = UserMessage("How many islands make up the country of Cape Verde?")
     response = await llm.run([user_message], stream=True)
@@ -63,7 +63,7 @@ async def langchain_ollama_stream() -> None:
 
 
 async def langchain_ollama_stream_abort() -> None:
-    langchain_llm = LangChainOllamaChat(model="granite3.3:8b")
+    langchain_llm = LangChainOllamaChat(model="granite4:micro")
     llm = LangChainChatModel(langchain_llm)
     user_message = UserMessage("What is the smallest of the Cape Verde islands?")
 
@@ -82,7 +82,7 @@ async def langchain_ollama_structure() -> None:
     class TestSchema(BaseModel):
         answer: str = Field(description="your final answer")
 
-    langchain_llm = LangChainOllamaChat(model="granite3.3:8b")
+    langchain_llm = LangChainOllamaChat(model="granite4:micro")
     llm = LangChainChatModel(langchain_llm)
     user_message = UserMessage("How many islands make up the country of Cape Verde?")
     response = await llm.run([user_message], response_format=TestSchema)
@@ -90,7 +90,7 @@ async def langchain_ollama_structure() -> None:
 
 
 async def langchain_ollama_stream_parser() -> None:
-    langchain_llm = LangChainOllamaChat(model="granite3.3:8b")
+    langchain_llm = LangChainOllamaChat(model="granite4:micro")
     llm = LangChainChatModel(langchain_llm)
 
     parser = LinePrefixParser(
@@ -111,7 +111,7 @@ async def langchain_ollama_stream_parser() -> None:
 
 
 async def langchain_ollama_tool_calling() -> None:
-    langchain_llm = LangChainOllamaChat(model="granite3.3:8b")
+    langchain_llm = LangChainOllamaChat(model="granite4:micro")
     llm = LangChainChatModel(langchain_llm)
     llm.parameters.stream = True
     weather_tool = OpenMeteoTool()

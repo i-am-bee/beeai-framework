@@ -55,7 +55,8 @@
           "integrations/beeai-platform",
           "integrations/mcp",
           "integrations/a2a",
-          "integrations/watsonx-orchestrate"
+          "integrations/watsonx-orchestrate",
+          "integrations/openai-api"
         ]
       },
 

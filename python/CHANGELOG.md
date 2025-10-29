@@ -1,3 +1,31 @@
+## python_v0.1.59 (2025-10-27)
+
+### Bug Fixes
+
+- **adapters**: add missing meta property for A2A/BeeAI Platform Agents (#1243)
+- **adapters**: handle missing messages in BeeAIPlatform (#1237)
+- parse streamed tool calls with stream_stable=True
+- **adapters**: correct decorator order in ChatToolFunctionDefinition (#1234)
+
+### Features
+
+- **adapters**: update BeeAI SDK (#1231)
+
+## python_v0.1.58 (2025-10-23)
+
+### Bug Fixes
+
+- **serve**: properly serialize a tool output when using MCP (#1219)
+- **adapters**: properly handle BeeAIPlatform LLM provider
+- **adapters**: handle unsupported JSON Schema keywords (#1216)
+
+### Features
+
+- **adapters**: propagate provider specific parameters in BeeAIPlatformChatModel (#1225)
+- **adapters**: add OpenAI Chat Completion / Responses serve module (#1182)
+- **adapters**: add new parameters to A2A Agent (#1224)
+- **backend**: add more excluded JSON Schema keywords to Groq
+
 ## python_v0.1.57 (2025-10-20)
 
 ### Bug Fixes

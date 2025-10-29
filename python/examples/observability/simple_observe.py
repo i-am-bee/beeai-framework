@@ -19,7 +19,7 @@ async def main() -> None:
         ]
     )
 
-    llm = ChatModel.from_name("ollama:granite3.3:8b")
+    llm = ChatModel.from_name("ollama:granite4:micro")
 
     response = (
         await llm.run(memory.messages, stream=True)

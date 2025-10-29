@@ -26,7 +26,7 @@ async def main() -> None:
     destination_expert = RequirementAgent(
         name="DestinationExpert",
         description="A specialist in local attractions, history, and cultural information",
-        llm=ChatModel.from_name("ollama:granite3.3:8b"),
+        llm=ChatModel.from_name("ollama:granite4:micro"),
         memory=UnconstrainedMemory(),
         tools=[ThinkTool(), WikipediaTool(), DuckDuckGoSearchTool()],
         requirements=[
@@ -50,7 +50,7 @@ async def main() -> None:
     travel_meteorologist = RequirementAgent(
         name="TravelMeteorologistPro",
         description="An expert on seasonal weather patterns and climate considerations for travelers",
-        llm=ChatModel.from_name("ollama:granite3.3:8b"),
+        llm=ChatModel.from_name("ollama:granite4:micro"),
         memory=UnconstrainedMemory(),
         tools=[ThinkTool(), OpenMeteoTool()],
         requirements=[
@@ -74,7 +74,7 @@ async def main() -> None:
     travel_advisor = RequirementAgent(
         name="TravelAdvisor",
         description="A personal travel concierge who helps plan perfect trips",
-        llm=ChatModel.from_name("ollama:granite3.3:8b"),
+        llm=ChatModel.from_name("ollama:granite4:micro"),
         tools=[
             ThinkTool(),
             HandoffTool(
