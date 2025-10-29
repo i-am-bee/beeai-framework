@@ -94,6 +94,8 @@ Key benefits
 
 <Tip>You can also register agents, chat models, or any other runnable.</Tip>
 
+### Configuration
+
 The MCP Server Adapter uses the `MCPServerConfig` class to configure the MCP server:
 
 <CodeGroup>
@@ -124,3 +126,7 @@ Transport Options:
 - `stdio`: Uses standard input/output for communication (default)
 - `streamable-http`: Uses HTTP POST and GET requests (replaces `sse`)
 - `sse`: Uses server-sent events over HTTP (deprecated)
+
+### Custom Instances
+
+If you want to make your custom class compatible with an MCP server, you can do so by registering a custom mapper via MCPServer.register_factory(...).

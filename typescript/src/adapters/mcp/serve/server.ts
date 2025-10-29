@@ -115,10 +115,19 @@ export class MCPServer extends Server<any, MCPServerEntry, MCPServerConfig, neve
       }
     }
 
-    if (this.config.transport === "stdio") {
-      await this.server.connect(new StdioServerTransport());
-    } else {
-      runServer(this.server, this.config.hostname, this.config.port);
+    switch (this.config.transport) {
+      case "stdio":
+        await this.server.connect(new StdioServerTransport());
+        break;
+      case "sse":
+      case "streamable-http":
+        runServer(this.server, this.config.hostname, this.config.port);
+        break;
+      default: {
+        // The following line ensures exhaustiveness checking at compile time.
+        const _exhaustiveCheck: never = this.config.transport;
+        throw new Error("Unsupported transport type.");
+      }
     }
   }
 
