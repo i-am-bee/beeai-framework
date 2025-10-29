@@ -42,7 +42,7 @@ class MCPTool(Tool[BaseModel, ToolRunOptions, JSONToolOutput]):
         """Initialize MCPTool with client and tool configuration."""
         smart_parsing = options.pop("smart_parsing", True)
 
-        super().__init__(options)
+        super().__init__(dict(options))
         self._session = session
         self._tool = tool
         self._smart_parsing = smart_parsing
@@ -81,7 +81,7 @@ class MCPTool(Tool[BaseModel, ToolRunOptions, JSONToolOutput]):
                 chunks: list[Any] = []
                 for chunk in result.content:
                     if isinstance(chunk, TextContent):
-                        with contextlib.suppress(Exception):
+                        with contextlib.suppress(json.JSONDecodeError):
                             chunk = json.loads(chunk.text)
                     chunks.append(chunk)
 
