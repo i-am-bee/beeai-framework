@@ -11,7 +11,7 @@ from beeai_framework.tools.weather import OpenMeteoTool
 
 async def main() -> None:
     agent = RequirementAgent(
-        llm=ChatModel.from_name("ollama:granite3.3:8b", ChatModelParameters(stream=True)),
+        llm=ChatModel.from_name("ollama:granite4:micro", ChatModelParameters(stream=True)),
         tools=[ThinkTool(), OpenMeteoTool(), DuckDuckGoSearchTool()],
         instructions="Plan activities for a given destination based on current weather and events.",
         requirements=[

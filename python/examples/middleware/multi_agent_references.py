@@ -91,13 +91,13 @@ class ReferenceResultMiddleware(RunMiddlewareProtocol):
 
 async def main() -> None:
     agent_b = RequirementAgent(
-        llm="ollama:granite3.3", name="WeatherAgent", description="Weather agent", tools=[OpenMeteoTool()]
+        llm="ollama:granite4:micro", name="WeatherAgent", description="Weather agent", tools=[OpenMeteoTool()]
     )
     agent_c = RequirementAgent(
-        llm="ollama:granite3.3", name="ResearcherAgent", description="Research agent", tools=[WikipediaTool()]
+        llm="ollama:granite4:micro", name="ResearcherAgent", description="Research agent", tools=[WikipediaTool()]
     )
     agent_a = RequirementAgent(
-        llm="ollama:granite3.3",
+        llm="ollama:granite4:micro",
         tools=[HandoffTool(agent_b), HandoffTool(agent_c)],
         instructions="You are a manager agent. "
         + "Results from managed agent will be stored as variables like $result1, $result2, $result3 and so on. "

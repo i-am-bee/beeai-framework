@@ -4,7 +4,7 @@ from beeai_framework.serve.utils import UnlimitedMemoryManager
 
 
 def main() -> None:
-    llm = ChatModel.from_name("ollama:granite3.3:8b")
+    llm = ChatModel.from_name("ollama:granite4:micro")
 
     # Runs HTTP server that registers to BeeAI platform
     server = BeeAIPlatformServer(config={"configure_telemetry": False}, memory_manager=UnlimitedMemoryManager())
