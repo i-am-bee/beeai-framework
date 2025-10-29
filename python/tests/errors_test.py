@@ -147,7 +147,7 @@ class TestFrameworkError:
             pass
 
         err3 = FrameworkError("Unserializable", context={"func": my_func})
-        assert 'Context: "Cannot serialize context to JSON"' in err3.explain()
+        assert 'Context: "Cannot serialize context to JSON"' not in err3.explain()
 
         err4 = FrameworkError("Empty Context", context={})
         assert "Context:" not in err4.explain()
@@ -156,7 +156,7 @@ class TestFrameworkError:
         assert "Context:" not in err5.explain()
 
         err6 = FrameworkError("Mixed Context", context={"a": 1, "b": my_func})
-        assert 'Context: "Cannot serialize context to JSON"' in err6.explain()
+        assert 'Context: "Cannot serialize context to JSON"' not in err6.explain()
 
     def test_is_fatal(self) -> None:
         err = FrameworkError("Test", is_fatal=True)

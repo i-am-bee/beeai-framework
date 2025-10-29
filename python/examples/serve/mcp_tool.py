@@ -14,7 +14,7 @@ def reverse_tool(word: str) -> StringToolOutput:
 
 def main() -> None:
     # create an MCP server with custom config, register ReverseTool and OpenMeteoTool to the MCP server and run it
-    MCPServer(config=MCPServerConfig(transport="sse", settings=MCPSettings(port=8001))).register_many(
+    MCPServer(config=MCPServerConfig(transport="streamable-http", settings=MCPSettings(port=8001))).register_many(
         [reverse_tool, OpenMeteoTool()]
     ).serve()
 

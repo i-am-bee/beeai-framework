@@ -9,7 +9,7 @@ from beeai_framework.utils.models import to_list_model
 
 
 async def main() -> None:
-    agent = RequirementAgent(llm=ChatModel.from_name("ollama:granite3.3:8b"))
+    agent = RequirementAgent(llm=ChatModel.from_name("ollama:granite4:micro"))
 
     class Character(BaseModel):
         first_name: str

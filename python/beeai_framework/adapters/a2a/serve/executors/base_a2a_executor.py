@@ -1,14 +1,15 @@
 # Copyright 2025 © BeeAI a Series of LF Projects, LLC
 # SPDX-License-Identifier: Apache-2.0
 
-from typing import Any, Generic
+from typing import Generic
 
 from typing_extensions import TypeVar, override
 
 from beeai_framework.adapters.a2a.agents._utils import convert_a2a_to_framework_message
+from beeai_framework.adapters.a2a.serve.context import A2AContext
 from beeai_framework.emitter import Emitter
 from beeai_framework.memory import UnconstrainedMemory
-from beeai_framework.runnable import Runnable
+from beeai_framework.runnable import AnyRunnableTypeVar
 from beeai_framework.serve import MemoryManager
 from beeai_framework.utils.cancellation import AbortController
 from beeai_framework.utils.cloneable import Cloneable
@@ -28,15 +29,14 @@ from beeai_framework.agents import AnyAgent
 from beeai_framework.logger import Logger
 
 AnyAgentLike = TypeVar("AnyAgentLike", bound=AnyAgent, default=AnyAgent)
-AnyRunnable = TypeVar("AnyRunnable", bound=Runnable[Any], default=Runnable[Any])
 
 logger = Logger(__name__)
 
 
-class BaseA2AExecutor(a2a_agent_execution.AgentExecutor, Generic[AnyRunnable]):
+class BaseA2AExecutor(a2a_agent_execution.AgentExecutor, Generic[AnyRunnableTypeVar]):
     def __init__(
         self,
-        runnable: AnyRunnable,
+        runnable: AnyRunnableTypeVar,
         agent_card: a2a_types.AgentCard,
         *,
         memory_manager: MemoryManager,
@@ -70,15 +70,16 @@ class BaseA2AExecutor(a2a_agent_execution.AgentExecutor, Generic[AnyRunnable]):
         messages = memory.messages if memory else [convert_a2a_to_framework_message(context.message)]
 
         try:
-            data = await cloned_runnable.run(messages, signal=self._abort_controller.signal)
-            if memory is not None:
-                await memory.add(data.last_message)
+            with A2AContext(context=context, event_queue=event_queue):
+                data = await cloned_runnable.run(messages, signal=self._abort_controller.signal)
+                if memory is not None:
+                    await memory.add(data.last_message)
 
-            await event_queue.enqueue_event(
-                a2a_utils.new_agent_text_message(
-                    text=data.last_message.text, context_id=context.context_id, task_id=context.task_id
+                await event_queue.enqueue_event(
+                    a2a_utils.new_agent_text_message(
+                        text=data.last_message.text, context_id=context.context_id, task_id=context.task_id
+                    )
                 )
-            )
 
         except Exception as e:
             logger.exception("Exception during execution")

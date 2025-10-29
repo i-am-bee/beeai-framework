@@ -14,6 +14,7 @@ from beeai_framework.utils.io import setup_io_context
 try:
     from beeai_sdk.a2a.extensions import (
         FormRender,
+        FormResponse,
         LLMServiceExtensionServer,
         TextField,
     )
@@ -85,9 +86,14 @@ class BeeAIPlatformContext:
                             col_span=1,
                         )
                     ],
-                )
+                ),
+                model=FormResponse,
             )
-            return str(form_data.values[answer_field_id].value)
+            if form_data:
+                return str(form_data.values[answer_field_id].value)
+            else:
+                logger.warning("Form is not supported")
+                return ""
         except ValueError as e:
             logger.warning(f"Failed to process form: {e}")
             return ""

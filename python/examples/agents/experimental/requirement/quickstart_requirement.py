@@ -14,7 +14,7 @@ from beeai_framework.tools.weather import OpenMeteoTool
 # Create an agent that plans activities based on weather and events
 async def main() -> None:
     agent = RequirementAgent(
-        llm=ChatModel.from_name("ollama:granite3.3"),
+        llm=ChatModel.from_name("ollama:granite4:micro"),
         tools=[
             ThinkTool(),  # to reason
             OpenMeteoTool(),  # retrieve weather data
@@ -25,9 +25,11 @@ async def main() -> None:
             # Force thinking first
             ConditionalRequirement(ThinkTool, force_at_step=1),
             # Search only after getting weather and at least once
-            ConditionalRequirement(DuckDuckGoSearchTool, only_after=[OpenMeteoTool], min_invocations=1),
+            ConditionalRequirement(
+                DuckDuckGoSearchTool, only_after=[OpenMeteoTool], min_invocations=1, max_invocations=2
+            ),
             # Weather tool be used at least once but not consecutively
-            ConditionalRequirement(OpenMeteoTool, consecutive_allowed=False, min_invocations=1),
+            ConditionalRequirement(OpenMeteoTool, consecutive_allowed=False, min_invocations=1, max_invocations=2),
         ],
     )
     # Run with execution logging

@@ -32,7 +32,7 @@ async def ollama_from_name() -> None:
 
 
 async def ollama_granite_from_name() -> None:
-    llm = ChatModel.from_name("ollama:granite3.3:8b")
+    llm = ChatModel.from_name("ollama:granite4:micro")
     user_message = UserMessage("what states are part of New England?")
     response = await llm.run([user_message])
     print(response.get_text_content())

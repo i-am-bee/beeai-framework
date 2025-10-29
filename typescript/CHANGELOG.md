@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.1.19](https://github.com/i-am-bee/beeai-framework/compare/typescript_v0.1.18...typescript_v0.1.19) (2025-10-27)
+
+### Bug Fixes
+
+- **adapters:** fix MCP server logging ([#1153](https://github.com/i-am-bee/beeai-framework/issues/1153)) ([2cc4338](https://github.com/i-am-bee/beeai-framework/commit/2cc433875915a4e1a4223b6066ec289f2306ac04))
+
 ## [0.1.18](https://github.com/i-am-bee/beeai-framework/compare/typescript_v0.1.17...typescript_v0.1.18) (2025-09-26)
 
 ### Features

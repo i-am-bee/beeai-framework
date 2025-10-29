@@ -12,7 +12,7 @@ from examples.helpers.io import ConsoleReader
 
 
 async def main() -> None:
-    llm = ChatModel.from_name("ollama:granite3.3:8b")
+    llm = ChatModel.from_name("ollama:granite4:micro")
     workflow = AgentWorkflow(name="Smart assistant")
     reader = ConsoleReader()
 

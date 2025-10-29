@@ -6,11 +6,12 @@ from urllib.parse import quote
 
 import requests
 
-from beeai_framework.agents.react import ReActAgent
+from beeai_framework.agents.requirement import RequirementAgent
 from beeai_framework.backend import ChatModel
 from beeai_framework.errors import FrameworkError
 from beeai_framework.logger import Logger
 from beeai_framework.memory import UnconstrainedMemory
+from beeai_framework.middleware.trajectory import GlobalTrajectoryMiddleware
 from beeai_framework.tools import StringToolOutput, tool
 
 logger = Logger(__name__)
@@ -46,11 +47,13 @@ def basic_calculator(expression: str) -> StringToolOutput:
 async def main() -> None:
     # using the tool in an agent
 
-    chat_model = ChatModel.from_name("ollama:granite3.3:8b")
+    chat_model = ChatModel.from_name("ollama:granite4:micro")
 
-    agent = ReActAgent(llm=chat_model, tools=[basic_calculator], memory=UnconstrainedMemory())
+    agent = RequirementAgent(llm=chat_model, tools=[basic_calculator], memory=UnconstrainedMemory())
 
-    result = await agent.run("What is the square root of 36?", total_max_retries=10)
+    result = await agent.run("What is the square root of 36?", total_max_retries=10).middleware(
+        GlobalTrajectoryMiddleware()
+    )
 
     print(result.last_message.text)
 
