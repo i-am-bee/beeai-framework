@@ -5,6 +5,8 @@ from typing import Any, Literal, Unpack
 
 import httpx
 
+from beeai_framework.adapters.beeai_platform.context import BeeAIPlatformContext
+
 try:
     import a2a.types as a2a_types
     from beeai_sdk.a2a.extensions import (
@@ -74,6 +76,7 @@ class BeeAIPlatformAgent(BaseAgent[BeeAIPlatformAgentOutput]):
         **kwargs: Unpack[BeeAIPlatformAgentOptions],
     ) -> BeeAIPlatformAgentOutput:
         context_param = kwargs.pop("platform_context", None)
+        beeai_platform_context = BeeAIPlatformContext.get()
         if context_param:
             self._platform_context = None if context_param == "clear" else context_param
 
@@ -92,8 +95,10 @@ class BeeAIPlatformAgent(BaseAgent[BeeAIPlatformAgentOutput]):
             )
 
         message = self._agent.convert_to_a2a_message(input)
-        message.metadata = (message.metadata or {}) | await self._get_metadata()
-        message.context_id = self._platform_context.id if self._platform_context else None
+        message.metadata = (message.metadata or {}) | (beeai_platform_context.metadata or await self._get_metadata())
+        message.context_id = (
+            self._platform_context.id if self._platform_context else (beeai_platform_context.context.context_id or None)
+        )
 
         response = await self._agent.run(message, **kwargs).on("update", update_event).on("error", error_event)  # type: ignore[misc]
 

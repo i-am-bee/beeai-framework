@@ -36,9 +36,11 @@ class BeeAIPlatformContext:
         context: RunContext,
         *,
         llm: LLMServiceExtensionServer | None = None,
+        metadata: dict[str, Any] | None = None,
         extra_extensions: BaseBeeAIPlatformExtensions,
     ) -> None:
         self.context = context
+        self.metadata = metadata
         self._llm = llm
         self._cleanup: list[Callable[[], None]] = []
         self._extensions = extra_extensions
