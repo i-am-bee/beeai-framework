@@ -6,13 +6,12 @@ from collections.abc import Iterable, Iterator
 from typing import TYPE_CHECKING, Any, Self
 
 from beeai_framework.backend.message import AnyMessage
-from beeai_framework.serialization import Serializable
 
 if TYPE_CHECKING:
     from beeai_framework.memory.readonly_memory import ReadOnlyMemory
 
 
-class BaseMemory(Serializable[dict[str, Any]], ABC):
+class BaseMemory(ABC):
     """Abstract base class for all memory implementations."""
 
     @property
@@ -82,13 +81,3 @@ class BaseMemory(Serializable[dict[str, Any]], ABC):
             "name": type(self).__name__,
             "messages": self.messages,
         }
-
-    def create_snapshot(self) -> dict[str, Any]:
-        raise NotImplementedError(f"{type(self).__name__} must implement create_snapshot().")
-
-    def load_snapshot(self, snapshot: dict[str, Any]) -> None:
-        raise NotImplementedError(f"{type(self).__name__} must implement load_snapshot().")
-
-    @classmethod
-    def from_snapshot(cls, snapshot: dict[str, Any]) -> Self:
-        raise NotImplementedError(f"{cls.__name__} must implement from_snapshot().")
