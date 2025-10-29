@@ -73,7 +73,11 @@ class BeeAIPlatformAgent(BaseAgent[BeeAIPlatformAgentOutput]):
         **kwargs: Unpack[BeeAIPlatformAgentOptions],
     ) -> BeeAIPlatformAgentOutput:
         context_param = kwargs.pop("platform_context", None)
-        beeai_platform_context = BeeAIPlatformContext.get()
+        try:
+            beeai_platform_context = BeeAIPlatformContext.get()
+        except LookupError:
+            beeai_platform_context = None
+
         if context_param:
             self._platform_context = None if context_param == "clear" else context_param
 
@@ -92,9 +96,15 @@ class BeeAIPlatformAgent(BaseAgent[BeeAIPlatformAgentOutput]):
             )
 
         message = self._agent.convert_to_a2a_message(input)
-        message.metadata = (message.metadata or {}) | (beeai_platform_context.metadata or await self._get_metadata())
+        message.metadata = (message.metadata or {}) | (
+            beeai_platform_context.metadata
+            if (beeai_platform_context and beeai_platform_context.metadata)
+            else await self._get_metadata()
+        )
         message.context_id = (
-            self._platform_context.id if self._platform_context else (beeai_platform_context.context.context_id or None)
+            self._platform_context.id
+            if self._platform_context
+            else (beeai_platform_context.context.context_id if beeai_platform_context else None)
         )
 
         response = await self._agent.run(message, **kwargs).on("update", update_event).on("error", error_event)  # type: ignore[misc]
