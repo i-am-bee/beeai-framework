@@ -20,6 +20,10 @@
     {
       "source": "/experimental/requirement-agent",
       "destination": "/modules/agents/requirement-agent"
+    },
+    {
+      "source": "/integrations/beeai-platform",
+      "destination": "/integrations/agent-stack"
     }
   ],
   "navigation": {
