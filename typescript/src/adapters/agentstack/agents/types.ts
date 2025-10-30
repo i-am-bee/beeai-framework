@@ -6,16 +6,16 @@
 import { Message } from "@/backend/message.js";
 import { BaseMemory } from "@/memory/base.js";
 
-export interface BeeAIPlatformAgentRunInput {
+export interface AgentStackAgentRunInput {
   input: Message | string | Message[] | string[];
 }
 
-export interface BeeAIPlatformAgentRunOutput {
+export interface AgentStackAgentRunOutput {
   result: Message;
   event: Record<string, any>;
 }
 
-export interface BeeAIPlatformAgentInput {
+export interface AgentStackAgentInput {
   url: string;
   agentName: string;
   memory: BaseMemory;

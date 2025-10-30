@@ -10,35 +10,32 @@ import { ACPAgentUpdateEvent, ACPAgentErrorEvent } from "@/adapters/acp/agents/e
 import { BaseMemory } from "@/memory/base.js";
 import { shallowCopy } from "@/serializer/utils.js";
 import {
-  BeeAIPlatformAgentInput,
-  BeeAIPlatformAgentRunInput,
-  BeeAIPlatformAgentRunOutput,
+  AgentStackAgentInput,
+  AgentStackAgentRunInput,
+  AgentStackAgentRunOutput,
 } from "./types.js";
-import { BeeAIPlatformAgentEvents } from "./events.js";
+import { AgentStackAgentEvents } from "./events.js";
 import { ACPAgent } from "@/adapters/acp/agents/agent.js";
 import { toCamelCase } from "remeda";
 
-export class BeeAIPlatformAgent extends BaseAgent<
-  BeeAIPlatformAgentRunInput,
-  BeeAIPlatformAgentRunOutput
-> {
-  public readonly emitter: Emitter<BeeAIPlatformAgentEvents>;
+export class AgentStackAgent extends BaseAgent<AgentStackAgentRunInput, AgentStackAgentRunOutput> {
+  public readonly emitter: Emitter<AgentStackAgentEvents>;
   protected agent: ACPAgent;
 
-  constructor(protected readonly input: BeeAIPlatformAgentInput) {
+  constructor(protected readonly input: AgentStackAgentInput) {
     super();
     this.agent = new ACPAgent(input);
-    this.emitter = Emitter.root.child<BeeAIPlatformAgentEvents>({
-      namespace: ["agent", "beeAIPlatform", toCamelCase(this.input.agentName)],
+    this.emitter = Emitter.root.child<AgentStackAgentEvents>({
+      namespace: ["agent", "agentStack", toCamelCase(this.input.agentName)],
       creator: this,
     });
   }
 
   protected async _run(
-    input: BeeAIPlatformAgentRunInput,
+    input: AgentStackAgentRunInput,
     _options: BaseAgentRunOptions,
     context: GetRunContext<this>,
-  ): Promise<BeeAIPlatformAgentRunOutput> {
+  ): Promise<AgentStackAgentRunOutput> {
     const response = await this.agent.run(input).observe((emitter) => {
       emitter.on(
         "update",

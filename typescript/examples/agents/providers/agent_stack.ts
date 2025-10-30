@@ -1,5 +1,5 @@
 import "dotenv/config.js";
-import { BeeAIPlatformAgent } from "beeai-framework/adapters/beeai_platform/agents/agent";
+import { AgentStackAgent } from "beeai-framework/adapters/agentstack/agents/agent";
 import { createConsoleReader } from "examples/helpers/io.js";
 import { FrameworkError } from "beeai-framework/errors";
 import { TokenMemory } from "beeai-framework/memory/tokenMemory";
@@ -10,7 +10,7 @@ import { TokenMemory } from "beeai-framework/memory/tokenMemory";
 
 const agentName = "chat";
 
-const instance = new BeeAIPlatformAgent({
+const instance = new AgentStackAgent({
   url: "http://127.0.0.1:8333/api/v1/acp",
   agentName,
   memory: new TokenMemory(),

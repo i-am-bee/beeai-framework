@@ -14,7 +14,7 @@ An **AI Agent** is a system built on language models (LLMs or SLMs) that can sol
 - Error Handling: Manages retries, timeouts, and graceful failure recovery
 - Event Orchestration: Emits detailed events for monitoring and debugging agent behavior
 
-Unlike basic chatbots, agents built with this framework can perform multi-step reasoning, use tools to interact with external systems, maintain context across interactions, and adapt based on feedback. 
+Unlike basic chatbots, agents built with this framework can perform multi-step reasoning, use tools to interact with external systems, maintain context across interactions, and adapt based on feedback.
 These capabilities make them ideal for planning, research, analysis, and complex execution tasks.
 
 <Tip>
@@ -96,12 +96,12 @@ COMING SOON
 
 **Prompt Parameters:**
 - `role`: Defines the agent's persona and primary function
-- `instructions`: List of specific behavioral guidelines 
+- `instructions`: List of specific behavioral guidelines
 - `notes`: Additional context or special considerations
 - `name` and `description`: Help identify the agent's purpose and are helpful when using the `HandoffTool`, `Serve` module, and when you need to access agent metadata via `agent.meta`
 
 
-Setting instructions, notes, role will be integrated into the framework provided system prompt template.  If you want to completely override the framework provided system prompt template, you can provide a custom [prompt template](./templates). 
+Setting instructions, notes, role will be integrated into the framework provided system prompt template.  If you want to completely override the framework provided system prompt template, you can provide a custom [prompt template](./templates).
 
 ### 3. Configuring Agent Run Options
 When executing an agent, you can provide additional options to guide its behavior and execution settings:
@@ -135,7 +135,7 @@ COMING SOON
 - `expected_output`: Guides the agent toward a specific unstructured or structured output format. `output_structured` is defined only when `expected_output` is a Pydantic model or a JSON schema. However, the text representation is always available via `response.output`.
 - `backstory`: Provides additional context to help the agent understand the user's situation
 - `total_max_retries`: Controls the total number of retry attempts across the entire agent execution
-- `max_retries_per_step`: Limits retries for individual steps (like tool calls or model responses)  
+- `max_retries_per_step`: Limits retries for individual steps (like tool calls or model responses)
 - `max_iterations`: Sets the maximum number of reasoning cycles the agent can perform
 
 <Tip>
@@ -222,7 +222,7 @@ This is the recommended agent. Currently only supported in Python.
 
 This agent provides the reliability needed for production scenarios through a rule system that defines execution constraints while keeping problem-solving flexibility intact. Unlike traditional approaches that require complex orchestration code, RequirementAgent uses a declarative interface where you define requirements and let the framework enforce them automatically.
 
-Learn more about RequirementAgent in our [RequirementAgent documentation](../experimental/requirement-agent) and [blog post](https://beeai.dev/blog/reliable-ai-agents).
+Learn more about RequirementAgent in our [RequirementAgent documentation](/modules/agents/requirement-agent) and [blog post](https://beeai.dev/blog/reliable-ai-agents).
 
 ```py Python [expandable]
 from beeai_framework.agents.requirement import RequirementAgent
