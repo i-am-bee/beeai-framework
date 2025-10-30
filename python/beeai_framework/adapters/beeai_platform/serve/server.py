@@ -6,6 +6,7 @@ import contextlib
 import os
 from collections.abc import Awaitable, Callable
 from datetime import timedelta
+from enum import StrEnum
 from typing import Any, Self
 
 import uvicorn
@@ -16,7 +17,6 @@ from beeai_framework.adapters.beeai_platform.serve._dummy_context_store import (
     DummyContextStore,
 )
 from beeai_framework.adapters.beeai_platform.serve.types import BaseBeeAIPlatformExtensions
-from beeai_framework.agents import BaseAgent
 from beeai_framework.agents.react import ReActAgent
 from beeai_framework.agents.requirement import RequirementAgent
 from beeai_framework.agents.tool_calling import ToolCallingAgent
@@ -132,7 +132,16 @@ class BaseBeeAIPlatformServerMetadata(TypedDict, total=False):
     version: str
 
 
+class BeeAIPlatformSettingsContent(StrEnum):
+    TOOLS = "tools"
+    """Allows to enable/disable tools."""
+
+
 class BeeAIPlatformServerMetadata(BaseBeeAIPlatformServerMetadata, total=False):
+    settings: set[BeeAIPlatformSettingsContent]
+    """
+    Provide the ability to dynamically modify an agent’s settings.
+    """
     extensions: type[BaseBeeAIPlatformExtensions]
 
 
@@ -197,7 +206,11 @@ class BeeAIPlatformServer(
                     name=tool.name,
                     description=tool.description,
                 )
-                for tool in (input.meta.tools if isinstance(input, BaseAgent) else [])
+                for tool in (
+                    input.meta.tools
+                    if isinstance(input, ReActAgent)
+                    else (input._tools if isinstance(input, ToolCallingAgent | RequirementAgent) else [])
+                )
             ]
 
             self._metadata_by_agent[input] = metadata

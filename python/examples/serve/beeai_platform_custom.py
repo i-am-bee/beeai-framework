@@ -1,5 +1,3 @@
-# Copyright 2025 © BeeAI a Series of LF Projects, LLC
-# SPDX-License-Identifier: Apache-2.0
 import re
 import sys
 import traceback
@@ -64,7 +62,7 @@ def main() -> None:
         instructions=(
             "You are an AI assistant focused on retrieving information from online sources."
             "Mandatory Search: Always search for the topic on Wikipedia and always search for related current news."
-            "Mandatory Output Structure: Return the result in two separate sections wit headings:"
+            "Mandatory Output Structure: Return the result in two separate sections with headings:"
             " 1. Basic Information (primarily utilizing data from Wikipedia, if relevant)."
             " 2. News (primarily utilizing current news results). "
             "Mandatory Citation: Always include a source link for all given information, especially news."
@@ -81,18 +79,16 @@ def main() -> None:
     )
 
     # define custom extensions
-    class CitationExtensions(BaseBeeAIPlatformExtensions):
+    class CustomExtensions(BaseBeeAIPlatformExtensions):
         citation: Annotated[CitationExtensionServer, CitationExtensionSpec()]
 
     # Runs HTTP server that registers to BeeAI platform
-    server = BeeAIPlatformServer(
-        config={"configure_telemetry": False}, memory_manager=BeeAIPlatformMemoryManager()
-    )  # use platform memory
+    server = BeeAIPlatformServer(memory_manager=BeeAIPlatformMemoryManager())  # use platform memory
     server.register(
         agent,
         name="Information retrieval",
         detail=AgentDetail(interaction_mode="single-turn", user_greeting="What can I search for you?"),
-        extensions=CitationExtensions,
+        extensions=CustomExtensions,
     )
     server.serve()
 
