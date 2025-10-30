@@ -1,3 +1,20 @@
+## python_v0.1.60 (2025-10-29)
+
+### Bug Fixes
+
+- **adapter**: Fix context in BeeAIPlatformAgent (#1247)
+
+### Features
+
+- **backend**: auto retry on empty/malformed response (#1253)
+- **serve**: enable streamable-http for MCPServer (#1251)
+- **tools**: add smart parsing for MCP Tool Output (#1250)
+- **adapters**: handle device identification in Transformers
+- **tools**: handle commas in location name in the OpenMeteo tool
+- improve error context serialization
+- **adapters**: propagate strict tool call parsing config for LangChain
+- **backend**: handle double-escaped tool calls (#1241)
+
 ## python_v0.1.59 (2025-10-27)
 
 ### Bug Fixes
