@@ -58,13 +58,14 @@ exclude = list(
             "playground/*.py",
             "playground/*/*.py",
             "playground/*/*/*.py",
-            "agents/experimental/requirement/exercises/*",
+            "agents/requirement/exercises/*",
             "integrations/langgraph_example.py",
             "agents/rag_agent.py",
-            "agents/experimental/requirement/rag.py",
+            "agents/requirement/rag.py",
             "backend/module_loading.py",
             # Interactive example
-            "agents/experimental/requirement/multi_agent.py",
+            "agents/requirement/multi_agent.py",
+            "agents/experimental/human.py",
         ],
     )
 )

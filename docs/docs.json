@@ -16,6 +16,10 @@
     {
       "source": "/modules/emitter",
       "destination": "/modules/middleware"
+    },
+    {
+      "source": "/experimental/requirement-agent",
+      "destination": "/modules/agents/requirement-agent"
     }
   ],
   "navigation": {

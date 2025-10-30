@@ -491,7 +491,7 @@ Use the VectorStoreSearchTool to perform semantic search against pre-populated v
 This tool requires a pre-populated vector store. Vector store population (loading and chunking documents) is typically handled offline in production applications.
 </Note>
 
-{/* <!-- embedme python/examples/agents/experimental/requirement/rag.py --> */}
+{/* <!-- embedme python/examples/agents/requirement/rag.py --> */}
 ```py Python [expandable]
 import asyncio
 import os
@@ -821,11 +821,11 @@ def get_riddle() -> Optional[Dict[str, str]]:
       Returns None if the request fails.
   """
   url = os.environ.get('API_URL')
-  
+
   try:
       response = requests.get(url)
-      response.raise_for_status() 
-      return response.json() 
+      response.raise_for_status()
+      return response.json()
   except Exception as e:
       return None`,
 );
@@ -934,11 +934,11 @@ def get_riddle() -> Optional[Dict[str, str]]:
       Returns None if the request fails.
   """
   url = os.environ.get('API_URL')
-  
+
   try:
       response = requests.get(url)
-      response.raise_for_status() 
-      return response.json() 
+      response.raise_for_status()
+      return response.json()
   except Exception as e:
       return None`,
 );
@@ -1069,11 +1069,11 @@ def get_riddle() -> Optional[Dict[str, str]]:
       Returns None if the request fails.
   """
   url = os.environ.get('API_URL')
-  
+
   try:
       response = requests.get(url)
-      response.raise_for_status() 
-      return response.json() 
+      response.raise_for_status()
+      return response.json()
   except Exception as e:
       return None`,
 );

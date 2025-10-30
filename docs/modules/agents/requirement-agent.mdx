@@ -22,7 +22,7 @@ RequirementAgent ensures consistent agent behavior through declarative rules tha
 
 ## Quickstart
 
-This example demonstrates how to create an agent with enforced tool execution order. 
+This example demonstrates how to create an agent with enforced tool execution order.
 
 This agent will:
 1. First use `ThinkTool` to reason about the request enabling a "Re-Act" pattern
@@ -33,7 +33,7 @@ This agent will:
 
 <CodeGroup>
 
-{/* <!-- embedme python/examples/agents/experimental/requirement/quickstart_requirement.py --> */}
+{/* <!-- embedme python/examples/agents/requirement/quickstart_requirement.py --> */}
 ```py Python
 import asyncio
 
@@ -121,7 +121,7 @@ Developers declare rules by creating `ConditionalRequirement` objects that targe
 # Declare: agent must think before acting
 ConditionalRequirement(ThinkTool, force_at_step=1)
 
-# Declare: require weather check before web search  
+# Declare: require weather check before web search
 ConditionalRequirement(DuckDuckGoSearchTool, only_after=[OpenMeteoTool])
 
 # Declare: prevent consecutive uses of same tool
@@ -168,11 +168,11 @@ Start with a single requirement and add more as needed.
 
 <Tip>
 	Curious to see it in action?
-	Explore our [interactive exercises](https://github.com/i-am-bee/beeai-framework/tree/main/python/examples/agents/experimental/requirement/exercises) to discover how the agent solves real problems step by step!
+	Explore our [interactive exercises](https://github.com/i-am-bee/beeai-framework/tree/main/python/examples/agents/requirement/exercises) to discover how the agent solves real problems step by step!
 </Tip>
 
 
-## Example Agents 
+## Example Agents
 
 ### Forced Execution Order
 
@@ -338,7 +338,7 @@ The Requirement class has the following lifecycle:
 This example demonstrates how to write a requirement that prevents the agent from answering if the question contains a specific phrase:
 
 <CodeGroup>
-{/* <!-- embedme python/examples/agents/experimental/requirement/custom_requirement.py --> */}
+{/* <!-- embedme python/examples/agents/requirement/custom_requirement.py --> */}
 ```py Python
 import asyncio
 
@@ -412,10 +412,10 @@ COMING SOON
 
 **➡️ Check out the following additional examples**
 
-- [Multi-agent](https://github.com/i-am-bee/beeai-framework/blob/main/python/examples/agents/experimental/requirement/multi_agent.py) system via handoffs.
-- [ReAct](https://github.com/i-am-bee/beeai-framework/blob/main/python/examples/agents/experimental/requirement/react.py) loop in a second.
-- Generating [structured output](https://github.com/i-am-bee/beeai-framework/blob/main/python/examples/agents/experimental/requirement/text_output.py) output.
-- [Advanced](https://github.com/i-am-bee/beeai-framework/blob/main/python/examples/agents/experimental/requirement/complex.py) (detailed configuration).
+- [Multi-agent](https://github.com/i-am-bee/beeai-framework/blob/main/python/examples/agents/requirement/multi_agent.py) system via handoffs.
+- [ReAct](https://github.com/i-am-bee/beeai-framework/blob/main/python/examples/agents/requirement/react.py) loop in a second.
+- Generating [structured output](https://github.com/i-am-bee/beeai-framework/blob/main/python/examples/agents/requirement/text_output.py) output.
+- [Advanced](https://github.com/i-am-bee/beeai-framework/blob/main/python/examples/agents/requirement/complex.py) (detailed configuration).
 
 
 <CardGroup cols={2}>
