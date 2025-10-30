@@ -1,13 +1,15 @@
 # Copyright 2025 © BeeAI a Series of LF Projects, LLC
 # SPDX-License-Identifier: Apache-2.0
-from typing import Any, Self
+import contextlib
+import json
+from typing import Any, Self, TypedDict, Unpack
 
 from beeai_framework.tools import ToolError
 from beeai_framework.tools.mcp.utils.session_provider import MCPClient, MCPSessionProvider
 
 try:
     from mcp import ClientSession
-    from mcp.types import CallToolResult
+    from mcp.types import CallToolResult, TextContent
     from mcp.types import Tool as MCPToolInfo
 except ModuleNotFoundError as e:
     raise ModuleNotFoundError(
@@ -29,14 +31,21 @@ logger = Logger(__name__)
 __all__ = ["MCPClient", "MCPTool"]
 
 
+class MCPToolKwargs(TypedDict, total=False):
+    smart_parsing: bool
+
+
 class MCPTool(Tool[BaseModel, ToolRunOptions, JSONToolOutput]):
     """Tool implementation for Model Context Protocol."""
 
-    def __init__(self, session: ClientSession, tool: MCPToolInfo, **options: int) -> None:
+    def __init__(self, session: ClientSession, tool: MCPToolInfo, **options: Unpack[MCPToolKwargs]) -> None:
         """Initialize MCPTool with client and tool configuration."""
-        super().__init__(options)
+        smart_parsing = options.pop("smart_parsing", True)
+
+        super().__init__(dict(options))
         self._session = session
         self._tool = tool
+        self._smart_parsing = smart_parsing
 
     @property
     def name(self) -> str:
@@ -68,7 +77,17 @@ class MCPTool(Tool[BaseModel, ToolRunOptions, JSONToolOutput]):
         if result.structuredContent is not None:
             data_result = result.structuredContent
         else:
-            data_result = result.content[0] if len(result.content) == 1 else result.content
+            if self._smart_parsing:
+                chunks: list[Any] = []
+                for chunk in result.content:
+                    if isinstance(chunk, TextContent):
+                        with contextlib.suppress(json.JSONDecodeError):
+                            chunk = json.loads(chunk.text)
+                    chunks.append(chunk)
+
+                data_result = chunks[0] if len(chunks) == 1 else chunks
+            else:
+                data_result = result.content
 
         if result.isError:
             raise ToolError(to_json(data_result, indent=4, sort_keys=False))
@@ -76,13 +95,13 @@ class MCPTool(Tool[BaseModel, ToolRunOptions, JSONToolOutput]):
         return JSONToolOutput(data_result)
 
     @classmethod
-    async def from_client(cls, client: MCPClient | ClientSession) -> list["MCPTool"]:
+    async def from_client(cls, client: MCPClient | ClientSession, **options: Unpack[MCPToolKwargs]) -> list["MCPTool"]:
         if isinstance(client, ClientSession):
-            return await cls.from_session(client)
+            return await cls.from_session(client, **options)
 
         manager = MCPSessionProvider(client)
         session = await manager.session()
-        instance = await cls.from_session(session)
+        instance = await cls.from_session(session, **options)
         manager.refs += len(instance)
         return instance
 
@@ -90,12 +109,13 @@ class MCPTool(Tool[BaseModel, ToolRunOptions, JSONToolOutput]):
         MCPSessionProvider.destroy_by_session(self._session)
 
     @classmethod
-    async def from_session(cls, session: ClientSession) -> list["MCPTool"]:
+    async def from_session(cls, session: ClientSession, **options: Unpack[MCPToolKwargs]) -> list["MCPTool"]:
         tools_result = await session.list_tools()
-        return [MCPTool(session, tool) for tool in tools_result.tools]
+        return [MCPTool(session, tool, **options) for tool in tools_result.tools]
 
     async def clone(self) -> Self:
         cloned = await super().clone()
         cloned._session = self._session
         cloned._tool = self._tool.model_copy()
+        cloned._smart_parsing = self._smart_parsing
         return cloned

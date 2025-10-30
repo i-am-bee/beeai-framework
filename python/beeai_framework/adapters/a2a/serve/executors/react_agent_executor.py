@@ -1,15 +1,12 @@
 # Copyright 2025 © BeeAI a Series of LF Projects, LLC
 # SPDX-License-Identifier: Apache-2.0
 
-from typing import Any
-
 from typing_extensions import TypeVar, override
 
 from beeai_framework.adapters.a2a.serve.executors.base_a2a_agent_executor import BaseA2AAgentExecutor
 from beeai_framework.agents.react import ReActAgentUpdateEvent
 from beeai_framework.agents.react.types import ReActAgentIterationResult
 from beeai_framework.emitter import Emitter, EventMeta
-from beeai_framework.runnable import Runnable
 from beeai_framework.utils.strings import to_json
 
 try:
@@ -26,7 +23,6 @@ from beeai_framework.agents import AnyAgent
 from beeai_framework.logger import Logger
 
 AnyAgentLike = TypeVar("AnyAgentLike", bound=AnyAgent, default=AnyAgent)
-AnyRunnable = TypeVar("AnyRunnable", bound=Runnable[Any], default=Runnable[Any])
 
 logger = Logger(__name__)
 

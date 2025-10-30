@@ -56,6 +56,7 @@ logger = Logger(__name__)
 
 class ChatModelKwargs(TypedDict, total=False):
     tool_call_fallback_via_response_format: bool
+    retry_on_empty_response: bool
     model_supports_tool_calling: bool
     allow_parallel_tool_calls: bool
     ignore_parallel_tool_calls: bool
@@ -165,6 +166,7 @@ class ChatModel(Runnable[ChatModelOutput]):
     model_supports_tool_calling: bool
     use_strict_model_schema: bool
     use_strict_tool_schema: bool
+    retry_on_empty_response: bool
 
     @property
     @abstractmethod
@@ -195,6 +197,7 @@ class ChatModel(Runnable[ChatModelOutput]):
         self.use_strict_tool_schema = kwargs.get("use_strict_tool_schema", True)
         self.use_strict_model_schema = kwargs.get("use_strict_model_schema", False)
         self.supports_top_level_unions = kwargs.get("supports_top_level_unions", True)
+        self.retry_on_empty_response = bool(kwargs.get("retry_on_empty_response", True))
 
         custom_tool_choice_support = kwargs.get("tool_choice_support")
         self._tool_choice_support: set[ToolChoiceType] = (
@@ -300,13 +303,11 @@ class ChatModel(Runnable[ChatModelOutput]):
         cache_key = self.cache.generate_key(model_input, {"messages": [m.to_plain() for m in model_input.messages]})
         cache_hit = await self.cache.get(cache_key)
 
-        try:
-            await context.emitter.emit("start", ChatModelStartEvent(input=model_input))
-            chunks: list[ChatModelOutput] = []
-
+        async def run() -> ChatModelOutput:
             if model_input.stream:
+                chunks: list[ChatModelOutput] = []
+                abort_controller = AbortController()
                 generator = to_async_generator(cache_hit) if cache_hit else self._create_stream(model_input, context)
-                abort_controller: AbortController = AbortController()
                 async for value in generator:
                     chunks.append(value)
                     await context.emitter.emit(
@@ -315,28 +316,35 @@ class ChatModel(Runnable[ChatModelOutput]):
                     if abort_controller.signal.aborted:
                         break
 
-                if not cache_hit:
-                    await self.cache.set(cache_key, chunks)
-                result = ChatModelOutput.from_chunks(chunks)
+                await self.cache.set(cache_key, chunks)
+                return ChatModelOutput.from_chunks(chunks)
             else:
                 if cache_hit:
-                    result = cache_hit[0].model_copy()
-                else:
-                    result = await Retryable(
-                        RetryableInput(
-                            executor=lambda _: self._create(model_input, context),
-                            config=RetryableConfig(
-                                max_retries=(
-                                    model_input.max_retries
-                                    if model_input is not None and model_input.max_retries is not None
-                                    else 0
-                                ),
-                                signal=context.signal,
-                            ),
-                        )
-                    ).get()
+                    return cache_hit[0].model_copy()
 
-                    await self.cache.set(cache_key, [result])
+                max_retries = model_input.max_retries if model_input and model_input.max_retries is not None else 0
+                result = await Retryable(
+                    RetryableInput(
+                        executor=lambda _: self._create(model_input, context),
+                        config=RetryableConfig(
+                            max_retries=max_retries,
+                            signal=context.signal,
+                        ),
+                    )
+                ).get()
+                await self.cache.set(cache_key, [result])
+                return result
+
+        try:
+            await context.emitter.emit("start", ChatModelStartEvent(input=model_input))
+
+            result = await run()
+            if self.retry_on_empty_response and result.is_empty():
+                old_messages = model_input.messages
+                model_input.messages = [*old_messages, AssistantMessage(content="")]
+                cache_hit = None
+                result = await run()
+                model_input.messages = old_messages
 
             if force_tool_call_via_response_format and not result.get_tool_calls():
                 assert response_format_schema and issubclass(response_format_schema, BaseModel)
@@ -461,6 +469,7 @@ class ChatModel(Runnable[ChatModelOutput]):
             use_strict_model_schema=self.use_strict_model_schema,
             use_strict_tool_schema=self.use_strict_tool_schema,
             tool_choice_support=self._tool_choice_support.copy(),
+            retry_on_empty_response=self.retry_on_empty_response,
         )
         return cloned
 

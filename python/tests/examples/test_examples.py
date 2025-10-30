@@ -1,3 +1,4 @@
+import logging
 import os
 import pathlib
 import runpy
@@ -7,6 +8,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
+MAX_RETRIES = max(0, int(os.getenv("TEST_RETRY_COUNT", 0)))
 EXAMPLES_DIR = (pathlib.Path(__file__).parent.parent.parent / "examples").resolve()
 all_examples = list(EXAMPLES_DIR.rglob("*.py"))
 
@@ -36,32 +38,34 @@ exclude = list(
             "workflows/searx_agent.py",
             "agents/providers/acp.py",
             "agents/providers/a2a_agent.py",
-            "agents/providers/beeai_platform.py",
+            "agents/providers/agentstack.py",
             "agents/providers/watsonx_orchestrate.py",
             "workflows/remote.py",
             "serve/acp.py",
-            "serve/beeai_platform.py",
-            "serve/beeai_platform_custom.py",
-            "serve/beeai_platform_await.py",
-            "serve/beeai_platform_llm.py",
+            "serve/agent_stack.py",
+            "serve/agent_stack_custom.py",
+            "serve/agent_stack_await.py",
+            "serve/agent_stack_llm.py",
             "serve/a2a_server.py",
             "serve/acp_with_custom_agent.py",
             "serve/mcp_agent.py",
             "serve/mcp_tool.py",
             "serve/watsonx_orchestrate.py",
+            "serve/openai_server.py",
             "tools/python_tool.py" if os.getenv("CODE_INTERPRETER_URL") is None else None,
             "tools/custom/sandbox.py" if os.getenv("CODE_INTERPRETER_URL") is None else None,
             "workflows/travel_advisor.py",
             "playground/*.py",
             "playground/*/*.py",
             "playground/*/*/*.py",
-            "agents/experimental/requirement/exercises/*",
+            "agents/requirement/exercises/*",
             "integrations/langgraph_example.py",
             "agents/rag_agent.py",
-            "agents/experimental/requirement/rag.py",
+            "agents/requirement/rag.py",
             "backend/module_loading.py",
             # Interactive example
-            "agents/experimental/requirement/multi_agent.py",
+            "agents/requirement/multi_agent.py",
+            "agents/experimental/human.py",
         ],
     )
 )
@@ -97,4 +101,15 @@ def test_finds_examples() -> None:
 def test_example_execution(example: pathlib.Path, monkeypatch: pytest.MonkeyPatch) -> None:
     inputs = iter(["Hello world", "q"])
     monkeypatch.setattr("builtins.input", lambda _: next(inputs))
-    runpy.run_path(str(example.resolve()), run_name="__main__")
+
+    remaining_attempts = MAX_RETRIES + 1
+    while remaining_attempts > 0:
+        remaining_attempts -= 1
+        try:
+            runpy.run_path(str(example.resolve()), run_name="__main__")
+            break
+        except Exception as e:
+            if remaining_attempts <= 0:
+                raise e
+
+            logging.warning(f"Retrying {example} after error ({remaining_attempts} remaining)", exc_info=e)

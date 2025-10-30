@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.1.20](https://github.com/i-am-bee/beeai-framework/compare/typescript_v0.1.19...typescript_v0.1.20) (2025-10-29)
+
+### Features
+
+- **serve:** enable streamable-http for MCPServer ([#1251](https://github.com/i-am-bee/beeai-framework/issues/1251)) ([611e6ac](https://github.com/i-am-bee/beeai-framework/commit/611e6ac9dab796fafa6ce9a99ca053cbc3de8bc2)), closes [#1252](https://github.com/i-am-bee/beeai-framework/issues/1252)
+
+## [0.1.19](https://github.com/i-am-bee/beeai-framework/compare/typescript_v0.1.18...typescript_v0.1.19) (2025-10-27)
+
+### Bug Fixes
+
+- **adapters:** fix MCP server logging ([#1153](https://github.com/i-am-bee/beeai-framework/issues/1153)) ([2cc4338](https://github.com/i-am-bee/beeai-framework/commit/2cc433875915a4e1a4223b6066ec289f2306ac04))
+
 ## [0.1.18](https://github.com/i-am-bee/beeai-framework/compare/typescript_v0.1.17...typescript_v0.1.18) (2025-09-26)
 
 ### Features

@@ -55,9 +55,9 @@ class LangChainChatModel(ChatModel):
         if input.tools:
             tools = [beeai_tool_to_lc_tool(tool) for tool in (input.tools or [])]
             tool_choice = str(input.tool_choice) if input.tool_choice else None
-            return self._model.bind_tools(tools, tool_choice=tool_choice) | RunnableLambda(
-                lambda data: LCModelResponse(output=data, output_structured=None)
-            )
+            return self._model.bind_tools(
+                tools, tool_choice=tool_choice, strict=self.use_strict_tool_schema
+            ) | RunnableLambda(lambda data: LCModelResponse(output=data, output_structured=None))
         elif input.response_format:
             return self._model.with_structured_output(schema=input.response_format, include_raw=True) | RunnableLambda(
                 lambda data: LCModelResponse(output=data["raw"], output_structured=data["parsed"])

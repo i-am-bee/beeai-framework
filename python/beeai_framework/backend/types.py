@@ -52,11 +52,7 @@ class ChatModelInput(ChatModelParameters):
     stop_sequences: list[str] | None = None
     response_format: dict[str, Any] | type[BaseModel] | None = None
     validate_response_format: bool | None = None
-    messages: list[InstanceOf[AnyMessage]] = Field(
-        ...,
-        min_length=1,
-        frozen=True,
-    )
+    messages: list[InstanceOf[AnyMessage]] = Field(..., min_length=1)
     parallel_tool_calls: bool | None = None
     stream_partial_tool_calls: bool = False
 
@@ -78,6 +74,28 @@ class ChatModelOutput(RunnableOutput):
     cost: ChatModelCost | None = None
     finish_reason: str | None = None
     output_structured: Any | BaseModel | None = None
+
+    def is_empty(self) -> bool:
+        if self.output_structured is not None:
+            return False
+
+        if self.get_text_content():
+            return False
+
+        if self.get_tool_calls():
+            return False
+
+        for msg in self.output:
+            for chunk in msg.content:
+                chunk_unpacked = (
+                    chunk.model_dump(exclude_none=True, exclude_defaults=True, exclude_unset=True)
+                    if isinstance(chunk, BaseModel)
+                    else chunk
+                )
+                if chunk_unpacked:
+                    return False
+
+        return True
 
     def is_valid(self) -> bool:
         for msg in self.output:

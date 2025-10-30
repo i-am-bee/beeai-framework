@@ -8,6 +8,24 @@
     "dark": "#000000"
   },
   "favicon": "/favicon.svg",
+  "redirects": [
+    {
+      "source": "/modules/events",
+      "destination": "/modules/middleware"
+    },
+    {
+      "source": "/modules/emitter",
+      "destination": "/modules/middleware"
+    },
+    {
+      "source": "/experimental/requirement-agent",
+      "destination": "/modules/agents/requirement-agent"
+    },
+    {
+      "source": "/integrations/beeai-platform",
+      "destination": "/integrations/agent-stack"
+    }
+  ],
   "navigation": {
     "groups": [
       {
@@ -21,18 +39,17 @@
       {
         "group": "Core Concepts",
         "pages": [
-          "experimental/requirement-agent",
+          "modules/agents/requirement-agent",
+          "modules/middleware",
           "modules/agents",
           "modules/backend",
           "modules/tools",
           "modules/memory",
           "modules/rag",
           "modules/observability",
-          "modules/emitter",
           "modules/serve",
           "modules/cache",
           "modules/logger",
-          "modules/events",
           "modules/serialization",
           "modules/errors",
           "modules/templates",
@@ -43,10 +60,11 @@
       {
         "group": "Integrations",
         "pages": [
-          "integrations/beeai-platform",
+          "integrations/agent-stack",
           "integrations/mcp",
           "integrations/a2a",
-          "integrations/watsonx-orchestrate"
+          "integrations/watsonx-orchestrate",
+          "integrations/openai-api"
         ]
       },
 

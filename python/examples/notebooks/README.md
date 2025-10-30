@@ -25,7 +25,7 @@ Follow the [Official Ollama Instructions](https://ollama.com/download/)
 ⚙️ Install the IBM Granite 3.1 model using
 
 ```shell
-ollama pull granite3.3:8b
+ollama pull granite4:latest
 ```
 
 ⚡ If you'd prefer to use watsonx to run Granite 3.1 instead of Ollama (e.g., if your machine lacks sufficient resources), refer to the [watsonx.ipynb](watsonx.ipynb) notebook, which demonstrates how to use watsonx. You can then substitute the watsonx ChatModel when working through the main series of notebooks. ⚡
