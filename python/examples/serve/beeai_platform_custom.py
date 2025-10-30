@@ -1,5 +1,3 @@
-# Copyright 2025 © BeeAI a Series of LF Projects, LLC
-# SPDX-License-Identifier: Apache-2.0
 import re
 import sys
 import traceback
@@ -81,18 +79,16 @@ def main() -> None:
     )
 
     # define custom extensions
-    class CitationExtensions(BaseBeeAIPlatformExtensions):
+    class CustomExtensions(BaseBeeAIPlatformExtensions):
         citation: Annotated[CitationExtensionServer, CitationExtensionSpec()]
 
     # Runs HTTP server that registers to BeeAI platform
-    server = BeeAIPlatformServer(
-        config={"configure_telemetry": False}, memory_manager=BeeAIPlatformMemoryManager()
-    )  # use platform memory
+    server = BeeAIPlatformServer(memory_manager=BeeAIPlatformMemoryManager())  # use platform memory
     server.register(
         agent,
         name="Information retrieval",
         detail=AgentDetail(interaction_mode="single-turn", user_greeting="What can I search for you?"),
-        extensions=CitationExtensions,
+        extensions=CustomExtensions,
     )
     server.serve()
 

@@ -18,7 +18,8 @@ except ModuleNotFoundError as e:
 def main() -> None:
     agent = RequirementAgent(
         llm=BeeAIPlatformChatModel(
-            preferred_models=["openai:gpt-4o", "ollama:llama3.1:8b"], parameters=ChatModelParameters(stream=True)
+            preferred_models=["openai:gpt-4o", "ollama:llama3.1:8b"],
+            parameters=ChatModelParameters(stream=True),
         ),
         tools=[DuckDuckGoSearchTool(), OpenMeteoTool()],
         memory=UnconstrainedMemory(),
@@ -26,10 +27,10 @@ def main() -> None:
     )
 
     # Runs HTTP server that registers to BeeAI platform
-    server = BeeAIPlatformServer(config={"configure_telemetry": False}, memory_manager=BeeAIPlatformMemoryManager())
+    server = BeeAIPlatformServer(memory_manager=BeeAIPlatformMemoryManager())
     server.register(
         agent,
-        name="Framework chat agent",
+        name="Framework chat agent",  # (optional)
         description="Simple chat agent",  # (optional)
         detail=AgentDetail(interaction_mode="multi-turn"),  # default is multi-turn (optional)
     )
@@ -38,5 +39,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-
-# run: beeai agent run chat_agent
