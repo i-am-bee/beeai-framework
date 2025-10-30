@@ -63,21 +63,9 @@ def _react_agent_factory(
         cloned_agent = await agent.clone() if isinstance(agent, Cloneable) else agent
         await init_beeai_platform_memory(cloned_agent, memory_manager, context)
 
-        settings = extra_extensions.get("settings")
-        if settings:
-            try:
-                parsed_settings = settings.parse_settings_response()
-
-                tools_settings = parsed_settings.values.get("tools")
-                if tools_settings and tools_settings.type == "checkbox_group":
-                    cloned_agent._input.tools = [
-                        tool
-                        for tool in cloned_agent._input.tools
-                        if tool.name in [key for key, value in tools_settings.values.items() if value.value]
-                    ]
-
-            except Exception:
-                logger.exception("Failed to parse settings response")
+        has_tool_settings, allowed_tools = _get_tools_settings(extra_extensions)
+        if has_tool_settings:
+            cloned_agent._input.tools = [tool for tool in cloned_agent._input.tools if tool.name in allowed_tools]
 
         with BeeAIPlatformContext(
             context,
@@ -163,21 +151,9 @@ def _tool_calling_agent_factory(
         cloned_agent = await agent.clone() if isinstance(agent, Cloneable) else agent
         await init_beeai_platform_memory(cloned_agent, memory_manager, context)
 
-        settings = extra_extensions.get("settings")
-        if settings:
-            try:
-                parsed_settings = settings.parse_settings_response()
-
-                tools_settings = parsed_settings.values.get("tools")
-                if tools_settings and tools_settings.type == "checkbox_group":
-                    cloned_agent._tools = [
-                        tool
-                        for tool in cloned_agent._tools
-                        if tool.name in [key for key, value in tools_settings.values.items() if value.value]
-                    ]
-
-            except Exception:
-                logger.exception("Failed to parse settings response")
+        has_tool_settings, allowed_tools = _get_tools_settings(extra_extensions)
+        if has_tool_settings:
+            cloned_agent._tools = [tool for tool in cloned_agent._tools if tool.name in allowed_tools]
 
         with BeeAIPlatformContext(
             context,
@@ -228,17 +204,9 @@ def _requirement_agent_factory(
         cloned_agent = await agent.clone() if isinstance(agent, Cloneable) else agent
         await init_beeai_platform_memory(cloned_agent, memory_manager, context)
 
-        settings = extra_extensions.get("settings")
-        if settings:
-            try:
-                parsed_settings = settings.parse_settings_response()
-
-                tools_settings = parsed_settings.values.get("tools")
-                if tools_settings:
-                    logger.warning("Tools settings is ignored for the RequirementAgent")
-
-            except Exception:
-                logger.exception("Failed to parse settings response")
+        has_tool_settings, allowed_tools = _get_tools_settings(extra_extensions)
+        if has_tool_settings:
+            logger.warning("Tools settings is ignored for the RequirementAgent")
 
         with BeeAIPlatformContext(
             context,
@@ -349,6 +317,21 @@ def _runnable_factory(
             yield agent_response
 
     return beeai_agent.agent(**runnable_metadata)(run)
+
+
+def _get_tools_settings(extra_extensions: dict[str, Any]) -> tuple[bool, list[str]]:
+    settings: Annotated[beeai_extensions.SettingsExtensionServer, Any] | None = extra_extensions.get("settings")
+    if settings:
+        try:
+            parsed_settings = settings.parse_settings_response()
+
+            tools_settings = parsed_settings.values.get("tools")
+            if tools_settings and tools_settings.type == "checkbox_group":
+                return True, [key for key, value in tools_settings.values.items() if value.value]
+
+        except Exception:
+            logger.exception("Failed to parse settings response")
+    return False, []
 
 
 def _init_metadata(

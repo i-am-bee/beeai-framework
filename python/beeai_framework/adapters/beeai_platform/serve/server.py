@@ -133,6 +133,9 @@ class BaseBeeAIPlatformServerMetadata(TypedDict, total=False):
 
 class BeeAIPlatformServerMetadata(BaseBeeAIPlatformServerMetadata, total=False):
     tools_setting: bool
+    """
+    Provide the ability to turn tools on/off for users.
+    """
     extensions: type[BaseBeeAIPlatformExtensions]
 
 
