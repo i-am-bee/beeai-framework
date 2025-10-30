@@ -114,7 +114,7 @@ if __name__ == "__main__":
     asyncio.run(main())
 ```
 
-_Source: [python/examples/agents/experimental/requirement/handoff.py](https://github.com/i-am-bee/beeai-framework/tree/main/python/examples/agents/experimental/requirement/handoff.py)_
+_Source: [python/examples/agents/requirement/handoff.py](https://github.com/i-am-bee/beeai-framework/tree/main/python/examples/agents/requirement/handoff.py)_
 
 ### Message Content Helpers (Text / Image / File)
 

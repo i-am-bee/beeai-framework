@@ -35,7 +35,7 @@
       {
         "group": "Core Concepts",
         "pages": [
-          "experimental/requirement-agent",
+          "modules/agents/requirement-agent",
           "modules/middleware",
           "modules/agents",
           "modules/backend",

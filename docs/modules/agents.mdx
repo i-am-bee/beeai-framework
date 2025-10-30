@@ -36,6 +36,7 @@ The backend system manages your connection to different language model providers
 
 ```py Python [expandable]
 from beeai_framework.backend import ChatModel
+from beeai_framework.agents.requirement import RequirementAgent
 
 # Using Ollama (local models)
 llm = ChatModel.from_name("ollama:granite3.3")
@@ -53,7 +54,22 @@ agent = RequirementAgent(
 ```
 
 ```ts TypeScript [expandable]
-COMING SOON
+import { ToolCallingAgent } from "beeai-framework/agents/toolCalling/agent";
+import { ChatModel } from "beeai-framework/backend/chat";
+
+# Using Ollama (local models)
+llm = await ChatModel.from_name("ollama:granite3.3")
+
+# Using OpenAI
+llm = await ChatModel.from_name("openai:gpt-5-mini")
+
+# Using Anthropic
+llm = await ChatModel.from_name("anthropic:claude-sonnet-4")
+
+agent = ToolCallingAgent({
+	llm,
+	# ... other configuration
+})
 ```
 
 </CodeGroup>
@@ -89,7 +105,15 @@ agent = RequirementAgent(
 ```
 
 ```ts TypeScript [expandable]
-COMING SOON
+const agent = new ToolCallingAgent({
+	llm,
+	templates: {
+		system: (template) =>
+			template.fork((config) => {
+				config.defaults.instructions = "You are a helpful assistant that uses tools to answer questions.";
+			}),
+	}
+});
 ```
 
 </CodeGroup>
@@ -114,7 +138,7 @@ When executing an agent, you can provide additional options to guide its behavio
 response = await agent.run(
     prompt="Analyze the latest AI research trends",
     expected_output="A structured summary with key findings and recommendations",
-  # expected_output= #insert pydantic data model for structured output
+	# expected_output can also receive a Pydantic Model or a JSON Schema
     backstory="The user is preparing for a conference presentation on AI trends",
     total_max_retries=5,
     max_retries_per_step=2,
@@ -126,7 +150,18 @@ print(response.output_structured)
 ```
 
 ```ts TypeScript [expandable]
-COMING SOON
+const schema = z.object({
+	firstName: z.string().min(1),
+	lastName: z.string().min(1),
+	age: z.number().min(1).max(99),
+	country: z.string(),
+});
+
+const response = await agent.run({
+	prompt: "Generate profile of a citizen.",
+	expectedOutput: schema,
+});
+console.info(response.result.text); // JSON text
 ```
 
 </CodeGroup>
@@ -139,10 +174,8 @@ COMING SOON
 - `max_iterations`: Sets the maximum number of reasoning cycles the agent can perform
 
 <Tip>
-The are defualts set for `max_iterations`, `total_max_retries`, and `max_retries_per_step`, but you can override them by setting your own preferences.
+The are defaults set for `max_iterations`, `total_max_retries`, and `max_retries_per_step`, but you can override them by setting your own preferences.
 </Tip>
-
-
 
 
 ### 4. Adding Tools
@@ -156,7 +189,7 @@ from beeai_framework.tools.search.duckduckgo import DuckDuckGoSearchTool
 from beeai_framework.tools.weather import OpenMeteoTool
 
 agent = RequirementAgent(
-    llm=llm,
+    llm="ollama:granite4",
     tools=[
         DuckDuckGoSearchTool(),
         OpenMeteoTool(),
@@ -166,7 +199,17 @@ agent = RequirementAgent(
 ```
 
 ```ts TypeScript [expandable]
-COMING SOON
+import { OpenMeteoTool } from "beeai-framework/tools/weather/openMeteo";
+import { ChatModel } from "beeai-framework/backend/chat";
+import { ToolCallingAgent } from "beeai-framework/agents/toolCalling/agent";
+
+const llm = await ChatModel.from_name("ollama:granite4");
+const agent = new ToolCallingAgent({
+	llm,
+	tools: [
+		new OpenMeteoTool(), // weather tool
+	],
+});
 ```
 
 </CodeGroup>
@@ -188,7 +231,15 @@ agent = RequirementAgent(
 ```
 
 ```ts TypeScript [expandable]
-COMING SOON
+import { TokenMemory } from "beeai-framework/memory/tokenMemory";
+import { ChatModel } from "beeai-framework/backend/chat";
+import { ToolCallingAgent } from "beeai-framework/agents/toolCalling/agent";
+
+const llm = await ChatModel.from_name("ollama:granite4");
+const agent = new ToolCallingAgent({
+	llm,
+	memory: new TokenMemory()
+});
 ```
 
 </CodeGroup>
@@ -222,7 +273,7 @@ This is the recommended agent. Currently only supported in Python.
 
 This agent provides the reliability needed for production scenarios through a rule system that defines execution constraints while keeping problem-solving flexibility intact. Unlike traditional approaches that require complex orchestration code, RequirementAgent uses a declarative interface where you define requirements and let the framework enforce them automatically.
 
-Learn more about RequirementAgent in our [RequirementAgent documentation](/modules/agents/requirement-agent) and [blog post](https://beeai.dev/blog/reliable-ai-agents).
+Learn more about RequirementAgent in its dedicated [page](/modules/agents/requirement-agent) or in the [blog post](https://beeai.dev/blog/reliable-ai-agents).
 
 ```py Python [expandable]
 from beeai_framework.agents.requirement import RequirementAgent
@@ -234,7 +285,7 @@ from beeai_framework.backend import ChatModel
 from beeai_framework.middleware.trajectory import GlobalTrajectoryMiddleware
 
 agent = RequirementAgent(
-    llm=ChatModel.from_name("ollama:granite3.3"),
+    llm=ChatModel.from_name("ollama:granite4:micro"),
     tools=[
         ThinkTool(),             # to reason
         OpenMeteoTool(),         # retrieve weather data
@@ -248,7 +299,9 @@ agent = RequirementAgent(
         ConditionalRequirement(DuckDuckGoSearchTool, only_after=[OpenMeteoTool], min_invocations=1),
         # Weather tool be used at least once but not consecutively
         ConditionalRequirement(OpenMeteoTool, consecutive_allowed=False, min_invocations=1),
-    ])
+    ]
+)
+
 # Run with execution logging
 response = await agent.run("What to do in Boston?").middleware(GlobalTrajectoryMiddleware())
 print(f"Final Answer: {response.answer.text}")
@@ -647,6 +700,13 @@ const llm = new OllamaChatModel("llama3.1");
 const agent = new ToolCallingAgent({
   llm,
   memory: new TokenMemory(),
+  templates: {
+    system: (template) =>
+      template.fork((config) => {
+        config.defaults.instructions =
+          "You are a helpful assistant that uses tools to answer questions.";
+      }),
+  },
   tools: [
     new OpenMeteoTool(), // weather tool
   ],
@@ -935,7 +995,87 @@ console.info(response.state);
 
 </CodeGroup>
 
-## Agent Workflows
+## Multi-Agent Hand-offs
+
+Create a team of specialized agents that can collaborate:
+
+<CodeGroup>
+
+	{/* <!-- embedme python/examples/agents/requirement/handoff.py --> */}
+	```py Python [expandable]
+	import asyncio
+	
+	from beeai_framework.agents.requirement import RequirementAgent
+	from beeai_framework.agents.requirement.requirements.conditional import ConditionalRequirement
+	from beeai_framework.backend import ChatModel
+	from beeai_framework.errors import FrameworkError
+	from beeai_framework.middleware.trajectory import GlobalTrajectoryMiddleware
+	from beeai_framework.tools import Tool
+	from beeai_framework.tools.handoff import HandoffTool
+	from beeai_framework.tools.search.wikipedia import WikipediaTool
+	from beeai_framework.tools.think import ThinkTool
+	from beeai_framework.tools.weather import OpenMeteoTool
+	
+	
+	async def main() -> None:
+	    knowledge_agent = RequirementAgent(
+	        llm=ChatModel.from_name("ollama:granite4:micro"),
+	        tools=[ThinkTool(), WikipediaTool()],
+	        requirements=[ConditionalRequirement(ThinkTool, force_at_step=1)],
+	        role="Knowledge Specialist",
+	        instructions="Provide answers to general questions about the world.",
+	    )
+	
+	    weather_agent = RequirementAgent(
+	        llm=ChatModel.from_name("ollama:granite4:micro"),
+	        tools=[OpenMeteoTool()],
+	        role="Weather Specialist",
+	        instructions="Provide weather forecast for a given destination.",
+	    )
+	
+	    main_agent = RequirementAgent(
+	        name="MainAgent",
+	        llm=ChatModel.from_name("ollama:granite4:micro"),
+	        tools=[
+	            ThinkTool(),
+	            HandoffTool(
+	                knowledge_agent,
+	                name="KnowledgeLookup",
+	                description="Consult the Knowledge Agent for general questions.",
+	            ),
+	            HandoffTool(
+	                weather_agent,
+	                name="WeatherLookup",
+	                description="Consult the Weather Agent for forecasts.",
+	            ),
+	        ],
+	        requirements=[ConditionalRequirement(ThinkTool, force_at_step=1)],
+	        # Log all tool calls to the console for easier debugging
+	        middlewares=[GlobalTrajectoryMiddleware(included=[Tool])],
+	    )
+	
+	    question = "If I travel to Rome next weekend, what should I expect in terms of weather, and also tell me one famous historical landmark there?"
+	    print(f"User: {question}")
+	
+	    try:
+	        response = await main_agent.run(question, expected_output="Helpful and clear response.")
+	        print("Agent:", response.last_message.text)
+	    except FrameworkError as err:
+	        print("Error:", err.explain())
+	
+	
+	if __name__ == "__main__":
+	    asyncio.run(main())
+	
+	```
+
+	```ts TypeScript
+	COMING SOON
+	```
+
+</CodeGroup>
+
+## Workflows
 
 <Warning>
 <strong>Upcoming change:</strong><br />
