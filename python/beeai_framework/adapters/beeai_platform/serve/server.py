@@ -6,6 +6,7 @@ import contextlib
 import os
 from collections.abc import Awaitable, Callable
 from datetime import timedelta
+from enum import StrEnum
 from typing import Any, Self
 
 import uvicorn
@@ -131,10 +132,15 @@ class BaseBeeAIPlatformServerMetadata(TypedDict, total=False):
     version: str
 
 
+class BeeAIPlatformSettingsContent(StrEnum):
+    TOOLS = "tools"
+    """Allows to enable/disable tools."""
+
+
 class BeeAIPlatformServerMetadata(BaseBeeAIPlatformServerMetadata, total=False):
-    tools_setting: bool
+    settings: set[BeeAIPlatformSettingsContent]
     """
-    Provide the ability to turn tools on/off for users.
+    Provide the ability to dynamically modify an agent’s settings.
     """
     extensions: type[BaseBeeAIPlatformExtensions]
 
