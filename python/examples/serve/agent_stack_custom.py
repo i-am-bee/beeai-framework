@@ -5,12 +5,10 @@ import sys
 import traceback
 from typing import Annotated
 
-from beeai_sdk.a2a.extensions import CitationExtensionServer, CitationExtensionSpec
-
-from beeai_framework.adapters.beeai_platform.backend.chat import BeeAIPlatformChatModel
-from beeai_framework.adapters.beeai_platform.context import BeeAIPlatformContext
-from beeai_framework.adapters.beeai_platform.serve.server import BeeAIPlatformMemoryManager, BeeAIPlatformServer
-from beeai_framework.adapters.beeai_platform.serve.types import BaseBeeAIPlatformExtensions
+from beeai_framework.adapters.agentstack.backend.chat import AgentStackChatModel
+from beeai_framework.adapters.agentstack.context import AgentStackContext
+from beeai_framework.adapters.agentstack.serve.server import AgentStackMemoryManager, AgentStackServer
+from beeai_framework.adapters.agentstack.serve.types import BaseAgentStackExtensions
 from beeai_framework.agents.requirement import RequirementAgent
 from beeai_framework.agents.requirement.events import RequirementAgentSuccessEvent
 from beeai_framework.agents.requirement.requirements.conditional import ConditionalRequirement
@@ -23,21 +21,21 @@ from beeai_framework.tools.search.wikipedia import WikipediaTool
 from beeai_framework.tools.think import ThinkTool
 
 try:
-    from beeai_sdk.a2a.extensions import Citation
-    from beeai_sdk.a2a.extensions.ui.agent_detail import AgentDetail
-    from beeai_sdk.a2a.types import AgentMessage
+    from agentstack_sdk.a2a.extensions import Citation, CitationExtensionServer, CitationExtensionSpec
+    from agentstack_sdk.a2a.extensions.ui.agent_detail import AgentDetail
+    from agentstack_sdk.a2a.types import AgentMessage
 except ModuleNotFoundError as e:
     raise ModuleNotFoundError(
-        "Optional module [beeai-platform] not found.\nRun 'pip install \"beeai-framework[beeai-platform]\"' to install."
+        "Optional module [agentstack] not found.\nRun 'pip install \"beeai-framework[agentstack]\"' to install."
     ) from e
 
 
 class PlatformCitationMiddleware(RunMiddlewareProtocol):
     def __init__(self) -> None:
-        self._context: BeeAIPlatformContext | None = None
+        self._context: AgentStackContext | None = None
 
     def bind(self, ctx: RunContext) -> None:
-        self._context = BeeAIPlatformContext.get()
+        self._context = AgentStackContext.get()
         # add emitter with the highest priority to ensure citations are sent before any other event handling
         ctx.emitter.on("success", self._handle_success, options=EmitterOptions(priority=10, is_blocking=True))
 
@@ -59,7 +57,7 @@ class PlatformCitationMiddleware(RunMiddlewareProtocol):
 
 def main() -> None:
     agent = RequirementAgent(
-        llm=BeeAIPlatformChatModel(preferred_models=["openai/gpt-5"]),
+        llm=AgentStackChatModel(preferred_models=["openai/gpt-5"]),
         tools=[WikipediaTool(), ThinkTool()],
         instructions=(
             "You are an AI assistant focused on retrieving information from online sources."
@@ -81,12 +79,12 @@ def main() -> None:
     )
 
     # define custom extensions
-    class CitationExtensions(BaseBeeAIPlatformExtensions):
+    class CitationExtensions(BaseAgentStackExtensions):
         citation: Annotated[CitationExtensionServer, CitationExtensionSpec()]
 
-    # Runs HTTP server that registers to BeeAI platform
-    server = BeeAIPlatformServer(
-        config={"configure_telemetry": False}, memory_manager=BeeAIPlatformMemoryManager()
+    # Runs HTTP server that registers to Agent Stack
+    server = AgentStackServer(
+        config={"configure_telemetry": False}, memory_manager=AgentStackMemoryManager()
     )  # use platform memory
     server.register(
         agent,

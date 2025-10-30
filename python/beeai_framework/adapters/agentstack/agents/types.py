@@ -7,12 +7,12 @@ try:
     import a2a.types as a2a_types
 except ModuleNotFoundError as e:
     raise ModuleNotFoundError(
-        "Optional module [beeai-platform] not found.\nRun 'pip install \"beeai-framework[beeai-platform]\"' to install."
+        "Optional module [agentstack] not found.\nRun 'pip install \"beeai-framework[agentstack]\"' to install."
     ) from e
 
 
 from beeai_framework.agents import AgentOutput
 
 
-class BeeAIPlatformAgentOutput(AgentOutput):
+class AgentStackAgentOutput(AgentOutput):
     event: a2a_client.ClientEvent | a2a_types.Message

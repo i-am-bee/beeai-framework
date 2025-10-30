@@ -65,8 +65,8 @@ async def main() -> None:
             "Plan activities for a given destination based on current weather and events.",
             "Input to Wikipedia should be a name of the target city.",
         ],
-        name="PlannerAgent",  # optional, useful for Handoff or registering agent to BeeAIPlatform or others
-        description="Assistant to plan your day in a given destination.",  # optional, useful for Handoff or registering agent to BeeAIPlatform or others
+        name="PlannerAgent",  # optional, useful for Handoff or registering agent to AgentStack or others
+        description="Assistant to plan your day in a given destination.",  # optional, useful for Handoff or registering agent to AgentStack or others
         requirements=[
             ConditionalRequirement(ThinkTool, force_at_step=1, force_after=Tool, consecutive_allowed=False),  # ReAct
             ConditionalRequirement(OpenMeteoTool, only_after=WikipediaTool),

@@ -2,15 +2,15 @@
 
 [[package]]
 name = "a2a-sdk"
-version = "0.3.7"
+version = "0.3.9"
 description = "A2A Python SDK"
 optional = true
 python-versions = ">=3.10"
 groups = ["main"]
-markers = "(platform_machine == \"arm64\" or platform_machine == \"x86_64\" or platform_machine != \"arm64\" and platform_machine != \"x86_64\" or sys_platform != \"darwin\") and (extra == \"beeai-platform\" or extra == \"a2a\" or extra == \"all\")"
+markers = "(platform_machine == \"arm64\" or platform_machine == \"x86_64\" or platform_machine != \"arm64\" and platform_machine != \"x86_64\" or sys_platform != \"darwin\") and (extra == \"beeai-platform\" or extra == \"agentstack\" or extra == \"a2a\" or extra == \"all\")"
 files = [
-    {file = "a2a_sdk-0.3.7-py3-none-any.whl", hash = "sha256:0813b8fd7add427b2b56895cf28cae705303cf6d671b305c0aac69987816e03e"},
-    {file = "a2a_sdk-0.3.7.tar.gz", hash = "sha256:795aa2bd2cfb3c9e8654a1352bf5f75d6cf1205b262b1bf8f4003b5308267ea2"},
+    {file = "a2a_sdk-0.3.9-py3-none-any.whl", hash = "sha256:7ed03a915bae98def46ea0313786da0a7a488346c3dc8af88407bb0b2a763926"},
+    {file = "a2a_sdk-0.3.9.tar.gz", hash = "sha256:1dff7b5b1cab0b221519d0faed50176e200a1a87a8de8b64308d876505cc7c77"},
 ]
 
 [package.dependencies]
@@ -102,6 +102,37 @@ opentelemetry-sdk = ">=1.31"
 psycopg = {version = ">=3.2", extras = ["binary"]}
 pydantic = ">=2.0"
 redis = ">=6.1"
+
+[[package]]
+name = "agentstack-sdk"
+version = "0.4.0rc1"
+description = "Agent Stack SDK"
+optional = true
+python-versions = "<3.14,>=3.11"
+groups = ["main"]
+markers = "(platform_machine == \"arm64\" or platform_machine == \"x86_64\" or platform_machine != \"arm64\" and platform_machine != \"x86_64\" or sys_platform != \"darwin\") and (extra == \"beeai-platform\" or extra == \"agentstack\" or extra == \"all\")"
+files = [
+    {file = "agentstack_sdk-0.4.0rc1-py3-none-any.whl", hash = "sha256:dc50b0c24f88e0924589ba8571cd96c473916a66df3494787c272421fc83e1ad"},
+    {file = "agentstack_sdk-0.4.0rc1.tar.gz", hash = "sha256:c1e084764713b2ce8d025abcc220f07bfc8929c533ef2a4e5e9ddfdbef554873"},
+]
+
+[package.dependencies]
+a2a-sdk = "0.3.9"
+anyio = ">=4.9.0"
+asyncclick = ">=8.1.8"
+fastapi = ">=0.116.1"
+httpx = "*"
+janus = ">=2.0.0"
+mcp = ">=1.12.3"
+objprint = ">=0.3.0"
+opentelemetry-api = ">=1.35.0"
+opentelemetry-exporter-otlp-proto-http = ">=1.35.0"
+opentelemetry-instrumentation-fastapi = ">=0.56b0"
+opentelemetry-sdk = ">=1.35.0"
+sse-starlette = ">=2.2.1"
+starlette = ">=0.47.2"
+tenacity = ">=9.1.2"
+uvicorn = ">=0.35.0"
 
 [[package]]
 name = "aiofiles"
@@ -394,7 +425,7 @@ description = "ASGI specs, helper code, and adapters"
 optional = true
 python-versions = ">=3.9"
 groups = ["main"]
-markers = "(platform_machine == \"arm64\" or platform_machine == \"x86_64\" or platform_machine != \"arm64\" and platform_machine != \"x86_64\" or sys_platform != \"darwin\") and (extra == \"acp\" or extra == \"all\" or extra == \"beeai-platform\")"
+markers = "(platform_machine == \"arm64\" or platform_machine == \"x86_64\" or platform_machine != \"arm64\" and platform_machine != \"x86_64\" or sys_platform != \"darwin\") and (extra == \"acp\" or extra == \"all\" or extra == \"beeai-platform\" or extra == \"agentstack\")"
 files = [
     {file = "asgiref-3.10.0-py3-none-any.whl", hash = "sha256:aef8a81283a34d0ab31630c9b7dfe70c812c95eba78171367ca8745e88124734"},
     {file = "asgiref-3.10.0.tar.gz", hash = "sha256:d89f2d8cd8b56dada7d52fa7dc8075baa08fb836560710d38c292a7a3f78c04e"},
@@ -449,7 +480,7 @@ description = "Composable command line interface toolkit, async fork"
 optional = true
 python-versions = ">=3.11"
 groups = ["main"]
-markers = "(platform_machine == \"arm64\" or platform_machine == \"x86_64\" or platform_machine != \"arm64\" and platform_machine != \"x86_64\" or sys_platform != \"darwin\") and (extra == \"beeai-platform\" or extra == \"all\")"
+markers = "(platform_machine == \"arm64\" or platform_machine == \"x86_64\" or platform_machine != \"arm64\" and platform_machine != \"x86_64\" or sys_platform != \"darwin\") and (extra == \"beeai-platform\" or extra == \"agentstack\" or extra == \"all\")"
 files = [
     {file = "asyncclick-8.3.0.7-py3-none-any.whl", hash = "sha256:7607046de39a3f315867cad818849f973e29d350c10d92f251db3ff7600c6c7d"},
     {file = "asyncclick-8.3.0.7.tar.gz", hash = "sha256:8a80d8ac613098ee6a9a8f0248f60c66c273e22402cf3f115ed7f071acfc71d3"},
@@ -530,37 +561,6 @@ chardet = ["chardet"]
 charset-normalizer = ["charset-normalizer"]
 html5lib = ["html5lib"]
 lxml = ["lxml"]
-
-[[package]]
-name = "beeai-sdk"
-version = "0.3.7"
-description = "BeeAI SDK"
-optional = true
-python-versions = ">=3.11"
-groups = ["main"]
-markers = "(platform_machine == \"arm64\" or platform_machine == \"x86_64\" or platform_machine != \"arm64\" and platform_machine != \"x86_64\" or sys_platform != \"darwin\") and (extra == \"beeai-platform\" or extra == \"all\")"
-files = [
-    {file = "beeai_sdk-0.3.7-py3-none-any.whl", hash = "sha256:1e9da0df5ef59263b01fc64fedffae06dbef63e99200b5410c5b2ed094c3e037"},
-    {file = "beeai_sdk-0.3.7.tar.gz", hash = "sha256:9c58bd2504e3a94f235b5e740c526a4eb54f9ebea9ec5a1ea74a5dd4a6d61798"},
-]
-
-[package.dependencies]
-a2a-sdk = "0.3.7"
-anyio = ">=4.9.0"
-asyncclick = ">=8.1.8"
-fastapi = ">=0.116.1"
-httpx = "*"
-janus = ">=2.0.0"
-mcp = ">=1.12.3"
-objprint = ">=0.3.0"
-opentelemetry-api = ">=1.35.0"
-opentelemetry-exporter-otlp-proto-http = ">=1.35.0"
-opentelemetry-instrumentation-fastapi = ">=0.56b0"
-opentelemetry-sdk = ">=1.35.0"
-sse-starlette = ">=2.2.1"
-starlette = ">=0.47.2"
-tenacity = ">=9.1.2"
-uvicorn = ">=0.35.0"
 
 [[package]]
 name = "boto3"
@@ -1095,7 +1095,7 @@ files = [
     {file = "colorama-0.4.6-py2.py3-none-any.whl", hash = "sha256:4f1d9991f5acc0ca119f9d443620b77f9d6b33703e51011c16baf57afb285fc6"},
     {file = "colorama-0.4.6.tar.gz", hash = "sha256:08695f5cb7ed6e0531a20572697297273c47b8cae5a63ffc6d6ed5c201be6e44"},
 ]
-markers = {main = "sys_platform == \"darwin\" and (platform_machine == \"arm64\" or platform_machine == \"x86_64\" or platform_machine != \"arm64\" and platform_machine != \"x86_64\") and (platform_system == \"Windows\" or extra == \"llama-index\" or extra == \"rag\" or extra == \"all\") or (platform_system == \"Windows\" or sys_platform == \"win32\" or extra == \"llama-index\" or extra == \"rag\" or extra == \"all\") and (platform_system == \"Windows\" or extra == \"acp\" or extra == \"all\" or extra == \"llama-index\" or extra == \"rag\") and sys_platform != \"darwin\"", dev = "platform_machine == \"arm64\" or platform_machine == \"x86_64\" or platform_machine != \"arm64\" and platform_machine != \"x86_64\" or sys_platform != \"darwin\""}
+markers = {main = "(platform_system == \"Windows\" or extra == \"llama-index\" or extra == \"rag\" or extra == \"all\" or sys_platform == \"win32\") and (platform_system == \"Windows\" or extra == \"acp\" or extra == \"all\" or extra == \"llama-index\" or extra == \"rag\") and (platform_machine == \"arm64\" or platform_machine == \"x86_64\" or platform_machine != \"arm64\" and platform_machine != \"x86_64\" or sys_platform != \"darwin\")", dev = "platform_machine == \"arm64\" or platform_machine == \"x86_64\" or platform_machine != \"arm64\" and platform_machine != \"x86_64\" or sys_platform != \"darwin\""}
 
 [[package]]
 name = "commitizen"
@@ -1600,7 +1600,7 @@ description = "FastAPI framework, high performance, easy to learn, fast to code,
 optional = true
 python-versions = ">=3.8"
 groups = ["main"]
-markers = "(platform_machine == \"arm64\" or platform_machine == \"x86_64\" or platform_machine != \"arm64\" and platform_machine != \"x86_64\" or sys_platform != \"darwin\") and (extra == \"beeai-platform\" or extra == \"a2a\" or extra == \"all\" or extra == \"acp\" or extra == \"watsonx-orchestrate\")"
+markers = "(platform_machine == \"arm64\" or platform_machine == \"x86_64\" or platform_machine != \"arm64\" and platform_machine != \"x86_64\" or sys_platform != \"darwin\") and (extra == \"beeai-platform\" or extra == \"agentstack\" or extra == \"a2a\" or extra == \"all\" or extra == \"acp\" or extra == \"watsonx-orchestrate\")"
 files = [
     {file = "fastapi-0.116.2-py3-none-any.whl", hash = "sha256:c3a7a8fb830b05f7e087d920e0d786ca1fc9892eb4e9a84b227be4c1bc7569db"},
     {file = "fastapi-0.116.2.tar.gz", hash = "sha256:231a6af2fe21cfa2c32730170ad8514985fc250bec16c9b242d3b94c835ef529"},
@@ -2003,7 +2003,7 @@ description = "Google API client core library"
 optional = true
 python-versions = ">=3.7"
 groups = ["main"]
-markers = "(platform_machine == \"arm64\" or platform_machine == \"x86_64\" or platform_machine != \"arm64\" and platform_machine != \"x86_64\" or sys_platform != \"darwin\") and (extra == \"beeai-platform\" or extra == \"a2a\" or extra == \"all\")"
+markers = "(platform_machine == \"arm64\" or platform_machine == \"x86_64\" or platform_machine != \"arm64\" and platform_machine != \"x86_64\" or sys_platform != \"darwin\") and (extra == \"beeai-platform\" or extra == \"agentstack\" or extra == \"a2a\" or extra == \"all\")"
 files = [
     {file = "google_api_core-2.28.0-py3-none-any.whl", hash = "sha256:b4362b0e2e6bc06037cfb0e2b28e2fe0c3f9d760dc311f314d5fb373768c7387"},
     {file = "google_api_core-2.28.0.tar.gz", hash = "sha256:4743b7d45fe8c0930e59928b1bade287242910f30b06ff9b22f139a3e33271b8"},
@@ -2036,7 +2036,7 @@ files = [
     {file = "google_auth-2.41.1-py2.py3-none-any.whl", hash = "sha256:754843be95575b9a19c604a848a41be03f7f2afd8c019f716dc1f51ee41c639d"},
     {file = "google_auth-2.41.1.tar.gz", hash = "sha256:b76b7b1f9e61f0cb7e88870d14f6a94aeef248959ef6992670efee37709cbfd2"},
 ]
-markers = {main = "(platform_machine == \"arm64\" or platform_machine == \"x86_64\" or platform_machine != \"arm64\" and platform_machine != \"x86_64\" or sys_platform != \"darwin\") and (extra == \"beeai-platform\" or extra == \"a2a\" or extra == \"all\" or extra == \"vertexai\")", dev = "platform_machine == \"arm64\" or platform_machine == \"x86_64\" or platform_machine != \"arm64\" and platform_machine != \"x86_64\" or sys_platform != \"darwin\""}
+markers = {main = "(platform_machine == \"arm64\" or platform_machine == \"x86_64\" or platform_machine != \"arm64\" and platform_machine != \"x86_64\" or sys_platform != \"darwin\") and (extra == \"beeai-platform\" or extra == \"agentstack\" or extra == \"a2a\" or extra == \"all\" or extra == \"vertexai\")", dev = "platform_machine == \"arm64\" or platform_machine == \"x86_64\" or platform_machine != \"arm64\" and platform_machine != \"x86_64\" or sys_platform != \"darwin\""}
 
 [package.dependencies]
 cachetools = ">=2.0.0,<7.0"
@@ -2091,7 +2091,7 @@ files = [
     {file = "googleapis_common_protos-1.71.0-py3-none-any.whl", hash = "sha256:59034a1d849dc4d18971997a72ac56246570afdd17f9369a0ff68218d50ab78c"},
     {file = "googleapis_common_protos-1.71.0.tar.gz", hash = "sha256:1aec01e574e29da63c80ba9f7bbf1ccfaacf1da877f23609fe236ca7c72a2e2e"},
 ]
-markers = {main = "(platform_machine == \"arm64\" or platform_machine == \"x86_64\" or platform_machine != \"arm64\" and platform_machine != \"x86_64\" or sys_platform != \"darwin\") and (extra == \"beeai-platform\" or extra == \"a2a\" or extra == \"all\" or extra == \"acp\")", dev = "platform_machine == \"arm64\" or platform_machine == \"x86_64\" or platform_machine != \"arm64\" and platform_machine != \"x86_64\" or sys_platform != \"darwin\""}
+markers = {main = "(platform_machine == \"arm64\" or platform_machine == \"x86_64\" or platform_machine != \"arm64\" and platform_machine != \"x86_64\" or sys_platform != \"darwin\") and (extra == \"beeai-platform\" or extra == \"agentstack\" or extra == \"a2a\" or extra == \"all\" or extra == \"acp\")", dev = "platform_machine == \"arm64\" or platform_machine == \"x86_64\" or platform_machine != \"arm64\" and platform_machine != \"x86_64\" or sys_platform != \"darwin\""}
 
 [package.dependencies]
 protobuf = ">=3.20.2,<4.21.1 || >4.21.1,<4.21.2 || >4.21.2,<4.21.3 || >4.21.3,<4.21.4 || >4.21.4,<4.21.5 || >4.21.5,<7.0.0"
@@ -2254,7 +2254,7 @@ files = [
     {file = "grpcio-1.76.0-cp39-cp39-win_amd64.whl", hash = "sha256:acab0277c40eff7143c2323190ea57b9ee5fd353d8190ee9652369fae735668a"},
     {file = "grpcio-1.76.0.tar.gz", hash = "sha256:7be78388d6da1a25c0d5ec506523db58b18be22d9c37d8d3a32c08be4987bd73"},
 ]
-markers = {main = "(platform_machine == \"arm64\" or platform_machine == \"x86_64\" or platform_machine != \"arm64\" and platform_machine != \"x86_64\" or sys_platform != \"darwin\") and (extra == \"beeai-platform\" or extra == \"a2a\" or extra == \"all\")", dev = "platform_machine == \"arm64\" or platform_machine == \"x86_64\" or platform_machine != \"arm64\" and platform_machine != \"x86_64\" or sys_platform != \"darwin\""}
+markers = {main = "(platform_machine == \"arm64\" or platform_machine == \"x86_64\" or platform_machine != \"arm64\" and platform_machine != \"x86_64\" or sys_platform != \"darwin\") and (extra == \"beeai-platform\" or extra == \"agentstack\" or extra == \"a2a\" or extra == \"all\")", dev = "platform_machine == \"arm64\" or platform_machine == \"x86_64\" or platform_machine != \"arm64\" and platform_machine != \"x86_64\" or sys_platform != \"darwin\""}
 
 [package.dependencies]
 typing-extensions = ">=4.12,<5.0"
@@ -2269,7 +2269,7 @@ description = "Standard Protobuf Reflection Service for gRPC"
 optional = true
 python-versions = ">=3.9"
 groups = ["main"]
-markers = "(platform_machine == \"arm64\" or platform_machine == \"x86_64\" or platform_machine != \"arm64\" and platform_machine != \"x86_64\" or sys_platform != \"darwin\") and (extra == \"beeai-platform\" or extra == \"a2a\" or extra == \"all\")"
+markers = "(platform_machine == \"arm64\" or platform_machine == \"x86_64\" or platform_machine != \"arm64\" and platform_machine != \"x86_64\" or sys_platform != \"darwin\") and (extra == \"beeai-platform\" or extra == \"agentstack\" or extra == \"a2a\" or extra == \"all\")"
 files = [
     {file = "grpcio_reflection-1.76.0-py3-none-any.whl", hash = "sha256:d7c43f2047a2a9c9320a5905aa7133c677977436b5f63e6a868e507864a11c73"},
     {file = "grpcio_reflection-1.76.0.tar.gz", hash = "sha256:e0e7e49921c2ee951e5ddff0bdbacbd1ac1a70888beb61d567f3d01b799decb1"},
@@ -2286,7 +2286,7 @@ description = "Protobuf code generator for gRPC"
 optional = true
 python-versions = ">=3.9"
 groups = ["main"]
-markers = "(platform_machine == \"arm64\" or platform_machine == \"x86_64\" or platform_machine != \"arm64\" and platform_machine != \"x86_64\" or sys_platform != \"darwin\") and (extra == \"beeai-platform\" or extra == \"a2a\" or extra == \"all\")"
+markers = "(platform_machine == \"arm64\" or platform_machine == \"x86_64\" or platform_machine != \"arm64\" and platform_machine != \"x86_64\" or sys_platform != \"darwin\") and (extra == \"beeai-platform\" or extra == \"agentstack\" or extra == \"a2a\" or extra == \"all\")"
 files = [
     {file = "grpcio_tools-1.76.0-cp310-cp310-linux_armv7l.whl", hash = "sha256:9b99086080ca394f1da9894ee20dedf7292dd614e985dcba58209a86a42de602"},
     {file = "grpcio_tools-1.76.0-cp310-cp310-macosx_11_0_universal2.whl", hash = "sha256:8d95b5c2394bbbe911cbfc88d15e24c9e174958cb44dad6aa8c46fe367f6cc2a"},
@@ -2393,7 +2393,7 @@ description = "Fast transfer of large files with the Hugging Face Hub."
 optional = false
 python-versions = ">=3.8"
 groups = ["main"]
-markers = "(sys_platform == \"darwin\" or platform_machine == \"x86_64\" or platform_machine == \"amd64\" or platform_machine == \"arm64\" or platform_machine == \"aarch64\") and (platform_machine == \"arm64\" or platform_machine == \"x86_64\" or platform_machine == \"amd64\" or platform_machine == \"aarch64\")"
+markers = "platform_machine == \"arm64\" or platform_machine == \"x86_64\" or platform_machine == \"amd64\" or platform_machine == \"aarch64\""
 files = [
     {file = "hf_xet-1.2.0-cp313-cp313t-macosx_10_12_x86_64.whl", hash = "sha256:ceeefcd1b7aed4956ae8499e2199607765fbd1c60510752003b6cc0b8413b649"},
     {file = "hf_xet-1.2.0-cp313-cp313t-macosx_11_0_arm64.whl", hash = "sha256:b70218dd548e9840224df5638fdc94bd033552963cfa97f9170829381179c813"},
@@ -2572,7 +2572,7 @@ description = "Consume Server-Sent Event (SSE) messages with HTTPX."
 optional = true
 python-versions = ">=3.9"
 groups = ["main"]
-markers = "(platform_machine == \"arm64\" or platform_machine == \"x86_64\" or platform_machine != \"arm64\" and platform_machine != \"x86_64\" or sys_platform != \"darwin\") and (extra == \"beeai-platform\" or extra == \"a2a\" or extra == \"all\" or extra == \"acp\" or extra == \"langchain\" or extra == \"rag\" or extra == \"mcp\")"
+markers = "(platform_machine == \"arm64\" or platform_machine == \"x86_64\" or platform_machine != \"arm64\" and platform_machine != \"x86_64\" or sys_platform != \"darwin\") and (extra == \"beeai-platform\" or extra == \"agentstack\" or extra == \"a2a\" or extra == \"all\" or extra == \"acp\" or extra == \"langchain\" or extra == \"rag\" or extra == \"mcp\")"
 files = [
     {file = "httpx_sse-0.4.3-py3-none-any.whl", hash = "sha256:0ac1c9fe3c0afad2e0ebb25a934a59f4c7823b60792691f779fad2c5568830fc"},
     {file = "httpx_sse-0.4.3.tar.gz", hash = "sha256:9b1ed0127459a66014aec3c56bebd93da3c1bc8bb6618c8082039a44889a755d"},
@@ -2709,7 +2709,7 @@ description = "Mixed sync-async queue to interoperate between asyncio tasks and 
 optional = true
 python-versions = ">=3.9"
 groups = ["main"]
-markers = "(platform_machine == \"arm64\" or platform_machine == \"x86_64\" or platform_machine != \"arm64\" and platform_machine != \"x86_64\" or sys_platform != \"darwin\") and (extra == \"acp\" or extra == \"all\" or extra == \"beeai-platform\")"
+markers = "(platform_machine == \"arm64\" or platform_machine == \"x86_64\" or platform_machine != \"arm64\" and platform_machine != \"x86_64\" or sys_platform != \"darwin\") and (extra == \"acp\" or extra == \"all\" or extra == \"beeai-platform\" or extra == \"agentstack\")"
 files = [
     {file = "janus-2.0.0-py3-none-any.whl", hash = "sha256:7e6449d34eab04cd016befbd7d8c0d8acaaaab67cb59e076a69149f9031745f9"},
     {file = "janus-2.0.0.tar.gz", hash = "sha256:0970f38e0e725400496c834a368a67ee551dc3b5ad0a257e132f5b46f2e77770"},
@@ -3930,7 +3930,7 @@ description = "Model Context Protocol SDK"
 optional = true
 python-versions = ">=3.10"
 groups = ["main"]
-markers = "(platform_machine == \"arm64\" or platform_machine == \"x86_64\" or platform_machine != \"arm64\" and platform_machine != \"x86_64\" or sys_platform != \"darwin\") and (extra == \"mcp\" or extra == \"all\" or extra == \"beeai-platform\")"
+markers = "(platform_machine == \"arm64\" or platform_machine == \"x86_64\" or platform_machine != \"arm64\" and platform_machine != \"x86_64\" or sys_platform != \"darwin\") and (extra == \"mcp\" or extra == \"all\" or extra == \"beeai-platform\" or extra == \"agentstack\")"
 files = [
     {file = "mcp-1.19.0-py3-none-any.whl", hash = "sha256:f5907fe1c0167255f916718f376d05f09a830a215327a3ccdd5ec8a519f2e572"},
     {file = "mcp-1.19.0.tar.gz", hash = "sha256:213de0d3cd63f71bc08ffe9cc8d4409cc87acffd383f6195d2ce0457c021b5c1"},
@@ -4796,7 +4796,7 @@ description = "A library that can print Python objects in human readable format"
 optional = true
 python-versions = ">=3.9"
 groups = ["main"]
-markers = "(platform_machine == \"arm64\" or platform_machine == \"x86_64\" or platform_machine != \"arm64\" and platform_machine != \"x86_64\" or sys_platform != \"darwin\") and (extra == \"beeai-platform\" or extra == \"all\")"
+markers = "(platform_machine == \"arm64\" or platform_machine == \"x86_64\" or platform_machine != \"arm64\" and platform_machine != \"x86_64\" or sys_platform != \"darwin\") and (extra == \"beeai-platform\" or extra == \"agentstack\" or extra == \"all\")"
 files = [
     {file = "objprint-0.3.0-py3-none-any.whl", hash = "sha256:489083bfc8baf0526f8fd6af74673799511532636f0ce4141133255ded773405"},
     {file = "objprint-0.3.0.tar.gz", hash = "sha256:b5d83f9d62db5b95353bb42959106e1cd43010dcaa3eed1ad8d7d0b2df9b2d5a"},
@@ -4979,7 +4979,7 @@ files = [
     {file = "opentelemetry_api-1.38.0-py3-none-any.whl", hash = "sha256:2891b0197f47124454ab9f0cf58f3be33faca394457ac3e09daba13ff50aa582"},
     {file = "opentelemetry_api-1.38.0.tar.gz", hash = "sha256:f4c193b5e8acb0912b06ac5b16321908dd0843d75049c091487322284a3eea12"},
 ]
-markers = {main = "(platform_machine == \"arm64\" or platform_machine == \"x86_64\" or platform_machine != \"arm64\" and platform_machine != \"x86_64\" or sys_platform != \"darwin\") and (extra == \"beeai-platform\" or extra == \"a2a\" or extra == \"all\" or extra == \"acp\")", dev = "platform_machine == \"arm64\" or platform_machine == \"x86_64\" or platform_machine != \"arm64\" and platform_machine != \"x86_64\" or sys_platform != \"darwin\""}
+markers = {main = "(platform_machine == \"arm64\" or platform_machine == \"x86_64\" or platform_machine != \"arm64\" and platform_machine != \"x86_64\" or sys_platform != \"darwin\") and (extra == \"beeai-platform\" or extra == \"agentstack\" or extra == \"a2a\" or extra == \"all\" or extra == \"acp\")", dev = "platform_machine == \"arm64\" or platform_machine == \"x86_64\" or platform_machine != \"arm64\" and platform_machine != \"x86_64\" or sys_platform != \"darwin\""}
 
 [package.dependencies]
 importlib-metadata = ">=6.0,<8.8.0"
@@ -4996,7 +4996,7 @@ files = [
     {file = "opentelemetry_exporter_otlp_proto_common-1.38.0-py3-none-any.whl", hash = "sha256:03cb76ab213300fe4f4c62b7d8f17d97fcfd21b89f0b5ce38ea156327ddda74a"},
     {file = "opentelemetry_exporter_otlp_proto_common-1.38.0.tar.gz", hash = "sha256:e333278afab4695aa8114eeb7bf4e44e65c6607d54968271a249c180b2cb605c"},
 ]
-markers = {main = "(platform_machine == \"arm64\" or platform_machine == \"x86_64\" or platform_machine != \"arm64\" and platform_machine != \"x86_64\" or sys_platform != \"darwin\") and (extra == \"acp\" or extra == \"all\" or extra == \"beeai-platform\")", dev = "platform_machine == \"arm64\" or platform_machine == \"x86_64\" or platform_machine != \"arm64\" and platform_machine != \"x86_64\" or sys_platform != \"darwin\""}
+markers = {main = "(platform_machine == \"arm64\" or platform_machine == \"x86_64\" or platform_machine != \"arm64\" and platform_machine != \"x86_64\" or sys_platform != \"darwin\") and (extra == \"acp\" or extra == \"all\" or extra == \"beeai-platform\" or extra == \"agentstack\")", dev = "platform_machine == \"arm64\" or platform_machine == \"x86_64\" or platform_machine != \"arm64\" and platform_machine != \"x86_64\" or sys_platform != \"darwin\""}
 
 [package.dependencies]
 opentelemetry-proto = "1.38.0"
@@ -5033,7 +5033,7 @@ description = "OpenTelemetry Collector Protobuf over HTTP Exporter"
 optional = true
 python-versions = ">=3.9"
 groups = ["main"]
-markers = "(platform_machine == \"arm64\" or platform_machine == \"x86_64\" or platform_machine != \"arm64\" and platform_machine != \"x86_64\" or sys_platform != \"darwin\") and (extra == \"acp\" or extra == \"all\" or extra == \"beeai-platform\")"
+markers = "(platform_machine == \"arm64\" or platform_machine == \"x86_64\" or platform_machine != \"arm64\" and platform_machine != \"x86_64\" or sys_platform != \"darwin\") and (extra == \"acp\" or extra == \"all\" or extra == \"beeai-platform\" or extra == \"agentstack\")"
 files = [
     {file = "opentelemetry_exporter_otlp_proto_http-1.38.0-py3-none-any.whl", hash = "sha256:84b937305edfc563f08ec69b9cb2298be8188371217e867c1854d77198d0825b"},
     {file = "opentelemetry_exporter_otlp_proto_http-1.38.0.tar.gz", hash = "sha256:f16bd44baf15cbe07633c5112ffc68229d0edbeac7b37610be0b2def4e21e90b"},
@@ -5055,7 +5055,7 @@ description = "Instrumentation Tools & Auto Instrumentation for OpenTelemetry Py
 optional = true
 python-versions = ">=3.9"
 groups = ["main"]
-markers = "(platform_machine == \"arm64\" or platform_machine == \"x86_64\" or platform_machine != \"arm64\" and platform_machine != \"x86_64\" or sys_platform != \"darwin\") and (extra == \"acp\" or extra == \"all\" or extra == \"beeai-platform\")"
+markers = "(platform_machine == \"arm64\" or platform_machine == \"x86_64\" or platform_machine != \"arm64\" and platform_machine != \"x86_64\" or sys_platform != \"darwin\") and (extra == \"acp\" or extra == \"all\" or extra == \"beeai-platform\" or extra == \"agentstack\")"
 files = [
     {file = "opentelemetry_instrumentation-0.59b0-py3-none-any.whl", hash = "sha256:44082cc8fe56b0186e87ee8f7c17c327c4c2ce93bdbe86496e600985d74368ee"},
     {file = "opentelemetry_instrumentation-0.59b0.tar.gz", hash = "sha256:6010f0faaacdaf7c4dff8aac84e226d23437b331dcda7e70367f6d73a7db1adc"},
@@ -5074,7 +5074,7 @@ description = "ASGI instrumentation for OpenTelemetry"
 optional = true
 python-versions = ">=3.9"
 groups = ["main"]
-markers = "(platform_machine == \"arm64\" or platform_machine == \"x86_64\" or platform_machine != \"arm64\" and platform_machine != \"x86_64\" or sys_platform != \"darwin\") and (extra == \"acp\" or extra == \"all\" or extra == \"beeai-platform\")"
+markers = "(platform_machine == \"arm64\" or platform_machine == \"x86_64\" or platform_machine != \"arm64\" and platform_machine != \"x86_64\" or sys_platform != \"darwin\") and (extra == \"acp\" or extra == \"all\" or extra == \"beeai-platform\" or extra == \"agentstack\")"
 files = [
     {file = "opentelemetry_instrumentation_asgi-0.59b0-py3-none-any.whl", hash = "sha256:ba9703e09d2c33c52fa798171f344c8123488fcd45017887981df088452d3c53"},
     {file = "opentelemetry_instrumentation_asgi-0.59b0.tar.gz", hash = "sha256:2509d6fe9fd829399ce3536e3a00426c7e3aa359fc1ed9ceee1628b56da40e7a"},
@@ -5097,7 +5097,7 @@ description = "OpenTelemetry FastAPI Instrumentation"
 optional = true
 python-versions = ">=3.9"
 groups = ["main"]
-markers = "(platform_machine == \"arm64\" or platform_machine == \"x86_64\" or platform_machine != \"arm64\" and platform_machine != \"x86_64\" or sys_platform != \"darwin\") and (extra == \"acp\" or extra == \"all\" or extra == \"beeai-platform\")"
+markers = "(platform_machine == \"arm64\" or platform_machine == \"x86_64\" or platform_machine != \"arm64\" and platform_machine != \"x86_64\" or sys_platform != \"darwin\") and (extra == \"acp\" or extra == \"all\" or extra == \"beeai-platform\" or extra == \"agentstack\")"
 files = [
     {file = "opentelemetry_instrumentation_fastapi-0.59b0-py3-none-any.whl", hash = "sha256:0d8d00ff7d25cca40a4b2356d1d40a8f001e0668f60c102f5aa6bb721d660c4f"},
     {file = "opentelemetry_instrumentation_fastapi-0.59b0.tar.gz", hash = "sha256:e8fe620cfcca96a7d634003df1bc36a42369dedcdd6893e13fb5903aeeb89b2b"},
@@ -5147,7 +5147,7 @@ files = [
     {file = "opentelemetry_proto-1.38.0-py3-none-any.whl", hash = "sha256:b6ebe54d3217c42e45462e2a1ae28c3e2bf2ec5a5645236a490f55f45f1a0a18"},
     {file = "opentelemetry_proto-1.38.0.tar.gz", hash = "sha256:88b161e89d9d372ce723da289b7da74c3a8354a8e5359992be813942969ed468"},
 ]
-markers = {main = "(platform_machine == \"arm64\" or platform_machine == \"x86_64\" or platform_machine != \"arm64\" and platform_machine != \"x86_64\" or sys_platform != \"darwin\") and (extra == \"acp\" or extra == \"all\" or extra == \"beeai-platform\")", dev = "platform_machine == \"arm64\" or platform_machine == \"x86_64\" or platform_machine != \"arm64\" and platform_machine != \"x86_64\" or sys_platform != \"darwin\""}
+markers = {main = "(platform_machine == \"arm64\" or platform_machine == \"x86_64\" or platform_machine != \"arm64\" and platform_machine != \"x86_64\" or sys_platform != \"darwin\") and (extra == \"acp\" or extra == \"all\" or extra == \"beeai-platform\" or extra == \"agentstack\")", dev = "platform_machine == \"arm64\" or platform_machine == \"x86_64\" or platform_machine != \"arm64\" and platform_machine != \"x86_64\" or sys_platform != \"darwin\""}
 
 [package.dependencies]
 protobuf = ">=5.0,<7.0"
@@ -5163,7 +5163,7 @@ files = [
     {file = "opentelemetry_sdk-1.38.0-py3-none-any.whl", hash = "sha256:1c66af6564ecc1553d72d811a01df063ff097cdc82ce188da9951f93b8d10f6b"},
     {file = "opentelemetry_sdk-1.38.0.tar.gz", hash = "sha256:93df5d4d871ed09cb4272305be4d996236eedb232253e3ab864c8620f051cebe"},
 ]
-markers = {main = "(platform_machine == \"arm64\" or platform_machine == \"x86_64\" or platform_machine != \"arm64\" and platform_machine != \"x86_64\" or sys_platform != \"darwin\") and (extra == \"beeai-platform\" or extra == \"a2a\" or extra == \"all\" or extra == \"acp\")", dev = "platform_machine == \"arm64\" or platform_machine == \"x86_64\" or platform_machine != \"arm64\" and platform_machine != \"x86_64\" or sys_platform != \"darwin\""}
+markers = {main = "(platform_machine == \"arm64\" or platform_machine == \"x86_64\" or platform_machine != \"arm64\" and platform_machine != \"x86_64\" or sys_platform != \"darwin\") and (extra == \"beeai-platform\" or extra == \"agentstack\" or extra == \"a2a\" or extra == \"all\" or extra == \"acp\")", dev = "platform_machine == \"arm64\" or platform_machine == \"x86_64\" or platform_machine != \"arm64\" and platform_machine != \"x86_64\" or sys_platform != \"darwin\""}
 
 [package.dependencies]
 opentelemetry-api = "1.38.0"
@@ -5181,7 +5181,7 @@ files = [
     {file = "opentelemetry_semantic_conventions-0.59b0-py3-none-any.whl", hash = "sha256:35d3b8833ef97d614136e253c1da9342b4c3c083bbaf29ce31d572a1c3825eed"},
     {file = "opentelemetry_semantic_conventions-0.59b0.tar.gz", hash = "sha256:7a6db3f30d70202d5bf9fa4b69bc866ca6a30437287de6c510fb594878aed6b0"},
 ]
-markers = {main = "(platform_machine == \"arm64\" or platform_machine == \"x86_64\" or platform_machine != \"arm64\" and platform_machine != \"x86_64\" or sys_platform != \"darwin\") and (extra == \"beeai-platform\" or extra == \"a2a\" or extra == \"all\" or extra == \"acp\")", dev = "platform_machine == \"arm64\" or platform_machine == \"x86_64\" or platform_machine != \"arm64\" and platform_machine != \"x86_64\" or sys_platform != \"darwin\""}
+markers = {main = "(platform_machine == \"arm64\" or platform_machine == \"x86_64\" or platform_machine != \"arm64\" and platform_machine != \"x86_64\" or sys_platform != \"darwin\") and (extra == \"beeai-platform\" or extra == \"agentstack\" or extra == \"a2a\" or extra == \"all\" or extra == \"acp\")", dev = "platform_machine == \"arm64\" or platform_machine == \"x86_64\" or platform_machine != \"arm64\" and platform_machine != \"x86_64\" or sys_platform != \"darwin\""}
 
 [package.dependencies]
 opentelemetry-api = "1.38.0"
@@ -5194,7 +5194,7 @@ description = "Web util for OpenTelemetry"
 optional = true
 python-versions = ">=3.9"
 groups = ["main"]
-markers = "(platform_machine == \"arm64\" or platform_machine == \"x86_64\" or platform_machine != \"arm64\" and platform_machine != \"x86_64\" or sys_platform != \"darwin\") and (extra == \"acp\" or extra == \"all\" or extra == \"beeai-platform\")"
+markers = "(platform_machine == \"arm64\" or platform_machine == \"x86_64\" or platform_machine != \"arm64\" and platform_machine != \"x86_64\" or sys_platform != \"darwin\") and (extra == \"acp\" or extra == \"all\" or extra == \"beeai-platform\" or extra == \"agentstack\")"
 files = [
     {file = "opentelemetry_util_http-0.59b0-py3-none-any.whl", hash = "sha256:6d036a07563bce87bf521839c0671b507a02a0d39d7ea61b88efa14c6e25355d"},
     {file = "opentelemetry_util_http-0.59b0.tar.gz", hash = "sha256:ae66ee91be31938d832f3b4bc4eb8a911f6eddd38969c4a871b1230db2a0a560"},
@@ -5993,7 +5993,7 @@ description = "Beautiful, Pythonic protocol buffers"
 optional = true
 python-versions = ">=3.7"
 groups = ["main"]
-markers = "(platform_machine == \"arm64\" or platform_machine == \"x86_64\" or platform_machine != \"arm64\" and platform_machine != \"x86_64\" or sys_platform != \"darwin\") and (extra == \"beeai-platform\" or extra == \"a2a\" or extra == \"all\")"
+markers = "(platform_machine == \"arm64\" or platform_machine == \"x86_64\" or platform_machine != \"arm64\" and platform_machine != \"x86_64\" or sys_platform != \"darwin\") and (extra == \"beeai-platform\" or extra == \"agentstack\" or extra == \"a2a\" or extra == \"all\")"
 files = [
     {file = "proto_plus-1.26.1-py3-none-any.whl", hash = "sha256:13285478c2dcf2abb829db158e1047e2f1e8d63a077d94263c2b88b043c75a66"},
     {file = "proto_plus-1.26.1.tar.gz", hash = "sha256:21a515a4c4c0088a773899e23c7bbade3d18f9c66c73edd4c7ee3816bc96a012"},
@@ -6024,7 +6024,7 @@ files = [
     {file = "protobuf-6.33.0-py3-none-any.whl", hash = "sha256:25c9e1963c6734448ea2d308cfa610e692b801304ba0908d7bfa564ac5132995"},
     {file = "protobuf-6.33.0.tar.gz", hash = "sha256:140303d5c8d2037730c548f8c7b93b20bb1dc301be280c378b82b8894589c954"},
 ]
-markers = {main = "(platform_machine == \"arm64\" or platform_machine == \"x86_64\" or platform_machine != \"arm64\" and platform_machine != \"x86_64\" or sys_platform != \"darwin\") and (extra == \"beeai-platform\" or extra == \"a2a\" or extra == \"all\" or extra == \"acp\")", dev = "platform_machine == \"arm64\" or platform_machine == \"x86_64\" or platform_machine != \"arm64\" and platform_machine != \"x86_64\" or sys_platform != \"darwin\""}
+markers = {main = "(platform_machine == \"arm64\" or platform_machine == \"x86_64\" or platform_machine != \"arm64\" and platform_machine != \"x86_64\" or sys_platform != \"darwin\") and (extra == \"beeai-platform\" or extra == \"agentstack\" or extra == \"a2a\" or extra == \"all\" or extra == \"acp\")", dev = "platform_machine == \"arm64\" or platform_machine == \"x86_64\" or platform_machine != \"arm64\" and platform_machine != \"x86_64\" or sys_platform != \"darwin\""}
 
 [[package]]
 name = "psutil"
@@ -6170,7 +6170,7 @@ files = [
     {file = "pyasn1-0.6.1-py3-none-any.whl", hash = "sha256:0d632f46f2ba09143da3a8afe9e33fb6f92fa2320ab7e886e2d0f7672af84629"},
     {file = "pyasn1-0.6.1.tar.gz", hash = "sha256:6f580d2bdd84365380830acf45550f2511469f673cb4a5ae3857a3170128b034"},
 ]
-markers = {main = "(platform_machine == \"arm64\" or platform_machine == \"x86_64\" or platform_machine != \"arm64\" and platform_machine != \"x86_64\" or sys_platform != \"darwin\") and (extra == \"beeai-platform\" or extra == \"a2a\" or extra == \"all\" or extra == \"vertexai\")", dev = "platform_machine == \"arm64\" or platform_machine == \"x86_64\" or platform_machine != \"arm64\" and platform_machine != \"x86_64\" or sys_platform != \"darwin\""}
+markers = {main = "(platform_machine == \"arm64\" or platform_machine == \"x86_64\" or platform_machine != \"arm64\" and platform_machine != \"x86_64\" or sys_platform != \"darwin\") and (extra == \"beeai-platform\" or extra == \"agentstack\" or extra == \"a2a\" or extra == \"all\" or extra == \"vertexai\")", dev = "platform_machine == \"arm64\" or platform_machine == \"x86_64\" or platform_machine != \"arm64\" and platform_machine != \"x86_64\" or sys_platform != \"darwin\""}
 
 [[package]]
 name = "pyasn1-modules"
@@ -6183,7 +6183,7 @@ files = [
     {file = "pyasn1_modules-0.4.2-py3-none-any.whl", hash = "sha256:29253a9207ce32b64c3ac6600edc75368f98473906e8fd1043bd6b5b1de2c14a"},
     {file = "pyasn1_modules-0.4.2.tar.gz", hash = "sha256:677091de870a80aae844b1ca6134f54652fa2c8c5a52aa396440ac3106e941e6"},
 ]
-markers = {main = "(platform_machine == \"arm64\" or platform_machine == \"x86_64\" or platform_machine != \"arm64\" and platform_machine != \"x86_64\" or sys_platform != \"darwin\") and (extra == \"beeai-platform\" or extra == \"a2a\" or extra == \"all\" or extra == \"vertexai\")", dev = "platform_machine == \"arm64\" or platform_machine == \"x86_64\" or platform_machine != \"arm64\" and platform_machine != \"x86_64\" or sys_platform != \"darwin\""}
+markers = {main = "(platform_machine == \"arm64\" or platform_machine == \"x86_64\" or platform_machine != \"arm64\" and platform_machine != \"x86_64\" or sys_platform != \"darwin\") and (extra == \"beeai-platform\" or extra == \"agentstack\" or extra == \"a2a\" or extra == \"all\" or extra == \"vertexai\")", dev = "platform_machine == \"arm64\" or platform_machine == \"x86_64\" or platform_machine != \"arm64\" and platform_machine != \"x86_64\" or sys_platform != \"darwin\""}
 
 [package.dependencies]
 pyasn1 = ">=0.6.1,<0.7.0"
@@ -6667,7 +6667,7 @@ description = "A streaming multipart parser for Python"
 optional = true
 python-versions = ">=3.8"
 groups = ["main"]
-markers = "(platform_machine == \"arm64\" or platform_machine == \"x86_64\" or platform_machine != \"arm64\" and platform_machine != \"x86_64\" or sys_platform != \"darwin\") and (extra == \"acp\" or extra == \"all\" or extra == \"mcp\" or extra == \"beeai-platform\")"
+markers = "(platform_machine == \"arm64\" or platform_machine == \"x86_64\" or platform_machine != \"arm64\" and platform_machine != \"x86_64\" or sys_platform != \"darwin\") and (extra == \"acp\" or extra == \"all\" or extra == \"mcp\" or extra == \"beeai-platform\" or extra == \"agentstack\")"
 files = [
     {file = "python_multipart-0.0.20-py3-none-any.whl", hash = "sha256:8a62d3a8335e06589fe01f2a3e178cdcc632f3fbe0d492ad9ee0ec35aab1f104"},
     {file = "python_multipart-0.0.20.tar.gz", hash = "sha256:8dd0cab45b8e23064ae09147625994d090fa46f5b0d1e13af944c331a7fa9d13"},
@@ -6733,7 +6733,7 @@ files = [
     {file = "pywin32-311-cp39-cp39-win_amd64.whl", hash = "sha256:e0c4cfb0621281fe40387df582097fd796e80430597cb9944f0ae70447bacd91"},
     {file = "pywin32-311-cp39-cp39-win_arm64.whl", hash = "sha256:62ea666235135fee79bb154e695f3ff67370afefd71bd7fea7512fc70ef31e3d"},
 ]
-markers = {main = "sys_platform == \"win32\" and (extra == \"mcp\" or extra == \"all\" or extra == \"beeai-platform\")", dev = "platform_system == \"Windows\" and (platform_machine == \"arm64\" or platform_machine == \"x86_64\" or platform_machine != \"arm64\" and platform_machine != \"x86_64\" or sys_platform != \"darwin\")"}
+markers = {main = "sys_platform == \"win32\" and (extra == \"mcp\" or extra == \"all\" or extra == \"beeai-platform\" or extra == \"agentstack\")", dev = "platform_system == \"Windows\" and (platform_machine == \"arm64\" or platform_machine == \"x86_64\" or platform_machine != \"arm64\" and platform_machine != \"x86_64\" or sys_platform != \"darwin\")"}
 
 [[package]]
 name = "pyyaml"
@@ -7461,7 +7461,7 @@ files = [
     {file = "rsa-4.9.1-py3-none-any.whl", hash = "sha256:68635866661c6836b8d39430f97a996acbd61bfa49406748ea243539fe239762"},
     {file = "rsa-4.9.1.tar.gz", hash = "sha256:e7bdbfdb5497da4c07dfd35530e1a902659db6ff241e39d9953cad06ebd0ae75"},
 ]
-markers = {main = "(platform_machine == \"arm64\" or platform_machine == \"x86_64\" or platform_machine != \"arm64\" and platform_machine != \"x86_64\" or sys_platform != \"darwin\") and (extra == \"beeai-platform\" or extra == \"a2a\" or extra == \"all\" or extra == \"vertexai\")", dev = "platform_machine == \"arm64\" or platform_machine == \"x86_64\" or platform_machine != \"arm64\" and platform_machine != \"x86_64\" or sys_platform != \"darwin\""}
+markers = {main = "(platform_machine == \"arm64\" or platform_machine == \"x86_64\" or platform_machine != \"arm64\" and platform_machine != \"x86_64\" or sys_platform != \"darwin\") and (extra == \"beeai-platform\" or extra == \"agentstack\" or extra == \"a2a\" or extra == \"all\" or extra == \"vertexai\")", dev = "platform_machine == \"arm64\" or platform_machine == \"x86_64\" or platform_machine != \"arm64\" and platform_machine != \"x86_64\" or sys_platform != \"darwin\""}
 
 [package.dependencies]
 pyasn1 = ">=0.1.3"
@@ -7521,7 +7521,7 @@ description = ""
 optional = true
 python-versions = ">=3.9"
 groups = ["main"]
-markers = "sys_platform == \"darwin\" and (platform_machine == \"arm64\" or platform_machine == \"x86_64\" or platform_machine != \"arm64\" and platform_machine != \"x86_64\") and (extra == \"transformers\" or extra == \"huggingface\" or extra == \"all\") and (platform_machine == \"arm64\" or platform_machine == \"x86_64\" or extra == \"transformers\" or extra == \"all\") or (extra == \"transformers\" or extra == \"huggingface\" or extra == \"all\") and sys_platform != \"darwin\""
+markers = "(extra == \"transformers\" or extra == \"huggingface\" or extra == \"all\") and (platform_machine == \"arm64\" or platform_machine == \"x86_64\" or platform_machine != \"arm64\" and platform_machine != \"x86_64\" or sys_platform != \"darwin\") and (platform_machine == \"arm64\" or platform_machine == \"x86_64\" or extra == \"transformers\" or extra == \"all\" or sys_platform != \"darwin\")"
 files = [
     {file = "safetensors-0.6.2-cp38-abi3-macosx_10_12_x86_64.whl", hash = "sha256:9c85ede8ec58f120bad982ec47746981e210492a6db876882aa021446af8ffba"},
     {file = "safetensors-0.6.2-cp38-abi3-macosx_11_0_arm64.whl", hash = "sha256:d6675cf4b39c98dbd7d940598028f3742e0375a6b4d4277e76beb0c35f4b843b"},
@@ -7626,7 +7626,7 @@ files = [
     {file = "setuptools-80.9.0-py3-none-any.whl", hash = "sha256:062d34222ad13e0cc312a4c02d73f059e86a4acbfbdea8f8f76b28c99f306922"},
     {file = "setuptools-80.9.0.tar.gz", hash = "sha256:f36b47402ecde768dbfafc46e8e4207b4360c654f1f3bb84475f0a28628fb19c"},
 ]
-markers = {main = "(python_version >= \"3.12\" or extra == \"beeai-platform\" or extra == \"a2a\" or extra == \"all\" or extra == \"llama-index\" or extra == \"rag\") and (extra == \"transformers\" or extra == \"all\" or extra == \"beeai-platform\" or extra == \"a2a\" or extra == \"llama-index\" or extra == \"rag\") and (platform_machine != \"x86_64\" or extra == \"beeai-platform\" or extra == \"a2a\" or extra == \"all\" or extra == \"llama-index\" or extra == \"rag\" or extra == \"transformers\") and (platform_machine != \"x86_64\" or extra == \"beeai-platform\" or extra == \"a2a\" or extra == \"all\" or extra == \"llama-index\" or extra == \"rag\" or sys_platform != \"darwin\")", dev = "platform_machine == \"arm64\" or platform_machine == \"x86_64\" or platform_machine != \"arm64\" and platform_machine != \"x86_64\" or sys_platform != \"darwin\""}
+markers = {main = "(python_version >= \"3.12\" or extra == \"beeai-platform\" or extra == \"agentstack\" or extra == \"a2a\" or extra == \"all\" or extra == \"llama-index\" or extra == \"rag\") and (extra == \"transformers\" or extra == \"all\" or extra == \"beeai-platform\" or extra == \"agentstack\" or extra == \"a2a\" or extra == \"llama-index\" or extra == \"rag\") and (platform_machine != \"x86_64\" or extra == \"beeai-platform\" or extra == \"agentstack\" or extra == \"a2a\" or extra == \"all\" or extra == \"llama-index\" or extra == \"rag\" or extra == \"transformers\") and (platform_machine != \"x86_64\" or extra == \"beeai-platform\" or extra == \"agentstack\" or extra == \"a2a\" or extra == \"all\" or extra == \"llama-index\" or extra == \"rag\" or sys_platform != \"darwin\")", dev = "platform_machine == \"arm64\" or platform_machine == \"x86_64\" or platform_machine != \"arm64\" and platform_machine != \"x86_64\" or sys_platform != \"darwin\""}
 
 [package.extras]
 check = ["pytest-checkdocs (>=2.4)", "pytest-ruff (>=0.2.1) ; sys_platform != \"cygwin\"", "ruff (>=0.8.0) ; sys_platform != \"cygwin\""]
@@ -7806,7 +7806,7 @@ description = "SSE plugin for Starlette"
 optional = true
 python-versions = ">=3.9"
 groups = ["main"]
-markers = "(platform_machine == \"arm64\" or platform_machine == \"x86_64\" or platform_machine != \"arm64\" and platform_machine != \"x86_64\" or sys_platform != \"darwin\") and (extra == \"beeai-platform\" or extra == \"a2a\" or extra == \"all\" or extra == \"mcp\")"
+markers = "(platform_machine == \"arm64\" or platform_machine == \"x86_64\" or platform_machine != \"arm64\" and platform_machine != \"x86_64\" or sys_platform != \"darwin\") and (extra == \"beeai-platform\" or extra == \"agentstack\" or extra == \"a2a\" or extra == \"all\" or extra == \"mcp\")"
 files = [
     {file = "sse_starlette-3.0.2-py3-none-any.whl", hash = "sha256:16b7cbfddbcd4eaca11f7b586f3b8a080f1afe952c15813455b162edea619e5a"},
     {file = "sse_starlette-3.0.2.tar.gz", hash = "sha256:ccd60b5765ebb3584d0de2d7a6e4f745672581de4f5005ab31c3a25d10b52b3a"},
@@ -7828,7 +7828,7 @@ description = "The little ASGI library that shines."
 optional = true
 python-versions = ">=3.9"
 groups = ["main"]
-markers = "(platform_machine == \"arm64\" or platform_machine == \"x86_64\" or platform_machine != \"arm64\" and platform_machine != \"x86_64\" or sys_platform != \"darwin\") and (extra == \"beeai-platform\" or extra == \"a2a\" or extra == \"all\" or extra == \"acp\" or extra == \"watsonx-orchestrate\" or extra == \"mcp\")"
+markers = "(platform_machine == \"arm64\" or platform_machine == \"x86_64\" or platform_machine != \"arm64\" and platform_machine != \"x86_64\" or sys_platform != \"darwin\") and (extra == \"beeai-platform\" or extra == \"agentstack\" or extra == \"a2a\" or extra == \"all\" or extra == \"acp\" or extra == \"watsonx-orchestrate\" or extra == \"mcp\")"
 files = [
     {file = "starlette-0.48.0-py3-none-any.whl", hash = "sha256:0764ca97b097582558ecb498132ed0c7d942f233f365b86ba37770e026510659"},
     {file = "starlette-0.48.0.tar.gz", hash = "sha256:7e8cee469a8ab2352911528110ce9088fdc6a37d9876926e73da7ce4aa4c7a46"},
@@ -7916,7 +7916,7 @@ files = [
     {file = "tenacity-9.1.2-py3-none-any.whl", hash = "sha256:f77bf36710d8b73a50b2dd155c97b870017ad21afe6ab300326b0371b3b05138"},
     {file = "tenacity-9.1.2.tar.gz", hash = "sha256:1169d376c297e7de388d18b4481760d478b0e99a777cad3a9c86e556f4b697cb"},
 ]
-markers = {main = "(platform_machine == \"arm64\" or platform_machine == \"x86_64\" or platform_machine != \"arm64\" and platform_machine != \"x86_64\" or sys_platform != \"darwin\") and (extra == \"langchain\" or extra == \"rag\" or extra == \"all\" or extra == \"llama-index\" or extra == \"beeai-platform\")", dev = "platform_machine == \"arm64\" or platform_machine == \"x86_64\" or platform_machine != \"arm64\" and platform_machine != \"x86_64\" or sys_platform != \"darwin\""}
+markers = {main = "(platform_machine == \"arm64\" or platform_machine == \"x86_64\" or platform_machine != \"arm64\" and platform_machine != \"x86_64\" or sys_platform != \"darwin\") and (extra == \"langchain\" or extra == \"rag\" or extra == \"all\" or extra == \"llama-index\" or extra == \"beeai-platform\" or extra == \"agentstack\")", dev = "platform_machine == \"arm64\" or platform_machine == \"x86_64\" or platform_machine != \"arm64\" and platform_machine != \"x86_64\" or sys_platform != \"darwin\""}
 
 [package.extras]
 doc = ["reno", "sphinx"]
@@ -8850,7 +8850,7 @@ description = "The lightning-fast ASGI server."
 optional = true
 python-versions = ">=3.9"
 groups = ["main"]
-markers = "(extra == \"mcp\" or extra == \"all\" or extra == \"beeai-platform\" or extra == \"acp\" or extra == \"a2a\" or extra == \"watsonx-orchestrate\") and (sys_platform != \"emscripten\" or extra == \"acp\" or extra == \"all\" or extra == \"beeai-platform\" or extra == \"a2a\" or extra == \"watsonx-orchestrate\") and (platform_machine == \"arm64\" or platform_machine == \"x86_64\" or platform_machine != \"arm64\" and platform_machine != \"x86_64\" or sys_platform != \"darwin\")"
+markers = "(extra == \"mcp\" or extra == \"all\" or extra == \"beeai-platform\" or extra == \"agentstack\" or extra == \"acp\" or extra == \"a2a\" or extra == \"watsonx-orchestrate\") and (sys_platform != \"emscripten\" or extra == \"acp\" or extra == \"all\" or extra == \"beeai-platform\" or extra == \"agentstack\" or extra == \"a2a\" or extra == \"watsonx-orchestrate\") and (platform_machine == \"arm64\" or platform_machine == \"x86_64\" or platform_machine != \"arm64\" and platform_machine != \"x86_64\" or sys_platform != \"darwin\")"
 files = [
     {file = "uvicorn-0.37.0-py3-none-any.whl", hash = "sha256:913b2b88672343739927ce381ff9e2ad62541f9f8289664fa1d1d3803fa2ce6c"},
     {file = "uvicorn-0.37.0.tar.gz", hash = "sha256:4115c8add6d3fd536c8ee77f0e14a7fd2ebba939fed9b02583a97f80648f9e13"},
@@ -9592,9 +9592,10 @@ cffi = ["cffi (>=1.17,<2.0) ; platform_python_implementation != \"PyPy\" and pyt
 [extras]
 a2a = ["a2a-sdk", "types-grpcio", "types-grpcio-reflection", "uvicorn"]
 acp = ["acp-sdk", "uvicorn"]
-all = ["a2a-sdk", "acp-sdk", "beeai-sdk", "boto3", "ddgs", "fastapi", "google-auth", "langchain-community", "langchain-core", "langchain-ollama", "langgraph-prebuilt", "llama-index", "mcp", "outlines", "peft", "torch", "torch", "torch", "transformers", "transformers", "transformers", "uvicorn", "wikipedia-api"]
+agentstack = ["a2a-sdk", "agentstack-sdk", "uvicorn"]
+all = ["a2a-sdk", "acp-sdk", "agentstack-sdk", "boto3", "ddgs", "fastapi", "google-auth", "langchain-community", "langchain-core", "langchain-ollama", "langgraph-prebuilt", "llama-index", "mcp", "outlines", "peft", "torch", "torch", "torch", "transformers", "transformers", "transformers", "uvicorn", "wikipedia-api"]
 bedrock = ["boto3"]
-beeai-platform = ["a2a-sdk", "beeai-sdk", "uvicorn"]
+beeai-platform = ["a2a-sdk", "agentstack-sdk", "uvicorn"]
 duckduckgo = ["ddgs"]
 huggingface = ["transformers", "transformers", "transformers"]
 langchain = ["langchain-community", "langchain-core", "langchain-ollama"]
@@ -9610,4 +9611,4 @@ wikipedia = ["wikipedia-api"]
 [metadata]
 lock-version = "2.1"
 python-versions = ">= 3.11,<3.14"
-content-hash = "f58ace1340962dd3de09e6b90edc535d0618e4c36fdc1ab3f6843f468145c3e2"
+content-hash = "1b80f15d900d2d14d69eee3b55226104ad182a5139a924e2170570ca5694e777"

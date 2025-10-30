@@ -10,12 +10,12 @@ from typing import Any, ClassVar, Self
 from pydantic import BaseModel, Field
 
 try:
-    from beeai_sdk.a2a.extensions import LLMServiceExtensionServer
-    from beeai_sdk.platform import ModelProviderType
+    from agentstack_sdk.a2a.extensions import LLMServiceExtensionServer
+    from agentstack_sdk.platform import ModelProviderType
 
 except ModuleNotFoundError as e:
     raise ModuleNotFoundError(
-        "Optional module [beeai-platform] not found.\nRun 'pip install \"beeai-framework[beeai-platform]\"' to install."
+        "Optional module [agentstack] not found.\nRun 'pip install \"beeai-framework[agentstack]\"' to install."
     ) from e
 
 
@@ -27,11 +27,11 @@ from beeai_framework.backend.chat import ChatModel, ChatModelKwargs, ChatModelOp
 from beeai_framework.backend.constants import ProviderName
 from beeai_framework.backend.utils import load_model
 
-__all__ = ["BeeAIPlatformChatModel"]
+__all__ = ["AgentStackChatModel"]
 
 from beeai_framework.context import Run
 
-_storage = ContextVar[LLMServiceExtensionServer]("beeai_chat_model_storage")
+_storage = ContextVar[LLMServiceExtensionServer]("agent_stack_chat_model_storage")
 
 
 class ProviderConfig(BaseModel):
@@ -41,7 +41,7 @@ class ProviderConfig(BaseModel):
     openai_native: bool = False
 
 
-class BeeAIPlatformChatModel(ChatModel):
+class AgentStackChatModel(ChatModel):
     tool_choice_support: ClassVar[set[ToolChoiceType]] = set()
     providers_mapping: ClassVar[dict[ModelProviderType, Callable[[], ProviderConfig] | None]] = {
         ModelProviderType.ANTHROPIC: lambda: _extract_provider_config("anthropic"),
@@ -90,7 +90,7 @@ class BeeAIPlatformChatModel(ChatModel):
 
         llm_conf = next(iter(llm_ext.data.llm_fulfillments.values()), None) if llm_ext and llm_ext.data else None
         if not llm_conf:
-            raise ValueError("BeeAIPlatform not provided llm configuration")
+            raise ValueError("AgentStack not provided llm configuration")
 
         provider_name = llm_conf.api_model.replace("beeai:", "").split(":")[0]
         config = (self.providers_mapping.get(provider_name) or (lambda: ProviderConfig()))()

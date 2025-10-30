@@ -4,11 +4,11 @@ from typing import Any, Literal, Unpack
 
 import httpx
 
-from beeai_framework.adapters.beeai_platform.context import BeeAIPlatformContext
+from beeai_framework.adapters.agentstack.context import AgentStackContext
 
 try:
     import a2a.types as a2a_types
-    from beeai_sdk.a2a.extensions import (
+    from agentstack_sdk.a2a.extensions import (
         EmbeddingDemand,
         EmbeddingFulfillment,
         EmbeddingServiceExtensionClient,
@@ -20,24 +20,24 @@ try:
         PlatformApiExtensionClient,
         PlatformApiExtensionSpec,
     )
-    from beeai_sdk.platform import ModelProvider
-    from beeai_sdk.platform.context import Context, ContextPermissions, Permissions
-    from beeai_sdk.platform.model_provider import ModelCapability
+    from agentstack_sdk.platform import ModelProvider
+    from agentstack_sdk.platform.context import Context, ContextPermissions, Permissions
+    from agentstack_sdk.platform.model_provider import ModelCapability
 
     from beeai_framework.adapters.a2a.agents import A2AAgent, A2AAgentErrorEvent, A2AAgentUpdateEvent
 
 except ModuleNotFoundError as e:
     raise ModuleNotFoundError(
-        "Optional module [beeai-platform] not found.\nRun 'pip install \"beeai-framework[beeai-platform]\"' to install."
+        "Optional module [agentstack] not found.\nRun 'pip install \"beeai-framework[agentstack]\"' to install."
     ) from e
 
-from beeai_framework.adapters.beeai_platform.agents.events import (
-    BeeAIPlatformAgentErrorEvent,
-    BeeAIPlatformAgentUpdateEvent,
-    beeai_platform_agent_event_types,
+from beeai_framework.adapters.agentstack.agents.events import (
+    AgentStackAgentErrorEvent,
+    AgentStackAgentUpdateEvent,
+    agent_stack_agent_event_types,
 )
-from beeai_framework.adapters.beeai_platform.agents.types import (
-    BeeAIPlatformAgentOutput,
+from beeai_framework.adapters.agentstack.agents.types import (
+    AgentStackAgentOutput,
 )
 from beeai_framework.agents import AgentError, AgentMeta, AgentOptions, BaseAgent
 from beeai_framework.backend.message import AnyMessage
@@ -49,19 +49,19 @@ from beeai_framework.runnable import runnable_entry
 from beeai_framework.utils.strings import to_safe_word
 
 
-class BeeAIPlatformAgentOptions(AgentOptions, total=False):
-    platform_context: Context | None | Literal["clear"]
+class AgentStackAgentOptions(AgentOptions, total=False):
+    agent_stack_context: Context | None | Literal["clear"]
     """
     User can specify custom context for the request. Can be used to support multiple users in one client.
     """
 
 
-class BeeAIPlatformAgent(BaseAgent[BeeAIPlatformAgentOutput]):
+class AgentStackAgent(BaseAgent[AgentStackAgentOutput]):
     def __init__(
         self, *, url: str | None = None, agent_card: a2a_types.AgentCard | None = None, memory: BaseMemory
     ) -> None:
         super().__init__()
-        self._platform_context: Context | None = None
+        self._agent_stack_context: Context | None = None
         self._agent = A2AAgent(url=url, agent_card=agent_card, memory=memory)
 
     @property
@@ -73,48 +73,44 @@ class BeeAIPlatformAgent(BaseAgent[BeeAIPlatformAgentOutput]):
         self,
         input: str | AnyMessage | list[AnyMessage] | a2a_types.Message,
         /,
-        **kwargs: Unpack[BeeAIPlatformAgentOptions],
-    ) -> BeeAIPlatformAgentOutput:
-        context_param = kwargs.pop("platform_context", None)
+        **kwargs: Unpack[AgentStackAgentOptions],
+    ) -> AgentStackAgentOutput:
+        context_param = kwargs.pop("agent_stack_context", None)
         try:
-            # try to extract existing platform context
-            beeai_platform_context = BeeAIPlatformContext.get()
+            # try to extract existing agent stack context
+            agent_stack_context = AgentStackContext.get()
         except LookupError:
-            beeai_platform_context = None
+            agent_stack_context = None
 
         if context_param:
-            self._platform_context = None if context_param == "clear" else context_param
+            self._agent_stack_context = None if context_param == "clear" else context_param
 
         context = RunContext.get()
 
         async def update_event(data: A2AAgentUpdateEvent, event: EventMeta) -> None:
             await context.emitter.emit(
                 "update",
-                BeeAIPlatformAgentUpdateEvent(value=data.value),
+                AgentStackAgentUpdateEvent(value=data.value),
             )
 
         async def error_event(data: A2AAgentErrorEvent, event: EventMeta) -> None:
             await context.emitter.emit(
                 "error",
-                BeeAIPlatformAgentErrorEvent(message=data.message),
+                AgentStackAgentErrorEvent(message=data.message),
             )
 
-        context_id = (
-            self._platform_context.id
-            if self._platform_context
-            else (beeai_platform_context.context.context_id if beeai_platform_context else None)
-        )
+        if not self._agent_stack_context and not agent_stack_context:
+            self._agent_stack_context = await Context.create()
+
         message = self._agent.convert_to_a2a_message(
             input,
-            context_id=context_id,
-            metadata=beeai_platform_context.metadata
-            if (beeai_platform_context and beeai_platform_context.metadata)
-            else await self._get_metadata(),
+            context_id=agent_stack_context.context.context_id if agent_stack_context else self._agent_stack_context.id,  # type: ignore[union-attr]
+            metadata=agent_stack_context.metadata if agent_stack_context else await self._get_metadata(),
         )
 
         response = await self._agent.run(message, **kwargs).on("update", update_event).on("error", error_event)  # type: ignore[misc]
 
-        return BeeAIPlatformAgentOutput(output=response.output, event=response.event)
+        return AgentStackAgentOutput(output=response.output, event=response.event)
 
     async def check_agent_exists(
         self,
@@ -122,7 +118,7 @@ class BeeAIPlatformAgent(BaseAgent[BeeAIPlatformAgentOutput]):
         try:
             await self._agent.check_agent_exists()
         except Exception as e:
-            raise AgentError("Can't connect to beeai platform agent.", cause=e)
+            raise AgentError("Can't connect to agent stack agent.", cause=e)
 
     async def _get_metadata(self) -> dict[str, Any]:
         if not self._agent.agent_card:
@@ -130,16 +126,15 @@ class BeeAIPlatformAgent(BaseAgent[BeeAIPlatformAgentOutput]):
 
         assert self._agent.agent_card is not None, "Agent card should not be empty after loading."
 
-        if not self._platform_context:
-            self._platform_context = await Context.create()
+        assert self._agent_stack_context is not None, "Agent stack context should not be empty."
 
-        context_token = await self._platform_context.generate_token(
-            grant_global_permissions=Permissions(llm={"*"}, embeddings={"*"}, a2a_proxy={"*"}),
+        context_token = await self._agent_stack_context.generate_token(
+            grant_global_permissions=Permissions(llm={"*"}, embeddings={"*"}, a2a_proxy={"*"}, contexts={"read"}),
             grant_context_permissions=ContextPermissions(files={"*"}, vector_stores={"*"}, context_data={"*"}),
         )
         llm_spec = LLMServiceExtensionSpec.from_agent_card(self._agent.agent_card)
         embedding_spec = EmbeddingServiceExtensionSpec.from_agent_card(self._agent.agent_card)
-        platform_extension_spec = PlatformApiExtensionSpec.from_agent_card(self._agent.agent_card)
+        agent_stack_extension_spec = PlatformApiExtensionSpec.from_agent_card(self._agent.agent_card)
 
         async def get_fulfillemnt_args(
             capability: ModelCapability, demand: LLMDemand | EmbeddingDemand
@@ -160,10 +155,10 @@ class BeeAIPlatformAgent(BaseAgent[BeeAIPlatformAgentOutput]):
 
         metadata = (
             (
-                PlatformApiExtensionClient(platform_extension_spec).api_auth_metadata(
+                PlatformApiExtensionClient(agent_stack_extension_spec).api_auth_metadata(
                     auth_token=context_token.token, expires_at=context_token.expires_at
                 )
-                if platform_extension_spec
+                if agent_stack_extension_spec
                 else {}
             )
             | (
@@ -191,23 +186,21 @@ class BeeAIPlatformAgent(BaseAgent[BeeAIPlatformAgentOutput]):
         return metadata
 
     @classmethod
-    async def from_platform(cls, url: str, memory: BaseMemory) -> list["BeeAIPlatformAgent"]:
+    async def from_agent_stack(cls, url: str, memory: BaseMemory) -> list["AgentStackAgent"]:
         async with httpx.AsyncClient() as client:
             response = await client.get(f"{url}/api/v1/providers")
 
             response.raise_for_status()
             return [
-                BeeAIPlatformAgent(
-                    agent_card=a2a_types.AgentCard(**provider["agent_card"]), memory=await memory.clone()
-                )
+                AgentStackAgent(agent_card=a2a_types.AgentCard(**provider["agent_card"]), memory=await memory.clone())
                 for provider in response.json().get("items", [])
             ]
 
     def _create_emitter(self) -> Emitter:
         return Emitter.root().child(
-            namespace=["beeai_platform", "agent", to_safe_word(self.name)],
+            namespace=["agentstack", "agent", to_safe_word(self.name)],
             creator=self,
-            events=beeai_platform_agent_event_types,
+            events=agent_stack_agent_event_types,
         )
 
     @property
@@ -222,8 +215,8 @@ class BeeAIPlatformAgent(BaseAgent[BeeAIPlatformAgentOutput]):
     def memory(self, memory: BaseMemory) -> None:
         self._agent.memory = memory
 
-    async def clone(self) -> "BeeAIPlatformAgent":
-        cloned = BeeAIPlatformAgent(
+    async def clone(self) -> "AgentStackAgent":
+        cloned = AgentStackAgent(
             url=self._agent._url, agent_card=self._agent.agent_card, memory=await self._agent.memory.clone()
         )
         cloned.emitter = await self.emitter.clone()

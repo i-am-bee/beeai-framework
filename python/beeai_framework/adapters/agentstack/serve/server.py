@@ -13,10 +13,10 @@ import uvicorn
 from pydantic import BaseModel
 from typing_extensions import TypedDict, TypeVar, Unpack, override
 
-from beeai_framework.adapters.beeai_platform.serve._dummy_context_store import (
+from beeai_framework.adapters.agentstack.serve._dummy_context_store import (
     DummyContextStore,
 )
-from beeai_framework.adapters.beeai_platform.serve.types import BaseBeeAIPlatformExtensions
+from beeai_framework.adapters.agentstack.serve.types import BaseAgentStackExtensions
 from beeai_framework.agents.react import ReActAgent
 from beeai_framework.agents.requirement import RequirementAgent
 from beeai_framework.agents.tool_calling import ToolCallingAgent
@@ -26,15 +26,15 @@ from beeai_framework.serve.errors import FactoryAlreadyRegisteredError
 
 try:
     import a2a.types as a2a_types
-    import beeai_sdk.a2a.extensions as beeai_extensions
-    import beeai_sdk.server as beeai_server
-    import beeai_sdk.server.agent as beeai_agent
-    import beeai_sdk.server.store.context_store as beeai_context_store
-    import beeai_sdk.server.store.platform_context_store as beeai_platform_context_store
-    from beeai_sdk.a2a.extensions.ui.agent_detail import AgentDetail
+    import agentstack_sdk.a2a.extensions as agent_stack_extensions
+    import agentstack_sdk.server as agent_stack_server
+    import agentstack_sdk.server.agent as agent_stack_agent
+    import agentstack_sdk.server.store.context_store as agent_stack_store
+    import agentstack_sdk.server.store.platform_context_store as agent_stack_platform_context_store
+    from agentstack_sdk.a2a.extensions.ui.agent_detail import AgentDetail
 except ModuleNotFoundError as e:
     raise ModuleNotFoundError(
-        "Optional module [beeai-platform] not found.\nRun 'pip install \"beeai-framework[beeai-platform]\"' to install."
+        "Optional module [agentstack] not found.\nRun 'pip install \"beeai-framework[agentstack]\"' to install."
     ) from e
 
 from beeai_framework.serve import MemoryManager, Server
@@ -44,18 +44,18 @@ AnyAgentLike = TypeVar("AnyAgentLike", bound=Runnable[Any], default=Runnable[Any
 
 
 # this class is only placeholder to use ContextStore from the beeai-sdk
-class BeeAIPlatformMemoryManager(MemoryManager):
+class AgentStackMemoryManager(MemoryManager):
     async def set(self, key: str, value: BaseMemory) -> None:
-        raise NotImplementedError("This method is not supported by BeeAIPlatformMemoryManager.")
+        raise NotImplementedError("This method is not supported by AgentStackMemoryManager.")
 
     async def get(self, key: str) -> BaseMemory:
-        raise NotImplementedError("This method is not supported by BeeAIPlatformMemoryManager.")
+        raise NotImplementedError("This method is not supported by AgentStackMemoryManager.")
 
     async def contains(self, key: str) -> bool:
-        raise NotImplementedError("This method is not supported by BeeAIPlatformMemoryManager.")
+        raise NotImplementedError("This method is not supported by AgentStackMemoryManager.")
 
 
-class BeeAIPlatformServerConfig(BaseModel):
+class AgentStackServerConfig(BaseModel):
     """Configuration for the BeeAIServer."""
 
     host: str = "127.0.0.1"
@@ -113,7 +113,7 @@ class BeeAIPlatformServerConfig(BaseModel):
     h11_max_incomplete_event_size: int | None = None
 
 
-class BaseBeeAIPlatformServerMetadata(TypedDict, total=False):
+class BaseAgentStackServerMetadata(TypedDict, total=False):
     name: str
     description: str
     additional_interfaces: list[a2a_types.AgentInterface]
@@ -132,47 +132,47 @@ class BaseBeeAIPlatformServerMetadata(TypedDict, total=False):
     version: str
 
 
-class BeeAIPlatformSettingsContent(StrEnum):
+class AgentStackSettingsContent(StrEnum):
     TOOLS = "tools"
     """Allows to enable/disable tools."""
 
 
-class BeeAIPlatformServerMetadata(BaseBeeAIPlatformServerMetadata, total=False):
-    settings: set[BeeAIPlatformSettingsContent]
+class AgentStackServerMetadata(BaseAgentStackServerMetadata, total=False):
+    settings: set[AgentStackSettingsContent]
     """
     Provide the ability to dynamically modify an agent’s settings.
     """
-    extensions: type[BaseBeeAIPlatformExtensions]
+    extensions: type[BaseAgentStackExtensions]
 
 
-class BeeAIPlatformServer(
+class AgentStackServer(
     Server[
         AnyAgentLike,
-        beeai_agent.AgentFactory,
-        BeeAIPlatformServerConfig,
+        agent_stack_agent.AgentFactory,
+        AgentStackServerConfig,
     ],
 ):
     def __init__(
-        self, *, config: ModelLike[BeeAIPlatformServerConfig] | None = None, memory_manager: MemoryManager | None = None
+        self, *, config: ModelLike[AgentStackServerConfig] | None = None, memory_manager: MemoryManager | None = None
     ) -> None:
         super().__init__(
-            config=to_model(BeeAIPlatformServerConfig, config or BeeAIPlatformServerConfig()),
-            memory_manager=memory_manager or BeeAIPlatformMemoryManager(),
+            config=to_model(AgentStackServerConfig, config or AgentStackServerConfig()),
+            memory_manager=memory_manager or AgentStackMemoryManager(),
         )
-        self._metadata_by_agent: dict[AnyAgentLike, BeeAIPlatformServerMetadata] = {}
-        self._server = beeai_server.Server()
+        self._metadata_by_agent: dict[AnyAgentLike, AgentStackServerMetadata] = {}
+        self._server = agent_stack_server.Server()
 
-    def _setup_member(self) -> beeai_context_store.ContextStore:
+    def _setup_member(self) -> agent_stack_store.ContextStore:
         if not self._members:
             raise ValueError("No agents registered to the server.")
 
         member = self._members[0]
         factory = type(self)._get_factory(member)
-        config = self._metadata_by_agent.get(member, BeeAIPlatformServerMetadata())
+        config = self._metadata_by_agent.get(member, AgentStackServerMetadata())
         self._server._agent_factory = factory(member, metadata=config, memory_manager=self._memory_manager)  # type: ignore[call-arg]
         return (
-            beeai_platform_context_store.PlatformContextStore()
-            if isinstance(self._memory_manager, BeeAIPlatformMemoryManager)
+            agent_stack_platform_context_store.PlatformContextStore()
+            if isinstance(self._memory_manager, AgentStackMemoryManager)
             else DummyContextStore()
         )
 
@@ -193,16 +193,16 @@ class BeeAIPlatformServer(
             )
 
     @override
-    def register(self, input: AnyAgentLike, **metadata: Unpack[BeeAIPlatformServerMetadata]) -> Self:
+    def register(self, input: AnyAgentLike, **metadata: Unpack[AgentStackServerMetadata]) -> Self:
         if len(self._members) != 0:
-            raise ValueError("BeeAIPlatformServer only supports one agent.")
+            raise ValueError("AgentStackServer only supports one agent.")
         else:
             super().register(input)
-            metadata = metadata or BeeAIPlatformServerMetadata()
+            metadata = metadata or AgentStackServerMetadata()
             detail = metadata.setdefault("detail", AgentDetail(interaction_mode="multi-turn"))
             detail.framework = detail.framework or "BeeAI"
             detail.tools = detail.tools or [
-                beeai_extensions.AgentDetailTool(
+                agent_stack_extensions.AgentDetailTool(
                     name=tool.name,
                     description=tool.description,
                 )
@@ -218,7 +218,7 @@ class BeeAIPlatformServer(
 
 
 def register() -> None:
-    from beeai_framework.adapters.beeai_platform.serve.factories import (
+    from beeai_framework.adapters.agentstack.serve.factories import (
         _react_agent_factory,
         _requirement_agent_factory,
         _runnable_factory,
@@ -226,16 +226,16 @@ def register() -> None:
     )
 
     with contextlib.suppress(FactoryAlreadyRegisteredError):
-        BeeAIPlatformServer.register_factory(ReActAgent, _react_agent_factory)  # type: ignore[arg-type]
+        AgentStackServer.register_factory(ReActAgent, _react_agent_factory)  # type: ignore[arg-type]
 
     with contextlib.suppress(FactoryAlreadyRegisteredError):
-        BeeAIPlatformServer.register_factory(ToolCallingAgent, _tool_calling_agent_factory)  # type: ignore[arg-type]
+        AgentStackServer.register_factory(ToolCallingAgent, _tool_calling_agent_factory)  # type: ignore[arg-type]
 
     with contextlib.suppress(FactoryAlreadyRegisteredError):
-        BeeAIPlatformServer.register_factory(RequirementAgent, _requirement_agent_factory)  # type: ignore[arg-type]
+        AgentStackServer.register_factory(RequirementAgent, _requirement_agent_factory)  # type: ignore[arg-type]
 
     with contextlib.suppress(FactoryAlreadyRegisteredError):
-        BeeAIPlatformServer.register_factory(Runnable, _runnable_factory)  # type: ignore
+        AgentStackServer.register_factory(Runnable, _runnable_factory)  # type: ignore
 
 
 register()

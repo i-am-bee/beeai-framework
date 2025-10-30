@@ -1,5 +1,5 @@
-from beeai_framework.adapters.beeai_platform.backend.chat import BeeAIPlatformChatModel
-from beeai_framework.adapters.beeai_platform.serve.server import BeeAIPlatformMemoryManager, BeeAIPlatformServer
+from beeai_framework.adapters.agentstack.backend.chat import AgentStackChatModel
+from beeai_framework.adapters.agentstack.serve.server import AgentStackMemoryManager, AgentStackServer
 from beeai_framework.agents.requirement import RequirementAgent
 from beeai_framework.backend import ChatModelParameters
 from beeai_framework.memory import UnconstrainedMemory
@@ -8,16 +8,16 @@ from beeai_framework.tools.search.duckduckgo import DuckDuckGoSearchTool
 from beeai_framework.tools.weather import OpenMeteoTool
 
 try:
-    from beeai_sdk.a2a.extensions.ui.agent_detail import AgentDetail
+    from agentstack_sdk.a2a.extensions.ui.agent_detail import AgentDetail
 except ModuleNotFoundError as e:
     raise ModuleNotFoundError(
-        "Optional module [beeai-platform] not found.\nRun 'pip install \"beeai-framework[beeai-platform]\"' to install."
+        "Optional module [agentstack] not found.\nRun 'pip install \"beeai-framework[agentstack]\"' to install."
     ) from e
 
 
 def main() -> None:
     agent = RequirementAgent(
-        llm=BeeAIPlatformChatModel(
+        llm=AgentStackChatModel(
             preferred_models=["openai:gpt-4o", "ollama:llama3.1:8b"], parameters=ChatModelParameters(stream=True)
         ),
         tools=[DuckDuckGoSearchTool(), OpenMeteoTool()],
@@ -25,8 +25,8 @@ def main() -> None:
         middlewares=[GlobalTrajectoryMiddleware()],
     )
 
-    # Runs HTTP server that registers to BeeAI platform
-    server = BeeAIPlatformServer(config={"configure_telemetry": False}, memory_manager=BeeAIPlatformMemoryManager())
+    # Runs HTTP server that registers to Agent Stack
+    server = AgentStackServer(config={"configure_telemetry": False}, memory_manager=AgentStackMemoryManager())
     server.register(
         agent,
         name="Framework chat agent",

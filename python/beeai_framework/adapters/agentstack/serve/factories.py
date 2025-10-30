@@ -4,16 +4,16 @@ import uuid
 from collections.abc import AsyncGenerator
 from typing import Annotated, Any, Unpack
 
-from beeai_framework.adapters.beeai_platform.backend.chat import BeeAIPlatformChatModel
-from beeai_framework.adapters.beeai_platform.context import BeeAIPlatformContext
-from beeai_framework.adapters.beeai_platform.serve.server import (
-    BaseBeeAIPlatformServerMetadata,
-    BeeAIPlatformMemoryManager,
-    BeeAIPlatformServerMetadata,
-    BeeAIPlatformSettingsContent,
+from beeai_framework.adapters.agentstack.backend.chat import AgentStackChatModel
+from beeai_framework.adapters.agentstack.context import AgentStackContext
+from beeai_framework.adapters.agentstack.serve.server import (
+    AgentStackMemoryManager,
+    AgentStackServerMetadata,
+    AgentStackSettingsContent,
+    BaseAgentStackServerMetadata,
 )
-from beeai_framework.adapters.beeai_platform.serve.types import BaseBeeAIPlatformExtensions
-from beeai_framework.adapters.beeai_platform.serve.utils import init_beeai_platform_memory, send_message_trajectory
+from beeai_framework.adapters.agentstack.serve.types import BaseAgentStackExtensions
+from beeai_framework.adapters.agentstack.serve.utils import init_agent_stack_memory, send_message_trajectory
 from beeai_framework.agents import BaseAgent
 from beeai_framework.agents.react import ReActAgent, ReActAgentUpdateEvent
 from beeai_framework.agents.requirement import RequirementAgent
@@ -27,15 +27,15 @@ from beeai_framework.utils.lists import find_index, remove_falsy
 
 try:
     import a2a.types as a2a_types
-    import beeai_sdk.a2a.extensions as beeai_extensions
-    import beeai_sdk.a2a.types as beeai_types
-    import beeai_sdk.server.agent as beeai_agent
-    import beeai_sdk.server.context as beeai_context
+    import agentstack_sdk.a2a.extensions as agentstack_extensions
+    import agentstack_sdk.a2a.types as agentstack_types
+    import agentstack_sdk.server.agent as agentstack_agent
+    import agentstack_sdk.server.context as agentstack_context
 
     from beeai_framework.adapters.a2a.agents._utils import convert_a2a_to_framework_message
 except ModuleNotFoundError as e:
     raise ModuleNotFoundError(
-        "Optional module [beeai-platform] not found.\nRun 'pip install \"beeai-framework[beeai-platform]\"' to install."
+        "Optional module [agentstack] not found.\nRun 'pip install \"beeai-framework[agentstack]\"' to install."
     ) from e
 
 from beeai_framework.backend.message import AnyMessage
@@ -45,30 +45,30 @@ logger = Logger(__name__)
 
 
 def _react_agent_factory(
-    agent: ReActAgent, *, metadata: BeeAIPlatformServerMetadata | None = None, memory_manager: MemoryManager
-) -> beeai_agent.AgentFactory:
+    agent: ReActAgent, *, metadata: AgentStackServerMetadata | None = None, memory_manager: MemoryManager
+) -> agentstack_agent.AgentFactory:
     agent_metadata, extensions = _init_metadata(agent, metadata)
 
     llm = agent._input.llm
-    if isinstance(llm, BeeAIPlatformChatModel):
+    if isinstance(llm, AgentStackChatModel):
         extensions.__annotations__["llm_ext"] = Annotated[
-            beeai_extensions.LLMServiceExtensionServer,
-            beeai_extensions.LLMServiceExtensionSpec.single_demand(suggested=tuple(llm.preferred_models)),
+            agentstack_extensions.LLMServiceExtensionServer,
+            agentstack_extensions.LLMServiceExtensionSpec.single_demand(suggested=tuple(llm.preferred_models)),
         ]
 
     async def run(
         message: a2a_types.Message,
-        context: beeai_context.RunContext,
+        context: agentstack_context.RunContext,
         **extra_extensions: Unpack[extensions],  # type: ignore
-    ) -> AsyncGenerator[beeai_types.RunYield, beeai_types.RunYieldResume]:
+    ) -> AsyncGenerator[agentstack_types.RunYield, agentstack_types.RunYieldResume]:
         cloned_agent = await agent.clone() if isinstance(agent, Cloneable) else agent
-        await init_beeai_platform_memory(cloned_agent, memory_manager, context)
+        await init_agent_stack_memory(cloned_agent, memory_manager, context)
 
         has_tool_settings, allowed_tools = _get_tools_settings(extra_extensions.get("settings"))
         if has_tool_settings:
             cloned_agent._input.tools = [tool for tool in cloned_agent._input.tools if tool.name in allowed_tools]
 
-        with BeeAIPlatformContext(
+        with AgentStackContext(
             context,
             metadata=message.metadata,
             llm=extra_extensions.get("llm_ext"),
@@ -125,38 +125,38 @@ def _react_agent_factory(
                 ),
             )
 
-            if isinstance(memory_manager, BeeAIPlatformMemoryManager):
+            if isinstance(memory_manager, AgentStackMemoryManager):
                 await context.store(message)
-                await context.store(beeai_types.AgentMessage(text=accumulated_text))
+                await context.store(agentstack_types.AgentMessage(text=accumulated_text))
 
-    return beeai_agent.agent(**agent_metadata)(run)
+    return agentstack_agent.agent(**agent_metadata)(run)
 
 
 def _tool_calling_agent_factory(
-    agent: ToolCallingAgent, *, metadata: BeeAIPlatformServerMetadata | None = None, memory_manager: MemoryManager
-) -> beeai_agent.AgentFactory:
+    agent: ToolCallingAgent, *, metadata: AgentStackServerMetadata | None = None, memory_manager: MemoryManager
+) -> agentstack_agent.AgentFactory:
     agent_metadata, extensions = _init_metadata(agent, metadata)
 
     llm = agent._llm
-    if isinstance(llm, BeeAIPlatformChatModel):
+    if isinstance(llm, AgentStackChatModel):
         extensions.__annotations__["llm_ext"] = Annotated[
-            beeai_extensions.LLMServiceExtensionServer,
-            beeai_extensions.LLMServiceExtensionSpec.single_demand(suggested=tuple(llm.preferred_models)),
+            agentstack_extensions.LLMServiceExtensionServer,
+            agentstack_extensions.LLMServiceExtensionSpec.single_demand(suggested=tuple(llm.preferred_models)),
         ]
 
     async def run(
         message: a2a_types.Message,
-        context: beeai_context.RunContext,
+        context: agentstack_context.RunContext,
         **extra_extensions: Unpack[extensions],  # type: ignore
-    ) -> AsyncGenerator[beeai_types.RunYield, beeai_types.RunYieldResume]:
+    ) -> AsyncGenerator[agentstack_types.RunYield, agentstack_types.RunYieldResume]:
         cloned_agent = await agent.clone() if isinstance(agent, Cloneable) else agent
-        await init_beeai_platform_memory(cloned_agent, memory_manager, context)
+        await init_agent_stack_memory(cloned_agent, memory_manager, context)
 
         has_tool_settings, allowed_tools = _get_tools_settings(extra_extensions.get("settings"))
         if has_tool_settings:
             cloned_agent._tools = [tool for tool in cloned_agent._tools if tool.name in allowed_tools]
 
-        with BeeAIPlatformContext(
+        with AgentStackContext(
             context,
             metadata=message.metadata,
             llm=extra_extensions.get("llm_ext"),
@@ -175,41 +175,41 @@ def _tool_calling_agent_factory(
                     last_msg = msg
 
                 if isinstance(data, ToolCallingAgentSuccessEvent) and data.state.result is not None:
-                    agent_response = beeai_types.AgentMessage(text=data.state.result.text)
-                    if isinstance(memory_manager, BeeAIPlatformMemoryManager):
+                    agent_response = agentstack_types.AgentMessage(text=data.state.result.text)
+                    if isinstance(memory_manager, AgentStackMemoryManager):
                         await context.store(message)
                         await context.store(agent_response)
 
                     yield agent_response
 
-    return beeai_agent.agent(**agent_metadata)(run)
+    return agentstack_agent.agent(**agent_metadata)(run)
 
 
 def _requirement_agent_factory(
-    agent: RequirementAgent, *, metadata: BeeAIPlatformServerMetadata | None = None, memory_manager: MemoryManager
-) -> beeai_agent.AgentFactory:
+    agent: RequirementAgent, *, metadata: AgentStackServerMetadata | None = None, memory_manager: MemoryManager
+) -> agentstack_agent.AgentFactory:
     agent_metadata, extensions = _init_metadata(agent, metadata)
 
     llm = agent._llm
-    if isinstance(llm, BeeAIPlatformChatModel):
+    if isinstance(llm, AgentStackChatModel):
         extensions.__annotations__["llm_ext"] = Annotated[
-            beeai_extensions.LLMServiceExtensionServer,
-            beeai_extensions.LLMServiceExtensionSpec.single_demand(suggested=tuple(llm.preferred_models)),
+            agentstack_extensions.LLMServiceExtensionServer,
+            agentstack_extensions.LLMServiceExtensionSpec.single_demand(suggested=tuple(llm.preferred_models)),
         ]
 
     async def run(
         message: a2a_types.Message,
-        context: beeai_context.RunContext,
+        context: agentstack_context.RunContext,
         **extra_extensions: Unpack[extensions],  # type: ignore
-    ) -> AsyncGenerator[beeai_types.RunYield, beeai_types.RunYieldResume]:
+    ) -> AsyncGenerator[agentstack_types.RunYield, agentstack_types.RunYieldResume]:
         cloned_agent = await agent.clone() if isinstance(agent, Cloneable) else agent
-        await init_beeai_platform_memory(cloned_agent, memory_manager, context)
+        await init_agent_stack_memory(cloned_agent, memory_manager, context)
 
         has_tool_settings, allowed_tools = _get_tools_settings(extra_extensions.get("settings"))
         if has_tool_settings:
             logger.warning("Tools settings is ignored for the RequirementAgent")
 
-        with BeeAIPlatformContext(
+        with AgentStackContext(
             context,
             metadata=message.metadata,
             llm=extra_extensions.get("llm_ext"),
@@ -231,8 +231,8 @@ def _requirement_agent_factory(
                     last_msg = msg
 
                 if isinstance(data, RequirementAgentSuccessEvent) and data.state.answer is not None:
-                    agent_response = beeai_types.AgentMessage(text=data.state.answer.text)
-                    if isinstance(memory_manager, BeeAIPlatformMemoryManager):
+                    agent_response = agentstack_types.AgentMessage(text=data.state.answer.text)
+                    if isinstance(memory_manager, AgentStackMemoryManager):
                         await context.store(message)
                         await context.store(agent_response)
 
@@ -267,22 +267,22 @@ def _requirement_agent_factory(
                     ),
                 )
 
-    return beeai_agent.agent(**agent_metadata)(run)
+    return agentstack_agent.agent(**agent_metadata)(run)
 
 
 def _runnable_factory(
-    runnable: Runnable[Any], *, metadata: BeeAIPlatformServerMetadata | None = None, memory_manager: MemoryManager
-) -> beeai_agent.AgentFactory:
+    runnable: Runnable[Any], *, metadata: AgentStackServerMetadata | None = None, memory_manager: MemoryManager
+) -> agentstack_agent.AgentFactory:
     runnable_metadata, extensions = _init_metadata(runnable, metadata)
 
     async def run(
         message: a2a_types.Message,
-        context: beeai_context.RunContext,
+        context: agentstack_context.RunContext,
         **extra_extensions: Unpack[extensions],  # type: ignore
-    ) -> AsyncGenerator[beeai_types.RunYield, beeai_types.RunYieldResume]:
+    ) -> AsyncGenerator[agentstack_types.RunYield, agentstack_types.RunYieldResume]:
         cloned_runnable = await runnable.clone() if isinstance(runnable, Cloneable) else runnable
         memory = None
-        if isinstance(memory_manager, BeeAIPlatformMemoryManager):
+        if isinstance(memory_manager, AgentStackMemoryManager):
             history = [msg async for msg in context.load_history() if msg.parts]
             messages = [convert_a2a_to_framework_message(msg) for msg in history]
         else:
@@ -295,7 +295,7 @@ def _runnable_factory(
             await memory.add(convert_a2a_to_framework_message(message))
             messages = memory.messages
 
-        with BeeAIPlatformContext(
+        with AgentStackContext(
             context,
             metadata=message.metadata,
             llm=extra_extensions.get("llm_ext"),
@@ -305,23 +305,23 @@ def _runnable_factory(
             if memory is not None:
                 await memory.add(data.last_message)
 
-            agent_response = beeai_types.AgentMessage(
+            agent_response = agentstack_types.AgentMessage(
                 text=data.last_message.text,
                 context_id=context.context_id,
                 task_id=context.task_id,
                 reference_task_ids=[task.id for task in (context.related_tasks or [])],
             )
-            if isinstance(memory_manager, BeeAIPlatformMemoryManager):
+            if isinstance(memory_manager, AgentStackMemoryManager):
                 await context.store(message)
                 await context.store(agent_response)
 
             yield agent_response
 
-    return beeai_agent.agent(**runnable_metadata)(run)
+    return agentstack_agent.agent(**runnable_metadata)(run)
 
 
 def _get_tools_settings(
-    settings: Annotated[beeai_extensions.SettingsExtensionServer, Any] | None,
+    settings: Annotated[agentstack_extensions.SettingsExtensionServer, Any] | None,
 ) -> tuple[bool, list[str]]:
     if settings:
         try:
@@ -338,25 +338,25 @@ def _get_tools_settings(
 
 def _init_metadata(
     runnable: Runnable[Any],
-    base: BeeAIPlatformServerMetadata | None = None,
-) -> tuple[BaseBeeAIPlatformServerMetadata, type[BaseBeeAIPlatformExtensions]]:
-    base_copy: BeeAIPlatformServerMetadata = base.copy() if base else BeeAIPlatformServerMetadata()
-    base_extension: type[BaseBeeAIPlatformExtensions] = base_copy.pop("extensions", BaseBeeAIPlatformExtensions)
+    base: AgentStackServerMetadata | None = None,
+) -> tuple[BaseAgentStackServerMetadata, type[BaseAgentStackExtensions]]:
+    base_copy: AgentStackServerMetadata = base.copy() if base else AgentStackServerMetadata()
+    base_extension: type[BaseAgentStackExtensions] = base_copy.pop("extensions", BaseAgentStackExtensions)
     extensions = clone_class(base_extension)
-    settings: set[BeeAIPlatformSettingsContent] = base_copy.pop("settings", set())
+    settings: set[AgentStackSettingsContent] = base_copy.pop("settings", set())
 
     if settings and isinstance(runnable, ToolCallingAgent | ReActAgent):
         tools = runnable.meta.tools if isinstance(runnable, ReActAgent) else runnable._tools
         extensions.__annotations__["settings"] = Annotated[
-            beeai_extensions.SettingsExtensionServer,
-            beeai_extensions.SettingsExtensionSpec(
-                params=beeai_extensions.SettingsRender(
+            agentstack_extensions.SettingsExtensionServer,
+            agentstack_extensions.SettingsExtensionSpec(
+                params=agentstack_extensions.SettingsRender(
                     fields=remove_falsy(
                         [
-                            beeai_extensions.CheckboxGroupField(
-                                id=BeeAIPlatformSettingsContent.TOOLS,
+                            agentstack_extensions.CheckboxGroupField(
+                                id=AgentStackSettingsContent.TOOLS,
                                 fields=[
-                                    beeai_extensions.ui.settings.CheckboxField(
+                                    agentstack_extensions.ui.settings.CheckboxField(
                                         id=tool.name,
                                         label=tool.name,
                                         default_value=True,
@@ -364,7 +364,7 @@ def _init_metadata(
                                     for tool in tools
                                 ],
                             )
-                            if BeeAIPlatformSettingsContent.TOOLS in settings and tools
+                            if AgentStackSettingsContent.TOOLS in settings and tools
                             else None
                         ]
                     ),
@@ -372,7 +372,7 @@ def _init_metadata(
             ),
         ]
 
-    metadata = BaseBeeAIPlatformServerMetadata(**base_copy)  # type: ignore
+    metadata = BaseAgentStackServerMetadata(**base_copy)  # type: ignore
     if isinstance(runnable, BaseAgent):
         if not metadata.get("name"):
             metadata["name"] = runnable.meta.name
