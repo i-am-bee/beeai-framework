@@ -299,7 +299,7 @@ from beeai_sdk.a2a.extensions.ui.agent_detail import AgentDetail
 server = BeeAIPlatformServer()
 agent = RequirementAgent(llm=BeeAIPlatformChatModel())
 server.register(agent,
-	name="SmartAgent,
+	name="SmartAgent",
 	description="Knows everything!",
 	url="https://example.com",
 	version="1.0.0",
@@ -397,7 +397,7 @@ It does so by leveraging the [Citation Extension](https://docs.beeai.dev/build-a
 	        instructions=(
 	            "You are an AI assistant focused on retrieving information from online sources."
 	            "Mandatory Search: Always search for the topic on Wikipedia and always search for related current news."
-	            "Mandatory Output Structure: Return the result in two separate sections wit headings:"
+	            "Mandatory Output Structure: Return the result in two separate sections with headings:"
 	            " 1. Basic Information (primarily utilizing data from Wikipedia, if relevant)."
 	            " 2. News (primarily utilizing current news results). "
 	            "Mandatory Citation: Always include a source link for all given information, especially news."

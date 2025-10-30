@@ -18,7 +18,7 @@ def main() -> None:
     )
 
     # Register the agent with the ACP server and run the HTTP server
-    # For the ToolCallingAgent and ReActAgent, we don't need to specify A2AAgent factory method
+    # For the ToolCallingAgent and ReActAgent, we don't need to specify ACPAgent factory method
     # because they are already registered in the ACPServer
     ACPServer(config=ACPServerConfig(port=8001)).register(agent, tags=["example"]).serve()
 
