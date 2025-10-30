@@ -17,81 +17,84 @@ from beeai_framework.workflows.v2.decorators.when import when
 from beeai_framework.workflows.v2.workflow import Workflow
 
 
-class Reflection(BaseModel):
+class ResponseWithReflection(BaseModel):
     response: str
-    critique: str
-
-
-class Critique(BaseModel):
-    critique: str = Field(description="A helpful critique of the most recent assistant message.")
+    reflection: str = Field(description="A helpful critique of the most recent assistant message.")
 
 
 def sys_prompt(
-    reflection: Reflection | None = None,
+    reflection: ResponseWithReflection | None = None,
 ) -> str:
     prompt = "You are a helpful and knowledgeable AI assistant that provides accurate, clear, and concise responses to user queries."
 
     if reflection:
         prompt += f"""
 Here is your previous response and a helpful critique.
-Your new response should be an iterative improvement of your previous response, taking the critique into account.
+Your response should be an iterative improvement of your previous response, taking the critique into account.
 
 Previous Response: {reflection.response}
-Critique: {reflection.critique}
+Critique: {reflection.reflection}
 """
     return prompt
 
 
-def critique_sys_prompt() -> str:
-    return """You are a helpful critic. Analyze the last assistant message, assess its quality, and provide a constructive critique."""
+def reflect_prompt() -> str:
+    return """Analyze the last assistant response, assess its quality, limit your review to 2 lines including suggestions for improvement."""
 
 
 class SelfReflectionWorkflow(Workflow):
     def __init__(self) -> None:
         super().__init__()
+        self.messages: list[AnyMessage] = []
         self.num_iterations = 3
         self.chat_model: ChatModel = ChatModel.from_name("ollama:ibm/granite4")
-        self.critique_model: ChatModel = ChatModel.from_name("ollama:gpt-oss:20b")
+        self.reflect_model: ChatModel = ChatModel.from_name("ollama:ibm/granite4")
 
     @start
-    async def start(self, input: list[AnyMessage]) -> list[AnyMessage]:
-        return input
+    async def start(self, input: list[AnyMessage]) -> None:
+        print("Start")
+        self.messages = input
+        self.response: str | None = None
 
     @after(start)
-    async def no_reflection_answer(self, messages: list[AnyMessage]) -> None:
-        """Print the default response for comparison"""
-        output = await self.chat_model.run([SystemMessage(content=sys_prompt()), *messages])
-        print(f"{output.get_text_content()}\n==========")
-
-    @after(_or(start, "reflect"))
-    async def answer(self, messages: list[AnyMessage], reflection: Reflection) -> str:
+    async def answer(self) -> str:
         """Generate response"""
-        output = await self.chat_model.run([SystemMessage(content=sys_prompt(reflection=reflection)), *messages])
-        return output.get_text_content()
+        output = await self.chat_model.run([SystemMessage(content=sys_prompt()), *self.messages])
+        self.response = output.get_text_content()
+        print("\nAnswer", ("*" * 20), "\n")
+        print(self.response)
+        return self.response
 
-    @after(answer)
-    @when(lambda self, response: self.num_iterations > 0)
-    async def reflect(self, response: str) -> Reflection:
+    @after("reflect")
+    async def answer_with_reflection(self, reflection: ResponseWithReflection) -> str:
+        """Generate response"""
+        output = await self.chat_model.run([SystemMessage(content=sys_prompt(reflection=reflection)), *self.messages])
+        self.response = output.get_text_content()
+        print("\nAnswer + reflection", ("*" * 20), "\n")
+        print(self.response)
+        return self.response
+
+    @after(_or(answer, answer_with_reflection))
+    @when(lambda self: self.num_iterations > 0)
+    async def reflect(self, response: str) -> ResponseWithReflection:
         """Reflect on the response"""
         self.num_iterations -= 1
         last_exec = self.inspect(self.start).last_execution()
         raw_inputs = last_exec.inputs[0] if last_exec is not None else []
         messages: list[AnyMessage] = cast(list[AnyMessage], raw_inputs)
 
-        output = await self.critique_model.run(
-            [SystemMessage(content=critique_sys_prompt()), *messages, AssistantMessage(content=response)],
-            response_format=Critique,
+        output = await self.reflect_model.run(
+            [*messages, AssistantMessage(content=response), UserMessage(content=reflect_prompt())],
         )
-        assert output.output_structured is not None
-        critique = Critique(**output.output_structured.model_dump())
-        print(f"Critique -> {critique.critique}")
-        return Reflection(response=response, critique=critique.critique)
+        print("\nReflection", ("*" * 20), "\n")
+        print(output.get_text_content())
+        return ResponseWithReflection(response=response, reflection=output.get_text_content())
 
     @end
-    @after(answer)
-    @when(lambda self, response: self.num_iterations <= 0)
-    async def end(self, response: str) -> list[AnyMessage]:
-        return [AssistantMessage(response)]
+    @after(_or(answer, answer_with_reflection))
+    @when(lambda self: self.num_iterations <= 0)
+    async def end(self) -> list[AnyMessage]:
+        return [AssistantMessage(self.response or "")]
 
 
 # Async main function
@@ -105,6 +108,7 @@ async def main() -> None:
             )
         ]
     )
+    print("\nFinal answer", ("*" * 20), "\n")
     print(f"{output.last_message.text}")
 
 

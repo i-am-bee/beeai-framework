@@ -15,15 +15,16 @@ from beeai_framework.workflows.v2.workflow import Workflow
 
 
 class ResponseWithConfidence(BaseModel):
-    response: str
-    confidence: int = Field(ge=1, le=10, description="Confidence in the correctness of your response between 1 and 10.")
+    response: str = Field(description="Comprehensive response.")
+    confidence: int = Field(
+        description="How confident are you in the correctness of the response? Chose a value between 1 and 10, 1 being lowest, 10 being highest."
+    )
 
 
 class RespondWithConfidenceWorkflow(Workflow):
     def __init__(self) -> None:
         super().__init__()
-        self.chat_model: ChatModel = ChatModel.from_name("ollama:ibm/granite4")
-        self.retries: int = 3
+        self.chat_model: ChatModel = ChatModel.from_name("ollama:gpt-oss:20b")
 
     @start
     async def start(self, input: list[AnyMessage]) -> list[AnyMessage]:
@@ -49,6 +50,8 @@ async def main() -> None:
     workflow = RespondWithConfidenceWorkflow()
     workflow.print_html(Path(__file__).resolve().parent / "workflow.html")
     output = await workflow.run([UserMessage("What is at the center of a black hole?")])
+    print(output.last_message.text)
+    output = await workflow.run([UserMessage("What is 10 + 10?")])
     print(output.last_message.text)
 
 

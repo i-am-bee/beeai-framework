@@ -23,13 +23,13 @@ class CalculateTokensWorkflow(Workflow):
         return "".join(msg.text for msg in messages)
 
     @after(convert_to_text)
-    @when(lambda _, text: len(text) < 1000)
+    @when(lambda text: len(text) < 1000)
     async def count_tokens_by_whitespaces(self, text: str) -> int:
         print("count_tokens_by_whitespaces")
         return len(text.split(" "))
 
     @after(convert_to_text)
-    @when(lambda _, text: len(text) >= 1000)
+    @when(lambda text: len(text) >= 1000)
     async def count_tokens_regex(self, text: str) -> int:
         print("count_tokens_regex")
         tokens = re.findall(r"\w+|[^\w\s]", text, re.UNICODE)
@@ -54,7 +54,7 @@ class CalculateTokensWorkflow(Workflow):
 async def main() -> None:
     workflow = CalculateTokensWorkflow()
     workflow.print_html(Path(__file__).resolve().parent / "workflow.html")
-    output = await workflow.run([UserMessage("Hello")])
+    output = await workflow.run([UserMessage("Hello world!")])
     print(output.last_message.text)
 
 

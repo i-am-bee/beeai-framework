@@ -26,13 +26,21 @@
                 <div class="diagram-container">
                     <pre class="mermaid">
                         flowchart-elk TD
-	_start(start) --> _do_something_flaky(do_something_flaky)
-	_do_something_flaky(do_something_flaky) --> _end(end)
-	_end(end)
+	_process_input(process_input) --> _no_task(no_task)
+	_no_task(no_task)
+	_process_input(process_input) --> _planner(planner)
+	_planner(planner) --> _executor(executor)
+	_executor(executor) --> _critique(critique)
+	_critique(critique) --> _replan(replan)
+	_replan(replan) --> _executor(executor)
+	_critique(critique) --> _solver(solver)
+	_solver(solver) --> _finalize(finalize)
+	_finalize(finalize)
 classDef _cls_start fill:#ffe5e5,stroke:#d32f2f,color:#b71c1c
 classDef _cls_end fill:#e0f7fa,stroke:#00796B,color:#004d40
-class _start _cls_start
-class _end _cls_end
+class _process_input _cls_start
+class _finalize _cls_end
+class _no_task _cls_end
                     </pre>
                 </div>
 

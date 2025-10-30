@@ -4,7 +4,6 @@
 import asyncio
 import random
 from pathlib import Path
-from typing import Any
 
 from beeai_framework.backend.message import AnyMessage, AssistantMessage, UserMessage
 from beeai_framework.workflows.v2.decorators._or import _or
@@ -26,8 +25,8 @@ class LoopUntilDoneWorkflow(Workflow):
         return input
 
     @after(_or(start, "loop"))
-    @when(lambda self, messages, _: not self.complete)
-    async def loop(self, messages: list[AnyMessage], _: Any) -> None:
+    @when(lambda self: not self.complete)
+    async def loop(self) -> None:
         num = random.random()
         print(num)
         if num < 0.1:

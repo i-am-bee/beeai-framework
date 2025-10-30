@@ -13,16 +13,15 @@ from typing import Any, Unpack
 from beeai_framework.backend.message import AnyMessage
 from beeai_framework.context import RunContext, RunMiddlewareType
 from beeai_framework.emitter.emitter import Emitter
-from beeai_framework.retryable import Retryable, RetryableConfig, RetryableContext, RetryableInput
 from beeai_framework.runnable import Runnable, RunnableOptions, RunnableOutput, runnable_entry
 from beeai_framework.workflows.v2.events import (
-    WorkflowRetryStepEvent,
     WorkflowStartEvent,
     WorkflowStartStepEvent,
     workflow_v2_event_types,
 )
 from beeai_framework.workflows.v2.step import WorkflowStep, WorkflowStepExecution
 from beeai_framework.workflows.v2.types import AsyncMethod, AsyncMethodSet
+from beeai_framework.workflows.v2.util import prepare_args, run_callable
 
 
 class Workflow(Runnable[RunnableOutput]):
@@ -194,18 +193,19 @@ class Workflow(Runnable[RunnableOutput]):
                         raise exception  # re-raise the exception from the task
 
     async def _run_step(self, step: WorkflowStep) -> None:
-        # If predicates exists and any one is false then bail
-        if step.predicates and any(p(self, *step.inputs) for p in step.predicates) is False:
-            return
+
+        step_inputs: list[Any] = (
+            [self._input] if step.is_start else [step.inputs[k] for k in sorted(step.inputs.keys())]
+        )
+
+        for p in step.predicates:
+            args = prepare_args(p, self, *step_inputs)
+            p_res = await run_callable(p, *args)
+            if not p_res:
+                return
 
         started_at = datetime.now(UTC)
         start_perf = time.perf_counter()
-
-        async def on_retry(ctx: RetryableContext, exc: Exception) -> None:
-            await RunContext.get().emitter.emit(
-                "retry_step",
-                WorkflowRetryStepEvent(step=step, error=exc, attempt=ctx.attempt),
-            )
 
         await RunContext.get().emitter.emit(
             "start_step",
@@ -213,45 +213,26 @@ class Workflow(Runnable[RunnableOutput]):
         )
 
         if step.is_start:
-            result = await Retryable(
-                RetryableInput(
-                    executor=lambda _: step.func(self._input),
-                    config=RetryableConfig(max_retries=step.retries),
-                    on_retry=on_retry,
-                ),
-            ).get()
+            result = await run_callable(step.func, *step_inputs)
         else:
             if step.is_fork:
-                safe_params = [i if i is not None else [] for i in step.inputs]
+                safe_params = [i if i is not None else [] for i in step_inputs]
                 params = list(zip_longest(*safe_params, fillvalue=None))
-                tasks = [step.func(*p) for p in params]
+                tasks = [run_callable(step.func, *p) for p in params]
                 # TODO Retry forked
                 result = await asyncio.gather(*tasks)
             elif step.is_join:
                 # Include the inputs to the original fork
-                fork_inputs = [d.inputs for d in step.dependencies]
+                fork_inputs = [[d.inputs[k] for k in sorted(d.inputs.keys())] for d in step.dependencies]
                 flat_fork_input = [item for sublist in fork_inputs for item in sublist]
-                inputs = flat_fork_input + step.inputs
-
-                result = await Retryable(
-                    RetryableInput(
-                        executor=lambda _: step.func(*inputs),
-                        config=RetryableConfig(max_retries=step.retries),
-                        on_retry=on_retry,
-                    )
-                ).get()
+                inputs = flat_fork_input + step_inputs
+                result = await run_callable(step.func, *inputs)
             else:
-                result = await Retryable(
-                    RetryableInput(
-                        executor=lambda _: step.func(*step.inputs),
-                        config=RetryableConfig(max_retries=step.retries),
-                        on_retry=on_retry,
-                    )
-                ).get()
+                result = await run_callable(step.func, *step_inputs)
 
         step.executions.append(
             WorkflowStepExecution(
-                inputs=tuple(step.inputs) if not step.is_start else (self._input,),
+                inputs=step_inputs,
                 output=result,
                 error=None,
                 started_at=started_at,
@@ -267,8 +248,12 @@ class Workflow(Runnable[RunnableOutput]):
         for dep in step.dependents:
             # Insert this result into the inputs at correct index
             idx = dep.dependencies.index(step)
+
             # Set the input at the correct dependency index
-            dep.inputs[idx] = result
+            if dep.condition == "and":
+                dep.inputs[idx] = result
+            else:
+                dep.inputs[0] = result
 
             if dep.condition == "and":
                 dep.completed_dependencies.append(step)

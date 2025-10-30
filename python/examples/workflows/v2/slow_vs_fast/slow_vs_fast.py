@@ -3,7 +3,6 @@
 
 import asyncio
 from pathlib import Path
-from typing import Any
 
 from beeai_framework.backend.message import AnyMessage, AssistantMessage, UserMessage
 from beeai_framework.workflows.v2.decorators._and import _and
@@ -25,14 +24,14 @@ class SlowVsFastWorkflow(Workflow):
         return input
 
     @after(start)
-    async def slow(self, messages: list[AnyMessage]) -> None:
+    async def slow(self) -> None:
         """Slow running operation"""
         await asyncio.sleep(10)
         print("Slow complete!")
 
     @after(_or(start, "fast"))
-    @when(lambda self, messages, _: self.fast_runs > 0)
-    async def fast(self, messages: list[AnyMessage], _: Any) -> None:
+    @when(lambda self: self.fast_runs > 0)
+    async def fast(self) -> None:
         """Fast running operation"""
         await asyncio.sleep(1)
         self.fast_runs -= 1
@@ -40,7 +39,7 @@ class SlowVsFastWorkflow(Workflow):
 
     @after(_and(slow, fast))
     @end
-    async def end(self, slow: Any, fast: Any) -> list[AnyMessage]:
+    async def end(self) -> list[AnyMessage]:
         return [AssistantMessage("Fast and slow complete!")]
 
 

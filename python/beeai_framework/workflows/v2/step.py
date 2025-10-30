@@ -12,7 +12,7 @@ from beeai_framework.workflows.v2.types import AsyncMethod, ExecutionCondition
 
 
 class WorkflowStepExecution(BaseModel):
-    inputs: tuple[Any | None, ...]
+    inputs: list[Any] = []
     output: Any | None
     error: Exception | None
     started_at: datetime | None
@@ -46,7 +46,7 @@ class WorkflowStep:
         self._dependencies: list[WorkflowStep] = []
         self._dependents: list[WorkflowStep] = []
         self.completed_dependencies: list[WorkflowStep] = []
-        self.inputs: list[Any | None] = []
+        self.inputs: dict[int, Any] = {}
 
         self.completed_event = asyncio.Event()
         self._predicates: list[Predicate] = []
@@ -101,7 +101,6 @@ class WorkflowStep:
 
     def add_dependency(self, dep: "WorkflowStep") -> None:
         self._dependencies.append(dep)
-        self.inputs.append(None)
         dep._dependents.append(self)
 
     @property
