@@ -139,3 +139,34 @@ def test_cyclic_graph_roundtrip() -> None:
     restored = Serializer.deserialize(payload, expected_type=Ring)
 
     assert restored.next is restored
+
+
+def test_deserialize_typescript_payload() -> None:
+    class Counter(Serializable[dict[str, int]]):
+        def __init__(self, value: int = 0) -> None:
+            self.value = value
+
+        def create_snapshot(self) -> dict[str, int]:
+            return {"value": self.value}
+
+        def load_snapshot(self, snapshot: dict[str, int]) -> None:
+            self.value = snapshot["value"]
+
+    payload = (
+        '{"__version":"0.0.0","__root":{"__serializer":true,"__class":"Counter","__ref":"1",'
+        '"__value":{"value":{"__serializer":true,"__class":"Number","__ref":"2","__value":"5"}}}}'
+    )
+
+    restored = Serializer.deserialize(payload, expected_type=Counter)
+    assert isinstance(restored, Counter)
+    assert restored.value == 5
+
+
+def test_deserialize_typescript_date() -> None:
+    payload = (
+        '{"__version":"0.0.0","__root":{"__serializer":true,"__class":"Date","__ref":"1",'
+        '"__value":"2024-01-01T00:00:00.000Z"}}'
+    )
+
+    restored = Serializer.deserialize(payload, expected_type=datetime)
+    assert restored == datetime(2024, 1, 1, tzinfo=UTC)
