@@ -38,6 +38,7 @@ from beeai_framework.adapters.agentstack.agents.events import (
 )
 from beeai_framework.adapters.agentstack.agents.types import (
     AgentStackAgentOutput,
+    AgentStackAgentStatus,
 )
 from beeai_framework.agents import AgentError, AgentMeta, AgentOptions, BaseAgent
 from beeai_framework.backend.message import AnyMessage
@@ -191,8 +192,11 @@ class AgentStackAgent(BaseAgent[AgentStackAgentOutput]):
         url: str,
         memory: BaseMemory,
         *,
-        states: frozenset[str] | None = frozenset({"missing", "starting", "ready", "running", "online"}),
+        states: set[AgentStackAgentStatus] | None = None,
     ) -> list["AgentStackAgent"]:
+        if states is None:
+            states = {s for s in AgentStackAgentStatus if s != AgentStackAgentStatus.OFFLINE}
+
         async with httpx.AsyncClient() as client:
             response = await client.get(f"{url}/api/v1/providers")
 
