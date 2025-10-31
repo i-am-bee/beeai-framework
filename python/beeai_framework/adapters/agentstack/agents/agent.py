@@ -200,7 +200,7 @@ class AgentStackAgent(BaseAgent[AgentStackAgentOutput]):
             return [
                 AgentStackAgent(agent_card=a2a_types.AgentCard(**provider["agent_card"]), memory=await memory.clone())
                 for provider in response.json().get("items", [])
-                if ((provider["state"] in states) if states else True)
+                if not states or provider["state"] in states
             ]
 
     def _create_emitter(self) -> Emitter:

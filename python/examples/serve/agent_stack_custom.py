@@ -55,6 +55,11 @@ class PlatformCitationMiddleware(RunMiddlewareProtocol):
                 data.state.answer = AssistantMessage(content=clean_text)
 
 
+# define custom extensions
+class CustomExtensions(BaseAgentStackExtensions):
+    citation: Annotated[CitationExtensionServer, CitationExtensionSpec()]
+
+
 def main() -> None:
     agent = RequirementAgent(
         llm=AgentStackChatModel(preferred_models=["openai/gpt-5"]),
@@ -77,10 +82,6 @@ def main() -> None:
             PlatformCitationMiddleware(),
         ],  # add platform middleware to get citations from the platform
     )
-
-    # define custom extensions
-    class CustomExtensions(BaseAgentStackExtensions):
-        citation: Annotated[CitationExtensionServer, CitationExtensionSpec()]
 
     # Runs HTTP server that registers to Agent Stack
     server = AgentStackServer(memory_manager=AgentStackMemoryManager())  # use platform memory
