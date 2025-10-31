@@ -4,7 +4,7 @@
 import enum
 import json
 from abc import ABC
-from collections.abc import Sequence
+from collections.abc import Iterable, Mapping, Sequence
 from datetime import UTC, datetime
 from enum import Enum
 from typing import Any, Generic, Literal, Required, Self, TypeAlias, TypeVar, cast
@@ -376,3 +376,89 @@ def dedupe_tool_calls(msg: AssistantMessage) -> None:
 
     for idx in sorted(excluded_indexes, reverse=True):
         msg.content.pop(idx)
+
+
+def _register_message_class(
+    message_cls: type[Message[Any]],
+    allowed_content: Mapping[str, type[BaseModel]],
+) -> None:
+    def _registrar() -> None:
+        from beeai_framework.serialization import Serializer, SerializerError
+
+        def _to_plain(message: Message[Any]) -> dict[str, Any]:
+            return {
+                "id": message.id,
+                "meta": dict(message.meta),
+                "role": str(message.role),
+                "content": [fragment.model_dump() for fragment in message.content],
+            }
+
+        def _from_plain(payload: Mapping[str, Any]) -> Message[Any]:
+            content_payload = payload.get("content", []) or []
+            content_models: list[Any] = []
+
+            for item in content_payload:
+                if not isinstance(item, Mapping):
+                    raise SerializerError("Serialized message content must be a mapping.")
+
+                content_type = item.get("type")
+                if not isinstance(content_type, str):
+                    raise SerializerError(
+                        f"Serialized message content is missing or has an invalid 'type': {content_type!r}",
+                    )
+
+                model_cls = allowed_content.get(content_type)
+                if model_cls is None:
+                    raise SerializerError(
+                        f"Unsupported message content '{content_type}' for {message_cls.__name__}.",
+                    )
+                content_models.append(model_cls.model_validate(dict(item)))
+
+            meta = payload.get("meta") or {}
+            meta_copy = dict(meta)
+            return message_cls(content_models, meta=meta_copy, id=payload.get("id"))
+
+        Serializer.register(
+            message_cls,
+            to_plain=_to_plain,
+            from_plain=_from_plain,
+        )
+
+    _registrar()
+
+    def _register_method(cls: type[Message[Any]], *, aliases: Iterable[str] | None = None) -> None:
+        _registrar()
+
+    type.__setattr__(message_cls, "register", classmethod(_register_method))
+
+
+_register_message_class(
+    SystemMessage,
+    {
+        "text": MessageTextContent,
+    },
+)
+
+_register_message_class(
+    UserMessage,
+    {
+        "text": MessageTextContent,
+        "image_url": MessageImageContent,
+        "file": MessageFileContent,
+    },
+)
+
+_register_message_class(
+    AssistantMessage,
+    {
+        "text": MessageTextContent,
+        "tool-call": MessageToolCallContent,
+    },
+)
+
+_register_message_class(
+    ToolMessage,
+    {
+        "tool-result": MessageToolResultContent,
+    },
+)
