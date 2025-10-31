@@ -186,7 +186,13 @@ class AgentStackAgent(BaseAgent[AgentStackAgentOutput]):
         return metadata
 
     @classmethod
-    async def from_agent_stack(cls, url: str, memory: BaseMemory) -> list["AgentStackAgent"]:
+    async def from_agent_stack(
+        cls,
+        url: str,
+        memory: BaseMemory,
+        *,
+        states: frozenset[str] | None = frozenset({"missing", "starting", "ready", "running", "online"}),
+    ) -> list["AgentStackAgent"]:
         async with httpx.AsyncClient() as client:
             response = await client.get(f"{url}/api/v1/providers")
 
@@ -194,6 +200,7 @@ class AgentStackAgent(BaseAgent[AgentStackAgentOutput]):
             return [
                 AgentStackAgent(agent_card=a2a_types.AgentCard(**provider["agent_card"]), memory=await memory.clone())
                 for provider in response.json().get("items", [])
+                if ((provider["state"] in states) if states else True)
             ]
 
     def _create_emitter(self) -> Emitter:
