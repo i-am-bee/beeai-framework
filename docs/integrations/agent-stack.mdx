@@ -14,7 +14,7 @@ This tutorial demonstrates how to consume agents from the Agent Stack and expose
 ---
 
 
-## Consuming from the platform (client)
+<Heading level={2} id="client">Consuming from the stack (client)</Heading>
 
 The `AgentStackAgent` class allows you to connect to any agent hosted on the Agent Stack. This means that you can interact with agents built from any framework!
 
@@ -34,40 +34,40 @@ Here's a simple example that uses the built-in `chat` agent:
 	import asyncio
 	import sys
 	import traceback
-	
+
 	from beeai_framework.adapters.agentstack.agents import AgentStackAgent
 	from beeai_framework.errors import FrameworkError
 	from beeai_framework.memory.unconstrained_memory import UnconstrainedMemory
 	from examples.helpers.io import ConsoleReader
-	
-	
+
+
 	async def main() -> None:
 	    reader = ConsoleReader()
-	
+
 	    agents = await AgentStackAgent.from_agent_stack(url="http://127.0.0.1:8333", memory=UnconstrainedMemory())
 	    agent_name = "Framework chat agent"
 	    try:
 	        agent = next(agent for agent in agents if agent.name == agent_name)
 	    except StopIteration:
 	        raise ValueError(f"Agent with name `{agent_name}` not found") from None
-	
+
 	    for prompt in reader:
 	        # Run the agent and observe events
 	        response = await agent.run(prompt).on(
 	            "update",
 	            lambda data, event: (reader.write("Agent 🤖 (debug) : ", data)),
 	        )
-	
+
 	        reader.write("Agent 🤖 : ", response.last_message.text)
-	
-	
+
+
 	if __name__ == "__main__":
 	    try:
 	        asyncio.run(main())
 	    except FrameworkError as e:
 	        traceback.print_exc()
 	        sys.exit(e.explain())
-	
+
 	```
 
 	{/* <!-- embedme typescript/examples/agents/providers/agent_stack.ts --> */}
@@ -77,21 +77,21 @@ Here's a simple example that uses the built-in `chat` agent:
 	import { createConsoleReader } from "examples/helpers/io.js";
 	import { FrameworkError } from "beeai-framework/errors";
 	import { TokenMemory } from "beeai-framework/memory/tokenMemory";
-	
+
 	////////////////////////////////////////////////////////
 	///   Supports only BeeAI platform version v0.2.xx   ///
 	////////////////////////////////////////////////////////
-	
+
 	const agentName = "chat";
-	
+
 	const instance = new AgentStackAgent({
 	  url: "http://127.0.0.1:8333/api/v1/acp",
 	  agentName,
 	  memory: new TokenMemory(),
 	});
-	
+
 	const reader = createConsoleReader();
-	
+
 	try {
 	  for await (const { prompt } of reader) {
 	    const result = await instance.run({ input: prompt }).observe((emitter) => {
@@ -102,13 +102,13 @@ Here's a simple example that uses the built-in `chat` agent:
 	        reader.write(`Agent (error) 🤖 : `, data.message);
 	      });
 	    });
-	
+
 	    reader.write(`Agent (${agentName}) 🤖 : `, result.result.text);
 	  }
 	} catch (error) {
 	  reader.write("Agent (error)  🤖", FrameworkError.ensure(error).dump());
 	}
-	
+
 	```
 </CodeGroup>
 
@@ -195,10 +195,10 @@ if __name__ == "__main__":
 ```
 
 
-## Exposing to the platform (server)
+<Heading level={2} id="server">Exposing to the stack (server)</Heading>
 
 The `AgentStackServer` class exposes an agent or any other runnable (tool/chat model, ...) to the **Agent Stack**.
-It gets automatically registered to the platform and allows you to access and use the agents directly in the platform.
+It gets automatically registered to the stack and allows you to access and use the agents directly in the stack.
 
 Key Features:
 
@@ -220,15 +220,15 @@ Key Features:
 	from beeai_framework.middleware.trajectory import GlobalTrajectoryMiddleware
 	from beeai_framework.tools.search.duckduckgo import DuckDuckGoSearchTool
 	from beeai_framework.tools.weather import OpenMeteoTool
-	
+
 	try:
 	    from agentstack_sdk.a2a.extensions.ui.agent_detail import AgentDetail
 	except ModuleNotFoundError as e:
 	    raise ModuleNotFoundError(
 	        "Optional module [agentstack] not found.\nRun 'pip install \"beeai-framework[agentstack]\"' to install."
 	    ) from e
-	
-	
+
+
 	def main() -> None:
 	    agent = RequirementAgent(
 	        llm=AgentStackChatModel(
@@ -239,7 +239,7 @@ Key Features:
 	        memory=UnconstrainedMemory(),
 	        middlewares=[GlobalTrajectoryMiddleware()],
 	    )
-	
+
 	    # Runs HTTP server that registers to Agent Stack
 	    server = AgentStackServer(memory_manager=AgentStackMemoryManager())
 	    server.register(
@@ -249,11 +249,11 @@ Key Features:
 	        detail=AgentDetail(interaction_mode="multi-turn"),  # default is multi-turn (optional)
 	    )
 	    server.serve()
-	
-	
+
+
 	if __name__ == "__main__":
 	    main()
-	
+
 	```
 
 	```ts TypeScript
@@ -267,7 +267,7 @@ Key Features:
 </Note>
 
 <Tip>
-	You can use the platform to do LLM inference by using the `AgentStackChatModel(...)` class.
+	You can let the Agent Stack to do LLM inference by using the `AgentStackChatModel(...)` class.
 </Tip>
 
 ### Configuration
@@ -324,7 +324,7 @@ The framework internally uses the following extensions:
 **Custom Extensions**
 
 The following implementation demonstrates an agent that conducts an internet search and provides an answer to the given question, with inline citations.
-It does so by leveraging the [Citation Extension](https://docs.beeai.dev/build-agents/citations), which is managed by the  `PlatformCitationMiddleware` class.
+It does so by leveraging the [Citation Extension](https://docs.beeai.dev/build-agents/citations), which is managed by the  `CitationMiddleware` class.
 
 <Note>Learn more about the [Middleware](/modules/middleware) concept.</Note>
 
@@ -339,7 +339,7 @@ It does so by leveraging the [Citation Extension](https://docs.beeai.dev/build-a
 	import sys
 	import traceback
 	from typing import Annotated
-	
+
 	from beeai_framework.adapters.agentstack.backend.chat import AgentStackChatModel
 	from beeai_framework.adapters.agentstack.context import AgentStackContext
 	from beeai_framework.adapters.agentstack.serve.server import AgentStackMemoryManager, AgentStackServer
@@ -354,7 +354,7 @@ It does so by leveraging the [Citation Extension](https://docs.beeai.dev/build-a
 	from beeai_framework.middleware.trajectory import GlobalTrajectoryMiddleware
 	from beeai_framework.tools.search.wikipedia import WikipediaTool
 	from beeai_framework.tools.think import ThinkTool
-	
+
 	try:
 	    from agentstack_sdk.a2a.extensions import Citation, CitationExtensionServer, CitationExtensionSpec
 	    from agentstack_sdk.a2a.extensions.ui.agent_detail import AgentDetail
@@ -363,33 +363,33 @@ It does so by leveraging the [Citation Extension](https://docs.beeai.dev/build-a
 	    raise ModuleNotFoundError(
 	        "Optional module [agentstack] not found.\nRun 'pip install \"beeai-framework[agentstack]\"' to install."
 	    ) from e
-	
-	
-	class PlatformCitationMiddleware(RunMiddlewareProtocol):
+
+
+	class CitationMiddleware(RunMiddlewareProtocol):
 	    def __init__(self) -> None:
 	        self._context: AgentStackContext | None = None
-	
+
 	    def bind(self, ctx: RunContext) -> None:
 	        self._context = AgentStackContext.get()
 	        # add emitter with the highest priority to ensure citations are sent before any other event handling
 	        ctx.emitter.on("success", self._handle_success, options=EmitterOptions(priority=10, is_blocking=True))
-	
+
 	    async def _handle_success(self, data: RequirementAgentSuccessEvent, meta: EventMeta) -> None:
 	        assert self._context is not None
 	        citation_ext = self._context.extensions.get("citation")
-	
+
 	        # check it is the final step
 	        if data.state.answer is not None:
 	            citations, clean_text = extract_citations(data.state.answer.text)
-	
+
 	            if citations:
 	                await self._context.context.yield_async(
 	                    AgentMessage(metadata=citation_ext.citation_metadata(citations=citations))  # type: ignore[attr-defined]
 	                )
 	                # replace an assistant message with an updated text without citation links
 	                data.state.answer = AssistantMessage(content=clean_text)
-	
-	
+
+
 	def main() -> None:
 	    agent = RequirementAgent(
 	        llm=AgentStackChatModel(preferred_models=["openai/gpt-5"]),
@@ -409,14 +409,14 @@ It does so by leveraging the [Citation Extension](https://docs.beeai.dev/build-a
 	        description="Search for information based on a given phrase.",
 	        middlewares=[
 	            GlobalTrajectoryMiddleware(),
-	            PlatformCitationMiddleware(),
+	            CitationMiddleware(),
 	        ],  # add platform middleware to get citations from the platform
 	    )
-	
+
 	    # define custom extensions
 	    class CustomExtensions(BaseAgentStackExtensions):
 	        citation: Annotated[CitationExtensionServer, CitationExtensionSpec()]
-	
+
 	    # Runs HTTP server that registers to Agent Stack
 	    server = AgentStackServer(memory_manager=AgentStackMemoryManager())  # use platform memory
 	    server.register(
@@ -426,17 +426,17 @@ It does so by leveraging the [Citation Extension](https://docs.beeai.dev/build-a
 	        extensions=CustomExtensions,
 	    )
 	    server.serve()
-	
-	
+
+
 	# function to extract citations from text and return clean text without citation links
 	def extract_citations(text: str) -> tuple[list[Citation], str]:
 	    citations, offset = [], 0
 	    pattern = r"\[([^\]]+)\]\(([^)]+)\)"
-	
+
 	    for match in re.finditer(pattern, text):
 	        content, url = match.groups()
 	        start = match.start() - offset
-	
+
 	        citations.append(
 	            Citation(
 	                url=url,
@@ -447,17 +447,17 @@ It does so by leveraging the [Citation Extension](https://docs.beeai.dev/build-a
 	            )
 	        )
 	        offset += len(match.group(0)) - len(content)
-	
+
 	    return citations, re.sub(pattern, r"\1", text)
-	
-	
+
+
 	if __name__ == "__main__":
 	    try:
 	        main()
 	    except FrameworkError as e:
 	        traceback.print_exc()
 	        sys.exit(e.explain())
-	
+
 	```
 
 	```ts TypeScript

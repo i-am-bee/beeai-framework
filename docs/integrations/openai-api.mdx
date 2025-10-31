@@ -7,13 +7,13 @@ The [OpenAI API](https://platform.openai.com/docs/quickstart) provides a simple 
 
 ---
 
-### OpenAI Server
+<Heading level={2} id="server">OpenAI Server</Heading>
 
 OpenAIServer allows you to expose your agents and LLMs to external systems that support the Chat completion or Responses API.
 
 Key benefits
 - Fast setup with minimal configuration
-- Support for [Chat completion](https://platform.openai.com/docs/api-reference/chat) and [Responses](https://platform.openai.com/docs/api-reference/responses) API
+- Support for [Chat Completion API](https://platform.openai.com/docs/api-reference/chat) and [Responses API](https://platform.openai.com/docs/api-reference/responses)
 - Register multiple agents and LLMs on a single server
 - Custom server settings
 
@@ -25,7 +25,6 @@ Key benefits
 	from beeai_framework.agents.requirement import RequirementAgent
 	from beeai_framework.backend import ChatModel
 	from beeai_framework.memory import UnconstrainedMemory
-	from beeai_framework.tools.search.duckduckgo import DuckDuckGoSearchTool
 	from beeai_framework.tools.weather import OpenMeteoTool
 	
 	
@@ -33,11 +32,16 @@ Key benefits
 	    llm = ChatModel.from_name("ollama:granite4:micro")
 	    agent = RequirementAgent(
 	        llm=llm,
-	        tools=[DuckDuckGoSearchTool(), OpenMeteoTool()],
+	        tools=[OpenMeteoTool()],
 	        memory=UnconstrainedMemory(),
 	    )
 	
-	    server = OpenAIServer(config=OpenAIServerConfig(port=9998, api=OpenAIAPIType.RESPONSES))
+	    server = OpenAIServer(
+	        config=OpenAIServerConfig(
+	            port=9998,
+	            api=OpenAIAPIType.RESPONSES,
+	        )
+	    )
 	    server.register(agent, name="agent")
 	    server.register(llm)
 	    server.serve()
@@ -58,30 +62,30 @@ You can easily call the exposed entities via cURL.
 
 <CodeGroup>
 
-	```sh Responses
-curl --location 'http://0.0.0.0:9998/responses' \
---header 'Content-Type: application/json' \
---data '{
-    "model": "agent",
-    "conversation": "123",
-    "stream": false,
-    "input": "Hello, how are you?"
-}'
+	```sh Responses API
+	curl --location 'http://0.0.0.0:9998/responses' \
+	--header 'Content-Type: application/json' \
+	--data '{
+		"model": "agent",
+		"conversation": "123",
+		"stream": false,
+		"input": "Hello, how are you?"
+	}'
 	```
 
-	```sh Chat Completion
-curl --location 'http://0.0.0.0:9998/chat/completions' \
---header 'Content-Type: application/json' \
---data '{
-    "model": "agent",
-    "stream": false,
-    "messages": [
-        {
-            "role": "user",
-            "content": "Hello, how are you?"
-        }
-    ]
-}'
+	```sh Chat Completion API
+	curl --location 'http://0.0.0.0:9998/chat/completions' \
+	--header 'Content-Type: application/json' \
+	--data '{
+	    "model": "agent",
+	    "stream": false,
+	    "messages": [
+	        {
+	            "role": "user",
+	            "content": "Hello, how are you?"
+	        }
+	    ]
+	}'
 	```
 
 </CodeGroup>

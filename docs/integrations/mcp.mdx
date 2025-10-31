@@ -7,14 +7,19 @@ The MCP (Model Context Protocol), developed by Anthropic, is an open protocol th
 
 ---
 
+## Prerequisites
 
-### MCP Tool (Client)
+- **BeeAI Framework** installed with `pip install beeai-framework`
+- **BeeAI Framework extension for MCP** installed with `pip install 'beeai-framework[mcp]'`
+
+
+<Heading level={2} id="client">MCP Client</Heading>
 
 MCPTool allows you to consume external tools exposed via MCP protocol.
 
 See the [MCP Tool page](/modules/tools#mcp-tool) for more information.
 
-### MCP Server
+<Heading level={2} id="server">MCP Server</Heading>
 
 MCPServer allows you to expose your components (Tools, Agents, Chat Models, Runnable) to external systems that support the Model Context Protocol (MCP) standard, enabling seamless integration with LLM tools ecosystems.
 
@@ -129,4 +134,4 @@ Transport Options:
 
 ### Custom Instances
 
-If you want to make your custom class compatible with an MCP server, you can do so by registering a custom mapper via MCPServer.register_factory(...).
+If you want to make your custom class compatible with an MCP server, you can do so by registering a custom mapper via `MCPServer.register_factory(...)`.

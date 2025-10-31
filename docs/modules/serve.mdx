@@ -5,7 +5,7 @@ icon: "truck"
 ---
 
 The `Serve` module enables developers to expose components built with the BeeAI Framework through a server to external clients.
-Out of the box, we provide implementations for protocols such as A2A and MCP, allowing you to quickly serve existing functionalities.
+Out of the box, we provide implementations for prominent protocols such as A2A and MCP, allowing you to quickly serve existing functionalities.
 You can also create your own custom adapter if needed.
 
 <Note>
@@ -16,52 +16,102 @@ Location within the framework: [beeai_framework/serve](https://github.com/i-am-b
 
 The following table lists the currently supported providers:
 
-| Name                                                  | Dependency                                   | Location                    |
-|:-----------------------------------------------------|:--------------------------------------------|:---------------------------|
-| [A2A](https://a2a-protocol.org/)       | `beeai_framework.adapters.a2a.serve`         | `beeai-framework[a2a]`       |
-| [Agent Stack](https://beeai.dev/)                | `beeai_framework.adapters.agentstack.serve` | `beeai-framework[agentstack]` |
-| [MCP](https://modelcontextprotocol.io/) | `beeai_framework.adapters.mcp.serve`         | `beeai-framework[mcp]`       |
+| Name                                                          | Installation                    |
+|:--------------------------------------------------------------|:------------------------------|
+| [A2A](/integrations/a2a/#server)                                     | `pip install beeai-framework[a2a]`        |
+| [Agent Stack](/integrations/agent-stack/#server)                     | `pip install beeai-framework[agentstack]` |
+| [MCP](/integrations/mcp/#server)                                     | `pip install beeai-framework[mcp]`        |
+| [IBM watsonx Orchestrate](/integrations/watsonx-orchestrate/#server) | `pip install beeai-framework`             |
+| [OpenAI Chat Completion API](/integrations/openai-api/#server)           | `pip install beeai-framework`             |
+| [OpenAI Responses API](/integrations/openai-api/#server)                 | `pip install beeai-framework`             |
 
-<Note>
-For more details, see the [Integrations page](/integrations).
-</Note>
+<Tip>
+Click on the provider name to see a dedicate page how to use it.
+</Tip>
 
-## Usage
+## How it works
 
-{/* <!-- embedme python/examples/serve/a2a_server.py --> */}
-```python
-from beeai_framework.adapters.a2a import A2AServer, A2AServerConfig
-from beeai_framework.agents.requirement import RequirementAgent
-from beeai_framework.backend import ChatModel
-from beeai_framework.memory import UnconstrainedMemory
-from beeai_framework.serve.utils import LRUMemoryManager
-from beeai_framework.tools.search.duckduckgo import DuckDuckGoSearchTool
-from beeai_framework.tools.weather import OpenMeteoTool
+Once you initiate the appropriate server class (eg: `AgentStackServer`, `OpenAIServer`, ...) you can do the following.
+
+- Register a new member (`register` method).
+- Deregister an existing member (`deregister` method).
+- List existing members (`members` property).
+- Run the server (`serve` method / `aserve` method).
+
+You can typically register one of the followings:
+
+- [Tools](/modules/tools/)
+- [Agents](/modules/agents/)
+- [Chat Models](/modules/backend/)
+- [Runnable](/modules/middleware/)
+
+If the given instance is not supported, the `register` method will raise an exception.
+Nevertheless, you can easily register a custom factory to make it supported.
+
+## Register a custom factory
+
+If the given server doesn't support (or you just want to override the conversion is done) you can register a custom factory function which takes the instance
+of a given type and converts it into an instance that the server knows how to work with.
+
+The following example showcases how we can add a support for `PromptTemplate` class (which exists in BeeAI Framework) so that it gets exposed as a [`Prompt`](https://modelcontextprotocol.info/docs/concepts/prompts/) in the MCP Server.
+
+{/* <!-- embedme python/examples/serve/extend_mcp_server.py --> */}
+```py Python [expandable]
+from typing import Any
+
+from mcp.server.fastmcp.prompts.base import Prompt as MCPPrompt
+from mcp.server.fastmcp.prompts.base import PromptArgument
+from pydantic import BaseModel
+
+from beeai_framework.adapters.mcp import MCPServer, MCPServerConfig
+from beeai_framework.template import PromptTemplate
 
 
-def main() -> None:
-    llm = ChatModel.from_name("ollama:granite4:micro")
-    agent = RequirementAgent(
-        llm=llm,
-        tools=[DuckDuckGoSearchTool(), OpenMeteoTool()],
-        memory=UnconstrainedMemory(),
+def add_prompt_template_factory() -> None:
+    def factory(instance: PromptTemplate[Any]) -> MCPPrompt:
+        return MCPPrompt(
+            name=instance.name,
+            title=instance.name,
+            description=instance.description,
+            arguments=[
+                PromptArgument(
+                    name=k, description=v.description, required=v.default is None and v.default_factory is None
+                )
+                for k, v in instance.input_schema.model_fields.items()
+            ],
+            fn=lambda **kwargs: instance.render(kwargs),
+        )
+
+    MCPServer.register_factory(PromptTemplate, factory, override=True)
+
+
+def run_server() -> None:
+    class GreetingTemplateModel(BaseModel):
+        name: str
+
+    my_template = PromptTemplate(
+        template="Hello {name}",
+        schema=GreetingTemplateModel,
     )
 
-    # Register the agent with the A2A server and run the HTTP server
-    # For the ToolCallingAgent, we don't need to specify A2AAgent factory method
-    # because it is already registered in the A2AServer
-    # we use LRU memory manager to keep limited amount of sessions in the memory
-    A2AServer(
-        config=A2AServerConfig(port=9999, protocol="jsonrpc"), memory_manager=LRUMemoryManager(maxsize=100)
-    ).register(agent, send_trajectory=True).serve()
+    server = MCPServer(config=MCPServerConfig(transport="streamable-http"))
+    server.register(my_template)
+    server.serve()
 
 
 if __name__ == "__main__":
-    main()
+    add_prompt_template_factory()
+    run_server()
 
 ```
 
-## Extending Functionality
+## Examples
 
-By default, each provider supports registration of a limited set of modules (agents, tools, templates, etc.).
-You can extend this functionality by registering a custom factory using `Server.register_factory` method.
+<CardGroup cols={2}>
+	<Card title="Python" icon="python" href="https://github.com/i-am-bee/beeai-framework/tree/main/python/examples/serve">
+		Explore usage of the Serve module in Python
+	</Card>
+	<Card title="TypeScript" icon="js" href="https://github.com/i-am-bee/beeai-framework/tree/main/typescript/examples/serve">
+		Explore usage of the Serve module in TypeScript
+	</Card>
+</CardGroup>

@@ -14,7 +14,7 @@ The following section describes essential modules that are important to understa
 An event refers to an action created by some component.
 
 - Has a name (e.g., `start`, `success`, `error`, ..., `fetch_data`).
-- Has a data payload (Pydantic model).
+- Has a data payload (typically a Pydantic model).
 - Has associated metadata about the context where the event was fired.
 
 The emitted event is processed via callbacks that look like this:
