@@ -56,6 +56,8 @@ interface A2AServerMetadata {
 }
 
 export class A2AServer extends Server<AnyAgent, AgentExecutor, A2AServerConfig, A2AServerMetadata> {
+  private ready = false;
+
   constructor(config: A2AServerConfig = new A2AServerConfig()) {
     super(config);
   }
@@ -98,7 +100,12 @@ export class A2AServer extends Server<AnyAgent, AgentExecutor, A2AServerConfig, 
     const appBuilder = new A2AExpressApp(requestHandler);
     const expressApp = appBuilder.setupRoutes(express());
 
+    expressApp.get("/health", (_req: any, res: any) => {
+      res.status(200).send(this.ready ? "ok" : "not ready");
+    });
+
     expressApp.listen(this.config.port, this.config.host, () => {
+      this.ready = true;
       logger.info(
         `[${agentCard.name}] Server started on http://${this.config.host}:${this.config.port}`,
       );

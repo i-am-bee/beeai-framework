@@ -34,7 +34,7 @@ try:
     from grpc_reflection.v1alpha import reflection
     from starlette.applications import Starlette
     from starlette.requests import Request
-    from starlette.responses import JSONResponse, Response
+    from starlette.responses import JSONResponse, PlainTextResponse, Response
     from starlette.routing import Route
 except ModuleNotFoundError as e:
     raise ModuleNotFoundError(
@@ -91,6 +91,7 @@ class A2AServer(
     ) -> None:
         super().__init__(config=to_model(A2AServerConfig, config or A2AServerConfig()), memory_manager=memory_manager)
         self._metadata_by_agent: dict[AnyRunnable, A2AServerMetadata] = {}
+        self._ready = False
 
     def serve(self) -> None:
         if len(self._members) == 0:
@@ -114,18 +115,38 @@ class A2AServer(
             executor.agent_card.url = f"http://localhost:{self._config.port}"
             executor.agent_card.preferred_transport = a2a_types.TransportProtocol.jsonrpc
             server = a2a_apps.A2AStarletteApplication(agent_card=executor.agent_card, http_handler=request_handler)
-            uvicorn.run(server.build(), host=self._config.host, port=self._config.port)
+            app = server.build()
+            self._add_health_endpoint(app)
+            uvicorn.run(app, host=self._config.host, port=self._config.port)
         elif self._config.protocol == "http_json":
             executor.agent_card.url = f"http://localhost:{self._config.port}"
             executor.agent_card.preferred_transport = a2a_types.TransportProtocol.http_json
             server = a2a_apps.A2ARESTFastAPIApplication(agent_card=executor.agent_card, http_handler=request_handler)
-            uvicorn.run(server.build(), host=self._config.host, port=self._config.port)
+            app = server.build()
+            self._add_health_endpoint(app)
+            uvicorn.run(app, host=self._config.host, port=self._config.port)
         elif self._config.protocol == "grpc":
             executor.agent_card.url = f"localhost:{self._config.port}"
             executor.agent_card.preferred_transport = a2a_types.TransportProtocol.grpc
             asyncio.run(self._start_grpc_server(executor.agent_card, request_handler))
         else:
             raise ValueError(f"Unsupported protocol {self._config.protocol}")
+
+    def _add_health_endpoint(self, app: Starlette) -> None:
+        """Add health endpoint to the Starlette app."""
+        async def on_startup() -> None:
+            self._ready = True
+
+        async def on_shutdown() -> None:
+            self._ready = False
+
+        async def health_endpoint(request: Request) -> Response:
+            content = "ok" if self._ready else "not ready"
+            return PlainTextResponse(content, status_code=200)
+
+        app.add_event_handler("startup", on_startup)
+        app.add_event_handler("shutdown", on_shutdown)
+        app.routes.append(Route("/health", endpoint=health_endpoint))
 
     @override
     def register(self, input: AnyRunnableTypeVar, **metadata: Unpack[A2AServerMetadata]) -> Self:

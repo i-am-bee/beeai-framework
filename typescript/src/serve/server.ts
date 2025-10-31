@@ -76,4 +76,8 @@ export abstract class Server<
   }
 
   public abstract serve(): void;
+
+  public checkHealth(): string {
+    return "ok";
+  }
 }
