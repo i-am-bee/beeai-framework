@@ -3,7 +3,8 @@ from __future__ import annotations
 # Copyright 2025 © BeeAI a Series of LF Projects, LLC
 # SPDX-License-Identifier: Apache-2.0
 import json
-from collections.abc import Callable, Iterable, Iterator, Mapping
+from abc import ABC, abstractmethod
+from collections.abc import Awaitable, Callable, Iterable, Iterator, Mapping
 from dataclasses import dataclass
 from datetime import datetime
 from itertools import count
@@ -32,6 +33,7 @@ class Serializer:
     _factories: ClassVar[dict[str, _SerializerFactory]] = {}
     _type_to_name: ClassVar[dict[type[Any], str]] = {}
     version: ClassVar[str] = "0.0.0"
+    _NOT_HANDLED = object()
 
     @staticmethod
     def _class_name(ref: type[Any]) -> str:
@@ -67,11 +69,13 @@ class Serializer:
         )
 
         cls._factories[name] = factory
-        cls._type_to_name[ref] = name
 
-        if aliases:
-            for alias in aliases:
-                cls._factories[alias] = factory
+        alias_list = tuple(aliases) if aliases else ()
+        preferred_name = alias_list[0] if alias_list else name
+        cls._type_to_name[ref] = preferred_name
+
+        for alias in alias_list:
+            cls._factories[alias] = factory
 
     @classmethod
     def register_serializable(
@@ -227,7 +231,10 @@ class Serializer:
                     return seen[ref_id]
 
                 if class_name not in cls._factories:
-                    raise SerializerError(f'Class "{class_name}" was not registered.')
+                    decoded = cls._decode_builtin(class_name, value, seen)
+                    if decoded is cls._NOT_HANDLED:
+                        raise SerializerError(f'Class "{class_name}" was not registered.')
+                    return decoded
 
                 factory = cls._factories[class_name]
                 payload = value.get("__value")
@@ -257,8 +264,96 @@ class Serializer:
 
         return value
 
+    @classmethod
+    def _decode_builtin(cls, class_name: str, raw: Mapping[str, Any], seen: dict[str, Any]) -> Any:
+        payload = raw.get("__value")
+        ref_id = raw.get("__ref")
 
-class Serializable(Generic[T]):
+        def remember(value: Any) -> Any:
+            if ref_id is not None:
+                seen[ref_id] = value
+            return value
+
+        if class_name in {"Undefined", "Null"}:
+            return remember(None)
+        if class_name == "Number":
+            if payload is None:
+                return remember(0)
+            if isinstance(payload, str):
+                number = float(payload)
+                if number.is_integer():
+                    return remember(int(number))
+                return remember(number)
+            if isinstance(payload, int | float):
+                return remember(payload)
+            raise SerializerError("Encountered malformed payload for JavaScript Number.")
+        if class_name == "Boolean":
+            if isinstance(payload, bool):
+                return remember(payload)
+            if isinstance(payload, str):
+                return remember(payload.lower() in {"true", "1"})
+            return remember(bool(payload))
+        if class_name == "String":
+            if payload is None:
+                return remember("")
+            return remember(str(payload))
+        if class_name == "BigInt":
+            if payload is None:
+                return remember(0)
+            return remember(int(payload))
+        if class_name == "Date":
+            if not isinstance(payload, str):
+                raise SerializerError("Encountered malformed payload for JavaScript Date.")
+            text = payload.replace("Z", "+00:00") if payload.endswith("Z") else payload
+            return remember(datetime.fromisoformat(text))
+        if class_name in {"Array", "Set"}:
+            container: list[Any] | set[Any]
+            if payload is None:
+                items: list[Any] = []
+            elif isinstance(payload, list):
+                items = payload
+            else:
+                raise SerializerError("Encountered malformed payload for JavaScript Array or Set.")
+            container = set() if class_name == "Set" else []
+            remember(container)
+            for item in items:
+                decoded = cls._decode(item, seen)
+                if isinstance(container, list):
+                    container.append(decoded)
+                else:
+                    container.add(decoded)
+            return container
+        if class_name == "Map":
+            mapping: dict[Any, Any] = {}
+            remember(mapping)
+            if payload is None:
+                return mapping
+            if not isinstance(payload, list):
+                raise SerializerError("Encountered malformed payload for JavaScript Map.")
+            for pair in payload:
+                if not isinstance(pair, Iterable):
+                    raise SerializerError("Encountered malformed payload for JavaScript Map.")
+                try:
+                    key_raw, value_raw = pair
+                except ValueError as exc:
+                    raise SerializerError("Encountered malformed payload for JavaScript Map.") from exc
+                key = cls._decode(key_raw, seen)
+                value = cls._decode(value_raw, seen)
+                mapping[key] = value
+            return mapping
+        if class_name == "Object":
+            result: dict[str, Any] = {}
+            if not isinstance(payload, Mapping):
+                raise SerializerError("Encountered malformed payload for JavaScript Object.")
+            remember(result)
+            for key, item in payload.items():
+                result[key] = cls._decode(item, seen)
+            return result
+
+        return cls._NOT_HANDLED
+
+
+class Serializable(ABC, Generic[T]):
     """Mixin that provides convenience helpers for registering serializable classes."""
 
     def __init_subclass__(
@@ -296,13 +391,12 @@ class Serializable(Generic[T]):
         instance.load_snapshot(snapshot)
         return instance
 
-    def to_snapshot(self) -> T:
-        return self.create_snapshot()
-
-    def create_snapshot(self) -> T:
+    @abstractmethod
+    def create_snapshot(self) -> T | Awaitable[T]:
         raise NotImplementedError
 
-    def load_snapshot(self, snapshot: T) -> None:
+    @abstractmethod
+    def load_snapshot(self, snapshot: T) -> None | Awaitable[None]:
         raise NotImplementedError
 
 
@@ -310,4 +404,5 @@ Serializer.register(
     datetime,
     to_plain=lambda value: value.isoformat(),
     from_plain=lambda data: datetime.fromisoformat(data),
+    aliases=("Date",),
 )
