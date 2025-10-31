@@ -1,3 +1,67 @@
+## python_v0.1.61 (2025-10-30)
+
+### Features
+
+- rename BeeAIPlatform to AgentStack (#1256)
+- **adapters**: add default tools settings for the platform agents (#1223)
+
+## python_v0.1.60 (2025-10-29)
+
+### Bug Fixes
+
+- **adapter**: Fix context in BeeAIPlatformAgent (#1247)
+
+### Features
+
+- **backend**: auto retry on empty/malformed response (#1253)
+- **serve**: enable streamable-http for MCPServer (#1251)
+- **tools**: add smart parsing for MCP Tool Output (#1250)
+- **adapters**: handle device identification in Transformers
+- **tools**: handle commas in location name in the OpenMeteo tool
+- improve error context serialization
+- **adapters**: propagate strict tool call parsing config for LangChain
+- **backend**: handle double-escaped tool calls (#1241)
+
+## python_v0.1.59 (2025-10-27)
+
+### Bug Fixes
+
+- **adapters**: add missing meta property for A2A/BeeAI Platform Agents (#1243)
+- **adapters**: handle missing messages in BeeAIPlatform (#1237)
+- parse streamed tool calls with stream_stable=True
+- **adapters**: correct decorator order in ChatToolFunctionDefinition (#1234)
+
+### Features
+
+- **adapters**: update BeeAI SDK (#1231)
+
+## python_v0.1.58 (2025-10-23)
+
+### Bug Fixes
+
+- **serve**: properly serialize a tool output when using MCP (#1219)
+- **adapters**: properly handle BeeAIPlatform LLM provider
+- **adapters**: handle unsupported JSON Schema keywords (#1216)
+
+### Features
+
+- **adapters**: propagate provider specific parameters in BeeAIPlatformChatModel (#1225)
+- **adapters**: add OpenAI Chat Completion / Responses serve module (#1182)
+- **adapters**: add new parameters to A2A Agent (#1224)
+- **backend**: add more excluded JSON Schema keywords to Groq
+
+## python_v0.1.57 (2025-10-20)
+
+### Bug Fixes
+
+- **emitter**: class method reference matching (#1209)
+- **agents**: requirement tool visibility regression (#1204)
+- **emitter**: handle cleanups when cloning (#1211)
+
+### Features
+
+- **adapters**: add A2A server context (#1207)
+
 ## python_v0.1.56 (2025-10-14)
 
 ### Bug Fixes

@@ -20,6 +20,13 @@ const llm = new OllamaChatModel("llama3.1");
 const agent = new ToolCallingAgent({
   llm,
   memory: new TokenMemory(),
+  templates: {
+    system: (template) =>
+      template.fork((config) => {
+        config.defaults.instructions =
+          "You are a helpful assistant that uses tools to answer questions.";
+      }),
+  },
   tools: [
     new OpenMeteoTool(), // weather tool
   ],

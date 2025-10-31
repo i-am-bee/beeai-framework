@@ -18,9 +18,9 @@ The following table lists the currently supported providers:
 
 | Name                                                  | Dependency                                   | Location                    |
 |:-----------------------------------------------------|:--------------------------------------------|:---------------------------|
-| [A2A](https://a2a-protocol.org/)       | `beeai_framework.adapters.a2a.serve`         | `beeai-platform[a2a]`       |
-| [BeeAI Platform](https://beeai.dev/)                | `beeai_framework.adapters.beeai_platform.serve` | `beeai-platform[beeai-platform]` |
-| [MCP](https://modelcontextprotocol.io/) | `beeai_framework.adapters.mcp.serve`         | `beeai-platform[mcp]`       |
+| [A2A](https://a2a-protocol.org/)       | `beeai_framework.adapters.a2a.serve`         | `beeai-framework[a2a]`       |
+| [Agent Stack](https://beeai.dev/)                | `beeai_framework.adapters.agentstack.serve` | `beeai-framework[agentstack]` |
+| [MCP](https://modelcontextprotocol.io/) | `beeai_framework.adapters.mcp.serve`         | `beeai-framework[mcp]`       |
 
 <Note>
 For more details, see the [Integrations page](/integrations).
@@ -40,7 +40,7 @@ from beeai_framework.tools.weather import OpenMeteoTool
 
 
 def main() -> None:
-    llm = ChatModel.from_name("ollama:granite3.3:8b")
+    llm = ChatModel.from_name("ollama:granite4:micro")
     agent = RequirementAgent(
         llm=llm,
         tools=[DuckDuckGoSearchTool(), OpenMeteoTool()],
@@ -48,7 +48,7 @@ def main() -> None:
     )
 
     # Register the agent with the A2A server and run the HTTP server
-    # For the ToolCallingAgent, we don't need to specify ACPAgent factory method
+    # For the ToolCallingAgent, we don't need to specify A2AAgent factory method
     # because it is already registered in the A2AServer
     # we use LRU memory manager to keep limited amount of sessions in the memory
     A2AServer(
