@@ -130,6 +130,72 @@ In simpler terms, when you call one runnable (e.g., `ChatModel`) from within ano
 <Tip>The current execution context can be retrieved anytime by calling `RunContext.get()`.</Tip>
 
 
+### Runnable
+
+The `Runnable[R]` class was created to unify common objects that can be executed and observed. It is an abstract class with the following traits:
+
+- It has an abstract `run` method that executes the class and returns a `Run[R]` (`R` is bound to the `RunnableOutput`).
+- It has an abstract `emitter` getter.
+- It has a `middlewares` getter that lists the existing middlewares.
+
+**Invoking a Runnable**
+
+Every runnable takes a list of messages as its first (positional) parameter, followed by the following optional keyword arguments (`RunnableOptions`):
+
+- `signal` (an instance of `AbortSignal`) — allows aborting the execution.
+- `context` (a dictionary) — used to propagate additional data.
+
+You can also pass extra arguments that may or may not be processed by the given handler.
+
+The `RunnableOutput` has the following properties:
+
+- `output`: a list of messages (can be empty)
+- `context`: a dictionary that can store additional data
+- `last_message` (getter): returns the last message if it exists, or creates an empty `AssistantMessage` otherwise
+
+**Creating a custom Runnable**
+
+{/* <!-- embedme python/examples/simple_runnable.py --> */}
+```py Python [expandable]
+import asyncio
+from functools import cached_property
+from typing import Unpack
+
+from beeai_framework.backend import AnyMessage, AssistantMessage, UserMessage
+from beeai_framework.context import RunContext
+from beeai_framework.emitter import Emitter
+from beeai_framework.runnable import Runnable, RunnableOptions, RunnableOutput, runnable_entry
+
+
+class GreetingRunnable(Runnable[RunnableOutput]):
+    @runnable_entry
+    async def run(self, input: list[AnyMessage], /, **kwargs: Unpack[RunnableOptions]) -> RunnableOutput:
+        # retrieves the current run contex
+        run = RunContext.get()
+
+        response = f"Hello, {run.context.get('name', 'stranger')}!"
+
+        # sends an emit so that someone can react to it (optional)
+        await run.emitter.emit("before_send", response)
+
+        return RunnableOutput(output=[AssistantMessage(response)])
+
+    @cached_property
+    def emitter(self) -> Emitter:
+        return Emitter.root().child(namespace=["echo"])
+
+
+async def main() -> None:
+    echo = GreetingRunnable()
+    response = await echo.run([UserMessage("Hello!")]).context({"name": "Alex"})
+    print(response.last_message.text)
+
+
+if __name__ == "__main__":
+    asyncio.run(main())
+
+```
+
 ## Working with events
 
 The following sections show you how to use the emitter to capture and modify events.
