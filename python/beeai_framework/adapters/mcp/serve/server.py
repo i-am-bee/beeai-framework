@@ -15,6 +15,7 @@ from beeai_framework.backend import Role, UserMessage
 from beeai_framework.runnable import Runnable, RunnableOutput
 from beeai_framework.serve import MemoryManager
 from beeai_framework.serve.errors import FactoryAlreadyRegisteredError
+from beeai_framework.template import PromptTemplate
 from beeai_framework.tools.tool import AnyTool, Tool
 from beeai_framework.tools.types import ToolOutput
 from beeai_framework.utils.cloneable import Cloneable
@@ -27,6 +28,8 @@ try:
     import mcp.server.fastmcp.resources as mcp_resources
     import mcp.server.fastmcp.server as mcp_server
     from mcp.server.auth.settings import AuthSettings
+    from mcp.server.fastmcp.prompts.base import Prompt as MCPPrompt
+    from mcp.server.fastmcp.prompts.base import PromptArgument
     from mcp.server.fastmcp.tools.base import Tool as MCPNativeTool
     from mcp.server.lowlevel.server import LifespanResultT
     from mcp.server.transport_security import TransportSecuritySettings
@@ -219,6 +222,19 @@ def _runnable_factory(
     return MCPNativeTool.from_function(run, name=name, description=description, structured_output=True)
 
 
+def _prompt_template_factory(instance: PromptTemplate[Any]) -> MCPPrompt:
+    return MCPPrompt(
+        name=instance.name,
+        title=instance.name,
+        description=instance.description,
+        arguments=[
+            PromptArgument(name=k, description=v.description, required=v.default is None and v.default_factory is None)
+            for k, v in instance.input_schema.model_fields.items()
+        ],
+        fn=lambda **kwargs: instance.render(kwargs),
+    )
+
+
 with contextlib.suppress(FactoryAlreadyRegisteredError):
     MCPServer.register_factory(Runnable, _runnable_factory)
 
@@ -230,3 +246,6 @@ with contextlib.suppress(FactoryAlreadyRegisteredError):
 
 with contextlib.suppress(FactoryAlreadyRegisteredError):
     MCPServer.register_factory(MCPNativeTool, identity)
+
+with contextlib.suppress(FactoryAlreadyRegisteredError):
+    MCPServer.register_factory(PromptTemplate, _prompt_template_factory)
