@@ -15,7 +15,7 @@ def __getattr__(name: str) -> Any:
         import beeai_framework.adapters.openai.serve.server as serve
 
         warnings.warn(
-            f"Please import {name} from beeai_framework.adapters.openai.serve instead.",
+            f"Please import {name} from beeai_framework.adapters.openai.serve.server instead.",
             DeprecationWarning,
             stacklevel=2,
         )
