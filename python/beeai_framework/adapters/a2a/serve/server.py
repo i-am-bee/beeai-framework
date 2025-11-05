@@ -122,9 +122,7 @@ class A2AServer(
             server = a2a_apps.A2ARESTFastAPIApplication(agent_card=executor.agent_card, http_handler=request_handler)
             uvicorn.run(server.build(), host=self._config.host, port=self._config.port)
         elif self._config.protocol == "grpc":
-            executor.agent_card.url = (
-                f"{self._config.agent_card_host}:{self._config.agent_card_port or self._config.port}"
-            )
+            executor.agent_card.url = f"{self._config.agent_card_host}:{self._config.port}"
             executor.agent_card.preferred_transport = a2a_types.TransportProtocol.grpc
             asyncio.run(self._start_grpc_server(executor.agent_card, request_handler))
         else:

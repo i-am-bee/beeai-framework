@@ -20,7 +20,7 @@ def main() -> None:
     # because it is already registered in the A2AServer
     # we use LRU memory manager to keep limited amount of sessions in the memory
     A2AServer(
-        config=A2AServerConfig(port=9999, protocol="jsonrpc"), memory_manager=LRUMemoryManager(maxsize=100)
+        config=A2AServerConfig(port=9999, protocol="grpc"), memory_manager=LRUMemoryManager(maxsize=100)
     ).register(agent, send_trajectory=True).serve()
 
 
