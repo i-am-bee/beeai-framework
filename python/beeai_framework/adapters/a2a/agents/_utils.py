@@ -1,10 +1,15 @@
 # Copyright 2025 © BeeAI a Series of LF Projects, LLC
 # SPDX-License-Identifier: Apache-2.0
+from typing import Any
+from uuid import uuid4
+
 from beeai_framework.backend.message import (
     AnyMessage,
     AssistantMessage,
     CustomMessageContent,
+    Message,
     MessageTextContent,
+    Role,
     UserMessage,
 )
 from beeai_framework.utils.strings import to_json
@@ -47,3 +52,43 @@ def convert_a2a_to_framework_message(input: a2a_types.Message | a2a_types.Artifa
                 )
             )
     return msg
+
+
+def convert_to_a2a_message(
+    input: str | list[AnyMessage] | AnyMessage | a2a_types.Message,
+    *,
+    context_id: str | None = None,
+    task_id: str | None = None,
+    reference_task_ids: list[str] | None = None,
+    metadata: dict[str, Any] | None = None,
+) -> a2a_types.Message:
+    if isinstance(input, str):
+        return a2a_types.Message(
+            role=a2a_types.Role.user,
+            parts=[a2a_types.Part(root=a2a_types.TextPart(text=input))],
+            message_id=uuid4().hex,
+            context_id=context_id,
+            task_id=task_id,
+            reference_task_ids=reference_task_ids,
+            metadata=metadata,
+        )
+    elif isinstance(input, Message):
+        return a2a_types.Message(
+            role=a2a_types.Role.agent if input.role == Role.ASSISTANT else a2a_types.Role.user,
+            parts=[a2a_types.Part(root=a2a_types.TextPart(text=input.text))],
+            message_id=uuid4().hex,
+            context_id=context_id,
+            task_id=task_id,
+            reference_task_ids=reference_task_ids,
+            metadata=(metadata or {}) | input.meta or None,
+        )
+    elif isinstance(input, list) and input and isinstance(input[-1], Message):
+        return convert_to_a2a_message(input[-1], context_id=context_id, metadata=metadata)
+    elif isinstance(input, a2a_types.Message):
+        input.metadata = (input.metadata or {}) | (metadata or {})
+        input.context_id = context_id or input.context_id
+        input.task_id = task_id or input.task_id
+        input.reference_task_ids = reference_task_ids or input.reference_task_ids
+        return input
+    else:
+        raise ValueError("Unsupported input type")

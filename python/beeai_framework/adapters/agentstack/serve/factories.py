@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 import uuid
 from collections.abc import AsyncGenerator
-from typing import Annotated, Any, Unpack
+from typing import Annotated, Any, Unpack, cast
 
 from beeai_framework.adapters.agentstack.backend.chat import AgentStackChatModel
 from beeai_framework.adapters.agentstack.context import AgentStackContext
@@ -17,13 +17,23 @@ from beeai_framework.adapters.agentstack.serve.utils import init_agent_stack_mem
 from beeai_framework.agents import BaseAgent
 from beeai_framework.agents.react import ReActAgent, ReActAgentUpdateEvent
 from beeai_framework.agents.requirement import RequirementAgent
-from beeai_framework.agents.requirement.events import RequirementAgentFinalAnswerEvent, RequirementAgentSuccessEvent
+from beeai_framework.agents.requirement.events import RequirementAgentFinalAnswerEvent
+from beeai_framework.agents.requirement.utils._tool import FinalAnswerTool
 from beeai_framework.agents.tool_calling import ToolCallingAgent, ToolCallingAgentSuccessEvent
+from beeai_framework.emitter import EventMeta
 from beeai_framework.logger import Logger
 from beeai_framework.memory import UnconstrainedMemory
+from beeai_framework.middleware.trajectory import (
+    GlobalTrajectoryMiddleware,
+    GlobalTrajectoryMiddlewareErrorEvent,
+    GlobalTrajectoryMiddlewareStartEvent,
+    GlobalTrajectoryMiddlewareSuccessEvent,
+)
 from beeai_framework.runnable import Runnable
+from beeai_framework.tools import Tool, ToolOutput
 from beeai_framework.utils.cloneable import Cloneable, clone_class
 from beeai_framework.utils.lists import find_index, remove_falsy
+from beeai_framework.utils.strings import to_json
 
 try:
     import a2a.types as a2a_types
@@ -32,13 +42,13 @@ try:
     import agentstack_sdk.server.agent as agentstack_agent
     import agentstack_sdk.server.context as agentstack_context
 
-    from beeai_framework.adapters.a2a.agents._utils import convert_a2a_to_framework_message
+    from beeai_framework.adapters.a2a.agents._utils import convert_a2a_to_framework_message, convert_to_a2a_message
 except ModuleNotFoundError as e:
     raise ModuleNotFoundError(
         "Optional module [agentstack] not found.\nRun 'pip install \"beeai-framework[agentstack]\"' to install."
     ) from e
 
-from beeai_framework.backend.message import AnyMessage
+from beeai_framework.backend.message import AnyMessage, MessageToolCallContent
 from beeai_framework.serve import MemoryManager
 
 logger = Logger(__name__)
@@ -218,30 +228,12 @@ def _requirement_agent_factory(
             artifact_id = uuid.uuid4()
             append = False
 
-            last_msg: AnyMessage | None = None
-            async for data, _ in cloned_agent.run([convert_a2a_to_framework_message(message)]):
-                messages = data.state.memory.messages
-                if last_msg is None:
-                    last_msg = messages[-1]
-
-                cur_index = find_index(messages, lambda msg: msg is last_msg, fallback=-1, reverse_traversal=True)  # noqa: B023
-                for msg in messages[cur_index + 1 :]:
-                    for value in send_message_trajectory(msg, extra_extensions["trajectory"]):
-                        yield value
-                    last_msg = msg
-
-                if isinstance(data, RequirementAgentSuccessEvent) and data.state.answer is not None:
-                    agent_response = agentstack_types.AgentMessage(text=data.state.answer.text)
-                    if isinstance(memory_manager, AgentStackMemoryManager):
-                        await context.store(message)
-                        await context.store(agent_response)
-
-                    if not append:
-                        yield agent_response
-
-                if isinstance(data, RequirementAgentFinalAnswerEvent):
-                    update = data.delta
-                    yield a2a_types.TaskArtifactUpdateEvent(
+            @cloned_agent.emitter.on("final_answer")
+            async def on_final_answer(data: RequirementAgentFinalAnswerEvent, meta: EventMeta) -> None:
+                nonlocal append
+                update = data.delta
+                await context.yield_async(
+                    a2a_types.TaskArtifactUpdateEvent(
                         append=append,
                         context_id=context.context_id,
                         task_id=context.task_id,
@@ -252,7 +244,20 @@ def _requirement_agent_factory(
                             parts=[a2a_types.Part(root=a2a_types.TextPart(text=update))],
                         ),
                     )
-                    append = True
+                )
+                append = True
+
+            tool_calls_trajectory_middleware = get_tool_calls_trajectory_middleware(
+                extra_extensions["trajectory"], context
+            )
+            result = await cloned_agent.run([convert_a2a_to_framework_message(message)]).middleware(
+                tool_calls_trajectory_middleware
+            )
+
+            agent_response = convert_to_a2a_message(result.last_message)
+            if isinstance(memory_manager, AgentStackMemoryManager):
+                await context.store(message)
+                await context.store(agent_response)
 
             if append:
                 yield a2a_types.TaskArtifactUpdateEvent(
@@ -380,3 +385,43 @@ def _init_metadata(
             metadata["description"] = runnable.meta.description
 
     return metadata, extensions
+
+
+def get_tool_calls_trajectory_middleware(
+    trajectory: agentstack_extensions.TrajectoryExtensionServer, context: agentstack_context.RunContext
+) -> GlobalTrajectoryMiddleware:
+    tool_calls_trajectory_middleware = GlobalTrajectoryMiddleware(
+        included=[Tool], excluded=[FinalAnswerTool], target=False, match_nested=True
+    )
+
+    @tool_calls_trajectory_middleware.emitter.on("start")
+    async def send_tool_call_start(data: GlobalTrajectoryMiddlewareStartEvent, _: EventMeta) -> None:
+        tool_start_event, tool_start_meta = data.origin
+        tool_call = cast(MessageToolCallContent, tool_start_meta.context["tool_call_msg"])
+        await context.yield_async(
+            trajectory.trajectory_metadata(
+                title=f"{tool_call.tool_name} (request)",
+                content=to_json(tool_start_event.input, sort_keys=False, indent=4),
+            )
+        )
+
+    @tool_calls_trajectory_middleware.emitter.on("success")
+    async def send_tool_call_success(data: GlobalTrajectoryMiddlewareSuccessEvent, _: EventMeta) -> None:
+        tool_success_event, tool_success_meta = data.origin
+        tool_call = cast(MessageToolCallContent, tool_success_meta.context["tool_call_msg"])
+        tool_output = cast(ToolOutput, tool_success_event.output)
+        await context.yield_async(
+            trajectory.trajectory_metadata(
+                title=f"{tool_call.tool_name} (response)", content=tool_output.get_text_content()
+            )
+        )
+
+    @tool_calls_trajectory_middleware.emitter.on("error")
+    async def send_tool_call_error(data: GlobalTrajectoryMiddlewareErrorEvent, _: EventMeta) -> None:
+        tool_error_event, tool_error_meta = data.origin
+        tool_call = cast(MessageToolCallContent, tool_error_meta.context["tool_call_msg"])
+        await context.yield_async(
+            trajectory.trajectory_metadata(title=f"{tool_call.tool_name} (error)", content=tool_error_event.explain())
+        )
+
+    return tool_calls_trajectory_middleware
