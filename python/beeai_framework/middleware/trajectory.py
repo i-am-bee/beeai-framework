@@ -190,9 +190,7 @@ class GlobalTrajectoryMiddleware(RunMiddlewareProtocol):
         indent_diff = indent - indent_parent
 
         prefix = ""
-        prefix += "  " * indent_parent
-        if indent_parent > 0:
-            prefix += "  " * indent_parent
+        prefix += "  " * (indent_parent * 2)
 
         if meta.name != "start" and indent:
             prefix += "<"
