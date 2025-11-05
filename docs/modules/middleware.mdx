@@ -791,6 +791,28 @@ The following events are caught internally by the `StreamToolCallMiddleware`.
 
 [Check out the in-code definition](https://github.com/i-am-bee/beeai-framework/blob/main/python/beeai_framework/middleware/stream_tool_call.py).
 
+### GlobalTrajectoryMiddleware
+
+The following events are handled internally by the `GlobalTrajectoryMiddleware`:
+
+| Event     | Data Type                                | Description                                                                                 |
+|:----------|:-----------------------------------------|:--------------------------------------------------------------------------------------------|
+| `start`   | `GlobalTrajectoryMiddlewareStartEvent`   | Triggered when a target begins execution.                                                   |
+| `success` | `GlobalTrajectoryMiddlewareSuccessEvent` | Triggered when a target completes successfully.                                             |
+| `error`   | `GlobalTrajectoryMiddlewareErrorEvent`   | Triggered when an error occurs during target execution.                                     |
+| `finish`  | `GlobalTrajectoryMiddlewareFinishEvent`  | Triggered after a target has finished execution, regardless of success or failure.          |
+
+All events inherit from the `GlobalTrajectoryMiddlewareEvent` class.
+
+```python
+class GlobalTrajectoryMiddlewareEvent(BaseModel):
+    message: str
+    level: TraceLevel
+    origin: tuple[Any, EventMeta]
+```
+
+The first element of the `origin` attribute is the original event (e.g., `start` → `RunContextStartEvent`, etc.) that comes from the `RunContext`.
+
 ### RunContext
 
 Special events that are emitted before the target's handler gets executed.
