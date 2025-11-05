@@ -13,13 +13,13 @@ from beeai_framework.adapters.agentstack.serve.server import (
     BaseAgentStackServerMetadata,
 )
 from beeai_framework.adapters.agentstack.serve.types import BaseAgentStackExtensions
-from beeai_framework.adapters.agentstack.serve.utils import init_agent_stack_memory, send_message_trajectory
+from beeai_framework.adapters.agentstack.serve.utils import init_agent_stack_memory
 from beeai_framework.agents import BaseAgent
 from beeai_framework.agents.react import ReActAgent, ReActAgentUpdateEvent
 from beeai_framework.agents.requirement import RequirementAgent
 from beeai_framework.agents.requirement.events import RequirementAgentFinalAnswerEvent
 from beeai_framework.agents.requirement.utils._tool import FinalAnswerTool
-from beeai_framework.agents.tool_calling import ToolCallingAgent, ToolCallingAgentSuccessEvent
+from beeai_framework.agents.tool_calling import ToolCallingAgent
 from beeai_framework.emitter import EventMeta
 from beeai_framework.logger import Logger
 from beeai_framework.memory import UnconstrainedMemory
@@ -32,7 +32,7 @@ from beeai_framework.middleware.trajectory import (
 from beeai_framework.runnable import Runnable
 from beeai_framework.tools import Tool, ToolOutput
 from beeai_framework.utils.cloneable import Cloneable, clone_class
-from beeai_framework.utils.lists import find_index, remove_falsy
+from beeai_framework.utils.lists import remove_falsy
 from beeai_framework.utils.strings import to_json
 
 try:
@@ -48,7 +48,7 @@ except ModuleNotFoundError as e:
         "Optional module [agentstack] not found.\nRun 'pip install \"beeai-framework[agentstack]\"' to install."
     ) from e
 
-from beeai_framework.backend.message import AnyMessage, MessageToolCallContent
+from beeai_framework.backend.message import MessageToolCallContent
 from beeai_framework.serve import MemoryManager
 
 logger = Logger(__name__)
@@ -172,25 +172,19 @@ def _tool_calling_agent_factory(
             llm=extra_extensions.get("llm_ext"),
             extra_extensions=extra_extensions,  # type: ignore[arg-type]
         ):
-            last_msg: AnyMessage | None = None
-            async for data, _ in cloned_agent.run([convert_a2a_to_framework_message(message)]):
-                messages = data.state.memory.messages
-                if last_msg is None:
-                    last_msg = messages[-1]
+            tool_calls_trajectory_middleware = get_tool_calls_trajectory_middleware(
+                extra_extensions["trajectory"], context
+            )
+            result = await cloned_agent.run([convert_a2a_to_framework_message(message)]).middleware(
+                tool_calls_trajectory_middleware
+            )
 
-                cur_index = find_index(messages, lambda msg: msg is last_msg, fallback=-1, reverse_traversal=True)  # noqa: B023
-                for msg in messages[cur_index + 1 :]:
-                    for value in send_message_trajectory(msg, extra_extensions["trajectory"]):
-                        yield value
-                    last_msg = msg
+            agent_response = convert_to_a2a_message(result.last_message)
+            if isinstance(memory_manager, AgentStackMemoryManager):
+                await context.store(message)
+                await context.store(agent_response)
 
-                if isinstance(data, ToolCallingAgentSuccessEvent) and data.state.result is not None:
-                    agent_response = agentstack_types.AgentMessage(text=data.state.result.text)
-                    if isinstance(memory_manager, AgentStackMemoryManager):
-                        await context.store(message)
-                        await context.store(agent_response)
-
-                    yield agent_response
+            yield agent_response
 
     return agentstack_agent.agent(**agent_metadata)(run)
 
