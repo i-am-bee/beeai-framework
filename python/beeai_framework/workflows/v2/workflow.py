@@ -193,7 +193,6 @@ class Workflow(Runnable[RunnableOutput]):
                         raise exception  # re-raise the exception from the task
 
     async def _run_step(self, step: WorkflowStep) -> None:
-
         step_inputs: list[Any] = (
             [self._input] if step.is_start else [step.inputs[k] for k in sorted(step.inputs.keys())]
         )

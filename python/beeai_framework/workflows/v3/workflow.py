@@ -34,7 +34,6 @@ class Workflow(Runnable[RunnableOutput]):
 
     @runnable_entry
     async def run(self, input: list[AnyMessage], /, **kwargs: Unpack[RunnableOptions]) -> RunnableOutput:
-
         context = RunContext.get().context
 
         assert self._start_step is not None
@@ -48,7 +47,6 @@ class Workflow(Runnable[RunnableOutput]):
         completed_steps: set[WorkflowStep] = set()
 
         async def execute_step(step: WorkflowStep | WorkflowBranch | WorkflowLoopUntil) -> None:
-
             step_to_exec: WorkflowStep | None = None
 
             # Run the step

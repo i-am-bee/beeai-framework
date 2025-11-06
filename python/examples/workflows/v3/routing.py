@@ -10,7 +10,6 @@ from beeai_framework.workflows.v3.workflow import Workflow, create_step
 
 
 async def main() -> None:
-
     class ToolsRequired(BaseModel):
         requires_web_search: bool
         reasoning: str

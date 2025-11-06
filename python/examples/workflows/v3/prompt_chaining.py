@@ -7,7 +7,6 @@ from beeai_framework.workflows.v3.workflow import Workflow, create_step
 
 
 async def main() -> None:
-
     async def start(messages: list[AnyMessage], context: dict[str, Any]) -> None:
         print("start workflow")
 
