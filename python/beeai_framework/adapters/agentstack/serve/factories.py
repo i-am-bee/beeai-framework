@@ -82,7 +82,7 @@ def _react_agent_factory(
             metadata=message.metadata,
             llm=extra_extensions.get("llm_ext"),
             extra_extensions=extra_extensions,  # type: ignore[arg-type]
-        ):
+        ) as stack_context:
             artifact_id = uuid.uuid4()
             append = False
 
@@ -92,7 +92,7 @@ def _react_agent_factory(
                 if data.update.key == "final_answer":
                     update = data.update.value
                     update = update.get_text_content() if hasattr(update, "get_text_content") else str(update)
-                    await _yield_artifact_update(context, artifact_id, update, append=append)
+                    await _send_final_answer_update(context, artifact_id, update, append=append)
                     append = True
 
             @cloned_agent.emitter.on("update")
@@ -104,11 +104,8 @@ def _react_agent_factory(
                         extra_extensions["trajectory"].trajectory_metadata(title=data.update.key, content=update)
                     )
 
-            tool_calls_trajectory_middleware = get_tool_calls_trajectory_middleware(
-                extra_extensions["trajectory"], context
-            )
             result = await cloned_agent.run([convert_a2a_to_framework_message(message)]).middleware(
-                tool_calls_trajectory_middleware
+                create_tool_trajectory_middleware(stack_context)
             )
 
             agent_response = convert_to_a2a_message(result.last_message)
@@ -117,7 +114,7 @@ def _react_agent_factory(
                 await context.store(agent_response)
 
             if append:
-                await _yield_artifact_update(context, artifact_id, last_chunk=True)
+                await _send_final_answer_update(context, artifact_id, last_chunk=True)
             else:
                 yield agent_response
 
@@ -153,12 +150,9 @@ def _tool_calling_agent_factory(
             metadata=message.metadata,
             llm=extra_extensions.get("llm_ext"),
             extra_extensions=extra_extensions,  # type: ignore[arg-type]
-        ):
-            tool_calls_trajectory_middleware = get_tool_calls_trajectory_middleware(
-                extra_extensions["trajectory"], context
-            )
+        ) as stack_context:
             result = await cloned_agent.run([convert_a2a_to_framework_message(message)]).middleware(
-                tool_calls_trajectory_middleware
+                create_tool_trajectory_middleware(stack_context)
             )
 
             agent_response = convert_to_a2a_message(result.last_message)
@@ -200,21 +194,18 @@ def _requirement_agent_factory(
             metadata=message.metadata,
             llm=extra_extensions.get("llm_ext"),
             extra_extensions=extra_extensions,  # type: ignore[arg-type]
-        ):
+        ) as stack_context:
             artifact_id = uuid.uuid4()
             append = False
 
             @cloned_agent.emitter.on("final_answer")
             async def on_final_answer(data: RequirementAgentFinalAnswerEvent, _: EventMeta) -> None:
                 nonlocal append
-                await _yield_artifact_update(context, artifact_id, data.delta, append=append)
+                await _send_final_answer_update(context, artifact_id, data.delta, append=append)
                 append = True
 
-            tool_calls_trajectory_middleware = get_tool_calls_trajectory_middleware(
-                extra_extensions["trajectory"], context
-            )
             result = await cloned_agent.run([convert_a2a_to_framework_message(message)]).middleware(
-                tool_calls_trajectory_middleware
+                create_tool_trajectory_middleware(stack_context)
             )
 
             agent_response = convert_to_a2a_message(result.last_message)
@@ -223,14 +214,14 @@ def _requirement_agent_factory(
                 await context.store(agent_response)
 
             if append:
-                await _yield_artifact_update(context, artifact_id, last_chunk=True)
+                await _send_final_answer_update(context, artifact_id, last_chunk=True)
             else:
                 yield agent_response
 
     return agentstack_agent.agent(**agent_metadata)(run)
 
 
-async def _yield_artifact_update(
+async def _send_final_answer_update(
     context: agentstack_context.RunContext,
     artifact_id: uuid.UUID,
     update: str = "",
@@ -365,9 +356,11 @@ def _init_metadata(
     return metadata, extensions
 
 
-def get_tool_calls_trajectory_middleware(
-    trajectory: agentstack_extensions.TrajectoryExtensionServer, context: agentstack_context.RunContext
+def create_tool_trajectory_middleware(
+    agent_stack_context: AgentStackContext,
 ) -> GlobalTrajectoryMiddleware:
+    context = agent_stack_context.context
+    trajectory = agent_stack_context.extensions["trajectory"]
     tool_calls_trajectory_middleware = GlobalTrajectoryMiddleware(
         included=[Tool], excluded=[FinalAnswerTool], target=False, match_nested=True
     )
@@ -376,11 +369,11 @@ def get_tool_calls_trajectory_middleware(
     async def send_tool_call_start(data: GlobalTrajectoryMiddlewareStartEvent, _: EventMeta) -> None:
         tool_start_event, tool_start_meta = data.origin
         tool = cast(AnyTool, tool_start_meta.creator.instance)  # type: ignore[attr-defined]
-        if tool.name == "final_answer":
+        if isinstance(tool, FinalAnswerTool):
             return
         await context.yield_async(
             trajectory.trajectory_metadata(
-                title=f"{tool.name} (request)",
+                title=f"{'--> ' * (data.level.relative - 1)}{tool.name} (request)",
                 content=to_json(tool_start_event.input, sort_keys=False, indent=4),
             )
         )
@@ -390,10 +383,13 @@ def get_tool_calls_trajectory_middleware(
         tool_success_event, tool_success_meta = data.origin
         tool_output = cast(ToolOutput, tool_success_event.output)
         tool = cast(AnyTool, tool_success_meta.creator.instance)  # type: ignore[attr-defined]
-        if tool.name == "final_answer":
+        if isinstance(tool, FinalAnswerTool):
             return
         await context.yield_async(
-            trajectory.trajectory_metadata(title=f"{tool.name} (response)", content=tool_output.get_text_content())
+            trajectory.trajectory_metadata(
+                title=f"{'--> ' * (data.level.relative - 1)}{tool.name} (response)",
+                content=tool_output.get_text_content(),
+            )
         )
 
     @tool_calls_trajectory_middleware.emitter.on("error")
@@ -401,7 +397,9 @@ def get_tool_calls_trajectory_middleware(
         tool_error_event, tool_error_meta = data.origin
         tool = cast(AnyTool, tool_error_meta.creator.instance)  # type: ignore[attr-defined]
         await context.yield_async(
-            trajectory.trajectory_metadata(title=f"{tool.name} (error)", content=tool_error_event.explain())
+            trajectory.trajectory_metadata(
+                title=f"{'--> ' * (data.level.relative - 1)}{tool.name} (error)", content=tool_error_event.explain()
+            )
         )
 
     return tool_calls_trajectory_middleware

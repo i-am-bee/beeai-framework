@@ -62,7 +62,13 @@ def convert_to_a2a_message(
     reference_task_ids: list[str] | None = None,
     metadata: dict[str, Any] | None = None,
 ) -> a2a_types.Message:
-    if isinstance(input, str):
+    if isinstance(input, list) and input and isinstance(input[-1], Message):
+        if len(input) == 0:
+            raise ValueError("Input cannot be empty")
+        return convert_to_a2a_message(
+            input[-1], context_id=context_id, task_id=task_id, reference_task_ids=reference_task_ids, metadata=metadata
+        )
+    elif isinstance(input, str):
         return a2a_types.Message(
             role=a2a_types.Role.user,
             parts=[a2a_types.Part(root=a2a_types.TextPart(text=input))],
@@ -82,8 +88,6 @@ def convert_to_a2a_message(
             reference_task_ids=reference_task_ids,
             metadata=(metadata or {}) | input.meta or None,
         )
-    elif isinstance(input, list) and input and isinstance(input[-1], Message):
-        return convert_to_a2a_message(input[-1], context_id=context_id, metadata=metadata)
     elif isinstance(input, a2a_types.Message):
         input.metadata = (input.metadata or {}) | (metadata or {})
         input.context_id = context_id or input.context_id
@@ -91,4 +95,4 @@ def convert_to_a2a_message(
         input.reference_task_ids = reference_task_ids or input.reference_task_ids
         return input
     else:
-        raise ValueError("Unsupported input type")
+        raise ValueError("Unsupported message type. Can not convert to a2a message.")
