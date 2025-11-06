@@ -369,7 +369,7 @@ def create_tool_trajectory_middleware(
     async def send_tool_call_start(data: GlobalTrajectoryMiddlewareStartEvent, _: EventMeta) -> None:
         tool_start_event, tool_start_meta = data.origin
         tool = cast(AnyTool, tool_start_meta.creator.instance)  # type: ignore[attr-defined]
-        if isinstance(tool, FinalAnswerTool):
+        if _check_is_final_answer(tool):
             return
         await context.yield_async(
             trajectory.trajectory_metadata(
@@ -383,11 +383,11 @@ def create_tool_trajectory_middleware(
         tool_success_event, tool_success_meta = data.origin
         tool_output = cast(ToolOutput, tool_success_event.output)
         tool = cast(AnyTool, tool_success_meta.creator.instance)  # type: ignore[attr-defined]
-        if isinstance(tool, FinalAnswerTool):
+        if _check_is_final_answer(tool):
             return
         await context.yield_async(
             trajectory.trajectory_metadata(
-                title=f"{'--> ' * (data.level.relative - 1)}{tool.name} (response)",
+                title=f"{'<-- ' * (data.level.relative - 1)}{tool.name} (response)",
                 content=tool_output.get_text_content(),
             )
         )
@@ -398,8 +398,12 @@ def create_tool_trajectory_middleware(
         tool = cast(AnyTool, tool_error_meta.creator.instance)  # type: ignore[attr-defined]
         await context.yield_async(
             trajectory.trajectory_metadata(
-                title=f"{'--> ' * (data.level.relative - 1)}{tool.name} (error)", content=tool_error_event.explain()
+                title=f"{'<-- ' * (data.level.relative - 1)}{tool.name} (error)", content=tool_error_event.explain()
             )
         )
 
     return tool_calls_trajectory_middleware
+
+
+def _check_is_final_answer(tool: AnyTool) -> bool:
+    return isinstance(tool, FinalAnswerTool) or tool.name == "final_answer"
