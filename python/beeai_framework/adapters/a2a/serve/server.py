@@ -60,11 +60,18 @@ class A2AServerConfig(BaseModel):
     port: int = 9999
     protocol: Literal["jsonrpc", "grpc", "http_json"] = "jsonrpc"
     agent_card_port: int | None = None
-    agent_card_host: str = "localhost"
+    """
+    Applicable only to the gRPC protocol. Specifies the port for the HTTP server to expose AgentCard.
+    """
     server_credentials: grpc.ServerCredentials | None = None
+    """
+    Applicable only to the gRPC protocol.
+    """
 
 
 class A2AServerMetadata(TypedDict, total=False):
+    """Configuration to be used within AgentCard."""
+
     name: str
     description: str
     url: str
@@ -77,7 +84,11 @@ class A2AServerMetadata(TypedDict, total=False):
     queue_manager: a2a_server_events.QueueManager | None
     push_notifier: a2a_server_tasks.PushNotificationSender | None
     request_context_builder: a2a_agent_execution.RequestContextBuilder | None
+
     send_trajectory: bool
+    """
+    Whether to send trajectory data to the client.
+    """
 
 
 class A2AServer(
@@ -99,30 +110,30 @@ class A2AServer(
 
         member = self._members[0]
         factory = type(self)._get_factory(member)
-        config = self._metadata_by_agent.get(member, {})
-        executor = factory(member, metadata=config, memory_manager=self._memory_manager)  # type: ignore[call-arg]
+        metadata = self._metadata_by_agent.get(member, {})
+        executor = factory(member, metadata=metadata, memory_manager=self._memory_manager)  # type: ignore[call-arg]
 
         request_handler = a2a_request_handlers.DefaultRequestHandler(
             agent_executor=executor,
-            task_store=config.get("task_store", None) or a2a_server.tasks.InMemoryTaskStore(),
-            queue_manager=config.get("queue_manager", None),
-            push_sender=config.get("push_sender", config.get("push_notifier", None)),  # type: ignore
-            request_context_builder=config.get("request_context_builder", None),
+            task_store=metadata.get("task_store", None) or a2a_server.tasks.InMemoryTaskStore(),
+            queue_manager=metadata.get("queue_manager", None),
+            push_sender=metadata.get("push_sender", metadata.get("push_notifier", None)),  # type: ignore
+            request_context_builder=metadata.get("request_context_builder", None),
         )
 
         server: a2a_apps.A2ARESTFastAPIApplication | a2a_apps.A2AStarletteApplication
         if self._config.protocol == "jsonrpc":
-            executor.agent_card.url = f"http://{self._config.agent_card_host}:{self._config.port}"
+            executor.agent_card.url = metadata.get("url", f"http://{self._config.host}:{self._config.port}")
             executor.agent_card.preferred_transport = a2a_types.TransportProtocol.jsonrpc
             server = a2a_apps.A2AStarletteApplication(agent_card=executor.agent_card, http_handler=request_handler)
             uvicorn.run(server.build(), host=self._config.host, port=self._config.port)
         elif self._config.protocol == "http_json":
-            executor.agent_card.url = f"http://{self._config.agent_card_host}:{self._config.port}"
+            executor.agent_card.url = metadata.get("url", f"http://{self._config.host}:{self._config.port}")
             executor.agent_card.preferred_transport = a2a_types.TransportProtocol.http_json
             server = a2a_apps.A2ARESTFastAPIApplication(agent_card=executor.agent_card, http_handler=request_handler)
             uvicorn.run(server.build(), host=self._config.host, port=self._config.port)
         elif self._config.protocol == "grpc":
-            executor.agent_card.url = f"{self._config.agent_card_host}:{self._config.port}"
+            executor.agent_card.url = metadata.get("url", f"{self._config.host}:{self._config.port}")
             executor.agent_card.preferred_transport = a2a_types.TransportProtocol.grpc
             asyncio.run(self._start_grpc_server(executor.agent_card, request_handler))
         else:
@@ -265,7 +276,7 @@ def _create_agent_card(metadata: A2AServerMetadata, runnable: Runnable[Any]) -> 
     return a2a_types.AgentCard(
         name=name,
         description=description,
-        url=metadata.get("url", "http://localhost:9999"),
+        url=metadata.get("url", "dummy"),
         version=metadata.get("version", "1.0.0"),
         default_input_modes=metadata.get("default_input_modes", ["text"]),
         default_output_modes=metadata.get("default_output_modes", ["text"]),
