@@ -12,6 +12,7 @@ from beeai_framework.backend.message import (
     Role,
     UserMessage,
 )
+from beeai_framework.logger import Logger
 from beeai_framework.utils.strings import to_json
 
 try:
@@ -20,6 +21,8 @@ except ModuleNotFoundError as e:
     raise ModuleNotFoundError(
         "Optional module [a2a] not found.\nRun 'pip install \"beeai-framework[a2a]\"' to install."
     ) from e
+
+logger = Logger(__name__)
 
 
 def convert_a2a_to_framework_message(input: a2a_types.Message | a2a_types.Artifact) -> AnyMessage:
@@ -65,6 +68,8 @@ def convert_to_a2a_message(
     if isinstance(input, list) and input and isinstance(input[-1], Message):
         if len(input) == 0:
             raise ValueError("Input cannot be empty")
+        elif len(input) > 1:
+            logger.warn("Input contains more than one message, only the last one will be used.")
         return convert_to_a2a_message(
             input[-1], context_id=context_id, task_id=task_id, reference_task_ids=reference_task_ids, metadata=metadata
         )
