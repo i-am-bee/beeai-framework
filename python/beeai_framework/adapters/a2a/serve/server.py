@@ -123,17 +123,17 @@ class A2AServer(
 
         server: a2a_apps.A2ARESTFastAPIApplication | a2a_apps.A2AStarletteApplication
         if self._config.protocol == "jsonrpc":
-            executor.agent_card.url = metadata.get("url", f"http://localhost:{self._config.port}")
+            executor.agent_card.url = metadata.get("url", f"http://{self._config.host}:{self._config.port}")
             executor.agent_card.preferred_transport = a2a_types.TransportProtocol.jsonrpc
             server = a2a_apps.A2AStarletteApplication(agent_card=executor.agent_card, http_handler=request_handler)
             uvicorn.run(server.build(), host=self._config.host, port=self._config.port)
         elif self._config.protocol == "http_json":
-            executor.agent_card.url = metadata.get("url", f"http://localhost:{self._config.port}")
+            executor.agent_card.url = metadata.get("url", f"http://{self._config.host}:{self._config.port}")
             executor.agent_card.preferred_transport = a2a_types.TransportProtocol.http_json
             server = a2a_apps.A2ARESTFastAPIApplication(agent_card=executor.agent_card, http_handler=request_handler)
             uvicorn.run(server.build(), host=self._config.host, port=self._config.port)
         elif self._config.protocol == "grpc":
-            executor.agent_card.url = metadata.get("url", f"localhost:{self._config.port}")
+            executor.agent_card.url = metadata.get("url", f"{self._config.host}:{self._config.port}")
             executor.agent_card.preferred_transport = a2a_types.TransportProtocol.grpc
             asyncio.run(self._start_grpc_server(executor.agent_card, request_handler))
         else:
