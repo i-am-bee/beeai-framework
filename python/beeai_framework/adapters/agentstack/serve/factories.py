@@ -30,7 +30,7 @@ from beeai_framework.middleware.trajectory import (
     GlobalTrajectoryMiddlewareSuccessEvent,
 )
 from beeai_framework.runnable import Runnable
-from beeai_framework.tools import Tool, ToolOutput
+from beeai_framework.tools import AnyTool, Tool, ToolOutput
 from beeai_framework.utils.cloneable import Cloneable, clone_class
 from beeai_framework.utils.lists import remove_falsy
 from beeai_framework.utils.strings import to_json
@@ -48,7 +48,6 @@ except ModuleNotFoundError as e:
         "Optional module [agentstack] not found.\nRun 'pip install \"beeai-framework[agentstack]\"' to install."
     ) from e
 
-from beeai_framework.backend.message import MessageToolCallContent
 from beeai_framework.serve import MemoryManager
 
 logger = Logger(__name__)
@@ -86,58 +85,41 @@ def _react_agent_factory(
         ):
             artifact_id = uuid.uuid4()
             append = False
-            last_key = None
-            last_update = None
-            accumulated_text = ""
-            async for data, event in cloned_agent.run([convert_a2a_to_framework_message(message)]):
-                match (data, event.name):
-                    case (ReActAgentUpdateEvent(), "partial_update"):
-                        match data.update.key:
-                            case "thought" | "tool_name" | "tool_input" | "tool_output":
-                                update = data.update.parsed_value
-                                update = (
-                                    update.get_text_content() if hasattr(update, "get_text_content") else str(update)
-                                )
-                                if last_key and last_key != data.update.key:
-                                    yield extra_extensions["trajectory"].trajectory_metadata(
-                                        title=last_key, content=last_update
-                                    )
-                                last_key = data.update.key
-                                last_update = update
-                            case "final_answer":
-                                update = data.update.value
-                                update = (
-                                    update.get_text_content() if hasattr(update, "get_text_content") else str(update)
-                                )
-                                accumulated_text += update
-                                yield a2a_types.TaskArtifactUpdateEvent(
-                                    append=append,
-                                    context_id=context.context_id,
-                                    task_id=context.task_id,
-                                    last_chunk=False,
-                                    artifact=a2a_types.Artifact(
-                                        name="final_answer",
-                                        artifact_id=str(artifact_id),
-                                        parts=[a2a_types.Part(root=a2a_types.TextPart(text=update))],
-                                    ),
-                                )
-                                append = True
 
-            yield a2a_types.TaskArtifactUpdateEvent(
-                append=True,
-                context_id=context.context_id,
-                task_id=context.task_id,
-                last_chunk=True,
-                artifact=a2a_types.Artifact(
-                    name="final_answer",
-                    artifact_id=str(artifact_id),
-                    parts=[a2a_types.Part(root=a2a_types.TextPart(text=""))],
-                ),
+            @cloned_agent.emitter.on("partial_update")
+            async def on_partial_update(data: ReActAgentUpdateEvent, _: EventMeta) -> None:
+                nonlocal append
+                if data.update.key == "final_answer":
+                    update = data.update.value
+                    update = update.get_text_content() if hasattr(update, "get_text_content") else str(update)
+                    await _yield_artifact_update(context, artifact_id, update, append=append)
+                    append = True
+
+            @cloned_agent.emitter.on("update")
+            async def on_update(data: ReActAgentUpdateEvent, _: EventMeta) -> None:
+                if data.update.key == "thought":
+                    update = data.update.parsed_value
+                    update = update.get_text_content() if hasattr(update, "get_text_content") else str(update)
+                    await context.yield_async(
+                        extra_extensions["trajectory"].trajectory_metadata(title=data.update.key, content=update)
+                    )
+
+            tool_calls_trajectory_middleware = get_tool_calls_trajectory_middleware(
+                extra_extensions["trajectory"], context
+            )
+            result = await cloned_agent.run([convert_a2a_to_framework_message(message)]).middleware(
+                tool_calls_trajectory_middleware
             )
 
+            agent_response = convert_to_a2a_message(result.last_message)
             if isinstance(memory_manager, AgentStackMemoryManager):
                 await context.store(message)
-                await context.store(agentstack_types.AgentMessage(text=accumulated_text))
+                await context.store(agent_response)
+
+            if append:
+                await _yield_artifact_update(context, artifact_id, last_chunk=False)
+            else:
+                yield agent_response
 
     return agentstack_agent.agent(**agent_metadata)(run)
 
@@ -223,22 +205,9 @@ def _requirement_agent_factory(
             append = False
 
             @cloned_agent.emitter.on("final_answer")
-            async def on_final_answer(data: RequirementAgentFinalAnswerEvent, meta: EventMeta) -> None:
+            async def on_final_answer(data: RequirementAgentFinalAnswerEvent, _: EventMeta) -> None:
                 nonlocal append
-                update = data.delta
-                await context.yield_async(
-                    a2a_types.TaskArtifactUpdateEvent(
-                        append=append,
-                        context_id=context.context_id,
-                        task_id=context.task_id,
-                        last_chunk=False,
-                        artifact=a2a_types.Artifact(
-                            name="final_answer",
-                            artifact_id=str(artifact_id),
-                            parts=[a2a_types.Part(root=a2a_types.TextPart(text=update))],
-                        ),
-                    )
-                )
+                await _yield_artifact_update(context, artifact_id, data.delta, append=append)
                 append = True
 
             tool_calls_trajectory_middleware = get_tool_calls_trajectory_middleware(
@@ -254,19 +223,34 @@ def _requirement_agent_factory(
                 await context.store(agent_response)
 
             if append:
-                yield a2a_types.TaskArtifactUpdateEvent(
-                    append=True,
-                    context_id=context.context_id,
-                    task_id=context.task_id,
-                    last_chunk=True,
-                    artifact=a2a_types.Artifact(
-                        name="final_answer",
-                        artifact_id=str(artifact_id),
-                        parts=[a2a_types.Part(root=a2a_types.TextPart(text=""))],
-                    ),
-                )
+                await _yield_artifact_update(context, artifact_id, last_chunk=False)
+            else:
+                yield agent_response
 
     return agentstack_agent.agent(**agent_metadata)(run)
+
+
+async def _yield_artifact_update(
+    context: agentstack_context.RunContext,
+    artifact_id: uuid.UUID,
+    update: str = "",
+    *,
+    append: bool = True,
+    last_chunk: bool = False,
+) -> None:
+    await context.yield_async(
+        a2a_types.TaskArtifactUpdateEvent(
+            append=append,
+            context_id=context.context_id,
+            task_id=context.task_id,
+            last_chunk=last_chunk,
+            artifact=a2a_types.Artifact(
+                name="final_answer",
+                artifact_id=str(artifact_id),
+                parts=[a2a_types.Part(root=a2a_types.TextPart(text=update))],
+            ),
+        )
+    )
 
 
 def _runnable_factory(
@@ -391,10 +375,12 @@ def get_tool_calls_trajectory_middleware(
     @tool_calls_trajectory_middleware.emitter.on("start")
     async def send_tool_call_start(data: GlobalTrajectoryMiddlewareStartEvent, _: EventMeta) -> None:
         tool_start_event, tool_start_meta = data.origin
-        tool_call = cast(MessageToolCallContent, tool_start_meta.context["tool_call_msg"])
+        tool = cast(AnyTool, tool_start_meta.creator.instance)  # type: ignore[attr-defined]
+        if tool.name == "final_answer":
+            return
         await context.yield_async(
             trajectory.trajectory_metadata(
-                title=f"{tool_call.tool_name} (request)",
+                title=f"{tool.name} (request)",
                 content=to_json(tool_start_event.input, sort_keys=False, indent=4),
             )
         )
@@ -402,20 +388,20 @@ def get_tool_calls_trajectory_middleware(
     @tool_calls_trajectory_middleware.emitter.on("success")
     async def send_tool_call_success(data: GlobalTrajectoryMiddlewareSuccessEvent, _: EventMeta) -> None:
         tool_success_event, tool_success_meta = data.origin
-        tool_call = cast(MessageToolCallContent, tool_success_meta.context["tool_call_msg"])
         tool_output = cast(ToolOutput, tool_success_event.output)
+        tool = cast(AnyTool, tool_success_meta.creator.instance)  # type: ignore[attr-defined]
+        if tool.name == "final_answer":
+            return
         await context.yield_async(
-            trajectory.trajectory_metadata(
-                title=f"{tool_call.tool_name} (response)", content=tool_output.get_text_content()
-            )
+            trajectory.trajectory_metadata(title=f"{tool.name} (response)", content=tool_output.get_text_content())
         )
 
     @tool_calls_trajectory_middleware.emitter.on("error")
     async def send_tool_call_error(data: GlobalTrajectoryMiddlewareErrorEvent, _: EventMeta) -> None:
         tool_error_event, tool_error_meta = data.origin
-        tool_call = cast(MessageToolCallContent, tool_error_meta.context["tool_call_msg"])
+        tool = cast(AnyTool, tool_error_meta.creator.instance)  # type: ignore[attr-defined]
         await context.yield_async(
-            trajectory.trajectory_metadata(title=f"{tool_call.tool_name} (error)", content=tool_error_event.explain())
+            trajectory.trajectory_metadata(title=f"{tool.name} (error)", content=tool_error_event.explain())
         )
 
     return tool_calls_trajectory_middleware
