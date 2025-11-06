@@ -1,3 +1,19 @@
+## python_v0.1.64 (2025-11-05)
+
+### Bug Fixes
+
+- **tools**: correctly clone the HandoffTool
+- **tools**: correctly clone the HandoffTool
+
+### Features
+
+- **adapters**: add host parameter for A2A (#1269)
+- **tools**: sanitize name attribute in the HandoffTool
+- **agents**: propagate memory to the context in ReactAgent
+- **tools**: improve error handling in HandoffTool
+- **middlewares**: emit events from GlobalTrajectoryMiddleware (#1272)
+- **middlewares**: propagate updates from StreamToolCallMiddleware without streaming
+
 ## python_v0.1.62 (2025-11-03)
 
 ### Bug Fixes
