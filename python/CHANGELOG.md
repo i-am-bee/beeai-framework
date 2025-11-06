@@ -1,3 +1,14 @@
+## python_v0.1.65 (2025-11-06)
+
+### Bug Fixes
+
+- **adapters**: agent card url can be provided in agent's metadata (#1276)
+
+### Features
+
+- **adapters**: add nested trajectory support for AgentStack (#1273)
+- **agent**: improve typing for ConditionalRequirement
+
 ## python_v0.1.64 (2025-11-05)
 
 ### Bug Fixes
