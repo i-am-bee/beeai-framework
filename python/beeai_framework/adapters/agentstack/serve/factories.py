@@ -117,7 +117,7 @@ def _react_agent_factory(
                 await context.store(agent_response)
 
             if append:
-                await _yield_artifact_update(context, artifact_id, last_chunk=False)
+                await _yield_artifact_update(context, artifact_id, last_chunk=True)
             else:
                 yield agent_response
 
@@ -223,7 +223,7 @@ def _requirement_agent_factory(
                 await context.store(agent_response)
 
             if append:
-                await _yield_artifact_update(context, artifact_id, last_chunk=False)
+                await _yield_artifact_update(context, artifact_id, last_chunk=True)
             else:
                 yield agent_response
 
