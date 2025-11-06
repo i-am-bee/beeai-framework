@@ -16,12 +16,6 @@ async def main() -> None:
         force_streaming=True,  # we want to let middleware enable streaming on the model
     )
 
-    # With Streaming
-    # "{\n  \"New York\",\n  \"country\": \"United States\",\n  \"start_date\": null,\n  \"end_date\": null,\n  \"temperature_unit\": \"celsius\"\n}"
-
-    # No-streaming
-    # "{\n  \"location_name\": \"New York\",\n  \"country\": \"United States\",\n  \"start_date\": null,\n  \"end_date\": null,\n  \"temperature_unit\": \"celsius\"\n}"
-
     @middleware.emitter.on("update")
     def log_thoughts(event: StreamToolCallMiddlewareUpdateEvent, meta: EventMeta) -> None:
         print(

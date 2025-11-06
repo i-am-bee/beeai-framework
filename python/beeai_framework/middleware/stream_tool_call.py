@@ -7,7 +7,13 @@ from typing import Any
 
 from pydantic import BaseModel
 
-from beeai_framework.backend import ChatModel, ChatModelNewTokenEvent, ChatModelOutput, ChatModelStartEvent
+from beeai_framework.backend import (
+    ChatModel,
+    ChatModelNewTokenEvent,
+    ChatModelOutput,
+    ChatModelStartEvent,
+    ChatModelSuccessEvent,
+)
 from beeai_framework.backend.utils import parse_broken_json
 from beeai_framework.context import RunContext, RunMiddlewareProtocol
 from beeai_framework.emitter import Emitter, EmitterOptions, EventMeta
@@ -59,6 +65,13 @@ class StreamToolCallMiddleware(RunMiddlewareProtocol):
                 options=self._create_emitter_options(),
             )
         )
+        self._cleanups.append(
+            ctx.instance.emitter.on(
+                lambda meta: isinstance(meta.creator, ChatModel) and meta.name == "success",
+                callback=self._handle_success,
+                options=self._create_emitter_options(),
+            )
+        )
 
     def unbind(self) -> None:
         while self._cleanups:
@@ -101,6 +114,10 @@ class StreamToolCallMiddleware(RunMiddlewareProtocol):
         if self._force_streaming:
             data.input.stream = True
             data.input.stream_partial_tool_calls = True
+
+    async def _handle_success(self, data: ChatModelSuccessEvent, meta: EventMeta) -> None:
+        if self._output.is_empty():
+            await self._handle_new_token(ChatModelNewTokenEvent(value=data.value, abort=lambda: None), meta)
 
     async def _handle_new_token(self, data: ChatModelNewTokenEvent, meta: EventMeta) -> None:
         self._output.merge(data.value)

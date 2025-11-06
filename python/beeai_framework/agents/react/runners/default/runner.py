@@ -258,7 +258,9 @@ class DefaultRunner(BaseRunner):
 
         async def executor(_: RetryableContext) -> ReActAgentRunnerToolResult:
             try:
-                tool_output: ToolOutput = await tool.run(input.state.tool_input)  # TODO: pass tool options
+                tool_output: ToolOutput = await tool.run(input.state.tool_input).context(
+                    {"state": {"memory": self.memory}}
+                )
                 output = (
                     tool_output
                     if not tool_output.is_empty()

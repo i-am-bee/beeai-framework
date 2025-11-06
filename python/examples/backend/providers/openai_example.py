@@ -135,9 +135,6 @@ async def openai_file_example() -> None:
 
 
 async def main() -> None:
-    await openai_file_example()
-    return
-
     print("*" * 10, "openai_from_name")
     await openai_from_name()
     print("*" * 10, "openai_granite_from_name")

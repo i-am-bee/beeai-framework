@@ -15,6 +15,7 @@ warnings.warn(
     stacklevel=2,
 )
 
+
 def __getattr__(name: str) -> Any:
     final_name = name.replace("BeeAIPlatform", "AgentStack")
     if hasattr(_new_module, final_name) and final_name != name:

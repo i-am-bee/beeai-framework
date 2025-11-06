@@ -29,7 +29,7 @@ The following table depicts supported providers. Each provider requires specific
 | :------------- | :--- |:---------------------------| :-------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Ollama         |  ✅  | ✅                          | OLLAMA_CHAT_MODEL<br/>OLLAMA_BASE_URL                                                                                                       |
 | OpenAI         |  ✅  | ✅                          | OPENAI_CHAT_MODEL<br/>OPENAI_EMBEDDING_MODEL<br/>OPENAI_API_BASE<br/>OPENAI_API_KEY<br/>OPENAI_ORGANIZATION<br/>OPENAI_API_HEADERS                                                                                                       |
-| Watsonx        |  ✅  | ✅                          | WATSONX_CHAT_MODEL<br/>WATSONX_API_KEY<br/>WATSONX_PROJECT_ID<br/>WATSONX_SPACE_ID<br/>WATSONX_TOKEN<br/>WATSONX_ZENAPIKEY<br/>WATSONX_URL<br/>WATSONX_REGION |
+| IBM watsonx.ai        |  ✅  | ✅                          | WATSONX_CHAT_MODEL<br/>WATSONX_API_KEY<br/>WATSONX_PROJECT_ID<br/>WATSONX_SPACE_ID<br/>WATSONX_TOKEN<br/>WATSONX_ZENAPIKEY<br/>WATSONX_URL<br/>WATSONX_REGION |
 | Anthropic      |  ✅  | ✅                          | ANTHROPIC_CHAT_MODEL<br/>ANTHROPIC_API_KEY<br/>ANTHROPIC_API_HEADERS |
 | Groq           |  ✅  | ✅                          | GROQ_CHAT_MODEL<br/>GROQ_EMBEDDING_MODEL<br/>GROQ_API_KEY |
 | Amazon Bedrock |  ✅  | ✅                          | AWS_CHAT_MODEL<br/>AWS_ACCESS_KEY_ID<br/>AWS_SECRET_ACCESS_KEY<br/>AWS_REGION<br/>AWS_API_HEADERS |
@@ -207,9 +207,6 @@ async def openai_file_example() -> None:
 
 
 async def main() -> None:
-    await openai_file_example()
-    return
-
     print("*" * 10, "openai_from_name")
     await openai_from_name()
     print("*" * 10, "openai_granite_from_name")

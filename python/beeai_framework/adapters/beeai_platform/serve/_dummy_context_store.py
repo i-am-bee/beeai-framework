@@ -9,11 +9,12 @@ from typing import Any
 import beeai_framework.adapters.agentstack.serve._dummy_context_store as _new_module
 
 warnings.warn(
-    "beeai_framework.adapters.beeai_platform.serve._dummy_context_store is deprecated and will be removed in a future release. " # noqa: E501
+    "beeai_framework.adapters.beeai_platform.serve._dummy_context_store is deprecated and will be removed in a future release. "  # noqa: E501
     "Please use beeai_framework.adapters.agentstack.serve._dummy_context_store instead.",
     DeprecationWarning,
     stacklevel=2,
 )
+
 
 def __getattr__(name: str) -> Any:
     final_name = name.replace("BeeAIPlatform", "AgentStack")

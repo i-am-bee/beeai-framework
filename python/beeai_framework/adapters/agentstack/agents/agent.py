@@ -38,6 +38,7 @@ from beeai_framework.adapters.agentstack.agents.events import (
 )
 from beeai_framework.adapters.agentstack.agents.types import (
     AgentStackAgentOutput,
+    AgentStackAgentStatus,
 )
 from beeai_framework.agents import AgentError, AgentMeta, AgentOptions, BaseAgent
 from beeai_framework.backend.message import AnyMessage
@@ -186,7 +187,16 @@ class AgentStackAgent(BaseAgent[AgentStackAgentOutput]):
         return metadata
 
     @classmethod
-    async def from_agent_stack(cls, url: str, memory: BaseMemory) -> list["AgentStackAgent"]:
+    async def from_agent_stack(
+        cls,
+        url: str,
+        memory: BaseMemory,
+        *,
+        states: set[AgentStackAgentStatus] | None = None,
+    ) -> list["AgentStackAgent"]:
+        if states is None:
+            states = {s for s in AgentStackAgentStatus if s != AgentStackAgentStatus.OFFLINE}
+
         async with httpx.AsyncClient() as client:
             response = await client.get(f"{url}/api/v1/providers")
 
@@ -194,6 +204,7 @@ class AgentStackAgent(BaseAgent[AgentStackAgentOutput]):
             return [
                 AgentStackAgent(agent_card=a2a_types.AgentCard(**provider["agent_card"]), memory=await memory.clone())
                 for provider in response.json().get("items", [])
+                if provider["state"] in states
             ]
 
     def _create_emitter(self) -> Emitter:

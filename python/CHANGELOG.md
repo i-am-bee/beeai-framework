@@ -1,3 +1,32 @@
+## python_v0.1.64 (2025-11-05)
+
+### Bug Fixes
+
+- **tools**: correctly clone the HandoffTool
+- **tools**: correctly clone the HandoffTool
+
+### Features
+
+- **adapters**: add host parameter for A2A (#1269)
+- **tools**: sanitize name attribute in the HandoffTool
+- **agents**: propagate memory to the context in ReactAgent
+- **tools**: improve error handling in HandoffTool
+- **middlewares**: emit events from GlobalTrajectoryMiddleware (#1272)
+- **middlewares**: propagate updates from StreamToolCallMiddleware without streaming
+
+## python_v0.1.62 (2025-11-03)
+
+### Bug Fixes
+
+- relax version of cachetools dependency
+- **adapters**: prevent importing extra dependencies when using OpenAI Chat Model (#1263)
+
+### Features
+
+- **adapters**: filter agents by state (#1258)
+- **adapters**: support exposing PromptTemplate in the MCP Server (#1260)
+- **adapters**: add aserve method for MCP Server
+
 ## python_v0.1.61 (2025-10-30)
 
 ### Features
