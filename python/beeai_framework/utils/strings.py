@@ -147,3 +147,14 @@ def find_first_pair(
         index += 1
 
     return None
+
+
+def is_valid_unicode_escape_sequence(s: str) -> bool:
+    """
+    Return True if s can be safely decoded using unicode_escape.
+    """
+    try:
+        s.encode("utf-8").decode("unicode_escape")
+        return True
+    except UnicodeDecodeError:
+        return False
