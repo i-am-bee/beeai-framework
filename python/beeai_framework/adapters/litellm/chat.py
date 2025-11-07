@@ -51,7 +51,7 @@ from beeai_framework.context import RunContext
 from beeai_framework.logger import Logger
 from beeai_framework.tools.tool import AnyTool, Tool
 from beeai_framework.utils.dicts import exclude_keys, exclude_none, include_keys, set_attr_if_none
-from beeai_framework.utils.strings import to_json
+from beeai_framework.utils.strings import is_valid_unicode_escape_sequence, to_json
 
 logger = Logger(__name__)
 
@@ -113,16 +113,16 @@ class LiteLLMChatModel(ChatModel, ABC):
         async for _chunk in response:
             is_empty = False
             new_chunk = self._transform_output(_chunk)
-            if input.stream_partial_tool_calls:
-                yield new_chunk
-                continue
 
             if last_chunk is None:
                 last_chunk = new_chunk
             else:
                 last_chunk.merge(new_chunk)
 
-            if last_chunk.is_valid():
+            if not is_valid_unicode_escape_sequence(last_chunk.get_text_content()):
+                continue
+
+            if input.stream_partial_tool_calls or last_chunk.is_valid():
                 text += last_chunk.get_text_content()
                 yield last_chunk
                 last_chunk = None
