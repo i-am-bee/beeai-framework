@@ -1095,7 +1095,7 @@ files = [
     {file = "colorama-0.4.6-py2.py3-none-any.whl", hash = "sha256:4f1d9991f5acc0ca119f9d443620b77f9d6b33703e51011c16baf57afb285fc6"},
     {file = "colorama-0.4.6.tar.gz", hash = "sha256:08695f5cb7ed6e0531a20572697297273c47b8cae5a63ffc6d6ed5c201be6e44"},
 ]
-markers = {main = "sys_platform == \"darwin\" and (platform_machine == \"arm64\" or platform_machine == \"x86_64\" or platform_machine != \"arm64\" and platform_machine != \"x86_64\") and (platform_system == \"Windows\" or extra == \"llama-index\" or extra == \"rag\" or extra == \"all\") or (platform_system == \"Windows\" or sys_platform == \"win32\" or extra == \"llama-index\" or extra == \"rag\" or extra == \"all\") and (platform_system == \"Windows\" or extra == \"acp\" or extra == \"all\" or extra == \"llama-index\" or extra == \"rag\") and sys_platform != \"darwin\"", dev = "platform_machine == \"arm64\" or platform_machine == \"x86_64\" or platform_machine != \"arm64\" and platform_machine != \"x86_64\" or sys_platform != \"darwin\""}
+markers = {main = "(platform_system == \"Windows\" or extra == \"llama-index\" or extra == \"rag\" or extra == \"all\" or sys_platform == \"win32\") and (platform_system == \"Windows\" or extra == \"acp\" or extra == \"all\" or extra == \"llama-index\" or extra == \"rag\") and (platform_machine == \"arm64\" or platform_machine == \"x86_64\" or platform_machine != \"arm64\" and platform_machine != \"x86_64\" or sys_platform != \"darwin\")", dev = "platform_machine == \"arm64\" or platform_machine == \"x86_64\" or platform_machine != \"arm64\" and platform_machine != \"x86_64\" or sys_platform != \"darwin\""}
 
 [[package]]
 name = "commitizen"
@@ -2393,7 +2393,7 @@ description = "Fast transfer of large files with the Hugging Face Hub."
 optional = false
 python-versions = ">=3.8"
 groups = ["main"]
-markers = "(sys_platform == \"darwin\" or platform_machine == \"x86_64\" or platform_machine == \"amd64\" or platform_machine == \"arm64\" or platform_machine == \"aarch64\") and (platform_machine == \"arm64\" or platform_machine == \"x86_64\" or platform_machine == \"amd64\" or platform_machine == \"aarch64\")"
+markers = "platform_machine == \"arm64\" or platform_machine == \"x86_64\" or platform_machine == \"amd64\" or platform_machine == \"aarch64\""
 files = [
     {file = "hf_xet-1.2.0-cp313-cp313t-macosx_10_12_x86_64.whl", hash = "sha256:ceeefcd1b7aed4956ae8499e2199607765fbd1c60510752003b6cc0b8413b649"},
     {file = "hf_xet-1.2.0-cp313-cp313t-macosx_11_0_arm64.whl", hash = "sha256:b70218dd548e9840224df5638fdc94bd033552963cfa97f9170829381179c813"},
@@ -2875,15 +2875,15 @@ files = [
 
 [[package]]
 name = "json-repair"
-version = "0.52.3"
+version = "0.52.5"
 description = "A package to repair broken json strings"
 optional = false
 python-versions = ">=3.10"
 groups = ["main"]
 markers = "platform_machine == \"arm64\" or platform_machine == \"x86_64\" or platform_machine != \"arm64\" and platform_machine != \"x86_64\" or sys_platform != \"darwin\""
 files = [
-    {file = "json_repair-0.52.3-py3-none-any.whl", hash = "sha256:cf8affd088ccd7a3c196dad7f6152c005f126f63a614b9ea5d0c1dfa7f5d7186"},
-    {file = "json_repair-0.52.3.tar.gz", hash = "sha256:5e6a6e4df41eb4ad2d316312940095964964f98c5f754583a0ae6efa4d6a613d"},
+    {file = "json_repair-0.52.5-py3-none-any.whl", hash = "sha256:031a84536c93df1de3fb8c8554393da69111e375109cac3ff3d7c68158d68633"},
+    {file = "json_repair-0.52.5.tar.gz", hash = "sha256:b17c8af9af91573bb7bd94a32b98a331df1d5e4ca58f0407c80eb14b1489ca1a"},
 ]
 
 [[package]]
@@ -3213,15 +3213,15 @@ vcr = ["vcrpy (>=7.0.0)"]
 
 [[package]]
 name = "litellm"
-version = "1.79.0"
+version = "1.79.1"
 description = "Library to easily interface with LLM API providers"
 optional = false
 python-versions = "!=2.7.*,!=3.0.*,!=3.1.*,!=3.2.*,!=3.3.*,!=3.4.*,!=3.5.*,!=3.6.*,!=3.7.*,>=3.8"
 groups = ["main"]
 markers = "platform_machine == \"arm64\" or platform_machine == \"x86_64\" or platform_machine != \"arm64\" and platform_machine != \"x86_64\" or sys_platform != \"darwin\""
 files = [
-    {file = "litellm-1.79.0-py3-none-any.whl", hash = "sha256:93414b6ed55fa9e3268e8cb3100faab960c9ecd18173129ccd85471cf3db4f1a"},
-    {file = "litellm-1.79.0.tar.gz", hash = "sha256:f58bb751222ee0e1ffecb2d44987999f9fa94130a6d1a478e19a3e5e8b9a7414"},
+    {file = "litellm-1.79.1-py3-none-any.whl", hash = "sha256:738f7bf36b31514ac11cc71f65718238b57696fcf22f8b3f1e57c44daf17a569"},
+    {file = "litellm-1.79.1.tar.gz", hash = "sha256:c1cf0232c01e7ad4b8442d2cdd78973ce74dfda37ad1d9f0ec3c911510e26523"},
 ]
 
 [package.dependencies]
@@ -3242,7 +3242,7 @@ tokenizers = "*"
 caching = ["diskcache (>=5.6.1,<6.0.0)"]
 extra-proxy = ["azure-identity (>=1.15.0,<2.0.0)", "azure-keyvault-secrets (>=4.8.0,<5.0.0)", "google-cloud-iam (>=2.19.1,<3.0.0)", "google-cloud-kms (>=2.21.3,<3.0.0)", "prisma (==0.11.0)", "redisvl (>=0.4.1,<0.5.0) ; python_version >= \"3.9\" and python_version < \"3.14\"", "resend (>=0.8.0,<0.9.0)"]
 mlflow = ["mlflow (>3.1.4) ; python_version >= \"3.10\""]
-proxy = ["PyJWT (>=2.8.0,<3.0.0)", "apscheduler (>=3.10.4,<4.0.0)", "azure-identity (>=1.15.0,<2.0.0)", "azure-storage-blob (>=12.25.1,<13.0.0)", "backoff", "boto3 (==1.36.0)", "cryptography", "fastapi (>=0.115.5,<0.116.0)", "fastapi-sso (>=0.16.0,<0.17.0)", "gunicorn (>=23.0.0,<24.0.0)", "litellm-enterprise (==0.1.20)", "litellm-proxy-extras (==0.2.29)", "mcp (>=1.10.0,<2.0.0) ; python_version >= \"3.10\"", "orjson (>=3.9.7,<4.0.0)", "polars (>=1.31.0,<2.0.0) ; python_version >= \"3.10\"", "pynacl (>=1.5.0,<2.0.0)", "python-multipart (>=0.0.18,<0.0.19)", "pyyaml (>=6.0.1,<7.0.0)", "rich (==13.7.1)", "rq", "uvicorn (>=0.29.0,<0.30.0)", "uvloop (>=0.21.0,<0.22.0) ; sys_platform != \"win32\"", "websockets (>=13.1.0,<14.0.0)"]
+proxy = ["PyJWT (>=2.8.0,<3.0.0)", "apscheduler (>=3.10.4,<4.0.0)", "azure-identity (>=1.15.0,<2.0.0)", "azure-storage-blob (>=12.25.1,<13.0.0)", "backoff", "boto3 (==1.36.0)", "cryptography", "fastapi (>=0.120.1)", "fastapi-sso (>=0.16.0,<0.17.0)", "gunicorn (>=23.0.0,<24.0.0)", "litellm-enterprise (==0.1.20)", "litellm-proxy-extras (==0.2.31)", "mcp (>=1.10.0,<2.0.0) ; python_version >= \"3.10\"", "orjson (>=3.9.7,<4.0.0)", "polars (>=1.31.0,<2.0.0) ; python_version >= \"3.10\"", "pynacl (>=1.5.0,<2.0.0)", "python-multipart (>=0.0.18,<0.0.19)", "pyyaml (>=6.0.1,<7.0.0)", "rich (==13.7.1)", "rq", "uvicorn (>=0.29.0,<0.30.0)", "uvloop (>=0.21.0,<0.22.0) ; sys_platform != \"win32\"", "websockets (>=13.1.0,<14.0.0)"]
 semantic-router = ["semantic-router ; python_version >= \"3.9\""]
 utils = ["numpydoc"]
 
@@ -9624,4 +9624,4 @@ wikipedia = ["wikipedia-api"]
 [metadata]
 lock-version = "2.1"
 python-versions = ">= 3.11,<3.14"
-content-hash = "d99c6406c6bedb1cf525839b4fa33619fec53e073f1427aec4bca25c41110910"
+content-hash = "4deb87b48bd5cc1074788b48b70dab7a76979c7da230cfac636cfd640cf42216"

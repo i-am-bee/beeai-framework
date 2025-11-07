@@ -27,7 +27,7 @@ chevron = "^0.14.0"
 ddgs = { version="^9.6.0", optional = true }
 fastapi = {version = "^0.116.0", optional = true }
 google-auth = { version = ">=2.14,<3.0.0", optional = true }
-json-repair = "^0.52.0"
+json-repair = "^0.52.5"
 jsonref = "^1.1.0"
 langchain-community = {version = "^0.3.19", optional = true}
 langchain-core = {version = "^0.3.41", optional = true}
