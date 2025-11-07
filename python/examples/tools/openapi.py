@@ -6,6 +6,7 @@ from typing import Any
 
 import aiofiles
 import yaml
+from dotenv import load_dotenv
 
 from beeai_framework.agents.tool_calling import ToolCallingAgent
 from beeai_framework.backend import ChatModel
@@ -35,11 +36,12 @@ async def main() -> None:
 
     response = await agent.run("How many repositories are in 'i-am-bee' org?")
 
-    print("Agent 🤖 : ", response.result.text)
+    print("Agent 🤖 : ", response.last_message.text)
 
 
 if __name__ == "__main__":
     try:
+        load_dotenv()
         asyncio.run(main())
     except FrameworkError as e:
         traceback.print_exc()

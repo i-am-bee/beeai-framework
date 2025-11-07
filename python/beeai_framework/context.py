@@ -1,27 +1,15 @@
 # Copyright 2025 © BeeAI a Series of LF Projects, LLC
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-
+# SPDX-License-Identifier: Apache-2.0
 
 import asyncio
-import contextlib
 import uuid
 from asyncio import Queue
 from collections.abc import AsyncGenerator, Awaitable, Callable, Generator
 from contextvars import ContextVar
 from datetime import UTC, datetime
-from types import NoneType
-from typing import Any, Generic, Protocol, Self, TypeVar
+from typing import Any, Generic, Protocol, Self, TypeAlias, TypeVar, runtime_checkable
+
+from pydantic import BaseModel, InstanceOf
 
 from beeai_framework.emitter import Callback, Emitter, EmitterOptions, EventMeta, EventTrace, Matcher
 from beeai_framework.errors import AbortError, FrameworkError
@@ -44,8 +32,23 @@ class RunInstance(Protocol):
         pass
 
 
-class Run(Generic[R]):
-    def __init__(self, handler: Callable[[], R | Awaitable[R]], context: "RunContext") -> None:
+@runtime_checkable
+class RunMiddlewareProtocol(Protocol):
+    def bind(self, ctx: "RunContext") -> None:
+        pass
+
+
+RunMiddlewareFn = Callable[["RunContext"], None]
+
+RunMiddlewareType: TypeAlias = RunMiddlewareFn | RunMiddlewareProtocol
+
+
+class Run(Generic[R], Awaitable[R]):
+    def __init__(
+        self,
+        handler: Callable[[], R | Awaitable[R]],
+        context: "RunContext",
+    ) -> None:
         super().__init__()
         self.handler = ensure_async(handler)
         self._tasks: list[tuple[Callable[..., Any], list[Any]]] = []
@@ -55,7 +58,7 @@ class Run(Generic[R]):
         async def add_to_queue(data: Any, event: EventMeta) -> None:
             await self._events.put((data, event))
 
-        self._run_context.emitter.match(
+        self._run_context.emitter.on(
             "*", add_to_queue, EmitterOptions(persistent=True, is_blocking=True, match_nested=False)
         )
 
@@ -86,15 +89,21 @@ class Run(Generic[R]):
         return self
 
     def on(self, matcher: Matcher, callback: Callback, options: EmitterOptions | None = None) -> Self:
-        self._tasks.append((self._run_context.emitter.match, [matcher, callback, options]))
+        self._tasks.append((self._run_context.emitter.on, [matcher, callback, options]))
         return self
 
     def context(self, context: dict[str, Any]) -> Self:
-        self._tasks.append((self._set_context, [context]))
+        if context:
+            self._tasks.append((self._set_context, [context]))
         return self
 
-    def middleware(self, fn: Callable[["RunContext"], None]) -> Self:
-        self._tasks.append((fn, [self._run_context]))
+    def middleware(self, *fns: RunMiddlewareProtocol | RunMiddlewareFn) -> Self:
+        for fn in fns:
+            if isinstance(fn, RunMiddlewareProtocol):
+                self._tasks.append((lambda ctx, _fn=fn: _fn.bind(ctx), [self._run_context]))
+            else:
+                self._tasks.append((fn, [self._run_context]))
+
         return self
 
     async def _run_tasks(self) -> R:
@@ -125,7 +134,7 @@ class RunContext:
     ) -> None:
         self.instance = instance
         self.created_at = datetime.now(tz=UTC)
-        self.run_params = run_params or {}
+        self.run_params: dict[str, Any] = run_params or {}
         self.run_id = str(uuid.uuid4())
         self.parent_id = parent.run_id if parent else None
         self.group_id: str = parent.group_id if parent else str(uuid.uuid4())
@@ -151,6 +160,18 @@ class RunContext:
             extra_signals.append(signal)
         register_signals(self._controller, extra_signals)
 
+    @classmethod
+    def get(cls) -> "RunContext":
+        """Get the current run context if invoked from within an execution context.
+
+        Returns:
+            The run context.
+        """
+        context = storage.get(None)
+        if context is None:
+            raise RuntimeError("Called from non-context.")
+        return context
+
     @property
     def signal(self) -> AbortSignal:
         return self._controller.signal
@@ -158,6 +179,9 @@ class RunContext:
     def destroy(self) -> None:
         self.emitter.destroy()
         self._controller.abort("Context has been destroyed.")
+
+    def abort(self, reason: str | None = None) -> None:
+        self._controller.abort(reason)
 
     @staticmethod
     def enter(
@@ -175,55 +199,68 @@ class RunContext:
                 namespace=["run"],
                 creator=context,
                 context={"internal": True},
-                events={
-                    "start": NoneType,
-                    "success": type(any),
-                    "error": FrameworkError,
-                    "finish": NoneType,
-                },
+                events=run_context_event_types,
             )
 
-            try:
-                await emitter.emit("start", None)
+            error: FrameworkError | None = None
+            output: R | None = None
 
-                async def _context_storage_run() -> R:
-                    storage.set(context)
+            start_event = RunContextStartEvent(input=context.run_params, output=output)
+            await emitter.emit("start", start_event)
+
+            async def _context_storage_run() -> R:
+                storage.set(context)
+                if start_event.output is not None:
+                    return start_event.output  # type: ignore
+                else:
                     return await fn(context)
 
-                async def _context_signal_aborted() -> None:
-                    cancel_future = asyncio.get_event_loop().create_future()
+            async def _context_signal_aborted() -> None:
+                fut = asyncio.get_event_loop().create_future()
 
-                    def _on_abort() -> None:
-                        if not cancel_future.done() and not cancel_future.cancelled():
-                            err = AbortError(context.signal.reason)
-                            cancel_future.set_exception(err)
+                def _on_abort() -> None:
+                    if not fut.done():
+                        fut.set_exception(AbortError(context.signal.reason))
 
-                    context.signal.add_event_listener(_on_abort)
-                    await cancel_future
+                context.signal.add_event_listener(_on_abort)
+                try:
+                    await fut
+                finally:
+                    context.signal.remove_event_listener(_on_abort)
 
-                abort_task = asyncio.create_task(
-                    _context_signal_aborted(),
-                    name="abort-task",
+            runner_task = asyncio.create_task(_context_storage_run(), name="run-task")
+            abort_task = asyncio.create_task(_context_signal_aborted(), name="abort-task")
+
+            try:
+                done, pending = await asyncio.wait(
+                    [runner_task, abort_task],
+                    return_when=asyncio.FIRST_COMPLETED,
                 )
-                runner_task = asyncio.create_task(_context_storage_run(), name="run-task")
 
-                done, pending = await asyncio.wait([abort_task, runner_task], return_when=asyncio.FIRST_COMPLETED)
-                result = done.pop().result()
-                abort_task.cancel()
+                if runner_task in done:
+                    output = runner_task.result()
+                    abort_task.cancel()
+                    await asyncio.gather(*pending, return_exceptions=True)
+                    await emitter.emit(
+                        "success",
+                        RunContextSuccessEvent(input=context.run_params, output=output),
+                    )
+                    return output
+                else:
+                    runner_task.cancel()
+                    await asyncio.gather(*pending, return_exceptions=True)
+                    abort_task.result()  # Will raise AbortError
+                    raise FrameworkError("Unhandled exception")
 
-                for task in pending:
-                    with contextlib.suppress(asyncio.CancelledError):
-                        await task
-
-                await emitter.emit("success", result)
-                assert result is not None
-                return result
             except Exception as e:
                 error = FrameworkError.ensure(e)
                 await emitter.emit("error", error)
                 raise error
             finally:
-                await emitter.emit("finish", None)
+                await emitter.emit(
+                    "finish",
+                    RunContextFinishEvent(error=error, input=context.run_params, output=output),
+                )
                 context.destroy()
                 emitter.destroy()
 
@@ -241,4 +278,37 @@ class RunContext:
         return cloned
 
 
-__all__ = ["Run", "RunContext"]
+class RunContextStartEvent(BaseModel):
+    input: dict[str, Any]
+    output: Any
+
+
+class RunContextSuccessEvent(BaseModel):
+    input: dict[str, Any]
+    output: Any
+
+
+class RunContextFinishEvent(BaseModel):
+    output: Any | None
+    error: InstanceOf[FrameworkError] | None
+    input: dict[str, Any]
+
+
+run_context_event_types: dict[str, type] = {
+    "start": RunContextStartEvent,
+    "success": RunContextSuccessEvent,
+    "error": FrameworkError,
+    "finish": RunContextFinishEvent,
+}
+
+
+__all__ = [
+    "Run",
+    "RunContext",
+    "RunContextFinishEvent",
+    "RunContextStartEvent",
+    "RunContextSuccessEvent",
+    "RunMiddlewareProtocol",
+    "RunMiddlewareType",
+    "run_context_event_types",
+]

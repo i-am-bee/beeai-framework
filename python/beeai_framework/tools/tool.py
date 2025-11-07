@@ -1,18 +1,7 @@
 # Copyright 2025 © BeeAI a Series of LF Projects, LLC
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
+# SPDX-License-Identifier: Apache-2.0
 
-
+import contextlib
 import inspect
 import typing
 from abc import ABC, abstractmethod
@@ -25,7 +14,7 @@ from typing_extensions import TypeVar
 
 from beeai_framework.cache.base import BaseCache
 from beeai_framework.cache.null_cache import NullCache
-from beeai_framework.context import Run, RunContext
+from beeai_framework.context import Run, RunContext, RunMiddlewareType
 from beeai_framework.emitter.emitter import Emitter
 from beeai_framework.errors import FrameworkError
 from beeai_framework.logger import Logger
@@ -52,6 +41,10 @@ class Tool(Generic[TInput, TRunOptions, TOutput], ABC):
     def __init__(self, options: dict[str, Any] | None = None) -> None:
         self._options: dict[str, Any] | None = options or None
         self._cache = self.options.get("cache", NullCache[TOutput]()) if self.options else NullCache[TOutput]()
+        self.middlewares: list[RunMiddlewareType] = []
+
+    def __str__(self) -> str:
+        return self.name
 
     @property
     def options(self) -> dict[str, Any] | None:
@@ -81,6 +74,17 @@ class Tool(Generic[TInput, TRunOptions, TOutput], ABC):
         emitter = self._create_emitter()
         emitter.events = tool_event_types
         return emitter
+
+    def to_json_safe(self) -> dict[str, Any]:
+        input_schema = {}
+        with contextlib.suppress(Exception):
+            input_schema = self.input_schema.model_json_schema()
+
+        return {
+            "name": self.name,
+            "description": self.description,
+            "input_schema": input_schema,
+        }
 
     @abstractmethod
     def _create_emitter(self) -> Emitter:
@@ -177,7 +181,7 @@ class Tool(Generic[TInput, TRunOptions, TOutput], ABC):
             handler,
             signal=options.signal if options else None,
             run_params={"input": input, "options": options},
-        )
+        ).middleware(*self.middlewares)
 
     async def clone(self) -> Self:
         cloned = type(self)(self._options.copy() if self._options else None)
@@ -188,10 +192,10 @@ class Tool(Generic[TInput, TRunOptions, TOutput], ABC):
 # this method was inspired by the discussion that was had in this issue:
 # https://github.com/pydantic/pydantic/issues/1391
 @typing.no_type_check
-def get_input_schema(tool_function: Callable) -> type[BaseModel]:
-    input_model_name = tool_function.__name__
+def get_input_schema(tool_function: Callable, *, name: str | None = None) -> type[BaseModel]:
+    input_model_name = name or tool_function.__name__
 
-    args, _, _, defaults, kwonlyargs, kwonlydefaults, annotations = inspect.getfullargspec(tool_function)
+    args, _, varkw, defaults, kwonlyargs, kwonlydefaults, annotations = inspect.getfullargspec(tool_function)
     defaults = defaults or []
     args = args or []
 
@@ -210,7 +214,7 @@ def get_input_schema(tool_function: Callable) -> type[BaseModel]:
         input_model_name,
         **params,
         **keyword_only_params,
-        __config__=ConfigDict(extra="allow", arbitrary_types_allowed=True),
+        __config__=ConfigDict(extra="allow" if varkw else "ignore", arbitrary_types_allowed=True),
     )
 
     return input_model
@@ -228,6 +232,8 @@ def tool(
     name: str | None = ...,
     description: str | None = ...,
     input_schema: type[BaseModel] | None = ...,
+    with_context: bool = False,
+    emitter: Emitter | None = None,
 ) -> AnyTool: ...
 @typing.overload
 def tool(
@@ -235,6 +241,8 @@ def tool(
     name: str | None = ...,
     description: str | None = ...,
     input_schema: type[BaseModel] | None = ...,
+    with_context: bool = False,
+    emitter: Emitter | None = None,
 ) -> Callable[[TFunction], AnyTool]: ...
 def tool(
     tool_function: TFunction | None = None,
@@ -243,6 +251,8 @@ def tool(
     name: str | None = None,
     description: str | None = None,
     input_schema: type[BaseModel] | None = None,
+    with_context: bool = False,
+    emitter: Emitter | None = None,
 ) -> AnyTool | Callable[[TFunction], AnyTool]:
     def create_tool(fn: TFunction) -> AnyTool:
         tool_name = name or fn.__name__
@@ -261,6 +271,9 @@ def tool(
                 super().__init__(options)
 
             def _create_emitter(self) -> Emitter:
+                if emitter is not None:
+                    return emitter
+
                 return Emitter.root().child(
                     namespace=["tool", "custom", to_safe_word(self.name)],
                     creator=self,
@@ -268,6 +281,9 @@ def tool(
 
             async def _run(self, input: Any, options: ToolRunOptions | None, context: RunContext) -> ToolOutput:
                 tool_input_dict = input.model_dump()
+                if with_context:
+                    tool_input_dict["context"] = context
+
                 if inspect.iscoroutinefunction(fn):
                     result = await fn(**tool_input_dict)
                 else:

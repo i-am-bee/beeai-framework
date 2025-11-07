@@ -1,0 +1,292 @@
+---
+title: "RAG"
+description: "Build intelligent agents that combine retrieval with generation for enhanced AI capabilities"
+icon: "folder-check"
+---
+
+## Overview
+
+Retrieval-Augmented Generation (RAG) is a powerful paradigm that enhances large language models by providing them with relevant information from external knowledge sources. This approach has become essential for enterprise AI applications that need to work with specific, up-to-date, or domain-specific information that wasn't part of the model's training data.
+
+RAG addresses key limitations of traditional LLMs:
+- **Knowledge cutoffs** - Access the most current information
+- **Domain expertise** - Integrate specialized knowledge bases
+- **Factual accuracy** - Reduce hallucinations with grounded responses
+- **Scalability** - Work with vast document collections efficiently
+
+Enterprises rely on RAG for applications like customer support, document analysis, knowledge management, and intelligent search systems.
+
+<Note>
+	Location within the framework: [beeai_framework/rag](https://github.com/i-am-bee/beeai-framework/blob/main/python/beeai_framework/rag).
+</Note>
+
+<Tip>
+RAG is most effective when document chunking and retrieval strategies are tailored to your specific problem domain. It's recommended to experiment with different configurations such as chunk sizes, overlap settings, and retrieval parameters. Future releases of BeeAI will provide enhanced capabilities to streamline this optimization process.
+</Tip>
+
+## Philosophy
+
+BeeAI Framework's approach to RAG emphasizes **integration over invention**. Rather than building RAG components from scratch, we provide seamless adapters for proven, production-ready solutions from leading platforms like LangChain and Llama-Index.
+
+This philosophy offers several advantages:
+- **Leverage existing expertise** - Use battle-tested implementations
+- **Faster time-to-market** - Focus on your application logic, not infrastructure
+- **Community support** - Benefit from extensive documentation and community
+- **Flexibility** - Switch between providers as needs evolve
+
+## Installation
+
+To use RAG components, install the framework with the RAG extras:
+
+```bash
+pip install "beeai-framework[rag]"
+```
+
+## RAG Components
+
+The following table outlines the key RAG components available in the BeeAI Framework:
+
+| Component | Description | Compatibility | Future Compatibility |
+|-----------|-------------|---------------|---------------------|
+| [**Document Loaders**](https://github.com/i-am-bee/beeai-framework/blob/main/python/beeai_framework/backend/document_loader.py) | Responsible for loading content from different formats and sources such as PDFs, web pages, and structured text files | LangChain | BeeAI |
+| [**Text Splitters**](https://github.com/i-am-bee/beeai-framework/blob/main/python/beeai_framework/backend/text_splitter.py) | Splits long documents into workable chunks using various strategies, e.g. fixed length or preserving context | LangChain | BeeAI |
+| [**Document**](https://github.com/i-am-bee/beeai-framework/blob/main/python/beeai_framework/backend/types.py) | The basic data structure to house text content, metadata, and relevant scores for retrieval operations | BeeAI | - |
+| [**Vector Store**](https://github.com/i-am-bee/beeai-framework/blob/main/python/beeai_framework/backend/vector_store.py) | Used to store document embeddings and retrieve them based on semantic similarity using embedding distance | LangChain | BeeAI, Llama-Index |
+| [**Document Processors**](https://github.com/i-am-bee/beeai-framework/blob/main/python/beeai_framework/backend/document_processor.py) | Used to process and refine documents during the retrieval-generation lifecycle including reranking and filtering | Llama-Index | - |
+
+## Dynamic Module Loading
+
+BeeAI Framework provides a dynamic module loading system that allows you to instantiate RAG components using string identifiers. This approach enables configuration-driven architectures and easy provider switching.
+
+The `from_name` method uses the format `provider:ClassName` where:
+- `provider` identifies the integration module (e.g., "beeai", "langchain")
+- `ClassName` specifies the exact class to instantiate
+
+<Tip>
+Dynamic loading enables you to switch between different vector store implementations without changing your application code - just update the configuration string.
+</Tip>
+
+### BeeAI Vector Store
+{/* <!-- embedme python/examples/backend/module_loading.py --> */}
+```py Python
+import asyncio
+import sys
+import traceback
+
+from beeai_framework.adapters.beeai.backend.vector_store import TemporalVectorStore
+from beeai_framework.adapters.langchain.mappers.documents import lc_document_to_document
+from beeai_framework.backend.embedding import EmbeddingModel
+from beeai_framework.backend.vector_store import VectorStore
+from beeai_framework.errors import FrameworkError
+
+# LC dependencies - to be swapped with BAI dependencies
+try:
+    from langchain_community.document_loaders import UnstructuredMarkdownLoader
+    from langchain_text_splitters import RecursiveCharacterTextSplitter
+except ModuleNotFoundError as e:
+    raise ModuleNotFoundError(
+        "Optional modules are not found.\nRun 'pip install \"beeai-framework[rag]\"' to install."
+    ) from e
+
+
+async def main() -> None:
+    embedding_model = EmbeddingModel.from_name("watsonx:ibm/slate-125m-english-rtrvr-v2", truncate_input_tokens=500)
+
+    # Document loading
+    loader = UnstructuredMarkdownLoader(file_path="docs/modules/agents.mdx")
+    docs = loader.load()
+    text_splitter = RecursiveCharacterTextSplitter(chunk_size=2000, chunk_overlap=1000)
+    all_splits = text_splitter.split_documents(docs)
+    documents = [lc_document_to_document(document) for document in all_splits]
+    print(f"Loaded {len(documents)} documents")
+
+    vector_store: TemporalVectorStore = VectorStore.from_name(
+        name="beeai:TemporalVectorStore", embedding_model=embedding_model
+    )  # type: ignore[assignment]
+    _ = await vector_store.add_documents(documents=documents)
+
+
+if __name__ == "__main__":
+    try:
+        asyncio.run(main())
+    except FrameworkError as e:
+        traceback.print_exc()
+        sys.exit(e.explain())
+
+```
+
+<Tip>
+Native BeeAI modules can be loaded directly by importing and instantiating the module, e.g. `from beeai_framework.adapters.beeai.backend.vector_store import TemporalVectorStore`.
+</Tip>
+
+### Supported Provider's Vector Store
+
+<CodeGroup>
+```py Python
+# LangChain integration
+vector_store = VectorStore.from_name(
+    name="langchain:InMemoryVectorStore",
+    embedding_model=embedding_model
+)
+```
+
+<Tip>
+You can customize dynamically loaded components by passing additional parameters directly to the `from_name` method. These parameters will be forwarded to the component's constructor, allowing you to configure settings like batch sizes, connection pools, or other provider-specific options without changing your code structure.
+</Tip>
+
+<Tip>
+The same dynamic loading pattern works for document loaders. For example, you can load documents using `DocumentLoader.from_name("langchain:UnstructuredMarkdownLoader", file_path="docs/modules/agents.mdx")` to get your documents ready for the vector store.
+</Tip>
+
+## RAG Agent
+
+The RAG Agent implements a sophisticated retrieval-augmented generation pipeline that combines the power of semantic search with large language models. The agent follows a three-stage process and supports advanced configuration options including custom reranking, flexible retrieval parameters, comprehensive error handling, and query flexibility using various object types.
+
+### 1. Retrieval
+The agent searches the vector store using semantic similarity to find the most relevant documents for the user's query. You can configure the number of documents retrieved and similarity thresholds to optimize for your specific use case.
+
+### 2. Reranking (Optional)
+Retrieved documents can be reranked using advanced LLM-based models to improve relevance and quality of the context provided to the generation stage. This step significantly enhances response accuracy for complex queries.
+
+### 3. Generation
+The LLM generates a response using the retrieved documents as context, ensuring grounded and accurate answers. Built-in error handling ensures informative error messages are stored in memory when issues occur.
+
+### Basic Usage
+
+<Note>
+Document loading and population of the vector store is the developers's responsibility and out of scope for the agent.
+</Note>
+
+{/* <!-- embedme python/examples/agents/rag_agent.py --> */}
+```py Python [expandable]
+import asyncio
+import logging
+import os
+import sys
+import traceback
+
+from dotenv import load_dotenv
+
+from beeai_framework.adapters.beeai.backend.vector_store import TemporalVectorStore
+from beeai_framework.adapters.langchain.backend.vector_store import LangChainVectorStore
+from beeai_framework.agents.experimental.rag import RAGAgent
+from beeai_framework.backend.chat import ChatModel
+from beeai_framework.backend.document_loader import DocumentLoader
+from beeai_framework.backend.document_processor import DocumentProcessor
+from beeai_framework.backend.embedding import EmbeddingModel
+from beeai_framework.backend.text_splitter import TextSplitter
+from beeai_framework.backend.vector_store import VectorStore
+from beeai_framework.errors import FrameworkError
+from beeai_framework.logger import Logger
+from beeai_framework.memory import UnconstrainedMemory
+
+load_dotenv()  # load environment variables
+logger = Logger("rag-agent", level=logging.DEBUG)
+
+
+POPULATE_VECTOR_DB = True
+VECTOR_DB_PATH_4_DUMP = ""  # Set this path for persistency
+INPUT_DOCUMENTS_LOCATION = "docs/integrations"
+
+
+async def populate_documents() -> VectorStore | None:
+    embedding_model = EmbeddingModel.from_name("watsonx:ibm/slate-125m-english-rtrvr-v2", truncate_input_tokens=500)
+
+    # Load existing vector store if available
+    if VECTOR_DB_PATH_4_DUMP and os.path.exists(VECTOR_DB_PATH_4_DUMP):
+        print(f"Loading vector store from: {VECTOR_DB_PATH_4_DUMP}")
+        preloaded_vector_store: VectorStore = TemporalVectorStore.load(
+            path=VECTOR_DB_PATH_4_DUMP, embedding_model=embedding_model
+        )
+        return preloaded_vector_store
+
+    # Create new vector store if population is enabled
+    if POPULATE_VECTOR_DB:
+        loader = DocumentLoader.from_name(
+            name="langchain:UnstructuredMarkdownLoader", file_path="docs/modules/agents.mdx"
+        )
+        try:
+            documents = await loader.load()
+        except Exception:
+            return None
+
+        # Use abstracted text splitter
+        text_splitter = TextSplitter.from_name(
+            name="langchain:RecursiveCharacterTextSplitter", chunk_size=2000, chunk_overlap=1000
+        )
+        documents = await text_splitter.split_documents(documents)
+        print(f"Loaded {len(documents)} documents")
+
+        print("Rebuilding vector store")
+        # Adapter example
+        vector_store: TemporalVectorStore = VectorStore.from_name(
+            name="beeai:TemporalVectorStore", embedding_model=embedding_model
+        )  # type: ignore[assignment]
+        # Native examples
+        # vector_store: TemporalVectorStore = TemporalVectorStore(embedding_model=embedding_model)
+        # vector_store = InMemoryVectorStore(embedding_model)
+        _ = await vector_store.add_documents(documents=documents)
+        if VECTOR_DB_PATH_4_DUMP and isinstance(vector_store, LangChainVectorStore):
+            print(f"Dumping vector store to: {VECTOR_DB_PATH_4_DUMP}")
+            vector_store.vector_store.dump(VECTOR_DB_PATH_4_DUMP)
+        return vector_store
+
+    # Neither existing DB found nor population enabled
+    return None
+
+
+async def main() -> None:
+    vector_store = await populate_documents()
+    if vector_store is None:
+        raise FileNotFoundError(
+            f"Vector database not found at {VECTOR_DB_PATH_4_DUMP}. "
+            "Either set POPULATE_VECTOR_DB=True to create a new one, or ensure the database file exists."
+        )
+
+    llm = ChatModel.from_name("ollama:llama3.2")
+    reranker = DocumentProcessor.from_name("beeai:LLMDocumentReranker", llm=llm)
+
+    agent = RAGAgent(llm=llm, memory=UnconstrainedMemory(), vector_store=vector_store, reranker=reranker)
+
+    response = await agent.run("What agents are available in BeeAI?")
+    print(response.last_message.text)
+
+
+if __name__ == "__main__":
+    try:
+        asyncio.run(main())
+    except FrameworkError as e:
+        traceback.print_exc()
+        sys.exit(e.explain())
+
+```
+
+</CodeGroup>
+
+<Tip>
+For production deployments, consider implementing document caching and index optimization to improve response times.
+</Tip>
+
+### RAG as Tools
+
+Vector store population (loading and chunking documents) is typically handled offline in production applications, making Vector Store the prominent RAG building block utilized as a tool.
+
+`VectorStoreSearchTool` enables any agent to perform semantic search against a pre-populated vector store. This provides flexibility for agents that need retrieval capabilities alongside other functionalities.
+
+<Tip>
+The VectorStoreSearchTool can be dynamically instantiated using `VectorStoreSearchTool.from_vector_store_name("beeai:TemporalVectorStore", embedding_model=embedding_model)`, see RAG with RequirementAgent example for the full code.
+</Tip>
+
+## Examples
+
+<CardGroup cols={1}>
+  <Card title="Python RAG Agent" icon="python" href="https://github.com/i-am-bee/beeai-framework/tree/main/python/examples/agents/rag_agent.py">
+    Complete RAG agent implementation with document loading and processing
+  </Card>
+</CardGroup>
+
+<CardGroup cols={1}>
+  <Card title="RAG with RequirementAgent" icon="search" href="https://github.com/i-am-bee/beeai-framework/tree/main/python/examples/agents/requirement/rag.py">
+    Example showing how to use VectorStoreSearchTool with RequirementAgent for RAG capabilities
+  </Card>
+</CardGroup>

@@ -1,17 +1,5 @@
 # Copyright 2025 © BeeAI a Series of LF Projects, LLC
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-
+# SPDX-License-Identifier: Apache-2.0
 
 from datetime import datetime
 from typing import Any
@@ -23,7 +11,6 @@ from pydantic import BaseModel, ValidationError
 from beeai_framework.template import (
     PromptTemplate,
     PromptTemplateError,
-    PromptTemplateInput,
 )
 
 """
@@ -38,10 +25,8 @@ def template() -> PromptTemplate[Any]:
         count: int
 
     template = PromptTemplate(
-        PromptTemplateInput(
-            schema=TestPromptInputSchema,
-            template="""This is the task: {{task}}{{count}}""",
-        )
+        schema=TestPromptInputSchema,
+        template="""This is the task: {{task}}{{count}}""",
     )
 
     return template
@@ -75,13 +60,11 @@ def test_render_function(template: PromptTemplate[Any]) -> None:
         task: str
 
     template = PromptTemplate(
-        PromptTemplateInput(
-            schema=TestPromptInputSchema,
-            functions={
-                "formatDate": lambda data: datetime.now(ZoneInfo("US/Eastern")).strftime("%A, %B %d, %Y at %I:%M:%S %p")
-            },
-            template="""{{task}} {{formatDate}}""",
-        )
+        schema=TestPromptInputSchema,
+        functions={
+            "formatDate": lambda data: datetime.now(ZoneInfo("US/Eastern")).strftime("%A, %B %d, %Y at %I:%M:%S %p")
+        },
+        template="""{{task}} {{formatDate}}""",
     )
 
     template.render(TestPromptInputSchema(task="Here is a task!"))
@@ -93,11 +76,9 @@ def test_render_function_clash(template: PromptTemplate[Any]) -> None:
         task: str
 
     template = PromptTemplate(
-        PromptTemplateInput(
-            schema=TestPromptInputSchema,
-            functions={"task": lambda d: "Clashing task!"},
-            template="""{{task}}""",
-        )
+        schema=TestPromptInputSchema,
+        functions={"task": lambda d: "Clashing task!"},
+        template="""{{task}}""",
     )
 
     with pytest.raises(PromptTemplateError):

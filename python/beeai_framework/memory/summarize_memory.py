@@ -1,17 +1,5 @@
 # Copyright 2025 © BeeAI a Series of LF Projects, LLC
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-
+# SPDX-License-Identifier: Apache-2.0
 
 from collections.abc import Iterable
 
@@ -59,9 +47,9 @@ Previous messages:
 Summary:""".format("\n".join([f"{msg.role}: {msg.text}" for msg in messages]))
         )
 
-        response = await self._model.create(messages=[prompt])
+        response = await self._model.run([prompt])
 
-        return response.messages[0].get_texts()[0].text
+        return response.output[0].get_texts()[0].text
 
     async def delete(self, message: AnyMessage) -> bool:
         """Delete a message from memory."""

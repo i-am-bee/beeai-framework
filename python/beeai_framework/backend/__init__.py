@@ -1,17 +1,7 @@
 # Copyright 2025 © BeeAI a Series of LF Projects, LLC
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
+# SPDX-License-Identifier: Apache-2.0
 
+from beeai_framework.backend.backend import Backend
 from beeai_framework.backend.chat import ChatModel
 from beeai_framework.backend.embedding import EmbeddingModel
 from beeai_framework.backend.errors import BackendError, ChatModelError, EmbeddingModelError, MessageError
@@ -31,6 +21,7 @@ from beeai_framework.backend.message import (
     CustomMessage,
     CustomMessageContent,
     Message,
+    MessageFileContent,
     MessageImageContent,
     MessageTextContent,
     MessageToolCallContent,
@@ -44,7 +35,6 @@ from beeai_framework.backend.message import (
 from beeai_framework.backend.types import (
     ChatModelOutput,
     ChatModelParameters,
-    ChatModelStructureOutput,
     EmbeddingModelOutput,
 )
 
@@ -52,6 +42,7 @@ __all__ = [
     "AnyMessage",
     "AssistantMessage",
     "AssistantMessageContent",
+    "Backend",
     "BackendError",
     "ChatModel",
     "ChatModelError",
@@ -60,7 +51,6 @@ __all__ = [
     "ChatModelOutput",
     "ChatModelParameters",
     "ChatModelStartEvent",
-    "ChatModelStructureOutput",
     "ChatModelSuccessEvent",
     "CustomMessage",
     "CustomMessage",
@@ -73,6 +63,7 @@ __all__ = [
     "EmbeddingModelSuccessEvent",
     "Message",
     "MessageError",
+    "MessageFileContent",
     "MessageImageContent",
     "MessageTextContent",
     "MessageToolCallContent",

@@ -1,0 +1,118 @@
+---
+title: "Quickstart"
+description: "Get up and running with the BeeAI framework"
+icon: "rocket"
+---
+<Steps>
+   <Step title="Clone the starter repo">
+
+  Chose your prefered programming language and get started with the BeeAI Framework starter template.
+
+  <CodeGroup>
+  ```bash Python
+  git clone https://github.com/i-am-bee/beeai-framework-py-starter.git
+  cd beeai-framework-py-starter
+  ```
+
+  ```bash TypeScript
+  git clone https://github.com/i-am-bee/beeai-framework-ts-starter.git
+  cd beeai-framework-ts-starter
+  ```
+
+  </CodeGroup>
+
+  </Step>
+
+   <Step title="Install the dependencies">
+
+   If you're using python, make sure you have [uv](https://docs.astral.sh/uv/getting-started/installation/) installed.
+
+  <CodeGroup>
+
+  ```bash Python
+  uv sync
+  ```
+
+  ```bash TypeScript
+  nvm install && nvm use
+  npm ci
+  ```
+
+  </CodeGroup>
+
+  </Step>
+
+  <Step title="Configure your Enviorment Variables">
+
+  Create an `.env` file with the contents from `.env.template`
+
+  <CodeGroup>
+
+  ```bash macOS/Linux
+  cp .env.template .env  
+  ```
+
+  ```bash Windows (PowerShell)
+  Copy-Item .env.template .env
+  ```
+
+  ```bash Windows (CMD) 
+  copy .env.template .env 
+  ```
+  </CodeGroup>
+
+
+  </Step>
+
+  <Step title="Configure your LLM Backend">
+
+   If you choose to run a local model, [Ollama](https://ollama.com/) must be installed and running, with the [granite3.3](https://ollama.com/library/granite3.3) model pulled. If you run into issues, run `ollama list` to verify the model name and ensure `granite3.3` is installed or that your alias points to it.
+  
+  ```bash shell
+  ollama pull granite3.3
+  ```
+
+  or
+
+  If you chose to use a hosted model, edit the `LLM_CHAT_MODEL_NAME` in the `.env` file.
+  
+  ```bash example
+  # Examples (pick one that matches your provider/account):
+  LLM_CHAT_MODEL_NAME="openai:gpt-5-mini"
+  ```
+
+  
+  Add your API key for your preferred provider to your `.env` file and uncomment the line.
+
+  ```bash example
+  # Examples (pick one that matches your provider/account):
+  OPENAI_API_KEY="YOUR API KEY"
+  ```
+
+  </Step>
+
+  <Step title="Run the Agent">
+
+  This agent is an activity planner that can help you plan your day. Prompt it with your task and location. Exit the loop by typing "q" and enter.
+  
+  Take a look inside the code file to understand the example agent.
+
+  <CodeGroup>
+  ```bash Python
+  uv run agent.py
+  ```
+
+  ```bash TypeScript
+  npm run start src/agent.ts
+  ```
+
+  </CodeGroup>
+
+  Congradulations! You've ran your first BeeAI agent.
+
+
+  </Step>
+
+</Steps>
+
+Explore more examples in our [Python](https://github.com/i-am-bee/beeai-framework/tree/main/python/examples) and [TypeScript](https://github.com/i-am-bee/beeai-framework/tree/main/typescript/examples) libraries.

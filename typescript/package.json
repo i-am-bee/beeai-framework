@@ -1,6 +1,6 @@
 {
   "name": "beeai-framework",
-  "version": "0.1.14",
+  "version": "0.1.20",
   "license": "Apache-2.0",
   "description": "BeeAI Framework - LLM Agent Framework",
   "author": "BeeAI a Series of LF Projects, LLC",
@@ -13,7 +13,7 @@
     "Bee Agent Framework",
     "NodeJS Agent Framework"
   ],
-  "packageManager": "yarn@4.1.1",
+  "packageManager": "yarn@4.9.1",
   "commitlint": {
     "extends": [
       "@commitlint/config-conventional"
@@ -45,11 +45,6 @@
         ]
       ]
     }
-  },
-  "lint-staged": {
-    "{src,tests,scripts}/**/*": "yarn copyright",
-    "*": "prettier --ignore-unknown --write",
-    "*.{ts,js}": "eslint --fix"
   },
   "prettier": {
     "printWidth": 100,
@@ -84,19 +79,11 @@
       "publish": true
     },
     "hooks": {
-      "before:init": [
-        "yarn docs:check",
-        "[ \"$RELEASE_SKIP_DOCS_LINKS\" = \"true\" ] && echo 'Skipping docs links check.' || yarn docs:links:check",
-        "yarn lint",
-        "yarn ts:check",
-        "[ \"$RELEASE_SKIP_TESTS\" = \"true\" ] && echo 'Skipping tests.' || yarn test:all"
-      ],
       "after:bump": [
-        "yarn build"
+        "mise typescript:build"
       ],
       "before:release": [
-        "yarn docs:build && git add . --update",
-        "yarn lint:fix && yarn format:fix && git add . --update"
+        "mise typescript:fix && git add . --update"
       ]
     },
     "github": {
@@ -150,47 +137,18 @@
   "bugs": {
     "url": "https://github.com/i-am-bee/beeai-framework/issues"
   },
-  "scripts": {
-    "clean": "rimraf dist",
-    "build": "yarn clean && yarn ts:check && NODE_OPTIONS='--max-old-space-size=8192' tsup",
-    "ts:check": "tsc --noEmit && tsc -p tsconfig.examples.json --noEmit",
-    "start": "tsx --tsconfig tsconfig.examples.json",
-    "start:bee": "yarn start -- examples/agents/bee.ts",
-    "docs:build": "embedme --source-root=. docs/**/*.md && yarn lint:fix docs/ && yarn prettier --write docs/",
-    "docs:check": "embedme --source-root=. docs/**/*.md --verify",
-    "docs:links": "linkinator . --timeout=10000 --retry --markdown --directory-listing --skip node_modules --skip CHANGELOG.md --skip docs/CHANGELOG.md --skip docs/_sidebar.md --skip \"https://ai.meta.com/blog/meta-llama-3-1/\" --include",
-    "docs:links:check": "yarn docs:links docs/**/*.md",
-    "docs:watch": "docsify serve ./docs --open",
-    "lint": "yarn eslint",
-    "prepare": "../.githooks/install.sh",
-    "lint:fix": "yarn eslint --fix",
-    "format": "yarn prettier --check .",
-    "format:fix": "yarn prettier --write .",
-    "test:unit": "vitest run src",
-    "test:unit:watch": "vitest run src",
-    "test:e2e": "vitest run tests/e2e",
-    "test:e2e:watch": "vitest watch tests/e2e",
-    "test:all": "yarn test:unit && yarn test:e2e && yarn test:examples",
-    "test:examples": "vitest --config ./examples/vitest.examples.config.ts run tests/examples",
-    "test:examples:watch": "vitest --config ./examples/vitest.examples.config.ts watch tests/examples",
-    "copyright": "./scripts/copyright.sh",
-    "copyright:check": "TYPE=check ./scripts/copyright.sh",
-    "release": "release-it",
-    "_ensure_env": "cp -n .env.template .env || true",
-    "git:commit-msg": "yarn commitlint --edit --",
-    "git:pre-commit": "yarn copyright:check && yarn docs:check && yarn lint && yarn format && yarn ts:check && yarn run test:unit"
-  },
   "dependencies": {
+    "@ai-sdk/xai": "^1.2.18",
     "@ai-zen/node-fetch-event-source": "^2.1.4",
     "@streamparser/json": "^0.0.22",
-    "ai": "^4.3.13",
+    "ai": "^4.3.19",
     "ajv": "^8.17.1",
     "ajv-formats": "^3.0.1",
     "duck-duck-scrape": "^2.2.7",
-    "fast-xml-parser": "^5.0.8",
-    "header-generator": "^2.1.62",
+    "fast-xml-parser": "^5.2.5",
+    "header-generator": "^2.1.69",
     "joplin-turndown-plugin-gfm": "^1.0.12",
-    "jsonrepair": "^3.12.0",
+    "jsonrepair": "^3.13.0",
     "mathjs": "^14.0.0",
     "mustache": "^4.2.0",
     "object-hash": "^3.0.0",
@@ -201,32 +159,37 @@
     "remeda": "^2.21.0",
     "serialize-error-cjs": "^0.2.0",
     "string-comparison": "^1.3.0",
-    "string-strip-html": "^13.4.12",
+    "string-strip-html": "^13.4.13",
     "turndown": "^7.2.0",
     "wikipedia": "^2.1.2",
-    "zod": "^3.24.2",
-    "zod-to-json-schema": "^3.24.3"
+    "zod": "^3.24.4",
+    "zod-to-json-schema": "^3.24.6"
   },
   "peerDependencies": {
-    "@ai-sdk/amazon-bedrock": "^2.2.8",
-    "@ai-sdk/anthropic": "^1.2.10",
-    "@ai-sdk/azure": "^1.3.14",
-    "@ai-sdk/google-vertex": "^2.2.15",
-    "@ai-sdk/groq": "^1.2.8",
-    "@ai-sdk/openai": "^1.3.21",
-    "@aws-sdk/client-bedrock-runtime": "^3.772.0",
+    "@a2a-js/sdk": "^0.3.4",
+    "@ai-sdk/amazon-bedrock": "^2.2.12",
+    "@ai-sdk/anthropic": "^1.2.12",
+    "@ai-sdk/azure": "^1.3.24",
+    "@ai-sdk/google-vertex": "^2.2.27",
+    "@ai-sdk/groq": "^1.2.9",
+    "@ai-sdk/openai": "^1.3.23",
+    "@aws-sdk/client-bedrock-runtime": "^3.848.0",
     "@elastic/elasticsearch": "^8.0.0",
     "@googleapis/customsearch": "^3.2.0",
     "@langchain/community": ">=0.2.28",
     "@langchain/core": ">=0.2.27",
-    "@modelcontextprotocol/sdk": "^1.0.4",
-    "@qdrant/js-client-rest": "^1.14.0",
-    "@zilliz/milvus2-sdk-node": "^2.4.9",
+    "@modelcontextprotocol/sdk": "^1.18.2",
+    "@qdrant/js-client-rest": "^1.15.0",
+    "@zilliz/milvus2-sdk-node": "^2.6.0",
+    "express": "^5.0.0",
     "ollama-ai-provider": "^1.2.0",
-    "sequelize": "^6.37.3",
+    "sequelize": "^6.37.7",
     "yaml": "^2.6.1"
   },
   "peerDependenciesMeta": {
+    "@a2a-js/sdk": {
+      "optional": true
+    },
     "@ai-sdk/amazon-bedrock": {
       "optional": true
     },
@@ -269,6 +232,9 @@
     "@zilliz/milvus2-sdk-node": {
       "optional": true
     },
+    "express": {
+      "optional": true
+    },
     "ibm-cloud-sdk-core": {
       "optional": true
     },
@@ -280,24 +246,25 @@
     }
   },
   "devDependencies": {
-    "@ai-sdk/amazon-bedrock": "^2.2.8",
-    "@ai-sdk/anthropic": "^1.2.10",
-    "@ai-sdk/azure": "^1.3.14",
-    "@ai-sdk/google-vertex": "^2.2.15",
-    "@ai-sdk/groq": "^1.2.8",
-    "@ai-sdk/openai": "^1.3.13",
+    "@a2a-js/sdk": "^0.3.4",
+    "@ai-sdk/amazon-bedrock": "^2.2.12",
+    "@ai-sdk/anthropic": "^1.2.12",
+    "@ai-sdk/azure": "^1.3.24",
+    "@ai-sdk/google-vertex": "^2.2.27",
+    "@ai-sdk/groq": "^1.2.9",
+    "@ai-sdk/openai": "^1.3.23",
     "@commitlint/cli": "^19.7.1",
     "@commitlint/config-conventional": "^19.7.1",
     "@elastic/elasticsearch": "^8.16.2",
     "@eslint/js": "^9.16.0",
     "@eslint/markdown": "^6.2.1",
     "@googleapis/customsearch": "^3.2.0",
-    "@ibm-cloud/watsonx-ai": "^1.6.0",
-    "@langchain/community": "0.3.34",
-    "@langchain/core": "0.3.42",
-    "@langchain/langgraph": "0.2.55",
+    "@ibm-cloud/watsonx-ai": "^1.6.9",
+    "@langchain/community": "^0.3.49",
+    "@langchain/core": "^0.3.59",
+    "@langchain/langgraph": "^0.3.11",
     "@langchain/ollama": "^0.2.0",
-    "@modelcontextprotocol/sdk": "^1.0.4",
+    "@modelcontextprotocol/sdk": "^1.12.0",
     "@qdrant/js-client-rest": "^1.14.0",
     "@release-it/conventional-changelog": "^8.0.2",
     "@rollup/plugin-commonjs": "^28.0.1",
@@ -306,6 +273,7 @@
     "@types/eslint": "^9.6.1",
     "@types/eslint-config-prettier": "^6.11.3",
     "@types/eslint__js": "^8.42.3",
+    "@types/express": "^5.0.0",
     "@types/glob": "^8.1.0",
     "@types/js-yaml": "^4.0.9",
     "@types/mustache": "^4",
@@ -314,33 +282,31 @@
     "@types/object-hash": "^3.0.6",
     "@types/turndown": "^5.0.5",
     "@zilliz/milvus2-sdk-node": "^2.5.1",
-    "docsify-cli": "^4.4.4",
     "dotenv": "^16.4.7",
     "embedme": "^1.22.1",
     "eslint": "^9.17.0",
     "eslint-config-prettier": "^9.1.0",
     "eslint-plugin-unused-imports": "^4.1.4",
+    "express": "^5.0.0",
     "glob": "^11.0.0",
-    "ibm-cloud-sdk-core": "^5.3.2",
+    "ibm-cloud-sdk-core": "^5.4.2",
     "langchain": "0.3.19",
-    "linkinator": "^6.1.2",
-    "lint-staged": "^15.2.10",
     "ollama-ai-provider": "^1.2.0",
     "picocolors": "^1.1.1",
     "pino-pretty": "^13.0.0",
     "pino-test": "^1.1.0",
-    "prettier": "^3.4.2",
+    "prettier": "^3.6.2",
     "release-it": "^17.10.0",
     "rimraf": "^6.0.1",
     "sequelize": "^6.37.5",
     "sqlite3": "^5.1.7",
     "strip-ansi": "^7.1.0",
     "tsup": "^8.4.0",
-    "tsx": "^4.19.2",
-    "typescript": "^5.8.2",
+    "tsx": "^4.20.3",
+    "typescript": "^5.8.3",
     "typescript-eslint": "^8.26.1",
     "vite-tsconfig-paths": "^5.1.4",
-    "vitest": "^2.1.8",
+    "vitest": "^2.1.9",
     "yaml": "^2.6.1"
   },
   "resolutions": {

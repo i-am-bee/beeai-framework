@@ -55,7 +55,7 @@ async function ollamaAbort() {
     console.info(response.getTextContent());
   } catch (err) {
     if (err instanceof ChatModelError) {
-      console.error("Aborted", { err });
+      console.log("Aborted", { err });
     }
   }
 }
@@ -71,7 +71,9 @@ async function ollamaStructure() {
 }
 
 async function ollamaToolCalling() {
-  const userMessage = new UserMessage("What is the weather in Boston?");
+  const userMessage = new UserMessage(
+    `What is the current weather in Boston? Current date is ${new Date().toISOString().split("T")[0]}.`,
+  );
   const weatherTool = new OpenMeteoTool({ retryOptions: { maxRetries: 3 } });
   const response = await llm.create({
     messages: [userMessage],

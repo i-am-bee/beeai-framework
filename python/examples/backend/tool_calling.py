@@ -28,12 +28,13 @@ async def main() -> None:
     ]
 
     while True:
-        response = await model.create(
-            messages=messages,
+        response = await model.run(
+            messages,
             tools=tools,
         )
 
         tool_calls = response.get_tool_calls()
+        messages.extend(response.output)
 
         tool_results: list[ToolMessage] = []
 
@@ -43,7 +44,7 @@ async def main() -> None:
             assert tool is not None
             res: ToolOutput = await tool.run(json.loads(tool_call.args))
             result = res.get_text_content()
-            print(f"<- got response from '{tool_call.tool_name}'", re.sub(r"\s+", " ", result)[:90] + " (truncated)")
+            print(f"<- got response from '{tool_call.tool_name}'", re.sub(r"\s+", " ", result)[:256] + " (truncated)")
             tool_results.append(
                 ToolMessage(
                     MessageToolResultContent(

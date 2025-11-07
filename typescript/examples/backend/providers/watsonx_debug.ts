@@ -2,7 +2,7 @@ import "dotenv/config";
 import { UserMessage } from "beeai-framework/backend/message";
 import { WatsonxChatModel } from "beeai-framework/adapters/watsonx/backend/chat";
 
-const chatLLM = new WatsonxChatModel("meta-llama/llama-3-1-70b-instruct");
+const chatLLM = new WatsonxChatModel("ibm/granite-3-3-8b-instruct");
 
 // Log every request
 chatLLM.emitter.match("*", async (data, event) => {

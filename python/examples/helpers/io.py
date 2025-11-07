@@ -1,3 +1,4 @@
+import os
 import sys
 
 from pydantic import BaseModel
@@ -27,7 +28,7 @@ class ConsoleReader:
         try:
             while True:
                 prompt = input(colored(self.input, "cyan", attrs=["bold"])).strip()
-                if not sys.stdin.isatty():
+                if not sys.stdin.isatty() and "PYCHARM_HOSTED" not in os.environ:
                     print(prompt)
 
                 if prompt == "q":

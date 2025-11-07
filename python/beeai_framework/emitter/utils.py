@@ -1,21 +1,15 @@
 # Copyright 2025 © BeeAI a Series of LF Projects, LLC
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-
+# SPDX-License-Identifier: Apache-2.0
 
 import re
+from typing import TYPE_CHECKING, Optional
 
 from beeai_framework.emitter.errors import EmitterError
+from beeai_framework.utils.lists import cast_list
+
+if TYPE_CHECKING:
+    from beeai_framework.context import RunInstance
+    from beeai_framework.emitter import Emitter, EventMeta, Matcher, MatcherFn
 
 
 def assert_valid_name(name: str) -> None:
@@ -28,3 +22,50 @@ def assert_valid_name(name: str) -> None:
 def assert_valid_namespace(path: list[str]) -> None:
     for part in path:
         assert_valid_name(part)
+
+
+def create_internal_event_matcher(
+    name: str | list[str],
+    instance: Optional["RunInstance"] = None,
+    *,
+    parent_run_id: str | None = None,
+    excluded_instance: object | None = None,
+    excluded_emitter: Optional["Emitter"] = None,
+) -> "MatcherFn":
+    allowed_names: list[str] = cast_list(name)
+
+    def matcher(event: "EventMeta") -> bool:
+        if parent_run_id is not None and (not event.trace or event.trace.parent_run_id != parent_run_id):
+            return False
+
+        if not bool(event.context.get("internal", False)):
+            return False
+
+        if event.name not in allowed_names:
+            return False
+
+        if event.creator.instance is excluded_instance:  # type: ignore
+            return False
+
+        if event.creator.emitter is excluded_emitter:  # type: ignore
+            return False
+
+        if instance is not None:
+            return (
+                event.path == ".".join(["run", *instance.emitter.namespace, event.name])
+                and event.creator.instance is instance  # type: ignore
+            )
+
+        return True
+
+    return matcher
+
+
+def create_event_matcher(name: str, instance: "RunInstance", *, parent_run_id: str | None = None) -> "Matcher":
+    def matcher(event: "EventMeta") -> bool:
+        if parent_run_id is not None and (not event.trace or event.trace.parent_run_id != parent_run_id):
+            return False
+
+        return event.name == name and event.creator is instance
+
+    return matcher

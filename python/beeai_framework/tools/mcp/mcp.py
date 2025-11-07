@@ -1,23 +1,15 @@
 # Copyright 2025 © BeeAI a Series of LF Projects, LLC
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
+# SPDX-License-Identifier: Apache-2.0
+import contextlib
+import json
+from typing import Any, Self, TypedDict, Unpack
 
-
-from typing import Any, Self
+from beeai_framework.tools import ToolError
+from beeai_framework.tools.mcp.utils.session_provider import MCPClient, MCPSessionProvider
 
 try:
     from mcp import ClientSession
-    from mcp.types import CallToolResult
+    from mcp.types import CallToolResult, TextContent
     from mcp.types import Tool as MCPToolInfo
 except ModuleNotFoundError as e:
     raise ModuleNotFoundError(
@@ -32,19 +24,28 @@ from beeai_framework.logger import Logger
 from beeai_framework.tools.tool import Tool
 from beeai_framework.tools.types import JSONToolOutput, ToolRunOptions
 from beeai_framework.utils.models import JSONSchemaModel
-from beeai_framework.utils.strings import to_safe_word
+from beeai_framework.utils.strings import to_json, to_safe_word
 
 logger = Logger(__name__)
+
+__all__ = ["MCPClient", "MCPTool"]
+
+
+class MCPToolKwargs(TypedDict, total=False):
+    smart_parsing: bool
 
 
 class MCPTool(Tool[BaseModel, ToolRunOptions, JSONToolOutput]):
     """Tool implementation for Model Context Protocol."""
 
-    def __init__(self, session: ClientSession, tool: MCPToolInfo, **options: int) -> None:
+    def __init__(self, session: ClientSession, tool: MCPToolInfo, **options: Unpack[MCPToolKwargs]) -> None:
         """Initialize MCPTool with client and tool configuration."""
-        super().__init__(options)
+        smart_parsing = options.pop("smart_parsing", True)
+
+        super().__init__(dict(options))
         self._session = session
         self._tool = tool
+        self._smart_parsing = smart_parsing
 
     @property
     def name(self) -> str:
@@ -71,15 +72,50 @@ class MCPTool(Tool[BaseModel, ToolRunOptions, JSONToolOutput]):
             name=self._tool.name, arguments=input_data.model_dump(exclude_none=True, exclude_unset=True)
         )
         logger.debug(f"Tool result: {result}")
-        return JSONToolOutput(result.content)
+
+        data_result: Any = None
+        if result.structuredContent is not None:
+            data_result = result.structuredContent
+        else:
+            if self._smart_parsing:
+                chunks: list[Any] = []
+                for chunk in result.content:
+                    if isinstance(chunk, TextContent):
+                        with contextlib.suppress(json.JSONDecodeError):
+                            chunk = json.loads(chunk.text)
+                    chunks.append(chunk)
+
+                data_result = chunks[0] if len(chunks) == 1 else chunks
+            else:
+                data_result = result.content
+
+        if result.isError:
+            raise ToolError(to_json(data_result, indent=4, sort_keys=False))
+
+        return JSONToolOutput(data_result)
 
     @classmethod
-    async def from_client(cls, session: ClientSession) -> list["MCPTool"]:
+    async def from_client(cls, client: MCPClient | ClientSession, **options: Unpack[MCPToolKwargs]) -> list["MCPTool"]:
+        if isinstance(client, ClientSession):
+            return await cls.from_session(client, **options)
+
+        manager = MCPSessionProvider(client)
+        session = await manager.session()
+        instance = await cls.from_session(session, **options)
+        manager.refs += len(instance)
+        return instance
+
+    def __del__(self) -> None:
+        MCPSessionProvider.destroy_by_session(self._session)
+
+    @classmethod
+    async def from_session(cls, session: ClientSession, **options: Unpack[MCPToolKwargs]) -> list["MCPTool"]:
         tools_result = await session.list_tools()
-        return [MCPTool(session, tool) for tool in tools_result.tools]
+        return [MCPTool(session, tool, **options) for tool in tools_result.tools]
 
     async def clone(self) -> Self:
         cloned = await super().clone()
         cloned._session = self._session
         cloned._tool = self._tool.model_copy()
+        cloned._smart_parsing = self._smart_parsing
         return cloned

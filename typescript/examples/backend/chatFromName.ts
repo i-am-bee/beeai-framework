@@ -3,7 +3,7 @@ import { createConsoleReader } from "examples/helpers/io.js";
 import { UserMessage } from "beeai-framework/backend/message";
 import { ChatModel } from "beeai-framework/backend/chat";
 
-const llm = await ChatModel.fromName("ollama:granite3.2:8b");
+const llm = await ChatModel.fromName("ollama:granite3.3:8b");
 
 const reader = createConsoleReader();
 

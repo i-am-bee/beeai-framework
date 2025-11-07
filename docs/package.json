@@ -1,0 +1,15 @@
+{
+  "name": "@beeai/framework-docs",
+  "version": "0.0.1",
+  "description": "",
+  "main": "index.js",
+  "keywords": [],
+  "packageManager": "yarn@4.9.1",
+  "author": "BeeAI a Series of LF Projects, LLC",
+  "license": "Apache-2.0",
+  "devDependencies": {
+    "embedme": "^1.22.1",
+    "mintlify": "^4.2.186",
+    "typescript": "^5.9.3"
+  }
+}

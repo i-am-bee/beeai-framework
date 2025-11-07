@@ -45,14 +45,14 @@ async def main() -> None:
 
     # Create agent
     agent = ToolCallingAgent(
-        llm=ChatModel.from_name("ollama:granite3.1-dense:8b"),
+        llm=ChatModel.from_name("ollama:granite4:micro"),
         memory=UnconstrainedMemory(),
         tools=[OpenMeteoTool()],
         templates={
             "system": lambda template: template.update(
                 defaults={
                     "role": "a weather forecast agent",
-                    "instructions": "- If user only provides a location, assume they want to know the weather forecast for it.",  # noqa: E501
+                    "instructions": "- If user only provides a location, assume they want to know the weather forecast for it.",
                 }
             ),
         },
@@ -69,14 +69,14 @@ async def main() -> None:
 
     # Main interaction loop with user input
     for prompt in reader:
-        reader.write("ℹ️ ", "enter a location for which you would like to get the weather forecast")  # noqa: RUF001
+        reader.write("ℹ️ ", "enter a location for which you would like to get the weather forecast")
         response = await agent.run(prompt, expected_output=WeatherForecatModel).on(
             "*",
             log_intermediate_steps,
         )
         reader.write(
             "Agent 🤖 : ",
-            to_json(WeatherForecatModel.model_validate_json(response.result.text), indent=2, sort_keys=False),
+            to_json(WeatherForecatModel.model_validate_json(response.last_message.text), indent=2, sort_keys=False),
         )
 
 

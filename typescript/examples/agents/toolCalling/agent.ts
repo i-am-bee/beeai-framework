@@ -12,7 +12,7 @@ const logger = new Logger({ name: "app", level: "trace" });
 
 // Other models to try:
 // "llama3.1:70b"
-// "granite3.1-dense"
+// "granite3.3"
 // "deepseek-r1:32b"
 // ensure the model is pulled before running
 const llm = new OllamaChatModel("llama3.1");
@@ -20,6 +20,13 @@ const llm = new OllamaChatModel("llama3.1");
 const agent = new ToolCallingAgent({
   llm,
   memory: new TokenMemory(),
+  templates: {
+    system: (template) =>
+      template.fork((config) => {
+        config.defaults.instructions =
+          "You are a helpful assistant that uses tools to answer questions.";
+      }),
+  },
   tools: [
     new OpenMeteoTool(), // weather tool
   ],

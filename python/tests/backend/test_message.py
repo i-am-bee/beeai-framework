@@ -1,16 +1,5 @@
 # Copyright 2025 © BeeAI a Series of LF Projects, LLC
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
+# SPDX-License-Identifier: Apache-2.0
 
 import json
 
@@ -19,6 +8,7 @@ import pytest
 from beeai_framework.backend import (
     AssistantMessage,
     CustomMessage,
+    MessageFileContent,
     MessageTextContent,
     SystemMessage,
     ToolMessage,
@@ -86,3 +76,36 @@ def test_custom_message() -> None:
     assert len(content) == 1
     assert content[0].model_dump()["text"] == text
     assert message.role == "custom"
+
+
+@pytest.mark.unit
+def test_user_message_with_file_id() -> None:
+    file_part = MessageFileContent(file_id="https://example.com/file.pdf", format="application/pdf")
+    message = UserMessage([file_part])
+    assert isinstance(message.content[0], MessageFileContent)
+    assert message.content[0].file_id is not None and message.content[0].file_id.endswith("file.pdf")
+    assert message.to_plain()["content"][0]["type"] == "file"
+
+
+@pytest.mark.unit
+def test_user_message_with_file_data() -> None:
+    file_part = MessageFileContent(file_data="data:application/pdf;base64,AAA", format="application/pdf")
+    message = UserMessage([file_part])
+    assert isinstance(message.content[0], MessageFileContent)
+    assert message.content[0].file_data is not None and message.content[0].file_data.startswith("data:application/pdf")
+    assert message.to_plain()["content"][0]["type"] == "file"
+
+
+@pytest.mark.unit
+def test_user_message_with_file_dict() -> None:
+    file_part = {"type": "file", "file_id": "https://example.com/file.pdf", "format": "application/pdf"}
+    message = UserMessage([MessageFileContent.model_validate(file_part)])
+    assert isinstance(message.content[0], MessageFileContent)
+    assert message.content[0].file_id is not None and message.content[0].file_id.endswith("file.pdf")
+    assert message.to_plain()["content"][0]["type"] == "file"
+
+
+@pytest.mark.unit
+def test_message_file_content_validation_error() -> None:
+    with pytest.raises(ValueError, match="Either 'file_id' or 'file_data' must be provided for MessageFileContent"):
+        MessageFileContent()

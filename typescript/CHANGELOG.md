@@ -1,5 +1,60 @@
 # Changelog
 
+## [0.1.20](https://github.com/i-am-bee/beeai-framework/compare/typescript_v0.1.19...typescript_v0.1.20) (2025-10-29)
+
+### Features
+
+- **serve:** enable streamable-http for MCPServer ([#1251](https://github.com/i-am-bee/beeai-framework/issues/1251)) ([611e6ac](https://github.com/i-am-bee/beeai-framework/commit/611e6ac9dab796fafa6ce9a99ca053cbc3de8bc2)), closes [#1252](https://github.com/i-am-bee/beeai-framework/issues/1252)
+
+## [0.1.19](https://github.com/i-am-bee/beeai-framework/compare/typescript_v0.1.18...typescript_v0.1.19) (2025-10-27)
+
+### Bug Fixes
+
+- **adapters:** fix MCP server logging ([#1153](https://github.com/i-am-bee/beeai-framework/issues/1153)) ([2cc4338](https://github.com/i-am-bee/beeai-framework/commit/2cc433875915a4e1a4223b6066ec289f2306ac04))
+
+## [0.1.18](https://github.com/i-am-bee/beeai-framework/compare/typescript_v0.1.17...typescript_v0.1.18) (2025-09-26)
+
+### Features
+
+- **adapters:** add A2AAgent to TS ([#1113](https://github.com/i-am-bee/beeai-framework/issues/1113)) ([3aaf6f7](https://github.com/i-am-bee/beeai-framework/commit/3aaf6f790bbada09a26016191ffbd5966a077c76)), closes [#1029](https://github.com/i-am-bee/beeai-framework/issues/1029)
+- **adapters:** add A2AServer ([#1129](https://github.com/i-am-bee/beeai-framework/issues/1129)) ([cbbf7d0](https://github.com/i-am-bee/beeai-framework/commit/cbbf7d0b9c6bfd97b3357d9097ff2960018e9787)), closes [#1029](https://github.com/i-am-bee/beeai-framework/issues/1029)
+- **serve:** switch BeeAIPlatform agent and server to beeai-sdk and a2a ([#1004](https://github.com/i-am-bee/beeai-framework/issues/1004)) ([1ecc69e](https://github.com/i-am-bee/beeai-framework/commit/1ecc69ecfc880f9edec363650b1b577e8406f900))
+
+## [0.1.17](https://github.com/i-am-bee/beeai-framework/compare/typescript_v0.1.16...typescript_v0.1.17) (2025-07-28)
+
+### Features
+
+- **adapters:** add XAI (Grok) adapter with chat and embedding support ([0e85b7b](https://github.com/i-am-bee/beeai-framework/commit/0e85b7bdf2ba5fcc2d5d7fc7b7041a4bf80aa751))
+- **backend:** allow passing custom headers and API key to the Ollama provider ([72fd441](https://github.com/i-am-bee/beeai-framework/commit/72fd44188f004d931cd731e8772b8a04513c57c9))
+- switch to Mise ([#908](https://github.com/i-am-bee/beeai-framework/issues/908)) ([dffd527](https://github.com/i-am-bee/beeai-framework/commit/dffd527bc23c3320b872aeb6bf0d79ac7f1fba20))
+- **tools:** add proxy envs for DDG ([44872e4](https://github.com/i-am-bee/beeai-framework/commit/44872e4f588af29d3157068c8fa22138f136a461))
+
+### Bug Fixes
+
+- remove unrelated comments and improve test ENV handling ([1de2e63](https://github.com/i-am-bee/beeai-framework/commit/1de2e6310ea29c41a2eae34094e426a86338e123))
+- resolve CI failures for PR ([f96aad9](https://github.com/i-am-bee/beeai-framework/commit/f96aad99bd7f9476ef57a1ded56188214680b023))
+- run yarn format:fix for typescript files ([3337e8c](https://github.com/i-am-bee/beeai-framework/commit/3337e8c26dfca98ac9594f249152eac920c53bb8))
+- **tools:** sanitize names in the MCPTool ([#955](https://github.com/i-am-bee/beeai-framework/issues/955)) ([75bb83c](https://github.com/i-am-bee/beeai-framework/commit/75bb83c4e1b1e9888f283453a37abdb2fe438dca)), closes [#954](https://github.com/i-am-bee/beeai-framework/issues/954)
+- update labeler configuration and remove unused embedding model ([44d57d2](https://github.com/i-am-bee/beeai-framework/commit/44d57d297b6148daf1c9b784d5318161979d126e))
+
+## [0.1.16](https://github.com/i-am-bee/beeai-framework/compare/typescript_v0.1.14...typescript_v0.1.16) (2025-06-08)
+
+### Features
+
+- **adapters:** add MCP serve ([#855](https://github.com/i-am-bee/beeai-framework/issues/855)) ([40a00d4](https://github.com/i-am-bee/beeai-framework/commit/40a00d43c6492097689fae08349176457ce5087e))
+- **agents:** refactor remote agent to ACPAgent a BeeAIPlatformAgent ([#850](https://github.com/i-am-bee/beeai-framework/issues/850)) ([866be8c](https://github.com/i-am-bee/beeai-framework/commit/866be8c6069a6cd9d107e27197af6bd399d05151))
+
+### Bug Fixes
+
+- **agents:** handle custom 'expectedOutput' schema in ToolCallingAgent ([27a3d87](https://github.com/i-am-bee/beeai-framework/commit/27a3d870aba8002adf534127f434e27d4d962302))
+
+## [0.1.15](https://github.com/i-am-bee/beeai-framework/compare/typescript_v0.1.14...typescript_v0.1.15) (2025-06-03)
+
+### Features
+
+- **adapters:** add MCP serve integration ([#855](https://github.com/i-am-bee/beeai-framework/issues/855)) ([40a00d4](https://github.com/i-am-bee/beeai-framework/commit/40a00d43c6492097689fae08349176457ce5087e))
+- **agents:** replace RemoteAgent with ACP and BeeAIPlatform serve integration ([#850](https://github.com/i-am-bee/beeai-framework/issues/850)) ([866be8c](https://github.com/i-am-bee/beeai-framework/commit/866be8c6069a6cd9d107e27197af6bd399d05151))
+
 ## [0.1.14](https://github.com/i-am-bee/beeai-framework/compare/typescript_v0.1.13...typescript_v0.1.14) (2025-05-06)
 
 ### Features

@@ -1,16 +1,5 @@
 # Copyright 2025 © BeeAI a Series of LF Projects, LLC
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
+# SPDX-License-Identifier: Apache-2.0
 
 import datetime
 
@@ -119,12 +108,14 @@ class DefaultRunner(BaseRunner):
                 ),
             },
             options=LinePrefixParserOptions(
+                wait_for_start_node=True,
+                end_on_repeat=True,
                 fallback=lambda value: [
                     {"key": "thought", "value": "I now know the final answer."},
                     {"key": "final_answer", "value": value},
                 ]
                 if value
-                else []
+                else [],
             ),
         )
 
@@ -201,8 +192,8 @@ class DefaultRunner(BaseRunner):
                 ):
                     data.abort()
 
-            output: ChatModelOutput = await self._input.llm.create(
-                messages=self.memory.messages[:],
+            output: ChatModelOutput = await self._input.llm.run(
+                self.memory.messages[:],
                 stream=self._input.stream,
                 tools=self._input.tools if self.use_native_tool_calling else None,
             ).observe(lambda llm_emitter: llm_emitter.on("new_token", on_new_token))
@@ -267,7 +258,9 @@ class DefaultRunner(BaseRunner):
 
         async def executor(_: RetryableContext) -> ReActAgentRunnerToolResult:
             try:
-                tool_output: ToolOutput = await tool.run(input.state.tool_input)  # TODO: pass tool options
+                tool_output: ToolOutput = await tool.run(input.state.tool_input).context(
+                    {"state": {"memory": self.memory}}
+                )
                 output = (
                     tool_output
                     if not tool_output.is_empty()
@@ -334,13 +327,21 @@ class DefaultRunner(BaseRunner):
             ]
         )
 
-        if memory.is_empty() or input.prompt:
-            created_at = datetime.datetime.now(tz=datetime.UTC)
-            content = (
-                self.templates.user.render(UserPromptTemplateInput(input=input.prompt, created_at=created_at))
-                if input.prompt
-                else self.templates.user_empty.render(UserEmptyPromptTemplateInput())
-            )
+        created_at = datetime.datetime.now(tz=datetime.UTC)
+        if input.prompt:
+            if isinstance(input.prompt, str):
+                content = self.templates.user.render(UserPromptTemplateInput(input=input.prompt, created_at=created_at))
+                await memory.add(UserMessage(content=content, meta={"createdAt": created_at}))
+            elif isinstance(input.prompt[-1], UserMessage) and input.prompt[-1].text:
+                await memory.add_many(input.prompt[:-1])
+                last_msg = input.prompt[-1].text
+                content = self.templates.user.render(UserPromptTemplateInput(input=last_msg, created_at=created_at))
+                await memory.add(UserMessage(content=content, meta={"createdAt": created_at}))
+            else:
+                await memory.add_many(input.prompt)
+
+        if len(memory.messages) <= 1:
+            content = self.templates.user_empty.render(UserEmptyPromptTemplateInput())
             await memory.add(UserMessage(content=content, meta={"createdAt": created_at}))
 
         return memory

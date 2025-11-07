@@ -1,28 +1,47 @@
 # Copyright 2025 © BeeAI a Series of LF Projects, LLC
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-
+# SPDX-License-Identifier: Apache-2.0
 
 from typing import Literal
 
 from pydantic import BaseModel
 
 ProviderName = Literal[
-    "ollama", "openai", "watsonx", "groq", "xai", "vertexai", "amazon_bedrock", "anthropic", "azure_openai"
+    "beeai",
+    "ollama",
+    "openai",
+    "watsonx",
+    "groq",
+    "xai",
+    "vertexai",
+    "gemini",
+    "amazon_bedrock",
+    "anthropic",
+    "azure_openai",
+    "mistralai",
+    "langchain",
+    "llamaindex",
+    "transformers",
 ]
 ProviderHumanName = Literal[
-    "Ollama", "OpenAI", "Watsonx", "Groq", "XAI", "VertexAI", "AmazonBedrock", "Anthropic", "AzureOpenAI"
+    "BeeAI",
+    "Ollama",
+    "OpenAI",
+    "Watsonx",
+    "Groq",
+    "XAI",
+    "VertexAI",
+    "Gemini",
+    "AmazonBedrock",
+    "Anthropic",
+    "AzureOpenAI",
+    "MistralAI",
+    "LangChain",
+    "LlamaIndex",
+    "Transformers",
 ]
+
+ModelTypes = Literal["embedding", "chat"]
+ModuleTypes = Literal["vector_store", "document_processor", "document_loader", "text_splitter"]
 
 
 class ProviderDef(BaseModel):
@@ -37,6 +56,12 @@ class ProviderModelDef(BaseModel):
     provider_def: ProviderDef
 
 
+class ProviderModuleDef(BaseModel):
+    provider_id: str
+    entity_id: str | None = None
+    provider_def: ProviderDef
+
+
 BackendProviders = {
     "Ollama": ProviderDef(name="Ollama", module="ollama", aliases=[]),
     "OpenAI": ProviderDef(name="OpenAI", module="openai", aliases=["openai"]),
@@ -44,6 +69,7 @@ BackendProviders = {
     "Groq": ProviderDef(name="Groq", module="groq", aliases=["groq"]),
     "xAI": ProviderDef(name="XAI", module="xai", aliases=["xai", "grok"]),
     "vertexAI": ProviderDef(name="VertexAI", module="vertexai", aliases=["vertexai", "google"]),
+    "Gemini": ProviderDef(name="Gemini", module="gemini", aliases=["gemini"]),
     "AmazonBedrock": ProviderDef(
         name="AmazonBedrock",
         module="amazon_bedrock",
@@ -55,4 +81,9 @@ BackendProviders = {
         module="azure_openai",
         aliases=["azure_openai", "azure"],
     ),
+    "mistralAI": ProviderDef(name="MistralAI", module="mistralai", aliases=["mistral"]),
+    "Langchain": ProviderDef(name="LangChain", module="langchain", aliases=["langchain", "LangChain"]),
+    "Llamaindex": ProviderDef(name="LlamaIndex", module="llamaindex", aliases=["llamaindex", "LlamaIndex"]),
+    "BeeAI": ProviderDef(name="BeeAI", module="beeai", aliases=["BeeAI", "Beeai", "BAI"]),
+    "Transformers": ProviderDef(name="Transformers", module="transformers", aliases=["Transformers", "transformers"]),
 }

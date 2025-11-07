@@ -37,7 +37,6 @@ Ensure you have access to an IBM Granite model and have followed any other requi
 The [granite_bee](/examples/agents/granite/granite_bee.ts) example agent is set up to demonstrate how to use IBM Granite with the BeeAI Framework. In order to run this example, take the following steps:
 
 1. Copy the [.env.template](/.env.template) file to a new file called `.env` and fill out the required details within the `.env` file (replace the values shown in braces), as follows
-
    1. For watsonx:
 
       ```.env
@@ -76,7 +75,7 @@ The [granite_bee](/examples/agents/granite/granite_bee.ts) example agent is set 
     yarn run start examples/agents/granite/granite_bee.ts <<< "What’s the weather going to be like tomorrow in Sydney?"
    ```
 
-   The example is configured with 2 available [tools](/docs/tools.md), these are OpenMeteo for facilitating weather related prompts and DuckDuckGo for facilitating search related prompts. The above example prompts demonstrate how each of these tools can be exercised.
+   The example is configured with 2 available [tools](https://framework.beeai.dev/modules/tools), these are OpenMeteo for facilitating weather related prompts and DuckDuckGo for facilitating search related prompts. The above example prompts demonstrate how each of these tools can be exercised.
 
 ## 🤖 Granite Wiki Bee
 
@@ -88,10 +87,10 @@ In this example the wikipedia tool interface is extended so that the agent can s
 
 This example uses Ollama exclusively.
 
-To get started you will need to pull `granite3.1-dense:8b` and `nomic-embed-text` (to perform text embedding). If you are unfamiliar with using Ollama then check out instructions for getting up and running at the the [Ollama Github repo](https://github.com/ollama/ollama).
+To get started you will need to pull `granite3.3:8b` and `nomic-embed-text` (to perform text embedding). If you are unfamiliar with using Ollama then check out instructions for getting up and running at the the [Ollama Github repo](https://github.com/ollama/ollama).
 
 ```shell
-ollama pull granite3.1-dense:8b
+ollama pull granite3.3:8b
 ollama pull nomic-embed-text
 ollama serve
 ```

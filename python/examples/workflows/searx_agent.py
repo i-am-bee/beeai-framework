@@ -6,14 +6,14 @@ from langchain_community.utilities import SearxSearchWrapper
 from pydantic import BaseModel, Field
 
 from beeai_framework.adapters.ollama import OllamaChatModel
-from beeai_framework.backend import ChatModelOutput, ChatModelStructureOutput, UserMessage
+from beeai_framework.backend import ChatModelOutput, UserMessage
 from beeai_framework.errors import FrameworkError
-from beeai_framework.template import PromptTemplate, PromptTemplateInput
+from beeai_framework.template import PromptTemplate
 from beeai_framework.workflows import Workflow
 
 
 async def main() -> None:
-    llm = OllamaChatModel("granite3.1-dense:8b")
+    llm = OllamaChatModel("granite4:micro")
     search = SearxSearchWrapper(searx_host="http://127.0.0.1:8888")
 
     class State(BaseModel):
@@ -34,36 +34,30 @@ async def main() -> None:
     async def web_search(state: State) -> str:
         print("Step: ", sys._getframe().f_code.co_name)
         prompt = PromptTemplate(
-            PromptTemplateInput(
-                schema=InputSchema,
-                template="""
+            schema=InputSchema,
+            template="""
             Please create a web search query for the following input.
             Query: {{input}}""",
-            )
         ).render(InputSchema(input=state.input))
 
-        output: ChatModelStructureOutput = await llm.create_structure(
-            schema=WebSearchQuery, messages=[UserMessage(prompt)]
-        )
-        # TODO Why is object not of type schema T?
-        state.search_results = search.run(f"current weather in {output.object['search_query']}")
+        response = await llm.run([UserMessage(prompt)], response_format=WebSearchQuery)
+        assert isinstance(response.output_structured, WebSearchQuery)
+        state.search_results = search.run(f"current weather in {response.output_structured.search_query}")
         return Workflow.NEXT
 
     async def generate_output(state: State) -> str:
         print("Step: ", sys._getframe().f_code.co_name)
 
         prompt = PromptTemplate(
-            PromptTemplateInput(
-                schema=RAGSchema,
-                template="""
+            schema=RAGSchema,
+            template="""
     Use the following search results to answer the query accurately. If the results are irrelevant or insufficient, say 'I don't know.'
 
     Search Results:
     {{search_results}}
 
     Query: {{input}}
-    """,  # noqa: E501
-            )
+    """,
         ).render(
             RAGSchema(
                 input=state.input,
@@ -71,7 +65,7 @@ async def main() -> None:
             )
         )
 
-        output: ChatModelOutput = await llm.create(messages=[UserMessage(prompt)])
+        output: ChatModelOutput = await llm.run([UserMessage(prompt)])
         state.output = output.get_text_content()
         return Workflow.END
 

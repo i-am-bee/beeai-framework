@@ -1,18 +1,7 @@
 # Copyright 2025 © BeeAI a Series of LF Projects, LLC
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
+# SPDX-License-Identifier: Apache-2.0
 
-from collections.abc import Mapping
+from collections.abc import Iterator, Mapping
 from typing import Any
 
 
@@ -42,3 +31,32 @@ def exclude_non_annotated(input: Mapping[str, Any], cls: type[Mapping[str, Any]]
             input.pop(k)
 
     return excluded
+
+
+def remap_key(obj: dict[str, Any], *, source: str, target: str, fallback: Any | None = None) -> dict[str, Any]:
+    clone = {**obj}
+    clone[target] = clone.pop(source, fallback)
+    return clone
+
+
+def set_attr_if_none(obj: dict[str, Any], attrs: list[str], value: Any) -> None:
+    for attr, next_attr in zip(attrs, attrs[1:] + [None], strict=False):
+        if not isinstance(obj, dict):
+            raise ValueError(f"obj must be a dict, got {type(obj)}")
+
+        if obj.get(attr) is not None:
+            obj = obj[attr]
+        elif next_attr is None:
+            obj[attr] = value
+        else:
+            obj[attr] = {}
+            obj = obj[attr]
+
+
+def traverse(obj: dict[str, Any] | list[Any], *, path: str = "") -> Iterator[tuple[dict[str, Any], str]]:
+    if isinstance(obj, dict):
+        yield obj, path
+
+    for k, v in obj.items() if isinstance(obj, dict) else enumerate(obj):
+        if isinstance(v, dict | list):
+            yield from traverse(v, path=f"{path}.{k}" if path else str(k))

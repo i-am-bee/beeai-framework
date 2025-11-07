@@ -1,0 +1,128 @@
+[tools]
+# Python
+python = "3.11"
+"pipx:poetry" = "2.1.1"
+
+# Node.js
+node = "20.15.1"
+yarn = "4.9.1"
+
+# Misc
+fd = "latest"
+"ubi:google/addlicense" = "1.1.1"
+
+[settings]
+experimental = true # for hooks
+raw = true
+node.gpg_verify = false # tends to randomly fail; sha is checked by lockfile
+
+[hooks]
+postinstall = "{{ mise_bin }} setup"
+
+# TASKS
+
+[task_config]
+includes = [
+    "python/tasks.toml",
+    "typescript/tasks.toml",
+    "docs/tasks.toml",
+]
+
+## convenience tasks
+
+[tasks."setup"]
+depends = ["*:setup"]
+
+[tasks."check"]
+depends = ["*:check"]
+
+[tasks."fix"]
+depends = ["*:fix"]
+
+[tasks."test"]
+depends = ["*:test"]
+
+[tasks."test:unit"]
+depends = ["*:test:unit"]
+
+[tasks."test:e2e"]
+depends = ["*:test:e2e"]
+
+[tasks."commit"]
+depends = ["python:setup"]
+dir = "{{config_root}}/python"
+run = "poetry run -- cz commit -- --signoff"
+
+## git hooks
+
+[tasks."git-hooks:pre-commit"]
+run = """
+#!/bin/bash
+set -euo pipefail
+(set -x; {{mise_bin}} common:git-hooks:pre-commit)
+changed=$(git diff --cached --name-only)
+if grep -q '^python/'     <<< "$changed"; then (set -x; {{mise_bin}} python:git-hooks:pre-commit);     fi
+if grep -q '^typescript/' <<< "$changed"; then (set -x; {{mise_bin}} typescript:git-hooks:pre-commit); fi
+if grep -q '^docs/'       <<< "$changed"; then (set -x; {{mise_bin}} docs:git-hooks:pre-commit);       fi
+"""
+
+[tasks."git-hooks:commit-msg"]
+run = """
+#!/bin/bash
+set -euo pipefail
+(set -x; {{mise_bin}} common:git-hooks:commit-msg)
+changed=$(git diff --cached --name-only)
+if grep -q '^python/'     <<< "$changed"; then (set -x; {{mise_bin}} python:git-hooks:commit-msg);     fi
+if grep -q '^typescript/' <<< "$changed"; then (set -x; {{mise_bin}} typescript:git-hooks:commit-msg); fi
+"""
+
+## common tasks
+
+### setup
+
+[tasks."common:setup"]
+depends = ["common:setup:*"]
+
+[tasks."common:setup:git-hooks"]
+dir = "{{config_root}}"
+run = """
+#!/bin/bash
+set -eu -o pipefail
+test -d .git || exit 0
+for hook in pre-commit commit-msg; do
+    printf "#!/bin/sh\n{{ mise_bin }} run git-hooks:$hook" >.git/hooks/$hook
+    chmod +x .git/hooks/$hook
+done
+"""
+sources = [".git/hooks/pre-commit", ".git/hooks/commit-msg"]
+outputs = { auto = true }
+
+### check
+
+[tasks."common:check"]
+depends = ["common:check:*"]
+
+[tasks."common:check:license"]
+dir = "{{config_root}}"
+run = "addlicense -check -l apache -s=only -c '© BeeAI a Series of LF Projects, LLC' $(fd --exclude examples '\\.(py|[jt]sx?|html|s?css)$' docs python typescript)"
+
+### fix
+
+[tasks."common:fix"]
+depends = ["common:fix:*"]
+
+[tasks."common:fix:license"]
+dir = "{{config_root}}"
+run = "addlicense -l apache -s=only -c '© BeeAI a Series of LF Projects, LLC' $(fd --exclude examples '\\.(py|[jt]sx?|html|s?css)$' docs python typescript)"
+
+### git hooks
+
+[tasks."common:git-hooks:pre-commit"]
+depends = ["common:check"]
+
+[tasks."common:git-hooks:commit-msg"]
+dir = "{{config_root}}"
+run = """
+grep -qE "^(fixup! )*(Merge branch .*)$|^((fixup! )*(feat|fix|chore|ci|docs|revert|refactor|test)(\\(\\w+\\))?!?: .+)$" .git/COMMIT_EDITMSG || (echo "ERROR: Commit message does not adhere to conventional commit style!" && exit 1)
+grep -qi "^Signed-off-by: "                                    .git/COMMIT_EDITMSG || (echo "ERROR: Commit message must contain a Signed-off-by line!"            && exit 1)
+"""

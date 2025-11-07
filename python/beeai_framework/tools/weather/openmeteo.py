@@ -1,33 +1,21 @@
 # Copyright 2025 © BeeAI a Series of LF Projects, LLC
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
+# SPDX-License-Identifier: Apache-2.0
 
-
-import json
+import os
 from datetime import UTC, date, datetime
 from typing import Any, Literal
 from urllib.parse import urlencode
 
 import httpx
-import requests
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 from beeai_framework.context import RunContext
 from beeai_framework.emitter.emitter import Emitter
 from beeai_framework.logger import Logger
+from beeai_framework.tools import JSONToolOutput
 from beeai_framework.tools.errors import ToolInputValidationError
 from beeai_framework.tools.tool import Tool
-from beeai_framework.tools.types import StringToolOutput, ToolRunOptions
+from beeai_framework.tools.types import ToolRunOptions
 
 logger = Logger(__name__)
 
@@ -45,8 +33,16 @@ class OpenMeteoToolInput(BaseModel):
         description="The unit to express temperature", default="celsius"
     )
 
+    @classmethod
+    @field_validator("temperature_unit", mode="before")
+    def _to_lower(cls, value: Any) -> Any:
+        if isinstance(value, str):
+            return value.lower()
+        else:
+            return value
 
-class OpenMeteoTool(Tool[OpenMeteoToolInput, ToolRunOptions, StringToolOutput]):
+
+class OpenMeteoTool(Tool[OpenMeteoToolInput, ToolRunOptions, JSONToolOutput[dict[str, Any]]]):
     name = "OpenMeteoTool"
     description = "Retrieve current, past, or future weather forecasts for a location."
     input_schema = OpenMeteoToolInput
@@ -60,28 +56,35 @@ class OpenMeteoTool(Tool[OpenMeteoToolInput, ToolRunOptions, StringToolOutput]):
             creator=self,
         )
 
-    def _geocode(self, input: OpenMeteoToolInput) -> dict[str, str]:
+    async def _geocode(self, input: OpenMeteoToolInput) -> dict[str, str]:
         params = {"format": "json", "count": 1}
         if input.location_name:
-            params["name"] = input.location_name
+            if not input.country:
+                name, *parts = input.location_name.split(",")
+                params["name"] = name.strip()
+                if parts:
+                    params["country"] = ",".join(parts).strip()
+            else:
+                params["name"] = input.location_name.strip()
         if input.country:
             params["country"] = input.country
 
         encoded_params = urlencode(params, doseq=True)
 
-        response = requests.get(
-            f"https://geocoding-api.open-meteo.com/v1/search?{encoded_params}",
-            headers={"Content-Type": "application/json", "Accept": "application/json"},
-        )
+        async with httpx.AsyncClient(proxy=os.environ.get("BEEAI_OPEN_METEO_TOOL_PROXY")) as client:
+            response = await client.get(
+                f"https://geocoding-api.open-meteo.com/v1/search?{encoded_params}",
+                headers={"Content-Type": "application/json", "Accept": "application/json"},
+            )
 
-        response.raise_for_status()
-        results = response.json().get("results", [])
-        if not results:
-            raise ToolInputValidationError(f"Location '{input.location_name}' was not found.")
-        geocode: dict[str, str] = results[0]
-        return geocode
+            response.raise_for_status()
+            results = response.json().get("results", [])
+            if not results:
+                raise ToolInputValidationError(f"Location '{input.location_name}' was not found.")
+            geocode: dict[str, str] = results[0]
+            return geocode
 
-    def get_params(self, input: OpenMeteoToolInput) -> dict[str, Any]:
+    async def get_params(self, input: OpenMeteoToolInput) -> dict[str, Any]:
         params = {
             "current": ",".join(
                 [
@@ -95,7 +98,7 @@ class OpenMeteoTool(Tool[OpenMeteoToolInput, ToolRunOptions, StringToolOutput]):
             "timezone": "UTC",
         }
 
-        geocode = self._geocode(input)
+        geocode = await self._geocode(input)
         params["latitude"] = geocode.get("latitude", "")
         params["longitude"] = geocode.get("longitude", "")
         current_date = datetime.now(tz=UTC).date()
@@ -106,14 +109,14 @@ class OpenMeteoTool(Tool[OpenMeteoToolInput, ToolRunOptions, StringToolOutput]):
 
     async def _run(
         self, input: OpenMeteoToolInput, options: ToolRunOptions | None, context: RunContext
-    ) -> StringToolOutput:
-        params = urlencode(self.get_params(input), doseq=True)
+    ) -> JSONToolOutput[dict[str, Any]]:
+        params = urlencode(await self.get_params(input), doseq=True)
         logger.debug(f"Using OpenMeteo URL: https://api.open-meteo.com/v1/forecast?{params}")
 
-        async with httpx.AsyncClient() as client:
+        async with httpx.AsyncClient(proxy=os.environ.get("BEEAI_OPEN_METEO_TOOL_PROXY")) as client:
             response = await client.get(
                 f"https://api.open-meteo.com/v1/forecast?{params}",
                 headers={"Content-Type": "application/json", "Accept": "application/json"},
             )
             response.raise_for_status()
-            return StringToolOutput(json.dumps(response.json()))
+            return JSONToolOutput(response.json())

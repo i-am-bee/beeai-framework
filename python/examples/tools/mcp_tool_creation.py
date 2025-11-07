@@ -2,12 +2,9 @@ import asyncio
 import os
 
 from dotenv import load_dotenv
-from mcp import ClientSession, StdioServerParameters
+from mcp import StdioServerParameters
 from mcp.client.stdio import stdio_client
 
-from beeai_framework.adapters.ollama import OllamaChatModel
-from beeai_framework.agents.react import ReActAgent
-from beeai_framework.memory import UnconstrainedMemory
 from beeai_framework.tools.mcp import MCPTool
 
 load_dotenv()
@@ -24,14 +21,15 @@ server_params = StdioServerParameters(
 )
 
 
-async def slack_tool() -> MCPTool:
-    async with stdio_client(server_params) as (read, write), ClientSession(read, write) as session:
-        await session.initialize()
-        # Discover Slack tools via MCP client
-        slacktools = await MCPTool.from_client(session)
-        filter_tool = filter(lambda tool: tool.name == "slack_post_message", slacktools)
-        slack = list(filter_tool)
-        return slack[0]
+async def slack_post_message_tool() -> MCPTool:
+    slack_tools = await MCPTool.from_client(stdio_client(server_params))
+    return next(filter(lambda tool: tool.name == "slack_post_message", slack_tools))
 
 
-agent = ReActAgent(llm=OllamaChatModel("llama3.1"), tools=[asyncio.run(slack_tool())], memory=UnconstrainedMemory())
+async def main() -> None:
+    tool = await slack_post_message_tool()
+    print(tool.name, tool.description)
+
+
+if __name__ == "__main__":
+    asyncio.run(main())

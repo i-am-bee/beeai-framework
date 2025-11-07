@@ -1,30 +1,22 @@
 # Copyright 2025 © BeeAI a Series of LF Projects, LLC
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-
+# SPDX-License-Identifier: Apache-2.0
 
 from collections.abc import Callable
 from typing import Any
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
+from pydantic import BaseModel
+
+from beeai_framework.context import RunContext
+from beeai_framework.utils.strings import to_json
 
 pytest.importorskip("mcp", reason="Optional module [mcp] not installed.")
 from mcp import ClientSession, StdioServerParameters
 from mcp.types import CallToolResult, TextContent
 from mcp.types import Tool as MCPToolInfo
 
-from beeai_framework.tools import StringToolOutput
+from beeai_framework.tools import StringToolOutput, ToolError
 from beeai_framework.tools.mcp import MCPTool
 
 """
@@ -125,12 +117,37 @@ class TestMCPTool:
         tools_result.tools = [mock_tool_info]
         mock_client_session.list_tools = AsyncMock(return_value=tools_result)  # type: ignore
 
-        tools = await MCPTool.from_client(mock_client_session)
+        tools = await MCPTool.from_session(mock_client_session)
 
         mock_client_session.list_tools.assert_awaited_once()
         assert len(tools) == 1
         assert tools[0].name == "test_tool"
         assert tools[0].description == "A test tool"
+
+    @pytest.mark.asyncio
+    @pytest.mark.unit
+    async def test_mcp_tool_run_with_error(self, mock_client_session: AsyncMock, mock_tool_info: MCPToolInfo) -> None:
+        # Arrange
+        tool = MCPTool(session=mock_client_session, tool=mock_tool_info)
+
+        error_result = MagicMock(spec=CallToolResult)
+        error_result.isError = True
+        error_result.content = {"error": "test error"}
+        error_result.structuredContent = {"code": 500}
+        mock_client_session.call_tool.return_value = error_result
+
+        class Input(BaseModel):
+            pass
+
+        context = MagicMock(spec=RunContext)
+
+        # Act & Assert
+        with pytest.raises(ToolError) as exc_info:
+            # We test _run directly to isolate the change
+            await tool._run(input_data=Input(), options=None, context=context)
+
+        assert exc_info.value.message == to_json(error_result.structuredContent, indent=4, sort_keys=False)
+        mock_client_session.call_tool.assert_awaited_once()
 
 
 # Calculator Tool Tests
@@ -164,7 +181,7 @@ class TestAddNumbersTool:
         tools_result.tools = [add_numbers_tool_info]
         mock_client_session.list_tools = AsyncMock(return_value=tools_result)  # type: ignore
 
-        tools = await MCPTool.from_client(mock_client_session)
+        tools = await MCPTool.from_session(mock_client_session)
 
         mock_client_session.list_tools.assert_awaited_once()
         assert len(tools) == 1

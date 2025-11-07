@@ -1,23 +1,12 @@
 # Copyright 2025 © BeeAI a Series of LF Projects, LLC
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-
+# SPDX-License-Identifier: Apache-2.0
 
 from math import ceil
 from typing import Any
 
 from beeai_framework.backend.message import AnyMessage
 from beeai_framework.memory.base_memory import BaseMemory
+from beeai_framework.utils.cloneable import Cloneable
 
 
 def simple_estimate(msg: AnyMessage) -> int:
@@ -33,7 +22,7 @@ class TokenMemory(BaseMemory):
 
     def __init__(
         self,
-        llm: Any,
+        llm: Cloneable | None = None,
         max_tokens: int | None = None,
         sync_threshold: float = 0.25,
         capacity_threshold: float = 0.75,
@@ -129,8 +118,9 @@ class TokenMemory(BaseMemory):
         self._tokens_by_message.clear()
 
     async def clone(self) -> "TokenMemory":
+        llm_clone = await self.llm.clone() if self.llm is not None else None
         cloned = TokenMemory(
-            self.llm.clone(),
+            llm_clone,
             self._max_tokens,
             self._sync_threshold,
             self._threshold,

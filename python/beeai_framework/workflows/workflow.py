@@ -1,28 +1,17 @@
 # Copyright 2025 © BeeAI a Series of LF Projects, LLC
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
+# SPDX-License-Identifier: Apache-2.0
 
-import asyncio
-import inspect
+from collections.abc import Sequence
 from functools import cached_property
-from typing import ClassVar, Final, Generic, Literal
+from typing import Any, ClassVar, Final, Generic, Literal
 
 from pydantic import BaseModel
 from typing_extensions import TypeVar
 
-from beeai_framework.context import Run, RunContext
+from beeai_framework.context import Run, RunContext, RunMiddlewareType
 from beeai_framework.emitter.emitter import Emitter
 from beeai_framework.errors import FrameworkError
+from beeai_framework.utils.asynchronous import ensure_async
 from beeai_framework.utils.models import ModelLike, check_model, to_model, to_model_optional
 from beeai_framework.utils.strings import to_safe_word
 from beeai_framework.workflows.errors import WorkflowError
@@ -49,11 +38,14 @@ class Workflow(Generic[T, K]):
 
     _RESERVED_STEP_NAMES: ClassVar = [START, SELF, PREV, NEXT, END]
 
-    def __init__(self, schema: type[T], name: str = "Workflow") -> None:
+    def __init__(
+        self, schema: type[T], name: str = "Workflow", *, middlewares: Sequence[RunMiddlewareType] | None = None
+    ) -> None:
         self._name = name
         self._schema = schema
         self._steps: dict[K, WorkflowStepDefinition[T, K]] = {}
         self._start_step: K | None = None
+        self.middlewares: list[RunMiddlewareType] = [*middlewares] if middlewares else []
 
     @cached_property
     def emitter(self) -> Emitter:
@@ -140,10 +132,7 @@ class Workflow(Generic[T, K]):
                     step_res = WorkflowStepRes[T, K](name=next, state=run.state.model_copy(deep=True))
                     run.steps.append(step_res)
 
-                    if inspect.iscoroutinefunction(step.handler):
-                        step_next = await step.handler(step_res.state)  # , handlers)
-                    else:
-                        step_next = await asyncio.to_thread(step.handler, step_res.state)  # handlers)
+                    step_next: Any = await ensure_async(step.handler)(step_res.state)
 
                     check_model(step_res.state)
                     run.state = step_res.state
@@ -191,7 +180,7 @@ class Workflow(Generic[T, K]):
             handler,
             signal=options.signal if options else None,
             run_params={"state": state, "options": options},
-        )
+        ).middleware(*self.middlewares)
 
     def _find_step(self, current: K) -> WorkflowState[K]:
         index = self.step_names.index(current)

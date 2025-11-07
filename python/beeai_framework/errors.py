@@ -1,18 +1,6 @@
 # Copyright 2025 © BeeAI a Series of LF Projects, LLC
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
+# SPDX-License-Identifier: Apache-2.0
 
-import json
 from asyncio import CancelledError
 from collections.abc import Generator
 from typing import Any, Self
@@ -27,8 +15,9 @@ def _format_error_message(e: BaseException, *, offset: int = 0, strip_traceback:
     formatted = f"{cls}({module}): {e!s}"
     if isinstance(e, FrameworkError) and e.context:
         try:
-            # Directly use json.dumps, with sort_keys for consistent output.
-            context_json: str = json.dumps(e.context, sort_keys=True)
+            from beeai_framework.utils.strings import to_json
+
+            context_json: str = to_json(e.context, sort_keys=True)
             formatted += f"\n{prefix}Context: {context_json}"
         except TypeError:
             # Handle serialization errors gracefully.

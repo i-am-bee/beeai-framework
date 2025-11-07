@@ -53,12 +53,12 @@ async function openaiAbort() {
     const response = await llm.create({
       messages: [new UserMessage("What is the smallest of the Cape Verde islands?")],
       stream: true,
-      abortSignal: AbortSignal.timeout(1 * 1000),
+      abortSignal: AbortSignal.timeout(1 * 500),
     });
     console.info(response.getTextContent());
   } catch (err) {
     if (err instanceof ChatModelError) {
-      console.error("Aborted", { err });
+      console.log("Aborted", { err });
     }
   }
 }
@@ -74,7 +74,9 @@ async function openaiStructure() {
 }
 
 async function openaiToolCalling() {
-  const userMessage = new UserMessage("What is the weather in Boston?");
+  const userMessage = new UserMessage(
+    `What is the current weather in Boston? Current date is ${new Date().toISOString().split("T")[0]}.`,
+  );
   const weatherTool = new OpenMeteoTool({ retryOptions: { maxRetries: 3 } });
   const response = await llm.create({
     messages: [userMessage],

@@ -1,38 +1,90 @@
 # Copyright 2025 © BeeAI a Series of LF Projects, LLC
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
+# SPDX-License-Identifier: Apache-2.0
 
-from abc import ABC, abstractmethod
+from abc import abstractmethod
 from collections.abc import Awaitable, Callable
 from functools import cached_property
-from typing import Any, Generic, TypeVar
+from typing import Any, Unpack
 
 from pydantic import BaseModel
+from typing_extensions import TypeVar
 
 from beeai_framework.agents.errors import AgentError
 from beeai_framework.agents.types import AgentMeta
-from beeai_framework.context import Run, RunContext
+from beeai_framework.backend import AnyMessage
+from beeai_framework.context import Run, RunContext, RunMiddlewareType
 from beeai_framework.emitter import Emitter
 from beeai_framework.memory import BaseMemory
+from beeai_framework.runnable import Runnable, RunnableOptions, RunnableOutput
 from beeai_framework.utils import AbortSignal
 
-TOutput = TypeVar("TOutput", bound=BaseModel)
+
+class AgentOptions(RunnableOptions, total=False):
+    """Agent options."""
+
+    expected_output: str | type[BaseModel] | None
+    """
+    Instruction for steering the agent towards an expected output format.
+    This can be a Pydantic model for structured output decoding and validation.
+    """
+
+    total_max_retries: int
+    """
+    Maximum number of retries.
+    """
+
+    max_retries_per_step: int
+    """
+    Maximum number of model retries per step.
+    """
+
+    max_iterations: int
+    """
+    Maximum number of iterations.
+    """
+
+    backstory: str | None
+    """
+    Additional piece of information or background for the agent.
+    """
 
 
-class BaseAgent(ABC, Generic[TOutput]):
-    def __init__(self) -> None:
-        super().__init__()
+class AgentOutput(RunnableOutput):
+    """Agent output."""
+
+    output_structured: Any | BaseModel = None
+    """The formatted output returned by the agent."""
+
+
+R = TypeVar("R", default=AgentOutput, bound=AgentOutput)
+
+
+class BaseAgent(Runnable[R]):
+    """An abstract agent."""
+
+    def __init__(self, middlewares: list[RunMiddlewareType] | None = None) -> None:
+        super().__init__(middlewares=middlewares)
         self._is_running = False
+
+    @abstractmethod
+    def run(self, input: str | list[AnyMessage], /, **kwargs: Unpack[AgentOptions]) -> Run[R]:
+        """Execute an agent, specializing the runnable interface to accept a string as input
+        in addition to a list of messages.
+
+        Args:
+            input: The input to the agent
+            expected_output: Pydantic model or instruction for steering the agent towards an expected output format.
+            total_max_retries: Maximum number of model retries.
+            max_retries_per_step: Maximum number of model retries per step.
+            max_iterations: Maximum number of iterations.
+            backstory: Additional piece of information or background for the agent.
+            signal: The agent abort signal
+            context: A dictionary that can be used to pass additional context to the agent
+
+        Returns:
+            The agent output.
+        """
+        pass
 
     @abstractmethod
     def _create_emitter(self) -> Emitter:
@@ -41,10 +93,6 @@ class BaseAgent(ABC, Generic[TOutput]):
     @cached_property
     def emitter(self) -> Emitter:
         return self._create_emitter()
-
-    @abstractmethod
-    def run(self, *args: Any, **kwargs: Any) -> Run[TOutput]:
-        pass
 
     def destroy(self) -> None:
         self.emitter.destroy()
@@ -69,15 +117,15 @@ class BaseAgent(ABC, Generic[TOutput]):
 
     def _to_run(
         self,
-        fn: Callable[[RunContext], Awaitable[TOutput]],
+        fn: Callable[[RunContext], Awaitable[R]],
         *,
         signal: AbortSignal | None,
         run_params: dict[str, Any] | None = None,
-    ) -> Run[TOutput]:
+    ) -> Run[R]:
         if self._is_running:
             raise RuntimeError("Agent is already running!")
 
-        async def handler(context: RunContext) -> TOutput:
+        async def handler(context: RunContext) -> R:
             try:
                 self._is_running = True
                 return await fn(context)
@@ -91,7 +139,7 @@ class BaseAgent(ABC, Generic[TOutput]):
             handler,
             signal=signal,
             run_params=run_params,
-        )
+        ).middleware(*self.middlewares)
 
 
 AnyAgent = BaseAgent[Any]

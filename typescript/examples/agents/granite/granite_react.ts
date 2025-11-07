@@ -8,7 +8,7 @@ import * as process from "node:process";
 import { createConsoleReader } from "examples/helpers/io.js";
 import { ChatModel } from "beeai-framework/backend/chat";
 
-const llm = await ChatModel.fromName("ollama:granite3.1-dense:8b");
+const llm = await ChatModel.fromName("ollama:granite3.3:8b");
 const agent = new ReActAgent({
   llm,
   memory: new TokenMemory(),

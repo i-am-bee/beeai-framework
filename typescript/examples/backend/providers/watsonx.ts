@@ -7,7 +7,7 @@ import { z } from "zod";
 import { OpenMeteoTool } from "beeai-framework/tools/weather/openMeteo";
 
 const llm = new WatsonxChatModel(
-  "meta-llama/llama-3-1-70b-instruct",
+  "ibm/granite-3-3-8b-instruct",
   // {
   //   apiKey: "WATSONX_API_KEY",
   //   baseUrl: "WATSONX_BASE_URL",
@@ -23,7 +23,7 @@ llm.config({
 });
 
 async function watsonxFromName() {
-  const watsonxLLM = await ChatModel.fromName("watsonx:meta-llama/llama-3-1-8b-instruct");
+  const watsonxLLM = await ChatModel.fromName("watsonx:ibm/granite-3-3-8b-instruct");
   const response = await watsonxLLM.create({
     messages: [new UserMessage("what states are part of New England?")],
   });
@@ -68,7 +68,7 @@ async function watsonxAbort() {
     console.info(response.getTextContent());
   } catch (err) {
     if (err instanceof AbortError) {
-      console.error("Aborted", { err });
+      console.log("Aborted", { err });
     }
   }
 }

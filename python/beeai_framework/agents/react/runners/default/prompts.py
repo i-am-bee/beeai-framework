@@ -1,22 +1,11 @@
 # Copyright 2025 © BeeAI a Series of LF Projects, LLC
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
+# SPDX-License-Identifier: Apache-2.0
 
 import datetime
 
 from pydantic import BaseModel
 
-from beeai_framework.template import PromptTemplate, PromptTemplateInput
+from beeai_framework.template import PromptTemplate
 
 
 class UserEmptyPromptTemplateInput(BaseModel):
@@ -68,22 +57,19 @@ class SchemaErrorTemplateInput(BaseModel):
 
 
 UserPromptTemplate = PromptTemplate(
-    PromptTemplateInput(
-        schema=UserPromptTemplateInput,
-        template="Message: {{input}}{{formatCreatedAt}}",
-        functions={
-            "formatCreatedAt": lambda data: f"\n\nThis message was created at {data.get('created_at').replace(microsecond=0).isoformat()}"  # type: ignore[union-attr] # noqa: E501
-            if data.get("created_at")
-            else ""
-        },
-    )
+    schema=UserPromptTemplateInput,
+    template="Message: {{input}}{{formatCreatedAt}}",
+    functions={
+        "formatCreatedAt": lambda data: f"\n\nThis message was created at {data.get('created_at').replace(microsecond=0).isoformat()}"  # type: ignore[union-attr] # noqa: E501
+        if data.get("created_at")
+        else ""
+    },
 )
 
 
 SystemPromptTemplate = PromptTemplate(
-    PromptTemplateInput(
-        schema=SystemPromptTemplateInput,
-        template="""# Available functions
+    schema=SystemPromptTemplateInput,
+    template="""# Available functions
 {{#tools.0}}
 You can only use the following functions. Always use all required parameters.
 
@@ -154,62 +140,47 @@ Prefer to use these capabilities over functions.
 {{instructions}}
 {{/instructions}}
 """,  # noqa: E501
-    )
 )
 
 ToolNotFoundErrorTemplate = PromptTemplate(
-    PromptTemplateInput(
-        schema=ToolNotFoundErrorTemplateInput,
-        template="""Function does not exist!
+    schema=ToolNotFoundErrorTemplateInput,
+    template="""Function does not exist!
 {{#tools.0}}
 Use one of the following functions: {{#trim}}{{#tools}}{{name}},{{/tools}}{{/trim}}
 {{/tools.0}}""",
-    )
 )
 
 ToolNoResultsTemplate = PromptTemplate(
-    PromptTemplateInput(
-        schema=ToolNoResultsTemplateInput,
-        template="""No results were found!""",
-    )
+    schema=ToolNoResultsTemplateInput,
+    template="""No results were found!""",
 )
 
 UserEmptyPromptTemplate = PromptTemplate(
-    PromptTemplateInput(
-        schema=UserEmptyPromptTemplateInput,
-        template="""Message: Empty message.""",
-    )
+    schema=UserEmptyPromptTemplateInput,
+    template="""Message: Empty message.""",
 )
 
 ToolErrorTemplate = PromptTemplate(
-    PromptTemplateInput(
-        schema=ToolErrorTemplateInput,
-        template="""The function has failed; the error log is shown below. If the function cannot accomplish what you want, use a different function or explain why you can't use it.
+    schema=ToolErrorTemplateInput,
+    template="""The function has failed; the error log is shown below. If the function cannot accomplish what you want, use a different function or explain why you can't use it.
 
 {{&reason}}""",  # noqa: E501
-    )
 )
 
 ToolInputErrorTemplate = PromptTemplate(
-    PromptTemplateInput(
-        schema=ToolInputErrorTemplateInput,
-        template="""{{&reason}}
+    schema=ToolInputErrorTemplateInput,
+    template="""{{&reason}}
 
 HINT: If you're convinced that the input was correct but the function cannot process it then use a different function or say I don't know.""",  # noqa: E501
-    )
 )
 
 AssistantPromptTemplate = PromptTemplate(
-    PromptTemplateInput(
-        schema=AssistantPromptTemplateInput,
-        template="""{{#thought}}Thought: {{&.}}\n{{/thought}}{{#tool_name}}Function Name: {{&.}}\n{{/tool_name}}{{#tool_input}}Function Input: {{&.}}\n{{/tool_input}}{{#tool_output}}Function Output: {{&.}}\n{{/tool_output}}{{#final_answer}}Final Answer: {{&.}}{{/final_answer}}""",  # noqa: E501
-    )
+    schema=AssistantPromptTemplateInput,
+    template="""{{#thought}}Thought: {{&.}}\n{{/thought}}{{#tool_name}}Function Name: {{&.}}\n{{/tool_name}}{{#tool_input}}Function Input: {{&.}}\n{{/tool_input}}{{#tool_output}}Function Output: {{&.}}\n{{/tool_output}}{{#final_answer}}Final Answer: {{&.}}{{/final_answer}}""",  # noqa: E501
 )
 
 SchemaErrorTemplate = PromptTemplate(
-    PromptTemplateInput(
-        schema=SchemaErrorTemplateInput,
-        template="""Error: The generated response does not adhere to the communication structure mentioned in the system prompt.
+    schema=SchemaErrorTemplateInput,
+    template="""Error: The generated response does not adhere to the communication structure mentioned in the system prompt.
     You communicate only in instruction lines. Valid instruction lines are 'Thought' followed by either 'Function Name' + 'Function Input' + 'Function Output' or 'Final Answer'.""",  # noqa: E501
-    )
 )

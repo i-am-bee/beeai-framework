@@ -1,22 +1,17 @@
 # Copyright 2025 © BeeAI a Series of LF Projects, LLC
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-
+# SPDX-License-Identifier: Apache-2.0
+import json
+import logging
 from typing import Any
 
-from beeai_framework.logger import Logger
+import litellm
+from openai.lib._pydantic import _ensure_strict_json_schema
+from pydantic import BaseModel
 
-logger = Logger(__name__)
+from beeai_framework.backend import ChatModelError, MessageToolCallContent
+from beeai_framework.backend.utils import parse_broken_json
+from beeai_framework.utils.dicts import traverse
+from beeai_framework.utils.models import is_pydantic_model
 
 
 def parse_extra_headers(
@@ -56,6 +51,10 @@ def parse_extra_headers(
 
 def _parse_header_string(header_string: str) -> dict[str, str]:
     """Parses a comma-separated string of headers into a dictionary."""
+    from beeai_framework.logger import Logger
+
+    logger = Logger(__name__)
+
     headers: dict[str, str] = {}
     if not header_string:
         return headers
@@ -68,3 +67,51 @@ def _parse_header_string(header_string: str) -> dict[str, str]:
         else:
             logger.warning(f"Malformed header string detected. Will ignore it: {pair}")
     return headers
+
+
+def litellm_debug(enable: bool = True) -> None:
+    litellm.set_verbose = enable  # type: ignore
+    litellm.suppress_debug_info = not enable
+
+    litellm.suppress_debug_info = not enable
+    litellm.logging = enable
+
+    litellm_logger = logging.getLogger("LiteLLM")
+    litellm_logger.setLevel(logging.DEBUG if enable else logging.CRITICAL + 1)
+
+
+def to_strict_json_schema(model: type[BaseModel] | dict[str, Any]) -> dict[str, Any]:
+    json_schema = model if isinstance(model, dict) else model.model_json_schema()
+
+    if json_schema.get("type") == "object":
+        json_schema["additionalProperties"] = False
+
+    strict_schema = _ensure_strict_json_schema(json_schema, path=(), root=json_schema)
+    for obj, _ in traverse(strict_schema):
+        if obj.get("type") == "object" and "additionalProperties" in obj:
+            obj["additionalProperties"] = False
+    return strict_schema
+
+
+def process_structured_output(schema: dict[str, Any] | type[BaseModel] | None, text: str) -> Any:
+    try:
+        data = parse_broken_json(text)
+        if schema and is_pydantic_model(schema):
+            return schema.model_validate(data, strict=False)
+        else:
+            return data
+    except Exception as e:
+        raise ChatModelError(
+            "The model failed to satisfy the schema given in the response format.", context={"input": text}
+        ) from e
+
+
+def fix_double_escaped_tool_calls(items: list[MessageToolCallContent]) -> None:
+    for item in items:
+        try:
+            parsed = json.loads(item.args)
+            if isinstance(parsed, str):
+                parsed = json.loads(parsed)
+                item.args = json.dumps(parsed, ensure_ascii=False)
+        except json.JSONDecodeError:
+            pass

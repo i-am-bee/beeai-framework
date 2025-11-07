@@ -1,3 +1,669 @@
+## python_v0.1.65 (2025-11-06)
+
+### Bug Fixes
+
+- **adapters**: agent card url can be provided in agent's metadata (#1276)
+
+### Features
+
+- **adapters**: add nested trajectory support for AgentStack (#1273)
+- **agent**: improve typing for ConditionalRequirement
+
+## python_v0.1.64 (2025-11-05)
+
+### Bug Fixes
+
+- **tools**: correctly clone the HandoffTool
+- **tools**: correctly clone the HandoffTool
+
+### Features
+
+- **adapters**: add host parameter for A2A (#1269)
+- **tools**: sanitize name attribute in the HandoffTool
+- **agents**: propagate memory to the context in ReactAgent
+- **tools**: improve error handling in HandoffTool
+- **middlewares**: emit events from GlobalTrajectoryMiddleware (#1272)
+- **middlewares**: propagate updates from StreamToolCallMiddleware without streaming
+
+## python_v0.1.62 (2025-11-03)
+
+### Bug Fixes
+
+- relax version of cachetools dependency
+- **adapters**: prevent importing extra dependencies when using OpenAI Chat Model (#1263)
+
+### Features
+
+- **adapters**: filter agents by state (#1258)
+- **adapters**: support exposing PromptTemplate in the MCP Server (#1260)
+- **adapters**: add aserve method for MCP Server
+
+## python_v0.1.61 (2025-10-30)
+
+### Features
+
+- rename BeeAIPlatform to AgentStack (#1256)
+- **adapters**: add default tools settings for the platform agents (#1223)
+
+## python_v0.1.60 (2025-10-29)
+
+### Bug Fixes
+
+- **adapter**: Fix context in BeeAIPlatformAgent (#1247)
+
+### Features
+
+- **backend**: auto retry on empty/malformed response (#1253)
+- **serve**: enable streamable-http for MCPServer (#1251)
+- **tools**: add smart parsing for MCP Tool Output (#1250)
+- **adapters**: handle device identification in Transformers
+- **tools**: handle commas in location name in the OpenMeteo tool
+- improve error context serialization
+- **adapters**: propagate strict tool call parsing config for LangChain
+- **backend**: handle double-escaped tool calls (#1241)
+
+## python_v0.1.59 (2025-10-27)
+
+### Bug Fixes
+
+- **adapters**: add missing meta property for A2A/BeeAI Platform Agents (#1243)
+- **adapters**: handle missing messages in BeeAIPlatform (#1237)
+- parse streamed tool calls with stream_stable=True
+- **adapters**: correct decorator order in ChatToolFunctionDefinition (#1234)
+
+### Features
+
+- **adapters**: update BeeAI SDK (#1231)
+
+## python_v0.1.58 (2025-10-23)
+
+### Bug Fixes
+
+- **serve**: properly serialize a tool output when using MCP (#1219)
+- **adapters**: properly handle BeeAIPlatform LLM provider
+- **adapters**: handle unsupported JSON Schema keywords (#1216)
+
+### Features
+
+- **adapters**: propagate provider specific parameters in BeeAIPlatformChatModel (#1225)
+- **adapters**: add OpenAI Chat Completion / Responses serve module (#1182)
+- **adapters**: add new parameters to A2A Agent (#1224)
+- **backend**: add more excluded JSON Schema keywords to Groq
+
+## python_v0.1.57 (2025-10-20)
+
+### Bug Fixes
+
+- **emitter**: class method reference matching (#1209)
+- **agents**: requirement tool visibility regression (#1204)
+- **emitter**: handle cleanups when cloning (#1211)
+
+### Features
+
+- **adapters**: add A2A server context (#1207)
+
+## python_v0.1.56 (2025-10-14)
+
+### Bug Fixes
+
+- **backend**: remove property decorator from computed_field (#1191)
+- **agents**: prevent duplications of tokens while streaming an answer (#1188)
+
+### Features
+
+- **adapters**: add tool choice mapping to all providers in the platform (#1185)
+- **adapters**: update clone method in LangChainChatModel (#1189)
+
+## python_v0.1.55 (2025-10-09)
+
+### Bug Fixes
+
+- **backend**: properly propagate file content type
+- **adapters**: set default timeout for A2A Client (#1184)
+- update uvicorn version (#1180)
+
+### Features
+
+- **agents**: stream final answer in the RequirementAgent (#1178)
+- **agents**: propagate retry parameters to the LLM in the RequirementAgent
+- support more message content types (#1150)
+
+## python_v0.1.53 (2025-10-03)
+
+### Bug Fixes
+
+- **internals**: handle conversion of more complex schemas (#1168)
+
+### Features
+
+- **adapters**: add dynamic registration of BeeAI Platform extensions (#1162)
+- **emitter**: allow to set priorities for listeners (#1170)
+- **adapters**: add tools metadata to BeeAIPlatformServer (#1166)
+
+## python_v0.1.52 (2025-10-01)
+
+### Bug Fixes
+
+- **internals**: fix serialization of lists/sets
+- **internals**: fix serialization of lists/sets (#1161)
+- **tools**: adjust typings for MCPTool to accept streamablehttp_client
+- **backend**: prevent propagating internal parameters to the request
+
+### Features
+
+- **tools**: allow HandoffTool to accept any runnable (#1158)
+
+## python_v0.1.51 (2025-09-30)
+
+### Bug Fixes
+
+- **adapters**: correctly propagate Google VertexAI parameters (#1146)
+
+### Features
+
+- **adapters**: add Transformers ChatModel support (#1087)
+- **backend**: add validate_response_format flag for structured outputs in ChatModel (#1156)
+- **agents**: make RequirementAgent stable (#1143)
+- **adapters**: add serve factories for Runnables (#1139)
+
+## python_v0.1.50 (2025-09-26)
+
+### Bug Fixes
+
+- temporary pin uvicorn version (#1141)
+- **tools**: fix MCP tool hanging when server not running (#1137)
+
+### Features
+
+- **agents**: updates to RequirementAgent (#1128)
+- **adapters**: update A2AServer and events (#1130)
+- **tools**: flatten outputs from the MCP servers (#1138)
+
+## python_v0.1.49 (2025-09-22)
+
+### Features
+
+- convert `ChatModel` into `Runnable` (#1111)
+
+**Migration Guide**
+
+The `ChatModel` class has undergone significant refactoring to implement the `Runnable` interface, requiring changes to how you interact with chat models.
+
+Key Changes:
+
+- `ChatModel` now extends `Runnable[ChatModelOutput]` instead of being a standalone class.
+- The `ChatModel.create()` method has been renamed to `ChatModel.run()`. Keyword arguments are defined in `ChatModelOptions` typed dictionary.
+- The `ChatModel.create_structure()` method has been collapsed into `ChatModel.run()`, and it now supports streaming.
+- Method signatures have changed to align with the runnable pattern.
+
+
+**Before**
+
+```python
+from beeai_framework.adapters.ollama import OllamaChatModel
+from beeai_framework.backend import UserMessage
+
+llm = OllamaChatModel("llama3.1")
+
+# Old create method with keyword arguments
+response = await llm.create(
+    messages=[UserMessage("Hello")],
+    tools=None,
+    tool_choice=None,
+    stream=False,
+    max_tokens=1000,
+    temperature=0.7
+)
+```
+
+**After**
+
+```python
+from beeai_framework.adapters.ollama import OllamaChatModel
+from beeai_framework.backend import UserMessage
+
+llm = OllamaChatModel("llama3.1")
+
+# New run method with positional messages argument
+response = await llm.run(
+    [UserMessage("Hello")],  # First positional argument
+    tools=None,
+    tool_choice=None,
+    stream=False,
+    max_tokens=1000,
+    temperature=0.7
+)
+```
+
+#### Structured Generation Changes
+
+**Before**
+
+```python
+class PersonModel(BaseModel):
+    name: str
+    age: int
+
+response = await llm.create_structure(
+    messages=[UserMessage("Generate a person profile")],
+    schema=PersonModel
+)
+person = PersonModel.model_validate(response.output_structured)
+print(response.name, person.age)
+```
+
+**After**
+
+```python
+class PersonModel(BaseModel):
+    name: str
+    age: int
+
+response = await llm.run(
+    [UserMessage("Generate structured data")],
+    response_format=PersonModel
+)
+person = response.output_structured
+print(response.name, person.age)
+```
+
+IMPORTANT: If `response_format` is a Pydantic model, the `output_structured` will be the instance of it. Previously there was no such step.  
+
+
+## python_v0.1.48 (2025-09-22)
+
+### Bug Fixes
+
+- **backend**: correctly serialize response_format (#1121)
+- **adapters**: handle unknown providers in BeeAIPlatformChatModel
+
+### Features
+
+- **adapters**: handle form cancellation in BeeAIPlatformServer (#1118)
+
+## python_v0.1.47 (2025-09-19)
+
+### Bug Fixes
+
+- **adapters**: update A2A Agent (#1112)
+- **adapters**: correctly wrap the inner model in BeeAIPlatformChatModel (#1115)
+- add missing retry for embeddings (#1110)
+
+
+## python_v0.1.46 (2025-09-17)
+
+### Bug Fixes
+
+- **backend**: include tool_choice_support when cloning
+
+### Features
+
+- **adapters**: handle nested initialization of BeeAIPlatformChatModel (#1109)
+
+## python_v0.1.45 (2025-09-15)
+
+### Features
+
+- **adapter**: add LangChain ChatModel integration (#1104)
+- make yes/no in AskPermissionRequirement case-insensitive
+- **adapters**: support BeeAIPlatform adapter and llm extension (#1098)
+- support extensions in BeeAIPlatformAgent (#1091)
+
+## python_v0.1.44 (2025-09-11)
+
+### Bug Fixes
+
+- type cast
+- **logging**: prevent TypeError when during retry (#1093)
+- **backend**: watsonx tool call streaming (#1085)
+
+### Features
+
+- **adapters**: use FormExtension in BeeAI Platform (#1099)
+- **adapters**: support agents in MCP server (#1086)
+- **emitter**: improve register/deregister mechanism (#849)
+- **adapters**: add support for running the A2A server on multiple protocols (#1077)
+
+## python_v0.1.43 (2025-09-05)
+
+### Bug Fixes
+
+- **agents**: handle an empty list of messages in RequirementAgent
+
+### Features
+
+- simplify and extend PromptTemplate (#1082)
+- **tools**: propagate MCP errors (#1065)
+
+## python_v0.1.42 (2025-09-02)
+
+### Features
+
+- Converted all `beeai_framework.agents` into “runnables,” modifying their `run` method signatures (#1013).
+
+**Migration Guide**
+
+This guide will help you update your codebase to the latest version. It outlines breaking changes and new features that may require updates to your application.  Agents now subclass a common `Runnable` interface.
+
+Key changes:
+
+- Agents require a positional `input: str | list[AnyMessage]` (first argument).
+- Optional keyword options are defined in the new `AgentOptions` typed dictionary.
+- Agent return types all derive from `AgentOutput`. This object contains a field `output: list[AnyMessage]` and a convenience property `last_message` that returns the last message in the output, with a fallback if none is defined.
+
+**Before**
+
+```python
+response: RequirementAgentRunOutput = await agent.run(
+    prompt="Write a step-by-step tutorial on how to bake bread",
+    expected_output="The output should be an ordered list of steps. Each step should ideally be one sentence.",
+    context="Assume that the user has no prior knowledge of baking.",
+    execution=AgentExecutionConfig(max_iterations=8, max_retries_per_step=3, total_max_retries=10)
+)
+print(response.result.text) # the result is a message
+print(response.answer_structured) # the result is a structured response (if the expected_output is a Pydantic model)
+```
+
+- The following return types have been renamed and should be updated as follows:
+    - `TooCallingAgentRunOutput` → `TooCallingAgentOutput`
+    - `ReActAgentRunOutput` → `ReActAgentOutput`
+    - `RequirementsAgentRunOutput` → `RequirementsAgentOutput`
+
+**After**
+
+```python
+response: RequirementAgentOutput = await agent.run(
+    "Write a step-by-step tutorial on how to bake bread",
+    expected_output="The output should be an ordered list of steps. Each step should ideally be one sentence.",
+    backstory="Assume that the user has no prior knowledge of baking.",
+    max_iterations=8, max_retries_per_step=3, total_max_retries=10
+)
+print(response.last_message.text) # the result is a message
+# print(response.output) # a list of all messages that the agent produced
+print(response.output_structured) # structured output, if any
+```
+
+### Adapters
+
+- The internal BeeAI Platform agent factories were refactored to align with the new runnable input contract that the framework agents now implement. This affects agent initialization logic: instead of adding the messages from the task context to memory during agent memory initialization, these are now passed directly to the agent’s `run` interface, allowing agents to manage their own memory. Adapters are responsible only for creating and configuring memory.
+- The following return types have been renamed and should be updated as follows:
+    - `BeeAIPlatformAgentRunOutput` → `BeeAIPlatformAgentOutput`
+    - `ACPAgentRunOutput` → `ACPAgentOutput`
+    - `A2AAgentRunOutput` → `A2AAgentOutput`
+    - `WatsonxOrchestrateAgentRunOutput` → `WatsonxOrchestrateAgentOutput`
+
+### Other Changes
+
+- Removed `ReActAgentRunOutput`, `RAGAgentOutput` (switched to `AgentOutput`)
+- Removed `RAGAgentInput`
+
+
+## python_v0.1.41 (2025-09-01)
+
+### Bug Fixes
+
+- **backend**: handle empty responses for Gemini (#1061)
+
+### Features
+
+- **serve**: interception support in BeeAI Platform (#1063)
+- **serve**: support parallel agent runs (#1060)
+- **serve**: add support for streamable-http in MCP (#1062)
+
+## python_v0.1.40 (2025-08-29)
+
+### Bug Fixes
+
+- match nested events in GlobalTrajectoryMiddleware (#1057)
+
+## python_v0.1.39 (2025-08-28)
+
+### Features
+
+- add retry logic to ChatModel (#1043)
+- **tools**: improve Handoff tool (#1051)
+
+## python_v0.1.38 (2025-08-27)
+
+### Bug Fixes
+
+- **backend**: initialize tool_choice in LiteLLM chat adapter (#1040)
+
+### Features
+
+- **adapters**: update agent's trajectory in BeeAI Platform (#1042)
+- **agents**: improve tool error propagation in the RequirementAgent (#1041)
+
+
+## python_v0.1.37 (2025-08-26)
+
+### Bug Fixes
+
+- **backend**: unify structured generation behavior across providers (#1038)
+- **adapters**: fix trajectory for BeeAI platform (#1036)
+
+### Features
+
+- **serve**: switch BeeAIPlatform agent and server to beeai-sdk and a2a (#1004)
+
+## python_v0.1.36 (2025-08-08)
+
+### Bug Fixes
+
+- **backend**: apply strict schema transformation (#996)
+- **tools**: handle MCP client session cleanup (#990)
+
+### Features
+
+- improve serialization (#1001)
+- introduce runnable interface (#982)
+- **serve**: add memory manager (#983)
+- **backend**: Vector store tool (#991)
+
+## python_v0.1.35 (2025-08-06)
+
+### Bug Fixes
+
+- **agents**: exclude hidden tools from the system prompt (RequirementAgent) (#988)
+- **backend**: correctly merge tool call chunks
+- update error message for invalid tool choice
+- **backend**: remove deprecated response_format.strict parameter
+- **backend**: correctly processes streaming chunks (#973)
+
+### Features
+
+- **backend**: handle parallel tool calls (#986)
+- **backend**: support dynamic loading of document processors (#979)
+- **adapters**: add context_id based memory to A2A server (#975)
+- **backend**: detect non-supported tool choice values (#977)
+- **rag**: add text splitter backend class (#974)
+
+## python_v0.1.34 (2025-08-01)
+
+### Bug Fixes
+
+- **adapters**: handle A2A updates (#968)
+- **adapters**: do not send task_id for multiple runs (#967)
+- **agents**: prevent tool duplication in RequirementAgent rules
+
+## python_v0.1.33 (2025-07-31)
+
+### Bug Fixes
+
+- **backend**: handle costs for non registered models
+- **adapters**: remove completion_cost by _hidden_params['response_cost']
+- **tools**: exclude the last tool call message during handoff (#964)
+- **agents**: copy middlewares when cloning in the RequirementAgent
+- **adapters**: handle empty responses for Google Gemini models (#961)
+
+### Features
+
+- **backend**: add response cost to the ChatModelOutput
+- address issues
+- define the input and output costs on CostBreakdown when returning ChatModelOutput
+- **adapters**: add completion_cost from LiteLLM
+- **rag**: add document loader (#962)
+- **agents**: add abort signal to RequirementAgent #960
+- **adapters**: add Google Gemini backend (#939)
+- **adapters**: upgrade A2A (#951)
+
+## python_v0.1.32 (2025-07-23)
+
+### Bug Fixes
+
+- **adapters**: correctly propagate watsonx orchestrate events (#947)
+
+### Features
+
+- **backend**: initialize RAG module and agent (#890)
+- **adapters**: add state support for Watsonx integration (#948)
+
+## python_v0.1.31 (2025-07-18)
+
+### Bug Fixes
+
+- **internals**: avoid recursion errors when handling empty JSON Schema objects (#929)
+- **tools**: handle MCPTool termination (#927)
+- MCP client unpacking error (#922)
+- remove mypy path in project config (#925)
+- **backend**: correctly propagate api_base/base_url in OllamaEmbeddingModel
+- **internals**: omit top-level undefines in to_json
+- **internals**: prevent piping nested events
+- **tools**: correctly serialize the tool's input in events
+- **adapters**: fix MCP server (#917)
+
+### Features
+
+- **backend**: update tool choice support for OpenAI compatible endpoints (#933)
+- **tools**: switch from duckduckgo-search to ddgs (#932)
+- **agents**: add init event to the Requirement class, extend RequirementAgent interfaces (#930)
+- prevent sorting keys for JSON schemas
+- improve JSONSchemaModel parsing capabilities (#918)
+
+## python_v0.1.30 (2025-07-09)
+
+### Bug Fixes
+
+- **internals**: handle optional fields and types correctly in MCP JSON schema parsing (#902)
+- **backend**: add missing usage data during streaming (#910)
+- **tools**: fix session in MCP tool (#901)
+- **adapters**: prevent duplicate registration on module reload
+- **adapters**: ACP invalid type
+
+### Features
+
+- **tools**: allow to disable SSL proxy verify in DDG
+- **adapters**: add async serve version for ACP (#914)
+- switch to Mise (#908)
+- **adapters**: adding Groq adapter embedding and modifiying associated docs (#907)
+- **tools**: allow proxy to be set via environment variable in DDG
+- **adapters**: update A2A integration
+- **adapters**: add RequirementAgent support for A2A
+
+## python_v0.1.29 (2025-07-02)
+
+### Bug Fixes
+
+- acp-sdk import
+
+## python_v0.1.28 (2025-07-02)
+
+### Bug Fixes
+
+- **adapters**: handle result of the RequirementAgent
+
+## python_v0.1.27 (2025-07-01)
+
+### Bug Fixes
+
+- put back accidental changes
+- resolve CI failures for PR
+- **adapters**: agent's return type in the A2AServer
+- **adapters**: agent's return type in the ACPServer
+- **agents**: add 'result' field to RequirementAgent's output for backward compatibility
+
+### Features
+
+- **adapters**: add IBM watsonx Orchestrate integration (#897)
+- add support for oneOf/anyOf modifiers in the JSONSchemaModel (#896)
+
+## python_v0.1.26 (2025-06-26)
+
+### Bug Fixes
+
+- **agents**: remove extra new lines in the system prompt (RequirementAgent)
+- **backend**: remove non-supported tool choice for strict environments
+- set value for aliases in embedding model (#888)
+
+### Features
+
+- **adapters**: add Mistral AI backend provider
+- **tools**: switch to httpx from requests in OpenMeteoTool, add proxy support
+- **tools**: update description of the ThinkTool
+- **tools**: ignore case sensitivity for OpenMeteoTool's temperature_unit parameter
+- **tools**: update description of the WikipediaTool
+- **agents**: update cycle prevention mechanism
+- **adapters**: update ACP
+- **backend**: allow to set headers for Ollama via ENV
+- update logging in TrajectoryMiddleware
+
+## python_v0.1.25 (2025-06-13)
+
+### Bug Fixes
+
+- **internals**: correctly abort tasks
+- **agents**: correctly handle the 'force_at_step' argument in ConditionalRequirement
+- properly invoke sync and async callbacks in runs (#883)
+
+### Features
+
+- add context dependent IO support (#886)
+- **agents**: update RequirementAgent system prompt
+- **internals**: execute sync callbacks in threads
+- **agents**: add 'force_prevent_stop' attribute to ConditionalRequirement
+- **agents**: update the behaviour of 'forced' attribute in RequirementAgent
+- **tools**: simplify the Wikipedia tool
+- **backend**: add text completion support for OpenAI (#871)
+- add middleware arg to the core modules (#880)
+
+## python_v0.1.24 (2025-06-08)
+
+### Features
+
+- **agents**: improve RequirementAgent interfaces, examples, docs (#878)
+- expose watsonx embedding model (#877)
+- **backend**: Support OpenAI embedding models (#873)
+- **agents**: allow RequirementAgent to be exposed via ACP,BeeAIPlatform and A2A
+
+## python_v0.1.23 (2025-06-03)
+
+### Bug Fixes
+
+- update import in GlobalTrajectoryMiddleware
+
+## python_v0.1.22 (2025-06-03)
+
+### Bug Fixes
+
+- **agent**: Enable parser options in python like they are enabled in typescript (#856)
+
+### Features
+
+- **agents**: add experimental RequirementAgent (#852)
+- **providers**: add session support for ACP (#854)
+- **adapters**: add A2A remote agent (#845)
+- **adapters**: Add initial EmbeddingModel adapters (#814)
+
+## python_v0.1.21 (2025-05-15)
+
+### Features
+
+- **adapters**: add validation checks for ACP and BeeAI Platform (#838)
+- **adapters**: introduce ACP and BeeAIPlatform serve integrations (#833)
+- **adapters**: add MCP server adapter (#830)
+- **agents**: prevent cycles in ToolCallingAgent (#832)
+- **adapters**: add support for ACP servers (#808)
+
 ## python_v0.1.20 (2025-05-06)
 
 ### Bug Fixes
@@ -85,7 +751,7 @@
 
 ### BREAKING CHANGE
 
-- - Removed ability to import classes from beeai_framework without a path
+- Removed ability to import classes from beeai_framework without a path
 - Moved AbortSignal from beeai_framework.cancellation to beeai_framework.utils
 - Moved MCPTool from beeai_framework.tools.mcp_tools to beeai_framework.tools.mcp
 

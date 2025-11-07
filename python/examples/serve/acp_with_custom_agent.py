@@ -1,31 +1,28 @@
 import sys
 import traceback
 from collections.abc import AsyncGenerator
+from typing import Unpack
 
 import acp_sdk.models as acp_models
 import acp_sdk.server.context as acp_context
 import acp_sdk.server.types as acp_types
-from pydantic import BaseModel, InstanceOf
 
-from beeai_framework.adapters.acp import AcpAgentServer, acp_msg_to_framework_msg
-from beeai_framework.adapters.acp.serve._agent import AcpAgent
-from beeai_framework.agents.base import BaseAgent
-from beeai_framework.agents.types import AgentMeta
-from beeai_framework.backend.message import AnyMessage, AssistantMessage, Role
-from beeai_framework.context import Run, RunContext
+from beeai_framework.adapters.acp import ACPServer
+from beeai_framework.adapters.acp.serve._utils import acp_msgs_to_framework_msgs
+from beeai_framework.adapters.acp.serve.agent import ACPServerAgent
+from beeai_framework.adapters.acp.serve.server import ACPServerMetadata, to_acp_agent_metadata
+from beeai_framework.agents import AgentOptions, AgentOutput, BaseAgent
+from beeai_framework.backend.message import AnyMessage, AssistantMessage, UserMessage
 from beeai_framework.emitter.emitter import Emitter
 from beeai_framework.errors import FrameworkError
 from beeai_framework.memory import UnconstrainedMemory
 from beeai_framework.memory.base_memory import BaseMemory
-
-
-class EchoAgentRunOutput(BaseModel):
-    message: InstanceOf[AnyMessage]
+from beeai_framework.runnable import runnable_entry
 
 
 # This is a simple echo agent that echoes back the last message it received.
-class EchoAgent(BaseAgent[EchoAgentRunOutput]):
-    memory: BaseMemory | None = None
+class EchoAgent(BaseAgent):
+    memory: BaseMemory
 
     def __init__(self, memory: BaseMemory) -> None:
         super().__init__()
@@ -37,51 +34,47 @@ class EchoAgent(BaseAgent[EchoAgentRunOutput]):
             creator=self,
         )
 
-    def run(
-        self,
-        input: list[AnyMessage] | None = None,
-    ) -> Run[EchoAgentRunOutput]:
-        async def handler(context: RunContext) -> EchoAgentRunOutput:
-            assert self.memory is not None
-            if input:
-                await self.memory.add_many(input)
-            return EchoAgentRunOutput(message=AssistantMessage(self.memory.messages[-1].text))
+    @runnable_entry
+    async def run(self, input: str | list[AnyMessage], /, **kwargs: Unpack[AgentOptions]) -> AgentOutput:
+        assert self.memory is not None
 
-        return self._to_run(handler, signal=None)
+        if isinstance(input, str):
+            await self.memory.add(UserMessage(input))
+        elif isinstance(input, list):
+            await self.memory.add_many(input)
 
-    @property
-    def meta(self) -> AgentMeta:
-        return AgentMeta(
-            name="EchoAgent",
-            description="Simple echo agent.",
-            tools=[],
-        )
+        text_input = self.memory.messages[-1].text if self.memory.messages else ""
+        return AgentOutput(output=[AssistantMessage(text_input)])
 
 
 def main() -> None:
     # Create a custom agent factory for the EchoAgent
-    def agent_factory(agent: EchoAgent) -> AcpAgent:
-        """Factory method to create an AcpAgent from a EchoAgent."""
+    def agent_factory(agent: EchoAgent, *, metadata: ACPServerMetadata | None = None) -> ACPServerAgent:
+        """Factory method to create an ACPAgent from a EchoAgent."""
+        if metadata is None:
+            metadata = {}
 
         async def run(
             input: list[acp_models.Message], context: acp_context.Context
         ) -> AsyncGenerator[acp_types.RunYield, acp_types.RunYieldResume]:
-            framework_messages = [
-                acp_msg_to_framework_msg(Role(message.parts[0].role), str(message))  # type: ignore[attr-defined]
-                for message in input
-            ]
+            framework_messages = acp_msgs_to_framework_msgs(input)
             response = await agent.run(framework_messages)
-            yield acp_models.MessagePart(content=response.message.text, role="assistant")  # type: ignore[call-arg]
+            yield acp_models.MessagePart(content=response.last_message.text, role="assistant")  # type: ignore[call-arg]
 
-        # Create an AcpAgent instance with the run function
-        return AcpAgent(fn=run, name=agent.meta.name, description=agent.meta.description)
+        # Create an ACPAgent instance with the run function
+        return ACPServerAgent(
+            fn=run,
+            name=metadata.get("name", agent.meta.name),
+            description=metadata.get("description", agent.meta.description),
+            metadata=to_acp_agent_metadata(metadata),
+        )
 
     # Register the custom agent factory with the ACP server
-    AcpAgentServer.register_factory(EchoAgent, agent_factory)
+    ACPServer.register_factory(EchoAgent, agent_factory)
     # Create an instance of the EchoAgent with UnconstrainedMemory
     agent = EchoAgent(memory=UnconstrainedMemory())
     # Register the agent with the ACP server and run the HTTP server
-    AcpAgentServer().register(agent).serve()
+    ACPServer().register(agent, name="echo_agent").serve()
 
 
 if __name__ == "__main__":
@@ -91,4 +84,4 @@ if __name__ == "__main__":
         traceback.print_exc()
         sys.exit(e.explain())
 
-# run: beeai agent run EchoAgent "Hello"
+# run: beeai agent run echo_agent "Hello"

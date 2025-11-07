@@ -1,0 +1,130 @@
+---
+title: "Observability"
+description: "Monitor and debug your BeeAI Framework applications with OpenInference instrumentation"
+icon: "chart-line"
+---
+
+## Overview
+
+The BeeAI Framework provides comprehensive observability through OpenInference instrumentation, enabling you to trace and monitor your AI applications with industry-standard telemetry. This allows you to debug issues, optimize performance, and understand how your agents, tools, and workflows are performing in production.
+
+<Note>
+	Currently supported in Python only.
+</Note>
+
+## Quickstart
+
+### 1. Install the package
+
+This package provides the OpenInference instrumentor specifically designed for the BeeAI Framework.
+
+```bash
+pip install openinference-instrumentation-beeai
+```
+
+### 2. Set up observability
+
+Configure OpenTelemetry to create and export spans. This example sets up an OTLP HTTP exporter, a tracer provider, and the BeeAI instrumentor, with the endpoint pointing to a local Arize Phoenix instance.
+
+```py
+from openinference.instrumentation.beeai import BeeAIInstrumentor
+from opentelemetry import trace as trace_api
+from opentelemetry.exporter.otlp.proto.http.trace_exporter import OTLPSpanExporter
+from opentelemetry.sdk import trace as trace_sdk
+from opentelemetry.sdk.resources import Resource
+from opentelemetry.sdk.trace.export import SimpleSpanProcessor
+
+
+def setup_observability() -> None:
+    resource = Resource(attributes={})
+    tracer_provider = trace_sdk.TracerProvider(resource=resource)
+    tracer_provider.add_span_processor(SimpleSpanProcessor(OTLPSpanExporter()))
+    trace_api.set_tracer_provider(tracer_provider)
+
+    BeeAIInstrumentor().instrument()
+```
+
+<Tip>
+	To override the default traces endpoint (http://localhost:4318/v1/traces), set the `OTEL_EXPORTER_OTLP_TRACES_ENDPOINT` environment variable.
+</Tip>
+
+<Tip>
+	For Arize Phoenix, set `OTEL_EXPORTER_OTLP_TRACES_ENDPOINT` to `http://localhost:6006/v1/traces`.
+</Tip>
+
+### 3. Enable instrumentation
+
+Call the setup function **before** running any BeeAI Framework code:
+
+```py
+setup_observability()
+```
+
+The setup function must be called before importing and using any BeeAI Framework components to ensure all operations are properly instrumented.
+
+## What Gets Instrumented
+
+When instrumentation is enabled, BeeAI emits spans and attributes for core runtime operations.
+
+### Agents
+
+- Agent execution start/stop times
+- Input prompts and output responses
+- Tool usage within agent workflows
+- Memory operations and state changes
+
+### Tools
+
+- Tool invocation details
+- Input parameters and return values
+- Execution time and success/failure status
+- Error details when tools fail
+
+### Chat Models
+
+- Model inference requests (including streaming)
+- Token usage statistics
+- Model parameters (temperature, max tokens, etc.)
+- Response timing and latency
+
+### Embedding Models
+
+- Text embedding requests
+- Input text and embedding dimensions
+- Processing time and batch sizes
+
+### Workflows
+
+- Workflow step execution
+- State transitions and data flow
+- Step dependencies and execution order
+
+## Observability Backends
+
+### Arize Phoenix
+
+Open-source observability for LLM applications.
+
+<Info>
+**Documentation:** [Arize Phoenix](https://github.com/Arize-ai/phoenix)
+</Info>
+
+### LangFuse
+
+Production-ready LLMOps platform with advanced analytics.
+
+<Info>
+**Documentation:** [LangFuse OpenTelemetry Integration](https://langfuse.com/integrations/native/opentelemetry#opentelemetry-native-langfuse-sdk-v3)
+</Info>
+
+### LangSmith
+
+Comprehensive LLM development platform by LangChain.
+
+<Info>
+**Documentation:** [LangSmith OpenTelemetry Guide](https://docs.smith.langchain.com/observability/how_to_guides/trace_with_opentelemetry)
+</Info>
+
+### Other Platforms
+
+Any backend supporting OpenTelemetry/OpenInference standards.

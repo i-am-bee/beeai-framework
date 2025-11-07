@@ -1,17 +1,5 @@
 # Copyright 2025 © BeeAI a Series of LF Projects, LLC
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-
+# SPDX-License-Identifier: Apache-2.0
 
 import asyncio
 import uuid
@@ -122,8 +110,8 @@ class Retryable(Generic[T]):
         async def _retry(attempt: int) -> T:
             assert_aborted()
             ctx = self._get_context(attempt)
-            if attempt > 1:
-                await self._handlers.on_retry(ctx, last_error) if self._handlers.on_retry and last_error else None
+            if attempt > 1 and last_error and self._handlers.on_retry is not None:
+                await self._handlers.on_retry(ctx, last_error)
             value: T = await self._handlers.executor(ctx)
             return value
 
@@ -133,7 +121,7 @@ class Retryable(Generic[T]):
                 or (config and config.group_signal and config.group_signal.aborted)
                 or (self._config.signal and self._config.signal.aborted)
             )
-            logger.debug("Retryable run should retry:", should_retry)
+            logger.debug("Retryable run should retry: %s", should_retry)
             return should_retry
 
         async def _on_failed_attempt(e: FrameworkError, meta: Meta) -> None:

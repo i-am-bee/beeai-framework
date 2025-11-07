@@ -24,16 +24,13 @@ Closes: #
 - [ ] Appropriate label(s) added to PR: `Python` for Python changes, `TypeScript` for TypeScript changes
 
 #### Code quality checks
-- [ ] Linting passes: Python `poe lint` or `poe lint --fix` / TypeScript `yarn lint` or `yarn lint:fix`
-- [ ] Formatting is applied: Python `poe format` or `poe format --fix` / TypeScript: `yarn format` or `yarn format:fix`
-- [ ] Static type checks pass: Python `poe type-check`
+- [ ] Code quality checks pass: `mise check` (`mise fix` to auto-fix)
 
 #### Testing
-- [ ] Unit tests pass: Python `poe test --type unit` / TypeScript `yarn test:unit`
-- [ ] E2E tests pass: Python `poe test --type e2e` / TypeScript: `yarn test:e2e`
-- [ ] Integration tests pass: Python `poe test --type integration`
+- [ ] Unit tests pass: `mise test:unit`
+- [ ] E2E tests pass: `mise test:e2e`
 - [ ] Tests are included (for bug fixes or new features)
 
 #### Documentation
 - [ ] Documentation is updated
-- [ ] Embedme embeds code examples in docs. To update after edits, run: Python `poe docs --type build`
+- [ ] Embedme embeds code examples in docs. To update after edits, run: Python `mise docs:fix`

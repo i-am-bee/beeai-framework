@@ -1,22 +1,12 @@
 # Copyright 2025 © BeeAI a Series of LF Projects, LLC
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
+# SPDX-License-Identifier: Apache-2.0
 
 from collections.abc import Callable
 from typing import Annotated, Any
 
 from pydantic import BaseModel, InstanceOf
 
+from beeai_framework.agents import AgentOutput
 from beeai_framework.agents.react.runners.default.prompts import (
     AssistantPromptTemplateInput,
     SchemaErrorTemplateInput,
@@ -29,8 +19,8 @@ from beeai_framework.agents.react.runners.default.prompts import (
     UserPromptTemplateInput,
 )
 from beeai_framework.agents.types import AgentExecutionConfig, AgentMeta, BaseAgentRunOptions
+from beeai_framework.backend import AnyMessage
 from beeai_framework.backend.chat import ChatModel
-from beeai_framework.backend.message import AnyMessage
 from beeai_framework.backend.types import ChatModelOutput
 from beeai_framework.memory.base_memory import BaseMemory
 from beeai_framework.template import PromptTemplate
@@ -39,7 +29,7 @@ from beeai_framework.utils.strings import to_json
 
 
 class ReActAgentRunInput(BaseModel):
-    prompt: str | None = None
+    prompt: str | list[InstanceOf[AnyMessage]]
 
 
 class ReActAgentIterationMeta(BaseModel):
@@ -72,8 +62,7 @@ class ReActAgentRunIteration(BaseModel):
     state: InstanceOf[ReActAgentIterationResult]
 
 
-class ReActAgentRunOutput(BaseModel):
-    result: InstanceOf[AnyMessage]
+class ReActAgentOutput(AgentOutput):
     iterations: list[ReActAgentRunIteration]
     memory: InstanceOf[BaseMemory]
 

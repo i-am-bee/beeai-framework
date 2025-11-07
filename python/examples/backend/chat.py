@@ -13,7 +13,7 @@ async def main() -> None:
 
     #  Optionally one may set llm parameters
     llm.parameters.max_tokens = 10000  # high number yields longer potential output
-    llm.parameters.top_p = 0  # higher number yields more complex vocabulary, recommend only changing p or k
+    llm.parameters.top_p = 0.1  # higher number yields more complex vocabulary, recommend only changing p or k
     llm.parameters.frequency_penalty = 0  # higher number yields reduction in word reptition
     llm.parameters.temperature = 0  # higher number yields greater randomness and variation
     llm.parameters.top_k = 0  # higher number yields more variance, recommend only changing p or k
@@ -26,9 +26,9 @@ async def main() -> None:
     reader = ConsoleReader()
 
     for prompt in reader:
-        response = await llm.create(messages=[UserMessage(prompt)])
+        response = await llm.run([UserMessage(prompt)])
         reader.write("LLM 🤖 (txt) : ", response.get_text_content())
-        reader.write("LLM 🤖 (raw) : ", "\n".join([str(msg.to_plain()) for msg in response.messages]))
+        reader.write("LLM 🤖 (raw) : ", "\n".join([str(msg.to_plain()) for msg in response.output]))
 
 
 if __name__ == "__main__":

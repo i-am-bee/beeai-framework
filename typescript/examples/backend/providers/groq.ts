@@ -57,7 +57,7 @@ async function groqAbort() {
     console.info(response.getTextContent());
   } catch (err) {
     if (err instanceof AbortError) {
-      console.error("Aborted", { err });
+      console.log("Aborted", { err });
     }
   }
 }
@@ -73,7 +73,9 @@ async function groqStructure() {
 }
 
 async function groqToolCalling() {
-  const userMessage = new UserMessage("What is the weather in Boston?");
+  const userMessage = new UserMessage(
+    `What is the current weather in Boston? Current date is ${new Date().toISOString().split("T")[0]}.`,
+  );
   const weatherTool = new OpenMeteoTool({ retryOptions: { maxRetries: 3 } });
   const response = await llm.create({ messages: [userMessage], tools: [weatherTool] });
   const toolCallMsg = response.getToolCalls()[0];

@@ -1,0 +1,137 @@
+---
+title: "MCP"
+icon: "server"
+---
+
+The MCP (Model Context Protocol), developed by Anthropic, is an open protocol that standardizes how applications provide context to LLMs.
+
+---
+
+## Prerequisites
+
+- **BeeAI Framework** installed with `pip install beeai-framework`
+- **BeeAI Framework extension for MCP** installed with `pip install 'beeai-framework[mcp]'`
+
+
+<Heading level={2} id="client">MCP Client</Heading>
+
+MCPTool allows you to consume external tools exposed via MCP protocol.
+
+See the [MCP Tool page](/modules/tools#mcp) for more information.
+
+<Heading level={2} id="server">MCP Server</Heading>
+
+MCPServer allows you to expose your components (Tools, Agents, Chat Models, Runnable) to external systems that support the Model Context Protocol (MCP) standard, enabling seamless integration with LLM tools ecosystems.
+
+Key benefits
+- Fast setup with minimal configuration
+- Support for multiple transport options
+- Register multiple tools on a single server
+- Custom server settings and instructions
+
+<CodeGroup>
+
+	{/* <!-- embedme python/examples/serve/mcp_tool.py --> */}
+	```py Python
+	from beeai_framework.adapters.mcp.serve.server import MCPServer, MCPServerConfig, MCPSettings
+	from beeai_framework.tools import tool
+	from beeai_framework.tools.types import StringToolOutput
+	from beeai_framework.tools.weather.openmeteo import OpenMeteoTool
+	
+	
+	@tool
+	def reverse_tool(word: str) -> StringToolOutput:
+	    """A tool that reverses a word"""
+	    return StringToolOutput(result=word[::-1])
+	
+	
+	def main() -> None:
+	    """Create an MCP server with custom config, register ReverseTool and OpenMeteoTool to the MCP server and run it."""
+	
+	    config = MCPServerConfig(transport="streamable-http", settings=MCPSettings(port=8001))  # optional
+	    server = MCPServer(config=config)
+	    server.register_many([reverse_tool, OpenMeteoTool()])
+	    server.serve()
+	
+	
+	if __name__ == "__main__":
+	    main()
+	
+	```
+
+	{/* <!-- embedme typescript/examples/serve/mcp_tool.ts --> */}
+	```ts TypeScript
+	import { StringToolOutput, Tool, ToolEmitter, ToolInput } from "beeai-framework/tools/base";
+	import { OpenMeteoTool } from "beeai-framework/tools/weather/openMeteo";
+	import { MCPServer, MCPServerConfig } from "beeai-framework/adapters/mcp/serve/server";
+	import { Emitter } from "beeai-framework/emitter/emitter";
+	import { z } from "zod";
+	
+	export class ReverseTool extends Tool<StringToolOutput> {
+	  name = "ReverseTool";
+	  description = "A tool that reverses a word";
+	
+	  public readonly emitter: ToolEmitter<ToolInput<this>, StringToolOutput> = Emitter.root.child({
+	    namespace: ["tool", "reverseTool"],
+	    creator: this,
+	  });
+	
+	  inputSchema() {
+	    return z.object({
+	      word: z.string(),
+	    });
+	  }
+	
+	  protected async _run(input: ToolInput<this>): Promise<StringToolOutput> {
+	    return new StringToolOutput(input.word.split("").reverse().join(""));
+	  }
+	}
+	
+	// create an MCP server with custom config, register ReverseTool and OpenMeteoTool and run it
+	const config = new MCPServerConfig({ transport: "streamable-http", port: 8001 });
+	const server = new MCPServer(config);
+	server.registerMany([new ReverseTool(), new OpenMeteoTool()]);
+	await server.serve();
+	
+	```
+
+</CodeGroup>
+
+<Tip>You can also register agents, chat models, or any other runnable.</Tip>
+
+### Configuration
+
+The MCP Server Adapter uses the `MCPServerConfig` class to configure the MCP server:
+
+<CodeGroup>
+
+	```py Python
+	class MCPServerConfig(BaseModel):
+		transport: Literal["stdio", "sse", "streamable-http"] = "stdio"
+		name: str = "MCP Server"
+		instructions: str | None = None
+		settings: MCPSettings | mcp_server.Settings = Field(default_factory=lambda: MCPSettings())
+	```
+
+	```ts TypeScript
+	export class MCPServerConfig {
+		transport: "stdio" | "sse" | "streamable-http" = "stdio";
+		hostname = "127.0.0.1";
+		port = 3000;
+		name = "MCP Server";
+		version = "1.0.0";
+		settings?: ServerOptions;
+	}
+	```
+
+</CodeGroup>
+
+Transport Options:
+
+- `stdio`: Uses standard input/output for communication (default)
+- `streamable-http`: Uses HTTP POST and GET requests (replaces `sse`)
+- `sse`: Uses server-sent events over HTTP (deprecated)
+
+### Custom Instances
+
+If you want to make your custom class compatible with an MCP server, you can do so by registering a custom mapper via `MCPServer.register_factory(...)`.

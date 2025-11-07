@@ -1,16 +1,5 @@
 # Copyright 2025 © BeeAI a Series of LF Projects, LLC
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
+# SPDX-License-Identifier: Apache-2.0
 
 import json
 import random
@@ -18,7 +7,7 @@ import re
 import string
 from collections.abc import Sequence
 from enum import StrEnum
-from typing import Any, cast
+from typing import Any, Protocol, cast, runtime_checkable
 
 from pydantic import BaseModel
 
@@ -48,8 +37,38 @@ def create_strenum(name: str, keys: Sequence[str]) -> type[StrEnum]:
     return cast(type[StrEnum], target)
 
 
-def to_json(input: Any, *, indent: int | None = None, sort_keys: bool = True) -> str:
-    return json.dumps(input, ensure_ascii=False, default=lambda o: o.__dict__, sort_keys=sort_keys, indent=indent)
+def from_json(input: str) -> Any:
+    return json.loads(input)
+
+
+@runtime_checkable
+class CustomJsonDump(Protocol):
+    def to_json_safe(self) -> Any: ...
+
+
+def to_json_serializable(input: Any, *, exclude_none: bool = False) -> Any:
+    def apply_child(value: Any) -> Any:
+        return to_json_serializable(value, exclude_none=exclude_none)
+
+    if isinstance(input, CustomJsonDump):
+        return apply_child(input.to_json_safe())
+    elif isinstance(input, BaseModel):
+        return apply_child(input.model_dump(exclude_none=exclude_none))
+    elif isinstance(input, list | set):  # set is not JSON serializable
+        return [apply_child(v) for v in input if v is not None] if exclude_none else [apply_child(v) for v in input]
+    elif isinstance(input, dict):
+        return {k: apply_child(v) for k, v in input.items() if v is not None} if exclude_none else input
+    elif isinstance(input, str | bool | int | float):
+        return input
+    else:
+        return str(input)
+
+
+def to_json(input: Any, *, indent: int | None = None, sort_keys: bool = True, exclude_none: bool = False) -> str:
+    def fallback(value: Any) -> Any:
+        return to_json_serializable(value, exclude_none=exclude_none)
+
+    return json.dumps(fallback(input), ensure_ascii=False, default=fallback, sort_keys=sort_keys, indent=indent)
 
 
 def to_safe_word(phrase: str) -> str:

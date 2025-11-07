@@ -1,3 +1,8 @@
+/**
+ * Copyright 2025 © BeeAI a Series of LF Projects, LLC
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
 // @ts-check
 
 import eslint from "@eslint/js";
@@ -127,7 +132,6 @@ export default tseslint.config(
       "no-restricted-imports": "off",
     },
   },
-  // @ts-expect-error
   ...markdown.configs.processor,
   prettierConfig,
   {
