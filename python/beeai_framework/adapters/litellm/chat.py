@@ -122,7 +122,7 @@ class LiteLLMChatModel(ChatModel, ABC):
             if not is_valid_unicode_escape_sequence(last_chunk.get_text_content()):
                 continue
 
-            if last_chunk.is_valid() or input.stream_partial_tool_calls:
+            if input.stream_partial_tool_calls or last_chunk.is_valid():
                 text += last_chunk.get_text_content()
                 yield last_chunk
                 last_chunk = None
