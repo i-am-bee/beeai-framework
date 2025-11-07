@@ -134,6 +134,7 @@ class LiteLLMChatModel(ChatModel, ABC):
         if last_chunk:
             fix_double_escaped_tool_calls(last_chunk.get_tool_calls())
             if last_chunk.is_valid():
+                text += last_chunk.get_text_content()
                 yield last_chunk
                 last_chunk = None
             else:
