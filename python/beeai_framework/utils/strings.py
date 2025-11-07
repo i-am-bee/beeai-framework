@@ -147,3 +147,17 @@ def find_first_pair(
         index += 1
 
     return None
+
+
+def is_valid_unicode_escape_sequence(s: str) -> bool:
+    """
+    Return True if s can be safely decoded using unicode_escape.
+    """
+    try:
+        decoded_s = s.encode("utf-8").decode("unicode_escape")
+        # This check ensures we don't have lone surrogates, which can happen
+        # with chunked streaming of multi-byte characters (e.g. emoji).
+        decoded_s.encode("utf-8")
+        return True
+    except UnicodeError:
+        return False
