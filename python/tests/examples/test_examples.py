@@ -25,6 +25,7 @@ exclude = list(
             "backend/providers/openai_example.py" if os.getenv("OPENAI_API_KEY") is None else None,
             "backend/providers/groq.py" if os.getenv("GROQ_API_KEY") is None else None,
             "backend/providers/xai.py" if os.getenv("XAI_API_KEY") is None else None,
+            "workflows/custom/autoflow" if os.getenv("OPENAI_API_KEY") is None else None,
             "backend/providers/vertexai.py" if os.getenv("GOOGLE_VERTEX_PROJECT") is None else None,
             "backend/providers/gemini.py" if os.getenv("GEMINI_API_KEY") is None else None,
             "backend/providers/amazon_bedrock.py" if os.getenv("AWS_ACCESS_KEY_ID") is None else None,
