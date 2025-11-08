@@ -18,7 +18,7 @@ from beeai_framework.utils import AbortSignal
 async def deepseek_from_name() -> None:
     llm = ChatModel.from_name("deepseek:deepseek-chat")
     user_message = UserMessage("what states are part of New England?")
-    response = await llm.run(messages=[user_message])
+    response = await llm.run([user_message])
     print(response.get_text_content())
 
 
@@ -83,7 +83,7 @@ async def deepseek_stream_parser() -> None:
 
 async def main() -> None:
     print("*" * 10, "deepseek_from_name")
-    # await deepseek_from_name()
+    await deepseek_from_name()
     print("*" * 10, "deepseek_sync")
     await deepseek_sync()
     print("*" * 10, "deepseek_stream")
