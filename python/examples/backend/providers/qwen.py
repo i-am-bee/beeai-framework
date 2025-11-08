@@ -93,7 +93,7 @@ async def main() -> None:
     print("*" * 10, "qwen_structure")
     await qwen_structure()
     print("*" * 10, "qwen_stream_parser")
-
+    await qwen_stream_parser()
 
 if __name__ == "__main__":
     load_dotenv()
