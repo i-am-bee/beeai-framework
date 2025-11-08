@@ -16,9 +16,9 @@ from beeai_framework.utils import AbortSignal
 
 
 async def qwen_from_name() -> None:
-    llm = ChatModel.from_name("qwen:qwen-plus")
+    llm = ChatModel.from_name("qwen:qwen-turbo")
     user_message = UserMessage("what states are part of New England?")
-    response = await llm.run(messages=[user_message])
+    response = await llm.run([user_message])
     print(response.get_text_content())
 
 
@@ -83,7 +83,7 @@ async def qwen_stream_parser() -> None:
 
 async def main() -> None:
     print("*" * 10, "qwen_from_name")
-    # await qwen_from_name()
+    await qwen_from_name()
     print("*" * 10, "qwen_sync")
     await qwen_sync()
     print("*" * 10, "qwen_stream")
