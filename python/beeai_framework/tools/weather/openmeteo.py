@@ -3,7 +3,7 @@
 
 import os
 from datetime import UTC, date, datetime
-from typing import Any, Literal
+from typing import Any, Literal, Self
 from urllib.parse import urlencode
 
 import httpx
@@ -47,8 +47,8 @@ class OpenMeteoTool(Tool[OpenMeteoToolInput, ToolRunOptions, JSONToolOutput[dict
     description = "Retrieve current, past, or future weather forecasts for a location."
     input_schema = OpenMeteoToolInput
 
-    async def clone(self) -> "OpenMeteoTool":
-        tool = OpenMeteoTool(options=self.options)
+    async def clone(self) -> Self:
+        tool = self.__class__(options=self.options)
         tool.name = self.name
         tool.description = self.description
         tool.input_schema = self.input_schema

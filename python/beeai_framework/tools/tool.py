@@ -296,14 +296,14 @@ def tool(
                 else:
                     return StringToolOutput(result=str(result))
 
-            async def clone(self) -> "FunctionTool":
+            async def clone(self) -> Self:
                 cloned = FunctionTool()
                 cloned.name = self.name
                 cloned.description = self.description
                 cloned.input_schema = self.input_schema
                 cloned._cache = await self._cache.clone()
                 cloned.middlewares.extend(self.middlewares)
-                return cloned
+                return cloned  # type: ignore
 
         return FunctionTool()
 

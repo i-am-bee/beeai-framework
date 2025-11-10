@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 from collections.abc import Callable
+from typing import Self
 
 from pydantic import BaseModel, Field
 
@@ -40,10 +41,10 @@ class ThinkTool(Tool[ThinkSchema]):
             creator=self,
         )
 
-    async def clone(self) -> "ThinkTool":
-        tool = ThinkTool(extra_instructions=self._extra_instructions, tool_output=self._tool_output)
+    async def clone(self) -> Self:
+        tool = self.__class__(extra_instructions=self._extra_instructions, tool_output=self._tool_output)
         tool.name = self.name
         tool.description = self.description
         tool._cache = await self.cache.clone()
-        tool.middlewares = self.middlewares.copy()
+        tool.middlewares.extend(self.middlewares)
         return tool

@@ -10,7 +10,7 @@ except ModuleNotFoundError as e:
         "Optional module [duckduckgo] not found.\nRun 'pip install \"beeai-framework[duckduckgo]\"' to install."
     ) from e
 
-from typing import Any
+from typing import Any, Self
 
 from pydantic import BaseModel, Field
 
@@ -84,8 +84,8 @@ class DuckDuckGoSearchTool(Tool[DuckDuckGoSearchToolInput, ToolRunOptions, DuckD
         except Exception as e:
             raise ToolError("Error performing search:") from e
 
-    async def clone(self) -> "DuckDuckGoSearchTool":
-        tool = DuckDuckGoSearchTool(
+    async def clone(self) -> Self:
+        tool = self.__class__(
             max_results=self.max_results,
             safe_search=self.safe_search,
             options=self.options,

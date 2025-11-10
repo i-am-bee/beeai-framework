@@ -16,6 +16,8 @@ except ModuleNotFoundError as e:
         "Optional module [mcp] not found.\nRun 'pip install \"beeai-framework[mcp]\"' to install."
     ) from e
 
+from typing import Self
+
 from pydantic import BaseModel
 
 from beeai_framework.context import RunContext
@@ -113,13 +115,13 @@ class MCPTool(Tool[BaseModel, ToolRunOptions, JSONToolOutput]):
         tools_result = await session.list_tools()
         return [MCPTool(session, tool, **options) for tool in tools_result.tools]
 
-    async def clone(self) -> "MCPTool":
+    async def clone(self) -> Self:
         options = MCPToolKwargs(smart_parsing=self._smart_parsing)
         options.update(self._options or {})  # type: ignore
 
-        tool = MCPTool(
+        tool = self.__class__(
             session=self._session,
-            tool=self._tool,
+            tool=self._tool.model_copy(),
             **options,
         )
         tool.middlewares.extend(self.middlewares)

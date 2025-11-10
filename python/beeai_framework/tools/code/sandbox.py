@@ -37,8 +37,8 @@ class SandboxTool(Tool[BaseModel, SandboxToolOptions, StringToolOutput]):
         super().__init__()
         self._tool_options = options
 
-    async def clone(self) -> "SandboxTool":
-        tool = SandboxTool(self._tool_options)
+    async def clone(self) -> Self:
+        tool = self.__class__(self._tool_options)
         tool.middlewares.extend(self.middlewares)
         tool._cache = await self.cache.clone()
         return tool

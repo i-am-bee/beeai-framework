@@ -1,7 +1,7 @@
 # Copyright 2025 © BeeAI a Series of LF Projects, LLC
 # SPDX-License-Identifier: Apache-2.0
 
-from typing import Any
+from typing import Any, Self
 
 try:
     import wikipediaapi  # type: ignore
@@ -51,8 +51,8 @@ class WikipediaTool(Tool[WikipediaToolInput, ToolRunOptions, WikipediaToolOutput
             creator=self,
         )
 
-    async def clone(self) -> "WikipediaTool":
-        tool = WikipediaTool(
+    async def clone(self) -> Self:
+        tool = self.__class__(
             options=self.options,
             language=self._language,
         )
