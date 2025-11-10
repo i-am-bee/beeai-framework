@@ -221,7 +221,7 @@ class OpenAPITool(Tool[BaseModel, ToolRunOptions, OpenAPIToolOutput]):
                 response = await client.request(
                     method=input_dict.get("method", self._method) or "",
                     url=str(url),
-                    headers={"Accept": "application/json"}.update(self.headers),
+                    headers={"Accept": "application/json", **self.headers},
                     data=input_dict.get("body"),
                 )
                 output = OpenAPIToolOutput(response.status_code, response.text)
