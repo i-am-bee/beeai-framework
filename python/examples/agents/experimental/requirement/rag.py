@@ -39,9 +39,12 @@ async def setup_vector_store() -> VectorStore | None:
     """
     Setup vector store with BeeAI framework documentation.
     """
-    embedding_model = EmbeddingModel.from_name("watsonx:ibm/slate-125m-english-rtrvr-v2", truncate_input_tokens=500)
-
+    # Use Ollama embedding model (change to watsonx if you have credentials)
+    embedding_model = EmbeddingModel.from_name("ollama:nomic-embed-text")
+    # embedding_model = EmbeddingModel.from_name("watsonx:ibm/slate-125m-english-rtrvr-v2", truncate_input_tokens=500)
+    
     # Load existing vector store if available
+    
     if VECTOR_DB_PATH_4_DUMP and os.path.exists(VECTOR_DB_PATH_4_DUMP):
         print(f"Loading vector store from: {VECTOR_DB_PATH_4_DUMP}")
         from beeai_framework.adapters.beeai.backend.vector_store import TemporalVectorStore

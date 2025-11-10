@@ -12,10 +12,11 @@ from deepeval import evaluate
 from deepeval.metrics import ContextualPrecisionMetric, ContextualRecallMetric, ContextualRelevancyMetric, AnswerRelevancyMetric
 from deepeval.test_case import LLMTestCase
 
-# Add the examples directory to sys.path to import setup_vector_store
-examples_path = Path(__file__).parent.parent.parent.parent / "examples" / "agents" / "experimental" / "requirement"
-sys.path.insert(0, str(examples_path))
+# Add the python directory to sys.path so we can import from eval and examples
+python_path = Path(__file__).parent.parent.parent.parent.resolve()
+sys.path.insert(0, str(python_path))
 
+# Import setup_vector_store from examples
 from examples.agents.experimental.requirement.rag import setup_vector_store
 
 from beeai_framework.agents.experimental import RequirementAgent
@@ -41,7 +42,7 @@ async def create_agent() -> RequirementAgent:
     search_tool = VectorStoreSearchTool(vector_store=vector_store)
     
     return RequirementAgent(
-        llm=ChatModel.from_name(os.environ["EVAL_CHAT_MODEL_NAME"]),
+        llm=ChatModel.from_name("ollama:granite3.3:2b"),
         tools=[search_tool],
         memory=UnconstrainedMemory(),
         instructions=(
@@ -115,9 +116,12 @@ async def create_rag_test_cases():
         # )
     ]
     
-    for question, expected_output in test_data:
+    for i, (question, expected_output) in enumerate(test_data, 1):
+        print(f"\n[{i}/{len(test_data)}] Processing question: {question}")
         # Run the agent
+        print("Running agent...")
         response = await agent.run(question)
+        print("Agent response received")
         actual_output = response.result.text
         
         # Extract retrieval context from message history
@@ -137,28 +141,36 @@ async def create_rag_test_cases():
 
 @pytest.mark.asyncio
 async def test_rag() -> None:
+    print("Starting RAG evaluation...")
     # Run evaluation and get test cases
+    print("Creating test cases...")
     test_cases = await create_rag_test_cases()
+    print(f"Created {len(test_cases)} test cases")
     
-    # RAG-specific metrics
+    # RAG-specific metrics - use the same model as the agent
+    model_name = "ollama:granite3.3:2b"
+    print(f"\nSetting up evaluation metrics with model: {model_name}")
+    deepeval_model = DeepEvalLLM.from_name(model_name)
     contextual_recall = ContextualRecallMetric(
-        model=os.environ["EVAL_CHAT_MODEL_NAME"],#DeepEvalLLM.from_name(os.environ["EVAL_CHAT_MODEL_NAME"]),
+        model=deepeval_model,
         threshold=0.7
     )
     contextual_relevancy = ContextualRelevancyMetric(
-        model=os.environ["EVAL_CHAT_MODEL_NAME"],#DeepEvalLLM.from_name(os.environ["EVAL_CHAT_MODEL_NAME"]),
+        model=deepeval_model,
         threshold=0.7
     )
     contextual_precision = AnswerRelevancyMetric(
-        model=os.environ["EVAL_CHAT_MODEL_NAME"],#DeepEvalLLM.from_name(os.environ["EVAL_CHAT_MODEL_NAME"]),
+        model=deepeval_model,
         threshold=0.7
     )
     
     # Evaluate using DeepEval
+    print("\nRunning evaluation...")
     eval_results = evaluate(
         test_cases=test_cases,
         metrics=[contextual_precision, contextual_recall, contextual_relevancy]
     )
+    print("\nEvaluation Results:")
     print(eval_results)
     
 if __name__ == "__main__":

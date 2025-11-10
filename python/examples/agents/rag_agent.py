@@ -83,7 +83,7 @@ async def main() -> None:
             "Either set POPULATE_VECTOR_DB=True to create a new one, or ensure the database file exists."
         )
 
-    llm = ChatModel.from_name("ollama:llama3.2")
+    llm = ChatModel.from_name("ollama:granite3.3:2b")
     reranker = DocumentProcessor.from_name("beeai:LLMDocumentReranker", llm=llm)
 
     agent = RAGAgent(llm=llm, memory=UnconstrainedMemory(), vector_store=vector_store, reranker=reranker)
