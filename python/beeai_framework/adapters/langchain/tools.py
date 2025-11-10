@@ -73,3 +73,9 @@ class LangChainTool(Tool[T, LangChainToolRunOptions, StringToolOutput]):
             response = self._tool.invoke(*args)  # type: ignore
 
         return StringToolOutput(result=str(response))
+
+    async def clone(self) -> "LangChainTool[T]":
+        tool = LangChainTool[T](tool=self._tool, options=self._options)
+        tool._cache = await self.cache.clone()
+        tool.middlewares.extend(self.middlewares)
+        return tool

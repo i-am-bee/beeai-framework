@@ -22,6 +22,7 @@ class ThinkTool(Tool[ThinkSchema]):
     def __init__(self, *, extra_instructions: str = "", tool_output: str | Callable[[ThinkSchema], str] = "OK") -> None:
         super().__init__()
         self._tool_output = tool_output
+        self._extra_instructions = extra_instructions
         if extra_instructions:
             self.description += f" {extra_instructions}"
 
@@ -40,7 +41,7 @@ class ThinkTool(Tool[ThinkSchema]):
         )
 
     async def clone(self) -> "ThinkTool":
-        tool = ThinkTool(extra_instructions=self.description, tool_output=self._tool_output)
+        tool = ThinkTool(extra_instructions=self._extra_instructions, tool_output=self._tool_output)
         tool.name = self.name
         tool.description = self.description
         tool._cache = await self.cache.clone()

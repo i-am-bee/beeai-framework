@@ -97,6 +97,14 @@ class FinalAnswerTool(Tool[BaseModel, ToolRunOptions, StringToolOutput]):
 
         return StringToolOutput("Message has been sent")
 
+    async def clone(self) -> "FinalAnswerTool":
+        tool = FinalAnswerTool(expected_output=self._expected_output, state=self._state.model_copy())
+        tool.name = self.name
+        tool.description = self.description
+        tool._cache = await self.cache.clone()
+        tool.middlewares.extend(self.middlewares)
+        return tool
+
 
 class ToolInvocationResult(BaseModel):
     msg: InstanceOf[MessageToolCallContent]
