@@ -3,7 +3,7 @@
 
 from __future__ import annotations
 
-from typing import Any, Self
+from typing import Any
 
 from pydantic import BaseModel, Field
 
@@ -100,7 +100,11 @@ class VectorStoreSearchTool(Tool[VectorStoreSearchToolInput, ToolRunOptions, Vec
         vector_store = VectorStore.from_name(name, embedding_model=embedding_model, **kwargs)
         return cls(vector_store=vector_store, options=options)
 
-    async def clone(self) -> Self:
-        cloned = await super().clone()
-        cloned.vector_store = self.vector_store
-        return cloned
+    async def clone(self) -> VectorStoreSearchTool:
+        tool = VectorStoreSearchTool(
+            vector_store=self.vector_store,
+            options=self.options,
+        )
+        tool.middlewares.extend(self.middlewares)
+        tool._cache = await self.cache.clone()
+        return tool

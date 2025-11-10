@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 import contextlib
 import json
-from typing import Any, Self, TypedDict, Unpack
+from typing import Any, TypedDict, Unpack
 
 from beeai_framework.tools import ToolError
 from beeai_framework.tools.mcp.utils.session_provider import MCPClient, MCPSessionProvider
@@ -113,9 +113,15 @@ class MCPTool(Tool[BaseModel, ToolRunOptions, JSONToolOutput]):
         tools_result = await session.list_tools()
         return [MCPTool(session, tool, **options) for tool in tools_result.tools]
 
-    async def clone(self) -> Self:
-        cloned = await super().clone()
-        cloned._session = self._session
-        cloned._tool = self._tool.model_copy()
-        cloned._smart_parsing = self._smart_parsing
-        return cloned
+    async def clone(self) -> "MCPTool":
+        options = MCPToolKwargs(smart_parsing=self._smart_parsing)
+        options.update(self._options or {})  # type: ignore
+
+        tool = MCPTool(
+            session=self._session,
+            tool=self._tool,
+            **options,
+        )
+        tool.middlewares.extend(self.middlewares)
+        tool._cache = await self.cache.clone()
+        return tool

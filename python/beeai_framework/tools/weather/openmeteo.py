@@ -47,8 +47,14 @@ class OpenMeteoTool(Tool[OpenMeteoToolInput, ToolRunOptions, JSONToolOutput[dict
     description = "Retrieve current, past, or future weather forecasts for a location."
     input_schema = OpenMeteoToolInput
 
-    def __init__(self, options: dict[str, Any] | None = None) -> None:
-        super().__init__(options)
+    async def clone(self) -> "OpenMeteoTool":
+        tool = OpenMeteoTool(options=self.options)
+        tool.name = self.name
+        tool.description = self.description
+        tool.input_schema = self.input_schema
+        tool.middlewares.extend(self.middlewares)
+        tool._cache = await self.cache.clone()
+        return tool
 
     def _create_emitter(self) -> Emitter:
         return Emitter.root().child(

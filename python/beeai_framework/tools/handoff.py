@@ -3,7 +3,7 @@
 
 import contextlib
 from functools import cached_property
-from typing import Any, Self
+from typing import Any
 
 from pydantic import BaseModel, Field
 
@@ -102,10 +102,14 @@ class HandoffTool(Tool[HandoffSchema, ToolRunOptions, StringToolOutput]):
             creator=self,
         )
 
-    async def clone(self) -> Self:
-        return type(self)(
+    async def clone(self) -> "HandoffTool":
+        tool = HandoffTool(
             target=self._target,
             name=self._name,
             description=self._description,
             propagate_inputs=self._propagate_inputs,
         )
+        tool.input_schema = self.input_schema
+        tool._cache = await self._cache.clone()
+        tool.middlewares = self.middlewares.copy()
+        return tool

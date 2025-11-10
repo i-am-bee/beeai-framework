@@ -2,7 +2,6 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import os
-from typing import Self
 
 try:
     from ddgs import DDGS
@@ -10,6 +9,8 @@ except ModuleNotFoundError as e:
     raise ModuleNotFoundError(
         "Optional module [duckduckgo] not found.\nRun 'pip install \"beeai-framework[duckduckgo]\"' to install."
     ) from e
+
+from typing import Any
 
 from pydantic import BaseModel, Field
 
@@ -47,7 +48,13 @@ class DuckDuckGoSearchTool(Tool[DuckDuckGoSearchToolInput, ToolRunOptions, DuckD
     description = "Search for online trends, news, current events, real-time information, or research topics."
     input_schema = DuckDuckGoSearchToolInput
 
-    def __init__(self, max_results: int = 10, safe_search: str = DuckDuckGoSearchType.STRICT) -> None:
+    def __init__(
+        self,
+        max_results: int = 10,
+        safe_search: str = DuckDuckGoSearchType.STRICT,
+        *,
+        options: dict[str, Any] | None = None,
+    ) -> None:
         super().__init__()
         self.max_results = max_results
         self.safe_search = safe_search
@@ -77,8 +84,14 @@ class DuckDuckGoSearchTool(Tool[DuckDuckGoSearchToolInput, ToolRunOptions, DuckD
         except Exception as e:
             raise ToolError("Error performing search:") from e
 
-    async def clone(self) -> Self:
-        cloned = await super().clone()
-        cloned.max_results = self.max_results
-        cloned.safe_search = self.safe_search
-        return cloned
+    async def clone(self) -> "DuckDuckGoSearchTool":
+        tool = DuckDuckGoSearchTool(
+            max_results=self.max_results,
+            safe_search=self.safe_search,
+            options=self.options,
+        )
+        tool.name = self.name
+        tool.description = self.description
+        tool.middlewares.extend(self.middlewares)
+        tool._cache = await self.cache.clone()
+        return tool
