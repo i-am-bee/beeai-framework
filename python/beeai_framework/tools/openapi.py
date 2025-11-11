@@ -1,8 +1,7 @@
 # Copyright 2025 © BeeAI a Series of LF Projects, LLC
 # SPDX-License-Identifier: Apache-2.0
 
-from collections.abc import Iterable
-from typing import Any, Union
+from typing import Any, Self, Union
 from urllib.parse import parse_qs, urlencode, urljoin, urlparse, urlunparse
 
 import httpx
@@ -48,8 +47,8 @@ class OpenAPITool(Tool[BaseModel, ToolRunOptions, OpenAPIToolOutput]):
         super().__init__()
         self.open_api_schema = open_api_schema
         self.headers = headers or {}
-        self._path = path
-        self._method = method
+        self.path = path
+        self.method = method
 
         server_urls = [
             server.get("url") for server in self.open_api_schema.get("servers", []) if server.get("url") is not None
@@ -59,9 +58,10 @@ class OpenAPITool(Tool[BaseModel, ToolRunOptions, OpenAPIToolOutput]):
         if self.url is None:
             raise ToolError("OpenAPI schema hasn't any server with url specified. Pass it manually.")
 
-        self._name = name or self.open_api_schema.get("info", {}).get("title", "").strip()
-        if self._name is None:
+        name = name or self.open_api_schema.get("info", {}).get("title", "").strip()
+        if name is None:
             raise ToolError("OpenAPI schema hasn't 'name' specified. Pass it manually.")
+        self._name = to_safe_word(name.replace("{", "").replace("}", "").rstrip("/").rstrip("_"))
 
         self._description = (
             description
@@ -209,7 +209,7 @@ class OpenAPITool(Tool[BaseModel, ToolRunOptions, OpenAPIToolOutput]):
         self, tool_input: BaseModel, options: ToolRunOptions | None, context: RunContext
     ) -> OpenAPIToolOutput:
         input_dict = tool_input.model_dump()
-        parsed_url = urlparse(urljoin(self.url, input_dict.get("path", self._path)))
+        parsed_url = urlparse(urljoin(self.url, input_dict.get("path", self.path)))
         search_params = parse_qs(parsed_url.query)
         search_params.update(input_dict.get("parameters", {}))
         new_params = urlencode(search_params, doseq=True)
@@ -219,7 +219,7 @@ class OpenAPITool(Tool[BaseModel, ToolRunOptions, OpenAPIToolOutput]):
         try:
             async with httpx.AsyncClient() as client:
                 response = await client.request(
-                    method=input_dict.get("method", self._method) or "",
+                    method=input_dict.get("method", self.method) or "",
                     url=str(url),
                     headers={"Accept": "application/json", **self.headers},
                     data=input_dict.get("body"),
@@ -238,19 +238,32 @@ class OpenAPITool(Tool[BaseModel, ToolRunOptions, OpenAPIToolOutput]):
 
     @classmethod
     def from_schema(cls, open_api_schema: dict[str, Any], api_url: str | None = None) -> list["OpenAPITool"]:
-        def get_tool() -> Iterable[OpenAPITool]:
-            for path, path_spec in open_api_schema.get("paths", {}).items():
-                for method, method_spec in path_spec.items():
-                    if isinstance(method_spec, dict):
-                        new_schema = open_api_schema.copy()
-                        new_schema["paths"] = {path: {method: method_spec}}
-                        yield OpenAPITool(
+        tools: list[OpenAPITool] = []
+        for path, path_spec in open_api_schema.get("paths", {}).items():
+            for method, method_spec in path_spec.items():
+                if isinstance(method_spec, dict):
+                    new_schema = open_api_schema.copy()
+                    new_schema["paths"] = {path: {method: method_spec}}
+                    tools.append(
+                        OpenAPITool(
                             open_api_schema=new_schema,
-                            name=f"{method.lower()} {path}",
-                            description=method_spec.get("summary", method_spec.get("description")),
+                            name=method_spec.get("operationId") or f"{method.upper()} {path}",
+                            description=method_spec.get("description", method_spec.get("summary")),
                             url=api_url,
                             path=path,
                             method=method,
                         )
+                    )
 
-        return list(get_tool())
+        return tools
+
+    async def clone(self) -> Self:
+        return self.__class__(
+            open_api_schema=self.open_api_schema.copy(),
+            name=self._name,
+            description=self._description,
+            url=self.url,
+            headers=self.headers.copy(),
+            path=self.path,
+            method=self.method,
+        )
