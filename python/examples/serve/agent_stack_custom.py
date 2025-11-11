@@ -17,6 +17,7 @@ from beeai_framework.context import RunContext, RunMiddlewareProtocol
 from beeai_framework.emitter import EmitterOptions, EventMeta
 from beeai_framework.errors import FrameworkError
 from beeai_framework.middleware.trajectory import GlobalTrajectoryMiddleware
+from beeai_framework.tools.search.duckduckgo import DuckDuckGoSearchTool
 from beeai_framework.tools.search.wikipedia import WikipediaTool
 from beeai_framework.tools.think import ThinkTool
 
@@ -62,8 +63,8 @@ class CustomExtensions(BaseAgentStackExtensions):
 
 def main() -> None:
     agent = RequirementAgent(
-        llm=AgentStackChatModel(preferred_models=["openai/gpt-5"]),
-        tools=[WikipediaTool(), ThinkTool()],
+        llm=AgentStackChatModel(preferred_models=["openai/gpt-4o"]),
+        tools=[WikipediaTool(), ThinkTool(), DuckDuckGoSearchTool()],
         instructions=(
             "You are an AI assistant focused on retrieving information from online sources."
             "Mandatory Search: Always search for the topic on Wikipedia and always search for related current news."
@@ -75,6 +76,7 @@ def main() -> None:
         requirements=[
             ConditionalRequirement(ThinkTool, force_at_step=1, consecutive_allowed=False),
             ConditionalRequirement(WikipediaTool, min_invocations=1),
+            ConditionalRequirement(DuckDuckGoSearchTool, min_invocations=1),
         ],
         description="Search for information based on a given phrase.",
         middlewares=[
