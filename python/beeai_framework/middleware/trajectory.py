@@ -50,6 +50,7 @@ class GlobalTrajectoryMiddleware(RunMiddlewareProtocol):
         enabled: bool = True,
         match_nested: bool = True,
         emitter_priority: int | None = None,
+        formatter: Callable[["GlobalTrajectoryMiddlewareFormatterInput"], str] | None = None,
     ) -> None:
         """
         Args:
@@ -80,6 +81,9 @@ class GlobalTrajectoryMiddleware(RunMiddlewareProtocol):
         self._exclude_none = exclude_none
         self._match_nested = match_nested
         self._emitter_priority = emitter_priority if emitter_priority is not None else -1  # run later
+        self._formatter = formatter or (
+            lambda x: f"{x.prefix}{x.class_name}[{x.instance_name or x.class_name}][{x.event_name}]"
+        )
 
     @cached_property
     def emitter(self) -> Emitter:
@@ -173,15 +177,18 @@ class GlobalTrajectoryMiddleware(RunMiddlewareProtocol):
             target = target.instance
 
         class_name = type(target).__name__
-
+        target_name = (
+            target.meta.name if isinstance(target, BaseAgent) else target.name if hasattr(target, "name") else None
+        )
         prefix = next((v for k, v in self._prefix_by_type.items() if isinstance(target, k)), "")
 
-        if isinstance(target, BaseAgent):
-            return f"{prefix}{class_name}[{target.meta.name}][{meta.name}]"
-        elif isinstance(target, Tool | Requirement):
-            return f"{prefix}{class_name}[{target.name}][{meta.name}]"
-
-        return f"{prefix}{class_name}[{meta.name}]"
+        input = GlobalTrajectoryMiddlewareFormatterInput(
+            prefix=prefix,
+            class_name=class_name,
+            instance_name=target_name,
+            event_name=meta.name,
+        )
+        return self._formatter(input)
 
     def _format_prefix(self, meta: EventMeta) -> str:
         assert meta.trace
@@ -273,6 +280,13 @@ class GlobalTrajectoryMiddlewareEvent(BaseModel):
     message: str
     level: TraceLevel
     origin: tuple[Any, EventMeta]
+
+
+class GlobalTrajectoryMiddlewareFormatterInput(BaseModel):
+    prefix: str
+    class_name: str
+    event_name: str
+    instance_name: str | None
 
 
 class GlobalTrajectoryMiddlewareStartEvent(GlobalTrajectoryMiddlewareEvent):
