@@ -55,7 +55,7 @@ class DuckDuckGoSearchTool(Tool[DuckDuckGoSearchToolInput, ToolRunOptions, DuckD
         *,
         options: dict[str, Any] | None = None,
     ) -> None:
-        super().__init__()
+        super().__init__(options)
         self.max_results = max_results
         self.safe_search = safe_search
 
