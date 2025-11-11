@@ -3,19 +3,18 @@
 
 import pytest
 
-from beeai_framework.adapters.openai.serve.responses._types import ResponsesRequestInputMessage
-from beeai_framework.adapters.openai.serve.responses._utils import openai_input_to_beeai_message
-
+from beeai_framework.adapters.openai.serve.responses._types import (
+    ResponsesRequestInputMessage,
+)
+from beeai_framework.adapters.openai.serve.responses._utils import (
+    openai_input_to_beeai_message,
+)
 from beeai_framework.backend.message import (
     AssistantMessage,
     MessageTextContent,
     SystemMessage,
-    UserMessage, )
-
-class DummyRequestMessage(ResponsesRequestInputMessage):
-    def __init__(self, role: str, content: str | None)-> None:
-        self.role = role
-        self.content = content
+    UserMessage,
+)
 
 @pytest.mark.unit
 def test_openai_input_to_beeai_message_user_role() -> None:
@@ -69,10 +68,7 @@ def test_none_content_defaults_to_empty_string() -> None:
 
 @pytest.mark.unit
 def test_openai_input_to_beeai_message_invalid_role() -> None:
-    msg = ResponsesRequestInputMessage.model_construct(
-        role="unknown",
-        content="x"
-    )
+    msg = ResponsesRequestInputMessage.model_construct(role="unknown", content="x")
 
     with pytest.raises(ValueError) as exc:
         openai_input_to_beeai_message(msg)
