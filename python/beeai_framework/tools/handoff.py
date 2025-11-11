@@ -103,9 +103,12 @@ class HandoffTool(Tool[HandoffSchema, ToolRunOptions, StringToolOutput]):
         )
 
     async def clone(self) -> Self:
-        return type(self)(
+        tool = self.__class__(
             target=self._target,
             name=self._name,
             description=self._description,
             propagate_inputs=self._propagate_inputs,
         )
+        tool._cache = await self._cache.clone()
+        tool.middlewares.extend(self.middlewares)
+        return tool

@@ -120,7 +120,7 @@ class Autoflow:
         state.next_step = self._transition_overrides.get(state.last_step, Autoflow.ROUTER)
 
         fn = self._handler_by_name[state.last_step]
-        state.last_result = await ensure_async(fn)(**state.last_input)
+        state.last_result = await ensure_async(fn)(**state.last_input)  # type: ignore
         await state.memory.add(
             AssistantMessage(
                 self._router_response_template.render(
@@ -140,8 +140,8 @@ class Autoflow:
             for name, handler in self._handler_by_name.items()
             if not name.startswith("__") and (self._allow_immediate_step_reuse or name != state.last_step)
         ]
-        response = await self._model.create(
-            messages=[
+        response = await self._model.run(
+            [
                 SystemMessage(
                     self._router_reason_template.render(
                         AutoflowReasonPromptInput(
@@ -211,11 +211,11 @@ async def main() -> None:
         tool = OpenMeteoTool()
         date_f = datetime.strptime(date, "%Y-%m-%d").date()  # noqa: DTZ007
         result = await tool.run(OpenMeteoToolInput(location_name=location, start_date=date_f, end_date=date_f))
-        formatted_result = await model.create(
-            messages=[
+        formatted_result = await model.run(
+            [
                 SystemMessage(
                     "You are a weather forecasting assistant.\n"
-                    "Your task is to briefly summarize the weather forecast from the raw data provided in the user message."  #  noqa: E501
+                    "Your task is to briefly summarize the weather forecast from the raw data provided in the user message."
                     "Your response should not contain any additional comments."
                 ),
                 UserMessage(f"Location: ${location}"),
@@ -249,7 +249,7 @@ async def main() -> None:
             print(" Input: ", data.state.last_input)
 
     response = await workflow.run(  # noqa: F841
-        task="Create a detailed travel plan for my upcoming trip to Prague next weekend. The plan should include a daily schedule along with the weather forecast for each day.",  # noqa: E501
+        task="Create a detailed travel plan for my upcoming trip to Prague next weekend. The plan should include a daily schedule along with the weather forecast for each day.",
         start_step="get_current_date_and_time",  # optional
     ).on("success", log_intermediate_steps)
 
