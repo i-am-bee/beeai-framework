@@ -73,18 +73,6 @@ class OpenAPITool(Tool[BaseModel, ToolRunOptions, OpenAPIToolOutput]):
             )
         )
 
-    async def clone(self) -> Self:
-        tool = self.__class__(
-            open_api_schema=self.open_api_schema,
-            name=self._name,
-            description=self._description,
-            url=self.url,
-            headers=self.headers,
-        )
-        tool._cache = await self._cache.clone()
-        tool.middlewares.extend(self.middlewares)
-        return tool
-
     def _create_emitter(self) -> Emitter:
         return Emitter.root().child(
             namespace=["tool", "web", "openAPI", to_safe_word(self._name)],
@@ -280,7 +268,7 @@ class OpenAPITool(Tool[BaseModel, ToolRunOptions, OpenAPIToolOutput]):
         return tools
 
     async def clone(self) -> Self:
-        return self.__class__(
+        tool = self.__class__(
             open_api_schema=self.open_api_schema.copy(),
             name=self._name,
             description=self._description,
@@ -289,3 +277,6 @@ class OpenAPITool(Tool[BaseModel, ToolRunOptions, OpenAPIToolOutput]):
             path=self.path,
             method=self.method,
         )
+        tool._cache = await self._cache.clone()
+        tool.middlewares.extend(self.middlewares)
+        return tool
