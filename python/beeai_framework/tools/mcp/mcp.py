@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 import contextlib
 import json
-from typing import Any, Self, TypedDict, Unpack
+from typing import Any, TypedDict, Unpack
 
 from beeai_framework.tools import ToolError
 from beeai_framework.tools.mcp.utils.session_provider import MCPClient, MCPSessionProvider
@@ -15,6 +15,8 @@ except ModuleNotFoundError as e:
     raise ModuleNotFoundError(
         "Optional module [mcp] not found.\nRun 'pip install \"beeai-framework[mcp]\"' to install."
     ) from e
+
+from typing import Self
 
 from pydantic import BaseModel
 
@@ -114,8 +116,14 @@ class MCPTool(Tool[BaseModel, ToolRunOptions, JSONToolOutput]):
         return [MCPTool(session, tool, **options) for tool in tools_result.tools]
 
     async def clone(self) -> Self:
-        cloned = await super().clone()
-        cloned._session = self._session
-        cloned._tool = self._tool.model_copy()
-        cloned._smart_parsing = self._smart_parsing
-        return cloned
+        options = MCPToolKwargs(smart_parsing=self._smart_parsing)
+        options.update(self._options or {})  # type: ignore
+
+        tool = self.__class__(
+            session=self._session,
+            tool=self._tool.model_copy(),
+            **options,
+        )
+        tool.middlewares.extend(self.middlewares)
+        tool._cache = await self.cache.clone()
+        return tool
