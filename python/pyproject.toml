@@ -81,6 +81,7 @@ types-PyYAML = "^6.0.12.20250402"
 types-requests = "^2.32.0.20241016"
 syrupy = "^4.9.1"
 types-deprecated = "^1.2.15.20250304"
+pyyaml = "^6.0.3"
 
 [tool.poetry.extras]
 transformers = ["transformers", "torch", "peft", "outlines"]

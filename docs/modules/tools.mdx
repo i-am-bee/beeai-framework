@@ -19,11 +19,12 @@ Ready-to-use tools that provide immediate functionality for common agent tasks:
 | [MCP](#mcp)        | Discover and use tools exposed by arbitrary [MCP Server](https://modelcontextprotocol.io/examples)  |
 | [Think](#think)    | Gives an agent a place to think                                                                                              |
 | [Handoff](#handoff)    | Delegates a task to an expert agent                                                                                             |
+| [OpenAPI](#openapi)  | Consume external APIs with an ease                                       |
 | [OpenMeteo](#openmeteo)  | Retrieve weather information for specific locations and dates                                       |
 | [DuckDuckGo](#duckduckgo) | Search for data on DuckDuckGo                                                                       |
 | [Wikipedia](#wikipedia)  | Search for data on Wikipedia                                                                        |
-| [VectorStoreSearch](#vector-store-search) | Search for relevant documents in a vector store using semantic similarity                         |
-| [Python](#python)     | Run arbitrary Python code in a sandboxed environment                                                |
+| [VectorStoreSearch](#vector-store-search) | Search for documents in a vector database                         |
+| [Python](#python)     | Let agent run an arbitrary Python code in a sandboxed environment                                                |
 | [Sandbox](#sandbox)    | Run custom Python functions in a sandboxed environment                                              |
 
 ➕ [Request additional built-in tools](https://github.com/i-am-bee/beeai-framework/discussions)
@@ -805,6 +806,93 @@ Leverage the Model Context Protocol (MCP) to define, initialize, and utilize too
 <Note>
 	Currently, the client does not support Roots, Sampling, or Elicitation. Feel free to open a GitHub issue if needed.
 </Note>
+
+<Heading level={3} id="openapi">OpenAPI Tool</Heading>
+
+Many APIs are described using the OpenAPI Specification, and a framework can read this specification to generate a set of tools that allow an agent to communicate with the API.
+
+<CodeGroup>
+	{/* <!-- embedme python/examples/tools/openapi.py --> */}
+	```py Python [expandable]
+	import asyncio
+	import json
+	import os
+	import sys
+	import traceback
+	
+	from beeai_framework.agents.requirement import RequirementAgent
+	from beeai_framework.errors import FrameworkError
+	from beeai_framework.tools.openapi import OpenAPITool
+	
+	
+	async def main() -> None:
+	    # Retrieve the schema
+	    current_dir = os.path.dirname(__file__)
+	    open_api_schema = json.load(open(f"{current_dir}/assets/github_openapi.json"))
+	
+	    # Create a tool for each operation in the schema
+	    tools = OpenAPITool.from_schema(open_api_schema)
+	    print(f"Retrieved {len(tools)} tools")
+	    print("\n".join([t.name for t in tools]))
+	
+	    # Create an agent
+	    agent = RequirementAgent(llm="ollama:granite4:micro", tools=tools)
+	
+	    # Run the agent
+	    prompt = "How many repositories are in 'i-am-bee' org?"
+	    print("User:", prompt)
+	    response = await agent.run(prompt)
+	    print("Agent 🤖 : ", response.last_message.text)
+	
+	
+	if __name__ == "__main__":
+	    try:
+	        asyncio.run(main())
+	    except FrameworkError as e:
+	        traceback.print_exc()
+	        sys.exit(e.explain())
+	
+	```
+
+	{/* <!-- embedme typescript/examples/tools/openapi.ts --> */}
+	```ts TypeScript [expandable]
+	import "dotenv/config.js";
+	import { ReActAgent } from "beeai-framework/agents/react/agent";
+	import { TokenMemory } from "beeai-framework/memory/tokenMemory";
+	import { OpenAPITool } from "beeai-framework/tools/openapi";
+	import * as fs from "fs";
+	import { dirname } from "node:path";
+	import { fileURLToPath } from "node:url";
+	import { ChatModel } from "beeai-framework/backend/chat";
+	
+	const llm = await ChatModel.fromName("ollama:llama3.1");
+	
+	const __dirname = dirname(fileURLToPath(import.meta.url));
+	const openApiSchema = await fs.promises.readFile(
+	  `${__dirname}/assets/github_openapi.json`,
+	  "utf-8",
+	);
+	
+	const agent = new ReActAgent({
+	  llm,
+	  memory: new TokenMemory(),
+	  tools: [new OpenAPITool({ openApiSchema })],
+	});
+	
+	const response = await agent
+	  .run({ prompt: 'How many repositories are in "i-am-bee" org?' })
+	  .observe((emitter) => {
+	    emitter.on("update", async ({ data, update, meta }) => {
+	      console.log(`Agent (${update.key}) 🤖 : `, update.value);
+	    });
+	  });
+	
+	console.log(`Agent 🤖 : `, response.result.text);
+	
+	```
+
+</CodeGroup>
+
 
 <Heading level={3} id="python">Python Tool</Heading>
 
