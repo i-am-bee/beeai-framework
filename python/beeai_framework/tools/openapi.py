@@ -1,7 +1,7 @@
 # Copyright 2025 © BeeAI a Series of LF Projects, LLC
 # SPDX-License-Identifier: Apache-2.0
 
-from typing import Any, Union
+from typing import Any, Self, Union
 from urllib.parse import parse_qs, urlencode, urljoin, urlparse, urlunparse
 
 import httpx
@@ -64,6 +64,18 @@ class OpenAPITool(Tool[BaseModel, ToolRunOptions, OpenAPIToolOutput]):
                 "Only use the OpenAPI tool if you need to communicate to external servers."
             )
         )
+
+    async def clone(self) -> Self:
+        tool = self.__class__(
+            open_api_schema=self.open_api_schema,
+            name=self._name,
+            description=self._description,
+            url=self.url,
+            headers=self.headers,
+        )
+        tool._cache = await self._cache.clone()
+        tool.middlewares.extend(self.middlewares)
+        return tool
 
     def _create_emitter(self) -> Emitter:
         return Emitter.root().child(
