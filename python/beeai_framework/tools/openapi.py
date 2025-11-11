@@ -234,7 +234,17 @@ class OpenAPITool(Tool[BaseModel, ToolRunOptions, OpenAPIToolOutput]):
     async def from_url(cls, open_api_url: str, *, api_url: str | None = None) -> list["OpenAPITool"]:
         async with httpx.AsyncClient() as client:
             response = await client.get(open_api_url)
-            return cls.from_schema(response.json(), api_url=api_url)
+            response.raise_for_status()
+
+            content_type = response.headers.get("Content-Type", "")
+            if "yaml" in content_type:
+                import yaml
+
+                content = yaml.parse(response.text)
+            else:
+                content = response.json()
+
+            return cls.from_schema(content, api_url=api_url)
 
     @classmethod
     def from_schema(cls, open_api_schema: dict[str, Any], api_url: str | None = None) -> list["OpenAPITool"]:
