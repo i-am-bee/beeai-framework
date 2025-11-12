@@ -1,3 +1,15 @@
+## python_v0.1.66 (2025-11-11)
+
+### Bug Fixes
+
+- **backend**: extract content from the last corrupted chat output chunk
+
+### Features
+
+- **tools**: add method to create OpenAPITool from URL (#1284)
+- **tools**: redefine cloning (#1283)
+- **backend**: handle incomplete Unicode chunks while streaming (#1279)
+
 ## python_v0.1.65 (2025-11-06)
 
 ### Bug Fixes
