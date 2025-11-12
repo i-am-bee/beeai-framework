@@ -16,6 +16,7 @@ from beeai_framework.backend.message import (
     UserMessage,
 )
 
+
 @pytest.mark.unit
 @pytest.mark.parametrize(
     ("role", "content", "expected_message_type"),
@@ -26,9 +27,7 @@ from beeai_framework.backend.message import (
         ("assistant", "assistant content", AssistantMessage),
     ],
 )
-def test_openai_input_to_beeai_message_roles(
-    role: str, content: str, expected_message_type: type
-) -> None:
+def test_openai_input_to_beeai_message_roles(role: str, content: str, expected_message_type: type) -> None:
     msg = ResponsesRequestInputMessage(role=role, content=content)
     result = openai_input_to_beeai_message(msg)
 
