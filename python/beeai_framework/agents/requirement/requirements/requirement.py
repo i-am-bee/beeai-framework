@@ -27,6 +27,7 @@ from beeai_framework.utils.strings import to_safe_word
 class Rule(BaseModel):
     target: str = Field(..., description="A tool that the requirement apply to.")
     allowed: bool = Field(True, description="Can the agent use the tool?")
+    reason: str | None = Field(None, description="Reason for the rule.")
     prevent_stop: bool = Field(False, description="Prevent the agent from terminating.")
     forced: bool = Field(False, description="Must the agent use the tool?")
     hidden: bool = Field(False, description="Completely omit the tool.")
