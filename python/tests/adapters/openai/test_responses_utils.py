@@ -17,43 +17,24 @@ from beeai_framework.backend.message import (
 )
 
 @pytest.mark.unit
-def test_openai_input_to_beeai_message_user_role() -> None:
-    msg = ResponsesRequestInputMessage(role="user", content="hello user")
+@pytest.mark.parametrize(
+    ("role", "content", "expected_message_type"),
+    [
+        ("user", "hello user", UserMessage),
+        ("system", "system content", SystemMessage),
+        ("developer", "dev content", SystemMessage),
+        ("assistant", "assistant content", AssistantMessage),
+    ],
+)
+def test_openai_input_to_beeai_message_roles(
+    role: str, content: str, expected_message_type: type
+) -> None:
+    msg = ResponsesRequestInputMessage(role=role, content=content)
     result = openai_input_to_beeai_message(msg)
 
-    assert isinstance(result, UserMessage)
+    assert isinstance(result, expected_message_type)
     assert isinstance(result.content[0], MessageTextContent)
-    assert result.content[0].text == "hello user"
-
-
-@pytest.mark.unit
-def test_openai_input_to_beeai_message_system_role() -> None:
-    msg = ResponsesRequestInputMessage(role="system", content="system content")
-    result = openai_input_to_beeai_message(msg)
-
-    assert isinstance(result, SystemMessage)
-    assert isinstance(result.content[0], MessageTextContent)
-    assert result.content[0].text == "system content"
-
-
-@pytest.mark.unit
-def test_openai_input_to_beeai_message_developer_role() -> None:
-    msg = ResponsesRequestInputMessage(role="developer", content="dev content")
-    result = openai_input_to_beeai_message(msg)
-
-    assert isinstance(result, SystemMessage)
-    assert isinstance(result.content[0], MessageTextContent)
-    assert result.content[0].text == "dev content"
-
-
-@pytest.mark.unit
-def test_openai_input_to_beeai_message_assistant_role() -> None:
-    msg = ResponsesRequestInputMessage(role="assistant", content="assistant content")
-    result = openai_input_to_beeai_message(msg)
-
-    assert isinstance(result, AssistantMessage)
-    assert isinstance(result.content[0], MessageTextContent)
-    assert result.content[0].text == "assistant content"
+    assert result.content[0].text == content
 
 
 @pytest.mark.unit
