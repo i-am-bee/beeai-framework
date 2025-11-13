@@ -77,7 +77,7 @@ class Workflow(Runnable[RunnableOutput], ABC):
         self._context = RunContext.get().context
 
         # Builds out the execution graph
-        # TODO The graph is reconstructed on each run? What would a user expect?
+        # TODO The graph is reconstructed on each run?
         self._start_step: WorkflowStep = WorkflowStep()
         self.build(self._start_step)
 
@@ -133,7 +133,11 @@ class Workflow(Runnable[RunnableOutput], ABC):
                 done, _ = await asyncio.wait(tasks)
                 # done, _ = await asyncio.wait(tasks, return_when=asyncio.FIRST_COMPLETED)
 
-        return RunnableOutput(output=[])
+        return self.finalize()
+
+    @abstractmethod
+    def finalize(self) -> RunnableOutput:
+        pass
 
     @abstractmethod
     def build(self, start: WorkflowStep) -> None:

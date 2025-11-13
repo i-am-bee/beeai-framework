@@ -1,8 +1,9 @@
 import asyncio
 
 from beeai_framework.backend.chat import ChatModel
-from beeai_framework.backend.message import SystemMessage, UserMessage
+from beeai_framework.backend.message import AssistantMessage, SystemMessage, UserMessage
 from beeai_framework.context import RunMiddlewareType
+from beeai_framework.runnable import RunnableOutput
 from beeai_framework.workflows.v3.step import WorkflowStep
 from beeai_framework.workflows.v3.workflow import Workflow, step
 
@@ -41,24 +42,17 @@ class ConcurrentWorkflow(Workflow):
         )
         self.responses.append(result.get_text_content())
 
-    @step
-    async def end(self) -> None:
-        print(len(self.responses))
-        for resp in self.responses:
-            print("==========")
-            print(resp)
-
-    # Handles return values and parameters between steps
-    # Fork and join
-    # Return a runnable output
-
     def build(self, start: WorkflowStep) -> None:
-        start.then([self.answer_persona_a, self.answer_persona_b, self.answer_persona_c]).then(self.end)
+        start.then([self.answer_persona_a, self.answer_persona_b, self.answer_persona_c])
+
+    def finalize(self) -> RunnableOutput:
+        return RunnableOutput(output=[AssistantMessage("\n".join(r for r in self.responses))])
 
 
 async def main() -> None:
     workflow = ConcurrentWorkflow()
-    await workflow.run([UserMessage("How should I invest $10K??")], context={})
+    run_output = await workflow.run([UserMessage("How should I invest $10K??")], context={})
+    print(run_output.output[-1].text)
 
 
 if __name__ == "__main__":

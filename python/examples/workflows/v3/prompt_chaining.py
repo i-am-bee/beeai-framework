@@ -3,6 +3,7 @@ import asyncio
 from beeai_framework.backend.chat import ChatModel
 from beeai_framework.backend.message import AssistantMessage, SystemMessage, UserMessage
 from beeai_framework.context import RunMiddlewareType
+from beeai_framework.runnable import RunnableOutput
 from beeai_framework.workflows.v3.step import WorkflowStep
 from beeai_framework.workflows.v3.workflow import Workflow, step
 
@@ -43,18 +44,18 @@ class PromptChainWorkflow(Workflow):
         )
         self.revised_response = result.get_text_content()
 
-    @step
-    async def end(self) -> None:
-        print(self.revised_response)
-
     def build(self, start: WorkflowStep) -> None:
         """Build out the workflow"""
-        start.then(self.answer).then(self.review).then(self.revise_answer).then(self.end)
+        start.then(self.answer).then(self.review).then(self.revise_answer)
+
+    def finalize(self) -> RunnableOutput:
+        return RunnableOutput(output=[AssistantMessage(self.revised_response or "")])
 
 
 async def main() -> None:
     workflow = PromptChainWorkflow()
-    await workflow.run([UserMessage("How is a black dwarf formed?")])
+    run_output = await workflow.run([UserMessage("How is a black dwarf formed?")])
+    print(run_output.output[-1].text)
 
 
 if __name__ == "__main__":

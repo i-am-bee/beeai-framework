@@ -4,8 +4,9 @@ import json
 from pydantic import BaseModel
 
 from beeai_framework.backend.chat import ChatModel
-from beeai_framework.backend.message import UserMessage
+from beeai_framework.backend.message import AssistantMessage, UserMessage
 from beeai_framework.context import RunMiddlewareType
+from beeai_framework.runnable import RunnableOutput
 from beeai_framework.workflows.v3.step import WorkflowStep
 from beeai_framework.workflows.v3.workflow import Workflow, step
 
@@ -59,10 +60,14 @@ class RoutingWorkflow(Workflow):
         self.answer_with_web_search.then(self.end)
         self.answer.then(self.end)
 
+    def finalize(self) -> RunnableOutput:
+        return RunnableOutput(output=[AssistantMessage(self.response or "")])
+
 
 async def main() -> None:
     workflow = RoutingWorkflow()
-    await workflow.run([UserMessage("What is the current rivian stock price?")], context={})
+    run_output = await workflow.run([UserMessage("What is the current rivian stock price?")], context={})
+    print(run_output.output[-1].text)
 
 
 if __name__ == "__main__":
