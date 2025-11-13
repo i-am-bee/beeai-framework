@@ -24,7 +24,7 @@ class QwenChatModel(LiteLLMChatModel):
         base_url: str | None = None,
         **kwargs: Unpack[ChatModelKwargs],
     ) -> None:
-        model = model_id if model_id else os.getenv("QWEN_CHAT_MODEL", "qwen-plus")
+        model = model_id if model_id else os.getenv("DASHSCOPE_CHAT_MODEL", "qwen-plus")
 
         super().__init__(
             model,
@@ -32,8 +32,8 @@ class QwenChatModel(LiteLLMChatModel):
             **kwargs,
         )
 
-        self._assert_setting_value("api_key", api_key, envs=["QWEN_API_KEY"])
-        self._assert_setting_value("base_url", base_url, envs=["QWEN_API_BASE"], aliases=["api_base"], allow_empty=True)
+        self._assert_setting_value("api_key", api_key, envs=["DASHSCOPE_API_KEY"])
+        self._assert_setting_value("base_url", base_url, envs=["DASHSCOPE_API_BASE"], aliases=["api_base"], allow_empty=True)
         self._settings["extra_headers"] = utils.parse_extra_headers(
-            self._settings.get("extra_headers"), os.getenv("QWEN_API_HEADERS")
+            self._settings.get("extra_headers"), os.getenv("DASHSCOPE_API_HEADERS")
         )
