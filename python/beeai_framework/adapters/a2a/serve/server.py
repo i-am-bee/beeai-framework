@@ -31,6 +31,7 @@ try:
     import a2a.utils as a2a_utils
     import grpc
     from a2a.grpc import a2a_pb2, a2a_pb2_grpc
+    from grpc_health.v1 import health, health_pb2, health_pb2_grpc
     from grpc_reflection.v1alpha import reflection
     from starlette.applications import Starlette
     from starlette.requests import Request
@@ -134,6 +135,7 @@ class A2AServer(
 
     def _add_health_endpoint(self, app: Starlette) -> None:
         """Add health endpoint to the Starlette app."""
+
         async def on_startup() -> None:
             self._ready = True
 
@@ -142,7 +144,8 @@ class A2AServer(
 
         async def health_endpoint(request: Request) -> Response:
             content = "ok" if self._ready else "not ready"
-            return PlainTextResponse(content, status_code=200)
+            status = 200 if self._ready else 503
+            return PlainTextResponse(content, status_code=status)
 
         app.add_event_handler("startup", on_startup)
         app.add_event_handler("shutdown", on_shutdown)
@@ -185,12 +188,15 @@ class A2AServer(
 
         """Creates the gRPC server."""
         grpc_server = grpc.aio.server()
+        health_servicer = health.HealthServicer()
+        health_pb2_grpc.add_HealthServicer_to_server(health_servicer, grpc_server)
         a2a_pb2_grpc.add_A2AServiceServicer_to_server(
             a2a_request_handlers.GrpcHandler(agent_card, request_handler),
             grpc_server,
         )  # type: ignore[no-untyped-call]
         service_names = (
             a2a_pb2.DESCRIPTOR.services_by_name["A2AService"].full_name,
+            "grpc.health.v1.Health",
             reflection.SERVICE_NAME,
         )
         reflection.enable_server_reflection(service_names, grpc_server)
@@ -204,6 +210,14 @@ class A2AServer(
 
         async def shutdown(sig: signal.Signals) -> None:
             """Gracefully shutdown the servers."""
+            try:
+                health_servicer.set("", health_pb2.HealthCheckResponse.NOT_SERVING)
+                health_servicer.set(
+                    a2a_pb2.DESCRIPTOR.services_by_name["A2AService"].full_name,
+                    health_pb2.HealthCheckResponse.NOT_SERVING,
+                )
+            except Exception:
+                pass
             http_server.should_exit = True
 
             await grpc_server.stop(5)
@@ -212,6 +226,11 @@ class A2AServer(
             loop.add_signal_handler(sig, lambda s=sig: asyncio.create_task(shutdown(s)))  # type: ignore[misc]
 
         await grpc_server.start()
+        health_servicer.set("", health_pb2.HealthCheckResponse.SERVING)
+        health_servicer.set(
+            a2a_pb2.DESCRIPTOR.services_by_name["A2AService"].full_name,
+            health_pb2.HealthCheckResponse.SERVING,
+        )
 
         await asyncio.gather(http_server.serve(), grpc_server.wait_for_termination())
 

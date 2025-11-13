@@ -43,6 +43,7 @@ unstructured = {version = "^0.17.2", optional = true}
 uvicorn = {version = "^0.37.0", optional = true}
 types-grpcio = {version = "1.0.0.20250703", optional = true}
 types-grpcio-reflection = {version = "1.0.0.20250506", optional = true}
+grpcio-health-checking = {version = "^1.65.5", optional = true}
 wikipedia-api = {version = "^0.8.1", optional = true}
 beeai-sdk = {version = "^0.3.5", optional = true}
 langgraph-prebuilt = {version = "^0.6.4", optional = true}
@@ -81,6 +82,7 @@ types-PyYAML = "^6.0.12.20250402"
 types-requests = "^2.32.0.20241016"
 syrupy = "^4.9.1"
 types-deprecated = "^1.2.15.20250304"
+types-grpcio-health-checking = "^1.0.0.20250506"
 
 [tool.poetry.extras]
 transformers = ["transformers", "torch", "peft", "outlines"]
@@ -94,7 +96,7 @@ langchain = ["langchain-core", "langchain-community", "langchain-ollama"]
 rag = ["llama-index", "langchain-core", "langchain-community", "langchain-ollama", "markdown", "unstructured"]
 acp = ["acp-sdk", "uvicorn"]
 beeai-platform = ["beeai-sdk", "a2a-sdk", "uvicorn"]
-a2a = ["a2a-sdk", "uvicorn", "types-grpcio", "types-grpcio-reflection"]
+a2a = ["a2a-sdk", "uvicorn", "types-grpcio", "types-grpcio-reflection", "grpcio-health-checking"]
 watsonx-orchestrate = ["uvicorn", "fastapi"]
 bedrock = ["boto3"]
 vertexai = ["google-auth"]
@@ -110,6 +112,7 @@ all = [
     "acp-sdk",
     "uvicorn",
     "a2a-sdk",
+    "grpcio-health-checking",
     "fastapi",
     "llama-index",
     "beeai-sdk",
