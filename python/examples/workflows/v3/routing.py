@@ -52,13 +52,9 @@ class RoutingWorkflow(Workflow):
 
     def build(self, start: WorkflowStep) -> None:
         start.then(self.check_context).branch(
-            next_steps={True: self.answer_with_web_search, False: self.answer},
+            steps={True: self.answer_with_web_search, False: self.answer},
             branch_fn=self.branch_fn,
-        )
-
-        # TODO: branch should be chainable directly
-        self.answer_with_web_search.then(self.end)
-        self.answer.then(self.end)
+        ).then(self.end)
 
     def finalize(self) -> RunnableOutput:
         return RunnableOutput(output=[AssistantMessage(self.response or "")])

@@ -13,19 +13,21 @@ from beeai_framework.runnable import Runnable, RunnableOptions, RunnableOutput, 
 from beeai_framework.workflows.v3.events import (
     workflow_v3_event_types,
 )
-from beeai_framework.workflows.v3.step import WorkflowBranch, WorkflowLoopUntil, WorkflowStep
+from beeai_framework.workflows.v3.step import (
+    AsyncFuncStepExecutable,
+    EmptyStepExecutable,
+    WorkflowStep,
+)
 from beeai_framework.workflows.v3.types import AsyncStepFunction
-
-
-def create_step(func: AsyncStepFunction) -> WorkflowStep:
-    return WorkflowStep(func=func)
-
 
 T = TypeVar("T", bound="Workflow")
 
 
 class step:  # noqa: N801
-    """Descriptor that turns an async method into a WorkflowStep."""
+    """
+    Descriptor that turns an async method into a WorkflowStep.
+    Users can refer to decorated methods and treat as WorkflowStep for composition.
+    """
 
     def __init__(self, func: AsyncStepFunction) -> None:
         self.func = func
@@ -43,10 +45,10 @@ class step:  # noqa: N801
         if instance is None:
             return self  # accessed on class, not instance
 
-        cache_name = f"__workflow_cache_{self.name}"
+        cache_name = f"__workflow_step_cache_{self.name}"
         if not hasattr(instance, cache_name):
             bound_func = self.func.__get__(instance, owner)
-            setattr(instance, cache_name, WorkflowStep(bound_func))
+            setattr(instance, cache_name, WorkflowStep(executable=AsyncFuncStepExecutable(func=bound_func)))
         return getattr(instance, cache_name)
 
 
@@ -78,7 +80,7 @@ class Workflow(Runnable[RunnableOutput], ABC):
 
         # Builds out the execution graph
         # TODO The graph is reconstructed on each run?
-        self._start_step: WorkflowStep = WorkflowStep()
+        self._start_step: WorkflowStep = WorkflowStep(executable=EmptyStepExecutable("Start"))
         self.build(self._start_step)
 
         assert self._start_step is not None
@@ -91,32 +93,19 @@ class Workflow(Runnable[RunnableOutput], ABC):
         tasks: set[asyncio.Task[Any]] = set()
         completed_steps: set[WorkflowStep] = set()
 
-        async def execute_step(step: WorkflowStep | WorkflowBranch | WorkflowLoopUntil) -> None:
-            step_to_exec: WorkflowStep | None = None
+        async def execute_step(step: WorkflowStep) -> None:
+            print("Executing:", step.name)
 
-            # Run the step
-            if isinstance(step, WorkflowStep):
-                step_to_exec = step
-            elif isinstance(step, WorkflowBranch):
-                key = step.branch_fn()
-                step_to_exec = step.next_steps[key]
-            elif isinstance(step, WorkflowLoopUntil):
-                step_to_exec = step.step
+            result = await step.execute()
 
-            assert step_to_exec is not None
+            completed_steps.add(step)
 
-            print("Executing:", step_to_exec.name)
-
-            await step_to_exec.execute()
-
-            completed_steps.add(step_to_exec)
-
-            if isinstance(step, WorkflowLoopUntil) and step.until_fn():
+            if step.requeue():
                 await queue.put(step)
                 return
 
             # Enqueue downstream steps
-            for ds in step_to_exec._downstream:
+            for ds in step._downstream:
                 await queue.put(ds)
 
         while not queue.empty() or tasks:
@@ -128,7 +117,8 @@ class Workflow(Runnable[RunnableOutput], ABC):
                 task.add_done_callback(tasks.discard)
                 queue.task_done()
 
-            # Wait for at least one task to complete before continuing
+            # Wait for all tasks on the queue to complete before proceeding
+            # In certain cases this may not be optimal, but simplifies implementation
             if tasks:
                 done, _ = await asyncio.wait(tasks)
                 # done, _ = await asyncio.wait(tasks, return_when=asyncio.FIRST_COMPLETED)
