@@ -96,7 +96,7 @@ class Workflow(Runnable[RunnableOutput], ABC):
         async def execute_step(step: WorkflowStep) -> None:
             print("Executing:", step.name)
 
-            result = await step.execute()
+            await step.execute()
 
             completed_steps.add(step)
 
