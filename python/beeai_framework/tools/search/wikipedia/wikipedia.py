@@ -51,6 +51,19 @@ class WikipediaTool(Tool[WikipediaToolInput, ToolRunOptions, WikipediaToolOutput
             creator=self,
         )
 
+    async def clone(self) -> Self:
+        tool = self.__class__(
+            options=self.options,
+            language=self._language,
+        )
+        tool.name = self.name
+        tool.description = self.description
+        tool.input_schema = self.input_schema
+        tool.client = self.client
+        tool.middlewares.extend(self.middlewares)
+        tool._cache = await self.cache.clone()
+        return tool
+
     async def _run(
         self, input: WikipediaToolInput, options: ToolRunOptions | None, context: RunContext
     ) -> WikipediaToolOutput:
@@ -73,8 +86,3 @@ class WikipediaTool(Tool[WikipediaToolInput, ToolRunOptions, WikipediaToolOutput
                 )
             ]
         )
-
-    async def clone(self) -> Self:
-        cloned = await super().clone()
-        cloned._language = self._language
-        return cloned

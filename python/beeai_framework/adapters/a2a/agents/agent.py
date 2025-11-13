@@ -4,7 +4,6 @@
 import ssl
 from collections.abc import Callable, Mapping, Sequence
 from typing import Any, Literal, Unpack
-from uuid import uuid4
 
 import httpx
 import httpx._types as httpx_types
@@ -15,7 +14,7 @@ from httpx._models import Cookies, Headers, Request  # noqa: F401
 from httpx._urls import URL, QueryParams  # noqa: F401
 from pydantic import BaseModel, ConfigDict
 
-from beeai_framework.adapters.a2a.agents._utils import convert_a2a_to_framework_message
+from beeai_framework.adapters.a2a.agents._utils import convert_a2a_to_framework_message, convert_to_a2a_message
 from beeai_framework.adapters.a2a.agents.events import (
     A2AAgentErrorEvent,
     A2AAgentUpdateEvent,
@@ -42,7 +41,6 @@ from beeai_framework.backend.message import (
     AnyMessage,
     AssistantMessage,
     Message,
-    Role,
 )
 from beeai_framework.context import RunContext
 from beeai_framework.emitter import Emitter
@@ -353,34 +351,15 @@ class A2AAgent(BaseAgent[A2AAgentOutput]):
         context_id: str | None = None,
         metadata: dict[str, Any] | None = None,
     ) -> a2a_types.Message:
-        if isinstance(input, str):
-            return a2a_types.Message(
-                role=a2a_types.Role.user,
-                parts=[a2a_types.Part(root=a2a_types.TextPart(text=input))],
-                message_id=uuid4().hex,
-                context_id=context_id or self._context_id,
-                task_id=self._task_id if not context_id else None,
-                reference_task_ids=self._reference_task_ids if not context_id else None,
-                metadata=metadata,
-            )
-        elif isinstance(input, Message):
-            return a2a_types.Message(
-                role=a2a_types.Role.agent if input.role == Role.ASSISTANT else a2a_types.Role.user,
-                parts=[a2a_types.Part(root=a2a_types.TextPart(text=input.text))],
-                message_id=uuid4().hex,
-                context_id=context_id or self._context_id,
-                task_id=self._task_id if not context_id else None,
-                reference_task_ids=self._reference_task_ids if not context_id else None,
-                metadata=(metadata or {}) | input.meta or None,
-            )
-        elif isinstance(input, list) and input and isinstance(input[-1], Message):
-            return self.convert_to_a2a_message(input[-1], context_id=context_id, metadata=metadata)
-        elif isinstance(input, a2a_types.Message):
-            input.metadata = (input.metadata or {}) | (metadata or {})
-            input.context_id = context_id or input.context_id or self._context_id
-            return input
-        else:
-            raise ValueError("Unsupported input type")
+        return convert_to_a2a_message(
+            input,
+            metadata=metadata,
+            context_id=context_id
+            or (input.context_id if isinstance(input, a2a_types.Message) else None)
+            or self._context_id,
+            task_id=self._task_id if not context_id else None,
+            reference_task_ids=self._reference_task_ids if not context_id else None,
+        )
 
 
 def _convert_to_framework_message(

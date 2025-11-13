@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 from enum import Enum
-from typing import Any
+from typing import Any, Self
 
 import httpx
 from pydantic import BaseModel, Field, InstanceOf
@@ -79,6 +79,17 @@ Do not use this tool multiple times in a row, always write the full code you wan
         self._code_interpreter_url = code_interpreter_url
         self._storage = storage
         self._preprocess = preprocess
+
+    async def clone(self) -> Self:
+        tool = self.__class__(
+            code_interpreter_url=self._code_interpreter_url, storage=self._storage, preprocess=self._preprocess
+        )
+        tool.name = self.name
+        tool.description = self.description
+        tool.input_schema = self.input_schema
+        tool.middlewares.extend(self.middlewares)
+        tool._cache = await self.cache.clone()
+        return tool
 
     def _create_emitter(self) -> Emitter:
         return Emitter.root().child(
