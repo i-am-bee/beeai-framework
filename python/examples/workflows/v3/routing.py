@@ -23,7 +23,7 @@ class RoutingWorkflow(Workflow):
     @step
     async def check_context(self) -> None:
         result = await ChatModel.from_name("ollama:ibm/granite4").run(
-            [*self.messages, UserMessage("To answer the user request, do you need access to the web search tool?")],
+            [*self.input, UserMessage("To answer the user request, do you need access to the web search tool?")],
             response_format=RoutingWorkflow.ToolsRequired,
         )
         assert result.output_structured is not None
@@ -36,13 +36,13 @@ class RoutingWorkflow(Workflow):
 
     @step
     async def answer_with_web_search(self) -> None:
-        result = await ChatModel.from_name("ollama:ibm/granite4").run(self.messages)
+        result = await ChatModel.from_name("ollama:ibm/granite4").run(self.input)
         self.response = result.get_text_content()
 
     @step
     async def answer(self) -> None:
         print("answer")
-        result = await ChatModel.from_name("ollama:ibm/granite4").run(self.messages)
+        result = await ChatModel.from_name("ollama:ibm/granite4").run(self.input)
         self.response = result.get_text_content()
 
     @step

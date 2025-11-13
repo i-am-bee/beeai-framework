@@ -15,7 +15,7 @@ class ConcurrentWorkflow(Workflow):
     @step
     async def answer_persona_a(self) -> None:
         result = await ChatModel.from_name("ollama:ibm/granite4").run(
-            [SystemMessage(content="You are an irritated and unhelpful AI. Respond accordingly."), *self.messages]
+            [SystemMessage(content="You are an irritated and unhelpful AI. Respond accordingly."), *self.input]
         )
         self.responses.append(result.get_text_content())
 
@@ -24,7 +24,7 @@ class ConcurrentWorkflow(Workflow):
         result = await ChatModel.from_name("ollama:ibm/granite4").run(
             [
                 SystemMessage(content="You are a somewhat deranged AI bent on global domination. Respond accordingly."),
-                *self.messages,
+                *self.input,
             ]
         )
         self.responses.append(result.get_text_content())
@@ -36,7 +36,7 @@ class ConcurrentWorkflow(Workflow):
                 SystemMessage(
                     content="You are a evil AI but you want the humans to think you are not plotting against them. Respond accordingly."
                 ),
-                *self.messages,
+                *self.input,
             ]
         )
         self.responses.append(result.get_text_content())

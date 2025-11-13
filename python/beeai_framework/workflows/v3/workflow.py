@@ -53,12 +53,12 @@ class step:  # noqa: N801
 class Workflow(Runnable[RunnableOutput], ABC):
     def __init__(self, middlewares: list[RunMiddlewareType] | None = None) -> None:
         super().__init__(middlewares=middlewares)
-        self._messages: list[AnyMessage] = []
+        self._input: list[AnyMessage] = []
         self._context: dict[str, Any] = {}
 
     @property
-    def messages(self) -> list[AnyMessage]:
-        return self._messages
+    def input(self) -> list[AnyMessage]:
+        return self._input
 
     @property
     def context(self) -> dict[str, Any]:
@@ -73,7 +73,7 @@ class Workflow(Runnable[RunnableOutput], ABC):
 
     @runnable_entry
     async def run(self, input: list[AnyMessage], /, **kwargs: Unpack[RunnableOptions]) -> RunnableOutput:
-        self._messages = input
+        self._input = input
         self._context = RunContext.get().context
 
         # Builds out the execution graph

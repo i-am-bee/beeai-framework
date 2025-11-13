@@ -13,17 +13,18 @@ class PromptChainWorkflow(Workflow):
 
         self.response: str | None = None
         self.improvements: str | None = None
+        self.revised_response: str | None = None
 
     @step
     async def answer(self) -> None:
-        result = await ChatModel.from_name("ollama:ibm/granite4").run(self.messages)
+        result = await ChatModel.from_name("ollama:ibm/granite4").run(self.input)
         self.response = result.get_text_content()
 
     @step
     async def review(self) -> None:
         result = await ChatModel.from_name("ollama:ibm/granite4").run(
             [
-                *self.messages,
+                *self.input,
                 AssistantMessage(self.response or ""),
                 UserMessage(
                     "Read the last agent response and produce a short (2 to 3 items max.) list of suggested improvements."
@@ -37,16 +38,14 @@ class PromptChainWorkflow(Workflow):
         result = await ChatModel.from_name("ollama:ibm/granite4").run(
             [
                 SystemMessage(self.improvements or ""),
-                *self.messages,
+                *self.input,
             ]
         )
-        self.messages.append(
-            AssistantMessage(result.get_text_content()),
-        )
+        self.revised_response = result.get_text_content()
 
     @step
     async def end(self) -> None:
-        print(self.messages[-1].text)
+        print(self.revised_response)
 
     def build(self, start: WorkflowStep) -> None:
         """Build out the workflow"""
