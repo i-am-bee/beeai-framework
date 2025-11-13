@@ -1,22 +1,18 @@
 # Copyright 2025 © BeeAI a Series of LF Projects, LLC
 # SPDX-License-Identifier: Apache-2.0
+
 import asyncio
 import os
 from collections.abc import AsyncGenerator
 from typing import Any, Unpack
 
 import outlines
+import torch
 from outlines.inputs import Chat
 from outlines.types import JsonSchema
 from peft import PeftModel
 from pydantic import BaseModel
-from transformers import (  # type: ignore [attr-defined]
-    AutoModelForCausalLM,
-    AutoTokenizer,
-    StoppingCriteria,
-    TextIteratorStreamer,
-    set_seed,
-)
+from transformers import AutoModelForCausalLM, AutoTokenizer, StoppingCriteria, TextIteratorStreamer, set_seed
 
 from beeai_framework.adapters.litellm.utils import to_strict_json_schema
 from beeai_framework.adapters.transformers.backend._utils import (
@@ -92,8 +88,12 @@ class TransformersChatModel(ChatModel):
         self._model.eval()
         self._model_structured = outlines.from_transformers(self._model, self.tokenizer)  # type: ignore
 
-        first_layer_name = next(iter(self._model.hf_device_map.keys()))
-        self._device_first_layer = self._model.hf_device_map[first_layer_name]
+        # Determine device for first layer, fallback if not available
+        if hasattr(self._model, "hf_device_map") and isinstance(self._model.hf_device_map, dict):
+            first_layer_name = next(iter(self._model.hf_device_map.keys()))
+            self._device_first_layer = self._model.hf_device_map[first_layer_name]
+        else:
+            self._device_first_layer = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     @property
     def model_id(self) -> str:

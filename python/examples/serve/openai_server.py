@@ -2,19 +2,23 @@ from beeai_framework.adapters.openai.serve.server import OpenAIAPIType, OpenAISe
 from beeai_framework.agents.requirement import RequirementAgent
 from beeai_framework.backend import ChatModel
 from beeai_framework.memory import UnconstrainedMemory
-from beeai_framework.tools.search.duckduckgo import DuckDuckGoSearchTool
 from beeai_framework.tools.weather import OpenMeteoTool
 
 
 def main() -> None:
-    llm = ChatModel.from_name("ollama:granite3.3:8b")
+    llm = ChatModel.from_name("ollama:granite4:micro")
     agent = RequirementAgent(
         llm=llm,
-        tools=[DuckDuckGoSearchTool(), OpenMeteoTool()],
+        tools=[OpenMeteoTool()],
         memory=UnconstrainedMemory(),
     )
 
-    server = OpenAIServer(config=OpenAIServerConfig(port=9998, api=OpenAIAPIType.RESPONSES))
+    server = OpenAIServer(
+        config=OpenAIServerConfig(
+            port=9998,
+            api=OpenAIAPIType.RESPONSES,
+        )
+    )
     server.register(agent, name="agent")
     server.register(llm)
     server.serve()

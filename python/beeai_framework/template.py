@@ -19,6 +19,8 @@ class PromptTemplateInput(BaseModel, Generic[T]):
     template: str
     functions: dict[str, Callable[[dict[str, Any]], str]] = {}
     defaults: dict[str, Any] = {}
+    name: str | None = None
+    description: str | None = None
 
 
 class PromptTemplate(Generic[T]):
@@ -118,6 +120,23 @@ class PromptTemplate(Generic[T]):
         self._config.functions.update(functions or {})
         self._config.defaults.update(defaults or {})
         return self
+
+    @property
+    def name(self) -> str:
+        return (
+            self._config.name
+            or self._config.input_schema.model_config.get("title")
+            or self._config.input_schema.__name__
+            or ""
+        )
+
+    @property
+    def description(self) -> str:
+        return self._config.description or self._config.input_schema.__doc__ or ""
+
+    @property
+    def input_schema(self) -> type[T]:
+        return self._config.input_schema
 
 
 class PromptTemplateError(FrameworkError):

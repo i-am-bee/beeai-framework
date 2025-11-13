@@ -22,7 +22,12 @@ from litellm.types.utils import StreamingChoices
 from pydantic import BaseModel
 from typing_extensions import Unpack
 
-from beeai_framework.adapters.litellm.utils import litellm_debug, process_structured_output, to_strict_json_schema
+from beeai_framework.adapters.litellm.utils import (
+    fix_double_escaped_tool_calls,
+    litellm_debug,
+    process_structured_output,
+    to_strict_json_schema,
+)
 from beeai_framework.backend.chat import (
     ChatModel,
     ChatModelKwargs,
@@ -46,7 +51,7 @@ from beeai_framework.context import RunContext
 from beeai_framework.logger import Logger
 from beeai_framework.tools.tool import AnyTool, Tool
 from beeai_framework.utils.dicts import exclude_keys, exclude_none, include_keys, set_attr_if_none
-from beeai_framework.utils.strings import to_json
+from beeai_framework.utils.strings import is_valid_unicode_escape_sequence, to_json
 
 logger = Logger(__name__)
 
@@ -80,6 +85,14 @@ class LiteLLMChatModel(ChatModel, ABC):
         litellm_input = self._transform_input(input) | {"stream": False}
         raw = await acompletion(**litellm_input)
         response_output = self._transform_output(raw)
+        if not response_output.is_valid():
+            fix_double_escaped_tool_calls(response_output.get_tool_calls())
+
+        if not response_output.is_valid():
+            raise ChatModelError(
+                "Response could not be produced because it is invalid.", context={"output": response_output}
+            )
+
         if input.response_format and not response_output.output_structured:
             text = response_output.get_text_content()
             response_output.output_structured = process_structured_output(
@@ -96,30 +109,38 @@ class LiteLLMChatModel(ChatModel, ABC):
 
         text = ""
         is_empty = True
-        tmp_chunk: ChatModelOutput | None = None
+        last_chunk: ChatModelOutput | None = None
         async for _chunk in response:
             is_empty = False
-            chunk = self._transform_output(_chunk)
-            if input.stream_partial_tool_calls:
-                yield chunk
+            new_chunk = self._transform_output(_chunk)
+
+            if last_chunk is None:
+                last_chunk = new_chunk
+            else:
+                last_chunk.merge(new_chunk)
+
+            if not is_valid_unicode_escape_sequence(last_chunk.get_text_content()):
                 continue
 
-            if tmp_chunk is None:
-                tmp_chunk = chunk
-            else:
-                tmp_chunk.merge(chunk)
-
-            if tmp_chunk.is_valid():
-                text += tmp_chunk.get_text_content()
-                yield tmp_chunk
-                tmp_chunk = None
+            if input.stream_partial_tool_calls or last_chunk.is_valid():
+                text += last_chunk.get_text_content()
+                yield last_chunk
+                last_chunk = None
 
         if is_empty:
             # TODO: issue https://github.com/BerriAI/litellm/issues/8868
             raise ChatModelError("Stream response is empty.")
 
-        if tmp_chunk:
-            raise ChatModelError("Failed to merge intermediate responses.")
+        if last_chunk:
+            fix_double_escaped_tool_calls(last_chunk.get_tool_calls())
+            if last_chunk.is_valid():
+                text += last_chunk.get_text_content()
+                yield last_chunk
+                last_chunk = None
+            else:
+                raise ChatModelError(
+                    "Response could not be produced because it is invalid.", context={"output": last_chunk}
+                )
 
         if input.response_format:
             output_structured = process_structured_output(

@@ -1,8 +1,9 @@
 # Copyright 2025 © BeeAI a Series of LF Projects, LLC
 # SPDX-License-Identifier: Apache-2.0
 
+import contextlib
 from functools import cached_property
-from typing import Any
+from typing import Any, Self
 
 from pydantic import BaseModel, Field
 
@@ -15,6 +16,7 @@ from beeai_framework.runnable import Runnable
 from beeai_framework.tools import StringToolOutput, Tool, ToolError, ToolRunOptions
 from beeai_framework.utils.cloneable import Cloneable
 from beeai_framework.utils.lists import find_index
+from beeai_framework.utils.strings import to_safe_word
 
 
 class HandoffSchema(BaseModel):
@@ -48,6 +50,8 @@ class HandoffTool(Tool[HandoffSchema, ToolRunOptions, StringToolOutput]):
         else:
             self._name = name or target.__class__.__name__
             self._description = description or (target.__class__.__doc__ or "")
+
+        self._name = to_safe_word(self._name)
         self._propagate_inputs = propagate_inputs
 
     @property
@@ -63,9 +67,12 @@ class HandoffTool(Tool[HandoffSchema, ToolRunOptions, StringToolOutput]):
         return HandoffSchema
 
     async def _run(self, input: HandoffSchema, options: ToolRunOptions | None, context: RunContext) -> StringToolOutput:
-        memory: BaseMemory = context.context["state"]["memory"]
+        memory: BaseMemory | None = None
+        with contextlib.suppress(AttributeError):
+            memory = context.context["state"]["memory"]
+
         if not memory or not isinstance(memory, BaseMemory):
-            raise ToolError("No memory found in context.")
+            raise ToolError("No memory found in the context.")
 
         target: Runnable[Any] = await self._target.clone() if isinstance(self._target, Cloneable) else self._target
 
@@ -94,3 +101,14 @@ class HandoffTool(Tool[HandoffSchema, ToolRunOptions, StringToolOutput]):
             namespace=["tool", "handoff"],
             creator=self,
         )
+
+    async def clone(self) -> Self:
+        tool = self.__class__(
+            target=self._target,
+            name=self._name,
+            description=self._description,
+            propagate_inputs=self._propagate_inputs,
+        )
+        tool._cache = await self._cache.clone()
+        tool.middlewares.extend(self.middlewares)
+        return tool

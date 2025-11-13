@@ -4,7 +4,7 @@ import traceback
 
 from pydantic import BaseModel
 
-from beeai_framework.adapters.beeai_platform import BeeAIPlatformAgent
+from beeai_framework.adapters.agentstack import AgentStackAgent
 from beeai_framework.errors import FrameworkError
 from beeai_framework.memory.unconstrained_memory import UnconstrainedMemory
 from beeai_framework.workflows import Workflow
@@ -19,7 +19,7 @@ async def main() -> None:
         research: str | None = None
         output: str | None = None
 
-    agents = await BeeAIPlatformAgent.from_platform(url="http://127.0.0.1:8333", memory=UnconstrainedMemory())
+    agents = await AgentStackAgent.from_agent_stack(url="http://127.0.0.1:8333", memory=UnconstrainedMemory())
 
     async def research(state: State) -> None:
         # Run the agent and observe events

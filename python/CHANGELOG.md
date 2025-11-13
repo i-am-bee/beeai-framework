@@ -1,3 +1,92 @@
+## python_v0.1.66 (2025-11-11)
+
+### Bug Fixes
+
+- **backend**: extract content from the last corrupted chat output chunk
+
+### Features
+
+- **tools**: add method to create OpenAPITool from URL (#1284)
+- **tools**: redefine cloning (#1283)
+- **backend**: handle incomplete Unicode chunks while streaming (#1279)
+
+## python_v0.1.65 (2025-11-06)
+
+### Bug Fixes
+
+- **adapters**: agent card url can be provided in agent's metadata (#1276)
+
+### Features
+
+- **adapters**: add nested trajectory support for AgentStack (#1273)
+- **agent**: improve typing for ConditionalRequirement
+
+## python_v0.1.64 (2025-11-05)
+
+### Bug Fixes
+
+- **tools**: correctly clone the HandoffTool
+- **tools**: correctly clone the HandoffTool
+
+### Features
+
+- **adapters**: add host parameter for A2A (#1269)
+- **tools**: sanitize name attribute in the HandoffTool
+- **agents**: propagate memory to the context in ReactAgent
+- **tools**: improve error handling in HandoffTool
+- **middlewares**: emit events from GlobalTrajectoryMiddleware (#1272)
+- **middlewares**: propagate updates from StreamToolCallMiddleware without streaming
+
+## python_v0.1.62 (2025-11-03)
+
+### Bug Fixes
+
+- relax version of cachetools dependency
+- **adapters**: prevent importing extra dependencies when using OpenAI Chat Model (#1263)
+
+### Features
+
+- **adapters**: filter agents by state (#1258)
+- **adapters**: support exposing PromptTemplate in the MCP Server (#1260)
+- **adapters**: add aserve method for MCP Server
+
+## python_v0.1.61 (2025-10-30)
+
+### Features
+
+- rename BeeAIPlatform to AgentStack (#1256)
+- **adapters**: add default tools settings for the platform agents (#1223)
+
+## python_v0.1.60 (2025-10-29)
+
+### Bug Fixes
+
+- **adapter**: Fix context in BeeAIPlatformAgent (#1247)
+
+### Features
+
+- **backend**: auto retry on empty/malformed response (#1253)
+- **serve**: enable streamable-http for MCPServer (#1251)
+- **tools**: add smart parsing for MCP Tool Output (#1250)
+- **adapters**: handle device identification in Transformers
+- **tools**: handle commas in location name in the OpenMeteo tool
+- improve error context serialization
+- **adapters**: propagate strict tool call parsing config for LangChain
+- **backend**: handle double-escaped tool calls (#1241)
+
+## python_v0.1.59 (2025-10-27)
+
+### Bug Fixes
+
+- **adapters**: add missing meta property for A2A/BeeAI Platform Agents (#1243)
+- **adapters**: handle missing messages in BeeAIPlatform (#1237)
+- parse streamed tool calls with stream_stable=True
+- **adapters**: correct decorator order in ChatToolFunctionDefinition (#1234)
+
+### Features
+
+- **adapters**: update BeeAI SDK (#1231)
+
 ## python_v0.1.58 (2025-10-23)
 
 ### Bug Fixes

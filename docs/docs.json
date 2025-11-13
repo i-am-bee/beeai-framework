@@ -16,6 +16,14 @@
     {
       "source": "/modules/emitter",
       "destination": "/modules/middleware"
+    },
+    {
+      "source": "/experimental/requirement-agent",
+      "destination": "/modules/agents/requirement-agent"
+    },
+    {
+      "source": "/integrations/beeai-platform",
+      "destination": "/integrations/agent-stack"
     }
   ],
   "navigation": {
@@ -31,15 +39,15 @@
       {
         "group": "Core Concepts",
         "pages": [
-          "experimental/requirement-agent",
+          "modules/agents/requirement-agent",
           "modules/middleware",
           "modules/agents",
+          "modules/serve",
           "modules/backend",
           "modules/tools",
           "modules/memory",
           "modules/rag",
           "modules/observability",
-          "modules/serve",
           "modules/cache",
           "modules/logger",
           "modules/serialization",
@@ -52,7 +60,7 @@
       {
         "group": "Integrations",
         "pages": [
-          "integrations/beeai-platform",
+          "integrations/agent-stack",
           "integrations/mcp",
           "integrations/a2a",
           "integrations/watsonx-orchestrate",

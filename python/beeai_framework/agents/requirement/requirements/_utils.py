@@ -1,6 +1,7 @@
 # Copyright 2025 © BeeAI a Series of LF Projects, LLC
 # SPDX-License-Identifier: Apache-2.0
 
+from collections.abc import Sequence
 from typing import Any, TypeVar
 
 from beeai_framework.errors import FrameworkError
@@ -9,13 +10,13 @@ from beeai_framework.tools import AnyTool, Tool
 T = TypeVar("T", bound=Any)
 
 TargetType = str | type[AnyTool] | AnyTool
-MultiTargetType = list[TargetType] | TargetType
+MultiTargetType = Sequence[TargetType] | TargetType
 
 
 def _extract_targets(
     target: MultiTargetType | None,
 ) -> set[str | type | AnyTool]:
-    targets = target if isinstance(target, list) else [target] if target is not None else []
+    targets = list(target) if isinstance(target, Sequence) else [target] if target is not None else []
     return set(targets)
 
 

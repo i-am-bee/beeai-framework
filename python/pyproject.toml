@@ -1,6 +1,6 @@
 [project]
 name = "beeai-framework"
-version="0.1.58"
+version="0.1.66"
 license = "Apache-2.0"
 readme = "README.md"
 authors = [{ name = "IBM Corp." }]
@@ -22,12 +22,12 @@ a2a-sdk = {version = "^0.3.7", optional = true, extras = ["grpc", "http-server",
 acp-sdk = {version = "^1.0.3", optional = true}
 aiofiles = "^24.1.0"
 boto3 = {version = "^1.37.5", optional = true}
-cachetools = "^5.5.2"
+cachetools = ">=5.5.2"
 chevron = "^0.14.0"
 ddgs = { version="^9.6.0", optional = true }
 fastapi = {version = "^0.116.0", optional = true }
 google-auth = { version = ">=2.14,<3.0.0", optional = true }
-json-repair = "^0.52.0"
+json-repair = "^0.52.5"
 jsonref = "^1.1.0"
 langchain-community = {version = "^0.3.19", optional = true}
 langchain-core = {version = "^0.3.41", optional = true}
@@ -36,8 +36,8 @@ litellm = ">=1.76.1,<2.0.0"
 llama-index = {version = "^0.12.42", optional = true}
 markdown = {version = "^3.8.2", optional = true}
 mcp = {version = "^1.10.1", optional = true}
-pydantic = "^2.10"
-pydantic-settings = "^2.9.0"
+pydantic = "^2.11.10"
+pydantic-settings = "^2.11.0"
 requests = "^2.32"
 unstructured = {version = "^0.17.2", optional = true}
 uvicorn = {version = "^0.37.0", optional = true}
@@ -45,13 +45,13 @@ types-grpcio = {version = "1.0.0.20250703", optional = true}
 types-grpcio-reflection = {version = "1.0.0.20250506", optional = true}
 grpcio-health-checking = {version = "^1.65.5", optional = true}
 wikipedia-api = {version = "^0.8.1", optional = true}
-beeai-sdk = {version = "^0.3.5", optional = true}
+agentstack-sdk = {version = "0.4.1", optional = true}
 langgraph-prebuilt = {version = "^0.6.4", optional = true}
 deprecated = "^1.2.18"
 torch = [
   {version = ">=2.4.1", markers = "sys_platform == 'darwin' and platform_machine == 'arm64'", optional = true},
   {version = "2.2.2", markers = "sys_platform == 'darwin' and platform_machine == 'x86_64'", optional = true},
-  {version = ">=2.4.1", markers = "sys_platform != 'darwin'", optional = true}
+  {version = "2.7.1", source = "pytorch-cpu", markers = "sys_platform != 'darwin'", optional = true}
 ]
 transformers = [
   {version = ">=4.49.0", markers = "sys_platform == 'darwin' and platform_machine == 'arm64'", optional = true},
@@ -82,7 +82,8 @@ types-PyYAML = "^6.0.12.20250402"
 types-requests = "^2.32.0.20241016"
 syrupy = "^4.9.1"
 types-deprecated = "^1.2.15.20250304"
-types-grpcio-health-checking = "^1.0.0.20250506"
+pyyaml = "^6.0.3"
+types-grpcio-health-checking = ">=1.0.0,<2.0.0"
 
 [tool.poetry.extras]
 transformers = ["transformers", "torch", "peft", "outlines"]
@@ -95,7 +96,8 @@ llama_index = ["llama-index"]
 langchain = ["langchain-core", "langchain-community", "langchain-ollama"]
 rag = ["llama-index", "langchain-core", "langchain-community", "langchain-ollama", "markdown", "unstructured"]
 acp = ["acp-sdk", "uvicorn"]
-beeai-platform = ["beeai-sdk", "a2a-sdk", "uvicorn"]
+beeai-platform = ["agentstack-sdk", "a2a-sdk", "uvicorn"]
+agentstack = ["agentstack-sdk", "a2a-sdk", "uvicorn"]
 a2a = ["a2a-sdk", "uvicorn", "types-grpcio", "types-grpcio-reflection", "grpcio-health-checking"]
 watsonx-orchestrate = ["uvicorn", "fastapi"]
 bedrock = ["boto3"]
@@ -115,7 +117,7 @@ all = [
     "grpcio-health-checking",
     "fastapi",
     "llama-index",
-    "beeai-sdk",
+    "agentstack-sdk",
     "langgraph-prebuilt",
     "torch",
     "peft",
@@ -226,3 +228,8 @@ convention = "google"
 [tool.ruff.lint.flake8-tidy-imports]
 # Disallow all relative imports, "parents" | "all"
 ban-relative-imports = "all"
+
+[[tool.poetry.source]]
+name = "pytorch-cpu"
+url = "https://download.pytorch.org/whl/cpu"
+priority = "explicit"

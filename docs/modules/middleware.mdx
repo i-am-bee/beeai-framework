@@ -1,6 +1,6 @@
 ---
 title: "Middleware"
-icon: "bell"
+icon: "repeat"
 ---
 
 The BeeAI framework core and its parts can be easily extended via the underlying concept of events and run contexts.
@@ -14,7 +14,7 @@ The following section describes essential modules that are important to understa
 An event refers to an action created by some component.
 
 - Has a name (e.g., `start`, `success`, `error`, ..., `fetch_data`).
-- Has a data payload (Pydantic model).
+- Has a data payload (typically a Pydantic model).
 - Has associated metadata about the context where the event was fired.
 
 The emitted event is processed via callbacks that look like this:
@@ -129,6 +129,72 @@ In simpler terms, when you call one runnable (e.g., `ChatModel`) from within ano
 
 <Tip>The current execution context can be retrieved anytime by calling `RunContext.get()`.</Tip>
 
+
+### Runnable
+
+The `Runnable[R]` class was created to unify common objects that can be executed and observed. It is an abstract class with the following traits:
+
+- It has an abstract `run` method that executes the class and returns a `Run[R]` (`R` is bound to the `RunnableOutput`).
+- It has an abstract `emitter` getter.
+- It has a `middlewares` getter that lists the existing middlewares.
+
+**Invoking a Runnable**
+
+Every runnable takes a list of messages as its first (positional) parameter, followed by the following optional keyword arguments (`RunnableOptions`):
+
+- `signal` (an instance of `AbortSignal`) — allows aborting the execution.
+- `context` (a dictionary) — used to propagate additional data.
+
+You can also pass extra arguments that may or may not be processed by the given handler.
+
+The `RunnableOutput` has the following properties:
+
+- `output`: a list of messages (can be empty)
+- `context`: a dictionary that can store additional data
+- `last_message` (getter): returns the last message if it exists, or creates an empty `AssistantMessage` otherwise
+
+**Creating a custom Runnable**
+
+{/* <!-- embedme python/examples/simple_runnable.py --> */}
+```py Python [expandable]
+import asyncio
+from functools import cached_property
+from typing import Unpack
+
+from beeai_framework.backend import AnyMessage, AssistantMessage, UserMessage
+from beeai_framework.context import RunContext
+from beeai_framework.emitter import Emitter
+from beeai_framework.runnable import Runnable, RunnableOptions, RunnableOutput, runnable_entry
+
+
+class GreetingRunnable(Runnable[RunnableOutput]):
+    @runnable_entry
+    async def run(self, input: list[AnyMessage], /, **kwargs: Unpack[RunnableOptions]) -> RunnableOutput:
+        # retrieves the current run contex
+        run = RunContext.get()
+
+        response = f"Hello, {run.context.get('name', 'stranger')}!"
+
+        # sends an emit so that someone can react to it (optional)
+        await run.emitter.emit("before_send", response)
+
+        return RunnableOutput(output=[AssistantMessage(response)])
+
+    @cached_property
+    def emitter(self) -> Emitter:
+        return Emitter.root().child(namespace=["echo"])
+
+
+async def main() -> None:
+    echo = GreetingRunnable()
+    response = await echo.run([UserMessage("Hello!")]).context({"name": "Alex"})
+    print(response.last_message.text)
+
+
+if __name__ == "__main__":
+    asyncio.run(main())
+
+```
 
 ## Working with events
 
@@ -395,7 +461,7 @@ class OverrideResponseMiddleware(RunMiddlewareProtocol):
 
 async def main() -> None:
     middleware = OverrideResponseMiddleware(ChatModelOutput(output=[AssistantMessage("BeeAI is the best!")]))
-    response = await ChatModel.from_name("ollama:granite3.3").run([UserMessage("Hello!")]).middleware(middleware)
+    response = await ChatModel.from_name("ollama:granite4:micro").run([UserMessage("Hello!")]).middleware(middleware)
     print(response.get_text_content())  # "BeeAI is the best!"
 
 
@@ -532,16 +598,17 @@ await agent.run("What's the current weather in Miami?")
 
 See which parameters can be passed to the constructor.
 
-| Parameter        | Description                                                                 |
-|------------------|------------------------------------------------------------------------------|
-| `target`         | Specify a file or stream to which to write the trajectory.                         |
-| `included`       | List of classes to include in the trajectory.                                |
-| `excluded`       | List of classes to exclude from the trajectory.                              |
-| `pretty`         | Use pretty formatting for the trajectory.                                    |
-| `prefix_by_type` | Customize how instances of individual classes should be printed.             |
-| `exclude_none`   | Exclude `None` values from the printing.                                     |
-| `enabled`        | Enable/Disable the logging.                                                  |
-| `match_nested`   | Whether to observe trajectories of nested run contexts.                      |
+| Parameter          | Description                                                                                              |
+|--------------------|----------------------------------------------------------------------------------------------------------|
+| `target`           | Specify a file or stream to which to write the trajectory (pass `False` to disable).                     |
+| `included`         | List of classes to include in the trajectory.                                                            |
+| `excluded`         | List of classes to exclude from the trajectory.                                                          |
+| `pretty`           | Use pretty formatting for the trajectory.                                                                |
+| `prefix_by_type`   | Customize how instances of individual classes should be printed.                                         |
+| `exclude_none`     | Exclude `None` values from the printing.                                                                 |
+| `enabled`          | Enable/Disable the logging.                                                                              |
+| `match_nested`     | Whether to observe trajectories of nested run contexts.                                                  |
+| `emitter_priority` | Setting higher priority may result in capturing events without any modifications from other middlewares. |
 
 **Example**
 
@@ -558,10 +625,14 @@ GlobalTrajectoryMiddleware(target=[ChatModel]) # log only tool calls except Open
 GlobalTrajectoryMiddleware(prefix_by_type={BaseAgent: "🐝 "}) # use Bee Emoji for agents
 ```
 
+<Tip>You can listen to events emitted throughout the execution and build your custom trajectory.</Tip>
+
 
 ### Tool Call Streaming
 
-Middleware for handling streaming tool calls in a ChatModel. This middleware observes and listens to Chat Model stream updates and parses the tool calls on demand so that they can be consumed as soon as possible.
+Middleware for handling streaming tool calls in a ChatModel. This middleware observes and listens to [Chat Model](/modules/backend#chat-model) stream updates and parses the tool calls on demand so that they can be consumed as soon as possible.
+
+The middleware works even **without streaming** enabled. It just emits the `update` event at the very end.
 
 **Example**
 
@@ -576,7 +647,7 @@ from beeai_framework.tools.weather import OpenMeteoTool
 
 
 async def main() -> None:
-    llm = ChatModel.from_name("ollama:granite3.3:8b")
+    llm = ChatModel.from_name("ollama:granite4:micro")
     weather_tool = OpenMeteoTool()
     middleware = StreamToolCallMiddleware(
         weather_tool,
@@ -591,7 +662,10 @@ async def main() -> None:
             "Received update", event.delta, event.output_structured
         )  # event.delta contains an update of the 'location_name' field
 
-    await llm.run([UserMessage("What's the current weather in New York?")], tools=[weather_tool]).middleware(middleware)
+    response = await llm.run([UserMessage("What's the current weather in New York?")], tools=[weather_tool]).middleware(
+        middleware
+    )
+    print(response.get_tool_calls()[0].args)
 
 
 if __name__ == "__main__":
@@ -700,7 +774,7 @@ The following events can be observed when calling `Workflow.run(...)`.
 
 ### LinePrefixParser
 
-The following events are caught internally by the line prefix parser.
+The following events are caught internally by the `LinePrefixParser`.
 
 | Event            | Data Type                | Description                             |
 | :--------------- | :----------------------- | :-------------------------------------- |
@@ -716,6 +790,28 @@ The following events are caught internally by the `StreamToolCallMiddleware`.
 | `update`         | `StreamToolCallMiddlewareUpdateEvent` | Triggered when an update occurs.        |
 
 [Check out the in-code definition](https://github.com/i-am-bee/beeai-framework/blob/main/python/beeai_framework/middleware/stream_tool_call.py).
+
+### GlobalTrajectoryMiddleware
+
+The following events are handled internally by the `GlobalTrajectoryMiddleware`:
+
+| Event     | Data Type                                | Description                                                                                 |
+|:----------|:-----------------------------------------|:--------------------------------------------------------------------------------------------|
+| `start`   | `GlobalTrajectoryMiddlewareStartEvent`   | Triggered when a target begins execution.                                                   |
+| `success` | `GlobalTrajectoryMiddlewareSuccessEvent` | Triggered when a target completes successfully.                                             |
+| `error`   | `GlobalTrajectoryMiddlewareErrorEvent`   | Triggered when an error occurs during target execution.                                     |
+| `finish`  | `GlobalTrajectoryMiddlewareFinishEvent`  | Triggered after a target has finished execution, regardless of success or failure.          |
+
+All events inherit from the `GlobalTrajectoryMiddlewareEvent` class.
+
+```python
+class GlobalTrajectoryMiddlewareEvent(BaseModel):
+    message: str
+    level: TraceLevel
+    origin: tuple[Any, EventMeta]
+```
+
+The first element of the `origin` attribute is the original event (e.g., `start` → `RunContextStartEvent`, etc.) that comes from the `RunContext`.
 
 ### RunContext
 
