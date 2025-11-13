@@ -53,9 +53,12 @@ interface A2AServerMetadata {
   eventBusManager?: ExecutionEventBusManager;
   pushNotificationStore?: PushNotificationStore;
   pushNotificationSender?: PushNotificationSender;
+  healthCheck?: () => Promise<boolean>;
 }
 
 export class A2AServer extends Server<AnyAgent, AgentExecutor, A2AServerConfig, A2AServerMetadata> {
+  private ready = false;
+
   constructor(config: A2AServerConfig = new A2AServerConfig()) {
     super(config);
   }
@@ -98,7 +101,21 @@ export class A2AServer extends Server<AnyAgent, AgentExecutor, A2AServerConfig, 
     const appBuilder = new A2AExpressApp(requestHandler);
     const expressApp = appBuilder.setupRoutes(express());
 
+    expressApp.get("/health", async (_req: any, res: any) => {
+      const timeout = (ms: number) =>
+        new Promise<never>((_, reject) => setTimeout(() => reject(new Error("timeout")), ms));
+
+      try {
+        const healthPromise = config.healthCheck ? config.healthCheck() : Promise.resolve(this.ready);
+        const healthy = await Promise.race([healthPromise, timeout(2000)]);
+        res.status(healthy ? 200 : 503).send(healthy ? "ok" : "not ready");
+      } catch {
+        res.status(503).send("not ready");
+      }
+    });
+
     expressApp.listen(this.config.port, this.config.host, () => {
+      this.ready = true;
       logger.info(
         `[${agentCard.name}] Server started on http://${this.config.host}:${this.config.port}`,
       );
