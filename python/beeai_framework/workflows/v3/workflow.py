@@ -96,7 +96,10 @@ class Workflow(Runnable[RunnableOutput], ABC):
         async def execute_step(step: WorkflowStep) -> None:
             print("Executing:", step.name)
 
-            await step.execute()
+            # Get upstream results
+            results = [u.result for u in step.upstream]
+
+            await step.execute(*results)
 
             completed_steps.add(step)
 
@@ -118,7 +121,7 @@ class Workflow(Runnable[RunnableOutput], ABC):
                 queue.task_done()
 
             # Wait for all tasks on the queue to complete before proceeding
-            # In certain cases this may not be optimal, but simplifies implementation
+            # In certain cases this may not be optimal, but significantly simplifies implementation
             if tasks:
                 done, _ = await asyncio.wait(tasks)
                 # done, _ = await asyncio.wait(tasks, return_when=asyncio.FIRST_COMPLETED)

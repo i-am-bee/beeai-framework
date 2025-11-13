@@ -5,4 +5,5 @@ from collections.abc import Callable, Coroutine
 from typing import Any
 
 ControllerFunction = Callable[..., Any]
+BooleanControllerFunction = Callable[..., bool]
 AsyncStepFunction = Callable[..., Coroutine[Any, Any, Any]]
