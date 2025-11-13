@@ -11,7 +11,6 @@ from beeai_framework.workflows.v3.workflow import Workflow, step
 
 
 class RoutingWorkflow(Workflow):
-
     class ToolsRequired(BaseModel):
         requires_web_search: bool
         reasoning: str
@@ -51,7 +50,6 @@ class RoutingWorkflow(Workflow):
         print(json.dumps(self.response, indent=4))
 
     def build(self, start: WorkflowStep) -> None:
-
         start.then(self.check_context).branch(
             next_steps={True: self.answer_with_web_search, False: self.answer},
             branch_fn=self.branch_fn,
@@ -63,7 +61,6 @@ class RoutingWorkflow(Workflow):
 
 
 async def main() -> None:
-
     workflow = RoutingWorkflow()
     await workflow.run([UserMessage("What is the current rivian stock price?")], context={})
 

@@ -51,7 +51,6 @@ class step:  # noqa: N801
 
 
 class Workflow(Runnable[RunnableOutput], ABC):
-
     def __init__(self, middlewares: list[RunMiddlewareType] | None = None) -> None:
         super().__init__(middlewares=middlewares)
         self._messages: list[AnyMessage] = []
@@ -74,7 +73,6 @@ class Workflow(Runnable[RunnableOutput], ABC):
 
     @runnable_entry
     async def run(self, input: list[AnyMessage], /, **kwargs: Unpack[RunnableOptions]) -> RunnableOutput:
-
         self._messages = input
         self._context = RunContext.get().context
 

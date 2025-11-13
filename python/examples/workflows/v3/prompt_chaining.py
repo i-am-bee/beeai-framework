@@ -8,7 +8,6 @@ from beeai_framework.workflows.v3.workflow import Workflow, step
 
 
 class PromptChainWorkflow(Workflow):
-
     def __init__(self, middlewares: list[RunMiddlewareType] | None = None) -> None:
         super().__init__(middlewares=middlewares)
 
@@ -55,7 +54,6 @@ class PromptChainWorkflow(Workflow):
 
 
 async def main() -> None:
-
     workflow = PromptChainWorkflow()
     await workflow.run([UserMessage("How is a black dwarf formed?")])
 

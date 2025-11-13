@@ -8,7 +8,6 @@ from beeai_framework.workflows.v3.workflow import Workflow, step
 
 
 class ConcurrentWorkflow(Workflow):
-
     def __init__(self, middlewares: list[RunMiddlewareType] | None = None) -> None:
         super().__init__(middlewares=middlewares)
         self.responses: list[str] = []
@@ -58,7 +57,6 @@ class ConcurrentWorkflow(Workflow):
 
 
 async def main() -> None:
-
     workflow = ConcurrentWorkflow()
     await workflow.run([UserMessage("How should I invest $10K??")], context={})
 
