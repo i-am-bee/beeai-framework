@@ -13,21 +13,25 @@ from beeai_framework.workflows.v3.types import AsyncStepFunction, ControllerFunc
 class WorkflowStep:
     def __init__(
         self,
-        func: AsyncStepFunction,
+        func: AsyncStepFunction | None = None,
     ) -> None:
         self._func = func
-        self._name = func.__name__
-
         self._upstream: list[WorkflowStep] = []
         self._downstream: list[WorkflowStep | WorkflowBranch | WorkflowLoopUntil] = []
 
     @property
     def name(self) -> str:
-        return self._name
+        if self.func:
+            return self.func.__name__
+        return ""
 
     @property
-    def func(self) -> AsyncStepFunction:
+    def func(self) -> AsyncStepFunction | None:
         return self._func
+
+    async def execute(self) -> None:
+        if self._func:
+            await self._func()
 
     def then(self, next_steps: WorkflowStep | list[WorkflowStep]) -> WorkflowStep:
         if isinstance(next_steps, list):

@@ -4,7 +4,5 @@
 from collections.abc import Callable, Coroutine
 from typing import Any
 
-from beeai_framework.backend.message import AnyMessage
-
-ControllerFunction = Callable[[list[AnyMessage], dict[str, Any]], Any]
-AsyncStepFunction = Callable[[list[AnyMessage], dict[str, Any]], Coroutine[Any, Any, Any]]
+ControllerFunction = Callable[..., Any]
+AsyncStepFunction = Callable[..., Coroutine[Any, Any, Any]]

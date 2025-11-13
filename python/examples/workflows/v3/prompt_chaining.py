@@ -1,56 +1,63 @@
 import asyncio
-from typing import Any
 
 from beeai_framework.backend.chat import ChatModel
-from beeai_framework.backend.message import AnyMessage, SystemMessage, UserMessage
-from beeai_framework.workflows.v3.workflow import Workflow, create_step
+from beeai_framework.backend.message import AssistantMessage, SystemMessage, UserMessage
+from beeai_framework.context import RunMiddlewareType
+from beeai_framework.workflows.v3.step import WorkflowStep
+from beeai_framework.workflows.v3.workflow import Workflow, step
 
 
-async def main() -> None:
-    async def start(messages: list[AnyMessage], context: dict[str, Any]) -> None:
-        print("start workflow")
+class PromptChainWorkflow(Workflow):
 
-    async def answer(messages: list[AnyMessage], context: dict[str, Any]) -> None:
-        print("answer")
-        result = await ChatModel.from_name("ollama:ibm/granite4").run(messages)
-        context["response"] = result.get_text_content()
+    def __init__(self, middlewares: list[RunMiddlewareType] | None = None) -> None:
+        super().__init__(middlewares=middlewares)
 
-    async def review(messages: list[AnyMessage], context: dict[str, Any]) -> None:
-        print("review")
-        result = await ChatModel.from_name("ollama:gpt-oss:20b").run(
+        self.response: str | None = None
+        self.improvements: str | None = None
+
+    @step
+    async def answer(self) -> None:
+        result = await ChatModel.from_name("ollama:ibm/granite4").run(self.messages)
+        self.response = result.get_text_content()
+
+    @step
+    async def review(self) -> None:
+        result = await ChatModel.from_name("ollama:ibm/granite4").run(
             [
-                *messages,
+                *self.messages,
+                AssistantMessage(self.response or ""),
                 UserMessage(
                     "Read the last agent response and produce a short (2 to 3 items max.) list of suggested improvements."
                 ),
             ],
         )
-        context["review"] = result.get_text_content()
+        self.improvements = result.get_text_content()
 
-    async def revise_answer(messages: list[AnyMessage], context: dict[str, Any]) -> None:
-        print("revise_answer")
+    @step
+    async def revise_answer(self) -> None:
         result = await ChatModel.from_name("ollama:ibm/granite4").run(
             [
-                SystemMessage(context["review"]),
-                *messages,
+                SystemMessage(self.improvements or ""),
+                *self.messages,
             ]
         )
-        context["revised_response"] = result.get_text_content()
+        self.messages.append(
+            AssistantMessage(result.get_text_content()),
+        )
 
-    async def end(messages: list[AnyMessage], context: dict[str, Any]) -> None:
-        print("end")
-        print("Original: ", context["response"])
-        print("Revised: ", context["revised_response"])
+    @step
+    async def end(self) -> None:
+        print(self.messages[-1].text)
 
-    # Define steps
-    start_step = create_step(start)
-    answer_step = create_step(answer)
-    review_step = create_step(review)
-    revise_answer_step = create_step(revise_answer)
+    def build(self, start: WorkflowStep) -> None:
+        """Build out the workflow"""
+        start.then(self.answer).then(self.review).then(self.revise_answer).then(self.end)
 
-    workflow = Workflow()
-    workflow.start(start_step).then(answer_step).then(review_step).then(revise_answer_step).then(create_step(end))
-    await workflow.run([UserMessage("How is a black dwarf formed?")], context={})
+
+async def main() -> None:
+
+    workflow = PromptChainWorkflow()
+    await workflow.run([UserMessage("How is a black dwarf formed?")])
 
 
 if __name__ == "__main__":

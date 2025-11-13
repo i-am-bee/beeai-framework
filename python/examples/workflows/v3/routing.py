@@ -1,63 +1,70 @@
 import asyncio
 import json
-from typing import Any
 
 from pydantic import BaseModel
 
 from beeai_framework.backend.chat import ChatModel
-from beeai_framework.backend.message import AnyMessage, UserMessage
-from beeai_framework.workflows.v3.workflow import Workflow, create_step
+from beeai_framework.backend.message import UserMessage
+from beeai_framework.context import RunMiddlewareType
+from beeai_framework.workflows.v3.step import WorkflowStep
+from beeai_framework.workflows.v3.workflow import Workflow, step
 
 
-async def main() -> None:
+class RoutingWorkflow(Workflow):
+
     class ToolsRequired(BaseModel):
         requires_web_search: bool
         reasoning: str
 
-    async def start(messages: list[AnyMessage], context: dict[str, Any]) -> None:
-        print("start workflow")
+    def __init__(self, middlewares: list[RunMiddlewareType] | None = None) -> None:
+        super().__init__(middlewares=middlewares)
+        self.tools_required: RoutingWorkflow.ToolsRequired | None = None
+        self.response: str | None = None
 
-    async def check_context(messages: list[AnyMessage], context: dict[str, Any]) -> None:
-        print("check_context")
+    @step
+    async def check_context(self) -> None:
         result = await ChatModel.from_name("ollama:ibm/granite4").run(
-            [*messages, UserMessage("To answer the user request, do you need access to the web search tool?")],
-            response_format=ToolsRequired,
+            [*self.messages, UserMessage("To answer the user request, do you need access to the web search tool?")],
+            response_format=RoutingWorkflow.ToolsRequired,
         )
         assert result.output_structured is not None
-        context["requires_web_search"] = ToolsRequired(**result.output_structured.model_dump()).requires_web_search
-        context["reasoning"] = ToolsRequired(**result.output_structured.model_dump()).reasoning
+        self.tools_required = RoutingWorkflow.ToolsRequired(**result.output_structured.model_dump())
 
-    async def answer_web_search(messages: list[AnyMessage], context: dict[str, Any]) -> None:
-        print("answer_web_search")
-        result = await ChatModel.from_name("ollama:ibm/granite4").run(messages)
-        context["response"] = result.get_text_content()
+    def branch_fn(self) -> bool:
+        if not self.tools_required:
+            return False
+        return self.tools_required.requires_web_search
 
-    async def answer(messages: list[AnyMessage], context: dict[str, Any]) -> None:
+    @step
+    async def answer_with_web_search(self) -> None:
+        result = await ChatModel.from_name("ollama:ibm/granite4").run(self.messages)
+        self.response = result.get_text_content()
+
+    @step
+    async def answer(self) -> None:
         print("answer")
-        result = await ChatModel.from_name("ollama:ibm/granite4").run(messages)
-        context["response"] = result.get_text_content()
+        result = await ChatModel.from_name("ollama:ibm/granite4").run(self.messages)
+        self.response = result.get_text_content()
 
-    async def end(messages: list[AnyMessage], context: dict[str, Any]) -> None:
-        print("end")
-        print(json.dumps(context, indent=4))
+    @step
+    async def end(self) -> None:
+        print(json.dumps(self.response, indent=4))
 
-    # Define steps
-    start_step = create_step(start)
-    check_context_step = create_step(check_context)
-    answer_web_search_step = create_step(answer_web_search)
-    answer_step = create_step(answer)
-    end_step = create_step(end)
+    def build(self, start: WorkflowStep) -> None:
 
-    workflow = Workflow()
-    workflow.start(start_step)
+        start.then(self.check_context).branch(
+            next_steps={True: self.answer_with_web_search, False: self.answer},
+            branch_fn=self.branch_fn,
+        )
 
-    start_step.then(check_context_step).branch(
-        next_steps={True: answer_web_search_step, False: answer_step},
-        branch_fn=lambda messages, context: context["requires_web_search"],
-    )
-    answer_web_search_step.then(end_step)
-    answer_step.then(end_step)
+        # TODO: branch should be chainable directly
+        self.answer_with_web_search.then(self.end)
+        self.answer.then(self.end)
 
+
+async def main() -> None:
+
+    workflow = RoutingWorkflow()
     await workflow.run([UserMessage("What is the current rivian stock price?")], context={})
 
 

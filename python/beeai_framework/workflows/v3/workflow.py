@@ -2,8 +2,9 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import asyncio
+from abc import ABC, abstractmethod
 from functools import cached_property
-from typing import Any, Unpack
+from typing import Any, TypeVar, Unpack, overload
 
 from beeai_framework.backend.message import AnyMessage
 from beeai_framework.context import RunContext, RunMiddlewareType
@@ -20,10 +21,49 @@ def create_step(func: AsyncStepFunction) -> WorkflowStep:
     return WorkflowStep(func=func)
 
 
-class Workflow(Runnable[RunnableOutput]):
+T = TypeVar("T", bound="Workflow")
+
+
+class step:  # noqa: N801
+    """Descriptor that turns an async method into a WorkflowStep."""
+
+    def __init__(self, func: AsyncStepFunction) -> None:
+        self.func = func
+        self.name = func.__name__
+
+    def __set_name__(self, owner: T, name: str) -> None:
+        self.name = name
+
+    @overload
+    def __get__(self, instance: None, owner: type[T]) -> "step": ...
+    @overload
+    def __get__(self, instance: T, owner: type[T]) -> WorkflowStep: ...
+
+    def __get__(self, instance: T | None, owner: type[T]) -> Any:
+        if instance is None:
+            return self  # accessed on class, not instance
+
+        cache_name = f"__workflow_cache_{self.name}"
+        if not hasattr(instance, cache_name):
+            bound_func = self.func.__get__(instance, owner)
+            setattr(instance, cache_name, WorkflowStep(bound_func))
+        return getattr(instance, cache_name)
+
+
+class Workflow(Runnable[RunnableOutput], ABC):
+
     def __init__(self, middlewares: list[RunMiddlewareType] | None = None) -> None:
         super().__init__(middlewares=middlewares)
-        self._start_step: WorkflowStep | None = None
+        self._messages: list[AnyMessage] = []
+        self._context: dict[str, Any] = {}
+
+    @property
+    def messages(self) -> list[AnyMessage]:
+        return self._messages
+
+    @property
+    def context(self) -> dict[str, Any]:
+        return self._context
 
     def _create_emitter(self) -> Emitter:
         return Emitter.root().child(namespace=["workflow", "v3"], creator=self, events=workflow_v3_event_types)
@@ -34,7 +74,14 @@ class Workflow(Runnable[RunnableOutput]):
 
     @runnable_entry
     async def run(self, input: list[AnyMessage], /, **kwargs: Unpack[RunnableOptions]) -> RunnableOutput:
-        context = RunContext.get().context
+
+        self._messages = input
+        self._context = RunContext.get().context
+
+        # Builds out the execution graph
+        # TODO The graph is reconstructed on each run? What would a user expect?
+        self._start_step: WorkflowStep = WorkflowStep()
+        self.build(self._start_step)
 
         assert self._start_step is not None
 
@@ -53,17 +100,20 @@ class Workflow(Runnable[RunnableOutput]):
             if isinstance(step, WorkflowStep):
                 step_to_exec = step
             elif isinstance(step, WorkflowBranch):
-                key = step.branch_fn(input, context)
+                key = step.branch_fn()
                 step_to_exec = step.next_steps[key]
             elif isinstance(step, WorkflowLoopUntil):
                 step_to_exec = step.step
 
             assert step_to_exec is not None
 
-            await step_to_exec._func(input, context)
+            print("Executing:", step_to_exec.name)
+
+            await step_to_exec.execute()
+
             completed_steps.add(step_to_exec)
 
-            if isinstance(step, WorkflowLoopUntil) and step.until_fn(input, context):
+            if isinstance(step, WorkflowLoopUntil) and step.until_fn():
                 await queue.put(step)
                 return
 
@@ -82,10 +132,11 @@ class Workflow(Runnable[RunnableOutput]):
 
             # Wait for at least one task to complete before continuing
             if tasks:
-                done, _ = await asyncio.wait(tasks, return_when=asyncio.FIRST_COMPLETED)
+                done, _ = await asyncio.wait(tasks)
+                # done, _ = await asyncio.wait(tasks, return_when=asyncio.FIRST_COMPLETED)
 
         return RunnableOutput(output=[])
 
-    def start(self, step: WorkflowStep) -> WorkflowStep:
-        self._start_step = step
-        return self._start_step
+    @abstractmethod
+    def build(self, start: WorkflowStep) -> None:
+        pass
