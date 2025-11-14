@@ -1,6 +1,9 @@
 # Copyright 2025 © BeeAI a Series of LF Projects, LLC
 # SPDX-License-Identifier: Apache-2.0
 
+from __future__ import annotations
+
+import logging
 from abc import abstractmethod
 from collections.abc import AsyncGenerator, Callable
 from functools import cached_property
@@ -10,7 +13,7 @@ from pydantic import BaseModel, ConfigDict, InstanceOf, TypeAdapter, ValidationE
 from typing_extensions import TypedDict, TypeVar, Unpack, override
 
 from beeai_framework.backend.constants import ProviderName
-from beeai_framework.backend.errors import ChatModelError
+from beeai_framework.backend.errors import ChatModelError, EmptyChatModelResponseError, InvalidToolCallError
 from beeai_framework.backend.events import (
     ChatModelErrorEvent,
     ChatModelNewTokenEvent,
@@ -18,7 +21,7 @@ from beeai_framework.backend.events import (
     ChatModelSuccessEvent,
     chat_model_event_types,
 )
-from beeai_framework.backend.message import AnyMessage, AssistantMessage, MessageToolCallContent
+from beeai_framework.backend.message import AnyMessage, AssistantMessage, MessageToolCallContent, UserMessage
 from beeai_framework.backend.types import (
     ChatModelCache,
     ChatModelInput,
@@ -34,18 +37,20 @@ from beeai_framework.backend.utils import (
     parse_model,
 )
 from beeai_framework.cache.null_cache import NullCache
+from beeai_framework.cache.utils import CacheEntry
 from beeai_framework.context import RunContext, RunMiddlewareType
 from beeai_framework.emitter import Emitter
 from beeai_framework.logger import Logger
-from beeai_framework.retryable import Retryable, RetryableConfig, RetryableInput
+from beeai_framework.retryable import Retryable, RetryableConfig, RetryableContext
 from beeai_framework.runnable import Runnable, RunnableOptions, runnable_entry
 from beeai_framework.tools.tool import AnyTool, Tool
-from beeai_framework.utils import AbortController, ModelLike
+from beeai_framework.utils import ModelLike
 from beeai_framework.utils.asynchronous import to_async_generator
+from beeai_framework.utils.cancellation import AbortController
 from beeai_framework.utils.dicts import exclude_keys, exclude_non_annotated
 from beeai_framework.utils.lists import cast_list
 from beeai_framework.utils.models import WrappedRootModel, to_model, update_model
-from beeai_framework.utils.strings import generate_random_string, to_json
+from beeai_framework.utils.strings import generate_random_string, to_json, to_json_serializable
 
 T = TypeVar("T", bound=BaseModel)
 TTool = TypeVar("TTool", bound=AnyTool)
@@ -68,6 +73,7 @@ class ChatModelKwargs(TypedDict, total=False):
     settings: dict[str, Any]
     middlewares: list[RunMiddlewareType]
     tool_choice_support: set[ToolChoiceType]
+    fix_invalid_tool_calls: bool
 
     __pydantic_config__ = ConfigDict(extra="forbid", arbitrary_types_allowed=True)  # type: ignore
 
@@ -167,6 +173,7 @@ class ChatModel(Runnable[ChatModelOutput]):
     use_strict_model_schema: bool
     use_strict_tool_schema: bool
     retry_on_empty_response: bool
+    fix_invalid_tool_calls: bool
 
     @property
     @abstractmethod
@@ -198,6 +205,7 @@ class ChatModel(Runnable[ChatModelOutput]):
         self.use_strict_model_schema = kwargs.get("use_strict_model_schema", False)
         self.supports_top_level_unions = kwargs.get("supports_top_level_unions", True)
         self.retry_on_empty_response = bool(kwargs.get("retry_on_empty_response", True))
+        self.fix_invalid_tool_calls = bool(kwargs.get("fix_invalid_tool_calls", True))
 
         custom_tool_choice_support = kwargs.get("tool_choice_support")
         self._tool_choice_support: set[ToolChoiceType] = (
@@ -233,6 +241,50 @@ class ChatModel(Runnable[ChatModelOutput]):
     ) -> AsyncGenerator[ChatModelOutput]:
         raise NotImplementedError
 
+    def _prepare_model_input(
+        self, input: list[AnyMessage], options: ChatModelOptions
+    ) -> tuple[ChatModelInput, ChatModelResponseConfig]:
+        tools = options.get("tools")
+        tool_choice = options.get("tool_choice")
+        response_format = options.get("response_format")
+
+        force_tool_call_via_response_format = self._force_tool_call_via_response_format(
+            tool_choice=tool_choice,
+            tools=tools or [],
+            has_custom_response_format=bool(response_format),
+        )
+
+        parallel_tool_calls = options.get("parallel_tool_calls")
+        if parallel_tool_calls is None:
+            parallel_tool_calls = self.allow_parallel_tool_calls and not self.ignore_parallel_tool_calls
+        else:
+            parallel_tool_calls = parallel_tool_calls and not self.ignore_parallel_tool_calls
+
+        response_format_final, response_format_schema = (
+            generate_tool_union_schema(
+                filter_tools_by_tool_choice(tools, tool_choice),
+                strict=self.use_strict_model_schema,
+                allow_top_level_union=self.supports_top_level_unions,
+                allow_parallel_tool_calls=parallel_tool_calls,
+            )
+            if force_tool_call_via_response_format and tools
+            else (response_format, None)
+        )
+
+        validate_response_format = options.get("validate_response_format")
+        stream = options.get("stream", self.parameters.stream)
+        return ChatModelInput(
+            messages=input,
+            tools=tools if self.model_supports_tool_calling else None,
+            response_format=response_format_final,
+            validate_response_format=True if validate_response_format is None else validate_response_format,
+            stream=stream if stream is not None else self.parameters.stream,
+            **exclude_keys(dict(options), {"tools", "response_format", "stream", "validate_response_format"}),
+        ), ChatModelResponseConfig(
+            response_format_schema=response_format_schema,
+            force_tool_call_via_response_format=force_tool_call_via_response_format,
+        )
+
     @override
     @runnable_entry
     async def run(self, input: list[AnyMessage], /, **kwargs: Unpack[ChatModelOptions]) -> ChatModelOutput:
@@ -261,148 +313,146 @@ class ChatModel(Runnable[ChatModelOutput]):
         Returns:
             The chat model output.
         """
-        tools = kwargs.get("tools")
-        tool_choice = kwargs.get("tool_choice")
-        response_format = kwargs.get("response_format")
-        stream = kwargs.get("stream", self.parameters.stream)
-        parallel_tool_calls = kwargs.get("parallel_tool_calls")
 
-        force_tool_call_via_response_format = self._force_tool_call_via_response_format(
-            tool_choice=tool_choice,
-            tools=tools or [],
-            has_custom_response_format=bool(response_format),
-        )
+        model_input, model_response_config = self._prepare_model_input(input, kwargs)
+        model_input_messages_backup = model_input.messages.copy()
 
-        if parallel_tool_calls is None:
-            parallel_tool_calls = self.allow_parallel_tool_calls and not self.ignore_parallel_tool_calls
-        else:
-            parallel_tool_calls = parallel_tool_calls and not self.ignore_parallel_tool_calls
-
-        response_format_final, response_format_schema = (
-            generate_tool_union_schema(
-                filter_tools_by_tool_choice(tools, tool_choice),
-                strict=self.use_strict_model_schema,
-                allow_top_level_union=self.supports_top_level_unions,
-                allow_parallel_tool_calls=parallel_tool_calls,
-            )
-            if force_tool_call_via_response_format and tools
-            else (response_format, None)
-        )
-
-        validate_response_format = kwargs.get("validate_response_format")
-        model_input = ChatModelInput(
-            messages=input,
-            tools=tools if self.model_supports_tool_calling else None,
-            response_format=response_format_final,
-            validate_response_format=True if validate_response_format is None else validate_response_format,
-            stream=stream if stream is not None else self.parameters.stream,
-            **exclude_keys(dict(kwargs), {"tools", "response_format", "stream", "validate_response_format"}),
-        )
-
-        context = RunContext.get()
-        cache_key = self.cache.generate_key(model_input, {"messages": [m.to_plain() for m in model_input.messages]})
-        cache_hit = await self.cache.get(cache_key)
-
-        async def run() -> ChatModelOutput:
-            if model_input.stream:
-                chunks: list[ChatModelOutput] = []
-                abort_controller = AbortController()
-                generator = to_async_generator(cache_hit) if cache_hit else self._create_stream(model_input, context)
-                async for value in generator:
-                    chunks.append(value)
-                    await context.emitter.emit(
-                        "new_token", ChatModelNewTokenEvent(value=value, abort=lambda: abort_controller.abort())
-                    )
-                    if abort_controller.signal.aborted:
-                        break
-
-                await self.cache.set(cache_key, chunks)
-                return ChatModelOutput.from_chunks(chunks)
-            else:
-                if cache_hit:
-                    return cache_hit[0].model_copy()
-
-                max_retries = model_input.max_retries if model_input and model_input.max_retries is not None else 0
-                result = await Retryable(
-                    RetryableInput(
-                        executor=lambda _: self._create(model_input, context),
-                        config=RetryableConfig(
-                            max_retries=max_retries,
-                            signal=context.signal,
-                        ),
-                    )
-                ).get()
-                await self.cache.set(cache_key, [result])
-                return result
+        cache_entry = CacheEntry(self.cache, key=to_json_serializable(model_input, exclude_none=True))
 
         try:
+            context = RunContext.get()
             await context.emitter.emit("start", ChatModelStartEvent(input=model_input))
 
-            result = await run()
-            if self.retry_on_empty_response and result.is_empty():
-                old_messages = model_input.messages
-                model_input.messages = [*old_messages, AssistantMessage(content="")]
-                cache_hit = None
-                result = await run()
-                model_input.messages = old_messages
+            handler = Retryable.create(
+                lambda _: self.__run(model_input, response=model_response_config, cache=cache_entry, context=context),
+                config=RetryableConfig(
+                    max_retries=model_input.max_retries if model_input and model_input.max_retries is not None else 0,
+                    signal=context.signal,
+                    factor=0,
+                ),
+            )
 
-            if force_tool_call_via_response_format and not result.get_tool_calls():
-                assert response_format_schema and issubclass(response_format_schema, BaseModel)
+            @handler.on_retry
+            async def on_retry(_: RetryableContext, e: Exception) -> None:
+                nonlocal model_input
 
-                final_message = AssistantMessage.from_chunks(result.output)
-                final_message.content.clear()
+                if self.fix_invalid_tool_calls and isinstance(e, InvalidToolCallError):
+                    model_input.messages = model_input.messages.copy()
+                    if e.generated_content:
+                        model_input.messages.append(AssistantMessage(e.generated_content))
 
-                text = result.get_text_content()
-                tool_calls_raw = parse_broken_json(text)
-                if isinstance(tool_calls_raw, list) and self.ignore_parallel_tool_calls:
-                    tool_calls_raw = tool_calls_raw[0]
-
-                try:
-                    tool_calls = response_format_schema.model_validate(tool_calls_raw)
-                    if isinstance(tool_calls, WrappedRootModel):
-                        tool_calls = tool_calls.item
-                except ValidationError as ex:
-                    raise ChatModelError("Failed to produce a valid tool call.") from ex
-
-                for tool_call in cast_list(tool_calls.model_dump()):
-                    if not tool_call or not tool_call.get("name") or tool_call.get("parameters") is None:
-                        raise ChatModelError(
-                            "Failed to produce a valid tool call.\n"
-                            "Try to increase max new tokens for your chat model.\n"
-                            f"Generated output: {text}",
+                    # TODO: add a custom template
+                    tool_names = ", ".join([t.name for t in (model_input.tools or [])]) or "None"
+                    model_input.messages.append(
+                        UserMessage(
+                            f"{e.generated_error}\n\nAvailable Tools: {tool_names}",
+                            {"tempMessage": True},
                         )
-
-                    tool_call_content = MessageToolCallContent(
-                        id=f"call_{generate_random_string(8).lower()}",
-                        tool_name=tool_call["name"],
-                        args=to_json(tool_call["parameters"], sort_keys=False, indent=None),
                     )
-                    final_message.content.append(tool_call_content)
+                elif self.retry_on_empty_response and isinstance(e, EmptyChatModelResponseError):
+                    model_input.messages = model_input.messages.copy()
+                    model_input.messages.append(AssistantMessage("", {"tempMessage": True}))
+                    await cache_entry.delete()
 
-                result.output.clear()
-                result.output.append(final_message)
-
-            while self.ignore_parallel_tool_calls and len(result.get_tool_calls()) > 1:
-                tool_call_to_remove = result.get_tool_calls()[-1]
-                for msg in reversed(result.output):
-                    if isinstance(msg, AssistantMessage):
-                        msg.content.remove(tool_call_to_remove)
-                        if not msg.content:
-                            result.output.remove(msg)
-                        break
-
-            self._assert_tool_response(input=model_input, output=result)
+            result = await handler.get()
+            model_input.messages = model_input_messages_backup
 
             await context.emitter.emit("success", ChatModelSuccessEvent(value=result))
             return result
         except Exception as ex:
+            await cache_entry.delete()
             error = ChatModelError.ensure(ex, model=self)
-            if cache_hit:
-                await self.cache.delete(cache_key)
             await context.emitter.emit("error", ChatModelErrorEvent(input=model_input, error=error))
             raise error
         finally:
             await context.emitter.emit("finish", None)
+
+    async def __run(
+        self,
+        input: ChatModelInput,
+        *,
+        response: ChatModelResponseConfig,
+        cache: CacheEntry[list[ChatModelOutput]],
+        context: RunContext,
+    ) -> ChatModelOutput:
+        cache_hit = await cache.get()
+
+        if input.stream:
+            chunks: list[ChatModelOutput] = []
+            abort_controller = AbortController()
+            generator = to_async_generator(cache_hit) if cache_hit else self._create_stream(input, context)
+
+            async for value in generator:
+                chunks.append(value)
+                event_data = ChatModelNewTokenEvent(value=value, abort=lambda: abort_controller.abort())
+                await context.emitter.emit("new_token", event_data)
+                if abort_controller.signal.aborted:
+                    break
+
+            await cache.set(chunks)
+            result = ChatModelOutput.from_chunks(chunks)
+        else:
+            if cache_hit:
+                result = cache_hit[0].model_copy()
+            else:
+                result = await self._create(input, context)
+                await cache.set([result])
+
+        if self.retry_on_empty_response and result.is_empty():
+            raise EmptyChatModelResponseError()
+
+        if response.force_tool_call_via_response_format and not result.get_tool_calls():
+            assert response.response_format_schema and issubclass(response.response_format_schema, BaseModel)
+
+            final_message = AssistantMessage.from_chunks(result.output)
+            final_message.content.clear()
+
+            text = result.get_text_content()
+            tool_calls_raw = parse_broken_json(text)
+            if isinstance(tool_calls_raw, list) and self.ignore_parallel_tool_calls:
+                tool_calls_raw = tool_calls_raw[0]
+
+            try:
+                tool_calls = response.response_format_schema.model_validate(tool_calls_raw)
+                if isinstance(tool_calls, WrappedRootModel):
+                    tool_calls = tool_calls.item
+            except ValidationError as ex:
+                raise InvalidToolCallError(
+                    generated_content=to_json(tool_calls_raw, sort_keys=False), generated_error=str(ex)
+                )
+
+            for tool_call in cast_list(tool_calls.model_dump()):
+                if not tool_call or not tool_call.get("name") or tool_call.get("parameters") is None:
+                    raise InvalidToolCallError(
+                        "Failed to produce a valid tool call.\n"
+                        "Try to increase max new tokens for your chat model.\n"
+                        f"Generated output: {text}",
+                        generated_content=text,
+                        generated_error="Tool call was not produced.",
+                        is_retryable=False,
+                    )
+
+                tool_call_content = MessageToolCallContent(
+                    id=f"call_{generate_random_string(8).lower()}",
+                    tool_name=tool_call["name"],
+                    args=to_json(tool_call["parameters"], sort_keys=False, indent=None),
+                )
+                final_message.content.append(tool_call_content)
+
+            result.output.clear()
+            result.output.append(final_message)
+
+        while self.ignore_parallel_tool_calls and len(result.get_tool_calls()) > 1:
+            tool_call_to_remove = result.get_tool_calls()[-1]
+            for msg in reversed(result.output):
+                if isinstance(msg, AssistantMessage):
+                    msg.content.remove(tool_call_to_remove)
+                    if not msg.content:
+                        result.output.remove(msg)
+                    break
+
+        self._assert_tool_response(input=input, output=result)
+        return result
 
     def config(
         self,
@@ -422,7 +472,7 @@ class ChatModel(Runnable[ChatModelOutput]):
         options: ModelLike[ChatModelParameters] | None = None,
         /,
         **kwargs: Any,
-    ) -> "ChatModel":
+    ) -> ChatModel:
         parsed_model = parse_model(name)
         TargetChatModel = load_model(parsed_model.provider_id, "chat")  # type: ignore # noqa: N806
         if options and isinstance(options, ChatModelParameters):
@@ -458,20 +508,10 @@ class ChatModel(Runnable[ChatModelOutput]):
         return not self.model_supports_tool_calling or not tool_choice_supported
 
     async def clone(self) -> Self:
-        cloned = type(self)(
-            parameters=ChatModelParameters(**self.parameters.model_dump())
-            if self.parameters
-            else ChatModelParameters(),
-            cache=await self.cache.clone() if self.cache else NullCache[list[ChatModelOutput]](),
-            tool_call_fallback_via_response_format=self.tool_call_fallback_via_response_format,
-            model_supports_tool_calling=self.model_supports_tool_calling,
-            settings=self._settings.copy(),
-            use_strict_model_schema=self.use_strict_model_schema,
-            use_strict_tool_schema=self.use_strict_tool_schema,
-            tool_choice_support=self._tool_choice_support.copy(),
-            retry_on_empty_response=self.retry_on_empty_response,
-        )
-        return cloned
+        if type(self).clone == ChatModel.clone:
+            logging.warning(f"ChatModel ({type(self)!s}) does not implement the 'clone' method.")
+
+        return self
 
     @classmethod
     def get_default_parameters(cls) -> ChatModelParameters:
@@ -556,3 +596,8 @@ def _create_tool_choice_error(message: str, *, input_tool_choice: str | AnyTool,
         f"   model.tool_choice_support = {tool_choices_set_str}\n"
         f'3. {model_class}.tool_choice_support.discard("{input_tool_choice_str}")\n',
     )
+
+
+class ChatModelResponseConfig(BaseModel):
+    force_tool_call_via_response_format: bool = False
+    response_format_schema: type[BaseModel] | None = None

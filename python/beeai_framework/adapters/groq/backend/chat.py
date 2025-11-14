@@ -3,23 +3,26 @@
 
 import copy
 import os
-from typing import Any, Self
+from collections.abc import AsyncGenerator
+from typing import Any
 
-from litellm.exceptions import BadRequestError
+import litellm.exceptions
+from litellm.exceptions import BadRequestError, MidStreamFallbackError
 from pydantic import BaseModel
 from typing_extensions import Unpack, override
 
+from beeai_framework.adapters.groq.backend._errors import GroqChatModelError
 from beeai_framework.adapters.litellm.chat import LiteLLMChatModel
 from beeai_framework.backend import AssistantMessage, ChatModelOutput
 from beeai_framework.backend.chat import ChatModelKwargs
 from beeai_framework.backend.constants import ProviderName
+from beeai_framework.backend.errors import InvalidToolCallError
 from beeai_framework.backend.types import ChatModelInput
-from beeai_framework.backend.utils import inline_schema_refs, parse_broken_json
+from beeai_framework.backend.utils import inline_schema_refs
 from beeai_framework.context import RunContext
 from beeai_framework.logger import Logger
 from beeai_framework.utils.models import is_pydantic_model
 from beeai_framework.utils.schema import SimplifyJsonSchemaConfig, simplify_json_schema
-from beeai_framework.utils.strings import find_first_pair
 
 logger = Logger(__name__)
 
@@ -33,17 +36,15 @@ class GroqChatModel(LiteLLMChatModel):
         self,
         model_id: str | None = None,
         api_key: str | None = None,
-        *,
-        fallback_failed_generation: bool = False,
         **kwargs: Unpack[ChatModelKwargs],
     ) -> None:
+        kwargs.pop("fallback_failed_generation", None)  # type: ignore
         super().__init__(
             model_id if model_id else os.getenv("GROQ_CHAT_MODEL", "llama-3.1-8b-instant"),
             provider_id="groq",
             **kwargs,
         )
         self._assert_setting_value("api_key", api_key, envs=["GROQ_API_KEY"])
-        self._fallback_failed_generation = fallback_failed_generation
 
     @override
     async def _create(
@@ -53,20 +54,41 @@ class GroqChatModel(LiteLLMChatModel):
     ) -> ChatModelOutput:
         try:
             return await super()._create(input, run)
-        except BadRequestError as e:
-            if not self._fallback_failed_generation:
+        except BadRequestError as ex:
+            try:
+                formated_err = GroqChatModelError.parse_from_litellm_error(ex.message)
+            except Exception:
+                raise ex
+
+            if "tool" in formated_err.code:
+                raise InvalidToolCallError(
+                    generated_error=formated_err.message,
+                    generated_content=formated_err.failed_generation or "",
+                    context={"source": formated_err},
+                )
+
+            return ChatModelOutput(output=[AssistantMessage(formated_err.failed_generation)])
+
+    @override
+    async def _create_stream(self, input: ChatModelInput, ctx: RunContext) -> AsyncGenerator[ChatModelOutput]:
+        try:
+            async for chunk in super()._create_stream(input, ctx):
+                yield chunk
+        except MidStreamFallbackError as e:
+            source_exc = e.original_exception
+            if not isinstance(source_exc, litellm.exceptions.APIError):
                 raise e
 
-            match = find_first_pair(e.message, ("{", "}"))
-            if not match:
+            # status_code should be int but is actually not
+            if "tool" not in str(source_exc.status_code):
                 raise e
 
-            result = parse_broken_json(match.outer, {})
-            failed_generation = result.get("error", {}).get("failed_generation")
-            if not failed_generation:
-                raise e
-
-            return ChatModelOutput(output=[AssistantMessage(failed_generation)])
+            raise InvalidToolCallError(
+                generated_error=source_exc.message.replace("litellm.APIError: APIError: GroqException - ", "").strip(),
+                generated_content=e.generated_content,
+                context={"source": source_exc},
+                cause=e,
+            )
 
     @override
     def _format_response_model(self, model: type[BaseModel] | dict[str, Any]) -> type[BaseModel] | dict[str, Any]:
@@ -93,9 +115,3 @@ class GroqChatModel(LiteLLMChatModel):
             ),
         )
         return json_schema
-
-    @override
-    async def clone(self) -> Self:
-        cloned = await super().clone()
-        cloned._fallback_failed_generation = self._fallback_failed_generation
-        return cloned

@@ -47,6 +47,28 @@ class ChatModelError(BackendError):
         return super().ensure(error, message=message, context=model_context)
 
 
+class InvalidToolCallError(ChatModelError):
+    def __init__(
+        self,
+        message: str = "Chat Model Tool Call Error",
+        *,
+        generated_error: str,
+        generated_content: str,
+        cause: Exception | None = None,
+        context: dict[str, Any] | None = None,
+        is_retryable: bool = True,
+    ) -> None:
+        super().__init__(message, cause=cause, context=context)
+        self.generated_error = generated_error
+        self.generated_content = generated_content
+        self.fatal = True
+        self.retryable = is_retryable
+
+
+class EmptyChatModelResponseError(ChatModelError):
+    pass
+
+
 class EmbeddingModelError(BackendError):
     def __init__(
         self,
