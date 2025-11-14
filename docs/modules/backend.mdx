@@ -389,13 +389,13 @@ The `ChatModel` class represents a Chat Language Model and provides methods for 
 **Method 1: Using the `from_name` method**
 
 <CodeGroup>
-```py Python
+```py Python [expandable]
 from beeai_framework.backend.chat import ChatModel
 
 model = ChatModel.from_name("ollama:llama3.1")
 ```
 
-```ts TypeScript
+```ts TypeScript [expandable]
 import { ChatModel } from "beeai-framework/backend/chat";
 
 const model = await ChatModel.fromName("ollama:granite3.3:8b");
@@ -405,13 +405,13 @@ const model = await ChatModel.fromName("ollama:granite3.3:8b");
 **Method 2: Directly specifying the provider class**
 
 <CodeGroup>
-```py Python
+```py Python [expandable]
 from beeai_framework.adapters.ollama.backend.chat import OllamaChatModel
 
 model = OllamaChatModel("llama3.1")
 ```
 
-```ts Typescript
+```ts TypeScript [expandable]
 import { OllamaChatModel } from "beeai-framework/adapters/ollama/backend/chat";
 
 const model = new OllamaChatModel("llama3.1");
@@ -422,7 +422,7 @@ const model = new OllamaChatModel("llama3.1");
 
 You can attach files (e.g. PDFs) to a `UserMessage` using the `MessageFileContent` part or the convenience factory `UserMessage.from_file`. Provide either a remote `file_id`/URL or an inline base64 data URI (`file_data`). Optionally specify a MIME `format`.
 
-```py Python
+```py Python [expandable]
 from beeai_framework.backend import UserMessage, MessageFileContent
 
 # Using a remote / previously uploaded file URL or id (flattened API)
@@ -565,7 +565,7 @@ The most basic usage is to generate text responses:
 
 <CodeGroup>
 
-```py Python
+```py Python [expandable]
 from beeai_framework.adapters.ollama.backend.chat import OllamaChatModel
 from beeai_framework.backend.message import UserMessage
 
@@ -577,7 +577,7 @@ response = await model.create(
 print(response.get_text_content())
 ```
 
-```ts TypeScript
+```ts TypeScript [expandable]
 import { UserMessage } from "beeai-framework/backend/message";
 import { OllamaChatModel } from "beeai-framework/adapters/ollama/backend/chat";
 
@@ -601,7 +601,7 @@ Execution parameters (those passed to `model.create({...})`) take precedent over
 For applications requiring real-time responses:
 
 <CodeGroup>
-```py Python
+```py Python [expandable]
 from beeai_framework.adapters.ollama.backend.chat import OllamaChatModel
 from beeai_framework.backend.message import UserMessage
 
@@ -878,13 +878,13 @@ You can initialize an embedding model in multiple ways:
 **Method 1: Using the `from_name` method**
 
 <CodeGroup>
-```py Python
+```py Python [expandable]
 from beeai_framework.backend.embedding import EmbeddingModel
 
 model = EmbeddingModel.from_name("ollama:nomic-embed-text")
 ```
 
-```ts TypeScript
+```ts TypeScript [expandable]
 import { EmbeddingModel } from "beeai-framework/backend/embedding";
 
 const model = await EmbeddingModel.fromName("ollama:nomic-embed-text");
@@ -894,13 +894,13 @@ const model = await EmbeddingModel.fromName("ollama:nomic-embed-text");
 **Method 2: Directly specifying the provider class**
 
 <CodeGroup>
-```py Python
+```py Python [expandable]
 from beeai_framework.adapters.ollama.backend import OllamaEmbeddingModel
 
 model = OllamaEmbeddingModel("nomic-embed-text")
 ```
 
-```ts TypeScript
+```ts TypeScript [expandable]
 import { OpenAIEmbeddingModel } from "beeai-framework/adapters/openai/embedding";
 
 const model = new OpenAIEmbeddingModel(
@@ -925,7 +925,7 @@ const model = new OpenAIEmbeddingModel(
 Generate embeddings for one or more text strings:
 
 <CodeGroup>
-```py Python
+```py Python [expandable]
 from beeai_framework.backend.embedding import EmbeddingModel
 
 model = EmbeddingModel.from_name("ollama:nomic-embed-text")
@@ -935,7 +935,7 @@ console.log(response.values)
 console.log(response.embeddings)
 ```
 
-```ts TypeScript
+```ts TypeScript [expandable]
 import { EmbeddingModel } from "beeai-framework/backend/embedding";
 
 const model = await EmbeddingModel.fromName("ollama:nomic-embed-text");
