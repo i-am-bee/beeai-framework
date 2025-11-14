@@ -623,7 +623,7 @@ Leverage the Model Context Protocol (MCP) to define, initialize, and utilize too
 		<CodeGroup>
 
 		{/* <!-- embedme python/examples/tools/mcp/mcp_stdio.py --> */}
-		```py Python
+		```py Python [expandable]
 		import asyncio
 		import os
 		
@@ -664,7 +664,7 @@ Leverage the Model Context Protocol (MCP) to define, initialize, and utilize too
 		```
 
 		{/* <!-- embedme typescript/examples/tools/mcp.ts --> */}
-		```ts TypeScript
+		```ts TypeScript [expandable]
 		import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 		import { MCPTool } from "beeai-framework/tools/mcp";
 		import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js";
@@ -717,7 +717,7 @@ Leverage the Model Context Protocol (MCP) to define, initialize, and utilize too
 
 	<Accordion title="Using streamable-http transport">
 		{/* <!-- embedme python/examples/tools/mcp/mcp_streamable_http.py --> */}
-		```py
+		```py Python [expandable]
 		import asyncio
 		
 		from mcp.client.streamable_http import streamablehttp_client
@@ -755,7 +755,7 @@ Leverage the Model Context Protocol (MCP) to define, initialize, and utilize too
 
 	<Accordion title="Using sse transport">
 		{/* <!-- embedme python/examples/tools/mcp/mcp_sse.py --> */}
-		```py Python
+		```py Python [expandable]
 		import asyncio
 		
 		from mcp.client.sse import sse_client
@@ -1486,7 +1486,7 @@ To create a custom tool, you need to extend the base `Tool` class and implement 
 
 Your tool needs a clear, descriptive name that follows naming conventions:
 
-```py
+```py Python [expandable]
 name = "MyNewTool"
 ```
 
@@ -1496,7 +1496,7 @@ The name must only contain characters a-z, A-Z, 0-9, or one of - or _.
 
 The description is crucial as it determines when the agent uses your tool:
 
-```py
+```py Python [expandable]
 description = "Takes X action when given Y input resulting in Z output"
 ```
 
@@ -1506,7 +1506,7 @@ You should experiment with different natural language descriptions to ensure the
 
 Create a Pydantic model that defines the expected inputs with helpful descriptions:
 
-```py
+```py Python [expandable]
 class OpenMeteoToolInput(BaseModel):
     location_name: str = Field(description="The name of the location to retrieve weather information.")
     country: str | None = Field(description="Country name.", default=None)
@@ -1528,7 +1528,7 @@ The input schema is a required field used to define the format of the input to y
 
 This method contains the core functionality of your tool, processing the input and returning the appropriate output.
 
-```py
+```py Python [expandable]
 def _run(self, input: OpenMeteoToolInput, options: Any = None) -> None:
     params = urlencode(self.get_params(input), doseq=True)
     logger.debug(f"Using OpenMeteo URL: https://api.open-meteo.com/v1/forecast?{params}")
