@@ -34,7 +34,7 @@ This agent will:
 <CodeGroup>
 
 {/* <!-- embedme python/examples/agents/requirement/quickstart_requirement.py --> */}
-```py Python
+```py Python [expandable]
 import asyncio
 
 from beeai_framework.agents.requirement import RequirementAgent
@@ -79,7 +79,7 @@ if __name__ == "__main__":
 
 ```
 
-```ts TypeScript
+```ts TypeScript [expandable]
 COMING SOON
 ```
 
@@ -117,7 +117,7 @@ When requirements generate conflicting rules, the system applies this precedence
 ### Basic Rule Definition
 Developers declare rules by creating `ConditionalRequirement` objects that target specific tools. The framework automatically handles all orchestration:
 
-```python
+```py Python [expandable]
 # Declare: agent must think before acting
 ConditionalRequirement(ThinkTool, force_at_step=1)
 
@@ -131,7 +131,7 @@ ConditionalRequirement(OpenMeteoTool(), consecutive_allowed=False)
 ### Complete Parameter Reference
 
 <CodeGroup>
-```py Python
+```py Python [expandable]
 ConditionalRequirement(
   target_tool, # Tool class, instance, or name (can also be specified as `target=...`)
   name="", # (optional) Name, useful for logging
@@ -154,7 +154,7 @@ ConditionalRequirement(
 )
 ```
 
-```ts TypeScript
+```ts TypeScript [expandable]
 COMING SOON
 ```
 
@@ -179,7 +179,7 @@ Start with a single requirement and add more as needed.
 This example forces the agent to use `ThinkTool` for reasoning followed by `DuckDuckGoSearchTool` to retrieve data. This trajectory ensures that even a small model can arrive at the correct answer by preventing it from skipping tool calls entirely.
 
 <CodeGroup>
-```py Python
+```py Python [expandable]
 RequirementAgent(
   llm=ChatModel.from_name("ollama:granite3.3"),
   tools=[ThinkTool(), DuckDuckGoSearchTool()],
@@ -190,7 +190,7 @@ RequirementAgent(
 )
 ```
 
-```ts TypeScript
+```ts TypeScript [expandable]
 COMING SOON
 ```
 
@@ -207,7 +207,7 @@ Think -> Use a tool -> Think -> Use a tool -> Think -> ... -> End
 You can achieve this by forcing the execution of the `Think` tool after every tool:
 
 <CodeGroup>
-```py Python
+```py Python [expandable]
 RequirementAgent(
   llm=ChatModel.from_name("ollama:granite3.3"),
   tools=[ThinkTool(), WikipediaTool(), OpenMeteoTool()],
@@ -215,7 +215,7 @@ RequirementAgent(
 )
 ```
 
-```ts TypeScript
+```ts TypeScript [expandable]
 COMING SOON
 ```
 
@@ -230,7 +230,7 @@ For a more general approach, use `ConditionalRequirement(ThinkTool, force_at_ste
 You may want an agent that works like ReAct but skips the "reasoning" step under certain conditions. This example uses the priority option to tell the agent to send an email after creating an order, while calling `ThinkTool` as the first step and after `retrieve_basket`.
 
 <CodeGroup>
-```py Python
+```py Python [expandable]
 RequirementAgent(
   llm=ChatModel.from_name("ollama:granite3.3"),
   tools=[ThinkTool(), retrieve_basket(), create_order(), send_email()],
@@ -241,7 +241,7 @@ RequirementAgent(
 )
 ```
 
-```ts TypeScript
+```ts TypeScript [expandable]
 COMING SOON
 ```
 
@@ -256,7 +256,7 @@ For these tools, you may want to get **approval from an external system or direc
 The following agent first asks the user before it runs the `remove_data` or the `get_data` tool.
 
 <CodeGroup>
-```py Python
+```py Python [expandable]
 RequirementAgent(
   llm=ChatModel.from_name("ollama:granite3.3"),
   tools=[get_data, remove_data, update_data],
@@ -266,7 +266,7 @@ RequirementAgent(
 )
 ```
 
-```ts TypeScript
+```ts TypeScript [expandable]
 COMING SOON
 ```
 
@@ -278,7 +278,7 @@ By default, the approval process is done as a simple prompt in terminal.
 The framework provides a simple way to provide a custom implementation.
 
 <CodeGroup>
-```py Python
+```py Python [expandable]
 async def handler(tool: Tool, input: dict[str, Any]) -> bool:
   # your implementation
   return True
@@ -286,7 +286,7 @@ async def handler(tool: Tool, input: dict[str, Any]) -> bool:
 AskPermissionRequirement(..., handler=handler)
 ```
 
-```ts TypeScript
+```ts TypeScript [expandable]
 COMING SOON
 ```
 
@@ -296,7 +296,7 @@ COMING SOON
 #### Complete `AskPermissionRequirement` Parameter Reference
 
 <CodeGroup>
-```py Python
+```py Python [expandable]
 AskPermissionRequirement(
   include=[...], # (optional) List of targets (tool name, instance, or class) requiring explicit approval
   exclude=[...], # (optional) List of targets to exclude
@@ -307,7 +307,7 @@ AskPermissionRequirement(
 )
 ```
 
-```ts TypeScript
+```ts TypeScript [expandable]
 COMING SOON
 ```
 
@@ -339,7 +339,7 @@ This example demonstrates how to write a requirement that prevents the agent fro
 
 <CodeGroup>
 {/* <!-- embedme python/examples/agents/requirement/custom_requirement.py --> */}
-```py Python
+```py Python [expandable]
 import asyncio
 
 from beeai_framework.agents.requirement import RequirementAgent, RequirementAgentRunState
@@ -402,7 +402,7 @@ if __name__ == "__main__":
 
 ```
 
-```ts TypeScript
+```ts TypeScript [expandable]
 COMING SOON
 ```
 
