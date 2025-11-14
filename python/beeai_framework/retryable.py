@@ -53,7 +53,7 @@ async def do_retry(fn: Callable[[int], Awaitable[T]], options: dict[str, Any] | 
     async def handler(attempt: int, remaining: int) -> T:
         logger.debug(f"Entering p_retry handler({attempt}, {remaining})")
         try:
-            factor = options.get("factor", 2) or 2
+            factor = options.get("factor", 2) or 0
 
             if attempt > 1:
                 await asyncio.sleep(factor ** (attempt - 1))
@@ -89,6 +89,13 @@ class Retryable(Generic[T]):
         retry_input = to_model(RetryableInput, retryable_input)
         self._handlers = to_model(RetryableInput, retry_input)
         self._config = retry_input.config
+
+    @staticmethod
+    def create(handler: Callable[[RetryableContext], Awaitable[T]], *, config: RetryableConfig) -> "Retryable[T]":
+        return Retryable(RetryableInput(executor=handler, config=config))
+
+    def on_retry(self, fn: Callable[[RetryableContext, Exception], Awaitable[None]]) -> None:
+        self._handlers.on_retry = fn
 
     def _get_context(self, attempt: int) -> RetryableContext:
         ctx = RetryableContext(

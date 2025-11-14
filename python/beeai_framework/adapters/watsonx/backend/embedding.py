@@ -27,7 +27,7 @@ class WatsonxEmbeddingModel(LiteLLMEmbeddingModel):
         **kwargs: Unpack[EmbeddingModelKwargs],
     ) -> None:
         super().__init__(
-            model_id if model_id else os.getenv("WATSONX_EMBEDDING_MODEL", "ibm/granite-embedding-107m-multilingual"),
+            model_id if model_id else os.getenv("WATSONX_EMBEDDING_MODEL", "sentence-transformers/all-minilm-l6-v2"),
             provider_id="watsonx",
             **kwargs,
         )
