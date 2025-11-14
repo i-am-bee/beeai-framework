@@ -17,7 +17,11 @@ async def main() -> None:
         requirements=[
             ConditionalRequirement(ThinkTool, force_at_step=1, max_invocations=3),
             ConditionalRequirement(
-                DuckDuckGoSearchTool, only_after=[OpenMeteoTool], min_invocations=1, max_invocations=2
+                DuckDuckGoSearchTool,
+                only_after=[OpenMeteoTool],
+                min_invocations=1,
+                max_invocations=2,
+                reason="can be used only after retrieving the weather forecast",
             ),
         ],
     )
