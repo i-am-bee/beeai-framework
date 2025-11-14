@@ -4,7 +4,7 @@ from beeai_framework.backend.chat import ChatModel
 from beeai_framework.backend.message import AssistantMessage, SystemMessage, UserMessage
 from beeai_framework.context import RunMiddlewareType
 from beeai_framework.runnable import RunnableOutput
-from beeai_framework.workflows.v3.step import WorkflowStep
+from beeai_framework.workflows.v3.step import WorkflowChainable
 from beeai_framework.workflows.v3.workflow import Workflow, step
 
 
@@ -42,7 +42,7 @@ class PromptChainWorkflow(Workflow):
         )
         self.revised_response = result.get_text_content()
 
-    def build(self, start: WorkflowStep) -> None:
+    def build(self, start: WorkflowChainable) -> None:
         """
         Build out the workflow from the start node.
         """

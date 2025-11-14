@@ -14,8 +14,9 @@ from beeai_framework.workflows.v3.events import (
     workflow_v3_event_types,
 )
 from beeai_framework.workflows.v3.step import (
-    AsyncFuncStepExecutable,
-    EmptyStepExecutable,
+    EmptyWorkflowStep,
+    FuncWorkflowStep,
+    WorkflowChainable,
     WorkflowStep,
 )
 from beeai_framework.workflows.v3.types import AsyncStepFunction
@@ -48,7 +49,7 @@ class step:  # noqa: N801
         cache_name = f"__workflow_step_cache_{self.name}"
         if not hasattr(instance, cache_name):
             bound_func = self.func.__get__(instance, owner)
-            setattr(instance, cache_name, WorkflowStep(executable=AsyncFuncStepExecutable(func=bound_func)))
+            setattr(instance, cache_name, FuncWorkflowStep(func=bound_func))
         return getattr(instance, cache_name)
 
 
@@ -80,8 +81,8 @@ class Workflow(Runnable[RunnableOutput], ABC):
 
         # Builds out the execution graph
         # TODO The graph is reconstructed on each run?
-        self._start_step: WorkflowStep = WorkflowStep(executable=EmptyStepExecutable("Start"))
-        self.build(self._start_step)
+        self._start_step: WorkflowStep = EmptyWorkflowStep("Start")
+        self.build(WorkflowChainable(frontier=[self._start_step]))
 
         assert self._start_step is not None
 
@@ -96,7 +97,7 @@ class Workflow(Runnable[RunnableOutput], ABC):
         async def execute_step(step: WorkflowStep) -> None:
             print("Executing:", step.name)
 
-            # Get upstream results
+            # Get upstream results as ordered list
             results = [u.result for u in step.upstream]
 
             await step.execute(*results)
@@ -133,5 +134,5 @@ class Workflow(Runnable[RunnableOutput], ABC):
         pass
 
     @abstractmethod
-    def build(self, start: WorkflowStep) -> None:
+    def build(self, start: WorkflowChainable) -> None:
         pass

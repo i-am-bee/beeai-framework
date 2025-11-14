@@ -7,7 +7,7 @@ from beeai_framework.backend.chat import ChatModel
 from beeai_framework.backend.message import AssistantMessage, UserMessage
 from beeai_framework.context import RunMiddlewareType
 from beeai_framework.runnable import RunnableOutput
-from beeai_framework.workflows.v3.step import WorkflowStep
+from beeai_framework.workflows.v3.step import WorkflowChainable
 from beeai_framework.workflows.v3.workflow import Workflow, step
 
 
@@ -50,7 +50,7 @@ class RoutingWorkflow(Workflow):
     async def end(self) -> None:
         print(json.dumps(self.response, indent=4))
 
-    def build(self, start: WorkflowStep) -> None:
+    def build(self, start: WorkflowChainable) -> None:
         start.then(self.check_context).branch(
             steps={True: self.answer_with_web_search, False: self.answer},
             branch_fn=self.branch_fn,
