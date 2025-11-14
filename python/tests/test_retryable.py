@@ -3,7 +3,6 @@
 
 import pytest
 
-from beeai_framework.errors import FrameworkError
 from beeai_framework.retryable import Retryable, RetryableConfig, RetryableContext
 
 """
@@ -49,6 +48,8 @@ async def test_retryable() -> None:
 @pytest.mark.asyncio
 @pytest.mark.unit
 async def test_retryable_retries() -> None:
+    from beeai_framework.errors import FrameworkError
+
     async def executor(ctx: RetryableContext) -> None:
         print(f"Executing attempt: {ctx.attempt}")
         raise FrameworkError(f"frameworkerror:test_retryable_retries:{ctx.attempt}", is_retryable=True)

@@ -130,9 +130,8 @@ class AgentStackChatModel(ChatModel):
         return "beeai"
 
     async def clone(self) -> Self:
-        cloned = await super().clone()
-        cloned.preferred_models = self.preferred_models
-        cloned._kwargs = self._kwargs.copy()
+        cloned = self.__class__(preferred_models=self.preferred_models.copy(), **self._kwargs.copy())
+        cloned.middlewares.extend(self.middlewares)
         return cloned
 
 

@@ -6,7 +6,6 @@ import copy
 from abc import ABC
 from collections.abc import Generator, Sequence
 from contextlib import suppress
-from logging import Logger
 from typing import Any, Generic, Literal, Optional, Self, TypeGuard, TypeVar, Union
 
 from pydantic import BaseModel, ConfigDict, Field, GetJsonSchemaHandler, RootModel, ValidationError, create_model
@@ -14,6 +13,7 @@ from pydantic.fields import FieldInfo
 from pydantic.json_schema import JsonSchemaValue
 from pydantic_core import CoreSchema, SchemaValidator
 
+from beeai_framework.logger import Logger
 from beeai_framework.utils.dicts import remap_key
 from beeai_framework.utils.schema import simplify_json_schema
 
