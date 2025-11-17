@@ -84,7 +84,7 @@ class GroqChatModel(LiteLLMChatModel):
                 raise e
 
             raise InvalidToolCallError(
-                generated_error=source_exc.message.replace("litellm.APIError: APIError: GroqException - ", "").strip(),
+                generated_error=source_exc.message.removeprefix("litellm.APIError: APIError: GroqException -").strip(),
                 generated_content=e.generated_content,
                 context={"source": source_exc},
                 cause=e,
