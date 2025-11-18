@@ -1,12 +1,12 @@
-# Copyright 2025 © BeeAI a Series of LF Projects, LLC
-# SPDX-License-Identifier: Apache-2.0
-
 import json
 import os
 import sys
 from pathlib import Path
+import asyncio
+import traceback
+import tempfile
 from typing import List
-
+from beeai_framework.tools.tool import Tool
 import pytest
 from deepeval import evaluate
 from deepeval.metrics import ContextualPrecisionMetric, ContextualRecallMetric, ContextualRelevancyMetric, AnswerRelevancyMetric
@@ -22,37 +22,67 @@ from beeai_framework.agents.experimental import RequirementAgent
 from beeai_framework.backend import ChatModel, ToolMessage
 from beeai_framework.memory import UnconstrainedMemory
 from beeai_framework.tools.search.retrieval import VectorStoreSearchTool
+from beeai_framework.adapters.gemini import GeminiChatModel
+from beeai_framework.errors import FrameworkError
+from beeai_framework.tools.search.wikipedia import (WikipediaTool)
+from beeai_framework.adapters.gemini import GeminiChatModel
+from beeai_framework.tools.weather import OpenMeteoTool
 
+from beeai_framework.tools.code import PythonTool, LocalPythonStorage
 
+from eval.model import DeepEvalLLM
+
+def create_calculator_tool() -> Tool:
+    """
+    Create a PythonTool configured for mathematical calculations.
+    """
+    storage = LocalPythonStorage(
+        local_working_dir=tempfile.mkdtemp("code_interpreter_source"),
+        # CODE_INTERPRETER_TMPDIR should point to where code interpreter stores it's files
+        interpreter_working_dir=os.getenv("CODE_INTERPRETER_TMPDIR", "./tmp/code_interpreter_target"),
+    )
+
+    python_tool = PythonTool(
+        code_interpreter_url=os.getenv("CODE_INTERPRETER_URL", "http://127.0.0.1:50081"),
+        storage=storage,
+    )
+    return python_tool
 
 async def create_agent() -> RequirementAgent:
     """
-    Create a RequirementAgent with RAG capabilities using VectorStoreSearchTool.
+    Create a RequirementAgent with RAG and Wikipedia capabilities.
     """
-  
-    # Setup vector store using the reusable function from examples
-    vector_store = await setup_vector_store()
+    #vector_store = await setup_vector_store()
+    #need it?
+    vector_store = True
     if vector_store is None:
         raise FileNotFoundError(
             "Failed to instantiate Vector Store. "
-            "Either set POPULATE_VECTOR_DB=True to create a new one, or ensure the database file exists."
+            "Either set POPULATE_VECTOR_DB=True in your .env file, or ensure the database file exists."
         )
-    
-    # Create the vector store search tool
     search_tool = VectorStoreSearchTool(vector_store=vector_store)
-    
-    return RequirementAgent(
-        llm=ChatModel.from_name(os.environ["EVAL_CHAT_MODEL_NAME"]),
-        tools=[search_tool],
-        memory=UnconstrainedMemory(),
-        instructions=(
-            "You are a helpful assistant that answers questions about the BeeAI framework. "
-            "Use the vector store search tool to find relevant information from the documentation "
-            "before providing your answer. Always search for information first, then provide a "
-            "comprehensive response based on what you found."
-        ),
-    )
 
+    wiki_tool = WikipediaTool() 
+    calculator_tool = create_calculator_tool()
+
+    model_name = os.environ.get("GEMINI_CHAT_MODEL", "gemini-2.5-flash")
+    llm = GeminiChatModel(model_name=model_name, ApiKey=os.environ.get("GEMINI_API_KEY"), allow_parallel_tool_calls=True )
+
+    # Create RequirementAgent with multiple tools
+    # tools: WikipediaTool for general knowledge, PythonTool for calculations, OpenMeteoTool for weather data
+    agent = RequirementAgent(
+        llm=llm, 
+        tools=[wiki_tool,OpenMeteoTool(), calculator_tool],
+        memory=UnconstrainedMemory(),
+        role="You are an expert Multi-hop Question Answering (QA) agent. Your primary role is to extract and combine information from the provided context to answer the user's question. Your final output must strictly follow these constraints:",
+        instructions=[
+            "1. SOURCE CONSTRAINT: Your answer must be based ONLY on the provided context paragraphs. Do not use external knowledge.",
+            "2. REASONING: Your answer must require linking facts from at least two separate context paragraphs (Multi-hop).",
+            "3. EXPLAINABILITY: After your final answer, you must provide a list of the exact sentences (using their original numerical identifiers [1], [2], etc.) that fully support your conclusion."
+        ],
+
+    )
+    return agent
 
 def extract_retrieval_context(messages) -> List[str]:
     """
@@ -95,13 +125,13 @@ async def create_rag_test_cases():
     # Define test questions and expected outputs
     test_data = [
         (
-            "What types of agents are available in BeeAI Framework?",
-            "BeeAI Framework provides several agent implementations: ReAct Agent (implements the ReAct pattern for reasoning and acting), Tool Calling Agent (optimized for scenarios where tool usage is the primary focus), Custom Agent (for advanced use cases by extending BaseAgent class), and the new experimental RequirementAgent that combines LLMs, tools, and requirements in a declarative interface."
+            "Which magazine was started first Arthur's Magazine or First for Women?",
+            "Arthur's Magazine"
         ),
         (
-            "How does the ReAct Agent work?",
-            "The ReActAgent implements the ReAct (Reasoning and Acting) pattern, which structures agent behavior into a cyclical process of reasoning, action, and observation. The agent reasons about a task, takes actions using tools, observes results, and continues reasoning until reaching a conclusion."
-        ),
+            "The Oberoi family is part of a hotel company that has a head office in what city?",
+            "New Delhi"
+        )
         # (
         #     "What tools can be used with BeeAI agents?",
         #     "BeeAI agents can use various tools including Search tools (DuckDuckGoSearchTool), Weather tools (OpenMeteoTool), Knowledge tools (LangChainWikipediaTool), and many more available in the beeai_framework.tools module. Tools enhance the agent's capabilities by allowing interaction with external systems."
@@ -140,18 +170,21 @@ async def create_rag_test_cases():
 async def test_rag() -> None:
     # Run evaluation and get test cases
     test_cases = await create_rag_test_cases()
-    
+     # Get the evaluation model name from the environment, with a safe default
+    eval_model_name = os.environ.get("EVAL_CHAT_MODEL_NAME", "google:gemini-2.5-flash")
+
+    eval_model = DeepEvalLLM.from_name(eval_model_name)
     # RAG-specific metrics
     contextual_recall = ContextualRecallMetric(
-        model=os.environ["EVAL_CHAT_MODEL_NAME"],#DeepEvalLLM.from_name(os.environ["EVAL_CHAT_MODEL_NAME"]),
+        model = eval_model,#DeepEvalLLM.from_name(os.environ["EVAL_CHAT_MODEL_NAME"]),
         threshold=0.7
     )
     contextual_relevancy = ContextualRelevancyMetric(
-        model=os.environ["EVAL_CHAT_MODEL_NAME"],#DeepEvalLLM.from_name(os.environ["EVAL_CHAT_MODEL_NAME"]),
+        model = eval_model,#DeepEvalLLM.from_name(os.environ["EVAL_CHAT_MODEL_NAME"]),
         threshold=0.7
     )
     contextual_precision = AnswerRelevancyMetric(
-        model=os.environ["EVAL_CHAT_MODEL_NAME"],#DeepEvalLLM.from_name(os.environ["EVAL_CHAT_MODEL_NAME"]),
+        model = eval_model,#DeepEvalLLM.from_name(os.environ["EVAL_CHAT_MODEL_NAME"]),
         threshold=0.7
     )
     

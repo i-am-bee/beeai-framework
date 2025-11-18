@@ -2,6 +2,7 @@ import asyncio
 import os
 
 ## Observability
+
 from openinference.instrumentation.beeai import BeeAIInstrumentor
 from opentelemetry import trace as trace_api
 from opentelemetry.exporter.otlp.proto.http.trace_exporter import OTLPSpanExporter
