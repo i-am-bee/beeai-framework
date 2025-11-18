@@ -26,7 +26,7 @@ class ThinkTool(Tool[ThinkSchema]):
         *,
         extra_instructions: str = "",
         tool_output: str | Callable[[ThinkSchema], str] = "OK",
-        schema: type[ThinkSchema],
+        schema: type[ThinkSchema] = ThinkSchema,
     ) -> None:
         super().__init__()
         self._input_schema = schema
