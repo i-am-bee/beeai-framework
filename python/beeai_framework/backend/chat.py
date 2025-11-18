@@ -539,8 +539,6 @@ class ChatModel(Runnable[ChatModelOutput]):
                 "Consider enabling parallel tool calls by setting 'model.allow_parallel_tool_calls' to True.",
             )
 
-        print(output.get_text_content())
-
         if input.tool_choice == "none" and tool_calls:
             _raise_tool_choice_error(
                 "The model generated a tool call, but 'tool_choice' was set to 'none'.",
