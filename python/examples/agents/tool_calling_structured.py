@@ -45,7 +45,7 @@ async def main() -> None:
 
     # Create agent
     agent = ToolCallingAgent(
-        llm=ChatModel.from_name("ollama:granite4:micro"),
+        llm=ChatModel.from_name("ollama:granite3.3:8b"),
         memory=UnconstrainedMemory(),
         tools=[OpenMeteoTool()],
         templates={
@@ -76,7 +76,7 @@ async def main() -> None:
         )
         reader.write(
             "Agent 🤖 : ",
-            to_json(WeatherForecatModel.model_validate_json(response.last_message.text), indent=2, sort_keys=False),
+            to_json(WeatherForecatModel.model_validate_json(response.result.text), indent=2, sort_keys=False),
         )
 
 

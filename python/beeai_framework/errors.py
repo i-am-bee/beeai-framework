@@ -1,6 +1,7 @@
 # Copyright 2025 © BeeAI a Series of LF Projects, LLC
 # SPDX-License-Identifier: Apache-2.0
 
+import json
 from asyncio import CancelledError
 from collections.abc import Generator
 from typing import Any, Self
@@ -15,9 +16,8 @@ def _format_error_message(e: BaseException, *, offset: int = 0, strip_traceback:
     formatted = f"{cls}({module}): {e!s}"
     if isinstance(e, FrameworkError) and e.context:
         try:
-            from beeai_framework.utils.strings import to_json
-
-            context_json: str = to_json(e.context, sort_keys=True)
+            # Directly use json.dumps, with sort_keys for consistent output.
+            context_json: str = json.dumps(e.context, sort_keys=True)
             formatted += f"\n{prefix}Context: {context_json}"
         except TypeError:
             # Handle serialization errors gracefully.

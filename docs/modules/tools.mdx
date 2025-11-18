@@ -12,20 +12,21 @@ Tools extend agent capabilities beyond text processing, enabling interaction wit
 Supported in Python and TypeScript.
 </Note>
 
+## Built-in tools
+
 Ready-to-use tools that provide immediate functionality for common agent tasks:
 
 | Tool             | Description                                                                                         |
 | :--------------- |:----------------------------------------------------------------------------------------------------|
-| [MCP](#mcp)        | Discover and use tools exposed by arbitrary [MCP Server](https://modelcontextprotocol.io/examples)  |
-| [Think](#think)    | Gives an agent a place to think                                                                                              |
-| [Handoff](#handoff)    | Delegates a task to an expert agent                                                                                             |
-| [OpenAPI](#openapi)  | Consume external APIs with an ease                                       |
-| [OpenMeteo](#openmeteo)  | Retrieve weather information for specific locations and dates                                       |
-| [DuckDuckGo](#duckduckgo) | Search for data on DuckDuckGo                                                                       |
-| [Wikipedia](#wikipedia)  | Search for data on Wikipedia                                                                        |
-| [VectorStoreSearch](#vector-store-search) | Search for documents in a vector database                         |
-| [Python](#python)     | Let agent run an arbitrary Python code in a sandboxed environment                                                |
-| [Sandbox](#sandbox)    | Run custom Python functions in a sandboxed environment                                              |
+| `DuckDuckGoTool` | Search for data on DuckDuckGo                                                                       |
+| `OpenMeteoTool`  | Retrieve weather information for specific locations and dates                                       |
+| `WikipediaTool`  | Search for data on Wikipedia                                                                        |
+| `VectorStoreSearchTool` | Search for relevant documents in a vector store using semantic similarity                         |
+| `MCPTool`        | Discover and use tools exposed by arbitrary [MCP Server](https://modelcontextprotocol.io/examples)  |
+| `PythonTool`     | Run arbitrary Python code in a sandboxed environment                                                |
+| `SandboxTool`    | Run custom Python functions in a sandboxed environment                                              |
+| `ThinkTool`    | Gives an agent a place to think.                                                                                              |
+| `HandoffTool`    | Delegates a task to an expert agent                                                                                             |
 
 ➕ [Request additional built-in tools](https://github.com/i-am-bee/beeai-framework/discussions)
 
@@ -193,7 +194,7 @@ const agent = new ReActAgent({
 
 </CodeGroup>
 
-<Heading level={3} id="tool-decorator">Creating a tool</Heading>
+### Using the tool decorator in Python
 
 For simpler tools, you can use the `tool` decorator to quickly create a tool from a function:
 
@@ -207,12 +208,12 @@ from urllib.parse import quote
 
 import requests
 
-from beeai_framework.agents.requirement import RequirementAgent
+from beeai_framework.agents import AgentExecutionConfig
+from beeai_framework.agents.react import ReActAgent
 from beeai_framework.backend import ChatModel
 from beeai_framework.errors import FrameworkError
 from beeai_framework.logger import Logger
 from beeai_framework.memory import UnconstrainedMemory
-from beeai_framework.middleware.trajectory import GlobalTrajectoryMiddleware
 from beeai_framework.tools import StringToolOutput, tool
 
 logger = Logger(__name__)
@@ -248,15 +249,13 @@ def basic_calculator(expression: str) -> StringToolOutput:
 async def main() -> None:
     # using the tool in an agent
 
-    chat_model = ChatModel.from_name("ollama:granite4:micro")
+    chat_model = ChatModel.from_name("ollama:granite3.3:8b")
 
-    agent = RequirementAgent(llm=chat_model, tools=[basic_calculator], memory=UnconstrainedMemory())
+    agent = ReActAgent(llm=chat_model, tools=[basic_calculator], memory=UnconstrainedMemory())
 
-    result = await agent.run("What is the square root of 36?", total_max_retries=10).middleware(
-        GlobalTrajectoryMiddleware()
-    )
+    result = await agent.run("What is the square root of 36?", execution=AgentExecutionConfig(total_max_retries=10))
 
-    print(result.last_message.text)
+    print(result.result.text)
 
 
 if __name__ == "__main__":
@@ -268,9 +267,9 @@ if __name__ == "__main__":
 
 ```
 
-## Built-in Tools
+## Built-in tool examples
 
-<Heading level={3} id="duckduckgo" name="duckduckgo">DuckDuckGo search tool</Heading>
+### DuckDuckGo search tool
 
 Use the DuckDuckGo search tool to retrieve real-time search results from across the internet, including news, current events, or content from specific websites or domains.
 
@@ -282,7 +281,7 @@ import asyncio
 import sys
 import traceback
 
-from beeai_framework.agents.requirement import RequirementAgent
+from beeai_framework.agents.react import ReActAgent
 from beeai_framework.backend import ChatModel
 from beeai_framework.errors import FrameworkError
 from beeai_framework.memory import UnconstrainedMemory
@@ -290,12 +289,12 @@ from beeai_framework.tools.search.duckduckgo import DuckDuckGoSearchTool
 
 
 async def main() -> None:
-    chat_model = ChatModel.from_name("ollama:granite4:micro")
-    agent = RequirementAgent(llm=chat_model, tools=[DuckDuckGoSearchTool()], memory=UnconstrainedMemory())
+    chat_model = ChatModel.from_name("ollama:granite3.3:8b")
+    agent = ReActAgent(llm=chat_model, tools=[DuckDuckGoSearchTool()], memory=UnconstrainedMemory())
 
     result = await agent.run("How tall is the mount Everest?")
 
-    print(result.last_message.text)
+    print(result.result.text)
 
 
 if __name__ == "__main__":
@@ -347,7 +346,7 @@ console.info(response);
 
 </CodeGroup>
 
-<Heading level={3} id="openmeteo">OpenMeteo weather tool</Heading>
+### OpenMeteo weather tool
 
 Use the OpenMeteo tool to retrieve real-time weather forecasts including detailed information on temperature, wind speed, and precipitation. Access forecasts predicting weather up to 16 days in the future and archived forecasts for weather up to 30 days in the past. Ideal for obtaining up-to-date weather predictions and recent historical weather trends.
 
@@ -367,12 +366,12 @@ from beeai_framework.tools.weather import OpenMeteoTool
 
 
 async def main() -> None:
-    llm = ChatModel.from_name("ollama:llama3.1")
+    llm = ChatModel.from_name("ollama:granite3.3:8b")
     agent = ReActAgent(llm=llm, tools=[OpenMeteoTool()], memory=UnconstrainedMemory())
 
     result = await agent.run("What's the current weather in London?")
 
-    print(result.last_message.text)
+    print(result.result.text)
 
 
 if __name__ == "__main__":
@@ -400,7 +399,7 @@ console.log(result.getTextContent());
 ```
 </CodeGroup>
 
-<Heading level={3} id="wikipedia">Wikipedia tool</Heading>
+### Wikipedia tool
 
 Use the Wikipedia tool to retrieve detailed information from Wikipedia.org on a wide range of topics, including famous individuals, locations, organizations, and historical events. Ideal for obtaining comprehensive overviews or specific details on well-documented subjects. May not be suitable for lesser-known or more recent topics. The information is subject to community edits which can be inaccurate.
 
@@ -482,7 +481,7 @@ console.info(response);
 ```
 </CodeGroup>
 
-<Heading level={3} id="vector-store-search">Vector Store Search Tool</Heading>
+### Vector store search tool
 
 Use the VectorStoreSearchTool to perform semantic search against pre-populated vector stores. This tool enables agents to retrieve relevant documents from knowledge bases using semantic similarity, making it ideal for RAG (Retrieval-Augmented Generation) applications and knowledge-based question answering.
 
@@ -490,12 +489,12 @@ Use the VectorStoreSearchTool to perform semantic search against pre-populated v
 This tool requires a pre-populated vector store. Vector store population (loading and chunking documents) is typically handled offline in production applications.
 </Note>
 
-{/* <!-- embedme python/examples/agents/requirement/rag.py --> */}
+{/* <!-- embedme python/examples/agents/experimental/requirement/rag.py --> */}
 ```py Python [expandable]
 import asyncio
 import os
 
-from beeai_framework.agents.requirement import RequirementAgent
+from beeai_framework.agents.experimental import RequirementAgent
 from beeai_framework.backend import ChatModel
 from beeai_framework.backend.document_loader import DocumentLoader
 from beeai_framework.backend.embedding import EmbeddingModel
@@ -604,7 +603,7 @@ async def main() -> None:
 
     query = "What types of agents are available in BeeAI?"
     response = await agent.run(query)
-    print(f"query: {query}\nResponse: {response.last_message.text}")
+    print(f"query: {query}\nResponse: {response.answer.text}")
 
 
 if __name__ == "__main__":
@@ -612,293 +611,108 @@ if __name__ == "__main__":
 
 ```
 
-<Heading level={3} id="mcp">MCP Tool</Heading>
+### MCP tool
 
 Leverage the Model Context Protocol (MCP) to define, initialize, and utilize tools on compatible MCP servers. These servers expose executable functionalities, enabling AI models to perform tasks such as computations, API calls, or system operations.
 
-
-<AccordionGroup>
-	<Accordion title="Using stdio transport">
-
-		<CodeGroup>
-
-		{/* <!-- embedme python/examples/tools/mcp/mcp_stdio.py --> */}
-		```py Python [expandable]
-		import asyncio
-		import os
-		
-		from mcp import StdioServerParameters, stdio_client
-		
-		from beeai_framework.agents.requirement import RequirementAgent
-		from beeai_framework.backend import ChatModel
-		from beeai_framework.middleware.trajectory import GlobalTrajectoryMiddleware
-		from beeai_framework.tools import Tool
-		from beeai_framework.tools.mcp import MCPTool
-		
-		server_params = StdioServerParameters(
-		    command="npx", args=["-y", "@modelcontextprotocol/server-filesystem", os.getcwd()]
-		)
-		
-		
-		async def main() -> None:
-		    """Using a local MCP file server to explore the file system."""
-		
-		    client = stdio_client(server_params)
-		    mcp_tools = await MCPTool.from_client(client)
-		
-		    agent = RequirementAgent(
-		        llm=ChatModel.from_name("ollama:granite4:micro"),
-		        tools=mcp_tools,
-		        middlewares=[GlobalTrajectoryMiddleware(included=[Tool, ChatModel])],
-		    )
-		
-		    prompt = "What's the current working directory?"
-		    print(f"User: {prompt}")
-		    response = await agent.run(prompt)
-		    print(f"Agent: {response.last_message.text}")
-		
-		
-		if __name__ == "__main__":
-		    asyncio.run(main())
-		
-		```
-
-		{/* <!-- embedme typescript/examples/tools/mcp.ts --> */}
-		```ts TypeScript [expandable]
-		import { Client } from "@modelcontextprotocol/sdk/client/index.js";
-		import { MCPTool } from "beeai-framework/tools/mcp";
-		import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js";
-		import { ReActAgent } from "beeai-framework/agents/react/agent";
-		import { UnconstrainedMemory } from "beeai-framework/memory/unconstrainedMemory";
-		import { OllamaChatModel } from "beeai-framework/adapters/ollama/backend/chat";
-		
-		// Create MCP Client
-		const client = new Client(
-		  {
-		    name: "test-client",
-		    version: "1.0.0",
-		  },
-		  {
-		    capabilities: {},
-		  },
-		);
-		
-		// Connect the client to any MCP server with tools capablity
-		await client.connect(
-		  new StdioClientTransport({
-		    command: "npx",
-		    args: ["-y", "@modelcontextprotocol/server-everything"],
-		  }),
-		);
-		
-		try {
-		  // Server usually supports several tools, use the factory for automatic discovery
-		  const tools = await MCPTool.fromClient(client);
-		  const agent = new ReActAgent({
-		    llm: new OllamaChatModel("llama3.1"),
-		    memory: new UnconstrainedMemory(),
-		    tools,
-		  });
-		  // @modelcontextprotocol/server-everything contains "add" tool
-		  await agent.run({ prompt: "Find out how much is 4 + 7" }).observe((emitter) => {
-		    emitter.on("update", async ({ data, update, meta }) => {
-		      console.log(`Agent (${update.key}) 🤖 : `, update.value);
-		    });
-		  });
-		} finally {
-		  // Close the MCP connection
-		  await client.close();
-		}
-		
-		```
-		</CodeGroup>
-
-	</Accordion>
-
-	<Accordion title="Using streamable-http transport">
-		{/* <!-- embedme python/examples/tools/mcp/mcp_streamable_http.py --> */}
-		```py Python [expandable]
-		import asyncio
-		
-		from mcp.client.streamable_http import streamablehttp_client
-		
-		from beeai_framework.agents.requirement import RequirementAgent
-		from beeai_framework.backend import ChatModel
-		from beeai_framework.middleware.trajectory import GlobalTrajectoryMiddleware
-		from beeai_framework.tools import Tool
-		from beeai_framework.tools.mcp import MCPTool
-		
-		
-		async def main() -> None:
-		    """Using BeeAI Framework Documentation MCP Server to learn more."""
-		
-		    client = streamablehttp_client("https://framework.beeai.dev/mcp")
-		    all_tools = await MCPTool.from_client(client)
-		
-		    agent = RequirementAgent(
-		        llm=ChatModel.from_name("ollama:granite4:micro"),
-		        tools=all_tools,
-		        middlewares=[GlobalTrajectoryMiddleware(included=[Tool, ChatModel])],
-		    )
-		
-		    prompt = "Why to use Requirement Agent?"
-		    print(f"User: {prompt}")
-		    response = await agent.run(prompt)
-		    print(f"Agent: {response.last_message.text}")
-		
-		
-		if __name__ == "__main__":
-		    asyncio.run(main())
-		
-		```
-	</Accordion>
-
-	<Accordion title="Using sse transport">
-		{/* <!-- embedme python/examples/tools/mcp/mcp_sse.py --> */}
-		```py Python [expandable]
-		import asyncio
-		
-		from mcp.client.sse import sse_client
-		
-		from beeai_framework.agents.requirement import RequirementAgent
-		from beeai_framework.backend import ChatModel
-		from beeai_framework.middleware.trajectory import GlobalTrajectoryMiddleware
-		from beeai_framework.tools import Tool
-		from beeai_framework.tools.mcp import MCPTool
-		
-		
-		async def main() -> None:
-		    """Using IBM Cloud MCP Server with BeeAI Framework.
-		
-		    ibmcloud login -r us-south --sso
-		    ibmcloud --mcp-transport http://127.0.0.1:7777
-		    """
-		
-		    all_ibm_tools = await MCPTool.from_client(sse_client("http://127.0.0.1:7777/sse"))
-		    ibm_tools = [tool for tool in all_ibm_tools if tool.name in {"ibmcloud_account_show"}]
-		
-		    agent = RequirementAgent(
-		        llm=ChatModel.from_name("ollama:granite3.3:8b"),
-		        tools=[*ibm_tools],
-		        instructions="Specify JSON as an output format for the tool calls if possible.",
-		        middlewares=[GlobalTrajectoryMiddleware(included=[Tool, ChatModel])],
-		    )
-		
-		    prompt = "Who is the owner of my IBM account?"
-		    print(f"User: {prompt}")
-		    response = await agent.run(prompt)
-		    print(f"Agent: {response.last_message.text}")
-		
-		
-		if __name__ == "__main__":
-		    asyncio.run(main())
-		
-		```
-	</Accordion>
-
-</AccordionGroup>
-
-
 <Tip>
-	Check out the [MCP Slack integration tutorial](/guides/mcp-slackbot)
+Check out the [MCP Slack integration tutorial](/guides/mcp-slackbot)
 </Tip>
 
-<Note>
-	Currently, the client does not support Roots, Sampling, or Elicitation. Feel free to open a GitHub issue if needed.
-</Note>
-
-<Heading level={3} id="openapi">OpenAPI Tool</Heading>
-
-Many APIs are described using the OpenAPI Specification, and a framework can read this specification to generate a set of tools that allow an agent to communicate with the API.
-
 <CodeGroup>
-	{/* <!-- embedme python/examples/tools/openapi.py --> */}
-	```py Python [expandable]
-	import asyncio
-	import json
-	import os
-	import sys
-	import traceback
-	
-	from aiofiles import open
-	
-	from beeai_framework.agents.requirement import RequirementAgent
-	from beeai_framework.errors import FrameworkError
-	from beeai_framework.tools.openapi import OpenAPITool
-	
-	
-	async def main() -> None:
-	    # Retrieve the schema
-	    current_dir = os.path.dirname(__file__)
-	    async with open(f"{current_dir}/assets/github_openapi.json") as file:
-	        content = await file.read()
-	        open_api_schema = json.loads(content)
-	
-	        # Create a tool for each operation in the schema
-	        tools = OpenAPITool.from_schema(open_api_schema)
-	        print(f"Retrieved {len(tools)} tools")
-	        print("\n".join([t.name for t in tools]))
-	
-	        # Create an agent
-	        agent = RequirementAgent(llm="ollama:granite4:micro", tools=tools)
-	
-	        # Run the agent
-	        prompt = "How many repositories are in 'i-am-bee' org?"
-	        print("User:", prompt)
-	        response = await agent.run(prompt)
-	        print("Agent 🤖 : ", response.last_message.text)
-	
-	
-	if __name__ == "__main__":
-	    try:
-	        asyncio.run(main())
-	    except FrameworkError as e:
-	        traceback.print_exc()
-	        sys.exit(e.explain())
-	
-	```
 
-	{/* <!-- embedme typescript/examples/tools/openapi.ts --> */}
-	```ts TypeScript [expandable]
-	import "dotenv/config.js";
-	import { ReActAgent } from "beeai-framework/agents/react/agent";
-	import { TokenMemory } from "beeai-framework/memory/tokenMemory";
-	import { OpenAPITool } from "beeai-framework/tools/openapi";
-	import * as fs from "fs";
-	import { dirname } from "node:path";
-	import { fileURLToPath } from "node:url";
-	import { ChatModel } from "beeai-framework/backend/chat";
-	
-	const llm = await ChatModel.fromName("ollama:llama3.1");
-	
-	const __dirname = dirname(fileURLToPath(import.meta.url));
-	const openApiSchema = await fs.promises.readFile(
-	  `${__dirname}/assets/github_openapi.json`,
-	  "utf-8",
-	);
-	
-	const agent = new ReActAgent({
-	  llm,
-	  memory: new TokenMemory(),
-	  tools: [new OpenAPITool({ openApiSchema })],
-	});
-	
-	const response = await agent
-	  .run({ prompt: 'How many repositories are in "i-am-bee" org?' })
-	  .observe((emitter) => {
-	    emitter.on("update", async ({ data, update, meta }) => {
-	      console.log(`Agent (${update.key}) 🤖 : `, update.value);
-	    });
-	  });
-	
-	console.log(`Agent 🤖 : `, response.result.text);
-	
-	```
+{/* <!-- embedme python/examples/tools/mcp_tool_creation.py --> */}
+```py Python [expandable]
+import asyncio
+import os
+
+from dotenv import load_dotenv
+from mcp import StdioServerParameters
+from mcp.client.stdio import stdio_client
+
+from beeai_framework.tools.mcp import MCPTool
+
+load_dotenv()
+
+# Create server parameters for stdio connection
+server_params = StdioServerParameters(
+    command="npx",
+    args=["-y", "@modelcontextprotocol/server-slack"],
+    env={
+        "SLACK_BOT_TOKEN": os.environ["SLACK_BOT_TOKEN"],
+        "SLACK_TEAM_ID": os.environ["SLACK_TEAM_ID"],
+        "PATH": os.getenv("PATH", default=""),
+    },
+)
+
+
+async def slack_post_message_tool() -> MCPTool:
+    slack_tools = await MCPTool.from_client(stdio_client(server_params))
+    return next(filter(lambda tool: tool.name == "slack_post_message", slack_tools))
+
+
+async def main() -> None:
+    tool = await slack_post_message_tool()
+    print(tool.name, tool.description)
+
+
+if __name__ == "__main__":
+    asyncio.run(main())
+
+```
+
+{/* <!-- embedme typescript/examples/tools/mcp.ts --> */}
+```ts TypeScript [expandable]
+import { Client } from "@modelcontextprotocol/sdk/client/index.js";
+import { MCPTool } from "beeai-framework/tools/mcp";
+import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js";
+import { ReActAgent } from "beeai-framework/agents/react/agent";
+import { UnconstrainedMemory } from "beeai-framework/memory/unconstrainedMemory";
+import { OllamaChatModel } from "beeai-framework/adapters/ollama/backend/chat";
+
+// Create MCP Client
+const client = new Client(
+  {
+    name: "test-client",
+    version: "1.0.0",
+  },
+  {
+    capabilities: {},
+  },
+);
+
+// Connect the client to any MCP server with tools capablity
+await client.connect(
+  new StdioClientTransport({
+    command: "npx",
+    args: ["-y", "@modelcontextprotocol/server-everything"],
+  }),
+);
+
+try {
+  // Server usually supports several tools, use the factory for automatic discovery
+  const tools = await MCPTool.fromClient(client);
+  const agent = new ReActAgent({
+    llm: new OllamaChatModel("llama3.1"),
+    memory: new UnconstrainedMemory(),
+    tools,
+  });
+  // @modelcontextprotocol/server-everything contains "add" tool
+  await agent.run({ prompt: "Find out how much is 4 + 7" }).observe((emitter) => {
+    emitter.on("update", async ({ data, update, meta }) => {
+      console.log(`Agent (${update.key}) 🤖 : `, update.value);
+    });
+  });
+} finally {
+  // Close the MCP connection
+  await client.close();
+}
+
+```
 
 </CodeGroup>
 
-
-<Heading level={3} id="python">Python Tool</Heading>
+### Python tool
 
 The Python tool allows AI agents to execute Python code within a secure, sandboxed environment. This tool enables access to files that are either provided by the user or created during execution.
 
@@ -960,12 +774,12 @@ async def main() -> None:
     result = await agent.run("Calculate 5036 * 12856 and save the result to answer.txt").on(
         "update", lambda data, event: print(f"Agent 🤖 ({data.update.key}) : ", data.update.parsed_value)
     )
-    print(result.last_message.text)
+    print(result.result.text)
 
     result = await agent.run("Read the content of answer.txt?").on(
         "update", lambda data, event: print(f"Agent 🤖 ({data.update.key}) : ", data.update.parsed_value)
     )
-    print(result.last_message.text)
+    print(result.result.text)
 
 
 if __name__ == "__main__":
@@ -1018,7 +832,7 @@ def get_riddle() -> Optional[Dict[str, str]]:
 
 </CodeGroup>
 
-<Heading level={3} id="sandbox">Sandbox tool</Heading>
+### Sandbox tool
 
 The Sandbox tool provides a way to define and run custom Python functions in a secure, sandboxed environment. It's ideal when you need to encapsulate specific functionality that can be called by the agent.
 
@@ -1486,7 +1300,7 @@ To create a custom tool, you need to extend the base `Tool` class and implement 
 
 Your tool needs a clear, descriptive name that follows naming conventions:
 
-```py Python [expandable]
+```py
 name = "MyNewTool"
 ```
 
@@ -1496,7 +1310,7 @@ The name must only contain characters a-z, A-Z, 0-9, or one of - or _.
 
 The description is crucial as it determines when the agent uses your tool:
 
-```py Python [expandable]
+```py
 description = "Takes X action when given Y input resulting in Z output"
 ```
 
@@ -1506,7 +1320,7 @@ You should experiment with different natural language descriptions to ensure the
 
 Create a Pydantic model that defines the expected inputs with helpful descriptions:
 
-```py Python [expandable]
+```py
 class OpenMeteoToolInput(BaseModel):
     location_name: str = Field(description="The name of the location to retrieve weather information.")
     country: str | None = Field(description="Country name.", default=None)
@@ -1528,7 +1342,7 @@ The input schema is a required field used to define the format of the input to y
 
 This method contains the core functionality of your tool, processing the input and returning the appropriate output.
 
-```py Python [expandable]
+```py
 def _run(self, input: OpenMeteoToolInput, options: Any = None) -> None:
     params = urlencode(self.get_params(input), doseq=True)
     logger.debug(f"Using OpenMeteo URL: https://api.open-meteo.com/v1/forecast?{params}")

@@ -2,30 +2,17 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import asyncio
+import contextlib
 from collections.abc import Callable
-from contextlib import AbstractAsyncContextManager
 from typing import ClassVar
 from weakref import WeakKeyDictionary
 
 from anyio.streams.memory import MemoryObjectReceiveStream, MemoryObjectSendStream
 from mcp.client.session import ClientSession
-from mcp.client.streamable_http import GetSessionIdCallback
 from mcp.shared.message import SessionMessage
 
-from beeai_framework.logger import Logger
-
-logger = Logger(__name__)
-
-MCPClient = AbstractAsyncContextManager[
-    tuple[
-        MemoryObjectReceiveStream[SessionMessage | Exception],
-        MemoryObjectSendStream[SessionMessage],
-    ]
-    | tuple[
-        MemoryObjectReceiveStream[SessionMessage | Exception],
-        MemoryObjectSendStream[SessionMessage],
-        GetSessionIdCallback,  # for streamable http
-    ]
+MCPClient = contextlib._AsyncGeneratorContextManager[
+    tuple[MemoryObjectReceiveStream[SessionMessage | Exception], MemoryObjectSendStream[SessionMessage]], None
 ]
 
 CleanupFn = Callable[[], None]
@@ -71,11 +58,6 @@ class MCPSessionProvider:
                     await _session.initialize()
                     self._session_initialized.set()
                     await self._session_stopping.wait()
-            except Exception as e:
-                logger.error(f"Failed to initialize MCP session: {e}")
-                self._session_initialized.set()
-                if isinstance(e, asyncio.CancelledError):
-                    raise
             finally:
                 self._session = None
 

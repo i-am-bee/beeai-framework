@@ -18,7 +18,7 @@ async def main() -> None:
     )
 
     llm = OllamaChatModel("llama3.1")
-    response = await llm.run(memory.messages)
+    response = await llm.create(messages=memory.messages)
     await memory.add(AssistantMessage(response.get_text_content()))
 
     print("Conversation history")

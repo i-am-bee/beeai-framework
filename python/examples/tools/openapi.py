@@ -1,40 +1,47 @@
 import asyncio
-import json
 import os
 import sys
 import traceback
+from typing import Any
 
-from aiofiles import open
+import aiofiles
+import yaml
+from dotenv import load_dotenv
 
-from beeai_framework.agents.requirement import RequirementAgent
+from beeai_framework.agents.tool_calling import ToolCallingAgent
+from beeai_framework.backend import ChatModel
+from beeai_framework.emitter import EventMeta
 from beeai_framework.errors import FrameworkError
-from beeai_framework.tools.openapi import OpenAPITool
+from beeai_framework.memory import UnconstrainedMemory
+from beeai_framework.tools.openapi import AfterFetchEvent, BeforeFetchEvent, OpenAPITool
 
 
 async def main() -> None:
-    # Retrieve the schema
+    llm = ChatModel.from_name("ollama:llama3.1")
     current_dir = os.path.dirname(__file__)
-    async with open(f"{current_dir}/assets/github_openapi.json") as file:
-        content = await file.read()
-        open_api_schema = json.loads(content)
+    async with aiofiles.open(os.path.join(current_dir, "assets/github_openapi.json")) as file:
+        open_api_schema = yaml.safe_load(await file.read())
 
-        # Create a tool for each operation in the schema
-        tools = OpenAPITool.from_schema(open_api_schema)
-        print(f"Retrieved {len(tools)} tools")
-        print("\n".join([t.name for t in tools]))
+    api_tool = OpenAPITool(open_api_schema)
 
-        # Create an agent
-        agent = RequirementAgent(llm="ollama:granite4:micro", tools=tools)
+    def print_fetch_event(data: Any, event: EventMeta) -> None:
+        if isinstance(data, BeforeFetchEvent):
+            print(f"Agent ({event.name}) 🤖 : ", data.input)
+        elif isinstance(data, AfterFetchEvent):
+            print(f"Agent ({event.name}) 🤖 : ", data.data)
 
-        # Run the agent
-        prompt = "How many repositories are in 'i-am-bee' org?"
-        print("User:", prompt)
-        response = await agent.run(prompt)
-        print("Agent 🤖 : ", response.last_message.text)
+    api_tool.emitter.on("*", print_fetch_event)
+
+    agent = ToolCallingAgent(llm=llm, tools=[api_tool], memory=UnconstrainedMemory())
+
+    response = await agent.run("How many repositories are in 'i-am-bee' org?")
+
+    print("Agent 🤖 : ", response.result.text)
 
 
 if __name__ == "__main__":
     try:
+        load_dotenv()
         asyncio.run(main())
     except FrameworkError as e:
         traceback.print_exc()

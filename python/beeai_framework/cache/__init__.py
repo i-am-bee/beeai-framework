@@ -2,16 +2,8 @@
 # SPDX-License-Identifier: Apache-2.0
 
 from beeai_framework.cache.base import BaseCache
-from beeai_framework.cache.decorator_cache import CacheFn, cached
 from beeai_framework.cache.null_cache import NullCache
 from beeai_framework.cache.sliding_cache import SlidingCache
 from beeai_framework.cache.unconstrained_cache import UnconstrainedCache
 
-__all__ = [
-    "BaseCache",
-    "CacheFn",
-    "NullCache",
-    "SlidingCache",
-    "UnconstrainedCache",
-    "cached",
-]
+__all__ = ["BaseCache", "NullCache", "SlidingCache", "UnconstrainedCache"]

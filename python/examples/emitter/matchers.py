@@ -17,18 +17,18 @@ async def main() -> None:
     emitter.on("update", lambda data, event: print(data, ": on update"))
 
     # Match all events emitted directly on the instance (not nested)
-    emitter.on("*", lambda data, event: print(data, ": match all instance"))
+    emitter.match("*", lambda data, event: print(data, ": match all instance"))
 
     # Match all events (included nested)
-    cleanup = Emitter.root().on("*.*", lambda data, event: print(data, ": match all nested"))
+    cleanup = Emitter.root().match("*.*", lambda data, event: print(data, ": match all nested"))
 
     # Match events by providing a filter function
-    model.emitter.on(
+    model.emitter.match(
         lambda event: isinstance(event.creator, ChatModel), lambda data, event: print(data, ": match ChatModel")
     )
 
     # Match events by regex
-    emitter.on(re.compile(r"watsonx"), lambda data, event: print(data, ": match regex"))
+    emitter.match(re.compile(r"watsonx"), lambda data, event: print(data, ": match regex"))
 
     await emitter.emit("update", "update")
     await Emitter.root().emit("root", "root")

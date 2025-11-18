@@ -2,5 +2,3 @@ beeai-framework
 langchain-community
 ipykernel
 jupyterlab
-wikipedia
-requests==2.32.4

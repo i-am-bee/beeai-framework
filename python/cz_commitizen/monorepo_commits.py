@@ -50,7 +50,6 @@ class MonorepoCommitsCz(ConventionalCommitsCz):
                             None,
                             "adapters",
                             "agents",
-                            "middlewares",
                             "backend",
                             "tools",
                             "cache",

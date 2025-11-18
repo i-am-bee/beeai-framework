@@ -4,7 +4,7 @@ import traceback
 
 from pydantic import BaseModel
 
-from beeai_framework.adapters.agentstack import AgentStackAgent
+from beeai_framework.adapters.acp.agents import ACPAgent
 from beeai_framework.errors import FrameworkError
 from beeai_framework.memory.unconstrained_memory import UnconstrainedMemory
 from beeai_framework.workflows import Workflow
@@ -19,31 +19,27 @@ async def main() -> None:
         research: str | None = None
         output: str | None = None
 
-    agents = await AgentStackAgent.from_agent_stack(url="http://127.0.0.1:8333", memory=UnconstrainedMemory())
-
     async def research(state: State) -> None:
+        agent = ACPAgent(
+            agent_name="gpt-researcher", url="http://127.0.0.1:8333/api/v1/acp", memory=UnconstrainedMemory()
+        )
         # Run the agent and observe events
-        try:
-            research_agent = next(agent for agent in agents if agent.name == "GPT Researcher")
-        except StopIteration:
-            raise ValueError("Agent 'GPT Researcher' not found") from None
-        response = await research_agent.run(state.topic).on(
+        response = await agent.run(state.topic).on(
             "update",
             lambda data, _: (reader.write("Agent 🤖 (debug) : ", data)),
         )
-        state.research = response.last_message.text
+        state.research = response.result.text
 
     async def podcast(state: State) -> None:
+        agent = ACPAgent(
+            agent_name="podcast-creator", url="http://127.0.0.1:8333/api/v1/acp", memory=UnconstrainedMemory()
+        )
         # Run the agent and observe events
-        try:
-            podcast_agent = next(agent for agent in agents if agent.name == "Podcast creator")
-        except StopIteration:
-            raise ValueError("Agent 'Podcast creator' not found") from None
-        response = await podcast_agent.run(state.research or "").on(
+        response = await agent.run(state.research or "").on(
             "update",
             lambda data, _: (reader.write("Agent 🤖 (debug) : ", data)),
         )
-        state.output = response.last_message.text
+        state.output = response.result.text
 
     # Define the structure of the workflow graph
     workflow = Workflow(State)

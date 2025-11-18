@@ -9,7 +9,7 @@ from beeai_framework.memory import UnconstrainedMemory
 
 LLMS = {
     "ollama": "ollama:llama3.1",
-    "watsonx": "watsonx:ibm/granite-3-3-8b-instruct",
+    "watsonx": "watsonx:ibm/granite-3-8b-instruct",
 }
 
 HELP = """
@@ -31,7 +31,7 @@ async def main(name: str) -> None:
 
     result = await agent.run("What is the smallest of the Cabo Verde islands?")
 
-    print("answer:", result.last_message.text)
+    print("answer:", result.result.text)
 
 
 if __name__ == "__main__":

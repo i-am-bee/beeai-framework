@@ -1,6 +1,6 @@
 # Copyright 2025 © BeeAI a Series of LF Projects, LLC
 # SPDX-License-Identifier: Apache-2.0
-import json
+
 import logging
 from typing import Any
 
@@ -8,10 +8,7 @@ import litellm
 from openai.lib._pydantic import _ensure_strict_json_schema
 from pydantic import BaseModel
 
-from beeai_framework.backend import ChatModelError, MessageToolCallContent
-from beeai_framework.backend.utils import parse_broken_json
 from beeai_framework.utils.dicts import traverse
-from beeai_framework.utils.models import is_pydantic_model
 
 
 def parse_extra_headers(
@@ -91,27 +88,3 @@ def to_strict_json_schema(model: type[BaseModel] | dict[str, Any]) -> dict[str, 
         if obj.get("type") == "object" and "additionalProperties" in obj:
             obj["additionalProperties"] = False
     return strict_schema
-
-
-def process_structured_output(schema: dict[str, Any] | type[BaseModel] | None, text: str) -> Any:
-    try:
-        data = parse_broken_json(text)
-        if schema and is_pydantic_model(schema):
-            return schema.model_validate(data, strict=False)
-        else:
-            return data
-    except Exception as e:
-        raise ChatModelError(
-            "The model failed to satisfy the schema given in the response format.", context={"input": text}
-        ) from e
-
-
-def fix_double_escaped_tool_calls(items: list[MessageToolCallContent]) -> None:
-    for item in items:
-        try:
-            parsed = json.loads(item.args)
-            if isinstance(parsed, str):
-                parsed = json.loads(parsed)
-                item.args = json.dumps(parsed, ensure_ascii=False)
-        except json.JSONDecodeError:
-            pass

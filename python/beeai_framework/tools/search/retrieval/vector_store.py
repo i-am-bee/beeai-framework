@@ -101,10 +101,6 @@ class VectorStoreSearchTool(Tool[VectorStoreSearchToolInput, ToolRunOptions, Vec
         return cls(vector_store=vector_store, options=options)
 
     async def clone(self) -> Self:
-        tool = self.__class__(
-            vector_store=self.vector_store,
-            options=self.options,
-        )
-        tool.middlewares.extend(self.middlewares)
-        tool._cache = await self.cache.clone()
-        return tool
+        cloned = await super().clone()
+        cloned.vector_store = self.vector_store
+        return cloned

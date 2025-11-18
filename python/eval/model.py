@@ -4,7 +4,7 @@
 import os
 from typing import Any, TypeVar
 
-from deepeval.key_handler import KEY_FILE_HANDLER, ModelKeyValues
+from deepeval.key_handler import KEY_FILE_HANDLER, KeyValues
 from deepeval.models import DeepEvalBaseLLM
 from dotenv import load_dotenv
 from pydantic import BaseModel
@@ -34,8 +34,8 @@ class DeepEvalLLM(DeepEvalBaseLLM):
 
     async def a_generate(self, prompt: str, schema: TSchema | None = None) -> str:
         input_msg = UserMessage(prompt)
-        response = await self._model.run(
-            [input_msg],
+        response = await self._model.create(
+            messages=[input_msg],
             response_format=schema.model_json_schema(mode="serialization") if schema is not None else None,
             stream=False,
             temperature=0,
@@ -54,6 +54,6 @@ class DeepEvalLLM(DeepEvalBaseLLM):
     def from_name(
         name: str | ProviderName | None = None, options: ModelLike[ChatModelParameters] | None = None, **kwargs: Any
     ) -> "DeepEvalLLM":
-        name = name or KEY_FILE_HANDLER.fetch_data(ModelKeyValues.LOCAL_MODEL_NAME)
+        name = name or KEY_FILE_HANDLER.fetch_data(KeyValues.LOCAL_MODEL_NAME)
         model = ChatModel.from_name(name, options, **kwargs)
         return DeepEvalLLM(model)

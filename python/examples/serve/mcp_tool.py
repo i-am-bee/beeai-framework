@@ -6,17 +6,17 @@ from beeai_framework.tools.weather.openmeteo import OpenMeteoTool
 
 @tool
 def reverse_tool(word: str) -> StringToolOutput:
-    """A tool that reverses a word"""
+    """
+    A tool that reverses a word
+    """
     return StringToolOutput(result=word[::-1])
 
 
 def main() -> None:
-    """Create an MCP server with custom config, register ReverseTool and OpenMeteoTool to the MCP server and run it."""
-
-    config = MCPServerConfig(transport="streamable-http", settings=MCPSettings(port=8001))  # optional
-    server = MCPServer(config=config)
-    server.register_many([reverse_tool, OpenMeteoTool()])
-    server.serve()
+    # create a MCP server with custom config, register ReverseTool and OpenMeteoTool to the MCP server and run it
+    MCPServer(config=MCPServerConfig(transport="sse", settings=MCPSettings(port=8001))).register_many(
+        [reverse_tool, OpenMeteoTool()]
+    ).serve()
 
 
 if __name__ == "__main__":

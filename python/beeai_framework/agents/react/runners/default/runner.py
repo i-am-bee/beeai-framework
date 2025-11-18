@@ -192,8 +192,8 @@ class DefaultRunner(BaseRunner):
                 ):
                     data.abort()
 
-            output: ChatModelOutput = await self._input.llm.run(
-                self.memory.messages[:],
+            output: ChatModelOutput = await self._input.llm.create(
+                messages=self.memory.messages[:],
                 stream=self._input.stream,
                 tools=self._input.tools if self.use_native_tool_calling else None,
             ).observe(lambda llm_emitter: llm_emitter.on("new_token", on_new_token))
@@ -258,9 +258,7 @@ class DefaultRunner(BaseRunner):
 
         async def executor(_: RetryableContext) -> ReActAgentRunnerToolResult:
             try:
-                tool_output: ToolOutput = await tool.run(input.state.tool_input).context(
-                    {"state": {"memory": self.memory}}
-                )
+                tool_output: ToolOutput = await tool.run(input.state.tool_input)  # TODO: pass tool options
                 output = (
                     tool_output
                     if not tool_output.is_empty()
@@ -327,21 +325,13 @@ class DefaultRunner(BaseRunner):
             ]
         )
 
-        created_at = datetime.datetime.now(tz=datetime.UTC)
-        if input.prompt:
-            if isinstance(input.prompt, str):
-                content = self.templates.user.render(UserPromptTemplateInput(input=input.prompt, created_at=created_at))
-                await memory.add(UserMessage(content=content, meta={"createdAt": created_at}))
-            elif isinstance(input.prompt[-1], UserMessage) and input.prompt[-1].text:
-                await memory.add_many(input.prompt[:-1])
-                last_msg = input.prompt[-1].text
-                content = self.templates.user.render(UserPromptTemplateInput(input=last_msg, created_at=created_at))
-                await memory.add(UserMessage(content=content, meta={"createdAt": created_at}))
-            else:
-                await memory.add_many(input.prompt)
-
-        if len(memory.messages) <= 1:
-            content = self.templates.user_empty.render(UserEmptyPromptTemplateInput())
+        if memory.is_empty() or input.prompt:
+            created_at = datetime.datetime.now(tz=datetime.UTC)
+            content = (
+                self.templates.user.render(UserPromptTemplateInput(input=input.prompt, created_at=created_at))
+                if input.prompt
+                else self.templates.user_empty.render(UserEmptyPromptTemplateInput())
+            )
             await memory.add(UserMessage(content=content, meta={"createdAt": created_at}))
 
         return memory

@@ -6,7 +6,6 @@ from typing import Annotated, Any
 
 from pydantic import BaseModel, InstanceOf
 
-from beeai_framework.agents import AgentOutput
 from beeai_framework.agents.react.runners.default.prompts import (
     AssistantPromptTemplateInput,
     SchemaErrorTemplateInput,
@@ -19,7 +18,7 @@ from beeai_framework.agents.react.runners.default.prompts import (
     UserPromptTemplateInput,
 )
 from beeai_framework.agents.types import AgentExecutionConfig, AgentMeta, BaseAgentRunOptions
-from beeai_framework.backend import AnyMessage
+from beeai_framework.backend import AssistantMessage
 from beeai_framework.backend.chat import ChatModel
 from beeai_framework.backend.types import ChatModelOutput
 from beeai_framework.memory.base_memory import BaseMemory
@@ -29,7 +28,7 @@ from beeai_framework.utils.strings import to_json
 
 
 class ReActAgentRunInput(BaseModel):
-    prompt: str | list[InstanceOf[AnyMessage]]
+    prompt: str | None = None
 
 
 class ReActAgentIterationMeta(BaseModel):
@@ -62,7 +61,8 @@ class ReActAgentRunIteration(BaseModel):
     state: InstanceOf[ReActAgentIterationResult]
 
 
-class ReActAgentOutput(AgentOutput):
+class ReActAgentRunOutput(BaseModel):
+    result: InstanceOf[AssistantMessage]
     iterations: list[ReActAgentRunIteration]
     memory: InstanceOf[BaseMemory]
 

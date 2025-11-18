@@ -2,6 +2,7 @@ import asyncio
 import sys
 import traceback
 
+from beeai_framework.agents import AgentExecutionConfig
 from beeai_framework.agents.react import ReActAgent
 from beeai_framework.backend import AssistantMessage, ChatModel, UserMessage
 from beeai_framework.errors import FrameworkError
@@ -12,7 +13,7 @@ memory = UnconstrainedMemory()
 
 
 def create_agent() -> ReActAgent:
-    llm = ChatModel.from_name("ollama:granite4:micro")
+    llm = ChatModel.from_name("ollama:granite3.3:8b")
 
     # Initialize the agent
     agent = ReActAgent(llm=llm, memory=memory, tools=[])
@@ -33,15 +34,13 @@ async def main() -> None:
     agent = create_agent()
 
     response = await agent.run(
-        user_input,
-        max_retries_per_step=3,
-        total_max_retries=10,
-        max_iterations=20,
+        prompt=user_input,
+        execution=AgentExecutionConfig(max_retries_per_step=3, total_max_retries=10, max_iterations=20),
     )
     print(f"Received response: {response}")
 
     # Create and store assistant's response
-    assistant_message = AssistantMessage(response.last_message.text)
+    assistant_message = AssistantMessage(response.result.text)
 
     # Await adding assistant message to memory
     await memory.add(assistant_message)

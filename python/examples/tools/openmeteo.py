@@ -10,12 +10,12 @@ from beeai_framework.tools.weather import OpenMeteoTool
 
 
 async def main() -> None:
-    llm = ChatModel.from_name("ollama:llama3.1")
+    llm = ChatModel.from_name("ollama:granite3.3:8b")
     agent = ReActAgent(llm=llm, tools=[OpenMeteoTool()], memory=UnconstrainedMemory())
 
     result = await agent.run("What's the current weather in London?")
 
-    print(result.last_message.text)
+    print(result.result.text)
 
 
 if __name__ == "__main__":

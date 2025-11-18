@@ -4,7 +4,6 @@
 __all__ = [
     "WatsonxOrchestrateServerReActAgent",
     "WatsonxOrchestrateServerRequirementAgent",
-    "WatsonxOrchestrateServerRunnable",
     "WatsonxOrchestrateServerToolCallingAgent",
 ]
 
@@ -13,9 +12,6 @@ from beeai_framework.adapters.watsonx_orchestrate.serve._factories._react_agent 
 )
 from beeai_framework.adapters.watsonx_orchestrate.serve._factories._requirement_agent import (
     WatsonxOrchestrateServerRequirementAgent,
-)
-from beeai_framework.adapters.watsonx_orchestrate.serve._factories._runnable import (
-    WatsonxOrchestrateServerRunnable,
 )
 from beeai_framework.adapters.watsonx_orchestrate.serve._factories._tool_calling_agent import (
     WatsonxOrchestrateServerToolCallingAgent,

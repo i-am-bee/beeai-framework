@@ -14,14 +14,14 @@ async def main() -> None:
     reader = ConsoleReader()
 
     for prompt in reader:
-        response = await llm.run([UserMessage(prompt)]).observe(
-            lambda emitter: emitter.on(
+        response = await llm.create(messages=[UserMessage(prompt)]).observe(
+            lambda emitter: emitter.match(
                 "*", lambda data, event: reader.write(f"LLM 🤖 (event: {event.name})", str(data))
             )
         )
 
         reader.write("LLM 🤖 (txt) : ", response.get_text_content())
-        reader.write("LLM 🤖 (raw) : ", "\n".join([str(msg.to_plain()) for msg in response.output]))
+        reader.write("LLM 🤖 (raw) : ", "\n".join([str(msg.to_plain()) for msg in response.messages]))
 
 
 if __name__ == "__main__":

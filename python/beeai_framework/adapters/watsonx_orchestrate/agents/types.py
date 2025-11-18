@@ -4,8 +4,11 @@
 
 from typing import Any
 
-from beeai_framework.agents import AgentOutput
+from pydantic import BaseModel, InstanceOf
+
+from beeai_framework.backend import AssistantMessage
 
 
-class WatsonxOrchestrateAgentOutput(AgentOutput):
+class WatsonxOrchestrateAgentRunOutput(BaseModel):
+    result: InstanceOf[AssistantMessage]
     raw: dict[str, Any]

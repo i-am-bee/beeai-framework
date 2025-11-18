@@ -11,7 +11,7 @@ from examples.helpers.io import ConsoleReader
 async def main() -> None:
     reader = ConsoleReader()
 
-    agent = ACPAgent(agent_name="chat", url="http://127.0.0.1:8001", memory=UnconstrainedMemory())
+    agent = ACPAgent(agent_name="chat", url="http://127.0.0.1:8000", memory=UnconstrainedMemory())
     for prompt in reader:
         # Run the agent and observe events
         response = await agent.run(prompt).on(
@@ -19,7 +19,7 @@ async def main() -> None:
             lambda data, event: (reader.write("Agent 🤖 (debug) : ", data)),
         )
 
-        reader.write("Agent 🤖 : ", response.last_message.text)
+        reader.write("Agent 🤖 : ", response.result.text)
 
 
 if __name__ == "__main__":

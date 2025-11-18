@@ -8,6 +8,7 @@ from typing import Any
 
 from dotenv import load_dotenv
 
+from beeai_framework.agents import AgentExecutionConfig
 from beeai_framework.agents.react import ReActAgent
 from beeai_framework.backend import ChatModel, ChatModelParameters
 from beeai_framework.emitter import EmitterOptions, EventMeta
@@ -35,11 +36,11 @@ def create_agent() -> ReActAgent:
 
     # Other models to try:
     # "llama3.1"
-    # "granite3.3"
+    # "granite3.3:8b"
     # "deepseek-r1"
     # ensure the model is pulled before running
     llm = ChatModel.from_name(
-        "ollama:granite4:micro",
+        "ollama:granite3.3:8b",
         ChatModelParameters(temperature=0),
     )
 
@@ -104,13 +105,11 @@ async def main() -> None:
     for prompt in reader:
         # Run agent with the prompt
         response = await agent.run(
-            prompt,
-            max_retries_per_step=3,
-            total_max_retries=10,
-            max_iterations=20,
+            prompt=prompt,
+            execution=AgentExecutionConfig(max_retries_per_step=3, total_max_retries=10, max_iterations=20),
         ).on("*", process_agent_events, EmitterOptions(match_nested=False))
 
-        reader.write("Agent 🤖 : ", response.last_message.text)
+        reader.write("Agent 🤖 : ", response.result.text)
 
 
 if __name__ == "__main__":

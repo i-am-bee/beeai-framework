@@ -61,9 +61,9 @@ type MCPServerEntry = MCPServerPrompt | MCPServerResource | MCPServerTool;
 
 //  Configuration for the MCPServer.
 export class MCPServerConfig {
-  transport: "stdio" | "sse" | "streamable-http" = "stdio";
+  transport: "stdio" | "sse" = "stdio";
   hostname = "127.0.0.1";
-  port = 8000;
+  port = 3000;
   name = "MCP Server";
   version = "1.0.0";
   settings?: ServerOptions;
@@ -75,7 +75,7 @@ export class MCPServerConfig {
   }
 }
 
-export class MCPServer extends Server<any, MCPServerEntry, MCPServerConfig, never> {
+export class MCPServer extends Server<any, MCPServerEntry, MCPServerConfig> {
   protected server: McpServer;
 
   constructor(config?: MCPServerConfig) {
@@ -115,19 +115,10 @@ export class MCPServer extends Server<any, MCPServerEntry, MCPServerConfig, neve
       }
     }
 
-    switch (this.config.transport) {
-      case "stdio":
-        await this.server.connect(new StdioServerTransport());
-        break;
-      case "sse":
-      case "streamable-http":
-        runServer(this.server, this.config.hostname, this.config.port);
-        break;
-      default: {
-        // The following line ensures exhaustiveness checking at compile time.
-        const _exhaustiveCheck: never = this.config.transport;
-        throw new Error("Unsupported transport type.");
-      }
+    if (this.config.transport === "sse") {
+      runServer(this.server, this.config.hostname, this.config.port);
+    } else {
+      await this.server.connect(new StdioServerTransport());
     }
   }
 

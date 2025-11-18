@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 from enum import Enum
-from typing import Any, Self
+from typing import Any
 
 import httpx
 from pydantic import BaseModel, Field, InstanceOf
@@ -80,17 +80,6 @@ Do not use this tool multiple times in a row, always write the full code you wan
         self._storage = storage
         self._preprocess = preprocess
 
-    async def clone(self) -> Self:
-        tool = self.__class__(
-            code_interpreter_url=self._code_interpreter_url, storage=self._storage, preprocess=self._preprocess
-        )
-        tool.name = self.name
-        tool.description = self.description
-        tool.input_schema = self.input_schema
-        tool.middlewares.extend(self.middlewares)
-        tool._cache = await self.cache.clone()
-        return tool
-
     def _create_emitter(self) -> Emitter:
         return Emitter.root().child(
             namespace=["tool", "python", "code_interpreter"],
@@ -102,9 +91,11 @@ Do not use this tool multiple times in a row, always write the full code you wan
     ) -> PythonToolOutput:
         async def get_source_code() -> str:
             if self._preprocess:
-                response = await self._preprocess.llm.run(
-                    [UserMessage(self._preprocess.prompt_template.render(PythonToolTemplate(input=tool_input.code)))],
-                    signal=context.signal,
+                response = await self._preprocess.llm.create(
+                    messages=[
+                        UserMessage(self._preprocess.prompt_template.render(PythonToolTemplate(input=tool_input.code)))
+                    ],
+                    abort_signal=context.signal,
                 )
                 return response.get_text_content()
             return tool_input.code

@@ -44,12 +44,11 @@ async def main() -> None:
     # Main interaction loop with user input
     for prompt in reader:
         response = await agent.run(prompt).on("*", process_agent_events)
-        reader.write("Agent 🤖 : ", response.last_message.text)
+        reader.write("Agent 🤖 : ", response.result.text)
 
     print("======DONE (showing the full message history)=======")
 
-    messages = response.state.memory.messages
-    for msg in messages:
+    for msg in response.memory.messages:
         print(msg)
 
 

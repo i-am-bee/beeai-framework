@@ -68,7 +68,7 @@ Dynamic loading enables you to switch between different vector store implementat
 
 ### BeeAI Vector Store
 {/* <!-- embedme python/examples/backend/module_loading.py --> */}
-```py Python [expandable]
+```py Python
 import asyncio
 import sys
 import traceback
@@ -122,7 +122,7 @@ Native BeeAI modules can be loaded directly by importing and instantiating the m
 ### Supported Provider's Vector Store
 
 <CodeGroup>
-```py Python [expandable]
+```py Python
 # LangChain integration
 vector_store = VectorStore.from_name(
     name="langchain:InMemoryVectorStore",
@@ -169,7 +169,8 @@ from dotenv import load_dotenv
 
 from beeai_framework.adapters.beeai.backend.vector_store import TemporalVectorStore
 from beeai_framework.adapters.langchain.backend.vector_store import LangChainVectorStore
-from beeai_framework.agents.experimental.rag import RAGAgent
+from beeai_framework.agents.experimental.rag import RAGAgent, RagAgentRunInput
+from beeai_framework.backend import UserMessage
 from beeai_framework.backend.chat import ChatModel
 from beeai_framework.backend.document_loader import DocumentLoader
 from beeai_framework.backend.document_processor import DocumentProcessor
@@ -248,8 +249,8 @@ async def main() -> None:
 
     agent = RAGAgent(llm=llm, memory=UnconstrainedMemory(), vector_store=vector_store, reranker=reranker)
 
-    response = await agent.run("What agents are available in BeeAI?")
-    print(response.last_message.text)
+    response = await agent.run(RagAgentRunInput(message=UserMessage("What agents are available in BeeAI?")))
+    print(response.message.text)
 
 
 if __name__ == "__main__":
@@ -286,7 +287,7 @@ The VectorStoreSearchTool can be dynamically instantiated using `VectorStoreSear
 </CardGroup>
 
 <CardGroup cols={1}>
-  <Card title="RAG with RequirementAgent" icon="search" href="https://github.com/i-am-bee/beeai-framework/tree/main/python/examples/agents/requirement/rag.py">
+  <Card title="RAG with RequirementAgent" icon="search" href="https://github.com/i-am-bee/beeai-framework/tree/main/python/examples/agents/experimental/requirement/rag.py">
     Example showing how to use VectorStoreSearchTool with RequirementAgent for RAG capabilities
   </Card>
 </CardGroup>

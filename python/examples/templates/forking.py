@@ -14,8 +14,10 @@ def main() -> None:
         objective: str
 
     original: PromptTemplate[OriginalSchema] = PromptTemplate(
-        schema=OriginalSchema,
-        template="""You are a helpful assistant called {{name}}. Your objective is to {{objective}}.""",
+        PromptTemplateInput(
+            schema=OriginalSchema,
+            template="""You are a helpful assistant called {{name}}. Your objective is to {{objective}}.""",
+        )
     )
 
     def customizer(temp_input: PromptTemplateInput[Any]) -> PromptTemplateInput[Any]:

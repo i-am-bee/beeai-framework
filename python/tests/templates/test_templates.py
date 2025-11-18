@@ -11,6 +11,7 @@ from pydantic import BaseModel, ValidationError
 from beeai_framework.template import (
     PromptTemplate,
     PromptTemplateError,
+    PromptTemplateInput,
 )
 
 """
@@ -25,8 +26,10 @@ def template() -> PromptTemplate[Any]:
         count: int
 
     template = PromptTemplate(
-        schema=TestPromptInputSchema,
-        template="""This is the task: {{task}}{{count}}""",
+        PromptTemplateInput(
+            schema=TestPromptInputSchema,
+            template="""This is the task: {{task}}{{count}}""",
+        )
     )
 
     return template
@@ -60,11 +63,13 @@ def test_render_function(template: PromptTemplate[Any]) -> None:
         task: str
 
     template = PromptTemplate(
-        schema=TestPromptInputSchema,
-        functions={
-            "formatDate": lambda data: datetime.now(ZoneInfo("US/Eastern")).strftime("%A, %B %d, %Y at %I:%M:%S %p")
-        },
-        template="""{{task}} {{formatDate}}""",
+        PromptTemplateInput(
+            schema=TestPromptInputSchema,
+            functions={
+                "formatDate": lambda data: datetime.now(ZoneInfo("US/Eastern")).strftime("%A, %B %d, %Y at %I:%M:%S %p")
+            },
+            template="""{{task}} {{formatDate}}""",
+        )
     )
 
     template.render(TestPromptInputSchema(task="Here is a task!"))
@@ -76,9 +81,11 @@ def test_render_function_clash(template: PromptTemplate[Any]) -> None:
         task: str
 
     template = PromptTemplate(
-        schema=TestPromptInputSchema,
-        functions={"task": lambda d: "Clashing task!"},
-        template="""{{task}}""",
+        PromptTemplateInput(
+            schema=TestPromptInputSchema,
+            functions={"task": lambda d: "Clashing task!"},
+            template="""{{task}}""",
+        )
     )
 
     with pytest.raises(PromptTemplateError):

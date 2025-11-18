@@ -4,52 +4,44 @@
 import functools
 from abc import ABC, abstractmethod
 from collections.abc import Awaitable, Callable
-from typing import Any, Generic, TypeAlias, TypedDict, Unpack
+from typing import Any, TypedDict, Unpack
 
-from pydantic import BaseModel, ConfigDict, InstanceOf
+from pydantic import BaseModel, ConfigDict
 from typing_extensions import ParamSpec, TypeVar
 
-from beeai_framework.backend.message import AnyMessage, AssistantMessage
+from beeai_framework.backend import AnyMessage
 from beeai_framework.context import Run, RunContext, RunMiddlewareType
 from beeai_framework.emitter import Emitter
 from beeai_framework.utils import AbortSignal
 from beeai_framework.utils.dicts import exclude_keys
+
+T = TypeVar("T")
+P = ParamSpec("P")
 
 
 class RunnableOptions(TypedDict, total=False):
     """Options for a runnable."""
 
     signal: AbortSignal
-    """The runnable's abort signal data."""
+    """The runnable's abort signal data"""
 
     context: dict[str, Any]
-    """Context can be used to pass additional context to runnable."""
+    """Context can be used to pass additional context to runnable"""
 
 
 class RunnableOutput(BaseModel):
     """Runnable output."""
 
-    model_config = ConfigDict(extra="allow")
+    model_config = ConfigDict(arbitrary_types_allowed=True)
 
-    output: list[InstanceOf[AnyMessage]]
-    """The runnable output."""
+    output: list[AnyMessage]
+    """The runnable output"""
 
-    context: dict[str, Any] = {}
-    """Context can be used to return additional data by runnable."""
-
-    @property
-    def last_message(self) -> AnyMessage:
-        """Returns the latest message in output, with a fallback if it is not defined."""
-
-        last_message = self.output[-1] if self.output else None
-        return last_message or AssistantMessage("")
+    context: dict[str, Any] | None = None
+    """Context can be used to return additional data by runnable"""
 
 
-R = TypeVar("R", bound=RunnableOutput)
-P = ParamSpec("P")
-
-
-class Runnable(Generic[R], ABC):
+class Runnable(ABC):
     """A unit of work that can be invoked using a stable interface.
 
     Attributes:
@@ -61,8 +53,8 @@ class Runnable(Generic[R], ABC):
         self._middlewares = middlewares or []
 
     @abstractmethod
-    def run(self, input: list[AnyMessage], /, **kwargs: Unpack[RunnableOptions]) -> Run[R]:
-        """Execute the runnable.
+    def run(self, input: list[AnyMessage], /, **kwargs: Unpack[RunnableOptions]) -> Run[RunnableOutput]:
+        """ "Execute the runnable.
 
         Args:
             input: The input to the runnable
@@ -86,7 +78,7 @@ class Runnable(Generic[R], ABC):
         return self._middlewares
 
 
-def runnable_entry(handler: Callable[P, Awaitable[R]]) -> Callable[P, Run[R]]:
+def runnable_entry(handler: Callable[P, Awaitable[T]]) -> Callable[P, Run[T]]:
     """A decorator that wraps the runnable into an execution context.
 
     For example:
@@ -99,18 +91,15 @@ def runnable_entry(handler: Callable[P, Awaitable[R]]) -> Callable[P, Run[R]]:
     """
 
     @functools.wraps(handler)
-    def wrapper(*args: P.args, **kwargs: P.kwargs) -> Run[R]:
+    def wrapper(*args: P.args, **kwargs: P.kwargs) -> Run[T]:
         """Wrapper that automates the call to RunContext.enter()."""
 
-        async def inner(_: RunContext) -> R:
+        async def inner(_: RunContext) -> T:
             return await handler(*args, **kwargs)
 
         self = args[0] if args else None
         if not isinstance(self, Runnable):
-            raise TypeError("The first argument of a runnable's run method must be a Runnable instance.")
-
-        if len(args) < 2:
-            raise ValueError("The positional input argument is required.")
+            raise TypeError("The first argument of a runnable must be a Runnable instance.")
 
         runnable_kwargs: RunnableOptions = kwargs  # type: ignore
         return (
@@ -125,7 +114,3 @@ def runnable_entry(handler: Callable[P, Awaitable[R]]) -> Callable[P, Run[R]]:
         )
 
     return wrapper
-
-
-AnyRunnable: TypeAlias = Runnable[Any]
-AnyRunnableTypeVar = TypeVar("AnyRunnableTypeVar", bound=Runnable[Any], default=Runnable[Any])

@@ -1,7 +1,7 @@
 # Copyright 2025 © BeeAI a Series of LF Projects, LLC
 # SPDX-License-Identifier: Apache-2.0
 
-from typing import Any, Self, TypeVar
+from typing import Any, TypeVar
 
 try:
     from langchain_core.callbacks import AsyncCallbackManagerForToolRun
@@ -73,9 +73,3 @@ class LangChainTool(Tool[T, LangChainToolRunOptions, StringToolOutput]):
             response = self._tool.invoke(*args)  # type: ignore
 
         return StringToolOutput(result=str(response))
-
-    async def clone(self) -> Self:
-        tool = self.__class__(tool=self._tool, options=self._options)
-        tool._cache = await self.cache.clone()
-        tool.middlewares.extend(self.middlewares)
-        return tool

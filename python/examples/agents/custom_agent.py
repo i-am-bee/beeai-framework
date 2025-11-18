@@ -1,18 +1,16 @@
 import asyncio
 import sys
 import traceback
-from typing import Unpack
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, InstanceOf
 
 from beeai_framework.adapters.ollama import OllamaChatModel
-from beeai_framework.agents import AgentMeta, AgentOptions, AgentOutput, BaseAgent
+from beeai_framework.agents import AgentMeta, BaseAgent, BaseAgentRunOptions
 from beeai_framework.backend import AnyMessage, AssistantMessage, ChatModel, SystemMessage, UserMessage
-from beeai_framework.context import RunContext
+from beeai_framework.context import Run, RunContext
 from beeai_framework.emitter import Emitter
 from beeai_framework.errors import FrameworkError
 from beeai_framework.memory import BaseMemory, UnconstrainedMemory
-from beeai_framework.runnable import runnable_entry
 
 
 class State(BaseModel):
@@ -20,7 +18,20 @@ class State(BaseModel):
     final_answer: str
 
 
-class CustomAgent(BaseAgent):
+class RunInput(BaseModel):
+    message: InstanceOf[AnyMessage]
+
+
+class CustomAgentRunOptions(BaseAgentRunOptions):
+    max_retries: int | None = None
+
+
+class CustomAgentRunOutput(BaseModel):
+    message: InstanceOf[AnyMessage]
+    state: State
+
+
+class CustomAgent(BaseAgent[CustomAgentRunOutput]):
     def __init__(self, llm: ChatModel, memory: BaseMemory) -> None:
         super().__init__()
         self.model = llm
@@ -40,41 +51,40 @@ class CustomAgent(BaseAgent):
             creator=self,
         )
 
-    @runnable_entry
-    async def run(self, input: str | list[AnyMessage], /, **kwargs: Unpack[AgentOptions]) -> AgentOutput:
-        async def handler(context: RunContext) -> AgentOutput:
+    def run(
+        self,
+        run_input: RunInput,
+        options: CustomAgentRunOptions | None = None,
+    ) -> Run[CustomAgentRunOutput]:
+        async def handler(context: RunContext) -> CustomAgentRunOutput:
             class CustomSchema(BaseModel):
                 thought: str = Field(description="Describe your thought process before coming with a final answer")
                 final_answer: str = Field(
                     description="Here you should provide concise answer to the original question."
                 )
 
-            response = await self.model.run(
-                [
+            response = await self.model.create_structure(
+                schema=CustomSchema,
+                messages=[
                     SystemMessage("You are a helpful assistant. Always use JSON format for your responses."),
                     *(self.memory.messages if self.memory is not None else []),
-                    *([UserMessage(input)] if isinstance(input, str) else input),
+                    run_input.message,
                 ],
-                response_format=CustomSchema,
-                max_retries=kwargs.get("total_max_retries", 3),
-                signal=context.signal,
+                max_retries=options.max_retries if options else None,
+                abort_signal=context.signal,
             )
-            assert isinstance(response.output_structured, CustomSchema)
 
-            result = AssistantMessage(response.output_structured.final_answer)
+            result = AssistantMessage(response.object["final_answer"])
             await self.memory.add(result) if self.memory else None
 
-            return AgentOutput(
-                output=[result],
-                context={
-                    "state": State(
-                        thought=response.output_structured.thought,
-                        final_answer=response.output_structured.final_answer,
-                    )
-                },
+            return CustomAgentRunOutput(
+                message=result,
+                state=State(thought=response.object["thought"], final_answer=response.object["final_answer"]),
             )
 
-        return await handler(RunContext.get())
+        return self._to_run(
+            handler, signal=options.signal if options else None, run_params={"input": run_input, "options": options}
+        )
 
     @property
     def meta(self) -> AgentMeta:
@@ -87,12 +97,12 @@ class CustomAgent(BaseAgent):
 
 async def main() -> None:
     agent = CustomAgent(
-        llm=OllamaChatModel("granite4:micro"),
+        llm=OllamaChatModel("granite3.3:8b"),
         memory=UnconstrainedMemory(),
     )
 
-    response = await agent.run([UserMessage("Why is the sky blue?")])
-    print(response.context.get("state"))
+    response = await agent.run(RunInput(message=UserMessage("Why is the sky blue?")))
+    print(response.state)
 
 
 if __name__ == "__main__":

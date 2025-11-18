@@ -1,0 +1,2 @@
+wikipedia-api
+langchain_community

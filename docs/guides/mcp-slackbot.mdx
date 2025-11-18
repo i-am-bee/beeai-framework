@@ -63,7 +63,7 @@ Now, copy and paste the following code into `slack_agent.py` module. Then, follo
 
 {/* <!-- embedme python/examples/tools/mcp_slack_agent.py --> */}
 
-```py Python [expandable]
+```python
 import asyncio
 import os
 import sys
@@ -74,6 +74,7 @@ from dotenv import load_dotenv
 from mcp import StdioServerParameters
 from mcp.client.stdio import stdio_client
 
+from beeai_framework.agents import AgentExecutionConfig
 from beeai_framework.agents.tool_calling import ToolCallingAgent
 from beeai_framework.backend import ChatModel, ChatModelParameters
 from beeai_framework.emitter import EventMeta
@@ -151,13 +152,11 @@ async def main() -> None:
 
     # Run agent with the prompt
     response = await agent.run(
-        "Post the current temperature in Prague to the '#bee-playground-xxx' Slack channel.",
-        max_retries_per_step=3,
-        total_max_retries=10,
-        max_iterations=20,
+        prompt="Post the current temperature in Prague to the '#bee-playground-xxx' Slack channel.",
+        execution=AgentExecutionConfig(max_retries_per_step=3, total_max_retries=10, max_iterations=20),
     ).on("*", print_events)
 
-    print("Agent 🤖 : ", response.last_message.text)
+    print("Agent 🤖 : ", response.result.text)
 
 
 if __name__ == "__main__":

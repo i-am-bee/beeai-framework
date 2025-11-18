@@ -26,7 +26,7 @@ pip install openinference-instrumentation-beeai
 
 Configure OpenTelemetry to create and export spans. This example sets up an OTLP HTTP exporter, a tracer provider, and the BeeAI instrumentor, with the endpoint pointing to a local Arize Phoenix instance.
 
-```py Python [expandable]
+```py
 from openinference.instrumentation.beeai import BeeAIInstrumentor
 from opentelemetry import trace as trace_api
 from opentelemetry.exporter.otlp.proto.http.trace_exporter import OTLPSpanExporter
@@ -56,7 +56,7 @@ def setup_observability() -> None:
 
 Call the setup function **before** running any BeeAI Framework code:
 
-```py Python [expandable]
+```py
 setup_observability()
 ```
 

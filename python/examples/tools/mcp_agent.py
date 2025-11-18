@@ -9,6 +9,7 @@ from dotenv import load_dotenv
 from mcp import StdioServerParameters
 from mcp.client.stdio import stdio_client
 
+from beeai_framework.agents import AgentExecutionConfig
 from beeai_framework.agents.react import ReActAgent
 from beeai_framework.backend import ChatModel, ChatModelParameters
 from beeai_framework.emitter import Emitter, EventMeta
@@ -92,13 +93,11 @@ async def main() -> None:
     for prompt in reader:
         # Run agent with the prompt
         response = await agent.run(
-            prompt,
-            max_retries_per_step=3,
-            total_max_retries=10,
-            max_iterations=20,
+            prompt=prompt,
+            execution=AgentExecutionConfig(max_retries_per_step=3, total_max_retries=10, max_iterations=20),
         ).observe(observer)
 
-        reader.write("Agent 🤖 : ", response.last_message.text)
+        reader.write("Agent 🤖 : ", response.result.text)
 
 
 if __name__ == "__main__":

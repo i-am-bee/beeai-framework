@@ -25,28 +25,28 @@ from beeai_framework.utils import AbortSignal
 async def openai_from_name() -> None:
     llm = ChatModel.from_name("openai:gpt-4.1-mini")
     user_message = UserMessage("what states are part of New England?")
-    response = await llm.run([user_message])
+    response = await llm.create(messages=[user_message])
     print(response.get_text_content())
 
 
 async def openai_granite_from_name() -> None:
     llm = ChatModel.from_name("openai:gpt-4.1-mini")
     user_message = UserMessage("what states are part of New England?")
-    response = await llm.run([user_message])
+    response = await llm.create(messages=[user_message])
     print(response.get_text_content())
 
 
 async def openai_sync() -> None:
     llm = OpenAIChatModel("gpt-4.1-mini")
     user_message = UserMessage("what is the capital of Massachusetts?")
-    response = await llm.run([user_message])
+    response = await llm.create(messages=[user_message])
     print(response.get_text_content())
 
 
 async def openai_stream() -> None:
     llm = OpenAIChatModel("gpt-4.1-mini")
     user_message = UserMessage("How many islands make up the country of Cape Verde?")
-    response = await llm.run([user_message], stream=True)
+    response = await llm.create(messages=[user_message], stream=True)
     print(response.get_text_content())
 
 
@@ -55,7 +55,7 @@ async def openai_stream_abort() -> None:
     user_message = UserMessage("What is the smallest of the Cape Verde islands?")
 
     try:
-        response = await llm.run([user_message], stream=True, signal=AbortSignal.timeout(0.5))
+        response = await llm.create(messages=[user_message], stream=True, abort_signal=AbortSignal.timeout(0.5))
 
         if response is not None:
             print(response.get_text_content())
@@ -71,8 +71,11 @@ async def openai_structure() -> None:
 
     llm = OpenAIChatModel("gpt-4.1-mini")
     user_message = UserMessage("How many islands make up the country of Cape Verde?")
-    response = await llm.run([user_message], response_format=TestSchema, stream=True)
-    print(response.output_structured)
+    response = await llm.create_structure(
+        schema=TestSchema,
+        messages=[user_message],
+    )
+    print(response.object)
 
 
 async def openai_stream_parser() -> None:
@@ -90,16 +93,18 @@ async def openai_stream_parser() -> None:
         await parser.add(data.value.get_text_content())
 
     user_message = UserMessage("Produce 3 lines each starting with 'Prefix: ' followed by a sentence and a new line.")
-    await llm.run([user_message], stream=True).observe(lambda emitter: emitter.on("new_token", on_new_token))
+    await llm.create(messages=[user_message], stream=True).observe(
+        lambda emitter: emitter.on("new_token", on_new_token)
+    )
     result = await parser.end()
     print(result)
 
 
 async def openai_tool_calling() -> None:
-    llm = ChatModel.from_name("openai:gpt-4.1-mini", ChatModelParameters(stream=True, temperature=0))
+    watsonx_llm = ChatModel.from_name("openai:gpt-4.1-mini", ChatModelParameters(stream=True, temperature=0))
     user_message = UserMessage(f"What is the current weather in Boston? Current date is {datetime.datetime.today()}.")
     weather_tool = OpenMeteoTool()
-    response = await llm.run([user_message], tools=[weather_tool])
+    response = await watsonx_llm.create(messages=[user_message], tools=[weather_tool])
     tool_call_msg = response.get_tool_calls()[0]
     print(tool_call_msg.model_dump())
     tool_response = await weather_tool.run(OpenMeteoToolInput(location_name="Boston"))
@@ -111,7 +116,7 @@ async def openai_tool_calling() -> None:
         )
     )
     print(tool_response_msg.to_plain())
-    final_response = await llm.run([user_message, *response.output, tool_response_msg], tools=[])
+    final_response = await watsonx_llm.create(messages=[user_message, *response.messages, tool_response_msg], tools=[])
     print(final_response.get_text_content())
 
 
@@ -122,16 +127,6 @@ async def openai_embedding() -> None:
 
     for row in response.embeddings:
         print(*row)
-
-
-async def openai_file_example() -> None:
-    llm = ChatModel.from_name("openai:gpt-4.1-mini")
-    data_uri = "data:application/pdf;base64,JVBERi0xLjQKMSAwIG9iago8PC9UeXBlIC9DYXRhbG9nCi9QYWdlcyAyIDAgUgo+PgplbmRvYmoKMiAwIG9iago8PC9UeXBlIC9QYWdlcwovS2lkcyBbMyAwIFJdCi9Db3VudCAxCj4+CmVuZG9iagozIDAgb2JqCjw8L1R5cGUgL1BhZ2UKL1BhcmVudCAyIDAgUgovTWVkaWFCb3ggWzAgMCA1OTUgODQyXQovQ29udGVudHMgNSAwIFIKL1Jlc291cmNlcyA8PC9Qcm9jU2V0IFsvUERGIC9UZXh0XQovRm9udCA8PC9GMSA0IDAgUj4+Cj4+Cj4+CmVuZG9iago0IDAgb2JqCjw8L1R5cGUgL0ZvbnQKL1N1YnR5cGUgL1R5cGUxCi9OYW1lIC9GMQovQmFzZUZvbnQgL0hlbHZldGljYQovRW5jb2RpbmcgL01hY1JvbWFuRW5jb2RpbmcKPj4KZW5kb2JqCjUgMCBvYmoKPDwvTGVuZ3RoIDUzCj4+CnN0cmVhbQpCVAovRjEgMjAgVGYKMjIwIDQwMCBUZAooRHVtbXkgUERGKSBUagpFVAplbmRzdHJlYW0KZW5kb2JqCnhyZWYKMCA2CjAwMDAwMDAwMDAgNjU1MzUgZgowMDAwMDAwMDA5IDAwMDAwIG4KMDAwMDAwMDA2MyAwMDAwMCBuCjAwMDAwMDAxMjQgMDAwMDAgbgowMDAwMDAwMjc3IDAwMDAwIG4KMDAwMDAwMDM5MiAwMDAwMCBuCnRyYWlsZXIKPDwvU2l6ZSA2Ci9Sb290IDEgMCBSCj4+CnN0YXJ0eHJlZgo0OTUKJSVFT0YK"
-
-    file_message = UserMessage.from_file(file_data=data_uri, format="text")
-    print(file_message.to_plain())
-    response = await llm.run([UserMessage("Read content of the file."), file_message])
-    print(response.get_text_content())
 
 
 async def main() -> None:

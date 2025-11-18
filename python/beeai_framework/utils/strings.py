@@ -54,10 +54,12 @@ def to_json_serializable(input: Any, *, exclude_none: bool = False) -> Any:
         return apply_child(input.to_json_safe())
     elif isinstance(input, BaseModel):
         return apply_child(input.model_dump(exclude_none=exclude_none))
-    elif isinstance(input, list | set):  # set is not JSON serializable
-        return [apply_child(v) for v in input if v is not None] if exclude_none else [apply_child(v) for v in input]
+    elif isinstance(input, list):
+        return [apply_child(v) for v in input if input is not None] if exclude_none else input
     elif isinstance(input, dict):
         return {k: apply_child(v) for k, v in input.items() if v is not None} if exclude_none else input
+    elif isinstance(input, set):
+        return {apply_child(v) for v in input}
     elif isinstance(input, str | bool | int | float):
         return input
     else:
@@ -147,17 +149,3 @@ def find_first_pair(
         index += 1
 
     return None
-
-
-def is_valid_unicode_escape_sequence(s: str) -> bool:
-    """
-    Return True if s can be safely decoded using unicode_escape.
-    """
-    try:
-        decoded_s = s.encode("utf-8").decode("unicode_escape")
-        # This check ensures we don't have lone surrogates, which can happen
-        # with chunked streaming of multi-byte characters (e.g. emoji).
-        decoded_s.encode("utf-8")
-        return True
-    except UnicodeError:
-        return False

@@ -12,7 +12,6 @@ from sse_starlette.sse import EventSourceResponse
 import beeai_framework.adapters.watsonx_orchestrate._api as watsonx_orchestrate_api
 from beeai_framework.adapters.watsonx_orchestrate._utils import watsonx_orchestrate_message_to_beeai_message
 from beeai_framework.adapters.watsonx_orchestrate.serve.agent import WatsonxOrchestrateServerAgent
-from beeai_framework.agents import BaseAgent
 from beeai_framework.backend import AnyMessage, AssistantMessage, SystemMessage, ToolMessage
 from beeai_framework.logger import Logger
 from beeai_framework.memory import BaseMemory
@@ -78,16 +77,16 @@ class WatsonxOrchestrateAPI:
 
         agent = self._create_agent()
 
-        if isinstance(agent._agent, BaseAgent):
-            await init_agent_memory(agent._agent, self._memory_manager, thread_id, stateful=self._stateful)
+        await init_agent_memory(agent._agent, self._memory_manager, thread_id, stateful=self._stateful)
 
         messages = self._transform_request_messages(request.messages)
+        await agent._agent.memory.add_many(messages)
 
         if request.stream:
-            stream = agent.stream(messages, thread_id)
+            stream = agent.stream(thread_id)
             return EventSourceResponse(stream)
         else:
-            content = await agent.run(messages)
+            content = await agent.run()
             return JSONResponse(content=content.model_dump())
 
     def _transform_request_messages(

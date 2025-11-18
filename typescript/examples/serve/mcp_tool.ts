@@ -24,8 +24,7 @@ export class ReverseTool extends Tool<StringToolOutput> {
   }
 }
 
-// create an MCP server with custom config, register ReverseTool and OpenMeteoTool and run it
-const config = new MCPServerConfig({ transport: "streamable-http", port: 8001 });
-const server = new MCPServer(config);
-server.registerMany([new ReverseTool(), new OpenMeteoTool()]);
-await server.serve();
+//  create a MCP server with custom config, register reverseTool and OpenMeteoTool to the MCP server and run it
+await new MCPServer(new MCPServerConfig({ transport: "sse" }))
+  .registerMany([new ReverseTool(), new OpenMeteoTool()])
+  .serve();

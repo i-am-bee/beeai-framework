@@ -12,21 +12,24 @@ from beeai_framework.agents.react.runners.default.prompts import (
     ToolNotFoundErrorTemplateInput,
     UserPromptTemplateInput,
 )
-from beeai_framework.template import PromptTemplate
+from beeai_framework.template import PromptTemplate, PromptTemplateInput
 
-GraniteUserPromptTemplate = PromptTemplate(schema=UserPromptTemplateInput, template="{{input}}")
+GraniteUserPromptTemplate = PromptTemplate(PromptTemplateInput(schema=UserPromptTemplateInput, template="{{input}}"))
 
 GraniteAssistantPromptTemplate = PromptTemplate(
-    schema=AssistantPromptTemplateInput,
-    template="{{#thought}}Thought: {{.}}\n{{/thought}}{{#tool_name}}Tool Name: {{.}}\n{{/tool_name}}{{#tool_input}}Tool Input: {{&.}}\n{{/tool_input}}{{#final_answer}}Final Answer: {{.}}{{/final_answer}}",  # noqa: E501
+    PromptTemplateInput(
+        schema=AssistantPromptTemplateInput,
+        template="{{#thought}}Thought: {{.}}\n{{/thought}}{{#tool_name}}Tool Name: {{.}}\n{{/tool_name}}{{#tool_input}}Tool Input: {{&.}}\n{{/tool_input}}{{#final_answer}}Final Answer: {{.}}{{/final_answer}}",  # noqa: E501
+    )
 )
 
 GraniteSystemPromptTemplate = PromptTemplate(
-    schema=SystemPromptTemplateInput,
-    functions={
-        "formatDate": lambda data: datetime.now(tz=UTC).strftime("%A, %B %d, %Y at %I:%M:%S %p"),
-    },
-    template="""You are an AI assistant.
+    PromptTemplateInput(
+        schema=SystemPromptTemplateInput,
+        functions={
+            "formatDate": lambda data: datetime.now(tz=UTC).strftime("%A, %B %d, %Y at %I:%M:%S %p"),
+        },
+        template="""You are an AI assistant.
 When the user sends a message figure out a solution and provide a final answer.
 {{#tools.0}}
 You have access to a set of tools that can be used to retrieve information and perform actions.
@@ -67,32 +70,41 @@ You do not need a tool to get the current Date and Time. Use the information ava
 {{.}}
 {{/instructions}}
 """,  # noqa: E501
+    )
 )
 
 GraniteToolNotFoundErrorTemplate = PromptTemplate(
-    schema=ToolNotFoundErrorTemplateInput,
-    template="""The tool does not exist!
+    PromptTemplateInput(
+        schema=ToolNotFoundErrorTemplateInput,
+        template="""The tool does not exist!
 {{#tools.length}}
 Use one of the following tools: {{#trim}}{{#tools}}{{name}},{{/tools}}{{/trim}}
 {{/tools.length}}""",
+    )
 )
 
 GraniteToolInputErrorTemplate = PromptTemplate(
-    schema=ToolInputErrorTemplateInput,
-    template="""{{&reason}}
+    PromptTemplateInput(
+        schema=ToolInputErrorTemplateInput,
+        template="""{{&reason}}
 
 HINT: If you're convinced that the input was correct but the tool cannot process it then use a different tool or say I don't know.""",  # noqa: E501
+    )
 )
 
 GraniteToolErrorTemplate = PromptTemplate(
-    schema=ToolErrorTemplateInput,
-    template="""The tool has failed; the error log is shown below. If the tool cannot accomplish what you want, use a different tool or explain why you can't use it.
+    PromptTemplateInput(
+        schema=ToolErrorTemplateInput,
+        template="""The tool has failed; the error log is shown below. If the tool cannot accomplish what you want, use a different tool or explain why you can't use it.
 
 {{&reason}}""",  # noqa: E501
+    )
 )
 
 GraniteSchemaErrorTemplate = PromptTemplate(
-    schema=SchemaErrorTemplateInput,
-    template="""Error: The generated response does not adhere to the communication structure mentioned in the system prompt.
+    PromptTemplateInput(
+        schema=SchemaErrorTemplateInput,
+        template="""Error: The generated response does not adhere to the communication structure mentioned in the system prompt.
 You communicate only in instruction lines. Valid instruction lines are 'Thought' followed by 'Tool Name' and then 'Tool Input' or 'Thought' followed by 'Final Answer'.""",  # noqa: E501
+    )
 )

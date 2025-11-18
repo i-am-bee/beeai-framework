@@ -7,7 +7,7 @@ from abc import ABC
 from collections.abc import Generator, Sequence
 from contextlib import suppress
 from logging import Logger
-from typing import Any, Generic, Literal, Optional, Self, TypeGuard, TypeVar, Union
+from typing import Any, Generic, Literal, Optional, Self, TypeVar, Union
 
 from pydantic import BaseModel, ConfigDict, Field, GetJsonSchemaHandler, RootModel, ValidationError, create_model
 from pydantic.fields import FieldInfo
@@ -15,7 +15,6 @@ from pydantic.json_schema import JsonSchemaValue
 from pydantic_core import CoreSchema, SchemaValidator
 
 from beeai_framework.utils.dicts import remap_key
-from beeai_framework.utils.schema import simplify_json_schema
 
 logger = Logger(__name__)
 
@@ -76,8 +75,6 @@ class JSONSchemaModel(ABC, BaseModel):
         from beeai_framework.backend.utils import inline_schema_refs
 
         schema = inline_schema_refs(copy.deepcopy(schema))
-        simplify_json_schema(schema)
-
         type_mapping: dict[str, Any] = {
             "string": str,
             "integer": int,
@@ -85,12 +82,13 @@ class JSONSchemaModel(ABC, BaseModel):
             "boolean": bool,
             "object": dict,
             "array": list,
-            "null": type(None),
+            "null": None,
         }
 
         fields: dict[str, tuple[type, FieldInfo]] = {}
+        required = set(schema.get("required", []))
 
-        def create_field(param_name: str, param: dict[str, Any], required: set[str]) -> tuple[type, Any]:
+        def create_field(param_name: str, param: dict[str, Any]) -> tuple[type, Any]:
             any_of = param.get("anyOf")
             one_of = param.get("oneOf")
             default = param.get("default")
@@ -109,35 +107,26 @@ class JSONSchemaModel(ABC, BaseModel):
                     f"{JSONSchemaModel.__name__}: does not support 'oneOf' modifier found in {param_name} attribute."
                     f" Will use 'anyOf' instead."
                 )
-                return create_field(param_name, remap_key(param, source="oneOf", target="anyOf"), required)
+                return create_field(param_name, remap_key(param, source="oneOf", target="anyOf"))
 
             if any_of:
-                target_types: list[type] = []
-                for idx, t in enumerate(param["anyOf"]):
-                    tmp_name = f"{param_name}_{idx}"
-                    field, _ = create_field(tmp_name, t, {tmp_name})
-                    target_types.append(field)
-
+                target_types: list[type] = [create_field(param_name, t)[0] for t in param["anyOf"]]
                 if len(target_types) == 1:
-                    return create_field(param_name, remap_key(param, source="anyOf", target="type"), required)
+                    return create_field(param_name, remap_key(param, source="anyOf", target="type"))
                 else:
                     return Union[*target_types], target_field  # type: ignore
 
             else:
-                enum = param.get("enum")
                 raw_type = param.get("type")
-                target_type: type | Any
-                if isinstance(raw_type, list):
-                    target_type = list[*[type_mapping.get(v) for v in raw_type]]  # type: ignore
-                else:
-                    target_type = type_mapping.get(raw_type)  # type: ignore[arg-type]
+                enum = param.get("enum")
 
-                    if target_type is dict and param.get("properties") is not None:
-                        target_type = cls.create(param_name, param)
-                    elif target_type is list and param.get("items"):
-                        tmp_name = f"{param_name}_tmp"
-                        given_field, given_field_info = create_field(tmp_name, param.get("items"), {tmp_name})  # type: ignore
-                        target_type = list[given_field]  # type: ignore
+                target_type: type | Any = type_mapping.get(raw_type)  # type: ignore[arg-type]
+
+                if target_type is dict and param.get("properties") is not None:
+                    target_type = cls.create(param_name, param)
+
+                if target_type is list:
+                    target_type = list[create_field(param_name, param.get("items"))[0]]  # type: ignore
 
                 is_required = param_name in required
                 explicitly_nullable = (
@@ -146,6 +135,8 @@ class JSONSchemaModel(ABC, BaseModel):
                     or (any_of and any(t.get("type") == "null" for t in any_of))
                     or (one_of and any(t.get("type") == "null" for t in one_of))
                 )
+                if (not is_required and not default) or explicitly_nullable:
+                    target_type = Optional[target_type] if target_type else type(None)  # noqa: UP007
 
                 if enum is not None and isinstance(enum, list):
                     target_type = Literal[tuple(enum)]
@@ -158,24 +149,20 @@ class JSONSchemaModel(ABC, BaseModel):
                     )
                     target_type = type
 
-                if (not is_required and not default) or explicitly_nullable:
-                    target_type = Optional[target_type] if target_type else type(None)  # noqa: UP007
-
-            return (  # type: ignore
+            return (
                 target_type,
                 target_field,
             )
 
         properties = schema.get("properties", {})
-        updated_config = ConfigDict(**cls.model_config, title=schema.get("title", None))
+        updated_config = ConfigDict(**cls.model_config)
         updated_config["extra"] = "allow" if schema.get("additionalProperties") else "forbid"
-        updated_config["arbitrary_types_allowed"] = True
 
         if not properties and schema.get("type") != "object":
             properties["root"] = schema
 
         for param_name, param in properties.items():
-            fields[param_name] = create_field(param_name, param, set(schema.get("required", [])))
+            fields[param_name] = create_field(param_name, param)
 
         model: type[JSONSchemaModel] = create_model(  # type: ignore
             schema_name, __base__=cls, **fields, __config__=updated_config
@@ -238,11 +225,3 @@ class WrappedRootModel(BaseModel, Generic[T]):
             with contextlib.suppress(ValidationError):
                 return cls(item=obj)
             raise e
-
-
-def is_pydantic_model(obj: Any) -> TypeGuard[type[BaseModel]]:
-    return isinstance(obj, type) and issubclass(obj, BaseModel)
-
-
-class AnyModel(BaseModel):
-    model_config = ConfigDict(extra="allow", arbitrary_types_allowed=True)

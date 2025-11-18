@@ -12,32 +12,32 @@ from beeai_framework.utils import AbortSignal
 
 
 async def groq_from_name() -> None:
-    llm = ChatModel.from_name("groq:llama-3.1-8b-instant")
+    llm = ChatModel.from_name("groq:gemma2-9b-it")
     user_message = UserMessage("what states are part of New England?")
-    response = await llm.run([user_message])
+    response = await llm.create(messages=[user_message])
     print(response.get_text_content())
 
 
 async def groq_sync() -> None:
-    llm = GroqChatModel("llama-3.1-8b-instant")
+    llm = GroqChatModel("gemma2-9b-it")
     user_message = UserMessage("what is the capital of Massachusetts?")
-    response = await llm.run([user_message])
+    response = await llm.create(messages=[user_message])
     print(response.get_text_content())
 
 
 async def groq_stream() -> None:
-    llm = GroqChatModel("llama-3.1-8b-instant")
+    llm = GroqChatModel("gemma2-9b-it")
     user_message = UserMessage("How many islands make up the country of Cape Verde?")
-    response = await llm.run([user_message], stream=True)
+    response = await llm.create(messages=[user_message], stream=True)
     print(response.get_text_content())
 
 
 async def groq_stream_abort() -> None:
-    llm = GroqChatModel("llama-3.1-8b-instant")
+    llm = GroqChatModel("gemma2-9b-it")
     user_message = UserMessage("What is the smallest of the Cape Verde islands?")
 
     try:
-        response = await llm.run([user_message], stream=True, signal=AbortSignal.timeout(0.5))
+        response = await llm.create(messages=[user_message], stream=True, abort_signal=AbortSignal.timeout(0.5))
 
         if response is not None:
             print(response.get_text_content())
@@ -51,14 +51,14 @@ async def groq_structure() -> None:
     class TestSchema(BaseModel):
         answer: str = Field(description="your final answer")
 
-    llm = GroqChatModel("llama-3.1-8b-instant")
+    llm = GroqChatModel("gemma2-9b-it")
     user_message = UserMessage("How many islands make up the country of Cape Verde?")
-    response = await llm.run([user_message], response_format=TestSchema)
-    print(response.output_structured)
+    response = await llm.create_structure(schema=TestSchema, messages=[user_message])
+    print(response.object)
 
 
 async def groq_stream_parser() -> None:
-    llm = GroqChatModel("llama-3.1-8b-instant")
+    llm = GroqChatModel("gemma2-9b-it")
 
     parser = LinePrefixParser(
         nodes={
@@ -72,7 +72,9 @@ async def groq_stream_parser() -> None:
         await parser.add(data.value.get_text_content())
 
     user_message = UserMessage("Produce 3 lines each starting with 'Prefix: ' followed by a sentence and a new line.")
-    await llm.run([user_message], stream=True).observe(lambda emitter: emitter.on("new_token", on_new_token))
+    await llm.create(messages=[user_message], stream=True).observe(
+        lambda emitter: emitter.on("new_token", on_new_token)
+    )
     result = await parser.end()
     print(result)
 

@@ -15,23 +15,23 @@ try:
         acp_agent_event_types,
     )
     from beeai_framework.adapters.acp.agents.types import (
-        ACPAgentOutput,
+        ACPAgentRunOutput,
     )
 except ModuleNotFoundError as e:
     raise ModuleNotFoundError(
         "Optional module [acp] not found.\nRun 'pip install \"beeai-framework[acp]\"' to install."
     ) from e
-from typing import Unpack
 
-from beeai_framework.agents import AgentError, AgentOptions, BaseAgent
+from beeai_framework.agents.base import BaseAgent
+from beeai_framework.agents.errors import AgentError
 from beeai_framework.backend.message import AnyMessage, AssistantMessage, Message, UserMessage
-from beeai_framework.context import RunContext
+from beeai_framework.context import Run, RunContext
 from beeai_framework.emitter import Emitter
 from beeai_framework.memory import BaseMemory
-from beeai_framework.runnable import runnable_entry
+from beeai_framework.utils import AbortSignal
 
 
-class ACPAgent(BaseAgent[ACPAgentOutput]):
+class ACPAgent(BaseAgent[ACPAgentRunOutput]):
     def __init__(
         self, agent_name: str, *, url: str, memory: BaseMemory, session: acp_models.Session | None = None
     ) -> None:
@@ -45,21 +45,20 @@ class ACPAgent(BaseAgent[ACPAgentOutput]):
     def name(self) -> str:
         return self._name
 
-    @runnable_entry
-    async def run(
+    def run(
         self,
         input: str | AnyMessage | acp_models.Message | list[str] | list[AnyMessage] | list[acp_models.Message],
-        /,
-        **kwargs: Unpack[AgentOptions],
-    ) -> ACPAgentOutput:
-        async def handler(context: RunContext) -> ACPAgentOutput:
+        *,
+        signal: AbortSignal | None = None,
+    ) -> Run[ACPAgentRunOutput]:
+        async def handler(context: RunContext) -> ACPAgentRunOutput:
             async with (
-                acp_client.Client(base_url=self._url, manage_client=False, session=self._session) as client,
+                acp_client.Client(base_url=self._url, session=self._session) as client,
             ):
                 inputs = (
-                    [self._convert_to_agent_stack_message(i) for i in input]
+                    [self._convert_to_platform_message(i) for i in input]
                     if isinstance(input, list)
-                    else [self._convert_to_agent_stack_message(input)]
+                    else [self._convert_to_platform_message(input)]
                 )
 
                 last_event = None
@@ -97,11 +96,18 @@ class ACPAgent(BaseAgent[ACPAgentOutput]):
                     await self.memory.add_many(input_messages)
                     await self.memory.add(assistant_message)
 
-                    return ACPAgentOutput(output=[assistant_message], event=last_event)
+                    return ACPAgentRunOutput(result=assistant_message, event=last_event)
                 else:
-                    return ACPAgentOutput(output=[AssistantMessage("No response from agent.")], event=last_event)
+                    return ACPAgentRunOutput(result=AssistantMessage("No response from agent."), event=last_event)
 
-        return await handler(RunContext.get())
+        return self._to_run(
+            handler,
+            signal=signal,
+            run_params={
+                "prompt": input,
+                "signal": signal,
+            },
+        )
 
     async def check_agent_exists(
         self,
@@ -145,7 +151,7 @@ class ACPAgent(BaseAgent[ACPAgentOutput]):
         else:
             raise ValueError("Unsupported input type")
 
-    def _convert_to_agent_stack_message(self, input: str | AnyMessage | acp_models.Message) -> acp_models.Message:
+    def _convert_to_platform_message(self, input: str | AnyMessage | acp_models.Message) -> acp_models.Message:
         if isinstance(input, str):
             return acp_models.Message(parts=[acp_models.MessagePart(content=input, role="user")])  # type: ignore[call-arg]
         elif isinstance(input, Message):

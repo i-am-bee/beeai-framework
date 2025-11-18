@@ -15,7 +15,7 @@ async def main() -> None:
 
     result = await agent.run("What is the capital of Massachusetts")
 
-    print("answer:", result.last_message.text)
+    print("answer:", result.result.text)
 
 
 if __name__ == "__main__":
