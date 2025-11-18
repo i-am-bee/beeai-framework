@@ -5,6 +5,7 @@ from collections.abc import Sequence
 from typing import Any
 
 from typing_extensions import override
+from utils.io import io_ask
 
 from beeai_framework.agents.requirement import RequirementAgentRunState
 from beeai_framework.agents.requirement.requirements import Requirement
@@ -22,7 +23,6 @@ from beeai_framework.emitter.utils import create_internal_event_matcher
 from beeai_framework.tools import AnyTool, StringToolOutput
 from beeai_framework.utils import MaybeAsync
 from beeai_framework.utils.asynchronous import ensure_async
-from beeai_framework.utils.io import io_read
 
 AskHandler = MaybeAsync[[AnyTool, dict[str, Any]], bool]
 
@@ -105,7 +105,4 @@ class AskPermissionRequirement(Requirement[RequirementAgentRunState]):
 
 
 async def _default_handler(tool: AnyTool, input: dict[str, Any]) -> bool:
-    response = await io_read(
-        f"The agent wants to use the '{tool.name} tool.'\nInput: {input}\nDo you allow it? (yes/no): "
-    )
-    return response.strip().lower().startswith("yes")
+    return await io_ask(f"The agent wants to use the '{tool.name} tool.'\nInput: {input}")

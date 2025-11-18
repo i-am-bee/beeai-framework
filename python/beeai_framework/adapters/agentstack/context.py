@@ -19,6 +19,7 @@ try:
         CheckboxField,
         FormRender,
         FormResponse,
+        TextField,
     )
     from agentstack_sdk.server.context import RunContext
 except ModuleNotFoundError as e:
@@ -58,7 +59,7 @@ class AgentStackContext:
     def __enter__(self) -> Self:
         ctx_key = _storage.set(self)
         self._cleanup.append(lambda: _storage.reset(ctx_key))
-        self._cleanup.append(setup_io_context(read=self._read))
+        self._cleanup.append(setup_io_context(read=self._read, ask=self._ask))
         if self._llm is not None:
             self._cleanup.append(AgentStackChatModel.set_context(self._llm))
         return self
@@ -80,11 +81,44 @@ class AgentStackContext:
                     columns=1,
                     submit_label="Send",
                     fields=[
+                        TextField(
+                            id=answer_field_id,
+                            label="Answer",
+                            required=True,
+                            placeholder="",
+                            type="text",
+                            default_value="",
+                            col_span=1,
+                        )
+                    ],
+                ),
+                model=FormResponse,
+            )
+            if form_data:
+                return str(form_data.values[answer_field_id].value)
+            else:
+                logger.warning("Form is not supported")
+                return ""
+        except ValueError as e:
+            logger.warning(f"Failed to process form: {e}")
+            return ""
+
+    async def _ask(self, prompt: str) -> bool:
+        try:
+            answer_field_id = "answer"
+            form_data = await self._extensions["form"].request_form(
+                form=FormRender(
+                    id="form",
+                    title=prompt,
+                    description="",
+                    columns=1,
+                    submit_label="Submit",
+                    fields=[
                         CheckboxField(
                             id=answer_field_id,
-                            label="Allow the tool",
+                            label="Ask Dialog",
                             required=False,
-                            content="I agree to run the tool",
+                            content="I agree",
                             default_value=False,
                         )
                     ],
@@ -92,10 +126,10 @@ class AgentStackContext:
                 model=FormResponse,
             )
             if form_data:
-                return "yes" if form_data.values[answer_field_id].value else "no"
+                return bool(form_data.values[answer_field_id].value)
             else:
                 logger.warning("Form is not supported")
-                return ""
+                return False
         except ValueError as e:
             logger.warning(f"Failed to process form: {e}")
-            return ""
+            return False
