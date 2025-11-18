@@ -3,6 +3,8 @@
 
 from typing import TYPE_CHECKING, Any, Optional
 
+from utils.lists import remove_falsy
+
 from beeai_framework.errors import FrameworkError
 
 if TYPE_CHECKING:
@@ -47,7 +49,7 @@ class ChatModelError(BackendError):
         return super().ensure(error, message=message, context=model_context)
 
 
-class InvalidToolCallError(ChatModelError):
+class ChatModelToolCallError(ChatModelError):
     def __init__(
         self,
         message: str = "Chat Model Tool Call Error",
@@ -63,6 +65,17 @@ class InvalidToolCallError(ChatModelError):
         self.generated_content = generated_content
         self.fatal = True
         self.retryable = is_retryable
+
+    def __str__(self) -> str:
+        return "\n- ".join(
+            remove_falsy(
+                [
+                    self.message,
+                    f"Generated: {self.generated_content}" if self.generated_content else None,
+                    f"Error: {self.generated_error}" if self.generated_error else None,
+                ]
+            )
+        )
 
 
 class EmptyChatModelResponseError(ChatModelError):

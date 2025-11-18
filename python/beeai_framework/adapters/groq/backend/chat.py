@@ -16,7 +16,7 @@ from beeai_framework.adapters.litellm.chat import LiteLLMChatModel
 from beeai_framework.backend import AssistantMessage, ChatModelOutput
 from beeai_framework.backend.chat import ChatModelKwargs
 from beeai_framework.backend.constants import ProviderName
-from beeai_framework.backend.errors import InvalidToolCallError
+from beeai_framework.backend.errors import ChatModelToolCallError
 from beeai_framework.backend.types import ChatModelInput
 from beeai_framework.backend.utils import inline_schema_refs
 from beeai_framework.context import RunContext
@@ -61,7 +61,7 @@ class GroqChatModel(LiteLLMChatModel):
                 raise ex
 
             if "tool" in formated_err.code:
-                raise InvalidToolCallError(
+                raise ChatModelToolCallError(
                     generated_error=formated_err.message,
                     generated_content=formated_err.failed_generation or "",
                     context={"source": formated_err},
@@ -83,7 +83,7 @@ class GroqChatModel(LiteLLMChatModel):
             if "tool" not in str(source_exc.status_code):
                 raise e
 
-            raise InvalidToolCallError(
+            raise ChatModelToolCallError(
                 generated_error=source_exc.message.removeprefix("litellm.APIError: APIError: GroqException -").strip(),
                 generated_content=e.generated_content,
                 context={"source": source_exc},
