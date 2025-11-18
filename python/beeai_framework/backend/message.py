@@ -168,7 +168,7 @@ class AssistantMessage(Message[AssistantMessageContent]):
         *,
         id: str | None = None,
     ) -> None:
-        super().__init__(
+        chunks = (
             [
                 (
                     MessageTextContent(text=c)
@@ -176,7 +176,12 @@ class AssistantMessage(Message[AssistantMessageContent]):
                     else to_any_model([MessageToolCallContent, MessageTextContent], cast(AssistantMessageContent, c))
                 )
                 for c in cast_list(content)
-            ],
+            ]
+            if content is not None
+            else []
+        )
+        super().__init__(
+            chunks,
             meta,
             id=id,
         )

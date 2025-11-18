@@ -4,6 +4,7 @@
 from typing import TYPE_CHECKING, Any, Optional
 
 from beeai_framework.errors import FrameworkError
+from beeai_framework.utils.lists import remove_falsy
 
 if TYPE_CHECKING:
     from beeai_framework.backend.chat import ChatModel
@@ -45,6 +46,39 @@ class ChatModelError(BackendError):
         model_context = {"provider": model.provider_id, "model_id": model.model_id} if model is not None else {}
         model_context.update(context) if context is not None else None
         return super().ensure(error, message=message, context=model_context)
+
+
+class ChatModelToolCallError(ChatModelError):
+    def __init__(
+        self,
+        message: str = "Chat Model Tool Call Error",
+        *,
+        generated_error: str,
+        generated_content: str,
+        cause: Exception | None = None,
+        context: dict[str, Any] | None = None,
+        is_retryable: bool = True,
+    ) -> None:
+        super().__init__(message, cause=cause, context=context)
+        self.generated_error = generated_error
+        self.generated_content = generated_content
+        self.fatal = True
+        self.retryable = is_retryable
+
+    def __str__(self) -> str:
+        return "\n- ".join(
+            remove_falsy(
+                [
+                    self.message,
+                    f"Generated: {self.generated_content}" if self.generated_content else None,
+                    f"Error: {self.generated_error}" if self.generated_error else None,
+                ]
+            )
+        )
+
+
+class EmptyChatModelResponseError(ChatModelError):
+    pass
 
 
 class EmbeddingModelError(BackendError):

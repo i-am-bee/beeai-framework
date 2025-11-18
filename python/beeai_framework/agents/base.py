@@ -11,7 +11,7 @@ from typing_extensions import TypeVar
 
 from beeai_framework.agents.errors import AgentError
 from beeai_framework.agents.types import AgentMeta
-from beeai_framework.backend import AnyMessage
+from beeai_framework.backend.message import AnyMessage
 from beeai_framework.context import Run, RunContext, RunMiddlewareType
 from beeai_framework.emitter import Emitter
 from beeai_framework.memory import BaseMemory

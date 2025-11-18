@@ -85,6 +85,15 @@ class Requirement(ABC, Generic[T]):
         instance.state = self.state.copy()
         return instance
 
+    def to_json_safe(self) -> dict[str, Any]:
+        return {
+            "name": self.name,
+            "priority": self.priority,
+            "enabled": self.enabled,
+            "state": self.state,
+            "class_name": self.__class__.__name__,
+        }
+
 
 TSelf = TypeVar("TSelf", bound=Requirement[Any])
 
