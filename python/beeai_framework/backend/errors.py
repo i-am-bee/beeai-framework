@@ -3,9 +3,8 @@
 
 from typing import TYPE_CHECKING, Any, Optional
 
-from utils.lists import remove_falsy
-
 from beeai_framework.errors import FrameworkError
+from beeai_framework.utils.lists import remove_falsy
 
 if TYPE_CHECKING:
     from beeai_framework.backend.chat import ChatModel

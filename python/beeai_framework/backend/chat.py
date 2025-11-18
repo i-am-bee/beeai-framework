@@ -7,7 +7,7 @@ import logging
 from abc import abstractmethod
 from collections.abc import AsyncGenerator, Callable
 from functools import cached_property
-from typing import Any, ClassVar, Literal, Self
+from typing import Any, ClassVar, Literal, NoReturn, Self
 
 from pydantic import BaseModel, ConfigDict, InstanceOf, TypeAdapter, ValidationError
 from typing_extensions import TypedDict, TypeVar, Unpack, override
@@ -74,6 +74,7 @@ class ChatModelKwargs(TypedDict, total=False):
     middlewares: list[RunMiddlewareType]
     tool_choice_support: set[ToolChoiceType]
     fix_invalid_tool_calls: bool
+    repair_invalid_json: bool
 
     __pydantic_config__ = ConfigDict(extra="forbid", arbitrary_types_allowed=True)  # type: ignore
 
@@ -174,6 +175,7 @@ class ChatModel(Runnable[ChatModelOutput]):
     use_strict_tool_schema: bool
     retry_on_empty_response: bool
     fix_invalid_tool_calls: bool
+    repair_invalid_json: bool
 
     @property
     @abstractmethod
@@ -206,6 +208,7 @@ class ChatModel(Runnable[ChatModelOutput]):
         self.supports_top_level_unions = kwargs.get("supports_top_level_unions", True)
         self.retry_on_empty_response = bool(kwargs.get("retry_on_empty_response", True))
         self.fix_invalid_tool_calls = bool(kwargs.get("fix_invalid_tool_calls", True))
+        self.repair_invalid_json = bool(kwargs.get("repair_invalid_json", True))
 
         custom_tool_choice_support = kwargs.get("tool_choice_support")
         self._tool_choice_support: set[ToolChoiceType] = (
@@ -539,7 +542,7 @@ class ChatModel(Runnable[ChatModelOutput]):
         print(output.get_text_content())
 
         if input.tool_choice == "none" and tool_calls:
-            raise _create_tool_choice_error(
+            _raise_tool_choice_error(
                 "The model generated a tool call, but 'tool_choice' was set to 'none'.",
                 input_tool_choice=input.tool_choice,
                 model=self,
@@ -548,7 +551,7 @@ class ChatModel(Runnable[ChatModelOutput]):
 
         if isinstance(input.tool_choice, Tool):
             if not tool_calls:
-                raise _create_tool_choice_error(
+                _raise_tool_choice_error(
                     f"The model was required to produce a tool call for the '{input.tool_choice.name}' tool, "
                     f"but no tool calls were generated.",
                     input_tool_choice=input.tool_choice,
@@ -558,7 +561,7 @@ class ChatModel(Runnable[ChatModelOutput]):
 
             for tool_call in tool_calls:
                 if tool_call.tool_name != input.tool_choice.name:
-                    raise _create_tool_choice_error(
+                    _raise_tool_choice_error(
                         f"The model was required to produce a tool call for the '{input.tool_choice.name}' tool, "
                         f"but generated one for '{tool_call.tool_name}' instead.",
                         input_tool_choice=input.tool_choice,
@@ -567,7 +570,7 @@ class ChatModel(Runnable[ChatModelOutput]):
                     )
 
         if input.tool_choice == "required" and input.tools and not output.get_tool_calls():
-            raise _create_tool_choice_error(
+            _raise_tool_choice_error(
                 "The model was required to produce a tool call, but no tool calls were generated.",
                 input_tool_choice=input.tool_choice,
                 model=self,
@@ -585,9 +588,9 @@ class ChatModel(Runnable[ChatModelOutput]):
                     )
 
 
-def _create_tool_choice_error(
+def _raise_tool_choice_error(
     message: str, *, input_tool_choice: str | AnyTool, model: ChatModel, output: ChatModelOutput
-) -> ChatModelError:
+) -> NoReturn:
     input_tool_choice_str = "single" if isinstance(input_tool_choice, Tool) else input_tool_choice
     tool_choice_support: set[str] = set(model._tool_choice_support)
     tool_choice_support.discard(input_tool_choice_str)
@@ -598,16 +601,20 @@ def _create_tool_choice_error(
     model_class = type(model).__name__
     provider = f"{model.provider_id}:{model.model_id}"
 
-    return ChatModelToolCallError(
+    logger.error(
         f"{message}\n\n"
-        f"This may occur if the target provider does not support 'tool_choice={{\"{input_tool_choice_str}\"}}', "
-        f"but the framework is configured to support it. "
-        f"To resolve this, update the supported values for the 'tool_choice' parameter.\n\n"
-        f"Use one of the provided options:\n"
+        "This may occur if the target provider does not support "
+        f"'tool_choice={{\"{input_tool_choice_str}\"}}', but the framework is configured to support it. "
+        "To resolve this, update the supported values for the 'tool_choice' parameter.\n\n"
+        "Use one of the provided options:\n"
         f"1. ChatModel.from_name('{provider}', tool_choice_support={tool_choices_set_str})\n"
         f"2. model = {model_class}(...) \n"
         f"   model.tool_choice_support = {tool_choices_set_str}\n"
         f'3. {model_class}.tool_choice_support.discard("{input_tool_choice_str}")\n',
+    )
+
+    raise ChatModelToolCallError(
+        message,
         generated_content=output.get_text_content(),
         generated_error=message,
     )
