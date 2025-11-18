@@ -35,6 +35,8 @@ exclude = list(
             "backend/providers/azure_openai.py" if os.getenv("AZURE_API_KEY") is None else None,
             "backend/providers/transformers_hf.py" if os.getenv("TRANSFORMERS_CHAT_MODEL") is None else None,
             "backend/providers/langchain_compatible.py",
+            "backend/providers/qwen.py" if os.getenv("DASHSCOPE_API_KEY") is None else None,
+            "backend/providers/deepseek.py" if os.getenv("DEEPSEEK_CHAT_MODEL") is None else None,
             "tools/mcp_agent.py" if os.getenv("SLACK_BOT_TOKEN") is None else None,
             "tools/mcp_tool_creation.py" if os.getenv("SLACK_BOT_TOKEN") is None else None,
             "tools/mcp_slack_agent.py" if os.getenv("SLACK_BOT_TOKEN") is None else None,

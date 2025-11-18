@@ -6,6 +6,7 @@ from typing import Unpack
 
 from beeai_framework.adapters.litellm import LiteLLMChatModel, utils
 from beeai_framework.backend.chat import ChatModelKwargs
+from beeai_framework.backend.constants import ProviderName
 from beeai_framework.logger import Logger
 
 logger = Logger(__name__)
@@ -13,7 +14,7 @@ logger = Logger(__name__)
 
 class DeepseekChatModel(LiteLLMChatModel):
     @property
-    def provider_id(self) -> str:
+    def provider_id(self) -> ProviderName:
         return "deepseek"
 
     def __init__(

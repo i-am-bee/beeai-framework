@@ -91,5 +91,5 @@ BackendProviders = {
     "BeeAI": ProviderDef(name="BeeAI", module="beeai", aliases=["BeeAI", "Beeai", "BAI"]),
     "Transformers": ProviderDef(name="Transformers", module="transformers", aliases=["Transformers", "transformers"]),
     "Deepseek": ProviderDef(name="Deepseek", module="deepseek", aliases=["deepseek"]),
-    "Qwen": ProviderDef(name="Qwen", module="qwen", aliases=["qwen"]),
+    "Qwen": ProviderDef(name="Qwen", module="qwen", aliases=["qwen", "dashscope"]),
 }
