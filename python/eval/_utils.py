@@ -93,7 +93,7 @@ def evaluate_dataset(
         display_mode = TestRunResultDisplay(os.environ.get("EVAL_DISPLAY_MODE", "all"))
 
     output = evaluate(
-        test_cases=dataset.test_cases,  # type: ignore
+        test_cases=dataset.test_cases,
         metrics=metrics,
         display_config=DisplayConfig(
             show_indicator=False, print_results=False, verbose_mode=False, display_option=None

@@ -43,7 +43,7 @@ RunMiddlewareFn = Callable[["RunContext"], None]
 RunMiddlewareType: TypeAlias = RunMiddlewareFn | RunMiddlewareProtocol
 
 
-class Run(Generic[R]):
+class Run(Generic[R], Awaitable[R]):
     def __init__(
         self,
         handler: Callable[[], R | Awaitable[R]],
@@ -58,7 +58,7 @@ class Run(Generic[R]):
         async def add_to_queue(data: Any, event: EventMeta) -> None:
             await self._events.put((data, event))
 
-        self._run_context.emitter.match(
+        self._run_context.emitter.on(
             "*", add_to_queue, EmitterOptions(persistent=True, is_blocking=True, match_nested=False)
         )
 
@@ -89,7 +89,7 @@ class Run(Generic[R]):
         return self
 
     def on(self, matcher: Matcher, callback: Callback, options: EmitterOptions | None = None) -> Self:
-        self._tasks.append((self._run_context.emitter.match, [matcher, callback, options]))
+        self._tasks.append((self._run_context.emitter.on, [matcher, callback, options]))
         return self
 
     def context(self, context: dict[str, Any]) -> Self:
@@ -179,6 +179,9 @@ class RunContext:
     def destroy(self) -> None:
         self.emitter.destroy()
         self._controller.abort("Context has been destroyed.")
+
+    def abort(self, reason: str | None = None) -> None:
+        self._controller.abort(reason)
 
     @staticmethod
     def enter(
@@ -305,6 +308,7 @@ __all__ = [
     "RunContextFinishEvent",
     "RunContextStartEvent",
     "RunContextSuccessEvent",
+    "RunMiddlewareProtocol",
     "RunMiddlewareType",
     "run_context_event_types",
 ]

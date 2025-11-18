@@ -21,6 +21,7 @@ from beeai_framework.backend.message import (
     CustomMessage,
     CustomMessageContent,
     Message,
+    MessageFileContent,
     MessageImageContent,
     MessageTextContent,
     MessageToolCallContent,
@@ -34,7 +35,6 @@ from beeai_framework.backend.message import (
 from beeai_framework.backend.types import (
     ChatModelOutput,
     ChatModelParameters,
-    ChatModelStructureOutput,
     EmbeddingModelOutput,
 )
 
@@ -51,7 +51,6 @@ __all__ = [
     "ChatModelOutput",
     "ChatModelParameters",
     "ChatModelStartEvent",
-    "ChatModelStructureOutput",
     "ChatModelSuccessEvent",
     "CustomMessage",
     "CustomMessage",
@@ -64,6 +63,7 @@ __all__ = [
     "EmbeddingModelSuccessEvent",
     "Message",
     "MessageError",
+    "MessageFileContent",
     "MessageImageContent",
     "MessageTextContent",
     "MessageToolCallContent",

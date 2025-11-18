@@ -3,6 +3,7 @@
 
 import contextlib
 import inspect
+import logging
 import typing
 from abc import ABC, abstractmethod
 from collections.abc import Callable
@@ -184,9 +185,10 @@ class Tool(Generic[TInput, TRunOptions, TOutput], ABC):
         ).middleware(*self.middlewares)
 
     async def clone(self) -> Self:
-        cloned = type(self)(self._options.copy() if self._options else None)
-        cloned._cache = await self._cache.clone()
-        return cloned
+        if type(self).clone == Tool.clone:
+            logging.warning(f"Tool '{self.name}' does not implement the 'clone' method.")
+
+        return self
 
 
 # this method was inspired by the discussion that was had in this issue:
@@ -293,6 +295,15 @@ def tool(
                     return result
                 else:
                     return StringToolOutput(result=str(result))
+
+            async def clone(self) -> Self:
+                cloned = FunctionTool()
+                cloned.name = self.name
+                cloned.description = self.description
+                cloned.input_schema = self.input_schema
+                cloned._cache = await self._cache.clone()
+                cloned.middlewares.extend(self.middlewares)
+                return cloned  # type: ignore
 
         return FunctionTool()
 

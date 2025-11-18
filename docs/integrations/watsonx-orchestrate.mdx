@@ -23,7 +23,7 @@ Before integrating IBM watsonx Orchestrate with the BeeAI Framework, ensure you 
 
 ---
 
-## Consuming agent from IBM watsonx Orchestrate (Client)
+<Heading level={2} id="client">Consuming from IBM watsonx Orchestrate (client)</Heading>
 
 The `WatsonxOrchestrateAgent` class enables you to connect to any native agent hosted on IBM watsonx Orchestrate. This allows your BeeAI-powered applications to interact with IBM watsonx Orchestrate agents programmatically.
 
@@ -31,7 +31,7 @@ The `WatsonxOrchestrateAgent` class enables you to connect to any native agent h
 
 	{/* <!-- embedme python/examples/agents/providers/watsonx_orchestrate.py --> */}
 
-	```py Python
+	```py Python [expandable]
 	import asyncio
 	import sys
 	import traceback
@@ -58,7 +58,7 @@ The `WatsonxOrchestrateAgent` class enables you to connect to any native agent h
 	    )
 	    for prompt in reader:
 	        response = await agent.run(prompt)
-	        reader.write("Agent 🤖 : ", response.result.text)
+	        reader.write("Agent 🤖 : ", response.last_message.text)
 	
 	
 	if __name__ == "__main__":
@@ -70,14 +70,14 @@ The `WatsonxOrchestrateAgent` class enables you to connect to any native agent h
 	
 	```
 
-	```ts TypeScript
+	```ts TypeScript [expandable]
 	// COMING SOON
 	```
 </CodeGroup>
 
 ---
 
-## Consuming BeeAI Agents in IBM watsonx Orchestrate (Server)
+<Heading level={2} id="server">Exposing to IBM watsonx Orchestrate (server)</Heading>
 
 The `WatsonxOrchestrateServer` allows you to expose BeeAI agents as HTTP server with a chat completion endpoint compatible with IBM watsonx Orchestrate.
 This enables you to register and use your local BeeAI agents as external agents within IBM watsonx Orchestrate.
@@ -86,9 +86,9 @@ This enables you to register and use your local BeeAI agents as external agents 
 
 	{/* <!-- embedme python/examples/serve/watsonx_orchestrate.py --> */}
 
-	```py Python
+	```py Python [expandable]
 	from beeai_framework.adapters.watsonx_orchestrate import WatsonxOrchestrateServer, WatsonxOrchestrateServerConfig
-	from beeai_framework.agents.experimental import RequirementAgent
+	from beeai_framework.agents.requirement import RequirementAgent
 	from beeai_framework.backend import ChatModel
 	from beeai_framework.memory import UnconstrainedMemory
 	from beeai_framework.serve.utils import LRUMemoryManager
@@ -96,7 +96,7 @@ This enables you to register and use your local BeeAI agents as external agents 
 	
 	
 	def main() -> None:
-	    llm = ChatModel.from_name("ollama:granite3.3:8b")
+	    llm = ChatModel.from_name("ollama:granite4:micro")
 	    agent = RequirementAgent(llm=llm, tools=[OpenMeteoTool()], memory=UnconstrainedMemory(), role="a weather agent")
 	
 	    config = WatsonxOrchestrateServerConfig(port=8080, host="0.0.0.0", api_key=None)  # optional
@@ -113,7 +113,7 @@ This enables you to register and use your local BeeAI agents as external agents 
 	
 	```
 
-	```ts TypeScript
+	```ts TypeScript [expandable]
 	// COMING SOON
 	```
 </CodeGroup>

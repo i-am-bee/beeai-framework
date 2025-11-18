@@ -1,3 +1,5 @@
 dotenv
 langchain-community
+langchain-ollama
 langchain
+langgraph

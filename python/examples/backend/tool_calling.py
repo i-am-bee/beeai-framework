@@ -28,13 +28,13 @@ async def main() -> None:
     ]
 
     while True:
-        response = await model.create(
-            messages=messages,
+        response = await model.run(
+            messages,
             tools=tools,
         )
 
         tool_calls = response.get_tool_calls()
-        messages.extend(response.messages)
+        messages.extend(response.output)
 
         tool_results: list[ToolMessage] = []
 

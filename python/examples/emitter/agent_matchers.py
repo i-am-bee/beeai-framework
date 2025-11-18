@@ -16,11 +16,11 @@ async def main() -> None:
     )
 
     # Matching events on the instance level
-    agent.emitter.match("*.*", lambda data, event: None)
+    agent.emitter.on("*.*", lambda data, event: None)
 
     # Matching events on the execution (run) level
     await agent.run("Hello agent!").observe(
-        lambda emitter: emitter.match("*.*", lambda data, event: print(f"RUN LOG: received event '{event.path}'"))
+        lambda emitter: emitter.on("*.*", lambda data, event: print(f"RUN LOG: received event '{event.path}'"))
     )
 
 

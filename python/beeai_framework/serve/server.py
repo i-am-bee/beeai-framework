@@ -3,7 +3,7 @@
 
 from abc import ABC, abstractmethod
 from collections.abc import Callable, Sequence
-from typing import ClassVar, Generic, Self
+from typing import Any, ClassVar, Generic, Self
 
 from pydantic import BaseModel
 from typing_extensions import TypeVar
@@ -17,13 +17,22 @@ TConfig = TypeVar("TConfig", bound=BaseModel, default=BaseModel)
 
 
 class Server(Generic[TInput, TInternal, TConfig], ABC):
-    _factories: ClassVar[dict[type[TInput], Callable[[TInput], TInternal]]] = {}  # type: ignore[misc]
+    _factories: ClassVar[dict[type[TInput], Callable[[TInput], TInternal]]] = {}
 
     # TODO: later remove config property
     def __init__(self, *, config: TConfig, memory_manager: MemoryManager | None) -> None:
         self._members: list[TInput] = []
         self._config = config
         self._memory_manager: MemoryManager = memory_manager or UnlimitedMemoryManager()
+
+    def __init_subclass__(cls, **kwargs: Any) -> None:
+        super().__init_subclass__(**kwargs)
+
+        parent_factories = next(
+            parent_class._factories for parent_class in cls.__bases__ if hasattr(parent_class, "_factories")
+        )
+        if cls._factories is parent_factories:
+            cls._factories = {}
 
     @classmethod
     def register_factory(
@@ -58,10 +67,10 @@ class Server(Generic[TInput, TInternal, TConfig], ABC):
 
     @classmethod
     def _get_factory(cls, input: TInput) -> Callable[[TInput], TInternal]:
-        factory = cls._factories.get(type(input))
-        if factory is None:
-            raise ValueError(f"No factory registered for {type(input)}.")
-        return factory
+        for obj_type in type(input).__mro__:
+            if factory := cls._factories.get(obj_type):
+                return factory
+        raise ValueError(f"No factory registered for {type(input)}.")
 
     @property
     def members(self) -> list[TInput]:

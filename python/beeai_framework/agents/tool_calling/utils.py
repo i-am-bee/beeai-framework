@@ -40,6 +40,10 @@ class ToolCallChecker:
         self._occurrences_counter.reset(current)
         self.cycle_found = False
 
+    @property
+    def config(self) -> ToolCallCheckerConfig:
+        return self._config
+
 
 def _is_same_tool_call(a: MessageToolCallContent | None, b: MessageToolCallContent | None) -> bool:
     return bool(a and b and a.tool_name == b.tool_name and a.args == b.args and a.type == b.type)

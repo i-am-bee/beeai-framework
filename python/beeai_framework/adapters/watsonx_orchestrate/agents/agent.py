@@ -4,7 +4,7 @@
 import uuid
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
-from typing import Literal
+from typing import Literal, Unpack
 
 import httpx
 
@@ -15,21 +15,20 @@ from beeai_framework.adapters.watsonx_orchestrate._utils import (
     map_watsonx_orchestrate_agent_input_to_bee_messages,
     watsonx_orchestrate_message_to_beeai_message,
 )
-from beeai_framework.adapters.watsonx_orchestrate.agents.types import WatsonxOrchestrateAgentRunOutput
-from beeai_framework.agents.base import BaseAgent
+from beeai_framework.adapters.watsonx_orchestrate.agents.types import WatsonxOrchestrateAgentOutput
+from beeai_framework.agents import AgentOptions, BaseAgent
 from beeai_framework.agents.errors import AgentError
-from beeai_framework.backend import AssistantMessage
-from beeai_framework.backend.message import AnyMessage
-from beeai_framework.context import Run, RunContext
+from beeai_framework.backend import AnyMessage, AssistantMessage
+from beeai_framework.context import RunContext
 from beeai_framework.emitter import Emitter
 from beeai_framework.memory import BaseMemory, UnconstrainedMemory
-from beeai_framework.utils import AbortSignal
+from beeai_framework.runnable import runnable_entry
 from beeai_framework.utils.dicts import exclude_none
 from beeai_framework.utils.lists import flatten
 from beeai_framework.utils.strings import to_safe_word
 
 
-class WatsonxOrchestrateAgent(BaseAgent[WatsonxOrchestrateAgentRunOutput]):
+class WatsonxOrchestrateAgent(BaseAgent[WatsonxOrchestrateAgentOutput]):
     def __init__(
         self,
         *,
@@ -54,10 +53,11 @@ class WatsonxOrchestrateAgent(BaseAgent[WatsonxOrchestrateAgentRunOutput]):
     def name(self) -> str:
         return self._name
 
-    def run(
-        self, input: str | list[str] | AnyMessage | list[AnyMessage] | None, *, signal: AbortSignal | None = None
-    ) -> Run[WatsonxOrchestrateAgentRunOutput]:
-        async def handler(_: RunContext) -> WatsonxOrchestrateAgentRunOutput:
+    @runnable_entry
+    async def run(
+        self, input: str | list[str] | AnyMessage | list[AnyMessage] | None, /, **kwargs: Unpack[AgentOptions]
+    ) -> WatsonxOrchestrateAgentOutput:
+        async def handler(_: RunContext) -> WatsonxOrchestrateAgentOutput:
             async with self._create_client() as client:
                 input_messages = map_watsonx_orchestrate_agent_input_to_bee_messages(input)
                 await self.memory.add_many(input_messages)
@@ -86,19 +86,12 @@ class WatsonxOrchestrateAgent(BaseAgent[WatsonxOrchestrateAgentRunOutput]):
                 )
                 assert isinstance(result, AssistantMessage), "Result must be instanceof AssistantMessage"
                 await self.memory.add(result)
-                return WatsonxOrchestrateAgentRunOutput(
-                    result=result,
+                return WatsonxOrchestrateAgentOutput(
+                    output=[result],
                     raw=response_data.model_dump(),
                 )
 
-        return self._to_run(
-            handler,
-            signal=signal,
-            run_params={
-                "prompt": input,
-                "signal": signal,
-            },
-        )
+        return await handler(RunContext.get())
 
     async def check_agent_exists(
         self,

@@ -5,8 +5,15 @@ from typing import Any, Generic, Literal, Self, TypeVar
 
 from pydantic import BaseModel, ConfigDict, Field, InstanceOf
 
-from beeai_framework.backend.message import AnyMessage, AssistantMessage, MessageToolCallContent, dedupe_tool_calls
+from beeai_framework.backend.message import (
+    AnyMessage,
+    AssistantMessage,
+    AssistantMessageContent,
+    MessageToolCallContent,
+    dedupe_tool_calls,
+)
 from beeai_framework.cache.base import BaseCache
+from beeai_framework.runnable import RunnableOutput
 from beeai_framework.tools.tool import AnyTool
 from beeai_framework.utils import AbortSignal
 from beeai_framework.utils.lists import flatten
@@ -31,28 +38,23 @@ class ChatModelParameters(BaseModel):
 class ChatModelStructureInput(ChatModelParameters, Generic[T]):
     input_schema: type[T] | dict[str, Any] = Field(..., alias="schema")
     messages: list[InstanceOf[AnyMessage]] = Field(..., min_length=1)
-    abort_signal: AbortSignal | None = None
+    signal: AbortSignal | None = None
     max_retries: int | None = None
 
 
-class ChatModelStructureOutput(BaseModel):
-    object: dict[str, Any]  # | type[BaseModel]
-
-
 class ChatModelInput(ChatModelParameters):
-    model_config = ConfigDict(frozen=True, extra="allow")
+    model_config = ConfigDict(frozen=False, extra="allow")
 
     tools: list[InstanceOf[AnyTool]] | None = None
     tool_choice: InstanceOf[AnyTool] | Literal["required"] | Literal["auto"] | Literal["none"] | None = None
-    abort_signal: AbortSignal | None = None
+    signal: AbortSignal | None = None
+    max_retries: int | None = None
     stop_sequences: list[str] | None = None
     response_format: dict[str, Any] | type[BaseModel] | None = None
-    messages: list[InstanceOf[AnyMessage]] = Field(
-        ...,
-        min_length=1,
-        frozen=True,
-    )
+    validate_response_format: bool | None = None
+    messages: list[InstanceOf[AnyMessage]] = Field(..., min_length=1)
     parallel_tool_calls: bool | None = None
+    stream_partial_tool_calls: bool = False
 
 
 class ChatModelUsage(BaseModel):
@@ -67,30 +69,91 @@ class ChatModelCost(BaseModel):
     total_cost_usd: float
 
 
-class ChatModelOutput(BaseModel):
-    messages: list[InstanceOf[AnyMessage]]
+class ChatModelOutput(RunnableOutput):
     usage: InstanceOf[ChatModelUsage] | None = None
     cost: ChatModelCost | None = None
     finish_reason: str | None = None
+    output_structured: Any | BaseModel | None = None
+
+    def is_empty(self) -> bool:
+        if self.output_structured is not None:
+            return False
+
+        if self.get_text_content():
+            return False
+
+        if self.get_tool_calls():
+            return False
+
+        for msg in self.output:
+            for chunk in msg.content:
+                chunk_unpacked = (
+                    chunk.model_dump(exclude_none=True, exclude_defaults=True, exclude_unset=True)
+                    if isinstance(chunk, BaseModel)
+                    else chunk
+                )
+                if chunk_unpacked:
+                    return False
+
+        return True
+
+    def is_valid(self) -> bool:
+        for msg in self.output:
+            if not isinstance(msg, AssistantMessage):
+                continue
+
+            for tool_call in msg.get_tool_calls():
+                if not tool_call.is_valid():
+                    return False
+
+        return True
 
     def dedupe(self) -> None:
         messages_by_id = dict[str, list[AnyMessage]]()
-        for msg in self.messages:
+        messages_by_tool_call_id = dict[str, AssistantMessage]()
+
+        for msg in self.output:
             msg_id = msg.id or ""
+
+            # Group partial tool calls
+            if isinstance(msg, AssistantMessage) and msg.get_tool_calls():
+                filtered_chunks: list[AssistantMessageContent] = []
+                for chunk in msg.content:
+                    if not isinstance(chunk, MessageToolCallContent):
+                        filtered_chunks.append(chunk)
+                        continue
+
+                    # Assume that tool calls with no id referss to the most recent tool call
+                    if not chunk.id and messages_by_tool_call_id:
+                        chunk.id = next(reversed(messages_by_tool_call_id.keys()))
+
+                    if chunk.id in messages_by_tool_call_id:
+                        messages_by_tool_call_id[chunk.id].content.append(chunk)
+                    else:
+                        messages_by_tool_call_id[chunk.id] = msg
+                        filtered_chunks.append(chunk)
+
+                msg.content.clear()
+                msg.content.extend(filtered_chunks)
+
+                if not filtered_chunks:
+                    # nothing to be processed
+                    continue
+
             if msg_id not in messages_by_id:
                 messages_by_id[msg_id] = [msg]
             else:
                 messages_by_id[msg_id].append(msg)
 
-        self.messages.clear()
+        self.output.clear()
 
         for messages in messages_by_id.values():
             main = messages.pop(0)
             for other in messages:
                 main.merge(other)
-            self.messages.append(main)
+            self.output.append(main)
 
-        for msg in self.messages:
+        for msg in self.output:
             if isinstance(msg, AssistantMessage):
                 dedupe_tool_calls(msg)
 
@@ -99,15 +162,19 @@ class ChatModelOutput(BaseModel):
 
     @classmethod
     def from_chunks(cls, chunks: list[Self]) -> Self:
-        final = cls(messages=[])
+        final = cls(output=[])
         for cur in chunks:
             final.merge(cur)
         return final
 
     def merge(self, other: Self) -> None:
-        if other.messages:
-            self.messages.extend(other.messages)
+        if other.output:
+            cloned_output = (part.clone() for part in other.output)
+            self.output.extend(cloned_output)
             self.dedupe()
+
+        if other.output_structured is not None:
+            self.output_structured = other.output_structured
 
         if other.finish_reason:
             self.finish_reason = other.finish_reason
@@ -135,14 +202,14 @@ class ChatModelOutput(BaseModel):
             self.usage = other.usage.model_copy()
 
     def get_tool_calls(self) -> list[MessageToolCallContent]:
-        assistant_message = [msg for msg in self.messages if isinstance(msg, AssistantMessage)]
+        assistant_message = [msg for msg in self.output if isinstance(msg, AssistantMessage)]
         return flatten([x.get_tool_calls() for x in assistant_message])
 
     def get_text_messages(self) -> list[AssistantMessage]:
-        return [msg for msg in self.messages if isinstance(msg, AssistantMessage) and msg.text]
+        return [msg for msg in self.output if isinstance(msg, AssistantMessage) and msg.text]
 
     def get_text_content(self) -> str:
-        return "".join([x.text for x in list(filter(lambda x: isinstance(x, AssistantMessage), self.messages))])
+        return "".join([x.text for x in list(filter(lambda x: isinstance(x, AssistantMessage), self.output))])
 
 
 ChatModelCache = BaseCache[list[ChatModelOutput]]
@@ -156,7 +223,7 @@ class EmbeddingModelUsage(BaseModel):
 
 class EmbeddingModelInput(BaseModel):
     values: list[str]
-    abort_signal: AbortSignal | None = None
+    signal: AbortSignal | None = None
     max_retries: int | None = None
 
 

@@ -8,44 +8,63 @@
     "dark": "#000000"
   },
   "favicon": "/favicon.svg",
+  "redirects": [
+    {
+      "source": "/modules/events",
+      "destination": "/modules/middleware"
+    },
+    {
+      "source": "/modules/emitter",
+      "destination": "/modules/middleware"
+    },
+    {
+      "source": "/experimental/requirement-agent",
+      "destination": "/modules/agents/requirement-agent"
+    },
+    {
+      "source": "/integrations/beeai-platform",
+      "destination": "/integrations/agent-stack"
+    }
+  ],
   "navigation": {
     "groups": [
       {
         "group": "Introduction",
         "pages": [
           "introduction/welcome",
-          "introduction/quickstart"
+          "introduction/quickstart",
+          "introduction/tour"
         ]
       },
       {
         "group": "Core Concepts",
         "pages": [
+          "modules/agents/requirement-agent",
+          "modules/middleware",
           "modules/agents",
-          "experimental/requirement-agent",
-          "modules/workflows",
-          "modules/backend",
-          "modules/templates",
-          "modules/memory",
-          "modules/emitter",
-          "modules/serialization",
-          "modules/tools",
-          "modules/rag",
           "modules/serve",
+          "modules/backend",
+          "modules/tools",
+          "modules/memory",
+          "modules/rag",
+          "modules/observability",
           "modules/cache",
           "modules/logger",
+          "modules/serialization",
           "modules/errors",
-          "modules/events",
-          "modules/observability"
+          "modules/templates",
+          "modules/workflows"
+
         ]
       },
       {
         "group": "Integrations",
         "pages": [
-          "integrations/beeai-platform",
-          "integrations/watsonx-orchestrate",
-          "integrations/acp",
+          "integrations/agent-stack",
           "integrations/mcp",
-          "integrations/a2a"
+          "integrations/a2a",
+          "integrations/watsonx-orchestrate",
+          "integrations/openai-api"
         ]
       },
 

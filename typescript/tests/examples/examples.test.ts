@@ -23,9 +23,11 @@ const exclude: string[] = [
   "examples/workflows/contentCreator.ts",
   "examples/workflows/competitive-analysis/**/*.ts",
   "examples/agents/experimental/remote.ts",
+  "examples/agents/providers/*.ts",
   "examples/playground/**/*.ts",
   "examples/internals/fetcher.ts",
   "examples/integrations/langgraph.ts",
+  "examples/serve/*.ts",
   "examples/backend/toolCalling.ts", // broken DDG
   // prevents 'Too many requests' error on Free Tier
   !getEnv("WATSONX_API_KEY") && [
