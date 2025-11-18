@@ -9,7 +9,7 @@ from beeai_framework.errors import FrameworkError
 
 
 async def main() -> None:
-    llm = OllamaChatModel("llama3.1")
+    llm = OllamaChatModel("granite3.3")
     llm.config(parameters=ChatModelParameters(max_tokens=25), cache=SlidingCache(size=50))
 
     print(await llm.cache.size())  # 0

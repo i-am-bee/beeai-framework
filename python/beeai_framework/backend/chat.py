@@ -50,7 +50,7 @@ from beeai_framework.utils.cancellation import AbortController
 from beeai_framework.utils.dicts import exclude_keys, exclude_non_annotated
 from beeai_framework.utils.lists import cast_list
 from beeai_framework.utils.models import WrappedRootModel, to_model, update_model
-from beeai_framework.utils.strings import generate_random_string, to_json, to_json_serializable
+from beeai_framework.utils.strings import generate_random_string, to_json
 
 T = TypeVar("T", bound=BaseModel)
 TTool = TypeVar("TTool", bound=AnyTool)
@@ -317,7 +317,7 @@ class ChatModel(Runnable[ChatModelOutput]):
         model_input, model_response_config = self._prepare_model_input(input, kwargs)
         model_input_messages_backup = model_input.messages.copy()
 
-        cache_entry = CacheEntry(self.cache, key=to_json_serializable(model_input, exclude_none=True))
+        cache_entry = CacheEntry(self.cache, key=to_json(model_input, exclude_none=True))
 
         try:
             context = RunContext.get()
