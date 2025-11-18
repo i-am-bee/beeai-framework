@@ -13,10 +13,12 @@ from beeai_framework.utils.io import setup_io_context
 
 try:
     from agentstack_sdk.a2a.extensions import (
+        LLMServiceExtensionServer,
+    )
+    from agentstack_sdk.a2a.extensions.ui.form import (
+        CheckboxField,
         FormRender,
         FormResponse,
-        LLMServiceExtensionServer,
-        TextField,
     )
     from agentstack_sdk.server.context import RunContext
 except ModuleNotFoundError as e:
@@ -78,21 +80,19 @@ class AgentStackContext:
                     columns=1,
                     submit_label="Send",
                     fields=[
-                        TextField(
+                        CheckboxField(
                             id=answer_field_id,
-                            label="Answer",
-                            required=True,
-                            placeholder="",
-                            type="text",
-                            default_value="",
-                            col_span=1,
+                            label="Allow the tool",
+                            required=False,
+                            content="I agree to run the tool",
+                            default_value=False,
                         )
                     ],
                 ),
                 model=FormResponse,
             )
             if form_data:
-                return str(form_data.values[answer_field_id].value)
+                return "yes" if form_data.values[answer_field_id].value else "no"
             else:
                 logger.warning("Form is not supported")
                 return ""

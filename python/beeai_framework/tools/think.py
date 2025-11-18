@@ -14,7 +14,8 @@ from beeai_framework.tools import StringToolOutput, Tool, ToolRunOptions
 class ThinkSchema(BaseModel):
     thoughts: str = Field(..., description="Precisely describe what you are thinking about.")
     # Note: next_step was removed as it did not perform well
-    # next_step: list[str] = Field(..., description="Describe the tool you would need to use next and why.", min_length=1)
+    # next_step: list[str] =
+    # Field(..., description="Describe the tool you would need to use next and why.", min_length=1)
 
 
 class ThinkTool(Tool[ThinkSchema]):
