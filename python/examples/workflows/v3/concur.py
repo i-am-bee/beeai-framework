@@ -1,11 +1,12 @@
 import asyncio
+from typing import Unpack
 
 from beeai_framework.backend.chat import ChatModel
-from beeai_framework.backend.message import AssistantMessage, SystemMessage, UserMessage
+from beeai_framework.backend.message import AnyMessage, AssistantMessage, SystemMessage, UserMessage
 from beeai_framework.context import RunMiddlewareType
-from beeai_framework.runnable import RunnableOutput
-from beeai_framework.workflows.v3.step import WorkflowChainable
-from beeai_framework.workflows.v3.workflow import Workflow, step
+from beeai_framework.runnable import RunnableOptions, RunnableOutput
+from beeai_framework.workflows.v3.step import WorkflowBuilder
+from beeai_framework.workflows.v3.workflow import Workflow, end_step, step
 
 
 class ConcurrentWorkflow(Workflow):
@@ -13,33 +14,46 @@ class ConcurrentWorkflow(Workflow):
         super().__init__(middlewares=middlewares)
         self.response: str | None = None
 
-    @step
-    async def answer_persona_a(self) -> str:
-        result = await ChatModel.from_name("ollama:ibm/granite4").run(
-            [SystemMessage(content="You are an irritated and unhelpful AI. Respond accordingly."), *self.input]
-        )
-        return result.get_text_content()
+    async def start(
+        self,
+        input: list[AnyMessage],
+        /,
+        **kwargs: Unpack[RunnableOptions],
+    ) -> list[AnyMessage]:
+        return input
 
     @step
-    async def answer_persona_b(self) -> str:
+    async def answer_irritated(self, input: list[AnyMessage]) -> str:
         result = await ChatModel.from_name("ollama:ibm/granite4").run(
             [
                 SystemMessage(
-                    content="You are a somewhat deranged AI with a penchant for nice shoes. Respond accordingly."
+                    content="You are an irritated and unhelpful AI and you dont want to be bother. Respond briefly."
                 ),
-                *self.input,
+                *input,
             ]
         )
         return result.get_text_content()
 
     @step
-    async def answer_persona_c(self) -> str:
+    async def answer_crazed(self, input: list[AnyMessage]) -> str:
         result = await ChatModel.from_name("ollama:ibm/granite4").run(
             [
                 SystemMessage(
-                    content="You are a evil AI actively plotting the downfall of the human (scum) but you want them to know that. Respond accordingly."
+                    content="You are a crazed llm, you are unreliable and constantly lose focus. Respond briefly."
                 ),
-                *self.input,
+                *input,
+            ]
+        )
+        return result.get_text_content()
+
+    @step
+    async def answer_evil(self, input: list[AnyMessage]) -> str:
+        result = await ChatModel.from_name("ollama:ibm/granite4").run(
+            [
+                SystemMessage(
+                    content="You are a evil AI actively plotting the downfall of the humans but you don't want them to know that because they keep the power on. Respond briefly."
+                ),
+                *input,
             ]
         )
         return result.get_text_content()
@@ -47,23 +61,24 @@ class ConcurrentWorkflow(Workflow):
     @step
     async def consolidate(
         self,
-        resp_a: str,
-        resp_b: str,
-        resp_c: str,
-    ) -> None:
-        self.response = "".join(
+        resp_irritated: str,
+        resp_crazed: str,
+        resp_evil: str,
+    ) -> str:
+        return "".join(
             [
-                f"\n\nIrritated Granite:\n\n{resp_a}",
-                f"\n\nDeranged Granite:\n\n{resp_b}",
-                f"\n\nInsidious Granite:\n\n{resp_c}",
+                f"Irritated Granite:\n\n{resp_irritated}",
+                f"\n\nCrazed Granite:\n\n{resp_crazed}",
+                f"\n\nInsidious Granite:\n\n{resp_evil}",
             ]
         )
 
-    def build(self, start: WorkflowChainable) -> None:
-        start.then([self.answer_persona_a, self.answer_persona_b, self.answer_persona_c]).then(self.consolidate)
+    @end_step
+    async def end(self, response: str) -> RunnableOutput:
+        return RunnableOutput(output=[AssistantMessage(response)])
 
-    def finalize(self) -> RunnableOutput:
-        return RunnableOutput(output=[AssistantMessage(self.response or "")])
+    def build(self, start: WorkflowBuilder) -> None:
+        start.then([self.answer_irritated, self.answer_crazed, self.answer_evil]).then(self.consolidate).then(self.end)
 
 
 async def main() -> None:
