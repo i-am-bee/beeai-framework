@@ -19,7 +19,7 @@ An event refers to an action created by some component.
 
 The emitted event is processed via callbacks that look like this:
 
-```python
+```py Python [expandable]
 from beeai_framework.backend.chat import ChatModelStartEvent
 from beeai_framework.emitter import EventMeta
 
@@ -64,7 +64,7 @@ The following example depicts a minimal application that does the following:
 4. fires the `fetch_data` event,
 5. logs the modified event's data.
 
-```python
+```py Python [expandable]
 from pydantic import BaseModel
 from beeai_framework.emitter import EventMeta, Emitter
 
@@ -208,7 +208,7 @@ Events can be generally observed on three different levels.
 
 Every emitter provided by the out-of-the-box modules is a child of the root emitter, which means we can listen to all events directly from the root emitter.
 
-```python
+```py Python [expandable]
 from beeai_framework.emitter import Emitter, EventMeta
 from typing import Any
 
@@ -226,7 +226,7 @@ root.on("*.*", log_all_events)
 
 On the other hand, we can listen to events emitted by a specific instance of a class.
 
-```python
+```py Python [expandable]
 from beeai_framework.backend.chat import ChatModel, ChatModelStartEvent
 from beeai_framework.backend.message import UserMessage
 from beeai_framework.emitter import EventMeta
@@ -249,7 +249,7 @@ Therefore, all events in a given class will be captured.
 
 Sometimes we might want to listen to events emitted by a single run of a class.
 
-```python
+```py Python [expandable]
 from beeai_framework.backend.chat import ChatModel, ChatModelStartEvent
 from beeai_framework.backend.message import UserMessage
 from beeai_framework.emitter import EventMeta
@@ -276,7 +276,7 @@ To address these needs, we can use the optional keyword argument called `options
 
 **Example**
 
-```python
+```py Python [expandable]
 from beeai_framework.emitter import EmitterOptions, EventMeta
 from beeai_framework.backend.chat import ChatModel, ChatModelNewTokenEvent
 
@@ -349,7 +349,7 @@ The appropriate events are depicted in the following table:
 
 See how you can listen to these events.
 
-```python
+```py Python [expandable]
 import asyncio
 
 from beeai_framework.backend import AnyMessage, AssistantMessage, ChatModelOutput
@@ -410,7 +410,7 @@ print("Agent:", response.get_text_content())
 
 To see which events get emitted in your case, the best way is to register a log-all callback for your run.
 
-```python
+```py Python [expandable]
 agent = RequirementAgent("ollama:granite3:3", tools=[OpenMeteoTool()])
 response = await agent
   .run("What's the current weather in Miami?")
@@ -427,7 +427,7 @@ The middleware is a function that takes the `RunContext` where one can attach de
 
 {/* <!-- embedme python/examples/middleware/override.py --> */}
 
-```python
+```py Python [expandable]
 import asyncio
 from typing import Any
 
@@ -585,7 +585,7 @@ The fastest way to see what's happening in your code (who is calling what) is by
 
 **Example**
 
-```python
+```py Python [expandable]
 from beeai_framework.middleware.trajectory import GlobalTrajectoryMiddleware
 
 agent = RequirementAgent(
@@ -612,7 +612,7 @@ See which parameters can be passed to the constructor.
 
 **Example**
 
-```python
+```py Python [expandable]
 from beeai_framework.middleware.trajectory import GlobalTrajectoryMiddleware
 from beeai_framework.tools.tool import Tool
 from beeai_framework.backend.chat import ChatModel
@@ -637,7 +637,7 @@ The middleware works even **without streaming** enabled. It just emits the `upda
 **Example**
 
 {/* <!-- embedme python/examples/middleware/llm_streaming.py --> */}
-```py Python
+```py Python [expandable]
 import asyncio
 
 from beeai_framework.backend import ChatModel, UserMessage
@@ -804,7 +804,7 @@ The following events are handled internally by the `GlobalTrajectoryMiddleware`:
 
 All events inherit from the `GlobalTrajectoryMiddlewareEvent` class.
 
-```python
+```py Python [expandable]
 class GlobalTrajectoryMiddlewareEvent(BaseModel):
     message: str
     level: TraceLevel

@@ -68,7 +68,7 @@ Dynamic loading enables you to switch between different vector store implementat
 
 ### BeeAI Vector Store
 {/* <!-- embedme python/examples/backend/module_loading.py --> */}
-```py Python
+```py Python [expandable]
 import asyncio
 import sys
 import traceback
@@ -122,7 +122,7 @@ Native BeeAI modules can be loaded directly by importing and instantiating the m
 ### Supported Provider's Vector Store
 
 <CodeGroup>
-```py Python
+```py Python [expandable]
 # LangChain integration
 vector_store = VectorStore.from_name(
     name="langchain:InMemoryVectorStore",
