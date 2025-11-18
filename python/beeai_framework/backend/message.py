@@ -98,8 +98,8 @@ class MessageToolCallContent(BaseModel):
 
         try:
             response = json.loads(self.args)
-            if not isinstance(response, dict):
-                raise ValueError("Tool Call arguments attribute must be a dictionary when parsed!")
+            if not isinstance(response, dict | list):
+                raise ValueError("Tool Call arguments attribute must be a dictionary/list when parsed!")
             return True
         except Exception:
             return False

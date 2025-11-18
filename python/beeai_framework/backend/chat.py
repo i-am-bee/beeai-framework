@@ -456,7 +456,25 @@ class ChatModel(Runnable[ChatModelOutput]):
                     break
 
         self._assert_tool_response(input=input, output=result)
+        self._fix_tool_calls(result)
         return result
+
+    def _fix_tool_calls(self, result: ChatModelOutput) -> None:
+        for tool_call in result.get_tool_calls():
+            if tool_call.is_valid():
+                continue
+
+            if self.fix_invalid_tool_calls:
+                parsed = parse_broken_json(tool_call.args, {})
+                if parsed:
+                    tool_call.args = to_json(parsed, sort_keys=False)
+
+            if not tool_call.is_valid():
+                raise ChatModelToolCallError(
+                    generated_content=tool_call.args,
+                    generated_error=f"The tool call for the '{tool_call.tool_name}' tool has malformed parameters. "
+                    f"It must be a valid JSON.",
+                )
 
     def config(
         self,
