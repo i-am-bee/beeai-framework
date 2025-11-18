@@ -12,7 +12,8 @@ from beeai_framework.agents import AgentOutput
 from beeai_framework.agents.requirement import RequirementAgent
 from beeai_framework.backend import AssistantMessage, ChatModel
 from beeai_framework.context import RunContext, RunContextStartEvent, RunMiddlewareProtocol
-from beeai_framework.emitter import EventMeta
+from beeai_framework.emitter import EmitterOptions, EventMeta
+from beeai_framework.emitter.utils import create_internal_event_matcher
 from beeai_framework.errors import FrameworkError
 from beeai_framework.memory import UnconstrainedMemory
 
@@ -36,7 +37,11 @@ class InvisibleTextDetectionMiddleware(RunMiddlewareProtocol):
             self._cleanup_functions.pop(0)()
 
         # Listen for run context start events to intercept before agent execution
-        cleanup = ctx.emitter.on("run.agent.requirement.start", self._on_run_start)
+        cleanup = ctx.emitter.on(
+            create_internal_event_matcher("start", ctx.instance),
+            self._on_run_start,
+            EmitterOptions(is_blocking=True, priority=1),
+        )
         self._cleanup_functions.append(cleanup)
 
     def _on_run_start(self, data: RunContextStartEvent, _: EventMeta) -> None:
@@ -64,7 +69,7 @@ class InvisibleTextDetectionMiddleware(RunMiddlewareProtocol):
 
 async def main() -> None:
     """
-    Example demonstrating a middleware for prompt injection detection.
+    Example demonstrating a middleware for invisible text detection.
     """
 
     agent = RequirementAgent(

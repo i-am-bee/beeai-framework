@@ -83,7 +83,7 @@ class SecretsDetectionMiddleware(RunMiddlewareProtocol):
 
 async def main() -> None:
     """
-    Example demonstrating a middleware for prompt injection detection.
+    Example demonstrating a middleware for secrets detection and redaction.
     """
 
     agent = RequirementAgent(
