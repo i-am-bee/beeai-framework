@@ -3,6 +3,7 @@
 
 from collections.abc import Callable
 from typing import Annotated, Any
+from weakref import WeakKeyDictionary
 
 from pydantic import BaseModel, ConfigDict, Field, InstanceOf
 from typing_extensions import TypeVar
@@ -86,6 +87,7 @@ class RequirementAgentRequest(BaseModel):
 
     tools: list[AnyTool]
     allowed_tools: list[AnyTool]
+    reason_by_tool: WeakKeyDictionary[AnyTool, str | None]
     hidden_tools: list[AnyTool]
     tool_choice: ChatModelToolChoice
     final_answer: FinalAnswerTool

@@ -92,13 +92,14 @@ COMING SOON
 
 In `RequirementAgent`, **all capabilities (including data retrieval, web search, reasoning patterns, and `final_answer`) are implemented as tools** to ensure structured, reliable execution. Each `ConditionalRequirement` returns a `Rule` where each rule is bound to a single tool:
 
-| Attribute | Purpose | Value |
-|-----------|---------|-------|
-| `target` | Which tool the rule applies to for a given turn | String |
-| `allowed` | Whether the tool can be used for a given turn and is present in the system prompt| Boolean |
-| `hidden` | Whether the tool definition is visible to the agent for a given turn and in the system prompt | Boolean |
-| `prevent_stop` | Whether rule prevents the agent from terminating for a given turn| Boolean |
-| `forced` | Whether tool must be invoked on a given turn | Boolean |
+| Attribute      | Purpose                                                                                       | Value |
+|----------------|-----------------------------------------------------------------------------------------------|-------|
+| `target`       | Which tool the rule applies to for a given turn                                               | str   |
+| `allowed`      | Whether the tool can be used for a given turn and is present in the system prompt             | bool  |
+| `hidden`       | Whether the tool definition is visible to the agent for a given turn and in the system prompt | bool  |
+| `prevent_stop` | Whether rule prevents the agent from terminating for a given turn                             | bool  |
+| `forced`       | Whether tool must be invoked on a given turn                                                  | bool  |
+| `reason`       | Optinally explain to the LLM why the given rule is applied                                    | str   |
 
 When requirements generate conflicting rules, the system applies this precedence:
 - **Forbidden overrides all**: If any requirement forbids a tool, that tool cannot be used.
