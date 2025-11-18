@@ -236,7 +236,10 @@ class RequirementAgent(BaseAgent[RequirementAgentOutput]):
         await reasoner.update(self._requirements)
 
         tool_call_cycle_checker = self._create_tool_call_checker()
-        tool_call_retry_counter = RetryCounter(error_type=AgentError, max_retries=run_config.total_max_retries or 1)
+        tool_call_retry_counter = RetryCounter(
+            error_type=AgentError,
+            max_retries=0 if run_config.total_max_retries is None else run_config.total_max_retries,
+        )
         force_final_answer_as_tool = self._final_answer_as_tool
         tmp_rules: list[Rule] = []
 

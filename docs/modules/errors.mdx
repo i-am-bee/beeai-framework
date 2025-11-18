@@ -195,12 +195,12 @@ try {
 ### Basic usage
 
 To use Framework error, add the following import:
-```py
+```py Python [expandable]
 from beeai_framework.errors import FrameworkError
 ```
 
 Add any additional custom errors you need in your code to the import, for example
-```py
+```py Python [expandable]
 from beeai_framework.errors import FrameworkError, ChatModelError,ToolError
 ```
 
@@ -208,7 +208,7 @@ from beeai_framework.errors import FrameworkError, ChatModelError,ToolError
 
 If you wish to create additional errors, you can extend `FrameworkError` or any of the other errors above:
 
-```py
+```py Python [expandable]
 from beeai_framework.errors import FrameworkError
 
 class MyCustomError(FrameworkError):
@@ -219,7 +219,7 @@ class MyCustomError(FrameworkError):
 ### Wrapping existing errors
 
 You can wrap existing errors in a `FrameworkError`, for example:
-```py
+```py Python [expandable]
 inner_err: Exception = ValueError("Value error")
 error = FrameworkError.ensure(inner_err)
 raise(error)
@@ -234,7 +234,7 @@ Framework error also has two additional properties which help with agent process
 
 These can be accessed via:
 
-```py
+```py Python [expandable]
 err = FrameworkError("error")
 isfatal: bool = FrameworkError.is_fatal(err)
 isretryable: bool = FrameworkError.is_retryable(err)
@@ -244,7 +244,7 @@ This allows use of some useful functions within the error class.
 
 For example the `explain` static method will return a string that may be more useful for an LLM to interpret:
 
-```py
+```py Python [expandable]
 message: str = FrameworkError.ensure(error).explain()
 ```
 

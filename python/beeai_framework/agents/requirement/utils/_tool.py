@@ -9,10 +9,12 @@ from typing import TYPE_CHECKING, Any, Self
 from pydantic import BaseModel, Field, InstanceOf
 
 from beeai_framework.backend import AssistantMessage, MessageToolCallContent
+from beeai_framework.backend.errors import ChatModelToolCallError
 from beeai_framework.context import RunContext
 from beeai_framework.emitter import Emitter
 from beeai_framework.errors import FrameworkError
 from beeai_framework.tools import AnyTool, StringToolOutput, Tool, ToolError, ToolOutput, ToolRunOptions
+from beeai_framework.utils.strings import to_json
 
 if TYPE_CHECKING:
     from beeai_framework.agents.requirement import RequirementAgentRunState
@@ -23,6 +25,12 @@ async def _run_tool(
     msg: MessageToolCallContent,
     context: dict[str, Any],
 ) -> "ToolInvocationResult":
+    if not msg.is_valid():
+        raise ChatModelToolCallError(
+            generated_content=to_json({"name": msg.tool_name, "parameters": msg.args}, sort_keys=False),
+            generated_error="The generated tool call is invalid. Cannot parse the args.",
+        )
+
     result = ToolInvocationResult(
         msg=msg,
         tool=None,

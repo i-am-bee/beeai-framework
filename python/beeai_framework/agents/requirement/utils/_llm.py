@@ -6,6 +6,9 @@ from collections.abc import Sequence
 from typing import Literal
 from weakref import WeakKeyDictionary
 
+from pydantic import BaseModel, ConfigDict
+
+from beeai_framework.agents.errors import AgentError
 from beeai_framework.agents.requirement.prompts import (
     RequirementAgentSystemPromptInput,
     RequirementAgentToolTemplateDefinition,
@@ -16,7 +19,6 @@ from beeai_framework.agents.requirement.types import RequirementAgentRequest, Re
 from beeai_framework.agents.requirement.utils._tool import FinalAnswerTool
 from beeai_framework.backend import SystemMessage
 from beeai_framework.context import RunContext
-from beeai_framework.errors import FrameworkError
 from beeai_framework.template import PromptTemplate
 from beeai_framework.tools import AnyTool
 from beeai_framework.tools.tool import Tool
@@ -72,16 +74,20 @@ class RequirementsReasoner:
         reason_by_tools: WeakKeyDictionary[AnyTool, str | None] = WeakKeyDictionary()
 
         prevent_stop: bool = False
+        prevent_step_refs: list[RuleEntry] = []
+
         forced: AnyTool | None = None
         forced_level: int = 0
-        rules_by_tool: dict[str, list[tuple[Rule, int]]] = {t.name: [] for t in self._tools}
+        rules_by_tool: dict[str, list[RuleEntry]] = {t.name: [] for t in self._tools}
 
         # Group rules
-        for entry in [entry for entry in self._entries if entry.enabled]:
-            requirements = await entry.run(state)
-            for rule in requirements:
+        for requirement in [entry for entry in self._entries if entry.enabled]:
+            generated_rules = await requirement.run(state)
+            for rule in generated_rules:
                 tool = self._find_tool_by_name(rule.target)
-                rules_by_tool[tool.name].append((rule, entry.priority))
+                rules_by_tool[tool.name].append(
+                    RuleEntry(priority=requirement.priority, rule=rule, requirement=requirement)
+                )
 
         # Add extra rules
         for rule in extra_rules or []:
@@ -89,21 +95,22 @@ class RequirementsReasoner:
                 raise ValueError(f"Tool '{rule.target}' not found.")
 
             rules = rules_by_tool[rule.target]
-            priority = max(rules, key=lambda v: v[1])[1] + 1 if rules else 1
-            rules.append((rule, priority))
+            priority = max(rules, key=lambda v: v.priority).priority + 1 if rules else 1
+            rules.append(RuleEntry(priority=priority, rule=rule, requirement=None))
 
         # Aggregate rules and infer the required tool
         for tool_name, rules in rules_by_tool.items():
             tool = self._find_tool_by_name(tool_name)
-            rules.sort(key=lambda x: x[1], reverse=True)  # DESC
+            rules.sort(key=lambda x: x.priority, reverse=True)  # DESC
 
-            max_priority = rules[0][1] if rules else 1
+            max_priority = rules[0].priority if rules else 1
             is_allowed = True
             is_forced = False
             is_hidden = False
             is_prevent_stop = False
 
-            for rule, _ in rules:
+            for rule_entry in rules:
+                rule = rule_entry.rule
                 if not rule.allowed:
                     is_allowed = False
                 if rule.hidden:
@@ -112,8 +119,6 @@ class RequirementsReasoner:
                     is_forced = True
                 if rule.prevent_stop:
                     is_prevent_stop = True
-                if rule.reason is not None:
-                    reason_by_tools[tool] = rule.reason
 
             if is_allowed and is_hidden:
                 is_allowed = False
@@ -138,7 +143,12 @@ class RequirementsReasoner:
                 remove_by_reference(allowed, self.final_answer)
 
         if not allowed:
-            raise FrameworkError("Unknown state. Tools cannot be empty.")
+            raise AgentError(
+                "One of the generated rules is preventing the agent from continuing. "
+                "This indicates that the provided requirements may conflict with each other. "
+                "See the following rules and their attached requirements that are preventing the agent from continuing."
+                f"\n{to_json(prevent_step_refs, indent=2, sort_keys=False)}"
+            )
 
         tool_choice: Literal["required"] | AnyTool = forced if forced is not None else "required"
         if len(allowed) == 1:
@@ -178,3 +188,11 @@ def _create_system_message(
             final_answer_instructions=request.final_answer.instructions,
         )
     )
+
+
+class RuleEntry(BaseModel):
+    model_config = ConfigDict(arbitrary_types_allowed=True)
+
+    rule: Rule
+    requirement: Requirement[RequirementAgentRunState] | None
+    priority: int

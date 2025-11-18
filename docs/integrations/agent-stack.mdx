@@ -256,7 +256,7 @@ Key Features:
 	
 	```
 
-	```ts TypeScript
+	```ts TypeScript [expandable]
 	// COMING SOON
 	```
 </CodeGroup>
@@ -277,7 +277,7 @@ Key Features:
 The server's behavior can be influenced via attributes listed in `AgentStackServerConfig` class (host, port, self registration, ...).
 Internally the server preserves every conversation, the custom strategy can be used by implementing the base `MemoryManager` class.
 
-```python
+```py Python [expandable]
 from beeai_framework.adapters.agentstack.serve.server import AgentStackServer, AgentStackServerConfig
 from beeai_framework.serve.utils import LRUMemoryManager
 
@@ -291,7 +291,7 @@ server = AgentStackServer(config=config, memory_manager=memory_manager)
 The agent’s meta information is inferred from its metadata (the `agent.meta` property).
 However, this information can be overridden during agent registration. See the following example.
 
-```python
+```py Python [expandable]
 from beeai_framework.adapters.agentstack.serve.server import AgentStackServer
 from beeai_framework.adapters.agentstack.backend.chat import AgentStackChatModel
 from agentstack_sdk.a2a.extensions.ui.agent_detail import AgentDetail
@@ -463,7 +463,7 @@ It does so by leveraging the [Citation Extension](https://docs.beeai.dev/build-a
 	
 	```
 
-	```ts TypeScript
+	```ts TypeScript [expandable]
 	// COMING SOON
 	```
 

@@ -64,8 +64,7 @@ You can also use other LLM providers like OpenAI, Anthropic, or watsonx - see [B
 Let's start with the simplest possible agent - one that can respond to messages.
 
 <CodeGroup>
-```py Python
-import asyncio
+```py Python [expandable]import asyncio
 from beeai_framework.agents.requirement import RequirementAgent
 from beeai_framework.backend import ChatModel
 
@@ -124,7 +123,7 @@ Give your agent the ability to access real-world information, external systems, 
 
 <CodeGroup>
 
-```py Python
+```py Python [expandable]
 import asyncio
 from beeai_framework.agents.requirement import RequirementAgent
 from beeai_framework.backend import ChatModel
@@ -179,7 +178,7 @@ The most simple way to see what's happening in your application is by using `Glo
 
 <CodeGroup>
 
-```py Python
+```py Python [expandable]
 import asyncio
 from beeai_framework.agents.requirement import RequirementAgent
 from beeai_framework.backend import ChatModel
@@ -217,7 +216,7 @@ Sometimes you want to react to specific events. To see which events are emitted,
 
 <CodeGroup>
 
-```py Python
+```py Python [expandable]
 import asyncio
 from beeai_framework.agents.requirement import RequirementAgent
 from beeai_framework.backend import ChatModel
@@ -253,7 +252,7 @@ Alternatively, you can listen for events on the class itself rather than for a s
 
 <CodeGroup>
 
-```py Python
+```py Python [expandable]
 import asyncio
 from beeai_framework.agents.requirement import RequirementAgent
 from beeai_framework.backend import ChatModel
@@ -300,7 +299,7 @@ Logging is a way to provide visibility into the state of your application. Set t
 
 <CodeGroup>
 
-```py Python
+```py Python [expandable]
 import asyncio
 from beeai_framework.agents.requirement import RequirementAgent
 from beeai_framework.backend import ChatModel
@@ -381,7 +380,7 @@ $env:OTEL_EXPORTER_OTLP_ENDPOINT="https://your-otel-endpoint"
 
 <CodeGroup>
 
-```py Python
+```py Python [expandable]
 from openinference.instrumentation.beeai import BeeAIInstrumentor
 from opentelemetry import trace as trace_api
 from opentelemetry.exporter.otlp.proto.http.trace_exporter import OTLPSpanExporter
@@ -417,7 +416,7 @@ Learn more about the [RequirementAgent](/modules/agents/requirement-agent)
 
 <CodeGroup>
 
-```py Python
+```py Python [expandable]
 import asyncio
 from beeai_framework.agents.requirement import RequirementAgent
 from beeai_framework.agents.requirement.requirements.conditional import ConditionalRequirement
@@ -476,7 +475,7 @@ Add user permission for when you want an action to be human validated before bei
 
 <CodeGroup>
 
-```py Python
+```py Python [expandable]
 import asyncio
 from beeai_framework.agents.requirement import RequirementAgent
 from beeai_framework.agents.requirement.requirements.conditional import ConditionalRequirement
@@ -557,7 +556,7 @@ Let's give your agent access to a knowledge base of documents.
 
 <CodeGroup>
 
-```py Python
+```py Python [expandable]
 import asyncio
 from beeai_framework.backend.document_loader import DocumentLoader
 from beeai_framework.backend.embedding import EmbeddingModel
@@ -649,7 +648,7 @@ COMING SOON
 
 <CodeGroup>
 
-```py Python
+```py Python [expandable]
 import asyncio
 from beeai_framework.agents.requirement import RequirementAgent
 from beeai_framework.backend import ChatModel
@@ -721,7 +720,7 @@ Create a team of specialized agents that can collaborate:
 
 <CodeGroup>
 
-```py Python
+```py Python [expandable]
 import asyncio
 from beeai_framework.agents.requirement import RequirementAgent
 from beeai_framework.backend import ChatModel
@@ -834,7 +833,7 @@ Configure a cache on your LLM to avoid paying for repeated queries:
 
 <CodeGroup>
 
-```py Python
+```py Python [expandable]
 import asyncio
 from beeai_framework.backend import ChatModel, UserMessage
 from beeai_framework.cache import SlidingCache
@@ -870,7 +869,7 @@ Many tools query APIs or perform expensive lookups. You can attach a cache direc
 
 <CodeGroup>
 
-```py Python
+```py Python [expandable]
 from beeai_framework.tools.weather import OpenMeteoTool
 from beeai_framework.cache import UnconstrainedCache
 
@@ -888,7 +887,7 @@ COMING SOON
 
 <CodeGroup>
 
-```py Python
+```py Python [expandable]
 from beeai_framework.agents.requirement import RequirementAgent
 from beeai_framework.tools.weather import OpenMeteoTool
 from beeai_framework.cache import UnconstrainedCache
@@ -935,7 +934,7 @@ Make your system robust with comprehensive error management:
 
 <CodeGroup>
 
-```py Python
+```py Python [expandable]
 import asyncio
 import traceback
 from beeai_framework.agents.requirement import RequirementAgent
@@ -986,7 +985,7 @@ Expose your agent as an **MCP server**:
 
 <CodeGroup>
 
-```py Python
+```py Python [expandable]
 from beeai_framework.adapters.mcp import MCPServer
 from beeai_framework.tools.weather import OpenMeteoTool
 from beeai_framework.tools.search.wikipedia import WikipediaTool
@@ -1026,7 +1025,7 @@ pip install `'beeai-framework[a2a]' 'beeai-framework[agentstack]'`  and you have
 
 <CodeGroup>
 
-```py Python
+```py Python [expandable]
 from beeai_framework.adapters.agentstack.serve.server import AgentStackServer
 from beeai_framework.agents.requirement import RequirementAgent
 from beeai_framework.backend import ChatModel
@@ -1072,7 +1071,7 @@ pip install `'beeai-framework[a2a]'`  and you have a compatible version of `uvic
 
 <CodeGroup>
 
-```py Python
+```py Python [expandable]
 from beeai_framework.adapters.a2a import A2AServer, A2AServerConfig
 from beeai_framework.agents.requirement import RequirementAgent
 from beeai_framework.backend import ChatModel
@@ -1111,7 +1110,7 @@ Expose your agent as an **IBM watsonx Orchestrate server**:
 
 <CodeGroup>
 
-```py Python
+```py Python [expandable]
 from beeai_framework.adapters.watsonx_orchestrate import WatsonxOrchestrateServer, WatsonxOrchestrateServerConfig
 from beeai_framework.agents.requirement import RequirementAgent
 from beeai_framework.backend import ChatModel

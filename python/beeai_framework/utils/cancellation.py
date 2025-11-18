@@ -9,9 +9,6 @@ from typing import TypeVar
 from pydantic import BaseModel
 
 from beeai_framework.errors import AbortError
-from beeai_framework.logger import Logger
-
-logger = Logger(__name__)
 
 T = TypeVar("T")
 
