@@ -27,6 +27,7 @@ from beeai_framework.utils.strings import to_safe_word
 class Rule(BaseModel):
     target: str = Field(..., description="A tool that the requirement apply to.")
     allowed: bool = Field(True, description="Can the agent use the tool?")
+    reason: str | None = Field(None, description="Reason for the rule.")
     prevent_stop: bool = Field(False, description="Prevent the agent from terminating.")
     forced: bool = Field(False, description="Must the agent use the tool?")
     hidden: bool = Field(False, description="Completely omit the tool.")
@@ -84,6 +85,15 @@ class Requirement(ABC, Generic[T]):
         instance.enabled = self.enabled
         instance.state = self.state.copy()
         return instance
+
+    def to_json_safe(self) -> dict[str, Any]:
+        return {
+            "name": self.name,
+            "priority": self.priority,
+            "enabled": self.enabled,
+            "state": self.state,
+            "class_name": self.__class__.__name__,
+        }
 
 
 TSelf = TypeVar("TSelf", bound=Requirement[Any])
