@@ -87,7 +87,7 @@ class RequirementAgentRequest(BaseModel):
 
     tools: list[AnyTool]
     allowed_tools: list[AnyTool]
-    reason_by_tools: WeakKeyDictionary[AnyTool, str | None]
+    reason_by_tool: WeakKeyDictionary[AnyTool, str | None]
     hidden_tools: list[AnyTool]
     tool_choice: ChatModelToolChoice
     final_answer: FinalAnswerTool

@@ -71,7 +71,7 @@ class RequirementsReasoner:
         hidden: list[AnyTool] = []
         allowed: list[AnyTool] = []
         all_tools: list[AnyTool] = list(self._tools)
-        reason_by_tools: WeakKeyDictionary[AnyTool, str | None] = WeakKeyDictionary()
+        reason_by_tool: WeakKeyDictionary[AnyTool, str | None] = WeakKeyDictionary()
 
         prevent_stop: bool = False
         prevent_step_refs: list[RuleEntry] = []
@@ -119,6 +119,9 @@ class RequirementsReasoner:
                     is_forced = True
                 if rule.prevent_stop:
                     is_prevent_stop = True
+                    prevent_step_refs.append(rule_entry)
+                if rule.reason:
+                    reason_by_tool[tool] = rule.reason
 
             if is_allowed and is_hidden:
                 is_allowed = False
@@ -157,7 +160,7 @@ class RequirementsReasoner:
         return RequirementAgentRequest(
             tools=all_tools,
             allowed_tools=allowed,
-            reason_by_tools=reason_by_tools,
+            reason_by_tool=reason_by_tool,
             tool_choice=tool_choice if isinstance(tool_choice, Tool) or force_tool_call or prevent_stop else "auto",
             final_answer=self.final_answer,
             hidden_tools=hidden,
@@ -174,7 +177,7 @@ def _create_system_message(
                 RequirementAgentToolTemplateDefinition.from_tool(
                     tool,
                     allowed=tool in request.allowed_tools,
-                    reason=request.reason_by_tools.get(tool, None),
+                    reason=request.reason_by_tool.get(tool, None),
                 )
                 for tool in request.tools
                 if tool not in request.hidden_tools
