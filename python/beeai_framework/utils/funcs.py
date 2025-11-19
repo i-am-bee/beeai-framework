@@ -52,6 +52,10 @@ def safe_invoke(fn: Callable[P, T]) -> Callable[P, T]:
     """Safely invoke the function by striping all unknown keyword arguments."""
     allowed_kwargs = get_keyword_arg_names(fn)
 
+    # The `**<name>` placeholder from `get_keyword_arg_names` indicates a generic `**kwargs`.
+    if any(key.startswith("**") for key in allowed_kwargs):
+        return fn
+
     def handler(*args: P.args, **kwargs: P.kwargs) -> T:
         valid_kwargs = include_keys(kwargs, allowed_kwargs)
         return fn(*args, **valid_kwargs)
