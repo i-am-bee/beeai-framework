@@ -50,6 +50,10 @@ class InvisibleTextDetectionMiddleware(RunMiddlewareProtocol):
         if "input" in run_params:
             input_data = run_params["input"]
 
+            # Do nothing if empty input
+            if not input_data:
+                return
+
             # Scan input
             if self._scan(input_data):
                 print("🚫 Content blocked: Invisible text detected in the input")
@@ -63,7 +67,8 @@ class InvisibleTextDetectionMiddleware(RunMiddlewareProtocol):
 
     def _scan(self, text: str) -> bool:
         """Check if text contains invisible text."""
-        _, is_valid, _ = self.scanner.scan(text)
+        msg = text if isinstance(text, str) else text[0].text
+        _, is_valid, _ = self.scanner.scan(msg)
         return not is_valid
 
 

@@ -12,7 +12,7 @@ from typing import Literal, TypeAlias
 
 from beeai_framework.agents import AgentOutput
 from beeai_framework.agents.requirement import RequirementAgent
-from beeai_framework.backend import AssistantMessage, ChatModel
+from beeai_framework.backend import AnyMessage, AssistantMessage, ChatModel, UserMessage
 from beeai_framework.context import RunContext, RunContextStartEvent, RunMiddlewareProtocol
 from beeai_framework.emitter import EmitterOptions, EventMeta
 from beeai_framework.emitter.utils import create_internal_event_matcher
@@ -58,13 +58,19 @@ class SecretsDetectionMiddleware(RunMiddlewareProtocol):
         if "input" in run_params:
             input_data = run_params["input"]
 
+            # Do nothing if empty input
+            if not input_data:
+                return
+
             # Scan input
             sanitized_data, contains_secret = self._scan(input_data)
-            print(sanitized_data)
             if contains_secret:
                 if self.permissive:
                     print("🛡️ Content redacted: Secrets were detected and masked in the input")
-                    data.input["input"] = sanitized_data
+                    if isinstance(input_data, str):
+                        data.input["input"] = sanitized_data
+                    else:
+                        data.input["input"][-1] = sanitized_data
                 else:
                     print("🚫 Content blocked: Secrets detected in the input")
                     custom_output = AgentOutput(
@@ -75,10 +81,11 @@ class SecretsDetectionMiddleware(RunMiddlewareProtocol):
                     # Set the output on the event to prevent normal execution
                     data.output = custom_output
 
-    def _scan(self, text: str) -> tuple[str, bool]:
+    def _scan(self, text: str | list[AnyMessage]) -> tuple[str, bool]:
         """Check if text contains a secret."""
-        redacted, is_valid, _ = self.scanner.scan(text)
-        return redacted, not is_valid
+        msg = text if isinstance(text, str) else text[0].text
+        sanitized_data, is_valid, _ = self.scanner.scan(msg)
+        return sanitized_data, not is_valid
 
 
 async def main() -> None:
@@ -117,6 +124,13 @@ async def main() -> None:
     print("=== Testing Clean Input ===")
     try:
         result = await agent.run("What is 2 + 2?")
+        print("Response:", result.last_message.text)
+    except Exception as e:
+        print(f"Error: {e}")
+
+    print("=== Testing Clean Input (list of messages) ===")
+    try:
+        result = await agent.run([UserMessage("What is 2 + 2?")])
         print("Response:", result.last_message.text)
     except Exception as e:
         print(f"Error: {e}")
