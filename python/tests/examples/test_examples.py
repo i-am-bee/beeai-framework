@@ -30,6 +30,8 @@ exclude = list(
             "backend/providers/gemini.py" if os.getenv("GEMINI_API_KEY") is None else None,
             "backend/providers/amazon_bedrock.py" if os.getenv("AWS_ACCESS_KEY_ID") is None else None,
             "backend/providers/anthropic.py" if os.getenv("ANTHROPIC_API_KEY") is None else None,
+            "backend/providers/qwen.py" if os.getenv("DASHSCOPE_API_KEY") is None else None,
+            "backend/providers/deepseek.py" if os.getenv("DEEPSEEK_API_KEY") is None else None,
             "backend/providers/azure_openai.py" if os.getenv("AZURE_API_KEY") is None else None,
             "backend/providers/transformers_hf.py" if os.getenv("TRANSFORMERS_CHAT_MODEL") is None else None,
             "backend/providers/langchain_compatible.py",
