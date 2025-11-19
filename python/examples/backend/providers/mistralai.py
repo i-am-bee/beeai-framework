@@ -93,6 +93,14 @@ async def mistralai_embedding() -> None:
         print(*row)
 
 
+async def mistralai_cloning() -> None:
+    llm = MistralAIChatModel(MODEL_NAME)
+    await llm.clone()
+
+    embedding_llm = MistralAIEmbeddingModel()
+    await embedding_llm.clone()
+
+
 async def main() -> None:
     print("*" * 10, "mistralai_from_name")
     await mistralai_from_name()
@@ -108,6 +116,8 @@ async def main() -> None:
     await mistralai_stream_parser()
     print("*" * 10, "mistralai_embedding")
     await mistralai_embedding()
+    print("*" * 10, "mistralai_cloning")
+    await mistralai_cloning()
 
 
 if __name__ == "__main__":

@@ -1,3 +1,13 @@
+## python_v0.1.68 (2025-11-19)
+
+### Bug Fixes
+
+- **backend**: improve cloning and add tests (#1311)
+
+### Features
+
+- **backend**: handle streamed tool calls without ID (#1312)
+
 ## python_v0.1.67 (2025-11-18)
 
 ### Bug Fixes

@@ -139,6 +139,14 @@ async def ollama_embedding() -> None:
         print(*row)
 
 
+async def ollama_cloning() -> None:
+    llm = OllamaChatModel("llama3.1")
+    await llm.clone()
+
+    embedding_llm = OllamaEmbeddingModel()
+    await embedding_llm.clone()
+
+
 async def main() -> None:
     print("*" * 10, "ollama_from_name")
     await ollama_from_name()
@@ -160,6 +168,8 @@ async def main() -> None:
     await ollama_tool_calling()
     print("*" * 10, "ollama_embedding")
     await ollama_embedding()
+    print("*" * 10, "ollama_cloning")
+    await ollama_cloning()
 
 
 if __name__ == "__main__":

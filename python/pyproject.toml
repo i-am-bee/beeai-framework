@@ -1,6 +1,6 @@
 [project]
 name = "beeai-framework"
-version="0.1.67"
+version="0.1.68"
 license = "Apache-2.0"
 readme = "README.md"
 authors = [{ name = "IBM Corp." }]
@@ -24,7 +24,7 @@ aiofiles = "^24.1.0"
 boto3 = {version = "^1.37.5", optional = true}
 cachetools = ">=5.5.2"
 chevron = "^0.14.0"
-ddgs = { version="^9.6.0", optional = true }
+ddgs = { version="^9.9.1", optional = true }
 fastapi = {version = "^0.116.0", optional = true }
 google-auth = { version = ">=2.14,<3.0.0", optional = true }
 json-repair = "^0.52.5"

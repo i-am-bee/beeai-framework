@@ -1327,25 +1327,26 @@ typing-inspect = ">=0.4.0,<1"
 
 [[package]]
 name = "ddgs"
-version = "9.6.1"
+version = "9.9.1"
 description = "Dux Distributed Global Search. A metasearch library that aggregates results from diverse web search services."
 optional = true
-python-versions = ">=3.9"
+python-versions = ">=3.10"
 groups = ["main"]
 markers = "(platform_machine == \"arm64\" or platform_machine == \"x86_64\" or platform_machine != \"arm64\" and platform_machine != \"x86_64\" or sys_platform != \"darwin\") and (extra == \"search\" or extra == \"duckduckgo\" or extra == \"all\")"
 files = [
-    {file = "ddgs-9.6.1-py3-none-any.whl", hash = "sha256:e7d7e0c4dbae3f287627b9f6e411278256d7859d017bbad45b8229c230bf5270"},
-    {file = "ddgs-9.6.1.tar.gz", hash = "sha256:15ec3aace0417c0ab3c0184059e1e03dbd6bda8d3be6108949c18ad7b4cd1e11"},
+    {file = "ddgs-9.9.1-py3-none-any.whl", hash = "sha256:bba5701462bc9c8eac69fdd2edf7e833e74741b2bae3593489e470e125e9601d"},
+    {file = "ddgs-9.9.1.tar.gz", hash = "sha256:d33529abb56aa5b98eb436565a6bfa48f07eb04dca18d323df723b83cb007e4f"},
 ]
 
 [package.dependencies]
 click = ">=8.1.8"
+fake-useragent = ">=2.2.0"
 httpx = {version = ">=0.28.1", extras = ["brotli", "http2", "socks"]}
-lxml = ">=6.0.0"
+lxml = ">=4.9.4"
 primp = ">=0.15.0"
 
 [package.extras]
-dev = ["mypy (>=1.17.1)", "pytest (>=8.4.1)", "pytest-dependency (>=0.6.0)", "ruff (>=0.13.0)"]
+dev = ["lxml-stubs", "mypy (>=1.17.1)", "pre-commit", "pytest (>=8.4.1)", "pytest-dependency (>=0.6.0)", "ruff (>=0.13.0)", "types-Pygments", "types-pexpect"]
 
 [[package]]
 name = "decli"
@@ -1592,6 +1593,19 @@ files = [
 
 [package.extras]
 testing = ["hatch", "pre-commit", "pytest", "tox"]
+
+[[package]]
+name = "fake-useragent"
+version = "2.2.0"
+description = "Up-to-date simple useragent faker with real world database"
+optional = true
+python-versions = ">=3.9"
+groups = ["main"]
+markers = "(platform_machine == \"arm64\" or platform_machine == \"x86_64\" or platform_machine != \"arm64\" and platform_machine != \"x86_64\" or sys_platform != \"darwin\") and (extra == \"search\" or extra == \"duckduckgo\" or extra == \"all\")"
+files = [
+    {file = "fake_useragent-2.2.0-py3-none-any.whl", hash = "sha256:67f35ca4d847b0d298187443aaf020413746e56acd985a611908c73dba2daa24"},
+    {file = "fake_useragent-2.2.0.tar.gz", hash = "sha256:4e6ab6571e40cc086d788523cf9e018f618d07f9050f822ff409a4dfe17c16b2"},
+]
 
 [[package]]
 name = "fastapi"
@@ -9629,3 +9643,4 @@ wikipedia = ["wikipedia-api"]
 lock-version = "2.1"
 python-versions = ">= 3.11,<3.14"
 content-hash = "f72a42489f29c01b91f398a88f3ff39d0c641ecd83baf4a32015d9237f807460"
+content-hash = "d6544ab559527fbea59a9005c98115709fd0a9c6f4be7453875c3716d31469fd"
