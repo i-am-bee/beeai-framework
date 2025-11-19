@@ -63,4 +63,5 @@ def traverse(obj: dict[str, Any] | list[Any], *, path: str = "") -> Iterator[tup
 
 
 def is_typed_dict_type(tp: Any) -> bool:
+    """Return True if tp is a TypedDict class."""
     return isinstance(tp, type) and hasattr(tp, "__annotations__") and hasattr(tp, "__total__")

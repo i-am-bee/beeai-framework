@@ -48,19 +48,17 @@ def is_same_function(f1: Callable[..., Any], f2: Callable[..., Any]) -> bool:
     return self1 is self2
 
 
-def safe_invoke(fn: Callable[P, T]) -> Callable[P, T]:
-    """Safely invoke the function by striping all unknown keyword arguments."""
-    allowed_kwargs = get_keyword_arg_names(fn)
+P = ParamSpec("P")
 
-    # The `**<name>` placeholder from `get_keyword_arg_names` indicates a generic `**kwargs`.
-    if any(key.startswith("**") for key in allowed_kwargs):
-        return fn
 
-    def handler(*args: P.args, **kwargs: P.kwargs) -> T:
+def safe_invoke(cls: Callable[P, T]) -> Callable[P, T]:
+    allowed_kwargs = get_keyword_arg_names(cls)
+
+    def construct(*args: P.args, **kwargs: P.kwargs) -> T:
         valid_kwargs = include_keys(kwargs, allowed_kwargs)
-        return fn(*args, **valid_kwargs)
+        return cls(*args, **valid_kwargs)
 
-    return handler
+    return construct
 
 
 def get_keyword_arg_names(func: Callable[..., Any]) -> set[str]:
