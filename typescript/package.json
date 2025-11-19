@@ -141,7 +141,7 @@
     "@ai-sdk/xai": "^1.2.18",
     "@ai-zen/node-fetch-event-source": "^2.1.4",
     "@streamparser/json": "^0.0.22",
-    "ai": "^4.3.19",
+    "ai": "^5.0.52",
     "ajv": "^8.17.1",
     "ajv-formats": "^3.0.1",
     "duck-duck-scrape": "^2.2.7",
