@@ -60,10 +60,6 @@ class step:  # noqa: N801
     def step_factory(self, func: AsyncStepFunction) -> WorkflowStep:
         return FuncWorkflowStep(func=func)
 
-    # class start_step(step):  # noqa: N801
-    #     def __init__(self, func: StartStepMethod) -> None:
-    #         super().__init__(func, is_start=True)
-
 
 class end_step(step):  # noqa: N801
     def step_factory(self, func: AsyncStepFunction) -> WorkflowStep:
@@ -90,7 +86,9 @@ class Workflow(Runnable[RunnableOutput], ABC):
         self.build(WorkflowBuilder([self._start_step]))
 
         # Need to detect back edges to avoid deadlock
-        def detect_back_edges(step: WorkflowStep, visited: set | None = None, stack: set | None = None) -> None:
+        def detect_back_edges(
+            step: WorkflowStep, visited: set[WorkflowStep] | None = None, stack: set[WorkflowStep] | None = None
+        ) -> None:
             if visited is None:
                 visited = set()
             if stack is None:
