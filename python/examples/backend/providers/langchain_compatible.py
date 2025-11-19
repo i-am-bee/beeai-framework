@@ -138,6 +138,12 @@ Current date is {datetime.now(tz=UTC).date()!s}
     print(final_response.get_text_content())
 
 
+async def langchain_ollama_cloning() -> None:
+    langchain_llm = LangChainOllamaChat(model="granite4:micro")
+    llm = LangChainChatModel(langchain_llm)
+    await llm.clone()
+
+
 async def main() -> None:
     print("*" * 10, "langchain_ollama_from_name")
     await langchain_ollama_from_name()
@@ -155,6 +161,8 @@ async def main() -> None:
     await langchain_ollama_stream_parser()
     print("*" * 10, "langchain_ollama_tool_calling")
     await langchain_ollama_tool_calling()
+    print("*" * 10, "langchain_ollama_cloning")
+    await langchain_ollama_cloning()
 
 
 if __name__ == "__main__":

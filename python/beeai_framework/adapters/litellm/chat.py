@@ -7,6 +7,8 @@ from collections.abc import AsyncGenerator
 from itertools import chain
 from typing import Any, Self
 
+from beeai_framework.utils.funcs import safe_invoke
+
 if not os.getenv("LITELLM_LOCAL_MODEL_COST_MAP", None):
     os.environ["LITELLM_LOCAL_MODEL_COST_MAP"] = "True"
 
@@ -348,11 +350,11 @@ class LiteLLMChatModel(ChatModel, ABC):
         return {"type": "json_schema", "json_schema": json_schema}
 
     async def clone(self) -> Self:
-        cloned = self.__class__(
+        cloned: Self = safe_invoke(self.__class__)(
             model_id=self.model_id,
             provider_id=self._litellm_provider_id,
             parameters=self.parameters.model_copy(),
-            cache=await self.cache.clone() if self.cache else None,  # type: ignore
+            cache=await self.cache.clone() if self.cache else None,
             tool_call_fallback_via_response_format=self.tool_call_fallback_via_response_format,
             model_supports_tool_calling=self.model_supports_tool_calling,
             use_strict_model_schema=self.use_strict_model_schema,

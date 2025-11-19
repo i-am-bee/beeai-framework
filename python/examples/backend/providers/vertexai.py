@@ -77,6 +77,11 @@ async def vertexai_stream_parser() -> None:
     print(result)
 
 
+async def vertexai_cloning() -> None:
+    llm = VertexAIChatModel("gemini-2.0-flash-lite-001")
+    await llm.clone()
+
+
 async def main() -> None:
     print("*" * 10, "vertexai_from_name")
     await vertexai_from_name()
@@ -90,6 +95,8 @@ async def main() -> None:
     await vertexai_structure()
     print("*" * 10, "vertexai_stream_parser")
     await vertexai_stream_parser()
+    print("*" * 10, "vertexai_cloning")
+    await vertexai_cloning()
 
 
 if __name__ == "__main__":
