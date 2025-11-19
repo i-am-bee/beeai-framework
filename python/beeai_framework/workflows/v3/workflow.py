@@ -16,11 +16,13 @@ from beeai_framework.workflows.v3.events import (
 from beeai_framework.workflows.v3.step import (
     EndWorkflowStep,
     FuncWorkflowStep,
+    JoinWorkflowStep,
     StartWorkflowStep,
     WorkflowBuilder,
     WorkflowStep,
 )
 from beeai_framework.workflows.v3.types import AsyncStepFunction
+from beeai_framework.workflows.v3.util import run_callable
 
 T = TypeVar("T", bound="Workflow")
 
@@ -87,6 +89,36 @@ class Workflow(Runnable[RunnableOutput], ABC):
         self._start_step: WorkflowStep = StartWorkflowStep(func=self.start)
         self.build(WorkflowBuilder([self._start_step]))
 
+        # Need to detect back edges to avoid deadlock
+        def detect_back_edges(step: WorkflowStep, visited: set | None = None, stack: set | None = None) -> None:
+            if visited is None:
+                visited = set()
+            if stack is None:
+                stack = set()
+
+            visited.add(step)
+            stack.add(step)
+
+            for ds_edge in step._downstream_edges:
+                target = ds_edge.target
+
+                if target in stack:
+                    # Back edge: cycle
+                    # print(f"Back edge detected: {step.name} -> {target.name}")
+                    ds_edge.optional = True
+
+                    for us_edge in target._upstream_edges:
+                        if us_edge.source is ds_edge.source and us_edge.target is ds_edge.target:
+                            us_edge.optional = True
+                            break  # There should be exactly one
+
+                elif target not in visited:
+                    detect_back_edges(target, visited, stack)
+
+            stack.remove(step)
+
+        detect_back_edges(self._start_step)
+
         # Execute the workflow rooted at the start node
         queue: asyncio.Queue[Any] = asyncio.Queue()
         await queue.put(self._start_step)
@@ -97,17 +129,20 @@ class Workflow(Runnable[RunnableOutput], ABC):
 
         async def execute_step(step: WorkflowStep) -> None:
             # Send run input and kwargs to start step, otherwise get from upstream
-            results = [input, kwargs] if isinstance(step, StartWorkflowStep) else [u.result for u in step.upstream]
 
-            if not await step.condition(*results):
-                # This assumes that this step/branch has been skipped
-                # Allows downstream to proceed
-                for ds in step._downstream:
-                    ds.remaining_upstream -= 1
-                return
+            results = []
+
+            if isinstance(step, StartWorkflowStep):
+                results = [input, kwargs]
+            else:
+                for us in step.upstream_steps:
+                    # Joins return aggregate
+                    if isinstance(us, JoinWorkflowStep):
+                        results.extend(us.result)
+                    else:
+                        results.append(us.result)
 
             print("Executing:", step.name)
-
             await step.execute(*results)
             completed_steps.add(step)
 
@@ -120,11 +155,23 @@ class Workflow(Runnable[RunnableOutput], ABC):
                 await queue.put(step)
                 return
 
-            # Queue any downstream if all upstream have completed
-            # TODO: Loop until?
-            for ds in step._downstream:
-                ds.remaining_upstream -= 1
-                if ds.remaining_upstream == 0:
+            step.has_executed = True
+
+            # Enqueue downstream
+            for ds_edge in step._downstream_edges:
+                ds = ds_edge.target
+                enqueue_ds = True
+                for up_edge in ds._upstream_edges:
+                    up = up_edge.source
+                    if not up.has_executed and not up_edge.optional:
+                        enqueue_ds = False
+                        break
+
+                if enqueue_ds and ds_edge.condition is not None:
+                    enqueue_ds = bool(await run_callable(ds_edge.condition.fn, *results) == ds_edge.condition.key)
+
+                if enqueue_ds:
+                    ds.has_executed = False
                     await queue.put(ds)
 
         while not queue.empty() or tasks:
@@ -136,11 +183,9 @@ class Workflow(Runnable[RunnableOutput], ABC):
                 task.add_done_callback(tasks.discard)
                 queue.task_done()
 
-            # Wait for all tasks on the queue to complete before proceeding
-            # In certain cases this may not be optimal, but significantly simplifies implementation
             if tasks:
-                done, _ = await asyncio.wait(tasks)
-                # done, _ = await asyncio.wait(tasks, return_when=asyncio.FIRST_COMPLETED)
+                # done, _ = await asyncio.wait(tasks)
+                done, _ = await asyncio.wait(tasks, return_when=asyncio.FIRST_COMPLETED)
 
         return output
 

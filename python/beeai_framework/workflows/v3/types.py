@@ -4,15 +4,16 @@
 from collections.abc import Awaitable, Callable, Coroutine
 from typing import Any
 
-from beeai_framework.runnable import RunnableOutput
 from pydantic import BaseModel
+
+from beeai_framework.runnable import RunnableOutput
 
 ControllerFunction = Callable[..., Awaitable[Any]]
 BooleanControllerFunction = Callable[..., Awaitable[bool]]
 AsyncStepFunction = Callable[..., Coroutine[Any, Any, Any]]
 
 
-class StepCondition(BaseModel):
+class BranchCondition(BaseModel):
     fn: ControllerFunction
     key: Any
 
@@ -20,9 +21,6 @@ class StepCondition(BaseModel):
 class StepLoopCondition(BaseModel):
     fn: BooleanControllerFunction
 
-
-# # Start of workflow
-# StartStepMethod = Callable[[TWorkflow, list[AnyMessage], Unpack[RunnableOptions]], Coroutine[Any, Any, Any]]
 
 # # End of workflow
 EndStepMethod = Callable[..., Coroutine[Any, Any, RunnableOutput]]

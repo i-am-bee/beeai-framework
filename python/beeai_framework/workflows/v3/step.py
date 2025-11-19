@@ -9,8 +9,8 @@ from typing import Any
 from beeai_framework.workflows.v3.types import (
     AsyncStepFunction,
     BooleanControllerFunction,
+    BranchCondition,
     ControllerFunction,
-    StepCondition,
     StepLoopCondition,
 )
 from beeai_framework.workflows.v3.util import run_callable
@@ -21,27 +21,37 @@ class WorkflowBuilder:
         self._frontier = frontier or []
 
     def then(self, next_steps: WorkflowStep | list[WorkflowStep]) -> WorkflowBuilder:
-        if not isinstance(next_steps, list):
+        if isinstance(next_steps, list):
+            for prev in self._frontier:
+                join_step = JoinWorkflowStep()
+
+                for nxt in next_steps:
+                    prev.add_downstream_step(nxt)
+                    nxt.add_upstream_step(prev)
+
+                    nxt.add_downstream_step(join_step)
+                    join_step.add_upstream_step(nxt)
+
+            return WorkflowBuilder([join_step])
+        else:
             next_steps = [next_steps]
+            for prev in self._frontier:
+                for nxt in next_steps:
+                    prev.add_downstream_step(nxt)
+                    nxt.add_upstream_step(prev)
 
-        for prev in self._frontier:
-            for nxt in next_steps:
-                prev.add_downstream(nxt)
-                nxt.add_upstream(prev)
-
-        return WorkflowBuilder(next_steps)
+            return WorkflowBuilder(next_steps)
 
     def branch(self, steps: dict[Any, WorkflowStep], branch_fn: ControllerFunction) -> WorkflowBuilder:
-        for key, step in steps.items():
-            # Apply guard to each step
-            step.guard_condition = StepCondition(fn=branch_fn, key=key)
-
         for prev in self._frontier:
-            for nxt in steps.values():
-                prev.add_downstream(nxt)
-                nxt.add_upstream(prev)
+            join_step = JoinWorkflowStep()
+            for key, nxt in steps.items():
+                prev.add_downstream_step(nxt, BranchCondition(fn=branch_fn, key=key))
+                nxt.add_upstream_step(prev)
+                nxt.add_downstream_step(join_step, optional=True)
+                join_step.add_upstream_step(nxt, optional=True)
 
-        return WorkflowBuilder(list(steps.values()))
+        return WorkflowBuilder([join_step])
 
     def loop_until(
         self,
@@ -53,40 +63,51 @@ class WorkflowBuilder:
         )
 
         for prev in self._frontier:
-            prev.add_downstream(step)
-            step.add_upstream(prev)
+            prev.add_downstream_step(step)
+            step.add_upstream_step(prev)
 
         return WorkflowBuilder([step])
+
+
+class WorkflowEdge:
+    def __init__(
+        self,
+        source: WorkflowStep,
+        target: WorkflowStep,
+        condition: BranchCondition | None = None,
+        optional: bool = False,
+    ) -> None:
+        self.source = source
+        self.target = target
+        self.condition = condition
+        self.optional = optional
 
 
 class WorkflowStep(ABC):
     def __init__(self) -> None:
         super().__init__()
-        self._upstream: list[WorkflowStep] = []
-        self._downstream: list[WorkflowStep] = []
-        self.remaining_upstream: int = 0
-        self.guard_condition: StepCondition | None = None
+
+        self._upstream_edges: list[WorkflowEdge] = []
+        self._downstream_edges: list[WorkflowEdge] = []
+
+        self.has_executed: bool = False
         self.loop_condition: StepLoopCondition | None = None
 
-    def add_upstream(self, step: WorkflowStep) -> None:
-        self._upstream.append(step)
-        self.remaining_upstream = len(self._upstream)
+    def add_upstream_step(self, step: WorkflowStep, optional: bool = False) -> None:
+        self._upstream_edges.append(WorkflowEdge(step, self, optional=optional))
 
-    def add_downstream(self, step: WorkflowStep) -> None:
-        self._downstream.append(step)
-
-    @property
-    def upstream(self) -> list[WorkflowStep]:
-        return self._upstream
+    def add_downstream_step(
+        self, step: WorkflowStep, condition: BranchCondition | None = None, optional: bool = False
+    ) -> None:
+        self._downstream_edges.append(WorkflowEdge(self, step, condition=condition, optional=optional))
 
     @property
-    def downstream(self) -> list[WorkflowStep]:
-        return self._downstream
+    def upstream_steps(self) -> list[WorkflowStep]:
+        return [edge.source for edge in self._upstream_edges]
 
-    async def condition(self, *inputs: Any) -> bool:
-        if self.guard_condition:
-            return bool(await run_callable(self.guard_condition.fn, inputs) == self.guard_condition.key)
-        return True
+    @property
+    def downstream_steps(self) -> list[WorkflowStep]:
+        return [edge.target for edge in self._downstream_edges]
 
     @property
     @abstractmethod
@@ -105,6 +126,23 @@ class WorkflowStep(ABC):
         if self.loop_condition:
             return bool(await run_callable(self.loop_condition.fn, inputs))
         return False
+
+
+class JoinWorkflowStep(WorkflowStep):
+    @property
+    def name(self) -> str:
+        return "__join__"
+
+    async def execute(self, *inputs: Any) -> Any:
+        pass
+
+    @property
+    def result(self) -> Any:
+        res = []
+        for up in self.upstream_steps:
+            if up.has_executed:
+                res.append(up.result)
+        return res
 
 
 class FuncWorkflowStep(WorkflowStep):

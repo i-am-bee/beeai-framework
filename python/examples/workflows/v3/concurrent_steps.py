@@ -65,11 +65,11 @@ class ConcurrentWorkflow(Workflow):
         resp_crazed: str,
         resp_evil: str,
     ) -> str:
-        return "".join(
+        return "\n\n".join(
             [
-                f"Irritated Granite:\n\n{resp_irritated}",
-                f"\n\nCrazed Granite:\n\n{resp_crazed}",
-                f"\n\nInsidious Granite:\n\n{resp_evil}",
+                f"Irritated LLM:\n{resp_irritated}",
+                f"Crazed LLM:\n{resp_crazed}",
+                f"Insidious LLM:\n{resp_evil}",
             ]
         )
 
