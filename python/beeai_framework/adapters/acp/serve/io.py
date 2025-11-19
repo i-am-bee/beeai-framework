@@ -29,6 +29,6 @@ class ACPIOContext:
         # TODO: handle non-text responses
         return str(response.message) if response else ""
 
-    async def _ask(self, prompt: str) -> str:
+    async def _ask(self, prompt: str) -> bool:
         response = await self._read(prompt)
-        return response.startswith("yes")
+        return response.lower().startswith("yes") or response.lower().startswith("true")

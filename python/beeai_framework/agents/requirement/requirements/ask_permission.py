@@ -1,12 +1,12 @@
 # Copyright 2025 © BeeAI a Series of LF Projects, LLC
 # SPDX-License-Identifier: Apache-2.0
-
+import inspect
 from collections.abc import Sequence
 from typing import Any
 
 from typing_extensions import override
-from utils.io import io_ask
 
+from beeai_framework.adapters.agentstack.context import AgentStackContext
 from beeai_framework.agents.requirement import RequirementAgentRunState
 from beeai_framework.agents.requirement.requirements import Requirement
 from beeai_framework.agents.requirement.requirements._utils import (
@@ -23,6 +23,8 @@ from beeai_framework.emitter.utils import create_internal_event_matcher
 from beeai_framework.tools import AnyTool, StringToolOutput
 from beeai_framework.utils import MaybeAsync
 from beeai_framework.utils.asynchronous import ensure_async
+from beeai_framework.utils.io import io_ask
+from beeai_framework.utils.strings import to_json
 
 AskHandler = MaybeAsync[[AnyTool, dict[str, Any]], bool]
 
@@ -105,4 +107,12 @@ class AskPermissionRequirement(Requirement[RequirementAgentRunState]):
 
 
 async def _default_handler(tool: AnyTool, input: dict[str, Any]) -> bool:
+    try:
+        if AgentStackContext.get() and inspect.stack()[1].frame.f_locals["self"]._handler == _default_handler:
+            return await io_ask(
+                f"The agent wants to use the _{tool.name}_ tool.\n ```JSON \n"
+                f"{to_json(input, sort_keys=False, indent=2)}\n``` \n\nDo you allow it? ( True / False )"
+            )
+    except Exception:
+        pass
     return await io_ask(f"The agent wants to use the '{tool.name} tool.'\nInput: {input}")
