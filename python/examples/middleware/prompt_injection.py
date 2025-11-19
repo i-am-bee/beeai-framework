@@ -11,7 +11,7 @@ except ImportError:
 
 from beeai_framework.agents import AgentOutput
 from beeai_framework.agents.requirement import RequirementAgent
-from beeai_framework.backend import AssistantMessage, ChatModel
+from beeai_framework.backend import AnyMessage, AssistantMessage, ChatModel
 from beeai_framework.context import RunContext, RunContextStartEvent, RunMiddlewareProtocol
 from beeai_framework.emitter import EmitterOptions, EventMeta
 from beeai_framework.emitter.utils import create_internal_event_matcher
@@ -51,6 +51,10 @@ class PromptInjectionDetectionMiddleware(RunMiddlewareProtocol):
         if "input" in run_params:
             input_data = run_params["input"]
 
+            # Do nothing if empty input
+            if not input_data:
+                return
+
             # Scan input
             if self._scan(input_data):
                 print("🚫 Content blocked: Potential prompt injection detected")
@@ -64,9 +68,10 @@ class PromptInjectionDetectionMiddleware(RunMiddlewareProtocol):
                 # Set the output on the event to prevent normal execution
                 data.output = custom_output
 
-    def _scan(self, text: str) -> bool:
+    def _scan(self, text: str | list[AnyMessage]) -> bool:
         """Check if text contains an injection pattern."""
-        _, is_valid, _ = self.scanner.scan(text)
+        msg = text if isinstance(text, str) else text[0].text
+        _, is_valid, _ = self.scanner.scan(msg)
         return not is_valid
 
 
