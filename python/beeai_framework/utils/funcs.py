@@ -1,8 +1,13 @@
 # Copyright 2025 © BeeAI a Series of LF Projects, LLC
 # SPDX-License-Identifier: Apache-2.0
 
+import inspect
 from collections.abc import Callable
-from typing import Any, TypeVar
+from typing import Any, ParamSpec, TypeVar, Unpack, get_args, get_origin
+
+import typing_extensions
+
+from beeai_framework.utils.dicts import include_keys, is_typed_dict_type
 
 T = TypeVar("T")
 
@@ -40,3 +45,45 @@ def is_same_function(f1: Callable[..., Any], f2: Callable[..., Any]) -> bool:
     self2 = getattr(f2, "__self__", None)
 
     return self1 is self2
+
+
+P = ParamSpec("P")
+
+
+def safe_invoke(cls: Callable[P, T]) -> Callable[P, T]:
+    allowed_kwargs = get_keyword_arg_names(cls)
+
+    def construct(*args: P.args, **kwargs: P.kwargs) -> T:
+        valid_kwargs = include_keys(kwargs, allowed_kwargs)
+        return cls(*args, **valid_kwargs)
+
+    return construct
+
+
+def get_keyword_arg_names(func: Callable[..., Any]) -> set[str]:
+    """
+    Extract names of all keyword arguments of a function,
+    including **kwargs (if present).
+    """
+    signature = inspect.signature(func)
+    keyword_args = []
+
+    for name, param in signature.parameters.items():
+        if param.kind in (param.KEYWORD_ONLY, param.POSITIONAL_OR_KEYWORD):
+            keyword_args.append(name)
+        elif param.kind == param.VAR_KEYWORD:
+            annotation = param.annotation
+            origin = get_origin(annotation)
+            if origin is Unpack or origin is typing_extensions.Unpack:
+                (inner,) = get_args(annotation)
+                if is_typed_dict_type(inner):
+                    # Extract the TypedDict keys
+                    keyword_args.extend(inner.__annotations__.keys())
+                else:
+                    # Unpack of non-TypedDict, fallback to placeholder
+                    keyword_args.append(f"**{name}")
+            else:
+                # Generic **kwargs
+                keyword_args.append(f"**{name}")
+
+    return set(keyword_args)

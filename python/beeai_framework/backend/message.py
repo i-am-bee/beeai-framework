@@ -126,6 +126,7 @@ class Message(ABC, Generic[T]):
         return instance
 
     def merge(self, other: "Message[T]") -> None:
+        self.id = self.id or other.id
         self.meta.update(other.meta)
         self.content.extend(other.content)
 
