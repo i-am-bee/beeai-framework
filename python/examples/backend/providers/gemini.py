@@ -86,6 +86,14 @@ async def gemini_embedding() -> None:
         print(*row)
 
 
+async def gemini_cloning() -> None:
+    llm = GeminiChatModel("gemini-2.5-flash")
+    await llm.clone()
+
+    embedding_llm = GeminiEmbeddingModel()
+    await embedding_llm.clone()
+
+
 async def main() -> None:
     print("*" * 10, "gemini_from_name")
     await gemini_from_name()
@@ -101,6 +109,8 @@ async def main() -> None:
     await gemini_stream_parser()
     print("*" * 10, "gemini_embedding")
     await gemini_embedding()
+    print("*" * 10, "gemini_cloning")
+    await gemini_cloning()
 
 
 if __name__ == "__main__":

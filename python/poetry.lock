@@ -1327,25 +1327,26 @@ typing-inspect = ">=0.4.0,<1"
 
 [[package]]
 name = "ddgs"
-version = "9.6.1"
+version = "9.9.1"
 description = "Dux Distributed Global Search. A metasearch library that aggregates results from diverse web search services."
 optional = true
-python-versions = ">=3.9"
+python-versions = ">=3.10"
 groups = ["main"]
 markers = "(platform_machine == \"arm64\" or platform_machine == \"x86_64\" or platform_machine != \"arm64\" and platform_machine != \"x86_64\" or sys_platform != \"darwin\") and (extra == \"search\" or extra == \"duckduckgo\" or extra == \"all\")"
 files = [
-    {file = "ddgs-9.6.1-py3-none-any.whl", hash = "sha256:e7d7e0c4dbae3f287627b9f6e411278256d7859d017bbad45b8229c230bf5270"},
-    {file = "ddgs-9.6.1.tar.gz", hash = "sha256:15ec3aace0417c0ab3c0184059e1e03dbd6bda8d3be6108949c18ad7b4cd1e11"},
+    {file = "ddgs-9.9.1-py3-none-any.whl", hash = "sha256:bba5701462bc9c8eac69fdd2edf7e833e74741b2bae3593489e470e125e9601d"},
+    {file = "ddgs-9.9.1.tar.gz", hash = "sha256:d33529abb56aa5b98eb436565a6bfa48f07eb04dca18d323df723b83cb007e4f"},
 ]
 
 [package.dependencies]
 click = ">=8.1.8"
+fake-useragent = ">=2.2.0"
 httpx = {version = ">=0.28.1", extras = ["brotli", "http2", "socks"]}
-lxml = ">=6.0.0"
+lxml = ">=4.9.4"
 primp = ">=0.15.0"
 
 [package.extras]
-dev = ["mypy (>=1.17.1)", "pytest (>=8.4.1)", "pytest-dependency (>=0.6.0)", "ruff (>=0.13.0)"]
+dev = ["lxml-stubs", "mypy (>=1.17.1)", "pre-commit", "pytest (>=8.4.1)", "pytest-dependency (>=0.6.0)", "ruff (>=0.13.0)", "types-Pygments", "types-pexpect"]
 
 [[package]]
 name = "decli"
@@ -1592,6 +1593,19 @@ files = [
 
 [package.extras]
 testing = ["hatch", "pre-commit", "pytest", "tox"]
+
+[[package]]
+name = "fake-useragent"
+version = "2.2.0"
+description = "Up-to-date simple useragent faker with real world database"
+optional = true
+python-versions = ">=3.9"
+groups = ["main"]
+markers = "(platform_machine == \"arm64\" or platform_machine == \"x86_64\" or platform_machine != \"arm64\" and platform_machine != \"x86_64\" or sys_platform != \"darwin\") and (extra == \"search\" or extra == \"duckduckgo\" or extra == \"all\")"
+files = [
+    {file = "fake_useragent-2.2.0-py3-none-any.whl", hash = "sha256:67f35ca4d847b0d298187443aaf020413746e56acd985a611908c73dba2daa24"},
+    {file = "fake_useragent-2.2.0.tar.gz", hash = "sha256:4e6ab6571e40cc086d788523cf9e018f618d07f9050f822ff409a4dfe17c16b2"},
+]
 
 [[package]]
 name = "fastapi"
@@ -2106,7 +2120,7 @@ description = "Lightweight in-process concurrent programming"
 optional = true
 python-versions = ">=3.9"
 groups = ["main"]
-markers = "(extra == \"llama-index\" or extra == \"rag\" or extra == \"all\") and (sys_platform == \"darwin\" or platform_machine == \"aarch64\" or platform_machine == \"ppc64le\" or platform_machine == \"x86_64\" or platform_machine == \"amd64\" or platform_machine == \"AMD64\" or platform_machine == \"win32\" or platform_machine == \"WIN32\") and (platform_machine == \"x86_64\" or platform_machine == \"aarch64\" or platform_machine == \"ppc64le\" or platform_machine == \"amd64\" or platform_machine == \"AMD64\" or platform_machine == \"win32\" or platform_machine == \"WIN32\")"
+markers = "(extra == \"llama-index\" or extra == \"rag\" or extra == \"all\") and (platform_machine == \"x86_64\" or platform_machine == \"aarch64\" or platform_machine == \"ppc64le\" or platform_machine == \"amd64\" or platform_machine == \"AMD64\" or platform_machine == \"win32\" or platform_machine == \"WIN32\")"
 files = [
     {file = "greenlet-3.2.4-cp310-cp310-macosx_11_0_universal2.whl", hash = "sha256:8c68325b0d0acf8d91dde4e6f930967dd52a5302cd4062932a6b2e7c2969f47c"},
     {file = "greenlet-3.2.4-cp310-cp310-manylinux2014_aarch64.manylinux_2_17_aarch64.whl", hash = "sha256:94385f101946790ae13da500603491f04a76b6e4c059dab271b3ce2e283b2590"},
@@ -7536,7 +7550,7 @@ description = ""
 optional = true
 python-versions = ">=3.9"
 groups = ["main"]
-markers = "(extra == \"transformers\" or extra == \"huggingface\" or extra == \"all\") and (platform_machine == \"arm64\" or platform_machine == \"x86_64\" or platform_machine != \"arm64\" and platform_machine != \"x86_64\" or sys_platform != \"darwin\") and (platform_machine == \"arm64\" or platform_machine == \"x86_64\" or extra == \"transformers\" or extra == \"all\" or sys_platform != \"darwin\")"
+markers = "sys_platform == \"darwin\" and (platform_machine == \"arm64\" or platform_machine == \"x86_64\" or platform_machine != \"arm64\" and platform_machine != \"x86_64\") and (extra == \"transformers\" or extra == \"huggingface\" or extra == \"all\") and (platform_machine == \"arm64\" or platform_machine == \"x86_64\" or extra == \"transformers\" or extra == \"all\") or (extra == \"transformers\" or extra == \"huggingface\" or extra == \"all\") and sys_platform != \"darwin\""
 files = [
     {file = "safetensors-0.6.2-cp38-abi3-macosx_10_12_x86_64.whl", hash = "sha256:9c85ede8ec58f120bad982ec47746981e210492a6db876882aa021446af8ffba"},
     {file = "safetensors-0.6.2-cp38-abi3-macosx_11_0_arm64.whl", hash = "sha256:d6675cf4b39c98dbd7d940598028f3742e0375a6b4d4277e76beb0c35f4b843b"},
@@ -9628,4 +9642,4 @@ wikipedia = ["wikipedia-api"]
 [metadata]
 lock-version = "2.1"
 python-versions = ">= 3.11,<3.14"
-content-hash = "f72a42489f29c01b91f398a88f3ff39d0c641ecd83baf4a32015d9237f807460"
+content-hash = "d6544ab559527fbea59a9005c98115709fd0a9c6f4be7453875c3716d31469fd"

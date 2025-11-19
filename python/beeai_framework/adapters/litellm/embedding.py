@@ -4,7 +4,7 @@
 import os
 from abc import ABC
 from itertools import chain
-from typing import Any
+from typing import Any, Self
 
 import litellm
 from litellm import aembedding
@@ -18,6 +18,7 @@ from beeai_framework.backend.embedding import EmbeddingModelKwargs
 from beeai_framework.backend.types import EmbeddingModelInput, EmbeddingModelOutput, EmbeddingModelUsage
 from beeai_framework.context import RunContext
 from beeai_framework.logger import Logger
+from beeai_framework.utils.funcs import safe_invoke
 
 logger = Logger(__name__)
 
@@ -115,6 +116,13 @@ class LiteLLMEmbeddingModel(EmbeddingModel, ABC):
             )
 
         self._settings[name] = value or None
+
+    async def clone(self) -> Self:
+        instance: Self = safe_invoke(self.__class__)(
+            model_id=self._model_id, provider_id=self._litellm_provider_id, settings=self._settings.copy()
+        )
+        instance.middlewares.extend(self.middlewares)
+        return instance
 
 
 litellm_debug(False)

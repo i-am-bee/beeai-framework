@@ -83,6 +83,11 @@ async def azure_openai_stream_parser() -> None:
     print(result)
 
 
+async def azure_openai_cloning() -> None:
+    llm = AzureOpenAIChatModel(MODEL_NAME)
+    await llm.clone()
+
+
 async def main() -> None:
     print("*" * 10, "azure_openai_from_name")
     await azure_openai_from_name()
@@ -96,6 +101,8 @@ async def main() -> None:
     await azure_openai_structure()
     print("*" * 10, "azure_openai_stream_parser")
     await azure_openai_stream_parser()
+    print("*" * 10, "azure_openai_cloning")
+    await azure_openai_cloning()
 
 
 if __name__ == "__main__":
