@@ -46,6 +46,11 @@ async def transformers_structure() -> None:
     print(response.output_structured)
 
 
+async def transformers_cloning() -> None:
+    # Reuse the same global llm config for cloning demo
+    await llm.clone()
+
+
 async def main() -> None:
     print("*" * 10, "transformers_sync")
     await transformers_sync()
@@ -55,6 +60,8 @@ async def main() -> None:
     await transformers_stream_abort()
     print("*" * 10, "transformers_structure")
     await transformers_structure()
+    print("*" * 10, "transformers_cloning")
+    await transformers_cloning()
 
 
 if __name__ == "__main__":

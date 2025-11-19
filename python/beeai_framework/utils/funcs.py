@@ -10,6 +10,7 @@ import typing_extensions
 from beeai_framework.utils.dicts import include_keys, is_typed_dict_type
 
 T = TypeVar("T")
+P = ParamSpec("P")
 
 
 def identity(value: T) -> T:
@@ -62,8 +63,7 @@ def safe_invoke(cls: Callable[P, T]) -> Callable[P, T]:
 
 def get_keyword_arg_names(func: Callable[..., Any]) -> set[str]:
     """
-    Extract names of all keyword arguments of a function,
-    including **kwargs (if present).
+    Extract names of all keyword arguments of a function including **kwargs (if present).
     """
     signature = inspect.signature(func)
     keyword_args = []
