@@ -350,11 +350,6 @@ class LiteLLMChatModel(ChatModel, ABC):
         return {"type": "json_schema", "json_schema": json_schema}
 
     async def clone(self) -> Self:
-        cloned = self.__class__(
-            model_id=self.model_id,
-            provider_id=self._litellm_provider_id,
-            parameters=self.parameters.model_copy(),
-            cache=await self.cache.clone() if self.cache else None,  # type: ignore
         cloned: Self = safe_invoke(self.__class__)(
             model_id=self.model_id,
             provider_id=self._litellm_provider_id,

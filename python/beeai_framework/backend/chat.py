@@ -466,10 +466,6 @@ class ChatModel(Runnable[ChatModelOutput]):
                 continue
 
             if self.fix_invalid_tool_calls:
-                parsed = parse_broken_json(tool_call.args, {})
-                if isinstance(parsed, str):
-                    parsed = parse_broken_json(parsed, {})
-                if parsed:
                 if not tool_call.id:
                     tool_call.id = f"call_{generate_random_string(8).lower()}"
 
