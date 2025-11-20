@@ -59,7 +59,7 @@ class AgentStackContext:
     def __enter__(self) -> Self:
         ctx_key = _storage.set(self)
         self._cleanup.append(lambda: _storage.reset(ctx_key))
-        self._cleanup.append(setup_io_context(read=self._read, confirm=self._confirm))
+        self._cleanup.append(setup_io_context(read=self._read, io_confirm=self._io_confirm))
         if self._llm is not None:
             self._cleanup.append(AgentStackChatModel.set_context(self._llm))
         return self
@@ -103,22 +103,32 @@ class AgentStackContext:
             logger.warning(f"Failed to process form: {e}")
             return ""
 
-    async def _confirm(self, prompt: str) -> bool:
+    async def _io_confirm(
+        self,
+        prompt: str,
+        *,
+        title: str = "Confirm Dialog",
+        description: str | None = None,
+        content: str = "I agree",
+        submit_label: str | None = "Submit",
+        cancel_label: str | None = None,
+        data: dict[str, Any] | None = None,
+    ) -> bool:
         try:
             permission_field_id = "answer"
             form_data = await self._extensions["form"].request_form(
                 form=FormRender(
                     id="form",
                     title=prompt,
-                    description="",
+                    description=description,
                     columns=1,
-                    submit_label="Submit",
+                    submit_label=submit_label,
                     fields=[
                         CheckboxField(
                             id=permission_field_id,
-                            label="Confirm Dialog",
+                            label=title,
                             required=False,
-                            content="I agree",
+                            content=content,
                             default_value=False,
                         )
                     ],

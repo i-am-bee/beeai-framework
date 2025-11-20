@@ -16,7 +16,7 @@ class ACPIOContext:
         self._cleanup: Callable[[], None] = lambda: None
 
     def __enter__(self) -> Self:
-        self._cleanup = setup_io_context(read=self._read, confirm=self._confirm)
+        self._cleanup = setup_io_context(read=self._read, io_confirm=self._confirm)
         return self
 
     def __exit__(self, exc_type: Any, exc_val: Any, exc_tb: Any) -> None:
