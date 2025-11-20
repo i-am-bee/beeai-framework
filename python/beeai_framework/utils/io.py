@@ -10,13 +10,13 @@ from beeai_framework.utils.asynchronous import ensure_async
 __all__ = ["IOHandlers", "io_read", "setup_io_context"]
 
 ReadHandler = Callable[[str], Awaitable[str]]
-AskHandler = Callable[[str], Awaitable[bool]]
+ConfirmHandler = Callable[[str], Awaitable[bool]]
 
 
 @dataclass
 class IOHandlers:
     read: ReadHandler
-    ask: AskHandler
+    confirm: ConfirmHandler
 
 
 _default_read = ensure_async(input)
@@ -27,7 +27,7 @@ async def _default_ask(question: str) -> bool:
 
 
 _storage: ContextVar[IOHandlers] = ContextVar("io_storage")
-_storage.set(IOHandlers(read=_default_read, ask=_default_ask))
+_storage.set(IOHandlers(read=_default_read, confirm=_default_ask))
 
 
 async def io_read(prompt: str) -> str:
@@ -37,10 +37,10 @@ async def io_read(prompt: str) -> str:
 
 async def io_ask(prompt: str) -> bool:
     store = _storage.get()
-    return await store.ask(prompt)
+    return await store.confirm(prompt)
 
 
-def setup_io_context(*, read: ReadHandler, ask: AskHandler) -> Callable[[], None]:
-    handlers = IOHandlers(read=read, ask=ask)
+def setup_io_context(*, read: ReadHandler, confirm: ConfirmHandler) -> Callable[[], None]:
+    handlers = IOHandlers(read=read, confirm=confirm)
     token = _storage.set(handlers)
     return lambda: _storage.reset(token)

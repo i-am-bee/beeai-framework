@@ -16,7 +16,7 @@ class ACPIOContext:
         self._cleanup: Callable[[], None] = lambda: None
 
     def __enter__(self) -> Self:
-        self._cleanup = setup_io_context(read=self._read, ask=self._ask)
+        self._cleanup = setup_io_context(read=self._read, confirm=self._confirm)
         return self
 
     def __exit__(self, exc_type: Any, exc_val: Any, exc_tb: Any) -> None:
@@ -29,6 +29,6 @@ class ACPIOContext:
         # TODO: handle non-text responses
         return str(response.message) if response else ""
 
-    async def _ask(self, prompt: str) -> bool:
+    async def _confirm(self, prompt: str) -> bool:
         response = await self._read(prompt)
         return response.lower().startswith("yes") or response.lower().startswith("true")
