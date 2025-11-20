@@ -8,7 +8,7 @@ from beeai_framework.backend.message import AnyMessage, AssistantMessage, UserMe
 from beeai_framework.context import RunMiddlewareType
 from beeai_framework.runnable import RunnableOptions, RunnableOutput
 from beeai_framework.workflows.v3.step import WorkflowBuilder
-from beeai_framework.workflows.v3.workflow import Workflow, end_step, step
+from beeai_framework.workflows.v3.workflow import Workflow, step
 
 
 class RoutingWorkflow(Workflow):
@@ -30,17 +30,13 @@ class RoutingWorkflow(Workflow):
         self.input = input
 
     @step
-    async def check_context(self) -> None:
+    async def check_context(self) -> bool:
         result = await ChatModel.from_name("ollama:ibm/granite4").run(
             [*self.input, UserMessage("To answer the user request, do you need access to the web search tool?")],
             response_format=RoutingWorkflow.ToolsRequired,
         )
         assert result.output_structured is not None
         self.tools_required = RoutingWorkflow.ToolsRequired(**result.output_structured.model_dump())
-
-    async def branch_fn(self) -> bool:
-        if not self.tools_required:
-            return False
         return self.tools_required.requires_web_search
 
     @step
@@ -54,15 +50,19 @@ class RoutingWorkflow(Workflow):
         result = await ChatModel.from_name("ollama:ibm/granite4").run(self.input)
         return result.get_text_content()
 
-    @end_step
+    @step
     async def end(self, response: str) -> RunnableOutput:
         return RunnableOutput(output=[AssistantMessage(response)])
 
     def build(self, start: WorkflowBuilder) -> None:
-        start.then(self.check_context).branch(
-            steps={True: self.answer_with_web_search, False: self.answer},
-            branch_fn=self.branch_fn,
-        ).then(self.end)
+        (
+            start.then(self.check_context)
+            .branch(steps={True: self.answer_with_web_search, False: self.answer})
+            .after(self.answer_with_web_search)
+            .then(self.end)
+            .after(self.answer)
+            .then(self.end)
+        )
 
 
 async def main() -> None:

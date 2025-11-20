@@ -14,7 +14,6 @@ from beeai_framework.workflows.v3.events import (
     workflow_v3_event_types,
 )
 from beeai_framework.workflows.v3.step import (
-    EndWorkflowStep,
     FuncWorkflowStep,
     JoinWorkflowStep,
     StartWorkflowStep,
@@ -61,11 +60,6 @@ class step:  # noqa: N801
         return FuncWorkflowStep(func=func)
 
 
-class end_step(step):  # noqa: N801
-    def step_factory(self, func: AsyncStepFunction) -> WorkflowStep:
-        return EndWorkflowStep(func=func)
-
-
 class Workflow(Runnable[RunnableOutput], ABC):
     def __init__(self, middlewares: list[RunMiddlewareType] | None = None) -> None:
         super().__init__(middlewares=middlewares)
@@ -79,43 +73,41 @@ class Workflow(Runnable[RunnableOutput], ABC):
 
     @runnable_entry
     async def run(self, input: list[AnyMessage], /, **kwargs: Unpack[RunnableOptions]) -> RunnableOutput:
-        output: RunnableOutput = RunnableOutput(output=[])
-
         # Builds out the execution graph
         self._start_step: WorkflowStep = StartWorkflowStep(func=self.start)
-        self.build(WorkflowBuilder([self._start_step]))
+        self.build(WorkflowBuilder(root=self._start_step))
 
         # Need to detect back edges to avoid deadlock
-        def detect_back_edges(
-            step: WorkflowStep, visited: set[WorkflowStep] | None = None, stack: set[WorkflowStep] | None = None
-        ) -> None:
-            if visited is None:
-                visited = set()
-            if stack is None:
-                stack = set()
+        # def detect_back_edges(
+        #     step: WorkflowStep, visited: set[WorkflowStep] | None = None, stack: set[WorkflowStep] | None = None
+        # ) -> None:
+        #     if visited is None:
+        #         visited = set()
+        #     if stack is None:
+        #         stack = set()
 
-            visited.add(step)
-            stack.add(step)
+        #     visited.add(step)
+        #     stack.add(step)
 
-            for ds_edge in step._downstream_edges:
-                target = ds_edge.target
+        #     for ds_edge in step._downstream_edges:
+        #         target = ds_edge.target
 
-                if target in stack:
-                    # Back edge: cycle
-                    # print(f"Back edge detected: {step.name} -> {target.name}")
-                    ds_edge.optional = True
+        #         if target in stack:
+        #             # Back edge: cycle
+        #             # print(f"Back edge detected: {step.name} -> {target.name}")
+        #             ds_edge.optional = True
 
-                    for us_edge in target._upstream_edges:
-                        if us_edge.source is ds_edge.source and us_edge.target is ds_edge.target:
-                            us_edge.optional = True
-                            break  # There should be exactly one
+        #             for us_edge in target._upstream_edges:
+        #                 if us_edge.source is ds_edge.source and us_edge.target is ds_edge.target:
+        #                     us_edge.optional = True
+        #                     break  # There should be exactly one
 
-                elif target not in visited:
-                    detect_back_edges(target, visited, stack)
+        #         elif target not in visited:
+        #             detect_back_edges(target, visited, stack)
 
-            stack.remove(step)
+        #     stack.remove(step)
 
-        detect_back_edges(self._start_step)
+        # detect_back_edges(self._start_step)
 
         # Execute the workflow rooted at the start node
         queue: asyncio.Queue[Any] = asyncio.Queue()
@@ -123,13 +115,14 @@ class Workflow(Runnable[RunnableOutput], ABC):
 
         # Track running tasks
         tasks: set[asyncio.Task[Any]] = set()
-        completed_steps: set[WorkflowStep] = set()
+        completed_steps: list[WorkflowStep] = []
 
         async def execute_step(step: WorkflowStep) -> None:
             # Send run input and kwargs to start step, otherwise get from upstream
 
             results = []
 
+            # TODO: Bind input
             if isinstance(step, StartWorkflowStep):
                 results = [input, kwargs]
             else:
@@ -142,12 +135,7 @@ class Workflow(Runnable[RunnableOutput], ABC):
 
             print("Executing:", step.name)
             await step.execute(*results)
-            completed_steps.add(step)
-
-            # Save output
-            if isinstance(step, EndWorkflowStep):
-                nonlocal output
-                output = step.result
+            completed_steps.append(step)
 
             if await step.requeue(*results):
                 await queue.put(step)
@@ -159,14 +147,21 @@ class Workflow(Runnable[RunnableOutput], ABC):
             for ds_edge in step._downstream_edges:
                 ds = ds_edge.target
                 enqueue_ds = True
+                # Check all upstream edges to determine execution conditions
                 for up_edge in ds._upstream_edges:
                     up = up_edge.source
-                    if not up.has_executed and not up_edge.optional:
+
+                    # If upstream has not executed and is its an and edge dont queue
+                    if not up.has_executed and up_edge.type == "and":
                         enqueue_ds = False
                         break
 
+                # Check for conditional execution
                 if enqueue_ds and ds_edge.condition is not None:
-                    enqueue_ds = bool(await run_callable(ds_edge.condition.fn, *results) == ds_edge.condition.key)
+                    if ds_edge.condition.fn:
+                        enqueue_ds = bool(await run_callable(ds_edge.condition.fn, *results) == ds_edge.condition.key)
+                    else:
+                        enqueue_ds = bool(step.result == ds_edge.condition.key)
 
                 if enqueue_ds:
                     ds.has_executed = False
@@ -185,6 +180,11 @@ class Workflow(Runnable[RunnableOutput], ABC):
                 # done, _ = await asyncio.wait(tasks)
                 done, _ = await asyncio.wait(tasks, return_when=asyncio.FIRST_COMPLETED)
 
+        output: RunnableOutput = (
+            completed_steps[-1].result
+            if completed_steps and isinstance(completed_steps[-1].result, RunnableOutput)
+            else RunnableOutput(output=[])
+        )
         return output
 
     @abstractmethod

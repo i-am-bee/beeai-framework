@@ -14,7 +14,7 @@ AsyncStepFunction = Callable[..., Coroutine[Any, Any, Any]]
 
 
 class BranchCondition(BaseModel):
-    fn: ControllerFunction
+    fn: ControllerFunction | None = None
     key: Any
 
 

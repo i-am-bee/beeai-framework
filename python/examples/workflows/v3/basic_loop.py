@@ -10,7 +10,7 @@ from beeai_framework.backend.types import ChatModelParameters
 from beeai_framework.context import RunMiddlewareType
 from beeai_framework.runnable import RunnableOptions, RunnableOutput
 from beeai_framework.workflows.v3.step import WorkflowBuilder
-from beeai_framework.workflows.v3.workflow import Workflow, end_step, step
+from beeai_framework.workflows.v3.workflow import Workflow, step
 
 
 class EvalOptimizeWorkflow(Workflow):
@@ -63,7 +63,7 @@ class EvalOptimizeWorkflow(Workflow):
         self.response = result.get_text_content()
 
     @step
-    async def eval(self) -> None:
+    async def eval(self) -> bool:
         result = await self.eval_llm.run(
             [
                 SystemMessage(content="Evaluate the correctness of the assistant's response."),
@@ -76,21 +76,18 @@ class EvalOptimizeWorkflow(Workflow):
         assert result.output_structured is not None
         self.response_eval = EvalOptimizeWorkflow.ResponseEval(**result.output_structured.model_dump())
         self.attempts -= 1
+        return self.response_eval.evaluation == "fail" and self.attempts > 0
 
-    async def try_again(self) -> bool:
-        if self.response_eval is None or self.attempts == 0:
-            return False
+    @step
+    async def done(self) -> None:
+        pass
 
-        return self.response_eval.evaluation == "fail"
-
-    @end_step
+    @step
     async def end(self) -> RunnableOutput:
         return RunnableOutput(output=[AssistantMessage(self.response)])
 
     def build(self, start: WorkflowBuilder) -> None:
-        start.then(self.answer).then(self.eval).branch(
-            branch_fn=self.try_again, steps={True: self.answer, False: self.end}
-        )
+        (start.then(self.answer).then(self.eval).branch(steps={True: self.answer, False: self.end}))
 
 
 async def main() -> None:

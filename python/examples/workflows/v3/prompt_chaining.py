@@ -6,7 +6,7 @@ from beeai_framework.backend.message import AnyMessage, AssistantMessage, System
 from beeai_framework.context import RunMiddlewareType
 from beeai_framework.runnable import RunnableOptions, RunnableOutput
 from beeai_framework.workflows.v3.step import WorkflowBuilder
-from beeai_framework.workflows.v3.workflow import Workflow, end_step, step
+from beeai_framework.workflows.v3.workflow import Workflow, step
 
 
 class PromptChainWorkflow(Workflow):
@@ -51,7 +51,7 @@ class PromptChainWorkflow(Workflow):
         )
         return result.get_text_content()
 
-    @end_step
+    @step
     async def end(self, response: str) -> RunnableOutput:
         return RunnableOutput(output=[AssistantMessage(response)])
 
@@ -59,7 +59,7 @@ class PromptChainWorkflow(Workflow):
         """
         Build out the workflow.
         """
-        start.then(self.answer).then(self.review).then(self.revise_answer).then(self.end)
+        (start.then(self.answer).then(self.review).then(self.revise_answer).then(self.end))
 
 
 async def main() -> None:

@@ -6,7 +6,7 @@ from beeai_framework.backend.message import AnyMessage, AssistantMessage, System
 from beeai_framework.context import RunMiddlewareType
 from beeai_framework.runnable import RunnableOptions, RunnableOutput
 from beeai_framework.workflows.v3.step import WorkflowBuilder
-from beeai_framework.workflows.v3.workflow import Workflow, end_step, step
+from beeai_framework.workflows.v3.workflow import Workflow, step
 
 
 class ConcurrentWorkflow(Workflow):
@@ -73,12 +73,16 @@ class ConcurrentWorkflow(Workflow):
             ]
         )
 
-    @end_step
+    @step
     async def end(self, response: str) -> RunnableOutput:
         return RunnableOutput(output=[AssistantMessage(response)])
 
     def build(self, start: WorkflowBuilder) -> None:
-        start.then([self.answer_irritated, self.answer_crazed, self.answer_evil]).then(self.consolidate).then(self.end)
+        (
+            start.then([self.answer_irritated, self.answer_crazed, self.answer_evil])
+            .then(self.consolidate)
+            .then(self.end)
+        )
 
 
 async def main() -> None:
