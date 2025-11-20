@@ -9,8 +9,6 @@ from typing import Any, ClassVar, Self
 
 from pydantic import BaseModel, Field
 
-from beeai_framework.utils.models import update_model
-
 try:
     from agentstack_sdk.a2a.extensions import LLMServiceExtensionServer
     from agentstack_sdk.platform import ModelProviderType
@@ -98,8 +96,7 @@ class AgentStackChatModel(ChatModel):
         config = (self.providers_mapping.get(provider_name) or (lambda: ProviderConfig()))()
 
         kwargs = self._kwargs.copy()
-        kwargs["parameters"] = kwargs.get("parameters", ChatModel.get_default_parameters())
-        update_model(kwargs["parameters"], sources=[self.parameters])
+        kwargs["parameters"] = self.parameters
         if kwargs.get("tool_choice_support") is None:
             kwargs["tool_choice_support"] = config.tool_choice_support
 
@@ -136,7 +133,7 @@ class AgentStackChatModel(ChatModel):
     async def clone(self) -> Self:
         cloned = self.__class__(preferred_models=self.preferred_models.copy(), **self._kwargs.copy())
         cloned.middlewares.extend(self.middlewares)
-        cloned.parameters = self.parameters
+        cloned.parameters = self.parameters.model_copy(deep=True)
         return cloned
 
 
