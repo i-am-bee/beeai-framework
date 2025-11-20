@@ -1,6 +1,7 @@
 # Copyright 2025 © BeeAI a Series of LF Projects, LLC
 # SPDX-License-Identifier: Apache-2.0
 
+import logging
 from abc import ABC, abstractmethod
 from collections.abc import Sequence
 from functools import cached_property
@@ -115,8 +116,11 @@ class EmbeddingModel(ABC):
     ) -> EmbeddingModelOutput:
         raise NotImplementedError
 
-    def clone(self) -> Self:
-        return type(self)()
+    async def clone(self) -> Self:
+        if type(self).clone == EmbeddingModel.clone:
+            logging.warning(f"EmbeddingModel ({type(self)!s}) does not implement the 'clone' method.")
+
+        return self
 
     def destroy(self) -> None:
         self.emitter.destroy()

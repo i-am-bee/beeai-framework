@@ -7,6 +7,8 @@ from collections.abc import AsyncGenerator
 from itertools import chain
 from typing import Any, Self
 
+from beeai_framework.utils.funcs import safe_invoke
+
 if not os.getenv("LITELLM_LOCAL_MODEL_COST_MAP", None):
     os.environ["LITELLM_LOCAL_MODEL_COST_MAP"] = "True"
 
@@ -43,10 +45,8 @@ from beeai_framework.backend.types import (
     ChatModelCost,
     ChatModelInput,
     ChatModelOutput,
-    ChatModelParameters,
     ChatModelUsage,
 )
-from beeai_framework.cache.null_cache import NullCache
 from beeai_framework.context import RunContext
 from beeai_framework.logger import Logger
 from beeai_framework.tools.tool import AnyTool, Tool
@@ -350,13 +350,25 @@ class LiteLLMChatModel(ChatModel, ABC):
         return {"type": "json_schema", "json_schema": json_schema}
 
     async def clone(self) -> Self:
-        cloned = type(self)(self._model_id, settings=self._settings.copy())  # type: ignore
-        cloned.parameters = self.parameters.model_copy() if self.parameters else ChatModelParameters()
-        cloned.cache = await self.cache.clone() if self.cache else NullCache[list[ChatModelOutput]]()
-        cloned.tool_call_fallback_via_response_format = self.tool_call_fallback_via_response_format
-        cloned.model_supports_tool_calling = self.model_supports_tool_calling
-        cloned.use_strict_model_schema = self.use_strict_model_schema
-        cloned.use_strict_tool_schema = self.use_strict_tool_schema
+        cloned: Self = safe_invoke(self.__class__)(
+            model_id=self.model_id,
+            provider_id=self._litellm_provider_id,
+            parameters=self.parameters.model_copy(),
+            cache=await self.cache.clone() if self.cache else None,
+            tool_call_fallback_via_response_format=self.tool_call_fallback_via_response_format,
+            model_supports_tool_calling=self.model_supports_tool_calling,
+            use_strict_model_schema=self.use_strict_model_schema,
+            use_strict_tool_schema=self.use_strict_tool_schema,
+            middlewares=self.middlewares.copy(),
+            tool_choice_support=self.tool_choice_support.copy(),
+            settings=self._settings.copy(),
+            allow_parallel_tool_calls=self.allow_parallel_tool_calls,
+            ignore_parallel_tool_calls=self.ignore_parallel_tool_calls,
+            supports_top_level_unions=self.supports_top_level_unions,
+            fix_invalid_tool_calls=self.fix_invalid_tool_calls,
+            retry_on_empty_response=self.retry_on_empty_response,
+            **self._settings,
+        )
         return cloned
 
     def _assert_setting_value(

@@ -83,6 +83,11 @@ async def anthropic_stream_parser() -> None:
     print(result)
 
 
+async def anthropic_cloning() -> None:
+    llm = AnthropicChatModel(MODEL_NAME)
+    await llm.clone()
+
+
 async def main() -> None:
     print("*" * 10, "anthropic_from_name")
     await anthropic_from_name()
@@ -96,6 +101,8 @@ async def main() -> None:
     await anthropic_structure()
     print("*" * 10, "anthropic_stream_parser")
     await anthropic_stream_parser()
+    print("*" * 10, "anthropic_cloning")
+    await anthropic_cloning()
 
 
 if __name__ == "__main__":

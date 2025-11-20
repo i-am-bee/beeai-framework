@@ -20,4 +20,4 @@ class Backend:
         return Backend.from_name(chat=name, embedding=name)
 
     async def clone(self) -> "Backend":
-        return Backend(chat=await self.chat.clone(), embedding=self.embedding.clone())
+        return Backend(chat=await self.chat.clone(), embedding=await self.embedding.clone())

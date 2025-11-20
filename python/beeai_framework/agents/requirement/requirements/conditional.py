@@ -43,6 +43,7 @@ class ConditionalRequirement(Generic[TInput], Requirement[TInput]):
         priority: int | None = None,
         custom_checks: list[ConditionalAbilityCheck[TInput]] | None = None,
         enabled: bool = True,
+        reason: str | None = None,
     ) -> None:
         super().__init__()
 
@@ -64,6 +65,7 @@ class ConditionalRequirement(Generic[TInput], Requirement[TInput]):
         self._consecutive_allowed = consecutive_allowed
         self._custom_checks = list(custom_checks or [])
         self._force_prevent_stop = force_prevent_stop
+        self._reason = reason
 
         self._check_invariant()
 
@@ -162,6 +164,7 @@ class ConditionalRequirement(Generic[TInput], Requirement[TInput]):
                     forced=forced,
                     hidden=False,
                     prevent_stop=(self._min_invocations > invocations) or (forced and self._force_prevent_stop),
+                    reason=self._reason if not allowed else None,
                 )
             ]
 
@@ -206,4 +209,5 @@ class ConditionalRequirement(Generic[TInput], Requirement[TInput]):
         instance.source = self.source
         instance._source_tool = self._source_tool
         instance._force_prevent_stop = self._force_prevent_stop
+        instance._reason = self._reason
         return instance

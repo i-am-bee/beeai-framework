@@ -63,7 +63,7 @@ class WatsonxOrchestrateServerRequirementAgent(WatsonxOrchestrateServerAgent[Req
             )
             if isinstance(meta.creator, ThinkTool):
                 assert isinstance(data.input, ThinkSchema), "ThinkTool must use ThinkSchema as an input"
-                await emit(WatsonxOrchestrateServerAgentThinkEvent(text=f"{data.input.thoughts}"))
+                await emit(WatsonxOrchestrateServerAgentThinkEvent(text=data.input.thoughts))
 
         await (
             cloned_agent.run(input)
