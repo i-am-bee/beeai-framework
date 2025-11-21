@@ -2,6 +2,8 @@
 # SPDX-License-Identifier: Apache-2.0
 from typing import Any, Literal, Unpack
 
+import httpx
+
 from beeai_framework.adapters.agentstack.context import AgentStackContext
 
 try:
@@ -18,7 +20,7 @@ try:
         PlatformApiExtensionClient,
         PlatformApiExtensionSpec,
     )
-    from agentstack_sdk.platform import ModelProvider, PlatformClient, Provider
+    from agentstack_sdk.platform import ModelProvider, PlatformClient, Provider, get_platform_client
     from agentstack_sdk.platform.context import Context, ContextPermissions, Permissions
     from agentstack_sdk.platform.model_provider import ModelCapability
 
@@ -206,12 +208,19 @@ class AgentStackAgent(BaseAgent[AgentStackAgentOutput]):
         if states is None:
             states = {s for s in AgentStackAgentStatus if s != AgentStackAgentStatus.OFFLINE}
 
-        providers = await Provider.list(client=client or PlatformClient(base_url=url))
+        def create_platform_client() -> PlatformClient:
+            return (
+                PlatformClient(base_url=url, timeout=httpx.Timeout(30.0, read=None))
+                if url
+                else (client or get_platform_client())
+            )
+
+        providers = await Provider.list(client=create_platform_client())
         return [
             AgentStackAgent(
                 agent_card=provider.agent_card,
                 memory=await memory.clone(),
-                client=client or PlatformClient(base_url=url),
+                client=create_platform_client(),
             )
             for provider in providers
             if provider.state in states
