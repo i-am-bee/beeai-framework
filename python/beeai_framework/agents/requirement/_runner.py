@@ -118,21 +118,6 @@ class RequirementAgentRunner:
         stream_middleware.unbind()
         return response
 
-    async def _process_response(self, response: ChatModelOutput, request: RequirementAgentRequest) -> ChatModelOutput:
-        if response.get_tool_calls():  # all good
-            return response
-
-        text = response.get_text_content()
-        if text and request.can_stop:
-            fixed_message = await self.__create_final_answer_tool_call(text)
-            if fixed_message:
-                cloned = ChatModelOutput.from_chunks([response])
-                cloned.output_structured = None
-                cloned.output = [fixed_message]
-                return cloned
-
-        raise ValueError("No final answer tool found.")
-
     async def __create_final_answer_tool_call(self, full_text: str) -> AssistantMessage | None:
         json_object_pair = find_first_pair(full_text, ("{", "}"))
         final_answer_input = parse_broken_json(json_object_pair.outer) if json_object_pair else None
@@ -211,14 +196,10 @@ class RequirementAgentRunner:
         if self._state.answer is not None:
             return self._state
 
-        # Init
         await self._reasoner.update(self._requirements)
 
         while self._state.answer is None:
-            self._state.iteration += 1
-
-            if self._run_config.max_iterations and self._state.iteration > self._run_config.max_iterations:
-                raise AgentError(f"Agent was not able to resolve the task in {self._state.iteration} iterations.")
+            self._increment_iteration()
 
             request = await self._create_request()
             await self._ctx.emitter.emit(
@@ -233,9 +214,7 @@ class RequirementAgentRunner:
         return self._state
 
     async def __run(self, request: RequirementAgentRequest) -> ChatModelOutput:
-        response_raw = await self._send_request(request)
-        response = await self._process_response(response_raw, request)  # TODO: handle errors
-
+        response = await self._send_request(request)
         if response.is_empty():
             await self._state.memory.add(AssistantMessage("\n", {"tempMessage": True}))
             return await self.__run(request)
@@ -255,7 +234,7 @@ class RequirementAgentRunner:
                     )
                     return await self.__run(updated_request)
             else:
-                raise ValueError("No final answer tool found.")
+                raise AgentError("Model returned an invalid response.")
 
         # Check Tool Calls
         tool_calls = response.get_tool_calls()

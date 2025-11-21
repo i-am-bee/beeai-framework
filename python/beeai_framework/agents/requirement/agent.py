@@ -211,6 +211,9 @@ class RequirementAgent(BaseAgent[RequirementAgentOutput]):
     def _process_input(
         self, input: str | list[AnyMessage], backstory: str | None, expected_output: Any
     ) -> list[AnyMessage]:
+        if not input:
+            return []
+
         *msgs, last_message = [UserMessage(input)] if isinstance(input, str) else input
         if last_message is None and isinstance(last_message, UserMessage) and last_message.text:
             user_message = UserMessage(
