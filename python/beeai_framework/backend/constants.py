@@ -21,6 +21,8 @@ ProviderName = Literal[
     "langchain",
     "llamaindex",
     "transformers",
+    "deepseek",
+    "qwen",
 ]
 ProviderHumanName = Literal[
     "BeeAI",
@@ -38,6 +40,8 @@ ProviderHumanName = Literal[
     "LangChain",
     "LlamaIndex",
     "Transformers",
+    "Deepseek",
+    "Qwen",
 ]
 
 ModelTypes = Literal["embedding", "chat"]
@@ -86,4 +90,6 @@ BackendProviders = {
     "Llamaindex": ProviderDef(name="LlamaIndex", module="llamaindex", aliases=["llamaindex", "LlamaIndex"]),
     "BeeAI": ProviderDef(name="BeeAI", module="beeai", aliases=["BeeAI", "Beeai", "BAI"]),
     "Transformers": ProviderDef(name="Transformers", module="transformers", aliases=["Transformers", "transformers"]),
+    "Deepseek": ProviderDef(name="Deepseek", module="deepseek", aliases=["deepseek"]),
+    "Qwen": ProviderDef(name="Qwen", module="qwen", aliases=["qwen", "dashscope"]),
 }
