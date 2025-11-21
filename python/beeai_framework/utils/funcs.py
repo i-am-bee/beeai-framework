@@ -48,9 +48,6 @@ def is_same_function(f1: Callable[..., Any], f2: Callable[..., Any]) -> bool:
     return self1 is self2
 
 
-P = ParamSpec("P")
-
-
 def safe_invoke(cls: Callable[P, T]) -> Callable[P, T]:
     allowed_kwargs = get_keyword_arg_names(cls)
 
