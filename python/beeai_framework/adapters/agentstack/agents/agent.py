@@ -20,9 +20,8 @@ try:
         PlatformApiExtensionClient,
         PlatformApiExtensionSpec,
     )
-    from agentstack_sdk.platform import ModelProvider
     from agentstack_sdk.platform.context import Context, ContextPermissions, Permissions
-    from agentstack_sdk.platform.model_provider import ModelCapability
+    from agentstack_sdk.platform.model_provider import ModelCapability, ModelProvider
 
     from beeai_framework.adapters.a2a.agents import A2AAgent, A2AAgentErrorEvent, A2AAgentUpdateEvent
 
