@@ -284,6 +284,8 @@ class A2AAgent(BaseAgent[A2AAgentOutput]):
                     cause=err,
                 )
 
+        return A2AAgentOutput(output=[AssistantMessage("No response from agent.")], event=last_event)
+
     def set_run_params(
         self, *, context_id: str | None, task_id: str | None, clear_context: bool | None = False
     ) -> None:

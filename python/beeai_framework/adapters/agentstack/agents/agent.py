@@ -206,14 +206,13 @@ class AgentStackAgent(BaseAgent[AgentStackAgentOutput]):
         if states is None:
             states = {s for s in AgentStackAgentStatus if s != AgentStackAgentStatus.OFFLINE}
 
-        if client:
-            client = client
-        elif url:
-            client = PlatformClient(base_url=url)
-
-        providers = await Provider.list(client=client)
+        providers = await Provider.list(client=client or PlatformClient(base_url=url))
         return [
-            AgentStackAgent(agent_card=provider.agent_card, memory=await memory.clone(), client=client)
+            AgentStackAgent(
+                agent_card=provider.agent_card,
+                memory=await memory.clone(),
+                client=client or PlatformClient(base_url=url),
+            )
             for provider in providers
             if provider.state in states
         ]
