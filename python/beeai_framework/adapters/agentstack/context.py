@@ -6,10 +6,13 @@ from collections.abc import Callable
 from contextvars import ContextVar
 from typing import Any, Self
 
+from typing_extensions import Unpack
+
 from beeai_framework.adapters.agentstack.backend.chat import AgentStackChatModel
 from beeai_framework.adapters.agentstack.serve.types import BaseAgentStackExtensions
 from beeai_framework.logger import Logger
-from beeai_framework.utils.io import setup_io_context
+from beeai_framework.utils.io import IOConfirmKwargs, setup_io_context
+from beeai_framework.utils.strings import to_json
 
 try:
     from agentstack_sdk.a2a.extensions import (
@@ -59,7 +62,7 @@ class AgentStackContext:
     def __enter__(self) -> Self:
         ctx_key = _storage.set(self)
         self._cleanup.append(lambda: _storage.reset(ctx_key))
-        self._cleanup.append(setup_io_context(read=self._read, io_confirm=self._io_confirm))
+        self._cleanup.append(setup_io_context(read=self._read, confirm=self._io_confirm))
         if self._llm is not None:
             self._cleanup.append(AgentStackChatModel.set_context(self._llm))
         return self
@@ -103,32 +106,28 @@ class AgentStackContext:
             logger.warning(f"Failed to process form: {e}")
             return ""
 
-    async def _io_confirm(
-        self,
-        prompt: str,
-        *,
-        title: str = "Confirm Dialog",
-        description: str | None = None,
-        content: str = "I agree",
-        submit_label: str | None = "Submit",
-        cancel_label: str | None = None,
-        data: dict[str, Any] | None = None,
-    ) -> bool:
+    async def _io_confirm(self, prompt: str, **kwargs: Unpack[IOConfirmKwargs]) -> bool:
+        data = kwargs.get("data")
+        tool_input = (
+            f"\n ```JSON \n{to_json(data['input'], sort_keys=False, indent=2)}\n``` \n\n"
+            if data and data["input"]
+            else None
+        )
         try:
             permission_field_id = "answer"
             form_data = await self._extensions["form"].request_form(
                 form=FormRender(
                     id="form",
-                    title=prompt,
-                    description=description,
+                    title=f"{prompt}{tool_input}",
+                    description=kwargs.get("description"),
                     columns=1,
-                    submit_label=submit_label,
+                    submit_label=kwargs.get("submit_label", "Submit"),
                     fields=[
                         CheckboxField(
                             id=permission_field_id,
-                            label=title,
+                            label=kwargs.get("title", "Do you agree?"),
                             required=False,
-                            content=content,
+                            content=kwargs.get("content", "I agree"),
                             default_value=False,
                         )
                     ],
