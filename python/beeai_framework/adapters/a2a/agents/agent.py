@@ -3,6 +3,7 @@
 
 import ssl
 from collections.abc import Callable, Mapping, Sequence
+from contextlib import AsyncExitStack
 from typing import Any, Literal, Unpack
 
 import httpx
@@ -56,6 +57,7 @@ class A2AAgentOptions(AgentOptions, total=False):
     task_id: str
     clear_context: bool
     a2a_context: a2a_client.ClientCallContext | None
+    httpx_client: httpx.AsyncClient | None
 
 
 class HttpxAsyncClientParameters(BaseModel):
@@ -139,8 +141,15 @@ class A2AAgent(BaseAgent[A2AAgentOutput]):
 
         assert self._agent_card is not None, "Agent card should not be empty after loading."
 
-        async with httpx.AsyncClient(**self._parameters.httpx_async_client.model_dump()) as httpx_client:
-            # create client
+        async with AsyncExitStack() as stack:
+            # create httpx_client client
+            if kwargs.get("httpx_client") is not None:
+                httpx_client = kwargs.get("httpx_client")
+            else:
+                new_client = httpx.AsyncClient(**self._parameters.httpx_async_client.model_dump())
+                httpx_client = await stack.enter_async_context(new_client)
+
+            # create a2a client
             client: a2a_client.Client = a2a_client.ClientFactory(
                 config=a2a_client.ClientConfig(
                     streaming=True,
