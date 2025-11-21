@@ -6,8 +6,9 @@ from typing import Any, Self
 
 from acp_sdk import Message, MessageAwaitRequest, MessagePart
 from acp_sdk.server import Context
+from typing_extensions import Unpack
 
-from beeai_framework.utils.io import setup_io_context
+from beeai_framework.utils.io import IOConfirmKwargs, setup_io_context
 
 
 class ACPIOContext:
@@ -16,7 +17,7 @@ class ACPIOContext:
         self._cleanup: Callable[[], None] = lambda: None
 
     def __enter__(self) -> Self:
-        self._cleanup = setup_io_context(read=self._read)
+        self._cleanup = setup_io_context(read=self._read, confirm=self._confirm)
         return self
 
     def __exit__(self, exc_type: Any, exc_val: Any, exc_tb: Any) -> None:
@@ -28,3 +29,7 @@ class ACPIOContext:
         response = await self.context.yield_async(MessageAwaitRequest(message=message))
         # TODO: handle non-text responses
         return str(response.message) if response else ""
+
+    async def _confirm(self, prompt: str, **kwargs: Unpack[IOConfirmKwargs]) -> bool:
+        response = await self._read(prompt)
+        return response.lower().startswith("yes") or response.lower().startswith("true")
