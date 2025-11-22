@@ -71,10 +71,13 @@ class RequirementAgentRunner:
         )
         self._run_config = config
         self._tool_call_cycle_checker = tool_call_cycle_checker
-        self._tool_call_retry_counter = RetryCounter(
-            error_type=AgentError,
-            max_retries=0 if config.total_max_retries is None else config.total_max_retries,
-        )
+
+        max_retries_per_iteration = 0 if config.max_retries_per_step is None else config.max_retries_per_step
+        self._iteration_error_counter = RetryCounter(error_type=AgentError, max_retries=max_retries_per_iteration)
+
+        max_retries = 0 if config.total_max_retries is None else config.total_max_retries
+        max_retries = max(max_retries_per_iteration, max_retries)
+        self._global_error_counter = RetryCounter(error_type=AgentError, max_retries=max_retries)
 
     def _increment_iteration(self) -> None:
         self._state.iteration += 1
@@ -189,7 +192,8 @@ class RequirementAgentRunner:
                 )
             )
             if tool_call.error is not None:
-                self._tool_call_retry_counter.use(tool_call.error)
+                self._iteration_error_counter.use(tool_call.error)
+                self._global_error_counter.use(tool_call.error)
 
         return tool_results
 
@@ -213,6 +217,7 @@ class RequirementAgentRunner:
                 "start",
                 RequirementAgentStartEvent(state=self._state, request=request),
             )
+            self._iteration_error_counter.reset()
             response = await self._run(request)
             await self._ctx.emitter.emit(
                 "success",
@@ -233,6 +238,10 @@ class RequirementAgentRunner:
 
             final_answer_tool_call = await self._create_final_answer_tool_call(text)
             if not final_answer_tool_call:
+                err = AgentError("Model produced an invalid final answer tool call.")
+                self._iteration_error_counter.use(err)
+                self._global_error_counter.use(err)
+
                 await self._reasoner.update(requirements=[])
                 updated_request = await self._create_request(
                     extra_rules=[Rule(target=self._reasoner.final_answer.name, allowed=True, hidden=False)],
@@ -243,7 +252,7 @@ class RequirementAgentRunner:
             response.output_structured = None
             response.output = [final_answer_tool_call]
 
-        # Check for tool call cycles
+        # Check for cycles
         tool_calls = response.get_tool_calls()
         for tool_call_msg in tool_calls:
             self._tool_call_cycle_checker.register(tool_call_msg)
