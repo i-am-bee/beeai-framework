@@ -150,6 +150,7 @@ class RequirementAgent(BaseAgent[RequirementAgentOutput]):
         self._tools = list(tools or [])
         self._requirements = list(requirements or [])
         self._meta = AgentMeta(name=name or "", description=description or "", tools=self._tools)
+        self.runner_cls: type[RequirementAgentRunner] = RequirementAgentRunner
 
     @runnable_entry
     async def run(self, input: str | list[AnyMessage], /, **kwargs: Unpack[AgentOptions]) -> RequirementAgentOutput:
@@ -169,7 +170,7 @@ class RequirementAgent(BaseAgent[RequirementAgentOutput]):
             The agent output.
         """
 
-        runner = RequirementAgentRunner(
+        runner = self.runner_cls(
             llm=self._llm,
             config=AgentExecutionConfig(
                 max_retries_per_step=kwargs.get("max_retries_per_step", 3),
@@ -288,6 +289,7 @@ class RequirementAgent(BaseAgent[RequirementAgentOutput]):
             middlewares=self.middlewares.copy(),
         )
         cloned.emitter = await self.emitter.clone()
+        cloned.runner_cls = self.runner_cls
         return cloned
 
     @property
