@@ -22,6 +22,11 @@ class RetryCounter:
         self._lastError: BaseException | None = None
         self._finalError: BaseException | None = None
 
+    def reset(self) -> None:
+        self.remaining = self._max_retries
+        self._lastError = None
+        self._finalError = None
+
     def use(self, error: BaseException) -> None:
         if self._finalError:
             raise self._finalError
