@@ -19,7 +19,7 @@ from beeai_framework.agents.requirement.types import (
     RequirementAgentTemplates,
 )
 from beeai_framework.agents.requirement.utils._llm import RequirementsReasoner, _create_system_message
-from beeai_framework.agents.requirement.utils._tool import FinalAnswerTool, _run_tools
+from beeai_framework.agents.requirement.utils._tool import FinalAnswerTool, FinalAnswerToolSchema, _run_tools
 from beeai_framework.agents.tool_calling.utils import ToolCallChecker
 from beeai_framework.backend import (
     AnyMessage,
@@ -33,6 +33,7 @@ from beeai_framework.backend import (
 from beeai_framework.backend.utils import parse_broken_json
 from beeai_framework.context import RunContext
 from beeai_framework.memory import UnconstrainedMemory
+from beeai_framework.memory.utils import TEMP_MESSAGE_META_KEY, delete_messages_by_meta_key
 from beeai_framework.middleware.stream_tool_call import StreamToolCallMiddleware
 from beeai_framework.tools import AnyTool
 from beeai_framework.utils.counter import RetryCounter
@@ -40,6 +41,8 @@ from beeai_framework.utils.strings import find_first_pair, generate_random_strin
 
 
 class RequirementAgentRunner:
+    """Class responsible for running the agent."""
+
     def __init__(
         self,
         *,
@@ -79,9 +82,9 @@ class RequirementAgentRunner:
         if self._run_config.max_iterations and self._state.iteration > self._run_config.max_iterations:
             raise AgentError(f"Agent was not able to resolve the task in {self._state.iteration} iterations.")
 
-    def __create_final_answer_stream(self) -> StreamToolCallMiddleware:
+    def __create_final_answer_stream(self, final_answer_tool: FinalAnswerTool) -> StreamToolCallMiddleware:
         stream_middleware = StreamToolCallMiddleware(
-            self._reasoner.final_answer,
+            final_answer_tool,
             "response",  # from the default schema
             match_nested=False,
             force_streaming=False,
@@ -97,11 +100,11 @@ class RequirementAgentRunner:
         )
         return stream_middleware
 
-    async def _send_request(
+    async def _run_llm(
         self,
         request: RequirementAgentRequest,
     ) -> ChatModelOutput:
-        stream_middleware = self.__create_final_answer_stream()
+        stream_middleware = self.__create_final_answer_stream(request.final_answer)
         response = await self._llm.run(
             [
                 _create_system_message(
@@ -118,24 +121,24 @@ class RequirementAgentRunner:
         stream_middleware.unbind()
         return response
 
-    async def __create_final_answer_tool_call(self, full_text: str) -> AssistantMessage | None:
+    async def _create_final_answer_tool_call(self, full_text: str) -> AssistantMessage | None:
+        """Try to convert a text message to a valid final answer tool call."""
+
         json_object_pair = find_first_pair(full_text, ("{", "}"))
         final_answer_input = parse_broken_json(json_object_pair.outer) if json_object_pair else None
         if not final_answer_input and not self._reasoner.final_answer.custom_schema:
-            final_answer_input = {"response": full_text}
+            final_answer_input = FinalAnswerToolSchema(response=full_text).model_dump()
 
         if not final_answer_input:
             return None
-        else:
-            manual_assistant_tool_call_message = MessageToolCallContent(
-                type="tool-call",
-                id=f"call_{generate_random_string(8).lower()}",
-                tool_name=self._reasoner.final_answer.name,
-                args=to_json(final_answer_input, sort_keys=False),
-            )
-            # tool_call_messages.append(manual_assistant_tool_call_message)
-            # await state.memory.add(AssistantMessage(manual_assistant_tool_call_message))
-            return AssistantMessage(manual_assistant_tool_call_message)
+
+        manual_assistant_tool_call_message = MessageToolCallContent(
+            type="tool-call",
+            id=f"call_{generate_random_string(8).lower()}",
+            tool_name=self._reasoner.final_answer.name,
+            args=to_json(final_answer_input, sort_keys=False),
+        )
+        return AssistantMessage(manual_assistant_tool_call_message)
 
     async def _create_request(self, *, extra_rules: list[Rule] | None = None) -> RequirementAgentRequest:
         return await self._reasoner.create_request(
@@ -148,6 +151,7 @@ class RequirementAgentRunner:
         self, tools: list[AnyTool], tool_calls: list[MessageToolCallContent]
     ) -> list[ToolMessage]:
         tool_results: list[ToolMessage] = []
+
         for tool_call in await _run_tools(
             tools=tools,
             messages=tool_calls,
@@ -193,9 +197,12 @@ class RequirementAgentRunner:
         await self._state.memory.add_many(messages)
 
     async def run(self) -> RequirementAgentRunState:
+        """Run the agent until it reaches the final answer. Returns the final state."""
+
         if self._state.answer is not None:
             return self._state
 
+        # Init requirements
         await self._reasoner.update(self._requirements)
 
         while self._state.answer is None:
@@ -206,37 +213,37 @@ class RequirementAgentRunner:
                 "start",
                 RequirementAgentStartEvent(state=self._state, request=request),
             )
-            response = await self.__run(request)
+            response = await self._run(request)
             await self._ctx.emitter.emit(
                 "success",
                 RequirementAgentSuccessEvent(state=self._state, response=response),
             )
         return self._state
 
-    async def __run(self, request: RequirementAgentRequest) -> ChatModelOutput:
-        response = await self._send_request(request)
-        if response.is_empty():
-            await self._state.memory.add(AssistantMessage("\n", {"tempMessage": True}))
-            return await self.__run(request)
+    async def _run(self, request: RequirementAgentRequest) -> ChatModelOutput:
+        """Run a single iteration of the agent."""
 
-        if not response.get_tool_calls():  # all good
+        response = await self._run_llm(request)
+
+        # Try to cast a text message to a final answer tool call if it is allowed
+        if not response.get_tool_calls():
             text = response.get_text_content()
-            if text and request.can_stop:
-                fixed_tool_call = await self.__create_final_answer_tool_call(text)
-                if fixed_tool_call:
-                    response.output_structured = None
-                    response.output = [fixed_tool_call]
-                else:
-                    self._force_final_answer_as_tool = True
-                    await self._reasoner.update(requirements=[])
-                    updated_request = await self._create_request(
-                        extra_rules=[Rule(target=self._reasoner.final_answer.name, allowed=True, hidden=False)],
-                    )
-                    return await self.__run(updated_request)
-            else:
-                raise AgentError("Model returned an invalid response.")
+            if not text or request.can_stop:
+                raise AgentError("Model produced an empty response.", context={"response": response})
 
-        # Check Tool Calls
+            final_answer_tool_call = await self._create_final_answer_tool_call(text)
+            if not final_answer_tool_call:
+                await self._reasoner.update(requirements=[])
+                updated_request = await self._create_request(
+                    extra_rules=[Rule(target=self._reasoner.final_answer.name, allowed=True, hidden=False)],
+                )
+                self._force_final_answer_as_tool = True
+                return await self._run(updated_request)
+
+            response.output_structured = None
+            response.output = [final_answer_tool_call]
+
+        # Check for tool call cycles
         tool_calls = response.get_tool_calls()
         for tool_call_msg in tool_calls:
             self._tool_call_cycle_checker.register(tool_call_msg)
@@ -245,13 +252,11 @@ class RequirementAgentRunner:
                 updated_request = await self._create_request(
                     extra_rules=[Rule(target=tool_call_msg.tool_name, allowed=False, hidden=False, forced=True)],
                 )
-                return await self.__run(updated_request)
+                return await self._run(updated_request)
 
         tool_results = await self._invoke_tool_calls(request.allowed_tools, tool_calls)
 
         await self._state.memory.add_many([*response.output, *tool_results])
-        await self._state.memory.delete_many(
-            [msg for msg in self._state.memory.messages if msg.meta.get("tempMessage", False)]
-        )
+        await delete_messages_by_meta_key(self._state.memory, key=TEMP_MESSAGE_META_KEY, value=True)
 
         return response
