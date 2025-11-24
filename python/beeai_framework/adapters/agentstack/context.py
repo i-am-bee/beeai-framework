@@ -4,7 +4,7 @@
 import contextlib
 from collections.abc import Callable
 from contextvars import ContextVar
-from typing import Any, Self, Unpack
+from typing import TYPE_CHECKING, Any, Optional, Self, Unpack
 from uuid import uuid4
 
 from beeai_framework.adapters.agentstack.backend.chat import AgentStackChatModel
@@ -13,21 +13,9 @@ from beeai_framework.logger import Logger
 from beeai_framework.utils.io import IOConfirmKwargs, setup_io_context
 from beeai_framework.utils.strings import to_json
 
-try:
-    from agentstack_sdk.a2a.extensions import (
-        LLMServiceExtensionServer,
-    )
-    from agentstack_sdk.a2a.extensions.ui.form import (
-        CheckboxField,
-        FormRender,
-        FormResponse,
-        TextField,
-    )
-    from agentstack_sdk.server.context import RunContext
-except ModuleNotFoundError as e:
-    raise ModuleNotFoundError(
-        "Optional module [agentstack] not found.\nRun 'pip install \"beeai-framework[agentstack]\"' to install."
-    ) from e
+if TYPE_CHECKING:
+    from agentstack_sdk.a2a.extensions import LLMServiceExtensionServer
+    from agentstack_sdk.server.context import RunContext as AgentStackRunContext
 
 logger = Logger(__name__)
 
@@ -38,9 +26,9 @@ _storage: ContextVar["AgentStackContext"] = ContextVar("agentstack")
 class AgentStackContext:
     def __init__(
         self,
-        context: RunContext,
+        context: "AgentStackRunContext",
         *,
-        llm: LLMServiceExtensionServer | None = None,
+        llm: Optional["LLMServiceExtensionServer"] = None,
         metadata: dict[str, Any] | None = None,
         extra_extensions: BaseAgentStackExtensions,
     ) -> None:
@@ -74,6 +62,18 @@ class AgentStackContext:
 
     async def _read(self, prompt: str) -> str:
         try:
+            from agentstack_sdk.a2a.extensions import (
+                FormRender,
+                FormResponse,
+                TextField,
+            )
+
+        except ModuleNotFoundError as e:
+            raise ModuleNotFoundError(
+                "Optional module [agentstack] not found.\nRun 'pip install \"beeai-framework[agentstack]\"' to install."
+            ) from e
+
+        try:
             answer_field_id = "answer"
             form_data = await self._extensions["form"].request_form(
                 form=FormRender(
@@ -106,6 +106,14 @@ class AgentStackContext:
             return ""
 
     async def _confirm(self, question: str, **kwargs: Unpack[IOConfirmKwargs]) -> bool:
+        try:
+            from agentstack_sdk.a2a.extensions.ui.form import CheckboxField, FormRender, FormResponse
+
+        except ModuleNotFoundError as e:
+            raise ModuleNotFoundError(
+                "Optional module [agentstack] not found.\nRun 'pip install \"beeai-framework[agentstack]\"' to install."
+            ) from e
+
         data = kwargs.get("data")
         formatted_data = f"\n```json\n{to_json(data, sort_keys=False, indent=2)}\n``` \n\n" if data else ""
         try:

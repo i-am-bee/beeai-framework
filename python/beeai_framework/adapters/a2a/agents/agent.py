@@ -3,6 +3,7 @@
 
 import ssl
 from collections.abc import Callable, Mapping, Sequence
+from contextlib import AsyncExitStack
 from typing import Any, Literal, Unpack
 
 import httpx
@@ -56,6 +57,8 @@ class A2AAgentOptions(AgentOptions, total=False):
     task_id: str
     clear_context: bool
     a2a_context: a2a_client.ClientCallContext | None
+    # The HTTP client should already be opened
+    httpx_client: httpx.AsyncClient | None
 
 
 class HttpxAsyncClientParameters(BaseModel):
@@ -139,8 +142,14 @@ class A2AAgent(BaseAgent[A2AAgentOutput]):
 
         assert self._agent_card is not None, "Agent card should not be empty after loading."
 
-        async with httpx.AsyncClient(**self._parameters.httpx_async_client.model_dump()) as httpx_client:
-            # create client
+        async with AsyncExitStack() as stack:
+            if kwargs.get("httpx_client") is not None:
+                httpx_client = kwargs.get("httpx_client")
+            else:
+                new_client = httpx.AsyncClient(**self._parameters.httpx_async_client.model_dump())
+                httpx_client = await stack.enter_async_context(new_client)
+
+            # create a2a client
             client: a2a_client.Client = a2a_client.ClientFactory(
                 config=a2a_client.ClientConfig(
                     streaming=True,
@@ -274,6 +283,8 @@ class A2AAgent(BaseAgent[A2AAgentOutput]):
                     context=error_context if isinstance(last_event, tuple) and last_event[1] else None,
                     cause=err,
                 )
+
+        return A2AAgentOutput(output=[AssistantMessage("No response from agent.")], event=last_event)
 
     def set_run_params(
         self, *, context_id: str | None, task_id: str | None, clear_context: bool | None = False
