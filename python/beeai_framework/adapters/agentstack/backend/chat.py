@@ -75,7 +75,7 @@ class AgentStackChatModel(ChatModel):
     ) -> None:
         super().__init__(**kwargs)
         self.preferred_models = preferred_models or []
-        self._tool_choice_supports = kwargs.get("tool_choice_support")
+        self._has_custom_tool_choice_support = kwargs.get("tool_choice_support") is not None
 
     @staticmethod
     def set_context(ctx: LLMServiceExtensionServer) -> Callable[[], None]:
@@ -112,7 +112,9 @@ class AgentStackChatModel(ChatModel):
             supports_top_level_unions=self.supports_top_level_unions,
             retry_on_empty_response=self.retry_on_empty_response,
             fix_invalid_tool_calls=self.fix_invalid_tool_calls,
-            tool_choice_support=self._tool_choice_support or config.tool_choice_support,
+            tool_choice_support=self._tool_choice_support.copy()
+            if (self._has_custom_tool_choice_support or type(self).tool_choice_support != self._tool_choice_support)
+            else config.tool_choice_support.copy(),
             parameters=self.parameters.model_copy(deep=True),
         )
 
@@ -152,10 +154,10 @@ class AgentStackChatModel(ChatModel):
             supports_top_level_unions=self.supports_top_level_unions,
             retry_on_empty_response=self.retry_on_empty_response,
             fix_invalid_tool_calls=self.fix_invalid_tool_calls,
+            tool_choice_support=self._tool_choice_support.copy(),
             parameters=self.parameters.model_copy(deep=True),
         )
-        if self._tool_choice_support:
-            cloned._tool_choice_support = self._tool_choice_support
+        cloned._has_custom_tool_choice_support = self._has_custom_tool_choice_support
         self.middlewares.extend(self.middlewares)
         return cloned
 
