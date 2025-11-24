@@ -57,6 +57,7 @@ class A2AAgentOptions(AgentOptions, total=False):
     task_id: str
     clear_context: bool
     a2a_context: a2a_client.ClientCallContext | None
+    # The HTTP client should already be opened
     httpx_client: httpx.AsyncClient | None
 
 
