@@ -4,25 +4,16 @@
 import contextlib
 from collections.abc import Callable
 from contextvars import ContextVar
-from typing import Any, Self
+from typing import TYPE_CHECKING, Any, Optional, Self
 
 from beeai_framework.adapters.agentstack.backend.chat import AgentStackChatModel
 from beeai_framework.adapters.agentstack.serve.types import BaseAgentStackExtensions
 from beeai_framework.logger import Logger
 from beeai_framework.utils.io import setup_io_context
 
-try:
-    from agentstack_sdk.a2a.extensions import (
-        FormRender,
-        FormResponse,
-        LLMServiceExtensionServer,
-        TextField,
-    )
-    from agentstack_sdk.server.context import RunContext
-except ModuleNotFoundError as e:
-    raise ModuleNotFoundError(
-        "Optional module [agentstack] not found.\nRun 'pip install \"beeai-framework[agentstack]\"' to install."
-    ) from e
+if TYPE_CHECKING:
+    from agentstack_sdk.a2a.extensions import LLMServiceExtensionServer
+    from agentstack_sdk.server.context import RunContext as AgentStackRunContext
 
 logger = Logger(__name__)
 
@@ -33,9 +24,9 @@ _storage: ContextVar["AgentStackContext"] = ContextVar("agentstack")
 class AgentStackContext:
     def __init__(
         self,
-        context: RunContext,
+        context: "AgentStackRunContext",
         *,
-        llm: LLMServiceExtensionServer | None = None,
+        llm: Optional["LLMServiceExtensionServer"] = None,
         metadata: dict[str, Any] | None = None,
         extra_extensions: BaseAgentStackExtensions,
     ) -> None:
@@ -68,6 +59,18 @@ class AgentStackContext:
                 cleanup()
 
     async def _read(self, prompt: str) -> str:
+        try:
+            from agentstack_sdk.a2a.extensions import (
+                FormRender,
+                FormResponse,
+                TextField,
+            )
+
+        except ModuleNotFoundError as e:
+            raise ModuleNotFoundError(
+                "Optional module [agentstack] not found.\nRun 'pip install \"beeai-framework[agentstack]\"' to install."
+            ) from e
+
         try:
             answer_field_id = "answer"
             form_data = await self._extensions["form"].request_form(
