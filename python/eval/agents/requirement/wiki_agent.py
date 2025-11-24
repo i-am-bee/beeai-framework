@@ -11,6 +11,8 @@ import pytest
 from deepeval import evaluate
 from deepeval.metrics import ContextualPrecisionMetric, ContextualRecallMetric, ContextualRelevancyMetric, AnswerRelevancyMetric
 from deepeval.test_case import LLMTestCase
+from dotenv import load_dotenv
+load_dotenv()
 
 # Add the examples directory to sys.path to import setup_vector_store
 examples_path = Path(__file__).parent.parent.parent.parent / "examples" / "agents" / "experimental" / "requirement"
@@ -31,6 +33,7 @@ from beeai_framework.tools.weather import OpenMeteoTool
 from beeai_framework.tools.code import PythonTool, LocalPythonStorage
 
 from eval.model import DeepEvalLLM
+
 
 def create_calculator_tool() -> Tool:
     """
@@ -70,15 +73,25 @@ async def create_agent() -> RequirementAgent:
 
     # Create RequirementAgent with multiple tools
     # tools: WikipediaTool for general knowledge, PythonTool for calculations, OpenMeteoTool for weather data
+
+    #Format in Jason:
+    #Final answer 
+    #List of supporting sentences
+    #explanation of reasoning for each sentence by its number
+    #tool that was used
+    #
+    JSON_SCHEMA_STRING = """{"final_answer": "...","tool_used": "...","supporting_sentences": ["<sentence 1>", "<sentence 2>"],"reasoning_explanation": [{"step": 1, "logic": "The reasoning step"}]}"""
     agent = RequirementAgent(
         llm=llm, 
         tools=[wiki_tool,OpenMeteoTool(), calculator_tool],
         memory=UnconstrainedMemory(),
-        role="You are an expert Multi-hop Question Answering (QA) agent. Your primary role is to extract and combine information from the provided context to answer the user's question. Your final output must strictly follow these constraints:",
+        role="You are an expert Multi-hop Question Answering (QA) agent. Your primary role is to extract and combine information from the provided context to answer the user's question. Answer in jason format only.",
         instructions=[
-            "1. SOURCE CONSTRAINT: Your answer must be based ONLY on the provided context paragraphs. Do not use external knowledge.",
-            "2. REASONING: Your answer must require linking facts from at least two separate context paragraphs (Multi-hop).",
-            "3. EXPLAINABILITY: After your final answer, you must provide a list of the exact sentences (using their original numerical identifiers [1], [2], etc.) that fully support your conclusion."
+            "RULES and CONSTRAINTS:",
+            "1. SOURCE ADHERENCE (NO HALLUCINATION): Your final answer MUST be based ONLY on the context you retrieve from the provided tools (VectorStoreSearchTool or WikipediaTool). Do not use external knowledge.",
+            "2. MULTI-HOP: You must perform multi-step reasoning or use multiple tools/retrievals if the question requires it.",
+            "3. FINAL FORMAT: Your ONLY final output MUST be a single, valid JSON object adhering strictly to the required keys. Do not include any text outside the JSON block.",
+            "4. THE JSON SCHEMA STRING: " + JSON_SCHEMA_STRING
         ],
 
     )
@@ -149,8 +162,10 @@ async def create_rag_test_cases():
     for question, expected_output in test_data:
         # Run the agent
         response = await agent.run(question)
-        actual_output = response.result.text
         
+        #actual_output = response.result.text + extract_tool_usage_and_facts_trace(response.memory.messages)
+        actual_output = response.result.text
+
         # Extract retrieval context from message history
         retrieval_context = extract_retrieval_context(response.memory.messages)
         
@@ -162,6 +177,8 @@ async def create_rag_test_cases():
             retrieval_context=retrieval_context
         )
         test_cases.append(test_case)
+
+        #TODO trajectory check
     
     return test_cases
 

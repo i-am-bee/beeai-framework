@@ -173,3 +173,6 @@ examples/playground
 .deepeval-cache.json
 .deepeval_telemetry.txt
 eval/**/*.cache
+
+eval/evaluation_dataset_2.json
+eval/evaluation_dataset.json
