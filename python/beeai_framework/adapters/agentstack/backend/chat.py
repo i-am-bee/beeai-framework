@@ -5,13 +5,15 @@ import contextlib
 from collections.abc import Callable
 from contextvars import ContextVar
 from functools import cached_property
-from typing import Any, ClassVar, Self
+from typing import TYPE_CHECKING, Any, ClassVar, Self
 
 from pydantic import BaseModel, Field
 
 try:
-    from agentstack_sdk.a2a.extensions import LLMServiceExtensionServer
     from agentstack_sdk.platform import ModelProviderType
+
+    if TYPE_CHECKING:
+        from agentstack_sdk.a2a.extensions import LLMServiceExtensionServer
 
 except ModuleNotFoundError as e:
     raise ModuleNotFoundError(
@@ -31,7 +33,7 @@ __all__ = ["AgentStackChatModel"]
 
 from beeai_framework.context import Run
 
-_storage = ContextVar[LLMServiceExtensionServer]("agent_stack_chat_model_storage")
+_storage = ContextVar["LLMServiceExtensionServer"]("agent_stack_chat_model_storage")
 
 
 class ProviderConfig(BaseModel):
@@ -78,7 +80,7 @@ class AgentStackChatModel(ChatModel):
         self._has_custom_tool_choice_support = kwargs.get("tool_choice_support") is not None
 
     @staticmethod
-    def set_context(ctx: LLMServiceExtensionServer) -> Callable[[], None]:
+    def set_context(ctx: "LLMServiceExtensionServer") -> Callable[[], None]:
         token = _storage.set(ctx)
         return lambda: _storage.reset(token)
 
