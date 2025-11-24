@@ -143,7 +143,6 @@ class A2AAgent(BaseAgent[A2AAgentOutput]):
         assert self._agent_card is not None, "Agent card should not be empty after loading."
 
         async with AsyncExitStack() as stack:
-            # create httpx_client client
             if kwargs.get("httpx_client") is not None:
                 httpx_client = kwargs.get("httpx_client")
             else:

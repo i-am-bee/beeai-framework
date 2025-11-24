@@ -20,7 +20,7 @@ try:
         PlatformApiExtensionClient,
         PlatformApiExtensionSpec,
     )
-    from agentstack_sdk.platform import ModelProvider, PlatformClient, Provider, get_platform_client
+    from agentstack_sdk.platform import ModelProvider, PlatformClient, Provider
     from agentstack_sdk.platform.context import Context, ContextPermissions, Permissions
     from agentstack_sdk.platform.model_provider import ModelCapability
 
@@ -121,7 +121,7 @@ class AgentStackAgent(BaseAgent[AgentStackAgentOutput]):
             .on("error", error_event)
         )
 
-        return AgentStackAgentOutput(output=response.output, event=response.event)
+        return AgentStackAgentOutput(output=response.output, event=response.event, context=response.context)
 
     async def check_agent_exists(
         self,
@@ -198,22 +198,13 @@ class AgentStackAgent(BaseAgent[AgentStackAgentOutput]):
 
     @classmethod
     async def from_agent_stack(
-        cls,
-        url: str,
-        memory: BaseMemory,
-        *,
-        states: set[AgentStackAgentStatus] | None = None,
-        client: PlatformClient | None = None,
+        cls, url: str | PlatformClient, memory: BaseMemory, *, states: set[AgentStackAgentStatus] | None = None
     ) -> list["AgentStackAgent"]:
         if states is None:
             states = {s for s in AgentStackAgentStatus if s != AgentStackAgentStatus.OFFLINE}
 
         def create_platform_client() -> PlatformClient:
-            return (
-                PlatformClient(base_url=url, timeout=httpx.Timeout(30.0, read=None))
-                if url
-                else (client or get_platform_client())
-            )
+            return PlatformClient(base_url=url, timeout=httpx.Timeout(30.0, read=None)) if isinstance(url, str) else url
 
         providers = await Provider.list(client=create_platform_client())
         return [
