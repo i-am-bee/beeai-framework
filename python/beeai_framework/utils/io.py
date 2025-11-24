@@ -15,11 +15,10 @@ __all__ = ["IOHandlers", "io_read", "setup_io_context"]
 
 class IOConfirmKwargs(TypedDict, total=False):
     title: str
-    description: str | None
-    content: str
-    submit_label: str | None
-    cancel_label: str | None
-    data: dict[str, Any] | None
+    description: str
+    submit_label: str
+    cancel_label: str
+    data: dict[str, Any]
 
 
 ReadHandler = Callable[[str], Awaitable[str]]

@@ -105,15 +105,15 @@ class AgentStackContext:
             logger.warning(f"Failed to process form: {e}")
             return ""
 
-    async def _confirm(self, prompt: str, **kwargs: Unpack[IOConfirmKwargs]) -> bool:
+    async def _confirm(self, question: str, **kwargs: Unpack[IOConfirmKwargs]) -> bool:
         data = kwargs.get("data")
-        formatted_data = f"\n ```JSON \n{to_json(data, sort_keys=False, indent=2)}\n``` \n\n" if data else ""
+        formatted_data = f"\n```json\n{to_json(data, sort_keys=False, indent=2)}\n``` \n\n" if data else ""
         try:
             permission_field_id = "answer"
             form_data = await self._extensions["form"].request_form(
                 form=FormRender(
                     id=str(uuid4()),
-                    title=f"{prompt}{formatted_data}",  # render all data to the title
+                    title=f"{question}{formatted_data}",  # markdown is not supported in the description field
                     description=kwargs.get("description"),
                     columns=1,
                     submit_label=kwargs.get("submit_label", "Submit"),
@@ -122,7 +122,7 @@ class AgentStackContext:
                             id=permission_field_id,
                             label=kwargs.get("title", "Do you agree?"),
                             required=False,
-                            content=kwargs.get("content", "I agree"),
+                            content="I agree",
                             default_value=False,
                         )
                     ],
