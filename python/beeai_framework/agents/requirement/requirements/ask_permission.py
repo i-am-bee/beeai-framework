@@ -104,4 +104,4 @@ class AskPermissionRequirement(Requirement[RequirementAgentRunState]):
 
 
 async def _default_handler(tool: AnyTool, input: dict[str, Any]) -> bool:
-    return await io_confirm(f"The agent wants to use the {tool.name} tool.", data={"input": input})
+    return await io_confirm(f"The agent wants to use the {tool.name} tool.", data=input)

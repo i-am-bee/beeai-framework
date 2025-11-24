@@ -4,9 +4,8 @@
 import contextlib
 from collections.abc import Callable
 from contextvars import ContextVar
-from typing import Any, Self
-
-from typing_extensions import Unpack
+from typing import Any, Self, Unpack
+from uuid import uuid4
 
 from beeai_framework.adapters.agentstack.backend.chat import AgentStackChatModel
 from beeai_framework.adapters.agentstack.serve.types import BaseAgentStackExtensions
@@ -62,7 +61,7 @@ class AgentStackContext:
     def __enter__(self) -> Self:
         ctx_key = _storage.set(self)
         self._cleanup.append(lambda: _storage.reset(ctx_key))
-        self._cleanup.append(setup_io_context(read=self._read, confirm=self._io_confirm))
+        self._cleanup.append(setup_io_context(read=self._read, confirm=self._confirm))
         if self._llm is not None:
             self._cleanup.append(AgentStackChatModel.set_context(self._llm))
         return self
@@ -106,19 +105,15 @@ class AgentStackContext:
             logger.warning(f"Failed to process form: {e}")
             return ""
 
-    async def _io_confirm(self, prompt: str, **kwargs: Unpack[IOConfirmKwargs]) -> bool:
+    async def _confirm(self, prompt: str, **kwargs: Unpack[IOConfirmKwargs]) -> bool:
         data = kwargs.get("data")
-        tool_input = (
-            f"\n ```JSON \n{to_json(data['input'], sort_keys=False, indent=2)}\n``` \n\n"
-            if data and data["input"]
-            else None
-        )
+        formatted_data = f"\n ```JSON \n{to_json(data, sort_keys=False, indent=2)}\n``` \n\n" if data else ""
         try:
             permission_field_id = "answer"
             form_data = await self._extensions["form"].request_form(
                 form=FormRender(
-                    id="form",
-                    title=f"{prompt}{tool_input}",
+                    id=str(uuid4()),
+                    title=f"{prompt}{formatted_data}",  # render all data to the title
                     description=kwargs.get("description"),
                     columns=1,
                     submit_label=kwargs.get("submit_label", "Submit"),
