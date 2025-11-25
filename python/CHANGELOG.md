@@ -1,3 +1,27 @@
+## python_v0.1.68 (2025-11-19)
+
+### Bug Fixes
+
+- **backend**: improve cloning and add tests (#1311)
+
+### Features
+
+- **backend**: handle streamed tool calls without ID (#1312)
+
+## python_v0.1.67 (2025-11-18)
+
+### Bug Fixes
+
+- broken caching
+
+### Features
+
+- **backend**: auto repair produced json
+- **agents**: add reason to a rule when using Requirements (#1289)
+- **backend**: auto fix malformed tool calls (#1291)
+- **tools**: remove next_step from the ThinkTool (#1303)
+- **middlewares**: add custom message formatter to the GlobalTrajectoryMiddleware (#1287)
+
 ## python_v0.1.66 (2025-11-11)
 
 ### Bug Fixes

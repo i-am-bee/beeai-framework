@@ -1,8 +1,12 @@
+# Copyright 2025 © BeeAI a Series of LF Projects, LLC
+# SPDX-License-Identifier: Apache-2.0
+
 import asyncio
 
+from dotenv import load_dotenv
 from pydantic import BaseModel, Field
 
-from beeai_framework.adapters.vertexai import VertexAIChatModel
+from beeai_framework.adapters.deepseek import DeepseekChatModel
 from beeai_framework.backend import ChatModel, ChatModelNewTokenEvent, UserMessage
 from beeai_framework.emitter import EventMeta
 from beeai_framework.errors import AbortError
@@ -11,29 +15,29 @@ from beeai_framework.parsers.line_prefix import LinePrefixParser, LinePrefixPars
 from beeai_framework.utils import AbortSignal
 
 
-async def vertexai_from_name() -> None:
-    llm = ChatModel.from_name("vertexai:gemini-2.0-flash-lite-001")
+async def deepseek_from_name() -> None:
+    llm = ChatModel.from_name("deepseek:deepseek-chat")
     user_message = UserMessage("what states are part of New England?")
     response = await llm.run([user_message])
     print(response.get_text_content())
 
 
-async def vertexai_sync() -> None:
-    llm = VertexAIChatModel("gemini-2.0-flash-lite-001")
+async def deepseek_sync() -> None:
+    llm = DeepseekChatModel("deepseek-chat")
     user_message = UserMessage("what is the capital of Massachusetts?")
     response = await llm.run([user_message])
     print(response.get_text_content())
 
 
-async def vertexai_stream() -> None:
-    llm = VertexAIChatModel("gemini-2.0-flash-lite-001")
+async def deepseek_stream() -> None:
+    llm = DeepseekChatModel("deepseek-chat")
     user_message = UserMessage("How many islands make up the country of Cape Verde?")
     response = await llm.run([user_message], stream=True)
     print(response.get_text_content())
 
 
-async def vertexai_stream_abort() -> None:
-    llm = VertexAIChatModel("gemini-2.0-flash-lite-001")
+async def deepseek_stream_abort() -> None:
+    llm = DeepseekChatModel("deepseek-chat")
     user_message = UserMessage("What is the smallest of the Cape Verde islands?")
 
     try:
@@ -47,18 +51,18 @@ async def vertexai_stream_abort() -> None:
         print(f"Aborted: {err}")
 
 
-async def vertexai_structure() -> None:
+async def deepseek_structure() -> None:
     class TestSchema(BaseModel):
         answer: str = Field(description="your final answer")
 
-    llm = VertexAIChatModel("gemini-2.0-flash-lite-001")
+    llm = DeepseekChatModel("deepseek-chat")
     user_message = UserMessage("How many islands make up the country of Cape Verde?")
     response = await llm.run([user_message], response_format=TestSchema)
     print(response.output_structured)
 
 
-async def vertexai_stream_parser() -> None:
-    llm = VertexAIChatModel("gemini-2.0-flash-lite-001")
+async def deepseek_stream_parser() -> None:
+    llm = DeepseekChatModel("deepseek-chat")
 
     parser = LinePrefixParser(
         nodes={
@@ -69,7 +73,7 @@ async def vertexai_stream_parser() -> None:
     )
 
     async def on_new_token(data: ChatModelNewTokenEvent, event: EventMeta) -> None:
-        await parser.add(data.value.get_text_content())
+        await parser.add(chunk=data.value.get_text_content())
 
     user_message = UserMessage("Produce 3 lines each starting with 'Prefix: ' followed by a sentence and a new line.")
     await llm.run([user_message], stream=True).observe(lambda emitter: emitter.on("new_token", on_new_token))
@@ -77,27 +81,21 @@ async def vertexai_stream_parser() -> None:
     print(result)
 
 
-async def vertexai_cloning() -> None:
-    llm = VertexAIChatModel("gemini-2.0-flash-lite-001")
-    await llm.clone()
-
-
 async def main() -> None:
-    print("*" * 10, "vertexai_from_name")
-    await vertexai_from_name()
-    print("*" * 10, "vertexai_sync")
-    await vertexai_sync()
-    print("*" * 10, "vertexai_stream")
-    await vertexai_stream()
-    print("*" * 10, "vertexai_stream_abort")
-    await vertexai_stream_abort()
-    print("*" * 10, "vertexai_structure")
-    await vertexai_structure()
-    print("*" * 10, "vertexai_stream_parser")
-    await vertexai_stream_parser()
-    print("*" * 10, "vertexai_cloning")
-    await vertexai_cloning()
+    print("*" * 10, "deepseek_from_name")
+    await deepseek_from_name()
+    print("*" * 10, "deepseek_sync")
+    await deepseek_sync()
+    print("*" * 10, "deepseek_stream")
+    await deepseek_stream()
+    print("*" * 10, "deepseek_stream_abort")
+    await deepseek_stream_abort()
+    print("*" * 10, "deepseek_structure")
+    await deepseek_structure()
+    print("*" * 10, "deepseek_stream_parser")
+    await deepseek_stream_parser()
 
 
 if __name__ == "__main__":
+    load_dotenv()
     asyncio.run(main())

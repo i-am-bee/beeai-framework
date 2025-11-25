@@ -17,14 +17,16 @@ class RequirementAgentToolTemplateDefinition(BaseModel):
     description: str
     input_schema: str
     allowed: str
+    reason: str | None
 
     @classmethod
-    def from_tool(cls, tool: AnyTool, *, allowed: bool = True) -> Self:
+    def from_tool(cls, tool: AnyTool, *, allowed: bool = True, reason: str | None = None) -> Self:
         return cls(
             name=tool.name,
             description=tool.description,
             input_schema=to_json(tool.input_schema.model_json_schema(mode="validation"), indent=2, sort_keys=False),
             allowed=str(allowed),
+            reason=reason,
         )
 
 
@@ -70,7 +72,8 @@ Never use the tool twice with the same input if not stated otherwise.
 {{#tools}}
 Name: {{name}}
 Description: {{description}}
-Allowed: {{allowed}}
+Allowed: {{allowed}}{{#reason}}
+Reason: {{&.}}{{/reason}}
 
 {{/tools}}
 {{/tools.0}}
