@@ -1,3 +1,23 @@
+## python_v0.1.69 (2025-11-25)
+
+### Bug Fixes
+
+- **adapters**: propagate changes to AgentStack Chat Model (#1308)
+
+### Features
+
+- switch from llama-index to llama-index-core
+- **adapters**: make default exports lazy AgentStack
+- **adapters**: make default exports lazy A2A
+- **adapters**: add health-check support (#1235)
+- add io_confirm for human in the loop (#1306)
+- **agents**: rewrite RequirementAgent (#1317)
+- **adapters**: make AgentStack client optional (#1325)
+- **adapters**: make some imports for AgentStack lazy (#1316)
+- **adapters**: propagate agent stack client (#1315)
+- **adapters**: add qwen and deepseek providers (#1281)
+- bump ddgs
+
 ## python_v0.1.68 (2025-11-19)
 
 ### Bug Fixes
