@@ -144,7 +144,7 @@ class WorkflowStep(ABC):
 
     async def requeue(self, *inputs: Any) -> bool:
         if self.loop_condition:
-            return bool(await run_callable(self.loop_condition.fn, inputs))
+            return bool(await run_callable(self.loop_condition.fn, *inputs))
         return False
 
 

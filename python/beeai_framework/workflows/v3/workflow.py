@@ -32,11 +32,9 @@ class step:  # noqa: N801
     Users can refer to decorated methods and treat as WorkflowStep for composition.
     """
 
-    def __init__(self, func: AsyncStepFunction, is_start: bool = False, is_end: bool = False) -> None:
+    def __init__(self, func: AsyncStepFunction) -> None:
         self.func = func
         self.name = func.__name__
-        self.is_start = is_start
-        self.is_end = is_end
 
     def __set_name__(self, owner: T, name: str) -> None:
         self.name = name
@@ -53,11 +51,8 @@ class step:  # noqa: N801
         cache_name = f"__workflow_step_cache_{self.name}"
         if not hasattr(instance, cache_name):
             bound_func = self.func.__get__(instance, owner)
-            setattr(instance, cache_name, self.step_factory(func=bound_func))
+            setattr(instance, cache_name, FuncWorkflowStep(func=bound_func))
         return getattr(instance, cache_name)
-
-    def step_factory(self, func: AsyncStepFunction) -> WorkflowStep:
-        return FuncWorkflowStep(func=func)
 
 
 class Workflow(Runnable[RunnableOutput], ABC):
@@ -76,38 +71,6 @@ class Workflow(Runnable[RunnableOutput], ABC):
         # Builds out the execution graph
         self._start_step: WorkflowStep = StartWorkflowStep(func=self.start)
         self.build(WorkflowBuilder(root=self._start_step))
-
-        # Need to detect back edges to avoid deadlock
-        # def detect_back_edges(
-        #     step: WorkflowStep, visited: set[WorkflowStep] | None = None, stack: set[WorkflowStep] | None = None
-        # ) -> None:
-        #     if visited is None:
-        #         visited = set()
-        #     if stack is None:
-        #         stack = set()
-
-        #     visited.add(step)
-        #     stack.add(step)
-
-        #     for ds_edge in step._downstream_edges:
-        #         target = ds_edge.target
-
-        #         if target in stack:
-        #             # Back edge: cycle
-        #             # print(f"Back edge detected: {step.name} -> {target.name}")
-        #             ds_edge.optional = True
-
-        #             for us_edge in target._upstream_edges:
-        #                 if us_edge.source is ds_edge.source and us_edge.target is ds_edge.target:
-        #                     us_edge.optional = True
-        #                     break  # There should be exactly one
-
-        #         elif target not in visited:
-        #             detect_back_edges(target, visited, stack)
-
-        #     stack.remove(step)
-
-        # detect_back_edges(self._start_step)
 
         # Execute the workflow rooted at the start node
         queue: asyncio.Queue[Any] = asyncio.Queue()
