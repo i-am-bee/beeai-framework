@@ -789,7 +789,7 @@ description = "Foreign Function Interface for Python calling C code."
 optional = true
 python-versions = ">=3.9"
 groups = ["main"]
-markers = "(extra == \"search\" or extra == \"duckduckgo\" or extra == \"all\" or platform_python_implementation != \"PyPy\") and (extra == \"search\" or extra == \"duckduckgo\" or extra == \"all\" or extra == \"mcp\" or extra == \"beeai-platform\" or extra == \"agentstack\" or extra == \"rag\") and (platform_python_implementation != \"CPython\" or extra == \"mcp\" or extra == \"all\" or extra == \"beeai-platform\" or extra == \"agentstack\" or extra == \"rag\") and (platform_machine == \"arm64\" or platform_machine == \"x86_64\" or platform_machine != \"arm64\" and platform_machine != \"x86_64\" or sys_platform != \"darwin\") and (platform_python_implementation != \"CPython\" or extra == \"mcp\" or extra == \"all\" or extra == \"beeai-platform\" or extra == \"agentstack\" or extra == \"rag\" or extra == \"search\" or extra == \"duckduckgo\")"
+markers = "(platform_machine == \"arm64\" or platform_machine == \"x86_64\" or platform_machine != \"arm64\" and platform_machine != \"x86_64\" or sys_platform != \"darwin\") and ((extra == \"search\" or extra == \"duckduckgo\" or extra == \"all\") and platform_python_implementation != \"CPython\" or platform_python_implementation != \"PyPy\" and (extra == \"mcp\" or extra == \"all\" or extra == \"beeai-platform\" or extra == \"agentstack\" or extra == \"rag\"))"
 files = [
     {file = "cffi-2.0.0-cp310-cp310-macosx_10_13_x86_64.whl", hash = "sha256:0cf2d91ecc3fcc0625c2c530fe004f82c110405f101548512cce44322fa8ac44"},
     {file = "cffi-2.0.0-cp310-cp310-macosx_11_0_arm64.whl", hash = "sha256:f73b96c41e3b2adedc34a7356e64c8eb96e03a3782b535e043a986276ce12a49"},
@@ -1070,7 +1070,7 @@ files = [
     {file = "colorama-0.4.6-py2.py3-none-any.whl", hash = "sha256:4f1d9991f5acc0ca119f9d443620b77f9d6b33703e51011c16baf57afb285fc6"},
     {file = "colorama-0.4.6.tar.gz", hash = "sha256:08695f5cb7ed6e0531a20572697297273c47b8cae5a63ffc6d6ed5c201be6e44"},
 ]
-markers = {main = "sys_platform == \"darwin\" and (platform_machine == \"arm64\" or platform_machine == \"x86_64\" or platform_machine != \"arm64\" and platform_machine != \"x86_64\") and (platform_system == \"Windows\" or extra == \"llama-index\" or extra == \"rag\" or extra == \"all\") or (platform_system == \"Windows\" or sys_platform == \"win32\" or extra == \"llama-index\" or extra == \"rag\" or extra == \"all\") and (platform_system == \"Windows\" or extra == \"acp\" or extra == \"all\" or extra == \"llama-index\" or extra == \"rag\") and sys_platform != \"darwin\"", dev = "platform_machine == \"arm64\" or platform_machine == \"x86_64\" or platform_machine != \"arm64\" and platform_machine != \"x86_64\" or sys_platform != \"darwin\""}
+markers = {main = "(platform_system == \"Windows\" or extra == \"llama-index\" or extra == \"rag\" or extra == \"all\" or sys_platform == \"win32\") and (platform_system == \"Windows\" or extra == \"acp\" or extra == \"all\" or extra == \"llama-index\" or extra == \"rag\") and (platform_machine == \"arm64\" or platform_machine == \"x86_64\" or platform_machine != \"arm64\" and platform_machine != \"x86_64\" or sys_platform != \"darwin\")", dev = "platform_machine == \"arm64\" or platform_machine == \"x86_64\" or platform_machine != \"arm64\" and platform_machine != \"x86_64\" or sys_platform != \"darwin\""}
 
 [[package]]
 name = "commitizen"
@@ -2421,6 +2421,23 @@ typing-extensions = ">=4.12,<5.0"
 protobuf = ["grpcio-tools (>=1.76.0)"]
 
 [[package]]
+name = "grpcio-health-checking"
+version = "1.76.0"
+description = "Standard Health Checking Service for gRPC"
+optional = true
+python-versions = ">=3.9"
+groups = ["main"]
+markers = "(platform_machine == \"arm64\" or platform_machine == \"x86_64\" or platform_machine != \"arm64\" and platform_machine != \"x86_64\" or sys_platform != \"darwin\") and (extra == \"a2a\" or extra == \"all\")"
+files = [
+    {file = "grpcio_health_checking-1.76.0-py3-none-any.whl", hash = "sha256:9743f345a855ba030cc7c381361606870b79d33bb71d7756efa47b6faa970f81"},
+    {file = "grpcio_health_checking-1.76.0.tar.gz", hash = "sha256:b7a99d74096b3ab3a59987fc02374068e1c180a352e8d1f79f10e5a23727098d"},
+]
+
+[package.dependencies]
+grpcio = ">=1.76.0"
+protobuf = ">=6.31.1,<7.0.0"
+
+[[package]]
 name = "grpcio-reflection"
 version = "1.76.0"
 description = "Standard Protobuf Reflection Service for gRPC"
@@ -2551,7 +2568,7 @@ description = "Fast transfer of large files with the Hugging Face Hub."
 optional = false
 python-versions = ">=3.8"
 groups = ["main"]
-markers = "(sys_platform == \"darwin\" or platform_machine == \"x86_64\" or platform_machine == \"amd64\" or platform_machine == \"arm64\" or platform_machine == \"aarch64\") and (platform_machine == \"arm64\" or platform_machine == \"x86_64\" or platform_machine == \"amd64\" or platform_machine == \"aarch64\")"
+markers = "platform_machine == \"arm64\" or platform_machine == \"x86_64\" or platform_machine == \"amd64\" or platform_machine == \"aarch64\""
 files = [
     {file = "hf_xet-1.2.0-cp313-cp313t-macosx_10_12_x86_64.whl", hash = "sha256:ceeefcd1b7aed4956ae8499e2199607765fbd1c60510752003b6cc0b8413b649"},
     {file = "hf_xet-1.2.0-cp313-cp313t-macosx_11_0_arm64.whl", hash = "sha256:b70218dd548e9840224df5638fdc94bd033552963cfa97f9170829381179c813"},
@@ -5782,7 +5799,7 @@ description = "Python Imaging Library (fork)"
 optional = true
 python-versions = ">=3.10"
 groups = ["main"]
-markers = "(platform_machine == \"arm64\" or platform_machine == \"x86_64\" or platform_machine != \"arm64\" and platform_machine != \"x86_64\" or sys_platform != \"darwin\") and (python_version == \"3.12\" or python_version == \"3.11\" or extra == \"llama-index\" or extra == \"rag\" or extra == \"all\") and (extra == \"transformers\" or extra == \"all\" or extra == \"llama-index\" or extra == \"rag\")"
+markers = "(extra == \"transformers\" or extra == \"all\" or extra == \"llama-index\" or extra == \"rag\") and (python_version == \"3.12\" or extra == \"llama-index\" or extra == \"rag\" or extra == \"all\" or python_version == \"3.11\") and (platform_machine == \"arm64\" or platform_machine == \"x86_64\" or platform_machine != \"arm64\" and platform_machine != \"x86_64\" or sys_platform != \"darwin\") and (python_version == \"3.12\" or extra == \"llama-index\" or extra == \"rag\" or extra == \"all\" or extra == \"transformers\" or python_version == \"3.11\")"
 files = [
     {file = "pillow-12.0.0-cp310-cp310-macosx_10_10_x86_64.whl", hash = "sha256:3adfb466bbc544b926d50fe8f4a4e6abd8c6bffd28a26177594e6e9b2b76572b"},
     {file = "pillow-12.0.0-cp310-cp310-macosx_11_0_arm64.whl", hash = "sha256:1ac11e8ea4f611c3c0147424eae514028b5e9077dd99ab91e1bd7bc33ff145e1"},
@@ -6362,7 +6379,7 @@ description = "C parser in Python"
 optional = true
 python-versions = ">=3.8"
 groups = ["main"]
-markers = "(extra == \"search\" or extra == \"duckduckgo\" or extra == \"all\" or platform_python_implementation != \"PyPy\") and (extra == \"search\" or extra == \"duckduckgo\" or extra == \"all\" or extra == \"mcp\" or extra == \"beeai-platform\" or extra == \"agentstack\" or extra == \"rag\") and implementation_name != \"PyPy\" and (platform_python_implementation != \"CPython\" or extra == \"mcp\" or extra == \"all\" or extra == \"beeai-platform\" or extra == \"agentstack\" or extra == \"rag\") and (platform_machine == \"arm64\" or platform_machine == \"x86_64\" or platform_machine != \"arm64\" and platform_machine != \"x86_64\" or sys_platform != \"darwin\") and (platform_python_implementation != \"CPython\" or extra == \"mcp\" or extra == \"all\" or extra == \"beeai-platform\" or extra == \"agentstack\" or extra == \"rag\" or extra == \"search\" or extra == \"duckduckgo\")"
+markers = "(platform_machine == \"arm64\" or platform_machine == \"x86_64\" or platform_machine != \"arm64\" and platform_machine != \"x86_64\" or sys_platform != \"darwin\") and ((extra == \"search\" or extra == \"duckduckgo\" or extra == \"all\") and platform_python_implementation != \"CPython\" or platform_python_implementation != \"PyPy\" and (extra == \"mcp\" or extra == \"all\" or extra == \"beeai-platform\" or extra == \"agentstack\" or extra == \"rag\")) and implementation_name != \"PyPy\""
 files = [
     {file = "pycparser-2.23-py3-none-any.whl", hash = "sha256:e5c6e8d3fbad53479cab09ac03729e0a9faf2bee3db8208a550daf5af81a5934"},
     {file = "pycparser-2.23.tar.gz", hash = "sha256:78816d4f24add8f10a06d6f05b4d424ad9e96cfebf68a4ddc99c65c0720d00c2"},
@@ -7730,7 +7747,7 @@ description = ""
 optional = true
 python-versions = ">=3.9"
 groups = ["main"]
-markers = "sys_platform == \"darwin\" and (platform_machine == \"arm64\" or platform_machine == \"x86_64\" or platform_machine != \"arm64\" and platform_machine != \"x86_64\") and (extra == \"transformers\" or extra == \"huggingface\" or extra == \"all\") and (platform_machine == \"arm64\" or platform_machine == \"x86_64\" or extra == \"transformers\" or extra == \"all\") or (extra == \"transformers\" or extra == \"huggingface\" or extra == \"all\") and sys_platform != \"darwin\""
+markers = "(extra == \"transformers\" or extra == \"huggingface\" or extra == \"all\") and (platform_machine == \"arm64\" or platform_machine == \"x86_64\" or platform_machine != \"arm64\" and platform_machine != \"x86_64\" or sys_platform != \"darwin\") and (platform_machine == \"arm64\" or platform_machine == \"x86_64\" or extra == \"transformers\" or extra == \"all\" or sys_platform != \"darwin\")"
 files = [
     {file = "safetensors-0.7.0-cp38-abi3-macosx_10_12_x86_64.whl", hash = "sha256:c82f4d474cf725255d9e6acf17252991c3c8aac038d6ef363a4bf8be2f6db517"},
     {file = "safetensors-0.7.0-cp38-abi3-macosx_11_0_arm64.whl", hash = "sha256:94fd4858284736bb67a897a41608b5b0c2496c9bdb3bf2af1fa3409127f20d57"},
@@ -7846,7 +7863,7 @@ files = [
     {file = "setuptools-80.9.0-py3-none-any.whl", hash = "sha256:062d34222ad13e0cc312a4c02d73f059e86a4acbfbdea8f8f76b28c99f306922"},
     {file = "setuptools-80.9.0.tar.gz", hash = "sha256:f36b47402ecde768dbfafc46e8e4207b4360c654f1f3bb84475f0a28628fb19c"},
 ]
-markers = {main = "(extra == \"transformers\" or extra == \"all\" or extra == \"beeai-platform\" or extra == \"agentstack\" or extra == \"a2a\" or extra == \"llama-index\" or extra == \"rag\") and (python_version >= \"3.12\" or extra == \"beeai-platform\" or extra == \"agentstack\" or extra == \"a2a\" or extra == \"all\" or extra == \"llama-index\" or extra == \"rag\") and (platform_machine != \"x86_64\" or extra == \"beeai-platform\" or extra == \"agentstack\" or extra == \"a2a\" or extra == \"all\" or extra == \"llama-index\" or extra == \"rag\" or extra == \"transformers\") and (platform_machine != \"x86_64\" or extra == \"beeai-platform\" or extra == \"agentstack\" or extra == \"a2a\" or extra == \"all\" or extra == \"llama-index\" or extra == \"rag\" or sys_platform != \"darwin\")", dev = "platform_machine == \"arm64\" or platform_machine == \"x86_64\" or platform_machine != \"arm64\" and platform_machine != \"x86_64\" or sys_platform != \"darwin\""}
+markers = {main = "(python_version >= \"3.12\" or extra == \"beeai-platform\" or extra == \"agentstack\" or extra == \"a2a\" or extra == \"all\" or extra == \"llama-index\" or extra == \"rag\") and (extra == \"transformers\" or extra == \"all\" or extra == \"beeai-platform\" or extra == \"agentstack\" or extra == \"a2a\" or extra == \"llama-index\" or extra == \"rag\") and (platform_machine != \"x86_64\" or extra == \"beeai-platform\" or extra == \"agentstack\" or extra == \"a2a\" or extra == \"all\" or extra == \"llama-index\" or extra == \"rag\" or extra == \"transformers\") and (platform_machine != \"x86_64\" or extra == \"beeai-platform\" or extra == \"agentstack\" or extra == \"a2a\" or extra == \"all\" or extra == \"llama-index\" or extra == \"rag\" or sys_platform != \"darwin\")", dev = "platform_machine == \"arm64\" or platform_machine == \"x86_64\" or platform_machine != \"arm64\" and platform_machine != \"x86_64\" or sys_platform != \"darwin\""}
 
 [package.extras]
 check = ["pytest-checkdocs (>=2.4)", "pytest-ruff (>=0.2.1) ; sys_platform != \"cygwin\"", "ruff (>=0.8.0) ; sys_platform != \"cygwin\""]
@@ -8835,14 +8852,31 @@ files = [
 name = "types-grpcio"
 version = "1.0.0.20250703"
 description = "Typing stubs for grpcio"
-optional = true
+optional = false
 python-versions = ">=3.9"
-groups = ["main"]
-markers = "(platform_machine == \"arm64\" or platform_machine == \"x86_64\" or platform_machine != \"arm64\" and platform_machine != \"x86_64\" or sys_platform != \"darwin\") and extra == \"a2a\""
+groups = ["main", "dev"]
 files = [
     {file = "types_grpcio-1.0.0.20250703-py3-none-any.whl", hash = "sha256:78d1bfc33b58a56697ef99e666e34be4c6887631341c75fdd28d58587aef5d9f"},
     {file = "types_grpcio-1.0.0.20250703.tar.gz", hash = "sha256:baf100184e5353cb60f045fb4fd47f37a360bedf0f19581535e4c3a3a1f7912b"},
 ]
+markers = {main = "(platform_machine == \"arm64\" or platform_machine == \"x86_64\" or platform_machine != \"arm64\" and platform_machine != \"x86_64\" or sys_platform != \"darwin\") and extra == \"a2a\"", dev = "platform_machine == \"arm64\" or platform_machine == \"x86_64\" or platform_machine != \"arm64\" and platform_machine != \"x86_64\" or sys_platform != \"darwin\""}
+
+[[package]]
+name = "types-grpcio-health-checking"
+version = "1.0.0.20250506"
+description = "Typing stubs for grpcio-health-checking"
+optional = false
+python-versions = ">=3.9"
+groups = ["dev"]
+markers = "platform_machine == \"arm64\" or platform_machine == \"x86_64\" or platform_machine != \"arm64\" and platform_machine != \"x86_64\" or sys_platform != \"darwin\""
+files = [
+    {file = "types_grpcio_health_checking-1.0.0.20250506-py3-none-any.whl", hash = "sha256:07ea2a7d574b448c3ba924aea56df8cbe6b3516fe7c3f9d9d204d75094087476"},
+    {file = "types_grpcio_health_checking-1.0.0.20250506.tar.gz", hash = "sha256:30bfcd70821f6c05222a023b51561328a3df6faea12124865fd25dfa1bfcb453"},
+]
+
+[package.dependencies]
+types-grpcio = "*"
+types-protobuf = "*"
 
 [[package]]
 name = "types-grpcio-reflection"
@@ -8865,14 +8899,14 @@ types-protobuf = "*"
 name = "types-protobuf"
 version = "6.32.1.20251105"
 description = "Typing stubs for protobuf"
-optional = true
+optional = false
 python-versions = ">=3.9"
-groups = ["main"]
-markers = "(platform_machine == \"arm64\" or platform_machine == \"x86_64\" or platform_machine != \"arm64\" and platform_machine != \"x86_64\" or sys_platform != \"darwin\") and extra == \"a2a\""
+groups = ["main", "dev"]
 files = [
     {file = "types_protobuf-6.32.1.20251105-py3-none-any.whl", hash = "sha256:a15109d38f7cfefd2539ef86d3f93a6a41c7cad53924f8aa1a51eaddbb72a660"},
     {file = "types_protobuf-6.32.1.20251105.tar.gz", hash = "sha256:641002611ff87dd9fedc38a39a29cacb9907ae5ce61489b53e99ca2074bef764"},
 ]
+markers = {main = "(platform_machine == \"arm64\" or platform_machine == \"x86_64\" or platform_machine != \"arm64\" and platform_machine != \"x86_64\" or sys_platform != \"darwin\") and extra == \"a2a\"", dev = "platform_machine == \"arm64\" or platform_machine == \"x86_64\" or platform_machine != \"arm64\" and platform_machine != \"x86_64\" or sys_platform != \"darwin\""}
 
 [[package]]
 name = "types-pyyaml"
@@ -8956,7 +8990,7 @@ description = "Provider of IANA time zone data"
 optional = true
 python-versions = ">=2"
 groups = ["main"]
-markers = "sys_platform == \"darwin\" and (platform_machine == \"arm64\" or platform_machine == \"x86_64\" or platform_machine != \"arm64\" and platform_machine != \"x86_64\") and (extra == \"llama-index\" or extra == \"rag\" or extra == \"all\") or sys_platform != \"darwin\" and (extra == \"acp\" or extra == \"all\" or extra == \"llama-index\" or extra == \"rag\") and (sys_platform == \"win32\" or extra == \"llama-index\" or extra == \"rag\" or extra == \"all\")"
+markers = "sys_platform == \"darwin\" and (platform_machine == \"arm64\" or platform_machine == \"x86_64\" or platform_machine != \"arm64\" and platform_machine != \"x86_64\") and (extra == \"llama-index\" or extra == \"rag\" or extra == \"all\") or ((extra == \"acp\" or extra == \"all\") and sys_platform == \"win32\" or extra == \"llama-index\" or extra == \"rag\" or extra == \"all\") and sys_platform != \"darwin\""
 files = [
     {file = "tzdata-2025.2-py2.py3-none-any.whl", hash = "sha256:1a403fada01ff9221ca8044d701868fa132215d84beb92242d9acd2147f667a8"},
     {file = "tzdata-2025.2.tar.gz", hash = "sha256:b60a638fcc0daffadf82fe0f57e53d06bdec2f36c4df66280ae79bce6bd6f2b9"},
@@ -9067,7 +9101,7 @@ description = "The lightning-fast ASGI server."
 optional = true
 python-versions = ">=3.9"
 groups = ["main"]
-markers = "sys_platform == \"darwin\" and (platform_machine == \"arm64\" or platform_machine == \"x86_64\" or platform_machine != \"arm64\" and platform_machine != \"x86_64\") and (extra == \"mcp\" or extra == \"all\" or extra == \"beeai-platform\" or extra == \"agentstack\" or extra == \"acp\" or extra == \"a2a\" or extra == \"watsonx-orchestrate\") or sys_platform != \"darwin\" and (extra == \"mcp\" or extra == \"all\" or extra == \"beeai-platform\" or extra == \"agentstack\" or extra == \"acp\" or extra == \"a2a\" or extra == \"watsonx-orchestrate\") and (sys_platform != \"darwin\" and sys_platform != \"emscripten\" or extra == \"acp\" or extra == \"all\" or extra == \"beeai-platform\" or extra == \"agentstack\" or extra == \"a2a\" or extra == \"watsonx-orchestrate\")"
+markers = "(extra == \"mcp\" or extra == \"all\" or extra == \"beeai-platform\" or extra == \"agentstack\" or extra == \"acp\" or extra == \"a2a\" or extra == \"watsonx-orchestrate\") and (sys_platform != \"emscripten\" or extra == \"acp\" or extra == \"all\" or extra == \"beeai-platform\" or extra == \"agentstack\" or extra == \"a2a\" or extra == \"watsonx-orchestrate\") and (platform_machine == \"arm64\" or platform_machine == \"x86_64\" or platform_machine != \"arm64\" and platform_machine != \"x86_64\" or sys_platform != \"darwin\")"
 files = [
     {file = "uvicorn-0.37.0-py3-none-any.whl", hash = "sha256:913b2b88672343739927ce381ff9e2ad62541f9f8289664fa1d1d3803fa2ce6c"},
     {file = "uvicorn-0.37.0.tar.gz", hash = "sha256:4115c8add6d3fd536c8ee77f0e14a7fd2ebba939fed9b02583a97f80648f9e13"},
@@ -9807,10 +9841,10 @@ files = [
 cffi = ["cffi (>=1.17,<2.0) ; platform_python_implementation != \"PyPy\" and python_version < \"3.14\"", "cffi (>=2.0.0b) ; platform_python_implementation != \"PyPy\" and python_version >= \"3.14\""]
 
 [extras]
-a2a = ["a2a-sdk", "types-grpcio", "types-grpcio-reflection", "uvicorn"]
+a2a = ["a2a-sdk", "grpcio-health-checking", "types-grpcio", "types-grpcio-reflection", "uvicorn"]
 acp = ["acp-sdk", "uvicorn"]
 agentstack = ["a2a-sdk", "agentstack-sdk", "uvicorn"]
-all = ["a2a-sdk", "acp-sdk", "agentstack-sdk", "boto3", "ddgs", "fastapi", "google-auth", "langchain-community", "langchain-core", "langchain-ollama", "langgraph-prebuilt", "llama-index", "mcp", "outlines", "peft", "torch", "torch", "torch", "transformers", "transformers", "transformers", "uvicorn", "wikipedia-api"]
+all = ["a2a-sdk", "acp-sdk", "agentstack-sdk", "boto3", "ddgs", "fastapi", "google-auth", "grpcio-health-checking", "langchain-community", "langchain-core", "langchain-ollama", "langgraph-prebuilt", "llama-index", "mcp", "outlines", "peft", "torch", "torch", "torch", "transformers", "transformers", "transformers", "uvicorn", "wikipedia-api"]
 bedrock = ["boto3"]
 beeai-platform = ["a2a-sdk", "agentstack-sdk", "uvicorn"]
 duckduckgo = ["ddgs"]
@@ -9828,4 +9862,4 @@ wikipedia = ["wikipedia-api"]
 [metadata]
 lock-version = "2.1"
 python-versions = ">= 3.11,<3.14"
-content-hash = "d6544ab559527fbea59a9005c98115709fd0a9c6f4be7453875c3716d31469fd"
+content-hash = "98a7a0db47771ef609c99ce227a22866a65555019e38cd4e6442a18b0fe1ff55"
