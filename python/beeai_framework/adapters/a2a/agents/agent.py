@@ -10,6 +10,7 @@ import httpx
 import httpx._types as httpx_types
 from httpx import AsyncBaseTransport
 from httpx._auth import Auth  # noqa: F401
+from httpx._client import ClientState
 from httpx._config import Proxy, Timeout  # noqa: F401
 from httpx._models import Cookies, Headers, Request  # noqa: F401
 from httpx._urls import URL, QueryParams  # noqa: F401
@@ -145,6 +146,8 @@ class A2AAgent(BaseAgent[A2AAgentOutput]):
         async with AsyncExitStack() as stack:
             if kwargs.get("httpx_client") is not None:
                 httpx_client = kwargs.get("httpx_client")
+                if httpx_client and httpx_client._state is ClientState.UNOPENED:
+                    httpx_client = await stack.enter_async_context(httpx_client)
             else:
                 new_client = httpx.AsyncClient(**self._parameters.httpx_async_client.model_dump())
                 httpx_client = await stack.enter_async_context(new_client)
