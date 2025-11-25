@@ -1,6 +1,5 @@
 # Copyright 2025 © BeeAI a Series of LF Projects, LLC
 # SPDX-License-Identifier: Apache-2.0
-
 from collections.abc import Sequence
 from typing import Any
 
@@ -22,7 +21,7 @@ from beeai_framework.emitter.utils import create_internal_event_matcher
 from beeai_framework.tools import AnyTool, StringToolOutput
 from beeai_framework.utils import MaybeAsync
 from beeai_framework.utils.asynchronous import ensure_async
-from beeai_framework.utils.io import io_read
+from beeai_framework.utils.io import io_confirm
 
 AskHandler = MaybeAsync[[AnyTool, dict[str, Any]], bool]
 
@@ -105,7 +104,4 @@ class AskPermissionRequirement(Requirement[RequirementAgentRunState]):
 
 
 async def _default_handler(tool: AnyTool, input: dict[str, Any]) -> bool:
-    response = await io_read(
-        f"The agent wants to use the '{tool.name} tool.'\nInput: {input}\nDo you allow it? (yes/no): "
-    )
-    return response.strip().lower().startswith("yes")
+    return await io_confirm(f"The agent wants to use the {tool.name} tool.", data=input)
