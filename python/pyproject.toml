@@ -41,8 +41,9 @@ pydantic-settings = "^2.11.0"
 requests = "^2.32"
 unstructured = {version = "^0.17.2", optional = true}
 uvicorn = {version = "^0.37.0", optional = true}
-types-grpcio = {version = "1.0.0.20250703", optional = true}
-types-grpcio-reflection = {version = "1.0.0.20250506", optional = true}
+types-grpcio = {version = "^1.0.0.20250703", optional = true}
+types-grpcio-reflection = {version = "^1.0.0.20250506", optional = true}
+types-grpcio-health-checking = {version = "^1.0.0.20250506", optional = true }
 grpcio-health-checking = {version = "^1.65.5", optional = true}
 wikipedia-api = {version = "^0.8.1", optional = true}
 agentstack-sdk = {version = "0.4.1", optional = true}
@@ -97,7 +98,7 @@ rag = ["llama-index-core", "langchain-core", "langchain-community", "langchain-o
 acp = ["acp-sdk", "uvicorn"]
 beeai-platform = ["agentstack-sdk", "a2a-sdk", "uvicorn"]
 agentstack = ["agentstack-sdk", "a2a-sdk", "uvicorn"]
-a2a = ["a2a-sdk", "uvicorn", "types-grpcio", "types-grpcio-reflection", "grpcio-health-checking"]
+a2a = ["a2a-sdk", "uvicorn", "types-grpcio", "types-grpcio-reflection", "grpcio-health-checking", "types-grpcio-health-checking"]
 watsonx-orchestrate = ["uvicorn", "fastapi"]
 bedrock = ["boto3"]
 vertexai = ["google-auth"]

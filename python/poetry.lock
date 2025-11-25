@@ -8373,11 +8373,11 @@ description = "Typing stubs for grpcio"
 optional = false
 python-versions = ">=3.9"
 groups = ["main", "dev"]
+markers = "platform_machine == \"arm64\" or platform_machine == \"x86_64\" or platform_machine != \"arm64\" and platform_machine != \"x86_64\" or sys_platform != \"darwin\""
 files = [
     {file = "types_grpcio-1.0.0.20250703-py3-none-any.whl", hash = "sha256:78d1bfc33b58a56697ef99e666e34be4c6887631341c75fdd28d58587aef5d9f"},
     {file = "types_grpcio-1.0.0.20250703.tar.gz", hash = "sha256:baf100184e5353cb60f045fb4fd47f37a360bedf0f19581535e4c3a3a1f7912b"},
 ]
-markers = {main = "(platform_machine == \"arm64\" or platform_machine == \"x86_64\" or platform_machine != \"arm64\" and platform_machine != \"x86_64\" or sys_platform != \"darwin\") and extra == \"a2a\"", dev = "platform_machine == \"arm64\" or platform_machine == \"x86_64\" or platform_machine != \"arm64\" and platform_machine != \"x86_64\" or sys_platform != \"darwin\""}
 
 [[package]]
 name = "types-grpcio-health-checking"
@@ -8385,7 +8385,7 @@ version = "1.0.0.20250506"
 description = "Typing stubs for grpcio-health-checking"
 optional = false
 python-versions = ">=3.9"
-groups = ["dev"]
+groups = ["main", "dev"]
 markers = "platform_machine == \"arm64\" or platform_machine == \"x86_64\" or platform_machine != \"arm64\" and platform_machine != \"x86_64\" or sys_platform != \"darwin\""
 files = [
     {file = "types_grpcio_health_checking-1.0.0.20250506-py3-none-any.whl", hash = "sha256:07ea2a7d574b448c3ba924aea56df8cbe6b3516fe7c3f9d9d204d75094087476"},
@@ -8420,11 +8420,11 @@ description = "Typing stubs for protobuf"
 optional = false
 python-versions = ">=3.9"
 groups = ["main", "dev"]
+markers = "platform_machine == \"arm64\" or platform_machine == \"x86_64\" or platform_machine != \"arm64\" and platform_machine != \"x86_64\" or sys_platform != \"darwin\""
 files = [
     {file = "types_protobuf-6.32.1.20251105-py3-none-any.whl", hash = "sha256:a15109d38f7cfefd2539ef86d3f93a6a41c7cad53924f8aa1a51eaddbb72a660"},
     {file = "types_protobuf-6.32.1.20251105.tar.gz", hash = "sha256:641002611ff87dd9fedc38a39a29cacb9907ae5ce61489b53e99ca2074bef764"},
 ]
-markers = {main = "(platform_machine == \"arm64\" or platform_machine == \"x86_64\" or platform_machine != \"arm64\" and platform_machine != \"x86_64\" or sys_platform != \"darwin\") and extra == \"a2a\"", dev = "platform_machine == \"arm64\" or platform_machine == \"x86_64\" or platform_machine != \"arm64\" and platform_machine != \"x86_64\" or sys_platform != \"darwin\""}
 
 [[package]]
 name = "types-pyyaml"
@@ -9359,7 +9359,7 @@ files = [
 cffi = ["cffi (>=1.17,<2.0) ; platform_python_implementation != \"PyPy\" and python_version < \"3.14\"", "cffi (>=2.0.0b) ; platform_python_implementation != \"PyPy\" and python_version >= \"3.14\""]
 
 [extras]
-a2a = ["a2a-sdk", "grpcio-health-checking", "types-grpcio", "types-grpcio-reflection", "uvicorn"]
+a2a = ["a2a-sdk", "grpcio-health-checking", "types-grpcio", "types-grpcio-health-checking", "types-grpcio-reflection", "uvicorn"]
 acp = ["acp-sdk", "uvicorn"]
 agentstack = ["a2a-sdk", "agentstack-sdk", "uvicorn"]
 all = ["a2a-sdk", "acp-sdk", "agentstack-sdk", "boto3", "ddgs", "fastapi", "google-auth", "grpcio-health-checking", "langchain-community", "langchain-core", "langchain-ollama", "mcp", "outlines", "peft", "torch", "torch", "torch", "transformers", "transformers", "transformers", "uvicorn", "wikipedia-api"]
@@ -9380,4 +9380,4 @@ wikipedia = ["wikipedia-api"]
 [metadata]
 lock-version = "2.1"
 python-versions = ">= 3.11,<3.14"
-content-hash = "0d1a50bf4ea907af09a1ff96b6d29f45ef8d05d60eaa911d3b854b1f0fba0db3"
+content-hash = "c9f5cdda089aa62c7f29004fa2b5e35ffd65802b0249efb2bc49538da79894d6"
