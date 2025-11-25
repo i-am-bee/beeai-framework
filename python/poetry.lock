@@ -327,7 +327,7 @@ description = "asyncio bridge to the standard sqlite3 module"
 optional = true
 python-versions = ">=3.9"
 groups = ["main"]
-markers = "(platform_machine == \"arm64\" or platform_machine == \"x86_64\" or platform_machine != \"arm64\" and platform_machine != \"x86_64\" or sys_platform != \"darwin\") and (extra == \"llama-index\" or extra == \"rag\" or extra == \"all\")"
+markers = "(platform_machine == \"arm64\" or platform_machine == \"x86_64\" or platform_machine != \"arm64\" and platform_machine != \"x86_64\" or sys_platform != \"darwin\") and (extra == \"llama-index\" or extra == \"rag\")"
 files = [
     {file = "aiosqlite-0.21.0-py3-none-any.whl", hash = "sha256:2549cf4057f95f53dcba16f2b64e8e2791d7e1adedb13197dd8ed77bb226d7d0"},
     {file = "aiosqlite-0.21.0.tar.gz", hash = "sha256:131bb8056daa3bc875608c631c678cda73922a2d4ba8aec373b19f18c17e7aa3"},
@@ -522,7 +522,7 @@ description = "A prompt programming language"
 optional = true
 python-versions = ">=3.9"
 groups = ["main"]
-markers = "(platform_machine == \"arm64\" or platform_machine == \"x86_64\" or platform_machine != \"arm64\" and platform_machine != \"x86_64\" or sys_platform != \"darwin\") and (extra == \"llama-index\" or extra == \"rag\" or extra == \"all\")"
+markers = "(platform_machine == \"arm64\" or platform_machine == \"x86_64\" or platform_machine != \"arm64\" and platform_machine != \"x86_64\" or sys_platform != \"darwin\") and (extra == \"llama-index\" or extra == \"rag\")"
 files = [
     {file = "banks-2.2.0-py3-none-any.whl", hash = "sha256:963cd5c85a587b122abde4f4064078def35c50c688c1b9d36f43c92503854e7d"},
     {file = "banks-2.2.0.tar.gz", hash = "sha256:d1446280ce6e00301e3e952dd754fd8cee23ff277d29ed160994a84d0d7ffe62"},
@@ -545,7 +545,7 @@ description = "Screen-scraping library"
 optional = true
 python-versions = ">=3.7.0"
 groups = ["main"]
-markers = "(platform_machine == \"arm64\" or platform_machine == \"x86_64\" or platform_machine != \"arm64\" and platform_machine != \"x86_64\" or sys_platform != \"darwin\") and (extra == \"llama-index\" or extra == \"rag\" or extra == \"all\")"
+markers = "(platform_machine == \"arm64\" or platform_machine == \"x86_64\" or platform_machine != \"arm64\" and platform_machine != \"x86_64\" or sys_platform != \"darwin\") and extra == \"rag\""
 files = [
     {file = "beautifulsoup4-4.14.2-py3-none-any.whl", hash = "sha256:5ef6fa3a8cbece8488d66985560f97ed091e22bbc4e9c2338508a9d5de6d4515"},
     {file = "beautifulsoup4-4.14.2.tar.gz", hash = "sha256:2a98ab9f944a11acee9cc848508ec28d9228abfd522ef0fad6a02a72e0ded69e"},
@@ -1070,7 +1070,7 @@ files = [
     {file = "colorama-0.4.6-py2.py3-none-any.whl", hash = "sha256:4f1d9991f5acc0ca119f9d443620b77f9d6b33703e51011c16baf57afb285fc6"},
     {file = "colorama-0.4.6.tar.gz", hash = "sha256:08695f5cb7ed6e0531a20572697297273c47b8cae5a63ffc6d6ed5c201be6e44"},
 ]
-markers = {main = "(platform_system == \"Windows\" or extra == \"llama-index\" or extra == \"rag\" or extra == \"all\" or sys_platform == \"win32\") and (platform_system == \"Windows\" or extra == \"acp\" or extra == \"all\" or extra == \"llama-index\" or extra == \"rag\") and (platform_machine == \"arm64\" or platform_machine == \"x86_64\" or platform_machine != \"arm64\" and platform_machine != \"x86_64\" or sys_platform != \"darwin\")", dev = "platform_machine == \"arm64\" or platform_machine == \"x86_64\" or platform_machine != \"arm64\" and platform_machine != \"x86_64\" or sys_platform != \"darwin\""}
+markers = {main = "(platform_system == \"Windows\" or extra == \"llama-index\" or extra == \"rag\" or sys_platform == \"win32\") and (platform_system == \"Windows\" or extra == \"acp\" or extra == \"all\" or extra == \"llama-index\" or extra == \"rag\") and (platform_machine == \"arm64\" or platform_machine == \"x86_64\" or platform_machine != \"arm64\" and platform_machine != \"x86_64\" or sys_platform != \"darwin\")", dev = "platform_machine == \"arm64\" or platform_machine == \"x86_64\" or platform_machine != \"arm64\" and platform_machine != \"x86_64\" or sys_platform != \"darwin\""}
 
 [[package]]
 name = "commitizen"
@@ -1380,19 +1380,6 @@ typer = ">=0.9,<1.0.0"
 wheel = "*"
 
 [[package]]
-name = "defusedxml"
-version = "0.7.1"
-description = "XML bomb protection for Python stdlib modules"
-optional = true
-python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*, !=3.4.*"
-groups = ["main"]
-markers = "(platform_machine == \"arm64\" or platform_machine == \"x86_64\" or platform_machine != \"arm64\" and platform_machine != \"x86_64\" or sys_platform != \"darwin\") and (extra == \"llama-index\" or extra == \"rag\" or extra == \"all\")"
-files = [
-    {file = "defusedxml-0.7.1-py2.py3-none-any.whl", hash = "sha256:a352e7e428770286cc899e2542b6cdaedb2b4953ff269a210103ec58f6198a61"},
-    {file = "defusedxml-0.7.1.tar.gz", hash = "sha256:1bb3032db185915b62d7c6209c5a8792be6a32ab2fedacc84e01b52c51aa3e69"},
-]
-
-[[package]]
 name = "deprecated"
 version = "1.3.1"
 description = "Python @deprecated decorator to deprecate old python classes, functions or methods."
@@ -1435,7 +1422,7 @@ description = "JSON decoder for Python that can extract data from the muck"
 optional = true
 python-versions = "*"
 groups = ["main"]
-markers = "(platform_machine == \"arm64\" or platform_machine == \"x86_64\" or platform_machine != \"arm64\" and platform_machine != \"x86_64\" or sys_platform != \"darwin\") and (extra == \"llama-index\" or extra == \"rag\" or extra == \"all\")"
+markers = "(platform_machine == \"arm64\" or platform_machine == \"x86_64\" or platform_machine != \"arm64\" and platform_machine != \"x86_64\" or sys_platform != \"darwin\") and (extra == \"llama-index\" or extra == \"rag\")"
 files = [
     {file = "dirtyjson-1.0.8-py3-none-any.whl", hash = "sha256:125e27248435a58acace26d5c2c4c11a1c0de0a9c5124c5a94ba78e517d74f53"},
     {file = "dirtyjson-1.0.8.tar.gz", hash = "sha256:90ca4a18f3ff30ce849d100dcf4a003953c79d3a2348ef056f1d9c22231a25fd"},
@@ -1950,7 +1937,7 @@ description = "Infer file type and MIME type of any file/buffer. No external dep
 optional = true
 python-versions = "*"
 groups = ["main"]
-markers = "(platform_machine == \"arm64\" or platform_machine == \"x86_64\" or platform_machine != \"arm64\" and platform_machine != \"x86_64\" or sys_platform != \"darwin\") and (extra == \"llama-index\" or extra == \"rag\" or extra == \"all\")"
+markers = "(platform_machine == \"arm64\" or platform_machine == \"x86_64\" or platform_machine != \"arm64\" and platform_machine != \"x86_64\" or sys_platform != \"darwin\") and (extra == \"llama-index\" or extra == \"rag\")"
 files = [
     {file = "filetype-1.2.0-py2.py3-none-any.whl", hash = "sha256:7ce71b6880181241cf7ac8697a2f1eb6a8bd9b429f7ad6d27b8db9ba5f1c2d25"},
     {file = "filetype-1.2.0.tar.gz", hash = "sha256:66b56cd6474bf41d8c54660347d37afcc3f7d1970648de365c102ef77548aadb"},
@@ -2261,7 +2248,7 @@ description = "Lightweight in-process concurrent programming"
 optional = true
 python-versions = ">=3.9"
 groups = ["main"]
-markers = "(extra == \"llama-index\" or extra == \"rag\" or extra == \"all\") and (platform_machine == \"x86_64\" or platform_machine == \"aarch64\" or platform_machine == \"ppc64le\" or platform_machine == \"amd64\" or platform_machine == \"AMD64\" or platform_machine == \"win32\" or platform_machine == \"WIN32\")"
+markers = "(extra == \"llama-index\" or extra == \"rag\") and (platform_machine == \"x86_64\" or platform_machine == \"aarch64\" or platform_machine == \"ppc64le\" or platform_machine == \"amd64\" or platform_machine == \"AMD64\" or platform_machine == \"win32\" or platform_machine == \"WIN32\")"
 files = [
     {file = "greenlet-3.2.4-cp310-cp310-macosx_11_0_universal2.whl", hash = "sha256:8c68325b0d0acf8d91dde4e6f930967dd52a5302cd4062932a6b2e7c2969f47c"},
     {file = "greenlet-3.2.4-cp310-cp310-manylinux2014_aarch64.manylinux_2_17_aarch64.whl", hash = "sha256:94385f101946790ae13da500603491f04a76b6e4c059dab271b3ce2e283b2590"},
@@ -2330,7 +2317,7 @@ description = "Signatures for entire Python programs. Extract the structure, the
 optional = true
 python-versions = ">=3.10"
 groups = ["main"]
-markers = "(platform_machine == \"arm64\" or platform_machine == \"x86_64\" or platform_machine != \"arm64\" and platform_machine != \"x86_64\" or sys_platform != \"darwin\") and (extra == \"llama-index\" or extra == \"rag\" or extra == \"all\")"
+markers = "(platform_machine == \"arm64\" or platform_machine == \"x86_64\" or platform_machine != \"arm64\" and platform_machine != \"x86_64\" or sys_platform != \"darwin\") and (extra == \"llama-index\" or extra == \"rag\")"
 files = [
     {file = "griffe-1.15.0-py3-none-any.whl", hash = "sha256:6f6762661949411031f5fcda9593f586e6ce8340f0ba88921a0f2ef7a81eb9a3"},
     {file = "griffe-1.15.0.tar.gz", hash = "sha256:7726e3afd6f298fbc3696e67958803e7ac843c1cfe59734b6251a40cdbfb5eea"},
@@ -2419,23 +2406,6 @@ typing-extensions = ">=4.12,<5.0"
 
 [package.extras]
 protobuf = ["grpcio-tools (>=1.76.0)"]
-
-[[package]]
-name = "grpcio-health-checking"
-version = "1.76.0"
-description = "Standard Health Checking Service for gRPC"
-optional = true
-python-versions = ">=3.9"
-groups = ["main"]
-markers = "(platform_machine == \"arm64\" or platform_machine == \"x86_64\" or platform_machine != \"arm64\" and platform_machine != \"x86_64\" or sys_platform != \"darwin\") and (extra == \"a2a\" or extra == \"all\")"
-files = [
-    {file = "grpcio_health_checking-1.76.0-py3-none-any.whl", hash = "sha256:9743f345a855ba030cc7c381361606870b79d33bb71d7756efa47b6faa970f81"},
-    {file = "grpcio_health_checking-1.76.0.tar.gz", hash = "sha256:b7a99d74096b3ab3a59987fc02374068e1c180a352e8d1f79f10e5a23727098d"},
-]
-
-[package.dependencies]
-grpcio = ">=1.76.0"
-protobuf = ">=6.31.1,<7.0.0"
 
 [[package]]
 name = "grpcio-reflection"
@@ -3042,7 +3012,7 @@ description = "Lightweight pipelining with Python functions"
 optional = true
 python-versions = ">=3.9"
 groups = ["main"]
-markers = "(platform_machine == \"arm64\" or platform_machine == \"x86_64\" or platform_machine != \"arm64\" and platform_machine != \"x86_64\" or sys_platform != \"darwin\") and (extra == \"llama-index\" or extra == \"rag\" or extra == \"all\")"
+markers = "(platform_machine == \"arm64\" or platform_machine == \"x86_64\" or platform_machine != \"arm64\" and platform_machine != \"x86_64\" or sys_platform != \"darwin\") and (extra == \"llama-index\" or extra == \"rag\")"
 files = [
     {file = "joblib-1.5.2-py3-none-any.whl", hash = "sha256:4e1f0bdbb987e6d843c70cf43714cb276623def372df3c22fe5266b2670bc241"},
     {file = "joblib-1.5.2.tar.gz", hash = "sha256:3faa5c39054b2f03ca547da9b2f52fde67c06240c31853f306aea97f13647b55"},
@@ -3422,119 +3392,16 @@ semantic-router = ["semantic-router ; python_version >= \"3.9\""]
 utils = ["numpydoc"]
 
 [[package]]
-name = "llama-cloud"
-version = "0.1.35"
-description = ""
-optional = true
-python-versions = "<4,>=3.8"
-groups = ["main"]
-markers = "(platform_machine == \"arm64\" or platform_machine == \"x86_64\" or platform_machine != \"arm64\" and platform_machine != \"x86_64\" or sys_platform != \"darwin\") and (extra == \"llama-index\" or extra == \"rag\" or extra == \"all\")"
-files = [
-    {file = "llama_cloud-0.1.35-py3-none-any.whl", hash = "sha256:b7abab4423118e6f638d2f326749e7a07c6426543bea6da99b623c715b22af71"},
-    {file = "llama_cloud-0.1.35.tar.gz", hash = "sha256:200349d5d57424d7461f304cdb1355a58eea3e6ca1e6b0d75c66b2e937216983"},
-]
-
-[package.dependencies]
-certifi = ">=2024.7.4"
-httpx = ">=0.20.0"
-pydantic = ">=1.10"
-
-[[package]]
-name = "llama-cloud-services"
-version = "0.6.54"
-description = "Tailored SDK clients for LlamaCloud services."
-optional = true
-python-versions = "<4.0,>=3.9"
-groups = ["main"]
-markers = "(platform_machine == \"arm64\" or platform_machine == \"x86_64\" or platform_machine != \"arm64\" and platform_machine != \"x86_64\" or sys_platform != \"darwin\") and (extra == \"llama-index\" or extra == \"rag\" or extra == \"all\")"
-files = [
-    {file = "llama_cloud_services-0.6.54-py3-none-any.whl", hash = "sha256:07f595f7a0ba40c6a1a20543d63024ca7600fe65c4811d1951039977908997be"},
-    {file = "llama_cloud_services-0.6.54.tar.gz", hash = "sha256:baf65d9bffb68f9dca98ac6e22908b6675b2038b021e657ead1ffc0e43cbd45d"},
-]
-
-[package.dependencies]
-click = ">=8.1.7,<9"
-llama-cloud = "0.1.35"
-llama-index-core = ">=0.12.0"
-platformdirs = ">=4.3.7,<5"
-pydantic = ">=2.8,<2.10 || >2.10"
-python-dotenv = ">=1.0.1,<2"
-tenacity = ">=8.5.0,<10.0"
-
-[[package]]
-name = "llama-index"
-version = "0.12.52"
-description = "Interface between LLMs and your data"
-optional = true
-python-versions = "<4.0,>=3.9"
-groups = ["main"]
-markers = "(platform_machine == \"arm64\" or platform_machine == \"x86_64\" or platform_machine != \"arm64\" and platform_machine != \"x86_64\" or sys_platform != \"darwin\") and (extra == \"llama-index\" or extra == \"rag\" or extra == \"all\")"
-files = [
-    {file = "llama_index-0.12.52-py3-none-any.whl", hash = "sha256:21e05e5a02b3601e18358eeed8748384eac8d35d384fdcbe16d03f0ffb09ea61"},
-    {file = "llama_index-0.12.52.tar.gz", hash = "sha256:3a81fa4fbf1a36e30502d2fb7da26d53bc1a1ab02db1db12e62f06bb014d5ad9"},
-]
-
-[package.dependencies]
-llama-index-agent-openai = ">=0.4.0,<0.5"
-llama-index-cli = ">=0.4.2,<0.5"
-llama-index-core = ">=0.12.52.post1,<0.13"
-llama-index-embeddings-openai = ">=0.3.0,<0.4"
-llama-index-indices-managed-llama-cloud = ">=0.4.0"
-llama-index-llms-openai = ">=0.4.0,<0.5"
-llama-index-multi-modal-llms-openai = ">=0.5.0,<0.6"
-llama-index-program-openai = ">=0.3.0,<0.4"
-llama-index-question-gen-openai = ">=0.3.0,<0.4"
-llama-index-readers-file = ">=0.4.0,<0.5"
-llama-index-readers-llama-parse = ">=0.4.0"
-nltk = ">3.8.1"
-
-[[package]]
-name = "llama-index-agent-openai"
-version = "0.4.12"
-description = "llama-index agent openai integration"
-optional = true
-python-versions = "<4.0,>=3.9"
-groups = ["main"]
-markers = "(platform_machine == \"arm64\" or platform_machine == \"x86_64\" or platform_machine != \"arm64\" and platform_machine != \"x86_64\" or sys_platform != \"darwin\") and (extra == \"llama-index\" or extra == \"rag\" or extra == \"all\")"
-files = [
-    {file = "llama_index_agent_openai-0.4.12-py3-none-any.whl", hash = "sha256:6dbb6276b2e5330032a726b28d5eef5140825f36d72d472b231f08ad3af99665"},
-    {file = "llama_index_agent_openai-0.4.12.tar.gz", hash = "sha256:d2fe53feb69cfe45752edb7328bf0d25f6a9071b3c056787e661b93e5b748a28"},
-]
-
-[package.dependencies]
-llama-index-core = ">=0.12.41,<0.13"
-llama-index-llms-openai = ">=0.4.0,<0.5"
-openai = ">=1.14.0"
-
-[[package]]
-name = "llama-index-cli"
-version = "0.4.4"
-description = "llama-index cli"
-optional = true
-python-versions = "<4.0,>=3.9"
-groups = ["main"]
-markers = "(platform_machine == \"arm64\" or platform_machine == \"x86_64\" or platform_machine != \"arm64\" and platform_machine != \"x86_64\" or sys_platform != \"darwin\") and (extra == \"llama-index\" or extra == \"rag\" or extra == \"all\")"
-files = [
-    {file = "llama_index_cli-0.4.4-py3-none-any.whl", hash = "sha256:1070593cf79407054735ab7a23c5a65a26fc18d264661e42ef38fc549b4b7658"},
-    {file = "llama_index_cli-0.4.4.tar.gz", hash = "sha256:c3af0cf1e2a7e5ef44d0bae5aa8e8872b54c5dd6b731afbae9f13ffeb4997be0"},
-]
-
-[package.dependencies]
-llama-index-core = ">=0.12.0,<0.13"
-llama-index-embeddings-openai = ">=0.3.1,<0.4"
-llama-index-llms-openai = ">=0.4.0,<0.5"
-
-[[package]]
 name = "llama-index-core"
-version = "0.12.52.post1"
+version = "0.14.8"
 description = "Interface between LLMs and your data"
 optional = true
 python-versions = "<4.0,>=3.9"
 groups = ["main"]
-markers = "(platform_machine == \"arm64\" or platform_machine == \"x86_64\" or platform_machine != \"arm64\" and platform_machine != \"x86_64\" or sys_platform != \"darwin\") and (extra == \"llama-index\" or extra == \"rag\" or extra == \"all\")"
+markers = "(platform_machine == \"arm64\" or platform_machine == \"x86_64\" or platform_machine != \"arm64\" and platform_machine != \"x86_64\" or sys_platform != \"darwin\") and (extra == \"llama-index\" or extra == \"rag\")"
 files = [
-    {file = "llama_index_core-0.12.52.post1-py3-none-any.whl", hash = "sha256:3e28d65d238bad8ec5ce372659ae0a3878851c6ba9c9447d6ddb4de138694b1f"},
-    {file = "llama_index_core-0.12.52.post1.tar.gz", hash = "sha256:ac6f447271e5ac4c12e1901373ec4b5ac7814ea33bd1ad3c3c8e9ac9771834ab"},
+    {file = "llama_index_core-0.14.8-py3-none-any.whl", hash = "sha256:e54046f09507aeb2fad51d8e9686dc0fa41c77d3925892e55c3756ca31f1c0c3"},
+    {file = "llama_index_core-0.14.8.tar.gz", hash = "sha256:8865a8546746b8c5f0684085ccfcf900aeb04862ebfe2077ad522374cf71e58e"},
 ]
 
 [package.dependencies]
@@ -3547,7 +3414,7 @@ dirtyjson = ">=1.0.8,<2"
 filetype = ">=1.2.0,<2"
 fsspec = ">=2023.5.0"
 httpx = "*"
-llama-index-workflows = ">=1.0.1,<2"
+llama-index-workflows = ">=2,<2.9.0 || >2.9.0,<3"
 nest-asyncio = ">=1.5.8,<2"
 networkx = ">=3.0"
 nltk = ">3.8.1"
@@ -3567,47 +3434,13 @@ typing-inspect = ">=0.8.0"
 wrapt = "*"
 
 [[package]]
-name = "llama-index-embeddings-openai"
-version = "0.3.1"
-description = "llama-index embeddings openai integration"
-optional = true
-python-versions = "<4.0,>=3.9"
-groups = ["main"]
-markers = "(platform_machine == \"arm64\" or platform_machine == \"x86_64\" or platform_machine != \"arm64\" and platform_machine != \"x86_64\" or sys_platform != \"darwin\") and (extra == \"llama-index\" or extra == \"rag\" or extra == \"all\")"
-files = [
-    {file = "llama_index_embeddings_openai-0.3.1-py3-none-any.whl", hash = "sha256:f15a3d13da9b6b21b8bd51d337197879a453d1605e625a1c6d45e741756c0290"},
-    {file = "llama_index_embeddings_openai-0.3.1.tar.gz", hash = "sha256:1368aad3ce24cbaed23d5ad251343cef1eb7b4a06d6563d6606d59cb347fef20"},
-]
-
-[package.dependencies]
-llama-index-core = ">=0.12.0,<0.13.0"
-openai = ">=1.1.0"
-
-[[package]]
-name = "llama-index-indices-managed-llama-cloud"
-version = "0.8.0"
-description = "llama-index indices llama-cloud integration"
-optional = true
-python-versions = "<4.0,>=3.9"
-groups = ["main"]
-markers = "(platform_machine == \"arm64\" or platform_machine == \"x86_64\" or platform_machine != \"arm64\" and platform_machine != \"x86_64\" or sys_platform != \"darwin\") and (extra == \"llama-index\" or extra == \"rag\" or extra == \"all\")"
-files = [
-    {file = "llama_index_indices_managed_llama_cloud-0.8.0-py3-none-any.whl", hash = "sha256:817d6bd4715d45522e7165d29208e093d06179cc1bc5f9590382245f73dfd7aa"},
-    {file = "llama_index_indices_managed_llama_cloud-0.8.0.tar.gz", hash = "sha256:762de10d3949e04997766f6a665ed4503394d82ea4b3339139a365edde6e753e"},
-]
-
-[package.dependencies]
-llama-cloud = "0.1.35"
-llama-index-core = ">=0.12.0,<0.13"
-
-[[package]]
 name = "llama-index-instrumentation"
 version = "0.4.2"
 description = "Instrumentation and Observability for LlamaIndex"
 optional = true
 python-versions = "<4.0,>=3.9"
 groups = ["main"]
-markers = "(platform_machine == \"arm64\" or platform_machine == \"x86_64\" or platform_machine != \"arm64\" and platform_machine != \"x86_64\" or sys_platform != \"darwin\") and (extra == \"llama-index\" or extra == \"rag\" or extra == \"all\")"
+markers = "(platform_machine == \"arm64\" or platform_machine == \"x86_64\" or platform_machine != \"arm64\" and platform_machine != \"x86_64\" or sys_platform != \"darwin\") and (extra == \"llama-index\" or extra == \"rag\")"
 files = [
     {file = "llama_index_instrumentation-0.4.2-py3-none-any.whl", hash = "sha256:b4989500e6454059ab3f3c4a193575d47ab1fadb730c2e8f2b962649ae88b70b"},
     {file = "llama_index_instrumentation-0.4.2.tar.gz", hash = "sha256:dc4957b64da0922060690e85a6be9698ac08e34e0f69e90b01364ddec4f3de7f"},
@@ -3618,127 +3451,16 @@ deprecated = ">=1.2.18"
 pydantic = ">=2.11.5"
 
 [[package]]
-name = "llama-index-llms-openai"
-version = "0.4.7"
-description = "llama-index llms openai integration"
-optional = true
-python-versions = "<4.0,>=3.9"
-groups = ["main"]
-markers = "(platform_machine == \"arm64\" or platform_machine == \"x86_64\" or platform_machine != \"arm64\" and platform_machine != \"x86_64\" or sys_platform != \"darwin\") and (extra == \"llama-index\" or extra == \"rag\" or extra == \"all\")"
-files = [
-    {file = "llama_index_llms_openai-0.4.7-py3-none-any.whl", hash = "sha256:3b8d9d3c1bcadc2cff09724de70f074f43eafd5b7048a91247c9a41b7cd6216d"},
-    {file = "llama_index_llms_openai-0.4.7.tar.gz", hash = "sha256:564af8ab39fb3f3adfeae73a59c0dca46c099ab844a28e725eee0c551d4869f8"},
-]
-
-[package.dependencies]
-llama-index-core = ">=0.12.41,<0.13"
-openai = ">=1.81.0,<2"
-
-[[package]]
-name = "llama-index-multi-modal-llms-openai"
-version = "0.5.3"
-description = "llama-index multi-modal-llms openai integration"
-optional = true
-python-versions = "<4.0,>=3.9"
-groups = ["main"]
-markers = "(platform_machine == \"arm64\" or platform_machine == \"x86_64\" or platform_machine != \"arm64\" and platform_machine != \"x86_64\" or sys_platform != \"darwin\") and (extra == \"llama-index\" or extra == \"rag\" or extra == \"all\")"
-files = [
-    {file = "llama_index_multi_modal_llms_openai-0.5.3-py3-none-any.whl", hash = "sha256:be6237df8f9caaa257f9beda5317287bbd2ec19473d777a30a34e41a7c5bddf8"},
-    {file = "llama_index_multi_modal_llms_openai-0.5.3.tar.gz", hash = "sha256:b755a8b47d8d2f34b5a3d249af81d9bfb69d3d2cf9ab539d3a42f7bfa3e2391a"},
-]
-
-[package.dependencies]
-llama-index-core = ">=0.12.47,<0.13"
-llama-index-llms-openai = ">=0.4.0,<0.5"
-
-[[package]]
-name = "llama-index-program-openai"
-version = "0.3.2"
-description = "llama-index program openai integration"
-optional = true
-python-versions = "<4.0,>=3.9"
-groups = ["main"]
-markers = "(platform_machine == \"arm64\" or platform_machine == \"x86_64\" or platform_machine != \"arm64\" and platform_machine != \"x86_64\" or sys_platform != \"darwin\") and (extra == \"llama-index\" or extra == \"rag\" or extra == \"all\")"
-files = [
-    {file = "llama_index_program_openai-0.3.2-py3-none-any.whl", hash = "sha256:451829ae53e074e7b47dcc60a9dd155fcf9d1dcbc1754074bdadd6aab4ceb9aa"},
-    {file = "llama_index_program_openai-0.3.2.tar.gz", hash = "sha256:04c959a2e616489894bd2eeebb99500d6f1c17d588c3da0ddc75ebd3eb7451ee"},
-]
-
-[package.dependencies]
-llama-index-agent-openai = ">=0.4.0,<0.5"
-llama-index-core = ">=0.12.0,<0.13"
-llama-index-llms-openai = ">=0.4.0,<0.5"
-
-[[package]]
-name = "llama-index-question-gen-openai"
-version = "0.3.1"
-description = "llama-index question_gen openai integration"
-optional = true
-python-versions = "<4.0,>=3.9"
-groups = ["main"]
-markers = "(platform_machine == \"arm64\" or platform_machine == \"x86_64\" or platform_machine != \"arm64\" and platform_machine != \"x86_64\" or sys_platform != \"darwin\") and (extra == \"llama-index\" or extra == \"rag\" or extra == \"all\")"
-files = [
-    {file = "llama_index_question_gen_openai-0.3.1-py3-none-any.whl", hash = "sha256:1ce266f6c8373fc8d884ff83a44dfbacecde2301785db7144872db51b8b99429"},
-    {file = "llama_index_question_gen_openai-0.3.1.tar.gz", hash = "sha256:5e9311b433cc2581ff8a531fa19fb3aa21815baff75aaacdef11760ac9522aa9"},
-]
-
-[package.dependencies]
-llama-index-core = ">=0.12.0,<0.13"
-llama-index-llms-openai = ">=0.4.0,<0.5"
-llama-index-program-openai = ">=0.3.0,<0.4"
-
-[[package]]
-name = "llama-index-readers-file"
-version = "0.4.11"
-description = "llama-index readers file integration"
-optional = true
-python-versions = "<4.0,>=3.9"
-groups = ["main"]
-markers = "(platform_machine == \"arm64\" or platform_machine == \"x86_64\" or platform_machine != \"arm64\" and platform_machine != \"x86_64\" or sys_platform != \"darwin\") and (extra == \"llama-index\" or extra == \"rag\" or extra == \"all\")"
-files = [
-    {file = "llama_index_readers_file-0.4.11-py3-none-any.whl", hash = "sha256:e71192d8d6d0bf95131762da15fa205cf6e0cc248c90c76ee04d0fbfe160d464"},
-    {file = "llama_index_readers_file-0.4.11.tar.gz", hash = "sha256:1b21cb66d78dd5f60e8716607d9a47ccd81bb39106d459665be1ca7799e9597b"},
-]
-
-[package.dependencies]
-beautifulsoup4 = ">=4.12.3,<5"
-defusedxml = ">=0.7.1"
-llama-index-core = ">=0.12.0,<0.13"
-pandas = "<2.3.0"
-pypdf = ">=5.1.0,<6"
-striprtf = ">=0.0.26,<0.0.27"
-
-[package.extras]
-pymupdf = ["pymupdf (>=1.23.21,<2)"]
-
-[[package]]
-name = "llama-index-readers-llama-parse"
-version = "0.4.0"
-description = "llama-index readers llama-parse integration"
-optional = true
-python-versions = "<4.0,>=3.9"
-groups = ["main"]
-markers = "(platform_machine == \"arm64\" or platform_machine == \"x86_64\" or platform_machine != \"arm64\" and platform_machine != \"x86_64\" or sys_platform != \"darwin\") and (extra == \"llama-index\" or extra == \"rag\" or extra == \"all\")"
-files = [
-    {file = "llama_index_readers_llama_parse-0.4.0-py3-none-any.whl", hash = "sha256:574e48386f28d2c86c3f961ca4a4906910312f3400dd0c53014465bfbc6b32bf"},
-    {file = "llama_index_readers_llama_parse-0.4.0.tar.gz", hash = "sha256:e99ec56f4f8546d7fda1a7c1ae26162fb9acb7ebcac343b5abdb4234b4644e0f"},
-]
-
-[package.dependencies]
-llama-index-core = ">=0.12.0,<0.13.0"
-llama-parse = ">=0.5.0"
-
-[[package]]
 name = "llama-index-workflows"
-version = "1.3.0"
+version = "2.11.5"
 description = "An event-driven, async-first, step-based way to control the execution flow of AI applications like Agents."
 optional = true
 python-versions = ">=3.9"
 groups = ["main"]
-markers = "(platform_machine == \"arm64\" or platform_machine == \"x86_64\" or platform_machine != \"arm64\" and platform_machine != \"x86_64\" or sys_platform != \"darwin\") and (extra == \"llama-index\" or extra == \"rag\" or extra == \"all\")"
+markers = "(platform_machine == \"arm64\" or platform_machine == \"x86_64\" or platform_machine != \"arm64\" and platform_machine != \"x86_64\" or sys_platform != \"darwin\") and (extra == \"llama-index\" or extra == \"rag\")"
 files = [
-    {file = "llama_index_workflows-1.3.0-py3-none-any.whl", hash = "sha256:328cc25d92b014ef527f105a2f2088c0924fff0494e53d93decb951f14fbfe47"},
-    {file = "llama_index_workflows-1.3.0.tar.gz", hash = "sha256:9c1688e237efad384f16485af71c6f9456a2eb6d85bf61ff49e5717f10ff286d"},
+    {file = "llama_index_workflows-2.11.5-py3-none-any.whl", hash = "sha256:3c5a419129114bb0b1bd83b88aa5f653f84181b2e39e33473e8747ec6e88538e"},
+    {file = "llama_index_workflows-2.11.5.tar.gz", hash = "sha256:defba6c5169a9c986fe06dd9f3ee5e1a6cc5f58c776605c0458baa0a55f07643"},
 ]
 
 [package.dependencies]
@@ -3747,23 +3469,8 @@ pydantic = ">=2.11.5"
 typing-extensions = ">=4.6.0"
 
 [package.extras]
+client = ["httpx (>=0.28.1,<1)"]
 server = ["starlette (>=0.39.0)", "uvicorn (>=0.32.0)"]
-
-[[package]]
-name = "llama-parse"
-version = "0.6.54"
-description = "Parse files into RAG-Optimized formats."
-optional = true
-python-versions = "<4.0,>=3.9"
-groups = ["main"]
-markers = "(platform_machine == \"arm64\" or platform_machine == \"x86_64\" or platform_machine != \"arm64\" and platform_machine != \"x86_64\" or sys_platform != \"darwin\") and (extra == \"llama-index\" or extra == \"rag\" or extra == \"all\")"
-files = [
-    {file = "llama_parse-0.6.54-py3-none-any.whl", hash = "sha256:c66c8d51cf6f29a44eaa8595a595de5d2598afc86e5a33a4cebe5fe228036920"},
-    {file = "llama_parse-0.6.54.tar.gz", hash = "sha256:c707b31152155c9bae84e316fab790bbc8c85f4d8825ce5ee386ebeb7db258f1"},
-]
-
-[package.dependencies]
-llama-cloud-services = ">=0.6.54"
 
 [[package]]
 name = "lxml"
@@ -4458,7 +4165,7 @@ files = [
     {file = "nest_asyncio-1.6.0-py3-none-any.whl", hash = "sha256:87af6efd6b5e897c81050477ef65c62e2b2f35d51703cae01aff2905b1852e1c"},
     {file = "nest_asyncio-1.6.0.tar.gz", hash = "sha256:6f172d5449aca15afd6c646851f4e31e02c598d553a667e38cafa997cfec55fe"},
 ]
-markers = {main = "(platform_machine == \"arm64\" or platform_machine == \"x86_64\" or platform_machine != \"arm64\" and platform_machine != \"x86_64\" or sys_platform != \"darwin\") and (extra == \"llama-index\" or extra == \"rag\" or extra == \"all\")", dev = "platform_machine == \"arm64\" or platform_machine == \"x86_64\" or platform_machine != \"arm64\" and platform_machine != \"x86_64\" or sys_platform != \"darwin\""}
+markers = {main = "(platform_machine == \"arm64\" or platform_machine == \"x86_64\" or platform_machine != \"arm64\" and platform_machine != \"x86_64\" or sys_platform != \"darwin\") and (extra == \"llama-index\" or extra == \"rag\")", dev = "platform_machine == \"arm64\" or platform_machine == \"x86_64\" or platform_machine != \"arm64\" and platform_machine != \"x86_64\" or sys_platform != \"darwin\""}
 
 [[package]]
 name = "networkx"
@@ -4467,7 +4174,7 @@ description = "Python package for creating and manipulating graphs and networks"
 optional = true
 python-versions = ">=3.11"
 groups = ["main"]
-markers = "(platform_machine == \"arm64\" or platform_machine == \"x86_64\" or platform_machine != \"arm64\" and platform_machine != \"x86_64\" or sys_platform != \"darwin\") and (extra == \"llama-index\" or extra == \"rag\" or extra == \"all\" or extra == \"transformers\")"
+markers = "(platform_machine == \"arm64\" or platform_machine == \"x86_64\" or platform_machine != \"arm64\" and platform_machine != \"x86_64\" or sys_platform != \"darwin\") and (extra == \"llama-index\" or extra == \"rag\" or extra == \"transformers\" or extra == \"all\")"
 files = [
     {file = "networkx-3.5-py3-none-any.whl", hash = "sha256:0030d386a9a06dee3565298b4a734b68589749a544acbb6c412dc9e2489ec6ec"},
     {file = "networkx-3.5.tar.gz", hash = "sha256:d4c6f9cf81f52d69230866796b82afbccdec3db7ae4fbd1b65ea750feed50037"},
@@ -4489,7 +4196,7 @@ description = "Natural Language Toolkit"
 optional = true
 python-versions = ">=3.9"
 groups = ["main"]
-markers = "(platform_machine == \"arm64\" or platform_machine == \"x86_64\" or platform_machine != \"arm64\" and platform_machine != \"x86_64\" or sys_platform != \"darwin\") and (extra == \"llama-index\" or extra == \"rag\" or extra == \"all\")"
+markers = "(platform_machine == \"arm64\" or platform_machine == \"x86_64\" or platform_machine != \"arm64\" and platform_machine != \"x86_64\" or sys_platform != \"darwin\") and (extra == \"llama-index\" or extra == \"rag\")"
 files = [
     {file = "nltk-3.9.2-py3-none-any.whl", hash = "sha256:1e209d2b3009110635ed9709a67a1a3e33a10f799490fa71cf4bec218c11c88a"},
     {file = "nltk-3.9.2.tar.gz", hash = "sha256:0f409e9b069ca4177c1903c3e843eef90c7e92992fa4931ae607da6de49e1419"},
@@ -5662,93 +5369,6 @@ files = [
 ]
 
 [[package]]
-name = "pandas"
-version = "2.2.3"
-description = "Powerful data structures for data analysis, time series, and statistics"
-optional = true
-python-versions = ">=3.9"
-groups = ["main"]
-markers = "(platform_machine == \"arm64\" or platform_machine == \"x86_64\" or platform_machine != \"arm64\" and platform_machine != \"x86_64\" or sys_platform != \"darwin\") and (extra == \"llama-index\" or extra == \"rag\" or extra == \"all\")"
-files = [
-    {file = "pandas-2.2.3-cp310-cp310-macosx_10_9_x86_64.whl", hash = "sha256:1948ddde24197a0f7add2bdc4ca83bf2b1ef84a1bc8ccffd95eda17fd836ecb5"},
-    {file = "pandas-2.2.3-cp310-cp310-macosx_11_0_arm64.whl", hash = "sha256:381175499d3802cde0eabbaf6324cce0c4f5d52ca6f8c377c29ad442f50f6348"},
-    {file = "pandas-2.2.3-cp310-cp310-manylinux2014_aarch64.manylinux_2_17_aarch64.whl", hash = "sha256:d9c45366def9a3dd85a6454c0e7908f2b3b8e9c138f5dc38fed7ce720d8453ed"},
-    {file = "pandas-2.2.3-cp310-cp310-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:86976a1c5b25ae3f8ccae3a5306e443569ee3c3faf444dfd0f41cda24667ad57"},
-    {file = "pandas-2.2.3-cp310-cp310-musllinux_1_2_aarch64.whl", hash = "sha256:b8661b0238a69d7aafe156b7fa86c44b881387509653fdf857bebc5e4008ad42"},
-    {file = "pandas-2.2.3-cp310-cp310-musllinux_1_2_x86_64.whl", hash = "sha256:37e0aced3e8f539eccf2e099f65cdb9c8aa85109b0be6e93e2baff94264bdc6f"},
-    {file = "pandas-2.2.3-cp310-cp310-win_amd64.whl", hash = "sha256:56534ce0746a58afaf7942ba4863e0ef81c9c50d3f0ae93e9497d6a41a057645"},
-    {file = "pandas-2.2.3-cp311-cp311-macosx_10_9_x86_64.whl", hash = "sha256:66108071e1b935240e74525006034333f98bcdb87ea116de573a6a0dccb6c039"},
-    {file = "pandas-2.2.3-cp311-cp311-macosx_11_0_arm64.whl", hash = "sha256:7c2875855b0ff77b2a64a0365e24455d9990730d6431b9e0ee18ad8acee13dbd"},
-    {file = "pandas-2.2.3-cp311-cp311-manylinux2014_aarch64.manylinux_2_17_aarch64.whl", hash = "sha256:cd8d0c3be0515c12fed0bdbae072551c8b54b7192c7b1fda0ba56059a0179698"},
-    {file = "pandas-2.2.3-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:c124333816c3a9b03fbeef3a9f230ba9a737e9e5bb4060aa2107a86cc0a497fc"},
-    {file = "pandas-2.2.3-cp311-cp311-musllinux_1_2_aarch64.whl", hash = "sha256:63cc132e40a2e084cf01adf0775b15ac515ba905d7dcca47e9a251819c575ef3"},
-    {file = "pandas-2.2.3-cp311-cp311-musllinux_1_2_x86_64.whl", hash = "sha256:29401dbfa9ad77319367d36940cd8a0b3a11aba16063e39632d98b0e931ddf32"},
-    {file = "pandas-2.2.3-cp311-cp311-win_amd64.whl", hash = "sha256:3fc6873a41186404dad67245896a6e440baacc92f5b716ccd1bc9ed2995ab2c5"},
-    {file = "pandas-2.2.3-cp312-cp312-macosx_10_9_x86_64.whl", hash = "sha256:b1d432e8d08679a40e2a6d8b2f9770a5c21793a6f9f47fdd52c5ce1948a5a8a9"},
-    {file = "pandas-2.2.3-cp312-cp312-macosx_11_0_arm64.whl", hash = "sha256:a5a1595fe639f5988ba6a8e5bc9649af3baf26df3998a0abe56c02609392e0a4"},
-    {file = "pandas-2.2.3-cp312-cp312-manylinux2014_aarch64.manylinux_2_17_aarch64.whl", hash = "sha256:5de54125a92bb4d1c051c0659e6fcb75256bf799a732a87184e5ea503965bce3"},
-    {file = "pandas-2.2.3-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:fffb8ae78d8af97f849404f21411c95062db1496aeb3e56f146f0355c9989319"},
-    {file = "pandas-2.2.3-cp312-cp312-musllinux_1_2_aarch64.whl", hash = "sha256:6dfcb5ee8d4d50c06a51c2fffa6cff6272098ad6540aed1a76d15fb9318194d8"},
-    {file = "pandas-2.2.3-cp312-cp312-musllinux_1_2_x86_64.whl", hash = "sha256:062309c1b9ea12a50e8ce661145c6aab431b1e99530d3cd60640e255778bd43a"},
-    {file = "pandas-2.2.3-cp312-cp312-win_amd64.whl", hash = "sha256:59ef3764d0fe818125a5097d2ae867ca3fa64df032331b7e0917cf5d7bf66b13"},
-    {file = "pandas-2.2.3-cp313-cp313-macosx_10_13_x86_64.whl", hash = "sha256:f00d1345d84d8c86a63e476bb4955e46458b304b9575dcf71102b5c705320015"},
-    {file = "pandas-2.2.3-cp313-cp313-macosx_11_0_arm64.whl", hash = "sha256:3508d914817e153ad359d7e069d752cdd736a247c322d932eb89e6bc84217f28"},
-    {file = "pandas-2.2.3-cp313-cp313-manylinux2014_aarch64.manylinux_2_17_aarch64.whl", hash = "sha256:22a9d949bfc9a502d320aa04e5d02feab689d61da4e7764b62c30b991c42c5f0"},
-    {file = "pandas-2.2.3-cp313-cp313-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:f3a255b2c19987fbbe62a9dfd6cff7ff2aa9ccab3fc75218fd4b7530f01efa24"},
-    {file = "pandas-2.2.3-cp313-cp313-musllinux_1_2_aarch64.whl", hash = "sha256:800250ecdadb6d9c78eae4990da62743b857b470883fa27f652db8bdde7f6659"},
-    {file = "pandas-2.2.3-cp313-cp313-musllinux_1_2_x86_64.whl", hash = "sha256:6374c452ff3ec675a8f46fd9ab25c4ad0ba590b71cf0656f8b6daa5202bca3fb"},
-    {file = "pandas-2.2.3-cp313-cp313-win_amd64.whl", hash = "sha256:61c5ad4043f791b61dd4752191d9f07f0ae412515d59ba8f005832a532f8736d"},
-    {file = "pandas-2.2.3-cp313-cp313t-macosx_10_13_x86_64.whl", hash = "sha256:3b71f27954685ee685317063bf13c7709a7ba74fc996b84fc6821c59b0f06468"},
-    {file = "pandas-2.2.3-cp313-cp313t-macosx_11_0_arm64.whl", hash = "sha256:38cf8125c40dae9d5acc10fa66af8ea6fdf760b2714ee482ca691fc66e6fcb18"},
-    {file = "pandas-2.2.3-cp313-cp313t-manylinux2014_aarch64.manylinux_2_17_aarch64.whl", hash = "sha256:ba96630bc17c875161df3818780af30e43be9b166ce51c9a18c1feae342906c2"},
-    {file = "pandas-2.2.3-cp313-cp313t-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:1db71525a1538b30142094edb9adc10be3f3e176748cd7acc2240c2f2e5aa3a4"},
-    {file = "pandas-2.2.3-cp313-cp313t-musllinux_1_2_aarch64.whl", hash = "sha256:15c0e1e02e93116177d29ff83e8b1619c93ddc9c49083f237d4312337a61165d"},
-    {file = "pandas-2.2.3-cp313-cp313t-musllinux_1_2_x86_64.whl", hash = "sha256:ad5b65698ab28ed8d7f18790a0dc58005c7629f227be9ecc1072aa74c0c1d43a"},
-    {file = "pandas-2.2.3-cp39-cp39-macosx_10_9_x86_64.whl", hash = "sha256:bc6b93f9b966093cb0fd62ff1a7e4c09e6d546ad7c1de191767baffc57628f39"},
-    {file = "pandas-2.2.3-cp39-cp39-macosx_11_0_arm64.whl", hash = "sha256:5dbca4c1acd72e8eeef4753eeca07de9b1db4f398669d5994086f788a5d7cc30"},
-    {file = "pandas-2.2.3-cp39-cp39-manylinux2014_aarch64.manylinux_2_17_aarch64.whl", hash = "sha256:8cd6d7cc958a3910f934ea8dbdf17b2364827bb4dafc38ce6eef6bb3d65ff09c"},
-    {file = "pandas-2.2.3-cp39-cp39-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:99df71520d25fade9db7c1076ac94eb994f4d2673ef2aa2e86ee039b6746d20c"},
-    {file = "pandas-2.2.3-cp39-cp39-musllinux_1_2_aarch64.whl", hash = "sha256:31d0ced62d4ea3e231a9f228366919a5ea0b07440d9d4dac345376fd8e1477ea"},
-    {file = "pandas-2.2.3-cp39-cp39-musllinux_1_2_x86_64.whl", hash = "sha256:7eee9e7cea6adf3e3d24e304ac6b8300646e2a5d1cd3a3c2abed9101b0846761"},
-    {file = "pandas-2.2.3-cp39-cp39-win_amd64.whl", hash = "sha256:4850ba03528b6dd51d6c5d273c46f183f39a9baf3f0143e566b89450965b105e"},
-    {file = "pandas-2.2.3.tar.gz", hash = "sha256:4f18ba62b61d7e192368b84517265a99b4d7ee8912f8708660fb4a366cc82667"},
-]
-
-[package.dependencies]
-numpy = [
-    {version = ">=1.26.0", markers = "python_version >= \"3.12\""},
-    {version = ">=1.23.2", markers = "python_version == \"3.11\""},
-]
-python-dateutil = ">=2.8.2"
-pytz = ">=2020.1"
-tzdata = ">=2022.7"
-
-[package.extras]
-all = ["PyQt5 (>=5.15.9)", "SQLAlchemy (>=2.0.0)", "adbc-driver-postgresql (>=0.8.0)", "adbc-driver-sqlite (>=0.8.0)", "beautifulsoup4 (>=4.11.2)", "bottleneck (>=1.3.6)", "dataframe-api-compat (>=0.1.7)", "fastparquet (>=2022.12.0)", "fsspec (>=2022.11.0)", "gcsfs (>=2022.11.0)", "html5lib (>=1.1)", "hypothesis (>=6.46.1)", "jinja2 (>=3.1.2)", "lxml (>=4.9.2)", "matplotlib (>=3.6.3)", "numba (>=0.56.4)", "numexpr (>=2.8.4)", "odfpy (>=1.4.1)", "openpyxl (>=3.1.0)", "pandas-gbq (>=0.19.0)", "psycopg2 (>=2.9.6)", "pyarrow (>=10.0.1)", "pymysql (>=1.0.2)", "pyreadstat (>=1.2.0)", "pytest (>=7.3.2)", "pytest-xdist (>=2.2.0)", "python-calamine (>=0.1.7)", "pyxlsb (>=1.0.10)", "qtpy (>=2.3.0)", "s3fs (>=2022.11.0)", "scipy (>=1.10.0)", "tables (>=3.8.0)", "tabulate (>=0.9.0)", "xarray (>=2022.12.0)", "xlrd (>=2.0.1)", "xlsxwriter (>=3.0.5)", "zstandard (>=0.19.0)"]
-aws = ["s3fs (>=2022.11.0)"]
-clipboard = ["PyQt5 (>=5.15.9)", "qtpy (>=2.3.0)"]
-compression = ["zstandard (>=0.19.0)"]
-computation = ["scipy (>=1.10.0)", "xarray (>=2022.12.0)"]
-consortium-standard = ["dataframe-api-compat (>=0.1.7)"]
-excel = ["odfpy (>=1.4.1)", "openpyxl (>=3.1.0)", "python-calamine (>=0.1.7)", "pyxlsb (>=1.0.10)", "xlrd (>=2.0.1)", "xlsxwriter (>=3.0.5)"]
-feather = ["pyarrow (>=10.0.1)"]
-fss = ["fsspec (>=2022.11.0)"]
-gcp = ["gcsfs (>=2022.11.0)", "pandas-gbq (>=0.19.0)"]
-hdf5 = ["tables (>=3.8.0)"]
-html = ["beautifulsoup4 (>=4.11.2)", "html5lib (>=1.1)", "lxml (>=4.9.2)"]
-mysql = ["SQLAlchemy (>=2.0.0)", "pymysql (>=1.0.2)"]
-output-formatting = ["jinja2 (>=3.1.2)", "tabulate (>=0.9.0)"]
-parquet = ["pyarrow (>=10.0.1)"]
-performance = ["bottleneck (>=1.3.6)", "numba (>=0.56.4)", "numexpr (>=2.8.4)"]
-plot = ["matplotlib (>=3.6.3)"]
-postgresql = ["SQLAlchemy (>=2.0.0)", "adbc-driver-postgresql (>=0.8.0)", "psycopg2 (>=2.9.6)"]
-pyarrow = ["pyarrow (>=10.0.1)"]
-spss = ["pyreadstat (>=1.2.0)"]
-sql-other = ["SQLAlchemy (>=2.0.0)", "adbc-driver-postgresql (>=0.8.0)", "adbc-driver-sqlite (>=0.8.0)"]
-test = ["hypothesis (>=6.46.1)", "pytest (>=7.3.2)", "pytest-xdist (>=2.2.0)"]
-xml = ["lxml (>=4.9.2)"]
-
-[[package]]
 name = "pathspec"
 version = "0.12.1"
 description = "Utility library for gitignore style pattern matching of file paths."
@@ -5799,7 +5419,7 @@ description = "Python Imaging Library (fork)"
 optional = true
 python-versions = ">=3.10"
 groups = ["main"]
-markers = "(extra == \"transformers\" or extra == \"all\" or extra == \"llama-index\" or extra == \"rag\") and (python_version == \"3.12\" or extra == \"llama-index\" or extra == \"rag\" or extra == \"all\" or python_version == \"3.11\") and (platform_machine == \"arm64\" or platform_machine == \"x86_64\" or platform_machine != \"arm64\" and platform_machine != \"x86_64\" or sys_platform != \"darwin\") and (python_version == \"3.12\" or extra == \"llama-index\" or extra == \"rag\" or extra == \"all\" or extra == \"transformers\" or python_version == \"3.11\")"
+markers = "(extra == \"transformers\" or extra == \"all\" or extra == \"llama-index\" or extra == \"rag\") and (python_version == \"3.12\" or extra == \"llama-index\" or extra == \"rag\" or python_version == \"3.11\") and (platform_machine == \"arm64\" or platform_machine == \"x86_64\" or platform_machine != \"arm64\" and platform_machine != \"x86_64\" or sys_platform != \"darwin\") and (python_version == \"3.12\" or extra == \"llama-index\" or extra == \"rag\" or extra == \"transformers\" or extra == \"all\" or python_version == \"3.11\")"
 files = [
     {file = "pillow-12.0.0-cp310-cp310-macosx_10_10_x86_64.whl", hash = "sha256:3adfb466bbc544b926d50fe8f4a4e6abd8c6bffd28a26177594e6e9b2b76572b"},
     {file = "pillow-12.0.0-cp310-cp310-macosx_11_0_arm64.whl", hash = "sha256:1ac11e8ea4f611c3c0147424eae514028b5e9077dd99ab91e1bd7bc33ff145e1"},
@@ -5913,7 +5533,7 @@ files = [
     {file = "platformdirs-4.5.0-py3-none-any.whl", hash = "sha256:e578a81bb873cbb89a41fcc904c7ef523cc18284b7e3b3ccf06aca1403b7ebd3"},
     {file = "platformdirs-4.5.0.tar.gz", hash = "sha256:70ddccdd7c99fc5942e9fc25636a8b34d04c24b335100223152c2803e4063312"},
 ]
-markers = {main = "(platform_machine == \"arm64\" or platform_machine == \"x86_64\" or platform_machine != \"arm64\" and platform_machine != \"x86_64\" or sys_platform != \"darwin\") and (extra == \"llama-index\" or extra == \"rag\" or extra == \"all\")", dev = "platform_machine == \"arm64\" or platform_machine == \"x86_64\" or platform_machine != \"arm64\" and platform_machine != \"x86_64\" or sys_platform != \"darwin\""}
+markers = {main = "(platform_machine == \"arm64\" or platform_machine == \"x86_64\" or platform_machine != \"arm64\" and platform_machine != \"x86_64\" or sys_platform != \"darwin\") and (extra == \"llama-index\" or extra == \"rag\")", dev = "platform_machine == \"arm64\" or platform_machine == \"x86_64\" or platform_machine != \"arm64\" and platform_machine != \"x86_64\" or sys_platform != \"darwin\""}
 
 [package.extras]
 docs = ["furo (>=2025.9.25)", "proselint (>=0.14)", "sphinx (>=8.2.3)", "sphinx-autodoc-typehints (>=3.2)"]
@@ -6656,7 +6276,7 @@ description = "A pure-python PDF library capable of splitting, merging, cropping
 optional = true
 python-versions = ">=3.8"
 groups = ["main"]
-markers = "(platform_machine == \"arm64\" or platform_machine == \"x86_64\" or platform_machine != \"arm64\" and platform_machine != \"x86_64\" or sys_platform != \"darwin\") and (extra == \"llama-index\" or extra == \"rag\" or extra == \"all\")"
+markers = "(platform_machine == \"arm64\" or platform_machine == \"x86_64\" or platform_machine != \"arm64\" and platform_machine != \"x86_64\" or sys_platform != \"darwin\") and extra == \"rag\""
 files = [
     {file = "pypdf-5.9.0-py3-none-any.whl", hash = "sha256:be10a4c54202f46d9daceaa8788be07aa8cd5ea8c25c529c50dd509206382c35"},
     {file = "pypdf-5.9.0.tar.gz", hash = "sha256:30f67a614d558e495e1fbb157ba58c1de91ffc1718f5e0dfeb82a029233890a1"},
@@ -6820,7 +6440,7 @@ files = [
     {file = "python-dateutil-2.9.0.post0.tar.gz", hash = "sha256:37dd54208da7e1cd875388217d5e00ebd4179249f90fb72437e91a35459a0ad3"},
     {file = "python_dateutil-2.9.0.post0-py2.py3-none-any.whl", hash = "sha256:a8b2bc7bffae282281c8140a97d3aa9c14da0b136dfe83f850eea9a5f7470427"},
 ]
-markers = {main = "(platform_machine == \"arm64\" or platform_machine == \"x86_64\" or platform_machine != \"arm64\" and platform_machine != \"x86_64\" or sys_platform != \"darwin\") and (extra == \"bedrock\" or extra == \"all\" or extra == \"llama-index\" or extra == \"rag\")", dev = "platform_machine == \"arm64\" or platform_machine == \"x86_64\" or platform_machine != \"arm64\" and platform_machine != \"x86_64\" or sys_platform != \"darwin\""}
+markers = {main = "(platform_machine == \"arm64\" or platform_machine == \"x86_64\" or platform_machine != \"arm64\" and platform_machine != \"x86_64\" or sys_platform != \"darwin\") and (extra == \"bedrock\" or extra == \"all\")", dev = "platform_machine == \"arm64\" or platform_machine == \"x86_64\" or platform_machine != \"arm64\" and platform_machine != \"x86_64\" or sys_platform != \"darwin\""}
 
 [package.dependencies]
 six = ">=1.5"
@@ -6900,19 +6520,6 @@ files = [
 click = "*"
 olefile = "*"
 typing_extensions = ">=4.9.0"
-
-[[package]]
-name = "pytz"
-version = "2025.2"
-description = "World timezone definitions, modern and historical"
-optional = true
-python-versions = "*"
-groups = ["main"]
-markers = "(platform_machine == \"arm64\" or platform_machine == \"x86_64\" or platform_machine != \"arm64\" and platform_machine != \"x86_64\" or sys_platform != \"darwin\") and (extra == \"llama-index\" or extra == \"rag\" or extra == \"all\")"
-files = [
-    {file = "pytz-2025.2-py2.py3-none-any.whl", hash = "sha256:5ddf76296dd8c44c26eb8f4b6f35488f3ccbf6fbbd7adee0b7262d43f0ec2f00"},
-    {file = "pytz-2025.2.tar.gz", hash = "sha256:360b9e3dbb49a209c21ad61809c7fb453643e048b38924c765813546746e81c3"},
-]
 
 [[package]]
 name = "pywin32"
@@ -7898,7 +7505,7 @@ files = [
     {file = "six-1.17.0-py2.py3-none-any.whl", hash = "sha256:4721f391ed90541fddacab5acf947aa0d3dc7d27b2e1e8eda2be8970586c3274"},
     {file = "six-1.17.0.tar.gz", hash = "sha256:ff70335d468e7eb6ec65b95b99d3a2836546063f63acc5171de367e834932a81"},
 ]
-markers = {main = "(platform_machine == \"arm64\" or platform_machine == \"x86_64\" or platform_machine != \"arm64\" and platform_machine != \"x86_64\" or sys_platform != \"darwin\") and (extra == \"bedrock\" or extra == \"all\" or extra == \"llama-index\" or extra == \"rag\")", dev = "platform_machine == \"arm64\" or platform_machine == \"x86_64\" or platform_machine != \"arm64\" and platform_machine != \"x86_64\" or sys_platform != \"darwin\""}
+markers = {main = "(platform_machine == \"arm64\" or platform_machine == \"x86_64\" or platform_machine != \"arm64\" and platform_machine != \"x86_64\" or sys_platform != \"darwin\") and (extra == \"bedrock\" or extra == \"all\" or extra == \"rag\")", dev = "platform_machine == \"arm64\" or platform_machine == \"x86_64\" or platform_machine != \"arm64\" and platform_machine != \"x86_64\" or sys_platform != \"darwin\""}
 
 [[package]]
 name = "sniffio"
@@ -7933,7 +7540,7 @@ description = "A modern CSS selector implementation for Beautiful Soup."
 optional = true
 python-versions = ">=3.9"
 groups = ["main"]
-markers = "(platform_machine == \"arm64\" or platform_machine == \"x86_64\" or platform_machine != \"arm64\" and platform_machine != \"x86_64\" or sys_platform != \"darwin\") and (extra == \"llama-index\" or extra == \"rag\" or extra == \"all\")"
+markers = "(platform_machine == \"arm64\" or platform_machine == \"x86_64\" or platform_machine != \"arm64\" and platform_machine != \"x86_64\" or sys_platform != \"darwin\") and extra == \"rag\""
 files = [
     {file = "soupsieve-2.8-py3-none-any.whl", hash = "sha256:0cc76456a30e20f5d7f2e14a98a4ae2ee4e5abdc7c5ea0aafe795f344bc7984c"},
     {file = "soupsieve-2.8.tar.gz", hash = "sha256:e2dd4a40a628cb5f28f6d4b0db8800b8f581b65bb380b97de22ba5ca8d72572f"},
@@ -8077,19 +7684,6 @@ typing-extensions = {version = ">=4.10.0", markers = "python_version < \"3.13\""
 
 [package.extras]
 full = ["httpx (>=0.27.0,<0.29.0)", "itsdangerous", "jinja2", "python-multipart (>=0.0.18)", "pyyaml"]
-
-[[package]]
-name = "striprtf"
-version = "0.0.26"
-description = "A simple library to convert rtf to text"
-optional = true
-python-versions = "*"
-groups = ["main"]
-markers = "(platform_machine == \"arm64\" or platform_machine == \"x86_64\" or platform_machine != \"arm64\" and platform_machine != \"x86_64\" or sys_platform != \"darwin\") and (extra == \"llama-index\" or extra == \"rag\" or extra == \"all\")"
-files = [
-    {file = "striprtf-0.0.26-py3-none-any.whl", hash = "sha256:8c8f9d32083cdc2e8bfb149455aa1cc5a4e0a035893bedc75db8b73becb3a1bb"},
-    {file = "striprtf-0.0.26.tar.gz", hash = "sha256:fdb2bba7ac440072d1c41eab50d8d74ae88f60a8b6575c6e2c7805dc462093aa"},
-]
 
 [[package]]
 name = "sympy"
@@ -8852,31 +8446,14 @@ files = [
 name = "types-grpcio"
 version = "1.0.0.20250703"
 description = "Typing stubs for grpcio"
-optional = false
+optional = true
 python-versions = ">=3.9"
-groups = ["main", "dev"]
+groups = ["main"]
+markers = "(platform_machine == \"arm64\" or platform_machine == \"x86_64\" or platform_machine != \"arm64\" and platform_machine != \"x86_64\" or sys_platform != \"darwin\") and extra == \"a2a\""
 files = [
     {file = "types_grpcio-1.0.0.20250703-py3-none-any.whl", hash = "sha256:78d1bfc33b58a56697ef99e666e34be4c6887631341c75fdd28d58587aef5d9f"},
     {file = "types_grpcio-1.0.0.20250703.tar.gz", hash = "sha256:baf100184e5353cb60f045fb4fd47f37a360bedf0f19581535e4c3a3a1f7912b"},
 ]
-markers = {main = "(platform_machine == \"arm64\" or platform_machine == \"x86_64\" or platform_machine != \"arm64\" and platform_machine != \"x86_64\" or sys_platform != \"darwin\") and extra == \"a2a\"", dev = "platform_machine == \"arm64\" or platform_machine == \"x86_64\" or platform_machine != \"arm64\" and platform_machine != \"x86_64\" or sys_platform != \"darwin\""}
-
-[[package]]
-name = "types-grpcio-health-checking"
-version = "1.0.0.20250506"
-description = "Typing stubs for grpcio-health-checking"
-optional = false
-python-versions = ">=3.9"
-groups = ["dev"]
-markers = "platform_machine == \"arm64\" or platform_machine == \"x86_64\" or platform_machine != \"arm64\" and platform_machine != \"x86_64\" or sys_platform != \"darwin\""
-files = [
-    {file = "types_grpcio_health_checking-1.0.0.20250506-py3-none-any.whl", hash = "sha256:07ea2a7d574b448c3ba924aea56df8cbe6b3516fe7c3f9d9d204d75094087476"},
-    {file = "types_grpcio_health_checking-1.0.0.20250506.tar.gz", hash = "sha256:30bfcd70821f6c05222a023b51561328a3df6faea12124865fd25dfa1bfcb453"},
-]
-
-[package.dependencies]
-types-grpcio = "*"
-types-protobuf = "*"
 
 [[package]]
 name = "types-grpcio-reflection"
@@ -8899,14 +8476,14 @@ types-protobuf = "*"
 name = "types-protobuf"
 version = "6.32.1.20251105"
 description = "Typing stubs for protobuf"
-optional = false
+optional = true
 python-versions = ">=3.9"
-groups = ["main", "dev"]
+groups = ["main"]
+markers = "(platform_machine == \"arm64\" or platform_machine == \"x86_64\" or platform_machine != \"arm64\" and platform_machine != \"x86_64\" or sys_platform != \"darwin\") and extra == \"a2a\""
 files = [
     {file = "types_protobuf-6.32.1.20251105-py3-none-any.whl", hash = "sha256:a15109d38f7cfefd2539ef86d3f93a6a41c7cad53924f8aa1a51eaddbb72a660"},
     {file = "types_protobuf-6.32.1.20251105.tar.gz", hash = "sha256:641002611ff87dd9fedc38a39a29cacb9907ae5ce61489b53e99ca2074bef764"},
 ]
-markers = {main = "(platform_machine == \"arm64\" or platform_machine == \"x86_64\" or platform_machine != \"arm64\" and platform_machine != \"x86_64\" or sys_platform != \"darwin\") and extra == \"a2a\"", dev = "platform_machine == \"arm64\" or platform_machine == \"x86_64\" or platform_machine != \"arm64\" and platform_machine != \"x86_64\" or sys_platform != \"darwin\""}
 
 [[package]]
 name = "types-pyyaml"
@@ -8990,7 +8567,7 @@ description = "Provider of IANA time zone data"
 optional = true
 python-versions = ">=2"
 groups = ["main"]
-markers = "sys_platform == \"darwin\" and (platform_machine == \"arm64\" or platform_machine == \"x86_64\" or platform_machine != \"arm64\" and platform_machine != \"x86_64\") and (extra == \"llama-index\" or extra == \"rag\" or extra == \"all\") or ((extra == \"acp\" or extra == \"all\") and sys_platform == \"win32\" or extra == \"llama-index\" or extra == \"rag\" or extra == \"all\") and sys_platform != \"darwin\""
+markers = "sys_platform == \"win32\" and (extra == \"acp\" or extra == \"all\")"
 files = [
     {file = "tzdata-2025.2-py2.py3-none-any.whl", hash = "sha256:1a403fada01ff9221ca8044d701868fa132215d84beb92242d9acd2147f667a8"},
     {file = "tzdata-2025.2.tar.gz", hash = "sha256:b60a638fcc0daffadf82fe0f57e53d06bdec2f36c4df66280ae79bce6bd6f2b9"},
@@ -9841,18 +9418,18 @@ files = [
 cffi = ["cffi (>=1.17,<2.0) ; platform_python_implementation != \"PyPy\" and python_version < \"3.14\"", "cffi (>=2.0.0b) ; platform_python_implementation != \"PyPy\" and python_version >= \"3.14\""]
 
 [extras]
-a2a = ["a2a-sdk", "grpcio-health-checking", "types-grpcio", "types-grpcio-reflection", "uvicorn"]
+a2a = ["a2a-sdk", "types-grpcio", "types-grpcio-reflection", "uvicorn"]
 acp = ["acp-sdk", "uvicorn"]
 agentstack = ["a2a-sdk", "agentstack-sdk", "uvicorn"]
-all = ["a2a-sdk", "acp-sdk", "agentstack-sdk", "boto3", "ddgs", "fastapi", "google-auth", "grpcio-health-checking", "langchain-community", "langchain-core", "langchain-ollama", "langgraph-prebuilt", "llama-index", "mcp", "outlines", "peft", "torch", "torch", "torch", "transformers", "transformers", "transformers", "uvicorn", "wikipedia-api"]
+all = ["a2a-sdk", "acp-sdk", "agentstack-sdk", "boto3", "ddgs", "fastapi", "google-auth", "langchain-community", "langchain-core", "langchain-ollama", "langgraph-prebuilt", "mcp", "outlines", "peft", "torch", "torch", "torch", "transformers", "transformers", "transformers", "uvicorn", "wikipedia-api"]
 bedrock = ["boto3"]
 beeai-platform = ["a2a-sdk", "agentstack-sdk", "uvicorn"]
 duckduckgo = ["ddgs"]
 huggingface = ["transformers", "transformers", "transformers"]
 langchain = ["langchain-community", "langchain-core", "langchain-ollama"]
-llama-index = ["llama-index"]
+llama-index = ["llama-index-core"]
 mcp = ["mcp"]
-rag = ["langchain-community", "langchain-core", "langchain-ollama", "llama-index", "markdown", "unstructured"]
+rag = ["langchain-community", "langchain-core", "langchain-ollama", "llama-index-core", "markdown", "unstructured"]
 search = ["ddgs", "wikipedia-api"]
 transformers = ["outlines", "peft", "torch", "torch", "torch", "transformers", "transformers", "transformers"]
 vertexai = ["google-auth"]
@@ -9862,4 +9439,4 @@ wikipedia = ["wikipedia-api"]
 [metadata]
 lock-version = "2.1"
 python-versions = ">= 3.11,<3.14"
-content-hash = "98a7a0db47771ef609c99ce227a22866a65555019e38cd4e6442a18b0fe1ff55"
+content-hash = "3bfe8e9b619e7ba02b7b538315856d32a4de1299c3bebb6180fbc4569521379d"
