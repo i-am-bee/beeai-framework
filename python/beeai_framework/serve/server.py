@@ -79,7 +79,3 @@ class Server(Generic[TInput, TInternal, TConfig], ABC):
     @abstractmethod
     def serve(self) -> None:
         pass
-
-    def check_health(self) -> str:
-        """Check the health status of the server."""
-        return "ok"

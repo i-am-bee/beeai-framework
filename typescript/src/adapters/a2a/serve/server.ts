@@ -23,7 +23,7 @@ import {
   AgentSkill,
 } from "@a2a-js/sdk";
 import { A2AExpressApp } from "@a2a-js/sdk/server/express";
-import express from "express";
+import express, { Request, Response } from "express";
 import { ToolCallingAgent } from "@/agents/toolCalling/agent.js";
 import { ValueError } from "@/errors.js";
 import { Logger } from "@/logger/logger.js";
@@ -101,12 +101,14 @@ export class A2AServer extends Server<AnyAgent, AgentExecutor, A2AServerConfig, 
     const appBuilder = new A2AExpressApp(requestHandler);
     const expressApp = appBuilder.setupRoutes(express());
 
-    expressApp.get("/health", async (_req: any, res: any) => {
+    expressApp.get("/health", async (_req: Request, res: Response) => {
       const timeout = (ms: number) =>
         new Promise<never>((_, reject) => setTimeout(() => reject(new Error("timeout")), ms));
 
       try {
-        const healthPromise = config.healthCheck ? config.healthCheck() : Promise.resolve(this.ready);
+        const healthPromise = config.healthCheck
+          ? config.healthCheck()
+          : Promise.resolve(this.ready);
         const healthy = await Promise.race([healthPromise, timeout(2000)]);
         res.status(healthy ? 200 : 503).send(healthy ? "ok" : "not ready");
       } catch {
