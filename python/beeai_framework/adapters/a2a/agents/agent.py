@@ -293,9 +293,10 @@ class A2AAgent(BaseAgent[A2AAgentOutput]):
         self, *, context_id: str | None, task_id: str | None, clear_context: bool | None = False
     ) -> None:
         self._context_id = context_id or self._context_id
-        self._task_id = task_id
+        self._task_id = task_id or self._task_id
         if clear_context:
             self._context_id = None
+            self._task_id = None
             self._reference_task_ids.clear()
 
     async def _load_agent_card(self) -> None:
@@ -371,7 +372,7 @@ class A2AAgent(BaseAgent[A2AAgentOutput]):
             context_id=context_id
             or (input.context_id if isinstance(input, a2a_types.Message) else None)
             or self._context_id,
-            task_id=self._task_id if not context_id else None,
+            task_id=self._task_id if (not context_id or context_id == self._context_id) else None,
             reference_task_ids=self._reference_task_ids if not context_id else None,
         )
 
