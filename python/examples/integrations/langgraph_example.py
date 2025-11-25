@@ -16,7 +16,6 @@ from langchain_core.messages import AIMessage, BaseMessage, HumanMessage, System
 from langchain_core.runnables import RunnableConfig
 from langchain_core.tools import StructuredTool
 from langchain_ollama import ChatOllama
-from langgraph.prebuilt import create_react_agent
 from pydantic import BaseModel, InstanceOf
 
 from beeai_framework.agents.react import ReActAgent
@@ -56,6 +55,8 @@ async def main() -> None:
 
             data = await WikipediaTool().run({"query": query})
             return data.get_text_content()
+
+        from langgraph.prebuilt import create_react_agent
 
         langgraph_agent = create_react_agent(
             ChatOllama(model="llama3.1", temperature=0),
