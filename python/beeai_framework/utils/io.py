@@ -28,7 +28,7 @@ IOConfirmHandler = Callable[[str, Unpack[IOConfirmKwargs]], Coroutine[Any, Any, 
 @dataclass
 class IOHandlers:
     read: ReadHandler
-    io_confirm: IOConfirmHandler
+    confirm: IOConfirmHandler
 
 
 _default_read = ensure_async(input)
@@ -39,7 +39,7 @@ async def _default_confirm(prompt: str, **kwargs: Unpack[IOConfirmKwargs]) -> bo
 
 
 _storage: ContextVar[IOHandlers] = ContextVar("io_storage")
-_storage.set(IOHandlers(read=_default_read, io_confirm=_default_confirm))
+_storage.set(IOHandlers(read=_default_read, confirm=_default_confirm))
 
 
 async def io_read(prompt: str) -> str:
@@ -49,10 +49,10 @@ async def io_read(prompt: str) -> str:
 
 async def io_confirm(prompt: str, **kwargs: Any) -> bool:
     store = _storage.get()
-    return await store.io_confirm(prompt, **kwargs)
+    return await store.confirm(prompt, **kwargs)
 
 
 def setup_io_context(*, read: ReadHandler, confirm: IOConfirmHandler) -> Callable[[], None]:
-    handlers = IOHandlers(read=read, io_confirm=confirm)
+    handlers = IOHandlers(read=read, confirm=confirm)
     token = _storage.set(handlers)
     return lambda: _storage.reset(token)
