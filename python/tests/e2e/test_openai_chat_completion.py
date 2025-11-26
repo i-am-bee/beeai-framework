@@ -59,15 +59,16 @@ def start_test_server() -> Generator[str, None, None]:
     thread = threading.Thread(target=server.serve, daemon=True)
     thread.start()
 
-    time.sleep(2.0)
-
     server_url = f"http://127.0.0.1:{port}"
 
-    try:
-        requests.get(server_url, timeout=0.1)
-    except requests.exceptions.ConnectionError:
-        print(f"Server did not become reachable at {server_url}")
-        raise
+    for _ in range(20):  # Poll for up to 2 seconds
+        try:
+            requests.get(server_url, timeout=0.1)
+            break  # Server is up
+        except requests.exceptions.ConnectionError:
+            time.sleep(0.1)
+    else:
+        pytest.fail(f"Server did not become reachable at {server_url}")
 
     yield server_url
 
