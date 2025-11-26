@@ -15,6 +15,7 @@ from beeai_framework.adapters.openai.serve.server import OpenAIServer, OpenAISer
 from beeai_framework.backend.message import AnyMessage, AssistantMessage
 from beeai_framework.emitter import Emitter
 from beeai_framework.runnable import Runnable, RunnableOptions, RunnableOutput, runnable_entry
+from beeai_framework.serve.errors import FactoryAlreadyRegisteredError
 from beeai_framework.serve.utils import UnlimitedMemoryManager
 
 
