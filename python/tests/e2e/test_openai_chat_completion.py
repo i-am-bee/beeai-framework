@@ -44,7 +44,7 @@ def start_test_server() -> Generator[str, None, None]:
     port = 19001
 
     register()
-    with contextlib.suppress(Exception):
+    with contextlib.suppress(FactoryAlreadyRegisteredError):
         OpenAIServer.register_factory(OpenAIModel, lambda model, **kwargs: model)  # type: ignore[type-var]
 
     config = OpenAIServerConfig(
