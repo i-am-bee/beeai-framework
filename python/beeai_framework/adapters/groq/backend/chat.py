@@ -60,7 +60,7 @@ class GroqChatModel(LiteLLMChatModel):
             except Exception:
                 raise ex
 
-            if "tool" in formated_err.code:
+            if "tool" in formated_err.code or "tool" in formated_err.message.lower():
                 raise ChatModelToolCallError(
                     generated_error=formated_err.message,
                     generated_content=formated_err.failed_generation or "",
@@ -80,7 +80,7 @@ class GroqChatModel(LiteLLMChatModel):
                 raise e
 
             # status_code should be int but is actually not
-            if "tool" not in str(source_exc.status_code):
+            if "tool" not in str(source_exc.status_code) and "tool" not in str(source_exc.message).lower():
                 raise e
 
             raise ChatModelToolCallError(
