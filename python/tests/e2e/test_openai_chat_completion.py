@@ -110,7 +110,8 @@ def test_openai_e2e_auth_failure(start_test_server: str) -> None:
     response = requests.post(url, json=payload, headers=headers)
 
     assert response.status_code == 401
-    assert "invalid" in response.text.lower() or "unauthorized" in response.text.lower()
+    data = response.json()
+    assert data.get("error", {}).get("code") == "invalid_api_key"
 
 
 @pytest.mark.e2e
