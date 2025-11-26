@@ -62,4 +62,5 @@ class LangChainTextSplitter(TextSplitter):
         return [lc_document_to_document(lc_doc) for lc_doc in split_lc_documents]
 
     async def split_text(self, text: str) -> list[str]:
-        return self.text_splitter.split_text(text)
+        results = self.text_splitter.split_text(text)
+        return [str(result) for result in results]  # results can contain LCDocument

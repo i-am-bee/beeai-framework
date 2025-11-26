@@ -14,71 +14,48 @@ __all__ = ["TextSplitter"]
 
 class TextSplitter(ABC):
     @classmethod
-    @abstractmethod
-    def _class_from_name(cls, class_name: str, **kwargs: Any) -> TextSplitter:
-        raise NotImplementedError("Implement me")
-
-    @classmethod
     def from_name(cls, name: str, **kwargs: Any) -> TextSplitter:
         """
         Import and instantiate a TextSplitter class dynamically.
 
-        Parameters
-        ----------
-        name : str
-            A *case sensitive* string in the format "integration:ClassName".
-            - `integration` is the name of the Python package namespace (e.g. "langchain").
-            - `ClassName` is the name of the text splitter class to load (e.g. "RecursiveCharacterTextSplitter").
+        Args:
+            name:
+                A *case-sensitive* string in the format "integration:ClassName".
+                - `integration` is the name of the Python package namespace (e.g. "langchain").
+                - `ClassName` is the name of the text splitter class to load (e.g. "RecursiveCharacterTextSplitter").
+            **kwargs:
+                Additional positional or keyword arguments to be passed to the class.
 
-        **kwargs :
-            any positional or keywords arguments that would be passed to the class
+        Returns:
+            TextSplitter:
+                An instantiated text splitter object of the requested class.
 
-        Returns
-        -------
-        TextSplitter
-            An instantiated text splitter object of the requested class.
-
-        Raises
-        ------
-        ImportError
-            If the specified class cannot be found in any known integration package.
+        Raises:
+            ImportError:
+                If the specified class cannot be found in any known integration package.
+            ValueError:
+                If the provided name is not in the required "integration:ClassName" format.
         """
         parsed_module = parse_module(name)
-        TargetTextSplitter = load_module(parsed_module.provider_id, "text_splitter")  # type: ignore # noqa: N806
-        return TargetTextSplitter._class_from_name(  # type: ignore[no-any-return]
-            class_name=parsed_module.entity_id, **kwargs
-        )
+        if not parsed_module.entity_id:
+            raise ValueError(
+                f"Only provider {parsed_module.provider_id} was specified. Text Splitter name was not specified."
+            )
+
+        target: type[TextSplitter] = load_module(parsed_module.provider_id, "text_splitter")
+        return target._class_from_name(class_name=parsed_module.entity_id, **kwargs)
 
     @abstractmethod
     async def split_documents(self, documents: list[Document]) -> list[Document]:
-        """
-        Split a list of documents into smaller chunks.
-
-        Parameters
-        ----------
-        documents : list[Document]
-            The documents to split.
-
-        Returns
-        -------
-        list[Document]
-            A list of document chunks.
-        """
+        """Split a list of documents into smaller chunks."""
         raise NotImplementedError("Implement me")
 
     @abstractmethod
     async def split_text(self, text: str) -> list[str]:
-        """
-        Split text into smaller chunks.
+        """Split text into smaller chunks."""
+        raise NotImplementedError("Implement me")
 
-        Parameters
-        ----------
-        text : str
-            The text to split.
-
-        Returns
-        -------
-        list[str]
-            A list of text chunks.
-        """
+    @classmethod
+    @abstractmethod
+    def _class_from_name(cls, class_name: str, **kwargs: Any) -> TextSplitter:
         raise NotImplementedError("Implement me")
