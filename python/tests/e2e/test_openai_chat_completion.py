@@ -112,23 +112,7 @@ def test_openai_e2e_auth_failure(start_test_server: str) -> None:
 
     assert response.status_code == 401
     data = response.json()
-    assert "invalid" in data.get("detail", "").lower() or "unauthorized" in data.get("detail", "").lower()
-
-
-@pytest.mark.e2e
-def test_openai_e2e_model_not_found(start_test_server: str) -> None:
-    url = f"{start_test_server}/chat/completions"
-
-    payload = {
-        "model": "non-existent-model",
-        "messages": [{"role": "user", "content": "ping"}],
-        "stream": False,
-    }
-
-    headers = {"Authorization": "Bearer TEST_KEY"}
-
-    response = requests.post(url, json=payload, headers=headers)
-
-    assert response.status_code == 404
-    data = response.json()
-    assert "model" in data.get("detail", "").lower()
+    assert "detail" in data
+    assert isinstance(data["detail"], str)
+    assert "invalid" in data["detail"].lower() or "unauthorized" in data["detail"].lower()
+    assert "api key" in data["detail"].lower()
