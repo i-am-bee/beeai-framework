@@ -128,5 +128,6 @@ def test_openai_e2e_model_not_found(start_test_server: str) -> None:
 
     response = requests.post(url, json=payload, headers=headers)
 
-    assert response.status_code in [404, 400]
-    assert "model" in response.text.lower()
+    assert response.status_code == 404
+    data = response.json()
+    assert data.get("error", {}).get("code") == "model_not_found"
