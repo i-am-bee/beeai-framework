@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { OllamaProvider } from "ollama-ai-provider";
+import { OllamaProvider } from "ollama-ai-provider-v2";
 import { OllamaClient, OllamaClientSettings } from "@/adapters/ollama/backend/client.js";
 import { VercelEmbeddingModel } from "@/adapters/vercel/backend/embedding.js";
 import { getEnv } from "@/internals/env.js";

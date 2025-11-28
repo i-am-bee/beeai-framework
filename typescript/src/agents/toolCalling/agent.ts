@@ -158,7 +158,7 @@ export class ToolCallingAgent extends BaseAgent<
             throw new AgentError(`Tool ${toolCall.toolName} does not exist!`);
           }
 
-          const toolInput: any = toolCall.args;
+          const toolInput: any = toolCall.input;
           const toolResponse: ToolOutput = await tool.run(toolInput).context({
             state,
             toolCallMsg: toolCall,
@@ -168,8 +168,7 @@ export class ToolCallingAgent extends BaseAgent<
               type: "tool-result",
               toolCallId: toolCall.toolCallId,
               toolName: toolCall.toolName,
-              result: toolResponse.getTextContent(),
-              isError: false,
+              output: { type: "text", value: toolResponse.getTextContent() },
             }),
           );
         } catch (e) {
@@ -180,8 +179,7 @@ export class ToolCallingAgent extends BaseAgent<
                 type: "tool-result",
                 toolCallId: toolCall.toolCallId,
                 toolName: toolCall.toolName,
-                result: e.explain(),
-                isError: true,
+                output: { type: "error-text", value: e.explain() },
               }),
             );
           } else {

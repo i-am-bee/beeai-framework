@@ -269,7 +269,6 @@ const llm = new OpenAIChatModel(
 
 llm.config({
   parameters: {
-    topK: 1,
     temperature: 0,
     topP: 1,
   },
@@ -335,10 +334,10 @@ async function openaiToolCalling() {
   });
   const toolCallMsg = response.getToolCalls()[0];
   console.debug(JSON.stringify(toolCallMsg));
-  const toolResponse = await weatherTool.run(toolCallMsg.args as any);
+  const toolResponse = await weatherTool.run(toolCallMsg.input as any);
   const toolResponseMsg = new ToolMessage({
     type: "tool-result",
-    result: toolResponse.getTextContent(),
+    output: { type: "text", value: toolResponse.getTextContent() },
     toolName: toolCallMsg.toolName,
     toolCallId: toolCallMsg.toolCallId,
   });
@@ -844,10 +843,10 @@ while (true) {
 
   const toolCalls = response.getToolCalls();
   const toolResults = await Promise.all(
-    toolCalls.map(async ({ args, toolName, toolCallId }) => {
-      console.log(`-> running '${toolName}' tool with ${JSON.stringify(args)}`);
+    toolCalls.map(async ({ input, toolName, toolCallId }) => {
+      console.log(`-> running '${toolName}' tool with ${JSON.stringify(input)}`);
       const tool = tools.find((tool) => tool.name === toolName)!;
-      const response: ToolOutput = await tool.run(args as any);
+      const response: ToolOutput = await tool.run(input as any);
       const result = response.getTextContent();
       console.log(
         `<- got response from '${toolName}'`,
@@ -855,8 +854,7 @@ while (true) {
       );
       return new ToolMessage({
         type: "tool-result",
-        result,
-        isError: false,
+        output: { type: "text", value: result },
         toolName,
         toolCallId,
       });
@@ -1216,10 +1214,10 @@ async function langchainToolCalling() {
   const response = await llm.create({ messages: [userMessage], tools: [weatherTool] });
   const toolCallMsg = response.getToolCalls()[0];
   console.debug(JSON.stringify(toolCallMsg));
-  const toolResponse = await weatherTool.run(toolCallMsg.args as any);
+  const toolResponse = await weatherTool.run(toolCallMsg.input as any);
   const toolResponseMsg = new ToolMessage({
     type: "tool-result",
-    result: toolResponse.getTextContent(),
+    output: { type: "text", value: toolResponse.getTextContent() },
     toolName: toolCallMsg.toolName,
     toolCallId: toolCallMsg.toolCallId,
   });
