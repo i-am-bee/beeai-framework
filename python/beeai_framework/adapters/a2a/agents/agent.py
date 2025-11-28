@@ -57,9 +57,10 @@ class A2AAgentOptions(AgentOptions, total=False):
     context_id: str
     task_id: str
     clear_context: bool
-    a2a_context: a2a_client.ClientCallContext | None
+    a2a_context: a2a_client.ClientCallContext
     # The HTTP client should already be opened
-    httpx_client: httpx.AsyncClient | None
+    httpx_client: httpx.AsyncClient
+    streaming: bool
 
 
 class HttpxAsyncClientParameters(BaseModel):
@@ -155,8 +156,8 @@ class A2AAgent(BaseAgent[A2AAgentOutput]):
             # create a2a client
             client: a2a_client.Client = a2a_client.ClientFactory(
                 config=a2a_client.ClientConfig(
-                    streaming=True,
-                    polling=True,
+                    streaming=kwargs.get("streaming", self._agent_card.capabilities.streaming or False),
+                    polling=False,
                     httpx_client=httpx_client,
                     grpc_channel_factory=(
                         lambda url: grpc.aio.secure_channel(url, self._grpc_client_credentials)
@@ -218,6 +219,9 @@ class A2AAgent(BaseAgent[A2AAgentOutput]):
                 # check if we received any event
                 if last_event is None:
                     raise AgentError("No result received from agent.")
+
+                if task and task.status.state is a2a_types.TaskState.completed:
+                    self._task_id = None
 
                 # insert input into memory
                 input_messages = [input] if not isinstance(input, list) else input
