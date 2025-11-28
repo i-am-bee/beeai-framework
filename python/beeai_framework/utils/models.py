@@ -71,6 +71,9 @@ class JSONSchemaModel(ABC, BaseModel):
     @classmethod
     def create(cls, schema_name: str, schema: dict[str, Any]) -> type["JSONSchemaModel"]:
         from beeai_framework.backend.utils import inline_schema_refs
+        from beeai_framework.logger import Logger
+
+        logger = Logger(__name__)
 
         schema = inline_schema_refs(copy.deepcopy(schema))
         simplify_json_schema(schema)
@@ -88,10 +91,6 @@ class JSONSchemaModel(ABC, BaseModel):
         fields: dict[str, tuple[type, FieldInfo]] = {}
 
         def create_field(param_name: str, param: dict[str, Any], required: set[str]) -> tuple[type, Any]:
-            from beeai_framework.logger import Logger
-
-            logger = Logger(__name__)
-
             any_of = param.get("anyOf")
             one_of = param.get("oneOf")
             default = param.get("default")
