@@ -45,20 +45,30 @@ Here's a simple example that uses the built-in `chat` agent:
 	    reader = ConsoleReader()
 	
 	    agents = await AgentStackAgent.from_agent_stack(url="http://127.0.0.1:8333", memory=UnconstrainedMemory())
-	    agent_name = "Framework chat agent"
-	    try:
-	        agent = next(agent for agent in agents if agent.name == agent_name)
-	    except StopIteration:
-	        raise ValueError(f"Agent with name `{agent_name}` not found") from None
+	    reader.write("Prompt: ", "Select one of the available agents:\n")
+	    while True:
+	        for index, agent in enumerate(agents):
+	            reader.write("AgentStack: ", f"{index}) {agent.name} - {agent.meta.description}")
 	
+	        agents_index = reader.ask_single_question("Write agent's number: ")
+	        try:
+	            agent = next(agent for index, agent in enumerate(agents) if index == int(agents_index))
+	        except StopIteration:
+	            agent = None  # type: ignore[assignment]
+	            reader.write("AgentStack (error) : ", f"Agent with index `{agents_index}` not found\n")
+	
+	        if agent is not None:
+	            break
+	
+	    reader.write("AgentStack: ", f"Selected {agent.name}:\n")
 	    for prompt in reader:
 	        # Run the agent and observe events
 	        response = await agent.run(prompt).on(
 	            "update",
-	            lambda data, event: (reader.write("Agent 🤖 (debug) : ", data)),
+	            lambda data, event: (reader.write(f"{agent.name} 🤖 (debug) : ", data)),
 	        )
 	
-	        reader.write("Agent 🤖 : ", response.last_message.text)
+	        reader.write(f"{agent.name} Agent 🤖 : ", response.last_message.text)
 	
 	
 	if __name__ == "__main__":
