@@ -5,13 +5,11 @@ from typing import Any
 
 from pydantic import BaseModel, Field
 
-from beeai_framework.logger import Logger
 from beeai_framework.utils.dicts import exclude_none
 from beeai_framework.utils.lists import remove_falsy
 
 Schema = dict[str, Any]
 
-logger = Logger(__name__)
 
 __all__ = ["SimplifyJsonSchemaConfig", "simplify_json_schema"]
 
@@ -28,6 +26,9 @@ class SimplifyJsonSchemaConfig(BaseModel):
 
 
 def _simplify(schema: Schema, path: list[str], config: SimplifyJsonSchemaConfig) -> Any:
+    from beeai_framework.logger import Logger
+
+    logger = Logger(__name__)
     logger.debug("Visiting:", ".".join(path))
     if not isinstance(schema, dict) or not schema:
         return schema

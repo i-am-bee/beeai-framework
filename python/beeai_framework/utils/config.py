@@ -1,5 +1,6 @@
 # Copyright 2025 © BeeAI a Series of LF Projects, LLC
 # SPDX-License-Identifier: Apache-2.0
+import os
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -13,7 +14,7 @@ class Settings(BaseSettings):
         extra="ignore",
     )
 
-    log_level: str = "INFO"
+    log_level: str = os.getenv("BEEAI_LOG_LEVEL", "INFO")
 
 
 CONFIG = Settings()
