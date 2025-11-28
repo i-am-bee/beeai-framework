@@ -80,7 +80,7 @@ outputs = { auto = true }
 ["typescript:build"]
 depends = ["typescript:setup", "typescript:check:tsc"]
 dir = "{{config_root}}/typescript"
-run = "rm -rf dist && NODE_OPTIONS='--max-old-space-size=8192' yarn tsup"
+run = "rm -rf dist && NODE_OPTIONS='--max-old-space-size=16384' yarn tsup"
 sources = ["src/**/*.ts", "tests/**/*.ts", "examples/**/*.ts", "*.json", "tsup.config.ts"]
 outputs = { auto = true }
 
