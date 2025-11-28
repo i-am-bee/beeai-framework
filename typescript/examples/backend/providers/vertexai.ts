@@ -84,10 +84,10 @@ async function googleVertexToolCalling() {
     toolChoice: weatherTool,
   });
   const toolCallMsg = response.getToolCalls()[0];
-  const toolResponse = await weatherTool.run(toolCallMsg.args as any);
+  const toolResponse = await weatherTool.run(toolCallMsg.input as any);
   const toolResponseMsg = new ToolMessage({
     type: "tool-result",
-    result: toolResponse.getTextContent(),
+    output: { type: "text", value: toolResponse.getTextContent() },
     toolName: toolCallMsg.toolName,
     toolCallId: toolCallMsg.toolCallId,
   });
