@@ -139,7 +139,7 @@ module = ["deepeval.*", "deepeval"]
 implicit_reexport = true
 
 [[tool.mypy.overrides]]
-module = ["llama-index", "llama-index.*", "llama-index.core.llama_dataset", "llama_index", "llama_index.*"]
+module = ["llama-index", "llama-index.*", "llama-index.core.llama_dataset", "llama_index", "llama_index.*", "llm_guard", "llm_guard.*"]
 ignore_errors = true
 ignore_missing_imports = true
 
