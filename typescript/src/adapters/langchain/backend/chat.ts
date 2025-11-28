@@ -12,7 +12,6 @@ import {
   ChatModelObjectOutput,
   ChatModelOutput,
   ChatModelParameters,
-  ChatModelUsage,
 } from "@/backend/chat.js";
 import { RunContext } from "@/context.js";
 import { Emitter } from "@/emitter/emitter.js";
@@ -113,15 +112,18 @@ export class LangChainChatModel extends ChatModel {
       );
     }
 
-    const usage: ChatModelUsage = {
-      totalTokens: output.usage_metadata?.total_tokens ?? 0,
-      promptTokens: output.usage_metadata?.input_tokens ?? 0,
-      completionTokens: output.usage_metadata?.output_tokens ?? 0,
-    };
-
     const stop: ChatModelFinishReason = output.response_metadata.stop_sequence || "stop";
-
-    return new ChatModelOutput(messages, usage, stop);
+    return new ChatModelOutput(
+      messages,
+      {
+        totalTokens: output.usage_metadata?.total_tokens ?? 0,
+        promptTokens: output.usage_metadata?.input_tokens ?? 0,
+        completionTokens: output.usage_metadata?.output_tokens ?? 0,
+        reasoningTokens: output.usage_metadata?.output_token_details?.reasoning,
+        cachedPromptTokens: output.usage_metadata?.input_token_details?.cache_read,
+      },
+      stop,
+    );
   }
 
   protected async _createStructure<T>(

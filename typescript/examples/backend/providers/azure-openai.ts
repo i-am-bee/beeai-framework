@@ -20,7 +20,6 @@ const llm = new AzureOpenAIChatModel(
 
 llm.config({
   parameters: {
-    topK: 1,
     temperature: 0,
     topP: 1,
   },

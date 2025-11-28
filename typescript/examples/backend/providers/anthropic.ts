@@ -17,7 +17,6 @@ const llm = new AnthropicChatModel(
 
 llm.config({
   parameters: {
-    topK: 1,
     temperature: 0,
     topP: 1,
   },

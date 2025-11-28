@@ -13,17 +13,18 @@ import {
 } from "@/backend/chat.js";
 import {
   CoreAssistantMessage,
-  CoreMessage,
+  ModelMessage,
   CoreToolMessage,
   generateObject,
   generateText,
   jsonSchema,
-  LanguageModelV1,
+  LanguageModel as _LanguageModel,
   streamText,
   TextPart,
   ToolCallPart,
   ToolChoice,
 } from "ai";
+type LanguageModelV2 = Exclude<_LanguageModel, string>;
 import { Emitter } from "@/emitter/emitter.js";
 import {
   AssistantMessage,
@@ -40,10 +41,10 @@ import { FullModelName } from "@/backend/utils.js";
 import { ChatModelError } from "@/backend/errors.js";
 import { z, ZodArray, ZodEnum, ZodSchema } from "zod";
 import { Tool } from "@/tools/base.js";
-import { encodeCustomMessage } from "@/adapters/vercel/backend/utils.js";
+import { encodeCustomMessage, extractTokenUsage } from "@/adapters/vercel/backend/utils.js";
 
 export abstract class VercelChatModel<
-  M extends LanguageModelV1 = LanguageModelV1,
+  M extends LanguageModelV2 = LanguageModelV2,
 > extends ChatModel {
   public readonly emitter: Emitter<ChatModelEvents>;
   public readonly supportsToolStreaming: boolean = true;
@@ -87,14 +88,18 @@ export abstract class VercelChatModel<
       response: { messages },
     } = await generateText(await this.transformInput(input));
 
-    return new ChatModelOutput(this.transformMessages(messages), usage, finishReason);
+    return new ChatModelOutput(
+      this.transformMessages(messages),
+      extractTokenUsage(usage),
+      finishReason,
+    );
   }
 
   protected async _createStructure<T>(
     { schema, ...input }: ChatModelObjectInput<T>,
     run: GetRunContext<this>,
   ): Promise<ChatModelObjectOutput<T>> {
-    const response = await generateObject<T>({
+    const response = await generateObject({
       temperature: 0,
       ...(await this.transformInput(input)),
       abortSignal: run.signal,
@@ -116,10 +121,10 @@ export abstract class VercelChatModel<
     });
 
     return {
-      object: response.object,
+      object: response.object as T,
       output: new ChatModelOutput(
         [new AssistantMessage(JSON.stringify(response.object, null, 2))],
-        response.usage,
+        extractTokenUsage(response.usage),
         response.finishReason,
       ),
     };
@@ -132,7 +137,12 @@ export abstract class VercelChatModel<
       return;
     }
 
-    const { fullStream, usage, finishReason, response } = streamText({
+    const {
+      fullStream,
+      usage: usagePromise,
+      finishReason: finishReasonPromise,
+      response: responsePromise,
+    } = streamText({
       ...(await this.transformInput(input)),
       abortSignal: run.signal,
     });
@@ -142,36 +152,31 @@ export abstract class VercelChatModel<
       let message: Message;
       switch (event.type) {
         case "text-delta":
-          message = new AssistantMessage(event.textDelta);
+          message = new AssistantMessage(event.text);
           break;
         case "tool-call":
           message = new AssistantMessage({
             type: event.type,
             toolCallId: event.toolCallId,
             toolName: event.toolName,
-            args: event.args,
+            input: event.input,
           });
           break;
         case "error":
           throw new ChatModelError("Unhandled error", [event.error as Error]);
-        case "step-finish":
-        case "step-start":
-          continue;
         case "tool-result":
           message = new ToolMessage({
             type: event.type,
             toolCallId: event.toolCallId,
             toolName: event.toolName,
-            result: event.result,
+            output: event.output as any,
           });
           break;
-        case "tool-call-streaming-start":
-        case "tool-call-delta":
-          continue;
-        case "finish":
-          continue;
+        case "abort":
+          message = new AssistantMessage([]);
+          break;
         default:
-          throw new Error(`Unhandled event "${event.type}"`);
+          continue;
       }
       lastChunk = new ChatModelOutput([message]);
       yield lastChunk;
@@ -180,9 +185,20 @@ export abstract class VercelChatModel<
     if (!lastChunk) {
       throw new ChatModelError("No chunks have been received!");
     }
-    lastChunk.usage = await usage;
-    lastChunk.finishReason = await finishReason;
-    await response;
+
+    try {
+      const [usage, finishReason, _] = await Promise.all([
+        usagePromise,
+        finishReasonPromise,
+        responsePromise,
+      ]);
+      lastChunk.usage = extractTokenUsage(usage);
+      lastChunk.finishReason = finishReason;
+    } catch (e) {
+      if (!run.signal.aborted) {
+        throw e;
+      }
+    }
   }
 
   protected async transformInput(
@@ -192,11 +208,11 @@ export abstract class VercelChatModel<
       (input.tools ?? []).map(async (tool) => ({
         name: tool.name,
         description: tool.description,
-        parameters: jsonSchema(await tool.getInputJsonSchema()),
+        inputSchema: jsonSchema(await tool.getInputJsonSchema()),
       })),
     );
 
-    const messages = input.messages.map((msg): CoreMessage => {
+    const messages = input.messages.map((msg): ModelMessage => {
       if (msg instanceof CustomMessage) {
         msg = encodeCustomMessage(msg);
       }
@@ -210,7 +226,7 @@ export abstract class VercelChatModel<
       } else if (msg instanceof SystemMessage) {
         return { role: "system", content: msg.content.map((part) => part.text).join("\n") };
       }
-      return { role: msg.role, content: msg.content } as CoreMessage;
+      return { role: msg.role, content: msg.content } as ModelMessage;
     });
 
     let toolChoice: ToolChoice<Record<string, any>> | undefined;

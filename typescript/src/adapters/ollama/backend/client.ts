@@ -4,7 +4,7 @@
  */
 
 import { getEnv } from "@/internals/env.js";
-import { createOllama, OllamaProvider, OllamaProviderSettings } from "ollama-ai-provider";
+import { createOllama, OllamaProvider, OllamaProviderSettings } from "ollama-ai-provider-v2";
 import { BackendClient } from "@/backend/client.js";
 import { parseHeadersFromEnv, vercelFetcher } from "@/adapters/vercel/backend/utils.js";
 

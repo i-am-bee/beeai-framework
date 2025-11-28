@@ -31,6 +31,11 @@ import { parseBrokenJson } from "@/internals/helpers/schema.js";
 import { getEnv } from "@/internals/env.js";
 import { NotImplementedError } from "@/errors.js";
 import { Tool } from "@/tools/base.js";
+import type {
+  TextChatMessageAssistant,
+  TextChatMessageSystem,
+  TextChatMessageTool,
+} from "@ibm-cloud/watsonx-ai";
 
 export class WatsonxChatModel extends ChatModel {
   protected readonly client: WatsonxClient;
@@ -119,7 +124,7 @@ export class WatsonxChatModel extends ChatModel {
                   type: "tool-call",
                   toolCallId: call.id,
                   toolName: call.function.name,
-                  args: parseBrokenJson(call.function.arguments),
+                  input: parseBrokenJson(call.function.arguments),
                 }),
               ),
             );
@@ -169,31 +174,46 @@ export class WatsonxChatModel extends ChatModel {
       modelId: this.modelId,
       messages: input.messages.flatMap((message): TextChatMessages[] => {
         if (message instanceof ToolMessage) {
-          return message.content.map((content) => ({
-            role: "tool",
-            content: JSON.stringify(content.result),
-            tool_call_id: content.toolCallId,
-          }));
+          return message.content.map(
+            (content): TextChatMessageTool => ({
+              role: "tool",
+              content:
+                typeof content.output.value === "string"
+                  ? content.output.value
+                  : JSON.stringify(content),
+              tool_call_id: content.toolCallId,
+            }),
+          );
         } else if (message instanceof SystemMessage) {
-          return message.content.map((content) => ({
-            role: "system",
-            content: content.text,
-          }));
-        } else if (message instanceof AssistantMessage) {
-          return message.content.map((content) => ({
-            role: "assistant",
-            ...(content.type === "text" && {
+          return message.content.map(
+            (content): TextChatMessageSystem => ({
+              role: "system",
               content: content.text,
             }),
-            ...(content.type === "tool-call" && {
-              id: content.toolCallId,
-              type: "function",
-              function: {
-                name: content.toolName,
-                arguments: JSON.stringify(content.args),
-              },
+          );
+        } else if (message instanceof AssistantMessage) {
+          return message.content.map(
+            (content): TextChatMessageAssistant => ({
+              role: "assistant",
+              ...(content.type === "text" && {
+                content: content.text,
+              }),
+              ...(content.type === "tool-call" && {
+                id: content.toolCallId,
+                type: "function",
+                function: {
+                  name: content.toolName,
+                  arguments: JSON.stringify(content.input),
+                },
+              }),
+              ...(() => {
+                if (content.type === "file") {
+                  throw new Error("Assistants cannot send a file in IBM watsonx");
+                }
+                return {};
+              })(),
             }),
-          }));
+          );
         } else {
           return [message.toPlain()];
         }

@@ -8,6 +8,10 @@ import { shallowCopy } from "@/serializer/utils.js";
 import { FilePart, ImagePart, TextPart, ToolCallPart, ToolResultPart } from "ai";
 import { z } from "zod";
 import { ValueError } from "@/errors.js";
+import { hasProp, popProp, safeDefineProperty } from "@/internals/helpers/object.js";
+import { Logger } from "@/logger/logger.js";
+import { isString } from "remeda";
+import { watchArray } from "@/internals/helpers/array.js";
 
 export type MessageRole = "user" | "system" | "tool" | "assistant";
 export type MessageContentPart = TextPart | ToolCallPart | ImagePart | FilePart | ToolResultPart;
@@ -59,7 +63,15 @@ export abstract class Message<
     } else {
       this.content = Array.isArray(content) ? content : [content];
     }
+    for (const chunk of this.content) {
+      this.assertContent(chunk);
+    }
+    this.content = watchArray(this.content, {
+      onAdd: this.assertContent,
+    });
   }
+
+  protected assertContent(content: T): asserts content is T {}
 
   protected abstract fromString(input: string): T;
 
@@ -129,6 +141,29 @@ export class AssistantMessage extends Message<TextPart | ToolCallPart | FilePart
   protected fromString(text: string): TextPart {
     return { type: "text", text };
   }
+
+  protected assertContent(
+    content: TextPart | ToolCallPart | FilePart,
+  ): asserts content is TextPart | ToolCallPart | FilePart {
+    if (content.type === "tool-call") {
+      const key = "args";
+      const args = popProp(content as any, key);
+
+      if (args !== null && !hasProp(content, "input")) {
+        Logger.root.warn(
+          `The '${key}' property in the AssistantMessage class is deprecated and will be removed. Use the 'input' property for Tool Call content chunks instead.`,
+        );
+        content.input = args;
+      }
+
+      safeDefineProperty(content, key as keyof typeof content, () => {
+        Logger.root.warn(
+          `The '${key}' property in the Tool Call is deprecated and will be removed. Use the 'input' property instead.`,
+        );
+        return content.input;
+      });
+    }
+  }
 }
 
 export class ToolMessage extends Message<ToolResultPart> {
@@ -143,20 +178,49 @@ export class ToolMessage extends Message<ToolResultPart> {
   }
 
   protected fromString(text: string): ToolResultPart {
-    const { success, data } = z
+    const schema = z
       .object({
         type: z.literal("tool-result"),
-        result: z.any(),
         toolName: z.string(),
         toolCallId: z.string(),
       })
-      .safeParse(text);
+      .and(z.object({ output: z.any() }).or(z.object({ result: z.any() })));
 
+    const { success, data } = schema.safeParse(text);
     if (!success) {
       throw new ValueError(`ToolMessage cannot be created from '${text}'!`);
     }
 
     return data as ToolResultPart;
+  }
+
+  protected assertContent(content: ToolResultPart): asserts content is ToolResultPart {
+    const result = popProp(content as any, "result", null);
+    const isError = popProp(content as any, "isError", false);
+
+    if (result !== null && !hasProp(content, "output")) {
+      Logger.root.warn(
+        "The 'result' property in the ToolMessage class is deprecated and will be removed. Use the 'output' property for content chunks instead.",
+      );
+      if (isString(result)) {
+        content.output = { type: isError ? "error-text" : "text", value: result };
+      } else {
+        content.output = { type: isError ? "error-json" : "json", value: result };
+      }
+    }
+
+    safeDefineProperty(content, "result" as any, () => {
+      Logger.root.warn(
+        "The 'result' property of Tool Message is deprecated and will be removed. Use the 'output.value' property instead.",
+      );
+      return content.output.value as any;
+    });
+    safeDefineProperty(content, "isError" as any, () => {
+      Logger.root.warn(
+        "The 'isError' property of Tool Message is deprecated and will be removed. Use the 'output.type' property instead.",
+      );
+      return content.output.type.includes("error");
+    });
   }
 }
 

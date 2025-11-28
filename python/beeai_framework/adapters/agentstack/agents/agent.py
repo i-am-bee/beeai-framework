@@ -59,6 +59,7 @@ class AgentStackAgentOptions(AgentOptions, total=False):
     """
     User can specify custom client to be used for the request.
     """
+    streaming: bool
 
 
 class AgentStackAgent(BaseAgent[AgentStackAgentOutput]):
