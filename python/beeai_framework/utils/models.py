@@ -13,11 +13,8 @@ from pydantic.fields import FieldInfo
 from pydantic.json_schema import JsonSchemaValue
 from pydantic_core import CoreSchema, SchemaValidator
 
-from beeai_framework.logger import Logger
 from beeai_framework.utils.dicts import remap_key
 from beeai_framework.utils.schema import simplify_json_schema
-
-logger = Logger(__name__)
 
 T = TypeVar("T", bound=BaseModel)
 ModelLike = Union[T, dict[str, Any]]  # noqa: UP007
@@ -74,6 +71,9 @@ class JSONSchemaModel(ABC, BaseModel):
     @classmethod
     def create(cls, schema_name: str, schema: dict[str, Any]) -> type["JSONSchemaModel"]:
         from beeai_framework.backend.utils import inline_schema_refs
+        from beeai_framework.logger import Logger
+
+        logger = Logger(__name__)
 
         schema = inline_schema_refs(copy.deepcopy(schema))
         simplify_json_schema(schema)
