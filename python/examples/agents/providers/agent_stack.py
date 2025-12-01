@@ -12,20 +12,28 @@ async def main() -> None:
     reader = ConsoleReader()
 
     agents = await AgentStackAgent.from_agent_stack(url="http://127.0.0.1:8333", memory=UnconstrainedMemory())
-    reader.write("Prompt: ", "Select one of the available agents:\n")
-    while True:
-        for index, agent in enumerate(agents):
-            reader.write("AgentStack: ", f"{index}) {agent.name} - {agent.meta.description}")
+    if len(agents) > 1:
+        reader.write("Prompt: ", "Select one of the available agents:\n")
+        while True:
+            for index, agent in enumerate(agents):
+                reader.write("AgentStack: ", f"{index}) {agent.name} - {agent.meta.description}")
 
-        agents_index = reader.ask_single_question("Write agent's number: ")
-        try:
-            agent = next(agent for index, agent in enumerate(agents) if index == int(agents_index))
-        except StopIteration:
-            agent = None  # type: ignore[assignment]
-            reader.write("AgentStack (error) : ", f"Agent with index `{agents_index}` not found\n")
+            agents_index = reader.ask_single_question("Write agent's number: ")
+            try:
+                agent = agents[int(agents_index)]
+                if agent:
+                    break
 
-        if agent is not None:
-            break
+            except (ValueError, IndexError):
+                reader.write(
+                    "AgentStack (error) : ",
+                    f"Invalid selection: `{agents_index}`. Please enter a valid agent number.\n",
+                )
+    elif len(agents) == 1:
+        agent = agents[0]
+    else:
+        reader.write("AgentStack (error) : ", "No agent registered within the agent stack.\n")
+        exit(0)
 
     reader.write("AgentStack: ", f"Selected {agent.name}:\n")
     for prompt in reader:
