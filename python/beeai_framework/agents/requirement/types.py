@@ -24,7 +24,7 @@ from beeai_framework.backend import (
     AssistantMessage,
     UserMessage,
 )
-from beeai_framework.backend.types import ChatModelToolChoice
+from beeai_framework.backend.types import ChatModelToolChoice, ChatModelUsage
 from beeai_framework.errors import FrameworkError
 from beeai_framework.memory import BaseMemory
 from beeai_framework.template import PromptTemplate
@@ -67,6 +67,7 @@ class RequirementAgentRunState(BaseModel):
     memory: InstanceOf[BaseMemory]
     iteration: int
     steps: list[RequirementAgentRunStateStep] = []
+    usage: ChatModelUsage | None = None
 
     @property
     def input(self) -> UserMessage:

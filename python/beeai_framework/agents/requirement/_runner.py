@@ -121,6 +121,15 @@ class RequirementAgentRunner:
             tool_choice=request.tool_choice,
             stream_partial_tool_calls=True,
         ).middleware(stream_middleware)
+
+        if self._state.usage is not None:
+            if response.usage is not None:
+                self._state.usage.prompt_tokens += response.usage.prompt_tokens
+                self._state.usage.completion_tokens += response.usage.completion_tokens
+                self._state.usage.total_tokens += response.usage.total_tokens
+        else:
+            self._state.usage = response.usage
+
         stream_middleware.unbind()
         return response
 
