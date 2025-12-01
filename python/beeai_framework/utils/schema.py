@@ -1,12 +1,15 @@
 # Copyright 2025 © BeeAI a Series of LF Projects, LLC
 # SPDX-License-Identifier: Apache-2.0
 
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from pydantic import BaseModel, Field
 
 from beeai_framework.utils.dicts import exclude_none
 from beeai_framework.utils.lists import remove_falsy
+
+if TYPE_CHECKING:
+    from beeai_framework.logger import Logger
 
 Schema = dict[str, Any]
 
@@ -24,7 +27,7 @@ class SimplifyJsonSchemaConfig(BaseModel):
     )
 
 
-def _simplify(schema: Schema, path: list[str], config: SimplifyJsonSchemaConfig, *, logger: Any) -> Any:
+def _simplify(schema: Schema, path: list[str], config: SimplifyJsonSchemaConfig, *, logger: "Logger") -> Any:
     logger.debug("Visiting:", ".".join(path))
     if not isinstance(schema, dict) or not schema:
         return schema
