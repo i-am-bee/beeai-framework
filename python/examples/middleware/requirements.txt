@@ -1,1 +1,1 @@
-llm-guard
+llm-guard==0.3.16

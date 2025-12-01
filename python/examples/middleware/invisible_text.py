@@ -1,18 +1,17 @@
 import asyncio
 import sys
 import traceback
-from typing import Any
 
 try:
     from llm_guard.input_scanners import InvisibleText
 except ImportError:
     print("The 'llm-guard' package is NOT installed. Run 'pip install -r examples/middleware/requirements.txt'.")
 
-from beeai_framework.agents import AgentOutput
+from beeai_framework.agents import AgentOutput, BaseAgent
 from beeai_framework.agents.requirement import RequirementAgent
 from beeai_framework.backend import AssistantMessage, ChatModel
 from beeai_framework.context import RunContext, RunContextStartEvent, RunMiddlewareProtocol
-from beeai_framework.emitter import EmitterOptions, EventMeta
+from beeai_framework.emitter import CleanupFn, EmitterOptions, EventMeta
 from beeai_framework.emitter.utils import create_internal_event_matcher
 from beeai_framework.errors import FrameworkError
 from beeai_framework.memory import UnconstrainedMemory
@@ -29,9 +28,13 @@ class InvisibleTextDetectionMiddleware(RunMiddlewareProtocol):
         self.custom_response = (
             custom_response or "Sorry, I detected invisible text in the input and cannot process your request."
         )
-        self._cleanup_functions: list[Any] = []
+        self._cleanup_functions: list[CleanupFn] = []
 
     def bind(self, ctx: RunContext) -> None:
+        # Check if instance is an agent
+        if not isinstance(ctx.instance, BaseAgent):
+            raise ValueError("Instance is not an agent")
+
         # Clean up any existing event listeners
         while self._cleanup_functions:
             self._cleanup_functions.pop(0)()

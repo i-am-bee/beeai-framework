@@ -1,7 +1,6 @@
 import asyncio
 import sys
 import traceback
-from typing import Any
 
 try:
     from llm_guard.input_scanners import Secrets
@@ -10,11 +9,11 @@ except ImportError:
 
 from typing import Literal, TypeAlias
 
-from beeai_framework.agents import AgentOutput
+from beeai_framework.agents import AgentOutput, BaseAgent
 from beeai_framework.agents.requirement import RequirementAgent
 from beeai_framework.backend import AnyMessage, AssistantMessage, ChatModel, UserMessage
 from beeai_framework.context import RunContext, RunContextStartEvent, RunMiddlewareProtocol
-from beeai_framework.emitter import EmitterOptions, EventMeta
+from beeai_framework.emitter import CleanupFn, EmitterOptions, EventMeta
 from beeai_framework.emitter.utils import create_internal_event_matcher
 from beeai_framework.errors import FrameworkError
 from beeai_framework.memory import UnconstrainedMemory
@@ -37,9 +36,13 @@ class SecretsDetectionMiddleware(RunMiddlewareProtocol):
         self.custom_response = (
             custom_response or "Sorry, I detected a secret in the input and cannot process your request."
         )
-        self._cleanup_functions: list[Any] = []
+        self._cleanup_functions: list[CleanupFn] = []
 
     def bind(self, ctx: RunContext) -> None:
+        # Check if instance is an agent
+        if not isinstance(ctx.instance, BaseAgent):
+            raise ValueError("Instance is not an agent")
+
         # Clean up any existing event listeners
         while self._cleanup_functions:
             self._cleanup_functions.pop(0)()
