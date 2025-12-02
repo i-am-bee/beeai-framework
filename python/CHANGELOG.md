@@ -1,3 +1,13 @@
+## python_v0.1.70 (2025-11-26)
+
+### Bug Fixes
+
+- **adapters**: langchain text_splitter types and refactor (#1327)
+
+### Features
+
+- **adapters**: improve error handling for Groq
+
 ## python_v0.1.69 (2025-11-25)
 
 ### Bug Fixes

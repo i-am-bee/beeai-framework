@@ -20,42 +20,41 @@ __all__ = ["QueryLike", "VectorStore"]
 
 class VectorStore(ABC):
     @classmethod
-    @abstractmethod
-    def _class_from_name(cls, class_name: str, embedding_model: EmbeddingModel, **kwargs: Any) -> VectorStore:
-        raise NotImplementedError("Implement me")
-
-    @classmethod
     def from_name(cls, name: str, *, embedding_model: EmbeddingModel, **kwargs: Any) -> VectorStore:
         """
         Import and instantiate a VectorStore class dynamically.
 
-        Parameters
-        ----------
-        name : str
-            A *case sensitive* string in the format "integration:ClassName".
-            - `integration` is the name of the Python package namespace (e.g. "langchain").
-            - `ClassName` is the name of the vector store class to load (e.g. "Milvus").
+        Args:
+            name:
+                A *case-sensitive* string in the format "integration:ClassName".
+                - `integration` is the name of the Python package namespace (e.g. "langchain").
+                - `ClassName` is the name of the vector store class to load (e.g. "Milvus").
+            embedding_model:
+                An instance of the embedding model required to initialize the vector store.
+            **kwargs:
+                Additional positional or keyword arguments to be passed to the class.
 
-        embedding_model : EmbeddingModel
-            An instance of the embedding model required to initialize the vector store.
+        Returns:
+            VectorStore:
+                An instantiated vector store object of the requested class.
 
-        **kwargs :
-            any positional or keywords arguments that would be passed to the class
-
-        Returns
-        -------
-        VectorStore
-            An instantiated vector store object of the requested class.
-
-        Raises
-        ------
-        ImportError
-            If the specified class cannot be found in any known integration package.
+        Raises:
+            ImportError:
+                If the specified class cannot be found in any known integration package.
+            ValueError:
+                If the provided name is not in the required "integration:ClassName" format.
         """
         parsed_module = parse_module(name)
-        TargetVectorStore = load_module(parsed_module.provider_id, "vector_store")  # type: ignore # noqa: N806
-        return TargetVectorStore._class_from_name(  # type: ignore[no-any-return]
-            class_name=parsed_module.entity_id, embedding_model=embedding_model, **kwargs
+        if not parsed_module.entity_id:
+            raise ValueError(
+                f"Only provider {parsed_module.provider_id} was specified. Vector Store name was not specified."
+            )
+
+        target: type[VectorStore] = load_module(parsed_module.provider_id, "vector_store")
+        return target._class_from_name(
+            class_name=parsed_module.entity_id,
+            embedding_model=embedding_model,
+            **kwargs,
         )
 
     @abstractmethod
@@ -64,4 +63,9 @@ class VectorStore(ABC):
 
     @abstractmethod
     async def search(self, query: QueryLike, k: int = 4, **kwargs: Any) -> list[DocumentWithScore]:
+        raise NotImplementedError("Implement me")
+
+    @classmethod
+    @abstractmethod
+    def _class_from_name(cls, class_name: str, embedding_model: EmbeddingModel, **kwargs: Any) -> VectorStore:
         raise NotImplementedError("Implement me")

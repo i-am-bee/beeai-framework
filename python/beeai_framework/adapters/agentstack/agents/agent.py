@@ -45,7 +45,7 @@ from beeai_framework.backend.message import AnyMessage
 from beeai_framework.context import RunContext
 from beeai_framework.emitter import Emitter
 from beeai_framework.emitter.emitter import EventMeta
-from beeai_framework.memory import BaseMemory
+from beeai_framework.memory import BaseMemory, UnconstrainedMemory
 from beeai_framework.runnable import runnable_entry
 from beeai_framework.utils.strings import to_safe_word
 
@@ -59,6 +59,7 @@ class AgentStackAgentOptions(AgentOptions, total=False):
     """
     User can specify custom client to be used for the request.
     """
+    streaming: bool
 
 
 class AgentStackAgent(BaseAgent[AgentStackAgentOutput]):
@@ -203,8 +204,14 @@ class AgentStackAgent(BaseAgent[AgentStackAgentOutput]):
 
     @classmethod
     async def from_agent_stack(
-        cls, url: str | PlatformClient | None, memory: BaseMemory, *, states: set[AgentStackAgentStatus] | None = None
+        cls,
+        url: str | PlatformClient | None = None,
+        memory: BaseMemory | None = None,
+        *,
+        states: set[AgentStackAgentStatus] | None = None,
     ) -> list["AgentStackAgent"]:
+        if memory is None:
+            memory = UnconstrainedMemory()
         if states is None:
             states = {s for s in AgentStackAgentStatus if s != AgentStackAgentStatus.OFFLINE}
 

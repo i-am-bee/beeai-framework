@@ -150,7 +150,7 @@ export class OpenMeteoTool extends Tool<OpenMeteoToolOutput, ToolOptions, ToolRu
       const extractLocation = async (): Promise<Location> => {
         if ("name" in location) {
           const response = await this._geocode(location, run.signal);
-          return pick(response, ["latitude", "longitude"]);
+          return pick(response, ["latitude", "longitude"]) as Location;
         }
         return location;
       };
