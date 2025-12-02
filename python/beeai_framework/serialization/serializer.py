@@ -22,7 +22,7 @@ class SerializerError(RuntimeError):
 class _SerializerFactory:
     ref: type[Any]
     to_plain: Callable[[Any], Any]
-    from_plain: Callable[[Any], Any]
+    from_plain: Callable[[Any, type[Any]], Any]
     create_empty: Callable[[], Any] | None = None
     update_instance: Callable[[Any, Any], Any] | None = None
 
@@ -33,7 +33,6 @@ class Serializer:
     _factories: ClassVar[dict[str, _SerializerFactory]] = {}
     _type_to_name: ClassVar[dict[type[Any], str]] = {}
     version: ClassVar[str] = "0.0.0"
-    _NOT_HANDLED = object()
 
     @staticmethod
     def _class_name(ref: type[Any]) -> str:
@@ -53,7 +52,7 @@ class Serializer:
         ref: type[Any],
         *,
         to_plain: Callable[[Any], Any],
-        from_plain: Callable[[Any], Any],
+        from_plain: Callable[[Any, type[Any]], Any],
         create_empty: Callable[[], Any] | None = None,
         update_instance: Callable[[Any, Any], Any] | None = None,
         aliases: Iterable[str] | None = None,
@@ -92,7 +91,7 @@ class Serializer:
         cls.register(
             ref,
             to_plain=lambda instance: instance.create_snapshot(),
-            from_plain=lambda snapshot: ref.from_snapshot(snapshot),
+            from_plain=lambda snapshot, factory_ref: factory_ref.from_snapshot(snapshot),
             create_empty=lambda: object.__new__(ref),
             update_instance=lambda instance, snapshot: instance.load_snapshot(snapshot),
             aliases=aliases,
@@ -231,10 +230,7 @@ class Serializer:
                     return seen[ref_id]
 
                 if class_name not in cls._factories:
-                    decoded = cls._decode_builtin(class_name, value, seen)
-                    if decoded is cls._NOT_HANDLED:
-                        raise SerializerError(f'Class "{class_name}" was not registered.')
-                    return decoded
+                    raise SerializerError(f'Class "{class_name}" was not registered.')
 
                 factory = cls._factories[class_name]
                 payload = value.get("__value")
@@ -255,7 +251,7 @@ class Serializer:
                     return instance
 
                 decoded_payload = cls._decode(payload, seen) if payload is not None else None
-                instance = factory.from_plain(decoded_payload)
+                instance = factory.from_plain(decoded_payload, factory.ref)
                 if ref_id is not None:
                     seen[ref_id] = instance
                 return instance
@@ -263,94 +259,6 @@ class Serializer:
             return {key: cls._decode(item, seen) for key, item in value.items()}
 
         return value
-
-    @classmethod
-    def _decode_builtin(cls, class_name: str, raw: Mapping[str, Any], seen: dict[str, Any]) -> Any:
-        payload = raw.get("__value")
-        ref_id = raw.get("__ref")
-
-        def remember(value: Any) -> Any:
-            if ref_id is not None:
-                seen[ref_id] = value
-            return value
-
-        if class_name in {"Undefined", "Null"}:
-            return remember(None)
-        if class_name == "Number":
-            if payload is None:
-                return remember(0)
-            if isinstance(payload, str):
-                number = float(payload)
-                if number.is_integer():
-                    return remember(int(number))
-                return remember(number)
-            if isinstance(payload, int | float):
-                return remember(payload)
-            raise SerializerError("Encountered malformed payload for JavaScript Number.")
-        if class_name == "Boolean":
-            if isinstance(payload, bool):
-                return remember(payload)
-            if isinstance(payload, str):
-                return remember(payload.lower() in {"true", "1"})
-            return remember(bool(payload))
-        if class_name == "String":
-            if payload is None:
-                return remember("")
-            return remember(str(payload))
-        if class_name == "BigInt":
-            if payload is None:
-                return remember(0)
-            return remember(int(payload))
-        if class_name == "Date":
-            if not isinstance(payload, str):
-                raise SerializerError("Encountered malformed payload for JavaScript Date.")
-            text = payload.replace("Z", "+00:00") if payload.endswith("Z") else payload
-            return remember(datetime.fromisoformat(text))
-        if class_name in {"Array", "Set"}:
-            container: list[Any] | set[Any]
-            if payload is None:
-                items: list[Any] = []
-            elif isinstance(payload, list):
-                items = payload
-            else:
-                raise SerializerError("Encountered malformed payload for JavaScript Array or Set.")
-            container = set() if class_name == "Set" else []
-            remember(container)
-            for item in items:
-                decoded = cls._decode(item, seen)
-                if isinstance(container, list):
-                    container.append(decoded)
-                else:
-                    container.add(decoded)
-            return container
-        if class_name == "Map":
-            mapping: dict[Any, Any] = {}
-            remember(mapping)
-            if payload is None:
-                return mapping
-            if not isinstance(payload, list):
-                raise SerializerError("Encountered malformed payload for JavaScript Map.")
-            for pair in payload:
-                if not isinstance(pair, Iterable):
-                    raise SerializerError("Encountered malformed payload for JavaScript Map.")
-                try:
-                    key_raw, value_raw = pair
-                except ValueError as exc:
-                    raise SerializerError("Encountered malformed payload for JavaScript Map.") from exc
-                key = cls._decode(key_raw, seen)
-                value = cls._decode(value_raw, seen)
-                mapping[key] = value
-            return mapping
-        if class_name == "Object":
-            result: dict[str, Any] = {}
-            if not isinstance(payload, Mapping):
-                raise SerializerError("Encountered malformed payload for JavaScript Object.")
-            remember(result)
-            for key, item in payload.items():
-                result[key] = cls._decode(item, seen)
-            return result
-
-        return cls._NOT_HANDLED
 
 
 class Serializable(ABC, Generic[T]):
@@ -400,9 +308,156 @@ class Serializable(ABC, Generic[T]):
         raise NotImplementedError
 
 
+def _parse_datetime(data: Any) -> datetime:
+    """Parse datetime from various formats including ISO and JavaScript Date strings."""
+    if not isinstance(data, str):
+        raise SerializerError("Encountered malformed payload for Date.")
+    text = data.replace("Z", "+00:00") if data.endswith("Z") else data
+    return datetime.fromisoformat(text)
+
+
+def _parse_number(data: Any) -> int | float:
+    """Parse number from string or numeric value."""
+    if data is None:
+        return 0
+    if isinstance(data, str):
+        number = float(data)
+        return int(number) if number.is_integer() else number
+    if isinstance(data, int | float):
+        return data
+    raise SerializerError("Encountered malformed payload for Number.")
+
+
+def _parse_list(data: Any) -> list[Any]:
+    """Parse list from payload."""
+    if data is None:
+        return []
+    if isinstance(data, list):
+        return data.copy()
+    raise SerializerError("Encountered malformed payload for Array.")
+
+
+def _parse_set(data: Any) -> set[Any]:
+    """Parse set from payload."""
+    if data is None:
+        return set()
+    if isinstance(data, list):
+        return set(data)
+    raise SerializerError("Encountered malformed payload for Set.")
+
+
+def _parse_dict(data: Any) -> dict[Any, Any]:
+    """Parse dict from payload (handles both Object and Map formats)."""
+    if data is None:
+        return {}
+    if isinstance(data, Mapping):
+        return dict(data)
+    if isinstance(data, list):
+        # Handle JavaScript Map format: [[key, value], ...]
+        result: dict[Any, Any] = {}
+        for pair in data:
+            if not isinstance(pair, Iterable):
+                raise SerializerError("Encountered malformed payload for Map.")
+            try:
+                key, value = pair
+            except ValueError as exc:
+                raise SerializerError("Encountered malformed payload for Map.") from exc
+            result[key] = value
+        return result
+    raise SerializerError("Encountered malformed payload for Object/Map.")
+
+
+# Register datetime with alias for JavaScript Date
 Serializer.register(
     datetime,
     to_plain=lambda value: value.isoformat(),
-    from_plain=lambda data: datetime.fromisoformat(data),
+    from_plain=lambda data, ref: _parse_datetime(data),
     aliases=("Date",),
 )
+
+# Register built-in types to match TypeScript serializer
+Serializer.register(
+    int,
+    to_plain=lambda value: str(value),
+    from_plain=lambda data, ref: _parse_number(data),
+    aliases=("Number", "BigInt"),
+)
+
+Serializer.register(
+    float,
+    to_plain=lambda value: str(value),
+    from_plain=lambda data, ref: float(data) if data is not None else 0.0,
+)
+
+Serializer.register(
+    str,
+    to_plain=lambda value: value,
+    from_plain=lambda data, ref: str(data) if data is not None else "",
+    aliases=("String",),
+)
+
+Serializer.register(
+    bool,
+    to_plain=lambda value: value,
+    from_plain=lambda data, ref: (
+        data if isinstance(data, bool) else (data.lower() in {"true", "1"} if isinstance(data, str) else bool(data))
+    ),
+    aliases=("Boolean",),
+)
+
+Serializer.register(
+    list,
+    to_plain=lambda value: value.copy(),
+    from_plain=lambda data, ref: _parse_list(data),
+    create_empty=lambda: [],
+    update_instance=lambda instance, update: instance.extend(update) if update else None,
+    aliases=("Array",),
+)
+
+Serializer.register(
+    set,
+    to_plain=lambda value: list(value),
+    from_plain=lambda data, ref: _parse_set(data),
+    create_empty=lambda: set(),
+    update_instance=lambda instance, update: instance.update(update) if update else None,
+    aliases=("Set",),
+)
+
+Serializer.register(
+    dict,
+    to_plain=lambda value: dict(value),
+    from_plain=lambda data, ref: _parse_dict(data),
+    create_empty=lambda: {},
+    update_instance=lambda instance, update: instance.update(update) if update else None,
+    aliases=("Object", "Map"),
+)
+
+
+# Register type(None) for JavaScript Null/Undefined compatibility
+class _NoneType:
+    """Placeholder class for NoneType registration."""
+
+
+Serializer.register(
+    _NoneType,
+    to_plain=lambda value: None,
+    from_plain=lambda data, ref: None,
+    aliases=("Null", "Undefined"),
+)
+
+
+def _register_pydantic_basemodel() -> None:
+    """Register Pydantic BaseModel for generic serialization."""
+    try:
+        from pydantic import BaseModel
+
+        Serializer.register(
+            BaseModel,
+            to_plain=lambda value: value.model_dump(),
+            from_plain=lambda data, ref: ref.model_validate(data),
+        )
+    except ImportError:
+        pass  # Pydantic not installed, skip registration
+
+
+_register_pydantic_basemodel()
