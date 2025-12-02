@@ -10,13 +10,12 @@ from typing import Unpack
 import pytest
 import requests
 
-from beeai_framework.adapters.openai.serve._openai_model import OpenAIModel
 from beeai_framework.adapters.openai.serve.server import OpenAIServer, OpenAIServerConfig, register
 from beeai_framework.backend.message import AnyMessage, AssistantMessage
 from beeai_framework.emitter import Emitter
 from beeai_framework.runnable import Runnable, RunnableOptions, RunnableOutput, runnable_entry
-from beeai_framework.serve.errors import FactoryAlreadyRegisteredError
-from beeai_framework.serve.utils import UnlimitedMemoryManager
+
+TEST_API_KEY = "TEST_KEY"
 
 
 class DummyRunnable(Runnable[RunnableOutput]):
@@ -29,33 +28,20 @@ class DummyRunnable(Runnable[RunnableOutput]):
         return RunnableOutput(output=[AssistantMessage(content="pong")])
 
 
-class DummyModel(OpenAIModel):
-    model_id = "dummy-model"
-
-    def __init__(self) -> None:
-        self.runnable_instance = DummyRunnable()
-        super().__init__(runnable=self.runnable_instance, model_id=self.model_id)
-
-    def get_runnable(self) -> DummyRunnable:
-        return self.runnable_instance
-
-
 @pytest.fixture(scope="session")
 def start_test_server() -> Generator[str, None, None]:
     port = 19001
 
     register()
-    with contextlib.suppress(FactoryAlreadyRegisteredError):
-        OpenAIServer.register_factory(OpenAIModel, lambda model, **kwargs: model)  # type: ignore[type-var]
 
     config = OpenAIServerConfig(
         host="127.0.0.1",
         port=port,
-        api_key="TEST_KEY",
+        api_key=TEST_API_KEY,
     )
 
-    server = OpenAIServer(config=config, memory_manager=UnlimitedMemoryManager())
-    server.register(DummyModel())  # type: ignore[arg-type]
+    server = OpenAIServer(config=config)
+    server.register(DummyRunnable(), name="dummy-model")
 
     thread = threading.Thread(target=server.serve, daemon=True)
     thread.start()
@@ -87,7 +73,7 @@ def test_openai_e2e_success(start_test_server: str) -> None:
         "stream": False,
     }
 
-    headers = {"Authorization": "Bearer TEST_KEY"}
+    headers = {"Authorization": f"Bearer {TEST_API_KEY}"}
 
     response = requests.post(url, json=payload, headers=headers)
 
@@ -116,3 +102,26 @@ def test_openai_e2e_auth_failure(start_test_server: str) -> None:
     assert isinstance(data["detail"], str)
     assert "invalid" in data["detail"].lower() or "unauthorized" in data["detail"].lower()
     assert "api key" in data["detail"].lower()
+
+
+@pytest.mark.e2e
+def test_openai_e2e_model_not_found(start_test_server: str) -> None:
+    url = f"{start_test_server}/chat/completions"
+
+    payload = {
+        "model": "non-existent-model",
+        "messages": [{"role": "user", "content": "ping"}],
+        "stream": False,
+    }
+
+    headers = {"Authorization": f"Bearer {TEST_API_KEY}"}
+
+    response = requests.post(url, json=payload, headers=headers)
+
+    assert response.status_code == 404
+    data = response.json()
+    assert "detail" in data
+    assert isinstance(data["detail"], str)
+    assert "model" in data["detail"].lower()
+    assert "not found" in data["detail"].lower()
+    assert "non-existent-model" in data["detail"]

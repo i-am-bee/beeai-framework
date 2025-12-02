@@ -68,7 +68,16 @@ class ChatCompletionAPI:
 
         messages = _transform_request_messages(request.messages)
 
-        runnable = self._model_factory(request.model)
+        try:
+            runnable = self._model_factory(request.model)
+        except RuntimeError as e:
+            if "not registered" in str(e):
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail=f"Model '{request.model}' not found",
+                ) from e
+            raise
+
         if request.stream:
             id = f"chatcmpl-{uuid.uuid4()!s}"
 
