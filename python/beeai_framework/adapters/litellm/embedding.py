@@ -42,7 +42,7 @@ class LiteLLMEmbeddingModel(EmbeddingModel, ABC):
         # drop any unsupported parameters that were passed in
         litellm.drop_params = True
         # disable LiteLLM caching in favor of our own
-        litellm.disable_cache()  # type: ignore [attr-defined]
+        litellm.disable_cache()
 
     @property
     def model_id(self) -> str:
