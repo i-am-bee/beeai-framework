@@ -391,7 +391,7 @@ def _register_message_class(
                 "content": [fragment.model_dump() for fragment in message.content],
             }
 
-        def _from_plain(payload: Mapping[str, Any]) -> Message[Any]:
+        def _from_plain(payload: Mapping[str, Any], ref: type[Any]) -> Any:
             content_payload = payload.get("content", []) or []
             content_models: list[Any] = []
 
@@ -408,13 +408,13 @@ def _register_message_class(
                 model_cls = allowed_content.get(content_type)
                 if model_cls is None:
                     raise SerializerError(
-                        f"Unsupported message content '{content_type}' for {message_cls.__name__}.",
+                        f"Unsupported message content '{content_type}' for {ref.__name__}.",
                     )
                 content_models.append(model_cls.model_validate(dict(item)))
 
             meta = payload.get("meta") or {}
             meta_copy = dict(meta)
-            return message_cls(content_models, meta=meta_copy, id=payload.get("id"))
+            return ref(content_models, meta=meta_copy, id=payload.get("id"))
 
         Serializer.register(
             message_cls,

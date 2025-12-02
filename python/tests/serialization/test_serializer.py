@@ -48,7 +48,7 @@ def test_custom_registration() -> None:
             "value": token.value,
             "expires_at": token.expires_at,
         },
-        from_plain=lambda payload: ApiToken(
+        from_plain=lambda payload, ref: ref(
             value=payload["value"],
             expires_at=payload["expires_at"],
         ),
