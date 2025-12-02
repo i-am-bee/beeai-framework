@@ -3,8 +3,7 @@
 
 import enum
 import json
-from abc import ABC
-from collections.abc import Iterable, Mapping, Sequence
+from collections.abc import Sequence
 from datetime import UTC, datetime
 from enum import Enum
 from typing import Any, Generic, Literal, Required, Self, TypeAlias, TypeVar, cast
@@ -12,6 +11,7 @@ from typing import Any, Generic, Literal, Required, Self, TypeAlias, TypeVar, ca
 from pydantic import BaseModel, ConfigDict, Field, computed_field
 from typing_extensions import TypedDict
 
+from beeai_framework.serialization import Serializable
 from beeai_framework.utils.dicts import exclude_none
 from beeai_framework.utils.lists import cast_list
 from beeai_framework.utils.models import to_any_model, to_model
@@ -36,7 +36,25 @@ class Role(str, Enum):
         return {value for key, value in vars(cls).items() if not key.startswith("_") and isinstance(value, str)}
 
 
-class MessageTextContent(BaseModel):
+class SerializableModel(BaseModel, Serializable[dict[str, Any]], auto_register=False):
+    """Base class for Pydantic models that need serialization support.
+
+    This class combines BaseModel with Serializable to provide consistent
+    serialization behavior for message content parts.
+    """
+
+    def create_snapshot(self) -> dict[str, Any]:
+        """Create a snapshot of this model for serialization."""
+        return self.model_dump()
+
+    def load_snapshot(self, snapshot: dict[str, Any]) -> None:
+        """Load state from a snapshot dictionary."""
+        for field_name, value in snapshot.items():
+            object.__setattr__(self, field_name, value)
+        object.__setattr__(self, "__pydantic_fields_set__", set(snapshot.keys()))
+
+
+class MessageTextContent(SerializableModel):
     type: Literal["text"] = "text"
     text: str
 
@@ -47,12 +65,12 @@ class MessageImageContentImageUrl(TypedDict, total=False):
     format: str
 
 
-class MessageImageContent(BaseModel):
+class MessageImageContent(SerializableModel):
     type: Literal["image_url"] = "image_url"
     image_url: MessageImageContentImageUrl
 
 
-class MessageFileContent(BaseModel):
+class MessageFileContent(SerializableModel):
     """File content part (e.g. PDF or other document) for multimodal user messages.
 
     Flattened shape is supported:
@@ -78,15 +96,25 @@ class MessageFileContent(BaseModel):
         if not (self.file_id or self.file_data):
             raise ValueError("Either 'file_id' or 'file_data' must be provided for MessageFileContent")
 
+    def create_snapshot(self) -> dict[str, Any]:
+        """Create snapshot including excluded fields for proper serialization."""
+        return {
+            "type": self.type,
+            "file_id": self.file_id,
+            "file_data": self.file_data,
+            "filename": self.filename,
+            "format": self.format,
+        }
 
-class MessageToolResultContent(BaseModel):
+
+class MessageToolResultContent(SerializableModel):
     type: Literal["tool-result"] = "tool-result"
     result: Any
     tool_name: str
     tool_call_id: str
 
 
-class MessageToolCallContent(BaseModel):
+class MessageToolCallContent(SerializableModel):
     type: Literal["tool-call"] = "tool-call"
     id: str
     tool_name: str
@@ -103,7 +131,7 @@ class MessageToolCallContent(BaseModel):
             return False
 
 
-class Message(ABC, Generic[T]):
+class Message(Serializable[dict[str, Any]], Generic[T]):
     id: str | None
     role: Role | str
     content: list[T]
@@ -151,6 +179,23 @@ class Message(ABC, Generic[T]):
 
     def clone(self) -> Self:
         return type(self)([c.model_copy() for c in self.content], self.meta.copy())
+
+    def create_snapshot(self) -> dict[str, Any]:
+        """Create a snapshot of this message for serialization."""
+        return {
+            "id": self.id,
+            "meta": dict(self.meta),
+            "role": str(self.role),
+            # Return content as-is - Serializer will handle encoding each item
+            "content": list(self.content),
+        }
+
+    def load_snapshot(self, snapshot: dict[str, Any]) -> None:
+        """Load state from a snapshot dictionary."""
+        self.id = snapshot.get("id")
+        self.meta = dict(snapshot.get("meta") or {})
+        # Content is already deserialized by the Serializer as proper objects
+        self.content = snapshot.get("content", [])
 
 
 AssistantMessageContent = MessageTextContent | MessageToolCallContent
@@ -314,7 +359,7 @@ class UserMessage(Message[UserMessageContent]):
         return cls(MessageTextContent(text=text))
 
 
-class CustomMessageContent(BaseModel):
+class CustomMessageContent(SerializableModel):
     model_config = ConfigDict(extra="allow")
 
 
@@ -374,89 +419,3 @@ def dedupe_tool_calls(msg: AssistantMessage) -> None:
 
     for idx in sorted(excluded_indexes, reverse=True):
         msg.content.pop(idx)
-
-
-def _register_message_class(
-    message_cls: type[Message[Any]],
-    allowed_content: Mapping[str, type[BaseModel]],
-) -> None:
-    def _registrar() -> None:
-        from beeai_framework.serialization import Serializer, SerializerError
-
-        def _to_plain(message: Message[Any]) -> dict[str, Any]:
-            return {
-                "id": message.id,
-                "meta": dict(message.meta),
-                "role": str(message.role),
-                "content": [fragment.model_dump() for fragment in message.content],
-            }
-
-        def _from_plain(payload: Mapping[str, Any]) -> Message[Any]:
-            content_payload = payload.get("content", []) or []
-            content_models: list[Any] = []
-
-            for item in content_payload:
-                if not isinstance(item, Mapping):
-                    raise SerializerError("Serialized message content must be a mapping.")
-
-                content_type = item.get("type")
-                if not isinstance(content_type, str):
-                    raise SerializerError(
-                        f"Serialized message content is missing or has an invalid 'type': {content_type!r}",
-                    )
-
-                model_cls = allowed_content.get(content_type)
-                if model_cls is None:
-                    raise SerializerError(
-                        f"Unsupported message content '{content_type}' for {message_cls.__name__}.",
-                    )
-                content_models.append(model_cls.model_validate(dict(item)))
-
-            meta = payload.get("meta") or {}
-            meta_copy = dict(meta)
-            return message_cls(content_models, meta=meta_copy, id=payload.get("id"))
-
-        Serializer.register(
-            message_cls,
-            to_plain=_to_plain,
-            from_plain=_from_plain,
-        )
-
-    _registrar()
-
-    def _register_method(cls: type[Message[Any]], *, aliases: Iterable[str] | None = None) -> None:
-        _registrar()
-
-    type.__setattr__(message_cls, "register", classmethod(_register_method))
-
-
-_register_message_class(
-    SystemMessage,
-    {
-        "text": MessageTextContent,
-    },
-)
-
-_register_message_class(
-    UserMessage,
-    {
-        "text": MessageTextContent,
-        "image_url": MessageImageContent,
-        "file": MessageFileContent,
-    },
-)
-
-_register_message_class(
-    AssistantMessage,
-    {
-        "text": MessageTextContent,
-        "tool-call": MessageToolCallContent,
-    },
-)
-
-_register_message_class(
-    ToolMessage,
-    {
-        "tool-result": MessageToolResultContent,
-    },
-)
