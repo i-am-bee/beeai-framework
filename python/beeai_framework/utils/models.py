@@ -13,11 +13,8 @@ from pydantic.fields import FieldInfo
 from pydantic.json_schema import JsonSchemaValue
 from pydantic_core import CoreSchema, SchemaValidator
 
-from beeai_framework.logger import Logger
 from beeai_framework.utils.dicts import remap_key
 from beeai_framework.utils.schema import simplify_json_schema
-
-logger = Logger(__name__)
 
 T = TypeVar("T", bound=BaseModel)
 ModelLike = Union[T, dict[str, Any]]  # noqa: UP007
@@ -105,10 +102,6 @@ class JSONSchemaModel(ABC, BaseModel):
             )
 
             if one_of:
-                logger.debug(
-                    f"{JSONSchemaModel.__name__}: does not support 'oneOf' modifier found in {param_name} attribute."
-                    f" Will use 'anyOf' instead."
-                )
                 return create_field(param_name, remap_key(param, source="oneOf", target="anyOf"), required)
 
             if any_of:
@@ -152,10 +145,6 @@ class JSONSchemaModel(ABC, BaseModel):
                 if isinstance(const, str):
                     target_type = Literal[const]
                 if not target_type:
-                    logger.debug(
-                        f"{JSONSchemaModel.__name__}: Can't resolve a correct type for '{param_name}' attribute."
-                        f" Using 'Any' as a fallback."
-                    )
                     target_type = type
 
                 if (not is_required and not default) or explicitly_nullable:
