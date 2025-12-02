@@ -11,7 +11,7 @@ from typing import Literal, TypeAlias
 
 from beeai_framework.agents import AgentOutput, BaseAgent
 from beeai_framework.agents.requirement import RequirementAgent
-from beeai_framework.backend import AnyMessage, AssistantMessage, ChatModel, UserMessage
+from beeai_framework.backend import AnyMessage, AssistantMessage, UserMessage
 from beeai_framework.context import RunContext, RunContextStartEvent, RunMiddlewareProtocol
 from beeai_framework.emitter import CleanupFn, EmitterOptions, EventMeta
 from beeai_framework.emitter.utils import create_internal_event_matcher
@@ -97,7 +97,7 @@ async def main() -> None:
     """
 
     agent = RequirementAgent(
-        llm=ChatModel.from_name("ollama:granite4:micro"),
+        llm="ollama:granite4:micro",
         memory=UnconstrainedMemory(),
         middlewares=[SecretsDetectionMiddleware()],
     )
@@ -112,7 +112,7 @@ async def main() -> None:
         print(f"Error: {e}")
 
     agent = RequirementAgent(
-        llm=ChatModel.from_name("ollama:granite4:micro"),
+        llm="ollama:granite4:micro",
         memory=UnconstrainedMemory(),
         middlewares=[SecretsDetectionMiddleware(permissive=True)],
     )

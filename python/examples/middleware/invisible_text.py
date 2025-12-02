@@ -9,7 +9,7 @@ except ImportError:
 
 from beeai_framework.agents import AgentOutput, BaseAgent
 from beeai_framework.agents.requirement import RequirementAgent
-from beeai_framework.backend import AssistantMessage, ChatModel
+from beeai_framework.backend import AssistantMessage
 from beeai_framework.context import RunContext, RunContextStartEvent, RunMiddlewareProtocol
 from beeai_framework.emitter import CleanupFn, EmitterOptions, EventMeta
 from beeai_framework.emitter.utils import create_internal_event_matcher
@@ -81,7 +81,7 @@ async def main() -> None:
     """
 
     agent = RequirementAgent(
-        llm=ChatModel.from_name("ollama:granite4:micro"),
+        llm="ollama:granite4:micro",
         memory=UnconstrainedMemory(),
         middlewares=[InvisibleTextDetectionMiddleware()],
     )
