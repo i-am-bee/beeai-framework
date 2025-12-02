@@ -10,18 +10,19 @@ import {
 import { VercelChatModel } from "@/adapters/vercel/backend/chat.js";
 import { getEnv } from "@/internals/env.js";
 import { AmazonBedrockProvider } from "@ai-sdk/amazon-bedrock";
+import { ChatModelParameters } from "@/backend/chat.js";
 
 type AmazonBedrockParameters = Parameters<AmazonBedrockProvider["languageModel"]>;
 export type AmazonBedrockChatModelId = NonNullable<AmazonBedrockParameters[0]>;
-export type AmazonBedrockChatModelSettings = NonNullable<AmazonBedrockParameters[1]>;
 
 export class AmazonBedrockChatModel extends VercelChatModel {
   constructor(
     modelId: AmazonBedrockChatModelId = getEnv("AWS_CHAT_MODEL", "meta.llama3-70b-instruct-v1:0"),
-    settings: AmazonBedrockChatModelSettings = {},
+    parameters: ChatModelParameters = {},
     client?: AmazonBedrockClient | AmazonBedrockClientSettings,
   ) {
-    const model = AmazonBedrockClient.ensure(client).instance.languageModel(modelId, settings);
+    const model = AmazonBedrockClient.ensure(client).instance.languageModel(modelId);
     super(model);
+    Object.assign(this.parameters, parameters ?? {});
   }
 }

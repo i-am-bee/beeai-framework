@@ -114,7 +114,7 @@ export abstract class BaseA2AAgentExecutor implements AgentExecutor {
 
       eventBus.finished();
     } catch (error) {
-      logger.error("Agent execution error:", { error });
+      logger.error(error, "Agent execution error");
       const errorMessage = error instanceof Error ? error.message : String(error);
       // Publish failed status update
       const errorUpdate: TaskStatusUpdateEvent = {

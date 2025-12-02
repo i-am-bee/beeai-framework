@@ -8,7 +8,7 @@ import * as R from "remeda";
 import { Serializer } from "@/serializer/serializer.js";
 import { ClassConstructor } from "@/internals/types.js";
 import { Logger } from "@/logger/logger.js";
-import { pino } from "pino";
+import { symbols as pinoSymbols } from "pino";
 import { BaseLLM as LCBaseLLM } from "@langchain/core/language_models/llms";
 import { ZodType } from "zod";
 import { Callback } from "@/emitter/types.js";
@@ -133,7 +133,7 @@ verifyDeserialization.isIgnored = (key: string, value: unknown, parent?: any) =>
   const ignored = verifyDeserialization.ignoredClasses;
 
   // Pino check
-  if (R.isObjectType(value) && Object.values(pino.symbols).some((symbol) => symbol in value)) {
+  if (R.isObjectType(value) && Object.values(pinoSymbols).some((symbol) => symbol in value)) {
     return true;
   }
 

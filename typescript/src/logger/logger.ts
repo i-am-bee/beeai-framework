@@ -3,7 +3,14 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { pino as pinoLogger, ChildLoggerOptions, LoggerOptions, DestinationStream } from "pino";
+import * as pinoLogger from "pino";
+import {
+  ChildLoggerOptions,
+  LoggerOptions,
+  DestinationStream,
+  LevelWithSilent,
+  BaseLogger,
+} from "pino";
 import { FrameworkError } from "@/errors.js";
 import { Serializable } from "@/internals/serializable.js";
 import { Cache } from "@/cache/decoratorCache.js";
@@ -23,7 +30,7 @@ export interface LoggerBindings extends Record<string, any> {}
 
 export class LoggerError extends FrameworkError {}
 
-export const LoggerLevel: EnumFromUnion<pinoLogger.LevelWithSilent> = {
+export const LoggerLevel: EnumFromUnion<LevelWithSilent> = {
   DEBUG: "debug",
   ERROR: "error",
   FATAL: "fatal",
@@ -41,7 +48,7 @@ export interface LoggerInput {
   raw?: ChildLoggerOptions;
 }
 
-export class Logger extends Serializable implements pinoLogger.BaseLogger {
+export class Logger extends Serializable implements BaseLogger {
   protected raw!: pinoLogger.Logger;
 
   info!: pinoLogger.LogFn;
@@ -54,6 +61,10 @@ export class Logger extends Serializable implements pinoLogger.BaseLogger {
 
   static {
     this.register();
+  }
+
+  get msgPrefix(): string | undefined {
+    return this.raw.msgPrefix;
   }
 
   get level(): LoggerLevelType {
@@ -154,7 +165,7 @@ export class Logger extends Serializable implements pinoLogger.BaseLogger {
 
     const targetStream = stream ?? (isPretty ? pinoLogger.destination(stdout) : undefined);
 
-    return pinoLogger(
+    return pinoLogger.pino(
       {
         ...(isPretty && {
           transport: {

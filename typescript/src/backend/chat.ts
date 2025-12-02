@@ -61,7 +61,7 @@ interface ResponseObjectJson {
 }
 
 export interface ChatModelObjectInput<T> extends ChatModelParameters {
-  schema: z.ZodSchema<T> | ResponseObjectJson;
+  schema: z.ZodSchema<T, any, any> | ResponseObjectJson;
   systemPromptTemplate?: PromptTemplate<ZodType<{ schema: string }>>;
   messages: Message[];
   abortSignal?: AbortSignal;
@@ -97,6 +97,8 @@ export interface ChatModelUsage {
   promptTokens: number;
   completionTokens: number;
   totalTokens: number;
+  reasoningTokens?: number;
+  cachedPromptTokens?: number;
 }
 
 export interface ChatModelEvents {
@@ -211,7 +213,7 @@ export abstract class ChatModel extends Serializable {
               type: "tool-call",
               toolCallId: `call_${randomString(8).toLowerCase()}`,
               toolName: toolCall.name, // todo: add types
-              args: toolCall.parameters,
+              input: toolCall.parameters,
             });
           }
 
