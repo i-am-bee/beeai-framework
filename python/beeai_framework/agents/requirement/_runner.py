@@ -130,6 +130,14 @@ class RequirementAgentRunner:
         else:
             self._state.usage = response.usage
 
+        if self._state.cost is not None:
+            if response.cost is not None:
+                self._state.cost.prompt_tokens_usd += response.cost.prompt_tokens_usd
+                self._state.cost.completion_tokens_cost_usd += response.cost.completion_tokens_cost_usd
+                self._state.cost.total_cost_usd += response.cost.total_cost_usd
+        else:
+            self._state.cost = response.cost
+
         stream_middleware.unbind()
         return response
 

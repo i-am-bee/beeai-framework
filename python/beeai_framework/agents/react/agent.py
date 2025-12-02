@@ -35,7 +35,7 @@ from beeai_framework.agents.types import (
 )
 from beeai_framework.backend.chat import ChatModel
 from beeai_framework.backend.message import AnyMessage, AssistantMessage, MessageMeta, UserMessage
-from beeai_framework.backend.types import ChatModelUsage
+from beeai_framework.backend.types import ChatModelCost, ChatModelUsage
 from beeai_framework.context import RunContext
 from beeai_framework.emitter import Emitter
 from beeai_framework.logger import Logger
@@ -217,7 +217,16 @@ class ReActAgent(BaseAgent[ReActAgentOutput]):
             total_tokens=sum(u.total_tokens for u in all_usages),
         )
 
-        return ReActAgentOutput(output=[final_message], iterations=runner.iterations, memory=runner.memory, usage=usage)
+        all_costs = [iteration.raw.cost for iteration in runner.iterations if iteration.raw.cost]
+        cost = ChatModelCost(
+            prompt_tokens_usd=sum(c.prompt_tokens_usd for c in all_costs),
+            completion_tokens_cost_usd=sum(c.completion_tokens_cost_usd for c in all_costs),
+            total_cost_usd=sum(c.total_cost_usd for c in all_costs),
+        )
+
+        return ReActAgentOutput(
+            output=[final_message], iterations=runner.iterations, memory=runner.memory, usage=usage, cost=cost
+        )
 
     async def clone(self) -> "ReActAgent":
         cloned = ReActAgent(**self._input.model_dump())
