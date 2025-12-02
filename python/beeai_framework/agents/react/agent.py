@@ -210,16 +210,11 @@ class ReActAgent(BaseAgent[ReActAgentOutput]):
         await self._input.memory.add_many(_input)
         await self._input.memory.add(final_message)
 
+        all_usages = [iteration.raw.usage for iteration in runner.iterations if iteration.raw.usage]
         usage = ChatModelUsage(
-            prompt_tokens=sum(
-                (iteration.raw.usage.prompt_tokens if iteration.raw.usage else 0) for iteration in runner.iterations
-            ),
-            completion_tokens=sum(
-                (iteration.raw.usage.completion_tokens if iteration.raw.usage else 0) for iteration in runner.iterations
-            ),
-            total_tokens=sum(
-                (iteration.raw.usage.total_tokens if iteration.raw.usage else 0) for iteration in runner.iterations
-            ),
+            prompt_tokens=sum(u.prompt_tokens for u in all_usages),
+            completion_tokens=sum(u.completion_tokens for u in all_usages),
+            total_tokens=sum(u.total_tokens for u in all_usages),
         )
 
         return ReActAgentOutput(output=[final_message], iterations=runner.iterations, memory=runner.memory, usage=usage)
