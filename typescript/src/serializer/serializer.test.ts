@@ -150,6 +150,7 @@ describe("Serializer", () => {
         const r = target("A");
 
         if (R.isFunction(l) && R.isFunction(r)) {
+          // @ts-expect-error intended
           expect(l("B")).toEqual(r("B"));
         } else {
           expect(fn("A")).toEqual(target("A"));

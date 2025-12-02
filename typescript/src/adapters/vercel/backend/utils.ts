@@ -6,9 +6,10 @@
 import { CustomMessage, Role, UserMessage } from "@/backend/message.js";
 import { isPlainObject, isString, isTruthy } from "remeda";
 import { getProp } from "@/internals/helpers/object.js";
-import { TextPart } from "ai";
+import type { TextPart, LanguageModelUsage } from "ai";
 import { z } from "zod";
 import { parseEnv } from "@/internals/env.js";
+import { ChatModelUsage } from "@/backend/chat.js";
 
 export function encodeCustomMessage(msg: CustomMessage): UserMessage {
   return new UserMessage([
@@ -92,4 +93,14 @@ export function parseHeadersFromEnv(env: string): Record<string, any> {
       );
     }, z.record(z.string())),
   );
+}
+
+export function extractTokenUsage(usage: LanguageModelUsage): ChatModelUsage {
+  return {
+    promptTokens: usage.inputTokens ?? 0,
+    completionTokens: usage.outputTokens ?? 0,
+    totalTokens: usage.totalTokens ?? 0,
+    reasoningTokens: usage.reasoningTokens,
+    cachedPromptTokens: usage.cachedInputTokens,
+  };
 }

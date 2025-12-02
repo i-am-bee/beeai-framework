@@ -249,7 +249,7 @@ export class A2AAgent extends BaseAgent<A2AAgentRunInput, A2AAgentRunOutput> {
         referenceTaskIds: this.referenceTaskIds,
       };
     } else if (input instanceof Message) {
-      const parts = input.content.map(convertFrameworkContentoA2APart);
+      const parts = input.content.map(convertFrameworkContentToA2APart);
       return {
         kind: "message",
         role: input.role == "assistant" ? "agent" : "user",
@@ -281,7 +281,7 @@ export class A2AAgent extends BaseAgent<A2AAgentRunInput, A2AAgentRunOutput> {
   }
 }
 
-function convertFrameworkContentoA2APart(content: MessageContentPart): Part {
+function convertFrameworkContentToA2APart(content: MessageContentPart): Part {
   const { type, ...rest } = content;
   switch (type) {
     case "text":
@@ -300,7 +300,7 @@ function convertFrameworkContentoA2APart(content: MessageContentPart): Part {
         kind: "file",
         file: {
           ...file,
-          mimeType: content.mimeType,
+          mimeType: content.mediaType,
           name: "filename" in content ? content.filename : undefined,
         },
         metadata: {

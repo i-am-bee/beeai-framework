@@ -25,13 +25,13 @@ export function convertA2AMessageToFrameworkMessage(input: A2AMessage | Artifact
           ? {
               type: "file",
               data: part.file.bytes,
-              mimeType: part.file.mimeType || "application/octet-stream",
+              mediaType: part.file.mimeType || "application/octet-stream",
               filename: part.file.name,
             }
           : {
               type: "file",
               data: part.file.uri,
-              mimeType: part.file.mimeType || "application/octet-stream",
+              mediaType: part.file.mimeType || "application/octet-stream",
               filename: part.file.name,
             };
 

@@ -26,10 +26,10 @@ while (true) {
 
   const toolCalls = response.getToolCalls();
   const toolResults = await Promise.all(
-    toolCalls.map(async ({ args, toolName, toolCallId }) => {
-      console.log(`-> running '${toolName}' tool with ${JSON.stringify(args)}`);
+    toolCalls.map(async ({ input, toolName, toolCallId }) => {
+      console.log(`-> running '${toolName}' tool with ${JSON.stringify(input)}`);
       const tool = tools.find((tool) => tool.name === toolName)!;
-      const response: ToolOutput = await tool.run(args as any);
+      const response: ToolOutput = await tool.run(input as any);
       const result = response.getTextContent();
       console.log(
         `<- got response from '${toolName}'`,
@@ -37,8 +37,7 @@ while (true) {
       );
       return new ToolMessage({
         type: "tool-result",
-        result,
-        isError: false,
+        output: { type: "text", value: result },
         toolName,
         toolCallId,
       });
