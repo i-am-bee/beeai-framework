@@ -3,7 +3,13 @@ title: "Middleware"
 icon: "repeat"
 ---
 
-The BeeAI framework core and its parts can be easily extended via the underlying concept of events and run contexts.
+Middleware in the BeeAI Framework is the "connective tissue" that allows you to observe, intercept, and modify an agent's behavior without altering its core logic.
+
+<Note>
+In this framework, "Middleware" refers to the classic software design pattern (pipeline interceptors). It is the code that runs between the agent's decision steps. This is distinct from the broader industry term "Agentic Middleware," which often refers to entire agent orchestration platforms.
+</Note>
+
+The BeeAI Framework core is designed to be extensible. Middleware leverages the underlying system of Events and Run Contexts to hook into the agent's lifecycle. Whether you need to log a thought process, sanitize an input, or halt a dangerous action, middleware provides the interface to inject that logic safely.
 
 ## Modules
 
