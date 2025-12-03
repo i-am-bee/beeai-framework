@@ -6,18 +6,18 @@ icon: "repeat"
 Middleware in the BeeAI Framework is the "connective tissue" that allows you to observe, intercept, and modify an agent's behavior without altering its core logic.
 
 <Note>
-In this framework, "Middleware" refers to the classic software design pattern (pipeline interceptors). It is the code that runs between the agent's decision steps. This is distinct from the broader industry term "Agentic Middleware," which often refers to entire agent orchestration platforms.
+Note "Middleware" here refers to the classic software design pattern, it is the code that runs between the agent's decision steps. This is distinct from the newer industry term "Agentic Middleware," which may refer to entire agent orchestration platforms.
 </Note>
 
 The BeeAI Framework core is designed to be extensible. Middleware leverages the underlying system of **Events** and **Run Contexts** to hook into the agent's lifecycle. Whether you need to log a thought process, sanitize an input, or halt a dangerous action, middleware provides the interface to inject that logic safely.
 
 ## Built-in middleware
 
-The following section showcases built-in middlewares that you can start using right away.
+The following section showcases built-in middleware that you can start using right away.
 
 ### Global Trajectory
 
-The fastest way to see what's happening in your code (who is calling what) is by using the `GlobalTrajectoryMiddleware`. It captures all events (even deeply nested) and prints them to the console while visualizing nested calls with indentation.
+The fastest way to see what's happening in your code (who is calling what) is by using the `GlobalTrajectoryMiddleware`. It captures all events, even deeply-nested, and prints them to the console, visualizing nested calls with indentation.
 
 **Example**
 
@@ -25,14 +25,14 @@ The fastest way to see what's happening in your code (who is calling what) is by
 from beeai_framework.middleware.trajectory import GlobalTrajectoryMiddleware
 
 agent = RequirementAgent(
-    llm="ollama:granite3:3",
+    llm="ollama:granite3.3",
     tools=[OpenMeteoTool()]
 )
 await agent.run("What's the current weather in Miami?")
             .middleware(GlobalTrajectoryMiddleware())
 ```
 
-See which parameters can be passed to the constructor.
+You can customize the output by passing parameters to the constructor:
 
 | Parameter          | Description                                                                                              |
 |--------------------|----------------------------------------------------------------------------------------------------------|
@@ -66,9 +66,7 @@ GlobalTrajectoryMiddleware(prefix_by_type={BaseAgent: "🐝 "}) # use Bee Emoji 
 
 ### Tool Call Streaming
 
-Middleware for handling streaming tool calls in a ChatModel. This middleware observes and listens to [Chat Model](/modules/backend#chat-model) stream updates and parses the tool calls on demand so that they can be consumed as soon as possible.
-
-The middleware works even **without streaming** enabled. It just emits the `update` event at the very end.
+Middleware for handling streaming tool calls in a ChatModel. It observes [Chat Model](/modules/backend#chat-model) stream updates and parses tool calls on demand so that they can be consumed immediately. It works even without streaming enabled (emitting the `update` event at the very end).
 
 **Example**
 
@@ -109,7 +107,7 @@ if __name__ == "__main__":
 
 ```
 
-See which parameters can be passed to the constructor.
+The following parameters can be passed to the constructor:
 
 | Parameter         | Description                                                                 |
 |-------------------|------------------------------------------------------------------------------|
@@ -121,9 +119,9 @@ See which parameters can be passed to the constructor.
 
 ## Modules
 
-The following section describes essential modules that are important to understand the whole concept.
+The BeeAI Framework middleware is built on an underlying system of primitives, which are described in this section. Understanding these primitives is helpful for building complex middleware.
 
-### Event
+### Events
 
 An event refers to an action created by some component.
 
@@ -157,7 +155,7 @@ The emitter instance has the following **properties**:
 - `context` (dictionary which is attached to all events emitted via the given emitter).
 - `trace` metadata (such as current `id`, `run_id` and `parent_id`)
 
-The emitter instance and the following **methods**:
+The emitter instance has the following **methods**:
 
 - `on` for registering a new event listener
   - The method takes `matcher` (event name, callback, regex), `callback` (sync/async function), and `options` (priority, etc.)
@@ -217,13 +215,11 @@ The `Run` class **acts as a wrapper of the target implementation** with its **ow
 
 The `RunContext` class is a container that contains information about the current execution context.
 
-**Why is it useful?**
-
-Such abstraction allows you to:
+These useful abstractions allow you to:
 
 - modify `input` to the given target (listen to a `start` event and modify the content of the `input` property)
 - modify `output` from the given target (listen to a `success` event and modify the content of the `output` property)
-- does premature stop (listen to a `start` event and set the `output` property to  not a `None` value)
+- stop the run early (listen to a `start` event and set the `output` property to a non-`None` value)
 - propagate `context` (dictionary) to whatever component of your system you'd like
 - cancel the execution in an arbitrary place
 - observability
@@ -246,7 +242,7 @@ In simpler terms, when you call one runnable (e.g., `ChatModel`) from within ano
 
 ### Runnable
 
-The `Runnable[R]` class was created to unify common objects that can be executed and observed. It is an abstract class with the following traits:
+The `Runnable[R]` class unifies common objects that can be executed and observed. It is an abstract class with the following traits:
 
 - It has an abstract `run` method that executes the class and returns a `Run[R]` (`R` is bound to the `RunnableOutput`).
 - It has an abstract `emitter` getter.
@@ -284,7 +280,7 @@ from beeai_framework.runnable import Runnable, RunnableOptions, RunnableOutput, 
 class GreetingRunnable(Runnable[RunnableOutput]):
     @runnable_entry
     async def run(self, input: list[AnyMessage], /, **kwargs: Unpack[RunnableOptions]) -> RunnableOutput:
-        # retrieves the current run contex
+        # retrieves the current run context
         run = RunContext.get()
 
         response = f"Hello, {run.context.get('name', 'stranger')}!"
@@ -443,8 +439,6 @@ The default value of the `match_nested` depends on the `matcher` value. Note tha
 
 When a framework component is executed, it creates a run context, which is a wrapper around the target handler that gives us the ability to modify its input and output ([learn more](#run-context)).
 
-**How it works?**
-
 Once a `Run` instance is executed (i.e., **awaited**), the lifecycle begins:
 
 1. The `start` event is emitted.
@@ -525,7 +519,7 @@ print("Agent:", response.get_text_content())
 To see which events get emitted in your case, the best way is to register a log-all callback for your run.
 
 ```py Python [expandable]
-agent = RequirementAgent("ollama:granite3:3", tools=[OpenMeteoTool()])
+agent = RequirementAgent("ollama:granite3.3", tools=[OpenMeteoTool()])
 response = await agent
   .run("What's the current weather in Miami?")
   .on("*.*", lambda data, meta: print(meta.path, 'by', type(meta.creator)))
