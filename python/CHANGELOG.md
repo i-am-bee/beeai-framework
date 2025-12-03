@@ -1,3 +1,16 @@
+## python_v0.1.71 (2025-12-03)
+
+### Bug Fixes
+
+- use beeai_log_level variable (#1332)
+
+### Features
+
+- **agents**: apply prompt caching strategy to RequirementAgent (#1340)
+- **adapters**: update agentstack sdk
+- **adapters**: add default parameters for AgentStackAgent factory method (#1336)
+- **adapters**: add option to disable a2a streaming (#1330)
+
 ## python_v0.1.70 (2025-11-26)
 
 ### Bug Fixes
