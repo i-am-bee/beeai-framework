@@ -6,10 +6,10 @@ icon: "repeat"
 Middleware in the BeeAI Framework is the "connective tissue" that allows you to observe, intercept, and modify an agent's behavior without altering its core logic.
 
 <Note>
-Note "Middleware" here refers to the classic software design pattern, it is the code that runs between the agent's decision steps. This is distinct from the newer industry term "Agentic Middleware," which may refer to entire agent orchestration platforms.
+Note: **Middleware** here refers to the classic software design pattern, it is the code that runs between the agent's decision steps. This is distinct from the newer industry term "Agentic Middleware," which may refer to entire agent orchestration platforms.
 </Note>
 
-The BeeAI Framework core is designed to be extensible. Middleware leverages the underlying system of **Events** and **Run Contexts** to hook into the agent's lifecycle. Whether you need to log a thought process, sanitize an input, or halt a dangerous action, middleware provides the interface to inject that logic safely.
+The BeeAI Framework core is designed to be extensible. Middleware leverages the underlying system of **Events** and **Run Contexts** to hook into the agent's lifecycle. Whether you need to log a thought process, sanitize an input, or halt a dangerous action, middleware provides the interface to inject that logic.
 
 ## Built-in middleware
 
@@ -117,7 +117,7 @@ The following parameters can be passed to the constructor:
 | `force_streaming` | Sets the stream flag on the `ChatModel`.                                     |
 
 
-## Modules
+## Core Primatives
 
 The BeeAI Framework middleware is built on an underlying system of primitives, which are described in this section. Understanding these primitives is helpful for building complex middleware.
 
@@ -213,16 +213,16 @@ emitter.off(callback=handle_event)
 
 The `Run` class **acts as a wrapper of the target implementation** with its **own lifecycle** (an emitter with a set of events) and **context** (data that gets propagated to all events).
 
-The `RunContext` class is a container that contains information about the current execution context.
+The `RunContext` class is a container that stores information about the current execution context.
 
-These useful abstractions allow you to:
+These abstractions allow you to:
 
-- modify `input` to the given target (listen to a `start` event and modify the content of the `input` property)
-- modify `output` from the given target (listen to a `success` event and modify the content of the `output` property)
-- stop the run early (listen to a `start` event and set the `output` property to a non-`None` value)
-- propagate `context` (dictionary) to whatever component of your system you'd like
-- cancel the execution in an arbitrary place
-- observability
+- modify `input` to the given target (listen to a `start` event and modify the content of the `input` property),
+- modify `output` from the given target (listen to a `success` event and modify the content of the `output` property),
+- stop the run early (listen to a `start` event and set the `output` property to a non-`None` value),
+- propagate `context` (dictionary) to any component of your system,
+- cancel the execution in an arbitrary place,
+- gain observability into runs via structured events (for logging, tracing, and debugging).
 
 **The Run and Run Context gets created** when a `run` method gets called on a framework class that can be executed (eg, `ChatModel`, `Agent`, ...).
 
@@ -308,15 +308,15 @@ if __name__ == "__main__":
 
 ## Working with events
 
-The following sections show you how to use the emitter to capture and modify events.
+The following sections explain how to use emitters to capture, observe, and modify events.
 
 ### Scopes
 
-Events can be generally observed on three different levels.
+Events can be observed at three different levels.
 
 **1. Global Level**
 
-Every emitter provided by the out-of-the-box modules is a child of the root emitter, which means we can listen to all events directly from the root emitter.
+Every emitter provided by the out-of-the-box modules is a child of the root emitter. This means you can listen to **all events** directly from the root emitter.
 
 ```py Python [expandable]
 from beeai_framework.emitter import Emitter, EventMeta
@@ -330,11 +330,11 @@ root = Emitter.root()
 root.on("*.*", log_all_events)
 ```
 
-<Note>Listeners that are bound "closer" to the source are executed earlier. For those that reside at the same level, the order can be altered by setting a `priority` value which is part of the `EmitterOptions` class.</Note>
+<Note>Listeners that are bound "closer" to the source are executed earlier. Listeners at the same level can be ordered by the ordered by setting the `priority` field in the `EmitterOptions` class.</Note>
 
 **2. Instance Level**
 
-On the other hand, we can listen to events emitted by a specific instance of a class.
+You can also listen to events emitted by a **specific instance** of a class.
 
 ```py Python [expandable]
 from beeai_framework.backend.chat import ChatModel, ChatModelStartEvent
@@ -352,12 +352,11 @@ model.emitter.on("start", change_model_temperature)
 await model.run([UserMessage("Hello!")])
 ```
 
-The following example registers a callback to the class's emitter.
-Therefore, all events in a given class will be captured.
+This registers a callback to the class's emitter so that all events in a given class will be captured.
 
 **3. Run (Invocation) Level**
 
-Sometimes we might want to listen to events emitted by a single run of a class.
+Sometimes you may want to listen to events emitted by **a single run** of a class.
 
 ```py Python [expandable]
 from beeai_framework.backend.chat import ChatModel, ChatModelStartEvent
@@ -375,14 +374,13 @@ await model.run([UserMessage("Hello!")])
             .on("start", change_model_temperature)
 ```
 
-In this example, we registered a callback, not the class itself, but to the concrete run instance (created by the `run` method).
-The run instance has its own emitter, which is a direct child of the class emitter.
-Thanks to this, one can apply modifications to a single run instead of the whole class.
+Here, the callback is registered on the **run instance** (created by the `run` method).
+The run’s emitter is a child of the class emitter, allowing you to modify behavior for a single invocation without affecting others.
 
 ### Config
 
-With a larger number of callbacks, we might want to ensure that some run before the others or that some run exclusively.
-To address these needs, we can use the optional keyword argument called `options` of type `EmitterOptions`.
+When working with multiple callbacks, you may need to control execution order, or ensure that some run exclusively.
+You can do this using the optional `options` argument of type `EmitterOptions`.
 
 **Example**
 
@@ -437,9 +435,9 @@ The default value of the `match_nested` depends on the `matcher` value. Note tha
 
 ### Lifecycle
 
-When a framework component is executed, it creates a run context, which is a wrapper around the target handler that gives us the ability to modify its input and output ([learn more](#run-context)).
+When a framework component is executed, it creates a run context, which wraps the target handler and allows you to modify its input and output (Learn more in the [Run (Context)](#run-context) section).
 
-Once a `Run` instance is executed (i.e., **awaited**), the lifecycle begins:
+Once a `Run` instance is executed (i.e., **awaited**), its lifecycle proceeds through the following steps:
 
 1. The `start` event is emitted.
 2. The target implementation is executed.
@@ -455,7 +453,7 @@ The appropriate events are depicted in the following table:
 | `error`   | `FrameworkError`         | Triggered when an error occurs. |
 | `finish`  | `RunContextFinishEvent`  | Triggered when the run finishes. |
 
-See how you can listen to these events.
+Below is an example showing how to listen to these events:
 
 ```py Python [expandable]
 import asyncio
@@ -510,9 +508,9 @@ response = await (
 print("Agent:", response.get_text_content())
 ```
 
-<Note>In this example we are using `create_internal_event_matcher` which correctly matches the correct event.</Note>
+<Note>In this example, `create_internal_event_matcher` ensures we correctly match the event.</Note>
 
-<Tip>The current context can be retrieved anytime by calling `RunContext.get()` within a callback.</Tip>
+<Tip>You can retrieve the current run context at any time within a callback using `RunContext.get()`.</Tip>
 
 ### Debugging
 
