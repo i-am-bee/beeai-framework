@@ -120,7 +120,7 @@ def fix_double_escaped_tool_calls(items: list[MessageToolCallContent]) -> None:
 
 
 def parse_chat_model_usage(usage: Usage) -> ChatModelUsage:
-    details = usage.prompt_tokens_details or PromptTokensDetailsWrapper()  # type: ignore
+    details = usage.prompt_tokens_details or PromptTokensDetailsWrapper()  # type: ignore[no-untyped-call]
 
     return ChatModelUsage(
         prompt_tokens=usage.prompt_tokens,
