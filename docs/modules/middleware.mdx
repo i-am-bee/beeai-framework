@@ -123,13 +123,14 @@ The BeeAI Framework middleware is built on an underlying system of primitives, w
 
 ### Events
 
-An event refers to an action created by some component.
+An event refers to an action initiated by a component. It carries the details of what just happened within the system.
 
-- Has a name (e.g., `start`, `success`, `error`, ..., `fetch_data`).
-- Has a data payload (typically a Pydantic model).
-- Has associated metadata about the context where the event was fired.
+Every event has three key properties:
+- Name: A string identifier (e.g., `start`, `success`, `error`, or custom names like `fetch_data`).
+- Data payload: The  content of the event, typically astructured as a Pydantic model.
+- Metadata: Information about the context where the event was fired.
 
-The emitted event is processed via callbacks that look like this:
+You process these events using callbacks that follow this structure:
 
 ```py Python [expandable]
 from beeai_framework.backend.chat import ChatModelStartEvent
@@ -145,17 +146,17 @@ async def handler(data: ChatModelStartEvent, meta: EventMeta) -> None:
 
 ### Emitter
 
-The core component through which events are emitted and observed. An emitter is typically attached to some class but can be used alone.
+The **Emitter** is the core component that lets you send and watch for events. While it is typically attached to a specific class, you can also use it on its own.
 An emitter instance is typically the child of a root emitter to which all events are propagated. Emitters can be nested (one can be a child of another), hence they internally create a tree hierarchy.
 
-The emitter instance has the following **properties**:
+Every emitter instance has the following **properties**:
 
 - `namespace` in which the emitter operates (eg: `agents.requirement`, `tool.open_meteo`, ...).
 - `creator` class which the given emitter belongs to.
 - `context` (dictionary which is attached to all events emitted via the given emitter).
 - `trace` metadata (such as current `id`, `run_id` and `parent_id`)
 
-The emitter instance has the following **methods**:
+It also gives you the following **methods** for managing listeners:
 
 - `on` for registering a new event listener
   - The method takes `matcher` (event name, callback, regex), `callback` (sync/async function), and `options` (priority, etc.)
@@ -526,7 +527,7 @@ response = await agent
 
 ### Reusability
 
-We just showed you how you can alter the component's behavior by listening to events that the target emits and modifying them. To make this concept more general and reusable, we can group all relevant listeners into a class called middleware.
+We just showed you how you can alter the component's behavior by listening to events that the target emits and modifying them. To make this concept more general and reusable, we can group all relevant listeners into a class called `middleware`.
 
 Similarly, callbacks are registered via the `on` method, and middlewares are registered via the `middleware` method. Sometimes they can also be set on the class itself via a constructor.
 The middleware is a function that takes the `RunContext` where one can attach desired callbacks. Middleware can also be a class with a public `bind` method that retrieves the `RunContext`.
