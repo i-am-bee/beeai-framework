@@ -27,6 +27,7 @@ from typing_extensions import Unpack
 from beeai_framework.adapters.litellm.utils import (
     fix_double_escaped_tool_calls,
     litellm_debug,
+    parse_chat_model_usage,
     process_structured_output,
     to_strict_json_schema,
 )
@@ -45,7 +46,6 @@ from beeai_framework.backend.types import (
     ChatModelCost,
     ChatModelInput,
     ChatModelOutput,
-    ChatModelUsage,
 )
 from beeai_framework.context import RunContext
 from beeai_framework.logger import Logger
@@ -75,7 +75,7 @@ class LiteLLMChatModel(ChatModel, ABC):
         # drop any unsupported parameters that were passed in
         litellm.drop_params = True
         # disable LiteLLM caching in favor of our own
-        litellm.disable_cache()  # type: ignore [attr-defined]
+        litellm.disable_cache()
 
     async def _create(
         self,
@@ -320,7 +320,7 @@ class LiteLLMChatModel(ChatModel, ABC):
             # Will be set later
             output_structured=None,
             finish_reason=finish_reason,
-            usage=ChatModelUsage(**usage.model_dump()) if usage else None,
+            usage=parse_chat_model_usage(usage) if usage else None,
             cost=cost,
         )
 

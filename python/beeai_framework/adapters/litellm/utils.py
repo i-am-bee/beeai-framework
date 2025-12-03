@@ -5,10 +5,12 @@ import logging
 from typing import Any
 
 import litellm
+from litellm.types.utils import PromptTokensDetailsWrapper, Usage
 from openai.lib._pydantic import _ensure_strict_json_schema
 from pydantic import BaseModel
 
 from beeai_framework.backend import ChatModelError, MessageToolCallContent
+from beeai_framework.backend.types import ChatModelUsage
 from beeai_framework.backend.utils import parse_broken_json
 from beeai_framework.utils.dicts import traverse
 from beeai_framework.utils.models import is_pydantic_model
@@ -115,3 +117,15 @@ def fix_double_escaped_tool_calls(items: list[MessageToolCallContent]) -> None:
                 item.args = json.dumps(parsed, ensure_ascii=False)
         except json.JSONDecodeError:
             pass
+
+
+def parse_chat_model_usage(usage: Usage) -> ChatModelUsage:
+    details = usage.prompt_tokens_details or PromptTokensDetailsWrapper()  # type: ignore[no-untyped-call]
+
+    return ChatModelUsage(
+        prompt_tokens=usage.prompt_tokens,
+        completion_tokens=usage.completion_tokens,
+        total_tokens=usage.total_tokens,
+        cached_prompt_tokens=details.cached_tokens or 0,
+        cached_creation_tokens=details.cache_creation_tokens or 0,
+    )
