@@ -107,7 +107,7 @@ class LangChainChatModel(ChatModel):
                 total_tokens=usage_metadata.get("total_tokens") or 0,
             )
             if usage_metadata
-            else None,
+            else ChatModelUsage(),
         )
 
     async def clone(self) -> "LangChainChatModel":

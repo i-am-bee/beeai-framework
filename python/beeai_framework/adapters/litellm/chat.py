@@ -46,6 +46,7 @@ from beeai_framework.backend.types import (
     ChatModelCost,
     ChatModelInput,
     ChatModelOutput,
+    ChatModelUsage,
 )
 from beeai_framework.context import RunContext
 from beeai_framework.logger import Logger
@@ -282,7 +283,7 @@ class LiteLLMChatModel(ChatModel, ABC):
         finish_reason = choice.finish_reason if choice else None
         update = (choice.delta if isinstance(choice, StreamingChoices) else choice.message) if choice else None
 
-        cost: ChatModelCost | None = None
+        cost: ChatModelCost = ChatModelCost()
         with contextlib.suppress(Exception):
             if usage:
                 prompt_tokens_cost_usd, completion_tokens_cost_usd = cost_per_token(
@@ -320,7 +321,7 @@ class LiteLLMChatModel(ChatModel, ABC):
             # Will be set later
             output_structured=None,
             finish_reason=finish_reason,
-            usage=parse_chat_model_usage(usage) if usage else None,
+            usage=parse_chat_model_usage(usage) if usage else ChatModelUsage(),
             cost=cost,
         )
 

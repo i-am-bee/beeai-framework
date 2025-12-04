@@ -71,9 +71,6 @@ class JSONSchemaModel(ABC, BaseModel):
     @classmethod
     def create(cls, schema_name: str, schema: dict[str, Any]) -> type["JSONSchemaModel"]:
         from beeai_framework.backend.utils import inline_schema_refs
-        from beeai_framework.logger import Logger
-
-        logger = Logger(__name__)
 
         schema = inline_schema_refs(copy.deepcopy(schema))
         simplify_json_schema(schema)

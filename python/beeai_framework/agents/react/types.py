@@ -65,8 +65,8 @@ class ReActAgentRunIteration(BaseModel):
 class ReActAgentOutput(AgentOutput):
     iterations: list[ReActAgentRunIteration]
     memory: InstanceOf[BaseMemory]
-    usage: InstanceOf[ChatModelUsage] | None = None
-    cost: InstanceOf[ChatModelCost] | None = None
+    usage: InstanceOf[ChatModelUsage] = ChatModelUsage()
+    cost: InstanceOf[ChatModelCost] = ChatModelCost()
 
 
 class ReActAgentTemplates(BaseModel):

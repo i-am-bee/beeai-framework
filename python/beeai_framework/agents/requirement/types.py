@@ -67,8 +67,8 @@ class RequirementAgentRunState(BaseModel):
     memory: InstanceOf[BaseMemory]
     iteration: int
     steps: list[RequirementAgentRunStateStep] = []
-    usage: ChatModelUsage | None = None
-    cost: ChatModelCost | None = None
+    usage: ChatModelUsage = ChatModelUsage()
+    cost: ChatModelCost = ChatModelCost()
 
     @property
     def input(self) -> UserMessage:

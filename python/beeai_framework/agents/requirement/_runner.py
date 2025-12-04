@@ -113,21 +113,13 @@ class RequirementAgentRunner:
         messages, options = self._prepare_llm_request(request)
         response = await self._llm.run(messages, **options).middleware(stream_middleware)
 
-        if self._state.usage is not None:
-            if response.usage is not None:
-                self._state.usage.prompt_tokens += response.usage.prompt_tokens
-                self._state.usage.completion_tokens += response.usage.completion_tokens
-                self._state.usage.total_tokens += response.usage.total_tokens
-        else:
-            self._state.usage = response.usage
+        self._state.usage.prompt_tokens += response.usage.prompt_tokens
+        self._state.usage.completion_tokens += response.usage.completion_tokens
+        self._state.usage.total_tokens += response.usage.total_tokens
 
-        if self._state.cost is not None:
-            if response.cost is not None:
-                self._state.cost.prompt_tokens_usd += response.cost.prompt_tokens_usd
-                self._state.cost.completion_tokens_cost_usd += response.cost.completion_tokens_cost_usd
-                self._state.cost.total_cost_usd += response.cost.total_cost_usd
-        else:
-            self._state.cost = response.cost
+        self._state.cost.prompt_tokens_usd += response.cost.prompt_tokens_usd
+        self._state.cost.completion_tokens_cost_usd += response.cost.completion_tokens_cost_usd
+        self._state.cost.total_cost_usd += response.cost.total_cost_usd
 
         stream_middleware.unbind()
         return response

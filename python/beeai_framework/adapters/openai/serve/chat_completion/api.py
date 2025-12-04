@@ -114,13 +114,13 @@ class ChatCompletionAPI:
                         completion_tokens=content.usage.completion_tokens,
                         total_tokens=content.usage.total_tokens,
                     )
-                    if isinstance(content, ChatModelOutput | ReActAgentOutput) and content.usage is not None
+                    if isinstance(content, ChatModelOutput | ReActAgentOutput)
                     else chat_completion_types.ChatCompletionUsage(
                         prompt_tokens=content.state.usage.prompt_tokens,
                         completion_tokens=content.state.usage.completion_tokens,
                         total_tokens=content.state.usage.total_tokens,
                     )
-                    if isinstance(content, RequirementAgentOutput) and content.state.usage is not None
+                    if isinstance(content, RequirementAgentOutput)
                     else None
                 ),
             )

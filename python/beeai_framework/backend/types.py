@@ -58,22 +58,22 @@ class ChatModelInput(ChatModelParameters):
 
 
 class ChatModelUsage(BaseModel):
-    prompt_tokens: int
-    completion_tokens: int
-    total_tokens: int
+    prompt_tokens: int = 0
+    completion_tokens: int = 0
+    total_tokens: int = 0
     cached_prompt_tokens: int = 0
     cached_creation_tokens: int = 0
 
 
 class ChatModelCost(BaseModel):
-    prompt_tokens_usd: float
-    completion_tokens_cost_usd: float
-    total_cost_usd: float
+    prompt_tokens_usd: float = 0.0
+    completion_tokens_cost_usd: float = 0.0
+    total_cost_usd: float = 0.0
 
 
 class ChatModelOutput(RunnableOutput):
-    usage: InstanceOf[ChatModelUsage] | None = None
-    cost: ChatModelCost | None = None
+    usage: InstanceOf[ChatModelUsage] = ChatModelUsage()
+    cost: ChatModelCost = ChatModelCost()
     finish_reason: str | None = None
     output_structured: Any | BaseModel | None = None
 
@@ -181,27 +181,17 @@ class ChatModelOutput(RunnableOutput):
         if other.finish_reason:
             self.finish_reason = other.finish_reason
 
-        if self.cost is not None and other.cost is not None:
-            self.cost = ChatModelCost(
-                prompt_tokens_usd=max(self.cost.prompt_tokens_usd, other.cost.prompt_tokens_usd),
-                completion_tokens_cost_usd=max(
-                    self.cost.completion_tokens_cost_usd, other.cost.completion_tokens_cost_usd
-                ),
-                total_cost_usd=max(self.cost.total_cost_usd, other.cost.total_cost_usd),
-            )
-        elif self.cost is None and other.cost is not None:
-            self.cost = other.cost.model_copy()
+        self.cost = ChatModelCost(
+            prompt_tokens_usd=max(self.cost.prompt_tokens_usd, other.cost.prompt_tokens_usd),
+            completion_tokens_cost_usd=max(self.cost.completion_tokens_cost_usd, other.cost.completion_tokens_cost_usd),
+            total_cost_usd=max(self.cost.total_cost_usd, other.cost.total_cost_usd),
+        )
 
-        if self.usage and other.usage:
-            merged_usage = self.usage.model_copy()
-            if other.usage.total_tokens:
-                merged_usage.total_tokens = max(self.usage.total_tokens, other.usage.total_tokens)
-                merged_usage.prompt_tokens = max(self.usage.prompt_tokens, other.usage.prompt_tokens)
-                merged_usage.completion_tokens = max(self.usage.completion_tokens, other.usage.completion_tokens)
-            self.usage = merged_usage
-
-        elif other.usage:
-            self.usage = other.usage.model_copy()
+        self.usage = ChatModelUsage(
+            total_tokens=max(self.usage.total_tokens, other.usage.total_tokens),
+            prompt_tokens=max(self.usage.prompt_tokens, other.usage.prompt_tokens),
+            completion_tokens=max(self.usage.completion_tokens, other.usage.completion_tokens),
+        )
 
     def get_tool_calls(self) -> list[MessageToolCallContent]:
         assistant_message = [msg for msg in self.output if isinstance(msg, AssistantMessage)]
@@ -218,9 +208,9 @@ ChatModelCache = BaseCache[list[ChatModelOutput]]
 
 
 class EmbeddingModelUsage(BaseModel):
-    prompt_tokens: int
-    completion_tokens: int
-    total_tokens: int
+    prompt_tokens: int = 0
+    completion_tokens: int = 0
+    total_tokens: int = 0
 
 
 class EmbeddingModelInput(BaseModel):
@@ -232,7 +222,7 @@ class EmbeddingModelInput(BaseModel):
 class EmbeddingModelOutput(BaseModel):
     values: list[str]
     embeddings: list[list[float]]
-    usage: InstanceOf[EmbeddingModelUsage] | None = None
+    usage: InstanceOf[EmbeddingModelUsage] = EmbeddingModelUsage()
 
 
 class Document(BaseModel):

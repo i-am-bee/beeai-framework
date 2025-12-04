@@ -210,18 +210,16 @@ class ReActAgent(BaseAgent[ReActAgentOutput]):
         await self._input.memory.add_many(_input)
         await self._input.memory.add(final_message)
 
-        all_usages = [iteration.raw.usage for iteration in runner.iterations if iteration.raw.usage]
         usage = ChatModelUsage(
-            prompt_tokens=sum(u.prompt_tokens for u in all_usages),
-            completion_tokens=sum(u.completion_tokens for u in all_usages),
-            total_tokens=sum(u.total_tokens for u in all_usages),
+            prompt_tokens=sum(i.raw.usage.prompt_tokens for i in runner.iterations),
+            completion_tokens=sum(i.raw.usage.completion_tokens for i in runner.iterations),
+            total_tokens=sum(i.raw.usage.total_tokens for i in runner.iterations),
         )
 
-        all_costs = [iteration.raw.cost for iteration in runner.iterations if iteration.raw.cost]
         cost = ChatModelCost(
-            prompt_tokens_usd=sum(c.prompt_tokens_usd for c in all_costs),
-            completion_tokens_cost_usd=sum(c.completion_tokens_cost_usd for c in all_costs),
-            total_cost_usd=sum(c.total_cost_usd for c in all_costs),
+            prompt_tokens_usd=sum(i.raw.cost.prompt_tokens_usd for i in runner.iterations),
+            completion_tokens_cost_usd=sum(i.raw.cost.completion_tokens_cost_usd for i in runner.iterations),
+            total_cost_usd=sum(i.raw.cost.total_cost_usd for i in runner.iterations),
         )
 
         return ReActAgentOutput(

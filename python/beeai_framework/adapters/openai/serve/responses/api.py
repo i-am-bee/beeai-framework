@@ -344,13 +344,13 @@ class ResponsesAPI:
                             output_tokens=content.usage.completion_tokens,
                             total_tokens=content.usage.total_tokens,
                         )
-                        if isinstance(content, ChatModelOutput | ReActAgentOutput) and content.usage is not None
+                        if isinstance(content, ChatModelOutput | ReActAgentOutput)
                         else responses_types.ResponsesUsage(
                             input_tokens=content.state.usage.prompt_tokens,
                             output_tokens=content.state.usage.completion_tokens,
                             total_tokens=content.state.usage.total_tokens,
                         )
-                        if isinstance(content, RequirementAgentOutput) and content.state.usage is not None
+                        if isinstance(content, RequirementAgentOutput)
                         else None
                     ),
                 )
