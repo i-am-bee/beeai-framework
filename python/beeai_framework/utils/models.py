@@ -71,9 +71,6 @@ class JSONSchemaModel(ABC, BaseModel):
     @classmethod
     def create(cls, schema_name: str, schema: dict[str, Any]) -> type["JSONSchemaModel"]:
         from beeai_framework.backend.utils import inline_schema_refs
-        from beeai_framework.logger import Logger
-
-        logger = Logger(__name__)
 
         schema = inline_schema_refs(copy.deepcopy(schema))
         simplify_json_schema(schema)
@@ -105,10 +102,6 @@ class JSONSchemaModel(ABC, BaseModel):
             )
 
             if one_of:
-                logger.debug(
-                    f"{JSONSchemaModel.__name__}: does not support 'oneOf' modifier found in {param_name} attribute."
-                    f" Will use 'anyOf' instead."
-                )
                 return create_field(param_name, remap_key(param, source="oneOf", target="anyOf"), required)
 
             if any_of:
@@ -152,10 +145,6 @@ class JSONSchemaModel(ABC, BaseModel):
                 if isinstance(const, str):
                     target_type = Literal[const]
                 if not target_type:
-                    logger.debug(
-                        f"{JSONSchemaModel.__name__}: Can't resolve a correct type for '{param_name}' attribute."
-                        f" Using 'Any' as a fallback."
-                    )
                     target_type = type
 
                 if (not is_required and not default) or explicitly_nullable:

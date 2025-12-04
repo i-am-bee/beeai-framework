@@ -112,6 +112,10 @@ class RequirementAgentRunner:
         stream_middleware = self.__create_final_answer_stream(request.final_answer)
         messages, options = self._prepare_llm_request(request)
         response = await self._llm.run(messages, **options).middleware(stream_middleware)
+
+        self._state.usage.merge(response.usage)
+        self._state.cost.merge(response.cost)
+
         stream_middleware.unbind()
         return response
 
