@@ -5,13 +5,16 @@ icon: "repeat"
 
 ## Overview
 
-Middleware in the BeeAI Framework is the "connective tissue" that allows you to observe, intercept, and modify an agent's behavior without altering its core logic.
+Middleware in the BeeAI Framework is code that runs "in the middle" of an execution lifecycle—intercepting the flow between when a component (like an Agent, Tool, or Model) starts and when it finishes.
+
+As these components execute, they emit events at key moments, such as starting a task, calling a tool, or completing a response . Middleware hooks into these events to inject behaviors like logging, filtering, or safety checks—all without modifying the component's core logic. This modular approach allows you to apply consistent policies across your entire system.
+
+You can use built-in tools like `GlobalTrajectoryMiddleware` for immediate debugging, or write custom middleware to handle complex needs like blocking unsafe content, enforcing rate limits, or managing authentication.
 
 <Note>
-Note: **Middleware** here refers to the classic software design pattern, it is the code that runs between the agent's decision steps. This is distinct from the newer industry term "Agentic Middleware," which may refer to entire agent orchestration platforms.
+Note on Terminology: In this framework, **Middleware** refers to the classic software design pattern (pipeline interceptors) that runs between execution steps. This is distinct from the industry term "Agentic Middleware," which typically refers to entire orchestration platforms.
 </Note>
 
-The BeeAI Framework core is designed to be extensible. Middleware leverages the underlying system of **Events** and **Run Contexts** to hook into the agent's lifecycle. Whether you need to log a thought process, sanitize an input, or halt a dangerous action, middleware provides the interface to inject that logic.
 
 ## Built-in middleware
 
