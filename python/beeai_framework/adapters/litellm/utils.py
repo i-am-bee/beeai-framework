@@ -127,5 +127,5 @@ def parse_chat_model_usage(usage: Usage) -> ChatModelUsage:
         completion_tokens=usage.completion_tokens,
         total_tokens=usage.total_tokens,
         cached_prompt_tokens=details.cached_tokens or 0,
-        cached_creation_tokens=details.cache_creation_tokens or 0,
+        cached_creation_tokens=getattr(details, "cache_creation_tokens", 0),
     )
