@@ -38,23 +38,28 @@ class AmazonBedrockChatModel(LiteLLMChatModel):
         self._assert_setting_value(
             "api_key", api_key, display_name="api_key", envs=["AWS_BEARER_TOKEN_BEDROCK"], allow_empty=True
         )
-        if not self._settings.get("api_key"):
-            self._assert_setting_value(
-                "aws_access_key_id", access_key_id, display_name="access_key_id", envs=["AWS_ACCESS_KEY_ID"]
-            )
-            self._assert_setting_value(
-                "aws_secret_access_key",
-                secret_access_key,
-                display_name="secret_access_key",
-                envs=["AWS_SECRET_ACCESS_KEY"],
-            )
+        api_key_found = bool(self._settings.get("api_key"))
 
+        self._assert_setting_value(
+            "aws_access_key_id",
+            access_key_id,
+            display_name="access_key_id",
+            envs=["AWS_ACCESS_KEY_ID"],
+            allow_empty=api_key_found,
+        )
+        self._assert_setting_value(
+            "aws_secret_access_key",
+            secret_access_key,
+            display_name="secret_access_key",
+            envs=["AWS_SECRET_ACCESS_KEY"],
+            allow_empty=api_key_found,
+        )
         self._assert_setting_value(
             "aws_region_name",
             region,
             envs=["AWS_REGION", "AWS_REGION_NAME"],
             display_name="region",
-            allow_empty=True,
+            allow_empty=api_key_found,
         )
         self._settings["extra_headers"] = utils.parse_extra_headers(
             self._settings.get("extra_headers"), os.getenv("AWS_API_HEADERS")
