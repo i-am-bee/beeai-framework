@@ -64,11 +64,25 @@ class ChatModelUsage(BaseModel):
     cached_prompt_tokens: int = 0
     cached_creation_tokens: int = 0
 
+    def merge(self, other: "ChatModelUsage") -> "ChatModelUsage":
+        self.prompt_tokens += other.prompt_tokens
+        self.completion_tokens += other.completion_tokens
+        self.total_tokens += other.total_tokens
+        self.cached_prompt_tokens += other.cached_prompt_tokens
+        self.cached_creation_tokens += other.cached_creation_tokens
+        return self
+
 
 class ChatModelCost(BaseModel):
     prompt_tokens_usd: float = 0.0
     completion_tokens_cost_usd: float = 0.0
     total_cost_usd: float = 0.0
+
+    def merge(self, other: "ChatModelCost") -> "ChatModelCost":
+        self.prompt_tokens_usd += other.prompt_tokens_usd
+        self.completion_tokens_cost_usd += other.completion_tokens_cost_usd
+        self.total_cost_usd += other.total_cost_usd
+        return self
 
 
 class ChatModelOutput(RunnableOutput):
@@ -211,6 +225,12 @@ class EmbeddingModelUsage(BaseModel):
     prompt_tokens: int = 0
     completion_tokens: int = 0
     total_tokens: int = 0
+
+    def merge(self, other: "EmbeddingModelUsage") -> "EmbeddingModelUsage":
+        self.prompt_tokens += other.prompt_tokens
+        self.completion_tokens += other.completion_tokens
+        self.total_tokens += other.total_tokens
+        return self
 
 
 class EmbeddingModelInput(BaseModel):

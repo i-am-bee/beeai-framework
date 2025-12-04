@@ -113,13 +113,8 @@ class RequirementAgentRunner:
         messages, options = self._prepare_llm_request(request)
         response = await self._llm.run(messages, **options).middleware(stream_middleware)
 
-        self._state.usage.prompt_tokens += response.usage.prompt_tokens
-        self._state.usage.completion_tokens += response.usage.completion_tokens
-        self._state.usage.total_tokens += response.usage.total_tokens
-
-        self._state.cost.prompt_tokens_usd += response.cost.prompt_tokens_usd
-        self._state.cost.completion_tokens_cost_usd += response.cost.completion_tokens_cost_usd
-        self._state.cost.total_cost_usd += response.cost.total_cost_usd
+        self._state.usage.merge(response.usage)
+        self._state.cost.merge(response.cost)
 
         stream_middleware.unbind()
         return response
