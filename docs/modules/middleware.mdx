@@ -16,13 +16,13 @@ Note on Terminology: In this framework, **Middleware** refers to the classic sof
 </Note>
 
 
-## Built-in middleware
+## Built-in Middleware
 
 The following section showcases built-in middleware that you can start using right away.
 
 ### Global Trajectory
 
-The fastest way to see what's happening in your code (who is calling what) is by using the `GlobalTrajectoryMiddleware`. It captures all events, even deeply-nested, and prints them to the console, visualizing nested calls with indentation.
+The fastest way to understand your agent's execution flow is by using the `GlobalTrajectoryMiddleware`. It captures all events, including deeply-nested ones, and prints them to the console, using indentation to visualize the call stack .
 
 **Example**
 
@@ -60,18 +60,27 @@ from beeai_framework.backend.chat import ChatModel
 from beeai_framework.tools.weather.openmeteo import OpenMeteoTool
 from beeai_framework.agents.base import BaseAgent
 
-GlobalTrajectoryMiddleware(target=[Tool]) # log only tool calls
-GlobalTrajectoryMiddleware(target=[Tool], excluded=[OpenMeteoTool]) # log only tool calls except OpenMeteoTool
-GlobalTrajectoryMiddleware(target=[ChatModel]) # log only tool calls except OpenMeteoTool
-GlobalTrajectoryMiddleware(prefix_by_type={BaseAgent: "🐝 "}) # use Bee Emoji for agents
+# Log only tool calls
+GlobalTrajectoryMiddleware(target=[Tool]) 
+
+# Log only tool calls except OpenMeteoTool
+GlobalTrajectoryMiddleware(target=[Tool], excluded=[OpenMeteoTool]) 
+
+# Log only ChatModel events
+GlobalTrajectoryMiddleware(target=[ChatModel]) 
+
+# Use a Bee emoji for agents
+GlobalTrajectoryMiddleware(prefix_by_type={BaseAgent: "🐝 "}) 
 ```
 
-<Tip>You can listen to events emitted throughout the execution and build your custom trajectory.</Tip>
+<Tip>You can listen to events emitted throughout the execution to build your custom trajectory.</Tip>
 
 
 ### Tool Call Streaming
 
-Middleware for handling streaming tool calls in a ChatModel. It observes [Chat Model](/modules/backend#chat-model) stream updates and parses tool calls on demand so that they can be consumed immediately. It works even without streaming enabled (emitting the `update` event at the very end).
+This middleware handles streaming tool calls in a `ChatModel`. It observes stream updates from the [Chat Model](/modules/backend#chat-model) and parses tool calls on demand so that they can be consumed immediately. 
+
+It works even without streaming enabled, in which case it emits the `update` event at the end of the execution..
 
 **Example**
 
