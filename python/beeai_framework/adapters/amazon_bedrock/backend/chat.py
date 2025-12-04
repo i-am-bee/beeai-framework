@@ -36,7 +36,7 @@ class AmazonBedrockChatModel(LiteLLMChatModel):
         )
 
         self._assert_setting_value(
-            "api_key", api_key, display_name="api_key", envs=["AWS_BEARER_TOKEN_BEDROCK"], allow_empty=True
+            "api_key", api_key, display_name="api_key", envs=["AWS_BEDROCK_API_KEY"], allow_empty=True
         )
         api_key_found = bool(self._settings.get("api_key"))
 
