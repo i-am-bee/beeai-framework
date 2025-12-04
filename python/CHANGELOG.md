@@ -1,3 +1,15 @@
+## python_v0.1.72 (2025-12-04)
+
+### Bug Fixes
+
+- **agents**: handle prompt caching edge cases for RequirementAgent with Bedrock
+- **adapters**: update AgentStack Form Extension (#1344)
+
+### Features
+
+- **agents**: add cost and token usage info (#1334)
+- **adapters**: allow passing API Key for Bedrock (#1345)
+
 ## python_v0.1.71 (2025-12-03)
 
 ### Bug Fixes
