@@ -138,7 +138,12 @@ class RequirementAgentRunner:
             },
             {
                 "location": "message",
-                "index": find_last_index(messages, lambda msg: not msg.meta.get(TEMP_MESSAGE_META_KEY)),
+                "index": find_last_index(
+                    messages,
+                    lambda msg: not msg.meta.get(TEMP_MESSAGE_META_KEY)
+                    # TODO: remove once https://github.com/BerriAI/litellm/issues/17479 is resolved
+                    and (self._llm.provider_id != "amazon_bedrock" or not isinstance(msg, ToolMessage)),
+                ),
             },
         ]
         options["cache_control_injection_points"] = ensure_strictly_increasing(  # type: ignore
