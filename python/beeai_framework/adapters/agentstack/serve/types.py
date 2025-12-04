@@ -12,9 +12,9 @@ except ModuleNotFoundError as e:
 
 
 class BaseAgentStackExtensions(TypedDict, total=True):
-    form: Annotated[
-        agentstack_extensions.FormExtensionServer,
-        agentstack_extensions.FormExtensionSpec(params=None),
+    form_request: Annotated[
+        agentstack_extensions.FormRequestExtensionServer,
+        agentstack_extensions.FormRequestExtensionSpec(),
     ]
     trajectory: Annotated[
         agentstack_extensions.TrajectoryExtensionServer, agentstack_extensions.TrajectoryExtensionSpec()

@@ -61,6 +61,8 @@ class ChatModelUsage(BaseModel):
     prompt_tokens: int
     completion_tokens: int
     total_tokens: int
+    cached_prompt_tokens: int = 0
+    cached_creation_tokens: int = 0
 
 
 class ChatModelCost(BaseModel):

@@ -30,6 +30,7 @@ from beeai_framework.backend import (
     MessageToolResultContent,
     ToolMessage,
 )
+from beeai_framework.backend.chat import ChatModelOptions
 from beeai_framework.backend.utils import parse_broken_json
 from beeai_framework.context import RunContext
 from beeai_framework.memory import UnconstrainedMemory
@@ -37,6 +38,7 @@ from beeai_framework.memory.utils import TEMP_MESSAGE_META_KEY, delete_messages_
 from beeai_framework.middleware.stream_tool_call import StreamToolCallMiddleware
 from beeai_framework.tools import AnyTool
 from beeai_framework.utils.counter import RetryCounter
+from beeai_framework.utils.lists import ensure_strictly_increasing, find_last_index
 from beeai_framework.utils.strings import find_first_pair, generate_random_string, to_json
 
 
@@ -108,19 +110,8 @@ class RequirementAgentRunner:
         request: RequirementAgentRequest,
     ) -> ChatModelOutput:
         stream_middleware = self.__create_final_answer_stream(request.final_answer)
-        response = await self._llm.run(
-            [
-                _create_system_message(
-                    template=self._templates.system,
-                    request=request,
-                ),
-                *self._state.memory.messages,
-            ],
-            max_retries=self._run_config.max_retries_per_step,
-            tools=request.allowed_tools,
-            tool_choice=request.tool_choice,
-            stream_partial_tool_calls=True,
-        ).middleware(stream_middleware)
+        messages, options = self._prepare_llm_request(request)
+        response = await self._llm.run(messages, **options).middleware(stream_middleware)
 
         if self._state.usage is not None:
             if response.usage is not None:
@@ -140,6 +131,43 @@ class RequirementAgentRunner:
 
         stream_middleware.unbind()
         return response
+
+    def _prepare_llm_request(self, request: RequirementAgentRequest) -> tuple[list[AnyMessage], ChatModelOptions]:
+        messages = [
+            _create_system_message(
+                template=self._templates.system,
+                request=request,
+            ),
+            *self._state.memory.messages,
+        ]
+
+        options = ChatModelOptions(
+            max_retries=self._run_config.max_retries_per_step,
+            tools=request.allowed_tools,
+            tool_choice=request.tool_choice,
+            stream_partial_tool_calls=True,
+        )
+
+        cache_control_injection_points = [
+            {
+                "location": "message",
+                "index": 1 if self._requirements else 0,  # system prompt might be dynamic when requirements are set
+            },
+            {
+                "location": "message",
+                "index": find_last_index(
+                    messages,
+                    lambda msg: not msg.meta.get(TEMP_MESSAGE_META_KEY)
+                    # TODO: remove once https://github.com/BerriAI/litellm/issues/17479 is resolved
+                    and (self._llm.provider_id != "amazon_bedrock" or not isinstance(msg, ToolMessage)),
+                ),
+            },
+        ]
+        options["cache_control_injection_points"] = ensure_strictly_increasing(  # type: ignore
+            cache_control_injection_points,
+            key=lambda v: v["index"],  # prevent duplicates
+        )
+        return messages, options
 
     async def _create_final_answer_tool_call(self, full_text: str) -> AssistantMessage | None:
         """Try to convert a text message to a valid final answer tool call."""

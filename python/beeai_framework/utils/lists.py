@@ -1,7 +1,7 @@
 # Copyright 2025 © BeeAI a Series of LF Projects, LLC
 # SPDX-License-Identifier: Apache-2.0
 
-from collections.abc import Callable
+from collections.abc import Callable, Sequence
 from typing import Any, TypeVar, overload
 
 T = TypeVar("T")
@@ -52,3 +52,32 @@ def remove_by_reference(lst: list[Any], obj: Any) -> None:
 def _append_if_not_exists(lst: list[T], item: T) -> None:
     if item not in lst:
         lst.append(item)
+
+
+def find_last_index(
+    seq: Sequence[T],
+    condition: Callable[[T], bool],
+    *,
+    negative: bool = False,
+) -> int | None:
+    """
+    Returns the index of the last element in `seq` that satisfies `condition`.
+
+    If `negative` is True, returns the negative offset (like -1, -2, ...),
+    otherwise returns the positive index (like 0, 1, 2, ...).
+
+    Returns None if no match is found.
+    """
+    for i in range(len(seq) - 1, -1, -1):
+        if condition(seq[i]):
+            return i - len(seq) if negative else i
+    return None
+
+
+def ensure_strictly_increasing(seq: list[T], *, key: Callable[[T], int]) -> list[T]:
+    """Filter sequence so that key(item) is strictly increasing."""
+    result: list[T] = []
+    for item in seq:
+        if not result or key(item) > key(result[-1]):
+            result.append(item)
+    return result

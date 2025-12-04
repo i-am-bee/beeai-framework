@@ -5,7 +5,6 @@ import contextlib
 from collections.abc import Callable
 from contextvars import ContextVar
 from typing import TYPE_CHECKING, Any, Optional, Self, Unpack
-from uuid import uuid4
 
 from beeai_framework.adapters.agentstack.backend.chat import AgentStackChatModel
 from beeai_framework.adapters.agentstack.serve.types import BaseAgentStackExtensions
@@ -62,11 +61,7 @@ class AgentStackContext:
 
     async def _read(self, prompt: str) -> str:
         try:
-            from agentstack_sdk.a2a.extensions import (
-                FormRender,
-                FormResponse,
-                TextField,
-            )
+            from agentstack_sdk.a2a.extensions.common.form import FormRender, FormResponse, TextField
 
         except ModuleNotFoundError as e:
             raise ModuleNotFoundError(
@@ -75,9 +70,8 @@ class AgentStackContext:
 
         try:
             answer_field_id = "answer"
-            form_data = await self._extensions["form"].request_form(
+            form_data = await self._extensions["form_request"].request_form(
                 form=FormRender(
-                    id="form",
                     title=prompt,
                     description="",
                     columns=1,
@@ -107,7 +101,7 @@ class AgentStackContext:
 
     async def _confirm(self, question: str, **kwargs: Unpack[IOConfirmKwargs]) -> bool:
         try:
-            from agentstack_sdk.a2a.extensions.ui.form import CheckboxField, FormRender, FormResponse
+            from agentstack_sdk.a2a.extensions.common.form import CheckboxField, FormRender, FormResponse
 
         except ModuleNotFoundError as e:
             raise ModuleNotFoundError(
@@ -118,9 +112,8 @@ class AgentStackContext:
         formatted_data = f"\n```json\n{to_json(data, sort_keys=False, indent=2)}\n``` \n\n" if data else ""
         try:
             permission_field_id = "answer"
-            form_data = await self._extensions["form"].request_form(
+            form_data = await self._extensions["form_request"].request_form(
                 form=FormRender(
-                    id=str(uuid4()),
                     title=f"{question}{formatted_data}",  # markdown is not supported in the description field
                     description=kwargs.get("description"),
                     columns=1,
