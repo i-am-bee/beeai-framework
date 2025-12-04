@@ -321,9 +321,16 @@ if __name__ == "__main__":
 
 ```
 
-## Working with events
+## Event Handling
 
-The following sections explain how to use emitters to capture, observe, and modify events.
+Building robust agents requires precise control over the execution lifecycle. You need the ability to not only observe your agent's behavior but also intercept and modify it at specific points.
+
+The following sections covers the mechanics of the BeeAI Framework **event system** and will enable you to manage:
+- **Scopes**: Deciding whether to listen globally, per instance, or for a single run.
+- ***Config**: Controlling listener priority, persistence, and blocking behavior.
+- **Lifecycle**: Undestanding the exact sequence events that occur during execution.
+- **Debugging**: Inspecting raw event streams to see exactly what your agent is doing.
+- **Piping**: Linking emitters together via piping to create unified event streams.
 
 ### Scopes
 
@@ -529,7 +536,9 @@ print("Agent:", response.get_text_content())
 
 ### Debugging
 
-To see which events get emitted in your case, the best way is to register a log-all callback for your run.
+While the [Global Trajectory](#global-trajectory) middleware is excellent for visualizing the structural hierarchy of a run, sometimes you need to inspect the raw stream of events as they happen.
+
+To do this quickly without setting up a full middleware class, you can register a wildcard listener (`*.*`) directly on your run. This captures every single event emitted during that specific execution.
 
 ```py Python [expandable]
 agent = RequirementAgent("ollama:granite3.3", tools=[OpenMeteoTool()])
@@ -537,68 +546,6 @@ response = await agent
   .run("What's the current weather in Miami?")
   .on("*.*", lambda data, meta: print(meta.path, 'by', type(meta.creator)))
 ```
-
-
-### Reusability
-
-We just showed you how you can alter the component's behavior by listening to events that the target emits and modifying them. To make this concept more general and reusable, we can group all relevant listeners into a class called `middleware`.
-
-Similarly, callbacks are registered via the `on` method, and middlewares are registered via the `middleware` method. Sometimes they can also be set on the class itself via a constructor.
-The middleware is a function that takes the `RunContext` where one can attach desired callbacks. Middleware can also be a class with a public `bind` method that retrieves the `RunContext`.
-
-{/* <!-- embedme python/examples/middleware/override.py --> */}
-
-```py Python [expandable]
-import asyncio
-from typing import Any
-
-from beeai_framework.backend import AssistantMessage, ChatModel, ChatModelOutput, UserMessage
-from beeai_framework.context import RunContext, RunContextStartEvent, RunMiddlewareProtocol
-from beeai_framework.emitter import EmitterOptions, EventMeta
-from beeai_framework.emitter.utils import create_internal_event_matcher
-
-
-class OverrideResponseMiddleware(RunMiddlewareProtocol):
-    """Middleware that sets the result value for a given runnable without executing it"""
-
-    def __init__(self, result: Any) -> None:
-        self._result = result
-
-    def bind(self, ctx: RunContext) -> None:
-        """Calls once the target is about to be run."""
-
-        ctx.emitter.on(
-            create_internal_event_matcher("start", ctx.instance),
-            self._run,
-            # ensures that this callback will be the first invoked
-            EmitterOptions(is_blocking=True, priority=1),
-        )
-
-    async def _run(self, data: RunContextStartEvent, meta: EventMeta) -> None:
-        """Set output property to the result which prevents an execution of the target handler."""
-
-        data.output = self._result
-
-
-async def main() -> None:
-    middleware = OverrideResponseMiddleware(ChatModelOutput(output=[AssistantMessage("BeeAI is the best!")]))
-    response = await ChatModel.from_name("ollama:granite4:micro").run([UserMessage("Hello!")]).middleware(middleware)
-    print(response.get_text_content())  # "BeeAI is the best!"
-
-
-if __name__ == "__main__":
-    asyncio.run(main())
-
-```
-
-<Note>Note that this concept is built on top of the run instance and is not available on the standalone emitter.</Note>
-
-<Important>Such middleware can be applied to an arbitrary class, just ensure that the mocked response matches the expected output type (eg, if you override the response for a `ChatModel`, then the return type should be of `ChatModelOutput`). The middleware can be both stateful and stateless, depending on the use case.</Important>
-
-**When to use middleware vs simple callback registration?**
-
-A rule of thumb is to create middleware if the desired functionality consists of multiple pieces that must be used together or when the functionality is more complex.
-
 
 ### Piping
 
@@ -695,6 +642,66 @@ await second.emit("d", {});
 ```
 
 </CodeGroup>
+
+## Creating Custom Middleware
+
+We just showed you how you can alter the component's behavior by listening to events that the target emits and modifying them. To make this concept more general and reusable, we can group all relevant listeners into a class called `middleware`.
+
+Similarly, callbacks are registered via the `on` method, and middlewares are registered via the `middleware` method. Sometimes they can also be set on the class itself via a constructor.
+The middleware is a function that takes the `RunContext` where one can attach desired callbacks. Middleware can also be a class with a public `bind` method that retrieves the `RunContext`.
+
+{/* <!-- embedme python/examples/middleware/override.py --> */}
+
+```py Python [expandable]
+import asyncio
+from typing import Any
+
+from beeai_framework.backend import AssistantMessage, ChatModel, ChatModelOutput, UserMessage
+from beeai_framework.context import RunContext, RunContextStartEvent, RunMiddlewareProtocol
+from beeai_framework.emitter import EmitterOptions, EventMeta
+from beeai_framework.emitter.utils import create_internal_event_matcher
+
+
+class OverrideResponseMiddleware(RunMiddlewareProtocol):
+    """Middleware that sets the result value for a given runnable without executing it"""
+
+    def __init__(self, result: Any) -> None:
+        self._result = result
+
+    def bind(self, ctx: RunContext) -> None:
+        """Calls once the target is about to be run."""
+
+        ctx.emitter.on(
+            create_internal_event_matcher("start", ctx.instance),
+            self._run,
+            # ensures that this callback will be the first invoked
+            EmitterOptions(is_blocking=True, priority=1),
+        )
+
+    async def _run(self, data: RunContextStartEvent, meta: EventMeta) -> None:
+        """Set output property to the result which prevents an execution of the target handler."""
+
+        data.output = self._result
+
+
+async def main() -> None:
+    middleware = OverrideResponseMiddleware(ChatModelOutput(output=[AssistantMessage("BeeAI is the best!")]))
+    response = await ChatModel.from_name("ollama:granite4:micro").run([UserMessage("Hello!")]).middleware(middleware)
+    print(response.get_text_content())  # "BeeAI is the best!"
+
+
+if __name__ == "__main__":
+    asyncio.run(main())
+
+```
+
+<Note>Note that this concept is built on top of the run instance and is not available on the standalone emitter.</Note>
+
+<Important>Such middleware can be applied to an arbitrary class, just ensure that the mocked response matches the expected output type (eg, if you override the response for a `ChatModel`, then the return type should be of `ChatModelOutput`). The middleware can be both stateful and stateless, depending on the use case.</Important>
+
+**When to use middleware vs simple callback registration?**
+
+A rule of thumb is to create middleware if the desired functionality consists of multiple pieces that must be used together or when the functionality is more complex.
 
 
 ## Events glossary
