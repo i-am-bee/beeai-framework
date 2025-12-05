@@ -86,12 +86,12 @@ class AgentStackChatModel(ChatModel):
             if k in CopyableKwargs and (kwargs.get(k) is not None or not is_primitive(v))
         }
         self.preferred_models = preferred_models or []
-        self.__initiated = True
+        self._initiated = True
 
     def __setattr__(self, name: str, value: Any) -> None:
         super().__setattr__(name, value)
 
-        if not getattr(self, "__initiated", False):
+        if not getattr(self, "_initiated", False):
             return
 
         if name in CopyableKwargs:
