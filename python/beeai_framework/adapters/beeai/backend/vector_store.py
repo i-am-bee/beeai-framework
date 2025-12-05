@@ -35,6 +35,7 @@ class BeeAIVectorStore(VectorStore, ABC):
             target_class = getattr(current_module, class_name)
             if not issubclass(target_class, BeeAIVectorStore):
                 raise ValueError(f"Class '{class_name}' is not a BeeAIVectorStore subclass")
+            # pyrefly: ignore [unexpected-keyword]
             instance: BeeAIVectorStore = target_class(embedding_model=embedding_model, **kwargs)
             return instance
         except AttributeError:

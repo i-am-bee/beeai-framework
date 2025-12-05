@@ -32,6 +32,7 @@ def create_internal_event_matcher(
     excluded_instance: object | None = None,
     excluded_emitter: Optional["Emitter"] = None,
 ) -> "MatcherFn":
+    # pyrefly: ignore [bad-assignment]
     allowed_names: list[str] = cast_list(name)
 
     def matcher(event: "EventMeta") -> bool:

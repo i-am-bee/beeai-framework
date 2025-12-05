@@ -368,9 +368,11 @@ class ChatModel(Runnable[ChatModelOutput]):
         except Exception as ex:
             await cache_entry.delete()
             error = ChatModelError.ensure(ex, model=self)
+            # pyrefly: ignore [unbound-name]
             await context.emitter.emit("error", ChatModelErrorEvent(input=model_input, error=error))
             raise error
         finally:
+            # pyrefly: ignore [unbound-name]
             await context.emitter.emit("finish", None)
 
     async def __run(

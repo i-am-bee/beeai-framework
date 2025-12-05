@@ -69,6 +69,7 @@ def convert_to_a2a_message(
         if len(input) == 0:
             raise ValueError("Input cannot be empty")
         elif len(input) > 1:
+            # pyrefly: ignore [deprecated]
             logger.warn("Input contains more than one message, only the last one will be used.")
         return convert_to_a2a_message(
             input[-1], context_id=context_id, task_id=task_id, reference_task_ids=reference_task_ids, metadata=metadata

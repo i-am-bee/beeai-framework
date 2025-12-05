@@ -663,6 +663,7 @@ async def main() -> None:
 
     print("======DONE (showing the full message history)=======")
 
+    # pyrefly: ignore [unbound-name]
     messages = response.state.memory.messages
     for msg in messages:
         print(msg)

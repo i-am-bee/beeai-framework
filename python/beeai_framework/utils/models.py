@@ -141,8 +141,10 @@ class JSONSchemaModel(ABC, BaseModel):
                 )
 
                 if enum is not None and isinstance(enum, list):
+                    # pyrefly: ignore [invalid-literal]
                     target_type = Literal[tuple(enum)]
                 if isinstance(const, str):
+                    # pyrefly: ignore [not-a-type]
                     target_type = Literal[const]
                 if not target_type:
                     target_type = type
@@ -156,6 +158,7 @@ class JSONSchemaModel(ABC, BaseModel):
             )
 
         properties = schema.get("properties", {})
+        # pyrefly: ignore [bad-keyword-argument]
         updated_config = ConfigDict(**cls.model_config, title=schema.get("title", None))
         updated_config["extra"] = "allow" if schema.get("additionalProperties") else "forbid"
         updated_config["arbitrary_types_allowed"] = True

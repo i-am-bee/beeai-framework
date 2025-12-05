@@ -28,11 +28,13 @@ def beta_tool() -> str:
     return "beta"
 
 
+# pyrefly: ignore [bad-argument-type]
 @requirement(name="allow-alpha", targets=["alpha_tool"])
 def allow_alpha_requirement(state: RequirementAgentRunState, ctx: RunContext) -> list[Rule]:
     return [Rule(target="alpha_tool", allowed=True)]
 
 
+# pyrefly: ignore [bad-argument-type]
 @requirement(name="hide-beta", targets=["beta_tool"])
 def hide_beta_requirement(state: RequirementAgentRunState, ctx: RunContext) -> list[Rule]:
     return [Rule(target="beta_tool", allowed=False, hidden=True)]

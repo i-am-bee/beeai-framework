@@ -117,6 +117,7 @@ class A2AServer(
 
         request_handler = a2a_request_handlers.DefaultRequestHandler(
             agent_executor=executor,
+            # pyrefly: ignore [implicit-import]
             task_store=metadata.get("task_store", None) or a2a_server.tasks.InMemoryTaskStore(),
             queue_manager=metadata.get("queue_manager", None),
             push_sender=metadata.get("push_sender", metadata.get("push_notifier", None)),  # type: ignore

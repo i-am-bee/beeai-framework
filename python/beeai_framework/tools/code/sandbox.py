@@ -61,6 +61,7 @@ class SandboxTool(Tool[BaseModel, SandboxToolOptions, StringToolOutput]):
     def input_schema(self) -> type[BaseModel]:
         return JSONSchemaModel.create(self.name, self._tool_options.input_schema)
 
+    # pyrefly: ignore [bad-param-name-override]
     async def _run(
         self, tool_input: BaseModel | dict[str, Any], options: SandboxToolOptions | None, context: RunContext
     ) -> StringToolOutput:

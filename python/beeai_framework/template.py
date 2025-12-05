@@ -103,6 +103,7 @@ class PromptTemplate(Generic[T]):
         new_config = customizer(self._config) if customizer else self._config
         if not isinstance(new_config, PromptTemplateInput):
             raise ValueError("Return type from customizer must be a PromptTemplateInput or nothing.")
+        # pyrefly: ignore [deprecated]
         return PromptTemplate(new_config)
 
     def update(

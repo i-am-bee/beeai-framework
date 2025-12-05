@@ -97,6 +97,7 @@ Do not use this tool multiple times in a row, always write the full code you wan
             creator=self,
         )
 
+    # pyrefly: ignore [bad-param-name-override]
     async def _run(
         self, tool_input: PythonToolInput, options: ToolRunOptions | None, context: RunContext
     ) -> PythonToolOutput:
@@ -158,7 +159,9 @@ Do not use this tool multiple times in a row, always write the full code you wan
                 return response.json()
         except httpx.HTTPStatusError as err:
             raise ToolError.ensure(
-                err, message=f"Request to code interpreter has failed with HTTP status code {response.status_code}."
+                err,
+                # pyrefly: ignore [unbound-name]
+                message=f"Request to code interpreter has failed with HTTP status code {response.status_code}.",
             )
         except httpx.HTTPError as err:
             raise ToolError(

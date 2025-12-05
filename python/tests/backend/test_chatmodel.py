@@ -40,6 +40,7 @@ class ReverseWordsDummyModel(ChatModel):
     """Dummy model that simply reverses every word in a UserMessages"""
 
     model_id = "reversed_words_model"
+    # pyrefly: ignore [bad-override]
     provider_id = "ollama"
 
     def reverse_message_words(self, messages: list[AnyMessage]) -> list[str]:
@@ -50,11 +51,13 @@ class ReverseWordsDummyModel(ChatModel):
                 reversed_words_messages.append(reversed_words)
         return reversed_words_messages
 
+    # pyrefly: ignore [bad-param-name-override]
     async def _create(self, input: ChatModelInput, _: RunContext) -> ChatModelOutput:
         reversed_words_messages = self.reverse_message_words(input.messages)
 
         output_structured: Any = {"reversed": "".join(reversed_words_messages)} if input.response_format else None
         if isinstance(input.response_format, type) and issubclass(input.response_format, BaseModel):
+            # pyrefly: ignore [missing-attribute]
             output_structured = input.response_format.model_validate(output_structured)
 
         return ChatModelOutput(
@@ -62,6 +65,7 @@ class ReverseWordsDummyModel(ChatModel):
             output_structured=output_structured,
         )
 
+    # pyrefly: ignore [bad-param-name-override]
     async def _create_stream(self, input: ChatModelInput, context: RunContext) -> AsyncGenerator[ChatModelOutput]:
         words = self.reverse_message_words(input.messages)[0].split(" ")
 

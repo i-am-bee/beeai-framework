@@ -61,6 +61,7 @@ async def main() -> None:
 
 
 if __name__ == "__main__":
+    # pyrefly: ignore [missing-attribute]
     langchain.debug = False
     try:
         asyncio.run(main())

@@ -218,13 +218,16 @@ class LinePrefixParser:
 
         stash = _lines_to_string(self._lines)
         self._lines.clear()
+        # pyrefly: ignore [bad-index]
         field = self._nodes[self._last_node_key].field
         if stash:
             field.write(stash)
             await self._emit_partial_update(
                 LinePrefixParserUpdate(key=self._last_node_key, value=field.get_partial(), delta=stash, field=field)
             )
+        # pyrefly: ignore [bad-argument-type]
         await self._emit_final_update(self._last_node_key, field)
+        # pyrefly: ignore [bad-index]
         current_node = self._nodes[self._last_node_key]
         if not current_node.is_end:
             self._throw_with_context(

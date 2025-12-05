@@ -37,7 +37,9 @@ class RetryCounter:
         # TODO: ifFatal, isRetryable etc
         if self.remaining < 0:
             self._finalError = self._error_class(  # type: ignore
-                f"Maximal amount of global retries ({self._max_retries}) has been reached.", cause=self._lastError
+                f"Maximal amount of global retries ({self._max_retries}) has been reached.",
+                # pyrefly: ignore [unexpected-keyword]
+                cause=self._lastError,
             )
             raise self._finalError
 

@@ -20,6 +20,7 @@ class MonorepoCommitsCz(ConventionalCommitsCz):
         "perf": "Performance Improvements",
     }
 
+    # pyrefly: ignore [bad-override]
     def changelog_message_builder_hook(
         self, parsed_message: dict[str, Any], commit: git.GitCommit
     ) -> dict[str, Any] | Iterable[dict[str, Any]] | None:

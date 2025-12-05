@@ -29,9 +29,11 @@ class DeepEvalLLM(DeepEvalBaseLLM):
     def load_model(self, *args: Any, **kwargs: Any) -> None:
         return None
 
+    # pyrefly: ignore [bad-override]
     def generate(self, prompt: str, schema: BaseModel | None = None) -> str:
         raise NotImplementedError()
 
+    # pyrefly: ignore [bad-override]
     async def a_generate(self, prompt: str, schema: TSchema | None = None) -> str:
         input_msg = UserMessage(prompt)
         response = await self._model.run(
@@ -47,6 +49,7 @@ class DeepEvalLLM(DeepEvalBaseLLM):
         text = response.get_text_content()
         return schema.model_validate_json(text) if schema else text  # type: ignore
 
+    # pyrefly: ignore [bad-override]
     def get_model_name(self) -> str:
         return f"{self._model.model_id} ({self._model.provider_id})"
 
@@ -55,5 +58,6 @@ class DeepEvalLLM(DeepEvalBaseLLM):
         name: str | ProviderName | None = None, options: ModelLike[ChatModelParameters] | None = None, **kwargs: Any
     ) -> "DeepEvalLLM":
         name = name or KEY_FILE_HANDLER.fetch_data(ModelKeyValues.LOCAL_MODEL_NAME)
+        # pyrefly: ignore [bad-argument-type]
         model = ChatModel.from_name(name, options, **kwargs)
         return DeepEvalLLM(model)

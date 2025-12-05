@@ -33,6 +33,7 @@ __all__ = ["AgentStackChatModel"]
 
 from beeai_framework.context import Run
 
+# pyrefly: ignore [not-a-type]
 _storage = ContextVar["LLMServiceExtensionServer"]("agent_stack_chat_model_storage")
 
 
@@ -99,9 +100,13 @@ class AgentStackChatModel(ChatModel):
 
         cls = config.cls if config.openai_native else OpenAIChatModel
         return cls(  # type: ignore
+            # pyrefly: ignore [unexpected-keyword]
             model_id=llm_conf.api_model,
+            # pyrefly: ignore [unexpected-keyword]
             api_key=llm_conf.api_key,
+            # pyrefly: ignore [unexpected-keyword]
             base_url=llm_conf.api_base,
+            # pyrefly: ignore [unexpected-keyword]
             preferred_models=self.preferred_models.copy(),
             settings=self._settings.copy(),
             cache=self.cache,

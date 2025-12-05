@@ -74,6 +74,7 @@ class BaseMemory(ABC):
         return ReadOnlyMemory(self)
 
     async def clone(self) -> Self:
+        # pyrefly: ignore [bad-instantiation]
         return type(self)()
 
     def to_json_safe(self) -> dict[str, Any]:

@@ -25,6 +25,7 @@ async def main() -> None:
         tools=[
             OpenMeteoTool(),
             HumanTool(
+                # pyrefly: ignore [bad-argument-type]
                 reader=reader,
             ),
         ],

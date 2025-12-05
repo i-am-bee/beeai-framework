@@ -17,6 +17,7 @@ TConfig = TypeVar("TConfig", bound=BaseModel, default=BaseModel)
 
 
 class Server(Generic[TInput, TInternal, TConfig], ABC):
+    # pyrefly: ignore [invalid-annotation]
     _factories: ClassVar[dict[type[TInput], Callable[[TInput], TInternal]]] = {}
 
     # TODO: later remove config property
@@ -31,7 +32,9 @@ class Server(Generic[TInput, TInternal, TConfig], ABC):
         parent_factories = next(
             parent_class._factories for parent_class in cls.__bases__ if hasattr(parent_class, "_factories")
         )
+        # pyrefly: ignore [missing-attribute]
         if cls._factories is parent_factories:
+            # pyrefly: ignore [no-access]
             cls._factories = {}
 
     @classmethod
@@ -42,8 +45,11 @@ class Server(Generic[TInput, TInternal, TConfig], ABC):
         *,
         override: bool = False,
     ) -> None:
+        # pyrefly: ignore [missing-attribute]
         if ref not in cls._factories or override:
+            # pyrefly: ignore [missing-attribute]
             cls._factories[ref] = factory
+        # pyrefly: ignore [missing-attribute]
         elif cls._factories[ref] is not factory:
             raise FactoryAlreadyRegisteredError(f"Factory for {ref} is already registered.")
 
@@ -68,6 +74,7 @@ class Server(Generic[TInput, TInternal, TConfig], ABC):
     @classmethod
     def _get_factory(cls, input: TInput) -> Callable[[TInput], TInternal]:
         for obj_type in type(input).__mro__:
+            # pyrefly: ignore [missing-attribute]
             if factory := cls._factories.get(obj_type):
                 return factory
         raise ValueError(f"No factory registered for {type(input)}.")

@@ -112,6 +112,7 @@ def run_with_context(
         return RunContext.enter(
             self,
             handler,
+            # pyrefly: ignore [missing-attribute]
             run_params=input.model_dump() if isinstance(input, BaseModel) else input,
         ).middleware(*self.middlewares)
 
@@ -136,6 +137,7 @@ def requirement(
             name = req_name or fn.__name__
 
             @run_with_context
+            # pyrefly: ignore [bad-override]
             async def run(self, state: T, context: RunContext) -> list[Rule]:
                 result = fn(state, context)
                 if inspect.isawaitable(result):

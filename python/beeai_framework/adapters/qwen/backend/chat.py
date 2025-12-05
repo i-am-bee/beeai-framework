@@ -26,6 +26,7 @@ class QwenChatModel(LiteLLMChatModel):
         **kwargs: Unpack[ChatModelKwargs],
     ) -> None:
         model_id = model_id if model_id else os.getenv("DASHSCOPE_CHAT_MODEL", "qwen-plus")
+        # pyrefly: ignore [missing-attribute]
         model_id = model_id.removeprefix("dashscope/")
 
         super().__init__(

@@ -20,6 +20,7 @@ class PrematureStopRequirement(Requirement[RequirementAgentRunState]):
         self._priority = 100  # (optional), default is 10
 
     @run_with_context
+    # pyrefly: ignore [bad-override]
     async def run(self, state: RequirementAgentRunState, context: RunContext) -> list[Rule]:
         # we take the last step's output (if exists) or the user's input
         last_step = state.steps[-1].output.get_text_content() if state.steps else state.input.text

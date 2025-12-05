@@ -10,6 +10,7 @@ class AutoflowReasonPromptInput(BaseModel):
     context: str | None = None
 
 
+# pyrefly: ignore [deprecated]
 AutoflowReasonPrompt = PromptTemplate(
     PromptTemplateInput(
         schema=AutoflowReasonPromptInput,
@@ -41,6 +42,7 @@ class AutoflowResponsePromptInput(BaseModel):
     output: str
 
 
+# pyrefly: ignore [deprecated]
 AutoflowResponsePrompt = PromptTemplate(
     PromptTemplateInput(
         schema=AutoflowResponsePromptInput,

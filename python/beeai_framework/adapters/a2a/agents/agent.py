@@ -108,6 +108,7 @@ class A2AAgent(BaseAgent[A2AAgentOutput]):
             self._agent_card: a2a_types.AgentCard | None = agent_card
             self._url = None
         elif url:
+            # pyrefly: ignore [bad-assignment]
             self._url = url
             self._agent_card = None
         else:
@@ -284,6 +285,7 @@ class A2AAgent(BaseAgent[A2AAgentOutput]):
                 if isinstance(last_event, a2a_types.Message):
                     error_context = last_event.model_dump(mode="json", exclude_none=True)
                 elif isinstance(last_event, tuple) and last_event[1]:
+                    # pyrefly: ignore [missing-attribute]
                     error_context = last_event[1].model_dump(mode="json", exclude_none=True)
                 raise AgentError(
                     message,

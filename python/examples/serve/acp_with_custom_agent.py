@@ -70,6 +70,7 @@ def main() -> None:
         )
 
     # Register the custom agent factory with the ACP server
+    # pyrefly: ignore [bad-argument-type]
     ACPServer.register_factory(EchoAgent, agent_factory)
     # Create an instance of the EchoAgent with UnconstrainedMemory
     agent = EchoAgent(memory=UnconstrainedMemory())

@@ -65,7 +65,6 @@ outlines = {version = "^1.2.4", python = ">=3.11,<3.13", optional = true}
 [tool.poetry.group.dev.dependencies]
 commitizen = "^4.2.1"
 deepeval = "3.3.5"
-mypy = "^1.18.1"
 nbstripout = "^0.8.1"
 pydantic-settings = "^2.7"
 pylint = "^3.3.2"
@@ -85,6 +84,7 @@ syrupy = "^4.9.1"
 types-deprecated = "^1.2.15.20250304"
 pyyaml = "^6.0.3"
 types-grpcio-health-checking = ">=1.0.0,<2.0.0"
+pyrefly = "^0.44.1"
 
 [tool.poetry.extras]
 transformers = ["transformers", "torch", "peft", "outlines"]
@@ -127,26 +127,6 @@ all = [
     "google-auth"
 ]
 
-
-[tool.mypy]
-exclude = ["^build/$", "^examples/playground/"]
-check_untyped_defs = true
-plugins = ["pydantic.mypy"]
-strict = true
-
-[[tool.mypy.overrides]]
-module = ["deepeval.*", "deepeval"]
-implicit_reexport = true
-
-[[tool.mypy.overrides]]
-module = ["llama-index", "llama-index.*", "llama-index.core.llama_dataset", "llama_index", "llama_index.*", "llm_guard", "llm_guard.*"]
-ignore_errors = true
-ignore_missing_imports = true
-
-[tool.pydantic-mypy]
-init_forbid_extra = true
-init_typed = true
-warn_required_dynamic_aliases = true
 
 [tool.commitizen]
 name = "cz_monorepo_commits"
@@ -222,6 +202,20 @@ line-length = 120
 "*.ipynb" = ["E501", "ANN001", "ANN201"]
 "examples/**/*.py" = ["E501"]
 "beeai_framework/agents/experimental/**/*.py" = ["E501"]
+
+[tool.pyrefly]
+project-excludes = [
+    "**/build/",
+    "**/examples/playground/",
+    "**/examples/notebooks/",
+]
+ignore-missing-imports = [
+    "llama-index",
+    "llama-index.*",
+    "llama-index.core.llama_dataset",
+    "llama_index",
+    "llama_index.*",
+]
 
 [tool.ruff.lint.pydocstyle]
 convention = "google"

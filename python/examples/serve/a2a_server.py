@@ -1,3 +1,4 @@
+# pyrefly: ignore [missing-module-attribute]
 from beeai_framework.adapters.a2a import A2AServer, A2AServerConfig
 from beeai_framework.agents.requirement import RequirementAgent
 from beeai_framework.backend import ChatModel

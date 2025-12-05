@@ -9,6 +9,7 @@ class CustomCache(BaseCache[T]):
     async def size(self) -> int:
         raise NotImplementedError("CustomCache 'size' not yet implemented")
 
+    # pyrefly: ignore [bad-param-name-override]
     async def set(self, _key: str, _value: T) -> None:
         raise NotImplementedError("CustomCache 'set' not yet implemented")
 

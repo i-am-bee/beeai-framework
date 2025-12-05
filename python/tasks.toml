@@ -40,10 +40,10 @@ run = "poetry run python -m ruff format --quiet --check"
 sources = ["beeai_framework/**/*.py", "cz_commitizen/**/*.py", "eval/**/*.py", "examples/**/*.py", "tests/**/*.py"]
 outputs = { auto = true }
 
-["python:check:mypy"]
+["python:check:pyrefly"]
 depends = ["python:setup"]
 dir = "{{config_root}}/python"
-run = "poetry run mypy --show-error-context --pretty ."
+run = "poetry run pyrefly check"
 sources = ["beeai_framework/**/*.py", "cz_commitizen/**/*.py", "eval/**/*.py", "examples/**/*.py", "tests/**/*.py"]
 outputs = { auto = true }
 

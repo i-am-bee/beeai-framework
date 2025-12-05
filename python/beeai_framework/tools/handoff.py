@@ -74,6 +74,7 @@ class HandoffTool(Tool[HandoffSchema, ToolRunOptions, StringToolOutput]):
         if not memory or not isinstance(memory, BaseMemory):
             raise ToolError("No memory found in the context.")
 
+        # pyrefly: ignore [bad-assignment]
         target: Runnable[Any] = await self._target.clone() if isinstance(self._target, Cloneable) else self._target
 
         non_system_messages = [msg for msg in memory.messages if not isinstance(msg, SystemMessage)]

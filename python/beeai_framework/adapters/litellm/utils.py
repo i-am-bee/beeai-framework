@@ -73,8 +73,10 @@ def _parse_header_string(header_string: str) -> dict[str, str]:
 
 def litellm_debug(enable: bool = True) -> None:
     litellm.set_verbose = enable  # type: ignore
+    # pyrefly: ignore [bad-assignment]
     litellm.suppress_debug_info = not enable
 
+    # pyrefly: ignore [bad-assignment]
     litellm.suppress_debug_info = not enable
     litellm.logging = enable
 
