@@ -28,12 +28,15 @@ from beeai_framework.backend import AnyMessage, ChatModelOutput
 from beeai_framework.backend.chat import ChatModel, ChatModelKwargs, ChatModelOptions, ToolChoiceType
 from beeai_framework.backend.constants import ProviderName
 from beeai_framework.backend.utils import load_model
+from beeai_framework.utils.types import is_primitive
 
 __all__ = ["AgentStackChatModel"]
 
 from beeai_framework.context import Run
 
 _storage = ContextVar["LLMServiceExtensionServer"]("agent_stack_chat_model_storage")
+
+CopyableKwargs = set(ChatModelKwargs.__annotations__.keys()) - {"middlewares", "settings"}
 
 
 class ProviderConfig(BaseModel):
@@ -76,8 +79,26 @@ class AgentStackChatModel(ChatModel):
         **kwargs: Unpack[ChatModelKwargs],
     ) -> None:
         super().__init__(**kwargs)
+        self._modified_attributes: set[str] = {
+            k
+            for k, v in ChatModelKwargs.__annotations__.items()
+            # include all custom properties or those that can be mutated
+            if k in CopyableKwargs and (kwargs.get(k) is not None or not is_primitive(v))
+        }
         self.preferred_models = preferred_models or []
-        self._has_custom_tool_choice_support = kwargs.get("tool_choice_support") is not None
+        self.__initiated = True
+
+    def __setattr__(self, name: str, value: Any) -> None:
+        super().__setattr__(name, value)
+
+        if not getattr(self, "__initiated", False):
+            return
+
+        if name in CopyableKwargs:
+            self._modified_attributes.add(name)
+
+        with contextlib.suppress(ValueError, AttributeError):
+            setattr(self._model, name, value)
 
     @staticmethod
     def set_context(ctx: "LLMServiceExtensionServer") -> Callable[[], None]:
@@ -97,28 +118,26 @@ class AgentStackChatModel(ChatModel):
         provider_name = llm_conf.api_model.replace("beeai:", "").split(":")[0]
         config = (self.providers_mapping.get(provider_name) or (lambda: ProviderConfig()))()
 
+        kwargs = ChatModelKwargs(**{k: getattr(self, k) for k in self._modified_attributes if hasattr(self, k)})  # type: ignore
+        with contextlib.suppress(AttributeError):
+            if kwargs["tool_choice_support"] == type(self).tool_choice_support:
+                kwargs.pop("tool_choice_support")
+
         cls = config.cls if config.openai_native else OpenAIChatModel
-        return cls(  # type: ignore
+        model = cls(  # type: ignore
             model_id=llm_conf.api_model,
             api_key=llm_conf.api_key,
             base_url=llm_conf.api_base,
-            preferred_models=self.preferred_models.copy(),
-            settings=self._settings.copy(),
-            cache=self.cache,
-            tool_call_fallback_via_response_format=self.tool_call_fallback_via_response_format,
-            model_supports_tool_calling=self.model_supports_tool_calling,
-            allow_parallel_tool_calls=self.allow_parallel_tool_calls,
-            ignore_parallel_tool_calls=self.ignore_parallel_tool_calls,
-            use_strict_tool_schema=self.use_strict_tool_schema,
-            use_strict_model_schema=self.use_strict_model_schema,
-            supports_top_level_unions=self.supports_top_level_unions,
-            retry_on_empty_response=self.retry_on_empty_response,
-            fix_invalid_tool_calls=self.fix_invalid_tool_calls,
-            tool_choice_support=self._tool_choice_support.copy()
-            if (self._has_custom_tool_choice_support or type(self).tool_choice_support != self._tool_choice_support)
-            else config.tool_choice_support.copy(),
-            parameters=self.parameters.model_copy(deep=True),
+            **kwargs,
         )
+
+        # propagate updates back
+        for k in CopyableKwargs:
+            v = getattr(model, k)
+            if v is not getattr(self, k):
+                setattr(self, k, v)
+
+        return model
 
     @override
     def run(self, input: list[AnyMessage], /, **kwargs: Unpack[ChatModelOptions]) -> Run[ChatModelOutput]:
@@ -159,7 +178,7 @@ class AgentStackChatModel(ChatModel):
             tool_choice_support=self._tool_choice_support.copy(),
             parameters=self.parameters.model_copy(deep=True),
         )
-        cloned._has_custom_tool_choice_support = self._has_custom_tool_choice_support
+        cloned._modified_attributes = self._modified_attributes.copy()
         self.middlewares.extend(self.middlewares)
         return cloned
 
