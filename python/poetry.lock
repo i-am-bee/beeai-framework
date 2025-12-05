@@ -105,15 +105,15 @@ redis = ">=6.1"
 
 [[package]]
 name = "agentstack-sdk"
-version = "0.4.2"
+version = "0.4.3"
 description = "Agent Stack SDK"
 optional = true
 python-versions = "<3.14,>=3.11"
 groups = ["main"]
 markers = "(platform_machine == \"arm64\" or platform_machine == \"x86_64\" or platform_machine != \"arm64\" and platform_machine != \"x86_64\" or sys_platform != \"darwin\") and (extra == \"beeai-platform\" or extra == \"agentstack\" or extra == \"all\")"
 files = [
-    {file = "agentstack_sdk-0.4.2-py3-none-any.whl", hash = "sha256:e1eb23836316e50dd4521f6baed6e04cfe5c7c6ba621fb5b0407c07b642ae3d3"},
-    {file = "agentstack_sdk-0.4.2.tar.gz", hash = "sha256:8a1cf1133ad57b41d1f17a20f876685787a0597851b392c742d0ea212159b0e2"},
+    {file = "agentstack_sdk-0.4.3-py3-none-any.whl", hash = "sha256:ffd45d8a759a8436291f9b140d4299d332ac1ddd988a056f0a2c92af8c93bdfe"},
+    {file = "agentstack_sdk-0.4.3.tar.gz", hash = "sha256:d27fdfe728ddaedcea93db416b022e48a4309a9e11384ae3a962ccd2e9ea0707"},
 ]
 
 [package.dependencies]
@@ -2540,7 +2540,7 @@ description = "Fast transfer of large files with the Hugging Face Hub."
 optional = false
 python-versions = ">=3.8"
 groups = ["main"]
-markers = "(sys_platform == \"darwin\" or platform_machine == \"x86_64\" or platform_machine == \"amd64\" or platform_machine == \"arm64\" or platform_machine == \"aarch64\") and (platform_machine == \"arm64\" or platform_machine == \"x86_64\" or platform_machine == \"amd64\" or platform_machine == \"aarch64\")"
+markers = "platform_machine == \"arm64\" or platform_machine == \"x86_64\" or platform_machine == \"amd64\" or platform_machine == \"aarch64\""
 files = [
     {file = "hf_xet-1.2.0-cp313-cp313t-macosx_10_12_x86_64.whl", hash = "sha256:ceeefcd1b7aed4956ae8499e2199607765fbd1c60510752003b6cc0b8413b649"},
     {file = "hf_xet-1.2.0-cp313-cp313t-macosx_11_0_arm64.whl", hash = "sha256:b70218dd548e9840224df5638fdc94bd033552963cfa97f9170829381179c813"},
@@ -9648,4 +9648,4 @@ wikipedia = ["wikipedia-api"]
 [metadata]
 lock-version = "2.1"
 python-versions = ">= 3.11,<3.14"
-content-hash = "9f7aadad1888f2702ae0ef8306b248d488ea6350db0b3d872f7c89bb9afe6478"
+content-hash = "c6c1c607b16c216418a0202118893d8bf89a45935384b2df33230c852bc1db0c"

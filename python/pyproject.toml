@@ -18,7 +18,7 @@ documentation = "https://i-am-bee.github.io/beeai-framework/#/python/"
 
 [tool.poetry.dependencies]
 python = ">= 3.11,<3.14"
-a2a-sdk = {version = "^0.3.7", optional = true, extras = ["grpc", "http-server", "telemetry"]}
+a2a-sdk = {version = "^0.3.9", optional = true, extras = ["grpc", "http-server", "telemetry"]}
 acp-sdk = {version = "^1.0.3", optional = true}
 aiofiles = "^24.1.0"
 boto3 = {version = "^1.37.5", optional = true}
@@ -47,7 +47,7 @@ types-grpcio-reflection = {version = "^1.0.0.20250506", optional = true}
 types-grpcio-health-checking = {version = "^1.0.0.20250506", optional = true }
 grpcio-health-checking = {version = "^1.65.5", optional = true}
 wikipedia-api = {version = "^0.8.1", optional = true}
-agentstack-sdk = {version = "0.4.2", optional = true}
+agentstack-sdk = {version = "0.4.3", optional = true}
 deprecated = "^1.2.18"
 torch = [
   {version = ">=2.4.1", markers = "sys_platform == 'darwin' and platform_machine == 'arm64'", optional = true},
