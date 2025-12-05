@@ -15,6 +15,7 @@ except ModuleNotFoundError as e:
 
 
 class DummyContextStoreInstance(agentstack_context_store.ContextStoreInstance):
+    # pyrefly: ignore [bad-override]
     async def load_history(self) -> AsyncIterator[a2a_types.Message | a2a_types.Artifact]:
         if False:
             yield

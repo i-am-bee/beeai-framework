@@ -73,6 +73,7 @@ def _react_agent_factory(
         cloned_agent = await agent.clone() if isinstance(agent, Cloneable) else agent
         await init_agent_stack_memory(cloned_agent, memory_manager, context)
 
+        # pyrefly: ignore [bad-argument-type]
         has_tool_settings, allowed_tools = _get_tools_settings(extra_extensions.get("settings"))
         if has_tool_settings:
             cloned_agent._input.tools = [tool for tool in cloned_agent._input.tools if tool.name in allowed_tools]
@@ -80,6 +81,7 @@ def _react_agent_factory(
         with AgentStackContext(
             context,
             metadata=message.metadata,
+            # pyrefly: ignore [bad-argument-type]
             llm=extra_extensions.get("llm_ext"),
             extra_extensions=extra_extensions,  # type: ignore[arg-type]
         ) as stack_context:
@@ -141,6 +143,7 @@ def _tool_calling_agent_factory(
         cloned_agent = await agent.clone() if isinstance(agent, Cloneable) else agent
         await init_agent_stack_memory(cloned_agent, memory_manager, context)
 
+        # pyrefly: ignore [bad-argument-type]
         has_tool_settings, allowed_tools = _get_tools_settings(extra_extensions.get("settings"))
         if has_tool_settings:
             cloned_agent._tools = [tool for tool in cloned_agent._tools if tool.name in allowed_tools]
@@ -148,6 +151,7 @@ def _tool_calling_agent_factory(
         with AgentStackContext(
             context,
             metadata=message.metadata,
+            # pyrefly: ignore [bad-argument-type]
             llm=extra_extensions.get("llm_ext"),
             extra_extensions=extra_extensions,  # type: ignore[arg-type]
         ) as stack_context:
@@ -185,6 +189,7 @@ def _requirement_agent_factory(
         cloned_agent = await agent.clone() if isinstance(agent, Cloneable) else agent
         await init_agent_stack_memory(cloned_agent, memory_manager, context)
 
+        # pyrefly: ignore [bad-argument-type]
         has_tool_settings, allowed_tools = _get_tools_settings(extra_extensions.get("settings"))
         if has_tool_settings:
             logger.warning("Tools settings is ignored for the RequirementAgent")
@@ -192,6 +197,7 @@ def _requirement_agent_factory(
         with AgentStackContext(
             context,
             metadata=message.metadata,
+            # pyrefly: ignore [bad-argument-type]
             llm=extra_extensions.get("llm_ext"),
             extra_extensions=extra_extensions,  # type: ignore[arg-type]
         ) as stack_context:
@@ -272,9 +278,11 @@ def _runnable_factory(
         with AgentStackContext(
             context,
             metadata=message.metadata,
+            # pyrefly: ignore [bad-argument-type]
             llm=extra_extensions.get("llm_ext"),
             extra_extensions=extra_extensions,  # type: ignore[arg-type]
         ):
+            # pyrefly: ignore [missing-attribute]
             data = await cloned_runnable.run(messages)
             if memory is not None:
                 await memory.add(data.last_message)

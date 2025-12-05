@@ -51,6 +51,7 @@ class BaseA2AExecutor(a2a_agent_execution.AgentExecutor, Generic[AnyRunnableType
     async def execute(
         self,
         context: a2a_agent_execution.RequestContext,
+        # pyrefly: ignore [implicit-import]
         event_queue: a2a_server.events.EventQueue,
     ) -> None:
         if not context.message:
@@ -71,6 +72,7 @@ class BaseA2AExecutor(a2a_agent_execution.AgentExecutor, Generic[AnyRunnableType
 
         try:
             with A2AContext(context=context, event_queue=event_queue):
+                # pyrefly: ignore [missing-attribute]
                 data = await cloned_runnable.run(messages, signal=self._abort_controller.signal)
                 if memory is not None:
                     await memory.add(data.last_message)
@@ -89,6 +91,7 @@ class BaseA2AExecutor(a2a_agent_execution.AgentExecutor, Generic[AnyRunnableType
     async def cancel(
         self,
         context: a2a_agent_execution.RequestContext,
+        # pyrefly: ignore [implicit-import]
         event_queue: a2a_server.events.EventQueue,
     ) -> None:
         self._abort_controller.abort()

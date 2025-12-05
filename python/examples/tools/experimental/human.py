@@ -85,6 +85,7 @@ class HumanTool(Tool[HumanToolInput, ToolRunOptions, HumanToolOutput]):
     def input_schema(self) -> type[HumanToolInput]:
         return HumanToolInput
 
+    # pyrefly: ignore [bad-param-name-override]
     async def _run(
         self, tool_input: HumanToolInput, options: ToolRunOptions | None, run: RunContext
     ) -> HumanToolOutput:

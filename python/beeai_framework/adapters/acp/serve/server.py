@@ -106,6 +106,7 @@ class ACPServer(Generic[AnyAgentLike], Server[AnyAgentLike, ACPServerAgent, "ACP
 
     def _setup_members(self) -> None:
         for member in self.members:
+            # pyrefly: ignore [missing-attribute]
             factory = type(self)._factories[type(member)]
             config = self._metadata_by_agent.get(member, None)
             self._server.register(factory(member, metadata=config, memory_manager=self._memory_manager))  # type: ignore[call-arg]

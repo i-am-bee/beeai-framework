@@ -46,6 +46,7 @@ class BaseA2AAgentExecutor(BaseA2AExecutor[AnyAgentLike]):
     async def execute(
         self,
         context: a2a_agent_execution.RequestContext,
+        # pyrefly: ignore [implicit-import]
         event_queue: a2a_server.events.EventQueue,
     ) -> None:
         agent: AnyAgentLike = self._runnable
@@ -57,11 +58,13 @@ class BaseA2AAgentExecutor(BaseA2AExecutor[AnyAgentLike]):
             await updater.submit()
 
         cloned_agent = await agent.clone() if isinstance(agent, Cloneable) else agent
+        # pyrefly: ignore [bad-argument-type]
         await init_agent_memory(cloned_agent, self._memory_manager, context.context_id)
         new_messages = _extract_request_messages(context)
 
         await updater.start_work()
         try:
+            # pyrefly: ignore [missing-attribute]
             response = await cloned_agent.run(new_messages, signal=self._abort_controller.signal).observe(
                 lambda emitter: self._process_events(emitter, context, updater) if self._send_trajectory else ...
             )

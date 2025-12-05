@@ -136,6 +136,7 @@ class ToolCallingAgent(BaseAgent[ToolCallingAgentOutput]):
                 "FinalAnswer",
                 response=(
                     str,
+                    # pyrefly: ignore [no-matching-overload]
                     Field(description=expected_output or None),
                 ),
             )

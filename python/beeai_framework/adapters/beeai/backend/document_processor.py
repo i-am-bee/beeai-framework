@@ -36,6 +36,7 @@ class BeeAIDocumentProcessor(DocumentProcessor, ABC):
             target_class = getattr(current_module, class_name)
             if not issubclass(target_class, DocumentProcessor):
                 raise ValueError(f"Class '{class_name}' is not a DocumentProcessor subclass")
+            # pyrefly: ignore [bad-assignment]
             instance: BeeAIDocumentProcessor = target_class(**kwargs)
             return instance
         except AttributeError:
