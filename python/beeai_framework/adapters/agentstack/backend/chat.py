@@ -87,6 +87,7 @@ class AgentStackChatModel(ChatModel):
         }
         self.preferred_models = preferred_models or []
         self._initiated = True
+        self._propagating_back = False
 
     def __setattr__(self, name: str, value: Any) -> None:
         super().__setattr__(name, value)
@@ -96,6 +97,9 @@ class AgentStackChatModel(ChatModel):
 
         if name in CopyableKwargs:
             self._modified_attributes.add(name)
+
+        if getattr(self, "_propagating_back", False):
+            return
 
         with contextlib.suppress(ValueError, AttributeError):
             setattr(self._model, name, value)
@@ -132,10 +136,14 @@ class AgentStackChatModel(ChatModel):
         )
 
         # propagate updates back
-        for k in CopyableKwargs:
-            v = getattr(model, k)
-            if v is not getattr(self, k):
-                setattr(self, k, v)
+        object.__setattr__(self, "_propagating_back", True)
+        try:
+            for k in CopyableKwargs:
+                v = getattr(model, k)
+                if v is not getattr(self, k):
+                    setattr(self, k, v)
+        finally:
+            object.__setattr__(self, "_propagating_back", False)
 
         return model
 
