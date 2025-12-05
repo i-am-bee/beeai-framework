@@ -64,3 +64,5 @@ class AmazonBedrockChatModel(LiteLLMChatModel):
         self._settings["extra_headers"] = utils.parse_extra_headers(
             self._settings.get("extra_headers"), os.getenv("AWS_API_HEADERS")
         )
+        # If enabled, LiteLLM would create a malformed output
+        self.supports_top_level_unions = False
