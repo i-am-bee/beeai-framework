@@ -208,6 +208,9 @@ class RunContext:
             start_event = RunContextStartEvent(input=context.run_params, output=output)
             await emitter.emit("start", start_event)
 
+            # Copy back any modifications made by middleware to run_params
+            context.run_params = start_event.input
+
             async def _context_storage_run() -> R:
                 storage.set(context)
                 if start_event.output is not None:

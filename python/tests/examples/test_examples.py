@@ -71,6 +71,9 @@ exclude = list(
             # Interactive example
             "agents/requirement/multi_agent.py",
             "agents/experimental/human.py",
+            "middleware/prompt_injection.py",
+            "middleware/secrets_detection.py",
+            "middleware/invisible_text.py",
         ],
     )
 )
