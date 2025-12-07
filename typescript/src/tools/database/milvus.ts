@@ -239,7 +239,7 @@ export class MilvusDatabaseTool extends Tool<
     const client = await this.client();
     const response = await client.search({
       collection_name: input.collectionName as string,
-      vector: input.vector,
+      data: input.vector ?? [],
       limit: input.topK || 10,
       filter: input.filter,
       output_fields: input.searchOutput,

@@ -25,20 +25,20 @@ Supported in Python and TypeScript.
 
 The following table depicts supported providers. Each provider requires specific configuration through environment variables. Ensure all required variables are set before initializing a provider.
 
-| Name           | Chat | Embedding                  |  Environment Variables                                                                                                                                                 |
-| :------------- | :--- |:---------------------------| :-------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Ollama         |  ✅  | ✅                          | OLLAMA_CHAT_MODEL<br/>OLLAMA_BASE_URL                                                                                                       |
-| OpenAI         |  ✅  | ✅                          | OPENAI_CHAT_MODEL<br/>OPENAI_EMBEDDING_MODEL<br/>OPENAI_API_BASE<br/>OPENAI_API_KEY<br/>OPENAI_ORGANIZATION<br/>OPENAI_API_HEADERS                                                                                                       |
-| IBM watsonx.ai        |  ✅  | ✅                          | WATSONX_CHAT_MODEL<br/>WATSONX_API_KEY<br/>WATSONX_PROJECT_ID<br/>WATSONX_SPACE_ID<br/>WATSONX_TOKEN<br/>WATSONX_ZENAPIKEY<br/>WATSONX_URL<br/>WATSONX_REGION |
-| Anthropic      |  ✅  | ✅                          | ANTHROPIC_CHAT_MODEL<br/>ANTHROPIC_API_KEY<br/>ANTHROPIC_API_HEADERS |
-| Groq           |  ✅  | ✅                          | GROQ_CHAT_MODEL<br/>GROQ_EMBEDDING_MODEL<br/>GROQ_API_KEY |
-| Amazon Bedrock |  ✅  | ✅                          | AWS_CHAT_MODEL<br/>AWS_ACCESS_KEY_ID<br/>AWS_SECRET_ACCESS_KEY<br/>AWS_REGION<br/>AWS_API_HEADERS |
-| Google Vertex  |  ✅  | ✅                          | GOOGLE_VERTEX_CHAT_MODEL<br/>GOOGLE_VERTEX_PROJECT<br/>GOOGLE_APPLICATION_CREDENTIALS<br/>GOOGLE_APPLICATION_CREDENTIALS_JSON<br/>GOOGLE_CREDENTIALS<br/>GOOGLE_VERTEX_API_HEADERS |
-| Azure OpenAI   |  ✅  | ✅                          | AZURE_OPENAI_CHAT_MODEL<br/>AZURE_OPENAI_API_KEY<br/>AZURE_OPENAI_API_BASE<br/>AZURE_OPENAI_API_VERSION<br/>AZURE_AD_TOKEN<br/>AZURE_API_TYPE<br/>AZURE_API_HEADERS |
-| xAI            |  ✅  | ✅                          | XAI_CHAT_MODEL<br/>XAI_API_KEY |
-| Google Gemini  |  ✅  | ✅               | GEMINI_CHAT_MODEL<br/>GEMINI_API_KEY<br/>GEMINI_API_HEADERS |
-| MistralAI      |  ✅  | ✅               | MISTRALAI_CHAT_MODEL<br/>MISTRALAI_EMBEDDING_MODEL<br />MISTRALAI_API_KEY<br />MISTRALAI_API_BASE |
-| Transformers      |  ✅  | ✅        | TRANSFORMERS_CHAT_MODEL<br/>HF_TOKEN|
+| Name           | Chat | Embedding |  Environment Variables                                                                                                                                                 |
+| :------------- | :--- |:----------| :-------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Ollama         |  ✅  | ✅        | OLLAMA_CHAT_MODEL<br/>OLLAMA_BASE_URL                                                                                                       |
+| OpenAI         |  ✅  | ✅        | OPENAI_CHAT_MODEL<br/>OPENAI_EMBEDDING_MODEL<br/>OPENAI_API_BASE<br/>**OPENAI_API_KEY**<br/>OPENAI_ORGANIZATION<br/>OPENAI_API_HEADERS                                                                                                       |
+| IBM watsonx.ai |  ✅  | ✅        | WATSONX_CHAT_MODEL<br/>WATSONX_API_KEY<br/>**WATSONX_PROJECT_ID**<br/>WATSONX_SPACE_ID<br/>WATSONX_TOKEN<br/>WATSONX_ZENAPIKEY<br/>WATSONX_URL<br/>WATSONX_REGION |
+| Anthropic      |  ✅  | ✅        | ANTHROPIC_CHAT_MODEL<br/>**ANTHROPIC_API_KEY**<br/>ANTHROPIC_API_HEADERS |
+| Groq           |  ✅  | ✅        | GROQ_CHAT_MODEL<br/>GROQ_EMBEDDING_MODEL<br/>**GROQ_API_KEY** |
+| Amazon Bedrock |  ✅  | ✅        | AWS_CHAT_MODEL<br/>**AWS_BEDROCK_API_KEY**<br/>**AWS_ACCESS_KEY_ID**<br/>**AWS_SECRET_ACCESS_KEY**<br/>**AWS_REGION**<br/>AWS_API_HEADERS |
+| Google Vertex  |  ✅  | ✅        | GOOGLE_VERTEX_CHAT_MODEL<br/>**GOOGLE_VERTEX_PROJECT**<br/>**GOOGLE_VERTEX_LOCATION**<br/>GOOGLE_APPLICATION_CREDENTIALS<br/>GOOGLE_APPLICATION_CREDENTIALS_JSON<br/>GOOGLE_CREDENTIALS<br/>GOOGLE_VERTEX_API_HEADERS |
+| Azure OpenAI   |  ✅  | ✅        | AZURE_OPENAI_CHAT_MODEL<br/>**AZURE_OPENAI_API_KEY**<br/>**AZURE_OPENAI_API_BASE**<br/>**AZURE_OPENAI_API_VERSION**<br/>AZURE_AD_TOKEN<br/>AZURE_API_TYPE<br/>AZURE_API_HEADERS |
+| xAI            |  ✅  | ✅        | XAI_CHAT_MODEL<br/>**XAI_API_KEY** |
+| Google Gemini  |  ✅  | ✅        | GEMINI_CHAT_MODEL<br/>**GEMINI_API_KEY**<br/>GEMINI_API_HEADERS |
+| MistralAI      |  ✅  | ✅        | MISTRALAI_CHAT_MODEL<br/>MISTRALAI_EMBEDDING_MODEL<br />**MISTRALAI_API_KEY**<br />MISTRALAI_API_BASE |
+| Transformers   |  ✅  | ✅        | TRANSFORMERS_CHAT_MODEL<br/>HF_TOKEN|
 
 <Tip>
 If you don't see your provider raise an issue [here](https://github.com/i-am-bee/beeai-framework/issues).
@@ -196,6 +196,14 @@ async def openai_embedding() -> None:
         print(*row)
 
 
+async def openai_cloning() -> None:
+    llm = OpenAIChatModel("gpt-4.1-mini")
+    await llm.clone()
+
+    embedding_llm = OpenAIEmbeddingModel()
+    await embedding_llm.clone()
+
+
 async def openai_file_example() -> None:
     llm = ChatModel.from_name("openai:gpt-4.1-mini")
     data_uri = "data:application/pdf;base64,JVBERi0xLjQKMSAwIG9iago8PC9UeXBlIC9DYXRhbG9nCi9QYWdlcyAyIDAgUgo+PgplbmRvYmoKMiAwIG9iago8PC9UeXBlIC9QYWdlcwovS2lkcyBbMyAwIFJdCi9Db3VudCAxCj4+CmVuZG9iagozIDAgb2JqCjw8L1R5cGUgL1BhZ2UKL1BhcmVudCAyIDAgUgovTWVkaWFCb3ggWzAgMCA1OTUgODQyXQovQ29udGVudHMgNSAwIFIKL1Jlc291cmNlcyA8PC9Qcm9jU2V0IFsvUERGIC9UZXh0XQovRm9udCA8PC9GMSA0IDAgUj4+Cj4+Cj4+CmVuZG9iago0IDAgb2JqCjw8L1R5cGUgL0ZvbnQKL1N1YnR5cGUgL1R5cGUxCi9OYW1lIC9GMQovQmFzZUZvbnQgL0hlbHZldGljYQovRW5jb2RpbmcgL01hY1JvbWFuRW5jb2RpbmcKPj4KZW5kb2JqCjUgMCBvYmoKPDwvTGVuZ3RoIDUzCj4+CnN0cmVhbQpCVAovRjEgMjAgVGYKMjIwIDQwMCBUZAooRHVtbXkgUERGKSBUagpFVAplbmRzdHJlYW0KZW5kb2JqCnhyZWYKMCA2CjAwMDAwMDAwMDAgNjU1MzUgZgowMDAwMDAwMDA5IDAwMDAwIG4KMDAwMDAwMDA2MyAwMDAwMCBuCjAwMDAwMDAxMjQgMDAwMDAgbgowMDAwMDAwMjc3IDAwMDAwIG4KMDAwMDAwMDM5MiAwMDAwMCBuCnRyYWlsZXIKPDwvU2l6ZSA2Ci9Sb290IDEgMCBSCj4+CnN0YXJ0eHJlZgo0OTUKJSVFT0YK"
@@ -225,6 +233,8 @@ async def main() -> None:
     await openai_tool_calling()
     print("*" * 10, "openai_embedding")
     await openai_embedding()
+    print("*" * 10, "openai_cloning")
+    await openai_cloning()
 
 
 if __name__ == "__main__":
@@ -259,7 +269,6 @@ const llm = new OpenAIChatModel(
 
 llm.config({
   parameters: {
-    topK: 1,
     temperature: 0,
     topP: 1,
   },
@@ -325,10 +334,10 @@ async function openaiToolCalling() {
   });
   const toolCallMsg = response.getToolCalls()[0];
   console.debug(JSON.stringify(toolCallMsg));
-  const toolResponse = await weatherTool.run(toolCallMsg.args as any);
+  const toolResponse = await weatherTool.run(toolCallMsg.input as any);
   const toolResponseMsg = new ToolMessage({
     type: "tool-result",
-    result: toolResponse.getTextContent(),
+    output: { type: "text", value: toolResponse.getTextContent() },
     toolName: toolCallMsg.toolName,
     toolCallId: toolCallMsg.toolCallId,
   });
@@ -834,10 +843,10 @@ while (true) {
 
   const toolCalls = response.getToolCalls();
   const toolResults = await Promise.all(
-    toolCalls.map(async ({ args, toolName, toolCallId }) => {
-      console.log(`-> running '${toolName}' tool with ${JSON.stringify(args)}`);
+    toolCalls.map(async ({ input, toolName, toolCallId }) => {
+      console.log(`-> running '${toolName}' tool with ${JSON.stringify(input)}`);
       const tool = tools.find((tool) => tool.name === toolName)!;
-      const response: ToolOutput = await tool.run(args as any);
+      const response: ToolOutput = await tool.run(input as any);
       const result = response.getTextContent();
       console.log(
         `<- got response from '${toolName}'`,
@@ -845,8 +854,7 @@ while (true) {
       );
       return new ToolMessage({
         type: "tool-result",
-        result,
-        isError: false,
+        output: { type: "text", value: result },
         toolName,
         toolCallId,
       });
@@ -1099,6 +1107,12 @@ Current date is {datetime.now(tz=UTC).date()!s}
     print(final_response.get_text_content())
 
 
+async def langchain_ollama_cloning() -> None:
+    langchain_llm = LangChainOllamaChat(model="granite4:micro")
+    llm = LangChainChatModel(langchain_llm)
+    await llm.clone()
+
+
 async def main() -> None:
     print("*" * 10, "langchain_ollama_from_name")
     await langchain_ollama_from_name()
@@ -1116,6 +1130,8 @@ async def main() -> None:
     await langchain_ollama_stream_parser()
     print("*" * 10, "langchain_ollama_tool_calling")
     await langchain_ollama_tool_calling()
+    print("*" * 10, "langchain_ollama_cloning")
+    await langchain_ollama_cloning()
 
 
 if __name__ == "__main__":
@@ -1198,10 +1214,10 @@ async function langchainToolCalling() {
   const response = await llm.create({ messages: [userMessage], tools: [weatherTool] });
   const toolCallMsg = response.getToolCalls()[0];
   console.debug(JSON.stringify(toolCallMsg));
-  const toolResponse = await weatherTool.run(toolCallMsg.args as any);
+  const toolResponse = await weatherTool.run(toolCallMsg.input as any);
   const toolResponseMsg = new ToolMessage({
     type: "tool-result",
-    result: toolResponse.getTextContent(),
+    output: { type: "text", value: toolResponse.getTextContent() },
     toolName: toolCallMsg.toolName,
     toolCallId: toolCallMsg.toolCallId,
   });

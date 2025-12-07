@@ -3,12 +3,14 @@
 
 import ssl
 from collections.abc import Callable, Mapping, Sequence
+from contextlib import AsyncExitStack
 from typing import Any, Literal, Unpack
 
 import httpx
 import httpx._types as httpx_types
 from httpx import AsyncBaseTransport
 from httpx._auth import Auth  # noqa: F401
+from httpx._client import ClientState
 from httpx._config import Proxy, Timeout  # noqa: F401
 from httpx._models import Cookies, Headers, Request  # noqa: F401
 from httpx._urls import URL, QueryParams  # noqa: F401
@@ -55,7 +57,10 @@ class A2AAgentOptions(AgentOptions, total=False):
     context_id: str
     task_id: str
     clear_context: bool
-    a2a_context: a2a_client.ClientCallContext | None
+    a2a_context: a2a_client.ClientCallContext
+    # The HTTP client should already be opened
+    httpx_client: httpx.AsyncClient
+    streaming: bool
 
 
 class HttpxAsyncClientParameters(BaseModel):
@@ -139,12 +144,20 @@ class A2AAgent(BaseAgent[A2AAgentOutput]):
 
         assert self._agent_card is not None, "Agent card should not be empty after loading."
 
-        async with httpx.AsyncClient(**self._parameters.httpx_async_client.model_dump()) as httpx_client:
-            # create client
+        async with AsyncExitStack() as stack:
+            if kwargs.get("httpx_client") is not None:
+                httpx_client = kwargs.get("httpx_client")
+                if httpx_client and httpx_client._state is ClientState.UNOPENED:
+                    httpx_client = await stack.enter_async_context(httpx_client)
+            else:
+                new_client = httpx.AsyncClient(**self._parameters.httpx_async_client.model_dump())
+                httpx_client = await stack.enter_async_context(new_client)
+
+            # create a2a client
             client: a2a_client.Client = a2a_client.ClientFactory(
                 config=a2a_client.ClientConfig(
-                    streaming=True,
-                    polling=True,
+                    streaming=kwargs.get("streaming", self._agent_card.capabilities.streaming or False),
+                    polling=False,
                     httpx_client=httpx_client,
                     grpc_channel_factory=(
                         lambda url: grpc.aio.secure_channel(url, self._grpc_client_credentials)
@@ -206,6 +219,9 @@ class A2AAgent(BaseAgent[A2AAgentOutput]):
                 # check if we received any event
                 if last_event is None:
                     raise AgentError("No result received from agent.")
+
+                if task and task.status.state is a2a_types.TaskState.completed:
+                    self._task_id = None
 
                 # insert input into memory
                 input_messages = [input] if not isinstance(input, list) else input
@@ -275,13 +291,16 @@ class A2AAgent(BaseAgent[A2AAgentOutput]):
                     cause=err,
                 )
 
+        return A2AAgentOutput(output=[AssistantMessage("No response from agent.")], event=last_event)
+
     def set_run_params(
         self, *, context_id: str | None, task_id: str | None, clear_context: bool | None = False
     ) -> None:
         self._context_id = context_id or self._context_id
-        self._task_id = task_id
+        self._task_id = task_id or self._task_id
         if clear_context:
             self._context_id = None
+            self._task_id = None
             self._reference_task_ids.clear()
 
     async def _load_agent_card(self) -> None:
@@ -357,7 +376,7 @@ class A2AAgent(BaseAgent[A2AAgentOutput]):
             context_id=context_id
             or (input.context_id if isinstance(input, a2a_types.Message) else None)
             or self._context_id,
-            task_id=self._task_id if not context_id else None,
+            task_id=self._task_id if (not context_id or context_id == self._context_id) else None,
             reference_task_ids=self._reference_task_ids if not context_id else None,
         )
 

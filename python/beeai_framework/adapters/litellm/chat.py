@@ -7,6 +7,8 @@ from collections.abc import AsyncGenerator
 from itertools import chain
 from typing import Any, Self
 
+from beeai_framework.utils.funcs import safe_invoke
+
 if not os.getenv("LITELLM_LOCAL_MODEL_COST_MAP", None):
     os.environ["LITELLM_LOCAL_MODEL_COST_MAP"] = "True"
 
@@ -25,6 +27,7 @@ from typing_extensions import Unpack
 from beeai_framework.adapters.litellm.utils import (
     fix_double_escaped_tool_calls,
     litellm_debug,
+    parse_chat_model_usage,
     process_structured_output,
     to_strict_json_schema,
 )
@@ -73,7 +76,7 @@ class LiteLLMChatModel(ChatModel, ABC):
         # drop any unsupported parameters that were passed in
         litellm.drop_params = True
         # disable LiteLLM caching in favor of our own
-        litellm.disable_cache()  # type: ignore [attr-defined]
+        litellm.disable_cache()
 
     async def _create(
         self,
@@ -280,7 +283,7 @@ class LiteLLMChatModel(ChatModel, ABC):
         finish_reason = choice.finish_reason if choice else None
         update = (choice.delta if isinstance(choice, StreamingChoices) else choice.message) if choice else None
 
-        cost: ChatModelCost | None = None
+        cost: ChatModelCost = ChatModelCost()
         with contextlib.suppress(Exception):
             if usage:
                 prompt_tokens_cost_usd, completion_tokens_cost_usd = cost_per_token(
@@ -318,7 +321,7 @@ class LiteLLMChatModel(ChatModel, ABC):
             # Will be set later
             output_structured=None,
             finish_reason=finish_reason,
-            usage=ChatModelUsage(**usage.model_dump()) if usage else None,
+            usage=parse_chat_model_usage(usage) if usage else ChatModelUsage(),
             cost=cost,
         )
 
@@ -348,11 +351,11 @@ class LiteLLMChatModel(ChatModel, ABC):
         return {"type": "json_schema", "json_schema": json_schema}
 
     async def clone(self) -> Self:
-        cloned = self.__class__(
+        cloned: Self = safe_invoke(self.__class__)(
             model_id=self.model_id,
             provider_id=self._litellm_provider_id,
             parameters=self.parameters.model_copy(),
-            cache=await self.cache.clone() if self.cache else None,  # type: ignore
+            cache=await self.cache.clone() if self.cache else None,
             tool_call_fallback_via_response_format=self.tool_call_fallback_via_response_format,
             model_supports_tool_calling=self.model_supports_tool_calling,
             use_strict_model_schema=self.use_strict_model_schema,

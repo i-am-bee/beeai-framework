@@ -8,7 +8,7 @@
     "isolatedModules": true,
     "useDefineForClassFields": true,
     "incremental": false,
-    "moduleDetection": "auto",
+    "moduleDetection": "force",
     "baseUrl": ".",
     "types": ["node", "vitest/globals"],
     "declarationMap": false,

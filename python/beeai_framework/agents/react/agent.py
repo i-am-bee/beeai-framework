@@ -35,6 +35,7 @@ from beeai_framework.agents.types import (
 )
 from beeai_framework.backend.chat import ChatModel
 from beeai_framework.backend.message import AnyMessage, AssistantMessage, MessageMeta, UserMessage
+from beeai_framework.backend.types import ChatModelCost, ChatModelUsage
 from beeai_framework.context import RunContext
 from beeai_framework.emitter import Emitter
 from beeai_framework.logger import Logger
@@ -209,7 +210,16 @@ class ReActAgent(BaseAgent[ReActAgentOutput]):
         await self._input.memory.add_many(_input)
         await self._input.memory.add(final_message)
 
-        return ReActAgentOutput(output=[final_message], iterations=runner.iterations, memory=runner.memory)
+        usage = ChatModelUsage()
+        cost = ChatModelCost()
+
+        for it in runner.iterations:
+            usage.merge(it.raw.usage)
+            cost.merge(it.raw.cost)
+
+        return ReActAgentOutput(
+            output=[final_message], iterations=runner.iterations, memory=runner.memory, usage=usage, cost=cost
+        )
 
     async def clone(self) -> "ReActAgent":
         cloned = ReActAgent(**self._input.model_dump())

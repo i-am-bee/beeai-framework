@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import contextlib
 import logging
 from abc import abstractmethod
 from collections.abc import AsyncGenerator, Callable
@@ -465,10 +466,13 @@ class ChatModel(Runnable[ChatModelOutput]):
                 continue
 
             if self.fix_invalid_tool_calls:
-                parsed = parse_broken_json(tool_call.args, {})
-                if isinstance(parsed, str):
-                    parsed = parse_broken_json(parsed, {})
-                if parsed:
+                if not tool_call.id:
+                    tool_call.id = f"call_{generate_random_string(8).lower()}"
+
+                with contextlib.suppress(Exception):
+                    parsed = parse_broken_json(tool_call.args)
+                    if isinstance(parsed, str):
+                        parsed = parse_broken_json(parsed)
                     tool_call.args = to_json(parsed, sort_keys=False, indent=None)
 
             if not tool_call.is_valid():
@@ -552,7 +556,7 @@ class ChatModel(Runnable[ChatModelOutput]):
 
         if not parallel_tool_calls and len(tool_calls) > 1:
             raise ChatModelError(
-                "The model produced more than one tool call, but parallel tool calls are disabled\n."
+                "The model produced more than one tool call, but parallel tool calls are disabled.\n"
                 "Consider enabling parallel tool calls by setting 'model.allow_parallel_tool_calls' to True.",
             )
 

@@ -89,12 +89,11 @@ describe("QdrantDatabaseTool", () => {
       action: QdrantAction.Search,
       collectionName,
       vector,
-      topK: 1,
     });
 
     expect(mockClient.query).toHaveBeenCalledWith(collectionName, {
       query: vector,
-      limit: 1,
+      limit: 10,
       with_payload: true,
     });
     expect(response.result).toEqual(mockSearchResponse);

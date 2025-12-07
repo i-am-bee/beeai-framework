@@ -62,9 +62,8 @@ export class GraniteRunner extends DefaultRunner {
             new ToolMessage(
               {
                 type: "tool-result",
-                result: update.value!,
+                output: { type: meta.success ? "text" : "error-text", value: update.value },
                 toolName: data.tool_name!,
-                isError: !meta.success,
                 toolCallId: "DUMMY_ID",
               },
               { success: meta.success },

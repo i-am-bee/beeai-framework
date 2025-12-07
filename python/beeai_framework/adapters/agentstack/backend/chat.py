@@ -5,13 +5,15 @@ import contextlib
 from collections.abc import Callable
 from contextvars import ContextVar
 from functools import cached_property
-from typing import Any, ClassVar, Self
+from typing import TYPE_CHECKING, Any, ClassVar, Self
 
 from pydantic import BaseModel, Field
 
 try:
-    from agentstack_sdk.a2a.extensions import LLMServiceExtensionServer
     from agentstack_sdk.platform import ModelProviderType
+
+    if TYPE_CHECKING:
+        from agentstack_sdk.a2a.extensions import LLMServiceExtensionServer
 
 except ModuleNotFoundError as e:
     raise ModuleNotFoundError(
@@ -31,7 +33,7 @@ __all__ = ["AgentStackChatModel"]
 
 from beeai_framework.context import Run
 
-_storage = ContextVar[LLMServiceExtensionServer]("agent_stack_chat_model_storage")
+_storage = ContextVar["LLMServiceExtensionServer"]("agent_stack_chat_model_storage")
 
 
 class ProviderConfig(BaseModel):
@@ -75,10 +77,10 @@ class AgentStackChatModel(ChatModel):
     ) -> None:
         super().__init__(**kwargs)
         self.preferred_models = preferred_models or []
-        self._kwargs = kwargs
+        self._has_custom_tool_choice_support = kwargs.get("tool_choice_support") is not None
 
     @staticmethod
-    def set_context(ctx: LLMServiceExtensionServer) -> Callable[[], None]:
+    def set_context(ctx: "LLMServiceExtensionServer") -> Callable[[], None]:
         token = _storage.set(ctx)
         return lambda: _storage.reset(token)
 
@@ -95,16 +97,27 @@ class AgentStackChatModel(ChatModel):
         provider_name = llm_conf.api_model.replace("beeai:", "").split(":")[0]
         config = (self.providers_mapping.get(provider_name) or (lambda: ProviderConfig()))()
 
-        kwargs = self._kwargs.copy()
-        if kwargs.get("tool_choice_support") is None:
-            kwargs["tool_choice_support"] = config.tool_choice_support
-
         cls = config.cls if config.openai_native else OpenAIChatModel
         return cls(  # type: ignore
             model_id=llm_conf.api_model,
             api_key=llm_conf.api_key,
             base_url=llm_conf.api_base,
-            **kwargs,
+            preferred_models=self.preferred_models.copy(),
+            settings=self._settings.copy(),
+            cache=self.cache,
+            tool_call_fallback_via_response_format=self.tool_call_fallback_via_response_format,
+            model_supports_tool_calling=self.model_supports_tool_calling,
+            allow_parallel_tool_calls=self.allow_parallel_tool_calls,
+            ignore_parallel_tool_calls=self.ignore_parallel_tool_calls,
+            use_strict_tool_schema=self.use_strict_tool_schema,
+            use_strict_model_schema=self.use_strict_model_schema,
+            supports_top_level_unions=self.supports_top_level_unions,
+            retry_on_empty_response=self.retry_on_empty_response,
+            fix_invalid_tool_calls=self.fix_invalid_tool_calls,
+            tool_choice_support=self._tool_choice_support.copy()
+            if (self._has_custom_tool_choice_support or type(self).tool_choice_support != self._tool_choice_support)
+            else config.tool_choice_support.copy(),
+            parameters=self.parameters.model_copy(deep=True),
         )
 
     @override
@@ -130,8 +143,24 @@ class AgentStackChatModel(ChatModel):
         return "beeai"
 
     async def clone(self) -> Self:
-        cloned = self.__class__(preferred_models=self.preferred_models.copy(), **self._kwargs.copy())
-        cloned.middlewares.extend(self.middlewares)
+        cloned = self.__class__(
+            preferred_models=self.preferred_models.copy(),
+            settings=self._settings.copy(),
+            cache=await self.cache.clone(),
+            tool_call_fallback_via_response_format=self.tool_call_fallback_via_response_format,
+            model_supports_tool_calling=self.model_supports_tool_calling,
+            allow_parallel_tool_calls=self.allow_parallel_tool_calls,
+            ignore_parallel_tool_calls=self.ignore_parallel_tool_calls,
+            use_strict_tool_schema=self.use_strict_tool_schema,
+            use_strict_model_schema=self.use_strict_model_schema,
+            supports_top_level_unions=self.supports_top_level_unions,
+            retry_on_empty_response=self.retry_on_empty_response,
+            fix_invalid_tool_calls=self.fix_invalid_tool_calls,
+            tool_choice_support=self._tool_choice_support.copy(),
+            parameters=self.parameters.model_copy(deep=True),
+        )
+        cloned._has_custom_tool_choice_support = self._has_custom_tool_choice_support
+        self.middlewares.extend(self.middlewares)
         return cloned
 
 

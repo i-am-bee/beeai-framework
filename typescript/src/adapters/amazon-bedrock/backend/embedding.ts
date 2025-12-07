@@ -13,15 +13,15 @@ import {
 
 type Params = Parameters<AmazonBedrockProvider["embedding"]>;
 export type BedrockEmbeddingModelId = NonNullable<Params[0]>;
-export type BedrockEmbeddingSettings = NonNullable<Params[1]>;
+export type BedrockEmbeddingSettings = any;
 
 export class BedrockEmbeddingModel extends VercelEmbeddingModel {
   constructor(
     modelId: BedrockEmbeddingModelId = getEnv("AWS_EMBEDDING_MODEL", "amazon.titan-embed-text-v1"),
-    settings: BedrockEmbeddingSettings = {},
+    _settings: BedrockEmbeddingSettings = {},
     client?: AmazonBedrockClient | AmazonBedrockClientSettings,
   ) {
-    const model = AmazonBedrockClient.ensure(client).instance.embedding(modelId, settings);
+    const model = AmazonBedrockClient.ensure(client).instance.embedding(modelId);
     super(model);
   }
 }

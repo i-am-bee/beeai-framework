@@ -10,18 +10,19 @@ import {
   GoogleVertexClientSettings,
 } from "@/adapters/google-vertex/backend/client.js";
 import { getEnv } from "@/internals/env.js";
+import { ChatModelParameters } from "@/backend/chat.js";
 
 type GoogleVertexParameters = Parameters<GoogleVertexProvider["languageModel"]>;
 export type GoogleVertexChatModelId = NonNullable<GoogleVertexParameters[0]>;
-export type GoogleVertexChatModelSettings = NonNullable<GoogleVertexParameters[1]>;
 
 export class GoogleVertexChatModel extends VercelChatModel {
   constructor(
     modelId: GoogleVertexChatModelId = getEnv("GOOGLE_VERTEX_CHAT_MODEL", "gemini-1.5-pro"),
-    settings: GoogleVertexChatModelSettings = {},
+    parameters: ChatModelParameters = {},
     client?: GoogleVertexClientSettings | GoogleVertexClient,
   ) {
-    const model = GoogleVertexClient.ensure(client).instance.languageModel(modelId, settings);
+    const model = GoogleVertexClient.ensure(client).instance.languageModel(modelId);
     super(model);
+    Object.assign(this.parameters, parameters ?? {});
   }
 }

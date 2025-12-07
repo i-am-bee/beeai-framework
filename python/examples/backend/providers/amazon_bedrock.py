@@ -12,7 +12,7 @@ from beeai_framework.parsers.line_prefix import LinePrefixParser, LinePrefixPars
 from beeai_framework.utils import AbortSignal
 
 # NOTE: See README.md for additional usage notes
-MODEL_NAME: Final[str] = "meta.llama3-8b-instruct-v1:0"
+MODEL_NAME: Final[str] = "global.anthropic.claude-opus-4-5-20251101-v1:0"
 
 
 async def amazon_bedrock_from_name() -> None:
@@ -84,6 +84,11 @@ async def amazon_bedrock_stream_parser() -> None:
     print(result)
 
 
+async def amazon_bedrock_cloning() -> None:
+    llm = AmazonBedrockChatModel(MODEL_NAME)
+    await llm.clone()
+
+
 async def main() -> None:
     print("*" * 10, "amazon_bedrock_from_name")
     await amazon_bedrock_from_name()
@@ -98,6 +103,8 @@ async def main() -> None:
     # await amazon_bedrock_structure()
     print("*" * 10, "amazon_bedrock_stream_parser")
     await amazon_bedrock_stream_parser()
+    print("*" * 10, "amazon_bedrock_cloning")
+    await amazon_bedrock_cloning()
 
 
 if __name__ == "__main__":

@@ -21,10 +21,10 @@ export class AzureOpenAIEmbeddingModel extends VercelEmbeddingModel {
       "AZURE_OPENAI_EMBEDDING_MODEL",
       "text-embedding-3-small",
     ),
-    settings: AzureOpenAIEmbeddingModelSettings = {},
+    _settings: AzureOpenAIEmbeddingModelSettings = {},
     client?: AzureOpenAIClient | AzureOpenAIClientSettings,
   ) {
-    const model = AzureOpenAIClient.ensure(client).instance.textEmbeddingModel(modelId, settings);
+    const model = AzureOpenAIClient.ensure(client).instance.textEmbeddingModel(modelId);
     super(model);
   }
 }

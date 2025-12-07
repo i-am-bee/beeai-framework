@@ -220,7 +220,7 @@ root = Emitter.root()
 root.on("*.*", log_all_events)
 ```
 
-<Note>Listeners that are bound "closer" to the source are executed earlier. For those that reside at the same level, the order can be altered by setting a `priority` value which is part of the `EmitterOptions` class.</Note>
+<Note>Listeners that are bound "closer" to the source are executed earlier. For those that reside at the same level, the order can be altered by setting a `priority` value which is part of the `EmitterOptions` class. A higher `priority` value means the listener will be executed earlier. The default priority is `0`.</Note>
 
 **2. Instance Level**
 

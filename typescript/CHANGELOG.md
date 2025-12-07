@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.1.21](https://github.com/i-am-bee/beeai-framework/compare/typescript_v0.1.20...typescript_v0.1.21) (2025-11-28)
+
+### Features
+
+- **adapters:** add health-check support ([#1235](https://github.com/i-am-bee/beeai-framework/issues/1235)) ([123232a](https://github.com/i-am-bee/beeai-framework/commit/123232acb93ad29858e16750ce721a3925d45b72)), closes [#1194](https://github.com/i-am-bee/beeai-framework/issues/1194)
+- rename BeeAIPlatform to AgentStack ([#1256](https://github.com/i-am-bee/beeai-framework/issues/1256)) ([366e473](https://github.com/i-am-bee/beeai-framework/commit/366e473c4e7f3dd329e934a87d9f80572c6af3e5))
+- upgrade all TS packages ([#1322](https://github.com/i-am-bee/beeai-framework/issues/1322)) ([cb42104](https://github.com/i-am-bee/beeai-framework/commit/cb42104e58ca77c2a4aa504df77e377f6c999214)), closes [#1320](https://github.com/i-am-bee/beeai-framework/issues/1320)
+
 ## [0.1.20](https://github.com/i-am-bee/beeai-framework/compare/typescript_v0.1.19...typescript_v0.1.20) (2025-10-29)
 
 ### Features
