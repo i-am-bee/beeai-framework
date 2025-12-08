@@ -295,7 +295,7 @@ from beeai_framework.runnable import Runnable, RunnableOptions, RunnableOutput, 
 class GreetingRunnable(Runnable[RunnableOutput]):
     @runnable_entry
     async def run(self, input: list[AnyMessage], /, **kwargs: Unpack[RunnableOptions]) -> RunnableOutput:
-        # retrieves the current run context
+        # retrieves the current run contex
         run = RunContext.get()
 
         response = f"Hello, {run.context.get('name', 'stranger')}!"
@@ -643,12 +643,31 @@ await second.emit("d", {});
 
 </CodeGroup>
 
+
 ## Creating Custom Middleware
 
-We just showed you how you can alter the component's behavior by listening to events that the target emits and modifying them. To make this concept more general and reusable, we can group all relevant listeners into a class called `middleware`.
+While you can register individual callbacks to handle specific events, this approach can become cluttered if you have complex logic. To make your event handling reusable and modular, the BeeAI framework allows you to group listeners into a class called **Middleware.**
 
-Similarly, callbacks are registered via the `on` method, and middlewares are registered via the `middleware` method. Sometimes they can also be set on the class itself via a constructor.
-The middleware is a function that takes the `RunContext` where one can attach desired callbacks. Middleware can also be a class with a public `bind` method that retrieves the `RunContext`.
+### **When to use Middleware vs. Callbacks**
+
+* **Use Callbacks (`.on` / `.match`)**: For simple, one-off logic, such as logging a specific event or debugging a single run.
+* **Use Middleware**: When the logic is complex, multi-step  or needs to be reused across different parts of your application.
+
+### **The Middleware Protocol**
+
+A middleware component is defined by how it interacts with the RunContext. It can be structured in two ways:
+
+1. **A Function**: A simple function that accepts `RunContext` as its first parameter.
+
+2. **A Class**: A class that implements a bind method, which accepts `RunContext` as its first parameter.
+
+The `RunContex` provides access to the emitter, the instance being run, and the shared memory for that specific execution.
+
+### **Example: Intercepting and Overriding**
+
+A common use case for middleware is intercepting a request before the target component executes to modify the input or provide a mock response.
+
+The following example demonstrates a middleware that intercepts the `start` event. By setting the `output` property on the event data, the middleware effectively "mocks" the result, preventing the actual ChatModel from running.
 
 {/* <!-- embedme python/examples/middleware/override.py --> */}
 
@@ -692,17 +711,39 @@ async def main() -> None:
 
 if __name__ == "__main__":
     asyncio.run(main())
-
 ```
 
-<Note>Note that this concept is built on top of the run instance and is not available on the standalone emitter.</Note>
+**Key Implementation Details:**
 
-<Important>Such middleware can be applied to an arbitrary class, just ensure that the mocked response matches the expected output type (eg, if you override the response for a `ChatModel`, then the return type should be of `ChatModelOutput`). The middleware can be both stateful and stateless, depending on the use case.</Important>
+* `create_internal_event_matcher`: A helper used to ensure you are matching the specific internal event (like `start` / `success` / `error` / `finish`) for the correct component instance.
+* `EmitterOptions`: Used here to set `priority=1` and `is_blocking=True`, ensuring this middleware executes early and takes precedence over other callbacks.
+* `data.output`: Setting this property during a `start` event signals the framework to skip the underlying execution (e.g., the LLM call) and return this value immediately.
 
-**When to use middleware vs simple callback registration?**
+<Note>Ensure that your mock response matches the expected output type of the component you are intercepting. For example, if you override a `ChatModel`, the return type must be `ChatModelOutput`.</Note>
 
-A rule of thumb is to create middleware if the desired functionality consists of multiple pieces that must be used together or when the functionality is more complex.
+### **Registering Middleware**
 
+Once defined, you can attach middleware to a component using the `.middleware()` method just before execution.
+
+```py Python [expandable]
+async def main() -> None:
+  # 1. Prepare the mock response
+  mock_output = ChatModelOutput(output=[AssistantMessage("BeeAI is the best!")])
+
+  # 2. Initialize the middleware
+  middleware = OverrideResponseMiddleware(mock_output)
+
+  # 3. Attach middleware to the run
+  llm = ChatModel.from_name("ollama:granite4")
+  response = await llm.run([UserMessage("Hello!")]).middleware(middleware)
+
+  print(response.get_text_content())  # Output: "BeeAI is the best!"
+
+if __name__ == "__main__":
+  asyncio.run(main())
+```
+
+Note that middleware is applied to the **Run** instance (the result of calling `.run()`), not the standalone emitter class itself. However, in some cases, middleware can be passed via the component's constructor if supported.
 
 ## Events glossary
 
@@ -743,7 +784,7 @@ The following events can be observed when calling `ChatModel.run(...)`.
 |:---------------|:-----------------------------------|:----------------------------------------------------------------------------------|
 | `start`        | `RequirementAgentStartEvent`       | Triggered when the agent begins execution.                                        |
 | `success`      | `RequirementAgentSuccessEvent`     | Triggered when the agent successfully completes execution.                        |
-| `final_answer` | `RequirementAgentFinalAnswerEvent` | Triggered with intermediate chunks of the final answer when streaming is enabled. |
+| `final_answer` | `RequirementAgentFinalAnswerEvent` | Triggered with intermediate chunks of the final answer. |
 
 [Check out the in-code definition](https://github.com/i-am-bee/beeai-framework/blob/main/python/beeai_framework/agents/experimental/events.py).
 
