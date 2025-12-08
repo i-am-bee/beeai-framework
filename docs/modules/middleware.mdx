@@ -3,21 +3,148 @@ title: "Middleware"
 icon: "repeat"
 ---
 
-The BeeAI framework core and its parts can be easily extended via the underlying concept of events and run contexts.
+## Overview
 
-## Modules
+Middleware in the BeeAI Framework is code that runs "in the middle" of an execution lifecycle—intercepting the flow between when a component (like an Agent, Tool, or Model) starts and when it finishes.
 
-The following section describes essential modules that are important to understand the whole concept.
+As these components execute, they emit events at key moments, such as starting a task, calling a tool, or completing a response . Middleware hooks into these events to inject behaviors like logging, filtering, or safety checks—all without modifying the component's core logic. This modular approach allows you to apply consistent policies across your entire system.
 
-### Event
+You can use built-in tools like `GlobalTrajectoryMiddleware` for immediate debugging, or write custom middleware to handle complex needs like blocking unsafe content, enforcing rate limits, or managing authentication.
 
-An event refers to an action created by some component.
+<Note>
+Note on Terminology: In this framework, **Middleware** refers to the classic software design pattern (pipeline interceptors) that runs between execution steps. This is distinct from the industry term "Agentic Middleware," which typically refers to entire orchestration platforms.
+</Note>
 
-- Has a name (e.g., `start`, `success`, `error`, ..., `fetch_data`).
-- Has a data payload (typically a Pydantic model).
-- Has associated metadata about the context where the event was fired.
 
-The emitted event is processed via callbacks that look like this:
+## Built-in Middleware
+
+The following section showcases built-in middleware that you can start using right away.
+
+### Global Trajectory
+
+The fastest way to understand your agent's execution flow is by using the `GlobalTrajectoryMiddleware`. It captures all events, including deeply-nested ones, and prints them to the console, using indentation to visualize the call stack .
+
+**Example**
+
+```py Python [expandable]
+from beeai_framework.middleware.trajectory import GlobalTrajectoryMiddleware
+
+agent = RequirementAgent(
+    llm="ollama:granite3.3",
+    tools=[OpenMeteoTool()]
+)
+await agent.run("What's the current weather in Miami?")
+            .middleware(GlobalTrajectoryMiddleware())
+```
+
+You can customize the output by passing parameters to the constructor:
+
+| Parameter          | Description                                                                                              |
+|--------------------|----------------------------------------------------------------------------------------------------------|
+| `target`           | Specify a file or stream to which to write the trajectory (pass `False` to disable).                     |
+| `included`         | List of classes to include in the trajectory.                                                            |
+| `excluded`         | List of classes to exclude from the trajectory.                                                          |
+| `pretty`           | Use pretty formatting for the trajectory.                                                                |
+| `prefix_by_type`   | Customize how instances of individual classes should be printed.                                         |
+| `exclude_none`     | Exclude `None` values from the printing.                                                                 |
+| `enabled`          | Enable/Disable the logging.                                                                              |
+| `match_nested`     | Whether to observe trajectories of nested run contexts.                                                  |
+| `emitter_priority` | Setting higher priority may result in capturing events without any modifications from other middlewares. |
+
+**Example**
+
+```py Python [expandable]
+from beeai_framework.middleware.trajectory import GlobalTrajectoryMiddleware
+from beeai_framework.tools.tool import Tool
+from beeai_framework.backend.chat import ChatModel
+from beeai_framework.tools.weather.openmeteo import OpenMeteoTool
+from beeai_framework.agents.base import BaseAgent
+
+# Log only tool calls
+GlobalTrajectoryMiddleware(target=[Tool]) 
+
+# Log only tool calls except OpenMeteoTool
+GlobalTrajectoryMiddleware(target=[Tool], excluded=[OpenMeteoTool]) 
+
+# Log only ChatModel events
+GlobalTrajectoryMiddleware(target=[ChatModel]) 
+
+# Use a Bee emoji for agents
+GlobalTrajectoryMiddleware(prefix_by_type={BaseAgent: "🐝 "}) 
+```
+
+<Tip>You can listen to events emitted throughout the execution to build your custom trajectory.</Tip>
+
+
+### Tool Call Streaming
+
+This middleware handles streaming tool calls in a `ChatModel`. It observes stream updates from the [Chat Model](/modules/backend#chat-model) and parses tool calls on demand so that they can be consumed immediately. 
+
+It works even without streaming enabled, in which case it emits the `update` event at the end of the execution..
+
+**Example**
+
+{/* <!-- embedme python/examples/middleware/llm_streaming.py --> */}
+```py Python [expandable]
+import asyncio
+
+from beeai_framework.backend import ChatModel, UserMessage
+from beeai_framework.emitter import EventMeta
+from beeai_framework.middleware.stream_tool_call import StreamToolCallMiddleware, StreamToolCallMiddlewareUpdateEvent
+from beeai_framework.tools.weather import OpenMeteoTool
+
+
+async def main() -> None:
+    llm = ChatModel.from_name("ollama:granite4:micro")
+    weather_tool = OpenMeteoTool()
+    middleware = StreamToolCallMiddleware(
+        weather_tool,
+        key="location_name",  # name is taken from the OpenMeteoToolInput schema
+        match_nested=False,  # we are applying the middleware to the model directly
+        force_streaming=True,  # we want to let middleware enable streaming on the model
+    )
+
+    @middleware.emitter.on("update")
+    def log_thoughts(event: StreamToolCallMiddlewareUpdateEvent, meta: EventMeta) -> None:
+        print(
+            "Received update", event.delta, event.output_structured
+        )  # event.delta contains an update of the 'location_name' field
+
+    response = await llm.run([UserMessage("What's the current weather in New York?")], tools=[weather_tool]).middleware(
+        middleware
+    )
+    print(response.get_tool_calls()[0].args)
+
+
+if __name__ == "__main__":
+    asyncio.run(main())
+
+```
+
+The following parameters can be passed to the constructor:
+
+| Parameter         | Description                                                                 |
+|-------------------|------------------------------------------------------------------------------|
+| `target`          | The tool that we are waiting for to be called.                              |
+| `key`             | Refers to the name of the attribute in the tool's schema that we want to stream. |
+| `match_nested`    | Whether the middleware should be applied only to the top level.              |
+| `force_streaming` | Sets the stream flag on the `ChatModel`.                                     |
+
+
+## Core Primatives
+
+The BeeAI Framework middleware is built on an underlying system of primitives, which are described in this section. Understanding these primitives is helpful for building complex middleware.
+
+### Events
+
+An event refers to an action initiated by a component. It carries the details of what just happened within the system.
+
+Every event has three key properties:
+- Name: A string identifier (e.g., `start`, `success`, `error`, or custom names like `fetch_data`).
+- Data payload: The  content of the event, typically astructured as a Pydantic model.
+- Metadata: Information about the context where the event was fired.
+
+You process these events using callbacks that follow this structure:
 
 ```py Python [expandable]
 from beeai_framework.backend.chat import ChatModelStartEvent
@@ -33,17 +160,17 @@ async def handler(data: ChatModelStartEvent, meta: EventMeta) -> None:
 
 ### Emitter
 
-The core component through which events are emitted and observed. An emitter is typically attached to some class but can be used alone.
+The **Emitter** is the core component that lets you send and watch for events. While it is typically attached to a specific class, you can also use it on its own.
 An emitter instance is typically the child of a root emitter to which all events are propagated. Emitters can be nested (one can be a child of another), hence they internally create a tree hierarchy.
 
-The emitter instance has the following **properties**:
+Every emitter instance has the following **properties**:
 
 - `namespace` in which the emitter operates (eg: `agents.requirement`, `tool.open_meteo`, ...).
 - `creator` class which the given emitter belongs to.
 - `context` (dictionary which is attached to all events emitted via the given emitter).
 - `trace` metadata (such as current `id`, `run_id` and `parent_id`)
 
-The emitter instance and the following **methods**:
+It also gives you the following **methods** for managing listeners:
 
 - `on` for registering a new event listener
   - The method takes `matcher` (event name, callback, regex), `callback` (sync/async function), and `options` (priority, etc.)
@@ -101,18 +228,16 @@ emitter.off(callback=handle_event)
 
 The `Run` class **acts as a wrapper of the target implementation** with its **own lifecycle** (an emitter with a set of events) and **context** (data that gets propagated to all events).
 
-The `RunContext` class is a container that contains information about the current execution context.
+The `RunContext` class is a container that stores information about the current execution context.
 
-**Why is it useful?**
+These abstractions allow you to:
 
-Such abstraction allows you to:
-
-- modify `input` to the given target (listen to a `start` event and modify the content of the `input` property)
-- modify `output` from the given target (listen to a `success` event and modify the content of the `output` property)
-- does premature stop (listen to a `start` event and set the `output` property to  not a `None` value)
-- propagate `context` (dictionary) to whatever component of your system you'd like
-- cancel the execution in an arbitrary place
-- observability
+- modify `input` to the given target (listen to a `start` event and modify the content of the `input` property),
+- modify `output` from the given target (listen to a `success` event and modify the content of the `output` property),
+- stop the run early (listen to a `start` event and set the `output` property to a non-`None` value),
+- propagate `context` (dictionary) to any component of your system,
+- cancel the execution in an arbitrary place,
+- gain observability into runs via structured events (for logging, tracing, and debugging).
 
 **The Run and Run Context gets created** when a `run` method gets called on a framework class that can be executed (eg, `ChatModel`, `Agent`, ...).
 
@@ -132,7 +257,7 @@ In simpler terms, when you call one runnable (e.g., `ChatModel`) from within ano
 
 ### Runnable
 
-The `Runnable[R]` class was created to unify common objects that can be executed and observed. It is an abstract class with the following traits:
+The `Runnable[R]` class unifies common objects that can be executed and observed. It is an abstract class with the following traits:
 
 - It has an abstract `run` method that executes the class and returns a `Run[R]` (`R` is bound to the `RunnableOutput`).
 - It has an abstract `emitter` getter.
@@ -196,17 +321,24 @@ if __name__ == "__main__":
 
 ```
 
-## Working with events
+## Event Handling
 
-The following sections show you how to use the emitter to capture and modify events.
+Building robust agents requires precise control over the execution lifecycle. You need the ability to not only observe your agent's behavior but also intercept and modify it at specific points.
+
+The following sections covers the mechanics of the BeeAI Framework **event system** and will enable you to manage:
+- **Scopes**: Deciding whether to listen globally, per instance, or for a single run.
+- ***Config**: Controlling listener priority, persistence, and blocking behavior.
+- **Lifecycle**: Undestanding the exact sequence events that occur during execution.
+- **Debugging**: Inspecting raw event streams to see exactly what your agent is doing.
+- **Piping**: Linking emitters together via piping to create unified event streams.
 
 ### Scopes
 
-Events can be generally observed on three different levels.
+Events can be observed at three different levels.
 
 **1. Global Level**
 
-Every emitter provided by the out-of-the-box modules is a child of the root emitter, which means we can listen to all events directly from the root emitter.
+Every emitter provided by the out-of-the-box modules is a child of the root emitter. This means you can listen to **all events** directly from the root emitter.
 
 ```py Python [expandable]
 from beeai_framework.emitter import Emitter, EventMeta
@@ -224,7 +356,7 @@ root.on("*.*", log_all_events)
 
 **2. Instance Level**
 
-On the other hand, we can listen to events emitted by a specific instance of a class.
+You can also listen to events emitted by a **specific instance** of a class.
 
 ```py Python [expandable]
 from beeai_framework.backend.chat import ChatModel, ChatModelStartEvent
@@ -242,12 +374,11 @@ model.emitter.on("start", change_model_temperature)
 await model.run([UserMessage("Hello!")])
 ```
 
-The following example registers a callback to the class's emitter.
-Therefore, all events in a given class will be captured.
+This registers a callback to the class's emitter so that all events in a given class will be captured.
 
 **3. Run (Invocation) Level**
 
-Sometimes we might want to listen to events emitted by a single run of a class.
+Sometimes you may want to listen to events emitted by **a single run** of a class.
 
 ```py Python [expandable]
 from beeai_framework.backend.chat import ChatModel, ChatModelStartEvent
@@ -265,14 +396,13 @@ await model.run([UserMessage("Hello!")])
             .on("start", change_model_temperature)
 ```
 
-In this example, we registered a callback, not the class itself, but to the concrete run instance (created by the `run` method).
-The run instance has its own emitter, which is a direct child of the class emitter.
-Thanks to this, one can apply modifications to a single run instead of the whole class.
+Here, the callback is registered on the **run instance** (created by the `run` method).
+The run’s emitter is a child of the class emitter, allowing you to modify behavior for a single invocation without affecting others.
 
 ### Config
 
-With a larger number of callbacks, we might want to ensure that some run before the others or that some run exclusively.
-To address these needs, we can use the optional keyword argument called `options` of type `EmitterOptions`.
+When working with multiple callbacks, you may need to control execution order, or ensure that some run exclusively.
+You can do this using the optional `options` argument of type `EmitterOptions`.
 
 **Example**
 
@@ -327,11 +457,9 @@ The default value of the `match_nested` depends on the `matcher` value. Note tha
 
 ### Lifecycle
 
-When a framework component is executed, it creates a run context, which is a wrapper around the target handler that gives us the ability to modify its input and output ([learn more](#run-context)).
+When a framework component is executed, it creates a run context, which wraps the target handler and allows you to modify its input and output (Learn more in the [Run (Context)](#run-context) section).
 
-**How it works?**
-
-Once a `Run` instance is executed (i.e., **awaited**), the lifecycle begins:
+Once a `Run` instance is executed (i.e., **awaited**), its lifecycle proceeds through the following steps:
 
 1. The `start` event is emitted.
 2. The target implementation is executed.
@@ -347,7 +475,7 @@ The appropriate events are depicted in the following table:
 | `error`   | `FrameworkError`         | Triggered when an error occurs. |
 | `finish`  | `RunContextFinishEvent`  | Triggered when the run finishes. |
 
-See how you can listen to these events.
+Below is an example showing how to listen to these events:
 
 ```py Python [expandable]
 import asyncio
@@ -402,82 +530,22 @@ response = await (
 print("Agent:", response.get_text_content())
 ```
 
-<Note>In this example we are using `create_internal_event_matcher` which correctly matches the correct event.</Note>
+<Note>In this example, `create_internal_event_matcher` ensures we correctly match the event.</Note>
 
-<Tip>The current context can be retrieved anytime by calling `RunContext.get()` within a callback.</Tip>
+<Tip>You can retrieve the current run context at any time within a callback using `RunContext.get()`.</Tip>
 
 ### Debugging
 
-To see which events get emitted in your case, the best way is to register a log-all callback for your run.
+While the [Global Trajectory](#global-trajectory) middleware is excellent for visualizing the structural hierarchy of a run, sometimes you need to inspect the raw stream of events as they happen.
+
+To do this quickly without setting up a full middleware class, you can register a wildcard listener (`*.*`) directly on your run. This captures every single event emitted during that specific execution.
 
 ```py Python [expandable]
-agent = RequirementAgent("ollama:granite3:3", tools=[OpenMeteoTool()])
+agent = RequirementAgent("ollama:granite3.3", tools=[OpenMeteoTool()])
 response = await agent
   .run("What's the current weather in Miami?")
   .on("*.*", lambda data, meta: print(meta.path, 'by', type(meta.creator)))
 ```
-
-
-### Reusability
-
-We just showed you how you can alter the component's behavior by listening to events that the target emits and modifying them. To make this concept more general and reusable, we can group all relevant listeners into a class called middleware.
-
-Similarly, callbacks are registered via the `on` method, and middlewares are registered via the `middleware` method. Sometimes they can also be set on the class itself via a constructor.
-The middleware is a function that takes the `RunContext` where one can attach desired callbacks. Middleware can also be a class with a public `bind` method that retrieves the `RunContext`.
-
-{/* <!-- embedme python/examples/middleware/override.py --> */}
-
-```py Python [expandable]
-import asyncio
-from typing import Any
-
-from beeai_framework.backend import AssistantMessage, ChatModel, ChatModelOutput, UserMessage
-from beeai_framework.context import RunContext, RunContextStartEvent, RunMiddlewareProtocol
-from beeai_framework.emitter import EmitterOptions, EventMeta
-from beeai_framework.emitter.utils import create_internal_event_matcher
-
-
-class OverrideResponseMiddleware(RunMiddlewareProtocol):
-    """Middleware that sets the result value for a given runnable without executing it"""
-
-    def __init__(self, result: Any) -> None:
-        self._result = result
-
-    def bind(self, ctx: RunContext) -> None:
-        """Calls once the target is about to be run."""
-
-        ctx.emitter.on(
-            create_internal_event_matcher("start", ctx.instance),
-            self._run,
-            # ensures that this callback will be the first invoked
-            EmitterOptions(is_blocking=True, priority=1),
-        )
-
-    async def _run(self, data: RunContextStartEvent, meta: EventMeta) -> None:
-        """Set output property to the result which prevents an execution of the target handler."""
-
-        data.output = self._result
-
-
-async def main() -> None:
-    middleware = OverrideResponseMiddleware(ChatModelOutput(output=[AssistantMessage("BeeAI is the best!")]))
-    response = await ChatModel.from_name("ollama:granite4:micro").run([UserMessage("Hello!")]).middleware(middleware)
-    print(response.get_text_content())  # "BeeAI is the best!"
-
-
-if __name__ == "__main__":
-    asyncio.run(main())
-
-```
-
-<Note>Note that this concept is built on top of the run instance and is not available on the standalone emitter.</Note>
-
-<Important>Such middleware can be applied to an arbitrary class, just ensure that the mocked response matches the expected output type (eg, if you override the response for a `ChatModel`, then the return type should be of `ChatModelOutput`). The middleware can be both stateful and stateless, depending on the use case.</Important>
-
-**When to use middleware vs simple callback registration?**
-
-A rule of thumb is to create middleware if the desired functionality consists of multiple pieces that must be used together or when the functionality is more complex.
-
 
 ### Piping
 
@@ -575,113 +643,107 @@ await second.emit("d", {});
 
 </CodeGroup>
 
-## Existing middlewares
 
-The following section showcases built-in middlewares that you can start using right away.
+## Creating Custom Middleware
 
-### Global Trajectory
+While you can register individual callbacks to handle specific events, this approach can become cluttered if you have complex logic. To make your event handling reusable and modular, the BeeAI framework allows you to group listeners into a class called **Middleware.**
 
-The fastest way to see what's happening in your code (who is calling what) is by using the `GlobalTrajectoryMiddleware`. It captures all events (even deeply nested) and prints them to the console while visualizing nested calls with indentation.
+### **When to use Middleware vs. Callbacks**
 
-**Example**
+* **Use Callbacks (`.on` / `.match`)**: For simple, one-off logic, such as logging a specific event or debugging a single run.
+* **Use Middleware**: When the logic is complex, multi-step  or needs to be reused across different parts of your application.
 
-```py Python [expandable]
-from beeai_framework.middleware.trajectory import GlobalTrajectoryMiddleware
+### **The Middleware Protocol**
 
-agent = RequirementAgent(
-    llm="ollama:granite3:3",
-    tools=[OpenMeteoTool()]
-)
-await agent.run("What's the current weather in Miami?")
-            .middleware(GlobalTrajectoryMiddleware())
-```
+A middleware component is defined by how it interacts with the RunContext. It can be structured in two ways:
 
-See which parameters can be passed to the constructor.
+1. **A Function**: A simple function that accepts `RunContext` as its first parameter.
 
-| Parameter          | Description                                                                                              |
-|--------------------|----------------------------------------------------------------------------------------------------------|
-| `target`           | Specify a file or stream to which to write the trajectory (pass `False` to disable).                     |
-| `included`         | List of classes to include in the trajectory.                                                            |
-| `excluded`         | List of classes to exclude from the trajectory.                                                          |
-| `pretty`           | Use pretty formatting for the trajectory.                                                                |
-| `prefix_by_type`   | Customize how instances of individual classes should be printed.                                         |
-| `exclude_none`     | Exclude `None` values from the printing.                                                                 |
-| `enabled`          | Enable/Disable the logging.                                                                              |
-| `match_nested`     | Whether to observe trajectories of nested run contexts.                                                  |
-| `emitter_priority` | Setting higher priority may result in capturing events without any modifications from other middlewares. |
+2. **A Class**: A class that implements a bind method, which accepts `RunContext` as its first parameter.
 
-**Example**
+The `RunContex` provides access to the emitter, the instance being run, and the shared memory for that specific execution.
 
-```py Python [expandable]
-from beeai_framework.middleware.trajectory import GlobalTrajectoryMiddleware
-from beeai_framework.tools.tool import Tool
-from beeai_framework.backend.chat import ChatModel
-from beeai_framework.tools.weather.openmeteo import OpenMeteoTool
-from beeai_framework.agents.base import BaseAgent
+### **Example: Intercepting and Overriding**
 
-GlobalTrajectoryMiddleware(target=[Tool]) # log only tool calls
-GlobalTrajectoryMiddleware(target=[Tool], excluded=[OpenMeteoTool]) # log only tool calls except OpenMeteoTool
-GlobalTrajectoryMiddleware(target=[ChatModel]) # log only tool calls except OpenMeteoTool
-GlobalTrajectoryMiddleware(prefix_by_type={BaseAgent: "🐝 "}) # use Bee Emoji for agents
-```
+A common use case for middleware is intercepting a request before the target component executes to modify the input or provide a mock response.
 
-<Tip>You can listen to events emitted throughout the execution and build your custom trajectory.</Tip>
+The following example demonstrates a middleware that intercepts the `start` event. By setting the `output` property on the event data, the middleware effectively "mocks" the result, preventing the actual ChatModel from running.
 
+{/* <!-- embedme python/examples/middleware/override.py --> */}
 
-### Tool Call Streaming
-
-Middleware for handling streaming tool calls in a ChatModel. This middleware observes and listens to [Chat Model](/modules/backend#chat-model) stream updates and parses the tool calls on demand so that they can be consumed as soon as possible.
-
-The middleware works even **without streaming** enabled. It just emits the `update` event at the very end.
-
-**Example**
-
-{/* <!-- embedme python/examples/middleware/llm_streaming.py --> */}
 ```py Python [expandable]
 import asyncio
+from typing import Any
 
-from beeai_framework.backend import ChatModel, UserMessage
-from beeai_framework.emitter import EventMeta
-from beeai_framework.middleware.stream_tool_call import StreamToolCallMiddleware, StreamToolCallMiddlewareUpdateEvent
-from beeai_framework.tools.weather import OpenMeteoTool
+from beeai_framework.backend import AssistantMessage, ChatModel, ChatModelOutput, UserMessage
+from beeai_framework.context import RunContext, RunContextStartEvent, RunMiddlewareProtocol
+from beeai_framework.emitter import EmitterOptions, EventMeta
+from beeai_framework.emitter.utils import create_internal_event_matcher
+
+
+class OverrideResponseMiddleware(RunMiddlewareProtocol):
+    """Middleware that sets the result value for a given runnable without executing it"""
+
+    def __init__(self, result: Any) -> None:
+        self._result = result
+
+    def bind(self, ctx: RunContext) -> None:
+        """Calls once the target is about to be run."""
+
+        ctx.emitter.on(
+            create_internal_event_matcher("start", ctx.instance),
+            self._run,
+            # ensures that this callback will be the first invoked
+            EmitterOptions(is_blocking=True, priority=1),
+        )
+
+    async def _run(self, data: RunContextStartEvent, meta: EventMeta) -> None:
+        """Set output property to the result which prevents an execution of the target handler."""
+
+        data.output = self._result
 
 
 async def main() -> None:
-    llm = ChatModel.from_name("ollama:granite4:micro")
-    weather_tool = OpenMeteoTool()
-    middleware = StreamToolCallMiddleware(
-        weather_tool,
-        key="location_name",  # name is taken from the OpenMeteoToolInput schema
-        match_nested=False,  # we are applying the middleware to the model directly
-        force_streaming=True,  # we want to let middleware enable streaming on the model
-    )
-
-    @middleware.emitter.on("update")
-    def log_thoughts(event: StreamToolCallMiddlewareUpdateEvent, meta: EventMeta) -> None:
-        print(
-            "Received update", event.delta, event.output_structured
-        )  # event.delta contains an update of the 'location_name' field
-
-    response = await llm.run([UserMessage("What's the current weather in New York?")], tools=[weather_tool]).middleware(
-        middleware
-    )
-    print(response.get_tool_calls()[0].args)
+    middleware = OverrideResponseMiddleware(ChatModelOutput(output=[AssistantMessage("BeeAI is the best!")]))
+    response = await ChatModel.from_name("ollama:granite4:micro").run([UserMessage("Hello!")]).middleware(middleware)
+    print(response.get_text_content())  # "BeeAI is the best!"
 
 
 if __name__ == "__main__":
     asyncio.run(main())
-
 ```
 
-See which parameters can be passed to the constructor.
+**Key Implementation Details:**
 
-| Parameter         | Description                                                                 |
-|-------------------|------------------------------------------------------------------------------|
-| `target`          | The tool that we are waiting for to be called.                              |
-| `key`             | Refers to the name of the attribute in the tool's schema that we want to stream. |
-| `match_nested`    | Whether the middleware should be applied only to the top level.              |
-| `force_streaming` | Sets the stream flag on the `ChatModel`.                                     |
+* `create_internal_event_matcher`: A helper used to ensure you are matching the specific internal event (like `start` / `success` / `error` / `finish`) for the correct component instance.
+* `EmitterOptions`: Used here to set `priority=1` and `is_blocking=True`, ensuring this middleware executes early and takes precedence over other callbacks.
+* `data.output`: Setting this property during a `start` event signals the framework to skip the underlying execution (e.g., the LLM call) and return this value immediately.
 
+<Note>Ensure that your mock response matches the expected output type of the component you are intercepting. For example, if you override a `ChatModel`, the return type must be `ChatModelOutput`.</Note>
+
+### **Registering Middleware**
+
+Once defined, you can attach middleware to a component using the `.middleware()` method just before execution.
+
+```py Python [expandable]
+async def main() -> None:
+  # 1. Prepare the mock response
+  mock_output = ChatModelOutput(output=[AssistantMessage("BeeAI is the best!")])
+
+  # 2. Initialize the middleware
+  middleware = OverrideResponseMiddleware(mock_output)
+
+  # 3. Attach middleware to the run
+  llm = ChatModel.from_name("ollama:granite4")
+  response = await llm.run([UserMessage("Hello!")]).middleware(middleware)
+
+  print(response.get_text_content())  # Output: "BeeAI is the best!"
+
+if __name__ == "__main__":
+  asyncio.run(main())
+```
+
+Note that middleware is applied to the **Run** instance (the result of calling `.run()`), not the standalone emitter class itself. However, in some cases, middleware can be passed via the component's constructor if supported.
 
 ## Events glossary
 
@@ -722,7 +784,7 @@ The following events can be observed when calling `ChatModel.run(...)`.
 |:---------------|:-----------------------------------|:----------------------------------------------------------------------------------|
 | `start`        | `RequirementAgentStartEvent`       | Triggered when the agent begins execution.                                        |
 | `success`      | `RequirementAgentSuccessEvent`     | Triggered when the agent successfully completes execution.                        |
-| `final_answer` | `RequirementAgentFinalAnswerEvent` | Triggered with intermediate chunks of the final answer when streaming is enabled. |
+| `final_answer` | `RequirementAgentFinalAnswerEvent` | Triggered with intermediate chunks of the final answer. |
 
 [Check out the in-code definition](https://github.com/i-am-bee/beeai-framework/blob/main/python/beeai_framework/agents/experimental/events.py).
 

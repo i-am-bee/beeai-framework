@@ -16,11 +16,12 @@ except ModuleNotFoundError as e:
 
 
 def main() -> None:
+    llm = AgentStackChatModel(
+        preferred_models=["openai:gpt-4o", "ollama:llama3.1:8b"],
+        parameters=ChatModelParameters(stream=True),
+    )
     agent = RequirementAgent(
-        llm=AgentStackChatModel(
-            preferred_models=["openai:gpt-4o", "ollama:llama3.1:8b"],
-            parameters=ChatModelParameters(stream=True),
-        ),
+        llm=llm,
         tools=[DuckDuckGoSearchTool(), OpenMeteoTool()],
         memory=UnconstrainedMemory(),
         middlewares=[GlobalTrajectoryMiddleware()],

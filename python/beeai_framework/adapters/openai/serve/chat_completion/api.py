@@ -69,8 +69,8 @@ class ChatCompletionAPI:
             )
 
         messages = _transform_request_messages(request.messages)
-
         runnable = self._model_factory(request.model)
+
         if request.stream:
             id = f"chatcmpl-{uuid.uuid4()!s}"
 
