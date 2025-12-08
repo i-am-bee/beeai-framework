@@ -77,7 +77,7 @@ class LiteLLMEmbeddingModel(EmbeddingModel, ABC):
         return LiteLLMEmbeddingModelOutput(
             values=model_input.values,
             embeddings=embeddings,
-            usage=EmbeddingModelUsage(**response.usage.model_dump()) if response.usage else None,
+            usage=EmbeddingModelUsage(**response.usage.model_dump()) if response.usage else EmbeddingModelUsage(),
             response=response,
         )
 

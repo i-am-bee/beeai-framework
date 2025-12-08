@@ -112,6 +112,10 @@ class RequirementAgentRunner:
         stream_middleware = self.__create_final_answer_stream(request.final_answer)
         messages, options = self._prepare_llm_request(request)
         response = await self._llm.run(messages, **options).middleware(stream_middleware)
+
+        self._state.usage.merge(response.usage)
+        self._state.cost.merge(response.cost)
+
         stream_middleware.unbind()
         return response
 
@@ -138,7 +142,12 @@ class RequirementAgentRunner:
             },
             {
                 "location": "message",
-                "index": find_last_index(messages, lambda msg: not msg.meta.get(TEMP_MESSAGE_META_KEY)),
+                "index": find_last_index(
+                    messages,
+                    lambda msg: not msg.meta.get(TEMP_MESSAGE_META_KEY)
+                    # TODO: remove once https://github.com/BerriAI/litellm/issues/17479 is resolved
+                    and (self._llm.provider_id != "amazon_bedrock" or not isinstance(msg, ToolMessage)),
+                ),
             },
         ]
         options["cache_control_injection_points"] = ensure_strictly_increasing(  # type: ignore

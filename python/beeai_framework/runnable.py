@@ -4,10 +4,10 @@
 import functools
 from abc import ABC, abstractmethod
 from collections.abc import Awaitable, Callable
-from typing import Any, Generic, TypeAlias, TypedDict, Unpack
+from typing import Any, Generic, TypeAlias
 
 from pydantic import BaseModel, ConfigDict, InstanceOf
-from typing_extensions import ParamSpec, TypeVar
+from typing_extensions import ParamSpec, TypedDict, TypeVar, Unpack
 
 from beeai_framework.backend.message import AnyMessage, AssistantMessage
 from beeai_framework.context import Run, RunContext, RunMiddlewareType
@@ -102,8 +102,11 @@ def runnable_entry(handler: Callable[P, Awaitable[R]]) -> Callable[P, Run[R]]:
     def wrapper(*args: P.args, **kwargs: P.kwargs) -> Run[R]:
         """Wrapper that automates the call to RunContext.enter()."""
 
-        async def inner(_: RunContext) -> R:
-            return await handler(*args, **kwargs)
+        async def inner(ctx: RunContext) -> R:
+            # Use potentially modified input from run_params instead of original args
+            modified_input = ctx.run_params.get("input", args[1] if len(args) > 1 else None)
+            modified_args = (args[0], modified_input, *args[2:])
+            return await handler(*modified_args, **kwargs)
 
         self = args[0] if args else None
         if not isinstance(self, Runnable):

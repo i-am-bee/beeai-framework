@@ -6,6 +6,7 @@ from enum import StrEnum
 from typing import Any, Self
 
 import uvicorn
+from fastapi import HTTPException, status
 from pydantic import BaseModel
 from typing_extensions import TypedDict, Unpack, override
 
@@ -77,7 +78,10 @@ class OpenAIServer(
             try:
                 return next(iter([internal for internal in internals if model_id == internal.model_id]))
             except StopIteration:
-                raise RuntimeError(f"Model {model_id} not registered")
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail=f"Model '{model_id}' not registered",
+                )
 
         api = (
             ChatCompletionAPI(
