@@ -22,7 +22,6 @@ MAPPINGS: list[Entry] = []
 # Requirement Agent
 MAPPINGS.extend(
     [
-        Entry(source="agents/experimental/__init__.py", target="agents/requirement/__init__.py"),
         Entry(source="agents/experimental/_utils.py", target="agents/requirement/utils/__init__.py"),
         Entry(source="agents/experimental/agent.py", target="agents/requirement/agent.py"),
         Entry(source="agents/experimental/events.py", target="agents/requirement/events.py"),
