@@ -1,64 +1,17 @@
 # Copyright 2025 © BeeAI a Series of LF Projects, LLC
 # SPDX-License-Identifier: Apache-2.0
 
-import asyncio
-import json
-from asyncio import create_task
-from typing import TYPE_CHECKING, Any, Self
+from typing import TYPE_CHECKING, Self
 
-from pydantic import BaseModel, Field, InstanceOf
+from pydantic import BaseModel, Field
 
-from beeai_framework.backend import AssistantMessage, MessageToolCallContent
-from beeai_framework.backend.errors import ChatModelToolCallError
+from beeai_framework.backend import AssistantMessage
 from beeai_framework.context import RunContext
 from beeai_framework.emitter import Emitter
-from beeai_framework.errors import FrameworkError
-from beeai_framework.tools import AnyTool, StringToolOutput, Tool, ToolError, ToolOutput, ToolRunOptions
-from beeai_framework.utils.strings import to_json
+from beeai_framework.tools import StringToolOutput, Tool, ToolRunOptions
 
 if TYPE_CHECKING:
     from beeai_framework.agents.requirement import RequirementAgentRunState
-
-
-async def _run_tool(
-    tools: list[AnyTool],
-    msg: MessageToolCallContent,
-    context: dict[str, Any],
-) -> "ToolInvocationResult":
-    if not msg.is_valid():
-        raise ChatModelToolCallError(
-            generated_content=to_json({"name": msg.tool_name, "parameters": msg.args}, sort_keys=False),
-            generated_error="The generated tool call is invalid. Cannot parse the args.",
-        )
-
-    result = ToolInvocationResult(
-        msg=msg,
-        tool=None,
-        input=json.loads(msg.args),
-        output=StringToolOutput(""),
-        error=None,
-    )
-
-    try:
-        result.tool = next((ability for ability in tools if ability.name == msg.tool_name), None)
-        if not result.tool:
-            raise ToolError(f"Tool '{msg.tool_name}' does not exist!")
-
-        result.output = await result.tool.run(result.input).context({**context, "tool_call_msg": msg})
-    except ToolError as e:
-        error = FrameworkError.ensure(e)
-        result.error = error
-
-    return result
-
-
-async def _run_tools(
-    tools: list[AnyTool], messages: list[MessageToolCallContent], context: dict[str, Any]
-) -> list["ToolInvocationResult"]:
-    return await asyncio.gather(
-        *(create_task(_run_tool(tools, msg=msg, context=context)) for msg in messages),
-        return_exceptions=False,
-    )
 
 
 class FinalAnswerToolSchema(BaseModel):
@@ -112,11 +65,3 @@ class FinalAnswerTool(Tool[BaseModel, ToolRunOptions, StringToolOutput]):
         tool._cache = await self.cache.clone()
         tool.middlewares.extend(self.middlewares)
         return tool
-
-
-class ToolInvocationResult(BaseModel):
-    msg: InstanceOf[MessageToolCallContent]
-    tool: InstanceOf[AnyTool] | None
-    input: Any
-    output: InstanceOf[ToolOutput]
-    error: InstanceOf[FrameworkError] | None
