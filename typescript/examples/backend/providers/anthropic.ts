@@ -17,7 +17,6 @@ const llm = new AnthropicChatModel(
 
 llm.config({
   parameters: {
-    topK: 1,
     temperature: 0,
     topP: 1,
   },
@@ -75,10 +74,10 @@ async function anthropicToolCalling() {
   });
   const toolCallMsg = response.getToolCalls()[0];
   console.debug(JSON.stringify(toolCallMsg));
-  const toolResponse = await weatherTool.run(toolCallMsg.args as any);
+  const toolResponse = await weatherTool.run(toolCallMsg.input as any);
   const toolResponseMsg = new ToolMessage({
     type: "tool-result",
-    result: toolResponse.getTextContent(),
+    output: { type: "text", value: toolResponse.getTextContent() },
     toolName: toolCallMsg.toolName,
     toolCallId: toolCallMsg.toolCallId,
   });

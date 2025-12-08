@@ -204,7 +204,7 @@ from beeai_framework.errors import FrameworkError
 
 
 async def main() -> None:
-    llm = OllamaChatModel("llama3.1")
+    llm = OllamaChatModel("granite3.3")
     llm.config(parameters=ChatModelParameters(max_tokens=25), cache=SlidingCache(size=50))
 
     print(await llm.cache.size())  # 0
@@ -352,7 +352,7 @@ Maintains a maximum number of entries, removing the oldest entries when the limi
 <CodeGroup>
 
 {/* <!-- embedme python/examples/cache/sliding_cache.py --> */}
-```python
+```py Python [expandable]
 import asyncio
 import sys
 import traceback
@@ -863,7 +863,8 @@ import asyncio
 import random
 import sys
 import traceback
-from typing import TypedDict
+
+from typing_extensions import TypedDict
 
 from beeai_framework.cache import CacheFn
 from beeai_framework.errors import FrameworkError

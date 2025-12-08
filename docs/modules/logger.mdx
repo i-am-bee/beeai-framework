@@ -37,8 +37,8 @@ To use the logger in your application:
 ```py Python [expandable]
 from beeai_framework.logger import Logger
 
-# Configure logger with default log level
-logger = Logger("app", level="TRACE")
+# Configure logger with default log level from the BEEAI_LOG_LEVEL variable
+logger = Logger("app")
 
 # Log at different levels
 logger.trace("Trace!")
@@ -87,7 +87,7 @@ You can also set a specific level when initializing the logger.
 
 The logger adds a TRACE level below DEBUG for extremely detailed logging:
 
-```py
+```py Python [expandable]
 # Configure a logger with a specific level
 logger = Logger("app", level="TRACE")  # Or use logging constants like logging.DEBUG
 

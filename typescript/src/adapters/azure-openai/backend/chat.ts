@@ -10,18 +10,19 @@ import type {
 } from "@ai-sdk/azure";
 import { AzureOpenAIClient } from "@/adapters/azure-openai/backend/client.js";
 import { getEnv } from "@/internals/env.js";
+import { ChatModelParameters } from "@/backend/chat.js";
 
 type AzureOpenAIParameters = Parameters<VercelAzureOpenAIProvider["languageModel"]>;
 export type AzureOpenAIChatModelId = NonNullable<AzureOpenAIParameters[0]>;
-export type AzureOpenAIChatModelSettings = NonNullable<AzureOpenAIParameters[1]>;
 
 export class AzureOpenAIChatModel extends VercelChatModel {
   constructor(
     modelId: AzureOpenAIChatModelId = getEnv("AZURE_OPENAI_CHAT_MODEL", "gpt-4o"),
-    settings: AzureOpenAIChatModelSettings = {},
+    parameters: ChatModelParameters = {},
     client?: VercelAzureOpenAIProviderSettings | AzureOpenAIClient,
   ) {
-    const model = AzureOpenAIClient.ensure(client).instance.chat(modelId, settings);
+    const model = AzureOpenAIClient.ensure(client).instance.chat(modelId);
     super(model);
+    Object.assign(this.parameters, parameters ?? {});
   }
 }

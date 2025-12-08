@@ -25,7 +25,7 @@ exclude = list(
             "backend/providers/openai_example.py" if os.getenv("OPENAI_API_KEY") is None else None,
             "backend/providers/groq.py" if os.getenv("GROQ_API_KEY") is None else None,
             "backend/providers/xai.py" if os.getenv("XAI_API_KEY") is None else None,
-            "workflows/custom/autoflow" if os.getenv("OPENAI_API_KEY") is None else None,
+            "workflows/custom/autoflow/*",
             "backend/providers/vertexai.py" if os.getenv("GOOGLE_VERTEX_PROJECT") is None else None,
             "backend/providers/gemini.py" if os.getenv("GEMINI_API_KEY") is None else None,
             "backend/providers/amazon_bedrock.py" if os.getenv("AWS_ACCESS_KEY_ID") is None else None,
@@ -33,6 +33,8 @@ exclude = list(
             "backend/providers/azure_openai.py" if os.getenv("AZURE_API_KEY") is None else None,
             "backend/providers/transformers_hf.py" if os.getenv("TRANSFORMERS_CHAT_MODEL") is None else None,
             "backend/providers/langchain_compatible.py",
+            "backend/providers/qwen.py" if os.getenv("DASHSCOPE_API_KEY") is None else None,
+            "backend/providers/deepseek.py" if os.getenv("DEEPSEEK_CHAT_MODEL") is None else None,
             "tools/mcp_agent.py" if os.getenv("SLACK_BOT_TOKEN") is None else None,
             "tools/mcp_tool_creation.py" if os.getenv("SLACK_BOT_TOKEN") is None else None,
             "tools/mcp_slack_agent.py" if os.getenv("SLACK_BOT_TOKEN") is None else None,
@@ -69,6 +71,9 @@ exclude = list(
             # Interactive example
             "agents/requirement/multi_agent.py",
             "agents/experimental/human.py",
+            "middleware/prompt_injection.py",
+            "middleware/secrets_detection.py",
+            "middleware/invisible_text.py",
         ],
     )
 )

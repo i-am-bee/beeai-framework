@@ -45,20 +45,38 @@ Here's a simple example that uses the built-in `chat` agent:
 	    reader = ConsoleReader()
 	
 	    agents = await AgentStackAgent.from_agent_stack(url="http://127.0.0.1:8333", memory=UnconstrainedMemory())
-	    agent_name = "Framework chat agent"
-	    try:
-	        agent = next(agent for agent in agents if agent.name == agent_name)
-	    except StopIteration:
-	        raise ValueError(f"Agent with name `{agent_name}` not found") from None
+	    if len(agents) > 1:
+	        reader.write("Prompt: ", "Select one of the available agents:\n")
+	        while True:
+	            for index, agent in enumerate(agents):
+	                reader.write("AgentStack: ", f"{index}) {agent.name} - {agent.meta.description}")
 	
+	            agents_index = reader.ask_single_question("Write agent's number: ")
+	            try:
+	                agent = agents[int(agents_index)]
+	                if agent:
+	                    break
+	
+	            except (ValueError, IndexError):
+	                reader.write(
+	                    "AgentStack (error) : ",
+	                    f"Invalid selection: `{agents_index}`. Please enter a valid agent number.\n",
+	                )
+	    elif len(agents) == 1:
+	        agent = agents[0]
+	    else:
+	        reader.write("AgentStack (error) : ", "No agent registered within the agent stack.\n")
+	        exit(0)
+	
+	    reader.write("AgentStack: ", f"Selected {agent.name}:\n")
 	    for prompt in reader:
 	        # Run the agent and observe events
 	        response = await agent.run(prompt).on(
 	            "update",
-	            lambda data, event: (reader.write("Agent 🤖 (debug) : ", data)),
+	            lambda data, event: (reader.write(f"{agent.name} 🤖 (debug) : ", data)),
 	        )
 	
-	        reader.write("Agent 🤖 : ", response.last_message.text)
+	        reader.write(f"{agent.name} Agent 🤖 : ", response.last_message.text)
 	
 	
 	if __name__ == "__main__":
@@ -256,7 +274,7 @@ Key Features:
 	
 	```
 
-	```ts TypeScript
+	```ts TypeScript [expandable]
 	// COMING SOON
 	```
 </CodeGroup>
@@ -277,7 +295,7 @@ Key Features:
 The server's behavior can be influenced via attributes listed in `AgentStackServerConfig` class (host, port, self registration, ...).
 Internally the server preserves every conversation, the custom strategy can be used by implementing the base `MemoryManager` class.
 
-```python
+```py Python [expandable]
 from beeai_framework.adapters.agentstack.serve.server import AgentStackServer, AgentStackServerConfig
 from beeai_framework.serve.utils import LRUMemoryManager
 
@@ -291,7 +309,7 @@ server = AgentStackServer(config=config, memory_manager=memory_manager)
 The agent’s meta information is inferred from its metadata (the `agent.meta` property).
 However, this information can be overridden during agent registration. See the following example.
 
-```python
+```py Python [expandable]
 from beeai_framework.adapters.agentstack.serve.server import AgentStackServer
 from beeai_framework.adapters.agentstack.backend.chat import AgentStackChatModel
 from agentstack_sdk.a2a.extensions.ui.agent_detail import AgentDetail
@@ -352,6 +370,7 @@ It does so by leveraging the [Citation Extension](https://docs.beeai.dev/build-a
 	from beeai_framework.emitter import EmitterOptions, EventMeta
 	from beeai_framework.errors import FrameworkError
 	from beeai_framework.middleware.trajectory import GlobalTrajectoryMiddleware
+	from beeai_framework.tools.search.duckduckgo import DuckDuckGoSearchTool
 	from beeai_framework.tools.search.wikipedia import WikipediaTool
 	from beeai_framework.tools.think import ThinkTool
 	
@@ -397,19 +416,20 @@ It does so by leveraging the [Citation Extension](https://docs.beeai.dev/build-a
 	
 	def main() -> None:
 	    agent = RequirementAgent(
-	        llm=AgentStackChatModel(preferred_models=["openai/gpt-5"]),
-	        tools=[WikipediaTool(), ThinkTool()],
+	        llm=AgentStackChatModel(preferred_models=["openai/gpt-4o"]),
+	        tools=[WikipediaTool(), ThinkTool(), DuckDuckGoSearchTool()],
 	        instructions=(
-	            "You are an AI assistant focused on retrieving information from online sources."
-	            "Mandatory Search: Always search for the topic on Wikipedia and always search for related current news."
-	            "Mandatory Output Structure: Return the result in two separate sections with headings:"
-	            " 1. Basic Information (primarily utilizing data from Wikipedia, if relevant)."
+	            "You are an AI assistant focused on retrieving information from online sources. "
+	            "Mandatory Search: Always search for the topic on Wikipedia and always search for related current news. "
+	            "Mandatory Output Structure: Return the result in two separate sections with headings: "
+	            " 1. Basic Information (primarily utilizing data from Wikipedia, if relevant). "
 	            " 2. News (primarily utilizing current news results). "
 	            "Mandatory Citation: Always include a source link for all given information, especially news."
 	        ),
 	        requirements=[
 	            ConditionalRequirement(ThinkTool, force_at_step=1, consecutive_allowed=False),
 	            ConditionalRequirement(WikipediaTool, min_invocations=1),
+	            ConditionalRequirement(DuckDuckGoSearchTool, min_invocations=1),
 	        ],
 	        description="Search for information based on a given phrase.",
 	        middlewares=[
@@ -461,7 +481,7 @@ It does so by leveraging the [Citation Extension](https://docs.beeai.dev/build-a
 	
 	```
 
-	```ts TypeScript
+	```ts TypeScript [expandable]
 	// COMING SOON
 	```
 

@@ -1,3 +1,94 @@
+## python_v0.1.72 (2025-12-04)
+
+### Bug Fixes
+
+- **agents**: handle prompt caching edge cases for RequirementAgent with Bedrock
+- **adapters**: update AgentStack Form Extension (#1344)
+
+### Features
+
+- **agents**: add cost and token usage info (#1334)
+- **adapters**: allow passing API Key for Bedrock (#1345)
+
+## python_v0.1.71 (2025-12-03)
+
+### Bug Fixes
+
+- use beeai_log_level variable (#1332)
+
+### Features
+
+- **agents**: apply prompt caching strategy to RequirementAgent (#1340)
+- **adapters**: update agentstack sdk
+- **adapters**: add default parameters for AgentStackAgent factory method (#1336)
+- **adapters**: add option to disable a2a streaming (#1330)
+
+## python_v0.1.70 (2025-11-26)
+
+### Bug Fixes
+
+- **adapters**: langchain text_splitter types and refactor (#1327)
+
+### Features
+
+- **adapters**: improve error handling for Groq
+
+## python_v0.1.69 (2025-11-25)
+
+### Bug Fixes
+
+- **adapters**: propagate changes to AgentStack Chat Model (#1308)
+
+### Features
+
+- switch from llama-index to llama-index-core
+- **adapters**: make default exports lazy AgentStack
+- **adapters**: make default exports lazy A2A
+- **adapters**: add health-check support (#1235)
+- add io_confirm for human in the loop (#1306)
+- **agents**: rewrite RequirementAgent (#1317)
+- **adapters**: make AgentStack client optional (#1325)
+- **adapters**: make some imports for AgentStack lazy (#1316)
+- **adapters**: propagate agent stack client (#1315)
+- **adapters**: add qwen and deepseek providers (#1281)
+- bump ddgs
+
+## python_v0.1.68 (2025-11-19)
+
+### Bug Fixes
+
+- **backend**: improve cloning and add tests (#1311)
+
+### Features
+
+- **backend**: handle streamed tool calls without ID (#1312)
+
+## python_v0.1.67 (2025-11-18)
+
+### Bug Fixes
+
+- broken caching
+
+### Features
+
+- **backend**: auto repair produced json
+- **agents**: add reason to a rule when using Requirements (#1289)
+- **backend**: auto fix malformed tool calls (#1291)
+- **tools**: remove next_step from the ThinkTool (#1303)
+- **middlewares**: add custom message formatter to the GlobalTrajectoryMiddleware (#1287)
+
+## python_v0.1.66 (2025-11-11)
+
+### Bug Fixes
+
+- **backend**: extract content from the last corrupted chat output chunk
+
+### Features
+
+- **tools**: add method to create OpenAPITool from URL (#1284)
+- **tools**: redefine cloning (#1283)
+- **backend**: handle incomplete Unicode chunks while streaming (#1279)
+
 ## python_v0.1.65 (2025-11-06)
 
 ### Bug Fixes

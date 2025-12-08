@@ -212,7 +212,7 @@ export function shallowCopy<T>(value: T): T {
 
 export async function deepCopy<T>(source: T): Promise<T> {
   if (isObjectType(source) && "clone" in source && isFunction(source.clone)) {
-    return await source.clone();
+    return await (source as any).clone();
   }
   const copy = shallowCopy(source);
   await traverseObject(source, async ({ value, path }) => {

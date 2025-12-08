@@ -16,6 +16,8 @@ import beeai_framework.adapters.openai.serve.responses._types as responses_types
 from beeai_framework.adapters.openai.serve._openai_model import OpenAIModel
 from beeai_framework.adapters.openai.serve.responses._utils import openai_input_to_beeai_message
 from beeai_framework.agents import AgentError, BaseAgent
+from beeai_framework.agents.react import ReActAgentOutput
+from beeai_framework.agents.requirement import RequirementAgentOutput
 from beeai_framework.backend import (
     AnyMessage,
     AssistantMessage,
@@ -342,7 +344,13 @@ class ResponsesAPI:
                             output_tokens=content.usage.completion_tokens,
                             total_tokens=content.usage.total_tokens,
                         )
-                        if isinstance(content, ChatModelOutput) and content.usage is not None
+                        if isinstance(content, ChatModelOutput | ReActAgentOutput)
+                        else responses_types.ResponsesUsage(
+                            input_tokens=content.state.usage.prompt_tokens,
+                            output_tokens=content.state.usage.completion_tokens,
+                            total_tokens=content.state.usage.total_tokens,
+                        )
+                        if isinstance(content, RequirementAgentOutput)
                         else None
                     ),
                 )

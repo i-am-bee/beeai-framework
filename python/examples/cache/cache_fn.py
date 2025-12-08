@@ -2,7 +2,8 @@ import asyncio
 import random
 import sys
 import traceback
-from typing import TypedDict
+
+from typing_extensions import TypedDict
 
 from beeai_framework.cache import CacheFn
 from beeai_framework.errors import FrameworkError

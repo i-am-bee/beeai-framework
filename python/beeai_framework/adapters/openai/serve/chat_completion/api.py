@@ -15,6 +15,8 @@ from sse_starlette.sse import EventSourceResponse
 import beeai_framework.adapters.openai.serve.chat_completion._types as chat_completion_types
 from beeai_framework.adapters.openai.serve._openai_model import OpenAIModel
 from beeai_framework.adapters.openai.serve.chat_completion._utils import openai_message_to_beeai_message
+from beeai_framework.agents.react import ReActAgentOutput
+from beeai_framework.agents.requirement import RequirementAgentOutput
 from beeai_framework.backend import AnyMessage, AssistantMessage, ChatModelOutput, SystemMessage, ToolMessage
 from beeai_framework.logger import Logger
 from beeai_framework.utils.strings import to_json
@@ -112,7 +114,13 @@ class ChatCompletionAPI:
                         completion_tokens=content.usage.completion_tokens,
                         total_tokens=content.usage.total_tokens,
                     )
-                    if isinstance(content, ChatModelOutput) and content.usage is not None
+                    if isinstance(content, ChatModelOutput | ReActAgentOutput)
+                    else chat_completion_types.ChatCompletionUsage(
+                        prompt_tokens=content.state.usage.prompt_tokens,
+                        completion_tokens=content.state.usage.completion_tokens,
+                        total_tokens=content.state.usage.total_tokens,
+                    )
+                    if isinstance(content, RequirementAgentOutput)
                     else None
                 ),
             )

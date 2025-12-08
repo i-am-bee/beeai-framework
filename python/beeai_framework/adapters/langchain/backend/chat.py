@@ -2,12 +2,13 @@
 # SPDX-License-Identifier: Apache-2.0
 
 from collections.abc import AsyncGenerator
-from typing import Any, TypedDict, Unpack
+from typing import Any
 
 from langchain_core.language_models import BaseChatModel, LanguageModelInput
 from langchain_core.messages import BaseMessage
 from langchain_core.runnables import Runnable as LCRunnable
 from langchain_core.runnables import RunnableLambda
+from typing_extensions import TypedDict, Unpack
 
 from beeai_framework.adapters.langchain.backend._utils import beeai_tool_to_lc_tool, to_beeai_messages, to_lc_messages
 from beeai_framework.backend import ChatModel, ChatModelError, ChatModelOutput
@@ -107,7 +108,7 @@ class LangChainChatModel(ChatModel):
                 total_tokens=usage_metadata.get("total_tokens") or 0,
             )
             if usage_metadata
-            else None,
+            else ChatModelUsage(),
         )
 
     async def clone(self) -> "LangChainChatModel":

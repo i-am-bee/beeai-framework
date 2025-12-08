@@ -15,7 +15,7 @@ import { GetRunContext } from "@/context.js";
 import { toCamelCase } from "remeda";
 import { FullModelName } from "@/backend/utils.js";
 
-type InternalEmbeddingModel = Model<string>;
+type InternalEmbeddingModel = Exclude<Model<string>, string>;
 
 export class VercelEmbeddingModel<
   R extends InternalEmbeddingModel = InternalEmbeddingModel,

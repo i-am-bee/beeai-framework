@@ -20,7 +20,7 @@ try:
         PlatformApiExtensionClient,
         PlatformApiExtensionSpec,
     )
-    from agentstack_sdk.platform import ModelProvider
+    from agentstack_sdk.platform import ModelProvider, PlatformClient, Provider, get_platform_client
     from agentstack_sdk.platform.context import Context, ContextPermissions, Permissions
     from agentstack_sdk.platform.model_provider import ModelCapability
 
@@ -45,21 +45,30 @@ from beeai_framework.backend.message import AnyMessage
 from beeai_framework.context import RunContext
 from beeai_framework.emitter import Emitter
 from beeai_framework.emitter.emitter import EventMeta
-from beeai_framework.memory import BaseMemory
+from beeai_framework.memory import BaseMemory, UnconstrainedMemory
 from beeai_framework.runnable import runnable_entry
 from beeai_framework.utils.strings import to_safe_word
 
 
 class AgentStackAgentOptions(AgentOptions, total=False):
-    agent_stack_context: Context | None | Literal["clear"]
+    agent_stack_context: Context | Literal["clear"]
     """
     User can specify custom context for the request. Can be used to support multiple users in one client.
     """
+    client: PlatformClient
+    """
+    User can specify custom client to be used for the request.
+    """
+    streaming: bool
 
 
 class AgentStackAgent(BaseAgent[AgentStackAgentOutput]):
     def __init__(
-        self, *, url: str | None = None, agent_card: a2a_types.AgentCard | None = None, memory: BaseMemory
+        self,
+        *,
+        url: str | None = None,
+        agent_card: a2a_types.AgentCard | None = None,
+        memory: BaseMemory,
     ) -> None:
         super().__init__()
         self._agent_stack_context: Context | None = None
@@ -109,9 +118,16 @@ class AgentStackAgent(BaseAgent[AgentStackAgentOutput]):
             metadata=agent_stack_context.metadata if agent_stack_context else await self._get_metadata(),
         )
 
-        response = await self._agent.run(message, **kwargs).on("update", update_event).on("error", error_event)  # type: ignore[misc]
+        client = _create_platform_client(kwargs.pop("client", self._agent._url))
+        client.timeout = httpx.Timeout(30.0, read=None)  # TODO: remove in a new AgentStack SDK version
 
-        return AgentStackAgentOutput(output=response.output, event=response.event)
+        response = await (
+            self._agent.run(message, **kwargs, httpx_client=client)  # type: ignore[misc]
+            .on("update", update_event)
+            .on("error", error_event)
+        )
+
+        return AgentStackAgentOutput(output=response.output, event=response.event, context=response.context)
 
     async def check_agent_exists(
         self,
@@ -189,23 +205,24 @@ class AgentStackAgent(BaseAgent[AgentStackAgentOutput]):
     @classmethod
     async def from_agent_stack(
         cls,
-        url: str,
-        memory: BaseMemory,
+        url: str | PlatformClient | None = None,
+        memory: BaseMemory | None = None,
         *,
         states: set[AgentStackAgentStatus] | None = None,
     ) -> list["AgentStackAgent"]:
+        if memory is None:
+            memory = UnconstrainedMemory()
         if states is None:
             states = {s for s in AgentStackAgentStatus if s != AgentStackAgentStatus.OFFLINE}
 
-        async with httpx.AsyncClient() as client:
-            response = await client.get(f"{url}/api/v1/providers")
+        client = _create_platform_client(url)
 
-            response.raise_for_status()
-            return [
-                AgentStackAgent(agent_card=a2a_types.AgentCard(**provider["agent_card"]), memory=await memory.clone())
-                for provider in response.json().get("items", [])
-                if provider["state"] in states
-            ]
+        providers = await Provider.list(client=client)
+        return [
+            AgentStackAgent(agent_card=provider.agent_card, memory=await memory.clone())
+            for provider in providers
+            if provider.state in states
+        ]
 
     def _create_emitter(self) -> Emitter:
         return Emitter.root().child(
@@ -228,7 +245,16 @@ class AgentStackAgent(BaseAgent[AgentStackAgentOutput]):
 
     async def clone(self) -> "AgentStackAgent":
         cloned = AgentStackAgent(
-            url=self._agent._url, agent_card=self._agent.agent_card, memory=await self._agent.memory.clone()
+            url=self._agent._url,
+            agent_card=self._agent.agent_card,
+            memory=await self._agent.memory.clone(),
         )
         cloned.emitter = await self.emitter.clone()
         return cloned
+
+
+def _create_platform_client(url_or_client: str | PlatformClient | None) -> PlatformClient:
+    if isinstance(url_or_client, str):
+        return PlatformClient(base_url=url_or_client, timeout=httpx.Timeout(30.0, read=None))
+    else:
+        return url_or_client or get_platform_client()

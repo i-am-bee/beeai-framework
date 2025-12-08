@@ -3,6 +3,7 @@
 
 from collections.abc import Callable
 from typing import Annotated, Any
+from weakref import WeakKeyDictionary
 
 from pydantic import BaseModel, ConfigDict, Field, InstanceOf
 from typing_extensions import TypeVar
@@ -23,7 +24,7 @@ from beeai_framework.backend import (
     AssistantMessage,
     UserMessage,
 )
-from beeai_framework.backend.types import ChatModelToolChoice
+from beeai_framework.backend.types import ChatModelCost, ChatModelToolChoice, ChatModelUsage
 from beeai_framework.errors import FrameworkError
 from beeai_framework.memory import BaseMemory
 from beeai_framework.template import PromptTemplate
@@ -66,6 +67,8 @@ class RequirementAgentRunState(BaseModel):
     memory: InstanceOf[BaseMemory]
     iteration: int
     steps: list[RequirementAgentRunStateStep] = []
+    usage: ChatModelUsage = ChatModelUsage()
+    cost: ChatModelCost = ChatModelCost()
 
     @property
     def input(self) -> UserMessage:
@@ -86,6 +89,7 @@ class RequirementAgentRequest(BaseModel):
 
     tools: list[AnyTool]
     allowed_tools: list[AnyTool]
+    reason_by_tool: WeakKeyDictionary[AnyTool, str | None]
     hidden_tools: list[AnyTool]
     tool_choice: ChatModelToolChoice
     final_answer: FinalAnswerTool

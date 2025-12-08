@@ -22,7 +22,7 @@ import Turndown from "turndown";
 // @ts-expect-error missing types
 import turndownPlugin from "joplin-turndown-plugin-gfm";
 import stringComparison from "string-comparison";
-import { pageResult } from "wikipedia/dist/resultTypes.js";
+import type { pageResult } from "wikipedia";
 import { Emitter } from "@/emitter/emitter.js";
 
 wiki.default.setLang("en");
@@ -333,6 +333,8 @@ export class WikipediaTool extends Tool<
     { query: input }: ToolInput<WikipediaTool>,
     _options?: WikipediaToolRunOptions,
   ): Promise<WikipediaToolOutput> {
+    await patchAxiosUserAgent();
+
     const runOptions = this._createRunOptions(_options);
 
     const { results: searchRawResults, suggestion }: SearchResponse = await wiki.default.search(
@@ -426,3 +428,29 @@ export class WikipediaTool extends Tool<
     super.loadSnapshot(snapshot);
   }
 }
+
+async function patchAxiosUserAgent() {
+  if (patchAxiosUserAgent.patched) {
+    return;
+  }
+  patchAxiosUserAgent.patched = true;
+
+  const doPatch = (entry: any) => {
+    entry.defaults.headers.common["User-Agent"] = "BeeAI Framework";
+  };
+
+  const { default: axios } = await import("axios");
+  doPatch(axios);
+
+  try {
+    const { createRequire } = await import("node:module");
+    const require = createRequire(import.meta.url);
+    const { default: axiosCjs } = await require("axios");
+    if (axiosCjs !== axios) {
+      doPatch(axiosCjs);
+    }
+  } catch {
+    /* empty */
+  }
+}
+patchAxiosUserAgent.patched = false;

@@ -66,7 +66,6 @@ describe("MilvusDatabaseTool", () => {
       action: MilvusAction.Search,
       collectionName,
       vector,
-      topK: 1,
     });
     expect(response.result).toEqual([{ id: 123, distance: 0.5 }]);
   });

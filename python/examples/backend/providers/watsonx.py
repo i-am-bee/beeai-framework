@@ -136,6 +136,14 @@ async def watsonx_embedding() -> None:
         print(*row)
 
 
+async def watsonx_cloning() -> None:
+    llm = WatsonxChatModel("ibm/granite-3-3-8b-instruct")
+    await llm.clone()
+
+    embedding_llm = WatsonxEmbeddingModel()
+    await embedding_llm.clone()
+
+
 async def main() -> None:
     print("*" * 10, "watsonx_from_name")
     await watsonx_from_name()
@@ -155,6 +163,8 @@ async def main() -> None:
     await watsonx_debug()
     print("*" * 10, "watsonx_embedding")
     await watsonx_embedding()
+    print("*" * 10, "watsonx_cloning")
+    await watsonx_cloning()
 
 
 if __name__ == "__main__":

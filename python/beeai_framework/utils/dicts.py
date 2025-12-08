@@ -60,3 +60,8 @@ def traverse(obj: dict[str, Any] | list[Any], *, path: str = "") -> Iterator[tup
     for k, v in obj.items() if isinstance(obj, dict) else enumerate(obj):
         if isinstance(v, dict | list):
             yield from traverse(v, path=f"{path}.{k}" if path else str(k))
+
+
+def is_typed_dict_type(tp: Any) -> bool:
+    """Return True if tp is a TypedDict class."""
+    return isinstance(tp, type) and hasattr(tp, "__annotations__") and hasattr(tp, "__total__")

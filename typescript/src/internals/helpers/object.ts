@@ -71,11 +71,22 @@ export function getProp(
   return value;
 }
 
-export function deleteProps<T, K extends keyof T>(target: T, keys: readonly K[]) {
-  keys.forEach((key) => {
+export function popProp<T, K extends keyof T>(
+  target: T,
+  key: K,
+  fallback: T[K] | null = null,
+): T[K] | null {
+  if (!hasProp(target, key)) {
+    return fallback;
+  }
+  const value = getProp(target, [key]);
+  try {
     // eslint-disable-next-line @typescript-eslint/no-dynamic-delete
     delete target[key];
-  });
+  } catch {
+    /* empty */
+  }
+  return value;
 }
 
 export function updateObject<T extends object, L extends object>(
@@ -132,4 +143,20 @@ export function mapObj<T extends object>(obj: T) {
     }
     return updated;
   };
+}
+
+export function safeDefineProperty<T, K extends keyof T>(target: T, key: K, get: () => T[K]) {
+  try {
+    Object.defineProperty(target, key, {
+      enumerable: false,
+      configurable: false,
+      get() {
+        return get();
+      },
+    });
+  } catch (e) {
+    if (!(e instanceof TypeError)) {
+      throw e;
+    }
+  }
 }
