@@ -4,10 +4,19 @@
 import contextlib
 from collections.abc import Callable
 from contextvars import ContextVar
-from functools import cached_property
-from typing import TYPE_CHECKING, Any, ClassVar, Self
+from typing import TYPE_CHECKING, Any, ClassVar, Self, get_type_hints
+from weakref import WeakKeyDictionary
 
 from pydantic import BaseModel, Field
+from typing_extensions import Unpack, override
+
+from beeai_framework.adapters.openai import OpenAIChatModel
+from beeai_framework.backend import AnyMessage, ChatModelOutput
+from beeai_framework.backend.chat import ChatModel, ChatModelKwargs, ChatModelOptions, ToolChoiceType
+from beeai_framework.backend.constants import ProviderName
+from beeai_framework.backend.utils import load_model
+from beeai_framework.context import Run
+from beeai_framework.utils.types import is_primitive
 
 try:
     from agentstack_sdk.platform import ModelProviderType
@@ -20,19 +29,7 @@ except ModuleNotFoundError as e:
         "Optional module [agentstack] not found.\nRun 'pip install \"beeai-framework[agentstack]\"' to install."
     ) from e
 
-
-from typing_extensions import Unpack, override
-
-from beeai_framework.adapters.openai import OpenAIChatModel
-from beeai_framework.backend import AnyMessage, ChatModelOutput
-from beeai_framework.backend.chat import ChatModel, ChatModelKwargs, ChatModelOptions, ToolChoiceType
-from beeai_framework.backend.constants import ProviderName
-from beeai_framework.backend.utils import load_model
-from beeai_framework.utils.types import is_primitive
-
 __all__ = ["AgentStackChatModel"]
-
-from beeai_framework.context import Run
 
 _storage = ContextVar["LLMServiceExtensionServer"]("agent_stack_chat_model_storage")
 
@@ -81,13 +78,14 @@ class AgentStackChatModel(ChatModel):
         super().__init__(**kwargs)
         self._modified_attributes: set[str] = {
             k
-            for k, v in ChatModelKwargs.__annotations__.items()
+            for k, v in get_type_hints(ChatModelKwargs).items()
             # include all custom properties or those that can be mutated
             if k in CopyableKwargs and (kwargs.get(k) is not None or not is_primitive(v))
         }
         self.preferred_models = preferred_models or []
         self._initiated = True
         self._propagating_back = False
+        self._model_by_context = WeakKeyDictionary["LLMServiceExtensionServer", ChatModel]()
 
     def __setattr__(self, name: str, value: Any) -> None:
         super().__setattr__(name, value)
@@ -109,15 +107,21 @@ class AgentStackChatModel(ChatModel):
         token = _storage.set(ctx)
         return lambda: _storage.reset(token)
 
-    @cached_property
+    @property
     def _model(self) -> ChatModel:
-        llm_ext = None
+        llm_ext: LLMServiceExtensionServer | None = None
         with contextlib.suppress(LookupError):
             llm_ext = _storage.get()
+
+        model = self._model_by_context.get(llm_ext) if llm_ext else None
+        if model is not None:
+            return model
 
         llm_conf = next(iter(llm_ext.data.llm_fulfillments.values()), None) if llm_ext and llm_ext.data else None
         if not llm_conf:
             raise ValueError("AgentStack not provided llm configuration")
+
+        assert llm_ext is not None
 
         provider_name = llm_conf.api_model.replace("beeai:", "").split(":")[0]
         config = (self.providers_mapping.get(provider_name) or (lambda: ProviderConfig()))()
@@ -145,6 +149,7 @@ class AgentStackChatModel(ChatModel):
         finally:
             object.__setattr__(self, "_propagating_back", False)
 
+        self._model_by_context[llm_ext] = model
         return model
 
     @override
