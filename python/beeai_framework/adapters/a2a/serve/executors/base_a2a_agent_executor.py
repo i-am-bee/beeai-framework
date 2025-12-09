@@ -12,8 +12,8 @@ from beeai_framework.serve import MemoryManager, init_agent_memory
 from beeai_framework.utils.cloneable import Cloneable
 
 try:
-    import a2a.server as a2a_server
     import a2a.server.agent_execution as a2a_agent_execution
+    import a2a.server.events as a2a_events
     import a2a.server.tasks as a2a_server_tasks
     import a2a.types as a2a_types
     import a2a.utils as a2a_utils
@@ -46,8 +46,7 @@ class BaseA2AAgentExecutor(BaseA2AExecutor[AnyAgentLike]):
     async def execute(
         self,
         context: a2a_agent_execution.RequestContext,
-        # pyrefly: ignore [implicit-import]
-        event_queue: a2a_server.events.EventQueue,
+        event_queue: a2a_events.EventQueue,
     ) -> None:
         agent: AnyAgentLike = self._runnable
         updater = a2a_server_tasks.TaskUpdater(event_queue, context.task_id, context.context_id)  # type: ignore[arg-type]

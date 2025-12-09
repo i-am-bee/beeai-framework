@@ -21,7 +21,6 @@ from beeai_framework.serve import MemoryManager
 from beeai_framework.serve.errors import FactoryAlreadyRegisteredError
 
 try:
-    import a2a.server as a2a_server
     import a2a.server.agent_execution as a2a_agent_execution
     import a2a.server.apps as a2a_apps
     import a2a.server.events as a2a_server_events
@@ -117,8 +116,7 @@ class A2AServer(
 
         request_handler = a2a_request_handlers.DefaultRequestHandler(
             agent_executor=executor,
-            # pyrefly: ignore [implicit-import]
-            task_store=metadata.get("task_store", None) or a2a_server.tasks.InMemoryTaskStore(),
+            task_store=metadata.get("task_store", None) or a2a_server_tasks.InMemoryTaskStore(),
             queue_manager=metadata.get("queue_manager", None),
             push_sender=metadata.get("push_sender", metadata.get("push_notifier", None)),  # type: ignore
             request_context_builder=metadata.get("request_context_builder", None),

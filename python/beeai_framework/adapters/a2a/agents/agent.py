@@ -106,9 +106,8 @@ class A2AAgent(BaseAgent[A2AAgentOutput]):
         super().__init__()
         if agent_card:
             self._agent_card: a2a_types.AgentCard | None = agent_card
-            self._url = None
+            self._url: str | None = None
         elif url:
-            # pyrefly: ignore [bad-assignment]
             self._url = url
             self._agent_card = None
         else:

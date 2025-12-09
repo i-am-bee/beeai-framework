@@ -15,8 +15,8 @@ from beeai_framework.utils.cancellation import AbortController
 from beeai_framework.utils.cloneable import Cloneable
 
 try:
-    import a2a.server as a2a_server
     import a2a.server.agent_execution as a2a_agent_execution
+    import a2a.server.events as a2a_events
     import a2a.server.tasks as a2a_server_tasks
     import a2a.types as a2a_types
     import a2a.utils as a2a_utils
@@ -51,8 +51,7 @@ class BaseA2AExecutor(a2a_agent_execution.AgentExecutor, Generic[AnyRunnableType
     async def execute(
         self,
         context: a2a_agent_execution.RequestContext,
-        # pyrefly: ignore [implicit-import]
-        event_queue: a2a_server.events.EventQueue,
+        event_queue: a2a_events.EventQueue,
     ) -> None:
         if not context.message:
             raise ValueError("No message found in the request context.")
@@ -91,8 +90,7 @@ class BaseA2AExecutor(a2a_agent_execution.AgentExecutor, Generic[AnyRunnableType
     async def cancel(
         self,
         context: a2a_agent_execution.RequestContext,
-        # pyrefly: ignore [implicit-import]
-        event_queue: a2a_server.events.EventQueue,
+        event_queue: a2a_events.EventQueue,
     ) -> None:
         self._abort_controller.abort()
 
