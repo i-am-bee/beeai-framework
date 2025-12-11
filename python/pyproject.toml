@@ -33,7 +33,7 @@ langchain-community = {version = "<1.0.0", optional = true}
 langchain-core = {version = "<1.0.0", optional = true}
 langchain-ollama = {version = "<1.0.0", optional = true}
 langgraph = {version = "<1.0.0", optional = true}
-litellm = "^1.80.0"
+litellm = "^1.80.9"
 llama-index-core = {version = "^0.14.0", optional = true}
 markdown = {version = "^3.8.2", optional = true}
 mcp = {version = "^1.23.0", optional = true}
