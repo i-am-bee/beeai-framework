@@ -104,3 +104,17 @@ export function extractTokenUsage(usage: LanguageModelUsage): ChatModelUsage {
     cachedPromptTokens: usage.cachedInputTokens,
   };
 }
+
+export function mergeTokenUsage(target: ChatModelUsage, ...sources: ChatModelUsage[]): void {
+  for (const source of sources) {
+    target.totalTokens += source.totalTokens ?? 0;
+    target.promptTokens += source.promptTokens ?? 0;
+    target.completionTokens += source.completionTokens ?? 0;
+    if (source.reasoningTokens) {
+      target.reasoningTokens = (target.reasoningTokens ?? 0) + source.reasoningTokens;
+    }
+    if (source.cachedPromptTokens) {
+      target.cachedPromptTokens = (target.cachedPromptTokens ?? 0) + source.cachedPromptTokens;
+    }
+  }
+}
