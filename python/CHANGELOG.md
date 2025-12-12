@@ -1,3 +1,16 @@
+## python_v0.1.73 (2025-12-11)
+
+### Bug Fixes
+
+- **adapters**: disable top-level union operators support for Bedrock
+
+### Features
+
+- **agents**: deprecate tool calling agent (#1354)
+- **adapters**: reflect changes in AgentStackChatModel (#1350)
+- import TypedDict from typing_extensions
+- add security middleware examples (#1299)
+
 ## python_v0.1.72 (2025-12-04)
 
 ### Bug Fixes
