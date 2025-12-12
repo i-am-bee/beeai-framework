@@ -26,8 +26,14 @@ export interface RunContextCallbacks {
   finish: Callback<null>;
 }
 
+export abstract class Middleware<T extends RunInstance = any> {
+  abstract bind(ctx: RunContext<T>): void;
+}
+
 export type GetRunContext<T, P = any> = T extends RunInstance ? RunContext<T, P> : never;
 export type GetRunInstance<T> = T extends RunInstance<infer P> ? P : never;
+export type MiddlewareFn<T> = (context: GetRunContext<T>) => void;
+export type MiddlewareType<T extends RunInstance> = Middleware<T> | MiddlewareFn<T>;
 
 export class Run<R, I extends RunInstance, P = any> extends LazyPromise<R> {
   protected readonly tasks: (() => Promise<void>)[] = [];
@@ -54,8 +60,14 @@ export class Run<R, I extends RunInstance, P = any> extends LazyPromise<R> {
     return this;
   }
 
-  middleware(fn: (context: GetRunContext<I, P>) => void) {
-    this.tasks.push(async () => fn(this.runContext));
+  middleware(fn: MiddlewareType<I>) {
+    this.tasks.push(async () => {
+      if (typeof fn === "function") {
+        return fn(this.runContext);
+      } else {
+        return fn.bind(this.runContext);
+      }
+    });
     return this;
   }
 
