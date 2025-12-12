@@ -436,6 +436,7 @@ export abstract class Tool<
 }
 
 export type AnyTool = Tool<any, any, any>;
+export type AnyToolClass = abstract new (...args: any[]) => AnyTool;
 
 export class DynamicTool<
   TOutput extends ToolOutput,

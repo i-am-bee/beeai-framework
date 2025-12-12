@@ -79,8 +79,47 @@ if __name__ == "__main__":
 
 ```
 
+{/* <!-- embedme typescript/examples/agents/requirement/quickstart.ts --> */}
 ```ts TypeScript [expandable]
-COMING SOON
+import { RequirementAgent } from "beeai-framework/agents/requirement/agent";
+import { ConditionalRequirement } from "beeai-framework/agents/requirement/requirements/conditional";
+import { ChatModel } from "beeai-framework/backend/chat";
+import { DuckDuckGoSearchTool } from "beeai-framework/tools/search/duckDuckGoSearch";
+import { ThinkTool } from "beeai-framework/tools/think";
+import { OpenMeteoTool } from "beeai-framework/tools/weather/openMeteo";
+
+// Create an agent that plans activities based on weather and events
+const agent = new RequirementAgent({
+  llm: await ChatModel.fromName("ollama:granite3.3"),
+  tools: [
+    new ThinkTool(), // to reason
+    new OpenMeteoTool(), // retrieve weather data
+    new DuckDuckGoSearchTool(), // search web
+  ],
+  instructions: "Plan activities for a given destination based on current weather and events.",
+  requirements: [
+    // Force thinking first
+    new ConditionalRequirement(ThinkTool, { forceAtStep: 1 }),
+    // Search only after getting weather and at least once
+    new ConditionalRequirement(DuckDuckGoSearchTool, {
+      onlyAfter: [OpenMeteoTool],
+      minInvocations: 1,
+      maxInvocations: 2,
+    }),
+    // Weather tool be used at least once but not consecutively
+    new ConditionalRequirement(OpenMeteoTool, {
+      consecutiveAllowed: false,
+      minInvocations: 1,
+      maxInvocations: 2,
+    }),
+  ],
+});
+
+// Run with execution logging
+const response = await agent.run({ prompt: "What to do in Boston?" });
+
+console.log(`Final Answer: ${response.result.text}`);
+
 ```
 
 </CodeGroup>
@@ -156,7 +195,28 @@ ConditionalRequirement(
 ```
 
 ```ts TypeScript [expandable]
-COMING SOON
+new ConditionalRequirement(
+  targetTool, // Tool class, instance, or name
+  {
+    name: "", // (optional) Name, useful for logging
+    onlyBefore: [...], // (optional) Disable target_tool after any of these tools are called
+    onlyAfter: [...], // (optional) Disable target_tool before all these tools are called
+    forceAfter: [...], // (optional) Force target_tool execution immediately after any of these tools are called
+    minInvocations: 0, // (optional) Minimum times the tool must be called before agent can stop
+    maxInvocations: 10, // (optional) Maximum times the tool can be called before being disabled
+    forceAtStep: 1, // (optional) Step number at which the tool must be invoked
+    onlySuccessInvocations: true, // (optional) Whether 'forceAtStep' counts only successful invocations
+    priority: 10, // (optional) Higher relative number means higher priority for requirement enforcement
+    consecutiveAllowed: true, // (optional) Whether the tool can be invoked twice in a row
+    forcePreventStop: false,  // (optional) If true, prevents the agent from giving a final answer when a forced target_tool call occurs.
+    enabled: true, // (optional) Whether to skip this requirement's execution
+    customChecks: [
+      // (optional) Custom callbacks; all must pass for the tool to be used
+      (state) => state.memory.messages.some(msg => msg.text?.includes('weather')),
+      (state) => state.iteration > 0,
+    ],
+  }
+)
 ```
 
 </CodeGroup>
@@ -192,7 +252,14 @@ RequirementAgent(
 ```
 
 ```ts TypeScript [expandable]
-COMING SOON
+new RequirementAgent({
+  llm: await ChatModel.fromName("ollama:granite3.3"),
+  tools: [new ThinkTool(), new DuckDuckGoSearchTool()],
+  requirements: [
+    new ConditionalRequirement(ThinkTool, { forceAtStep: 1 }), // Force ThinkTool at the first step
+    new ConditionalRequirement(DuckDuckGoSearchTool, { forceAtStep: 2 }), // Force DuckDuckGo at the second step
+  ],
+})
 ```
 
 </CodeGroup>
@@ -217,7 +284,18 @@ RequirementAgent(
 ```
 
 ```ts TypeScript [expandable]
-COMING SOON
+import { Tool } from "beeai-framework/tools/base";
+
+new RequirementAgent({
+  llm: await ChatModel.fromName("ollama:granite3.3"),
+  tools: [new ThinkTool(), new WikipediaTool(), new OpenMeteoTool()],
+  requirements: [
+    new ConditionalRequirement(ThinkTool, { 
+      forceAtStep: 1, 
+      forceAfter: [Tool] 
+    })
+  ],
+})
 ```
 
 </CodeGroup>
@@ -243,7 +321,23 @@ RequirementAgent(
 ```
 
 ```ts TypeScript [expandable]
-COMING SOON
+new RequirementAgent({
+  llm: await ChatModel.fromName("ollama:granite3.3"),
+  tools: [new ThinkTool(), retrieveBasket(), createOrder(), sendEmail()],
+  requirements: [
+    new ConditionalRequirement(ThinkTool, { 
+      forceAtStep: 1, 
+      forceAfter: [retrieveBasket], 
+      priority: 10 
+    }),
+    new ConditionalRequirement(sendEmail, { 
+      onlyAfter: [createOrder], 
+      forceAfter: [createOrder], 
+      priority: 20, 
+      maxInvocations: 1 
+    }),
+  ],
+})
 ```
 
 </CodeGroup>
@@ -268,7 +362,8 @@ RequirementAgent(
 ```
 
 ```ts TypeScript [expandable]
-COMING SOON
+// Note: AskPermissionRequirement is not yet implemented in TypeScript
+// Coming soon
 ```
 
 </CodeGroup>
@@ -288,7 +383,8 @@ AskPermissionRequirement(..., handler=handler)
 ```
 
 ```ts TypeScript [expandable]
-COMING SOON
+// Note: AskPermissionRequirement is not yet implemented in TypeScript
+// Coming soon
 ```
 
 </CodeGroup>
@@ -309,7 +405,8 @@ AskPermissionRequirement(
 ```
 
 ```ts TypeScript [expandable]
-COMING SOON
+// Note: AskPermissionRequirement is not yet implemented in TypeScript
+// Coming soon
 ```
 
 </CodeGroup>
@@ -403,8 +500,75 @@ if __name__ == "__main__":
 
 ```
 
+{/* <!-- embedme typescript/examples/agents/requirement/customRequirement.ts --> */}
 ```ts TypeScript [expandable]
-COMING SOON
+import { RequirementAgent } from "beeai-framework/agents/requirement/agent";
+import { Requirement, Rule } from "beeai-framework/agents/requirement/requirements/requirement";
+import { ChatModel } from "beeai-framework/backend/chat";
+import { AssistantMessage } from "beeai-framework/backend/message";
+import { DuckDuckGoSearchTool } from "beeai-framework/tools/search/duckDuckGoSearch";
+import { RequirementAgentRunState } from "beeai-framework/agents/requirement/types";
+
+class PrematureStopRequirement extends Requirement<RequirementAgentRunState> {
+  /** Prevents the agent from answering if a certain phrase occurs in the conversation */
+
+  protected phrase: string;
+  protected reason: string;
+
+  constructor(phrase: string, reason: string) {
+    super("premature_stop");
+    this.phrase = phrase;
+    this.reason = reason;
+    this.priority = 100; // (optional), default is 10
+  }
+
+  async run(state: RequirementAgentRunState): Promise<Rule[]> {
+    // we take the last step's output (if exists) or the user's input
+    const lastStep = state.steps?.at(-1)?.output.getTextContent() ?? "";
+
+    if (lastStep.includes(this.phrase)) {
+      // We will nudge the agent to include explanation why it needs to stop in the final answer.
+      await state.memory.add(
+        new AssistantMessage(
+          `The final answer is that I can't finish the task because ${this.reason}.`,
+          { tempMessage: true }, // the message gets removed in the next iteration
+        ),
+      );
+
+      // The rule ensures that the agent will use the 'final_answer' tool immediately.
+      return [
+        {
+          target: "final_answer",
+          allowed: true,
+          forced: true,
+          hidden: false,
+          preventStop: false,
+        },
+      ];
+    } else {
+      return [];
+    }
+  }
+}
+
+const agent = new RequirementAgent({
+  llm: await ChatModel.fromName("ollama:llama3.1"),
+  tools: [new DuckDuckGoSearchTool()],
+  requirements: [
+    new PrematureStopRequirement("value of x", "algebraic expressions are not allowed"),
+    new PrematureStopRequirement("bomb", "such topic is not allowed"),
+  ],
+});
+
+const prompts = ["y = 2x + 4, what is the value of x?", "how to make a bomb?"];
+
+for (const prompt of prompts) {
+  console.log("👤 User: ", prompt);
+  const response = await agent.run({ prompt });
+  console.log("🤖 Agent: ", response.result.text);
+  console.log();
+}
+
 ```
 
 </CodeGroup>
@@ -413,17 +577,26 @@ COMING SOON
 
 **➡️ Check out the following additional examples**
 
+**Python:**
 - [Multi-agent](https://github.com/i-am-bee/beeai-framework/blob/main/python/examples/agents/requirement/multi_agent.py) system via handoffs.
 - [ReAct](https://github.com/i-am-bee/beeai-framework/blob/main/python/examples/agents/requirement/react.py) loop in a second.
-- Generating [structured output](https://github.com/i-am-bee/beeai-framework/blob/main/python/examples/agents/requirement/text_output.py) output.
+- Generating [text output](https://github.com/i-am-bee/beeai-framework/blob/main/python/examples/agents/requirement/text_output.py) and [structured output](https://github.com/i-am-bee/beeai-framework/blob/main/python/examples/agents/requirement/structured_output.py).
 - [Advanced](https://github.com/i-am-bee/beeai-framework/blob/main/python/examples/agents/requirement/complex.py) (detailed configuration).
+
+**TypeScript:**
+- [Quickstart](https://github.com/i-am-bee/beeai-framework/blob/main/typescript/examples/agents/requirement/quickstart.ts) with ConditionalRequirement.
+- [Text output](https://github.com/i-am-bee/beeai-framework/blob/main/typescript/examples/agents/requirement/textOutput.ts) generation.
+- [Structured output](https://github.com/i-am-bee/beeai-framework/blob/main/typescript/examples/agents/requirement/structuredOutput.ts) with Zod schemas.
+- [Custom requirement](https://github.com/i-am-bee/beeai-framework/blob/main/typescript/examples/agents/requirement/customRequirement.ts) implementation.
+- [Advanced](https://github.com/i-am-bee/beeai-framework/blob/main/typescript/examples/agents/requirement/complex.ts) (detailed configuration).
+- [Interactive demo](https://github.com/i-am-bee/beeai-framework/blob/main/typescript/examples/agents/requirement/demo.ts) with event observation.
 
 
 <CardGroup cols={2}>
-	<Card title="Python" icon="python" href="https://github.com/i-am-bee/beeai-framework/tree/main/python/examples/agents/experimental/requirement">
+	<Card title="Python" icon="python" href="https://github.com/i-am-bee/beeai-framework/tree/main/python/examples/agents/requirement">
 		Explore examples in Python
 	</Card>
-	<Card title="TypeScript" icon="js">
-		Coming soon
+	<Card title="TypeScript" icon="js" href="https://github.com/i-am-bee/beeai-framework/tree/main/typescript/examples/agents/requirement">
+		Explore examples in TypeScript
 	</Card>
 </CardGroup>
