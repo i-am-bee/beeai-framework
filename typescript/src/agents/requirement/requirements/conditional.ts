@@ -38,9 +38,9 @@ export interface ConditionalRequirementOptions {
 export class ConditionalRequirement extends Requirement {
   protected source: TargetType;
   protected sourceTool?: AnyTool;
-  protected before: Set<string>;
-  protected after: Set<string>;
-  protected forceAfterSet: Set<string>;
+  protected before: Set<TargetType>;
+  protected after: Set<TargetType>;
+  protected forceAfterSet: Set<TargetType>;
   protected minInvocations: number;
   protected maxInvocations: number;
   protected forceAtStepValue?: number;
@@ -91,11 +91,11 @@ export class ConditionalRequirement extends Requirement {
     }
 
     const sourceName = extractTargetName(this.source);
-    if (this.before.has(sourceName)) {
+    if (this.before.has(this.source)) {
       throw new ValueError(`Referencing self in 'before' is not allowed (${sourceName})!`);
     }
 
-    if (this.forceAfterSet.has(sourceName)) {
+    if (this.forceAfterSet.has(this.source)) {
       throw new ValueError(`Referencing self in 'forceAfter' is not allowed (${sourceName})!`);
     }
 
@@ -123,16 +123,11 @@ export class ConditionalRequirement extends Requirement {
   async init(tools: AnyTool[], ctx: RunContext<any>): Promise<void> {
     await super.init(tools, ctx);
 
-    const allTargets = new Set([
-      ...this.before,
-      ...this.after,
-      ...this.forceAfterSet,
-      extractTargetName(this.source),
-    ]);
+    const allTargets = new Set([...this.before, ...this.after, ...this.forceAfterSet, this.source]);
     assertAllRulesFound(allTargets, tools);
 
     for (const tool of tools) {
-      if (targetSeenIn(tool, new Set([extractTargetName(this.source)]))) {
+      if (targetSeenIn(tool, this.source)) {
         if (this.sourceTool && this.sourceTool !== tool) {
           throw new ValueError(
             `More than one occurrence of ${extractTargetName(this.source)} has been found!`,

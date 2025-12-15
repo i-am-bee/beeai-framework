@@ -82,6 +82,7 @@ const agent = new RequirementAgent({
       consecutiveAllowed: false,
     }), // ReAct
     new ConditionalRequirement(OpenMeteoTool, { onlyAfter: [WikipediaTool] }),
+    new ConditionalRequirement(WikipediaTool, { maxInvocations: 5 }),
     new RepeatIfEmptyRequirement(WikipediaTool, { limit: 3 }),
   ],
   saveIntermediateSteps: true, // store tool calls between individual starts (default: true)

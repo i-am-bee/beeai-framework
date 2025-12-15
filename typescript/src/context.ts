@@ -21,7 +21,7 @@ export interface RunInstance<T = any> {
 
 export interface RunContextCallbacks {
   start: Callback<{ input: any; output: any }>;
-  success: Callback<{ input: any; output: any }>;
+  success: Callback<unknown>; // TODO: should be updated to Callback<{ input: any; output: any }>
   error: Callback<Error>;
   finish: Callback<{ input: any; output?: any; error?: FrameworkError }>;
 }
@@ -186,10 +186,7 @@ export class RunContext<T extends RunInstance, P = any> extends Serializable {
           ),
         ]);
         finishEvent.output = result;
-        await emitter.emit("success", {
-          input: startEvent.input,
-          output: result,
-        });
+        await emitter.emit("success", result);
         return result;
       } catch (_e) {
         const e = FrameworkError.ensure(_e);

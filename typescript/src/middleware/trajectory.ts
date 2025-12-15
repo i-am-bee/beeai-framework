@@ -386,7 +386,8 @@ export class GlobalTrajectoryMiddleware<T extends RunInstance = any> extends Mid
     meta: EventMeta,
   ): Promise<void> {
     const prefix = this.formatPrefix(meta);
-    const message = `${prefix}${await this.formatPayload(payload.output)}`;
+    // TODO: change to payload.output once available
+    const message = `${prefix}${await this.formatPayload(payload)}`;
 
     await this.emitter.emit("success", {
       message,

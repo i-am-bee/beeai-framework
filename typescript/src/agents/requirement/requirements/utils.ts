@@ -3,7 +3,10 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { AnyTool, AnyToolClass } from "@/tools/base.js";
+import { AnyTool, AnyToolClass, Tool } from "@/tools/base.js";
+import { ValueError } from "@/errors.js";
+import { isString } from "remeda";
+import { isConstructor } from "@/internals/helpers/prototype.js";
 
 export type TargetType = string | AnyTool | AnyToolClass;
 export type MultiTargetType = TargetType | TargetType[];
@@ -24,29 +27,39 @@ export function extractTargetName(target: TargetType): string {
 /**
  * Extract set of target names from various input types
  */
-export function extractTargets(targets?: MultiTargetType): Set<string> {
+export function extractTargets(targets?: MultiTargetType): Set<TargetType> {
   if (!targets) {
     return new Set();
   }
 
   const targetArray = Array.isArray(targets) ? targets : [targets];
-  return new Set(targetArray.map(extractTargetName));
+  return new Set(targetArray);
 }
 
 /**
  * Check if a tool matches any target in the set
  */
 export function targetSeenIn(
-  tool: AnyTool | null | undefined,
-  targets: Set<string>,
-): string | null {
-  if (!tool) {
+  target: AnyTool | null | undefined,
+  haystack: Set<TargetType> | TargetType,
+): TargetType | null {
+  if (!target) {
     return null;
   }
 
-  for (const target of targets) {
-    if (tool.name === target || tool.constructor.name === target) {
-      return target;
+  if (!(haystack instanceof Set)) {
+    haystack = new Set([haystack]);
+  }
+
+  for (const needle of haystack.values()) {
+    if (isString(needle) && needle === target.name) {
+      return needle;
+    }
+    if (needle instanceof Tool && needle === target) {
+      return needle;
+    }
+    if (isConstructor(needle) && target instanceof needle) {
+      return needle;
     }
   }
 
@@ -56,14 +69,18 @@ export function targetSeenIn(
 /**
  * Assert that all targets exist in the tools list
  */
-export function assertAllRulesFound(targets: Set<string>, tools: AnyTool[]): void {
-  const toolNames = new Set(tools.map((t) => t.name));
-  const toolClassNames = new Set(tools.map((t) => t.constructor.name));
-
+export function assertAllRulesFound(targets: Set<TargetType>, tools: AnyTool[]): void {
   for (const target of targets) {
-    if (!toolNames.has(target) && !toolClassNames.has(target)) {
-      throw new Error(
-        `Target '${target}' not found in tools. Available: ${Array.from(toolNames).join(", ")}`,
+    let found = false;
+    for (const tool of tools) {
+      if (targetSeenIn(tool, target)) {
+        found = true;
+        break;
+      }
+    }
+    if (!found) {
+      throw new ValueError(
+        `Tool '${target}' is specified as 'source', 'before', 'after' or 'force_after' but not found.`,
       );
     }
   }
