@@ -3,21 +3,21 @@ import { ReActAgent } from "beeai-framework/agents/react/agent";
 import { TokenMemory } from "beeai-framework/memory/tokenMemory";
 import { DuckDuckGoSearchTool } from "beeai-framework/tools/search/duckDuckGoSearch";
 import { OllamaChatModel } from "beeai-framework/adapters/ollama/backend/chat";
-import { GlobalTrajectoryMiddleware } from "beeai-framework/middleware";
+import { GlobalTrajectoryMiddleware } from "beeai-framework/middleware/trajectory";
 import { BaseAgent } from "beeai-framework/agents/base";
 import { ChatModel } from "beeai-framework/backend/chat";
 import { Tool } from "beeai-framework/tools/base";
+import { AnyConstructable } from "beeai-framework/internals/types";
 
 const llm = new OllamaChatModel("llama3.1");
 
 // Create middleware with custom formatting
 const trajectoryMiddleware = new GlobalTrajectoryMiddleware({
-  target: "console",
   pretty: true,
   formatter: (input) => {
     return `[${input.className}] ${input.instanceName || "unnamed"} - ${input.eventName}`;
   },
-  prefixByType: new Map([
+  prefixByType: new Map<AnyConstructable, string>([
     [BaseAgent, "🐝 "],
     [ChatModel, "🧠 "],
     [Tool, "⚙️ "],

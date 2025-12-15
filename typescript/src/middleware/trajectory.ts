@@ -3,16 +3,18 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { Middleware, RunContext, RunInstance } from "@/context.js";
-import { Emitter, EventMeta } from "@/emitter/emitter.js";
+import { Middleware, RunContext, RunContextCallbacks, RunInstance } from "@/context.js";
+import { Callback, Emitter, EventMeta } from "@/emitter/emitter.js";
 import { FrameworkError } from "@/errors.js";
 import { Logger } from "@/logger/logger.js";
 import { BaseAgent } from "@/agents/base.js";
-import { AnyConstructable } from "@/internals/types.js";
+import type { AnyConstructable } from "@/internals/types.js";
 import { capitalize } from "remeda";
 import { ChatModel } from "@/backend/chat.js";
 import { Tool } from "@/tools/base.js";
 import { Requirement } from "@/agents/requirement/requirements/requirement.js";
+import { isPrimitive } from "sequelize/lib/utils";
+import type { InferCallbackValue } from "@/emitter/types.js";
 
 /**
  * Information about how deep the given entity is in the execution tree.
@@ -34,51 +36,31 @@ export interface GlobalTrajectoryMiddlewareFormatterInput {
   instanceName: string | null;
 }
 
-/**
- * Base event for all trajectory middleware events
- */
-export interface GlobalTrajectoryMiddlewareEvent {
-  message: string;
-  level: TraceLevel;
-  origin: [any, EventMeta];
+export interface GlobalTrajectoryMiddlewareCallbacks {
+  start: Callback<{
+    message: string;
+    level: TraceLevel;
+    origin: [InferCallbackValue<RunContextCallbacks["start"]>, EventMeta];
+  }>;
+  success: Callback<{
+    message: string;
+    level: TraceLevel;
+    origin: [InferCallbackValue<RunContextCallbacks["success"]>, EventMeta];
+  }>;
+  error: Callback<{
+    message: string;
+    level: TraceLevel;
+    origin: [InferCallbackValue<RunContextCallbacks["error"]>, EventMeta];
+  }>;
+  finish: Callback<{
+    message: string;
+    level: TraceLevel;
+    origin: [InferCallbackValue<RunContextCallbacks["finish"]>, EventMeta];
+  }>;
 }
 
-/**
- * Event emitted when a target begins execution
- */
-export interface GlobalTrajectoryMiddlewareStartEvent extends GlobalTrajectoryMiddlewareEvent {
-  origin: [{ input: any; output: any }, EventMeta];
-}
-
-/**
- * Event emitted when a target completes successfully
- */
-export interface GlobalTrajectoryMiddlewareSuccessEvent extends GlobalTrajectoryMiddlewareEvent {
-  origin: [{ input: any; output: any }, EventMeta];
-}
-
-/**
- * Event emitted when an error occurs during target execution
- */
-export interface GlobalTrajectoryMiddlewareErrorEvent extends GlobalTrajectoryMiddlewareEvent {
-  origin: [FrameworkError, EventMeta];
-}
-
-/**
- * Event emitted after a target has finished execution
- */
-export interface GlobalTrajectoryMiddlewareFinishEvent extends GlobalTrajectoryMiddlewareEvent {
-  origin: [{ output: any; error: FrameworkError | null; input: any }, EventMeta];
-}
-
-export const globalTrajectoryMiddlewareEvents = {
-  start: {} as GlobalTrajectoryMiddlewareStartEvent,
-  success: {} as GlobalTrajectoryMiddlewareSuccessEvent,
-  error: {} as GlobalTrajectoryMiddlewareErrorEvent,
-  finish: {} as GlobalTrajectoryMiddlewareFinishEvent,
-};
-
-type OutputTarget = "console" | Logger | ((message: string) => void) | null;
+type OutputTargetFn = (message: string) => void;
+type OutputTarget = Logger | OutputTargetFn;
 
 export interface GlobalTrajectoryMiddlewareOptions {
   /** Specify output target: 'console', Logger instance, custom function, or null to disable */
@@ -121,7 +103,7 @@ export class GlobalTrajectoryMiddleware<T extends RunInstance = any> extends Mid
   private matchNested: boolean;
   private emitterPriority: number;
   private formatter: (input: GlobalTrajectoryMiddlewareFormatterInput) => string;
-  public readonly emitter: Emitter<typeof globalTrajectoryMiddlewareEvents>;
+  public readonly emitter: Emitter<GlobalTrajectoryMiddlewareCallbacks>;
 
   constructor(options: GlobalTrajectoryMiddlewareOptions = {}) {
     super();
@@ -148,7 +130,7 @@ export class GlobalTrajectoryMiddleware<T extends RunInstance = any> extends Mid
       options.formatter ??
       ((x) => `${x.prefix}${x.className}[${x.instanceName || x.className}][${x.eventName}]`);
 
-    this.emitter = Emitter.root.child<typeof globalTrajectoryMiddlewareEvents>({
+    this.emitter = Emitter.root.child<GlobalTrajectoryMiddlewareCallbacks>({
       namespace: ["middleware", "globalTrajectory"],
     });
   }
@@ -169,15 +151,12 @@ export class GlobalTrajectoryMiddleware<T extends RunInstance = any> extends Mid
     this.bindEmitter(ctx.emitter);
   }
 
-  private createTarget(input?: OutputTarget): (message: string) => void {
+  private createTarget(input?: OutputTarget): OutputTargetFn {
     if (input === null || input === undefined) {
       // eslint-disable-next-line no-console
       return (msg) => console.log(msg);
-    } else if (input === "console") {
-      // eslint-disable-next-line no-console
-      return (msg) => console.log(msg);
     } else if (input instanceof Logger) {
-      return (msg) => input.log(msg.replace(/\n$/, ""), input.level);
+      return (msg) => input.debug(msg.replace(/\n$/, ""));
     } else {
       return input;
     }
@@ -362,13 +341,7 @@ export class GlobalTrajectoryMiddleware<T extends RunInstance = any> extends Mid
   }
 
   private formatPayload(value: any): string {
-    if (
-      typeof value === "string" ||
-      typeof value === "number" ||
-      typeof value === "boolean" ||
-      value === null ||
-      value === undefined
-    ) {
+    if (isPrimitive(value)) {
       return String(value);
     }
 
@@ -376,20 +349,11 @@ export class GlobalTrajectoryMiddleware<T extends RunInstance = any> extends Mid
       return value.explain();
     }
 
-    return JSON.stringify(
-      value,
-      (key, val) => {
-        if (this.excludeNone && (val === null || val === undefined)) {
-          return undefined;
-        }
-        return val;
-      },
-      this.pretty ? 2 : undefined,
-    );
+    return JSON.stringify(value, null, this.pretty ? 2 : undefined);
   }
 
   private async onInternalStart(
-    payload: { input: any; output: any },
+    payload: InferCallbackValue<RunContextCallbacks["start"]>,
     meta: EventMeta,
   ): Promise<void> {
     const prefix = this.formatPrefix(meta);
@@ -405,11 +369,11 @@ export class GlobalTrajectoryMiddleware<T extends RunInstance = any> extends Mid
   }
 
   private async onInternalSuccess(
-    payload: { input: any; output: any },
+    payload: InferCallbackValue<RunContextCallbacks["success"]>,
     meta: EventMeta,
   ): Promise<void> {
     const prefix = this.formatPrefix(meta);
-    const message = `${prefix}${this.formatPayload(payload.output)}`;
+    const message = `${prefix}${this.formatPayload(payload)}`;
 
     await this.emitter.emit("success", {
       message,
@@ -420,7 +384,10 @@ export class GlobalTrajectoryMiddleware<T extends RunInstance = any> extends Mid
     this.target(`${message}\n`);
   }
 
-  private async onInternalError(payload: FrameworkError, meta: EventMeta): Promise<void> {
+  private async onInternalError(
+    payload: InferCallbackValue<RunContextCallbacks["error"]>,
+    meta: EventMeta,
+  ): Promise<void> {
     const prefix = this.formatPrefix(meta);
     const message = `${prefix}${this.formatPayload(payload)}`;
 
@@ -434,11 +401,9 @@ export class GlobalTrajectoryMiddleware<T extends RunInstance = any> extends Mid
   }
 
   private async onInternalFinish(
-    payload: { output: any; error: FrameworkError | null; input: any },
+    payload: InferCallbackValue<RunContextCallbacks["finish"]>,
     meta: EventMeta,
   ): Promise<void> {
-    // TODO: not implemented in TS yet
-
     const prefix = this.formatPrefix(meta);
     //const message = `${prefix}${this.formatPayload(payload.error || payload.output)}`;
     const message = `${prefix}${this.formatPayload({})}`;

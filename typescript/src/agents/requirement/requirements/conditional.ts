@@ -16,6 +16,7 @@ import { AnyTool } from "@/tools/base.js";
 import { RunContext } from "@/context.js";
 import { ValueError } from "@/errors.js";
 import type { RequirementAgentRunState } from "@/agents/requirement/types.js";
+import { isTruthy } from "remeda";
 
 export interface ConditionalRequirementOptions {
   name?: string;
@@ -171,15 +172,13 @@ export class ConditionalRequirement extends Requirement {
     }
 
     // Get steps from state (assuming state has steps property)
-    const stateSteps = (state as any).steps || [];
     const steps = this.onlySuccessInvocations
-      ? stateSteps.filter((step: any) => !step.error)
-      : stateSteps;
+      ? state.steps.filter((step) => !step.error)
+      : state.steps;
 
-    const lastStepTool =
-      steps.length > 0 && steps[steps.length - 1].tool ? steps[steps.length - 1].tool : null;
+    const lastStepTool = steps.at(-1)?.tool;
 
-    const invocations = steps.filter((step: any) => step.tool === sourceTool).length;
+    const invocations = steps.filter((step) => step.tool === sourceTool).length;
 
     const resolve = (allowed: boolean): Rule[] => {
       const currentStep = steps.length + 1;
@@ -221,7 +220,7 @@ export class ConditionalRequirement extends Requirement {
 
     // Check after/before constraints
     if (this.after.size > 0) {
-      const stepsAsToolCalls = steps.map((s: any) => s.tool).filter((t: any) => t !== null);
+      const stepsAsToolCalls = steps.map((step) => step.tool).filter(isTruthy);
       const afterToolsRemaining = new Set(this.after);
 
       for (const stepTool of stepsAsToolCalls) {

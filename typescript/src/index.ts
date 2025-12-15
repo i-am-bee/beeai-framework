@@ -12,4 +12,3 @@ export * from "./agents/base.js";
 export * from "./backend/chat.js";
 export * from "./backend/embedding.js";
 export * from "./tools/base.js";
-export * from "./middleware/index.js";

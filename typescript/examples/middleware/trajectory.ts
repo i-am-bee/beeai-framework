@@ -4,14 +4,13 @@ import { TokenMemory } from "beeai-framework/memory/tokenMemory";
 import { DuckDuckGoSearchTool } from "beeai-framework/tools/search/duckDuckGoSearch";
 import { OpenMeteoTool } from "beeai-framework/tools/weather/openMeteo";
 import { OllamaChatModel } from "beeai-framework/adapters/ollama/backend/chat";
-import { GlobalTrajectoryMiddleware } from "beeai-framework/middleware";
+import { GlobalTrajectoryMiddleware } from "beeai-framework/middleware/trajectory";
 import { Tool } from "beeai-framework/tools/base";
 
 const llm = new OllamaChatModel("llama3.1");
 
 // Create middleware to track all tool executions
 const trajectoryMiddleware = new GlobalTrajectoryMiddleware({
-  target: "console",
   included: [Tool], // Only track tools
   pretty: false,
 });
