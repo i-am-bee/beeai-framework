@@ -1,0 +1,27 @@
+import asyncio
+from beeai_framework.agents.react import ReActAgent
+from beeai_framework.agents.types import AgentExecutionConfig
+from beeai_framework.backend.chat import ChatModel
+from beeai_framework.backend.types import ChatModelParameters
+from beeai_framework.memory import TokenMemory
+from beeai_framework.tools.search.wikipedia import WikipediaTool
+from beeai_framework.tools.weather.openmeteo import OpenMeteoTool
+
+from agent import create_agent
+
+# Run the agent
+async def main():
+    agent = create_agent()  # Add await if create_agent is async
+    response = await agent.run(
+        "I'm planning a trip to Barcelona, Spain. Can you research key attractions and landmarks I should visit, and also tell me what the current weather conditions are like there?",  # Positional argument
+        execution=AgentExecutionConfig(
+            max_retries_per_step=3, 
+            total_max_retries=10, 
+            max_iterations=5
+        ),
+    )
+    print("Agent Response:", response.result.text)
+    return response
+ 
+if __name__ == "__main__":
+    asyncio.run(main())
