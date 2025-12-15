@@ -7,7 +7,7 @@ import { AsyncLocalStorage } from "node:async_hooks";
 import { Emitter } from "@/emitter/emitter.js";
 import { createRandomHash } from "@/internals/helpers/hash.js";
 import { omit } from "remeda";
-import { Callback } from "@/emitter/types.js";
+import { Callback, InferCallbackValue } from "@/emitter/types.js";
 import { registerSignals } from "@/internals/helpers/cancellation.js";
 import { Serializable } from "@/internals/serializable.js";
 import { executeSequentially, LazyPromise } from "@/internals/helpers/promise.js";
@@ -20,10 +20,10 @@ export interface RunInstance<T = any> {
 }
 
 export interface RunContextCallbacks {
-  start: Callback<null>;
-  success: Callback<unknown>;
+  start: Callback<{ input: any; output: any }>;
+  success: Callback<{ input: any; output: any }>;
   error: Callback<Error>;
-  finish: Callback<null>;
+  finish: Callback<{ input: any; output?: any; error?: FrameworkError }>;
 }
 
 export abstract class Middleware<T extends RunInstance = any> {
@@ -101,7 +101,7 @@ export class RunContext<T extends RunInstance, P = any> extends Serializable {
   public readonly parentId?: string;
   public readonly emitter;
   public readonly context: object;
-  public readonly runParams: P;
+  public runParams: P;
   public readonly createdAt: Date;
 
   get signal() {
@@ -161,24 +161,43 @@ export class RunContext<T extends RunInstance, P = any> extends Serializable {
         context: { internal: true },
       });
 
+      const finishEvent = {} as InferCallbackValue<RunContextCallbacks["finish"]>;
       try {
-        await emitter.emit("start", null);
-        const result = await Promise.race([
-          RunContext.#storage.run(runContext, fn, runContext),
+        const startEvent: InferCallbackValue<RunContextCallbacks["start"]> = {
+          input: runContext.runParams,
+          output: undefined,
+        };
+        await emitter.emit("start", startEvent);
+
+        // Copy back any modifications made by middleware to run_params
+        runContext.runParams = startEvent.input;
+        finishEvent.input = startEvent.input;
+
+        const result: R2 = await Promise.race([
+          RunContext.#storage.run(
+            runContext,
+            startEvent.output === undefined ? fn : async () => startEvent.output,
+            runContext,
+          ),
           new Promise<never>((_, reject) =>
             runContext.signal.addEventListener("abort", () =>
               setTimeout(() => reject(runContext.signal.reason), 0),
             ),
           ),
         ]);
-        await emitter.emit("success", result);
+        finishEvent.output = result;
+        await emitter.emit("success", {
+          input: startEvent.input,
+          output: result,
+        });
         return result;
       } catch (_e) {
         const e = FrameworkError.ensure(_e);
+        finishEvent.output = e;
         await emitter.emit("error", e);
         throw e;
       } finally {
-        await emitter.emit("finish", null);
+        await emitter.emit("finish", finishEvent);
         runContext.destroy();
       }
     }, runContext);

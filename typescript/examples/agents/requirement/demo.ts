@@ -4,6 +4,7 @@ import { ChatModel } from "beeai-framework/backend/chat";
 import { ThinkTool } from "beeai-framework/tools/think";
 import { OpenMeteoTool } from "beeai-framework/tools/weather/openMeteo";
 import { WikipediaTool } from "beeai-framework/tools/search/wikipedia";
+import { GlobalTrajectoryMiddleware } from "beeai-framework/middleware/trajectory";
 
 // Create an agent that plans activities based on weather and events
 const agent = new RequirementAgent({
@@ -33,6 +34,8 @@ const agent = new RequirementAgent({
 });
 
 // Run with execution logging
-const response = await agent.run({ prompt: "What to do in Boston?" });
+const response = await agent
+  .run({ prompt: "What to do in Boston?" })
+  .middleware(new GlobalTrajectoryMiddleware());
 
 console.log(`Final Answer: ${response.result.text}`);

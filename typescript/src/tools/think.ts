@@ -21,7 +21,7 @@ export interface ThinkToolOptions extends BaseToolOptions<StringToolOutput> {
 }
 
 export class ThinkTool extends Tool<StringToolOutput, ThinkToolOptions> {
-  public readonly name = "think";
+  public name = "think";
   public description =
     "Use when you want to think through a problem, clarify your assumptions, or break down complex steps before acting or responding.";
 

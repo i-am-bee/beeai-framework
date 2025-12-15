@@ -18,6 +18,7 @@ export interface EmitterOptions {
   once?: boolean;
   persistent?: boolean;
   matchNested?: boolean;
+  priority?: number;
 }
 export interface EventTrace {
   id: string;

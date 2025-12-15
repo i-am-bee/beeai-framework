@@ -15,6 +15,7 @@ import { Tool } from "@/tools/base.js";
 import { Requirement } from "@/agents/requirement/requirements/requirement.js";
 import { isPrimitive } from "sequelize/lib/utils";
 import type { InferCallbackValue } from "@/emitter/types.js";
+import { Serializer } from "@/serializer/serializer.js";
 
 /**
  * Information about how deep the given entity is in the execution tree.
@@ -73,8 +74,6 @@ export interface GlobalTrajectoryMiddlewareOptions {
   pretty?: boolean;
   /** Customize how instances of individual classes should be printed */
   prefixByType?: Map<AnyConstructable, string>;
-  /** Exclude null/undefined values from the printing */
-  excludeNone?: boolean;
   /** Enable/Disable the logging */
   enabled?: boolean;
   /** Whether to observe trajectories of nested run contexts */
@@ -99,7 +98,6 @@ export class GlobalTrajectoryMiddleware<T extends RunInstance = any> extends Mid
   private pretty: boolean;
   private traceLevel = new Map<string, TraceLevel>();
   private prefixByType: Map<any, string>;
-  private excludeNone: boolean;
   private matchNested: boolean;
   private emitterPriority: number;
   private formatter: (input: GlobalTrajectoryMiddlewareFormatterInput) => string;
@@ -113,7 +111,6 @@ export class GlobalTrajectoryMiddleware<T extends RunInstance = any> extends Mid
     this.excluded = options.excluded ?? [];
     this.target = this.createTarget(options.target);
     this.pretty = options.pretty ?? false;
-    this.excludeNone = options.excludeNone ?? true;
     this.matchNested = options.matchNested ?? true;
     this.emitterPriority = options.emitterPriority ?? -1; // run later
 
@@ -198,7 +195,7 @@ export class GlobalTrajectoryMiddleware<T extends RunInstance = any> extends Mid
         {
           matchNested: false,
           isBlocking: true,
-          // priority: this.emitterPriority, TODO: not implemented
+          priority: this.emitterPriority,
         },
       ),
     );
@@ -219,7 +216,7 @@ export class GlobalTrajectoryMiddleware<T extends RunInstance = any> extends Mid
         emitter.match((event) => event.name === "start", handleNestedEvent, {
           matchNested: true,
           isBlocking: true,
-          // priority: this.emitterPriority,
+          priority: this.emitterPriority,
         }),
       );
     }
@@ -340,7 +337,7 @@ export class GlobalTrajectoryMiddleware<T extends RunInstance = any> extends Mid
     return this.traceLevel.get(runId) ?? { relative: 0, absolute: 0 };
   }
 
-  private formatPayload(value: any): string {
+  private async formatPayload(value: any): Promise<string> {
     if (isPrimitive(value)) {
       return String(value);
     }
@@ -349,7 +346,23 @@ export class GlobalTrajectoryMiddleware<T extends RunInstance = any> extends Mid
       return value.explain();
     }
 
-    return JSON.stringify(value, null, this.pretty ? 2 : undefined);
+    const serialized = await Serializer.serialize(value);
+    return JSON.stringify(
+      await Serializer.deserialize(serialized, [], true),
+      (() => {
+        const excludedKeys = new Set(["emitter", "cleanups", "creator", "listeners"]);
+        return (key, value) => {
+          if (excludedKeys.has(key)) {
+            return undefined;
+          }
+          if (value && value instanceof Tool) {
+            return value.name;
+          }
+          return value;
+        };
+      })(),
+      this.pretty ? 2 : undefined,
+    );
   }
 
   private async onInternalStart(
@@ -357,7 +370,7 @@ export class GlobalTrajectoryMiddleware<T extends RunInstance = any> extends Mid
     meta: EventMeta,
   ): Promise<void> {
     const prefix = this.formatPrefix(meta);
-    const message = `${prefix}${this.formatPayload(payload)}`;
+    const message = `${prefix}${await this.formatPayload(payload.input)}`;
 
     await this.emitter.emit("start", {
       message,
@@ -373,7 +386,7 @@ export class GlobalTrajectoryMiddleware<T extends RunInstance = any> extends Mid
     meta: EventMeta,
   ): Promise<void> {
     const prefix = this.formatPrefix(meta);
-    const message = `${prefix}${this.formatPayload(payload)}`;
+    const message = `${prefix}${await this.formatPayload(payload.output)}`;
 
     await this.emitter.emit("success", {
       message,
@@ -389,7 +402,7 @@ export class GlobalTrajectoryMiddleware<T extends RunInstance = any> extends Mid
     meta: EventMeta,
   ): Promise<void> {
     const prefix = this.formatPrefix(meta);
-    const message = `${prefix}${this.formatPayload(payload)}`;
+    const message = `${prefix}${await this.formatPayload(payload)}`;
 
     await this.emitter.emit("error", {
       message,
@@ -405,8 +418,7 @@ export class GlobalTrajectoryMiddleware<T extends RunInstance = any> extends Mid
     meta: EventMeta,
   ): Promise<void> {
     const prefix = this.formatPrefix(meta);
-    //const message = `${prefix}${this.formatPayload(payload.error || payload.output)}`;
-    const message = `${prefix}${this.formatPayload({})}`;
+    const message = `${prefix}${await this.formatPayload(payload.error || payload.output)}`;
     await this.emitter.emit("finish", {
       message,
       level: this.getTraceLevel(meta),

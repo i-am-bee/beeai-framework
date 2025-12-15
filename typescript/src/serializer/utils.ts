@@ -38,6 +38,10 @@ export class RefPlaceholder<T = unknown> {
     return this.partialResult;
   }
 
+  get rawValue() {
+    return this.node.__value;
+  }
+
   async final() {
     const finalInstance = await this.factory.fromPlain(this.node.__value, this.factory.ref);
     if (this.partialResult === RefPlaceholder.EmptyPlaceholder) {
