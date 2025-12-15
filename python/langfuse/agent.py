@@ -8,6 +8,7 @@ from beeai_framework.tools.weather import OpenMeteoTool
 from beeai_framework.tools.code import PythonTool, LocalPythonStorage
 from beeai_framework.tools.tool import Tool
 from dotenv import load_dotenv
+from beeai_framework.adapters.gemini import GeminiChatModel
 
 load_dotenv()
 
@@ -33,12 +34,10 @@ def create_agent() -> RequirementAgent:
     wiki_tool = WikipediaTool() 
     calculator_tool = create_calculator_tool()
 
-    model_name = os.environ.get("GEMINI_CHAT_MODEL", os.environ.get("EVAL_CHAT_MODEL_NAME", "ollama:llama3.1:8b"))
-    llm = ChatModel.from_name(
-        model_name,
-        {"allow_parallel_tool_calls": True},
-    )
-
+   
+    #model_name = os.environ.get("GEMINI_CHAT_MODEL", "gemini-2.5-flash")
+    #llm = GeminiChatModel(model_name=model_name, ApiKey=os.environ.get("GEMINI_API_KEY"), allow_parallel_tool_calls=True )
+    llm = ChatModel.from_name("groq:llama-3.3-70b-versatile")
     
     
     agent = RequirementAgent(

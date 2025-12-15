@@ -11,16 +11,21 @@ from agent import create_agent
 
 # Run the agent
 async def main():
-    agent = create_agent()  # Add await if create_agent is async
+    agent = create_agent()
     response = await agent.run(
-        "I'm planning a trip to Barcelona, Spain. Can you research key attractions and landmarks I should visit, and also tell me what the current weather conditions are like there?",  # Positional argument
+        "I'm planning a trip to Barcelona, Spain. Can you research key attractions and landmarks I should visit, and also tell me what the current weather conditions are like there?",
         execution=AgentExecutionConfig(
             max_retries_per_step=3, 
             total_max_retries=10, 
             max_iterations=5
         ),
     )
-    print("Agent Response:", response.result.text)
+    
+    # RequirementAgent returns different structure
+    print("Agent Response:", response.final_answer)
+    print("\nFull response:")
+    print(response.model_dump())
+    
     return response
  
 if __name__ == "__main__":
