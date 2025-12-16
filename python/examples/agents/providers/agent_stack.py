@@ -4,7 +4,7 @@ import traceback
 
 from beeai_framework.adapters.agentstack.agents import AgentStackAgent
 from beeai_framework.errors import FrameworkError
-from beeai_framework.memory.unconstrained_memory import UnconstrainedMemory
+from beeai_framework.memory import UnconstrainedMemory
 from examples.helpers.io import ConsoleReader
 
 
