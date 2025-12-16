@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 from typing import Any, Literal, Unpack
 
-import httpx
+from pydantic import Secret
 
 from beeai_framework.adapters.agentstack.context import AgentStackContext
 
@@ -69,10 +69,14 @@ class AgentStackAgent(BaseAgent[AgentStackAgentOutput]):
         url: str | None = None,
         agent_card: a2a_types.AgentCard | None = None,
         memory: BaseMemory,
+        auth_token: str | Secret[str] | None = None,
+        agent_stack_url: str | None = None,
     ) -> None:
         super().__init__()
         self._agent_stack_context: Context | None = None
         self._agent = A2AAgent(url=url, agent_card=agent_card, memory=memory)
+        self._auth_token = auth_token
+        self._agent_stack_url = agent_stack_url
 
     @property
     def name(self) -> str:
@@ -109,25 +113,26 @@ class AgentStackAgent(BaseAgent[AgentStackAgentOutput]):
                 AgentStackAgentErrorEvent(message=data.message),
             )
 
-        if not self._agent_stack_context and not agent_stack_context:
-            self._agent_stack_context = await Context.create()
+        client = _create_platform_client(kwargs.pop("client", self._agent_stack_url), self._auth_token)
+        async with client:
+            if not self._agent_stack_context and not agent_stack_context:
+                self._agent_stack_context = await Context.create(client=client)
 
-        message = self._agent.convert_to_a2a_message(
-            input,
-            context_id=agent_stack_context.context.context_id if agent_stack_context else self._agent_stack_context.id,  # type: ignore[union-attr]
-            metadata=agent_stack_context.metadata if agent_stack_context else await self._get_metadata(),
-        )
+            message = self._agent.convert_to_a2a_message(
+                input,
+                context_id=agent_stack_context.context.context_id
+                if agent_stack_context
+                else self._agent_stack_context.id,  # type: ignore[union-attr]
+                metadata=agent_stack_context.metadata if agent_stack_context else await self._get_metadata(client),
+            )
 
-        client = _create_platform_client(kwargs.pop("client", self._agent._url))
-        client.timeout = httpx.Timeout(30.0, read=None)  # TODO: remove in a new AgentStack SDK version
+            response = await (
+                self._agent.run(message, **kwargs, httpx_client=client)  # type: ignore[misc]
+                .on("update", update_event)
+                .on("error", error_event)
+            )
 
-        response = await (
-            self._agent.run(message, **kwargs, httpx_client=client)  # type: ignore[misc]
-            .on("update", update_event)
-            .on("error", error_event)
-        )
-
-        return AgentStackAgentOutput(output=response.output, event=response.event, context=response.context)
+            return AgentStackAgentOutput(output=response.output, event=response.event, context=response.context)
 
     async def check_agent_exists(
         self,
@@ -137,7 +142,7 @@ class AgentStackAgent(BaseAgent[AgentStackAgentOutput]):
         except Exception as e:
             raise AgentError("Can't connect to agent stack agent.", cause=e)
 
-    async def _get_metadata(self) -> dict[str, Any]:
+    async def _get_metadata(self, client: PlatformClient) -> dict[str, Any]:
         if not self._agent.agent_card:
             await self._agent._load_agent_card()
 
@@ -146,6 +151,7 @@ class AgentStackAgent(BaseAgent[AgentStackAgentOutput]):
         assert self._agent_stack_context is not None, "Agent stack context should not be empty."
 
         context_token = await self._agent_stack_context.generate_token(
+            client=client,
             grant_global_permissions=Permissions(llm={"*"}, embeddings={"*"}, a2a_proxy={"*"}, contexts={"read"}),
             grant_context_permissions=ContextPermissions(files={"*"}, vector_stores={"*"}, context_data={"*"}),
         )
@@ -156,10 +162,7 @@ class AgentStackAgent(BaseAgent[AgentStackAgentOutput]):
         async def get_fulfillemnt_args(
             capability: ModelCapability, demand: LLMDemand | EmbeddingDemand
         ) -> dict[str, Any]:
-            matches = await ModelProvider.match(
-                suggested_models=demand.suggested,
-                capability=capability,
-            )
+            matches = await ModelProvider.match(suggested_models=demand.suggested, capability=capability, client=client)
 
             if not matches:
                 raise AgentError(f"No matching model found for {capability}.")
@@ -209,17 +212,23 @@ class AgentStackAgent(BaseAgent[AgentStackAgentOutput]):
         memory: BaseMemory | None = None,
         *,
         states: set[AgentStackAgentStatus] | None = None,
+        auth_token: str | Secret[str] | None = None,
     ) -> list["AgentStackAgent"]:
         if memory is None:
             memory = UnconstrainedMemory()
         if states is None:
             states = {s for s in AgentStackAgentStatus if s != AgentStackAgentStatus.OFFLINE}
 
-        client = _create_platform_client(url)
+        client = _create_platform_client(url, auth_token)
 
         providers = await Provider.list(client=client)
         return [
-            AgentStackAgent(agent_card=provider.agent_card, memory=await memory.clone())
+            AgentStackAgent(
+                agent_card=provider.agent_card,
+                agent_stack_url=url if isinstance(url, str) else None,
+                memory=await memory.clone(),
+                auth_token=auth_token,
+            )
             for provider in providers
             if provider.state in states
         ]
@@ -248,13 +257,17 @@ class AgentStackAgent(BaseAgent[AgentStackAgentOutput]):
             url=self._agent._url,
             agent_card=self._agent.agent_card,
             memory=await self._agent.memory.clone(),
+            auth_token=self._auth_token,
+            agent_stack_url=self._agent_stack_url,
         )
         cloned.emitter = await self.emitter.clone()
         return cloned
 
 
-def _create_platform_client(url_or_client: str | PlatformClient | None) -> PlatformClient:
+def _create_platform_client(
+    url_or_client: str | PlatformClient | None, auth_token: str | Secret[str] | None = None
+) -> PlatformClient:
     if isinstance(url_or_client, str):
-        return PlatformClient(base_url=url_or_client, timeout=httpx.Timeout(30.0, read=None))
+        return PlatformClient(base_url=url_or_client, auth_token=auth_token)
     else:
         return url_or_client or get_platform_client()
