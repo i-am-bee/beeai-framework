@@ -9,6 +9,7 @@ import { WikipediaTool } from "beeai-framework/tools/search/wikipedia";
 import { ThinkTool } from "beeai-framework/tools/think";
 import { OpenMeteoTool } from "beeai-framework/tools/weather/openMeteo";
 import { RequirementAgentRunState } from "beeai-framework/agents/requirement/types";
+import { GlobalTrajectoryMiddleware } from "beeai-framework/middleware/trajectory";
 import {
   RequirementAgentSystemPrompt,
   RequirementAgentTaskPrompt,
@@ -25,7 +26,7 @@ class RepeatIfEmptyRequirement extends Requirement {
   protected remaining: number;
 
   constructor(target: new (...args: any[]) => AnyTool, options: { limit?: number } = {}) {
-    super(`repeat_if_empty_${target.name}`);
+    super(`RepeatIfEmpty${target.name}`);
     this.priority = 20;
     this.targetCls = target;
     this.limit = options.limit ?? Infinity;
@@ -42,7 +43,7 @@ class RepeatIfEmptyRequirement extends Requirement {
     }
   }
 
-  async run(state: RequirementAgentRunState): Promise<Rule[]> {
+  async _run(state: RequirementAgentRunState, _: RunContext<typeof this>): Promise<Rule[]> {
     const lastStep = state.steps?.at(-1);
 
     if (lastStep && this.targets.includes(lastStep.tool!) && lastStep.output.isEmpty()) {
@@ -71,10 +72,8 @@ const agent = new RequirementAgent({
     "Plan activities for a given destination based on current weather and events.",
     "Input to Wikipedia should be a name of the target city.",
   ],
-  meta: {
-    name: "PlannerAgent", // optional, useful for Handoff or registering agent to AgentStack or others
-    description: "Assistant to plan your day in a given destination.", // optional
-  },
+  name: "PlannerAgent", // optional, useful for Handoff or registering agent to AgentStack or others
+  description: "Assistant to plan your day in a given destination.", // optional
   requirements: [
     new ConditionalRequirement(ThinkTool, {
       forceAtStep: 1,
@@ -95,6 +94,11 @@ const agent = new RequirementAgent({
     toolError: RequirementAgentToolErrorPrompt,
     toolNoResult: RequirementAgentToolNoResultPrompt,
   },
+  middlewares: [
+    new GlobalTrajectoryMiddleware({
+      included: [Tool],
+    }),
+  ],
 });
 
 const response = await agent.run({

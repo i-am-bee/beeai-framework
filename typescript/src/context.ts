@@ -6,7 +6,7 @@
 import { AsyncLocalStorage } from "node:async_hooks";
 import { Emitter } from "@/emitter/emitter.js";
 import { createRandomHash } from "@/internals/helpers/hash.js";
-import { omit } from "remeda";
+import { isFunction, omit } from "remeda";
 import { Callback, InferCallbackValue } from "@/emitter/types.js";
 import { registerSignals } from "@/internals/helpers/cancellation.js";
 import { Serializable } from "@/internals/serializable.js";
@@ -60,14 +60,12 @@ export class Run<R, I extends RunInstance, P = any> extends LazyPromise<R> {
     return this;
   }
 
-  middleware(fn: MiddlewareType<I>) {
-    this.tasks.push(async () => {
-      if (typeof fn === "function") {
-        return fn(this.runContext);
-      } else {
-        return fn.bind(this.runContext);
-      }
-    });
+  middleware(...fns: MiddlewareType<I>[]) {
+    for (const fn of fns) {
+      this.tasks.push(async () =>
+        isFunction(fn) ? fn(this.runContext) : fn.bind(this.runContext),
+      );
+    }
     return this;
   }
 

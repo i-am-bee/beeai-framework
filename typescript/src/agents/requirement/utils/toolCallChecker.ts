@@ -35,7 +35,7 @@ export class ToolCallChecker {
     }
 
     // Check for consecutive strikes
-    const lastCall = this.strikeHistory[this.strikeHistory.length - 1];
+    const lastCall = this.strikeHistory.at(-1);
     if (lastCall && this.isSameToolCall(lastCall, value)) {
       this.strikeHistory.push(value);
       if (this.strikeHistory.length > this.config.maxStrikeLength) {

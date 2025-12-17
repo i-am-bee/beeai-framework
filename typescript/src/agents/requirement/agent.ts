@@ -9,7 +9,7 @@ import { BaseMemory } from "@/memory/base.js";
 import { AgentMeta } from "@/agents/types.js";
 import { Emitter } from "@/emitter/emitter.js";
 import { ChatModel } from "@/backend/chat.js";
-import { GetRunContext } from "@/context.js";
+import type { GetRunContext, MiddlewareType } from "@/context.js";
 import { UnconstrainedMemory } from "@/memory/unconstrainedMemory.js";
 import { Message, UserMessage } from "@/backend/message.js";
 import { shallowCopy } from "@/serializer/utils.js";
@@ -34,6 +34,7 @@ import { RequirementAgentRunner } from "./runner.js";
 import { ToolCallChecker, ToolCallCheckerConfig } from "./utils/toolCallChecker.js";
 import { isDefined, isEmptyish, pickBy } from "remeda";
 import { castArray } from "@/internals/helpers/array.js";
+import type { RequiredExcept } from "@/internals/types.js";
 
 export type RequirementAgentTemplateFactory<K extends keyof RequirementAgentTemplates> = (
   template: RequirementAgentTemplates[K],
@@ -41,23 +42,37 @@ export type RequirementAgentTemplateFactory<K extends keyof RequirementAgentTemp
 
 export interface RequirementAgentInput {
   llm: ChatModel;
+  memory?: BaseMemory;
   tools?: AnyTool[];
   requirements?: Requirement[];
-  memory?: BaseMemory;
+  name?: string;
+  description?: string;
   role?: string;
   instructions?: string | string[];
   notes?: string | string[];
-  meta?: Omit<AgentMeta, "tools">;
+  toolCallChecker?: boolean | ToolCallCheckerConfig;
+  finalAnswerAsTool?: boolean;
+  saveIntermediateSteps?: boolean;
+  execution?: RequirementAgentExecutionConfig;
   templates?: Partial<{
     [K in keyof RequirementAgentTemplates]:
       | RequirementAgentTemplates[K]
       | RequirementAgentTemplateFactory<K>;
   }>;
-  execution?: RequirementAgentExecutionConfig;
-  saveIntermediateSteps?: boolean;
-  finalAnswerAsTool?: boolean;
-  toolCallChecker?: boolean | ToolCallCheckerConfig;
+  middlewares?: MiddlewareType<RequirementAgent>[];
 }
+
+type InternalRequirementAgentInput = RequiredExcept<
+  RequirementAgentInput,
+  | "role"
+  | "instructions"
+  | "name"
+  | "description"
+  | "templates"
+  | "notes"
+  | "execution"
+  | "middlewares"
+>;
 
 /**
  * RequirementAgent - A declarative AI agent with rule-based constraints
@@ -78,18 +93,26 @@ export class RequirementAgent extends BaseAgent<
     creator: this,
   });
 
+  protected readonly input: InternalRequirementAgentInput;
+
   protected runner: new (
     ...args: ConstructorParameters<typeof RequirementAgentRunner>
   ) => RequirementAgentRunner = RequirementAgentRunner;
 
-  constructor(protected readonly input: RequirementAgentInput) {
+  constructor(input: RequirementAgentInput) {
     super();
-    this.input.memory = this.input.memory || new UnconstrainedMemory();
-    this.input.tools = this.input.tools || [];
-    this.input.requirements = this.input.requirements || [];
-    this.input.saveIntermediateSteps = this.input.saveIntermediateSteps ?? true;
-    this.input.finalAnswerAsTool = this.input.finalAnswerAsTool ?? true;
-    this.input.toolCallChecker = this.input.toolCallChecker ?? true;
+    this.input = {
+      ...input,
+      memory: input.memory || new UnconstrainedMemory(),
+      tools: input.tools || [],
+      requirements: input.requirements || [],
+      saveIntermediateSteps: input.saveIntermediateSteps ?? true,
+      finalAnswerAsTool: input.finalAnswerAsTool ?? true,
+      toolCallChecker: input.toolCallChecker ?? true,
+    };
+    if (input.middlewares) {
+      this.middlewares.push(...input.middlewares);
+    }
   }
 
   static {
@@ -119,7 +142,7 @@ export class RequirementAgent extends BaseAgent<
       input.expectedOutput || null,
       toolCallChecker,
       run,
-      this.input.finalAnswerAsTool ?? true,
+      this.input.finalAnswerAsTool,
       this.templates,
     );
 
@@ -185,16 +208,13 @@ export class RequirementAgent extends BaseAgent<
   get meta(): AgentMeta {
     const tools = this.input.tools || [];
 
-    if (this.input.meta) {
-      return { ...this.input.meta, tools };
-    }
-
     return {
-      name: "Requirement",
+      name: this.input.name ?? "Requirement",
       tools,
       description:
+        this.input.description ??
         "The RequirementAgent is a declarative AI agent implementation that provides predictable, " +
-        "controlled execution behavior across different language models through rule-based constraints.",
+          "controlled execution behavior across different language models through rule-based constraints.",
       ...(tools.length > 0 && {
         extraDescription: [
           `Tools that I can use to accomplish given task.`,
@@ -229,10 +249,14 @@ export class RequirementAgent extends BaseAgent<
             role: this.input.role,
             instructions: isEmptyish(this.input.instructions)
               ? undefined
-              : castArray(this.input.instructions).join("\n -"),
+              : castArray(this.input.instructions)
+                  .map((v) => `- ${v}`)
+                  .join("\n"),
             notes: isEmptyish(this.input.notes)
               ? undefined
-              : castArray(this.input.notes).join("\n -"),
+              : castArray(this.input.notes)
+                  .map((v) => `- ${v}`)
+                  .join("\n"),
           },
           isDefined,
         ),
@@ -256,6 +280,6 @@ export class RequirementAgent extends BaseAgent<
   }
 
   get memory(): BaseMemory {
-    return this.input.memory || new UnconstrainedMemory();
+    return this.input.memory!;
   }
 }

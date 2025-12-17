@@ -13,7 +13,11 @@ import {
   RequirementAgentRunState,
   RequirementAgentSystemPromptInputSchema,
 } from "@/agents/requirement/types.js";
-import { Requirement, Rule } from "@/agents/requirement/requirements/requirement.js";
+import {
+  Requirement,
+  RequirementCallbacks,
+  Rule,
+} from "@/agents/requirement/requirements/requirement.js";
 import { FinalAnswerTool } from "./tool.js";
 import { ChatModelToolChoice } from "@/backend/chat.js";
 import { toCamelCase } from "remeda";
@@ -47,13 +51,14 @@ export class RequirementsReasoner {
     }
 
     for (const entry of this.entries) {
-      const emitter = this.context.emitter.child({
+      const emitter = this.context.emitter.child<RequirementCallbacks>({
         groupId: toCamelCase(entry.name),
         creator: entry,
       });
       emitter.namespace.push("requirement");
 
       const tools = [...this.tools];
+      await emitter.emit("init", { tools });
       await entry.init(tools, this.context);
     }
   }

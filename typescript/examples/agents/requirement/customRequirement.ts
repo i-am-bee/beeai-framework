@@ -4,6 +4,7 @@ import { ChatModel } from "beeai-framework/backend/chat";
 import { AssistantMessage, UserMessage } from "beeai-framework/backend/message";
 import { DuckDuckGoSearchTool } from "beeai-framework/tools/search/duckDuckGoSearch";
 import { RequirementAgentRunState } from "beeai-framework/agents/requirement/types";
+import { RunContext } from "beeai-framework/context";
 
 class PrematureStopRequirement extends Requirement {
   /** Prevents the agent from answering if a certain phrase occurs in the conversation */
@@ -18,7 +19,7 @@ class PrematureStopRequirement extends Requirement {
     this.priority = 100; // (optional), default is 10
   }
 
-  async run(state: RequirementAgentRunState): Promise<Rule[]> {
+  async _run(state: RequirementAgentRunState, _: RunContext<typeof this>): Promise<Rule[]> {
     // we take the last step's output (if exists) or the user's input
     const lastStep =
       state.steps.at(-1)?.output.getTextContent() ??

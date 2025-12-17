@@ -48,7 +48,7 @@ export class ConditionalRequirement extends Requirement {
   protected consecutiveAllowedValue: boolean;
   protected customChecks: ((state: RequirementAgentRunState) => boolean)[];
   protected forcePreventStop: boolean;
-  protected reasonValue?: string;
+  protected reason?: string;
 
   constructor(target: TargetType, options: ConditionalRequirementOptions = {}) {
     super(options.name || `Condition${extractTargetName(target)}`);
@@ -70,7 +70,7 @@ export class ConditionalRequirement extends Requirement {
     this.consecutiveAllowedValue = options.consecutiveAllowed ?? true;
     this.customChecks = options.customChecks ?? [];
     this.forcePreventStop = options.forcePreventStop ?? true;
-    this.reasonValue = options.reason;
+    this.reason = options.reason;
 
     this.checkInvariant();
   }
@@ -160,7 +160,7 @@ export class ConditionalRequirement extends Requirement {
     return this;
   }
 
-  async run(state: RequirementAgentRunState): Promise<Rule[]> {
+  async _run(state: RequirementAgentRunState, _: RunContext<typeof this>): Promise<Rule[]> {
     const sourceTool = this.sourceTool;
     if (!sourceTool) {
       throw new RequirementError("Source was not found!", this);
@@ -198,7 +198,7 @@ export class ConditionalRequirement extends Requirement {
           forced,
           hidden: false,
           preventStop: this.minInvocations > invocations || (forced && this.forcePreventStop),
-          reason: !allowed ? this.reasonValue : undefined,
+          reason: !allowed ? this.reason : undefined,
         },
       ];
     };
@@ -258,7 +258,7 @@ export class ConditionalRequirement extends Requirement {
     instance.source = this.source;
     instance.sourceTool = this.sourceTool;
     instance.forcePreventStop = this.forcePreventStop;
-    instance.reasonValue = this.reasonValue;
+    instance.reason = this.reason;
     return instance;
   }
 }

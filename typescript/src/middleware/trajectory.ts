@@ -89,18 +89,18 @@ export interface GlobalTrajectoryMiddlewareOptions {
  * Provides hierarchical visualization with indentation to show the call stack.
  */
 export class GlobalTrajectoryMiddleware<T extends RunInstance = any> extends Middleware<T> {
-  private enabled: boolean;
-  private included: AnyConstructable[];
-  private excluded: AnyConstructable[];
-  private cleanups: (() => void)[] = [];
-  private target: (message: string) => void;
-  private ctx: RunContext<T> | null = null;
-  private pretty: boolean;
-  private traceLevel = new Map<string, TraceLevel>();
-  private prefixByType: Map<any, string>;
-  private matchNested: boolean;
-  private emitterPriority: number;
-  private formatter: (input: GlobalTrajectoryMiddlewareFormatterInput) => string;
+  protected enabled: boolean;
+  protected included: AnyConstructable[];
+  protected excluded: AnyConstructable[];
+  protected cleanups: (() => void)[] = [];
+  protected target: (message: string) => void;
+  protected ctx: RunContext<T> | null = null;
+  protected pretty: boolean;
+  protected traceLevel = new Map<string, TraceLevel>();
+  protected prefixByType: Map<any, string>;
+  protected matchNested: boolean;
+  protected emitterPriority: number;
+  protected formatter: (input: GlobalTrajectoryMiddlewareFormatterInput) => string;
   public readonly emitter: Emitter<GlobalTrajectoryMiddlewareCallbacks>;
 
   constructor(options: GlobalTrajectoryMiddlewareOptions = {}) {
@@ -153,7 +153,7 @@ export class GlobalTrajectoryMiddleware<T extends RunInstance = any> extends Mid
       // eslint-disable-next-line no-console
       return (msg) => console.log(msg);
     } else if (input instanceof Logger) {
-      return (msg) => input.debug(msg.replace(/\n$/, ""));
+      return (msg) => input.debug(msg);
     } else {
       return input;
     }
@@ -378,7 +378,7 @@ export class GlobalTrajectoryMiddleware<T extends RunInstance = any> extends Mid
       origin: [payload, meta],
     });
 
-    this.target(`${message}\n`);
+    this.target(message);
   }
 
   private async onInternalSuccess(
@@ -395,7 +395,7 @@ export class GlobalTrajectoryMiddleware<T extends RunInstance = any> extends Mid
       origin: [payload, meta],
     });
 
-    this.target(`${message}\n`);
+    this.target(message);
   }
 
   private async onInternalError(
@@ -411,7 +411,7 @@ export class GlobalTrajectoryMiddleware<T extends RunInstance = any> extends Mid
       origin: [payload, meta],
     });
 
-    this.target(`${message}\n`);
+    this.target(message);
   }
 
   private async onInternalFinish(

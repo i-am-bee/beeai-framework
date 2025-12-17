@@ -4,11 +4,12 @@
  */
 
 import { AnyTool } from "@/tools/base.js";
-import { RunContext } from "@/context.js";
-import { Emitter } from "@/emitter/emitter.js";
+import { MiddlewareType, RunContext } from "@/context.js";
+import { Callback, Emitter } from "@/emitter/emitter.js";
 import { FrameworkError, ValueError } from "@/errors.js";
 import { toCamelCase } from "remeda";
 import type { RequirementAgentRunState } from "@/agents/requirement/types.js";
+import { Cache } from "@/cache/decoratorCache.js";
 
 // Rule definition
 export interface Rule {
@@ -25,10 +26,9 @@ export abstract class Requirement {
   public name: string;
   public state: Record<string, any> = {};
   public enabled = true;
-  public middlewares: any[] = [];
+  public middlewares: MiddlewareType<typeof this>[] = [];
 
   protected _priority = 10;
-  protected _emitter?: Emitter<any>;
 
   constructor(name?: string) {
     this.name = name || this.constructor.name;
@@ -45,21 +45,25 @@ export abstract class Requirement {
     this._priority = value;
   }
 
-  get emitter(): Emitter<any> {
-    if (!this._emitter) {
-      this._emitter = this.createEmitter();
-    }
-    return this._emitter;
-  }
-
-  protected createEmitter(): Emitter<any> {
+  @Cache({ enumerable: false })
+  get emitter(): Emitter<RequirementCallbacks> {
     return Emitter.root.child({
       namespace: ["requirement", toCamelCase(this.name)],
       creator: this,
     });
   }
 
-  abstract run(state: RequirementAgentRunState): Promise<Rule[]>;
+  run(state: RequirementAgentRunState) {
+    return RunContext.enter(
+      this,
+      { signal: undefined, params: [state] as const },
+      async (context) => {
+        return await this._run(state, context);
+      },
+    );
+  }
+
+  abstract _run(state: RequirementAgentRunState, _: RunContext<typeof this>): Promise<Rule[]>;
 
   async init(tools: AnyTool[], _: RunContext<any>): Promise<void> {
     await this.emitter.emit("init", { tools });
@@ -68,7 +72,7 @@ export abstract class Requirement {
   async clone(): Promise<this> {
     const instance = Object.create(Object.getPrototypeOf(this));
     instance.name = this.name;
-    instance._priority = this._priority;
+    instance.priority = this.priority;
     instance.enabled = this.enabled;
     instance.state = { ...this.state };
     instance.middlewares = [...this.middlewares];
@@ -90,4 +94,8 @@ export class RequirementError extends FrameworkError {
       context,
     });
   }
+}
+
+export interface RequirementCallbacks {
+  init: Callback<{ tools: AnyTool[] }>;
 }
