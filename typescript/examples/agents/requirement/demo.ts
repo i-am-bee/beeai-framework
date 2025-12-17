@@ -5,6 +5,7 @@ import { ThinkTool } from "beeai-framework/tools/think";
 import { OpenMeteoTool } from "beeai-framework/tools/weather/openMeteo";
 import { WikipediaTool } from "beeai-framework/tools/search/wikipedia";
 import { GlobalTrajectoryMiddleware } from "beeai-framework/middleware/trajectory";
+import { Tool } from "beeai-framework/tools/base";
 
 // Create an agent that plans activities based on weather and events
 const agent = new RequirementAgent({
@@ -17,7 +18,7 @@ const agent = new RequirementAgent({
   instructions: "Plan activities for a given destination based on current weather and events.",
   requirements: [
     // Force thinking first
-    new ConditionalRequirement(ThinkTool, { forceAtStep: 1 }),
+    new ConditionalRequirement(ThinkTool, { forceAtStep: 1, maxInvocations: 5 }),
     // Search only after getting weather and at least once
     new ConditionalRequirement(WikipediaTool, {
       onlyAfter: [OpenMeteoTool],
@@ -34,8 +35,10 @@ const agent = new RequirementAgent({
 });
 
 // Run with execution logging
-const response = await agent
-  .run({ prompt: "What to do in Boston?" })
-  .middleware(new GlobalTrajectoryMiddleware());
+const response = await agent.run({ prompt: "What to do in Boston?" }).middleware(
+  new GlobalTrajectoryMiddleware({
+    included: [Tool],
+  }),
+);
 
 console.log(`Final Answer: ${response.result.text}`);
