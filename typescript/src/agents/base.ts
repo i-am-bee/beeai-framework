@@ -79,7 +79,11 @@ export abstract class BaseAgent<
   }
 
   createSnapshot() {
-    return { isRunning: false, emitter: this.emitter, middlewares: shallowCopy(this.middlewares) };
+    return {
+      isRunning: false,
+      emitter: this.emitter,
+      middlewares: shallowCopy(this.middlewares) as MiddlewareType<any>[],
+    };
   }
 
   loadSnapshot(snapshot: ReturnType<typeof this.createSnapshot>) {
