@@ -223,7 +223,9 @@ export class Serializer {
   static async deserializeWithMeta<T = any>(
     raw: string,
     extraClasses?: SerializableClass<unknown>[],
+    keepPlain?: boolean,
   ): Promise<RootNode<T>> {
+    keepPlain = keepPlain ?? false;
     extraClasses?.forEach((ref) => Serializer.registerSerializable(ref));
 
     const output = Serializer._createOutputBuilder<RootNode<T>>();
@@ -264,7 +266,7 @@ export class Serializer {
         const placeholder = new RefPlaceholder<any>(contentRaw, factory);
         instances.set(contentRaw.__ref!, placeholder);
         await traverseNested();
-        const final = await placeholder.final();
+        const final = keepPlain ? placeholder.rawValue : await placeholder.final();
         instances.set(contentRaw.__ref!, final);
         return final;
       }
@@ -289,8 +291,9 @@ export class Serializer {
   static async deserialize<T = any>(
     raw: string,
     extraClasses?: SerializableClass<unknown>[],
+    keepPlain?: boolean,
   ): Promise<T> {
-    const response = await Serializer.deserializeWithMeta(raw, extraClasses);
+    const response = await Serializer.deserializeWithMeta(raw, extraClasses, keepPlain);
     return response.__root;
   }
 

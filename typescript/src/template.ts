@@ -117,6 +117,27 @@ export class PromptTemplate<T extends ZodType> extends Serializable {
     return new PromptTemplate(newConfig);
   }
 
+  update(input: Partial<PromptTemplateInput<T>>) {
+    if (input.schema) {
+      this.config.schema = input.schema;
+    }
+    if (input.template !== undefined) {
+      this.config.template = input.template;
+    }
+    if (input.functions) {
+      Object.assign(this.config.functions, input.functions);
+    }
+    if (input.defaults) {
+      Object.assign(this.config.defaults, input.defaults);
+    }
+    if (input.escape !== undefined) {
+      this.config.escape = input.escape;
+    }
+    if (input.customTags) {
+      this.config.customTags = input.customTags;
+    }
+  }
+
   render(input: PromptTemplateRenderInput<T>): string {
     const updatedInput: typeof input = { ...input };
     Object.assign(

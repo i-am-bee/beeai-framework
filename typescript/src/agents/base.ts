@@ -6,9 +6,10 @@
 import { FrameworkError } from "@/errors.js";
 import { AgentMeta } from "@/agents/types.js";
 import { Serializable } from "@/internals/serializable.js";
-import { GetRunContext, RunContext } from "@/context.js";
+import { GetRunContext, MiddlewareType, RunContext } from "@/context.js";
 import { Emitter } from "@/emitter/emitter.js";
 import { BaseMemory } from "@/memory/base.js";
+import { shallowCopy } from "@/serializer/utils.js";
 
 export class AgentError extends FrameworkError {}
 
@@ -24,6 +25,7 @@ export abstract class BaseAgent<
   protected isRunning = false;
 
   public abstract readonly emitter: Emitter<unknown>;
+  public readonly middlewares: MiddlewareType<typeof this>[] = [];
 
   public run(
     ...[input, options]: Partial<TOptions> extends TOptions
@@ -52,7 +54,7 @@ export abstract class BaseAgent<
           this.isRunning = false;
         }
       },
-    );
+    ).middleware(...this.middlewares);
   }
 
   protected abstract _run(
@@ -77,7 +79,7 @@ export abstract class BaseAgent<
   }
 
   createSnapshot() {
-    return { isRunning: false, emitter: this.emitter };
+    return { isRunning: false, emitter: this.emitter, middlewares: shallowCopy(this.middlewares) };
   }
 
   loadSnapshot(snapshot: ReturnType<typeof this.createSnapshot>) {

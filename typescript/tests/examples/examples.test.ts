@@ -11,6 +11,7 @@ const execAsync = (command: string) =>
       command,
       {
         shell: process.env.SHELL || "/bin/bash",
+        maxBuffer: 10 * 1024 * 1024,
       },
       (error, stdout, stderr) => (error ? reject(error) : resolve({ stdout, stderr })),
     ),
