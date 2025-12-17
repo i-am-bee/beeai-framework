@@ -1847,15 +1847,15 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@langchain/ollama@npm:^1.0.1":
-  version: 1.0.1
-  resolution: "@langchain/ollama@npm:1.0.1"
+"@langchain/ollama@npm:^0.2.4":
+  version: 0.2.4
+  resolution: "@langchain/ollama@npm:0.2.4"
   dependencies:
-    ollama: "npm:^0.5.12"
+    ollama: "npm:^0.5.17"
     uuid: "npm:^10.0.0"
   peerDependencies:
-    "@langchain/core": ^1.0.0
-  checksum: 10c0/4f8c7b3f33a425049ae185ca1720adf8a767245d95995b33680b98342a49472a1fdb0630f35622aeb82fccf4ba1b333c1522e73160fe5759be61f561310c3a67
+    "@langchain/core": ">=0.3.58 <0.4.0"
+  checksum: 10c0/8b3d4027e2d730c1d76d6e259f3e1049d891559a7e28c524c9411f2a0800d8729aac55d4c2658bc281d1206645926b83abe836e65c50025eaa1c7d5633843925
   languageName: node
   linkType: hard
 
@@ -3956,7 +3956,7 @@ __metadata:
     "@langchain/community": "npm:^0.3.58"
     "@langchain/core": "npm:^0.3.79"
     "@langchain/langgraph": "npm:^0.4.9"
-    "@langchain/ollama": "npm:^1.0.1"
+    "@langchain/ollama": "npm:^0.2.4"
     "@modelcontextprotocol/sdk": "npm:^1.22.0"
     "@qdrant/js-client-rest": "npm:^1.16.0"
     "@release-it/conventional-changelog": "npm:^8.0.2"
@@ -4036,8 +4036,8 @@ __metadata:
     "@aws-sdk/client-bedrock-runtime": ^3.848.0
     "@elastic/elasticsearch": ^8.0.0
     "@googleapis/customsearch": ^3.2.0
-    "@langchain/community": ">=0.2.28"
-    "@langchain/core": ">=0.2.27"
+    "@langchain/community": ^0.2.28
+    "@langchain/core": ^0.2.27
     "@modelcontextprotocol/sdk": ^1.18.2
     "@qdrant/js-client-rest": ^1.15.0
     "@zilliz/milvus2-sdk-node": ^2.6.0
@@ -9654,12 +9654,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"ollama@npm:^0.5.12":
-  version: 0.5.16
-  resolution: "ollama@npm:0.5.16"
+"ollama@npm:^0.5.17":
+  version: 0.5.18
+  resolution: "ollama@npm:0.5.18"
   dependencies:
     whatwg-fetch: "npm:^3.6.20"
-  checksum: 10c0/901f9dac5692447219b3a48dcb9ad4f7da292a8ddbbbf429482cdde56e787a8a37123f3df18957733b8990f70b67fd05eb13b9bb17bd029eb6597d5b36345d7a
+  checksum: 10c0/3ed3c98f1aebf734136032704079d87929f583bab99b4359685d5f1a427b607d5aa3268ff334cda6b2d741166d80245180d9d2d65b2c2a8c8bf4146b2ea0c72d
   languageName: node
   linkType: hard
 
