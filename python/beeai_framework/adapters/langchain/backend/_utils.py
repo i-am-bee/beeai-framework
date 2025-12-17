@@ -68,10 +68,12 @@ def to_beeai_messages(messages: list[LCBaseMessage]) -> list[AnyMessage]:
         content = remove_falsy([to_beeai_message_content(content) for content in cast_list(message.content)])  # type: ignore
 
         if isinstance(message, LCUserMessage):
+            # pyrefly: ignore [bad-argument-type]
             output_messages.append(UserMessage(content, message.response_metadata, id=message.id))
         elif isinstance(message, LCAIMessage):
             output_messages.append(
                 AssistantMessage(
+                    # pyrefly: ignore [bad-argument-type]
                     [
                         *content,
                         *[
@@ -88,6 +90,7 @@ def to_beeai_messages(messages: list[LCBaseMessage]) -> list[AnyMessage]:
                 )
             )
         elif isinstance(message, LCSystemMessage):
+            # pyrefly: ignore [bad-argument-type]
             output_messages.append(SystemMessage(content, message.response_metadata, id=message.id))
         elif isinstance(message, LCToolMessage):
             output_messages.append(

@@ -11,6 +11,8 @@ from pydantic import BaseModel, InstanceOf
 from beeai_framework.agents import AnyAgent
 from beeai_framework.agents.requirement import RequirementAgent, RequirementAgentOutput
 from beeai_framework.agents.tool_calling import ToolCallingAgentOutput
+
+# pyrefly: ignore [deprecated]
 from beeai_framework.agents.tool_calling.agent import ToolCallingAgent
 from beeai_framework.agents.tool_calling.utils import ToolCallCheckerConfig
 from beeai_framework.agents.types import (

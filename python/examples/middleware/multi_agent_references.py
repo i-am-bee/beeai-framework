@@ -29,6 +29,7 @@ class ReferenceResultMiddleware(RunMiddlewareProtocol):
         self._store: dict[str, str] = {}  # store intermediate results
         self._last_id: int = 0
 
+    # pyrefly: ignore [bad-param-name-override]
     def bind(self, run: RunContext) -> None:
         agent = run.instance
         assert isinstance(agent, BaseAgent), "Input must be an agent"

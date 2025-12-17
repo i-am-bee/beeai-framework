@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 
+# pyrefly: ignore [deprecated]
 from beeai_framework.agents.tool_calling.agent import ToolCallingAgent
 from beeai_framework.agents.tool_calling.events import ToolCallingAgentStartEvent, ToolCallingAgentSuccessEvent
 from beeai_framework.agents.tool_calling.types import (

@@ -180,6 +180,7 @@ class TestFrameworkError:
         assert FrameworkError.is_retryable(err) is True
 
         err = CancelledError("Cancelled")  # type: ignore[assignment]
+        # pyrefly: ignore [bad-argument-type]
         assert FrameworkError.is_retryable(err) is False
 
     def test_name(self) -> None:

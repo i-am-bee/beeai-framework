@@ -54,7 +54,9 @@ class LiteLLMEmbeddingModel(EmbeddingModel, ABC):
         run: RunContext,
     ) -> EmbeddingModelOutput:
         litellm_input = self._transform_input(input)
+        # pyrefly: ignore [not-async]
         response = await aembedding(**litellm_input)
+        # pyrefly: ignore [bad-argument-type]
         response_output = self._transform_output(response, input)
         logger.debug(f"Inference response output:\n{response_output}")
         return response_output
@@ -76,6 +78,7 @@ class LiteLLMEmbeddingModel(EmbeddingModel, ABC):
 
         return LiteLLMEmbeddingModelOutput(
             values=model_input.values,
+            # pyrefly: ignore [bad-argument-type]
             embeddings=embeddings,
             usage=EmbeddingModelUsage(**response.usage.model_dump()) if response.usage else EmbeddingModelUsage(),
             response=response,

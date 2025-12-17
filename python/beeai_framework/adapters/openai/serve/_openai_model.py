@@ -33,5 +33,6 @@ class OpenAIModel:
         if isinstance(cloned_runnable, ChatModel):
             cloned_runnable.parameters.stream = True
 
+        # pyrefly: ignore [missing-attribute]
         response: RunnableOutput = await cloned_runnable.run(input)
         yield OpenAIEvent(text=response.last_message.text, finish_reason="stop")

@@ -42,6 +42,7 @@ class OpenLibraryTool(Tool[OpenLibraryToolInput, ToolRunOptions, OpenLibraryTool
             creator=self,
         )
 
+    # pyrefly: ignore [bad-param-name-override]
     async def _run(
         self, tool_input: OpenLibraryToolInput, options: ToolRunOptions | None, context: RunContext
     ) -> OpenLibraryToolOutput:

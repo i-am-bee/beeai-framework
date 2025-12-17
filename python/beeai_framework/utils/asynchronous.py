@@ -19,6 +19,7 @@ def ensure_async(fn: Callable[P, T | Awaitable[T]]) -> Callable[P, Awaitable[T]]
 
     @functools.wraps(fn)
     async def wrapper(*args: P.args, **kwargs: P.kwargs) -> T:
+        # pyrefly: ignore [bad-argument-type]
         result: T | Awaitable[T] = await asyncio.to_thread(fn, *args, **kwargs)
         if inspect.isawaitable(result):
             return await result
