@@ -42,6 +42,8 @@ except ModuleNotFoundError as e:
     ) from e
 
 from beeai_framework.agents import BaseAgent
+
+# pyrefly: ignore [deprecated]
 from beeai_framework.agents.tool_calling.agent import ToolCallingAgent
 from beeai_framework.logger import Logger
 from beeai_framework.serve.server import Server

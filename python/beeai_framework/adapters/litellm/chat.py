@@ -13,7 +13,7 @@ if not os.getenv("LITELLM_LOCAL_MODEL_COST_MAP", None):
     os.environ["LITELLM_LOCAL_MODEL_COST_MAP"] = "True"
 
 import litellm
-from litellm import (  # type: ignore
+from litellm import (
     ModelResponse,
     ModelResponseStream,
     acompletion,
@@ -280,8 +280,8 @@ class LiteLLMChatModel(ChatModel, ABC):
         )
 
     def _transform_output(self, chunk: ModelResponse | ModelResponseStream) -> ChatModelOutput:
-        model = chunk.get("model")  # type: ignore
-        usage = chunk.get("usage")  # type: ignore
+        model = chunk.get("model")
+        usage = chunk.get("usage")
         choice = chunk.choices[0] if chunk.choices else None
         finish_reason = choice.finish_reason if choice else None
         update = (choice.delta if isinstance(choice, StreamingChoices) else choice.message) if choice else None
@@ -316,7 +316,8 @@ class LiteLLMChatModel(ChatModel, ABC):
                         id=chunk.id,
                     )
                     if update.tool_calls
-                    else AssistantMessage(update.content, id=chunk.id)  # type: ignore
+                    # pyrefly: ignore [bad-argument-type]
+                    else AssistantMessage(update.content, id=chunk.id)
                 ]
                 if (update and update.model_dump(exclude_none=True))
                 else []

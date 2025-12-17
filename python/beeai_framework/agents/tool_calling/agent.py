@@ -5,6 +5,7 @@ import json
 from collections.abc import Sequence
 from typing import Any, Unpack
 
+from deprecated import deprecated
 from pydantic import BaseModel, Field, create_model
 
 from beeai_framework.agents import AgentError, AgentOptions, BaseAgent
@@ -52,6 +53,7 @@ from beeai_framework.utils.models import update_model
 from beeai_framework.utils.strings import find_first_pair, generate_random_string, to_json
 
 
+@deprecated(reason="Use RequirementAgent instead.", version="0.1.73")
 class ToolCallingAgent(BaseAgent[ToolCallingAgentOutput]):
     def __init__(
         self,

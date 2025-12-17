@@ -37,7 +37,7 @@ Here's a simple example that uses the built-in `chat` agent:
 	
 	from beeai_framework.adapters.agentstack.agents import AgentStackAgent
 	from beeai_framework.errors import FrameworkError
-	from beeai_framework.memory.unconstrained_memory import UnconstrainedMemory
+	from beeai_framework.memory import UnconstrainedMemory
 	from examples.helpers.io import ConsoleReader
 	
 	
@@ -213,6 +213,23 @@ if __name__ == "__main__":
 
 ```
 
+**Use agent from the remote Agent Stack**
+
+If you want to integrate an agent from a remote server with authorization, you must first obtain a JWT auth token, and then create a remote agent and set its required parameters.
+
+```py Python
+agents = await AgentStackAgent.from_agent_stack(url="https://my-agentstack-server.com/", auth_token="ey***")
+```
+
+or create a custom client:
+
+```py Python
+from agentstack_sdk.platform import PlatformClient
+from beeai_framework.adapters.agentstack.agents import AgentStackAgent
+
+ async with PlatformClient(auth_token="ey***", base_url="https://my-agentstack-server.com/") as client:
+      agents = await AgentStackAgent.from_agent_stack(url=client)
+```
 
 ## Exposing to the platform (server)
 
@@ -249,11 +266,12 @@ Key Features:
 	
 	
 	def main() -> None:
+	    llm = AgentStackChatModel(
+	        preferred_models=["openai:gpt-4o", "ollama:llama3.1:8b"],
+	        parameters=ChatModelParameters(stream=True),
+	    )
 	    agent = RequirementAgent(
-	        llm=AgentStackChatModel(
-	            preferred_models=["openai:gpt-4o", "ollama:llama3.1:8b"],
-	            parameters=ChatModelParameters(stream=True),
-	        ),
+	        llm=llm,
 	        tools=[DuckDuckGoSearchTool(), OpenMeteoTool()],
 	        memory=UnconstrainedMemory(),
 	        middlewares=[GlobalTrajectoryMiddleware()],

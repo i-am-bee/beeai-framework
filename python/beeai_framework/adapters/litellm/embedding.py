@@ -78,6 +78,7 @@ class LiteLLMEmbeddingModel(EmbeddingModel, ABC):
 
         return LiteLLMEmbeddingModelOutput(
             values=model_input.values,
+            # pyrefly: ignore [bad-argument-type]
             embeddings=embeddings,
             usage=EmbeddingModelUsage(**response.usage.model_dump()) if response.usage else EmbeddingModelUsage(),
             response=response,

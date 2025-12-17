@@ -33,6 +33,8 @@ from beeai_framework.adapters.acp.serve.agent import ACPServerAgent
 from beeai_framework.agents import AnyAgent
 from beeai_framework.agents.react.agent import ReActAgent
 from beeai_framework.agents.react.events import ReActAgentUpdateEvent
+
+# pyrefly: ignore [deprecated]
 from beeai_framework.agents.tool_calling.agent import ToolCallingAgent
 from beeai_framework.agents.tool_calling.events import ToolCallingAgentSuccessEvent
 from beeai_framework.backend.message import (

@@ -158,7 +158,7 @@ class JSONSchemaModel(ABC, BaseModel):
             )
 
         properties = schema.get("properties", {})
-        # pyrefly: ignore [bad-keyword-argument]
+        # pyrefly: ignore [bad-keyword-argument, no-matching-overload]
         updated_config = ConfigDict(**cls.model_config, title=schema.get("title", None))
         updated_config["extra"] = "allow" if schema.get("additionalProperties") else "forbid"
         updated_config["arbitrary_types_allowed"] = True

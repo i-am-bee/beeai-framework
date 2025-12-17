@@ -2,7 +2,9 @@
 # SPDX-License-Identifier: Apache-2.0
 import contextlib
 import json
-from typing import Any, TypedDict, Unpack
+from typing import Any
+
+from typing_extensions import TypedDict, Unpack
 
 from beeai_framework.tools import ToolError
 from beeai_framework.tools.mcp.utils.session_provider import MCPClient, MCPSessionProvider

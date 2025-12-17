@@ -4,10 +4,19 @@
 import contextlib
 from collections.abc import Callable
 from contextvars import ContextVar
-from functools import cached_property
-from typing import TYPE_CHECKING, Any, ClassVar, Self
+from typing import TYPE_CHECKING, Any, ClassVar, Self, get_type_hints
+from weakref import WeakKeyDictionary
 
 from pydantic import BaseModel, Field
+from typing_extensions import Unpack, override
+
+from beeai_framework.adapters.openai import OpenAIChatModel
+from beeai_framework.backend import AnyMessage, ChatModelOutput
+from beeai_framework.backend.chat import ChatModel, ChatModelKwargs, ChatModelOptions, ToolChoiceType
+from beeai_framework.backend.constants import ProviderName
+from beeai_framework.backend.utils import load_model
+from beeai_framework.context import Run
+from beeai_framework.utils.types import is_primitive
 
 try:
     from agentstack_sdk.platform import ModelProviderType
@@ -20,21 +29,12 @@ except ModuleNotFoundError as e:
         "Optional module [agentstack] not found.\nRun 'pip install \"beeai-framework[agentstack]\"' to install."
     ) from e
 
-
-from typing_extensions import Unpack, override
-
-from beeai_framework.adapters.openai import OpenAIChatModel
-from beeai_framework.backend import AnyMessage, ChatModelOutput
-from beeai_framework.backend.chat import ChatModel, ChatModelKwargs, ChatModelOptions, ToolChoiceType
-from beeai_framework.backend.constants import ProviderName
-from beeai_framework.backend.utils import load_model
-
 __all__ = ["AgentStackChatModel"]
-
-from beeai_framework.context import Run
 
 # pyrefly: ignore [not-a-type]
 _storage = ContextVar["LLMServiceExtensionServer"]("agent_stack_chat_model_storage")
+
+CopyableKwargs = set(ChatModelKwargs.__annotations__.keys()) - {"middlewares", "settings"}
 
 
 class ProviderConfig(BaseModel):
@@ -77,53 +77,85 @@ class AgentStackChatModel(ChatModel):
         **kwargs: Unpack[ChatModelKwargs],
     ) -> None:
         super().__init__(**kwargs)
+        self._modified_attributes: set[str] = {
+            k
+            for k, v in get_type_hints(ChatModelKwargs).items()
+            # include all custom properties or those that can be mutated
+            if k in CopyableKwargs and (kwargs.get(k) is not None or not is_primitive(v))
+        }
         self.preferred_models = preferred_models or []
-        self._has_custom_tool_choice_support = kwargs.get("tool_choice_support") is not None
+        self._initiated = True
+        self._propagating_back = False
+        # pyrefly: ignore [not-a-type]
+        self._model_by_context = WeakKeyDictionary["LLMServiceExtensionServer", ChatModel]()
+
+    def __setattr__(self, name: str, value: Any) -> None:
+        super().__setattr__(name, value)
+
+        if not getattr(self, "_initiated", False):
+            return
+
+        if name in CopyableKwargs:
+            self._modified_attributes.add(name)
+
+        if getattr(self, "_propagating_back", False):
+            return
+
+        with contextlib.suppress(ValueError, AttributeError):
+            setattr(self._model, name, value)
 
     @staticmethod
     def set_context(ctx: "LLMServiceExtensionServer") -> Callable[[], None]:
         token = _storage.set(ctx)
         return lambda: _storage.reset(token)
 
-    @cached_property
+    @property
     def _model(self) -> ChatModel:
-        llm_ext = None
+        llm_ext: LLMServiceExtensionServer | None = None
         with contextlib.suppress(LookupError):
             llm_ext = _storage.get()
+
+        model = self._model_by_context.get(llm_ext) if llm_ext else None
+        if model is not None:
+            return model
 
         llm_conf = next(iter(llm_ext.data.llm_fulfillments.values()), None) if llm_ext and llm_ext.data else None
         if not llm_conf:
             raise ValueError("AgentStack not provided llm configuration")
 
+        assert llm_ext is not None
+
         provider_name = llm_conf.api_model.replace("beeai:", "").split(":")[0]
         config = (self.providers_mapping.get(provider_name) or (lambda: ProviderConfig()))()
 
+        kwargs = ChatModelKwargs(**{k: getattr(self, k) for k in self._modified_attributes if hasattr(self, k)})  # type: ignore
+        with contextlib.suppress(AttributeError):
+            if kwargs["tool_choice_support"] == type(self).tool_choice_support:
+                kwargs.pop("tool_choice_support")
+
         cls = config.cls if config.openai_native else OpenAIChatModel
-        return cls(  # type: ignore
+        model = cls(  # type: ignore
             # pyrefly: ignore [unexpected-keyword]
             model_id=llm_conf.api_model,
             # pyrefly: ignore [unexpected-keyword]
             api_key=llm_conf.api_key,
             # pyrefly: ignore [unexpected-keyword]
             base_url=llm_conf.api_base,
-            # pyrefly: ignore [unexpected-keyword]
-            preferred_models=self.preferred_models.copy(),
-            settings=self._settings.copy(),
-            cache=self.cache,
-            tool_call_fallback_via_response_format=self.tool_call_fallback_via_response_format,
-            model_supports_tool_calling=self.model_supports_tool_calling,
-            allow_parallel_tool_calls=self.allow_parallel_tool_calls,
-            ignore_parallel_tool_calls=self.ignore_parallel_tool_calls,
-            use_strict_tool_schema=self.use_strict_tool_schema,
-            use_strict_model_schema=self.use_strict_model_schema,
-            supports_top_level_unions=self.supports_top_level_unions,
-            retry_on_empty_response=self.retry_on_empty_response,
-            fix_invalid_tool_calls=self.fix_invalid_tool_calls,
-            tool_choice_support=self._tool_choice_support.copy()
-            if (self._has_custom_tool_choice_support or type(self).tool_choice_support != self._tool_choice_support)
-            else config.tool_choice_support.copy(),
-            parameters=self.parameters.model_copy(deep=True),
+            **kwargs,
         )
+
+        # propagate updates back
+        object.__setattr__(self, "_propagating_back", True)
+        try:
+            for k in CopyableKwargs:
+                v = getattr(model, k)
+                if v is not getattr(self, k):
+                    setattr(self, k, v)
+        finally:
+            object.__setattr__(self, "_propagating_back", False)
+
+        self._model_by_context[llm_ext] = model
+        return model
 
     @override
     def run(self, input: list[AnyMessage], /, **kwargs: Unpack[ChatModelOptions]) -> Run[ChatModelOutput]:
@@ -164,7 +196,7 @@ class AgentStackChatModel(ChatModel):
             tool_choice_support=self._tool_choice_support.copy(),
             parameters=self.parameters.model_copy(deep=True),
         )
-        cloned._has_custom_tool_choice_support = self._has_custom_tool_choice_support
+        cloned._modified_attributes = self._modified_attributes.copy()
         self.middlewares.extend(self.middlewares)
         return cloned
 
