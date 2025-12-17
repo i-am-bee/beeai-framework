@@ -205,11 +205,14 @@ class OpenAPITool(Tool[BaseModel, ToolRunOptions, OpenAPIToolOutput]):
 
         return OpenAPIToolInput
 
+    # pyrefly: ignore [bad-param-name-override]
     async def _run(
         self, tool_input: BaseModel, options: ToolRunOptions | None, context: RunContext
     ) -> OpenAPIToolOutput:
         input_dict = tool_input.model_dump()
+        # pyrefly: ignore [bad-specialization]
         parsed_url = urlparse(urljoin(self.url, input_dict.get("path", self.path)))
+        # pyrefly: ignore [bad-argument-type]
         search_params = parse_qs(parsed_url.query)
         search_params.update(input_dict.get("parameters", {}))
         new_params = urlencode(search_params, doseq=True)

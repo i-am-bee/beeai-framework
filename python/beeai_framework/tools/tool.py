@@ -130,6 +130,7 @@ class Tool(Generic[TInput, TRunOptions, TOutput], ABC):
 
                     result = await self._run(validated_input, options, context)
                     if self.cache.enabled:
+                        # pyrefly: ignore [unbound-name]
                         await self.cache.set(cache_key, result)
 
                     return result

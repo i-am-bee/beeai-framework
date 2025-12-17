@@ -46,10 +46,12 @@ class RepeatIfEmptyRequirement(Requirement[RequirementAgentRunState]):
             raise ValueError(f"No tool of type {self._target_cls.__name__} found!")
 
     @run_with_context
+    # pyrefly: ignore [bad-override]
     async def run(self, state: RequirementAgentRunState, ctx: RunContext) -> list[Rule]:
         last_step = state.steps[-1] if state.steps else None
         if last_step and last_step.tool in self._targets and last_step.output.is_empty():
             self._remaining -= 1
+            # pyrefly: ignore [missing-attribute]
             return [Rule(target=last_step.tool.name, forced=True)]
         else:
             self._remaining = self._limit

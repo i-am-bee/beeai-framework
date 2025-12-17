@@ -150,6 +150,7 @@ class MCPServer(
                 raise ValueError(f"Input type {type(member)} is not supported by this server.")
 
     @classmethod
+    # pyrefly: ignore [bad-param-name-override]
     def _get_factory(
         cls, member: Any
     ) -> Callable[
@@ -213,6 +214,7 @@ def _runnable_factory(
 
     async def run(input: str) -> Msg:
         cloned_runnable = await runnable.clone() if isinstance(runnable, Cloneable) else runnable
+        # pyrefly: ignore [missing-attribute]
         result: RunnableOutput = await cloned_runnable.run([UserMessage(input)])
         return Msg(role=result.last_message.role, content=result.last_message.text)
 

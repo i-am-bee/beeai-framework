@@ -106,7 +106,7 @@ class A2AAgent(BaseAgent[A2AAgentOutput]):
         super().__init__()
         if agent_card:
             self._agent_card: a2a_types.AgentCard | None = agent_card
-            self._url = None
+            self._url: str | None = None
         elif url:
             self._url = url
             self._agent_card = None
@@ -220,7 +220,12 @@ class A2AAgent(BaseAgent[A2AAgentOutput]):
                 if last_event is None:
                     raise AgentError("No result received from agent.")
 
-                if task and task.status.state is a2a_types.TaskState.completed:
+                if task and task.status.state in [
+                    a2a_types.TaskState.completed,
+                    a2a_types.TaskState.failed,
+                    a2a_types.TaskState.canceled,
+                    a2a_types.TaskState.rejected,
+                ]:
                     self._task_id = None
 
                 # insert input into memory
@@ -233,10 +238,11 @@ class A2AAgent(BaseAgent[A2AAgentOutput]):
                         if task.status.state is not a2a_types.TaskState.completed:
                             logger.warning(f"Task status ({task.status.state}) is not complete.")
 
+                        agent_history = [h for h in (task.history or []) if h.role == a2a_types.Role.agent]
                         if task.artifacts:
                             results = task.artifacts
-                        elif task.history:
-                            results = task.history
+                        elif agent_history:
+                            results = agent_history
                         elif task.status.message:
                             results = [task.status.message]
                         else:
@@ -284,6 +290,7 @@ class A2AAgent(BaseAgent[A2AAgentOutput]):
                 if isinstance(last_event, a2a_types.Message):
                     error_context = last_event.model_dump(mode="json", exclude_none=True)
                 elif isinstance(last_event, tuple) and last_event[1]:
+                    # pyrefly: ignore [missing-attribute]
                     error_context = last_event[1].model_dump(mode="json", exclude_none=True)
                 raise AgentError(
                     message,

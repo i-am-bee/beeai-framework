@@ -19,5 +19,6 @@ class WatsonxOrchestrateServerRunnable(WatsonxOrchestrateServerAgent[Runnable[An
 
     async def _stream(self, input: list[AnyMessage], emit: WatsonxOrchestrateServerAgentEmitFn) -> None:
         cloned_runnable = await self._agent.clone() if isinstance(self._agent, Cloneable) else self._agent
+        # pyrefly: ignore [missing-attribute]
         result = await cloned_runnable.run(input)
         await emit(WatsonxOrchestrateServerAgentMessageEvent(text=result.last_message.text))

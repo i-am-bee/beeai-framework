@@ -28,6 +28,7 @@ storage: ContextVar["RunContext"] = ContextVar("storage")
 
 class RunInstance(Protocol):
     @property
+    # pyrefly: ignore [bad-return]
     def emitter(self) -> Emitter:
         pass
 
@@ -243,6 +244,7 @@ class RunContext:
                 if runner_task in done:
                     output = runner_task.result()
                     abort_task.cancel()
+                    # pyrefly: ignore [no-matching-overload]
                     await asyncio.gather(*pending, return_exceptions=True)
                     await emitter.emit(
                         "success",
@@ -251,6 +253,7 @@ class RunContext:
                     return output
                 else:
                     runner_task.cancel()
+                    # pyrefly: ignore [no-matching-overload]
                     await asyncio.gather(*pending, return_exceptions=True)
                     abort_task.result()  # Will raise AbortError
                     raise FrameworkError("Unhandled exception")

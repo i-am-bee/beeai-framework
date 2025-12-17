@@ -70,6 +70,7 @@ class GroqChatModel(LiteLLMChatModel):
             return ChatModelOutput(output=[AssistantMessage(formated_err.failed_generation)])
 
     @override
+    # pyrefly: ignore [bad-param-name-override]
     async def _create_stream(self, input: ChatModelInput, ctx: RunContext) -> AsyncGenerator[ChatModelOutput]:
         try:
             async for chunk in super()._create_stream(input, ctx):
@@ -104,6 +105,7 @@ class GroqChatModel(LiteLLMChatModel):
         """Groq supports just a subset of the JSON Schema."""
 
         json_schema = model.model_json_schema() if is_pydantic_model(model) else copy.deepcopy(model)  # type: ignore
+        # pyrefly: ignore [bad-argument-type]
         json_schema = inline_schema_refs(json_schema)
         simplify_json_schema(
             json_schema,

@@ -59,5 +59,6 @@ class BaseCache(ABC, Generic[T]):
         return str(int.from_bytes(sha512(cache_key_str).digest()))
 
     async def clone(self) -> Self:
+        # pyrefly: ignore [bad-instantiation]
         cloned = type(self)()
         return cloned

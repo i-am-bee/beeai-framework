@@ -82,6 +82,7 @@ class Workflow(Generic[T, K]):
     def start_step(self) -> K | None:
         return self._start_step
 
+    # pyrefly: ignore [unsupported-operation]
     def add_step(self, step_name: K, runnable: WorkflowHandler[T, K]) -> "Workflow[T, K]":
         if (len(str(step_name).strip())) == 0:
             raise ValueError("Step name cannot be empty!")
@@ -122,6 +123,7 @@ class Workflow(Generic[T, K]):
             next = self._find_step(self.start_step or self.step_names[0]).current or Workflow.END
 
             while next and next != Workflow.END:
+                # pyrefly: ignore [no-matching-overload]
                 step = self.steps.get(next)
                 if step is None:
                     raise WorkflowError(f"Step '{next}' was not found.")
@@ -141,10 +143,13 @@ class Workflow(Generic[T, K]):
                     if step_next == Workflow.START:
                         next = run.steps[0].name
                     elif step_next == Workflow.PREV:
+                        # pyrefly: ignore [bad-argument-type]
                         next = self._find_step(next).prev or Workflow.END
                     elif step_next == Workflow.SELF:
+                        # pyrefly: ignore [bad-argument-type]
                         next = self._find_step(next).current
                     elif step_next is None or step_next == Workflow.NEXT:
+                        # pyrefly: ignore [bad-argument-type]
                         next = self._find_step(next).next or Workflow.END
                     else:
                         next = step_next

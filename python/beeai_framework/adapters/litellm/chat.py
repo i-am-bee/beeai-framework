@@ -13,7 +13,7 @@ if not os.getenv("LITELLM_LOCAL_MODEL_COST_MAP", None):
     os.environ["LITELLM_LOCAL_MODEL_COST_MAP"] = "True"
 
 import litellm
-from litellm import (  # type: ignore
+from litellm import (
     ModelResponse,
     ModelResponseStream,
     acompletion,
@@ -84,6 +84,7 @@ class LiteLLMChatModel(ChatModel, ABC):
         run: RunContext,
     ) -> ChatModelOutput:
         litellm_input = self._transform_input(input) | {"stream": False}
+        # pyrefly: ignore [not-callable]
         raw = await acompletion(**litellm_input)
         response_output = self._transform_output(raw)
         if not response_output.is_valid():
@@ -103,9 +104,11 @@ class LiteLLMChatModel(ChatModel, ABC):
         logger.debug(f"Inference response output:\n{response_output}")
         return response_output
 
+    # pyrefly: ignore [bad-param-name-override]
     async def _create_stream(self, input: ChatModelInput, _: RunContext) -> AsyncGenerator[ChatModelOutput]:
         litellm_input = self._transform_input(input) | {"stream": True}
         set_attr_if_none(litellm_input, ["stream_options", "include_usage"], value=True)
+        # pyrefly: ignore [not-callable]
         response = await acompletion(**litellm_input)
 
         text = ""
@@ -277,8 +280,8 @@ class LiteLLMChatModel(ChatModel, ABC):
         )
 
     def _transform_output(self, chunk: ModelResponse | ModelResponseStream) -> ChatModelOutput:
-        model = chunk.get("model")  # type: ignore
-        usage = chunk.get("usage")  # type: ignore
+        model = chunk.get("model")
+        usage = chunk.get("usage")
         choice = chunk.choices[0] if chunk.choices else None
         finish_reason = choice.finish_reason if choice else None
         update = (choice.delta if isinstance(choice, StreamingChoices) else choice.message) if choice else None
@@ -313,7 +316,8 @@ class LiteLLMChatModel(ChatModel, ABC):
                         id=chunk.id,
                     )
                     if update.tool_calls
-                    else AssistantMessage(update.content, id=chunk.id)  # type: ignore
+                    # pyrefly: ignore [bad-argument-type]
+                    else AssistantMessage(update.content, id=chunk.id)
                 ]
                 if (update and update.model_dump(exclude_none=True))
                 else []

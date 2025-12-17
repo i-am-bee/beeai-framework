@@ -3,6 +3,7 @@ import sys
 import traceback
 
 try:
+    # pyrefly: ignore [missing-import]
     from llm_guard.input_scanners import InvisibleText
 except ImportError:
     print("The 'llm-guard' package is NOT installed. Run 'pip install -r examples/middleware/requirements.txt'.")

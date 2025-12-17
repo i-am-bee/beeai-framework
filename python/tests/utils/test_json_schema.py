@@ -197,8 +197,11 @@ def test_schema_with_additional_properties(schema_with_additional_properties: di
 
     input_field = model.model_fields["input"].annotation
     assert type(input_field) is ModelMetaclass
+    # pyrefly: ignore [missing-attribute]
     assert input_field.model_config["title"] == "Input"
+    # pyrefly: ignore [missing-attribute]
     assert input_field.model_config["extra"] == "allow"
+    # pyrefly: ignore [missing-attribute]
     assert input_field.model_config["arbitrary_types_allowed"] is True
     assert get_args(model.model_fields["config"].annotation)[0].model_fields["max_retries"].annotation is int
     assert model.model_validate({"input": {"query": "test query"}})
