@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.1.22](https://github.com/i-am-bee/beeai-framework/compare/typescript_v0.1.21...typescript_v0.1.22) (2025-12-18)
+
+### Features
+
+- **agents:** introduce RequirementAgent ([#1357](https://github.com/i-am-bee/beeai-framework/issues/1357)) ([b942faa](https://github.com/i-am-bee/beeai-framework/commit/b942faa6a5a86433f1be3e4f3f0f595f7d0c4554)), closes [#1027](https://github.com/i-am-bee/beeai-framework/issues/1027)
+
 ## [0.1.21](https://github.com/i-am-bee/beeai-framework/compare/typescript_v0.1.20...typescript_v0.1.21) (2025-11-28)
 
 ### Features
