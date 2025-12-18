@@ -147,13 +147,15 @@ export class AssistantMessage extends Message<TextPart | ToolCallPart | FilePart
   ): asserts content is TextPart | ToolCallPart | FilePart {
     if (content.type === "tool-call") {
       const key = "args";
-      const args = popProp(content as any, key);
+      if (!Object.getOwnPropertyDescriptor(content, key)) {
+        const args = popProp(content as any, key);
 
-      if (args !== null && !hasProp(content, "input")) {
-        Logger.root.warn(
-          `The '${key}' property in the AssistantMessage class is deprecated and will be removed. Use the 'input' property for Tool Call content chunks instead.`,
-        );
-        content.input = args;
+        if (args !== null && !hasProp(content, "input")) {
+          Logger.root.warn(
+            `The '${key}' property in the AssistantMessage class is deprecated and will be removed. Use the 'input' property for Tool Call content chunks instead.`,
+          );
+          content.input = args;
+        }
       }
 
       safeDefineProperty(content, key as keyof typeof content, () => {

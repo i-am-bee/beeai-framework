@@ -51,6 +51,7 @@ export interface ChatModelParameters {
   presencePenalty?: number;
   seed?: number;
   stopSequences?: string[];
+  stream?: boolean;
 }
 
 interface ResponseObjectJson {
@@ -82,6 +83,7 @@ export interface ChatModelInput extends ChatModelParameters {
   responseFormat?: ZodSchema | ResponseObjectJson;
   toolChoice?: ChatModelToolChoice;
   messages: Message[];
+  streamPartialToolCalls?: boolean;
 }
 
 export type ChatModelFinishReason =
@@ -142,8 +144,12 @@ export abstract class ChatModel extends Serializable {
   abstract get modelId(): string;
   abstract get providerId(): string;
 
-  create(input: ChatModelInput & { stream?: boolean }) {
+  create(input: ChatModelInput) {
     input = shallowCopy(input);
+    console.info({ stream: input.stream, parameters: this.parameters });
+    if (input.stream === undefined) {
+      input.stream = this.parameters.stream;
+    }
 
     return RunContext.enter(
       this,
@@ -256,7 +262,11 @@ export abstract class ChatModel extends Serializable {
   static async fromName(name: FullModelName | ProviderName, options?: ChatModelParameters) {
     const { providerId, modelId } = parseModel(name);
     const Target = await loadModel<ChatModel>(providerId, "chat");
-    return new Target(modelId || undefined, options);
+    const instance = new Target(modelId || undefined);
+    if (options) {
+      Object.assign(instance.parameters, options);
+    }
+    return instance;
   }
 
   protected abstract _create(
