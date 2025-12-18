@@ -1,7 +1,7 @@
 import asyncio
 
 from beeai_framework.agents.lite import LiteAgent
-from beeai_framework.backend import ChatModel, ChatModelOutput, ChatModelParameters
+from beeai_framework.backend import ChatModel, ChatModelOutput, ChatModelParameters, SystemMessage
 from beeai_framework.emitter import EventMeta
 from beeai_framework.middleware.trajectory import GlobalTrajectoryMiddleware
 from beeai_framework.tools.search.duckduckgo import DuckDuckGoSearchTool
@@ -15,6 +15,9 @@ async def main() -> None:
         tools=[ThinkTool(), OpenMeteoTool(), DuckDuckGoSearchTool()],
         middlewares=[GlobalTrajectoryMiddleware()],
     )
+
+    # Optionally set a custom system prompt
+    await agent.memory.add(SystemMessage("You are a helpful assistant."))
 
     @agent.emitter.on("final_answer")
     def stream_final_answer(data: ChatModelOutput, meta: EventMeta) -> None:
