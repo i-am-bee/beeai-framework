@@ -1,6 +1,6 @@
 import asyncio
 
-from beeai_framework.agents.experimental.lite import LiteAgent
+from beeai_framework.agents.lite import LiteAgent
 from beeai_framework.backend import ChatModel, ChatModelOutput, ChatModelParameters
 from beeai_framework.emitter import EventMeta
 from beeai_framework.middleware.trajectory import GlobalTrajectoryMiddleware
@@ -18,7 +18,7 @@ async def main() -> None:
 
     @agent.emitter.on("final_answer")
     def stream_final_answer(data: ChatModelOutput, meta: EventMeta) -> None:
-        print(data.get_text_content(), end="")
+        print(data.get_text_content())  # emits chunks
 
     await agent.run("Hello")
 

@@ -31,7 +31,7 @@ class LiteAgent(BaseAgent):
     """
     Agent that uses a language model and set of tools to solve problems without defining a custom system prompt.
 
-    Ideal for exploring the capabilities of a given large language model without being biased by a framework system prompt.
+    Ideal for exploring the capabilities of an LLM without being biased by a framework system prompt.
     """
 
     def __init__(
@@ -88,26 +88,32 @@ class LiteAgent(BaseAgent):
         if kwargs.get("backstory"):
             logger.warning("LiteAgent does not support 'backstory' parameter.")
 
+        run_memory = await self._memory.clone()
+
         if input:
             new_messages = [UserMessage(input)] if isinstance(input, str) else input
-            await self._memory.add_many(new_messages)
+            await run_memory.add_many(new_messages)
 
         ctx = RunContext.get()
-        run_memory = await self._memory.clone()
-        iterations, max_iterations = 0, kwargs.get("max_iterations") or inf
+
+        iteration = 0
+        max_iterations = kwargs.get("max_iterations") or inf
+
+        max_retries_per_step = kwargs.get("max_retries_per_step", 3) or 0
 
         final_answer_emitted = False
         final_response: ChatModelOutput | None = None
+
         while final_response is None:
-            iterations += 1
-            if iterations > max_iterations:
+            iteration += 1
+            if iteration > max_iterations:
                 raise AgentError(f"Agent was not able to resolve the task in {max_iterations} iterations.")
 
             async for data, _ in self._llm.run(
                 run_memory.messages,
                 tools=self._tools,
                 signal=ctx.signal,
-                max_retries=kwargs.get("max_retries_per_step", 3),
+                max_retries=max_retries_per_step,
             ):
                 match data:
                     case ChatModelNewTokenEvent(value=response):
@@ -142,6 +148,9 @@ class LiteAgent(BaseAgent):
 
         if not final_answer_emitted:
             await ctx.emitter.emit("final_answer", final_response)
+
+        self.memory.reset()
+        await self.memory.add_many(run_memory.messages)
 
         return AgentOutput(output=run_memory.messages, output_structured=None)
 
