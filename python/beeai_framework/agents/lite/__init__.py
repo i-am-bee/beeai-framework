@@ -3,4 +3,4 @@
 
 __all__ = ["LiteAgent"]
 
-from agents.lite.agent import LiteAgent
+from beeai_framework.agents.lite.agent import LiteAgent
