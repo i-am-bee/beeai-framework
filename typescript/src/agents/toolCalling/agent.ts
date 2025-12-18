@@ -32,6 +32,7 @@ import {
   ToolCallingAgentTaskPrompt,
 } from "@/agents/toolCalling/prompts.js";
 import { z, ZodSchema } from "zod";
+import { Logger } from "@/logger/logger.js";
 
 export type ToolCallingAgentTemplateFactory<K extends keyof ToolCallingAgentTemplates> = (
   template: ToolCallingAgentTemplates[K],
@@ -51,6 +52,9 @@ export interface ToolCallingAgentInput {
   saveIntermediateSteps?: boolean;
 }
 
+/**
+ * @deprecated Use RequirementAgent instead.
+ */
 export class ToolCallingAgent extends BaseAgent<
   ToolCallingAgentRunInput,
   ToolCallingAgentRunOutput,
@@ -64,6 +68,9 @@ export class ToolCallingAgent extends BaseAgent<
   constructor(public readonly input: ToolCallingAgentInput) {
     super();
     this.input.saveIntermediateSteps = this.input.saveIntermediateSteps ?? true;
+    Logger.root.warn(
+      "The ToolCallingAgent is deprecated and will be removed soon. Use RequirementAgent instead.",
+    );
   }
 
   static {
