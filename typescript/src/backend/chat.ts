@@ -11,7 +11,7 @@ import { Callback } from "@/emitter/types.js";
 import { FrameworkError } from "@/errors.js";
 import { Emitter } from "@/emitter/emitter.js";
 import { GetRunContext, RunContext } from "@/context.js";
-import { isEmpty, isFunction, isString, randomString } from "remeda";
+import { isEmpty, isFunction, isPromise, isString, randomString } from "remeda";
 import { ObjectHashKeyFn } from "@/cache/decoratorCache.js";
 import { Task } from "promise-based-task";
 import { NullCache } from "@/cache/nullCache.js";
@@ -199,17 +199,17 @@ export abstract class ChatModel extends Serializable {
           }
 
           cacheEntry.resolve(chunks);
-          const result = await ChatModelOutput.fromChunks(chunks);
+          const result = ChatModelOutput.fromChunks(chunks);
           for (const toolCall of result.getToolCalls()) {
             if (isString(toolCall.input)) {
-              toolCall.input = parseBrokenJson(toolCall.input);
+              toolCall.input = JSON.parse(toolCall.input);
             }
           }
 
           if (forceToolCallViaResponseFormat && isEmpty(result.getToolCalls())) {
             const lastMsg = result.messages.at(-1)!;
-            const toolCall = parseBrokenJson(lastMsg.text);
-            if (!toolCall) {
+            const toolCall = parseBrokenJson(lastMsg.text, { pair: ["{", "}"] });
+            if (!toolCall || !toolCall.name || !toolCall.parameters) {
               throw new ChatModelError(
                 `Failed to produce a valid tool call. Generate output: ${lastMsg.text}`,
                 [],
@@ -453,15 +453,15 @@ export class ChatModelOutput extends Serializable {
     this.dedupe();
   }
 
-  static async fromChunks(chunks: ChatModelOutput[]) {
+  static fromChunks(chunks: ChatModelOutput[]) {
     const final = new ChatModelOutput([]);
-    await Promise.all(chunks.map((cur) => final.merge(cur)));
+    chunks.forEach((cur) => final.merge(cur));
     return final;
   }
 
-  async merge(other: ChatModelOutput) {
+  merge(other: ChatModelOutput) {
     if (other.messages.length > 0) {
-      const clones = await Promise.all(other.messages.map((msg) => msg.clone()));
+      const clones = other.messages.map(cloneSync);
       this.messages.push(...clones);
       this.dedupe();
     }
@@ -479,6 +479,7 @@ export class ChatModelOutput extends Serializable {
   }
 
   dedupe(): void {
+    // Dedupe messages
     if (this.messages.length > 1) {
       const messagesById = new Map<string, Message[]>();
       const messagesByToolCallId = new Map<string, AssistantMessage>();
@@ -516,12 +517,12 @@ export class ChatModelOutput extends Serializable {
           if (filteredChunks.length === 0) {
             continue; // nothing to process
           }
+        }
 
-          if (!messagesById.has(msgId)) {
-            messagesById.set(msgId, [msg]);
-          } else {
-            messagesById.get(msgId)!.push(...(filteredChunks as any[]));
-          }
+        if (!messagesById.has(msgId)) {
+          messagesById.set(msgId, [msg]);
+        } else {
+          messagesById.get(msgId)!.push(msg);
         }
       }
 
@@ -608,4 +609,19 @@ export class ChatModelOutput extends Serializable {
   loadSnapshot(snapshot: ReturnType<typeof this.createSnapshot>) {
     Object.assign(this, snapshot);
   }
+}
+
+function cloneSync<T extends Serializable>(serializable: T): T {
+  const snapshot = serializable.createSnapshot();
+  if (isPromise(snapshot)) {
+    throw new Error(`createSnapshot cannot be async`);
+  }
+
+  const target = Object.create(serializable.constructor.prototype) as T;
+  const load = target.loadSnapshot(snapshot);
+  if (isPromise(load)) {
+    throw new Error(`loadSnapshot cannot be async`);
+  }
+
+  return target;
 }

@@ -180,7 +180,6 @@ export class RequirementAgentRunner {
               toolCall: { tool: toolCall.tool, input: toolCall.input },
             });
       }
-
       toolResults.push(
         new ToolMessage({
           type: "tool-result",

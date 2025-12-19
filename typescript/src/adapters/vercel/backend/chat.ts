@@ -86,7 +86,11 @@ export abstract class VercelChatModel<
       finishReason,
       usage,
       response: { messages },
-    } = await generateText(await this.transformInput(input));
+    } = await generateText({
+      temperature: 0,
+      ...(await this.transformInput(input)),
+      abortSignal: run.signal,
+    });
 
     return new ChatModelOutput(
       this.transformMessages(messages),
@@ -103,7 +107,6 @@ export abstract class VercelChatModel<
       temperature: 0,
       ...(await this.transformInput(input)),
       abortSignal: run.signal,
-      model: this.model,
       ...(schema instanceof ZodSchema
         ? {
             schema,
@@ -131,6 +134,19 @@ export abstract class VercelChatModel<
   }
 
   async *_createStream(input: ChatModelInput, run: GetRunContext<this>) {
+    const responseFormat = input.responseFormat;
+    if (responseFormat && (responseFormat instanceof ZodSchema || responseFormat.schema)) {
+      const { output } = await this._createStructure(
+        {
+          ...input,
+          schema: responseFormat,
+        },
+        run,
+      );
+      yield output;
+      return;
+    }
+
     if (!this.supportsToolStreaming && !isEmpty(input.tools ?? [])) {
       const response = await this._create(input, run);
       yield response;
@@ -150,13 +166,15 @@ export abstract class VercelChatModel<
     let streamEmpty = true;
     const streamedToolCalls = new Map<string, ToolCallPart>();
     for await (const event of fullStream) {
-      streamEmpty = false;
-
       let message: Message;
       switch (event.type) {
         case "text-delta":
+          streamEmpty = false;
           message = new AssistantMessage(event.text, {}, event.id);
           yield new ChatModelOutput([message]);
+          break;
+        case "text-end":
+          streamEmpty = false;
           break;
         case "tool-input-start": {
           if (!input.streamPartialToolCalls) {
@@ -187,6 +205,7 @@ export abstract class VercelChatModel<
           break;
         }
         case "tool-call": {
+          streamEmpty = false;
           const existingToolCall = streamedToolCalls.get(event.toolCallId);
           if (existingToolCall) {
             streamedToolCalls.delete(event.toolCallId);
@@ -208,6 +227,7 @@ export abstract class VercelChatModel<
         case "error":
           throw new ChatModelError("Unhandled error", [event.error as Error]);
         case "tool-result":
+          streamEmpty = false;
           message = new ToolMessage(
             {
               type: event.type,

@@ -7,19 +7,16 @@ const agent = new RequirementAgent({
   llm: await ChatModel.fromName("watsonx:ibm/granite-3-3-8b-instruct", { stream: true }),
 });
 
-const response = await agent
+await agent
   .run({
     // pass the task
     prompt: "Write a step-by-step tutorial on how to bake bread.",
     // nudge the model to format an output
-    //expectedOutput:
-    //  "The output should be an ordered list of steps. Each step should be ideally one sentence.",
+    expectedOutput:
+      "The output should be an ordered list of steps. Each step should be ideally one sentence.",
   })
   .observe((emitter) =>
     emitter.on("finalAnswer", (data) => {
-      console.info("Final Answer Stream", data.delta);
+      console.log("Final Answer Chunk:", data.delta);
     }),
   );
-
-console.log("=================");
-console.log(response.result.text);
