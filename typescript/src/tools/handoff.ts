@@ -52,7 +52,7 @@ export class HandoffTool extends Tool<StringToolOutput> {
     options: Partial<BaseToolRunOptions>,
     run: GetRunContext<typeof this>,
   ): Promise<StringToolOutput> {
-    const memory = getProp(run.context, ["state", Tool.contextKeys.Memory]) as BaseMemory;
+    const memory = getProp(run.context, [Tool.contextKeys.Memory]) as BaseMemory;
 
     let messages: Message[] = memory
       ? memory.messages.filter((msg) => !(msg instanceof SystemMessage))

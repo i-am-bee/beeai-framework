@@ -4,7 +4,14 @@
  */
 
 import { AgentError, BaseAgent } from "@/agents/base.js";
-import { AnyTool, DynamicTool, StringToolOutput, ToolError, ToolOutput } from "@/tools/base.js";
+import {
+  AnyTool,
+  DynamicTool,
+  StringToolOutput,
+  Tool,
+  ToolError,
+  ToolOutput,
+} from "@/tools/base.js";
 import { BaseMemory } from "@/memory/base.js";
 import { AgentMeta } from "@/agents/types.js";
 import { Emitter } from "@/emitter/emitter.js";
@@ -169,6 +176,7 @@ export class ToolCallingAgent extends BaseAgent<
           const toolResponse: ToolOutput = await tool.run(toolInput).context({
             state,
             toolCallMsg: toolCall,
+            [Tool.contextKeys.Memory]: this.memory,
           });
           await state.memory.add(
             new ToolMessage({
