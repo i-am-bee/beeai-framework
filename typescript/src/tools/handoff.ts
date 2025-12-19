@@ -11,7 +11,7 @@ import { Emitter } from "@/emitter/emitter.js";
 import { AnyAgent } from "@/agents/types.js";
 import { GetRunContext } from "@/context.js";
 import { getProp } from "@/internals/helpers/object.js";
-import { toCamelCase } from "remeda";
+import { findLastIndex, toCamelCase } from "remeda";
 
 export interface HandoffToolInput {
   name?: string;
@@ -58,22 +58,22 @@ export class HandoffTool extends Tool<StringToolOutput> {
       ? memory.messages.filter((msg) => !(msg instanceof SystemMessage))
       : [];
 
-    for (let i = messages.length - 1; i >= 0; i--) {
-      const message = messages[i];
-      if (!(message instanceof AssistantMessage) || !message.getToolCalls()?.length) {
-        messages = messages.slice(0, i + 1);
-      } else {
-        break;
-      }
+    const lastValidMsgIndex = findLastIndex(
+      messages,
+      (msg) => msg instanceof AssistantMessage && (msg.getToolCalls()?.length ?? 0) > 0,
+    );
+
+    if (lastValidMsgIndex !== -1) {
+      messages = messages.slice(0, lastValidMsgIndex);
     }
 
     if (this.propagateInputs) {
       messages.push(new UserMessage(input.task));
     }
 
-    this.target.memory.reset();
+    await this.target.memory.addMany(messages);
 
-    const response = await this.target.run(messages);
+    const response = await this.target.run({});
 
     return new StringToolOutput(response.result.text);
   }
