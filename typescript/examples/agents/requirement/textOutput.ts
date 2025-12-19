@@ -1,15 +1,16 @@
+import "dotenv/config";
+
 import { RequirementAgent } from "beeai-framework/agents/requirement/agent";
 import { ChatModel } from "beeai-framework/backend/chat";
 
 const agent = new RequirementAgent({
-  llm: await ChatModel.fromName("ollama:granite4:micro", { stream: true }),
-  // tools: [new ThinkTool()],
+  llm: await ChatModel.fromName("watsonx:ibm/granite-3-3-8b-instruct", { stream: true }),
 });
 
 const response = await agent
   .run({
     // pass the task
-    prompt: "Write a step-by-step tutorial on how to bake bread. Make it short.",
+    prompt: "Write a step-by-step tutorial on how to bake bread.",
     // nudge the model to format an output
     //expectedOutput:
     //  "The output should be an ordered list of steps. Each step should be ideally one sentence.",

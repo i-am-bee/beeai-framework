@@ -6,10 +6,11 @@
 import { CustomMessage, Role, UserMessage } from "@/backend/message.js";
 import { isPlainObject, isString, isTruthy } from "remeda";
 import { getProp } from "@/internals/helpers/object.js";
-import type { TextPart, LanguageModelUsage } from "ai";
+import { TextPart, LanguageModelUsage, ToolCallPart } from "ai";
 import { z } from "zod";
 import { parseEnv } from "@/internals/env.js";
 import { ChatModelUsage } from "@/backend/chat.js";
+import { parseBrokenJson } from "@/internals/helpers/schema.js";
 
 export function encodeCustomMessage(msg: CustomMessage): UserMessage {
   return new UserMessage([
@@ -117,4 +118,14 @@ export function mergeTokenUsage(target: ChatModelUsage, ...sources: ChatModelUsa
       target.cachedPromptTokens = (target.cachedPromptTokens ?? 0) + source.cachedPromptTokens;
     }
   }
+}
+
+export function isToolCallValid(obj: ToolCallPart) {
+  if (!obj.toolName || !obj.toolCallId || !obj.input) {
+    return false;
+  }
+  if (isString(obj.input)) {
+    return Boolean(parseBrokenJson(obj.input, { pair: ["{", "}"] }));
+  }
+  return Boolean(obj.input);
 }

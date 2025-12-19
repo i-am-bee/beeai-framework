@@ -200,7 +200,7 @@ export class StreamToolCallMiddleware<T = any> extends Middleware<RunInstance> {
     data: InferCallbackValue<ChatModelEvents["newToken"]>,
     _meta: EventMeta,
   ): Promise<void> {
-    this.output.merge(data.value);
+    await this.output.merge(data.value);
 
     const toolCalls = this.output.getToolCalls();
     if (toolCalls.length > 0) {

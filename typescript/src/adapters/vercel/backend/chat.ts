@@ -147,8 +147,6 @@ export abstract class VercelChatModel<
       abortSignal: run.signal,
     });
 
-    // TODO: handle chunk merging
-
     let streamEmpty = true;
     const streamedToolCalls = new Map<string, ToolCallPart>();
     for await (const event of fullStream) {
@@ -157,7 +155,7 @@ export abstract class VercelChatModel<
       let message: Message;
       switch (event.type) {
         case "text-delta":
-          message = new AssistantMessage(event.text);
+          message = new AssistantMessage(event.text, {}, event.id);
           yield new ChatModelOutput([message]);
           break;
         case "tool-input-start": {
@@ -172,45 +170,54 @@ export abstract class VercelChatModel<
             input: "",
           };
           streamedToolCalls.set(event.id, chunk);
-          const message = new AssistantMessage(chunk);
+          const message = new AssistantMessage(chunk, {}, event.id);
           yield new ChatModelOutput([message]);
           break;
         }
         case "tool-input-delta": {
-          const chunk = streamedToolCalls.get(event.id)!;
-          if (chunk && event.delta) {
-            chunk.input += event.delta;
-            const message = new AssistantMessage({ ...chunk, input: event.delta });
+          if (!input.streamPartialToolCalls) {
+            break;
+          }
+
+          if (event.delta) {
+            const chunk = streamedToolCalls.get(event.id)!;
+            const message = new AssistantMessage({ ...chunk, input: event.delta }, {}, event.id);
             yield new ChatModelOutput([message]);
           }
           break;
         }
         case "tool-call": {
-          break;
-          /*console.info("final", { chunk: event });
           const existingToolCall = streamedToolCalls.get(event.toolCallId);
           if (existingToolCall) {
             streamedToolCalls.delete(event.toolCallId);
             break;
           }
-          message = new AssistantMessage({
-            type: event.type,
-            toolCallId: event.toolCallId,
-            toolName: event.toolName,
-            input: event.input,
-          });
+          message = new AssistantMessage(
+            {
+              type: event.type,
+              toolCallId: event.toolCallId,
+              toolName: event.toolName,
+              input: event.input,
+            },
+            {},
+            event.toolCallId,
+          );
           yield new ChatModelOutput([message]);
-          break;*/
+          break;
         }
         case "error":
           throw new ChatModelError("Unhandled error", [event.error as Error]);
         case "tool-result":
-          message = new ToolMessage({
-            type: event.type,
-            toolCallId: event.toolCallId,
-            toolName: event.toolName,
-            output: event.output as any,
-          });
+          message = new ToolMessage(
+            {
+              type: event.type,
+              toolCallId: event.toolCallId,
+              toolName: event.toolName,
+              output: event.output as any,
+            },
+            {},
+            `tool_result_${event.toolCallId}`,
+          );
           yield new ChatModelOutput([message]);
           break;
         case "abort":
@@ -230,7 +237,7 @@ export abstract class VercelChatModel<
         finishReasonPromise,
         responsePromise,
       ]);
-      const lastChunk = new ChatModelOutput([new AssistantMessage("")]);
+      const lastChunk = new ChatModelOutput([]);
       lastChunk.usage = extractTokenUsage(usage);
       lastChunk.finishReason = finishReason;
       yield lastChunk;

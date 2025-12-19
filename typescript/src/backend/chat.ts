@@ -11,7 +11,7 @@ import { Callback } from "@/emitter/types.js";
 import { FrameworkError } from "@/errors.js";
 import { Emitter } from "@/emitter/emitter.js";
 import { GetRunContext, RunContext } from "@/context.js";
-import { isEmpty, isFunction, randomString } from "remeda";
+import { isEmpty, isFunction, isString, randomString } from "remeda";
 import { ObjectHashKeyFn } from "@/cache/decoratorCache.js";
 import { Task } from "promise-based-task";
 import { NullCache } from "@/cache/nullCache.js";
@@ -40,6 +40,7 @@ import { PromptTemplate } from "@/template.js";
 import { toAsyncGenerator } from "@/internals/helpers/promise.js";
 import { Serializer } from "@/serializer/serializer.js";
 import { Logger } from "@/logger/logger.js";
+import { ToolCallPart } from "ai";
 
 export interface ChatModelParameters {
   maxTokens?: number;
@@ -146,7 +147,6 @@ export abstract class ChatModel extends Serializable {
 
   create(input: ChatModelInput) {
     input = shallowCopy(input);
-    console.info({ stream: input.stream, parameters: this.parameters });
     if (input.stream === undefined) {
       input.stream = this.parameters.stream;
     }
@@ -199,7 +199,12 @@ export abstract class ChatModel extends Serializable {
           }
 
           cacheEntry.resolve(chunks);
-          const result = ChatModelOutput.fromChunks(chunks);
+          const result = await ChatModelOutput.fromChunks(chunks);
+          for (const toolCall of result.getToolCalls()) {
+            if (isString(toolCall.input)) {
+              toolCall.input = parseBrokenJson(toolCall.input);
+            }
+          }
 
           if (forceToolCallViaResponseFormat && isEmpty(result.getToolCalls())) {
             const lastMsg = result.messages.at(-1)!;
@@ -445,16 +450,22 @@ export class ChatModelOutput extends Serializable {
     public finishReason?: ChatModelFinishReason,
   ) {
     super();
+    this.dedupe();
   }
 
-  static fromChunks(chunks: ChatModelOutput[]) {
+  static async fromChunks(chunks: ChatModelOutput[]) {
     const final = new ChatModelOutput([]);
-    chunks.forEach((cur) => final.merge(cur));
+    await Promise.all(chunks.map((cur) => final.merge(cur)));
     return final;
   }
 
-  merge(other: ChatModelOutput) {
-    this.messages.push(...other.messages);
+  async merge(other: ChatModelOutput) {
+    if (other.messages.length > 0) {
+      const clones = await Promise.all(other.messages.map((msg) => msg.clone()));
+      this.messages.push(...clones);
+      this.dedupe();
+    }
+
     this.finishReason = other.finishReason;
     if (this.usage && other.usage) {
       this.usage = customMerge([this.usage, other.usage], {
@@ -464,6 +475,102 @@ export class ChatModelOutput extends Serializable {
       });
     } else if (other.usage) {
       this.usage = shallowCopy(other.usage);
+    }
+  }
+
+  dedupe(): void {
+    if (this.messages.length > 1) {
+      const messagesById = new Map<string, Message[]>();
+      const messagesByToolCallId = new Map<string, AssistantMessage>();
+
+      for (const msg of this.messages) {
+        const msgId = msg.id || "";
+
+        if (msg instanceof AssistantMessage && msg.getToolCalls().length > 0) {
+          const filteredChunks: AssistantMessage["content"] = [];
+          for (const chunk of msg.content) {
+            if (chunk.type !== "tool-call") {
+              filteredChunks.push(chunk);
+              continue;
+            }
+
+            // Assume tool calls with no id refer to the most recent tool call
+            if (!chunk.toolCallId && messagesByToolCallId.size > 0) {
+              const lastToolCallId = Array.from(messagesByToolCallId.keys()).pop();
+              if (lastToolCallId) {
+                chunk.toolCallId = lastToolCallId;
+              }
+            }
+
+            if (chunk.toolCallId && messagesByToolCallId.has(chunk.toolCallId)) {
+              messagesByToolCallId.get(chunk.toolCallId)!.content.push(chunk);
+            } else if (chunk.toolCallId) {
+              messagesByToolCallId.set(chunk.toolCallId, msg);
+              filteredChunks.push(chunk);
+            }
+          }
+
+          msg.content.length = 0;
+          msg.content.push(...filteredChunks);
+
+          if (filteredChunks.length === 0) {
+            continue; // nothing to process
+          }
+
+          if (!messagesById.has(msgId)) {
+            messagesById.set(msgId, [msg]);
+          } else {
+            messagesById.get(msgId)!.push(...(filteredChunks as any[]));
+          }
+        }
+      }
+
+      this.messages.length = 0;
+
+      for (const messages of messagesById.values()) {
+        const main = messages.shift()!;
+        for (const other of messages) {
+          main.merge(other);
+        }
+        this.messages.push(main);
+      }
+    }
+
+    // Dedupe tool calls
+    for (const msg of this.messages) {
+      if (!(msg instanceof AssistantMessage)) {
+        continue;
+      }
+
+      const finalToolCalls: Record<string, ToolCallPart> = {};
+      let lastId = "";
+
+      const excludedIndexes: number[] = [];
+      msg.content.forEach((chunk, index) => {
+        if (chunk.type !== "tool-call") {
+          return;
+        }
+        const id = chunk.toolCallId || lastId;
+        if (!(id in finalToolCalls)) {
+          finalToolCalls[id] = shallowCopy(chunk);
+          msg.content[index] = finalToolCalls[id];
+        } else {
+          excludedIndexes.push(index);
+          const lastToolCall = finalToolCalls[id];
+          if (isString(lastToolCall.input) && isString(chunk.input)) {
+            lastToolCall.input += chunk.input;
+          } else {
+            throw new Error("Chunks cannot be merged.");
+          }
+          if (!lastToolCall.toolName) {
+            lastToolCall.toolName = chunk.toolName;
+          }
+        }
+        lastId = id;
+      });
+      excludedIndexes.reverse().forEach((index) => {
+        msg.content.splice(index, 1);
+      });
     }
   }
 

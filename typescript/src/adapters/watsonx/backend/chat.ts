@@ -80,6 +80,7 @@ export class WatsonxChatModel extends ChatModel {
   }
 
   async *_createStream(input: ChatModelInput, run: GetRunContext<this>) {
+    // @ts-ignore
     const stream = await this.client.instance.textChatStream({
       ...(await this.prepareInput(input)),
       signal: run.signal,
@@ -124,7 +125,10 @@ export class WatsonxChatModel extends ChatModel {
                   type: "tool-call",
                   toolCallId: call.id,
                   toolName: call.function.name,
-                  input: parseBrokenJson(call.function.arguments),
+                  input:
+                    parseBrokenJson(call.function.arguments, {
+                      pair: ["{", "}"],
+                    }) || call.function.arguments,
                 }),
               ),
             );

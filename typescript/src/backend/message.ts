@@ -53,6 +53,7 @@ export abstract class Message<
   constructor(
     content: T | T[] | string,
     public readonly meta: MessageMeta = {},
+    public id: string | undefined = undefined,
   ) {
     super();
     if (!meta?.createdAt) {
@@ -108,10 +109,11 @@ export abstract class Message<
   }
 
   toPlain() {
-    return { role: this.role, content: shallowCopy(this.content) } as const;
+    return { role: this.role, content: shallowCopy(this.content), id: this.id } as const;
   }
 
   merge(other: Message<T, R>) {
+    this.id = this.id || other.id;
     Object.assign(this, other.meta);
     this.content.push(...other.content);
   }
