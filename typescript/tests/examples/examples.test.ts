@@ -70,6 +70,8 @@ describe("E2E Examples", async () => {
   });
 
   it.concurrent.each(exampleFiles)(`Run %s`, async (example) => {
+    // eslint-disable-next-line no-console
+    console.log("Executing", example);
     await execAsync(`echo "Hello world" | yarn tsx --tsconfig tsconfig.examples.json -- ${example}`)
       .then(({ stdout, stderr }) => {
         if (stderr) {
