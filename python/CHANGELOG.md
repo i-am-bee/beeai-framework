@@ -1,3 +1,15 @@
+## python_v0.1.74 (2025-12-22)
+
+### Bug Fixes
+
+- **adapters**: fix remote AgentStack server connection (#1360)
+
+### Features
+
+- performance improvements
+- **backend**: add allow_prompt_caching flag to the ChatModel class (#1368)
+- **agents**: add LiteAgent (#1355)
+
 ## python_v0.1.73 (2025-12-11)
 
 ### Bug Fixes
