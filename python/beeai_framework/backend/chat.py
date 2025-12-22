@@ -75,6 +75,7 @@ class ChatModelKwargs(TypedDict, total=False):
     middlewares: list[RunMiddlewareType]
     tool_choice_support: set[ToolChoiceType]
     fix_invalid_tool_calls: bool
+    allow_prompt_caching: bool
 
     __pydantic_config__ = ConfigDict(extra="forbid", arbitrary_types_allowed=True)  # type: ignore
 
@@ -207,6 +208,7 @@ class ChatModel(Runnable[ChatModelOutput]):
         self.supports_top_level_unions = kwargs.get("supports_top_level_unions", True)
         self.retry_on_empty_response = bool(kwargs.get("retry_on_empty_response", True))
         self.fix_invalid_tool_calls = bool(kwargs.get("fix_invalid_tool_calls", True))
+        self.allow_prompt_caching = bool(kwargs.get("allow_prompt_caching", True))
 
         custom_tool_choice_support = kwargs.get("tool_choice_support")
         self._tool_choice_support: set[ToolChoiceType] = (
