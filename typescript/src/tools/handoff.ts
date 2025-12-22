@@ -56,9 +56,7 @@ export class HandoffTool extends Tool<StringToolOutput> {
     const memory = getProp(run.context, [Tool.contextKeys.Memory]) as BaseMemory;
 
     if (!memory) {
-      throw new CustomToolExecuteError(
-        "HandoffTool requires memory to propagate previous messages to the target agent.",
-      );
+      throw new CustomToolExecuteError("No memory found in the context.");
     }
 
     let messages: Message[] = memory.messages.filter((msg) => !(msg instanceof SystemMessage));
