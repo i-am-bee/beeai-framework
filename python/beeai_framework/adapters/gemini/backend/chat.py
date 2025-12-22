@@ -38,4 +38,4 @@ class GeminiChatModel(LiteLLMChatModel):
 
         # Ref: https://github.com/BerriAI/litellm/issues/17696
         if kwargs.get("allow_prompt_caching") is None:
-            self._settings["allow_prompt_caching"] = False
+            self.allow_prompt_caching = False
