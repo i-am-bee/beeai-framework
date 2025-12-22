@@ -19,7 +19,7 @@ const workflow = new Workflow({
   .addStep("router", () => (Math.random() >= 0.5 ? "bee" : "langgraph"))
   .addStep("bee", async (state, ctx) => {
     const agent = new ReActAgent({
-      llm: await ChatModel.fromName("ollama:llama3.1"),
+      llm: await ChatModel.fromName("ollama:granite4:micro"),
       tools: [new DuckDuckGoSearchTool()],
       memory: state.memory,
     });
@@ -32,7 +32,7 @@ const workflow = new Workflow({
   })
   .addStep("langgraph", async (state, ctx) => {
     const langGraphAgent = createLangGraphReactAgent({
-      llm: new LangChainOllamaChat({ model: "llama3.1" }),
+      llm: new LangChainOllamaChat({ model: "granite4:micro" }),
       tools: [new LangChainDDG()],
     });
     const response = await langGraphAgent.invoke(

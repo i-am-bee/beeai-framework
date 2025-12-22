@@ -31,7 +31,7 @@ export function createChatLLM(): ChatModel {
     }
 
     return new OllamaChatModel(
-      "llama3.1:8b",
+      "granite4:micro",
       {},
       {
         baseURL: process.env.OLLAMA_BASE_URL,

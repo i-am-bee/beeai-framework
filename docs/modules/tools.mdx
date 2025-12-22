@@ -184,7 +184,7 @@ import { UnconstrainedMemory } from "beeai-framework/memory/unconstrainedMemory"
 import { OllamaChatModel } from "beeai-framework/adapters/ollama/backend/chat";
 
 const agent = new ReActAgent({
-  llm: new OllamaChatModel("llama3.1"),
+  llm: new OllamaChatModel("granite4:micro"),
   memory: new UnconstrainedMemory(),
   tools: [new ArXivTool()],
 });
@@ -696,7 +696,7 @@ Leverage the Model Context Protocol (MCP) to define, initialize, and utilize too
 		  // Server usually supports several tools, use the factory for automatic discovery
 		  const tools = await MCPTool.fromClient(client);
 		  const agent = new ReActAgent({
-		    llm: new OllamaChatModel("llama3.1"),
+		    llm: new OllamaChatModel("granite4:micro"),
 		    memory: new UnconstrainedMemory(),
 		    tools,
 		  });
@@ -871,7 +871,7 @@ Many APIs are described using the OpenAPI Specification, and a framework can rea
 	import { fileURLToPath } from "node:url";
 	import { ChatModel } from "beeai-framework/backend/chat";
 	
-	const llm = await ChatModel.fromName("ollama:llama3.1");
+	const llm = await ChatModel.fromName("ollama:granite4:micro");
 	
 	const __dirname = dirname(fileURLToPath(import.meta.url));
 	const openApiSchema = await fs.promises.readFile(

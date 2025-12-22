@@ -5,7 +5,7 @@ import { DuckDuckGoSearchTool } from "beeai-framework/tools/search/duckDuckGoSea
 import { OpenMeteoTool } from "beeai-framework/tools/weather/openMeteo";
 import { OllamaChatModel } from "beeai-framework/adapters/ollama/backend/chat";
 
-const llm = new OllamaChatModel("llama3.1");
+const llm = new OllamaChatModel("granite4:micro");
 const agent = new ReActAgent({
   llm,
   memory: new TokenMemory(),
