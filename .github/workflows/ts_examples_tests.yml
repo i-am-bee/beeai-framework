@@ -34,18 +34,18 @@ jobs:
       - name: Run ollama
         run: |
           ollama serve &
-          ollama pull llama3.1
+          ollama pull granite4:micro
       - name: Call ollama API
         run: |
-          curl -d '{"model": "llama3.1:latest", "stream": false, "prompt":"Whatever I say, asnwer with Yes"}' http://localhost:11434/api/generate
+          curl -d '{"model": "granite4:micro", "stream": false, "prompt":"Whatever I say, asnwer with Yes"}' http://localhost:11434/api/generate
       - name: Example Tests
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           GOOGLE_API_KEY: ${{ secrets.GOOGLE_SEARCH_API_KEY }}
           GOOGLE_CSE_ID: ${{ secrets.GOOGLE_SEARCH_CSE_ID }}
-          # TODO: enable Watsonx later
-          # WATSONX_API_KEY: ${{ secrets.WATSONX_API_KEY }}
-          # WATSONX_PROJECT_ID: ${{ secrets.WATSONX_PROJECT_ID }}
+          WATSONX_API_KEY: ${{ secrets.WATSONX_API_KEY }}
+          WATSONX_PROJECT_ID: ${{ secrets.WATSONX_PROJECT_ID }}
+          WATSONX_REGION: ${{ secrets.WATSONX_REGION }}
           # WATSONX_SPACE_ID: ${{ secrets.WATSONX_SPACE_ID }}
           # WATSONX_DEPLOYMENT_ID: ${{ secrets.WATSONX_DEPLOYMENT_ID }}
         shell: bash
