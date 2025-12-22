@@ -1,13 +1,12 @@
 name: TypeScript - E2E Examples
 
 on:
-  # TODO: ollama hangs
-  #push:
-  #  branches: ["main"]
-  #  paths:
-  #    - 'typescript/**'
-  #  paths-ignore:
-  #    - "**/*.md"
+  push:
+    branches: ["main"]
+    paths:
+      - 'typescript/**'
+    paths-ignore:
+      - "**/*.md"
   workflow_dispatch:
 
 concurrency:
@@ -21,7 +20,7 @@ defaults:
 jobs:
   test:
     name: Tests
-    timeout-minutes: 40
+    timeout-minutes: 60
     runs-on: ubuntu-latest
 
     steps:
@@ -37,7 +36,7 @@ jobs:
           ollama pull granite4:micro
       - name: Call ollama API
         run: |
-          curl -d '{"model": "granite4:micro", "stream": false, "prompt":"Whatever I say, asnwer with Yes"}' http://localhost:11434/api/generate
+          curl -d '{"model": "granite4:micro", "stream": false, "prompt":"Whatever I say, answer with Yes"}' http://localhost:11434/api/generate
       - name: Example Tests
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
@@ -50,4 +49,4 @@ jobs:
           # WATSONX_DEPLOYMENT_ID: ${{ secrets.WATSONX_DEPLOYMENT_ID }}
         shell: bash
         run: |
-          mise typescript:test:examples
+          mise typescript:test:examples -- --max-concurrency=3
