@@ -53,6 +53,7 @@ export async function runTool(
     result.output = await result.tool.run(result.input).context({
       ...context,
       toolCallMsg: msg,
+      [Tool.contextKeys.Memory]: context.state.memory,
     });
   } catch (e) {
     if (e instanceof ToolError) {
