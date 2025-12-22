@@ -265,10 +265,8 @@ class LiteLLMChatModel(ChatModel, ABC):
 
         if not self.allow_prompt_caching:
             attr = "cache_control_injection_points"
-            if attr in params:
-                params.pop(attr)
-            if attr in settings:
-                settings.pop(attr)
+            params.pop(attr, None)
+            settings.pop(attr, None)
 
         return exclude_none(
             exclude_none(settings)
