@@ -13,9 +13,9 @@ import { capitalize } from "remeda";
 import { ChatModel } from "@/backend/chat.js";
 import { Tool } from "@/tools/base.js";
 import { Requirement } from "@/agents/requirement/requirements/requirement.js";
-import { isPrimitive } from "sequelize/lib/utils";
 import type { InferCallbackValue } from "@/emitter/types.js";
 import { Serializer } from "@/serializer/serializer.js";
+import { isPrimitive } from "@/internals/helpers/guards.js";
 
 /**
  * Information about how deep the given entity is in the execution tree.

@@ -60,16 +60,16 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@ai-sdk/gateway@npm:2.0.17":
-  version: 2.0.17
-  resolution: "@ai-sdk/gateway@npm:2.0.17"
+"@ai-sdk/gateway@npm:2.0.22":
+  version: 2.0.22
+  resolution: "@ai-sdk/gateway@npm:2.0.22"
   dependencies:
     "@ai-sdk/provider": "npm:2.0.0"
-    "@ai-sdk/provider-utils": "npm:3.0.18"
+    "@ai-sdk/provider-utils": "npm:3.0.19"
     "@vercel/oidc": "npm:3.0.5"
   peerDependencies:
     zod: ^3.25.76 || ^4.1.8
-  checksum: 10c0/78e3b8a23aa3a501d070dee93e96cad44599f7fb632ca0a0a941744b6affb481e10dbf832b886f48bd5a34ef9f55f5ae564b69bd5e42bfa4a0a696fec44132f5
+  checksum: 10c0/3ef90c2807ede90cf548eba89abdb6b67863b9bfeda5df799c14aa2792d129be71972d266948c5412c2ce28d56dd409dd5d1e350df7612856a1e5cf301ccf1ff
   languageName: node
   linkType: hard
 
@@ -171,6 +171,19 @@ __metadata:
   peerDependencies:
     zod: ^3.25.76 || ^4.1.8
   checksum: 10c0/209c15b0dceef0ba95a7d3de544be0a417ad4a0bd5143496b3966a35fedf144156d93a42ff8c3d7db56781b9836bafc8c132c98978c49240e55bc1a36e18a67f
+  languageName: node
+  linkType: hard
+
+"@ai-sdk/provider-utils@npm:3.0.19":
+  version: 3.0.19
+  resolution: "@ai-sdk/provider-utils@npm:3.0.19"
+  dependencies:
+    "@ai-sdk/provider": "npm:2.0.0"
+    "@standard-schema/spec": "npm:^1.0.0"
+    eventsource-parser: "npm:^3.0.6"
+  peerDependencies:
+    zod: ^3.25.76 || ^4.1.8
+  checksum: 10c0/e4decb19264067fa1b1642e07d515d25d1509a1a9143f59ccc051e3ca413c9fb1d708e1052a70eaf329ca39ddf6152520cd833dbf8c95d9bf02bbeffae8ea363
   languageName: node
   linkType: hard
 
@@ -1268,15 +1281,15 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@ibm-cloud/watsonx-ai@npm:^1.7.4":
-  version: 1.7.4
-  resolution: "@ibm-cloud/watsonx-ai@npm:1.7.4"
+"@ibm-cloud/watsonx-ai@npm:^1.7.5":
+  version: 1.7.5
+  resolution: "@ibm-cloud/watsonx-ai@npm:1.7.5"
   dependencies:
     "@types/node": "npm:^18.0.0"
     extend: "npm:3.0.2"
     form-data: "npm:^4.0.4"
     ibm-cloud-sdk-core: "npm:^5.4.3"
-  checksum: 10c0/f552aa1b0ec9da092fc119ca95369a5d4ebc5ba8ac05e50e06d45815662844beee732bfb2e1d61f8182e782b18af9e3b4d0bbad72181f28c5079f6f6e053cd99
+  checksum: 10c0/d79a613591390c7c31fdf0b465722bd807d38e80995abfa57170af6c261fb0d01153597e302aacee4c2e4129f0603cee3f817c35cddafe9ae8f37828477c126e
   languageName: node
   linkType: hard
 
@@ -3660,17 +3673,17 @@ __metadata:
   languageName: node
   linkType: hard
 
-"ai@npm:^5.0.104":
-  version: 5.0.104
-  resolution: "ai@npm:5.0.104"
+"ai@npm:^5.0.115":
+  version: 5.0.115
+  resolution: "ai@npm:5.0.115"
   dependencies:
-    "@ai-sdk/gateway": "npm:2.0.17"
+    "@ai-sdk/gateway": "npm:2.0.22"
     "@ai-sdk/provider": "npm:2.0.0"
-    "@ai-sdk/provider-utils": "npm:3.0.18"
+    "@ai-sdk/provider-utils": "npm:3.0.19"
     "@opentelemetry/api": "npm:1.9.0"
   peerDependencies:
     zod: ^3.25.76 || ^4.1.8
-  checksum: 10c0/1b4e17b7ef5c1b017ff3508b18c80d5e2da0c76ce6b1e175d516842f7de80fcced8ba7b8358874e61389d8e8e8be30f059cabbd766cac419da178e947df89c86
+  checksum: 10c0/44a844eb2980151a14a22e3c5f0d7525f03601957b9280f7de0fbd7d18c00353ffef39ac84d7ad01af3fc14eeb292f019015a0b7d8784a5b8c5e2a149d863a15
   languageName: node
   linkType: hard
 
@@ -3952,7 +3965,7 @@ __metadata:
     "@eslint/js": "npm:^9.39.1"
     "@eslint/markdown": "npm:^7.5.1"
     "@googleapis/customsearch": "npm:^6.0.0"
-    "@ibm-cloud/watsonx-ai": "npm:^1.7.4"
+    "@ibm-cloud/watsonx-ai": "npm:^1.7.5"
     "@langchain/community": "npm:^0.3.58"
     "@langchain/core": "npm:^0.3.79"
     "@langchain/langgraph": "npm:^0.4.9"
@@ -3976,7 +3989,7 @@ __metadata:
     "@types/object-hash": "npm:^3.0.6"
     "@types/turndown": "npm:^5.0.6"
     "@zilliz/milvus2-sdk-node": "npm:^2.6.5"
-    ai: "npm:^5.0.104"
+    ai: "npm:^5.0.115"
     ajv: "npm:^8.17.1"
     ajv-formats: "npm:^3.0.1"
     axios: "npm:^1.13.2"
@@ -4028,11 +4041,11 @@ __metadata:
   peerDependencies:
     "@a2a-js/sdk": ^0.3.4
     "@ai-sdk/amazon-bedrock": ^2.2.12
-    "@ai-sdk/anthropic": ^1.2.12
-    "@ai-sdk/azure": ^1.3.24
-    "@ai-sdk/google-vertex": ^2.2.27
-    "@ai-sdk/groq": ^2.0.32
-    "@ai-sdk/openai": ^2.0.74
+    "@ai-sdk/anthropic": ^2.0.56
+    "@ai-sdk/azure": ^2.0.90
+    "@ai-sdk/google-vertex": ^3.0.94
+    "@ai-sdk/groq": ^2.0.33
+    "@ai-sdk/openai": ^2.0.88
     "@aws-sdk/client-bedrock-runtime": ^3.848.0
     "@elastic/elasticsearch": ^8.0.0
     "@googleapis/customsearch": ^3.2.0

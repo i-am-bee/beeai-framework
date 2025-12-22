@@ -5,7 +5,7 @@
 
 import { v4 as uuidv4 } from "uuid";
 import { AgentError } from "@/agents/base.js";
-import { ChatModel, ChatModelOutput } from "@/backend/chat.js";
+import { ChatModel, ChatModelInput, ChatModelOutput } from "@/backend/chat.js";
 import { AssistantMessage, Message, ToolMessage } from "@/backend/message.js";
 import { ToolCallPart } from "ai";
 import { AnyTool } from "@/tools/base.js";
@@ -26,6 +26,7 @@ import { z } from "zod";
 import { parseBrokenJson } from "@/internals/helpers/schema.js";
 import { RequirementAgent } from "@/agents/requirement/agent.js";
 import { mergeTokenUsage } from "@/adapters/vercel/backend/utils.js";
+import { StreamToolCallMiddleware } from "@/middleware/streamToolCall.js";
 
 const TEMP_MESSAGE_KEY = "tempMessage";
 
@@ -86,30 +87,33 @@ export class RequirementAgentRunner {
   }
 
   protected async runLLM(request: RequirementAgentRequest): Promise<ChatModelOutput> {
-    const { messages, options } = await this.prepareLLMRequest(request);
-    const response = await this.llm.create({ ...options, messages });
+    const streamMiddleware = this.createFinalAnswerStream(request.finalAnswer);
+    try {
+      const input = await this.prepareLLMRequest(request);
+      const response = await this.llm.create(input).middleware(streamMiddleware);
 
-    if (response.usage) {
-      mergeTokenUsage(this.state.usage, response.usage);
+      if (response.usage) {
+        mergeTokenUsage(this.state.usage, response.usage);
+      }
+
+      return response;
+    } finally {
+      streamMiddleware.unbind();
     }
-
-    return response;
   }
 
-  protected async prepareLLMRequest(request: RequirementAgentRequest) {
+  protected async prepareLLMRequest(request: RequirementAgentRequest): Promise<ChatModelInput> {
     const messages: Message[] = [
       await createSystemMessage(this.templates.system, request),
       ...this.state.memory.messages,
     ];
 
-    const options = {
-      maxRetries: this.runConfig.maxRetriesPerStep,
+    return {
+      messages,
       tools: request.allowedTools,
       toolChoice: request.toolChoice,
-      stream: false,
+      streamPartialToolCalls: true,
     };
-
-    return { messages, options };
   }
 
   protected async createFinalAnswerToolCall(fullText: string): Promise<AssistantMessage | null> {
@@ -176,7 +180,6 @@ export class RequirementAgentRunner {
               toolCall: { tool: toolCall.tool, input: toolCall.input },
             });
       }
-
       toolResults.push(
         new ToolMessage({
           type: "tool-result",
@@ -284,5 +287,23 @@ export class RequirementAgentRunner {
     await this.state.memory.deleteMany(tempMessages);
 
     return response;
+  }
+
+  private createFinalAnswerStream(finalAnswer: FinalAnswerTool) {
+    const middleware = new StreamToolCallMiddleware({
+      target: finalAnswer,
+      forceStreaming: false,
+      key: "response",
+      matchNested: false,
+    });
+    middleware.emitter.on("update", async (data, _) => {
+      await this.ctx.emitter.emit("finalAnswer", {
+        state: this.state,
+        output: data.output,
+        delta: data.delta,
+        outputStructured: undefined,
+      });
+    });
+    return middleware;
   }
 }
