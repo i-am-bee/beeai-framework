@@ -26,6 +26,10 @@ class GeminiChatModel(LiteLLMChatModel):
         api_key: str | None = None,
         **kwargs: Unpack[ChatModelKwargs],
     ) -> None:
+        # Ref: https://github.com/BerriAI/litellm/issues/17696
+        if kwargs.get("allow_prompt_caching") is None:
+            kwargs["allow_prompt_caching"] = False
+
         super().__init__(
             model_id if model_id else os.getenv("GEMINI_CHAT_MODEL", "gemini-2.5-flash"),
             provider_id="gemini",
@@ -35,7 +39,3 @@ class GeminiChatModel(LiteLLMChatModel):
         self._settings["extra_headers"] = utils.parse_extra_headers(
             self._settings.get("extra_headers"), os.getenv("GEMINI_API_HEADERS")
         )
-
-        # Ref: https://github.com/BerriAI/litellm/issues/17696
-        if kwargs.get("allow_prompt_caching") is None:
-            self.allow_prompt_caching = False
