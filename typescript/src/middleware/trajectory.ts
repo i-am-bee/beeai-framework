@@ -16,6 +16,7 @@ import { Requirement } from "@/agents/requirement/requirements/requirement.js";
 import type { InferCallbackValue } from "@/emitter/types.js";
 import { Serializer } from "@/serializer/serializer.js";
 import { isPrimitive } from "@/internals/helpers/guards.js";
+import { getProp } from "@/internals/helpers/object.js";
 
 /**
  * Information about how deep the given entity is in the execution tree.
@@ -190,7 +191,7 @@ export class GlobalTrajectoryMiddleware<T extends RunInstance = any> extends Mid
 
     this.cleanups.push(
       emitter.match(
-        (event) => ["start", "success", "error", "finish"].includes(event.name),
+        matchInternalEvent(["start", "success", "error", "finish"]),
         handleTopLevelEvent,
         {
           matchNested: false,
@@ -213,7 +214,7 @@ export class GlobalTrajectoryMiddleware<T extends RunInstance = any> extends Mid
       };
 
       this.cleanups.push(
-        emitter.match((event) => event.name === "start", handleNestedEvent, {
+        emitter.match(matchInternalEvent(["start"]), handleNestedEvent, {
           matchNested: true,
           isBlocking: true,
           priority: this.emitterPriority,
@@ -426,4 +427,10 @@ export class GlobalTrajectoryMiddleware<T extends RunInstance = any> extends Mid
       origin: [payload, meta],
     });
   }
+}
+
+function matchInternalEvent(names: (keyof RunContextCallbacks)[]) {
+  return (meta: EventMeta): boolean =>
+    names.includes(meta.name as keyof RunContextCallbacks) &&
+    getProp(meta.context, ["internal"], false);
 }
