@@ -125,49 +125,50 @@ class ChatModelOutput(RunnableOutput):
         return True
 
     def dedupe(self) -> None:
-        messages_by_id = dict[str, list[AnyMessage]]()
-        messages_by_tool_call_id = dict[str, AssistantMessage]()
+        if len(self.output) > 1:
+            messages_by_id = dict[str, list[AnyMessage]]()
+            messages_by_tool_call_id = dict[str, AssistantMessage]()
 
-        for msg in self.output:
-            msg_id = msg.id or ""
+            for msg in self.output:
+                msg_id = msg.id or ""
 
-            # Group partial tool calls
-            if isinstance(msg, AssistantMessage) and msg.get_tool_calls():
-                filtered_chunks: list[AssistantMessageContent] = []
-                for chunk in msg.content:
-                    if not isinstance(chunk, MessageToolCallContent):
-                        filtered_chunks.append(chunk)
+                # Group partial tool calls
+                if isinstance(msg, AssistantMessage) and msg.get_tool_calls():
+                    filtered_chunks: list[AssistantMessageContent] = []
+                    for chunk in msg.content:
+                        if not isinstance(chunk, MessageToolCallContent):
+                            filtered_chunks.append(chunk)
+                            continue
+
+                        # Assume that tool calls with no id referss to the most recent tool call
+                        if not chunk.id and messages_by_tool_call_id:
+                            chunk.id = next(reversed(messages_by_tool_call_id.keys()))
+
+                        if chunk.id in messages_by_tool_call_id:
+                            messages_by_tool_call_id[chunk.id].content.append(chunk)
+                        else:
+                            messages_by_tool_call_id[chunk.id] = msg
+                            filtered_chunks.append(chunk)
+
+                    msg.content.clear()
+                    msg.content.extend(filtered_chunks)
+
+                    if not filtered_chunks:
+                        # nothing to be processed
                         continue
 
-                    # Assume that tool calls with no id referss to the most recent tool call
-                    if not chunk.id and messages_by_tool_call_id:
-                        chunk.id = next(reversed(messages_by_tool_call_id.keys()))
+                if msg_id not in messages_by_id:
+                    messages_by_id[msg_id] = [msg]
+                else:
+                    messages_by_id[msg_id].append(msg)
 
-                    if chunk.id in messages_by_tool_call_id:
-                        messages_by_tool_call_id[chunk.id].content.append(chunk)
-                    else:
-                        messages_by_tool_call_id[chunk.id] = msg
-                        filtered_chunks.append(chunk)
+            self.output.clear()
 
-                msg.content.clear()
-                msg.content.extend(filtered_chunks)
-
-                if not filtered_chunks:
-                    # nothing to be processed
-                    continue
-
-            if msg_id not in messages_by_id:
-                messages_by_id[msg_id] = [msg]
-            else:
-                messages_by_id[msg_id].append(msg)
-
-        self.output.clear()
-
-        for messages in messages_by_id.values():
-            main = messages.pop(0)
-            for other in messages:
-                main.merge(other)
-            self.output.append(main)
+            for messages in messages_by_id.values():
+                main = messages.pop(0)
+                for other in messages:
+                    main.merge(other)
+                self.output.append(main)
 
         for msg in self.output:
             if isinstance(msg, AssistantMessage):

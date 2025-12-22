@@ -111,14 +111,17 @@ class RequirementAgentRunner:
         request: RequirementAgentRequest,
     ) -> ChatModelOutput:
         stream_middleware = self.__create_final_answer_stream(request.final_answer)
-        messages, options = self._prepare_llm_request(request)
-        response = await self._llm.run(messages, **options).middleware(stream_middleware)
 
-        self._state.usage.merge(response.usage)
-        self._state.cost.merge(response.cost)
+        try:
+            messages, options = self._prepare_llm_request(request)
+            response = await self._llm.run(messages, **options).middleware(stream_middleware)
 
-        stream_middleware.unbind()
-        return response
+            self._state.usage.merge(response.usage)
+            self._state.cost.merge(response.cost)
+
+            return response
+        finally:
+            stream_middleware.unbind()
 
     def _prepare_llm_request(self, request: RequirementAgentRequest) -> tuple[list[AnyMessage], ChatModelOptions]:
         messages = [
