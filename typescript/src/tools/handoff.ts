@@ -76,9 +76,11 @@ export class HandoffTool extends Tool<StringToolOutput> {
       messages.push(new UserMessage(input.task));
     }
 
-    await this.target.memory.addMany(messages);
+    const target = await this.target.clone();
+    target.memory.reset();
+    await target.memory.addMany(messages);
 
-    const response = await this.target.run({});
+    const response = await target.run({});
 
     return new StringToolOutput(response.result.text);
   }
