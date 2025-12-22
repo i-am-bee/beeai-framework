@@ -4,7 +4,7 @@ import { OllamaChatModel } from "beeai-framework/adapters/ollama/backend/chat";
 
 const agent = new ReActAgent({
   memory: new UnconstrainedMemory(),
-  llm: new OllamaChatModel("llama3.1"),
+  llm: new OllamaChatModel("granite4:micro"),
   tools: [],
 });
 await agent.run({ prompt: "Hello world!" });

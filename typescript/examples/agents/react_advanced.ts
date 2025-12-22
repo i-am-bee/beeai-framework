@@ -15,7 +15,7 @@ import { OllamaChatModel } from "beeai-framework/adapters/ollama/backend/chat";
 Logger.root.level = "silent"; // disable internal logs
 const logger = new Logger({ name: "app", level: "trace" });
 
-const llm = new OllamaChatModel("llama3.1");
+const llm = new OllamaChatModel("granite4:micro");
 
 const agent = new ReActAgent({
   llm,

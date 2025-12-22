@@ -3,7 +3,7 @@ import { createConsoleReader } from "examples/helpers/io.js";
 import { UserMessage } from "beeai-framework/backend/message";
 import { OllamaChatModel } from "beeai-framework/adapters/ollama/backend/chat";
 
-const llm = new OllamaChatModel("llama3.1");
+const llm = new OllamaChatModel("granite4:micro");
 
 //  Optionally one may set llm parameters
 llm.parameters.maxTokens = 10000; // high number yields longer potential output

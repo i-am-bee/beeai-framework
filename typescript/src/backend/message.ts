@@ -22,6 +22,7 @@ export interface MessageMeta {
 }
 
 export interface MessageInput {
+  id?: string;
   role: MessageRole;
   text: string; // TODO
   meta?: MessageMeta;
@@ -47,14 +48,17 @@ export abstract class Message<
   T extends MessageContentPart = MessageContentPart,
   R extends string = MessageRole | string,
 > extends Serializable {
+  public id: string | undefined;
   public abstract readonly role: R;
   public readonly content: T[];
 
   constructor(
     content: T | T[] | string,
     public readonly meta: MessageMeta = {},
+    id: string | undefined = undefined,
   ) {
     super();
+    this.id = id;
     if (!meta?.createdAt) {
       meta.createdAt = new Date();
     }
@@ -75,17 +79,17 @@ export abstract class Message<
 
   protected abstract fromString(input: string): T;
 
-  static of({ role, text, meta }: MessageInput): Message {
+  static of({ role, text, meta, id }: MessageInput): Message {
     if (role === "user") {
-      return new UserMessage(text, meta);
+      return new UserMessage(text, meta, id);
     } else if (role === "assistant") {
-      return new AssistantMessage(text, meta);
+      return new AssistantMessage(text, meta, id);
     } else if (role === "system") {
-      return new SystemMessage(text, meta);
+      return new SystemMessage(text, meta, id);
     } else if (role === "tool") {
-      return new ToolMessage(text, meta);
+      return new ToolMessage(text, meta, id);
     } else {
-      return new CustomMessage(role, text, meta);
+      return new CustomMessage(role, text, meta, id);
     }
   }
 
@@ -100,7 +104,12 @@ export abstract class Message<
   }
 
   createSnapshot() {
-    return { content: shallowCopy(this.content), meta: shallowCopy(this.meta), role: this.role };
+    return {
+      id: this.id,
+      content: shallowCopy(this.content),
+      meta: shallowCopy(this.meta),
+      role: this.role,
+    };
   }
 
   loadSnapshot(snapshot: ReturnType<typeof this.createSnapshot>) {
@@ -108,10 +117,11 @@ export abstract class Message<
   }
 
   toPlain() {
-    return { role: this.role, content: shallowCopy(this.content) } as const;
+    return { id: this.id, role: this.role, content: shallowCopy(this.content) } as const;
   }
 
   merge(other: Message<T, R>) {
+    this.id = this.id || other.id;
     Object.assign(this, other.meta);
     this.content.push(...other.content);
   }
@@ -147,13 +157,15 @@ export class AssistantMessage extends Message<TextPart | ToolCallPart | FilePart
   ): asserts content is TextPart | ToolCallPart | FilePart {
     if (content.type === "tool-call") {
       const key = "args";
-      const args = popProp(content as any, key);
+      if (!Object.getOwnPropertyDescriptor(content, key)) {
+        const args = popProp(content as any, key);
 
-      if (args !== null && !hasProp(content, "input")) {
-        Logger.root.warn(
-          `The '${key}' property in the AssistantMessage class is deprecated and will be removed. Use the 'input' property for Tool Call content chunks instead.`,
-        );
-        content.input = args;
+        if (args !== null && !hasProp(content, "input")) {
+          Logger.root.warn(
+            `The '${key}' property in the AssistantMessage class is deprecated and will be removed. Use the 'input' property for Tool Call content chunks instead.`,
+          );
+          content.input = args;
+        }
       }
 
       safeDefineProperty(content, key as keyof typeof content, () => {
@@ -265,8 +277,13 @@ export const Role = {
 export class CustomMessage extends Message<MessageContentPart, string> {
   public role: string;
 
-  constructor(role: string, content: MessageContentPart | string, meta: MessageMeta = {}) {
-    super(content, meta);
+  constructor(
+    role: string,
+    content: MessageContentPart | string,
+    meta: MessageMeta = {},
+    id?: string,
+  ) {
+    super(content, meta, id);
     if (!role) {
       throw new ValueError(`Role "${role}" must be specified!`);
     }

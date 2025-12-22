@@ -28,7 +28,7 @@ try {
   // Server usually supports several tools, use the factory for automatic discovery
   const tools = await MCPTool.fromClient(client);
   const agent = new ReActAgent({
-    llm: new OllamaChatModel("llama3.1"),
+    llm: new OllamaChatModel("granite4:micro"),
     memory: new UnconstrainedMemory(),
     tools,
   });

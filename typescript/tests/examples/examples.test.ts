@@ -37,6 +37,7 @@ const exclude: string[] = [
     "examples/agents/experimental/streamlit.ts",
     "examples/agents/granite/*.ts",
     "examples/agents/granite/single_turn.ts",
+    "examples/agents/requirement/stream.ts",
   ],
   !getEnv("GROQ_API_KEY") && [
     "examples/agents/sql.ts",

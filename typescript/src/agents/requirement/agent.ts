@@ -271,7 +271,7 @@ export class RequirementAgent extends BaseAgent<
       ...super.createSnapshot(),
       input: shallowCopy(this.input),
       emitter: this.emitter,
-      runnerClass: this.runner,
+      runner: this.runner,
     };
   }
 

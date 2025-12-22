@@ -232,7 +232,7 @@ import { SlidingCache } from "beeai-framework/cache/slidingCache";
 import { OllamaChatModel } from "beeai-framework/adapters/ollama/backend/chat";
 import { UserMessage } from "beeai-framework/backend/message";
 
-const llm = new OllamaChatModel("llama3.1");
+const llm = new OllamaChatModel("granite4:micro");
 llm.config({
   cache: new SlidingCache({
     size: 50,
