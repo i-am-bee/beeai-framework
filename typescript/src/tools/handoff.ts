@@ -4,7 +4,14 @@
  */
 
 import { z } from "zod";
-import { BaseToolRunOptions, StringToolOutput, Tool, ToolEmitter, ToolInput } from "./base.js";
+import {
+  BaseToolRunOptions,
+  StringToolOutput,
+  Tool,
+  ToolEmitter,
+  ToolError,
+  ToolInput,
+} from "./base.js";
 import { BaseMemory } from "@/memory/base.js";
 import { AssistantMessage, Message, SystemMessage, UserMessage } from "@/backend/message.js";
 import { Emitter } from "@/emitter/emitter.js";
@@ -12,7 +19,6 @@ import { AnyAgent } from "@/agents/types.js";
 import { GetRunContext } from "@/context.js";
 import { getProp } from "@/internals/helpers/object.js";
 import { findLastIndex, toCamelCase } from "remeda";
-import { CustomToolExecuteError } from "./custom.js";
 
 export interface HandoffToolInput {
   name?: string;
@@ -56,7 +62,10 @@ export class HandoffTool extends Tool<StringToolOutput> {
     const memory = getProp(run.context, [Tool.contextKeys.Memory]) as BaseMemory;
 
     if (!memory) {
-      throw new CustomToolExecuteError("No memory found in the context.");
+      throw new ToolError(`No memory found in the context.`, [], {
+        isRetryable: false,
+        isFatal: true,
+      });
     }
 
     let messages: Message[] = memory.messages.filter((msg) => !(msg instanceof SystemMessage));
