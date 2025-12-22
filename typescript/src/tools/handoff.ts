@@ -78,7 +78,7 @@ export class HandoffTool extends Tool<StringToolOutput> {
     target.memory.reset();
     await target.memory.addMany(messages);
 
-    const response = await target.run({});
+    const response = await target.run({ prompt: null });
 
     return new StringToolOutput(response.result.text);
   }
