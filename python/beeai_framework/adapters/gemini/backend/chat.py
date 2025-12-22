@@ -35,3 +35,7 @@ class GeminiChatModel(LiteLLMChatModel):
         self._settings["extra_headers"] = utils.parse_extra_headers(
             self._settings.get("extra_headers"), os.getenv("GEMINI_API_HEADERS")
         )
+
+        # Ref: https://github.com/BerriAI/litellm/issues/17696
+        if kwargs.get("allow_prompt_caching") is None:
+            self._settings["allow_prompt_caching"] = False
