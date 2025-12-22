@@ -27,7 +27,6 @@ import { GetRunContext } from "@/context.js";
 import { AssistantMessage, Message, SystemMessage, ToolMessage } from "@/backend/message.js";
 import { ToolCallPart } from "ai";
 import Type = WatsonxAiMlVml_v1.TextChatResponseFormat.Constants.Type;
-import { parseBrokenJson } from "@/internals/helpers/schema.js";
 import { getEnv } from "@/internals/env.js";
 import { NotImplementedError } from "@/errors.js";
 import { Tool } from "@/tools/base.js";
@@ -75,11 +74,16 @@ export class WatsonxChatModel extends ChatModel {
       ...(await this.prepareInput(input)),
       signal: run.signal,
     });
-    const { messages, finishReason, usage } = this.extractOutput(result.choices, result.usage);
+    const { messages, finishReason, usage } = this.extractOutput(
+      result.choices,
+      result.usage,
+      result.id,
+    );
     return new ChatModelOutput(messages, usage, finishReason);
   }
 
   async *_createStream(input: ChatModelInput, run: GetRunContext<this>) {
+    // @ts-ignore
     const stream = await this.client.instance.textChatStream({
       ...(await this.prepareInput(input)),
       signal: run.signal,
@@ -93,12 +97,13 @@ export class WatsonxChatModel extends ChatModel {
       const { messages, finishReason, usage } = this.extractOutput(
         raw.data.choices.map(({ delta, ...choice }) => ({ ...choice, message: delta })),
         raw.data.usage,
+        raw.data.id,
       );
       yield new ChatModelOutput(messages, usage, finishReason);
     }
   }
 
-  protected extractOutput(choices: TextChatResultChoice[], usage?: TextChatUsage) {
+  protected extractOutput(choices: TextChatResultChoice[], usage?: TextChatUsage, id?: string) {
     return {
       finishReason: findLast(choices, (choice) => Boolean(choice?.finish_reason))
         ?.finish_reason as ChatModelOutput["finishReason"],
@@ -113,8 +118,7 @@ export class WatsonxChatModel extends ChatModel {
         .flatMap(({ message }) => {
           const messages: Message[] = [];
           if (message?.content) {
-            const msg = new AssistantMessage({ type: "text", text: message.content });
-            // msg.role = message.role || msg.role;
+            const msg = new AssistantMessage({ type: "text", text: message.content }, {}, id);
             messages.push(msg);
           }
           if (message?.tool_calls) {
@@ -124,16 +128,16 @@ export class WatsonxChatModel extends ChatModel {
                   type: "tool-call",
                   toolCallId: call.id,
                   toolName: call.function.name,
-                  input: parseBrokenJson(call.function.arguments),
+                  input: call.function.arguments,
                 }),
               ),
+              {},
+              id,
             );
-            // msg.role = message.role || msg.role;
             messages.push(msg);
           }
           if (message?.refusal) {
-            const msg = new AssistantMessage({ type: "text", text: message.refusal });
-            // msg.role = message.role || msg.role;
+            const msg = new AssistantMessage({ type: "text", text: message.refusal }, {}, id);
             messages.push(msg);
           }
           return messages;
