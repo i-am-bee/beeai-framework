@@ -31,6 +31,22 @@ jobs:
       - uses: ./.github/actions/setup
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Install Ollama
+        run: curl -fsSL https://ollama.com/install.sh | sudo sh
+
+      - name: Start Ollama Server
+        run: |
+          ollama serve &
+          sleep 5
+          curl -s http://localhost:11434
+
+      - name: Pull LLMs
+        run: ollama pull granite4:micro
+
+      - name: Check LLMs
+        run: ollama run granite4:micro "Hello"
+
       - run: mise use nodejs@${{ matrix.node-version }}
       - run: mise typescript:test:e2e
         env:

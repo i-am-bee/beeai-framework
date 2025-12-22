@@ -13,7 +13,7 @@ await memory.addMany([
 ]);
 
 const tool = new LLMTool({
-  llm: new OllamaChatModel("llama3.1"),
+  llm: new OllamaChatModel("granite4:micro"),
 });
 
 const response = await tool

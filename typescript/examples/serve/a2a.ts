@@ -7,7 +7,7 @@ import { UnconstrainedMemory } from "beeai-framework/memory/unconstrainedMemory"
 import { A2AServer } from "beeai-framework/adapters/a2a/serve/server";
 
 // ensure the model is pulled before running
-const llm = new OllamaChatModel("llama3.1");
+const llm = new OllamaChatModel("granite4:micro");
 
 const agent = new ToolCallingAgent({
   llm,

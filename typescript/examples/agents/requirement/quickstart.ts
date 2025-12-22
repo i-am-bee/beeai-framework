@@ -9,7 +9,7 @@ import { GlobalTrajectoryMiddleware } from "beeai-framework/middleware/trajector
 
 // Create an agent that plans activities based on weather and events
 const agent = new RequirementAgent({
-  llm: await ChatModel.fromName("ollama:llama3.1", { stream: true }),
+  llm: await ChatModel.fromName("ollama:granite4:micro", { stream: true }),
   tools: [
     new ThinkTool(), // to reason
     new OpenMeteoTool(), // retrieve weather data

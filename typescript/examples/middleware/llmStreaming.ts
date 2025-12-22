@@ -24,7 +24,7 @@ middleware.emitter.on("update", (event) => {
   // });
 });
 
-const llm = await ChatModel.fromName("ollama:llama3.1");
+const llm = await ChatModel.fromName("ollama:granite4:micro", { stream: true });
 const response = await llm
   .create({
     messages: [new UserMessage("Why sky is blue?")],

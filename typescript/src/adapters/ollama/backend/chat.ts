@@ -17,7 +17,7 @@ export class OllamaChatModel extends VercelChatModel {
   public readonly toolChoiceSupport: ChatModelToolChoiceSupport[] = ["none", "auto"];
 
   constructor(
-    modelId: OllamaChatModelId = getEnv("OLLAMA_CHAT_MODEL", "llama3.1:8b"),
+    modelId: OllamaChatModelId = getEnv("OLLAMA_CHAT_MODEL", "granite4:micro"),
     settings: OllamaChatModelSettings = {},
     client?: OllamaClient | OllamaClientSettings,
   ) {
