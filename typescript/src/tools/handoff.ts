@@ -12,6 +12,7 @@ import { AnyAgent } from "@/agents/types.js";
 import { GetRunContext } from "@/context.js";
 import { getProp } from "@/internals/helpers/object.js";
 import { findLastIndex, toCamelCase } from "remeda";
+import { CustomToolExecuteError } from "./custom.js";
 
 export interface HandoffToolInput {
   name?: string;
@@ -21,8 +22,8 @@ export interface HandoffToolInput {
 
 export class HandoffTool extends Tool<StringToolOutput> {
   private readonly propagateInputs: boolean;
-  public readonly name: string;
-  public readonly description: string;
+  public name: string;
+  public description: string;
 
   public readonly emitter: ToolEmitter<ToolInput<this>, StringToolOutput> = Emitter.root.child({
     namespace: ["tool", "handoff"],
@@ -54,9 +55,13 @@ export class HandoffTool extends Tool<StringToolOutput> {
   ): Promise<StringToolOutput> {
     const memory = getProp(run.context, [Tool.contextKeys.Memory]) as BaseMemory;
 
-    let messages: Message[] = memory
-      ? memory.messages.filter((msg) => !(msg instanceof SystemMessage))
-      : [];
+    if (!memory) {
+      throw new CustomToolExecuteError(
+        "HandoffTool requires memory to propagate previous messages to the target agent.",
+      );
+    }
+
+    let messages: Message[] = memory.messages.filter((msg) => !(msg instanceof SystemMessage));
 
     const lastValidMsgIndex = findLastIndex(
       messages,
