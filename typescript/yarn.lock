@@ -1872,19 +1872,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@langchain/openai@npm:>=0.1.0 <0.6.0":
-  version: 0.5.16
-  resolution: "@langchain/openai@npm:0.5.16"
-  dependencies:
-    js-tiktoken: "npm:^1.0.12"
-    openai: "npm:^5.3.0"
-    zod: "npm:^3.25.32"
-  peerDependencies:
-    "@langchain/core": ">=0.3.58 <0.4.0"
-  checksum: 10c0/f295b4aeca7521c4ff04f369dfff4265799e651cc80343be340feb9ad0401e08a91ccdfae40eda530794b91a86a75c67d5ce67b3e3e9a4ec751e21e6acfbddae
-  languageName: node
-  linkType: hard
-
 "@langchain/openai@npm:>=0.1.0 <0.7.0":
   version: 0.6.16
   resolution: "@langchain/openai@npm:0.6.16"
@@ -7915,82 +7902,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"langchain@npm:>=0.2.3 <0.3.0 || >=0.3.4 <0.4.0":
-  version: 0.3.29
-  resolution: "langchain@npm:0.3.29"
-  dependencies:
-    "@langchain/openai": "npm:>=0.1.0 <0.6.0"
-    "@langchain/textsplitters": "npm:>=0.0.0 <0.2.0"
-    js-tiktoken: "npm:^1.0.12"
-    js-yaml: "npm:^4.1.0"
-    jsonpointer: "npm:^5.0.1"
-    langsmith: "npm:^0.3.33"
-    openapi-types: "npm:^12.1.3"
-    p-retry: "npm:4"
-    uuid: "npm:^10.0.0"
-    yaml: "npm:^2.2.1"
-    zod: "npm:^3.25.32"
-  peerDependencies:
-    "@langchain/anthropic": "*"
-    "@langchain/aws": "*"
-    "@langchain/cerebras": "*"
-    "@langchain/cohere": "*"
-    "@langchain/core": ">=0.3.58 <0.4.0"
-    "@langchain/deepseek": "*"
-    "@langchain/google-genai": "*"
-    "@langchain/google-vertexai": "*"
-    "@langchain/google-vertexai-web": "*"
-    "@langchain/groq": "*"
-    "@langchain/mistralai": "*"
-    "@langchain/ollama": "*"
-    "@langchain/xai": "*"
-    axios: "*"
-    cheerio: "*"
-    handlebars: ^4.7.8
-    peggy: ^3.0.2
-    typeorm: "*"
-  peerDependenciesMeta:
-    "@langchain/anthropic":
-      optional: true
-    "@langchain/aws":
-      optional: true
-    "@langchain/cerebras":
-      optional: true
-    "@langchain/cohere":
-      optional: true
-    "@langchain/deepseek":
-      optional: true
-    "@langchain/google-genai":
-      optional: true
-    "@langchain/google-vertexai":
-      optional: true
-    "@langchain/google-vertexai-web":
-      optional: true
-    "@langchain/groq":
-      optional: true
-    "@langchain/mistralai":
-      optional: true
-    "@langchain/ollama":
-      optional: true
-    "@langchain/xai":
-      optional: true
-    axios:
-      optional: true
-    cheerio:
-      optional: true
-    handlebars:
-      optional: true
-    peggy:
-      optional: true
-    typeorm:
-      optional: true
-  checksum: 10c0/1d1de3714791cac5f1a5b9cd775d3414d0bf9a23ff6f3edc840a0d7792144e4b7aed29994edd7c03421469d5abb90a234c7fd9e33f588cc81edb24053a08e03c
-  languageName: node
-  linkType: hard
-
-"langchain@npm:^0.3.36":
-  version: 0.3.36
-  resolution: "langchain@npm:0.3.36"
+"langchain@npm:>=0.2.3 <0.3.0 || >=0.3.4 <0.4.0, langchain@npm:^0.3.36":
+  version: 0.3.37
+  resolution: "langchain@npm:0.3.37"
   dependencies:
     "@langchain/openai": "npm:>=0.1.0 <0.7.0"
     "@langchain/textsplitters": "npm:>=0.0.0 <0.2.0"
@@ -8057,27 +7971,7 @@ __metadata:
       optional: true
     typeorm:
       optional: true
-  checksum: 10c0/e6ce9a9babb12999935bc5998de8d0e9b2986b20ba3f322014a730e6d3dd60b4e12b0f8aed87b6b6ecb881abb03d5ea7615facd31a95c537141adefcce40eb65
-  languageName: node
-  linkType: hard
-
-"langsmith@npm:^0.3.33":
-  version: 0.3.34
-  resolution: "langsmith@npm:0.3.34"
-  dependencies:
-    "@types/uuid": "npm:^10.0.0"
-    chalk: "npm:^4.1.2"
-    console-table-printer: "npm:^2.12.1"
-    p-queue: "npm:^6.6.2"
-    p-retry: "npm:4"
-    semver: "npm:^7.6.3"
-    uuid: "npm:^10.0.0"
-  peerDependencies:
-    openai: "*"
-  peerDependenciesMeta:
-    openai:
-      optional: true
-  checksum: 10c0/1b54f80f653828a5c8047a106bf72d87a4ebccc86f31d319a8e98ff0c14080c882971d420136d695be5e0f01a2680f142531ed212e208e9b193740db7c1543ca
+  checksum: 10c0/3330a9a80fb5cdd2a9cadebef24b05852dacc989712fdfd2560167d5dbd720696eb311e985e2e60a2660ad96778563bdd2d0cfe77e36a7bf5acad36940b12016
   languageName: node
   linkType: hard
 
