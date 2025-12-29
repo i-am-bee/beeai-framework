@@ -28,9 +28,9 @@ load_dotenv()
 examples_path = Path(__file__).parent.parent.parent.parent / "examples" / "agents" / "experimental" / "requirement"
 sys.path.insert(0, str(examples_path))
 
-from examples.agents.experimental.requirement.rag import setup_vector_store
+from examples.agents.requirement.rag import setup_vector_store
 
-from beeai_framework.agents.experimental import RequirementAgent
+from beeai_framework.agents.requirement import RequirementAgent
 from beeai_framework.backend import ChatModel, ToolMessage
 from beeai_framework.memory import UnconstrainedMemory
 from beeai_framework.tools.search.retrieval import VectorStoreSearchTool

@@ -1,6 +1,6 @@
 import os
 import tempfile
-from beeai_framework.agents.experimental import RequirementAgent
+
 from beeai_framework.backend import ChatModel
 from beeai_framework.memory import UnconstrainedMemory
 from beeai_framework.tools.search.wikipedia import WikipediaTool
@@ -9,6 +9,8 @@ from beeai_framework.tools.code import PythonTool, LocalPythonStorage
 from beeai_framework.tools.tool import Tool
 from dotenv import load_dotenv
 from beeai_framework.adapters.gemini import GeminiChatModel
+from beeai_framework.agents.react import ReActAgent
+from beeai_framework.adapters.vertexai import VertexAIChatModel
 
 load_dotenv()
 
@@ -27,7 +29,7 @@ def create_calculator_tool() -> Tool:
     )
     return python_tool
 
-def create_agent() -> RequirementAgent:
+def create_agent() -> ReActAgent:
     """
     Create a RequirementAgent with Wikipedia capabilities.
     """
@@ -37,16 +39,12 @@ def create_agent() -> RequirementAgent:
    
     #model_name = os.environ.get("GEMINI_CHAT_MODEL", "gemini-2.5-flash")
     #llm = GeminiChatModel(model_name=model_name, ApiKey=os.environ.get("GEMINI_API_KEY"), allow_parallel_tool_calls=True )
-    llm = ChatModel.from_name("groq:llama-3.3-70b-versatile")
+    llm = VertexAIChatModel(model_id="gemini-2.0-flash-lite-001",allow_prompt_caching=False)
     
     
-    agent = RequirementAgent(
+    agent = ReActAgent(
         llm=llm, 
         tools=[wiki_tool, OpenMeteoTool(), calculator_tool],
-        memory=UnconstrainedMemory(),
-        role="You are an expert Multi-hop Question Answering (QA) agent. Your primary role is to extract and combine information from the provided context to answer the user's question. Answer in json format only.",
-        instructions=[]
-           
-         
+        memory=UnconstrainedMemory(),    
     )
     return agent

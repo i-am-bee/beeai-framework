@@ -6,8 +6,9 @@ from beeai_framework.backend.types import ChatModelParameters
 from beeai_framework.memory import TokenMemory
 from beeai_framework.tools.search.wikipedia import WikipediaTool
 from beeai_framework.tools.weather.openmeteo import OpenMeteoTool
-
+from langfuse import Evaluation
 from agent import create_agent
+
 
 # Run the agent
 async def main():
@@ -22,7 +23,7 @@ async def main():
     )
     
     # RequirementAgent returns different structure
-    print("Agent Response:", response.final_answer)
+    print("Agent Response:", response)
     print("\nFull response:")
     print(response.model_dump())
     
