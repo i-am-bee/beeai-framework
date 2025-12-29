@@ -4,7 +4,8 @@ from config import langfuse
 from agent import create_agent
 from dataset import get_dataset
 from beeai_framework.adapters.vertexai import VertexAIChatModel
-from beeai_framework.backend.chat import ChatModel, ChatModelMessage
+from beeai_framework.backend.chat import ChatModel
+from beeai_framework.backend.message import UserMessage
 
 async def judge_correctness(llm: ChatModel, query: str, actual: str, expected: str):
     """
@@ -33,7 +34,7 @@ async def judge_correctness(llm: ChatModel, query: str, actual: str, expected: s
     VERDICT: [YES or NO]
     """
     try:
-        response = await llm.create(ChatModelMessage(role="user", content=prompt))
+        response = await llm.create(messages=[UserMessage(content=prompt)])
         text = response.get_text_content().strip()
         
       
@@ -45,6 +46,9 @@ async def judge_correctness(llm: ChatModel, query: str, actual: str, expected: s
         print(f"⚠️ Judge failed: {e}")
         return 0.0, f"Error: {str(e)}"
 
+#TODO: UNDERSTAND ROOT SPAN USAGE HERE
+#TODO: RUN MY EVALUATIONS
+#TODO: GET EVALUATION METRICS SCOERS 
 async def run_experiment():
     agent = create_agent()  # Remove await - it's not async
     dataset = get_dataset()
@@ -83,7 +87,7 @@ async def run_experiment():
         expected_val = item.expected_output.get("result", "") if item.expected_output else ""
         
         print(f"⚖️ Judging answer for: '{query}'...")
-        llm = VertexAIChatModel(model_id="gemini-2.0-flash-lite-001",allow_prompt_caching=False)
+        llm = ChatModel.from_name("vertexai:gemini-2.0-flash-lite-001")
         score, reasoning = await judge_correctness(
             llm=llm,        
             query=query,         
