@@ -29,6 +29,7 @@ async def main() -> None:
     documents = [lc_document_to_document(document) for document in all_splits]
     print(f"Loaded {len(documents)} documents")
 
+    # pyrefly: ignore [bad-assignment]
     vector_store: TemporalVectorStore = VectorStore.from_name(
         name="beeai:TemporalVectorStore", embedding_model=embedding_model
     )  # type: ignore[assignment]

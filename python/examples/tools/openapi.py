@@ -14,6 +14,7 @@ from beeai_framework.tools.openapi import OpenAPITool
 async def main() -> None:
     # Retrieve the schema
     current_dir = os.path.dirname(__file__)
+    # pyrefly: ignore [bad-context-manager]
     async with open(f"{current_dir}/assets/github_openapi.json") as file:
         content = await file.read()
         open_api_schema = json.loads(content)

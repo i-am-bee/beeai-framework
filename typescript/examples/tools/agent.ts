@@ -4,7 +4,7 @@ import { UnconstrainedMemory } from "beeai-framework/memory/unconstrainedMemory"
 import { OllamaChatModel } from "beeai-framework/adapters/ollama/backend/chat";
 
 const agent = new ReActAgent({
-  llm: new OllamaChatModel("llama3.1"),
+  llm: new OllamaChatModel("granite4:micro"),
   memory: new UnconstrainedMemory(),
   tools: [new ArXivTool()],
 });

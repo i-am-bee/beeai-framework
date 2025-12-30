@@ -31,6 +31,7 @@ except ModuleNotFoundError as e:
 
 __all__ = ["AgentStackChatModel"]
 
+# pyrefly: ignore [not-a-type]
 _storage = ContextVar["LLMServiceExtensionServer"]("agent_stack_chat_model_storage")
 
 CopyableKwargs = set(ChatModelKwargs.__annotations__.keys()) - {"middlewares", "settings"}
@@ -85,6 +86,7 @@ class AgentStackChatModel(ChatModel):
         self.preferred_models = preferred_models or []
         self._initiated = True
         self._propagating_back = False
+        # pyrefly: ignore [not-a-type]
         self._model_by_context = WeakKeyDictionary["LLMServiceExtensionServer", ChatModel]()
 
     def __setattr__(self, name: str, value: Any) -> None:
@@ -133,8 +135,11 @@ class AgentStackChatModel(ChatModel):
 
         cls = config.cls if config.openai_native else OpenAIChatModel
         model = cls(  # type: ignore
+            # pyrefly: ignore [unexpected-keyword]
             model_id=llm_conf.api_model,
+            # pyrefly: ignore [unexpected-keyword]
             api_key=llm_conf.api_key,
+            # pyrefly: ignore [unexpected-keyword]
             base_url=llm_conf.api_base,
             **kwargs,
         )

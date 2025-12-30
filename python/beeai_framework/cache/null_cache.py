@@ -16,6 +16,7 @@ class NullCache(BaseCache[T]):
     async def size(self) -> int:
         return 0
 
+    # pyrefly: ignore [bad-param-name-override]
     async def set(self, _key: str, _value: T) -> None:
         pass
 

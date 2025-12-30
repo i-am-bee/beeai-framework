@@ -84,6 +84,7 @@ class LiteLLMChatModel(ChatModel, ABC):
         run: RunContext,
     ) -> ChatModelOutput:
         litellm_input = self._transform_input(input) | {"stream": False}
+        # pyrefly: ignore [not-callable]
         raw = await acompletion(**litellm_input)
         response_output = self._transform_output(raw)
         if not response_output.is_valid():
@@ -103,9 +104,11 @@ class LiteLLMChatModel(ChatModel, ABC):
         logger.debug(f"Inference response output:\n{response_output}")
         return response_output
 
+    # pyrefly: ignore [bad-param-name-override]
     async def _create_stream(self, input: ChatModelInput, _: RunContext) -> AsyncGenerator[ChatModelOutput]:
         litellm_input = self._transform_input(input) | {"stream": True}
         set_attr_if_none(litellm_input, ["stream_options", "include_usage"], value=True)
+        # pyrefly: ignore [not-callable]
         response = await acompletion(**litellm_input)
 
         text = ""
@@ -260,6 +263,11 @@ class LiteLLMChatModel(ChatModel, ABC):
             tools = []
             tool_choice = None
 
+        if not self.allow_prompt_caching:
+            attr = "cache_control_injection_points"
+            params.pop(attr, None)
+            settings.pop(attr, None)
+
         return exclude_none(
             exclude_none(settings)
             | exclude_none(params)
@@ -313,6 +321,7 @@ class LiteLLMChatModel(ChatModel, ABC):
                         id=chunk.id,
                     )
                     if update.tool_calls
+                    # pyrefly: ignore [bad-argument-type]
                     else AssistantMessage(update.content, id=chunk.id)
                 ]
                 if (update and update.model_dump(exclude_none=True))

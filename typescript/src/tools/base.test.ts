@@ -533,7 +533,7 @@ describe("Base Tool", () => {
       expect(callbacks).toMatchInlineSnapshot(`
         [
           {
-            "data": "null",
+            "data": "{"input":[{"query":"Hello!"},{}]}",
             "event": "tool.dummy.run.start",
           },
           {
@@ -553,7 +553,7 @@ describe("Base Tool", () => {
             "event": "tool.dummy.run.success",
           },
           {
-            "data": "null",
+            "data": "{"input":[{"query":"Hello!"},{}],"output":{"result":"Hey!"}}",
             "event": "tool.dummy.run.finish",
           },
         ]

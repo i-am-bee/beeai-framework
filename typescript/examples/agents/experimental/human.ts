@@ -15,7 +15,7 @@ Logger.root.level = "silent"; // Disable internal logs
 const logger = new Logger({ name: "app", level: "trace" });
 
 // Initialize LLM (test against llama as requested)
-const llm = new OllamaChatModel("llama3.1");
+const llm = new OllamaChatModel("granite4:micro");
 
 // Create the console reader once, share it with HumanTool
 const reader = createConsoleReader();

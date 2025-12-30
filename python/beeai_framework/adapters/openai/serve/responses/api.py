@@ -151,6 +151,7 @@ class ResponsesAPI:
                     )
                 )
                 try:
+                    # pyrefly: ignore [bad-assignment]
                     async for message in openai_model.stream(instructions + history + messages):
                         if output_item_id is None or message.append is False:
                             if output_item_id is not None:

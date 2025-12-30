@@ -86,7 +86,11 @@ export abstract class VercelChatModel<
       finishReason,
       usage,
       response: { messages },
-    } = await generateText(await this.transformInput(input));
+    } = await generateText({
+      temperature: 0,
+      ...(await this.transformInput(input)),
+      abortSignal: run.signal,
+    });
 
     return new ChatModelOutput(
       this.transformMessages(messages),
@@ -103,7 +107,6 @@ export abstract class VercelChatModel<
       temperature: 0,
       ...(await this.transformInput(input)),
       abortSignal: run.signal,
-      model: this.model,
       ...(schema instanceof ZodSchema
         ? {
             schema,
@@ -131,6 +134,19 @@ export abstract class VercelChatModel<
   }
 
   async *_createStream(input: ChatModelInput, run: GetRunContext<this>) {
+    const responseFormat = input.responseFormat;
+    if (responseFormat && (responseFormat instanceof ZodSchema || responseFormat.schema)) {
+      const { output } = await this._createStructure(
+        {
+          ...input,
+          schema: responseFormat,
+        },
+        run,
+      );
+      yield output;
+      return;
+    }
+
     if (!this.supportsToolStreaming && !isEmpty(input.tools ?? [])) {
       const response = await this._create(input, run);
       yield response;
@@ -147,42 +163,91 @@ export abstract class VercelChatModel<
       abortSignal: run.signal,
     });
 
-    let lastChunk: ChatModelOutput | null = null;
+    let streamEmpty = true;
+    const streamedToolCalls = new Map<string, ToolCallPart>();
     for await (const event of fullStream) {
       let message: Message;
       switch (event.type) {
         case "text-delta":
-          message = new AssistantMessage(event.text);
+          streamEmpty = false;
+          message = new AssistantMessage(event.text, {}, event.id);
+          yield new ChatModelOutput([message]);
           break;
-        case "tool-call":
-          message = new AssistantMessage({
-            type: event.type,
-            toolCallId: event.toolCallId,
+        case "text-end":
+          streamEmpty = false;
+          break;
+        case "tool-input-start": {
+          if (!input.streamPartialToolCalls) {
+            break;
+          }
+
+          const chunk: ToolCallPart = {
+            type: "tool-call",
             toolName: event.toolName,
-            input: event.input,
-          });
+            toolCallId: event.id,
+            input: "",
+          };
+          streamedToolCalls.set(event.id, chunk);
+          const message = new AssistantMessage(chunk, {}, event.id);
+          yield new ChatModelOutput([message]);
           break;
+        }
+        case "tool-input-delta": {
+          if (!input.streamPartialToolCalls) {
+            break;
+          }
+
+          if (event.delta) {
+            const chunk = streamedToolCalls.get(event.id)!;
+            const message = new AssistantMessage({ ...chunk, input: event.delta }, {}, event.id);
+            yield new ChatModelOutput([message]);
+          }
+          break;
+        }
+        case "tool-call": {
+          streamEmpty = false;
+          const existingToolCall = streamedToolCalls.get(event.toolCallId);
+          if (existingToolCall) {
+            streamedToolCalls.delete(event.toolCallId);
+            break;
+          }
+          message = new AssistantMessage(
+            {
+              type: event.type,
+              toolCallId: event.toolCallId,
+              toolName: event.toolName,
+              input: event.input,
+            },
+            {},
+            event.toolCallId,
+          );
+          yield new ChatModelOutput([message]);
+          break;
+        }
         case "error":
           throw new ChatModelError("Unhandled error", [event.error as Error]);
         case "tool-result":
-          message = new ToolMessage({
-            type: event.type,
-            toolCallId: event.toolCallId,
-            toolName: event.toolName,
-            output: event.output as any,
-          });
+          streamEmpty = false;
+          message = new ToolMessage(
+            {
+              type: event.type,
+              toolCallId: event.toolCallId,
+              toolName: event.toolName,
+              output: event.output as any,
+            },
+            {},
+            `tool_result_${event.toolCallId}`,
+          );
+          yield new ChatModelOutput([message]);
           break;
         case "abort":
-          message = new AssistantMessage([]);
           break;
         default:
-          continue;
+          break;
       }
-      lastChunk = new ChatModelOutput([message]);
-      yield lastChunk;
     }
 
-    if (!lastChunk) {
+    if (streamEmpty) {
       throw new ChatModelError("No chunks have been received!");
     }
 
@@ -192,8 +257,10 @@ export abstract class VercelChatModel<
         finishReasonPromise,
         responsePromise,
       ]);
+      const lastChunk = new ChatModelOutput([]);
       lastChunk.usage = extractTokenUsage(usage);
       lastChunk.finishReason = finishReason;
+      yield lastChunk;
     } catch (e) {
       if (!run.signal.aborted) {
         throw e;

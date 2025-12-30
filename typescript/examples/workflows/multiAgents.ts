@@ -6,7 +6,7 @@ import { AgentWorkflow } from "beeai-framework/workflows/agent";
 import { OllamaChatModel } from "beeai-framework/adapters/ollama/backend/chat";
 
 const workflow = new AgentWorkflow("Smart assistant");
-const llm = new OllamaChatModel("llama3.1");
+const llm = new OllamaChatModel("granite4:micro");
 
 workflow.addAgent({
   name: "Researcher",

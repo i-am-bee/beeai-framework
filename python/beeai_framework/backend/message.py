@@ -138,6 +138,7 @@ class Message(ABC, Generic[T]):
         return [cont for cont in self.content if isinstance(cont, MessageTextContent)]
 
     def get_by_type(self, tp: type[T2]) -> list[T2]:
+        # pyrefly: ignore [bad-return]
         return [cont for cont in self.content if isinstance(cont, tp)]
 
     def to_plain(self) -> dict[str, Any]:
@@ -174,6 +175,7 @@ class AssistantMessage(Message[AssistantMessageContent]):
                 (
                     MessageTextContent(text=c)
                     if isinstance(c, str)
+                    # pyrefly: ignore [bad-argument-type]
                     else to_any_model([MessageToolCallContent, MessageTextContent], cast(AssistantMessageContent, c))
                 )
                 for c in cast_list(content)
@@ -246,6 +248,7 @@ class SystemMessage(Message[MessageTextContent]):
 
     def to_plain(self) -> dict[str, Any]:
         return {
+            # pyrefly: ignore [missing-attribute]
             "role": self.role.value,
             "content": "\n".join([m.text for m in self.content]),
         }
@@ -270,7 +273,9 @@ class UserMessage(Message[UserMessageContent]):
                     MessageTextContent(text=c)
                     if isinstance(c, str)
                     else to_any_model(
-                        [MessageImageContent, MessageTextContent, MessageFileContent], cast(UserMessageContent, c)
+                        [MessageImageContent, MessageTextContent, MessageFileContent],
+                        # pyrefly: ignore [bad-argument-type]
+                        cast(UserMessageContent, c),
                     )
                 )
                 for c in cast_list(content)

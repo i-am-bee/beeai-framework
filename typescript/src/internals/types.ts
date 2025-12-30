@@ -61,7 +61,7 @@ export type NonEmptyArray<T> = [T, ...T[]];
 export type Unwrap<T> = T extends (infer X)[] ? X : T;
 export type Constructable<T> = new (...args: any[]) => T;
 export type AbstractConstructable = abstract new (...args: any[]) => any;
-export type AnyConstructable = Constructable<any>;
+export type AnyConstructable = AbstractConstructable & Record<string, any>;
 
 export type Constructor<T extends new (...args: any) => any> = T extends new (
   ...args: infer A

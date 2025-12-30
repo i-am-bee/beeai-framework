@@ -5,6 +5,7 @@ import uuid
 from typing import Any
 
 from beeai_framework.agents import AgentError, AgentExecutionConfig
+from beeai_framework.agents._utils import run_tools
 from beeai_framework.agents.requirement.events import (
     RequirementAgentFinalAnswerEvent,
     RequirementAgentStartEvent,
@@ -19,7 +20,7 @@ from beeai_framework.agents.requirement.types import (
     RequirementAgentTemplates,
 )
 from beeai_framework.agents.requirement.utils._llm import RequirementsReasoner, _create_system_message
-from beeai_framework.agents.requirement.utils._tool import FinalAnswerTool, FinalAnswerToolSchema, _run_tools
+from beeai_framework.agents.requirement.utils._tool import FinalAnswerTool, FinalAnswerToolSchema
 from beeai_framework.agents.tool_calling.utils import ToolCallChecker
 from beeai_framework.backend import (
     AnyMessage,
@@ -110,14 +111,17 @@ class RequirementAgentRunner:
         request: RequirementAgentRequest,
     ) -> ChatModelOutput:
         stream_middleware = self.__create_final_answer_stream(request.final_answer)
-        messages, options = self._prepare_llm_request(request)
-        response = await self._llm.run(messages, **options).middleware(stream_middleware)
 
-        self._state.usage.merge(response.usage)
-        self._state.cost.merge(response.cost)
+        try:
+            messages, options = self._prepare_llm_request(request)
+            response = await self._llm.run(messages, **options).middleware(stream_middleware)
 
-        stream_middleware.unbind()
-        return response
+            self._state.usage.merge(response.usage)
+            self._state.cost.merge(response.cost)
+
+            return response
+        finally:
+            stream_middleware.unbind()
 
     def _prepare_llm_request(self, request: RequirementAgentRequest) -> tuple[list[AnyMessage], ChatModelOptions]:
         messages = [
@@ -187,7 +191,7 @@ class RequirementAgentRunner:
     ) -> list[ToolMessage]:
         tool_results: list[ToolMessage] = []
 
-        for tool_call in await _run_tools(
+        for tool_call in await run_tools(
             tools=tools,
             messages=tool_calls,
             context={"state": self._state.model_dump()},

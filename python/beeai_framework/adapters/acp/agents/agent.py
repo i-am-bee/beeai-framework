@@ -59,6 +59,7 @@ class ACPAgent(BaseAgent[ACPAgentOutput]):
                 inputs = (
                     [self._convert_to_agent_stack_message(i) for i in input]
                     if isinstance(input, list)
+                    # pyrefly: ignore [bad-argument-type]
                     else [self._convert_to_agent_stack_message(input)]
                 )
 
@@ -90,6 +91,7 @@ class ACPAgent(BaseAgent[ACPAgentOutput]):
                     input_messages = (
                         [self._convert_to_framework_message(i) for i in input]
                         if isinstance(input, list)
+                        # pyrefly: ignore [bad-argument-type]
                         else [self._convert_to_framework_message(input)]
                     )
 

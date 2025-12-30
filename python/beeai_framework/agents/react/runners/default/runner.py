@@ -258,6 +258,7 @@ class DefaultRunner(BaseRunner):
 
         async def executor(_: RetryableContext) -> ReActAgentRunnerToolResult:
             try:
+                # pyrefly: ignore [missing-attribute]
                 tool_output: ToolOutput = await tool.run(input.state.tool_input).context(
                     {"state": {"memory": self.memory}}
                 )

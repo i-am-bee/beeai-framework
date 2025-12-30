@@ -17,6 +17,7 @@ class ACPIOContext:
         self._cleanup: Callable[[], None] = lambda: None
 
     def __enter__(self) -> Self:
+        # pyrefly: ignore [bad-argument-type]
         self._cleanup = setup_io_context(read=self._read, confirm=self._confirm)
         return self
 

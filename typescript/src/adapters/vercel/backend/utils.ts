@@ -6,10 +6,11 @@
 import { CustomMessage, Role, UserMessage } from "@/backend/message.js";
 import { isPlainObject, isString, isTruthy } from "remeda";
 import { getProp } from "@/internals/helpers/object.js";
-import type { TextPart, LanguageModelUsage } from "ai";
+import { TextPart, LanguageModelUsage, ToolCallPart } from "ai";
 import { z } from "zod";
 import { parseEnv } from "@/internals/env.js";
 import { ChatModelUsage } from "@/backend/chat.js";
+import { parseBrokenJson } from "@/internals/helpers/schema.js";
 
 export function encodeCustomMessage(msg: CustomMessage): UserMessage {
   return new UserMessage([
@@ -103,4 +104,28 @@ export function extractTokenUsage(usage: LanguageModelUsage): ChatModelUsage {
     reasoningTokens: usage.reasoningTokens,
     cachedPromptTokens: usage.cachedInputTokens,
   };
+}
+
+export function mergeTokenUsage(target: ChatModelUsage, ...sources: ChatModelUsage[]): void {
+  for (const source of sources) {
+    target.totalTokens += source.totalTokens ?? 0;
+    target.promptTokens += source.promptTokens ?? 0;
+    target.completionTokens += source.completionTokens ?? 0;
+    if (source.reasoningTokens) {
+      target.reasoningTokens = (target.reasoningTokens ?? 0) + source.reasoningTokens;
+    }
+    if (source.cachedPromptTokens) {
+      target.cachedPromptTokens = (target.cachedPromptTokens ?? 0) + source.cachedPromptTokens;
+    }
+  }
+}
+
+export function isToolCallValid(obj: ToolCallPart) {
+  if (!obj.toolName || !obj.toolCallId || !obj.input) {
+    return false;
+  }
+  if (isString(obj.input)) {
+    return Boolean(parseBrokenJson(obj.input, { pair: ["{", "}"] }));
+  }
+  return Boolean(obj.input);
 }

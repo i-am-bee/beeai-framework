@@ -69,6 +69,7 @@ class MCPTool(Tool[BaseModel, ToolRunOptions, JSONToolOutput]):
             creator=self,
         )
 
+    # pyrefly: ignore [bad-param-name-override]
     async def _run(self, input_data: Any, options: ToolRunOptions | None, context: RunContext) -> JSONToolOutput:
         """Execute the tool with given input."""
         logger.debug(f"Executing tool {self._tool.name} with input: {input_data}")

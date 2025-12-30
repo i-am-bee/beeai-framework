@@ -16,6 +16,10 @@ export function* traversePrototypeChain(value: unknown, excluded?: Set<any>) {
   }
 }
 
+export function isConstructor<A>(value: any): value is ClassConstructor<A> {
+  return !!value && !!value.prototype && !!value.prototype.constructor;
+}
+
 export function isDirectInstanceOf<A>(
   object: unknown,
   constructor: ClassConstructor<A>,

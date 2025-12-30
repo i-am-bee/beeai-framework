@@ -90,6 +90,7 @@ class AskPermissionRequirement(Requirement[RequirementAgentRunState]):
             data.output = StringToolOutput("This tool is not allowed to be used.")
 
     @run_with_context
+    # pyrefly: ignore [bad-override]
     async def run(self, state: RequirementAgentRunState, context: RunContext) -> list[Rule]:
         return [
             Rule(

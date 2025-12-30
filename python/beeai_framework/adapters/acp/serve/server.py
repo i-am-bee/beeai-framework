@@ -33,6 +33,8 @@ from beeai_framework.adapters.acp.serve.agent import ACPServerAgent
 from beeai_framework.agents import AnyAgent
 from beeai_framework.agents.react.agent import ReActAgent
 from beeai_framework.agents.react.events import ReActAgentUpdateEvent
+
+# pyrefly: ignore [deprecated]
 from beeai_framework.agents.tool_calling.agent import ToolCallingAgent
 from beeai_framework.agents.tool_calling.events import ToolCallingAgentSuccessEvent
 from beeai_framework.backend.message import (
@@ -106,6 +108,7 @@ class ACPServer(Generic[AnyAgentLike], Server[AnyAgentLike, ACPServerAgent, "ACP
 
     def _setup_members(self) -> None:
         for member in self.members:
+            # pyrefly: ignore [missing-attribute]
             factory = type(self)._factories[type(member)]
             config = self._metadata_by_agent.get(member, None)
             self._server.register(factory(member, metadata=config, memory_manager=self._memory_manager))  # type: ignore[call-arg]

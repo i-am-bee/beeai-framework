@@ -16,7 +16,7 @@ const logger = new Logger({ name: "app", level: "trace" });
 // "granite3.3"
 // "deepseek-r1:32b"
 // ensure the model is pulled before running
-const llm = new OllamaChatModel("llama3.1:8b");
+const llm = new OllamaChatModel("granite4:micro");
 
 const agent = new ToolCallingAgent({
   llm,

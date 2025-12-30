@@ -32,6 +32,7 @@ async def populate_documents() -> VectorStore | None:
     embedding_model = EmbeddingModel.from_name("watsonx:ibm/slate-125m-english-rtrvr-v2", truncate_input_tokens=500)
 
     # Load existing vector store if available
+    # pyrefly: ignore [redundant-condition]
     if VECTOR_DB_PATH_4_DUMP and os.path.exists(VECTOR_DB_PATH_4_DUMP):
         print(f"Loading vector store from: {VECTOR_DB_PATH_4_DUMP}")
         preloaded_vector_store: VectorStore = TemporalVectorStore.load(
@@ -58,6 +59,7 @@ async def populate_documents() -> VectorStore | None:
 
         print("Rebuilding vector store")
         # Adapter example
+        # pyrefly: ignore [bad-assignment]
         vector_store: TemporalVectorStore = VectorStore.from_name(
             name="beeai:TemporalVectorStore", embedding_model=embedding_model
         )  # type: ignore[assignment]
@@ -65,8 +67,10 @@ async def populate_documents() -> VectorStore | None:
         # vector_store: TemporalVectorStore = TemporalVectorStore(embedding_model=embedding_model)
         # vector_store = InMemoryVectorStore(embedding_model)
         _ = await vector_store.add_documents(documents=documents)
+        # pyrefly: ignore [redundant-condition]
         if VECTOR_DB_PATH_4_DUMP and isinstance(vector_store, LangChainVectorStore):
             print(f"Dumping vector store to: {VECTOR_DB_PATH_4_DUMP}")
+            # pyrefly: ignore [missing-attribute]
             vector_store.vector_store.dump(VECTOR_DB_PATH_4_DUMP)
         return vector_store
 
