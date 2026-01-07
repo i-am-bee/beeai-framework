@@ -32,6 +32,7 @@ from beeai_framework.backend import (
     ToolMessage,
 )
 from beeai_framework.backend.chat import ChatModelOptions
+from beeai_framework.backend.errors import ChatModelToolCallError
 from beeai_framework.backend.utils import parse_broken_json
 from beeai_framework.context import RunContext
 from beeai_framework.memory import UnconstrainedMemory
@@ -120,6 +121,15 @@ class RequirementAgentRunner:
             self._state.cost.merge(response.cost)
 
             return response
+        except ChatModelToolCallError as e:
+            generated_content = e.generated_content or (e.response.get_text_content() if e.response else "")
+            if not generated_content:
+                raise e
+
+            response = ChatModelOutput.from_chunks([e.response] if e.response else [])
+            response.output.clear()
+            response.output.append(AssistantMessage(generated_content))
+            return response
         finally:
             stream_middleware.unbind()
 
@@ -137,6 +147,7 @@ class RequirementAgentRunner:
             tools=request.allowed_tools,
             tool_choice=request.tool_choice,
             stream_partial_tool_calls=True,
+            fallback_tool=request.final_answer if request.can_stop else None,
         )
 
         cache_control_injection_points = [
@@ -269,11 +280,15 @@ class RequirementAgentRunner:
         # Try to cast a text message to a final answer tool call if it is allowed
         if not response.get_tool_calls():
             text = response.get_text_content()
-            if not text or request.can_stop:
+            if not text or not request.can_stop:
                 raise AgentError("Model produced an empty response.", context={"response": response})
 
             final_answer_tool_call = await self._create_final_answer_tool_call(text)
-            if not final_answer_tool_call:
+            if final_answer_tool_call:
+                # Manually emit the final_answer event
+                stream = self.__create_final_answer_stream(request.final_answer)
+                await stream.add(ChatModelOutput(output=[final_answer_tool_call]))
+            else:
                 err = AgentError("Model produced an invalid final answer tool call.")
                 self._iteration_error_counter.use(err)
                 self._global_error_counter.use(err)
