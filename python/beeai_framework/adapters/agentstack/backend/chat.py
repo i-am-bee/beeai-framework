@@ -81,7 +81,8 @@ class AgentStackChatModel(ChatModel):
             f"_{k}" if hasattr(type(self), k) else k  # eg: tool_choice_support -> _tool_choice_support
             for k, v in get_type_hints(ChatModelKwargs).items()
             # include all custom properties or those that can be mutated
-            if k in CopyableKwargs and (kwargs.get(k) is not None or not is_primitive(v))
+            if k in CopyableKwargs
+            and (kwargs.get(k) is not None or (not is_primitive(v) and k != "tool_choice_support"))
         }
         self.preferred_models = preferred_models or []
         self._initiated = True
@@ -132,14 +133,19 @@ class AgentStackChatModel(ChatModel):
             **{k.lstrip("_"): getattr(self, k) for k in self._modified_attributes if hasattr(self, k)}
         )
 
-        # If the tool choice parameter equals to the default, we assume it was not set by the user
-        if kwargs.get("tool_choice_support") == type(self).tool_choice_support:
-            # Empty/None means we let the target class decide
-            kwargs.pop("tool_choice_support", None)
+        # If value is defined, then it was configured by the user explicitly
+        tool_choice_support = kwargs.pop("tool_choice_support", None)
 
-        # If a user did not set the tool choice support, we take the configuration from the provider
-        if kwargs.get("tool_choice_support") is None and config.tool_choice_support is not None:
-            kwargs["tool_choice_support"] = config.tool_choice_support.copy()
+        # User modified class internal tool_choice attribute because it differs from the default
+        if tool_choice_support is None and self._tool_choice_support != type(self).tool_choice_support:
+            tool_choice_support = self._tool_choice_support.copy()
+
+        # Tool choice was not set, so we take the configuration from the provider
+        if tool_choice_support is None and config.tool_choice_support is not None:
+            tool_choice_support = config.tool_choice_support.copy()
+
+        if tool_choice_support is not None:
+            kwargs["tool_choice_support"] = tool_choice_support
 
         cls = config.cls if config.openai_native else OpenAIChatModel
         model = cls(  # type: ignore
