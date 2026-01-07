@@ -7,7 +7,7 @@ from contextvars import ContextVar
 from typing import TYPE_CHECKING, Any, ClassVar, Self, get_type_hints
 from weakref import WeakKeyDictionary
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
 from typing_extensions import Unpack, override
 
 from beeai_framework.adapters.openai import OpenAIChatModel
@@ -40,7 +40,7 @@ CopyableKwargs = set(ChatModelKwargs.__annotations__.keys()) - {"middlewares", "
 class ProviderConfig(BaseModel):
     name: ProviderName = "openai"
     cls: type[ChatModel] = OpenAIChatModel
-    tool_choice_support: set[ToolChoiceType] = Field(default_factory=set)
+    tool_choice_support: set[ToolChoiceType] | None = None
     openai_native: bool = False
 
 
@@ -78,7 +78,7 @@ class AgentStackChatModel(ChatModel):
     ) -> None:
         super().__init__(**kwargs)
         self._modified_attributes: set[str] = {
-            k
+            f"_{k}" if hasattr(type(self), k) else k  # eg: tool_choice_support -> _tool_choice_support
             for k, v in get_type_hints(ChatModelKwargs).items()
             # include all custom properties or those that can be mutated
             if k in CopyableKwargs and (kwargs.get(k) is not None or not is_primitive(v))
@@ -128,10 +128,18 @@ class AgentStackChatModel(ChatModel):
         provider_name = llm_conf.api_model.replace("beeai:", "").split(":")[0]
         config = (self.providers_mapping.get(provider_name) or (lambda: ProviderConfig()))()
 
-        kwargs = ChatModelKwargs(**{k: getattr(self, k) for k in self._modified_attributes if hasattr(self, k)})  # type: ignore
-        with contextlib.suppress(AttributeError):
-            if kwargs["tool_choice_support"] == type(self).tool_choice_support:
-                kwargs.pop("tool_choice_support")
+        kwargs = ChatModelKwargs(
+            **{k.lstrip("_"): getattr(self, k) for k in self._modified_attributes if hasattr(self, k)}
+        )
+
+        # If the tool choice parameter equals to the default, we assume it was not set by the user
+        if kwargs.get("tool_choice_support") == type(self).tool_choice_support:
+            # Empty/None means we let the target class decide
+            kwargs.pop("tool_choice_support", None)
+
+        # If a user did not set the tool choice support, we take the configuration from the provider
+        if kwargs.get("tool_choice_support") is None and config.tool_choice_support is not None:
+            kwargs["tool_choice_support"] = config.tool_choice_support.copy()
 
         cls = config.cls if config.openai_native else OpenAIChatModel
         model = cls(  # type: ignore
@@ -148,9 +156,10 @@ class AgentStackChatModel(ChatModel):
         object.__setattr__(self, "_propagating_back", True)
         try:
             for k in CopyableKwargs:
-                v = getattr(model, k)
-                if v is not getattr(self, k):
-                    setattr(self, k, v)
+                with contextlib.suppress(AttributeError):
+                    v = getattr(model, k)
+                    if v is not getattr(self, k):
+                        setattr(self, k, v)
         finally:
             object.__setattr__(self, "_propagating_back", False)
 
