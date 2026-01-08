@@ -73,6 +73,11 @@ class StreamToolCallMiddleware(RunMiddlewareProtocol):
             )
         )
 
+    async def add(self, chunk: ChatModelOutput) -> None:
+        await self._handle_new_token(
+            ChatModelNewTokenEvent(value=chunk, abort=lambda: None), EventMeta.model_construct()
+        )
+
     def unbind(self) -> None:
         while self._cleanups:
             fn = self._cleanups.pop(0)
