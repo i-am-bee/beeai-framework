@@ -1,3 +1,10 @@
+## python_v0.1.75 (2026-01-08)
+
+### Bug Fixes
+
+- **agents**: propagate events after malformed calls fix (#1381)
+- **adapters**: correctly propagate AgentStackChatModel settings (#1379)
+
 ## python_v0.1.74 (2025-12-22)
 
 ### Bug Fixes
