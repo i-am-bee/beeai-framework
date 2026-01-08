@@ -280,10 +280,9 @@ class RequirementAgentRunner:
         # Try to cast a text message to a final answer tool call if it is allowed
         if not response.get_tool_calls():
             text = response.get_text_content()
-            if not text or not request.can_stop:
-                raise AgentError("Model produced an empty response.", context={"response": response})
-
-            final_answer_tool_call = await self._create_final_answer_tool_call(text)
+            final_answer_tool_call = (
+                await self._create_final_answer_tool_call(text) if request.can_stop and text else None
+            )
             if final_answer_tool_call:
                 # Manually emit the final_answer event
                 stream = self.__create_final_answer_stream(request.final_answer)
