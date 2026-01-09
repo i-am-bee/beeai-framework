@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING, ClassVar, Self
 from weakref import WeakKeyDictionary
 
 from pydantic import BaseModel
-from typing_extensions import Unpack
+from typing_extensions import Unpack, override
 
 from beeai_framework.adapters.openai import OpenAIEmbeddingModel
 from beeai_framework.backend import EmbeddingModelOutput
@@ -15,7 +15,8 @@ from beeai_framework.backend.constants import ProviderName
 from beeai_framework.backend.embedding import EmbeddingModel, EmbeddingModelKwargs
 from beeai_framework.backend.types import EmbeddingModelInput
 from beeai_framework.backend.utils import load_model
-from beeai_framework.context import RunContext
+from beeai_framework.context import Run, RunContext
+from beeai_framework.utils import AbortSignal
 
 try:
     from agentstack_sdk.platform import ModelProviderType
@@ -117,6 +118,12 @@ class AgentstackEmbeddingModel(EmbeddingModel):
     @property
     def model_id(self) -> str:
         return self._model.model_id
+
+    @override
+    def create(
+        self, values: list[str], *, signal: AbortSignal | None = None, max_retries: int | None = None
+    ) -> Run[EmbeddingModelOutput]:
+        return self._model.create(values, signal=signal, max_retries=max_retries)
 
     async def _create(self, input: EmbeddingModelInput, run: RunContext) -> EmbeddingModelOutput:
         return await self._model.create(input.values, signal=input.signal, max_retries=input.max_retries)
