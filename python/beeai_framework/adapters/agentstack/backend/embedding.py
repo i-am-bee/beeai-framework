@@ -130,7 +130,7 @@ class AgentstackEmbeddingModel(EmbeddingModel):
             preferred_models=self.preferred_models.copy(),
             settings=self._settings.copy(),
         )
-        self.middlewares.extend(self.middlewares)
+        cloned.middlewares.extend(self.middlewares)
         return cloned
 
     @staticmethod
