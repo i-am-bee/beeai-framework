@@ -49,6 +49,7 @@ exclude = list(
             "serve/agent_stack_custom.py",
             "serve/agent_stack_await.py",
             "serve/agent_stack_llm.py",
+            "serve/agent_stack_rag.py",
             "agents/handoff_agent_stack.py",
             "serve/a2a_server.py",
             "serve/acp_with_custom_agent.py",

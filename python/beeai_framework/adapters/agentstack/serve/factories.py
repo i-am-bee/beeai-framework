@@ -83,6 +83,8 @@ def _react_agent_factory(
             metadata=message.metadata,
             # pyrefly: ignore [bad-argument-type]
             llm=extra_extensions.get("llm_ext"),
+            # pyrefly: ignore [bad-argument-type]
+            embedding=extra_extensions.get("embedding"),
             extra_extensions=extra_extensions,  # type: ignore[arg-type]
         ) as stack_context:
             artifact_id = uuid.uuid4()
@@ -153,6 +155,8 @@ def _tool_calling_agent_factory(
             metadata=message.metadata,
             # pyrefly: ignore [bad-argument-type]
             llm=extra_extensions.get("llm_ext"),
+            # pyrefly: ignore [bad-argument-type]
+            embedding=extra_extensions.get("embedding"),
             extra_extensions=extra_extensions,  # type: ignore[arg-type]
         ) as stack_context:
             result = await cloned_agent.run([convert_a2a_to_framework_message(message)]).middleware(
@@ -199,6 +203,8 @@ def _requirement_agent_factory(
             metadata=message.metadata,
             # pyrefly: ignore [bad-argument-type]
             llm=extra_extensions.get("llm_ext"),
+            # pyrefly: ignore [bad-argument-type]
+            embedding=extra_extensions.get("embedding"),
             extra_extensions=extra_extensions,  # type: ignore[arg-type]
         ) as stack_context:
             artifact_id = uuid.uuid4()
@@ -280,6 +286,8 @@ def _runnable_factory(
             metadata=message.metadata,
             # pyrefly: ignore [bad-argument-type]
             llm=extra_extensions.get("llm_ext"),
+            # pyrefly: ignore [bad-argument-type]
+            embedding=extra_extensions.get("embedding"),
             extra_extensions=extra_extensions,  # type: ignore[arg-type]
         ):
             # pyrefly: ignore [missing-attribute]
