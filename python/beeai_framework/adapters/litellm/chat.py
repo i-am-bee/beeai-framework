@@ -238,6 +238,7 @@ class LiteLLMChatModel(ChatModel, ABC):
                 "supports_top_level_unions",
                 "validate_response_format",
                 "stream_partial_tool_calls",
+                "fallback_tool",
             },
         )
         params = include_keys(
