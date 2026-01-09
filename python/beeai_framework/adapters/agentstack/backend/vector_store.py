@@ -69,6 +69,11 @@ class NativeVectorStore(VectorStore):
             )
         return self._vector_store
 
+    @property
+    def is_initialized(self) -> bool:
+        """Check if the vector store has been initialized."""
+        return self._vector_store is not None
+
     @classmethod
     def _class_from_name(cls, class_name: str, embedding_model: EmbeddingModel, **kwargs: Any) -> VectorStore:
         """Create an instance from class name (required by VectorStore base class)."""

@@ -34,11 +34,15 @@ def main() -> None:
     class RAGMiddleware(RunMiddlewareProtocol):
         async def bind(self, ctx: RunContext) -> None:  # pyrefly: ignore [bad-override]
             # insert the documents only at the beginning
-            if vector_store._vector_store is None:
+            if not vector_store.is_initialized:
                 print("debug: initializing vector store")
-                await vector_store.add_documents([Document(content="My name is John.", metadata={})])
-                await vector_store.add_documents([Document(content="I am a python programmer.", metadata={})])
-                await vector_store.add_documents([Document(content="I am 30 years old.", metadata={})])
+                await vector_store.add_documents(
+                    [
+                        Document(content="My name is John.", metadata={}),
+                        Document(content="I am a python programmer.", metadata={}),
+                        Document(content="I am 30 years old.", metadata={}),
+                    ]
+                )
 
     agent = RequirementAgent(
         llm=llm,
