@@ -5,13 +5,10 @@ from experiment import run_experiment
 async def main():
     # Create dataset (run once)
     create_dataset()
-    test_cases = [
-        ("What is the capital of France?", "Paris"),
-        ("Who is the CEO of Tesla?", "Elon Musk"),
-        ("Write a python print statement that prints 'Hello World'", "print('Hello World')")
-    ]
-    for query, expected in test_cases:
-        add_dataset_item(query, expected)
+    add_dataset_item("The Oberoi family is part of a hotel company that has a head office in what city?", "Delhi", [
+        "The Oberoi family is an Indian family that is famous for its involvement in hotels, namely through The Oberoi Group.",
+        "The Oberoi Group is a hotel company with its head office in Delhi."], ["Oberoi family","The Oberoi Group"])
    
+ 
 if __name__ == "__main__":
     asyncio.run(main())

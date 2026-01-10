@@ -14,7 +14,7 @@ from agent import create_agent
 async def main():
     agent = create_agent()
     response = await agent.run(
-        "I'm planning a trip to Barcelona, Spain. Can you research key attractions and landmarks I should visit, and also tell me what the current weather conditions are like there?",
+        "What is the capital of France?",
         execution=AgentExecutionConfig(
             max_retries_per_step=3, 
             total_max_retries=10, 
@@ -25,7 +25,8 @@ async def main():
     # RequirementAgent returns different structure
     print("Agent Response:", response)
     print("\nFull response:")
-    print(response.model_dump())
+    ##print(response.model_dump())
+    print(response.last_message.text)
     
     return response
  

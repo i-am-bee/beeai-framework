@@ -6,6 +6,23 @@ from dataset import get_dataset
 from beeai_framework.adapters.vertexai import VertexAIChatModel
 from beeai_framework.backend.chat import ChatModel
 from beeai_framework.backend.message import UserMessage
+import pandas as pd
+from langfuse import Langfuse
+import json
+from ragas.metrics import (
+    Faithfulness,
+    ResponseRelevancy,
+    LLMContextPrecisionWithoutReference,
+)
+from ragas.run_config import RunConfig
+from ragas.metrics.base import MetricWithLLM
+from ragas.llms import llm_factory
+
+def init_ragas_metrics(metrics, llm, embedding):
+    for metric in metrics:
+        metric.llm = llm
+        run_config = RunConfig()
+        metric.init(run_config)
 
 async def judge_correctness(llm: ChatModel, query: str, actual: str, expected: str):
     """
@@ -34,7 +51,8 @@ async def judge_correctness(llm: ChatModel, query: str, actual: str, expected: s
     VERDICT: [YES or NO]
     """
     try:
-        response = await llm.create(messages=[UserMessage(content=prompt)])
+        user_message = UserMessage(prompt)
+        response = await llm.run([user_message])
         text = response.get_text_content().strip()
         
       
@@ -46,9 +64,7 @@ async def judge_correctness(llm: ChatModel, query: str, actual: str, expected: s
         print(f"⚠️ Judge failed: {e}")
         return 0.0, f"Error: {str(e)}"
 
-#TODO: UNDERSTAND ROOT SPAN USAGE HERE
-#TODO: RUN MY EVALUATIONS
-#TODO: GET EVALUATION METRICS SCOERS 
+
 async def run_experiment():
     agent = create_agent()  # Remove await - it's not async
     dataset = get_dataset()
@@ -57,7 +73,7 @@ async def run_experiment():
         print(f"Running evaluation for item: {item.id} (Input: {item.input})")
         
         with item.run(
-            run_name="beeai_experiment_v1",
+            run_name="beeai_experiment_hotp",
             run_metadata={"model": "gpt-4o-mini", "temperature": 0.7},
             run_description="BeeAI agent experiment"
         ) as root_span:
@@ -67,13 +83,18 @@ async def run_experiment():
                 execution=AgentExecutionConfig(max_iterations=5),
             )
             
-            output_text = response.iterations[-1].state.final_answer
-    
-                
+            output_text = response.last_message.text
+            data = json.loads(output_text)
+            answer_text = data.get("answer", "")
+            tool_used = data.get("tool_used", [])
+            supporting_titles = data.get("supporting_titles", [])
+            supporting_sentences = data.get("supporting_sentences", [])
+            reasoning_explanation = data.get("reasoning_explanation", [])
+            
             # Update the trace with input and output
             root_span.update_trace(
-                input=item.input,
-                output={"result": output_text}
+                input=item.input["query"],
+                output={"answer": answer_text, "tool_used": tool_used, "supporting_titles": supporting_titles, "supporting_sentences": supporting_sentences, "reasoning_explanation": reasoning_explanation}
             )
             
             # Score the result against expected output
@@ -81,6 +102,8 @@ async def run_experiment():
                 root_span.score_trace(name="exact_match", value=1.0)
             else:
                 root_span.score_trace(name="exact_match", value=0.0)
+                
+    
                 
                 
         query = item.input["query"]
@@ -97,16 +120,21 @@ async def run_experiment():
 
         root_span.score_trace(
             name="ai_correctness",  
-            value=score,            
-            comment=reasoning       
+            value=score                     
         )
+        hallucination_evaluator = next(e for e in evaluators if e['name'] == 'Hallucination')
+        print(f"Prompt: {hallucination_evaluator['prompt']}")
+        print(f"Output Schema: {hallucination_evaluator['outputSchema']}")
+
         
         print(f"   🏁 Score: {score} | Reason: {reasoning.split('VERDICT')[0].strip()}")
-    
     print(f"\nFinished processing dataset for run 'beeai_experiment_v1'.")
-    
     # Flush events
+    
     langfuse.flush()
     
+
+
 if __name__ == "__main__":
     asyncio.run(run_experiment())
+   
