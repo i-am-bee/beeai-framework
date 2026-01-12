@@ -30,6 +30,7 @@ def main() -> None:
     embedding_model = AgentstackEmbeddingModel(preferred_models=["ollama:nomic-embed-text:latest"])
 
     vector_store = NativeVectorStore(embedding_model)
+    # vector_store = VectorStore.from_name("AgentStack:NativeVectorStore", embedding_model=embedding_model)
 
     # The middleware is necessary since the embedding service's initialization occurs after the client's call to the agent.
     class RAGMiddleware(RunMiddlewareProtocol):

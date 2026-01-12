@@ -1,6 +1,7 @@
 # Copyright 2025 © BeeAI a Series of LF Projects, LLC
 # SPDX-License-Identifier: Apache-2.0
 import uuid
+from abc import ABC
 from typing import Any
 
 from beeai_framework.backend import EmbeddingModelOutput
@@ -9,7 +10,7 @@ from beeai_framework.backend.types import Document, DocumentWithScore
 from beeai_framework.backend.vector_store import QueryLike, VectorStore
 
 try:
-    from agentstack_sdk.platform import VectorStore as AgentStackVectorStore
+    from agentstack_sdk.platform import VectorStore as AgentStackSDKVectorStore
     from agentstack_sdk.platform import VectorStoreItem
 except ModuleNotFoundError as e:
     raise ModuleNotFoundError(
@@ -17,7 +18,26 @@ except ModuleNotFoundError as e:
     ) from e
 
 
-class NativeVectorStore(VectorStore):
+class AgentStackVectorStore(VectorStore, ABC):
+    @classmethod
+    def _class_from_name(cls, class_name: str, embedding_model: EmbeddingModel, **kwargs: Any) -> VectorStore:
+        """Create an instance from class name (required by VectorStore base class)."""
+        # Get the current module to look for classes
+        import sys
+
+        current_module = sys.modules[cls.__module__]
+        # Try to get the class from the current module
+        try:
+            target_class = getattr(current_module, class_name)
+            if not issubclass(target_class, NativeVectorStore):
+                raise ValueError(f"Class '{class_name}' is not a NativeVectorStore subclass")
+            instance = target_class(embedding_model=embedding_model, **kwargs)
+            return instance
+        except AttributeError:
+            raise ValueError(f"Class '{class_name}' not found for BeeAI provider")
+
+
+class NativeVectorStore(AgentStackVectorStore):
     def __init__(self, embedding_model: EmbeddingModel, *, name: str | None = None) -> None:
         self.embedding_model = embedding_model
         self._vector_store = None
@@ -60,11 +80,11 @@ class NativeVectorStore(VectorStore):
         ]
         return documents_with_scores
 
-    async def _get_vector_store(self) -> AgentStackVectorStore:
+    async def _get_vector_store(self) -> AgentStackSDKVectorStore:
         if self._vector_store is None:
             embedding_response: EmbeddingModelOutput = await self.embedding_model.create(values=["test"])
             dimension = len(embedding_response.embeddings[0])
-            self._vector_store = await AgentStackVectorStore.create(
+            self._vector_store = await AgentStackSDKVectorStore.create(
                 name=self._name, dimension=dimension, model_id=self.embedding_model.model_id
             )
         return self._vector_store
@@ -73,20 +93,3 @@ class NativeVectorStore(VectorStore):
     def is_initialized(self) -> bool:
         """Check if the vector store has been initialized."""
         return self._vector_store is not None
-
-    @classmethod
-    def _class_from_name(cls, class_name: str, embedding_model: EmbeddingModel, **kwargs: Any) -> VectorStore:
-        """Create an instance from class name (required by VectorStore base class)."""
-        # Get the current module to look for classes
-        import sys
-
-        current_module = sys.modules[cls.__module__]
-        # Try to get the class from the current module
-        try:
-            target_class = getattr(current_module, class_name)
-            if not issubclass(target_class, NativeVectorStore):
-                raise ValueError(f"Class '{class_name}' is not a NativeVectorStore subclass")
-            instance = target_class(embedding_model=embedding_model, **kwargs)
-            return instance
-        except AttributeError:
-            raise ValueError(f"Class '{class_name}' not found for BeeAI provider")
