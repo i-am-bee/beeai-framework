@@ -26,14 +26,15 @@ def main() -> None:
         parameters=ChatModelParameters(stream=True),
     )
 
-    # setup embedding model from the agent Stack
+    # Initialize the embedding model from the Agent Stack.
     embedding_model = AgentstackEmbeddingModel(preferred_models=["ollama:nomic-embed-text:latest"])
 
     vector_store = NativeVectorStore(embedding_model)
 
+    # The middleware is necessary since the embedding service's initialization occurs after the client's call to the agent.
     class RAGMiddleware(RunMiddlewareProtocol):
         async def bind(self, ctx: RunContext) -> None:  # pyrefly: ignore [bad-override]
-            # insert the documents only at the beginning
+            # Only insert the documents during initialization.
             if not vector_store.is_initialized:
                 print("debug: initializing vector store")
                 await vector_store.add_documents(
@@ -53,7 +54,7 @@ def main() -> None:
 
     # define custom extensions
     class CustomExtensions(BaseAgentStackExtensions):
-        # name of the property must be 'embedding'
+        # "The property name must be 'embedding'.
         embedding: Annotated[
             EmbeddingServiceExtensionServer,
             EmbeddingServiceExtensionSpec.single_demand(suggested=tuple(embedding_model.preferred_models)),
