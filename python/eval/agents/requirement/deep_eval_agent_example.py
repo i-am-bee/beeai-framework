@@ -11,6 +11,12 @@ from pathlib import Path
 from collections import Counter
 from typing import Any, List
 
+# --- Environment Setup ---
+from dotenv import load_dotenv
+load_dotenv()
+
+
+
 # --- Logger Configuration ---
 def setup_logger():
     logger = logging.getLogger("DeepEvalAgentExample")
@@ -53,7 +59,6 @@ if str(CURRENT_DIR) not in sys.path:
 
 # --- Third-Party Library Imports ---
 import pytest
-from dotenv import load_dotenv
 from deepeval import evaluate
 from deepeval.evaluate import DisplayConfig
 from deepeval.metrics import (
@@ -90,10 +95,6 @@ from eval._utils import (
     EvaluationTable,
     print_evaluation_table,
 )
-
-
-# --- Environment Setup ---
-load_dotenv()
 
 test_cases_num = 50
 
@@ -335,7 +336,7 @@ async def create_agent() -> RequirementAgent:
         model_name,
         {
             "allow_parallel_tool_calls": True,
-            "tool_choice_support": set(), # <--- השורה הזו מונעת את הקריסה!
+            # "tool_choice_support": set(), # <--- השורה הזו מונעת את הקריסה!
         },
     )
 
@@ -350,25 +351,21 @@ async def create_agent() -> RequirementAgent:
     #
     JSON_SCHEMA_STRING = """{
         "answer": "<concise, specific answer only (e.g., 'Delhi')>",
-        "tool_used": [{"tool": "...", "times_used": 1}],
-        "supporting_titles": ["<title 1>", "<title 2>"],
         "supporting_sentences": ["<sentence 1>", "<sentence 2>"],
-        "reasoning_explanation": [{"step": 1, "logic": "The reasoning step"}]
     }"""
     
     agent = RequirementAgent(
         llm=llm, 
-        tools=[wiki_tool,OpenMeteoTool(), calculator_tool],
+        tools=[wiki_tool,OpenMeteoTool(), calculator_tool, ThinkTool()],
         memory=UnconstrainedMemory(),
-        role="You are a precise research assistant. You prioritize finding actual documents over guessing. If you don't find information, state that you couldn't find it in the context.",        
+        role="You are an expert Multi-hop Question Answering (QA) agent. Your primary role is to query the available data sources, extract relevant information and combine information from the provided context to answer the user's question. Answer in JSON format only.",
         instructions=[
             "RULES and CONSTRAINTS:",
             "1. SOURCE ADHERENCE (NO HALLUCINATION): Your final answer MUST be based ONLY on the context you retrieve from the provided tools. Do not use external knowledge.",
-            "2. SEARCH STRATEGY: Start with broad searches. If a tool returns 'No results', try again with a simpler query (e.g., just the person's name).",
-            "3. STOP CONDITION: If you find the clear and complete answer in the context of a tool (like Wikipedia), STOP searching immediately and provide the final JSON. Do not use Python or other tools if you already have the answer.",
-            "4. MULTI-HOP: You must perform multi-step reasoning ONLY if the question cannot be answered from a single retrieval.",
-            "5. FINAL FORMAT: Your ONLY final output MUST be a single, valid JSON object adhering strictly to the required keys: answer, tool_used, supporting_titles, supporting_sentences, reasoning_explanation.",
-            "6. THE JSON SCHEMA STRING: " + JSON_SCHEMA_STRING
+            "2. Wikipedia tool accepts short terms as the query rather than long queries, e.g. John Doe.",
+            "3. MULTI-HOP: You must perform multi-step reasoning or use multiple tools/retrievals if the question requires it.",
+            "4. ALWAYS RESPOND WITH JSON",
+            "5. THE RESPONSE JSON SCHEMA: " + JSON_SCHEMA_STRING
         ],
 
     )
@@ -495,7 +492,8 @@ async def create_rag_test_cases(num_rows: int = 50):
         agent_tool_usage_dict = dict(Counter([tc.name for tc in agent_tools_list]))
 
         try:
-            agent_response_json = json.loads(actual_output)
+            loaded_data = json.loads(actual_output)
+            agent_response_json = loaded_data if isinstance(loaded_data, dict) else {}
         except (json.JSONDecodeError, TypeError):
             agent_response_json = {}
 
@@ -504,7 +502,8 @@ async def create_rag_test_cases(num_rows: int = 50):
             or agent_response_json.get("final_answer")
             or actual_output
         )
-
+        supporting_sentences_from_agent = agent_response_json.get("supporting_sentences", None)
+        agent_supporting_sentences = supporting_sentences_from_agent if isinstance(supporting_sentences_from_agent, list) else agent_supporting_sentences
     
 
                 
