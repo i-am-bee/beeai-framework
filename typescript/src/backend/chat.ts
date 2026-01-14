@@ -10,7 +10,7 @@ import { takeBigger } from "@/internals/helpers/number.js";
 import { Callback } from "@/emitter/types.js";
 import { FrameworkError } from "@/errors.js";
 import { Emitter } from "@/emitter/emitter.js";
-import { GetRunContext, RunContext } from "@/context.js";
+import { GetRunContext, MiddlewareType, RunContext } from "@/context.js";
 import { isEmpty, isFunction, isPromise, isString, randomString } from "remeda";
 import { ObjectHashKeyFn } from "@/cache/decoratorCache.js";
 import { Task } from "promise-based-task";
@@ -129,6 +129,7 @@ export abstract class ChatModel extends Serializable {
   public abstract readonly emitter: Emitter<ChatModelEvents>;
   public cache: ChatModelCache = new NullCache();
   public parameters: ChatModelParameters = {};
+  public readonly middlewares: MiddlewareType<typeof this>[] = [];
   protected readonly logger = Logger.root.child({
     name: this.constructor.name,
   });
@@ -242,7 +243,7 @@ export abstract class ChatModel extends Serializable {
           await run.emitter.emit("finish", null);
         }
       },
-    );
+    ).middleware(...this.middlewares);
   }
 
   createStructure<T>(input: ChatModelObjectInput<T>) {
