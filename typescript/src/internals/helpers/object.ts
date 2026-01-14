@@ -160,3 +160,18 @@ export function safeDefineProperty<T, K extends keyof T>(target: T, key: K, get:
     }
   }
 }
+
+export function getLast<T>(iterable: Iterable<T>, fallback?: T): T {
+  const iterator = iterable[Symbol.iterator]();
+  let result = iterator.next();
+  let lastValue: any | undefined = fallback;
+
+  while (!result.done) {
+    lastValue = result.value;
+    result = iterator.next();
+  }
+  if (lastValue === undefined) {
+    throw new Error(`Target is empty.`);
+  }
+  return lastValue;
+}

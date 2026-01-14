@@ -5,7 +5,7 @@
 
 import { Serializable } from "@/internals/serializable.js";
 import { shallowCopy } from "@/serializer/utils.js";
-import { customMerge } from "@/internals/helpers/object.js";
+import { customMerge, getLast } from "@/internals/helpers/object.js";
 import { takeBigger } from "@/internals/helpers/number.js";
 import { Callback } from "@/emitter/types.js";
 import { FrameworkError } from "@/errors.js";
@@ -498,7 +498,7 @@ export class ChatModelOutput extends Serializable {
 
             // Assume tool calls with no id refer to the most recent tool call
             if (!chunk.toolCallId && messagesByToolCallId.size > 0) {
-              const lastToolCallId = Array.from(messagesByToolCallId.keys()).pop();
+              const lastToolCallId = getLast(messagesByToolCallId.keys(), "");
               if (lastToolCallId) {
                 chunk.toolCallId = lastToolCallId;
               }
