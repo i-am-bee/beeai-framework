@@ -367,6 +367,7 @@ Validation Errors: {{errors}}`,
     return {
       cache: this.cache,
       emitter: this.emitter,
+      middlewares: shallowCopy(this.middlewares),
       parameters: shallowCopy(this.parameters),
       logger: this.logger,
       toolChoiceSupport: this.toolChoiceSupport.slice(),
