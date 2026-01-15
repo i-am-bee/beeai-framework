@@ -128,7 +128,7 @@ export class WatsonxChatModel extends ChatModel {
         [toolCallName, toolCallId] = getLast(toolCallIdsByName, ["", ""]);
       }
       if (!toolCallId) {
-        toolCallId = toolCallIdsByName!.get(toolCallName)!;
+        toolCallId = toolCallIdsByName.get(toolCallName) || "";
       }
       if (!toolCallId) {
         toolCallId = `chatcmpl-tool-${randomBytes(16).toString("hex")}`;
