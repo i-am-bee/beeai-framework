@@ -113,6 +113,7 @@ export class RequirementAgentRunner {
       tools: request.allowedTools,
       toolChoice: request.toolChoice,
       streamPartialToolCalls: true,
+      maxRetries: this.runConfig.maxRetriesPerStep ?? 0,
     };
   }
 
@@ -231,12 +232,12 @@ export class RequirementAgentRunner {
       const textMessages = response.getTextMessages();
       const text = textMessages.map((m) => m.text).join("\n");
 
-      if (!text || request.canStop) {
-        throw new AgentError("Model produced an empty response.");
-      }
-
-      const finalAnswerToolCall = await this.createFinalAnswerToolCall(text);
-      if (!finalAnswerToolCall) {
+      const finalAnswerToolCall =
+        text && request.canStop ? await this.createFinalAnswerToolCall(text) : null;
+      if (finalAnswerToolCall) {
+        const stream = this.createFinalAnswerStream(request.finalAnswer);
+        await stream.add(new ChatModelOutput([finalAnswerToolCall]));
+      } else {
         const err = new AgentError("Model produced an invalid final answer tool call.");
         this.iterationErrorCounter.use(err);
         this.globalErrorCounter.use(err);
@@ -255,10 +256,8 @@ export class RequirementAgentRunner {
         return await this.runIteration(updatedRequest);
       }
 
-      await this.state.memory.add(finalAnswerToolCall);
+      response.messages.length = 0;
       toolCalls.push(...finalAnswerToolCall.getToolCalls());
-    } else {
-      await this.state.memory.addMany(response.messages);
     }
 
     // Check for cycles
@@ -280,7 +279,7 @@ export class RequirementAgentRunner {
     }
 
     const toolResults = await this.invokeToolCalls(request.allowedTools, toolCalls);
-    await this.state.memory.addMany(toolResults);
+    await this.state.memory.addMany([...response.messages, ...toolResults]);
 
     // Delete temporary messages
     const tempMessages = this.state.memory.messages.filter((msg) => msg.meta[TEMP_MESSAGE_KEY]);
