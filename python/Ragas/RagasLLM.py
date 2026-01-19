@@ -71,5 +71,3 @@ class RagasLLM(BaseRagasLLM):
         Validates if the generation process completed successfully and returned data.
         """
         return len(response.generations) > 0 and len(response.generations[0]) > 0
-    
-    
