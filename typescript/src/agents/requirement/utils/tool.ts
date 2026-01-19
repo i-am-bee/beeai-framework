@@ -18,6 +18,8 @@ import { z, ZodSchema } from "zod";
 import { RequirementAgentRunState } from "@/agents/requirement/types.js";
 import { AssistantMessage } from "@/backend/message.js";
 import { RunContext } from "@/context.js";
+import { isToolCallValid } from "@/adapters/vercel/backend/utils.js";
+import { ChatModelToolCallError } from "@/backend/errors.js";
 
 // Tool invocation result
 export interface ToolInvocationResult {
@@ -36,6 +38,13 @@ export async function runTool(
   msg: ToolCallPart,
   context: Record<string, any>,
 ): Promise<ToolInvocationResult> {
+  if (!isToolCallValid(msg)) {
+    throw new ChatModelToolCallError(`Tool '${msg.toolName}' does not exist!`, [], {
+      generatedContent: JSON.stringify({ name: msg.toolName, parameters: msg.input }),
+      generatedError: "The generated tool call is invalid. Cannot parse the args.",
+    });
+  }
+
   const result: ToolInvocationResult = {
     msg,
     tool: null,

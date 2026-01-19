@@ -292,6 +292,9 @@ class RequirementAgentRunner:
                 self._iteration_error_counter.use(err)
                 self._global_error_counter.use(err)
 
+                if not request.can_stop:
+                    return await self._run(request)
+
                 await self._reasoner.update(requirements=[])
                 updated_request = await self._create_request(
                     extra_rules=[Rule(target=self._reasoner.final_answer.name, allowed=True, hidden=False)],

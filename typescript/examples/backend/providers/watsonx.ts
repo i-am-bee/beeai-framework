@@ -8,12 +8,15 @@ import { OpenMeteoTool } from "beeai-framework/tools/weather/openMeteo";
 
 const llm = new WatsonxChatModel(
   "ibm/granite-3-3-8b-instruct",
+  {},
   // {
   //   apiKey: "WATSONX_API_KEY",
   //   baseUrl: "WATSONX_BASE_URL",
   //   projectId: "WATSONX_PROJECT_ID",
   // }
 );
+
+llm.parameters.stream = true;
 
 llm.config({
   parameters: {
