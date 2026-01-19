@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.1.24](https://github.com/i-am-bee/beeai-framework/compare/typescript_v0.1.23...typescript_v0.1.24) (2026-01-15)
+
+### Features
+
+- add middlewares to ChatModel class ([c654aa5](https://github.com/i-am-bee/beeai-framework/commit/c654aa5b0c847908f43ff00f6e69048c48442b7b))
+- **middlewares:** add isEmpty helper to StreamToolCall ([ac818ff](https://github.com/i-am-bee/beeai-framework/commit/ac818ff4b680e3a7457bf257dc20086a7f3e0a72))
+
+### Bug Fixes
+
+- **adapters:** infer missing tool call id for watsonx chat model tool… ([#1387](https://github.com/i-am-bee/beeai-framework/issues/1387)) ([93fc139](https://github.com/i-am-bee/beeai-framework/commit/93fc13958fe8a474cf49bc1178a0e26b5a1bc80b)), closes [#1386](https://github.com/i-am-bee/beeai-framework/issues/1386)
+
 ## [0.1.23](https://github.com/i-am-bee/beeai-framework/compare/typescript_v0.1.22...typescript_v0.1.23) (2025-12-22)
 
 ### Features
