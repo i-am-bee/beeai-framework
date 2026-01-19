@@ -6,6 +6,7 @@ from typing import Literal
 from pydantic import BaseModel
 
 ProviderName = Literal[
+    "agentstack",
     "beeai",
     "ollama",
     "openai",
@@ -25,6 +26,7 @@ ProviderName = Literal[
     "qwen",
 ]
 ProviderHumanName = Literal[
+    "AgentStack",
     "BeeAI",
     "Ollama",
     "OpenAI",
@@ -89,6 +91,7 @@ BackendProviders = {
     "Langchain": ProviderDef(name="LangChain", module="langchain", aliases=["langchain", "LangChain"]),
     "Llamaindex": ProviderDef(name="LlamaIndex", module="llamaindex", aliases=["llamaindex", "LlamaIndex"]),
     "BeeAI": ProviderDef(name="BeeAI", module="beeai", aliases=["BeeAI", "Beeai", "BAI"]),
+    "AgentStack": ProviderDef(name="AgentStack", module="agentstack", aliases=["agentstack", "agent-stack"]),
     "Transformers": ProviderDef(name="Transformers", module="transformers", aliases=["Transformers", "transformers"]),
     "Deepseek": ProviderDef(name="Deepseek", module="deepseek", aliases=["deepseek"]),
     "Qwen": ProviderDef(name="Qwen", module="qwen", aliases=["qwen", "dashscope"]),

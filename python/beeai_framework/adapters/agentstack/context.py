@@ -7,13 +7,14 @@ from contextvars import ContextVar
 from typing import TYPE_CHECKING, Any, Optional, Self, Unpack
 
 from beeai_framework.adapters.agentstack.backend.chat import AgentStackChatModel
+from beeai_framework.adapters.agentstack.backend.embedding import AgentstackEmbeddingModel
 from beeai_framework.adapters.agentstack.serve.types import BaseAgentStackExtensions
 from beeai_framework.logger import Logger
 from beeai_framework.utils.io import IOConfirmKwargs, setup_io_context
 from beeai_framework.utils.strings import to_json
 
 if TYPE_CHECKING:
-    from agentstack_sdk.a2a.extensions import LLMServiceExtensionServer
+    from agentstack_sdk.a2a.extensions import EmbeddingServiceExtensionServer, LLMServiceExtensionServer
     from agentstack_sdk.server.context import RunContext as AgentStackRunContext
 
 logger = Logger(__name__)
@@ -28,6 +29,7 @@ class AgentStackContext:
         context: "AgentStackRunContext",
         *,
         llm: Optional["LLMServiceExtensionServer"] = None,
+        embedding: Optional["EmbeddingServiceExtensionServer"] = None,
         metadata: dict[str, Any] | None = None,
         extra_extensions: BaseAgentStackExtensions,
     ) -> None:
@@ -36,6 +38,7 @@ class AgentStackContext:
         self._llm = llm
         self._cleanup: list[Callable[[], None]] = []
         self._extensions = extra_extensions
+        self._embedding = embedding
 
     @property
     def extensions(self) -> BaseAgentStackExtensions:
@@ -52,6 +55,8 @@ class AgentStackContext:
         self._cleanup.append(setup_io_context(read=self._read, confirm=self._confirm))
         if self._llm is not None:
             self._cleanup.append(AgentStackChatModel.set_context(self._llm))
+        if self._embedding is not None:
+            self._cleanup.append(AgentstackEmbeddingModel.set_context(self._embedding))
         return self
 
     def __exit__(self, exc_type: Any, exc_val: Any, exc_tb: Any) -> None:
