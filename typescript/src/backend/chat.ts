@@ -5,12 +5,12 @@
 
 import { Serializable } from "@/internals/serializable.js";
 import { shallowCopy } from "@/serializer/utils.js";
-import { customMerge } from "@/internals/helpers/object.js";
+import { customMerge, getLast } from "@/internals/helpers/object.js";
 import { takeBigger } from "@/internals/helpers/number.js";
 import { Callback } from "@/emitter/types.js";
 import { FrameworkError } from "@/errors.js";
 import { Emitter } from "@/emitter/emitter.js";
-import { GetRunContext, RunContext } from "@/context.js";
+import { GetRunContext, MiddlewareType, RunContext } from "@/context.js";
 import { isEmpty, isFunction, isPromise, isString, randomString } from "remeda";
 import { ObjectHashKeyFn } from "@/cache/decoratorCache.js";
 import { Task } from "promise-based-task";
@@ -129,6 +129,7 @@ export abstract class ChatModel extends Serializable {
   public abstract readonly emitter: Emitter<ChatModelEvents>;
   public cache: ChatModelCache = new NullCache();
   public parameters: ChatModelParameters = {};
+  public readonly middlewares: MiddlewareType<typeof this>[] = [];
   protected readonly logger = Logger.root.child({
     name: this.constructor.name,
   });
@@ -242,7 +243,7 @@ export abstract class ChatModel extends Serializable {
           await run.emitter.emit("finish", null);
         }
       },
-    );
+    ).middleware(...this.middlewares);
   }
 
   createStructure<T>(input: ChatModelObjectInput<T>) {
@@ -366,6 +367,7 @@ Validation Errors: {{errors}}`,
     return {
       cache: this.cache,
       emitter: this.emitter,
+      middlewares: shallowCopy(this.middlewares) as MiddlewareType<any>[],
       parameters: shallowCopy(this.parameters),
       logger: this.logger,
       toolChoiceSupport: this.toolChoiceSupport.slice(),
@@ -497,7 +499,7 @@ export class ChatModelOutput extends Serializable {
 
             // Assume tool calls with no id refer to the most recent tool call
             if (!chunk.toolCallId && messagesByToolCallId.size > 0) {
-              const lastToolCallId = Array.from(messagesByToolCallId.keys()).pop();
+              const lastToolCallId = getLast(messagesByToolCallId.keys(), "");
               if (lastToolCallId) {
                 chunk.toolCallId = lastToolCallId;
               }

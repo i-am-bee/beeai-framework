@@ -1,6 +1,6 @@
 {
   "name": "beeai-framework",
-  "version": "0.1.23",
+  "version": "0.1.24",
   "license": "Apache-2.0",
   "description": "BeeAI Framework - LLM Agent Framework",
   "author": "BeeAI a Series of LF Projects, LLC",
@@ -260,7 +260,7 @@
     "@eslint/js": "^9.39.1",
     "@eslint/markdown": "^7.5.1",
     "@googleapis/customsearch": "^6.0.0",
-    "@ibm-cloud/watsonx-ai": "^1.7.5",
+    "@ibm-cloud/watsonx-ai": "^1.7.6",
     "@langchain/community": "^0.3.58",
     "@langchain/core": "^0.3.79",
     "@langchain/langgraph": "^0.4.9",
