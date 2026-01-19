@@ -65,38 +65,82 @@ class ChatModelKwargs(TypedDict, total=False):
 
     This TypedDict defines all the optional keyword arguments that can be passed
     to a ChatModel constructor to customize its behavior.
-
-    Attributes:
-        tool_call_fallback_via_response_format: Enable fallback to response format for tool calls.
-        retry_on_empty_response: Automatically retry when the model returns an empty response.
-        model_supports_tool_calling: Whether the underlying model supports native tool calling.
-        allow_parallel_tool_calls: Allow the model to make multiple tool calls simultaneously.
-        ignore_parallel_tool_calls: Ignore all but the first tool call when multiple are returned.
-        use_strict_tool_schema: Use strict JSON schema validation for tool parameters.
-        use_strict_model_schema: Use strict JSON schema validation for structured outputs.
-        supports_top_level_unions: Whether the model supports union types at the top level.
-        parameters: Default parameters for model generation (temperature, max_tokens, etc.).
-        cache: Cache implementation for storing and retrieving model outputs.
-        settings: Additional provider-specific settings.
-        middlewares: List of middleware to apply during model execution.
-        tool_choice_support: Set of supported tool choice modes (required, none, single, auto).
-        fix_invalid_tool_calls: Automatically attempt to fix malformed tool calls.
     """
+
     tool_call_fallback_via_response_format: bool
+    """
+    Enable fallback to response format for tool calls.
+    """
+
     retry_on_empty_response: bool
+    """
+    Automatically retry when the model returns an empty response.
+    """
+
     model_supports_tool_calling: bool
+    """
+    Whether the underlying model supports native tool calling.
+    """
+
     allow_parallel_tool_calls: bool
+    """
+    Allow the model to make multiple tool calls simultaneously.
+    """
+
     ignore_parallel_tool_calls: bool
+    """
+    Ignore all but the first tool call when multiple are returned.
+    """
+
     use_strict_tool_schema: bool
+    """
+    Use strict JSON schema validation for tool parameters.
+    """
+
     use_strict_model_schema: bool
+    """
+    Use strict JSON schema validation for structured outputs.
+    """
+
     supports_top_level_unions: bool
+    """
+    Whether the model supports union types at the top level.
+    """
+
     parameters: InstanceOf[ChatModelParameters]
+    """
+    Default parameters for model generation (temperature, max_tokens, etc.).
+    """
+
     cache: InstanceOf[ChatModelCache]
+    """
+    Cache implementation for storing and retrieving model outputs.
+    """
+
     settings: dict[str, Any]
+    """
+    Additional provider-specific settings.
+    """
+
     middlewares: list[RunMiddlewareType]
+    """
+    List of middleware to apply during model execution.
+    """
+
     tool_choice_support: set[ToolChoiceType]
+    """
+    Set of supported tool choice modes (required, none, single, auto).
+    """
+
     fix_invalid_tool_calls: bool
+    """
+    Automatically attempt to fix malformed tool calls.
+    """
+
     allow_prompt_caching: bool
+    """
+    Enable prompt caching to optimize repeated API calls with similar prompts.
+    """
 
     __pydantic_config__ = ConfigDict(extra="forbid", arbitrary_types_allowed=True)  # type: ignore
 
@@ -204,20 +248,6 @@ class ChatModel(Runnable[ChatModelOutput]):
     The class is designed to be subclassed by provider-specific implementations that
     implement the `_create` and `_create_stream` abstract methods.
 
-    Class Attributes:
-        tool_choice_support: Set of supported tool choice modes for this model.
-            Default: {"required", "none", "single", "auto"}
-
-    Instance Attributes:
-        tool_call_fallback_via_response_format: Use response format as fallback for tool calls.
-        model_supports_tool_calling: Whether the model has native tool calling support.
-        use_strict_model_schema: Use strict JSON schema for structured outputs.
-        use_strict_tool_schema: Use strict JSON schema for tool parameters.
-        retry_on_empty_response: Retry automatically when model returns empty response.
-        fix_invalid_tool_calls: Attempt to fix malformed tool calls automatically.
-        parameters: Default generation parameters (temperature, max_tokens, etc.).
-        cache: Cache implementation for storing model outputs.
-
     Example:
         >>> from beeai_framework.adapters.openai import OpenAIChatModel
         >>> from beeai_framework.backend.message import UserMessage
@@ -253,13 +283,42 @@ class ChatModel(Runnable[ChatModelOutput]):
         ...     response_format=Person
         ... )
     """
+
     tool_choice_support: ClassVar[set[ToolChoiceType]] = {"required", "none", "single", "auto"}
+    """
+    Set of supported tool choice modes for this model.
+    Default: {"required", "none", "single", "auto"}
+    """
+
     tool_call_fallback_via_response_format: bool
+    """
+    Use response format as fallback for tool calls.
+    """
+
     model_supports_tool_calling: bool
+    """
+    Whether the model has native tool calling support.
+    """
+
     use_strict_model_schema: bool
+    """
+    Use strict JSON schema for structured outputs.
+    """
+
     use_strict_tool_schema: bool
+    """
+    Use strict JSON schema for tool parameters.
+    """
+
     retry_on_empty_response: bool
+    """
+    Retry automatically when model returns empty response.
+    """
+
     fix_invalid_tool_calls: bool
+    """
+    Attempt to fix malformed tool calls automatically.
+    """
 
     @property
     @abstractmethod

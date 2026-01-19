@@ -32,13 +32,17 @@ class EmbeddingModelKwargs(TypedDict, total=False):
 
     This TypedDict defines all the optional keyword arguments that can be passed
     to an EmbeddingModel constructor to customize its behavior.
-
-    Attributes:
-        middlewares: List of middleware to apply during model execution.
-        settings: Additional provider-specific settings.
     """
+
     middlewares: Sequence[RunMiddlewareType]
+    """
+    List of middleware to apply during model execution.
+    """
+
     settings: dict[str, Any]
+    """
+    Additional provider-specific settings.
+    """
 
     __pydantic_config__ = ConfigDict(extra="forbid", arbitrary_types_allowed=True)  # type: ignore
 

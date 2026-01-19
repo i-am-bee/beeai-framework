@@ -25,10 +25,8 @@ class Backend:
         ...     chat=OpenAIChatModel("gpt-4"),
         ...     embedding=OpenAIEmbeddingModel("text-embedding-3-small")
         ... )
-        
         >>> # Create backend from provider names
         >>> backend = Backend.from_name(chat="openai:gpt-4", embedding="openai:text-embedding-3-small")
-        
         >>> # Create backend using same provider for both
         >>> backend = Backend.from_provider("openai")
     """
@@ -96,7 +94,6 @@ class Backend:
         Example:
             >>> # Uses OpenAI's default chat and embedding models
             >>> backend = Backend.from_provider("openai")
-            
             >>> # Uses Ollama's default chat and embedding models
             >>> backend = Backend.from_provider("ollama")
         """
