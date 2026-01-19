@@ -227,8 +227,7 @@ export class RequirementAgentRunner {
     const response = await this.runLLM(request);
 
     // Try to cast text message to final answer tool call if allowed
-    const toolCalls = response.getToolCalls();
-    if (toolCalls.length === 0) {
+    if (response.getToolCalls().length === 0) {
       const textMessages = response.getTextMessages();
       const text = textMessages.map((m) => m.text).join("\n");
 
@@ -261,10 +260,11 @@ export class RequirementAgentRunner {
       }
 
       response.messages.length = 0;
-      toolCalls.push(...finalAnswerToolCall.getToolCalls());
+      response.messages.push(finalAnswerToolCall);
     }
 
     // Check for cycles
+    const toolCalls = response.getToolCalls();
     for (const toolCallMsg of toolCalls) {
       this.toolCallCycleChecker.register(toolCallMsg);
       if (this.toolCallCycleChecker.cycleFound) {
