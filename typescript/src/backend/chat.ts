@@ -479,6 +479,8 @@ Validation Errors: {{errors}}`,
       toolChoiceSupport: this.toolChoiceSupport.slice(),
       toolCallFallbackViaResponseFormat: this.toolCallFallbackViaResponseFormat,
       modelSupportsToolCalling: this.modelSupportsToolCalling,
+      retryOnEmptyResponse: this.retryOnEmptyResponse,
+      fixInvalidToolCalls: this.fixInvalidToolCalls,
     };
   }
 
