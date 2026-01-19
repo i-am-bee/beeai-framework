@@ -242,6 +242,10 @@ export class RequirementAgentRunner {
         this.iterationErrorCounter.use(err);
         this.globalErrorCounter.use(err);
 
+        if (!request.canStop) {
+          return await this.runIteration(request);
+        }
+
         await this.reasoner.update([]);
         const updatedRequest = await this.createRequest([
           {

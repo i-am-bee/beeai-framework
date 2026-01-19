@@ -216,9 +216,22 @@ export abstract class ChatModel extends Serializable {
                 throw new EmptyChatModelResponseError();
               }
 
-              if (forceToolCallViaResponseFormat && isEmpty(result.getToolCalls())) {
+              if (
+                isEmpty(result.getToolCalls()) &&
+                (forceToolCallViaResponseFormat ||
+                  input.toolChoice === "required" ||
+                  input.toolChoice instanceof Tool)
+              ) {
                 const lastMsg = result.messages.at(-1)!;
-                const toolCall = parseBrokenJson(lastMsg.text, { pair: ["{", "}"] });
+                let toolCall = parseBrokenJson(lastMsg.text, { pair: ["{", "}"] });
+                if (
+                  toolCall &&
+                  !toolCall.name &&
+                  !toolCall.parameters &&
+                  input.toolChoice instanceof Tool
+                ) {
+                  toolCall = { name: input.toolChoice.name, parameters: toolCall };
+                }
                 if (!toolCall || !toolCall.name || !toolCall.parameters) {
                   throw new ChatModelToolCallError(
                     `Failed to produce a valid tool call. Generate output: ${lastMsg.text}`,
@@ -244,7 +257,7 @@ export abstract class ChatModel extends Serializable {
                 if (!tool) {
                   const availableTools = input.tools?.map((t) => t.name).join(",") || "None";
                   throw new ChatModelToolCallError("Non existing tool call.", [], {
-                    generatedError: `The model generated a tool call for an unknown tool '${toolCall.toolName}'.\nAvailable tools: ${availableTools}`,
+                    generatedError: `Error: Unknown tool '${toolCall.toolName}'.\nUse on of the available tools: ${availableTools}`,
                     generatedContent: JSON.stringify({
                       name: toolCall.toolName,
                       input: isString(toolCall.input)
@@ -256,7 +269,6 @@ export abstract class ChatModel extends Serializable {
                 }
 
                 if (!isToolCallValid(toolCall)) {
-                  console.info("tool malformed not found");
                   throw new ChatModelToolCallError("Malformed tool call.", [], {
                     generatedContent: isString(toolCall.input)
                       ? toolCall.input
@@ -308,8 +320,14 @@ export abstract class ChatModel extends Serializable {
                   lastMessage.meta["tempMessage"] &&
                   lastMessage.text === ""
                 ) {
-                  input.messages.push(new AssistantMessage("Continue", { tempMessage: true }));
+                  input.messages.push(
+                    new UserMessage(
+                      "No output received. Please regenerate your previous response.",
+                      { tempMessage: true },
+                    ),
+                  );
                 } else {
+                  // Python compatibility
                   input.messages.push(new AssistantMessage("", { tempMessage: true }));
                 }
               }
