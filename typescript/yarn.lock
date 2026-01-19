@@ -1281,15 +1281,15 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@ibm-cloud/watsonx-ai@npm:^1.7.5":
-  version: 1.7.5
-  resolution: "@ibm-cloud/watsonx-ai@npm:1.7.5"
+"@ibm-cloud/watsonx-ai@npm:^1.7.6":
+  version: 1.7.6
+  resolution: "@ibm-cloud/watsonx-ai@npm:1.7.6"
   dependencies:
     "@types/node": "npm:^18.0.0"
     extend: "npm:3.0.2"
     form-data: "npm:^4.0.4"
-    ibm-cloud-sdk-core: "npm:^5.4.3"
-  checksum: 10c0/d79a613591390c7c31fdf0b465722bd807d38e80995abfa57170af6c261fb0d01153597e302aacee4c2e4129f0603cee3f817c35cddafe9ae8f37828477c126e
+    ibm-cloud-sdk-core: "npm:^5.4.5"
+  checksum: 10c0/ab2012058848b5abde59008c7d963354f878fd574bd016211fa2a668716777163c50357d8db4d4657aada75ebfda649ce78fb87eafb172970e7e36453b70c0c9
   languageName: node
   linkType: hard
 
@@ -3952,7 +3952,7 @@ __metadata:
     "@eslint/js": "npm:^9.39.1"
     "@eslint/markdown": "npm:^7.5.1"
     "@googleapis/customsearch": "npm:^6.0.0"
-    "@ibm-cloud/watsonx-ai": "npm:^1.7.5"
+    "@ibm-cloud/watsonx-ai": "npm:^1.7.6"
     "@langchain/community": "npm:^0.3.58"
     "@langchain/core": "npm:^0.3.79"
     "@langchain/langgraph": "npm:^0.4.9"
@@ -7201,7 +7201,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"ibm-cloud-sdk-core@npm:^5.4.3, ibm-cloud-sdk-core@npm:^5.4.4":
+"ibm-cloud-sdk-core@npm:^5.4.4":
   version: 5.4.4
   resolution: "ibm-cloud-sdk-core@npm:5.4.4"
   dependencies:
@@ -7221,6 +7221,29 @@ __metadata:
     retry-axios: "npm:^2.6.0"
     tough-cookie: "npm:^4.1.3"
   checksum: 10c0/3fca2868b598ec52aa5aaf77222c1ba204f81b64bd837a3978708f01d0100141c356d89c854c701874602bfdf78dc6ed5a1ac6048ff2db6cc84229aa8fdc0a08
+  languageName: node
+  linkType: hard
+
+"ibm-cloud-sdk-core@npm:^5.4.5":
+  version: 5.4.5
+  resolution: "ibm-cloud-sdk-core@npm:5.4.5"
+  dependencies:
+    "@types/debug": "npm:^4.1.12"
+    "@types/node": "npm:^18.19.80"
+    "@types/tough-cookie": "npm:^4.0.0"
+    axios: "npm:^1.12.2"
+    camelcase: "npm:^6.3.0"
+    debug: "npm:^4.3.4"
+    dotenv: "npm:^16.4.5"
+    extend: "npm:3.0.2"
+    file-type: "npm:16.5.4"
+    form-data: "npm:^4.0.4"
+    isstream: "npm:0.1.2"
+    jsonwebtoken: "npm:^9.0.3"
+    mime-types: "npm:2.1.35"
+    retry-axios: "npm:^2.6.0"
+    tough-cookie: "npm:^4.1.3"
+  checksum: 10c0/7d1bccd047e1207544992b885b28b33b3400372df691281da933b989498098f5e1a9ff6da1835dbaab3f0783d3583f8f59e25f1e3c4bad3a2e94264421cdff0d
   languageName: node
   linkType: hard
 
@@ -7837,6 +7860,24 @@ __metadata:
   languageName: node
   linkType: hard
 
+"jsonwebtoken@npm:^9.0.3":
+  version: 9.0.3
+  resolution: "jsonwebtoken@npm:9.0.3"
+  dependencies:
+    jws: "npm:^4.0.1"
+    lodash.includes: "npm:^4.3.0"
+    lodash.isboolean: "npm:^3.0.3"
+    lodash.isinteger: "npm:^4.0.4"
+    lodash.isnumber: "npm:^3.0.3"
+    lodash.isplainobject: "npm:^4.0.6"
+    lodash.isstring: "npm:^4.0.1"
+    lodash.once: "npm:^4.0.0"
+    ms: "npm:^2.1.1"
+    semver: "npm:^7.5.4"
+  checksum: 10c0/6ca7f1e54886ea3bde7146a5a22b53847c46e25453c7f7307a69818b9a6ad48c390b2e59d5690fcfd03c529b01960060cc4bb0c686991d6edae2285dfd30f4ba
+  languageName: node
+  linkType: hard
+
 "jwa@npm:^1.4.2":
   version: 1.4.2
   resolution: "jwa@npm:1.4.2"
@@ -7848,7 +7889,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"jwa@npm:^2.0.0":
+"jwa@npm:^2.0.0, jwa@npm:^2.0.1":
   version: 2.0.1
   resolution: "jwa@npm:2.0.1"
   dependencies:
@@ -7876,6 +7917,16 @@ __metadata:
     jwa: "npm:^2.0.0"
     safe-buffer: "npm:^5.0.1"
   checksum: 10c0/f1ca77ea5451e8dc5ee219cb7053b8a4f1254a79cb22417a2e1043c1eb8a569ae118c68f24d72a589e8a3dd1824697f47d6bd4fb4bebb93a3bdf53545e721661
+  languageName: node
+  linkType: hard
+
+"jws@npm:^4.0.1":
+  version: 4.0.1
+  resolution: "jws@npm:4.0.1"
+  dependencies:
+    jwa: "npm:^2.0.1"
+    safe-buffer: "npm:^5.0.1"
+  checksum: 10c0/6be1ed93023aef570ccc5ea8d162b065840f3ef12f0d1bb3114cade844de7a357d5dc558201d9a65101e70885a6fa56b17462f520e6b0d426195510618a154d0
   languageName: node
   linkType: hard
 

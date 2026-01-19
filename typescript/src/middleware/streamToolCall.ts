@@ -95,11 +95,18 @@ export class StreamToolCallMiddleware<T = any> extends Middleware<RunInstance> {
     });
   }
 
-  bind(ctx: RunContext<RunInstance>): void {
-    // Reset state
+  reset() {
     this.output = new ChatModelOutput([]);
     this.buffer = "";
     this.delta = "";
+  }
+
+  isEmpty() {
+    return this.buffer.length === 0;
+  }
+
+  bind(ctx: RunContext<RunInstance>): void {
+    this.reset();
 
     // Listen to ChatModel start event
     this.cleanups.push(
