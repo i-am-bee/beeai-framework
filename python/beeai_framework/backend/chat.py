@@ -96,6 +96,7 @@ class ChatModelKwargs(TypedDict, total=False):
     middlewares: list[RunMiddlewareType]
     tool_choice_support: set[ToolChoiceType]
     fix_invalid_tool_calls: bool
+    allow_prompt_caching: bool
 
     __pydantic_config__ = ConfigDict(extra="forbid", arbitrary_types_allowed=True)  # type: ignore
 
@@ -182,6 +183,11 @@ class ChatModelOptions(RunnableOptions, total=False):
     stream_partial_tool_calls: bool | None
     """
     Generated chunks will be streamed without validation of the produced tool calls.
+    """
+
+    fallback_tool: AnyTool | None
+    """
+    Tool to invoke when the model makes a malformed tool call (for example, when it forgets the name of a tool).
     """
 
 
@@ -303,6 +309,7 @@ class ChatModel(Runnable[ChatModelOutput]):
         self.supports_top_level_unions = kwargs.get("supports_top_level_unions", True)
         self.retry_on_empty_response = bool(kwargs.get("retry_on_empty_response", True))
         self.fix_invalid_tool_calls = bool(kwargs.get("fix_invalid_tool_calls", True))
+        self.allow_prompt_caching = bool(kwargs.get("allow_prompt_caching", True))
 
         custom_tool_choice_support = kwargs.get("tool_choice_support")
         self._tool_choice_support: set[ToolChoiceType] = (
@@ -379,6 +386,9 @@ class ChatModel(Runnable[ChatModelOutput]):
         tools = options.get("tools")
         tool_choice = options.get("tool_choice")
         response_format = options.get("response_format")
+        fallback_tool = options.get("fallback_tool")
+        if fallback_tool is None and isinstance(tool_choice, Tool):
+            fallback_tool = tool_choice
 
         force_tool_call_via_response_format = self._force_tool_call_via_response_format(
             tool_choice=tool_choice,
@@ -398,6 +408,7 @@ class ChatModel(Runnable[ChatModelOutput]):
                 strict=self.use_strict_model_schema,
                 allow_top_level_union=self.supports_top_level_unions,
                 allow_parallel_tool_calls=parallel_tool_calls,
+                fallback_tool=fallback_tool,
             )
             if force_tool_call_via_response_format and tools
             else (response_format, None)
@@ -411,7 +422,10 @@ class ChatModel(Runnable[ChatModelOutput]):
             response_format=response_format_final,
             validate_response_format=True if validate_response_format is None else validate_response_format,
             stream=stream if stream is not None else self.parameters.stream,
-            **exclude_keys(dict(options), {"tools", "response_format", "stream", "validate_response_format"}),
+            fallback_tool=fallback_tool,
+            **exclude_keys(
+                dict(options), {"tools", "response_format", "stream", "validate_response_format", "fallback_tool"}
+            ),
         ), ChatModelResponseConfig(
             response_format_schema=response_format_schema,
             force_tool_call_via_response_format=force_tool_call_via_response_format,
@@ -499,9 +513,11 @@ class ChatModel(Runnable[ChatModelOutput]):
         except Exception as ex:
             await cache_entry.delete()
             error = ChatModelError.ensure(ex, model=self)
+            # pyrefly: ignore [unbound-name]
             await context.emitter.emit("error", ChatModelErrorEvent(input=model_input, error=error))
             raise error
         finally:
+            # pyrefly: ignore [unbound-name]
             await context.emitter.emit("finish", None)
 
     async def __run(
@@ -557,6 +573,7 @@ class ChatModel(Runnable[ChatModelOutput]):
                 raise ChatModelToolCallError(
                     generated_content=to_json(tool_calls_raw, sort_keys=False),
                     generated_error=str(ex),
+                    response=result,
                 )
 
             for tool_call in cast_list(tool_calls.model_dump()):
@@ -566,6 +583,7 @@ class ChatModel(Runnable[ChatModelOutput]):
                         generated_content=text,
                         generated_error="Tool call was not produced.",
                         is_retryable=False,
+                        response=result,
                     )
 
                 tool_call_content = MessageToolCallContent(
@@ -611,6 +629,7 @@ class ChatModel(Runnable[ChatModelOutput]):
                     generated_content=tool_call.args,
                     generated_error=f"The tool call for the '{tool_call.tool_name}' tool has malformed parameters. "
                     f"It must be a valid JSON.",
+                    response=result,
                 )
 
     def config(
@@ -830,6 +849,7 @@ class ChatModel(Runnable[ChatModelOutput]):
                         generated_error=f"The model generated a tool call for an unknown tool '{tool_call.tool_name}'."
                         + f"\nAvailable tools: {','.join(available_tools)}",
                         generated_content=tool_call.model_dump_json(),
+                        response=output,
                     )
 
 
@@ -862,6 +882,7 @@ def _raise_tool_choice_error(
         message,
         generated_content=output.get_text_content(),
         generated_error=message,
+        response=output,
     )
 
 

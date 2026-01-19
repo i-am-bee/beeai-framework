@@ -34,6 +34,7 @@ class WatsonxOrchestrateServerAgent(ABC, Generic[T]):
 
     async def run(self, input: list[AnyMessage]) -> watsonx_orchestrate_api.ChatCompletionResponse:
         cloned_agent = await self._agent.clone() if isinstance(self._agent, Cloneable) else self._agent
+        # pyrefly: ignore [missing-attribute]
         response = await cloned_agent.run(input)
 
         return watsonx_orchestrate_api.ChatCompletionResponse(

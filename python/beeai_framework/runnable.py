@@ -106,6 +106,7 @@ def runnable_entry(handler: Callable[P, Awaitable[R]]) -> Callable[P, Run[R]]:
             # Use potentially modified input from run_params instead of original args
             modified_input = ctx.run_params.get("input", args[1] if len(args) > 1 else None)
             modified_args = (args[0], modified_input, *args[2:])
+            # pyrefly: ignore [invalid-param-spec]
             return await handler(*modified_args, **kwargs)
 
         self = args[0] if args else None

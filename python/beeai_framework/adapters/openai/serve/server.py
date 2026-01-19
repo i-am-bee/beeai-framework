@@ -117,9 +117,11 @@ def register() -> None:
         OpenAIServer.register_factory(Runnable, _runnable_factory)  # type: ignore
 
     with contextlib.suppress(FactoryAlreadyRegisteredError):
+        # pyrefly: ignore [bad-argument-type]
         OpenAIServer.register_factory(ReActAgent, _react_factory)
 
     with contextlib.suppress(FactoryAlreadyRegisteredError):
+        # pyrefly: ignore [bad-argument-type]
         OpenAIServer.register_factory(RequirementAgent, _requirement_agent_factory)
 
     with contextlib.suppress(FactoryAlreadyRegisteredError):

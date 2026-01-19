@@ -54,7 +54,7 @@ agent = RequirementAgent(
 ```
 
 ```ts TypeScript [expandable]
-import { ToolCallingAgent } from "beeai-framework/agents/toolCalling/agent";
+import { RequirementAgent } from "beeai-framework/agents/requirement/agent";
 import { ChatModel } from "beeai-framework/backend/chat";
 
 # Using Ollama (local models)
@@ -66,7 +66,7 @@ llm = await ChatModel.from_name("openai:gpt-5-mini")
 # Using Anthropic
 llm = await ChatModel.from_name("anthropic:claude-sonnet-4")
 
-agent = ToolCallingAgent({
+agent = new RequirementAgent({
 	llm,
 	# ... other configuration
 })
@@ -88,7 +88,7 @@ The system prompt defines your agent's behavior, personality, and capabilities. 
 
 ```py Python [expandable]
 agent = RequirementAgent(
-    llm=llm,
+    llm="ollama:granite4:micro",
     role="You are a helpful research assistant specializing in academic papers",
     instructions=[
         "Always provide citations for your sources",
@@ -105,14 +105,20 @@ agent = RequirementAgent(
 ```
 
 ```ts TypeScript [expandable]
-const agent = new ToolCallingAgent({
-	llm,
-	templates: {
-		system: (template) =>
-			template.fork((config) => {
-				config.defaults.instructions = "You are a helpful assistant that uses tools to answer questions.";
-			}),
-	}
+const agent = new RequirementAgent({
+	llm: await ChatModel.from_name("ollama:granite4:micro"),
+	role: "You are a helpful research assistant specializing in academic papers",
+	instructions: [
+	  "Always provide citations for your sources",
+	  "Focus on peer-reviewed research when possible",
+	  "Explain complex concepts in simple terms"
+	],
+	notes: [
+	  "Be especially careful about medical or legal advice",
+	  "If unsure about a fact, acknowledge the uncertainty"
+	],
+	name: "Research Assistant",
+	description: "An AI agent that helps with academic research tasks"
 });
 ```
 
@@ -136,7 +142,7 @@ When executing an agent, you can provide additional options to guide its behavio
 
 ```py Python [expandable]
 response = await agent.run(
-    prompt="Analyze the latest AI research trends",
+    Analyze the latest AI research trends",
     expected_output="A structured summary with key findings and recommendations",
 	# expected_output can also receive a Pydantic Model or a JSON Schema
     backstory="The user is preparing for a conference presentation on AI trends",
@@ -152,16 +158,15 @@ print(response.output_structured)
 ```ts TypeScript [expandable]
 const schema = z.object({
 	firstName: z.string().min(1),
-	lastName: z.string().min(1),
-	age: z.number().min(1).max(99),
-	country: z.string(),
+	lastName: z.string().min(1)
 });
 
 const response = await agent.run({
 	prompt: "Generate profile of a citizen.",
 	expectedOutput: schema,
 });
-console.info(response.result.text); // JSON text
+const person = response.state.result
+console.info(person.firstName, person.lastName);
 ```
 
 </CodeGroup>
@@ -201,10 +206,10 @@ agent = RequirementAgent(
 ```ts TypeScript [expandable]
 import { OpenMeteoTool } from "beeai-framework/tools/weather/openMeteo";
 import { ChatModel } from "beeai-framework/backend/chat";
-import { ToolCallingAgent } from "beeai-framework/agents/toolCalling/agent";
+import { RequirementAgent } from "beeai-framework/agents/requirement/agent";
 
 const llm = await ChatModel.from_name("ollama:granite4");
-const agent = new ToolCallingAgent({
+const agent = new RequirementAgent({
 	llm,
 	tools: [
 		new OpenMeteoTool(), // weather tool
@@ -222,23 +227,22 @@ Memory allows your agent to maintain context across multiple interactions. Diffe
 
 ```py Python [expandable]
 from beeai_framework.memory import TokenMemory, UnconstrainedMemory
+from beeai_framework.agents.requirement import RequirementAgent
 
-# For unlimited conversation history
 agent = RequirementAgent(
-    llm=llm,
-    memory=UnconstrainedMemory()
+    llm="ollama:granite4:micro",
+    memory=TokenMemory(max_tokens=20*1024)
 )
 ```
 
 ```ts TypeScript [expandable]
 import { TokenMemory } from "beeai-framework/memory/tokenMemory";
 import { ChatModel } from "beeai-framework/backend/chat";
-import { ToolCallingAgent } from "beeai-framework/agents/toolCalling/agent";
+import { RequirementAgent } from "beeai-framework/agents/requirement/agent";
 
-const llm = await ChatModel.from_name("ollama:granite4");
-const agent = new ToolCallingAgent({
-	llm,
-	memory: new TokenMemory()
+const agent = new RequirementAgent({
+	llm: await ChatModel.from_name("ollama:granite4:micro"),
+	memory: new TokenMemory({ maxTokens: 20 * 1024 })
 });
 ```
 
@@ -305,6 +309,54 @@ agent = RequirementAgent(
 # Run with execution logging
 response = await agent.run("What to do in Boston?").middleware(GlobalTrajectoryMiddleware())
 print(f"Final Answer: {response.answer.text}")
+
+```
+
+### Lite Agent
+
+<Note>
+	Currently only supported in Python.
+</Note>
+
+An agent that leverages a language model and a suite of tools to solve problems. **The agent does not have any system prompt**.
+
+This design is ideal for:
+
+- Exploring the raw capabilities of a language model without bias from a framework’s built‑in prompt
+- Developers who want to understand how to build an agent from scratch
+
+{/* <!-- embedme python/examples/agents/lite_agent.py --> */}
+```py Python [expandable]
+import asyncio
+
+from beeai_framework.agents.lite import LiteAgent
+from beeai_framework.backend import ChatModel, ChatModelOutput, ChatModelParameters, SystemMessage
+from beeai_framework.emitter import EventMeta
+from beeai_framework.middleware.trajectory import GlobalTrajectoryMiddleware
+from beeai_framework.tools.search.duckduckgo import DuckDuckGoSearchTool
+from beeai_framework.tools.think import ThinkTool
+from beeai_framework.tools.weather import OpenMeteoTool
+
+
+async def main() -> None:
+    agent = LiteAgent(
+        llm=ChatModel.from_name("ollama:granite4:micro", ChatModelParameters(stream=True)),
+        tools=[ThinkTool(), OpenMeteoTool(), DuckDuckGoSearchTool()],
+        middlewares=[GlobalTrajectoryMiddleware()],
+    )
+
+    # Optionally set a custom system prompt
+    await agent.memory.add(SystemMessage("You are a helpful assistant."))
+
+    @agent.emitter.on("final_answer")
+    def stream_final_answer(data: ChatModelOutput, meta: EventMeta) -> None:
+        print(data.get_text_content())  # emits chunks
+
+    await agent.run("Hello")
+
+
+if __name__ == "__main__":
+    asyncio.run(main())
 
 ```
 
@@ -494,7 +546,7 @@ const logger = new Logger({ name: "app", level: "trace" });
 // "granite3.3"
 // "deepseek-r1:32b"
 // ensure the model is pulled before running
-const llm = new OllamaChatModel("llama3.1");
+const llm = new OllamaChatModel("granite4:micro");
 
 const codeInterpreterUrl = process.env.CODE_INTERPRETER_URL;
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -604,9 +656,9 @@ try {
 
 ### Tool Calling Agent
 
-<Tip>
-The Tool Calling Agent is available in both Python and TypeScript, but no longer actively supported. Use [RequirementAgent](/modules/agents/requirement-agent) instead.
-</Tip>
+<Warning>
+The Tool Calling Agent is deprecated. Use [RequirementAgent](/modules/agents/requirement-agent) instead.
+</Warning>
 
 The ToolCallingAgent is optimized for scenarios where tool usage is the primary focus. It handles tool calls more efficiently and can execute multiple tools in parallel.
 
@@ -663,6 +715,7 @@ async def main() -> None:
 
     print("======DONE (showing the full message history)=======")
 
+    # pyrefly: ignore [unbound-name]
     messages = response.state.memory.messages
     for msg in messages:
         print(msg)
@@ -695,7 +748,7 @@ const logger = new Logger({ name: "app", level: "trace" });
 // "granite3.3"
 // "deepseek-r1:32b"
 // ensure the model is pulled before running
-const llm = new OllamaChatModel("llama3.1");
+const llm = new OllamaChatModel("granite4:micro");
 
 const agent = new ToolCallingAgent({
   llm,

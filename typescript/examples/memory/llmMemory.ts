@@ -12,7 +12,7 @@ await memory.addMany([
 ]);
 
 // Generate response
-const llm = new OllamaChatModel("llama3.1");
+const llm = new OllamaChatModel("granite4:micro");
 const response = await llm.create({ messages: memory.messages });
 await memory.add(Message.of({ role: "assistant", text: response.getTextContent() }));
 

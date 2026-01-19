@@ -292,9 +292,11 @@ class TransformersChatModel(ChatModel):
                 Chat(llm_input["messages"]),
                 **kwargs,
             )
+            # pyrefly: ignore [bad-argument-type]
             model_parsed_output = parse_broken_json(model_output)
             if is_pydantic_model(input.response_format):
                 model_parsed_output = input.response_format.model_validate(model_parsed_output)
+            # pyrefly: ignore [bad-return]
             return model_output, model_parsed_output
         else:
             model_output = await asyncio.to_thread(

@@ -7,7 +7,7 @@ from contextvars import ContextVar
 from typing import TYPE_CHECKING, Any, ClassVar, Self, get_type_hints
 from weakref import WeakKeyDictionary
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
 from typing_extensions import Unpack, override
 
 from beeai_framework.adapters.openai import OpenAIChatModel
@@ -31,6 +31,7 @@ except ModuleNotFoundError as e:
 
 __all__ = ["AgentStackChatModel"]
 
+# pyrefly: ignore [not-a-type]
 _storage = ContextVar["LLMServiceExtensionServer"]("agent_stack_chat_model_storage")
 
 CopyableKwargs = set(ChatModelKwargs.__annotations__.keys()) - {"middlewares", "settings"}
@@ -39,7 +40,7 @@ CopyableKwargs = set(ChatModelKwargs.__annotations__.keys()) - {"middlewares", "
 class ProviderConfig(BaseModel):
     name: ProviderName = "openai"
     cls: type[ChatModel] = OpenAIChatModel
-    tool_choice_support: set[ToolChoiceType] = Field(default_factory=set)
+    tool_choice_support: set[ToolChoiceType] | None = None
     openai_native: bool = False
 
 
@@ -77,14 +78,16 @@ class AgentStackChatModel(ChatModel):
     ) -> None:
         super().__init__(**kwargs)
         self._modified_attributes: set[str] = {
-            k
+            f"_{k}" if hasattr(type(self), k) else k  # eg: tool_choice_support -> _tool_choice_support
             for k, v in get_type_hints(ChatModelKwargs).items()
             # include all custom properties or those that can be mutated
-            if k in CopyableKwargs and (kwargs.get(k) is not None or not is_primitive(v))
+            if k in CopyableKwargs
+            and (kwargs.get(k) is not None or (not is_primitive(v) and k != "tool_choice_support"))
         }
         self.preferred_models = preferred_models or []
         self._initiated = True
         self._propagating_back = False
+        # pyrefly: ignore [not-a-type]
         self._model_by_context = WeakKeyDictionary["LLMServiceExtensionServer", ChatModel]()
 
     def __setattr__(self, name: str, value: Any) -> None:
@@ -126,15 +129,31 @@ class AgentStackChatModel(ChatModel):
         provider_name = llm_conf.api_model.replace("beeai:", "").split(":")[0]
         config = (self.providers_mapping.get(provider_name) or (lambda: ProviderConfig()))()
 
-        kwargs = ChatModelKwargs(**{k: getattr(self, k) for k in self._modified_attributes if hasattr(self, k)})  # type: ignore
-        with contextlib.suppress(AttributeError):
-            if kwargs["tool_choice_support"] == type(self).tool_choice_support:
-                kwargs.pop("tool_choice_support")
+        kwargs = ChatModelKwargs(
+            **{k.lstrip("_"): getattr(self, k) for k in self._modified_attributes if hasattr(self, k)}
+        )
+
+        # If value is defined, then it was configured by the user explicitly
+        tool_choice_support = kwargs.pop("tool_choice_support", None)
+
+        # User modified class internal tool_choice attribute because it differs from the default
+        if tool_choice_support is None and self._tool_choice_support != type(self).tool_choice_support:
+            tool_choice_support = self._tool_choice_support.copy()
+
+        # Tool choice was not set, so we take the configuration from the provider
+        if tool_choice_support is None and config.tool_choice_support is not None:
+            tool_choice_support = config.tool_choice_support.copy()
+
+        if tool_choice_support is not None:
+            kwargs["tool_choice_support"] = tool_choice_support
 
         cls = config.cls if config.openai_native else OpenAIChatModel
         model = cls(  # type: ignore
+            # pyrefly: ignore [unexpected-keyword]
             model_id=llm_conf.api_model,
+            # pyrefly: ignore [unexpected-keyword]
             api_key=llm_conf.api_key,
+            # pyrefly: ignore [unexpected-keyword]
             base_url=llm_conf.api_base,
             **kwargs,
         )
@@ -143,9 +162,10 @@ class AgentStackChatModel(ChatModel):
         object.__setattr__(self, "_propagating_back", True)
         try:
             for k in CopyableKwargs:
-                v = getattr(model, k)
-                if v is not getattr(self, k):
-                    setattr(self, k, v)
+                with contextlib.suppress(AttributeError):
+                    v = getattr(model, k)
+                    if v is not getattr(self, k):
+                        setattr(self, k, v)
         finally:
             object.__setattr__(self, "_propagating_back", False)
 

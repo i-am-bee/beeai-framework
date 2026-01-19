@@ -100,4 +100,20 @@ describe("Emitter", () => {
     // agent.runner, agent.runner.onStart
     await runner.emit("onStart", null);
   });
+
+  it("Handles priority ordering", async () => {
+    const emitter = new Emitter();
+    const arr: number[] = [];
+
+    emitter.match("*.*", () => arr.push(5), { priority: 4 });
+    emitter.match("*.*", () => arr.push(1), { priority: 1 });
+    emitter.match("*.*", () => arr.push(2), { priority: 2 });
+    emitter.match("*.*", () => arr.push(4), { priority: 3 });
+    emitter.match("*.*", () => arr.push(3), { priority: 3 });
+    emitter.match("*.*", () => arr.push(-1), { priority: -1 });
+    emitter.match("*.*", () => arr.push(0));
+
+    await emitter.emit("event", null);
+    expect(arr).toEqual([5, 4, 3, 2, 1, 0, -1]);
+  });
 });

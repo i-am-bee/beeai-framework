@@ -22,6 +22,7 @@ class IOConfirmKwargs(TypedDict, total=False):
 
 
 ReadHandler = Callable[[str], Awaitable[str]]
+# pyrefly: ignore [invalid-annotation]
 IOConfirmHandler = Callable[[str, Unpack[IOConfirmKwargs]], Coroutine[Any, Any, bool]]
 
 
@@ -39,6 +40,7 @@ async def _default_confirm(prompt: str, **kwargs: Unpack[IOConfirmKwargs]) -> bo
 
 
 _storage: ContextVar[IOHandlers] = ContextVar("io_storage")
+# pyrefly: ignore [bad-argument-type]
 _storage.set(IOHandlers(read=_default_read, confirm=_default_confirm))
 
 
@@ -49,6 +51,7 @@ async def io_read(prompt: str) -> str:
 
 async def io_confirm(prompt: str, **kwargs: Any) -> bool:
     store = _storage.get()
+    # pyrefly: ignore [bad-argument-count]
     return await store.confirm(prompt, **kwargs)
 
 

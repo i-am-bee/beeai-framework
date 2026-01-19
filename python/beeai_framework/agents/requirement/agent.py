@@ -142,7 +142,9 @@ class RequirementAgent(BaseAgent[RequirementAgentOutput]):
                 defaults=exclude_none(
                     {
                         "role": role,
+                        # pyrefly: ignore [no-matching-overload]
                         "instructions": "\n -".join(cast_list(instructions)) if instructions else None,
+                        # pyrefly: ignore [no-matching-overload]
                         "notes": "\n -".join(cast_list(notes)) if notes else None,
                     }
                 )
@@ -232,6 +234,7 @@ class RequirementAgent(BaseAgent[RequirementAgentOutput]):
             )
             return [*msgs, user_message]
         else:
+            # pyrefly: ignore [bad-return]
             return msgs if last_message is None else [*msgs, last_message]
 
     def _create_emitter(self) -> Emitter:

@@ -72,6 +72,7 @@ class WatsonxOrchestrateServer(
             raise ValueError("No agents registered to the server.")
 
         member = self._members[0]
+        # pyrefly: ignore [missing-attribute]
         factory = type(self)._factories[type(member)]
 
         api = self._api_cls(
@@ -96,17 +97,23 @@ class WatsonxOrchestrateServer(
 
 with contextlib.suppress(FactoryAlreadyRegisteredError):
     WatsonxOrchestrateServer.register_factory(
-        ReActAgent, lambda agent: factories.WatsonxOrchestrateServerReActAgent(agent)
+        ReActAgent,
+        # pyrefly: ignore [bad-argument-type]
+        lambda agent: factories.WatsonxOrchestrateServerReActAgent(agent),
     )
 
 with contextlib.suppress(FactoryAlreadyRegisteredError):
     WatsonxOrchestrateServer.register_factory(
-        ToolCallingAgent, lambda agent: factories.WatsonxOrchestrateServerToolCallingAgent(agent)
+        ToolCallingAgent,
+        # pyrefly: ignore [bad-argument-type]
+        lambda agent: factories.WatsonxOrchestrateServerToolCallingAgent(agent),
     )
 
 with contextlib.suppress(FactoryAlreadyRegisteredError):
     WatsonxOrchestrateServer.register_factory(
-        RequirementAgent, lambda agent: factories.WatsonxOrchestrateServerRequirementAgent(agent)
+        RequirementAgent,
+        # pyrefly: ignore [bad-argument-type]
+        lambda agent: factories.WatsonxOrchestrateServerRequirementAgent(agent),
     )
 
 with contextlib.suppress(FactoryAlreadyRegisteredError):

@@ -48,6 +48,7 @@ class AgentStackContext:
     def __enter__(self) -> Self:
         ctx_key = _storage.set(self)
         self._cleanup.append(lambda: _storage.reset(ctx_key))
+        # pyrefly: ignore [bad-argument-type]
         self._cleanup.append(setup_io_context(read=self._read, confirm=self._confirm))
         if self._llm is not None:
             self._cleanup.append(AgentStackChatModel.set_context(self._llm))

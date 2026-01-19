@@ -134,6 +134,7 @@ class BaseRunner(ABC):
         return ReActAgentTemplates(**templates)
 
     async def clone(self) -> Self:
+        # pyrefly: ignore [bad-instantiation]
         cloned = type(self)(self._input.model_copy(), self._options.model_copy(), await self._run.clone())
         cloned._memory = await self._memory.clone() if self._memory else None
         cloned._failed_attempts_counter = await self._failed_attempts_counter.clone()

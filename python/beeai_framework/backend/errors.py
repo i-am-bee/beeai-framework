@@ -7,7 +7,7 @@ from beeai_framework.errors import FrameworkError
 from beeai_framework.utils.lists import remove_falsy
 
 if TYPE_CHECKING:
-    from beeai_framework.backend.chat import ChatModel
+    from beeai_framework.backend.chat import ChatModel, ChatModelOutput
     from beeai_framework.backend.embedding import EmbeddingModel
 
 
@@ -58,12 +58,14 @@ class ChatModelToolCallError(ChatModelError):
         cause: Exception | None = None,
         context: dict[str, Any] | None = None,
         is_retryable: bool = True,
+        response: Optional["ChatModelOutput"] = None,
     ) -> None:
         super().__init__(message, cause=cause, context=context)
         self.generated_error = generated_error
         self.generated_content = generated_content
         self.fatal = True
         self.retryable = is_retryable
+        self.response = response
 
     def __str__(self) -> str:
         return "\n- ".join(

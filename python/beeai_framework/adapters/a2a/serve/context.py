@@ -16,6 +16,7 @@ except ModuleNotFoundError as e:
 
 __all__ = ["A2AContext"]
 
+# pyrefly: ignore [not-a-type]
 _storage = ContextVar["A2AContext"]("a2a_server_storage")
 
 
@@ -24,6 +25,7 @@ class A2AContext:
         self,
         *,
         context: a2a_agent_execution.RequestContext,
+        # pyrefly: ignore [implicit-import]
         event_queue: a2a_server.events.EventQueue,
     ) -> None:
         self._cleanups: list[Callable[[], None]] = []
@@ -35,6 +37,7 @@ class A2AContext:
         return self._context
 
     @property
+    # pyrefly: ignore [implicit-import]
     def event_queue(self) -> a2a_server.events.EventQueue:
         return self._event_queue
 

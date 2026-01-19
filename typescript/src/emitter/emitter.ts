@@ -22,6 +22,7 @@ import { shallowCopy, toBoundedFunction } from "@/serializer/utils.js";
 import { RequiredAll } from "@/internals/types.js";
 import { Serializable } from "@/internals/serializable.js";
 import { pick } from "remeda";
+import { removeFromArray } from "@/internals/helpers/array.js";
 
 export interface EmitterInput<E extends object = object> {
   groupId?: string;
@@ -46,7 +47,7 @@ interface Listener<T = any> {
 }
 
 export class Emitter<T = Record<keyof any, Callback<unknown>>> extends Serializable {
-  protected listeners = new Set<Listener>();
+  protected listeners: Listener[] = [];
   protected readonly groupId?: string;
   public readonly namespace: string[];
   public readonly creator?: object;
@@ -103,22 +104,19 @@ export class Emitter<T = Record<keyof any, Callback<unknown>>> extends Serializa
         isBlocking: true,
         once: false,
         persistent: true,
+        matchNested: false,
       },
     );
   }
 
   destroy() {
-    this.listeners.clear();
+    this.listeners.length = 0;
     this.cleanups.forEach((child) => child());
     this.cleanups.length = 0;
   }
 
   reset() {
-    for (const listener of this.listeners) {
-      if (!listener.options?.persistent) {
-        this.listeners.delete(listener);
-      }
-    }
+    this.listeners = this.listeners.filter((listener) => listener.options?.persistent);
   }
 
   registerCallbacks<K extends StringKey<RequiredAll<T>>>(
@@ -194,9 +192,18 @@ export class Emitter<T = Record<keyof any, Callback<unknown>>> extends Serializa
       raw: matcher,
       match: createMatcher(),
     };
-    this.listeners.add(listener);
 
-    return () => this.listeners.delete(listener);
+    const priority = options?.priority ?? 0;
+    const insertIndex = this.listeners.findIndex((l) => (l.options?.priority ?? 0) >= priority);
+    if (insertIndex === -1) {
+      this.listeners.push(listener);
+    } else {
+      this.listeners.splice(insertIndex, 0, listener);
+    }
+
+    return () => {
+      removeFromArray(this.listeners, listener);
+    };
   }
 
   async emit<K extends StringKey<RequiredAll<T>>>(
@@ -211,13 +218,15 @@ export class Emitter<T = Record<keyof any, Callback<unknown>>> extends Serializa
 
   protected async invoke(data: unknown, event: EventMeta) {
     const executions: unknown[] = [];
-    for (const listener of this.listeners.values()) {
+    // Iterate in reverse to match Python's behavior (reversed list iteration)
+    for (let i = this.listeners.length - 1; i >= 0; i--) {
+      const listener = this.listeners[i];
       if (!listener.match(event)) {
         continue;
       }
 
       if (listener.options?.once) {
-        this.listeners.delete(listener);
+        this.listeners.splice(i, 1);
       }
 
       const run = async () => listener.callback(data, event);
@@ -247,13 +256,13 @@ export class Emitter<T = Record<keyof any, Callback<unknown>>> extends Serializa
       creator: this.creator,
       context: this.context,
       trace: this.trace,
-      listeners: Array.from(this.listeners).map(pick(["raw", "options", "callback"])),
+      listeners: this.listeners.map(pick(["raw", "options", "callback"])),
       cleanups: this.cleanups,
     };
   }
 
   loadSnapshot({ listeners, ...snapshot }: ReturnType<typeof this.createSnapshot>): void {
-    Object.assign(this, snapshot, { listeners: new Set() });
+    Object.assign(this, snapshot, { listeners: [] });
     listeners.forEach(({ raw, callback, options }) => this.match(raw, callback, options));
   }
 }

@@ -131,6 +131,7 @@ class ConditionalRequirement(Generic[TInput], Requirement[TInput]):
         return self
 
     @run_with_context
+    # pyrefly: ignore [bad-override]
     async def run(self, state: TInput, context: RunContext) -> list[Rule]:
         source_tool = self._source_tool
         if not source_tool:
@@ -146,6 +147,7 @@ class ConditionalRequirement(Generic[TInput], Requirement[TInput]):
             current_step = len(steps) + 1
             if not allowed and self._force_at_step == current_step:
                 raise RequirementError(
+                    # pyrefly: ignore [missing-attribute]
                     f"Tool '{source_tool.name}' cannot be executed at step {self._force_at_step} "
                     f"because it has not met all requirements.",
                     requirement=self,
@@ -159,6 +161,7 @@ class ConditionalRequirement(Generic[TInput], Requirement[TInput]):
 
             return [
                 Rule(
+                    # pyrefly: ignore [missing-attribute]
                     target=source_tool.name,
                     allowed=allowed,
                     forced=forced,

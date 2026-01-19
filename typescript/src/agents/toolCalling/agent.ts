@@ -4,7 +4,14 @@
  */
 
 import { AgentError, BaseAgent } from "@/agents/base.js";
-import { AnyTool, DynamicTool, StringToolOutput, ToolError, ToolOutput } from "@/tools/base.js";
+import {
+  AnyTool,
+  DynamicTool,
+  StringToolOutput,
+  Tool,
+  ToolError,
+  ToolOutput,
+} from "@/tools/base.js";
 import { BaseMemory } from "@/memory/base.js";
 import { AgentMeta } from "@/agents/types.js";
 import { Emitter } from "@/emitter/emitter.js";
@@ -32,6 +39,7 @@ import {
   ToolCallingAgentTaskPrompt,
 } from "@/agents/toolCalling/prompts.js";
 import { z, ZodSchema } from "zod";
+import { Logger } from "@/logger/logger.js";
 
 export type ToolCallingAgentTemplateFactory<K extends keyof ToolCallingAgentTemplates> = (
   template: ToolCallingAgentTemplates[K],
@@ -51,6 +59,9 @@ export interface ToolCallingAgentInput {
   saveIntermediateSteps?: boolean;
 }
 
+/**
+ * @deprecated Use RequirementAgent instead.
+ */
 export class ToolCallingAgent extends BaseAgent<
   ToolCallingAgentRunInput,
   ToolCallingAgentRunOutput,
@@ -64,6 +75,9 @@ export class ToolCallingAgent extends BaseAgent<
   constructor(public readonly input: ToolCallingAgentInput) {
     super();
     this.input.saveIntermediateSteps = this.input.saveIntermediateSteps ?? true;
+    Logger.root.warn(
+      "The ToolCallingAgent is deprecated and will be removed soon. Use RequirementAgent instead.",
+    );
   }
 
   static {
@@ -162,6 +176,7 @@ export class ToolCallingAgent extends BaseAgent<
           const toolResponse: ToolOutput = await tool.run(toolInput).context({
             state,
             toolCallMsg: toolCall,
+            [Tool.contextKeys.Memory]: this.memory,
           });
           await state.memory.add(
             new ToolMessage({

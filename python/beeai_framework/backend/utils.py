@@ -20,6 +20,7 @@ from beeai_framework.backend.constants import (
 from beeai_framework.backend.errors import BackendError
 from beeai_framework.backend.types import ChatModelToolChoice
 from beeai_framework.tools.tool import AnyTool, Tool
+from beeai_framework.utils.dicts import exclude_keys_inplace
 from beeai_framework.utils.models import WrappedRootModel
 
 T = TypeVar("T")
@@ -112,6 +113,7 @@ def parse_broken_json(input: str, fallback: Any | None = None, *, stream_stable:
 
 def inline_schema_refs(schema: dict[str, Any], *, force: bool = False) -> dict[str, Any]:
     if schema.get("$defs") is not None or force is True:
+        # pyrefly: ignore [bad-assignment]
         schema = jsonref.replace_refs(
             schema, base_uri="", load_on_repr=True, merge_props=True, proxies=False, lazy_load=False
         )
@@ -126,6 +128,7 @@ def generate_tool_union_schema(
     strict: bool,
     allow_parallel_tool_calls: bool,
     allow_top_level_union: bool,
+    fallback_tool: AnyTool | None = None,
 ) -> tuple[dict[str, Any], type[BaseModel]]:
     if not tools:
         raise ValueError("No tools provided!")
@@ -136,6 +139,7 @@ def generate_tool_union_schema(
             __module__="fn",
             __config__=ConfigDict(extra="forbid", populate_by_name=True, title=tool.name),
             **{
+                # pyrefly: ignore [invalid-literal]
                 "name": (Literal[tool.name], Field(description="Tool Name")),
                 "parameters": (tool.input_schema, Field(description="Tool Parameters")),
             },
@@ -153,7 +157,35 @@ def generate_tool_union_schema(
         )
 
         class AvailableTools(BaseClass[SchemaType]):  # type: ignore
-            pass
+            @classmethod
+            def model_validate(
+                cls,
+                obj: Any,
+                **kwargs: Any,
+            ) -> Any:
+                if not fallback_tool or obj is None:
+                    return super().model_validate(obj, **kwargs)
+
+                if not isinstance(obj, dict):
+                    obj = {"name": fallback_tool.name, "parameters": obj}
+                    assert isinstance(obj, dict)
+
+                final = obj
+                if BaseClass is WrappedRootModel:
+                    if obj.get("item") is None:
+                        final = {"item": obj}
+                    else:
+                        obj = obj["item"]
+                        assert isinstance(obj, dict)
+
+                # Tool Schema
+                if obj.get("name") is None:
+                    obj["name"] = fallback_tool.name
+
+                if "parameters" not in obj:
+                    obj["parameters"] = exclude_keys_inplace(obj, set(obj.keys()) - {"name"})
+
+                return super().model_validate(final, **kwargs)
 
         schema = AvailableTools
 

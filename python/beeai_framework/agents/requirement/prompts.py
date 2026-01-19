@@ -6,7 +6,7 @@ from typing import Self
 
 from pydantic import BaseModel
 
-from beeai_framework.agents.requirement.utils._tool import ToolInvocationResult
+from beeai_framework.agents._utils import ToolInvocationResult
 from beeai_framework.template import PromptTemplate
 from beeai_framework.tools import AnyTool
 from beeai_framework.utils.strings import to_json

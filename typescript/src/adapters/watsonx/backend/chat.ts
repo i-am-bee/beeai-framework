@@ -27,7 +27,6 @@ import { GetRunContext } from "@/context.js";
 import { AssistantMessage, Message, SystemMessage, ToolMessage } from "@/backend/message.js";
 import { ToolCallPart } from "ai";
 import Type = WatsonxAiMlVml_v1.TextChatResponseFormat.Constants.Type;
-import { parseBrokenJson } from "@/internals/helpers/schema.js";
 import { getEnv } from "@/internals/env.js";
 import { NotImplementedError } from "@/errors.js";
 import { Tool } from "@/tools/base.js";
@@ -36,6 +35,8 @@ import type {
   TextChatMessageSystem,
   TextChatMessageTool,
 } from "@ibm-cloud/watsonx-ai";
+import { getLast } from "@/internals/helpers/object.js";
+import { randomBytes } from "node:crypto";
 
 export class WatsonxChatModel extends ChatModel {
   protected readonly client: WatsonxClient;
@@ -75,16 +76,23 @@ export class WatsonxChatModel extends ChatModel {
       ...(await this.prepareInput(input)),
       signal: run.signal,
     });
-    const { messages, finishReason, usage } = this.extractOutput(result.choices, result.usage);
+    const { messages, finishReason, usage } = this.extractOutput(
+      result.choices,
+      result.usage,
+      result.id,
+    );
     return new ChatModelOutput(messages, usage, finishReason);
   }
 
   async *_createStream(input: ChatModelInput, run: GetRunContext<this>) {
+    // @ts-ignore
     const stream = await this.client.instance.textChatStream({
       ...(await this.prepareInput(input)),
       signal: run.signal,
       returnObject: true,
     });
+
+    const toolCallIds = new Map<string, string>(); // toolName / id
     for await (const raw of stream) {
       if (run.signal.aborted) {
         stream.controller.abort(run.signal.aborted);
@@ -93,12 +101,45 @@ export class WatsonxChatModel extends ChatModel {
       const { messages, finishReason, usage } = this.extractOutput(
         raw.data.choices.map(({ delta, ...choice }) => ({ ...choice, message: delta })),
         raw.data.usage,
+        raw.data.id,
+        toolCallIds,
       );
       yield new ChatModelOutput(messages, usage, finishReason);
     }
   }
 
-  protected extractOutput(choices: TextChatResultChoice[], usage?: TextChatUsage) {
+  protected extractOutput(
+    choices: TextChatResultChoice[],
+    usage?: TextChatUsage,
+    id?: string,
+    toolCallIdsByName?: Map<string, string>,
+  ) {
+    if (!toolCallIdsByName) {
+      toolCallIdsByName = new Map();
+    }
+
+    const extractToolCall = (
+      toolCallId: string,
+      toolCallName: string,
+    ): Pick<ToolCallPart, "toolName" | "toolCallId"> => {
+      // Some tool call parts don't have the 'id'
+      // this function tries to guess it based on the previous chunks
+      if (!toolCallName && !toolCallId) {
+        [toolCallName, toolCallId] = getLast(toolCallIdsByName, ["", ""]);
+      }
+      if (!toolCallId) {
+        toolCallId = toolCallIdsByName.get(toolCallName) || "";
+      }
+      if (!toolCallId) {
+        toolCallId = `chatcmpl-tool-${randomBytes(16).toString("hex")}`;
+      }
+      toolCallIdsByName.set(toolCallName, toolCallId);
+      return {
+        toolCallId: toolCallId,
+        toolName: toolCallName,
+      };
+    };
+
     return {
       finishReason: findLast(choices, (choice) => Boolean(choice?.finish_reason))
         ?.finish_reason as ChatModelOutput["finishReason"],
@@ -113,27 +154,23 @@ export class WatsonxChatModel extends ChatModel {
         .flatMap(({ message }) => {
           const messages: Message[] = [];
           if (message?.content) {
-            const msg = new AssistantMessage({ type: "text", text: message.content });
-            // msg.role = message.role || msg.role;
+            const msg = new AssistantMessage({ type: "text", text: message.content }, {}, id);
             messages.push(msg);
           }
-          if (message?.tool_calls) {
-            const msg = new AssistantMessage(
-              message.tool_calls.map(
-                (call): ToolCallPart => ({
-                  type: "tool-call",
-                  toolCallId: call.id,
-                  toolName: call.function.name,
-                  input: parseBrokenJson(call.function.arguments),
-                }),
-              ),
-            );
-            // msg.role = message.role || msg.role;
+          if (message?.tool_calls && message.tool_calls.length > 0) {
+            const chunks: ToolCallPart[] = [];
+            for (const toolCall of message.tool_calls) {
+              chunks.push({
+                type: "tool-call",
+                ...extractToolCall(toolCall.id, toolCall.function.name),
+                input: toolCall.function.arguments,
+              });
+            }
+            const msg = new AssistantMessage(chunks, {}, id);
             messages.push(msg);
           }
           if (message?.refusal) {
-            const msg = new AssistantMessage({ type: "text", text: message.refusal });
-            // msg.role = message.role || msg.role;
+            const msg = new AssistantMessage({ type: "text", text: message.refusal }, {}, id);
             messages.push(msg);
           }
           return messages;

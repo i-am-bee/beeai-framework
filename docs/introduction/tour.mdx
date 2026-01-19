@@ -64,7 +64,8 @@ You can also use other LLM providers like OpenAI, Anthropic, or watsonx - see [B
 Let's start with the simplest possible agent - one that can respond to messages.
 
 <CodeGroup>
-```py Python [expandable]import asyncio
+```py Python [expandable]
+import asyncio
 from beeai_framework.agents.requirement import RequirementAgent
 from beeai_framework.backend import ChatModel
 
@@ -82,7 +83,17 @@ if __name__ == "__main__":
     asyncio.run(main())
 ```
 ```ts TypeScript [expandable]
-COMING SOON
+import { RequirementAgent } from "beeai-framework/agents/requirement/agent";
+import { ChatModel } from "beeai-framework/backend/chat";
+
+const agent = new RequirementAgent({
+  llm: await ChatModel.fromName("ollama:granite3.3"),
+  role: "friendly AI assistant",
+  instructions: "Be helpful and conversational in all your interactions.",
+});
+
+const response = await agent.run({ prompt: "Hello! What can you help me with?" });
+console.log(response.result.text);
 ```
 
 </CodeGroup>
@@ -145,7 +156,23 @@ if __name__ == "__main__":
     asyncio.run(main())
 ```
 ```ts TypeScript [expandable]
-COMING SOON
+import { RequirementAgent } from "beeai-framework/agents/requirement/agent";
+import { ChatModel } from "beeai-framework/backend/chat";
+import { WikipediaTool } from "beeai-framework/tools/search/wikipedia";
+import { OpenMeteoTool } from "beeai-framework/tools/weather/openMeteo";
+
+const agent = new RequirementAgent({
+  llm: await ChatModel.fromName("ollama:granite3.3"),
+  role: "friendly AI assistant",
+  instructions:
+    "Be helpful and conversational in all your interactions. Use your tools to find accurate, current information.",
+  tools: [new WikipediaTool(), new OpenMeteoTool()],
+});
+
+const response = await agent.run({
+  prompt: "What's the current weather in New York and tell me about the history of the city?",
+});
+console.log(response.result.text);
 ```
 
 </CodeGroup>
@@ -201,7 +228,22 @@ if __name__ == "__main__":
     asyncio.run(main())
 ```
 ```ts TypeScript [expandable]
-COMING SOON
+import { RequirementAgent } from "beeai-framework/agents/requirement/agent";
+import { ChatModel } from "beeai-framework/backend/chat";
+import { OpenMeteoTool } from "beeai-framework/tools/weather/openMeteo";
+import { GlobalTrajectoryMiddleware } from "beeai-framework/middleware/trajectory";
+import { Tool } from "beeai-framework/tools/base";
+
+const agent = new RequirementAgent({
+  llm: await ChatModel.fromName("ollama:granite3.3"),
+  tools: [new OpenMeteoTool()],
+});
+
+const response = await agent
+  .run({ prompt: "What's the current weather in Paris?" })
+  .middleware(new GlobalTrajectoryMiddleware({ included: [Tool] })); // Only show tool executions
+
+console.log(response.result.text);
 ```
 
 </CodeGroup>
@@ -238,11 +280,26 @@ if __name__ == "__main__":
     asyncio.run(main())
 ```
 ```ts TypeScript [expandable]
-COMING SOON
+import { RequirementAgent } from "beeai-framework/agents/requirement/agent";
+import { ChatModel } from "beeai-framework/backend/chat";
+import { OpenMeteoTool } from "beeai-framework/tools/weather/openMeteo";
+
+const agent = new RequirementAgent({
+  llm: await ChatModel.fromName("ollama:granite3.3"),
+  tools: [new OpenMeteoTool()],
+});
+
+const response = await agent
+  .run({ prompt: "What's the current weather in Paris?" })
+  .observe((emitter) => {
+    emitter.match("*.*", (data, event) => console.log(event.name, data));
+  });
+
+console.log(response.result.text);
 ```
 
 </CodeGroup>
-Tool
+
 <Tip>
 Listening for all events can be noisy. Filter to the events you are interested in capturing.
 </Tip>
@@ -278,7 +335,21 @@ if __name__ == "__main__":
     asyncio.run(main())
 ```
 ```ts TypeScript [expandable]
-COMING SOON
+import { RequirementAgent } from "beeai-framework/agents/requirement/agent";
+import { ChatModel } from "beeai-framework/backend/chat";
+import { OpenMeteoTool } from "beeai-framework/tools/weather/openMeteo";
+
+const agent = new RequirementAgent({
+  llm: await ChatModel.fromName("ollama:granite3.3"),
+  tools: [new OpenMeteoTool()],
+});
+
+agent.emitter.match("*.*", (data, event) => {
+  console.log(event.name, data);
+});
+
+const response = await agent.run({ prompt: "What's the current weather in Paris?" });
+console.log(response.result.text);
 ```
 
 </CodeGroup>
@@ -399,7 +470,8 @@ setup_observability()
 ```
 
 ```ts TypeScript [expandable]
-COMING SOON
+// Note: OpenTelemetry instrumentation for TypeScript is coming soon
+// For now, use standard OpenTelemetry setup with manual instrumentation
 ```
 
 </CodeGroup>
@@ -460,7 +532,42 @@ if __name__ == "__main__":
 ```
 
 ```ts TypeScript [expandable]
-COMING SOON
+import { RequirementAgent } from "beeai-framework/agents/requirement/agent";
+import { ConditionalRequirement } from "beeai-framework/agents/requirement/requirements/conditional";
+import { ChatModel } from "beeai-framework/backend/chat";
+import { WikipediaTool } from "beeai-framework/tools/search/wikipedia";
+import { OpenMeteoTool } from "beeai-framework/tools/weather/openMeteo";
+import { ThinkTool } from "beeai-framework/tools/think";
+import { GlobalTrajectoryMiddleware } from "beeai-framework/middleware/trajectory";
+import { Tool } from "beeai-framework/tools/base";
+import { Logger } from "beeai-framework/logger/logger";
+
+const logger = new Logger({ name: "my-agent", level: "trace" });
+logger.info("Starting agent application");
+
+const agent = new RequirementAgent({
+  llm: await ChatModel.fromName("ollama:granite3.3"),
+  role: "friendly AI assistant",
+  instructions:
+    "Be helpful and conversational in all your interactions. Use your tools to find accurate, current information.",
+  tools: [new WikipediaTool(), new OpenMeteoTool(), new ThinkTool()],
+  requirements: [
+    // Force agent to think before acting, and after each tool use
+    new ConditionalRequirement(ThinkTool, {
+      forceAtStep: 1, // Always think first
+      forceAfter: [Tool], // Think after using any tool
+      consecutiveAllowed: false, // Don't think twice in a row
+    }),
+  ],
+  middlewares: [new GlobalTrajectoryMiddleware({ included: [Tool] })],
+});
+
+logger.debug("About to process user message");
+const response = await agent.run({
+  prompt: "What's the weather in Paris and tell me about the Eiffel Tower?",
+});
+logger.info("Agent response generated");
+logger.info(response.result.text);
 ```
 
 </CodeGroup>
@@ -519,7 +626,8 @@ if __name__ == "__main__":
 ```
 
 ```ts TypeScript [expandable]
-COMING SOON
+// Note: AskPermissionRequirement is not yet implemented in TypeScript
+// Coming soon
 ```
 
 </CodeGroup>

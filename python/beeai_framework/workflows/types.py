@@ -36,6 +36,7 @@ class WorkflowStepRes(BaseModel, Generic[T, K]):
 
 
 class WorkflowStepDefinition(BaseModel, Generic[T, K]):
+    # pyrefly: ignore [unsupported-operation]
     handler: WorkflowHandler[T, K]
 
 

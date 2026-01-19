@@ -53,6 +53,7 @@ def safe_invoke(cls: Callable[P, T]) -> Callable[P, T]:
 
     def construct(*args: P.args, **kwargs: P.kwargs) -> T:
         valid_kwargs = include_keys(kwargs, allowed_kwargs)
+        # pyrefly: ignore [invalid-param-spec]
         return cls(*args, **valid_kwargs)
 
     return construct

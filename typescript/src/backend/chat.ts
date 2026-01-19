@@ -5,13 +5,13 @@
 
 import { Serializable } from "@/internals/serializable.js";
 import { shallowCopy } from "@/serializer/utils.js";
-import { customMerge } from "@/internals/helpers/object.js";
+import { customMerge, getLast } from "@/internals/helpers/object.js";
 import { takeBigger } from "@/internals/helpers/number.js";
 import { Callback } from "@/emitter/types.js";
 import { FrameworkError } from "@/errors.js";
 import { Emitter } from "@/emitter/emitter.js";
-import { GetRunContext, RunContext } from "@/context.js";
-import { isEmpty, isFunction, randomString } from "remeda";
+import { GetRunContext, MiddlewareType, RunContext } from "@/context.js";
+import { isEmpty, isFunction, isPromise, isString, randomString } from "remeda";
 import { ObjectHashKeyFn } from "@/cache/decoratorCache.js";
 import { Task } from "promise-based-task";
 import { NullCache } from "@/cache/nullCache.js";
@@ -40,6 +40,7 @@ import { PromptTemplate } from "@/template.js";
 import { toAsyncGenerator } from "@/internals/helpers/promise.js";
 import { Serializer } from "@/serializer/serializer.js";
 import { Logger } from "@/logger/logger.js";
+import { ToolCallPart } from "ai";
 
 export interface ChatModelParameters {
   maxTokens?: number;
@@ -51,6 +52,7 @@ export interface ChatModelParameters {
   presencePenalty?: number;
   seed?: number;
   stopSequences?: string[];
+  stream?: boolean;
 }
 
 interface ResponseObjectJson {
@@ -82,6 +84,7 @@ export interface ChatModelInput extends ChatModelParameters {
   responseFormat?: ZodSchema | ResponseObjectJson;
   toolChoice?: ChatModelToolChoice;
   messages: Message[];
+  streamPartialToolCalls?: boolean;
 }
 
 export type ChatModelFinishReason =
@@ -126,6 +129,7 @@ export abstract class ChatModel extends Serializable {
   public abstract readonly emitter: Emitter<ChatModelEvents>;
   public cache: ChatModelCache = new NullCache();
   public parameters: ChatModelParameters = {};
+  public readonly middlewares: MiddlewareType<typeof this>[] = [];
   protected readonly logger = Logger.root.child({
     name: this.constructor.name,
   });
@@ -142,8 +146,11 @@ export abstract class ChatModel extends Serializable {
   abstract get modelId(): string;
   abstract get providerId(): string;
 
-  create(input: ChatModelInput & { stream?: boolean }) {
+  create(input: ChatModelInput) {
     input = shallowCopy(input);
+    if (input.stream === undefined) {
+      input.stream = this.parameters.stream;
+    }
 
     return RunContext.enter(
       this,
@@ -194,11 +201,16 @@ export abstract class ChatModel extends Serializable {
 
           cacheEntry.resolve(chunks);
           const result = ChatModelOutput.fromChunks(chunks);
+          for (const toolCall of result.getToolCalls()) {
+            if (isString(toolCall.input)) {
+              toolCall.input = JSON.parse(toolCall.input);
+            }
+          }
 
           if (forceToolCallViaResponseFormat && isEmpty(result.getToolCalls())) {
             const lastMsg = result.messages.at(-1)!;
-            const toolCall = parseBrokenJson(lastMsg.text);
-            if (!toolCall) {
+            const toolCall = parseBrokenJson(lastMsg.text, { pair: ["{", "}"] });
+            if (!toolCall || !toolCall.name || !toolCall.parameters) {
               throw new ChatModelError(
                 `Failed to produce a valid tool call. Generate output: ${lastMsg.text}`,
                 [],
@@ -231,7 +243,7 @@ export abstract class ChatModel extends Serializable {
           await run.emitter.emit("finish", null);
         }
       },
-    );
+    ).middleware(...this.middlewares);
   }
 
   createStructure<T>(input: ChatModelObjectInput<T>) {
@@ -256,7 +268,11 @@ export abstract class ChatModel extends Serializable {
   static async fromName(name: FullModelName | ProviderName, options?: ChatModelParameters) {
     const { providerId, modelId } = parseModel(name);
     const Target = await loadModel<ChatModel>(providerId, "chat");
-    return new Target(modelId || undefined, options);
+    const instance = new Target(modelId || undefined);
+    if (options) {
+      Object.assign(instance.parameters, options);
+    }
+    return instance;
   }
 
   protected abstract _create(
@@ -351,6 +367,7 @@ Validation Errors: {{errors}}`,
     return {
       cache: this.cache,
       emitter: this.emitter,
+      middlewares: shallowCopy(this.middlewares) as MiddlewareType<any>[],
       parameters: shallowCopy(this.parameters),
       logger: this.logger,
       toolChoiceSupport: this.toolChoiceSupport.slice(),
@@ -435,6 +452,7 @@ export class ChatModelOutput extends Serializable {
     public finishReason?: ChatModelFinishReason,
   ) {
     super();
+    this.dedupe();
   }
 
   static fromChunks(chunks: ChatModelOutput[]) {
@@ -444,7 +462,12 @@ export class ChatModelOutput extends Serializable {
   }
 
   merge(other: ChatModelOutput) {
-    this.messages.push(...other.messages);
+    if (other.messages.length > 0) {
+      const clones = other.messages.map(cloneSync);
+      this.messages.push(...clones);
+      this.dedupe();
+    }
+
     this.finishReason = other.finishReason;
     if (this.usage && other.usage) {
       this.usage = customMerge([this.usage, other.usage], {
@@ -454,6 +477,103 @@ export class ChatModelOutput extends Serializable {
       });
     } else if (other.usage) {
       this.usage = shallowCopy(other.usage);
+    }
+  }
+
+  dedupe(): void {
+    // Dedupe messages
+    if (this.messages.length > 1) {
+      const messagesById = new Map<string, Message[]>();
+      const messagesByToolCallId = new Map<string, AssistantMessage>();
+
+      for (const msg of this.messages) {
+        const msgId = msg.id || "";
+
+        if (msg instanceof AssistantMessage && msg.getToolCalls().length > 0) {
+          const filteredChunks: AssistantMessage["content"] = [];
+          for (const chunk of msg.content) {
+            if (chunk.type !== "tool-call") {
+              filteredChunks.push(chunk);
+              continue;
+            }
+
+            // Assume tool calls with no id refer to the most recent tool call
+            if (!chunk.toolCallId && messagesByToolCallId.size > 0) {
+              const lastToolCallId = getLast(messagesByToolCallId.keys(), "");
+              if (lastToolCallId) {
+                chunk.toolCallId = lastToolCallId;
+              }
+            }
+
+            if (chunk.toolCallId && messagesByToolCallId.has(chunk.toolCallId)) {
+              messagesByToolCallId.get(chunk.toolCallId)!.content.push(chunk);
+            } else if (chunk.toolCallId) {
+              messagesByToolCallId.set(chunk.toolCallId, msg);
+              filteredChunks.push(chunk);
+            }
+          }
+
+          msg.content.length = 0;
+          msg.content.push(...filteredChunks);
+
+          if (filteredChunks.length === 0) {
+            continue; // nothing to process
+          }
+        }
+
+        if (!messagesById.has(msgId)) {
+          messagesById.set(msgId, [msg]);
+        } else {
+          messagesById.get(msgId)!.push(msg);
+        }
+      }
+
+      this.messages.length = 0;
+
+      for (const messages of messagesById.values()) {
+        const main = messages.shift()!;
+        for (const other of messages) {
+          main.merge(other);
+        }
+        this.messages.push(main);
+      }
+    }
+
+    // Dedupe tool calls
+    for (const msg of this.messages) {
+      if (!(msg instanceof AssistantMessage)) {
+        continue;
+      }
+
+      const finalToolCalls: Record<string, ToolCallPart> = {};
+      let lastId = "";
+
+      const excludedIndexes: number[] = [];
+      msg.content.forEach((chunk, index) => {
+        if (chunk.type !== "tool-call") {
+          return;
+        }
+        const id = chunk.toolCallId || lastId;
+        if (!(id in finalToolCalls)) {
+          finalToolCalls[id] = shallowCopy(chunk);
+          msg.content[index] = finalToolCalls[id];
+        } else {
+          excludedIndexes.push(index);
+          const lastToolCall = finalToolCalls[id];
+          if (isString(lastToolCall.input) && isString(chunk.input)) {
+            lastToolCall.input += chunk.input;
+          } else {
+            throw new Error("Chunks cannot be merged.");
+          }
+          if (!lastToolCall.toolName) {
+            lastToolCall.toolName = chunk.toolName;
+          }
+        }
+        lastId = id;
+      });
+      excludedIndexes.reverse().forEach((index) => {
+        msg.content.splice(index, 1);
+      });
     }
   }
 
@@ -491,4 +611,19 @@ export class ChatModelOutput extends Serializable {
   loadSnapshot(snapshot: ReturnType<typeof this.createSnapshot>) {
     Object.assign(this, snapshot);
   }
+}
+
+function cloneSync<T extends Serializable>(serializable: T): T {
+  const snapshot = serializable.createSnapshot();
+  if (isPromise(snapshot)) {
+    throw new Error(`createSnapshot cannot be async`);
+  }
+
+  const target = Object.create(serializable.constructor.prototype) as T;
+  const load = target.loadSnapshot(snapshot);
+  if (isPromise(load)) {
+    throw new Error(`loadSnapshot cannot be async`);
+  }
+
+  return target;
 }

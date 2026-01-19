@@ -184,7 +184,7 @@ import { UnconstrainedMemory } from "beeai-framework/memory/unconstrainedMemory"
 import { OllamaChatModel } from "beeai-framework/adapters/ollama/backend/chat";
 
 const agent = new ReActAgent({
-  llm: new OllamaChatModel("llama3.1"),
+  llm: new OllamaChatModel("granite4:micro"),
   memory: new UnconstrainedMemory(),
   tools: [new ArXivTool()],
 });
@@ -517,6 +517,7 @@ async def setup_vector_store() -> VectorStore | None:
     embedding_model = EmbeddingModel.from_name("watsonx:ibm/slate-125m-english-rtrvr-v2", truncate_input_tokens=500)
 
     # Load existing vector store if available
+    # pyrefly: ignore [redundant-condition]
     if VECTOR_DB_PATH_4_DUMP and os.path.exists(VECTOR_DB_PATH_4_DUMP):
         print(f"Loading vector store from: {VECTOR_DB_PATH_4_DUMP}")
         from beeai_framework.adapters.beeai.backend.vector_store import TemporalVectorStore
@@ -695,7 +696,7 @@ Leverage the Model Context Protocol (MCP) to define, initialize, and utilize too
 		  // Server usually supports several tools, use the factory for automatic discovery
 		  const tools = await MCPTool.fromClient(client);
 		  const agent = new ReActAgent({
-		    llm: new OllamaChatModel("llama3.1"),
+		    llm: new OllamaChatModel("granite4:micro"),
 		    memory: new UnconstrainedMemory(),
 		    tools,
 		  });
@@ -830,6 +831,7 @@ Many APIs are described using the OpenAPI Specification, and a framework can rea
 	async def main() -> None:
 	    # Retrieve the schema
 	    current_dir = os.path.dirname(__file__)
+	    # pyrefly: ignore [bad-context-manager]
 	    async with open(f"{current_dir}/assets/github_openapi.json") as file:
 	        content = await file.read()
 	        open_api_schema = json.loads(content)
@@ -869,7 +871,7 @@ Many APIs are described using the OpenAPI Specification, and a framework can rea
 	import { fileURLToPath } from "node:url";
 	import { ChatModel } from "beeai-framework/backend/chat";
 	
-	const llm = await ChatModel.fromName("ollama:llama3.1");
+	const llm = await ChatModel.fromName("ollama:granite4:micro");
 	
 	const __dirname = dirname(fileURLToPath(import.meta.url));
 	const openApiSchema = await fs.promises.readFile(
@@ -1325,6 +1327,7 @@ class OpenLibraryTool(Tool[OpenLibraryToolInput, ToolRunOptions, OpenLibraryTool
             creator=self,
         )
 
+    # pyrefly: ignore [bad-param-name-override]
     async def _run(
         self, tool_input: OpenLibraryToolInput, options: ToolRunOptions | None, context: RunContext
     ) -> OpenLibraryToolOutput:

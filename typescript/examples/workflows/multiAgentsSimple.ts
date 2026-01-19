@@ -11,7 +11,7 @@ workflow.addAgent({
   role: "A diligent researcher",
   instructions: "You look up and provide information about a specific topic.",
   tools: [new WikipediaTool()],
-  llm: new OllamaChatModel("llama3.1"),
+  llm: new OllamaChatModel("granite4:micro"),
 });
 
 workflow.addAgent({
@@ -19,14 +19,14 @@ workflow.addAgent({
   role: "A weather reporter",
   instructions: "You provide detailed weather reports.",
   tools: [new OpenMeteoTool()],
-  llm: new OllamaChatModel("llama3.1"),
+  llm: new OllamaChatModel("granite4:micro"),
 });
 
 workflow.addAgent({
   name: "DataSynthesizer",
   role: "A meticulous and creative data synthesizer",
   instructions: "You can combine disparate information into a final coherent summary.",
-  llm: new OllamaChatModel("llama3.1"),
+  llm: new OllamaChatModel("granite4:micro"),
 });
 
 const location = "Saint-Tropez";
