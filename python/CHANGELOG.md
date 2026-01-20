@@ -2,8 +2,8 @@
 
 ### Features
 
-- auto recover from malformed tool calls and empty responses (#1388)
-- **adapters**: add support for Agent Stack RAG (#1384)
+- **backend**: auto recover from malformed tool calls and empty responses (#1388)
+- **adapters**: add Agent Stack RAG capabilities (AgentStackVectorStore, AgentstackEmbeddingModel) (#1384)
 
 ## python_v0.1.75 (2026-01-08)
 
