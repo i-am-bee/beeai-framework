@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.1.25](https://github.com/i-am-bee/beeai-framework/compare/typescript_v0.1.24...typescript_v0.1.25) (2026-01-20)
+
+### Features
+
+- auto recover from malformed tool calls and empty responses ([#1388](https://github.com/i-am-bee/beeai-framework/issues/1388)) ([f721e41](https://github.com/i-am-bee/beeai-framework/commit/f721e4129cf0dd4918fa523834411189fdbca72c))
+
 ## [0.1.24](https://github.com/i-am-bee/beeai-framework/compare/typescript_v0.1.23...typescript_v0.1.24) (2026-01-15)
 
 ### Features
