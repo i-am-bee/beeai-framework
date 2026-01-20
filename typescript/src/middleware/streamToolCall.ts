@@ -101,6 +101,18 @@ export class StreamToolCallMiddleware<T = any> extends Middleware<RunInstance> {
     this.delta = "";
   }
 
+  async add(chunk: ChatModelOutput) {
+    await this.handleNewToken(
+      {
+        value: chunk,
+        callbacks: {
+          abort: () => {},
+        },
+      },
+      {} as EventMeta,
+    );
+  }
+
   isEmpty() {
     return this.buffer.length === 0;
   }

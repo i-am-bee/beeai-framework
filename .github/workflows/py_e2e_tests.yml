@@ -29,10 +29,17 @@ jobs:
       - uses: ./.github/actions/setup
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Install ollama
+        run: curl -fsSL https://ollama.com/install.sh | sh
+      - name: Run ollama
+        run: |
+          ollama serve &
+          ollama pull granite4:micro
+      - name: Call ollama API
+        run: |
+          curl -d '{"model": "granite4:micro", "stream": false, "prompt":"Whatever I say, answer with Yes"}' http://localhost:11434/api/generate
       - run: mise python:test:e2e
         env:
-          OLLAMA_API_BASE: ${{ secrets.OLLAMA_API_BASE }}
-          OLLAMA_API_KEY: ${{ secrets.OLLAMA_API_KEY }}
           BEEAI_OPEN_METEO_TOOL_PROXY: ${{ secrets.PROXY }}
           BEEAI_DDG_TOOL_PROXY: ${{ secrets.BEEAI_DDG_TOOL_PROXY }}
           BEEAI_DDG_TOOL_PROXY_VERIFY: ${{ secrets.BEEAI_DDG_TOOL_PROXY_VERIFY }}

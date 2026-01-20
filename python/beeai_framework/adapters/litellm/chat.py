@@ -323,7 +323,7 @@ class LiteLLMChatModel(ChatModel, ABC):
                     )
                     if update.tool_calls
                     # pyrefly: ignore [bad-argument-type]
-                    else AssistantMessage(update.content, id=chunk.id)
+                    else AssistantMessage(update.content or update.reasoning_content or "", id=chunk.id)
                 ]
                 if (update and update.model_dump(exclude_none=True))
                 else []
