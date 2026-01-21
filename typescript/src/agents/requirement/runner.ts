@@ -27,6 +27,7 @@ import { parseBrokenJson } from "@/internals/helpers/schema.js";
 import { RequirementAgent } from "@/agents/requirement/agent.js";
 import { mergeTokenUsage } from "@/adapters/vercel/backend/utils.js";
 import { StreamToolCallMiddleware } from "@/middleware/streamToolCall.js";
+import { ChatModelToolCallError } from "@/backend/errors.js";
 
 const TEMP_MESSAGE_KEY = "tempMessage";
 
@@ -90,7 +91,23 @@ export class RequirementAgentRunner {
     const streamMiddleware = this.createFinalAnswerStream(request.finalAnswer);
     try {
       const input = await this.prepareLLMRequest(request);
-      const response = await this.llm.create(input).middleware(streamMiddleware);
+      const response = await this.llm
+        .create(input)
+        .middleware(streamMiddleware)
+        .catch((err) => {
+          if (
+            request.canStop &&
+            err instanceof ChatModelToolCallError &&
+            err.data.generatedContent
+          ) {
+            return new ChatModelOutput(
+              [new AssistantMessage(err.data.generatedContent)],
+              err.data.response?.usage,
+              err.data.response?.finishReason,
+            );
+          }
+          throw err;
+        });
 
       if (response.usage) {
         mergeTokenUsage(this.state.usage, response.usage);
