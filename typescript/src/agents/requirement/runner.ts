@@ -95,16 +95,15 @@ export class RequirementAgentRunner {
         .create(input)
         .middleware(streamMiddleware)
         .catch((err) => {
-          if (
-            request.canStop &&
-            err instanceof ChatModelToolCallError &&
-            err.data.generatedContent
-          ) {
-            return new ChatModelOutput(
-              [new AssistantMessage(err.data.generatedContent)],
-              err.data.response?.usage,
-              err.data.response?.finishReason,
-            );
+          if (err instanceof ChatModelToolCallError && request.canStop) {
+            const { generatedContent, response: errorResponse } = err.data;
+            if (generatedContent) {
+              return new ChatModelOutput(
+                [new AssistantMessage(generatedContent)],
+                errorResponse?.usage,
+                errorResponse?.finishReason,
+              );
+            }
           }
           throw err;
         });
