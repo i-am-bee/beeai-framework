@@ -61,21 +61,86 @@ logger = Logger(__name__)
 
 
 class ChatModelKwargs(TypedDict, total=False):
+    """Configuration options for initializing a ChatModel.
+
+    This TypedDict defines all the optional keyword arguments that can be passed
+    to a ChatModel constructor to customize its behavior.
+    """
+
     tool_call_fallback_via_response_format: bool
+    """
+    Enable fallback to response format for tool calls.
+    """
+
     retry_on_empty_response: bool
+    """
+    Automatically retry when the model returns an empty response.
+    """
+
     model_supports_tool_calling: bool
+    """
+    Whether the underlying model supports native tool calling.
+    """
+
     allow_parallel_tool_calls: bool
+    """
+    Allow the model to make multiple tool calls simultaneously.
+    """
+
     ignore_parallel_tool_calls: bool
+    """
+    Ignore all but the first tool call when multiple are returned.
+    """
+
     use_strict_tool_schema: bool
+    """
+    Use strict JSON schema validation for tool parameters.
+    """
+
     use_strict_model_schema: bool
+    """
+    Use strict JSON schema validation for structured outputs.
+    """
+
     supports_top_level_unions: bool
+    """
+    Whether the model supports union types at the top level.
+    """
+
     parameters: InstanceOf[ChatModelParameters]
+    """
+    Default parameters for model generation (temperature, max_tokens, etc.).
+    """
+
     cache: InstanceOf[ChatModelCache]
+    """
+    Cache implementation for storing and retrieving model outputs.
+    """
+
     settings: dict[str, Any]
+    """
+    Additional provider-specific settings.
+    """
+
     middlewares: list[RunMiddlewareType]
+    """
+    List of middleware to apply during model execution.
+    """
+
     tool_choice_support: set[ToolChoiceType]
+    """
+    Set of supported tool choice modes (required, none, single, auto).
+    """
+
     fix_invalid_tool_calls: bool
+    """
+    Automatically attempt to fix malformed tool calls.
+    """
+
     allow_prompt_caching: bool
+    """
+    Enable prompt caching to optimize repeated API calls with similar prompts.
+    """
 
     __pydantic_config__ = ConfigDict(extra="forbid", arbitrary_types_allowed=True)  # type: ignore
 
@@ -174,25 +239,115 @@ _ChatModelKwargsAdapter = TypeAdapter(ChatModelKwargs)
 
 
 class ChatModel(Runnable[ChatModelOutput]):
+    """Abstract base class for all chat model implementations.
+
+    ChatModel provides a unified interface for interacting with various LLM providers
+    (OpenAI, Anthropic, Ollama, etc.). It handles tool calling, structured outputs,
+    streaming, caching, retries, and error handling.
+
+    The class is designed to be subclassed by provider-specific implementations that
+    implement the `_create` and `_create_stream` abstract methods.
+
+    Example:
+        >>> from beeai_framework.adapters.openai import OpenAIChatModel
+        >>> from beeai_framework.backend.message import UserMessage
+        >>>
+        >>> # Create a chat model
+        >>> model = OpenAIChatModel("gpt-4")
+        >>>
+        >>> # Run the model
+        >>> result = await model.run([UserMessage("Hello, world!")])
+        >>> print(result.last_message.text)
+        >>>
+        >>> # Use with tools
+        >>> from beeai_framework.tools import tool
+        >>> @tool
+        >>> def get_weather(location: str) -> str:
+        ...     '''Get the weather for a location.'''
+        ...     return f"Weather in {location}: Sunny"
+        >>>
+        >>> result = await model.run(
+        ...     [UserMessage("What's the weather in Paris?")],
+        ...     tools=[get_weather],
+        ...     tool_choice="required"
+        ... )
+        >>>
+        >>> # Use structured output
+        >>> from pydantic import BaseModel
+        >>> class Person(BaseModel):
+        ...     name: str
+        ...     age: int
+        >>>
+        >>> result = await model.run(
+        ...     [UserMessage("Extract: John is 30 years old")],
+        ...     response_format=Person
+        ... )
+    """
+
     tool_choice_support: ClassVar[set[ToolChoiceType]] = {"required", "none", "single", "auto"}
+    """
+    Set of supported tool choice modes for this model.
+    Default: {"required", "none", "single", "auto"}
+    """
+
     tool_call_fallback_via_response_format: bool
+    """
+    Use response format as fallback for tool calls.
+    """
+
     model_supports_tool_calling: bool
+    """
+    Whether the model has native tool calling support.
+    """
+
     use_strict_model_schema: bool
+    """
+    Use strict JSON schema for structured outputs.
+    """
+
     use_strict_tool_schema: bool
+    """
+    Use strict JSON schema for tool parameters.
+    """
+
     retry_on_empty_response: bool
+    """
+    Retry automatically when model returns empty response.
+    """
+
     fix_invalid_tool_calls: bool
+    """
+    Attempt to fix malformed tool calls automatically.
+    """
 
     @property
     @abstractmethod
     def model_id(self) -> str:
+        """The unique identifier for this model (e.g., 'gpt-4', 'claude-3-opus')."""
         pass
 
     @property
     @abstractmethod
     def provider_id(self) -> ProviderName:
+        """The provider name for this model (e.g., 'openai', 'anthropic')."""
         pass
 
     def __init__(self, **kwargs: Unpack[ChatModelKwargs]) -> None:
+        """Initialize a ChatModel with the given configuration.
+
+        Args:
+            **kwargs: Configuration options as defined in ChatModelKwargs.
+                See ChatModelKwargs documentation for all available options.
+
+        Example:
+            >>> from beeai_framework.adapters.openai import OpenAIChatModel
+            >>> model = OpenAIChatModel(
+            ...     "gpt-4",
+            ...     tool_call_fallback_via_response_format=True,
+            ...     retry_on_empty_response=True,
+            ...     parameters=ChatModelParameters(temperature=0.7, max_tokens=1000)
+            ... )
+        """
         super().__init__(middlewares=kwargs.get("middlewares", []))
         self._settings = kwargs.get("settings", {})
         self._settings.update(**exclude_non_annotated(kwargs, ChatModelKwargs))
@@ -227,6 +382,11 @@ class ChatModel(Runnable[ChatModelOutput]):
         return self._create_emitter()
 
     def _create_emitter(self) -> Emitter:
+        """Create an event emitter for this chat model.
+
+        Returns:
+            An Emitter instance configured for chat model events.
+        """
         return Emitter.root().child(
             namespace=["backend", self.provider_id, "chat"],
             creator=self,
@@ -239,6 +399,21 @@ class ChatModel(Runnable[ChatModelOutput]):
         input: ChatModelInput,
         run: RunContext,
     ) -> ChatModelOutput:
+        """Generate a single completion from the model (non-streaming).
+
+        This method must be implemented by subclasses to provide the actual
+        model invocation logic for non-streaming requests.
+
+        Args:
+            input: The prepared input containing messages, tools, and parameters.
+            run: The execution context for this run.
+
+        Returns:
+            The model's output containing generated messages and metadata.
+
+        Raises:
+            NotImplementedError: If the subclass doesn't implement this method.
+        """
         raise NotImplementedError
 
     @abstractmethod
@@ -247,6 +422,21 @@ class ChatModel(Runnable[ChatModelOutput]):
         input: ChatModelInput,
         run: RunContext,
     ) -> AsyncGenerator[ChatModelOutput]:
+        """Generate a streaming completion from the model.
+
+        This method must be implemented by subclasses to provide the actual
+        model invocation logic for streaming requests.
+
+        Args:
+            input: The prepared input containing messages, tools, and parameters.
+            run: The execution context for this run.
+
+        Yields:
+            ChatModelOutput chunks as they are generated by the model.
+
+        Raises:
+            NotImplementedError: If the subclass doesn't implement this method.
+        """
         raise NotImplementedError
 
     def _prepare_model_input(
@@ -507,6 +697,35 @@ class ChatModel(Runnable[ChatModelOutput]):
         parameters: ChatModelParameters | Callable[[ChatModelParameters], ChatModelParameters] | None = None,
         cache: ChatModelCache | Callable[[ChatModelCache], ChatModelCache] | None = None,
     ) -> None:
+        """Configure the chat model's parameters and cache.
+
+        This method allows you to update the model's configuration after initialization.
+        You can pass either new values directly or functions that transform the existing values.
+
+        Args:
+            parameters: New parameters or a function to transform existing parameters.
+                If a function is provided, it receives the current parameters and should
+                return the updated parameters.
+            cache: New cache instance or a function to transform the existing cache.
+                If a function is provided, it receives the current cache and should
+                return the updated cache.
+
+        Example:
+            >>> model = ChatModel.from_name("openai:gpt-4")
+            >>>
+            >>> # Set new parameters directly
+            >>> model.config(parameters=ChatModelParameters(temperature=0.9, max_tokens=2000))
+            >>>
+            >>> # Transform existing parameters
+            >>> model.config(parameters=lambda p: ChatModelParameters(
+            ...     temperature=p.temperature * 1.5,
+            ...     max_tokens=p.max_tokens
+            ... ))
+            >>>
+            >>> # Update cache
+            >>> from beeai_framework.cache import SlidingCache
+            >>> model.config(cache=SlidingCache(max_size=100))
+        """
         if cache is not None:
             self.cache = cache(self.cache) if callable(cache) else cache
 
@@ -520,6 +739,40 @@ class ChatModel(Runnable[ChatModelOutput]):
         /,
         **kwargs: Any,
     ) -> ChatModel:
+        """Create a ChatModel instance from a provider and model name.
+
+        This factory method allows you to instantiate a chat model by specifying
+        the provider and model name as a string, without needing to import
+        provider-specific classes.
+
+        Args:
+            name: The model identifier in the format "provider:model" or just "provider".
+                Examples: "openai:gpt-4", "anthropic:claude-3-opus", "ollama:llama2"
+            options: Optional parameters for the model. Can be a ChatModelParameters
+                instance or a dictionary of options.
+            **kwargs: Additional keyword arguments passed to the model constructor.
+                See ChatModelKwargs for available options.
+
+        Returns:
+            A ChatModel instance of the appropriate provider-specific subclass.
+
+        Example:
+            >>> # Create with just model name
+            >>> model = ChatModel.from_name("openai:gpt-4")
+            >>>
+            >>> # Create with parameters
+            >>> model = ChatModel.from_name(
+            ...     "anthropic:claude-3-opus",
+            ...     ChatModelParameters(temperature=0.7, max_tokens=1000)
+            ... )
+            >>>
+            >>> # Create with additional options
+            >>> model = ChatModel.from_name(
+            ...     "openai:gpt-4",
+            ...     tool_call_fallback_via_response_format=False,
+            ...     retry_on_empty_response=True
+            ... )
+        """
         parsed_model = parse_model(name)
         TargetChatModel = load_model(parsed_model.provider_id, "chat")  # type: ignore # noqa: N806
         if options and isinstance(options, ChatModelParameters):
@@ -555,6 +808,26 @@ class ChatModel(Runnable[ChatModelOutput]):
         return not self.model_supports_tool_calling or not tool_choice_supported
 
     async def clone(self) -> Self:
+        """Create a deep copy of this ChatModel instance.
+
+        This method creates an independent copy of the model that can be
+        modified without affecting the original. Subclasses should override
+        this method to properly clone their specific state.
+
+        Returns:
+            A new ChatModel instance with the same configuration.
+
+        Note:
+            The default implementation returns self and logs a warning.
+            Provider-specific implementations should override this method
+            to create proper clones.
+
+        Example:
+            >>> original = ChatModel.from_name("openai:gpt-4")
+            >>> cloned = await original.clone()
+            >>> # Modifications to cloned won't affect original
+            >>> cloned.config(parameters=ChatModelParameters(temperature=0.9))
+        """
         if type(self).clone == ChatModel.clone:
             logging.warning(f"ChatModel ({type(self)!s}) does not implement the 'clone' method.")
 
@@ -562,6 +835,18 @@ class ChatModel(Runnable[ChatModelOutput]):
 
     @classmethod
     def get_default_parameters(cls) -> ChatModelParameters:
+        """Get the default parameters for this chat model class.
+
+        Returns:
+            ChatModelParameters with default values (temperature=0).
+
+        Note:
+            Subclasses can override this method to provide different defaults.
+
+        Example:
+            >>> params = ChatModel.get_default_parameters()
+            >>> print(params.temperature)  # 0
+        """
         return ChatModelParameters(temperature=0)
 
     def _assert_tool_response(self, *, input: ChatModelInput, output: ChatModelOutput) -> None:
