@@ -98,6 +98,9 @@ export class WatsonxChatModel extends ChatModel {
         stream.controller.abort(run.signal.aborted);
         break;
       }
+      if (!Array.isArray(raw.data?.choices)) {
+        continue;
+      }
       const { messages, finishReason, usage } = this.extractOutput(
         raw.data.choices.map(({ delta, ...choice }) => ({ ...choice, message: delta })),
         raw.data.usage,
