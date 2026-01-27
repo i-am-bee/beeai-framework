@@ -50,13 +50,8 @@ class ScratchpadTool(Tool):
     _scratchpads: ClassVar[dict[str, list]] = {}
     _lock: ClassVar[asyncio.Lock] = asyncio.Lock()
 
-    def __init__(self, session_id: str | None = None) -> None:
-        """Initialize scratchpad tool.
-
-        Args:
-            session_id: Optional session identifier (deprecated, not used).
-                        Session ID is now extracted from RunContext.
-        """
+    def __init__(self) -> None:
+        """Initialize scratchpad tool."""
         super().__init__()
         self.middlewares = []
         # Store the session_id once it's determined from context
@@ -204,7 +199,7 @@ class ScratchpadTool(Tool):
         pattern = re.compile(r"([^:]+):\s*(.*?)(?=\s*,\s*[^:]+:|\s*$)")
         for match in pattern.finditer(content):
             key = match.group(1).strip()
-            value = match.group(2).strip().rstrip(",")
+            value = match.group(2).strip()
             if key and value:
                 pairs[key] = value
         return pairs
@@ -256,7 +251,11 @@ class ScratchpadTool(Tool):
         if new_pairs:
             # Merge with existing entries
             entries[:] = self._merge_entries(entries, new_pairs)
-            result = f"Updated scratchpad: {', '.join(f'{k}: {v}' for k, v in new_pairs.items())}"
+            result = (
+                f"Updated scratchpad to: {entries[0]}"
+                if entries
+                else "Scratchpad updated with no content."
+            )
         else:
             # If no key-value pairs found, append as-is (for non-structured entries)
             entries.append(entry)
@@ -339,12 +338,16 @@ class ScratchpadTool(Tool):
                 "write": lambda: (
                     self._write_scratchpad(content, session_id)
                     if content
-                    else "Error: 'write' operation requires 'content' parameter."
+                    else self._raise_input_validation_error(
+                        "'write' operation requires 'content' parameter."
+                    )
                 ),
                 "append": lambda: (
                     self._append_scratchpad(content, session_id)
                     if content
-                    else "Error: 'append' operation requires 'content' parameter."
+                    else self._raise_input_validation_error(
+                        "'append' operation requires 'content' parameter."
+                    )
                 ),
                 "clear": lambda: self._clear_scratchpad(session_id),
             }
@@ -361,6 +364,19 @@ class ScratchpadTool(Tool):
             "Use 'read', 'write', 'append', or 'clear'."
         )
         return StringToolOutput(result=error_msg)
+
+    def _raise_input_validation_error(self, message: str) -> None:
+        """Raise a ToolInputValidationError with the given message.
+
+        Args:
+            message: Error message to include in the exception.
+
+        Raises:
+            ToolInputValidationError: Always raised with the provided message.
+        """
+        from beeai_framework.tools import ToolInputValidationError
+
+        raise ToolInputValidationError(message)
 
     @classmethod
     def get_scratchpad_for_session(cls, session_id: str) -> list:

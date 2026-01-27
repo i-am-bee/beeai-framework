@@ -170,24 +170,20 @@ async def test_clear_scratchpad(tool: ScratchpadTool) -> None:
 
 @pytest.mark.asyncio
 async def test_write_without_content_fails(tool: ScratchpadTool) -> None:
-    """Test that write operation without content returns an error."""
-    result = await tool.run(input=ScratchpadInput(operation="write"))
-    assert isinstance(result, StringToolOutput)
-    assert "error" in result.result.lower()
-    assert "content" in result.result.lower()
+    """Test that write operation without content raises validation error."""
+    with pytest.raises(ToolInputValidationError, match="content"):
+        await tool.run(input=ScratchpadInput(operation="write"))
 
 
 @pytest.mark.asyncio
 async def test_append_without_content_fails(tool: ScratchpadTool) -> None:
-    """Test that append operation without content returns an error."""
+    """Test that append operation without content raises validation error."""
     # Add an entry first
     await tool.run(input=ScratchpadInput(operation="write", content="Entry"))
 
     # Try to append without content
-    result = await tool.run(input=ScratchpadInput(operation="append"))
-    assert isinstance(result, StringToolOutput)
-    assert "error" in result.result.lower()
-    assert "content" in result.result.lower()
+    with pytest.raises(ToolInputValidationError, match="content"):
+        await tool.run(input=ScratchpadInput(operation="append"))
 
 
 @pytest.mark.asyncio
@@ -339,3 +335,7 @@ async def test_concurrent_writes_do_not_corrupt_state(tool: ScratchpadTool) -> N
     assert "entry:" in result.result
     # Check that it's a single consolidated entry
     assert result.result.count("entry:") == 1
+    # Verify the value is one of the expected outcomes from concurrent writes
+    # The exact value depends on the order of completion, but it should be one of the 'entry: i' values
+    found_value = result.result.split("entry: ")[1].split()[0]
+    assert found_value.isdigit() and 0 <= int(found_value) < 10
