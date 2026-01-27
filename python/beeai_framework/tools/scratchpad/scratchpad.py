@@ -64,6 +64,13 @@ class ScratchpadTool(Tool):
 
     This design allows structured state management (key-value) while
     preserving free-form notes (plain text) as separate items.
+
+    Design Note (Lifecycle Management):
+    This tool uses a class-level dictionary (`_scratchpads`) for storage. In a
+    long-running process, this dictionary can grow indefinitely. Consumers
+    should ensure that `clear_session(session_id)` is called when a session
+    or agent run is complete to prevent memory leaks. For distributed
+    deployments, consider a persistent external store instead.
     """
 
     _scratchpads: ClassVar[dict[str, list[str]]] = {}
