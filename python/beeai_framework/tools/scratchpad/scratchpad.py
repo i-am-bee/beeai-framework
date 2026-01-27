@@ -70,7 +70,7 @@ class ScratchpadTool(Tool):
         self.middlewares = []
         # Store the session_id once it's determined from context
         # This ensures the same session is used across all calls
-        self._cached_session_id: str | None = None
+        # self._cached_session_id: str | None = None
 
     @staticmethod
     def _ensure_session(session_id: str) -> None:
