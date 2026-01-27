@@ -394,22 +394,15 @@ class ScratchpadTool(Tool):
         async with ScratchpadTool._lock:
             self._ensure_session(session_id)
 
+            if operation in ("write", "append") and not content:
+                self._raise_input_validation_error(
+                    f"'{operation}' operation requires 'content' parameter."
+                )
+
             handlers = {
                 "read": lambda: self._read_scratchpad(session_id),
-                "write": lambda: (
-                    self._write_scratchpad(content, session_id)
-                    if content
-                    else self._raise_input_validation_error(
-                        "'write' operation requires 'content' parameter."
-                    )
-                ),
-                "append": lambda: (
-                    self._append_scratchpad(content, session_id)
-                    if content
-                    else self._raise_input_validation_error(
-                        "'append' operation requires 'content' parameter."
-                    )
-                ),
+                "write": lambda: self._write_scratchpad(content, session_id),
+                "append": lambda: self._append_scratchpad(content, session_id),
                 "clear": lambda: self._clear_scratchpad(session_id),
             }
 
