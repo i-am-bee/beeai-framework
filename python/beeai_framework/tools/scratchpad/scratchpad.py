@@ -20,7 +20,12 @@ from pydantic import BaseModel, Field
 
 from beeai_framework.context import RunContext
 from beeai_framework.emitter import Emitter
-from beeai_framework.tools import StringToolOutput, Tool, ToolRunOptions
+from beeai_framework.tools import (
+    StringToolOutput,
+    Tool,
+    ToolInputValidationError,
+    ToolRunOptions,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -70,7 +75,7 @@ class ScratchpadTool(Tool):
         self.middlewares = []
         # Store the session_id once it's determined from context
         # This ensures the same session is used across all calls
-        # self._cached_session_id: str | None = None
+        self._cached_session_id: str | None = None
 
     @staticmethod
     def _ensure_session(session_id: str) -> None:
@@ -94,9 +99,8 @@ class ScratchpadTool(Tool):
             ValueError: If no valid session ID can be extracted from context.
         """
         # Return cached session ID if we already determined it
-        # Return cached session ID if we already determined it
-        # if self._cached_session_id:
-        #     return self._cached_session_id
+        if self._cached_session_id:
+            return self._cached_session_id
 
         if not context:
             raise ValueError(
@@ -130,8 +134,8 @@ class ScratchpadTool(Tool):
             )
 
         # Cache the session ID for future calls
-        # Cache the session ID for future calls
-        # self._cached_session_id = session_id
+        self._cached_session_id = session_id
+        logger.info(f"Scratchpad session initialized: {session_id}")
         return session_id
 
     @property
@@ -429,8 +433,6 @@ class ScratchpadTool(Tool):
         Raises:
             ToolInputValidationError: Always raised with the provided message.
         """
-        from beeai_framework.tools import ToolInputValidationError
-
         raise ToolInputValidationError(message)
 
     @classmethod
