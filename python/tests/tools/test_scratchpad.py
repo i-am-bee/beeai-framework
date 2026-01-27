@@ -98,6 +98,19 @@ async def test_write_key_value_with_comma_in_value(tool: ScratchpadTool) -> None
 
 
 @pytest.mark.asyncio
+async def test_write_key_with_hyphens(tool: ScratchpadTool) -> None:
+    """Test that keys with hyphens are correctly parsed."""
+    await tool.run(
+        input=ScratchpadInput(
+            operation="write", content="Content-Type: application/json, user-id: 12345"
+        )
+    )
+    read_result = await tool.run(input=ScratchpadInput(operation="read"))
+    assert "Content-Type: application/json" in read_result.result
+    assert "user-id: 12345" in read_result.result
+
+
+@pytest.mark.asyncio
 async def test_append_to_scratchpad(tool: ScratchpadTool) -> None:
     """Test appending to the last entry."""
     # Write initial entry

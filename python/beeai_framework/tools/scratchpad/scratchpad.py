@@ -69,17 +69,15 @@ class ScratchpadTool(Tool):
     def _get_session_id(self, context: RunContext | None = None) -> str:
         """Extract session ID from context.
 
-        Always returns "default" to maintain a single persistent scratchpad
-        across all requests, ensuring information is retained between interactions.
-
         Args:
-            context: Run context (not used, maintained for compatibility).
+            context: Run context, used to derive a unique session ID.
 
         Returns:
-            Session ID string (always "default").
+            A unique session ID for the current run group.
         """
-        # Use a single persistent session for all operations
-        # This ensures the scratchpad persists across HTTP requests
+        if context and context.group_id:
+            return context.group_id
+        # Fallback for when context is not available, e.g. in some tests.
         return "default"
 
     @property
@@ -158,8 +156,8 @@ class ScratchpadTool(Tool):
         """
         pairs = {}
         # Use regex to find key-value pairs, handling commas in values
-        # Pattern: word characters followed by colon, then value until next key or end
-        pattern = re.compile(r"(\w+):\s*(.*?)(?=\s*,\s*\w+:|\s*$)")
+        # Pattern: any characters except colon followed by colon, then value until next key or end
+        pattern = re.compile(r"([^:]+):\s*(.*?)(?=\s*,\s*[^:]+:|\s*$)")
         for match in pattern.finditer(content):
             key = match.group(1).strip()
             value = match.group(2).strip().rstrip(",")
@@ -287,13 +285,6 @@ class ScratchpadTool(Tool):
             f"ScratchpadTool[{session_id}]: operation='{operation}', "
             f"content='{content}'"
         )
-
-        if not operation:
-            error_msg = (
-                "Error: 'operation' parameter is required. "
-                "Use 'read', 'write', 'append', or 'clear'."
-            )
-            return StringToolOutput(result=error_msg)
 
         result = None
         async with ScratchpadTool._lock:
