@@ -94,8 +94,9 @@ class ScratchpadTool(Tool):
             ValueError: If no valid session ID can be extracted from context.
         """
         # Return cached session ID if we already determined it
-        if self._cached_session_id:
-            return self._cached_session_id
+        # Return cached session ID if we already determined it
+        # if self._cached_session_id:
+        #     return self._cached_session_id
 
         if not context:
             raise ValueError(
