@@ -12,6 +12,7 @@ This tool provides a working memory (scratchpad) where agents can:
 """
 
 import logging
+import re
 from typing import ClassVar
 
 from pydantic import BaseModel, Field
@@ -141,10 +142,11 @@ class ScratchpadTool(Tool):
     def _parse_key_value_pairs(content: str) -> dict:
         """Parse key-value pairs from scratchpad content.
 
+        Uses regex to correctly handle values containing commas.
         Handles formats like:
         - "key: value"
         - "key1: value1, key2: value2"
-        - "key: value, key2: value2, key3: value3"
+        - "key: value with, commas, key2: value2"
 
         Args:
             content: Content string to parse.
@@ -153,15 +155,14 @@ class ScratchpadTool(Tool):
             Dictionary of key-value pairs.
         """
         pairs = {}
-        # Split by comma, but be careful with commas inside values
-        parts = [p.strip() for p in content.split(",")]
-        for part in parts:
-            if ":" in part:
-                key, value = part.split(":", 1)
-                key = key.strip()
-                value = value.strip()
-                if key and value:
-                    pairs[key] = value
+        # Use regex to find key-value pairs, handling commas in values
+        # Pattern: word characters followed by colon, then value until next key or end
+        pattern = re.compile(r"(\w+):\s*(.*?)(?=\s*,\s*\w+:|\s*$)")
+        for match in pattern.finditer(content):
+            key = match.group(1).strip()
+            value = match.group(2).strip().rstrip(",")
+            if key and value:
+                pairs[key] = value
         return pairs
 
     @staticmethod
