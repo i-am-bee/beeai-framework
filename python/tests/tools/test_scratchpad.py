@@ -1,18 +1,31 @@
 # Copyright 2025 © BeeAI a Series of LF Projects, LLC
 # SPDX-License-Identifier: Apache-2.0
 
+from unittest.mock import Mock
+
 import pytest
 
+from beeai_framework.context import RunContext
 from beeai_framework.tools import StringToolOutput, ToolInputValidationError
 from beeai_framework.tools.scratchpad import ScratchpadInput, ScratchpadTool
 
 
 @pytest.fixture
-def tool() -> ScratchpadTool:
+def mock_context() -> RunContext:
+    """Create a mock RunContext with a test run_id."""
+    context = Mock(spec=RunContext)
+    context.run_id = "test-run-123"
+    context.conversation_id = None
+    context.agent_id = None
+    return context
+
+
+@pytest.fixture
+def tool(mock_context: RunContext) -> ScratchpadTool:
     """Create a fresh scratchpad tool instance for each test."""
     tool_instance = ScratchpadTool()
-    # Clear any existing data from previous tests
-    session_id = tool_instance._get_session_id()
+    # Initialize the session and clear any existing data
+    session_id = tool_instance._get_session_id(mock_context)
     if session_id in ScratchpadTool._scratchpads:
         ScratchpadTool._scratchpads[session_id] = []
     return tool_instance
@@ -190,8 +203,8 @@ async def test_get_scratchpad_for_session(tool: ScratchpadTool) -> None:
     # Write some data
     await tool.run(input=ScratchpadInput(operation="write", content="Test entry"))
 
-    # Get the session ID
-    session_id = tool._get_session_id()
+    # Get the cached session ID from the tool instance
+    session_id = tool._cached_session_id
 
     # Get scratchpad using class method
     entries = ScratchpadTool.get_scratchpad_for_session(session_id)
@@ -205,8 +218,8 @@ async def test_clear_session_class_method(tool: ScratchpadTool) -> None:
     # Write some data
     await tool.run(input=ScratchpadInput(operation="write", content="Test entry"))
 
-    # Get the session ID
-    session_id = tool._get_session_id()
+    # Get the cached session ID from the tool instance
+    session_id = tool._cached_session_id
 
     # Clear using class method
     ScratchpadTool.clear_session(session_id)
@@ -231,6 +244,79 @@ async def test_missing_operation_field(tool: ScratchpadTool) -> None:
     """Test that missing operation field raises validation error."""
     with pytest.raises(ToolInputValidationError):
         await tool.run(input={})
+
+
+@pytest.mark.asyncio
+async def test_session_id_requires_context() -> None:
+    """Test that session ID extraction requires a valid context."""
+    tool_instance = ScratchpadTool()
+
+    # Should raise ValueError when no context provided
+    with pytest.raises(ValueError, match="requires RunContext"):
+        tool_instance._get_session_id(None)
+
+
+@pytest.mark.asyncio
+async def test_session_id_requires_valid_identifier() -> None:
+    """Test that session ID extraction requires a valid identifier in context."""
+    tool_instance = ScratchpadTool()
+
+    # Create a context with no valid identifiers
+    empty_context = Mock(spec=RunContext)
+    empty_context.run_id = None
+    empty_context.conversation_id = None
+    empty_context.agent_id = None
+
+    # Should raise ValueError when no valid identifier found
+    with pytest.raises(ValueError, match="None found in context"):
+        tool_instance._get_session_id(empty_context)
+
+
+@pytest.mark.asyncio
+async def test_session_id_caching(mock_context: RunContext) -> None:
+    """Test that session ID is cached after first extraction."""
+    tool_instance = ScratchpadTool()
+
+    # First call should extract and cache
+    session_id_1 = tool_instance._get_session_id(mock_context)
+    assert session_id_1 == "test-run-123"
+    assert tool_instance._cached_session_id == "test-run-123"
+
+    # Modify the context
+    mock_context.run_id = "different-run-456"
+
+    # Second call should return cached value, not re-extract
+    session_id_2 = tool_instance._get_session_id(mock_context)
+    assert session_id_2 == "test-run-123"  # Still the original cached value
+
+
+@pytest.mark.asyncio
+async def test_session_id_preference_order() -> None:
+    """Test that session ID extraction follows the correct preference order."""
+    tool_instance = ScratchpadTool()
+
+    # Test 1: run_id takes precedence
+    context1 = Mock(spec=RunContext)
+    context1.run_id = "run-123"
+    context1.conversation_id = "conv-456"
+    context1.agent_id = "agent-789"
+    assert tool_instance._get_session_id(context1) == "run-123"
+
+    # Test 2: conversation_id is second
+    tool_instance2 = ScratchpadTool()
+    context2 = Mock(spec=RunContext)
+    context2.run_id = None
+    context2.conversation_id = "conv-456"
+    context2.agent_id = "agent-789"
+    assert tool_instance2._get_session_id(context2) == "conv-456"
+
+    # Test 3: agent_id is last
+    tool_instance3 = ScratchpadTool()
+    context3 = Mock(spec=RunContext)
+    context3.run_id = None
+    context3.conversation_id = None
+    context3.agent_id = "agent-789"
+    assert tool_instance3._get_session_id(context3) == "agent-789"
 
 
 @pytest.mark.asyncio

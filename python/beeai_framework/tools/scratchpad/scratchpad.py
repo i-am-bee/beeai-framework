@@ -59,6 +59,9 @@ class ScratchpadTool(Tool):
         """
         super().__init__()
         self.middlewares = []
+        # Store the session_id once it's determined from context
+        # This ensures the same session is used across all calls
+        self._cached_session_id: str | None = None
 
     @staticmethod
     def _ensure_session(session_id: str) -> None:
@@ -69,16 +72,57 @@ class ScratchpadTool(Tool):
     def _get_session_id(self, context: RunContext | None = None) -> str:
         """Extract session ID from context.
 
+        Caches the session ID on first call to ensure the same session
+        is used across all tool calls for this tool instance.
+
         Args:
-            context: Run context, used to derive a unique session ID.
+            context: Run context to extract session identifier from.
 
         Returns:
-            A unique session ID for the current run group.
+            Session ID string for data isolation.
+
+        Raises:
+            ValueError: If no valid session ID can be extracted from context.
         """
-        if context and context.group_id:
-            return context.group_id
-        # Fallback for when context is not available, e.g. in some tests.
-        return "default"
+        # Return cached session ID if we already determined it
+        if self._cached_session_id:
+            return self._cached_session_id
+
+        if not context:
+            raise ValueError(
+                "Scratchpad requires RunContext with a valid session identifier. "
+                "No context provided."
+            )
+
+        # Try different context attributes in order of preference
+        session_id = None
+
+        # run_id: Should persist across tool calls in the same agent run
+        if hasattr(context, "run_id") and context.run_id:
+            session_id = str(context.run_id)
+            logger.debug(f"Using run_id as session: {session_id}")
+
+        # conversation_id: If available, persists across the conversation
+        elif hasattr(context, "conversation_id") and context.conversation_id:
+            session_id = str(context.conversation_id)
+            logger.debug(f"Using conversation_id as session: {session_id}")
+
+        # agent_id: If available, unique per agent instance
+        elif hasattr(context, "agent_id") and context.agent_id:
+            session_id = str(context.agent_id)
+            logger.debug(f"Using agent_id as session: {session_id}")
+
+        # No valid session ID found - raise error
+        if not session_id:
+            raise ValueError(
+                "Scratchpad requires RunContext with a valid session identifier "
+                "(run_id, conversation_id, or agent_id). None found in context."
+            )
+
+        # Cache the session ID for future calls
+        self._cached_session_id = session_id
+        logger.info(f"Scratchpad session initialized: {session_id}")
+        return session_id
 
     @property
     def name(self) -> str:
