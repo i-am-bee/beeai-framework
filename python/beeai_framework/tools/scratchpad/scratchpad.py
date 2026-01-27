@@ -11,6 +11,7 @@ This tool provides a working memory (scratchpad) where agents can:
 - Avoid repeating actions
 """
 
+import asyncio
 import logging
 import re
 from typing import ClassVar
@@ -47,6 +48,7 @@ class ScratchpadTool(Tool):
     """Tool for managing agent scratchpad (working memory)."""
 
     _scratchpads: ClassVar[dict[str, list]] = {}
+    _lock: ClassVar[asyncio.Lock] = asyncio.Lock()
 
     def __init__(self, session_id: str | None = None) -> None:
         """Initialize scratchpad tool.
@@ -277,7 +279,6 @@ class ScratchpadTool(Tool):
         Returns:
             StringToolOutput with the result of the operation.
         """
-        # Get session ID (always "default" for persistent storage)
         session_id = self._get_session_id(context)
         operation = input.operation.lower().strip()
         content = input.content
@@ -294,25 +295,30 @@ class ScratchpadTool(Tool):
             )
             return StringToolOutput(result=error_msg)
 
-        # Operation handlers
-        handlers = {
-            "read": lambda: self._read_scratchpad(session_id),
-            "write": lambda: (
-                self._write_scratchpad(content, session_id)
-                if content
-                else "Error: 'write' operation requires 'content' parameter."
-            ),
-            "append": lambda: (
-                self._append_scratchpad(content, session_id)
-                if content
-                else "Error: 'append' operation requires 'content' parameter."
-            ),
-            "clear": lambda: self._clear_scratchpad(session_id),
-        }
+        result = None
+        async with ScratchpadTool._lock:
+            self._ensure_session(session_id)
 
-        handler = handlers.get(operation)
-        if handler:
-            result = handler()
+            handlers = {
+                "read": lambda: self._read_scratchpad(session_id),
+                "write": lambda: (
+                    self._write_scratchpad(content, session_id)
+                    if content
+                    else "Error: 'write' operation requires 'content' parameter."
+                ),
+                "append": lambda: (
+                    self._append_scratchpad(content, session_id)
+                    if content
+                    else "Error: 'append' operation requires 'content' parameter."
+                ),
+                "clear": lambda: self._clear_scratchpad(session_id),
+            }
+
+            handler = handlers.get(operation)
+            if handler:
+                result = handler()
+
+        if result is not None:
             return StringToolOutput(result=result)
 
         error_msg = (
