@@ -85,6 +85,19 @@ async def test_write_merge_key_value_pairs(tool: ScratchpadTool) -> None:
 
 
 @pytest.mark.asyncio
+async def test_write_key_value_with_comma_in_value(tool: ScratchpadTool) -> None:
+    """Test writing a key-value pair where the value contains a comma."""
+    await tool.run(
+        input=ScratchpadInput(
+            operation="write", content="item: milk, bread, eggs, priority: high"
+        )
+    )
+    read_result = await tool.run(input=ScratchpadInput(operation="read"))
+    assert "item: milk, bread, eggs" in read_result.result
+    assert "priority: high" in read_result.result
+
+
+@pytest.mark.asyncio
 async def test_append_to_scratchpad(tool: ScratchpadTool) -> None:
     """Test appending to the last entry."""
     # Write initial entry
