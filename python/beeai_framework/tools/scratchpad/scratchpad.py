@@ -84,11 +84,11 @@ class ScratchpadTool(Tool):
         # This ensures the same session is used across all calls
         self._cached_session_id: str | None = None
 
-    @staticmethod
-    def _ensure_session(session_id: str) -> None:
+    @classmethod
+    def _ensure_session(cls, session_id: str) -> None:
         """Ensure a session exists in scratchpads."""
-        if session_id not in ScratchpadTool._scratchpads:
-            ScratchpadTool._scratchpads[session_id] = []
+        if session_id not in cls._scratchpads:
+            cls._scratchpads[session_id] = []
 
     def _get_session_id(self, context: RunContext | None = None) -> str:
         """Extract session ID from context.
