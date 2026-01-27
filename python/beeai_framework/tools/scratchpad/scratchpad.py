@@ -103,7 +103,7 @@ class ScratchpadTool(Tool):
             return self._cached_session_id
 
         if not context:
-            raise ValueError(
+            raise ToolInputValidationError(
                 "Scratchpad requires RunContext with a valid session identifier. "
                 "No context provided."
             )
