@@ -205,3 +205,25 @@ async def test_missing_operation_field(tool: ScratchpadTool) -> None:
     """Test that missing operation field raises validation error."""
     with pytest.raises(ToolInputValidationError):
         await tool.run(input={})
+
+
+@pytest.mark.asyncio
+async def test_concurrent_writes_do_not_corrupt_state(tool: ScratchpadTool) -> None:
+    """Test that concurrent writes do not corrupt the scratchpad."""
+    import asyncio
+
+    async def write_entry(content: str) -> None:
+        await tool.run(input=ScratchpadInput(operation="write", content=content))
+
+    # With key-value merging, each write will update the value for 'entry'.
+    # We run them concurrently to test for race conditions.
+    tasks = [write_entry(f"entry: {i}") for i in range(10)]
+    await asyncio.gather(*tasks)
+
+    result = await tool.run(input=ScratchpadInput(operation="read"))
+
+    # The final state should contain one of the written values due to merging.
+    # Without proper locking, the final state could be unpredictable.
+    assert "entry:" in result.result
+    # Check that it's a single consolidated entry
+    assert result.result.count("entry:") == 1
