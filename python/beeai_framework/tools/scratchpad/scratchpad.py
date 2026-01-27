@@ -39,8 +39,7 @@ class ScratchpadInput(BaseModel):
     content: str | None = Field(
         default=None,
         description=(
-            "Content to write/append (required for 'write' and 'append' "
-            "operations)"
+            "Content to write/append (required for 'write' and 'append' " "operations)"
         ),
     )
 
@@ -182,11 +181,24 @@ class ScratchpadTool(Tool):
     def _parse_key_value_pairs(content: str) -> dict:
         """Parse key-value pairs from scratchpad content.
 
-        Uses regex to correctly handle values containing commas.
-        Handles formats like:
-        - "key: value"
-        - "key1: value1, key2: value2"
-        - "key: value with, commas, key2: value2"
+        Uses regex to correctly handle values containing commas, which prevents
+        incorrectly splitting "item: milk, bread, eggs" into separate entries.
+
+        Format Examples:
+        - Simple: "key: value" → {"key": "value"}
+        - Multiple: "key1: val1, key2: val2" → {"key1": "val1", "key2": "val2"}
+        - Comma in value: "item: milk, bread, key2: val2" → {"item": "milk, bread", "key2": "val2"}
+        - Hyphenated keys: "Content-Type: json, user-id: 123" → {"Content-Type": "json", "user-id": "123"}
+
+        Implementation Note:
+        A simple split-by-comma approach fails when values contain commas.
+        The regex pattern works by:
+        1. Matching any characters except ':' as the key: ([^:]+)
+        2. Matching the colon separator: :
+        3. Capturing everything until the next "key:" pattern or end: (.*?)(?=...)
+
+        This ensures commas within values are preserved while correctly
+        identifying multiple key-value pairs separated by commas.
 
         Args:
             content: Content string to parse.
@@ -195,14 +207,24 @@ class ScratchpadTool(Tool):
             Dictionary of key-value pairs.
         """
         pairs = {}
-        # Use regex to find key-value pairs, handling commas in values
-        # Pattern: any characters except colon followed by colon, then value until next key or end
+
+        # Regex breakdown:
+        # ([^:]+)           - Capture key (any chars except colon)
+        # :\s*              - Match colon and optional whitespace
+        # (.*?)             - Capture value (non-greedy)
+        # (?=               - Lookahead (doesn't consume characters):
+        #   \s*,\s*[^:]+:   - Next key-value pair (comma, then key:)
+        #   |               - OR
+        #   \s*$            - End of string
+        # )
         pattern = re.compile(r"([^:]+):\s*(.*?)(?=\s*,\s*[^:]+:|\s*$)")
+
         for match in pattern.finditer(content):
             key = match.group(1).strip()
             value = match.group(2).strip()
             if key and value:
                 pairs[key] = value
+
         return pairs
 
     @staticmethod

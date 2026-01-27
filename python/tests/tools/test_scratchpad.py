@@ -188,11 +188,9 @@ async def test_append_without_content_fails(tool: ScratchpadTool) -> None:
 
 @pytest.mark.asyncio
 async def test_invalid_operation(tool: ScratchpadTool) -> None:
-async def test_invalid_operation(tool: ScratchpadTool) -> None:
     """Test that an invalid operation is handled properly."""
-    result = await tool.run(input=ScratchpadInput(operation="invalid_op"))
-    assert isinstance(result, StringToolOutput)
-    assert "unknown operation" in result.result.lower()
+    with pytest.raises(ToolInputValidationError):
+        await tool.run(input={"operation": "invalid_op"})
 
 
 @pytest.mark.asyncio
@@ -219,8 +217,8 @@ async def test_clear_session_class_method(tool: ScratchpadTool) -> None:
     # Get the cached session ID from the tool instance
     session_id = tool._cached_session_id
 
-    # Clear using class method
-    ScratchpadTool.clear_session(session_id)
+    # Clear using async class method
+    await ScratchpadTool.clear_session(session_id)
 
     # Verify it's empty
     entries = ScratchpadTool.get_scratchpad_for_session(session_id)
