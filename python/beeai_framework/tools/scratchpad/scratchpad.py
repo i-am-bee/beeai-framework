@@ -254,7 +254,7 @@ class ScratchpadTool(Tool):
         return pairs
 
     @staticmethod
-    def _merge_entries(entries: list, new_pairs: dict) -> list:
+    def _merge_entries(entries: list[str], new_pairs: dict) -> list[str]:
         """Merge new key-value pairs into existing entries.
 
         IMPORTANT BEHAVIOR:
