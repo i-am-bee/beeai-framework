@@ -170,7 +170,7 @@ class ScratchpadTool(Tool):
         """Create emitter for the tool."""
         return Emitter()
 
-    def _get_entries(self, session_id: str) -> list:
+    def _get_entries(self, session_id: str) -> list[str]:
         """Get scratchpad entries for a session.
 
         Args:
