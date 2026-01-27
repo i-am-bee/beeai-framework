@@ -128,7 +128,7 @@ class ScratchpadTool(Tool):
 
         # No valid session ID found - raise error
         if not session_id:
-            raise ValueError(
+            raise ToolInputValidationError(
                 "Scratchpad requires RunContext with a valid session identifier "
                 "(run_id, conversation_id, or agent_id). None found in context."
             )

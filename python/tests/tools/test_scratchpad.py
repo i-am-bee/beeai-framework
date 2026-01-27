@@ -247,8 +247,8 @@ async def test_session_id_requires_context() -> None:
     """Test that session ID extraction requires a valid context."""
     tool_instance = ScratchpadTool()
 
-    # Should raise ValueError when no context provided
-    with pytest.raises(ValueError, match="requires RunContext"):
+    # Should raise ToolInputValidationError when no context provided
+    with pytest.raises(ToolInputValidationError, match="requires RunContext"):
         tool_instance._get_session_id(None)
 
 
@@ -263,8 +263,8 @@ async def test_session_id_requires_valid_identifier() -> None:
     empty_context.conversation_id = None
     empty_context.agent_id = None
 
-    # Should raise ValueError when no valid identifier found
-    with pytest.raises(ValueError, match="None found in context"):
+    # Should raise ToolInputValidationError when no valid identifier found
+    with pytest.raises(ToolInputValidationError, match="None found in context"):
         tool_instance._get_session_id(empty_context)
 
 
