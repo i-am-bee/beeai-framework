@@ -129,8 +129,8 @@ class ScratchpadTool(Tool):
             )
 
         # Cache the session ID for future calls
-        self._cached_session_id = session_id
-        logger.info(f"Scratchpad session initialized: {session_id}")
+        # Cache the session ID for future calls
+        # self._cached_session_id = session_id
         return session_id
 
     @property
