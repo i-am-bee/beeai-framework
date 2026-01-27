@@ -391,11 +391,12 @@ class ScratchpadTool(Tool):
         return cls._scratchpads.get(session_id, []).copy()
 
     @classmethod
-    def clear_session(cls, session_id: str) -> None:
+    async def clear_session(cls, session_id: str) -> None:
         """Clear scratchpad for a specific session.
 
         Args:
             session_id: Session identifier.
         """
-        if session_id in cls._scratchpads:
-            cls._scratchpads[session_id] = []
+        async with cls._lock:
+            if session_id in cls._scratchpads:
+                cls._scratchpads[session_id] = []
