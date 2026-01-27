@@ -433,7 +433,7 @@ class ScratchpadTool(Tool):
         raise ToolInputValidationError(message)
 
     @classmethod
-    def get_scratchpad_for_session(cls, session_id: str) -> list:
+    def get_scratchpad_for_session(cls, session_id: str) -> list[str]:
         """Get scratchpad entries for a specific session.
 
         Args:
