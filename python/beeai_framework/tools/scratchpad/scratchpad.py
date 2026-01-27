@@ -388,7 +388,7 @@ class ScratchpadTool(Tool):
         Returns:
             List of scratchpad entries.
         """
-        return cls._scratchpads.get(session_id, [])
+        return cls._scratchpads.get(session_id, []).copy()
 
     @classmethod
     def clear_session(cls, session_id: str) -> None:
