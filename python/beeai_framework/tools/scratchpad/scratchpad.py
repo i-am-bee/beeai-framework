@@ -45,7 +45,21 @@ class ScratchpadInput(BaseModel):
 
 
 class ScratchpadTool(Tool):
-    """Tool for managing agent scratchpad (working memory)."""
+    """Tool for managing agent scratchpad (working memory).
+
+    Supports two types of content:
+    1. Key-Value Pairs: Automatically consolidated into a single entry
+       - Format: "key: value, another_key: another_value"
+       - Duplicate keys are updated with latest values
+       - Results in ONE entry containing all key-value pairs
+
+    2. Plain Text: Appended as separate entries
+       - Format: Any text without colons
+       - Each write creates a new list entry
+
+    This design allows structured state management (key-value) while
+    preserving free-form notes (plain text) as separate items.
+    """
 
     _scratchpads: ClassVar[dict[str, list]] = {}
     _lock: ClassVar[asyncio.Lock] = asyncio.Lock()
@@ -231,12 +245,29 @@ class ScratchpadTool(Tool):
     def _merge_entries(entries: list, new_pairs: dict) -> list:
         """Merge new key-value pairs into existing entries.
 
+        IMPORTANT BEHAVIOR:
+        This method consolidates ALL key-value pairs (existing + new) into a
+        SINGLE entry. This means the returned list will contain at most ONE
+        consolidated entry, not multiple separate entries.
+
+        Design Rationale:
+        - Key-value pairs represent structured state that should be merged
+        - Each key appears only once with its latest value
+        - Prevents duplicate keys and maintains a single source of truth
+        - Example: Writing "city: Boston" then "date: 2025-01-28" results in
+          ONE entry: "city: Boston, date: 2025-01-28"
+
+        This is different from non-key-value entries (plain text) which are
+        appended as separate list items.
+
         Args:
             entries: List of existing scratchpad entries.
             new_pairs: Dictionary of new key-value pairs to merge.
 
         Returns:
-            Updated list of entries (consolidated).
+            Updated list with a SINGLE consolidated entry containing all
+            key-value pairs (old + new), with new values overriding old
+            values for duplicate keys. Returns empty list if no valid pairs.
         """
         # Parse all existing entries into a single dict
         consolidated = {}
@@ -244,12 +275,12 @@ class ScratchpadTool(Tool):
             pairs = ScratchpadTool._parse_key_value_pairs(entry)
             consolidated.update(pairs)
 
-        # Merge new pairs (new values override old ones)
+        # Merge new pairs (new values override old ones for duplicate keys)
         consolidated.update(new_pairs)
 
         # Convert back to entry format
         if consolidated:
-            # Create a single consolidated entry
+            # Create a single consolidated entry containing all pairs
             entry_str = ", ".join(f"{k}: {v}" for k, v in consolidated.items())
             return [entry_str]
         return []
@@ -257,16 +288,28 @@ class ScratchpadTool(Tool):
     def _write_scratchpad(self, entry: str, session_id: str) -> str:
         """Add or update entry in the scratchpad.
 
-        Merges key-value pairs with existing entries to avoid duplicates.
-        If entry contains key-value pairs (format: "key: value"), it will
-        update existing entries with the same keys.
+        Behavior depends on entry format:
+
+        1. Key-Value Pairs (contains ":"):
+           - Parsed and merged with existing key-value pairs
+           - Results in a SINGLE consolidated entry
+           - New values override old values for duplicate keys
+           - Example: Writing "city: Boston" then "date: 2025-01-28" creates
+             ONE entry: "city: Boston, date: 2025-01-28"
+
+        2. Plain Text (no ":"):
+           - Appended as a new separate entry
+           - Multiple plain text entries can exist
+
+        This design ensures structured state (key-value) remains consolidated
+        while allowing free-form notes (plain text) to accumulate.
 
         Args:
             entry: Content to add/update.
             session_id: Session identifier.
 
         Returns:
-            Success message.
+            Success message describing the action taken.
         """
         entries = self._get_entries(session_id)
         new_pairs = self._parse_key_value_pairs(entry)
