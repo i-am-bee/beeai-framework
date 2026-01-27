@@ -39,7 +39,8 @@ class ScratchpadInput(BaseModel):
     content: str | None = Field(
         default=None,
         description=(
-            "Content to write/append (required for 'write' and 'append' " "operations)"
+            "Content to write/append (required for 'write' and 'append' "
+            "operations)"
         ),
     )
 
