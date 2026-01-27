@@ -294,8 +294,6 @@ class ScratchpadTool(Tool):
            - Parsed and merged with existing key-value pairs
            - Results in a SINGLE consolidated entry
            - New values override old values for duplicate keys
-           - Example: Writing "city: Boston" then "date: 2025-01-28" creates
-             ONE entry: "city: Boston, date: 2025-01-28"
 
         2. Plain Text (no ":"):
            - Appended as a new separate entry
@@ -317,11 +315,8 @@ class ScratchpadTool(Tool):
         if new_pairs:
             # Merge with existing entries
             entries[:] = self._merge_entries(entries, new_pairs)
-            result = (
-                f"Updated scratchpad to: {entries[0]}"
-                if entries
-                else "Scratchpad updated with no content."
-            )
+            # Since we just merged new_pairs (which is not empty), entries will have content
+            result = f"Updated scratchpad to: {entries[0]}"
         else:
             # If no key-value pairs found, append as-is (for non-structured entries)
             entries.append(entry)
