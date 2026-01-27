@@ -397,8 +397,6 @@ class ScratchpadTool(Tool):
 
         result = None
         async with ScratchpadTool._lock:
-            self._ensure_session(session_id)
-
             if operation in ("write", "append") and not content:
                 self._raise_input_validation_error(
                     f"'{operation}' operation requires 'content' parameter."
