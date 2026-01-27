@@ -188,9 +188,11 @@ async def test_append_without_content_fails(tool: ScratchpadTool) -> None:
 
 @pytest.mark.asyncio
 async def test_invalid_operation(tool: ScratchpadTool) -> None:
+async def test_invalid_operation(tool: ScratchpadTool) -> None:
     """Test that an invalid operation is handled properly."""
-    with pytest.raises(ToolInputValidationError):
-        await tool.run(input={"operation": "invalid_op"})
+    result = await tool.run(input=ScratchpadInput(operation="invalid_op"))
+    assert isinstance(result, StringToolOutput)
+    assert "unknown operation" in result.result.lower()
 
 
 @pytest.mark.asyncio
