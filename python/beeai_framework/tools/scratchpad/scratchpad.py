@@ -66,7 +66,7 @@ class ScratchpadTool(Tool):
     preserving free-form notes (plain text) as separate items.
     """
 
-    _scratchpads: ClassVar[dict[str, list]] = {}
+    _scratchpads: ClassVar[dict[str, list[str]]] = {}
     _lock: ClassVar[asyncio.Lock] = asyncio.Lock()
 
     def __init__(self) -> None:
@@ -411,18 +411,10 @@ class ScratchpadTool(Tool):
                 "clear": lambda: self._clear_scratchpad(session_id),
             }
 
-            handler = handlers.get(operation)
-            if handler:
-                result = handler()
+            # Operation is validated by Pydantic enum, so key existence is guaranteed
+            result = handlers[operation]()
 
-        if result is not None:
-            return StringToolOutput(result=result)
-
-        error_msg = (
-            f"Unknown operation: {operation}. "
-            "Use 'read', 'write', 'append', or 'clear'."
-        )
-        return StringToolOutput(result=error_msg)
+        return StringToolOutput(result=result)
 
     def _raise_input_validation_error(self, message: str) -> None:
         """Raise a ToolInputValidationError with the given message.
