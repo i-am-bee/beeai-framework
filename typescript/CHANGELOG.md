@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.1.26](https://github.com/i-am-bee/beeai-framework/compare/typescript_v0.1.25...typescript_v0.1.26) (2026-01-22)
+
+### Features
+
+- handle empty chunks (watsonx) and invalid responses ([#1391](https://github.com/i-am-bee/beeai-framework/issues/1391)) ([2beeca9](https://github.com/i-am-bee/beeai-framework/commit/2beeca9e98a5f014e8efe50aba207523c46ad7cf))
+
 ## [0.1.25](https://github.com/i-am-bee/beeai-framework/compare/typescript_v0.1.24...typescript_v0.1.25) (2026-01-20)
 
 ### Features

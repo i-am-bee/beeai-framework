@@ -17,6 +17,7 @@ class QueryLike(Protocol):
     Any object that implements the `__str__` method can be used as a query
     for vector store searches.
     """
+
     def __str__(self) -> str: ...
 
 

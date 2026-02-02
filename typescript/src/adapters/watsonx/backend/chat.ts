@@ -157,10 +157,12 @@ export class WatsonxChatModel extends ChatModel {
         .flatMap(({ message }) => {
           const messages: Message[] = [];
 
-          // @ts-expect-error wrong types
-          const reasoning = message?.reasoning_content;
-          if (reasoning) {
-            const msg = new AssistantMessage({ type: "text", text: reasoning }, {}, id);
+          if (message?.reasoning_content) {
+            const msg = new AssistantMessage(
+              { type: "text", text: message.reasoning_content },
+              {},
+              id,
+            );
             messages.push(msg);
           }
           if (message?.content) {
