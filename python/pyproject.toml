@@ -40,7 +40,7 @@ mcp = {version = "^1.23.0", optional = true}
 pydantic = "^2.11.10"
 pydantic-settings = "^2.11.0"
 requests = "^2.32"
-unstructured = {version = "^0.18.18", optional = true}
+unstructured = {version = "^0.18.31", optional = true}
 uvicorn = {version = "^0.37.0", optional = true}
 types-grpcio = {version = "*", optional = true}
 types-grpcio-reflection = {version = "*", optional = true}
