@@ -285,6 +285,12 @@ export abstract class ChatModel extends Serializable {
 
               cacheEntry.resolve(chunks);
 
+              if (!result.finishReason) {
+                if (result.getToolCalls().length > 0) {
+                  result.finishReason = "tool-calls";
+                }
+              }
+
               return result;
             },
             config: { maxRetries: input.maxRetries ?? 0 },
