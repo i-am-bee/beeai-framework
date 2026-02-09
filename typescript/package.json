@@ -182,7 +182,7 @@
     "@qdrant/js-client-rest": "^1.15.0",
     "@zilliz/milvus2-sdk-node": "^2.6.0",
     "express": "^5.0.0",
-    "ollama-ai-provider-v2": "^1.5.5",
+    "ollama-ai-provider-v2": "^3.0.4",
     "sequelize": "^6.37.7",
     "yaml": "^2.6.1"
   },
@@ -292,7 +292,7 @@
     "glob": "^13.0.0",
     "ibm-cloud-sdk-core": "^5.4.5",
     "langchain": "^0.3.36",
-    "ollama-ai-provider-v2": "^1.5.5",
+    "ollama-ai-provider-v2": "^3.0.4",
     "picocolors": "^1.1.1",
     "pino-pretty": "^13.1.2",
     "pino-test": "^1.1.0",

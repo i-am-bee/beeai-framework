@@ -136,7 +136,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@ai-sdk/provider-utils@npm:4.0.14":
+"@ai-sdk/provider-utils@npm:4.0.14, @ai-sdk/provider-utils@npm:^4.0.10":
   version: 4.0.14
   resolution: "@ai-sdk/provider-utils@npm:4.0.14"
   dependencies:
@@ -149,29 +149,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@ai-sdk/provider-utils@npm:^3.0.17":
-  version: 3.0.17
-  resolution: "@ai-sdk/provider-utils@npm:3.0.17"
-  dependencies:
-    "@ai-sdk/provider": "npm:2.0.0"
-    "@standard-schema/spec": "npm:^1.0.0"
-    eventsource-parser: "npm:^3.0.6"
-  peerDependencies:
-    zod: ^3.25.76 || ^4.1.8
-  checksum: 10c0/1bae6dc4cacd0305b6aa152f9589bbd61c29f150155482c285a77f83d7ed416d52bc2aa7fdaba2e5764530392d9e8f799baea34a63dce6c72ecd3de364dc62d1
-  languageName: node
-  linkType: hard
-
-"@ai-sdk/provider@npm:2.0.0, @ai-sdk/provider@npm:^2.0.0":
-  version: 2.0.0
-  resolution: "@ai-sdk/provider@npm:2.0.0"
-  dependencies:
-    json-schema: "npm:^0.4.0"
-  checksum: 10c0/e50e520016c9fc0a8b5009cadd47dae2f1c81ec05c1792b9e312d7d15479f024ca8039525813a33425c884e3449019fed21043b1bfabd6a2626152ca9a388199
-  languageName: node
-  linkType: hard
-
-"@ai-sdk/provider@npm:3.0.8":
+"@ai-sdk/provider@npm:3.0.8, @ai-sdk/provider@npm:^3.0.5":
   version: 3.0.8
   resolution: "@ai-sdk/provider@npm:3.0.8"
   dependencies:
@@ -2758,13 +2736,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@standard-schema/spec@npm:^1.0.0":
-  version: 1.0.0
-  resolution: "@standard-schema/spec@npm:1.0.0"
-  checksum: 10c0/a1ab9a8bdc09b5b47aa8365d0e0ec40cc2df6437be02853696a0e377321653b0d3ac6f079a8c67d5ddbe9821025584b1fb71d9cc041a6666a96f1fadf2ece15f
-  languageName: node
-  linkType: hard
-
 "@standard-schema/spec@npm:^1.1.0":
   version: 1.1.0
   resolution: "@standard-schema/spec@npm:1.1.0"
@@ -3988,7 +3959,7 @@ __metadata:
     mathjs: "npm:^15.1.0"
     mustache: "npm:^4.2.0"
     object-hash: "npm:^3.0.0"
-    ollama-ai-provider-v2: "npm:^1.5.5"
+    ollama-ai-provider-v2: "npm:^3.0.4"
     p-queue-compat: "npm:^1.0.234"
     p-throttle: "npm:^8.1.0"
     picocolors: "npm:^1.1.1"
@@ -4033,7 +4004,7 @@ __metadata:
     "@qdrant/js-client-rest": ^1.15.0
     "@zilliz/milvus2-sdk-node": ^2.6.0
     express: ^5.0.0
-    ollama-ai-provider-v2: ^1.5.5
+    ollama-ai-provider-v2: ^3.0.4
     sequelize: ^6.37.7
     yaml: ^2.6.1
   peerDependenciesMeta:
@@ -9464,15 +9435,16 @@ __metadata:
   languageName: node
   linkType: hard
 
-"ollama-ai-provider-v2@npm:^1.5.5":
-  version: 1.5.5
-  resolution: "ollama-ai-provider-v2@npm:1.5.5"
+"ollama-ai-provider-v2@npm:^3.0.4":
+  version: 3.0.4
+  resolution: "ollama-ai-provider-v2@npm:3.0.4"
   dependencies:
-    "@ai-sdk/provider": "npm:^2.0.0"
-    "@ai-sdk/provider-utils": "npm:^3.0.17"
+    "@ai-sdk/provider": "npm:^3.0.5"
+    "@ai-sdk/provider-utils": "npm:^4.0.10"
   peerDependencies:
+    ai: ^5.0.0 || ^6.0.0
     zod: ^4.0.16
-  checksum: 10c0/da40c8097bd8205c46eccfbd13e77c51a6ce97a29b886adfc9e1b8444460b558138d1ed4428491fcc9378d46f649dd0a9b1e5b13cf6bbc8f5385e8b321734e72
+  checksum: 10c0/d10950b702809aad6dc6524ca57ea4834b2e5a31c16da898f1930856168a41a7edf62f0851dc2561e881dbfe059c2aa4022ec7b897bdb8b6375316c34dbf1ce7
   languageName: node
   linkType: hard
 

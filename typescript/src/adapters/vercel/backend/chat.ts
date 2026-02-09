@@ -22,6 +22,7 @@ import {
   TextPart,
   ToolCallPart,
   ToolChoice,
+  Output,
 } from "ai";
 type LanguageModelV2 = Exclude<_LanguageModel, string>;
 import { Emitter } from "@/emitter/emitter.js";
@@ -38,7 +39,7 @@ import { ValueError } from "@/errors.js";
 import { isEmpty, mapToObj, toCamelCase } from "remeda";
 import { FullModelName } from "@/backend/utils.js";
 import { ChatModelError } from "@/backend/errors.js";
-import { z, ZodArray, ZodEnum, ZodSchema } from "zod";
+import { ZodArray, ZodEnum, ZodSchema } from "zod";
 import { Tool } from "@/tools/base.js";
 import { encodeCustomMessage, extractTokenUsage } from "@/adapters/vercel/backend/utils.js";
 
@@ -106,20 +107,30 @@ export abstract class VercelChatModel<
       temperature: 0,
       ...(await this.transformInput(input)),
       abortSignal: run.signal,
-      ...(schema instanceof ZodSchema
-        ? {
-            schema,
-            output: ((schema._input || schema) instanceof ZodArray
-              ? "array"
-              : (schema._input || schema) instanceof ZodEnum
-                ? "enum"
-                : "object") as any,
+      output: ((): Output.Output => {
+        if (schema instanceof ZodSchema) {
+          const target = schema._input || schema;
+          if (target instanceof ZodArray) {
+            return Output.array({ element: schema, name: "", description: schema.description });
           }
-        : {
-            schema: schema.schema ? jsonSchema<T>(schema.schema) : z.any(),
-            schemaName: schema.name,
-            schemaDescription: schema.description,
-          }),
+          if (target instanceof ZodEnum) {
+            return Output.choice({
+              options: target.options,
+              name: "",
+              description: schema.description,
+            });
+          }
+          return Output.object({ schema, name: "", description: schema.description });
+        }
+        if (schema.schema) {
+          return Output.object({
+            schema: jsonSchema<T>(schema.schema),
+            name: schema.name,
+            description: schema.description,
+          });
+        }
+        return Output.json({ name: schema.name, description: schema.description });
+      })(),
     });
 
     return {
