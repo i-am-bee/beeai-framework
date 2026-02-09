@@ -19,15 +19,17 @@ export class EmptyChatModelResponseError extends ChatModelError {
   }
 }
 
+export interface ChatModelToolCallErrorInput {
+  generatedContent: string;
+  generatedError: string;
+  response?: ChatModelOutput;
+}
+
 export class ChatModelToolCallError extends ChatModelError {
   constructor(
     message: string,
     errors: Error[] = [],
-    public readonly data: {
-      generatedContent: string;
-      generatedError: string;
-      response?: ChatModelOutput;
-    },
+    public readonly data: ChatModelToolCallErrorInput,
   ) {
     super(message, errors, {
       isFatal: true,

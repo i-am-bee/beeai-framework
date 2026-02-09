@@ -12,10 +12,9 @@ import {
   ChatModelObjectOutput,
 } from "@/backend/chat.js";
 import {
-  CoreAssistantMessage,
+  AssistantModelMessage,
   ModelMessage,
-  CoreToolMessage,
-  generateObject,
+  ToolModelMessage,
   generateText,
   jsonSchema,
   LanguageModel as _LanguageModel,
@@ -103,7 +102,7 @@ export abstract class VercelChatModel<
     { schema, ...input }: ChatModelObjectInput<T>,
     run: GetRunContext<this>,
   ): Promise<ChatModelObjectOutput<T>> {
-    const response = await generateObject({
+    const response = await generateText({
       temperature: 0,
       ...(await this.transformInput(input)),
       abortSignal: run.signal,
@@ -124,9 +123,9 @@ export abstract class VercelChatModel<
     });
 
     return {
-      object: response.object as T,
+      object: response.output as T,
       output: new ChatModelOutput(
-        [new AssistantMessage(JSON.stringify(response.object, null, 2))],
+        [new AssistantMessage(JSON.stringify(response.output, null, 2))],
         extractTokenUsage(response.usage),
         response.finishReason,
       ),
@@ -159,6 +158,7 @@ export abstract class VercelChatModel<
       finishReason: finishReasonPromise,
       response: responsePromise,
     } = streamText({
+      temperature: 0,
       ...(await this.transformInput(input)),
       abortSignal: run.signal,
     });
@@ -324,10 +324,13 @@ export abstract class VercelChatModel<
     };
   }
 
-  protected transformMessages(messages: (CoreAssistantMessage | CoreToolMessage)[]): Message[] {
+  protected transformMessages(messages: (AssistantModelMessage | ToolModelMessage)[]): Message[] {
     return messages.flatMap((msg) => {
       if (msg.role === "tool") {
-        return new ToolMessage(msg.content, msg.providerOptions);
+        return new ToolMessage(
+          msg.content.filter((part) => part.type === "tool-result"),
+          msg.providerOptions,
+        );
       }
       return new AssistantMessage(
         msg.content as TextPart | ToolCallPart | string,

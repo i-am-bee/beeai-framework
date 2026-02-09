@@ -15,7 +15,7 @@ import { GetRunContext } from "@/context.js";
 import { toCamelCase } from "remeda";
 import { FullModelName } from "@/backend/utils.js";
 
-type InternalEmbeddingModel = Exclude<Model<string>, string>;
+type InternalEmbeddingModel = Exclude<Model, string>;
 
 export class VercelEmbeddingModel<
   R extends InternalEmbeddingModel = InternalEmbeddingModel,
@@ -43,7 +43,7 @@ export class VercelEmbeddingModel<
     input: EmbeddingModelInput,
     run: GetRunContext<this>,
   ): Promise<EmbeddingModelOutput> {
-    return embedMany<string>({
+    return embedMany({
       model: this.model,
       values: input.values,
       abortSignal: run.signal,

@@ -8,10 +8,11 @@ import { GroqClient, GroqClientSettings } from "@/adapters/groq/backend/client.j
 import { getEnv } from "@/internals/env.js";
 import { GroqProvider } from "@ai-sdk/groq";
 import { ChatModelInput, ChatModelParameters } from "@/backend/chat.js";
-import { GetRunContext } from "@/context.js";
+import type { GetRunContext } from "@/context.js";
 import { APICallError } from "ai";
-import { ChatModelToolCallError } from "@/backend/errors.js";
+import { ChatModelError, ChatModelToolCallError } from "@/backend/errors.js";
 import { parseBrokenJson } from "@/internals/helpers/schema.js";
+import { isPlainObject } from "remeda";
 
 type GroqParameters = Parameters<GroqProvider["languageModel"]>;
 export type GroqChatModelId = NonNullable<GroqParameters[0]>;
@@ -31,31 +32,55 @@ export class GroqChatModel extends VercelChatModel {
     this.register();
   }
 
-  protected async _create(input: ChatModelInput, run: GetRunContext<this>) {
+  async *_createStream(input: ChatModelInput, run: GetRunContext<this>) {
     try {
-      return await super._create(input, run);
-    } catch (e) {
-      if (
-        APICallError.isInstance(e) &&
-        (e.responseBody?.includes("model did not call a tool") ||
-          e.responseBody?.includes("tool call validation failed"))
-      ) {
-        const responseBody = parseBrokenJson(e.responseBody, { pair: ["{", "}"] });
-        if (!responseBody) {
-          throw e;
-        }
-
-        const {
-          error: { failed_generation: failedGeneration, message: errorMessage },
-        } = responseBody;
-        const tools = (input.tools || []).map((t) => t.name).join(", ");
-
-        throw new ChatModelToolCallError(errorMessage, [], {
-          generatedContent: failedGeneration || "empty",
-          generatedError: `Invalid response. Use one of the following tools: ${tools}. `,
-        });
+      for await (const chunk of super._createStream(input, run)) {
+        yield chunk;
       }
-      throw e;
+    } catch (error) {
+      this.handleError(input, error);
     }
+  }
+
+  protected async _create(input: ChatModelInput, run: GetRunContext<this>) {
+    return await super._create(input, run).catch((e) => this.handleError(input, e));
+  }
+
+  protected handleError(input: ChatModelInput, error: Error): never {
+    const matchedErrorMessages = [
+      "model did not call a tool",
+      "tool call validation failed",
+      "tool choice is required",
+      "Parsing failed",
+    ];
+
+    const cause: Error | Record<string, any> =
+      error instanceof ChatModelError ? error.getCause() : error;
+    const responseBodyRaw = APICallError.isInstance(cause)
+      ? cause.responseBody
+      : isPlainObject(cause)
+        ? JSON.stringify(cause)
+        : undefined;
+
+    if (
+      responseBodyRaw &&
+      matchedErrorMessages.some((message) => responseBodyRaw.includes(message))
+    ) {
+      const responseBody = parseBrokenJson(responseBodyRaw, { pair: ["{", "}"] });
+      if (!responseBody) {
+        throw cause;
+      }
+
+      const tools = (input.tools || []).map((t) => t.name).join(", ");
+      throw new ChatModelToolCallError(
+        responseBody?.error?.message || responseBody?.message || String(responseBody),
+        [],
+        {
+          generatedContent: responseBody?.error?.failed_generation || "empty",
+          generatedError: `Invalid response. Use one of the following tools: ${tools}. `,
+        },
+      );
+    }
+    throw cause;
   }
 }

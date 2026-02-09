@@ -13,7 +13,7 @@ import {
   ChatModelToolChoiceSupport,
 } from "@/backend/chat.js";
 import { WatsonxClient, WatsonxClientSettings } from "@/adapters/watsonx/backend/client.js";
-import { findLast, isEmpty, isTruthy } from "remeda";
+import { findLast, isEmpty, isString, isTruthy } from "remeda";
 import WatsonxAiMlVml_v1, {
   TextChatMessages,
   TextChatParameterTools,
@@ -227,7 +227,7 @@ export class WatsonxChatModel extends ChatModel {
             (content): TextChatMessageTool => ({
               role: "tool",
               content:
-                typeof content.output.value === "string"
+                "value" in content.output && isString(content.output.value)
                   ? content.output.value
                   : JSON.stringify(content),
               tool_call_id: content.toolCallId,
