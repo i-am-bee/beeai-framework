@@ -85,7 +85,7 @@ export abstract class VercelChatModel<
     const {
       finishReason,
       usage,
-      response: { messages },
+      response: { messages, id },
     } = await generateText({
       temperature: 0,
       ...(await this.transformInput(input)),
@@ -93,7 +93,7 @@ export abstract class VercelChatModel<
     });
 
     return new ChatModelOutput(
-      this.transformMessages(messages),
+      this.transformMessages(messages, id),
       extractTokenUsage(usage),
       finishReason,
     );
@@ -103,15 +103,16 @@ export abstract class VercelChatModel<
     { schema, ...input }: ChatModelObjectInput<T>,
     run: GetRunContext<this>,
   ): Promise<ChatModelObjectOutput<T>> {
-    const response = await generateText({
+    const { output, response, finishReason, usage } = await generateText({
       temperature: 0,
       ...(await this.transformInput(input)),
       abortSignal: run.signal,
       output: ((): Output.Output => {
         if (schema instanceof ZodSchema) {
+          const [name, description] = ["Schema", schema.description];
           const target = schema._input || schema;
           if (target instanceof ZodArray) {
-            return Output.array({ element: schema, name: "", description: schema.description });
+            return Output.array({ element: schema, name, description });
           }
           if (target instanceof ZodEnum) {
             return Output.choice({
@@ -120,7 +121,7 @@ export abstract class VercelChatModel<
               description: schema.description,
             });
           }
-          return Output.object({ schema, name: "", description: schema.description });
+          return Output.object({ schema, name, description });
         }
         if (schema.schema) {
           return Output.object({
@@ -134,11 +135,11 @@ export abstract class VercelChatModel<
     });
 
     return {
-      object: response.output as T,
+      object: output as T,
       output: new ChatModelOutput(
-        [new AssistantMessage(JSON.stringify(response.output, null, 2))],
-        extractTokenUsage(response.usage),
-        response.finishReason,
+        [new AssistantMessage(JSON.stringify(output, null, 2), undefined, response.id)],
+        extractTokenUsage(usage),
+        finishReason,
       ),
     };
   }
@@ -258,7 +259,7 @@ export abstract class VercelChatModel<
       }
     }
 
-    if (streamEmpty) {
+    if (streamEmpty && !run.signal.aborted) {
       throw new ChatModelError("No chunks have been received!");
     }
 
@@ -335,17 +336,25 @@ export abstract class VercelChatModel<
     };
   }
 
-  protected transformMessages(messages: (AssistantModelMessage | ToolModelMessage)[]): Message[] {
+  protected transformMessages(
+    messages: (AssistantModelMessage | ToolModelMessage)[],
+    id: string | undefined,
+  ): Message[] {
+    if (messages.length > 1) {
+      id = undefined;
+    }
     return messages.flatMap((msg) => {
       if (msg.role === "tool") {
         return new ToolMessage(
           msg.content.filter((part) => part.type === "tool-result"),
           msg.providerOptions,
+          id,
         );
       }
       return new AssistantMessage(
         msg.content as TextPart | ToolCallPart | string,
         msg.providerOptions,
+        id,
       );
     });
   }

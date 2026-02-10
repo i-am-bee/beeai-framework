@@ -19,7 +19,7 @@ export type GroqChatModelId = NonNullable<GroqParameters[0]>;
 
 export class GroqChatModel extends VercelChatModel {
   constructor(
-    modelId: GroqChatModelId = getEnv("GROQ_CHAT_MODEL", "gemma2-9b-it"),
+    modelId: GroqChatModelId = getEnv("GROQ_CHAT_MODEL", "openai/gpt-oss-20b"),
     parameters: ChatModelParameters = {},
     client?: GroqClientSettings | GroqClient,
   ) {

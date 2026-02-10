@@ -7,7 +7,7 @@ import { ChatModelError } from "beeai-framework/backend/errors";
 import { OpenMeteoTool } from "beeai-framework/tools/weather/openMeteo";
 
 const llm = new OpenAIChatModel(
-  "gpt-4o",
+  "gpt-5-nano",
   {},
   // {
   //   baseURL: "OPENAI_BASE_URL",
@@ -19,8 +19,8 @@ const llm = new OpenAIChatModel(
 
 llm.config({
   parameters: {
-    temperature: 0,
-    topP: 1,
+    // temperature: 0,
+    // topP: 1,
   },
 });
 
