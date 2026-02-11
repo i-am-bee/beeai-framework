@@ -247,14 +247,19 @@ class EmbeddingModelOutput(BaseModel):
 
 
 class Document(BaseModel):
+    model_config = ConfigDict(extra="allow")
+
+    id: str | None = Field(default=None, coerce_numbers_to_str=True)
+    metadata: dict[str, str | int | float | bool] = Field(default_factory=dict)
     content: str
-    metadata: dict[str, str | int | float | bool]
 
     def __str__(self) -> str:
         return self.content
 
 
 class DocumentWithScore(BaseModel):
+    model_config = ConfigDict(extra="allow")
+
     document: Document
     score: float
 
