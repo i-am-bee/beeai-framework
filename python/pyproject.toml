@@ -47,7 +47,7 @@ types-grpcio-reflection = {version = "*", optional = true}
 types-grpcio-health-checking = {version = "*", optional = true }
 grpcio-health-checking = {version = "*", optional = true}
 wikipedia-api = {version = "^0.8.1", optional = true}
-agentstack-sdk = {version = "0.4.3", optional = true}
+agentstack-sdk = {version = "0.6.1", optional = true}
 deprecated = "^1.2.18"
 torch = [
   {version = ">=2.4.1", markers = "sys_platform == 'darwin' and platform_machine == 'arm64'", optional = true},
