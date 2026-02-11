@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.27](https://github.com/i-am-bee/beeai-framework/compare/typescript_v0.1.26...typescript_v0.1.27) (2026-02-11)
+
+### Features
+
+- **backend:** set finish reason for manual tool calls ([fa0f5f4](https://github.com/i-am-bee/beeai-framework/commit/fa0f5f43f107744c9e795244d755e1c7557a111a))
+- upgrade VercelAI SDK, improve error recovery ([#1402](https://github.com/i-am-bee/beeai-framework/issues/1402)) ([85bb9bb](https://github.com/i-am-bee/beeai-framework/commit/85bb9bb554348c33e78b8fe27033dea2dce12ece))
+
 ## [0.1.26](https://github.com/i-am-bee/beeai-framework/compare/typescript_v0.1.25...typescript_v0.1.26) (2026-01-22)
 
 ### Features
