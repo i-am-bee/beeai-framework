@@ -152,9 +152,18 @@ class AgentStackAgent(BaseAgent[AgentStackAgentOutput]):
 
         context_token = await self._agent_stack_context.generate_token(
             client=client,
-            grant_global_permissions=Permissions(llm={"*"}, embeddings={"*"}, a2a_proxy={"*"}, contexts={"read"}),
+            grant_global_permissions=Permissions(
+                llm={"*"},
+                embeddings={"*"},
+                a2a_proxy={"*"},
+                contexts={"read"},
+                model_providers={"read"},
+                providers={"read"},
+            ),
             grant_context_permissions=ContextPermissions(files={"*"}, vector_stores={"*"}, context_data={"*"}),
         )
+        client.headers["Authorization"] = f"Bearer {context_token.token.get_secret_value()}"
+
         llm_spec = LLMServiceExtensionSpec.from_agent_card(self._agent.agent_card)
         embedding_spec = EmbeddingServiceExtensionSpec.from_agent_card(self._agent.agent_card)
         agent_stack_extension_spec = PlatformApiExtensionSpec.from_agent_card(self._agent.agent_card)
