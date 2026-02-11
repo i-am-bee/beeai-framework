@@ -12,7 +12,7 @@ export default defineConfig({
     deps: {
       interopDefault: false,
     },
-    maxConcurrency: 5,
+    maxConcurrency: 3,
   },
   define: {
     __LIBRARY_VERSION: JSON.stringify(packageJson.version),

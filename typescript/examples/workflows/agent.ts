@@ -18,7 +18,7 @@ const schema = z.object({
 const workflow = new Workflow({ schema: schema })
   .addStep("simpleAgent", async (state) => {
     const simpleAgent = new ReActAgent({
-      llm: new GroqChatModel("llama-3.3-70b-versatile"),
+      llm: new GroqChatModel("openai/gpt-oss-20b"),
       tools: [],
       memory: state.memory,
     });
@@ -29,7 +29,7 @@ const workflow = new Workflow({ schema: schema })
     return "critique";
   })
   .addStrictStep("critique", schema.required(), async (state) => {
-    const llm = new GroqChatModel("llama-3.3-70b-versatile");
+    const llm = new GroqChatModel("openai/gpt-oss-20b");
     const { object: critiqueResponse } = await llm.createStructure({
       schema: z.object({ score: z.number().int().min(0).max(100) }),
       messages: [
@@ -47,7 +47,7 @@ const workflow = new Workflow({ schema: schema })
   })
   .addStep("complexAgent", async (state) => {
     const complexAgent = new ReActAgent({
-      llm: new GroqChatModel("llama-3.3-70b-versatile"),
+      llm: new GroqChatModel("openai/gpt-oss-20b"),
       tools: [new WikipediaTool(), new OpenMeteoTool()],
       memory: state.memory,
     });

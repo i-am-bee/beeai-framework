@@ -595,6 +595,8 @@ export class ChatModelOutput extends Serializable {
         totalTokens: takeBigger,
         promptTokens: takeBigger,
         completionTokens: takeBigger,
+        cachedPromptTokens: takeBigger,
+        reasoningTokens: takeBigger,
       });
     } else if (other.usage) {
       this.usage = shallowCopy(other.usage);

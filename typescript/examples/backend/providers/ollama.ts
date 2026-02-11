@@ -49,7 +49,7 @@ async function ollamaAbort() {
     const response = await llm.create({
       messages: [new UserMessage("What is the smallest of the Cape Verde islands?")],
       stream: true,
-      abortSignal: AbortSignal.timeout(1 * 1000),
+      abortSignal: AbortSignal.timeout(1 * 500),
     });
     console.info(response.getTextContent());
   } catch (err) {

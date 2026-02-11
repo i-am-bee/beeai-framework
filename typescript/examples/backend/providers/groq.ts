@@ -8,7 +8,7 @@ import { z } from "zod";
 import { OpenMeteoTool } from "beeai-framework/tools/weather/openMeteo";
 
 const llm = new GroqChatModel(
-  "gemma2-9b-it",
+  "openai/gpt-oss-20b",
   // {},
   // {
   //   apiKey: "GROQ_API_KEY",
@@ -25,7 +25,7 @@ llm.config({
 });
 
 async function groqFromName() {
-  const groqLLM = await ChatModel.fromName("groq:gemma2-9b-it");
+  const groqLLM = await ChatModel.fromName("groq:openai/gpt-oss-20b");
   const response = await groqLLM.create({
     messages: [new UserMessage("what states are part of New England?")],
   });
