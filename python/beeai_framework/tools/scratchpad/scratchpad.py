@@ -12,7 +12,7 @@ This tool provides a working memory (scratchpad) where agents can:
 """
 
 import asyncio
-import logging
+from beeai_framework.logger import Logger
 import re
 from typing import ClassVar
 
@@ -27,7 +27,7 @@ from beeai_framework.tools import (
     ToolRunOptions,
 )
 
-logger = logging.getLogger(__name__)
+logger = Logger(__name__)
 
 
 class ScratchpadInput(BaseModel):
@@ -90,55 +90,24 @@ class ScratchpadTool(Tool):
         if session_id not in cls._scratchpads:
             cls._scratchpads[session_id] = []
 
-    def _get_session_id(self, context: RunContext | None = None) -> str:
+    def _get_session_id(self) -> str:
         """Extract session ID from context.
 
         Caches the session ID on first call to ensure the same session
         is used across all tool calls for this tool instance.
 
-        Args:
-            context: Run context to extract session identifier from.
-
         Returns:
             Session ID string for data isolation.
 
         Raises:
-            ValueError: If no valid session ID can be extracted from context.
+            ToolInputValidationError: If no valid session ID can be extracted from context.
         """
         # Return cached session ID if we already determined it
         if self._cached_session_id:
             return self._cached_session_id
 
-        if not context:
-            raise ToolInputValidationError(
-                "Scratchpad requires RunContext with a valid session identifier. "
-                "No context provided."
-            )
-
-        # Try different context attributes in order of preference
-        session_id = None
-
-        # run_id: Should persist across tool calls in the same agent run
-        if hasattr(context, "run_id") and context.run_id:
-            session_id = str(context.run_id)
-            logger.debug(f"Using run_id as session: {session_id}")
-
-        # conversation_id: If available, persists across the conversation
-        elif hasattr(context, "conversation_id") and context.conversation_id:
-            session_id = str(context.conversation_id)
-            logger.debug(f"Using conversation_id as session: {session_id}")
-
-        # agent_id: If available, unique per agent instance
-        elif hasattr(context, "agent_id") and context.agent_id:
-            session_id = str(context.agent_id)
-            logger.debug(f"Using agent_id as session: {session_id}")
-
-        # No valid session ID found - raise error
-        if not session_id:
-            raise ToolInputValidationError(
-                "Scratchpad requires RunContext with a valid session identifier "
-                "(run_id, conversation_id, or agent_id). None found in context."
-            )
+        # Get run_id from RunContext as session identifier
+        session_id = RunContext.get().run_id
 
         # Cache the session ID for future calls
         self._cached_session_id = session_id
@@ -162,13 +131,17 @@ class ScratchpadTool(Tool):
         )
 
     @property
-    def input_schema(self) -> type[BaseModel]:
+    def input_schema(self) -> type[ScratchpadInput]:
         """Input schema for the tool."""
         return ScratchpadInput
 
-    def _create_emitter(self) -> Emitter:
-        """Create emitter for the tool."""
-        return Emitter()
+    @property
+    def emitter(self) -> Emitter:
+        """Emitter for the tool."""
+        return Emitter.root.child(
+            namespace=["tool", "scratchpad"],
+            creator=self,
+        )
 
     def _get_entries(self, session_id: str) -> list[str]:
         """Get scratchpad entries for a session.
@@ -381,19 +354,17 @@ class ScratchpadTool(Tool):
         self,
         input: ScratchpadInput,
         options: ToolRunOptions | None = None,
-        context: RunContext | None = None,
     ) -> StringToolOutput:
         """Execute scratchpad operation.
 
         Args:
             input: ScratchpadInput model instance.
             options: Optional tool run options.
-            context: Optional run context.
 
         Returns:
             StringToolOutput with the result of the operation.
         """
-        session_id = self._get_session_id(context)
+        session_id = self._get_session_id()
         operation = input.operation.lower().strip()
         content = input.content
 
