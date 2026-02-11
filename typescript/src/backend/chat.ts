@@ -285,6 +285,12 @@ export abstract class ChatModel extends Serializable {
 
               cacheEntry.resolve(chunks);
 
+              if (!result.finishReason) {
+                if (result.getToolCalls().length > 0) {
+                  result.finishReason = "tool-calls";
+                }
+              }
+
               return result;
             },
             config: { maxRetries: input.maxRetries ?? 0 },
@@ -589,6 +595,8 @@ export class ChatModelOutput extends Serializable {
         totalTokens: takeBigger,
         promptTokens: takeBigger,
         completionTokens: takeBigger,
+        cachedPromptTokens: takeBigger,
+        reasoningTokens: takeBigger,
       });
     } else if (other.usage) {
       this.usage = shallowCopy(other.usage);

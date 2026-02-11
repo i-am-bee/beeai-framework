@@ -1,3 +1,10 @@
+## python_v0.1.77 (2026-02-11)
+
+### Features
+
+- extend VectorStore parameters
+- update agentstack-sdk (#1405)
+
 ## python_v0.1.76 (2026-01-20)
 
 ### Features

@@ -20,7 +20,7 @@ export function createChatLLM(): ChatModel {
   } else if (process.env.WATSONX_API_KEY && process.env.WATSONX_PROJECT_ID) {
     return new WatsonxChatModel("meta-llama/llama-3-3-70b-instruct");
   } else if (process.env.GROQ_API_KEY) {
-    return new GroqChatModel(`llama-3.3-70b-versatile`);
+    return new GroqChatModel(`openai/gpt-oss-20b`);
   } else if (process.env.OLLAMA_BASE_URL) {
     // the undici definition of RequestInit does not extend the default
     // fetch RequestInit so we can't use its type directly. Define

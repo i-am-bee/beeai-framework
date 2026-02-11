@@ -25,7 +25,7 @@ const workflow = new Workflow({
   outputSchema: schema.required({ output: true }),
 })
   .addStep("preprocess", async (state) => {
-    const llm = new GroqChatModel("llama-3.3-70b-versatile");
+    const llm = new GroqChatModel("openai/gpt-oss-20b");
 
     const { object: parsed } = await llm.createStructure({
       schema: schema.pick({ topic: true, notes: true }).or(
@@ -62,7 +62,7 @@ const workflow = new Workflow({
     state.topic = parsed.topic;
   })
   .addStrictStep("planner", schema.required({ topic: true }), async (state) => {
-    const llm = new GroqChatModel("llama-3.3-70b-versatile");
+    const llm = new GroqChatModel("openai/gpt-oss-20b");
     const agent = new ReActAgent({
       llm,
       memory: new UnconstrainedMemory(),
@@ -91,7 +91,7 @@ const workflow = new Workflow({
     state.plan = result.text;
   })
   .addStrictStep("writer", schema.required({ plan: true }), async (state) => {
-    const llm = new GroqChatModel("llama-3.3-70b-versatile");
+    const llm = new GroqChatModel("openai/gpt-oss-20b");
     const output = await llm.create({
       messages: [
         Message.of({
@@ -119,7 +119,7 @@ const workflow = new Workflow({
     state.draft = output.getTextContent();
   })
   .addStrictStep("editor", schema.required({ draft: true }), async (state) => {
-    const llm = new GroqChatModel("llama-3.3-70b-versatile");
+    const llm = new GroqChatModel("openai/gpt-oss-20b");
     const output = await llm.create({
       messages: [
         Message.of({

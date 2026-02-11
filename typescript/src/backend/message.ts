@@ -225,7 +225,10 @@ export class ToolMessage extends Message<ToolResultPart> {
       Logger.root.warn(
         "The 'result' property of Tool Message is deprecated and will be removed. Use the 'output.value' property instead.",
       );
-      return content.output.value as any;
+      if ("value" in content.output) {
+        return content.output.value;
+      }
+      return null;
     });
     safeDefineProperty(content, "isError" as any, () => {
       Logger.root.warn(
