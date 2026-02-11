@@ -80,9 +80,6 @@ class ScratchpadTool(Tool):
         """Initialize scratchpad tool."""
         super().__init__()
         self.middlewares = []
-        # Store the session_id once it's determined from context
-        # This ensures the same session is used across all calls
-        self._cached_session_id: str | None = None
 
     @classmethod
     def _ensure_session(cls, session_id: str) -> None:
@@ -91,28 +88,32 @@ class ScratchpadTool(Tool):
             cls._scratchpads[session_id] = []
 
     def _get_session_id(self) -> str:
-        """Extract session ID from context.
+        """Extract a stable session ID from RunContext.
 
-        Caches the session ID on first call to ensure the same session
-        is used across all tool calls for this tool instance.
-
-        Returns:
-            Session ID string for data isolation.
-
-        Raises:
-            ToolInputValidationError: If no valid session ID can be extracted from context.
+        Order of preference:
+        1) RunContext.context["session_id"] (set by the API layer)
+        2) RunContext.group_id (stable for a run group)
+        3) RunContext.run_id (per-request fallback)
         """
-        # Return cached session ID if we already determined it
-        if self._cached_session_id:
-            return self._cached_session_id
+        context = RunContext.get()
+        if not context:
+            raise ToolInputValidationError("RunContext missing; cannot determine session.")
 
-        # Get run_id from RunContext as session identifier
-        session_id = RunContext.get().run_id
+        context_data = getattr(context, "context", None)
+        if isinstance(context_data, dict):
+            session_id = context_data.get("session_id")
+            if session_id:
+                return str(session_id)
 
-        # Cache the session ID for future calls
-        self._cached_session_id = session_id
-        logger.info(f"Scratchpad session initialized: {session_id}")
-        return session_id
+        group_id = getattr(context, "group_id", None)
+        if group_id:
+            return str(group_id)
+
+        run_id = getattr(context, "run_id", None)
+        if run_id:
+            return str(run_id)
+
+        raise ToolInputValidationError("No valid session id found in RunContext.")
 
     @property
     def name(self) -> str:
@@ -135,10 +136,14 @@ class ScratchpadTool(Tool):
         """Input schema for the tool."""
         return ScratchpadInput
 
+    def _create_emitter(self) -> Emitter:
+        """Create emitter for the tool."""
+        return Emitter.root()
+
     @property
     def emitter(self) -> Emitter:
         """Emitter for the tool."""
-        return Emitter.root.child(
+        return Emitter.root().child(
             namespace=["tool", "scratchpad"],
             creator=self,
         )
