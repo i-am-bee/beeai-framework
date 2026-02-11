@@ -43,6 +43,12 @@ import { ZodArray, ZodEnum, ZodSchema } from "zod";
 import { Tool } from "@/tools/base.js";
 import { encodeCustomMessage, extractTokenUsage } from "@/adapters/vercel/backend/utils.js";
 
+try {
+  globalThis.AI_SDK_LOG_WARNINGS = false;
+} catch {
+  /* empty */
+}
+
 export abstract class VercelChatModel<
   M extends LanguageModelV2 = LanguageModelV2,
 > extends ChatModel {

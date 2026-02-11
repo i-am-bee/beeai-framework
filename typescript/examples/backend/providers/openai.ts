@@ -19,13 +19,12 @@ const llm = new OpenAIChatModel(
 
 llm.config({
   parameters: {
-    // temperature: 0,
-    // topP: 1,
+    maxTokens: 2048,
   },
 });
 
 async function openaiFromName() {
-  const openaiLLM = await ChatModel.fromName("openai:gpt-4o");
+  const openaiLLM = await ChatModel.fromName("openai:gpt-5-nano");
   const response = await openaiLLM.create({
     messages: [new UserMessage("what states are part of New England?")],
   });
