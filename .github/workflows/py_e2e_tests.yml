@@ -36,6 +36,7 @@ jobs:
           ollama serve &
           ollama pull granite4:micro
           ollama pull llama3.1:8b
+          ollama pull llama3.1
       - name: Call ollama API
         run: |
           curl -d '{"model": "granite4:micro", "stream": false, "prompt":"Whatever I say, answer with Yes"}' http://localhost:11434/api/generate
