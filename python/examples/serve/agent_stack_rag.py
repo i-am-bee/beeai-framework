@@ -1,8 +1,5 @@
 from typing import Annotated
 
-from emitter import EventMeta
-from emitter.utils import create_internal_event_matcher
-
 from beeai_framework.adapters.agentstack.backend.chat import AgentStackChatModel
 from beeai_framework.adapters.agentstack.backend.embedding import AgentstackEmbeddingModel
 from beeai_framework.adapters.agentstack.backend.vector_store import NativeVectorStore
@@ -12,6 +9,8 @@ from beeai_framework.agents.requirement import RequirementAgent
 from beeai_framework.backend import ChatModelParameters
 from beeai_framework.backend.types import Document
 from beeai_framework.context import RunContext, RunContextStartEvent, RunMiddlewareProtocol
+from beeai_framework.emitter import EventMeta
+from beeai_framework.emitter.utils import create_internal_event_matcher
 from beeai_framework.memory import UnconstrainedMemory
 from beeai_framework.tools.search.retrieval import VectorStoreSearchTool
 
