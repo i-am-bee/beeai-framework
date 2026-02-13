@@ -1,5 +1,8 @@
 from typing import Annotated
 
+from emitter import EventMeta
+from emitter.utils import create_internal_event_matcher
+
 from beeai_framework.adapters.agentstack.backend.chat import AgentStackChatModel
 from beeai_framework.adapters.agentstack.backend.embedding import AgentstackEmbeddingModel
 from beeai_framework.adapters.agentstack.backend.vector_store import NativeVectorStore
@@ -8,7 +11,7 @@ from beeai_framework.adapters.agentstack.serve.types import BaseAgentStackExtens
 from beeai_framework.agents.requirement import RequirementAgent
 from beeai_framework.backend import ChatModelParameters
 from beeai_framework.backend.types import Document
-from beeai_framework.context import RunContext, RunMiddlewareProtocol
+from beeai_framework.context import RunContext, RunContextStartEvent, RunMiddlewareProtocol
 from beeai_framework.memory import UnconstrainedMemory
 from beeai_framework.tools.search.retrieval import VectorStoreSearchTool
 
@@ -18,6 +21,27 @@ except ModuleNotFoundError as e:
     raise ModuleNotFoundError(
         "Optional module [agentstack] not found.\nRun 'pip install \"beeai-framework[agentstack]\"' to install."
     ) from e
+
+
+# The middleware is necessary since the embedding service's initialization occurs after the client's call to the agent.
+class RAGMiddleware(RunMiddlewareProtocol):
+    def __init__(self, vector_store: NativeVectorStore) -> None:
+        self._vector_store = vector_store
+
+    def bind(self, ctx: RunContext) -> None:  # pyrefly: ignore [bad-override]
+        # Only insert the documents during initialization.
+        ctx.emitter.on(create_internal_event_matcher("start"), self._on_start)
+
+    async def _on_start(self, _: RunContextStartEvent, meta: EventMeta) -> None:
+        if not self._vector_store.is_initialized:
+            print("debug: initializing vector store")
+            await self._vector_store.add_documents(
+                [
+                    Document(content="My name is John.", metadata={}),
+                    Document(content="I am a python programmer.", metadata={}),
+                    Document(content="I am 30 years old.", metadata={}),
+                ]
+            )
 
 
 def main() -> None:
@@ -32,25 +56,11 @@ def main() -> None:
     vector_store = NativeVectorStore(embedding_model)
     # vector_store = VectorStore.from_name("AgentStack:NativeVectorStore", embedding_model=embedding_model)
 
-    # The middleware is necessary since the embedding service's initialization occurs after the client's call to the agent.
-    class RAGMiddleware(RunMiddlewareProtocol):
-        async def bind(self, ctx: RunContext) -> None:  # pyrefly: ignore [bad-override]
-            # Only insert the documents during initialization.
-            if not vector_store.is_initialized:
-                print("debug: initializing vector store")
-                await vector_store.add_documents(
-                    [
-                        Document(content="My name is John.", metadata={}),
-                        Document(content="I am a python programmer.", metadata={}),
-                        Document(content="I am 30 years old.", metadata={}),
-                    ]
-                )
-
     agent = RequirementAgent(
         llm=llm,
         tools=[VectorStoreSearchTool(vector_store)],
         memory=UnconstrainedMemory(),
-        middlewares=[RAGMiddleware()],  # add middleware to initialize vector store
+        middlewares=[RAGMiddleware(vector_store)],  # add middleware to initialize vector store
     )
 
     # define custom extensions
