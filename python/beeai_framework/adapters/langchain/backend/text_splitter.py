@@ -18,6 +18,8 @@ from beeai_framework.backend.text_splitter import TextSplitter
 from beeai_framework.backend.types import Document
 from beeai_framework.logger import Logger
 
+from ._utils import validate_class_name
+
 logger = Logger(__name__)
 
 
@@ -31,6 +33,8 @@ class LangChainTextSplitter(TextSplitter):
         """
         Dynamically imports and instantiates `class_name` from LangChain text splitters
         """
+        validate_class_name(class_name)
+
         lc_text_splitter = None
 
         # Try importing from langchain_text_splitters first (most common text splitters)
