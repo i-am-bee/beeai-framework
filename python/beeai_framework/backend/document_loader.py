@@ -8,6 +8,7 @@ from typing import Any
 
 from beeai_framework.backend.types import Document
 from beeai_framework.backend.utils import load_module, parse_module
+from beeai_framework.utils.strings import validate_class_name
 
 __all__ = ["DocumentLoader"]
 
@@ -85,6 +86,7 @@ class DocumentLoader(ABC):
             If the specified class cannot be found in any known integration package.
         """
         parsed_module = parse_module(name)
+        validate_class_name(parsed_module.entity_id)
         TargetDocumentLoader = load_module(parsed_module.provider_id, "document_loader")  # type: ignore # noqa: N806
         return TargetDocumentLoader._class_from_name(  # type: ignore[no-any-return]
             class_name=parsed_module.entity_id, **kwargs
