@@ -181,3 +181,9 @@ def beeai_tool_to_lc_tool(tool: AnyTool) -> StructuredTool:
         parse_docstring=False,
         error_on_invalid_docstring=False,
     )
+
+
+def validate_class_name(class_name: str) -> None:
+    """Validate that a class name is a valid Python identifier to prevent injection."""
+    if not class_name.isidentifier():
+        raise ValueError(f"Invalid class name: {class_name}. Must be a valid Python identifier.")

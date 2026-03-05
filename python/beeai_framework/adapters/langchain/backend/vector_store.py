@@ -22,6 +22,8 @@ from beeai_framework.backend.embedding import EmbeddingModel
 from beeai_framework.backend.vector_store import QueryLike, VectorStore
 from beeai_framework.logger import Logger
 
+from ._utils import validate_class_name
+
 logger = Logger(__name__)
 
 
@@ -50,6 +52,8 @@ class LangChainVectorStore(VectorStore):
         """
         Dynamically imports and instantiates `class_name` from all vector store paths on LangChain
         """
+        validate_class_name(class_name)
+
         lc_vector_store = None
         # Convert BeeAI embedding to LangChain embedding
         lc_embedding = LangChainBeeAIEmbeddingModel(embedding_model)
