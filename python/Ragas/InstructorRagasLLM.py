@@ -31,7 +31,7 @@ class InstructorRagasLLM(InstructorBaseRagasLLM):
         4. Returns a Pydantic object.
         """
         
-        # Create message in BeeAI format (not LangChain!)
+        # Create message in BeeAI format
         native_message = UserMessage(prompt)
 
         # Direct execution with BeeAI engine
