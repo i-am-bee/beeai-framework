@@ -173,6 +173,15 @@ examples/playground
 .deepeval/
 .deepeval-cache.json
 .deepeval_telemetry.txt
+
+# Evaluation pipeline outputs
+evaluation/ragas/my_results.csv
+evaluation/ragas/my_results.pkl
+evaluation/ragas/results.csv
+evaluation/ragas/results.pkl
+evaluation/deepeval/eval_results_raw.pkl
+evaluation/deepeval/results.csv
+evaluation/deepeval/results.pkl
 eval/**/*.cache
 
 eval/agents/requirement/data_set_new50.py

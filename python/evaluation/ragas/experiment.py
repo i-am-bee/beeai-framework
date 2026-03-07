@@ -88,7 +88,9 @@ async def my_experiment(row):
     supporting_sentences = data.get("supporting_sentences", [])
     reasoning_explanation = data.get("reasoning_explanation", [])
 
-    ragas_judge_llm = InstructorRagasLLM.from_name(model_name="vertexai:gemini-2.0-flash-lite-001")
+    ragas_judge_llm = InstructorRagasLLM.from_name(
+        model_name=os.environ.get("EVAL_CHAT_MODEL_NAME", "vertexai:gemini-2.0-flash-lite-001")
+    )
     ragas_judge_llm.is_async = True
 
     print("agent response:", response.last_message.text)
