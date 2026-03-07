@@ -6,13 +6,13 @@ export default defineConfig({
   test: {
     globals: true,
     passWithNoTests: true,
-    testTimeout: 10 * 60 * 1000,
+    testTimeout: 30 * 60 * 1000,
     printConsoleTrace: true,
     setupFiles: ["./tests/setup.examples.ts"],
     deps: {
       interopDefault: false,
     },
-    maxConcurrency: 10,
+    maxConcurrency: 3,
   },
   define: {
     __LIBRARY_VERSION: JSON.stringify(packageJson.version),

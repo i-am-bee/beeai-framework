@@ -9,7 +9,7 @@ import { ChatModel } from "beeai-framework/backend/chat";
 import { Tool } from "beeai-framework/tools/base";
 import { AnyConstructable } from "beeai-framework/internals/types";
 
-const llm = new OllamaChatModel("llama3.1");
+const llm = new OllamaChatModel("granite4:micro");
 
 // Create middleware with custom formatting
 const trajectoryMiddleware = new GlobalTrajectoryMiddleware({

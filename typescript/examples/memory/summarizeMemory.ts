@@ -3,7 +3,7 @@ import { SummarizeMemory } from "beeai-framework/memory/summarizeMemory";
 import { OllamaChatModel } from "beeai-framework/adapters/ollama/backend/chat";
 
 const memory = new SummarizeMemory({
-  llm: new OllamaChatModel("llama3.1"),
+  llm: new OllamaChatModel("granite4:micro"),
 });
 
 await memory.addMany([

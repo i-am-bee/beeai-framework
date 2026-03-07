@@ -7,7 +7,7 @@ import { OllamaChatModel } from "beeai-framework/adapters/ollama/backend/chat";
 import { GlobalTrajectoryMiddleware } from "beeai-framework/middleware/trajectory";
 import { Tool } from "beeai-framework/tools/base";
 
-const llm = new OllamaChatModel("llama3.1");
+const llm = new OllamaChatModel("granite4:micro");
 
 // Create middleware to track all tool executions
 const trajectoryMiddleware = new GlobalTrajectoryMiddleware({

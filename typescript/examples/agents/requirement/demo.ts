@@ -9,7 +9,7 @@ import { Tool } from "beeai-framework/tools/base";
 
 // Create an agent that plans activities based on weather and events
 const agent = new RequirementAgent({
-  llm: await ChatModel.fromName("ollama:llama3.1"),
+  llm: await ChatModel.fromName("ollama:granite4:micro"),
   tools: [
     new ThinkTool(), // to reason
     new OpenMeteoTool(), // retrieve weather data

@@ -104,6 +104,7 @@ export class Emitter<T = Record<keyof any, Callback<unknown>>> extends Serializa
         isBlocking: true,
         once: false,
         persistent: true,
+        matchNested: false,
       },
     );
   }

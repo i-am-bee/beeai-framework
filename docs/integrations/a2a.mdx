@@ -154,7 +154,7 @@ The `A2AAgent` lets you easily connect with external agents using the A2A protoc
 	import { A2AServer } from "beeai-framework/adapters/a2a/serve/server";
 	
 	// ensure the model is pulled before running
-	const llm = new OllamaChatModel("llama3.1");
+	const llm = new OllamaChatModel("granite4:micro");
 	
 	const agent = new ToolCallingAgent({
 	  llm,

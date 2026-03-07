@@ -21,7 +21,7 @@ const logger = new Logger({ name: "app", level: "trace" });
 // "granite3.3"
 // "deepseek-r1:32b"
 // ensure the model is pulled before running
-const llm = new OllamaChatModel("llama3.1");
+const llm = new OllamaChatModel("granite4:micro");
 
 const codeInterpreterUrl = process.env.CODE_INTERPRETER_URL;
 const __dirname = dirname(fileURLToPath(import.meta.url));

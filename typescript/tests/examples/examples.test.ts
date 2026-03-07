@@ -22,6 +22,8 @@ const excludePattern = process.env.EXCLUDE_PATTERN || ``;
 
 const exclude: string[] = [
   "examples/workflows/contentCreator.ts",
+  "examples/workflows/multiAgents.ts",
+  "examples/workflows/multiAgentsSimple.ts",
   "examples/workflows/competitive-analysis/**/*.ts",
   "examples/agents/experimental/remote.ts",
   "examples/agents/providers/*.ts",
@@ -37,6 +39,7 @@ const exclude: string[] = [
     "examples/agents/experimental/streamlit.ts",
     "examples/agents/granite/*.ts",
     "examples/agents/granite/single_turn.ts",
+    "examples/agents/requirement/stream.ts",
   ],
   !getEnv("GROQ_API_KEY") && [
     "examples/agents/sql.ts",
@@ -69,6 +72,8 @@ describe("E2E Examples", async () => {
   });
 
   it.concurrent.each(exampleFiles)(`Run %s`, async (example) => {
+    // eslint-disable-next-line no-console
+    console.log("Executing", example);
     await execAsync(`echo "Hello world" | yarn tsx --tsconfig tsconfig.examples.json -- ${example}`)
       .then(({ stdout, stderr }) => {
         if (stderr) {

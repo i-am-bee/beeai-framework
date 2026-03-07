@@ -12,11 +12,11 @@ import random
 import sys
 import traceback
 
+from langchain.agents import create_agent as create_react_agent
 from langchain_core.messages import AIMessage, BaseMessage, HumanMessage, SystemMessage, ToolMessage
 from langchain_core.runnables import RunnableConfig
 from langchain_core.tools import StructuredTool
 from langchain_ollama import ChatOllama
-from langgraph.prebuilt import create_react_agent
 from pydantic import BaseModel, InstanceOf
 
 from beeai_framework.agents.react import ReActAgent

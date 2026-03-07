@@ -172,7 +172,7 @@ await memory.addMany([
 ]);
 
 // Generate response
-const llm = new OllamaChatModel("llama3.1");
+const llm = new OllamaChatModel("granite4:micro");
 const response = await llm.create({ messages: memory.messages });
 await memory.add(Message.of({ role: "assistant", text: response.getTextContent() }));
 
@@ -276,7 +276,7 @@ import { OllamaChatModel } from "beeai-framework/adapters/ollama/backend/chat";
 
 const agent = new ReActAgent({
   memory: new UnconstrainedMemory(),
-  llm: new OllamaChatModel("llama3.1"),
+  llm: new OllamaChatModel("granite4:micro"),
   tools: [],
 });
 await agent.run({ prompt: "Hello world!" });
@@ -607,7 +607,7 @@ import { SummarizeMemory } from "beeai-framework/memory/summarizeMemory";
 import { OllamaChatModel } from "beeai-framework/adapters/ollama/backend/chat";
 
 const memory = new SummarizeMemory({
-  llm: new OllamaChatModel("llama3.1"),
+  llm: new OllamaChatModel("granite4:micro"),
 });
 
 await memory.addMany([

@@ -1,7 +1,7 @@
 import { ChatModel, UserMessage } from "beeai-framework/backend/core";
 import { z } from "zod";
 
-const model = await ChatModel.fromName("ollama:llama3.1");
+const model = await ChatModel.fromName("ollama:granite4:micro");
 const response = await model.createStructure({
   schema: z.union([
     z.object({

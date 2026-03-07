@@ -20,7 +20,7 @@ Emitter.root.match("*.*", (data, event) => {
 
 // Create and run an agent
 const agent = new ReActAgent({
-  llm: new OllamaChatModel("llama3.1"),
+  llm: new OllamaChatModel("granite4:micro"),
   memory: new UnconstrainedMemory(),
   tools: [],
 });

@@ -7,7 +7,7 @@ import { ChatModelError } from "beeai-framework/backend/errors";
 import { OpenMeteoTool } from "beeai-framework/tools/weather/openMeteo";
 
 const llm = new OllamaChatModel(
-  "llama3.1",
+  "granite4:micro",
   {},
   // {
   //   baseURL: "OLLAMA_BASE_URL",
@@ -22,7 +22,7 @@ llm.config({
 });
 
 async function ollamaFromName() {
-  const ollamaLLM = await ChatModel.fromName("ollama:llama3.1");
+  const ollamaLLM = await ChatModel.fromName("ollama:granite4:micro");
   const response = await ollamaLLM.create({
     messages: [new UserMessage("what states are part of New England?")],
   });
@@ -49,7 +49,7 @@ async function ollamaAbort() {
     const response = await llm.create({
       messages: [new UserMessage("What is the smallest of the Cape Verde islands?")],
       stream: true,
-      abortSignal: AbortSignal.timeout(1 * 1000),
+      abortSignal: AbortSignal.timeout(1 * 500),
     });
     console.info(response.getTextContent());
   } catch (err) {

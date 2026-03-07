@@ -14,11 +14,10 @@ export type OllamaChatModelId = NonNullable<OllamaParameters[0]>;
 export type OllamaChatModelSettings = NonNullable<OllamaParameters[1]>;
 
 export class OllamaChatModel extends VercelChatModel {
-  readonly supportsToolStreaming = false;
   public readonly toolChoiceSupport: ChatModelToolChoiceSupport[] = ["none", "auto"];
 
   constructor(
-    modelId: OllamaChatModelId = getEnv("OLLAMA_CHAT_MODEL", "llama3.1:8b"),
+    modelId: OllamaChatModelId = getEnv("OLLAMA_CHAT_MODEL", "granite4:micro"),
     settings: OllamaChatModelSettings = {},
     client?: OllamaClient | OllamaClientSettings,
   ) {

@@ -30,9 +30,9 @@ class LangChainVectorStore(VectorStore):
         super().__init__()
         self.vector_store: LCVectorStore = vector_store
 
-    async def add_documents(self, documents: list[Document]) -> list[str]:
+    async def add_documents(self, documents: list[Document], **kwargs: Any) -> list[str]:
         lc_documents = [document_to_lc_document(document) for document in documents]
-        return await self.vector_store.aadd_documents(lc_documents)
+        return await self.vector_store.aadd_documents(lc_documents, **kwargs)
 
     async def search(self, query: QueryLike, k: int = 4, **kwargs: Any) -> list[DocumentWithScore]:
         query_str = str(query)

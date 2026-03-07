@@ -5,7 +5,7 @@
 
 import { v4 as uuidv4 } from "uuid";
 import { AgentError } from "@/agents/base.js";
-import { ChatModel, ChatModelOutput } from "@/backend/chat.js";
+import { ChatModel, ChatModelInput, ChatModelOutput } from "@/backend/chat.js";
 import { AssistantMessage, Message, ToolMessage } from "@/backend/message.js";
 import { ToolCallPart } from "ai";
 import { AnyTool } from "@/tools/base.js";
@@ -26,6 +26,8 @@ import { z } from "zod";
 import { parseBrokenJson } from "@/internals/helpers/schema.js";
 import { RequirementAgent } from "@/agents/requirement/agent.js";
 import { mergeTokenUsage } from "@/adapters/vercel/backend/utils.js";
+import { StreamToolCallMiddleware } from "@/middleware/streamToolCall.js";
+import { ChatModelToolCallError } from "@/backend/errors.js";
 
 const TEMP_MESSAGE_KEY = "tempMessage";
 
@@ -86,30 +88,49 @@ export class RequirementAgentRunner {
   }
 
   protected async runLLM(request: RequirementAgentRequest): Promise<ChatModelOutput> {
-    const { messages, options } = await this.prepareLLMRequest(request);
-    const response = await this.llm.create({ ...options, messages });
+    const streamMiddleware = this.createFinalAnswerStream(request.finalAnswer);
+    try {
+      const input = await this.prepareLLMRequest(request);
+      const response = await this.llm
+        .create(input)
+        .middleware(streamMiddleware)
+        .catch((err) => {
+          if (err instanceof ChatModelToolCallError && request.canStop) {
+            const { generatedContent, response: errorResponse } = err.data;
+            if (generatedContent) {
+              return new ChatModelOutput(
+                [new AssistantMessage(generatedContent)],
+                errorResponse?.usage,
+                errorResponse?.finishReason,
+              );
+            }
+          }
+          throw err;
+        });
 
-    if (response.usage) {
-      mergeTokenUsage(this.state.usage, response.usage);
+      if (response.usage) {
+        mergeTokenUsage(this.state.usage, response.usage);
+      }
+
+      return response;
+    } finally {
+      streamMiddleware.unbind();
     }
-
-    return response;
   }
 
-  protected async prepareLLMRequest(request: RequirementAgentRequest) {
+  protected async prepareLLMRequest(request: RequirementAgentRequest): Promise<ChatModelInput> {
     const messages: Message[] = [
       await createSystemMessage(this.templates.system, request),
       ...this.state.memory.messages,
     ];
 
-    const options = {
-      maxRetries: this.runConfig.maxRetriesPerStep,
+    return {
+      messages,
       tools: request.allowedTools,
       toolChoice: request.toolChoice,
-      stream: false,
+      streamPartialToolCalls: true,
+      maxRetries: this.runConfig.maxRetriesPerStep ?? 0,
     };
-
-    return { messages, options };
   }
 
   protected async createFinalAnswerToolCall(fullText: string): Promise<AssistantMessage | null> {
@@ -176,7 +197,6 @@ export class RequirementAgentRunner {
               toolCall: { tool: toolCall.tool, input: toolCall.input },
             });
       }
-
       toolResults.push(
         new ToolMessage({
           type: "tool-result",
@@ -223,20 +243,23 @@ export class RequirementAgentRunner {
     const response = await this.runLLM(request);
 
     // Try to cast text message to final answer tool call if allowed
-    const toolCalls = response.getToolCalls();
-    if (toolCalls.length === 0) {
+    if (response.getToolCalls().length === 0) {
       const textMessages = response.getTextMessages();
       const text = textMessages.map((m) => m.text).join("\n");
 
-      if (!text || request.canStop) {
-        throw new AgentError("Model produced an empty response.");
-      }
-
-      const finalAnswerToolCall = await this.createFinalAnswerToolCall(text);
-      if (!finalAnswerToolCall) {
+      const finalAnswerToolCall =
+        text && request.canStop ? await this.createFinalAnswerToolCall(text) : null;
+      if (finalAnswerToolCall) {
+        const stream = this.createFinalAnswerStream(request.finalAnswer);
+        await stream.add(new ChatModelOutput([finalAnswerToolCall]));
+      } else {
         const err = new AgentError("Model produced an invalid final answer tool call.");
         this.iterationErrorCounter.use(err);
         this.globalErrorCounter.use(err);
+
+        if (!request.canStop) {
+          return await this.runIteration(request);
+        }
 
         await this.reasoner.update([]);
         const updatedRequest = await this.createRequest([
@@ -252,13 +275,12 @@ export class RequirementAgentRunner {
         return await this.runIteration(updatedRequest);
       }
 
-      await this.state.memory.add(finalAnswerToolCall);
-      toolCalls.push(...finalAnswerToolCall.getToolCalls());
-    } else {
-      await this.state.memory.addMany(response.messages);
+      response.messages.length = 0;
+      response.messages.push(finalAnswerToolCall);
     }
 
     // Check for cycles
+    const toolCalls = response.getToolCalls();
     for (const toolCallMsg of toolCalls) {
       this.toolCallCycleChecker.register(toolCallMsg);
       if (this.toolCallCycleChecker.cycleFound) {
@@ -277,12 +299,30 @@ export class RequirementAgentRunner {
     }
 
     const toolResults = await this.invokeToolCalls(request.allowedTools, toolCalls);
-    await this.state.memory.addMany(toolResults);
+    await this.state.memory.addMany([...response.messages, ...toolResults]);
 
     // Delete temporary messages
     const tempMessages = this.state.memory.messages.filter((msg) => msg.meta[TEMP_MESSAGE_KEY]);
     await this.state.memory.deleteMany(tempMessages);
 
     return response;
+  }
+
+  private createFinalAnswerStream(finalAnswer: FinalAnswerTool) {
+    const middleware = new StreamToolCallMiddleware({
+      target: finalAnswer,
+      forceStreaming: false,
+      key: "response",
+      matchNested: false,
+    });
+    middleware.emitter.on("update", async (data, _) => {
+      await this.ctx.emitter.emit("finalAnswer", {
+        state: this.state,
+        output: data.output,
+        delta: data.delta,
+        outputStructured: undefined,
+      });
+    });
+    return middleware;
   }
 }

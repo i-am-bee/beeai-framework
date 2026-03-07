@@ -10,7 +10,7 @@ import { DuckDuckGoSearchTool } from "beeai-framework/tools/search/duckDuckGoSea
 import { OpenMeteoTool } from "beeai-framework/tools/weather/openMeteo";
 import { AnyTool, ToolOutput } from "beeai-framework/tools/base";
 
-const model = await ChatModel.fromName("ollama:llama3.1");
+const model = await ChatModel.fromName("ollama:granite4:micro");
 const tools: AnyTool[] = [new DuckDuckGoSearchTool(), new OpenMeteoTool()];
 const messages: Message[] = [
   new SystemMessage("You are a helpful assistant. Use tools to provide a correct answer."),

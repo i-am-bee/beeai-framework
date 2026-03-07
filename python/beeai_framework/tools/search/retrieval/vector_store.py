@@ -49,7 +49,7 @@ class VectorStoreSearchTool(Tool[VectorStoreSearchToolInput, ToolRunOptions, Vec
         self, input: VectorStoreSearchToolInput, options: ToolRunOptions | None, context: RunContext
     ) -> VectorStoreSearchToolOutput:
         # Search the vector store using the provided query and parameters
-        documents_with_score = await self.vector_store.search(query=input.query, k=input.k)
+        documents_with_score = await self.vector_store.search(**input.model_dump())
 
         # Convert DocumentWithScore objects to SearchToolResult format
         results = [

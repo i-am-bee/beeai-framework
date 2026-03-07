@@ -7,7 +7,7 @@ import { dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { ChatModel } from "beeai-framework/backend/chat";
 
-const llm = await ChatModel.fromName("ollama:llama3.1");
+const llm = await ChatModel.fromName("ollama:granite4:micro");
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const openApiSchema = await fs.promises.readFile(

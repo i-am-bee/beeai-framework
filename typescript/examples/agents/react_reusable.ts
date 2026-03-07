@@ -6,7 +6,7 @@ import { OllamaChatModel } from "beeai-framework/adapters/ollama/backend/chat";
 
 // We create an agent
 let agent = new ReActAgent({
-  llm: new OllamaChatModel("llama3.1"),
+  llm: new OllamaChatModel("granite4:micro"),
   tools: [new WikipediaTool()],
   memory: new UnconstrainedMemory(),
 });

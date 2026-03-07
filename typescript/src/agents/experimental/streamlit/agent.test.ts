@@ -11,7 +11,7 @@ import { verifyDeserialization } from "@tests/e2e/utils.js";
 describe("Streamlit agent", () => {
   it("Serializes", async () => {
     const instance = new StreamlitAgent({
-      llm: new OllamaChatModel("llama3.1"),
+      llm: new OllamaChatModel("granite4:micro"),
       memory: new UnconstrainedMemory(),
     });
     const serialized = await instance.serialize();

@@ -1,3 +1,38 @@
+## python_v0.1.78 (2026-02-26)
+
+## python_v0.1.77 (2026-02-11)
+
+### Features
+
+- extend VectorStore parameters
+- update agentstack-sdk (#1405)
+
+## python_v0.1.76 (2026-01-20)
+
+### Features
+
+- **backend**: auto recover from malformed tool calls and empty responses (#1388)
+- **adapters**: add Agent Stack RAG capabilities (AgentStackVectorStore, AgentstackEmbeddingModel) (#1384)
+
+## python_v0.1.75 (2026-01-08)
+
+### Bug Fixes
+
+- **agents**: propagate events after malformed calls fix (#1381)
+- **adapters**: correctly propagate AgentStackChatModel settings (#1379)
+
+## python_v0.1.74 (2025-12-22)
+
+### Bug Fixes
+
+- **adapters**: fix remote AgentStack server connection (#1360)
+
+### Features
+
+- performance improvements
+- **backend**: add allow_prompt_caching flag to the ChatModel class (#1368)
+- **agents**: add LiteAgent (#1355)
+
 ## python_v0.1.73 (2025-12-11)
 
 ### Bug Fixes

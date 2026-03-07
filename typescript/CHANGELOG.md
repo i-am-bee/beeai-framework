@@ -1,5 +1,48 @@
 # Changelog
 
+## [0.1.27](https://github.com/i-am-bee/beeai-framework/compare/typescript_v0.1.26...typescript_v0.1.27) (2026-02-11)
+
+### Features
+
+- **backend:** set finish reason for manual tool calls ([fa0f5f4](https://github.com/i-am-bee/beeai-framework/commit/fa0f5f43f107744c9e795244d755e1c7557a111a))
+- upgrade VercelAI SDK, improve error recovery ([#1402](https://github.com/i-am-bee/beeai-framework/issues/1402)) ([85bb9bb](https://github.com/i-am-bee/beeai-framework/commit/85bb9bb554348c33e78b8fe27033dea2dce12ece))
+
+## [0.1.26](https://github.com/i-am-bee/beeai-framework/compare/typescript_v0.1.25...typescript_v0.1.26) (2026-01-22)
+
+### Features
+
+- handle empty chunks (watsonx) and invalid responses ([#1391](https://github.com/i-am-bee/beeai-framework/issues/1391)) ([2beeca9](https://github.com/i-am-bee/beeai-framework/commit/2beeca9e98a5f014e8efe50aba207523c46ad7cf))
+
+## [0.1.25](https://github.com/i-am-bee/beeai-framework/compare/typescript_v0.1.24...typescript_v0.1.25) (2026-01-20)
+
+### Features
+
+- auto recover from malformed tool calls and empty responses ([#1388](https://github.com/i-am-bee/beeai-framework/issues/1388)) ([f721e41](https://github.com/i-am-bee/beeai-framework/commit/f721e4129cf0dd4918fa523834411189fdbca72c))
+
+## [0.1.24](https://github.com/i-am-bee/beeai-framework/compare/typescript_v0.1.23...typescript_v0.1.24) (2026-01-15)
+
+### Features
+
+- add middlewares to ChatModel class ([c654aa5](https://github.com/i-am-bee/beeai-framework/commit/c654aa5b0c847908f43ff00f6e69048c48442b7b))
+- **middlewares:** add isEmpty helper to StreamToolCall ([ac818ff](https://github.com/i-am-bee/beeai-framework/commit/ac818ff4b680e3a7457bf257dc20086a7f3e0a72))
+
+### Bug Fixes
+
+- **adapters:** infer missing tool call id for watsonx chat model tool… ([#1387](https://github.com/i-am-bee/beeai-framework/issues/1387)) ([93fc139](https://github.com/i-am-bee/beeai-framework/commit/93fc13958fe8a474cf49bc1178a0e26b5a1bc80b)), closes [#1386](https://github.com/i-am-bee/beeai-framework/issues/1386)
+
+## [0.1.23](https://github.com/i-am-bee/beeai-framework/compare/typescript_v0.1.22...typescript_v0.1.23) (2025-12-22)
+
+### Features
+
+- **agents:** deprecate ToolCallingAgent ([#1363](https://github.com/i-am-bee/beeai-framework/issues/1363)) ([eab5eba](https://github.com/i-am-bee/beeai-framework/commit/eab5eba4c2b32f3b016d9081cb0fbd5c16f8366e)), closes [#1362](https://github.com/i-am-bee/beeai-framework/issues/1362)
+- streaming tool calls, ollama, requirement agent ([#1366](https://github.com/i-am-bee/beeai-framework/issues/1366)) ([426de7b](https://github.com/i-am-bee/beeai-framework/commit/426de7b245338cca0ecdb6ea0cbf4ab47be1bcf6))
+- **tools:** add Handoff Tool ([#1365](https://github.com/i-am-bee/beeai-framework/issues/1365)) ([699508b](https://github.com/i-am-bee/beeai-framework/commit/699508bc2091faa8c3f0560c0034b6d31da50f37))
+
+### Bug Fixes
+
+- **middlewares:** prevent events duplication in the GlobalTrajectoryMiddleware ([a3f21eb](https://github.com/i-am-bee/beeai-framework/commit/a3f21eb3d81583273dbfd6b14006dd8fd691234c))
+- wrong import ([22c21f5](https://github.com/i-am-bee/beeai-framework/commit/22c21f565ecacbd663140174fdc7288400d5aec7))
+
 ## [0.1.22](https://github.com/i-am-bee/beeai-framework/compare/typescript_v0.1.21...typescript_v0.1.22) (2025-12-18)
 
 ### Features

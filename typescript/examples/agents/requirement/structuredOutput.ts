@@ -3,7 +3,7 @@ import { ChatModel } from "beeai-framework/backend/chat";
 import { z } from "zod";
 
 const agent = new RequirementAgent({
-  llm: await ChatModel.fromName("ollama:llama3.1"),
+  llm: await ChatModel.fromName("ollama:granite4:micro"),
 });
 
 const CharacterSchema = z.object({

@@ -65,7 +65,7 @@ class RepeatIfEmptyRequirement extends Requirement {
 }
 
 const agent = new RequirementAgent({
-  llm: await ChatModel.fromName("ollama:llama3.1"),
+  llm: await ChatModel.fromName("ollama:granite4:micro"),
   tools: [new ThinkTool(), new WikipediaTool(), new OpenMeteoTool()],
   role: "a trip planner",
   instructions: [

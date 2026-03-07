@@ -5,13 +5,13 @@
 
 import { Serializable } from "@/internals/serializable.js";
 import { shallowCopy } from "@/serializer/utils.js";
-import { customMerge } from "@/internals/helpers/object.js";
+import { customMerge, getLast } from "@/internals/helpers/object.js";
 import { takeBigger } from "@/internals/helpers/number.js";
 import { Callback } from "@/emitter/types.js";
 import { FrameworkError } from "@/errors.js";
 import { Emitter } from "@/emitter/emitter.js";
-import { GetRunContext, RunContext } from "@/context.js";
-import { isEmpty, isFunction, randomString } from "remeda";
+import { GetRunContext, MiddlewareType, RunContext } from "@/context.js";
+import { isEmpty, isFunction, isPromise, isString, randomString } from "remeda";
 import { ObjectHashKeyFn } from "@/cache/decoratorCache.js";
 import { Task } from "promise-based-task";
 import { NullCache } from "@/cache/nullCache.js";
@@ -27,7 +27,11 @@ import { ProviderName } from "@/backend/constants.js";
 import { AnyTool, Tool } from "@/tools/base.js";
 import { AssistantMessage, Message, SystemMessage, UserMessage } from "@/backend/message.js";
 
-import { ChatModelError } from "@/backend/errors.js";
+import {
+  ChatModelError,
+  ChatModelToolCallError,
+  EmptyChatModelResponseError,
+} from "@/backend/errors.js";
 import { z, ZodSchema, ZodType } from "zod";
 import {
   createSchemaValidator,
@@ -40,6 +44,8 @@ import { PromptTemplate } from "@/template.js";
 import { toAsyncGenerator } from "@/internals/helpers/promise.js";
 import { Serializer } from "@/serializer/serializer.js";
 import { Logger } from "@/logger/logger.js";
+import { ToolCallPart } from "ai";
+import { isToolCallValid } from "@/adapters/vercel/backend/utils.js";
 
 export interface ChatModelParameters {
   maxTokens?: number;
@@ -51,6 +57,7 @@ export interface ChatModelParameters {
   presencePenalty?: number;
   seed?: number;
   stopSequences?: string[];
+  stream?: boolean;
 }
 
 interface ResponseObjectJson {
@@ -82,6 +89,8 @@ export interface ChatModelInput extends ChatModelParameters {
   responseFormat?: ZodSchema | ResponseObjectJson;
   toolChoice?: ChatModelToolChoice;
   messages: Message[];
+  streamPartialToolCalls?: boolean;
+  maxRetries?: number;
 }
 
 export type ChatModelFinishReason =
@@ -126,6 +135,7 @@ export abstract class ChatModel extends Serializable {
   public abstract readonly emitter: Emitter<ChatModelEvents>;
   public cache: ChatModelCache = new NullCache();
   public parameters: ChatModelParameters = {};
+  public readonly middlewares: MiddlewareType<typeof this>[] = [];
   protected readonly logger = Logger.root.child({
     name: this.constructor.name,
   });
@@ -138,17 +148,22 @@ export abstract class ChatModel extends Serializable {
   ];
   public toolCallFallbackViaResponseFormat = true;
   public readonly modelSupportsToolCalling: boolean = true;
+  public readonly fixInvalidToolCalls: boolean = true;
+  public readonly retryOnEmptyResponse: boolean = true;
 
   abstract get modelId(): string;
   abstract get providerId(): string;
 
-  create(input: ChatModelInput & { stream?: boolean }) {
+  create(input: ChatModelInput) {
     input = shallowCopy(input);
+    if (input.stream === undefined) {
+      input.stream = this.parameters.stream;
+    }
 
     return RunContext.enter(
       this,
       { params: [input] as const, signal: input?.abortSignal },
-      async (run) => {
+      async (run): Promise<ChatModelOutput> => {
         if (!this.modelSupportsToolCalling) {
           input.tools = [];
         }
@@ -168,55 +183,164 @@ export abstract class ChatModel extends Serializable {
           input.toolChoice = undefined;
         }
 
+        const modelInputMessagesBackup = input.messages.slice();
         const cacheEntry = await this.createCacheAccessor(input);
 
         try {
           await run.emitter.emit("start", { input });
-          const chunks: ChatModelOutput[] = [];
 
-          const generator =
-            cacheEntry.value ??
-            (input.stream
-              ? this._createStream(input, run)
-              : toAsyncGenerator(this._create(input, run)));
+          const result = await new Retryable({
+            executor: async () => {
+              const chunks: ChatModelOutput[] = [];
 
-          const controller = new AbortController();
-          for await (const value of generator) {
-            chunks.push(value);
-            await run.emitter.emit("newToken", {
-              value,
-              callbacks: { abort: () => controller.abort() },
-            });
-            if (controller.signal.aborted) {
-              break;
-            }
-          }
+              const generator =
+                cacheEntry.value ??
+                (input.stream
+                  ? this._createStream(input, run)
+                  : toAsyncGenerator(this._create(input, run)));
 
-          cacheEntry.resolve(chunks);
-          const result = ChatModelOutput.fromChunks(chunks);
+              const controller = new AbortController();
+              for await (const value of generator) {
+                chunks.push(value);
+                await run.emitter.emit("newToken", {
+                  value,
+                  callbacks: { abort: () => controller.abort() },
+                });
+                if (controller.signal.aborted) {
+                  break;
+                }
+              }
 
-          if (forceToolCallViaResponseFormat && isEmpty(result.getToolCalls())) {
-            const lastMsg = result.messages.at(-1)!;
-            const toolCall = parseBrokenJson(lastMsg.text);
-            if (!toolCall) {
-              throw new ChatModelError(
-                `Failed to produce a valid tool call. Generate output: ${lastMsg.text}`,
-                [],
-                {
-                  isFatal: true,
-                  isRetryable: false,
-                },
-              );
-            }
-            lastMsg.content.length = 0;
-            lastMsg.content.push({
-              type: "tool-call",
-              toolCallId: `call_${randomString(8).toLowerCase()}`,
-              toolName: toolCall.name, // todo: add types
-              input: toolCall.parameters,
-            });
-          }
+              const result = ChatModelOutput.fromChunks(chunks);
+              if (result.isEmpty()) {
+                throw new EmptyChatModelResponseError();
+              }
 
+              if (
+                isEmpty(result.getToolCalls()) &&
+                (forceToolCallViaResponseFormat ||
+                  input.toolChoice === "required" ||
+                  input.toolChoice instanceof Tool)
+              ) {
+                const lastMsg = result.messages.at(-1)!;
+                let toolCall = parseBrokenJson(lastMsg.text, { pair: ["{", "}"] });
+                if (
+                  toolCall &&
+                  !toolCall.name &&
+                  !toolCall.parameters &&
+                  input.toolChoice instanceof Tool
+                ) {
+                  toolCall = { name: input.toolChoice.name, parameters: toolCall };
+                }
+                if (!toolCall || !toolCall.name || !toolCall.parameters) {
+                  throw new ChatModelToolCallError(
+                    `Failed to produce a valid tool call. Generate output: ${lastMsg.text}`,
+                    [],
+                    {
+                      generatedContent: lastMsg.text,
+                      generatedError: "Tool call was not produced.",
+                      response: result,
+                    },
+                  );
+                }
+                lastMsg.content.length = 0;
+                lastMsg.content.push({
+                  type: "tool-call",
+                  toolCallId: `call_${randomString(8).toLowerCase()}`,
+                  toolName: toolCall.name, // todo: add types
+                  input: toolCall.parameters,
+                });
+              }
+
+              for (const toolCall of result.getToolCalls()) {
+                const tool = input.tools?.find((t) => t.name === toolCall.toolName);
+                if (!tool) {
+                  const availableTools = input.tools?.map((t) => t.name).join(",") || "None";
+                  throw new ChatModelToolCallError("Non existing tool call.", [], {
+                    generatedError: `Error: Unknown tool '${toolCall.toolName}'.\nUse on of the available tools: ${availableTools}`,
+                    generatedContent: JSON.stringify({
+                      name: toolCall.toolName,
+                      input: isString(toolCall.input)
+                        ? toolCall.input
+                        : JSON.stringify(toolCall.input),
+                    }),
+                    response: result,
+                  });
+                }
+
+                if (!isToolCallValid(toolCall)) {
+                  throw new ChatModelToolCallError("Malformed tool call.", [], {
+                    generatedContent: isString(toolCall.input)
+                      ? toolCall.input
+                      : JSON.stringify(toolCall.input),
+                    generatedError: `The tool call for the '${toolCall.toolName}' tool has malformed parameters. It must be a valid JSON.`,
+                    response: result,
+                  });
+                }
+
+                if (isString(toolCall.input)) {
+                  toolCall.input = JSON.parse(toolCall.input);
+                }
+              }
+
+              cacheEntry.resolve(chunks);
+
+              if (!result.finishReason) {
+                if (result.getToolCalls().length > 0) {
+                  result.finishReason = "tool-calls";
+                }
+              }
+
+              return result;
+            },
+            config: { maxRetries: input.maxRetries ?? 0 },
+            onRetry: async (_, lastError) => {
+              if (this.fixInvalidToolCalls && lastError instanceof ChatModelToolCallError) {
+                input.messages = input.messages.slice();
+                if (lastError.data.generatedContent) {
+                  input.messages.push(
+                    new AssistantMessage(lastError.data.generatedContent, {
+                      tempMessage: true,
+                    }),
+                  );
+                }
+
+                const toolNames = input.tools?.map((t) => t.name).join(", ") || "None";
+                input.messages.push(
+                  new UserMessage(
+                    `${lastError.data.generatedError}\n\nAvailable Tools: ${toolNames}`,
+                    {
+                      tempMessage: true,
+                    },
+                  ),
+                );
+              } else if (
+                this.retryOnEmptyResponse &&
+                lastError instanceof EmptyChatModelResponseError
+              ) {
+                input.messages = input.messages.slice();
+                const lastMessage = input.messages.at(-1);
+                if (
+                  lastMessage &&
+                  lastMessage instanceof AssistantMessage &&
+                  lastMessage.meta["tempMessage"] &&
+                  lastMessage.text === ""
+                ) {
+                  input.messages.push(
+                    new UserMessage(
+                      "No output received. Please regenerate your previous response.",
+                      { tempMessage: true },
+                    ),
+                  );
+                } else {
+                  // Python compatibility
+                  input.messages.push(new AssistantMessage("", { tempMessage: true }));
+                }
+              }
+            },
+          }).get();
+
+          input.messages = modelInputMessagesBackup;
           await run.emitter.emit("success", { value: result });
           return result;
         } catch (error) {
@@ -231,7 +355,7 @@ export abstract class ChatModel extends Serializable {
           await run.emitter.emit("finish", null);
         }
       },
-    );
+    ).middleware(...this.middlewares);
   }
 
   createStructure<T>(input: ChatModelObjectInput<T>) {
@@ -256,7 +380,11 @@ export abstract class ChatModel extends Serializable {
   static async fromName(name: FullModelName | ProviderName, options?: ChatModelParameters) {
     const { providerId, modelId } = parseModel(name);
     const Target = await loadModel<ChatModel>(providerId, "chat");
-    return new Target(modelId || undefined, options);
+    const instance = new Target(modelId || undefined);
+    if (options) {
+      Object.assign(instance.parameters, options);
+    }
+    return instance;
   }
 
   protected abstract _create(
@@ -351,11 +479,14 @@ Validation Errors: {{errors}}`,
     return {
       cache: this.cache,
       emitter: this.emitter,
+      middlewares: shallowCopy(this.middlewares) as MiddlewareType<any>[],
       parameters: shallowCopy(this.parameters),
       logger: this.logger,
       toolChoiceSupport: this.toolChoiceSupport.slice(),
       toolCallFallbackViaResponseFormat: this.toolCallFallbackViaResponseFormat,
       modelSupportsToolCalling: this.modelSupportsToolCalling,
+      retryOnEmptyResponse: this.retryOnEmptyResponse,
+      fixInvalidToolCalls: this.fixInvalidToolCalls,
     };
   }
 
@@ -435,6 +566,7 @@ export class ChatModelOutput extends Serializable {
     public finishReason?: ChatModelFinishReason,
   ) {
     super();
+    this.dedupe();
   }
 
   static fromChunks(chunks: ChatModelOutput[]) {
@@ -443,17 +575,128 @@ export class ChatModelOutput extends Serializable {
     return final;
   }
 
+  isEmpty() {
+    if (this.messages.length === 0) {
+      return true;
+    }
+    return this.getTextContent() === "" && this.getToolCalls().length === 0;
+  }
+
   merge(other: ChatModelOutput) {
-    this.messages.push(...other.messages);
+    if (other.messages.length > 0) {
+      const clones = other.messages.map(cloneSync);
+      this.messages.push(...clones);
+      this.dedupe();
+    }
+
     this.finishReason = other.finishReason;
     if (this.usage && other.usage) {
       this.usage = customMerge([this.usage, other.usage], {
         totalTokens: takeBigger,
         promptTokens: takeBigger,
         completionTokens: takeBigger,
+        cachedPromptTokens: takeBigger,
+        reasoningTokens: takeBigger,
       });
     } else if (other.usage) {
       this.usage = shallowCopy(other.usage);
+    }
+  }
+
+  dedupe(): void {
+    // Dedupe messages
+    if (this.messages.length > 1) {
+      const messagesById = new Map<string, Message[]>();
+      const messagesByToolCallId = new Map<string, AssistantMessage>();
+
+      for (const msg of this.messages) {
+        const msgId = msg.id || "";
+
+        if (msg instanceof AssistantMessage && msg.getToolCalls().length > 0) {
+          const filteredChunks: AssistantMessage["content"] = [];
+          for (const chunk of msg.content) {
+            if (chunk.type !== "tool-call") {
+              filteredChunks.push(chunk);
+              continue;
+            }
+
+            // Assume tool calls with no id refer to the most recent tool call
+            if (!chunk.toolCallId && messagesByToolCallId.size > 0) {
+              const lastToolCallId = getLast(messagesByToolCallId.keys(), "");
+              if (lastToolCallId) {
+                chunk.toolCallId = lastToolCallId;
+              }
+            }
+
+            if (chunk.toolCallId && messagesByToolCallId.has(chunk.toolCallId)) {
+              messagesByToolCallId.get(chunk.toolCallId)!.content.push(chunk);
+            } else if (chunk.toolCallId) {
+              messagesByToolCallId.set(chunk.toolCallId, msg);
+              filteredChunks.push(chunk);
+            }
+          }
+
+          msg.content.length = 0;
+          msg.content.push(...filteredChunks);
+
+          if (filteredChunks.length === 0) {
+            continue; // nothing to process
+          }
+        }
+
+        if (!messagesById.has(msgId)) {
+          messagesById.set(msgId, [msg]);
+        } else {
+          messagesById.get(msgId)!.push(msg);
+        }
+      }
+
+      this.messages.length = 0;
+
+      for (const messages of messagesById.values()) {
+        const main = messages.shift()!;
+        for (const other of messages) {
+          main.merge(other);
+        }
+        this.messages.push(main);
+      }
+    }
+
+    // Dedupe tool calls
+    for (const msg of this.messages) {
+      if (!(msg instanceof AssistantMessage)) {
+        continue;
+      }
+
+      const finalToolCalls: Record<string, ToolCallPart> = {};
+      let lastId = "";
+
+      const excludedIndexes: number[] = [];
+      msg.content.forEach((chunk, index) => {
+        if (chunk.type !== "tool-call") {
+          return;
+        }
+        const id = chunk.toolCallId || lastId;
+        if (!(id in finalToolCalls)) {
+          finalToolCalls[id] = shallowCopy(chunk);
+          msg.content[index] = finalToolCalls[id];
+        } else {
+          excludedIndexes.push(index);
+          const lastToolCall = finalToolCalls[id];
+          if (isString(lastToolCall.input) && isString(chunk.input)) {
+            lastToolCall.input += chunk.input;
+          } else {
+            throw new Error("Chunks cannot be merged.");
+          }
+          if (!lastToolCall.toolName) {
+            lastToolCall.toolName = chunk.toolName;
+          }
+        }
+        lastId = id;
+      });
+      excludedIndexes.reverse().forEach((index) => {
+        msg.content.splice(index, 1);
+      });
     }
   }
 
@@ -491,4 +734,19 @@ export class ChatModelOutput extends Serializable {
   loadSnapshot(snapshot: ReturnType<typeof this.createSnapshot>) {
     Object.assign(this, snapshot);
   }
+}
+
+function cloneSync<T extends Serializable>(serializable: T): T {
+  const snapshot = serializable.createSnapshot();
+  if (isPromise(snapshot)) {
+    throw new Error(`createSnapshot cannot be async`);
+  }
+
+  const target = Object.create(serializable.constructor.prototype) as T;
+  const load = target.loadSnapshot(snapshot);
+  if (isPromise(load)) {
+    throw new Error(`loadSnapshot cannot be async`);
+  }
+
+  return target;
 }

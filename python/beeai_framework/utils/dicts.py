@@ -5,6 +5,13 @@ from collections.abc import Iterator, Mapping
 from typing import Any
 
 
+def exclude_keys_inplace(input: dict[str, Any], keys: set[str]) -> dict[str, Any]:
+    removed = {}
+    for k in keys:
+        removed[k] = input.pop(k, None)
+    return removed
+
+
 def exclude_keys(input: dict[str, Any], keys: set[str]) -> dict[str, Any]:
     return {k: input[k] for k in input.keys() - keys}
 

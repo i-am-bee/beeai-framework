@@ -209,6 +209,7 @@ describe("Serializer", () => {
       __root: {
         message: {
           __value: {
+            id: "123",
             role: "user",
             content: [{ type: "text", text: "a" }],
             meta: { __value: {}, __serializer: true, __class: "Object", __ref: "2" },
@@ -228,6 +229,7 @@ describe("Serializer", () => {
     it("Automatically registers serializable classes", async () => {
       expect(Serializer.hasFactory("UserMessage")).toBe(false);
       const message = Message.of({
+        id: "123",
         role: "user",
         text: "a",
         meta: { createdAt: new Date("2025-01-01") },

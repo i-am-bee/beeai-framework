@@ -238,6 +238,7 @@ class LiteLLMChatModel(ChatModel, ABC):
                 "supports_top_level_unions",
                 "validate_response_format",
                 "stream_partial_tool_calls",
+                "fallback_tool",
             },
         )
         params = include_keys(
@@ -262,6 +263,11 @@ class LiteLLMChatModel(ChatModel, ABC):
         if input.response_format:
             tools = []
             tool_choice = None
+
+        if not self.allow_prompt_caching:
+            attr = "cache_control_injection_points"
+            params.pop(attr, None)
+            settings.pop(attr, None)
 
         return exclude_none(
             exclude_none(settings)
@@ -317,7 +323,7 @@ class LiteLLMChatModel(ChatModel, ABC):
                     )
                     if update.tool_calls
                     # pyrefly: ignore [bad-argument-type]
-                    else AssistantMessage(update.content, id=chunk.id)
+                    else AssistantMessage(update.content or update.reasoning_content or "", id=chunk.id)
                 ]
                 if (update and update.model_dump(exclude_none=True))
                 else []
