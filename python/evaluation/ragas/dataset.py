@@ -13,8 +13,8 @@ dataset = Dataset(name="my_evaluation", backend="local/csv", root_dir=str(_data_
 for i, item in enumerate(load_items(), start=1):
     dataset.append({
         "id": f"sample_{i}",
-        "question": [item["question"]],
-        "answer": [item["answer"]],
+        "question": item["question"],
+        "answer": item["answer"],
         "contexts": item["relevant_sentences"],
         "supporting_titles": item["supporting_titles"],
     })

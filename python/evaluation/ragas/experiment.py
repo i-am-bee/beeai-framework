@@ -105,8 +105,19 @@ async def my_experiment(row):
         reference=row["answer"],
         retrieved_contexts=supporting_sentences
     )
+    reference_answer = row["answer"]
+    if isinstance(reference_answer, list):
+        reference_answer = reference_answer[0]
+    elif isinstance(reference_answer, str) and reference_answer.startswith("["):
+        import ast
+        try:
+            parsed = ast.literal_eval(reference_answer)
+            if isinstance(parsed, list):
+                reference_answer = parsed[0]
+        except (ValueError, SyntaxError):
+            pass
     ExactMatch_result = await ExactMatch().ascore(
-        reference=row["answer"],
+        reference=reference_answer,
         response=answer_text
     )
     AnswerAccuracy_result = await AnswerAccuracy(llm=ragas_judge_llm).ascore(
