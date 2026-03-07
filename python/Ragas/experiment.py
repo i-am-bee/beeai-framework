@@ -25,7 +25,8 @@ import json
 from ragas import experiment, Dataset
 from agent import create_agent
 # Load your dataset
-dataset = Dataset.load(name="my_evaluation", backend="local/csv", root_dir="./data")
+_script_dir = os.path.dirname(os.path.abspath(__file__))
+dataset = Dataset.load(name="my_evaluation", backend="local/csv", root_dir=os.path.join(_script_dir, "data"))
 from InstructorRagasLLM import InstructorRagasLLM
 from ragas.metrics.collections import ContextPrecision, ContextRecall, ExactMatch, ToolCallAccuracy, AnswerAccuracy
 import asyncio
