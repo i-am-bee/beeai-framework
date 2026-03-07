@@ -24,22 +24,13 @@ from ToolUsageMetric import ToolUsageMetric
 from FactsSimilarityMetric import FactsSimilarityMetric
 load_dotenv()
 
-# Add the examples directory to sys.path to import setup_vector_store
-examples_path = Path(__file__).parent.parent.parent.parent / "examples" / "agents" / "experimental" / "requirement"
-sys.path.insert(0, str(examples_path))
-
-from examples.agents.requirement.rag import setup_vector_store
+# Add shared evaluation module to path
+sys.path.insert(0, str(Path(__file__).parent.parent.parent.parent))
+from evaluation.agent import create_agent
 
 from beeai_framework.agents.requirement import RequirementAgent
 from beeai_framework.backend import ChatModel, ToolMessage
-from beeai_framework.memory import UnconstrainedMemory
-from beeai_framework.tools.search.retrieval import VectorStoreSearchTool
-from beeai_framework.adapters.ollama import OllamaChatModel
 from beeai_framework.errors import FrameworkError
-from beeai_framework.tools.search.wikipedia import (WikipediaTool)
-from beeai_framework.tools.weather import OpenMeteoTool
-
-from beeai_framework.tools.code import PythonTool, LocalPythonStorage
 
 from eval.model import DeepEvalLLM
 from deepeval.metrics import GEval
@@ -61,79 +52,6 @@ def count_tool_usage(messages):
 
     return dict(tool_counter)
 
-def create_calculator_tool() -> Tool:
-    """
-    Create a PythonTool configured for mathematical calculations.
-    """
-    storage = LocalPythonStorage(
-        local_working_dir=tempfile.mkdtemp("code_interpreter_source"),
-        # CODE_INTERPRETER_TMPDIR should point to where code interpreter stores it's files
-        interpreter_working_dir=os.getenv("CODE_INTERPRETER_TMPDIR", "./tmp/code_interpreter_target"),
-    )
-
-    python_tool = PythonTool(
-        code_interpreter_url=os.getenv("CODE_INTERPRETER_URL", "http://127.0.0.1:50081"),
-        storage=storage,
-    )
-    return python_tool
-
-async def create_agent() -> RequirementAgent:
-    """
-    Create a RequirementAgent with RAG and Wikipedia capabilities.
-    """
-    #vector_store = await setup_vector_store()
-    #need it?
-    vector_store = True
-    if vector_store is None:
-        raise FileNotFoundError(
-            "Failed to instantiate Vector Store. "
-            "Either set POPULATE_VECTOR_DB=True in your .env file, or ensure the database file exists."
-        )
-    search_tool = VectorStoreSearchTool(vector_store=vector_store)
-
-    wiki_tool = WikipediaTool() 
-    calculator_tool = create_calculator_tool()
-
-    # Use local Ollama without relying on environment variables
-    # Allow overriding the agent model; default aligns with eval model naming
-    model_name = os.environ.get("AGENT_CHAT_MODEL_NAME", os.environ.get("EVAL_CHAT_MODEL_NAME", "ollama:llama3.1:8b"))
-    llm = ChatModel.from_name(
-        model_name,
-        {"allow_parallel_tool_calls": True},
-    )
-
-    # Create RequirementAgent with multiple tools
-    # tools: WikipediaTool for general knowledge, PythonTool for calculations, OpenMeteoTool for weather data
-
-    #Format in Jason:
-    #Final answer 
-    #List of supporting sentences
-    #explanation of reasoning for each sentence by its number
-    #tool that was used
-    #
-    JSON_SCHEMA_STRING = """{
-        "answer": "<concise, specific answer only (e.g., 'Delhi')>",
-        "tool_used": [{"tool": "...", "times_used": 1}],
-        "supporting_titles": ["<title 1>", "<title 2>"],
-        "supporting_sentences": ["<sentence 1>", "<sentence 2>"],
-        "reasoning_explanation": [{"step": 1, "logic": "The reasoning step"}]
-    }"""
-    
-    agent = RequirementAgent(
-        llm=llm, 
-        tools=[wiki_tool,OpenMeteoTool(), calculator_tool],
-        memory=UnconstrainedMemory(),
-        role="You are an expert Multi-hop Question Answering (QA) agent. Your primary role is to extract and combine information from the provided context to answer the user's question. Answer in jason format only.",
-        instructions=[
-            "RULES and CONSTRAINTS:",
-            "1. SOURCE ADHERENCE (NO HALLUCINATION): Your final answer MUST be based ONLY on the context you retrieve from the provided tools (VectorStoreSearchTool or WikipediaTool). Do not use external knowledge.",
-            "2. MULTI-HOP: You must perform multi-step reasoning or use multiple tools/retrievals if the question requires it.",
-            "3. FINAL FORMAT: Your ONLY final output MUST be a single, valid JSON object adhering strictly to the required keys: answer, tool_used, supporting_titles, supporting_sentences, reasoning_explanation. The final_answer must be concise and specific (e.g., just 'Delhi', not a full sentence). Do not include any text outside the JSON block.",
-            "4. THE JSON SCHEMA STRING: " + JSON_SCHEMA_STRING
-        ],
-
-    )
-    return agent
 
 def extract_retrieval_context(messages) -> List[str]:
     """
@@ -168,7 +86,7 @@ async def create_rag_test_cases():
     """
     Create RAG test cases by directly invoking the agent and extracting retrieval context.
     """
-    agent = await create_agent()
+    agent = create_agent()
     
     test_cases = []
 
