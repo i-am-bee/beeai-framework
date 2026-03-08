@@ -63,43 +63,51 @@ async def create_rag_test_cases():
             for name in supporting_titles
         ]
 
-        response = await agent.run(question)
-        memory = response.state.memory.messages
-        actual_output = response.last_message.text
-        agent_tool_usage_times = count_tool_usage(memory)
-
         try:
-            agent_response_json = json.loads(actual_output)
-        except (json.JSONDecodeError, TypeError):
-            agent_response_json = {}
+            response = await agent.run(question)
+            memory = response.state.memory.messages
+            actual_output = response.last_message.text
+            agent_tool_usage_times = count_tool_usage(memory)
 
-        agent_final_answer = (
-            agent_response_json.get("answer")
-            or agent_response_json.get("final_answer")
-            or actual_output
-        )
-        agent_supporting_sentences = agent_response_json.get("supporting_sentences", [])
+            try:
+                agent_response_json = json.loads(actual_output)
+            except (json.JSONDecodeError, TypeError):
+                agent_response_json = {}
 
-        tool_used_field = agent_response_json.get("tool_used", [])
-        agent_tools_used = []
+            agent_final_answer = (
+                agent_response_json.get("answer")
+                or agent_response_json.get("final_answer")
+                or actual_output
+            )
+            agent_supporting_sentences = agent_response_json.get("supporting_sentences", [])
 
-        if isinstance(tool_used_field, str):
-            agent_tools_used.append(ToolCall(name=tool_used_field, input_parameters={}))
-        elif isinstance(tool_used_field, list):
-            for entry in tool_used_field:
-                tool_name = entry.get("tool") if isinstance(entry, dict) else None
-                times_used = entry.get("times_used", 1) if isinstance(entry, dict) else 1
-                titles = entry.get("titles", []) if isinstance(entry, dict) else []
-                if tool_name:
-                    agent_tools_used.append(
-                        ToolCall(name=tool_name, input_parameters={"titles": titles} if titles else {})
-                    )
-                    if times_used:
-                        agent_tool_usage_times[tool_name] = times_used
+            tool_used_field = agent_response_json.get("tool_used", [])
+            agent_tools_used = []
 
-        if not agent_tools_used and agent_tool_usage_times:
-            for tool_name in agent_tool_usage_times:
-                agent_tools_used.append(ToolCall(name=tool_name, input_parameters={}))
+            if isinstance(tool_used_field, str):
+                agent_tools_used.append(ToolCall(name=tool_used_field, input_parameters={}))
+            elif isinstance(tool_used_field, list):
+                for entry in tool_used_field:
+                    tool_name = entry.get("tool") if isinstance(entry, dict) else None
+                    times_used = entry.get("times_used", 1) if isinstance(entry, dict) else 1
+                    titles = entry.get("titles", []) if isinstance(entry, dict) else []
+                    if tool_name:
+                        agent_tools_used.append(
+                            ToolCall(name=tool_name, input_parameters={"titles": titles} if titles else {})
+                        )
+                        if times_used:
+                            agent_tool_usage_times[tool_name] = times_used
+
+            if not agent_tools_used and agent_tool_usage_times:
+                for tool_name in agent_tool_usage_times:
+                    agent_tools_used.append(ToolCall(name=tool_name, input_parameters={}))
+
+        except Exception as exc:
+            print(f"[ERROR] Agent failed on question: {question!r} — {exc}")
+            agent_final_answer = ""
+            agent_supporting_sentences = []
+            agent_tools_used = []
+            agent_tool_usage_times = {}
 
         test_case = LLMTestCase(
             input=question,

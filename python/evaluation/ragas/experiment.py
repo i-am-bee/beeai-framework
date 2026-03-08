@@ -61,7 +61,20 @@ def extract_json(text):
 # Define your experiment
 @experiment()
 async def my_experiment(row):
-    response = await create_agent().run(row["question"])
+    try:
+        response = await create_agent().run(row["question"])
+    except Exception as exc:
+        print(f"[ERROR] Agent failed on question: {row['question']!r} — {exc}")
+        return {
+            **row,
+            "answer": "",
+            "tool_used": [],
+            "supporting_titles": [],
+            "supporting_sentences": [],
+            "reasoning_explanation": [],
+            "experiment_name": "baseline_v1",
+            "error": str(exc)
+        }
 
     output_text = response.last_message.text
     json_text = extract_json(output_text)
