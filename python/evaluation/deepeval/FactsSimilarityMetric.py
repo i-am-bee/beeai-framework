@@ -47,7 +47,10 @@ class FactsSimilarityMetric(BaseMetric):
             "0 = completely different, 1 = identical in meaning.\n"
         )
         text = await self.model.a_generate(prompt)
-        score = float(str(text).strip())
+        try:
+            score = float(str(text).strip())
+        except Exception:
+            score = 0.0
         score = max(0.0, min(1.0, score))
         self.score = score
         self.success = score >= self.threshold
