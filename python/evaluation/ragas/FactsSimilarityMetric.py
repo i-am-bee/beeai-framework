@@ -38,7 +38,7 @@ class FactsSimilarityMetric(BaseMetric):
 
     Usage:
         >>> from ragas.llms import llm_factory
-        >>> from evaluation.adapters.ragas_llm import InstructorRagasLLM
+        >>> from evaluation.adapters import InstructorRagasLLM
         >>> from FactsSimilarityMetric import FactsSimilarityMetric
         >>>
         >>> # Setup LLM

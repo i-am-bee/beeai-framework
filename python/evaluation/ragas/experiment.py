@@ -39,8 +39,8 @@ from ragas.messages import AIMessage, HumanMessage, ToolCall, ToolMessage
 from ragas.metrics.collections import AnswerAccuracy, ContextPrecision, ContextRecall, ExactMatch, ToolCallAccuracy
 
 from evaluation.agent import create_agent
+from evaluation.adapters import InstructorRagasLLM
 from FactsSimilarityMetric import FactsSimilarityMetric
-from evaluation.adapters.ragas_llm import InstructorRagasLLM
 
 # Load dataset
 _script_dir = Path(__file__).parent

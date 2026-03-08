@@ -5,7 +5,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
 from deepeval.metrics import BaseMetric
 from deepeval.test_case import LLMTestCase
-from evaluation.adapters.deepeval_llm import DeepEvalLLM
+from evaluation.adapters import DeepEvalLLM
 
 
 class AnswerLLMJudgeMetric(BaseMetric):

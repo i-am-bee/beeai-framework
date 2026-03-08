@@ -28,7 +28,7 @@ sys.path.insert(0, str(Path(__file__).parent))
 
 from evaluation.agent import create_agent
 from evaluation.dataset import load_items
-from evaluation.adapters.deepeval_llm import DeepEvalLLM
+from evaluation.adapters import DeepEvalLLM
 from beeai_framework.backend import ToolMessage
 
 from AnswerLLMJudgeMetric import AnswerLLMJudgeMetric
