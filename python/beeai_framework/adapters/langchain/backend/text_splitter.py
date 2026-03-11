@@ -13,6 +13,7 @@ except ModuleNotFoundError as e:
         "Optional module [langchain] not found.\nRun 'pip install \"beeai-framework[langchain]\"' to install."
     ) from e
 
+from beeai_framework.adapters.langchain.backend._utils import validate_class_name
 from beeai_framework.adapters.langchain.mappers.documents import document_to_lc_document, lc_document_to_document
 from beeai_framework.backend.text_splitter import TextSplitter
 from beeai_framework.backend.types import Document
@@ -31,6 +32,8 @@ class LangChainTextSplitter(TextSplitter):
         """
         Dynamically imports and instantiates `class_name` from LangChain text splitters
         """
+        validate_class_name(class_name)
+
         lc_text_splitter = None
 
         # Try importing from langchain_text_splitters first (most common text splitters)
