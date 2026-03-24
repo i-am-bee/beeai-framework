@@ -6,7 +6,7 @@ import copy
 from abc import ABC
 from collections.abc import Generator, Sequence
 from contextlib import suppress
-from typing import Any, Generic, Literal, Optional, Self, TypeGuard, TypeVar, Union
+from typing import Any, Generic, Literal, Self, TypeGuard, TypeVar, Union
 
 from pydantic import BaseModel, ConfigDict, Field, GetJsonSchemaHandler, RootModel, ValidationError, create_model
 from pydantic.fields import FieldInfo
@@ -129,7 +129,7 @@ class JSONSchemaModel(ABC, BaseModel):
                         target_type = cls.create(param_name, param)
                     elif target_type is list and param.get("items"):
                         tmp_name = f"{param_name}_tmp"
-                        given_field, given_field_info = create_field(tmp_name, param.get("items"), {tmp_name})  # type: ignore
+                        given_field, _given_field_info = create_field(tmp_name, param.get("items"), {tmp_name})  # type: ignore
                         target_type = list[given_field]  # type: ignore
 
                 is_required = param_name in required
@@ -150,7 +150,7 @@ class JSONSchemaModel(ABC, BaseModel):
                     target_type = type
 
                 if (not is_required and not default) or explicitly_nullable:
-                    target_type = Optional[target_type] if target_type else type(None)  # noqa: UP007
+                    target_type = target_type | None if target_type else type(None)
 
             return (  # type: ignore
                 target_type,

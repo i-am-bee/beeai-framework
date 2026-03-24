@@ -190,7 +190,7 @@ def _requirement_agent_factory(
         await init_agent_stack_memory(cloned_agent, memory_manager, context)
 
         # pyrefly: ignore [bad-argument-type]
-        has_tool_settings, allowed_tools = _get_tools_settings(extra_extensions.get("settings"))
+        has_tool_settings, _allowed_tools = _get_tools_settings(extra_extensions.get("settings"))
         if has_tool_settings:
             logger.warning("Tools settings is ignored for the RequirementAgent")
 

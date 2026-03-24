@@ -33,7 +33,7 @@ async def populate_documents() -> VectorStore | None:
 
     # Load existing vector store if available
     # pyrefly: ignore [redundant-condition]
-    if VECTOR_DB_PATH_4_DUMP and os.path.exists(VECTOR_DB_PATH_4_DUMP):
+    if VECTOR_DB_PATH_4_DUMP and os.path.exists(VECTOR_DB_PATH_4_DUMP):  # noqa: ASYNC240
         print(f"Loading vector store from: {VECTOR_DB_PATH_4_DUMP}")
         preloaded_vector_store: VectorStore = TemporalVectorStore.load(
             path=VECTOR_DB_PATH_4_DUMP, embedding_model=embedding_model

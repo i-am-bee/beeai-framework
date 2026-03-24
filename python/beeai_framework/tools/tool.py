@@ -19,7 +19,12 @@ from beeai_framework.context import Run, RunContext, RunMiddlewareType
 from beeai_framework.emitter.emitter import Emitter
 from beeai_framework.errors import FrameworkError
 from beeai_framework.logger import Logger
-from beeai_framework.retryable import Retryable, RetryableConfig, RetryableContext, RetryableInput
+from beeai_framework.retryable import (
+    Retryable,
+    RetryableConfig,
+    RetryableContext,
+    RetryableInput,
+)
 from beeai_framework.tools.errors import ToolError, ToolInputValidationError
 from beeai_framework.tools.events import (
     ToolErrorEvent,
@@ -39,12 +44,30 @@ TOutput = TypeVar("TOutput", bound=ToolOutput, default=ToolOutput)
 
 
 class Tool(Generic[TInput, TRunOptions, TOutput], ABC):
+    """
+    Base abstraction for all BeeAI tools.
+
+    A Tool represents an executable unit that:
+    - validates structured input using a Pydantic schema
+    - executes logic via the `_run` method
+    - optionally caches results
+    - emits lifecycle events (start, retry, success, error)
+
+    Subclasses must implement:
+        - `name`
+        - `description`
+        - `input_schema`
+        - `_create_emitter`
+        - `_run`
+    """
+
     def __init__(self, options: dict[str, Any] | None = None) -> None:
         self._options: dict[str, Any] | None = options or None
         self._cache = self.options.get("cache", NullCache[TOutput]()) if self.options else NullCache[TOutput]()
         self.middlewares: list[RunMiddlewareType] = []
 
     def __str__(self) -> str:
+        """Return the tool name for readable string representation."""
         return self.name
 
     @property
@@ -108,7 +131,7 @@ class Tool(Generic[TInput, TRunOptions, TOutput], ABC):
         try:
             return self.input_schema.model_validate(input)
         except ValidationError as e:
-            raise ToolInputValidationError("Tool input validation error", cause=e)
+            raise ToolInputValidationError(f"Input validation failed for tool '{self.name}'", cause=e)
 
     def run(self, input: TInput | dict[str, Any], options: TRunOptions | None = None) -> Run[TOutput]:
         async def handler(context: RunContext) -> TOutput:
@@ -140,7 +163,8 @@ class Tool(Generic[TInput, TRunOptions, TOutput], ABC):
                     error_propagated = True
                     err = ToolError.ensure(error)
                     await context.emitter.emit(
-                        "error", ToolErrorEvent(error=err, input=validated_input, options=options)
+                        "error",
+                        ToolErrorEvent(error=err, input=validated_input, options=options),
                     )
                     if FrameworkError.is_fatal(err) is True:
                         raise err
@@ -148,7 +172,8 @@ class Tool(Generic[TInput, TRunOptions, TOutput], ABC):
                 async def on_retry(ctx: RetryableContext, last_error: Exception) -> None:
                     err = ToolError.ensure(last_error)
                     await context.emitter.emit(
-                        "retry", ToolRetryEvent(error=err, input=validated_input, options=options)
+                        "retry",
+                        ToolRetryEvent(error=err, input=validated_input, options=options),
                     )
 
                 output = await Retryable(
@@ -167,7 +192,8 @@ class Tool(Generic[TInput, TRunOptions, TOutput], ABC):
                 ).get()
 
                 await context.emitter.emit(
-                    "success", ToolSuccessEvent(output=output, input=validated_input, options=options)
+                    "success",
+                    ToolSuccessEvent(output=output, input=validated_input, options=options),
                 )
                 return output
             except Exception as e:
