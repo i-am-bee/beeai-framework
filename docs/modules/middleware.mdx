@@ -61,13 +61,13 @@ from beeai_framework.tools.weather.openmeteo import OpenMeteoTool
 from beeai_framework.agents.base import BaseAgent
 
 # Log only tool calls
-GlobalTrajectoryMiddleware(target=[Tool]) 
+GlobalTrajectoryMiddleware(included=[Tool]) 
 
 # Log only tool calls except OpenMeteoTool
-GlobalTrajectoryMiddleware(target=[Tool], excluded=[OpenMeteoTool]) 
+GlobalTrajectoryMiddleware(included=[Tool], excluded=[OpenMeteoTool]) 
 
 # Log only ChatModel events
-GlobalTrajectoryMiddleware(target=[ChatModel]) 
+GlobalTrajectoryMiddleware(included=[ChatModel]) 
 
 # Use a Bee emoji for agents
 GlobalTrajectoryMiddleware(prefix_by_type={BaseAgent: "🐝 "}) 

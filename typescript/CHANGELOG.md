@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.1.28](https://github.com/i-am-bee/beeai-framework/compare/typescript_v0.1.27...typescript_v0.1.28) (2026-03-24)
+
+### Features
+
+- update deps ([f9d9a2b](https://github.com/i-am-bee/beeai-framework/commit/f9d9a2b984a9a6f64bc7f4b36c9fc32ac8285b63))
+
 ## [0.1.27](https://github.com/i-am-bee/beeai-framework/compare/typescript_v0.1.26...typescript_v0.1.27) (2026-02-11)
 
 ### Features

@@ -49,15 +49,15 @@ icon: "rocket"
   <CodeGroup>
 
   ```bash macOS/Linux
-  cp .env.template .env  
+  cp .env.template .env
   ```
 
   ```bash Windows (PowerShell)
   Copy-Item .env.template .env
   ```
 
-  ```bash Windows (CMD) 
-  copy .env.template .env 
+  ```bash Windows (CMD)
+  copy .env.template .env
   ```
   </CodeGroup>
 
@@ -67,7 +67,7 @@ icon: "rocket"
   <Step title="Configure your LLM Backend">
 
    If you choose to run a local model, [Ollama](https://ollama.com/) must be installed and running, with the [granite3.3](https://ollama.com/library/granite3.3) model pulled. If you run into issues, run `ollama list` to verify the model name and ensure `granite3.3` is installed or that your alias points to it.
-  
+
   ```bash shell
   ollama pull granite3.3
   ```
@@ -75,13 +75,13 @@ icon: "rocket"
   or
 
   If you chose to use a hosted model, edit the `LLM_CHAT_MODEL_NAME` in the `.env` file.
-  
+
   ```bash example
   # Examples (pick one that matches your provider/account):
   LLM_CHAT_MODEL_NAME="openai:gpt-5-mini"
   ```
 
-  
+
   Add your API key for your preferred provider to your `.env` file and uncomment the line.
 
   ```bash example
@@ -94,12 +94,12 @@ icon: "rocket"
   <Step title="Run the Agent">
 
   This agent is an activity planner that can help you plan your day. Prompt it with your task and location. Exit the loop by typing "q" and enter.
-  
+
   Take a look inside the code file to understand the example agent.
 
   <CodeGroup>
   ```bash Python
-  uv run agent.py
+  uv run python beeai_framework_starter/agent.py
   ```
 
   ```bash TypeScript
