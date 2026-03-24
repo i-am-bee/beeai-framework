@@ -63,11 +63,7 @@ class Tool(Generic[TInput, TRunOptions, TOutput], ABC):
 
     def __init__(self, options: dict[str, Any] | None = None) -> None:
         self._options: dict[str, Any] | None = options or None
-        self._cache = (
-            self.options.get("cache", NullCache[TOutput]())
-            if self.options
-            else NullCache[TOutput]()
-        )
+        self._cache = self.options.get("cache", NullCache[TOutput]()) if self.options else NullCache[TOutput]()
         self.middlewares: list[RunMiddlewareType] = []
 
     def __str__(self) -> str:
@@ -119,14 +115,10 @@ class Tool(Generic[TInput, TRunOptions, TOutput], ABC):
         pass
 
     @abstractmethod
-    async def _run(
-        self, input: TInput, options: TRunOptions | None, context: RunContext
-    ) -> TOutput:
+    async def _run(self, input: TInput, options: TRunOptions | None, context: RunContext) -> TOutput:
         pass
 
-    def _generate_key(
-        self, input: TInput | dict[str, Any], options: TRunOptions | None = None
-    ) -> str:
+    def _generate_key(self, input: TInput | dict[str, Any], options: TRunOptions | None = None) -> str:
         options_dict = options.model_dump(exclude_none=True) if options else {}
         options_dict.pop("signal", None)
         options_dict.pop("retry_options", None)
@@ -139,13 +131,9 @@ class Tool(Generic[TInput, TRunOptions, TOutput], ABC):
         try:
             return self.input_schema.model_validate(input)
         except ValidationError as e:
-            raise ToolInputValidationError(
-                f"Input validation failed for tool '{self.name}'", cause=e
-            )
+            raise ToolInputValidationError(f"Input validation failed for tool '{self.name}'", cause=e)
 
-    def run(
-        self, input: TInput | dict[str, Any], options: TRunOptions | None = None
-    ) -> Run[TOutput]:
+    def run(self, input: TInput | dict[str, Any], options: TRunOptions | None = None) -> Run[TOutput]:
         async def handler(context: RunContext) -> TOutput:
             error_propagated = False
 
@@ -155,9 +143,7 @@ class Tool(Generic[TInput, TRunOptions, TOutput], ABC):
                 async def executor(_: RetryableContext) -> TOutput:
                     nonlocal error_propagated
                     error_propagated = False
-                    await context.emitter.emit(
-                        "start", ToolStartEvent(input=validated_input, options=options)
-                    )
+                    await context.emitter.emit("start", ToolStartEvent(input=validated_input, options=options))
 
                     if self.cache.enabled:
                         cache_key = self._generate_key(input, options)
@@ -178,22 +164,16 @@ class Tool(Generic[TInput, TRunOptions, TOutput], ABC):
                     err = ToolError.ensure(error)
                     await context.emitter.emit(
                         "error",
-                        ToolErrorEvent(
-                            error=err, input=validated_input, options=options
-                        ),
+                        ToolErrorEvent(error=err, input=validated_input, options=options),
                     )
                     if FrameworkError.is_fatal(err) is True:
                         raise err
 
-                async def on_retry(
-                    ctx: RetryableContext, last_error: Exception
-                ) -> None:
+                async def on_retry(ctx: RetryableContext, last_error: Exception) -> None:
                     err = ToolError.ensure(last_error)
                     await context.emitter.emit(
                         "retry",
-                        ToolRetryEvent(
-                            error=err, input=validated_input, options=options
-                        ),
+                        ToolRetryEvent(error=err, input=validated_input, options=options),
                     )
 
                 output = await Retryable(
@@ -203,15 +183,9 @@ class Tool(Generic[TInput, TRunOptions, TOutput], ABC):
                         on_retry=on_retry,
                         config=RetryableConfig(
                             max_retries=(
-                                (options.retry_options.max_retries or 0)
-                                if options and options.retry_options
-                                else 0
+                                (options.retry_options.max_retries or 0) if options and options.retry_options else 0
                             ),
-                            factor=(
-                                (options.retry_options.factor or 1)
-                                if options and options.retry_options
-                                else 1
-                            ),
+                            factor=((options.retry_options.factor or 1) if options and options.retry_options else 1),
                             signal=context.signal,
                         ),
                     )
@@ -219,17 +193,13 @@ class Tool(Generic[TInput, TRunOptions, TOutput], ABC):
 
                 await context.emitter.emit(
                     "success",
-                    ToolSuccessEvent(
-                        output=output, input=validated_input, options=options
-                    ),
+                    ToolSuccessEvent(output=output, input=validated_input, options=options),
                 )
                 return output
             except Exception as e:
                 err = ToolError.ensure(e, tool=self)
                 if not error_propagated:
-                    await context.emitter.emit(
-                        "error", ToolErrorEvent(error=err, input=input, options=options)
-                    )
+                    await context.emitter.emit("error", ToolErrorEvent(error=err, input=input, options=options))
                 raise err
             finally:
                 await context.emitter.emit("finish", None)
@@ -243,9 +213,7 @@ class Tool(Generic[TInput, TRunOptions, TOutput], ABC):
 
     async def clone(self) -> Self:
         if type(self).clone == Tool.clone:
-            logging.warning(
-                f"Tool '{self.name}' does not implement the 'clone' method."
-            )
+            logging.warning(f"Tool '{self.name}' does not implement the 'clone' method.")
 
         return self
 
@@ -253,14 +221,10 @@ class Tool(Generic[TInput, TRunOptions, TOutput], ABC):
 # this method was inspired by the discussion that was had in this issue:
 # https://github.com/pydantic/pydantic/issues/1391
 @typing.no_type_check
-def get_input_schema(
-    tool_function: Callable, *, name: str | None = None
-) -> type[BaseModel]:
+def get_input_schema(tool_function: Callable, *, name: str | None = None) -> type[BaseModel]:
     input_model_name = name or tool_function.__name__
 
-    args, _, varkw, defaults, kwonlyargs, kwonlydefaults, annotations = (
-        inspect.getfullargspec(tool_function)
-    )
+    args, _, varkw, defaults, kwonlyargs, kwonlydefaults, annotations = inspect.getfullargspec(tool_function)
     defaults = defaults or []
     args = args or []
 
@@ -272,21 +236,14 @@ def get_input_schema(
             ...,
         ] * non_default_args + defaults
 
-    keyword_only_params = {
-        param: kwonlydefaults.get(param, Any) for param in kwonlyargs
-    }
-    params = {
-        param: (annotations.get(param, Any), default)
-        for param, default in zip(args, defaults, strict=False)
-    }
+    keyword_only_params = {param: kwonlydefaults.get(param, Any) for param in kwonlyargs}
+    params = {param: (annotations.get(param, Any), default) for param, default in zip(args, defaults, strict=False)}
 
     input_model = create_model(
         input_model_name,
         **params,
         **keyword_only_params,
-        __config__=ConfigDict(
-            extra="allow" if varkw else "ignore", arbitrary_types_allowed=True
-        ),
+        __config__=ConfigDict(extra="allow" if varkw else "ignore", arbitrary_types_allowed=True),
     )
 
     return input_model
@@ -351,9 +308,7 @@ def tool(
                     creator=self,
                 )
 
-            async def _run(
-                self, input: Any, options: ToolRunOptions | None, context: RunContext
-            ) -> ToolOutput:
+            async def _run(self, input: Any, options: ToolRunOptions | None, context: RunContext) -> ToolOutput:
                 tool_input_dict = input.model_dump()
                 if with_context:
                     tool_input_dict["context"] = context

@@ -12,11 +12,11 @@ from beeai_framework.workflows.agent import AgentWorkflow, AgentWorkflowInput
 async def main() -> None:
     destination = ""
     while not destination:
-        destination = input("Enter your travel destination (e.g., Boston, MA): ").strip()
+        destination = input("Enter your travel destination (e.g., Boston, MA): ").strip()  # noqa: ASYNC250
 
     travel_dates = ""
     while not travel_dates:
-        travel_dates = input("Enter your travel dates (e.g., Mar 23-25, 2025): ").strip()
+        travel_dates = input("Enter your travel dates (e.g., Mar 23-25, 2025): ").strip()  # noqa: ASYNC250
 
     llm = ChatModel.from_name("ollama:llama3.1")
 

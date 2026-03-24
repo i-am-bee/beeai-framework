@@ -90,12 +90,14 @@ class GraniteRunner(DefaultRunner):
                 ),
             },
             options=LinePrefixParserOptions(
-                fallback=lambda value: [
-                    {"key": "thought", "value": "I now know the final answer."},
-                    {"key": "final_answer", "value": value},
-                ]
-                if value
-                else [],
+                fallback=lambda value: (
+                    [
+                        {"key": "thought", "value": "I now know the final answer."},
+                        {"key": "final_answer", "value": value},
+                    ]
+                    if value
+                    else []
+                ),
             ),
         )
 

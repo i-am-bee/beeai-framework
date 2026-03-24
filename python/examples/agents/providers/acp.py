@@ -16,7 +16,7 @@ async def main() -> None:
         # Run the agent and observe events
         response = await agent.run(prompt).on(
             "update",
-            lambda data, event: (reader.write("Agent 🤖 (debug) : ", data)),
+            lambda data, event: reader.write("Agent 🤖 (debug) : ", data),
         )
 
         reader.write("Agent 🤖 : ", response.last_message.text)

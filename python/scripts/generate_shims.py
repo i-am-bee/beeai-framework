@@ -80,7 +80,7 @@ MAPPINGS.extend(
 
 
 def to_import_path(path: str) -> str:
-    base, ext = os.path.splitext(path)
+    base, _ext = os.path.splitext(path)
     if os.path.basename(base) == "__init__":
         base = os.path.dirname(base)
 

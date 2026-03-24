@@ -30,7 +30,7 @@ async def main() -> None:
             raise ValueError("Agent 'GPT Researcher' not found") from None
         response = await research_agent.run(state.topic).on(
             "update",
-            lambda data, _: (reader.write("Agent 🤖 (debug) : ", data)),
+            lambda data, _: reader.write("Agent 🤖 (debug) : ", data),
         )
         state.research = response.last_message.text
 
@@ -42,7 +42,7 @@ async def main() -> None:
             raise ValueError("Agent 'Podcast creator' not found") from None
         response = await podcast_agent.run(state.research or "").on(
             "update",
-            lambda data, _: (reader.write("Agent 🤖 (debug) : ", data)),
+            lambda data, _: reader.write("Agent 🤖 (debug) : ", data),
         )
         state.output = response.last_message.text
 

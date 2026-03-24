@@ -101,7 +101,7 @@ class JsonFileCache(BaseCache[T], Generic[T]):
 
     async def _enforce_capacity(self) -> None:
         while len(self._items) > self._size:
-            oldest_key, _ = self._items.popitem(last=False)
+            _oldest_key, _ = self._items.popitem(last=False)
 
     def _load_from_disk(self) -> None:
         if not self._path.exists():

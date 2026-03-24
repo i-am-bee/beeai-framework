@@ -160,9 +160,11 @@ class A2AAgent(BaseAgent[A2AAgentOutput]):
                     polling=False,
                     httpx_client=httpx_client,
                     grpc_channel_factory=(
-                        lambda url: grpc.aio.secure_channel(url, self._grpc_client_credentials)
-                        if self._grpc_client_credentials
-                        else grpc.aio.insecure_channel(url)
+                        lambda url: (
+                            grpc.aio.secure_channel(url, self._grpc_client_credentials)
+                            if self._grpc_client_credentials
+                            else grpc.aio.insecure_channel(url)
+                        )
                     ),
                     supported_transports=[
                         a2a_types.TransportProtocol.jsonrpc,

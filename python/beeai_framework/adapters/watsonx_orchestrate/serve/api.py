@@ -99,8 +99,8 @@ class WatsonxOrchestrateAPI:
 
         for msg, next_msg, next_next_msg in zip(
             converted_messages,
-            converted_messages[1:] + [None],
-            converted_messages[2:] + [None, None],
+            [*converted_messages[1:], None],
+            [*converted_messages[2:], None, None],
             strict=False,
         ):
             if isinstance(msg, SystemMessage):

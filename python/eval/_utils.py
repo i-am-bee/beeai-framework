@@ -41,8 +41,8 @@ async def create_dataset(
     if cache is None:
         cache = os.getenv("EVAL_CACHE_DATASET", "").lower() == "true"
 
-    if cache and cache_dir.exists():
-        for file_path in cache_dir.glob("*.json"):
+    if cache and cache_dir.exists():  # noqa: ASYNC240
+        for file_path in cache_dir.glob("*.json"):  # noqa: ASYNC240
             dataset.add_test_cases_from_json_file(
                 file_path=str(file_path.absolute().resolve()),
                 input_key_name="input",
@@ -75,7 +75,7 @@ async def create_dataset(
             dataset.add_test_case(test_case)
 
         if cache:
-            dataset.save_as(file_type="json", directory=str(cache_dir.absolute()), include_test_cases=True)
+            dataset.save_as(file_type="json", directory=str(cache_dir.absolute()), include_test_cases=True)  # noqa: ASYNC240
 
     for case in dataset.test_cases:
         case.name = f"{name} - {case.input[0:128].strip()}"  # type: ignore

@@ -6,7 +6,7 @@ import json
 from abc import ABC
 from collections.abc import Sequence
 from datetime import UTC, datetime
-from enum import Enum
+from enum import StrEnum
 from typing import Any, Generic, Literal, Required, Self, TypeAlias, TypeVar, cast
 
 from pydantic import BaseModel, ConfigDict, Field, computed_field
@@ -22,7 +22,7 @@ T2 = TypeVar("T2")
 MessageMeta = dict[str, Any]
 
 
-class Role(str, Enum):
+class Role(StrEnum):
     ASSISTANT = "assistant"
     SYSTEM = "system"
     TOOL = "tool"

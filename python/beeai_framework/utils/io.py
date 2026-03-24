@@ -36,7 +36,7 @@ _default_read = ensure_async(input)
 
 
 async def _default_confirm(prompt: str, **kwargs: Unpack[IOConfirmKwargs]) -> bool:
-    return input(prompt).lower().startswith("yes")
+    return input(prompt).lower().startswith("yes")  # noqa: ASYNC250
 
 
 _storage: ContextVar[IOHandlers] = ContextVar("io_storage")

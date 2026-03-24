@@ -24,7 +24,7 @@ async def setup_vector_store() -> VectorStore | None:
 
     # Load existing vector store if available
     # pyrefly: ignore [redundant-condition]
-    if VECTOR_DB_PATH_4_DUMP and os.path.exists(VECTOR_DB_PATH_4_DUMP):
+    if VECTOR_DB_PATH_4_DUMP and os.path.exists(VECTOR_DB_PATH_4_DUMP):  # noqa: ASYNC240
         print(f"Loading vector store from: {VECTOR_DB_PATH_4_DUMP}")
         from beeai_framework.adapters.beeai.backend.vector_store import TemporalVectorStore
 
