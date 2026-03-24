@@ -1,6 +1,10 @@
 ## python_v0.1.79 (2026-03-24)
 
+- update dependencies
+
 ## python_v0.1.78 (2026-02-26)
+
+- update dependencies
 
 ## python_v0.1.77 (2026-02-11)
 
