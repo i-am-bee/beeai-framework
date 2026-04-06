@@ -43,7 +43,7 @@ markdown = {version = "^3.8.2", optional = true}
 mcp = {version = "^1.23.0", optional = true}
 pydantic = "^2.11.10"
 pydantic-settings = "^2.11.0"
-requests = "^2.32"
+requests = "^2.33"
 unstructured = {version = "^0.18.31", optional = true}
 uvicorn = {version = "^0.37.0", optional = true}
 types-grpcio = {version = "*", optional = true}
