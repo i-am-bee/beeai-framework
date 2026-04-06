@@ -78,7 +78,7 @@ class PromptTemplate(Generic[T]):
                 functions=functions or {},
                 defaults=defaults or {},
             )
-        )
+        ).model_copy(deep=True)
 
     def render(self, template_input: ModelLike[T] | None = None, /, **kwargs: Any) -> str:
         input_model = to_model_optional(self._config.input_schema, template_input)
