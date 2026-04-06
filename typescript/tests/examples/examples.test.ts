@@ -58,6 +58,7 @@ const exclude: string[] = [
   !getEnv("GOOGLE_APPLICATION_CREDENTIALS") && ["examples/backend/providers/vertexai.ts"],
   !getEnv("ANTHROPIC_API_KEY") && ["examples/backend/providers/anthropic.ts"],
   !getEnv("XAI_API_KEY") && ["examples/backend/providers/xai.ts"],
+  !getEnv("MINIMAX_API_KEY") && ["examples/backend/providers/minimax.ts"],
   "examples/tools/custom/extending.ts", // DDG problems
 ]
   .filter(isTruthy)
