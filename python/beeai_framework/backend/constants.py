@@ -24,6 +24,7 @@ ProviderName = Literal[
     "transformers",
     "deepseek",
     "qwen",
+    "minimax",
 ]
 ProviderHumanName = Literal[
     "AgentStack",
@@ -44,6 +45,7 @@ ProviderHumanName = Literal[
     "Transformers",
     "Deepseek",
     "Qwen",
+    "MiniMax",
 ]
 
 ModelTypes = Literal["embedding", "chat"]
@@ -95,4 +97,5 @@ BackendProviders = {
     "Transformers": ProviderDef(name="Transformers", module="transformers", aliases=["Transformers", "transformers"]),
     "Deepseek": ProviderDef(name="Deepseek", module="deepseek", aliases=["deepseek"]),
     "Qwen": ProviderDef(name="Qwen", module="qwen", aliases=["qwen", "dashscope"]),
+    "MiniMax": ProviderDef(name="MiniMax", module="minimax", aliases=["minimax"]),
 }
