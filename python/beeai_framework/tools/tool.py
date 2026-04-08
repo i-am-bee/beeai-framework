@@ -39,6 +39,10 @@ TOutput = TypeVar("TOutput", bound=ToolOutput, default=ToolOutput)
 
 
 class Tool(Generic[TInput, TRunOptions, TOutput], ABC):
+    """
+    Base class for all tools in the BeeAI framework.
+    Handles tool initialization, input validation, execution, and caching.
+    """
     def __init__(self, options: dict[str, Any] | None = None) -> None:
         self._options: dict[str, Any] | None = options or None
         self._cache = self.options.get("cache", NullCache[TOutput]()) if self.options else NullCache[TOutput]()
@@ -257,6 +261,9 @@ def tool(
     with_context: bool = False,
     emitter: Emitter | None = None,
 ) -> AnyTool | Callable[[TFunction], AnyTool]:
+    """
+    Decorator to easily create a Tool instance from a standard Python function.
+    """
     def create_tool(fn: TFunction) -> AnyTool:
         tool_name = name or fn.__name__
         tool_description = description or inspect.getdoc(fn)
