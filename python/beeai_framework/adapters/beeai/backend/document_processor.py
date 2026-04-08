@@ -14,6 +14,7 @@ from beeai_framework.adapters.llama_index.mappers.documents import (
 from beeai_framework.backend.chat import ChatModel
 from beeai_framework.backend.document_processor import DocumentProcessor
 from beeai_framework.backend.types import DocumentWithScore
+from beeai_framework.utils.strings import validate_class_name
 
 try:
     from llama_index.core.postprocessor.llm_rerank import LLMRerank
@@ -27,6 +28,8 @@ class BeeAIDocumentProcessor(DocumentProcessor, ABC):
     @classmethod
     def _class_from_name(cls, class_name: str, **kwargs: Any) -> BeeAIDocumentProcessor:
         """Create an instance from class name (required by DocumentProcessor base class)."""
+        validate_class_name(class_name)
+
         # Get the current module to look for classes
         import sys
 

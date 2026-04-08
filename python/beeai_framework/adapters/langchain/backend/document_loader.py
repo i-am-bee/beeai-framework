@@ -16,6 +16,7 @@ except ModuleNotFoundError as e:
 from beeai_framework.adapters.langchain.mappers.documents import lc_document_to_document
 from beeai_framework.backend.document_loader import DocumentLoader
 from beeai_framework.backend.types import Document
+from beeai_framework.utils.strings import validate_class_name
 from beeai_framework.logger import Logger
 
 logger = Logger(__name__)
@@ -31,6 +32,8 @@ class LangChainDocumentLoader(DocumentLoader):
         """
         Dynamically imports and instantiates `class_name` from LangChain document loaders
         """
+        validate_class_name(class_name)
+
         lc_document_loader = None
 
         # Try importing from langchain_community first (most common document loaders)

@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import json
+import keyword
 import random
 import re
 import string
@@ -161,3 +162,11 @@ def is_valid_unicode_escape_sequence(s: str) -> bool:
         return True
     except UnicodeError:
         return False
+
+
+def validate_class_name(class_name: str) -> None:
+    """Validate that a class name is a valid Python identifier and not a keyword to prevent injection."""
+    if not class_name or not class_name.isidentifier() or keyword.iskeyword(class_name):
+        raise ValueError(
+            f"Invalid class name: {class_name}. Must be a valid Python identifier and not a reserved keyword."
+        )

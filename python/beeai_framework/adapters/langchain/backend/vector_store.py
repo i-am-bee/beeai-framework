@@ -20,6 +20,7 @@ except ModuleNotFoundError as e:
 from beeai_framework.adapters.langchain.mappers.documents import document_to_lc_document, lc_document_to_document
 from beeai_framework.backend.embedding import EmbeddingModel
 from beeai_framework.backend.vector_store import QueryLike, VectorStore
+from beeai_framework.utils.strings import validate_class_name
 from beeai_framework.logger import Logger
 
 logger = Logger(__name__)
@@ -50,6 +51,8 @@ class LangChainVectorStore(VectorStore):
         """
         Dynamically imports and instantiates `class_name` from all vector store paths on LangChain
         """
+        validate_class_name(class_name)
+
         lc_vector_store = None
         # Convert BeeAI embedding to LangChain embedding
         lc_embedding = LangChainBeeAIEmbeddingModel(embedding_model)
