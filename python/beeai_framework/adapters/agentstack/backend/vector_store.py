@@ -8,6 +8,7 @@ from beeai_framework.backend import EmbeddingModelOutput
 from beeai_framework.backend.embedding import EmbeddingModel
 from beeai_framework.backend.types import Document, DocumentWithScore
 from beeai_framework.backend.vector_store import QueryLike, VectorStore
+from beeai_framework.utils.strings import validate_class_name
 
 try:
     from agentstack_sdk.platform import VectorStore as AgentStackSDKVectorStore
@@ -22,6 +23,8 @@ class AgentStackVectorStore(VectorStore, ABC):
     @classmethod
     def _class_from_name(cls, class_name: str, embedding_model: EmbeddingModel, **kwargs: Any) -> VectorStore:
         """Create an instance from class name (required by VectorStore base class)."""
+        validate_class_name(class_name)
+
         # Get the current module to look for classes
         import sys
 

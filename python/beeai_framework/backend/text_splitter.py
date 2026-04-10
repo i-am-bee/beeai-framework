@@ -8,6 +8,7 @@ from typing import Any
 
 from beeai_framework.backend.types import Document
 from beeai_framework.backend.utils import load_module, parse_module
+from beeai_framework.utils.strings import validate_class_name
 
 __all__ = ["TextSplitter"]
 
@@ -81,6 +82,8 @@ class TextSplitter(ABC):
             raise ValueError(
                 f"Only provider {parsed_module.provider_id} was specified. Text Splitter name was not specified."
             )
+
+        validate_class_name(parsed_module.entity_id)
 
         target: type[TextSplitter] = load_module(parsed_module.provider_id, "text_splitter")
         return target._class_from_name(class_name=parsed_module.entity_id, **kwargs)
