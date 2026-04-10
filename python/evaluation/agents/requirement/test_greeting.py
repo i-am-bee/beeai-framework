@@ -13,9 +13,9 @@ from beeai_framework.backend import ChatModel
 from beeai_framework.memory import UnconstrainedMemory
 from beeai_framework.tools.search.duckduckgo import DuckDuckGoSearchTool
 from beeai_framework.tools.weather.openmeteo import OpenMeteoTool
-from eval._utils import create_dataset, evaluate_dataset
-from eval.agents.requirement._utils import run_agent
-from eval.model import DeepEvalLLM
+from evaluation._utils import create_dataset, evaluate_dataset
+from evaluation.agents.requirement._utils import run_agent
+from evaluation.adapters import DeepEvalLLM
 
 
 def create_agent() -> RequirementAgent:
