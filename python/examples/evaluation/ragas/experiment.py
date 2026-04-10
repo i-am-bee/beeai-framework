@@ -7,7 +7,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # Add python/ root to path for shared evaluation module
-sys.path.insert(0, str(Path(__file__).parent.parent.parent))
+sys.path.insert(0, str(Path(__file__).parent.parent.parent.parent))
 # Add this folder to path for local metric imports
 sys.path.insert(0, str(Path(__file__).parent))
 
@@ -38,7 +38,7 @@ from ragas import experiment, Dataset
 from ragas.messages import AIMessage, HumanMessage, ToolCall, ToolMessage
 from ragas.metrics.collections import AnswerAccuracy, ContextPrecision, ContextRecall, ExactMatch, ToolCallAccuracy
 
-from evaluation.agent import create_agent
+from examples.evaluation.agent import create_agent
 from evaluation.adapters import InstructorRagasLLM
 from FactsSimilarityMetric import FactsSimilarityMetric
 

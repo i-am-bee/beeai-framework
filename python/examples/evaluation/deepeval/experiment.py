@@ -22,12 +22,12 @@ from deepeval.test_case import LLMTestCase, ToolCall
 load_dotenv()
 
 # Add python/ root to path for shared modules
-sys.path.insert(0, str(Path(__file__).parent.parent.parent))
+sys.path.insert(0, str(Path(__file__).parent.parent.parent.parent))
 # Add this folder to path for local metric imports
 sys.path.insert(0, str(Path(__file__).parent))
 
-from evaluation.agent import create_agent
-from evaluation.dataset import load_items
+from examples.evaluation.agent import create_agent
+from examples.evaluation.dataset import load_items
 from evaluation.adapters import DeepEvalLLM
 from beeai_framework.backend import ToolMessage
 

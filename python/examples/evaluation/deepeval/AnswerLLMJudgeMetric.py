@@ -1,36 +1,23 @@
 import sys
 from pathlib import Path
 
-from beeai_framework.tools.tool import Tool
+sys.path.insert(0, str(Path(__file__).parent.parent.parent.parent))
 
-from deepeval import evaluate
-from deepeval.test_case import LLMTestCase
-
-# Add the examples directory to sys.path to import setup_vector_store
-examples_path = Path(__file__).parent.parent.parent.parent / "examples" / "agents" / "experimental" / "requirement"
-sys.path.insert(0, str(examples_path))
-
-#from examples.agents.experimental.requirement.rag import setup_vector_store
-from beeai_framework.agents.experimental.agent import RequirementAgent
 from deepeval.metrics import BaseMetric
-from eval.model import DeepEvalLLM
 from deepeval.test_case import LLMTestCase
+from evaluation.adapters import DeepEvalLLM
 
 
 class AnswerLLMJudgeMetric(BaseMetric):
-    """
-    Uses an LLM as a judge to compare the actual answer vs the expected answer.
-    Returns a semantic similarity score between 0 and 1.
-    """
+    """Uses an LLM as a judge to compare actual vs expected answer semantically."""
 
-    success: bool = False  # ensure MetricData.success is always a bool
+    success: bool = False
 
     def __init__(self, model: DeepEvalLLM | None = None, threshold: float = 0.5):
         super().__init__()
-        # DeepEval expects model to be a DeepEvalBaseLLM; we use our wrapper.
         self.model: DeepEvalLLM = model or DeepEvalLLM.from_name("ollama:llama3.1:8b")
         self.threshold = threshold
-        self.async_mode = True  # DeepEval will call a_measure
+        self.async_mode = True
 
     async def a_measure(
         self,
@@ -42,7 +29,6 @@ class AnswerLLMJudgeMetric(BaseMetric):
         actual = (test_case.actual_output or "").strip()
         expected = (test_case.expected_output or "").strip()
 
-        # If no expected answer, treat as trivial pass/fail
         if not expected:
             score = 1.0 if not actual else 0.0
             self.score = score
@@ -60,7 +46,7 @@ class AnswerLLMJudgeMetric(BaseMetric):
             "1 = fully correct and equivalent in meaning.\n"
         )
 
-        text = await self.model.a_generate(prompt)  # DeepEvalLLM async call
+        text = await self.model.a_generate(prompt)
         try:
             score = float(str(text).strip())
         except Exception:
@@ -72,7 +58,6 @@ class AnswerLLMJudgeMetric(BaseMetric):
         return score
 
     def measure(self, test_case: LLMTestCase) -> float:
-        """Sync wrapper in case something calls measure() directly."""
         import asyncio
         return asyncio.run(self.a_measure(test_case))
 

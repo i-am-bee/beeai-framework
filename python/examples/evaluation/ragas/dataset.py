@@ -1,9 +1,9 @@
 import sys
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).parent.parent.parent))
+sys.path.insert(0, str(Path(__file__).parent.parent.parent.parent))
 
-from evaluation.dataset import load_items
+from examples.evaluation.dataset import load_items
 from ragas import Dataset
 
 _data_dir = Path(__file__).parent / "data"
