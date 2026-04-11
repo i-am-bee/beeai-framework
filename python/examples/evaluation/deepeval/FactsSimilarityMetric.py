@@ -49,7 +49,7 @@ class FactsSimilarityMetric(BaseMetric):
         text = await self.model.a_generate(prompt)
         try:
             score = float(str(text).strip())
-        except Exception:
+        except (ValueError, TypeError):
             score = 0.0
         score = max(0.0, min(1.0, score))
         self.score = score

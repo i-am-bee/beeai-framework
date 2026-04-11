@@ -5,7 +5,6 @@ sys.path.insert(0, str(Path(__file__).parent.parent.parent.parent))
 
 from deepeval.metrics import BaseMetric
 from deepeval.test_case import LLMTestCase
-from deepeval.test_case import LLMTestCase
 
 
 class ToolUsageMetric(BaseMetric):

@@ -1,10 +1,11 @@
 import json
+import logging
 import os
 import sys
 import pickle
+from collections import Counter
 from pathlib import Path
 import asyncio
-from typing import Counter, List
 
 import pytest
 from dotenv import load_dotenv
@@ -20,6 +21,8 @@ from deepeval.metrics import (
 from deepeval.test_case import LLMTestCase, ToolCall
 
 load_dotenv()
+
+logger = logging.getLogger(__name__)
 
 # Add python/ root to path for shared modules
 sys.path.insert(0, str(Path(__file__).parent.parent.parent.parent))
@@ -54,11 +57,11 @@ async def create_rag_test_cases():
 
     for item in test_data:
         question = item["question"]
-        HotpotQA_expected_output = item["answer"]
-        HotpotQA_context = item["relevant_sentences"]
-        HotpotQA_expected_tools = {"Wikipedia": item["wiki_times"]}
+        expected_output = item["answer"]
+        context = item["relevant_sentences"]
+        expected_tools = {"Wikipedia": item["wiki_times"]}
         supporting_titles = item["supporting_titles"]
-        HotpotQA_tools_used = [
+        tools_used = [
             ToolCall(name="Wikipedia", input_parameters={"query": name})
             for name in supporting_titles
         ]
@@ -103,7 +106,7 @@ async def create_rag_test_cases():
                     agent_tools_used.append(ToolCall(name=tool_name, input_parameters={}))
 
         except Exception as exc:
-            print(f"[ERROR] Agent failed on question: {question!r} — {exc}")
+            logger.error("Agent failed on question: %r — %s", question, exc)
             agent_final_answer = ""
             agent_supporting_sentences = []
             agent_tools_used = []
@@ -112,26 +115,23 @@ async def create_rag_test_cases():
         test_case = LLMTestCase(
             input=question,
             actual_output=agent_final_answer,
-            expected_output=HotpotQA_expected_output,
+            expected_output=expected_output,
             retrieval_context=agent_supporting_sentences,
-            context=HotpotQA_context,
+            context=context,
             tools_called=agent_tools_used,
-            expected_tools=HotpotQA_tools_used,
+            expected_tools=tools_used,
             additional_metadata={
-                "expected_facts": HotpotQA_context,
+                "expected_facts": context,
                 "tool_usage": agent_tool_usage_times,
-                "expected_tool_usage": HotpotQA_expected_tools,
+                "expected_tool_usage": expected_tools,
                 "supporting_titles": supporting_titles,
             }
         )
 
-        print("----- TEST CASE -----")
-        print(f"Question: {question}")
-        print(f"Expected answer: {HotpotQA_expected_output}")
-        print(f"Actual answer: {agent_final_answer}")
-        print(f"Expected tools: {HotpotQA_expected_tools}")
-        print(f"Actual tools: {agent_tool_usage_times}")
-        print("---------------------")
+        logger.info(
+            "Test case — Question: %s | Expected: %s | Actual: %s | Expected tools: %s | Actual tools: %s",
+            question, expected_output, agent_final_answer, expected_tools, agent_tool_usage_times,
+        )
 
         test_cases.append(test_case)
 
@@ -167,15 +167,12 @@ async def test_rag() -> None:
         raw_path = Path(__file__).parent / "eval_results_raw.pkl"
         with raw_path.open("wb") as f:
             pickle.dump(eval_results, f)
-        print(f"Saved raw eval results to {raw_path}")
+        logger.info("Saved raw eval results to %s", raw_path)
     except Exception as exc:
-        print(f"Warning: failed to persist eval results: {exc}")
+        logger.warning("Failed to persist eval results: %s", exc)
 
     # Pass/fail summary table
-    def _metric_name(m):
-        return getattr(m, "__name__", None) or m.__class__.__name__
-
-    metric_names = [_metric_name(m) for m in metrics]
+    metric_names = [getattr(m, "__name__", None) or m.__class__.__name__ for m in metrics]
     per_test_results = (
         getattr(eval_results, "results", None)
         or getattr(eval_results, "test_results", None)
@@ -216,14 +213,14 @@ async def test_rag() -> None:
     def fmt_row(r):
         return " | ".join(str(c).ljust(w) for c, w in zip(r, col_widths))
 
-    print("\n=== Evaluation Results Table ===")
-    print(fmt_row(all_rows[0]))
-    print("-+-".join("-" * w for w in col_widths))
+    logger.info("\n=== Evaluation Results Table ===")
+    logger.info(fmt_row(all_rows[0]))
+    logger.info("-+-".join("-" * w for w in col_widths))
     for row in all_rows[1:-1]:
-        print(fmt_row(row))
-    print("-+-".join("-" * w for w in col_widths))
-    print(fmt_row(all_rows[-1]))
-    print("=== End Table ===\n")
+        logger.info(fmt_row(row))
+    logger.info("-+-".join("-" * w for w in col_widths))
+    logger.info(fmt_row(all_rows[-1]))
+    logger.info("=== End Table ===\n")
 
 
 if __name__ == "__main__":

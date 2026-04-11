@@ -1,8 +1,11 @@
 """Facts Similarity metric - Modern implementation with Ragas BaseMetric."""
 
+import logging
 import typing as t
 
 import numpy as np
+
+logger = logging.getLogger(__name__)
 from pydantic import BaseModel, Field
 
 from ragas.metrics.collections.base import BaseMetric
@@ -178,8 +181,7 @@ class FactsSimilarityMetric(BaseMetric):
                 if retry < self.max_retries - 1:
                     continue  # Retry on exception
                 else:
-                    # If all retries fail, return NaN
-                    print(f"❌ Facts Similarity evaluation failed after {self.max_retries} retries: {e}")
+                    logger.error("Facts Similarity evaluation failed after %d retries: %s", self.max_retries, e)
                     return float("nan")
 
         return float("nan")
