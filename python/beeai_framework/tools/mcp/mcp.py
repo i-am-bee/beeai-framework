@@ -74,7 +74,7 @@ class MCPTool(Tool[BaseModel, ToolRunOptions, JSONToolOutput]):
         """Execute the tool with given input."""
         logger.debug(f"Executing tool {self._tool.name} with input: {input_data}")
         result: CallToolResult = await self._session.call_tool(
-            name=self._tool.name, arguments=input_data.model_dump(exclude_none=True, exclude_unset=True)
+            name=self._tool.name, arguments=input_data.model_dump(exclude_unset=True)
         )
         logger.debug(f"Tool result: {result}")
 
