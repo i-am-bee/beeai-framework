@@ -8,7 +8,6 @@ from beeai_framework.backend import ChatModel
 from beeai_framework.memory import UnconstrainedMemory
 from beeai_framework.tools.code import LocalPythonStorage, PythonTool
 from beeai_framework.tools.search.wikipedia import WikipediaTool
-from beeai_framework.tools.tool import Tool
 from beeai_framework.tools.weather import OpenMeteoTool
 
 load_dotenv()
@@ -41,7 +40,7 @@ AGENT_INSTRUCTIONS = [
 ]
 
 
-def create_calculator_tool() -> Tool:
+def create_calculator_tool() -> PythonTool:
     storage = LocalPythonStorage(
         local_working_dir=tempfile.mkdtemp("code_interpreter_source"),
         interpreter_working_dir=os.getenv("CODE_INTERPRETER_TMPDIR", "./tmp/code_interpreter_target"),
