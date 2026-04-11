@@ -9,6 +9,7 @@ from typing import Any, Protocol
 from beeai_framework.backend.embedding import EmbeddingModel
 from beeai_framework.backend.types import Document, DocumentWithScore
 from beeai_framework.backend.utils import load_module, parse_module
+from beeai_framework.utils.strings import validate_class_name
 
 
 class QueryLike(Protocol):
@@ -103,6 +104,8 @@ class VectorStore(ABC):
             raise ValueError(
                 f"Only provider {parsed_module.provider_id} was specified. Vector Store name was not specified."
             )
+
+        validate_class_name(parsed_module.entity_id)
 
         target: type[VectorStore] = load_module(parsed_module.provider_id, "vector_store")
         return target._class_from_name(
