@@ -234,6 +234,11 @@ class ChatModelOptions(RunnableOptions, total=False):
     Tool to invoke when the model makes a malformed tool call (for example, when it forgets the name of a tool).
     """
 
+    timeout: float | int | None
+    """
+    HTTP request timeout in seconds for the underlying API call.
+    """
+
 
 _ChatModelKwargsAdapter = TypeAdapter(ChatModelKwargs)
 
@@ -513,6 +518,7 @@ class ChatModel(Runnable[ChatModelOutput]):
             presence_penalty: Controls how much the model penalizes previously generated tokens
             seed: Controls deterministic sampling
             signal: The chat model abort signal
+            timeout: HTTP request timeout in seconds for the underlying API call
             context: A dictionary that can be used to pass additional context to the chat model
 
         Returns:

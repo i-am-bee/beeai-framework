@@ -31,6 +31,7 @@ class OpenAIChatModel(LiteLLMChatModel):
         api_key: str | None = None,
         base_url: str | None = None,
         text_completion: bool | None = False,
+        timeout: float | int | None = None,
         **kwargs: Unpack[ChatModelKwargs],
     ) -> None:
         """
@@ -40,6 +41,7 @@ class OpenAIChatModel(LiteLLMChatModel):
             model_id: The ID of the OpenAI model to use. If not provided,
                 it falls back to the OPENAI_CHAT_MODEL environment variable,
                 and then defaults to 'gpt-4o'.
+            timeout: HTTP request timeout in seconds for API calls.
             **kwargs: A dictionary of settings to configure the provider.
         """
         super().__init__(
@@ -48,6 +50,8 @@ class OpenAIChatModel(LiteLLMChatModel):
             **kwargs,
         )
         self._assert_setting_value("api_key", api_key, envs=["OPENAI_API_KEY"])
+        if timeout is not None:
+            self._settings["timeout"] = timeout
         self._assert_setting_value(
             "base_url", base_url, envs=["OPENAI_API_BASE"], aliases=["api_base"], allow_empty=True
         )
