@@ -200,3 +200,39 @@ def test_chat_model_from(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("AZURE_API_VERSION", "version")
     azure_openai_chat_model = ChatModel.from_name("azure_openai:gpt-4o")
     assert isinstance(azure_openai_chat_model, AzureOpenAIChatModel)
+
+
+@pytest.mark.unit
+def test_chat_model_timeout_constructor() -> None:
+    model = OpenAIChatModel("gpt-4o", api_key="test", timeout=30)
+    assert model._settings["timeout"] == 30
+
+
+@pytest.mark.unit
+def test_chat_model_timeout_default_none() -> None:
+    model = OpenAIChatModel("gpt-4o", api_key="test")
+    assert "timeout" not in model._settings
+
+
+@pytest.mark.unit
+def test_chat_model_timeout_in_transform_input() -> None:
+    model = OpenAIChatModel("gpt-4o", api_key="test", timeout=45)
+    model_input = ChatModelInput(messages=[UserMessage("hello")])
+    result = model._transform_input(model_input)
+    assert result["timeout"] == 45
+
+
+@pytest.mark.unit
+def test_chat_model_timeout_per_request_override() -> None:
+    model = OpenAIChatModel("gpt-4o", api_key="test", timeout=30)
+    model_input = ChatModelInput(messages=[UserMessage("hello")], timeout=90)
+    result = model._transform_input(model_input)
+    assert result["timeout"] == 90
+
+
+@pytest.mark.unit
+def test_chat_model_timeout_absent_when_unset() -> None:
+    model = OpenAIChatModel("gpt-4o", api_key="test")
+    model_input = ChatModelInput(messages=[UserMessage("hello")])
+    result = model._transform_input(model_input)
+    assert "timeout" not in result
