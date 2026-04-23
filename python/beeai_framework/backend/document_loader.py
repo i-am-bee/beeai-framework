@@ -86,6 +86,10 @@ class DocumentLoader(ABC):
             If the specified class cannot be found in any known integration package.
         """
         parsed_module = parse_module(name)
+        if not parsed_module.entity_id:
+            raise ValueError(
+                f"Only provider {parsed_module.provider_id} was specified. Document loader name was not specified."
+            )
         validate_class_name(parsed_module.entity_id)
         TargetDocumentLoader = load_module(parsed_module.provider_id, "document_loader")  # type: ignore # noqa: N806
         return TargetDocumentLoader._class_from_name(  # type: ignore[no-any-return]
