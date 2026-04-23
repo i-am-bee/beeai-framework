@@ -6,7 +6,7 @@ Launch from Zed (`~/.config/zed/settings.json`):
       "agent_servers": {
         "beeai": {
           "command": "python",
-          "args": ["/absolute/path/to/examples/serve/acp_zed.py"]
+          "args": ["/absolute/path/to/examples/serve/acp_zed/simple.py"]
         }
       }
     }
