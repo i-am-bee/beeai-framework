@@ -14,8 +14,8 @@ Launch from Zed (`~/.config/zed/settings.json`):
       }
     }
 
-Prereqs: `pip install "beeai-framework[acp-zed,search]"` and a running Ollama with
-the `granite4:micro` model pulled.
+Prereqs: `pip install "beeai-framework[acp-zed,filesystem,search]"` and credentials
+for whichever backend you wire up (OpenAI / Ollama / …).
 """
 
 from __future__ import annotations
@@ -23,31 +23,44 @@ from __future__ import annotations
 import asyncio
 import sys
 
+from dotenv import load_dotenv
+
 from beeai_framework.adapters.acp_zed import (
     ACPZedReadFileTool,
     ACPZedServer,
     ACPZedServerConfig,
+    ACPZedTerminalTool,
     ACPZedWriteFileTool,
 )
 from beeai_framework.agents.lite import LiteAgent
-from beeai_framework.backend import ChatModel, ChatModelParameters, SystemMessage
-from beeai_framework.tools.search.duckduckgo import DuckDuckGoSearchTool
-from beeai_framework.tools.think import ThinkTool
-from beeai_framework.tools.weather import OpenMeteoTool
+from beeai_framework.backend import ChatModel, ChatModelParameters, SystemMessage  # noqa: F401
+from beeai_framework.tools.code import ShellTool
+from beeai_framework.tools.filesystem import GlobTool, GrepTool
+from beeai_framework.tools.filesystem.patch import FilePatchTool
+from beeai_framework.tools.search.duckduckgo import DuckDuckGoSearchTool  # noqa: F401
+from beeai_framework.tools.think import ThinkTool  # noqa: F401
+from beeai_framework.tools.weather import OpenMeteoTool  # noqa: F401
+
+load_dotenv()
 
 
 async def _build_agent(server: ACPZedServer[LiteAgent]) -> LiteAgent:
     agent = LiteAgent(
-        llm=ChatModel.from_name("ollama:granite4:micro", ChatModelParameters(stream=True)),
+        llm=ChatModel.from_name("openai:gpt-5.4-mini", ChatModelParameters(stream=True)),
         tools=[
-            ThinkTool(),
-            OpenMeteoTool(),
-            DuckDuckGoSearchTool(),
+            # ThinkTool(),
+            # OpenMeteoTool(),
+            # DuckDuckGoSearchTool(),
             ACPZedReadFileTool(server),
             ACPZedWriteFileTool(server),
+            ACPZedTerminalTool(server),
+            GlobTool(),
+            GrepTool(),
+            FilePatchTool(),
+            ShellTool(),
         ],
     )
-    await agent.memory.add(SystemMessage("You are a helpful coding and research assistant."))
+    # await agent.memory.add(SystemMessage("You are a helpful coding and research assistant."))
     return agent
 
 
@@ -55,7 +68,7 @@ def main() -> None:
     server: ACPZedServer[LiteAgent] = ACPZedServer(
         config=ACPZedServerConfig(
             agent_name="beeai-lite",
-            agent_description="BeeAI LiteAgent with web-search, weather, and think tools — plus workspace FS.",
+            agent_description="BeeAI LiteAgent",
         )
     )
     agent = asyncio.run(_build_agent(server))
