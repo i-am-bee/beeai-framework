@@ -28,6 +28,7 @@ from typing_extensions import TypeVar
 from beeai_framework.adapters.acp_zed.serve._utils import acp_zed_prompt_to_framework_msgs
 from beeai_framework.adapters.acp_zed.serve.agent import ACPZedServerAgent, FsBridge, PromptBlock
 from beeai_framework.agents import AnyAgent
+from beeai_framework.agents.lite import LiteAgent
 from beeai_framework.agents.react.agent import ReActAgent
 from beeai_framework.agents.react.events import ReActAgentUpdateEvent
 from beeai_framework.agents.requirement import RequirementAgent
@@ -35,6 +36,7 @@ from beeai_framework.agents.requirement.events import RequirementAgentSuccessEve
 from beeai_framework.agents.tool_calling.agent import ToolCallingAgent  # pyrefly: ignore [deprecated]
 from beeai_framework.agents.tool_calling.events import ToolCallingAgentSuccessEvent
 from beeai_framework.backend.message import AssistantMessage, ToolMessage
+from beeai_framework.emitter import EventMeta
 from beeai_framework.serve.errors import FactoryAlreadyRegisteredError
 from beeai_framework.serve.server import Server
 from beeai_framework.serve.utils import MemoryManager, init_agent_memory
@@ -199,9 +201,53 @@ def _react_agent_factory(agent: ReActAgent, *, server: ACPZedServer[Any]) -> ACP
     return server._build_wrapper(agent, run_turn)
 
 
+def _lite_agent_factory(agent: LiteAgent, *, server: ACPZedServer[Any]) -> ACPZedServerAgent:
+    """Factory for `LiteAgent`, which streams via an emitter callback instead of an
+    async iterator. We bridge the synchronous `final_answer` event to the async ACP
+    connection through an `asyncio.Queue` so chunks flush to the client as they
+    arrive. Tool calls and tool results are drained from memory after the turn.
+    """
+
+    async def run_turn(session_id: str, prompt: list[PromptBlock], conn: Client, session: LiteAgent) -> str:
+        queue: asyncio.Queue[str | None] = asyncio.Queue()
+
+        def on_final_answer(data: Any, _meta: EventMeta) -> None:
+            chunk = data.get_text_content() if hasattr(data, "get_text_content") else str(data)
+            if chunk:
+                queue.put_nowait(chunk)
+
+        async def consume() -> None:
+            while (chunk := await queue.get()) is not None:
+                await conn.session_update(session_id=session_id, update=update_agent_message(text_block(chunk)))
+
+        last_seen = session.memory.messages[-1] if session.memory.messages else None
+        cleanup = session.emitter.on("final_answer", on_final_answer)
+        consumer = asyncio.create_task(consume())
+        try:
+            await session.run(acp_zed_prompt_to_framework_msgs(prompt))
+        finally:
+            cleanup()
+            queue.put_nowait(None)
+            await consumer
+
+        # Surface tool calls and results that accumulated in memory during the turn,
+        # since LiteAgent's emitter only exposes `final_answer`.
+        await _stream_messages_since(
+            conn,
+            session_id,
+            [m for m in session.memory.messages if isinstance(m, ToolMessage)],
+            last_seen if isinstance(last_seen, ToolMessage) else None,
+        )
+        return "end_turn"
+
+    return server._build_wrapper(agent, run_turn)
+
+
 with contextlib.suppress(FactoryAlreadyRegisteredError):
     ACPZedServer.register_factory(RequirementAgent, _requirement_agent_factory)  # type: ignore[arg-type]
 with contextlib.suppress(FactoryAlreadyRegisteredError):
     ACPZedServer.register_factory(ToolCallingAgent, _tool_calling_agent_factory)  # type: ignore[arg-type]
 with contextlib.suppress(FactoryAlreadyRegisteredError):
     ACPZedServer.register_factory(ReActAgent, _react_agent_factory)  # type: ignore[arg-type]
+with contextlib.suppress(FactoryAlreadyRegisteredError):
+    ACPZedServer.register_factory(LiteAgent, _lite_agent_factory)  # type: ignore[arg-type]
