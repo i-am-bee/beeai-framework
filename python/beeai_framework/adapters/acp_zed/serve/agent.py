@@ -73,6 +73,10 @@ class FsBridge:
         fs = getattr(self._capabilities, "fs", None)
         return bool(getattr(fs, "write_text_file", False))
 
+    @property
+    def can_terminal(self) -> bool:
+        return bool(getattr(self._capabilities, "terminal", False))
+
     def _active_session_id(self) -> str:
         sid = _active_session.get()
         if sid is None:
@@ -92,6 +96,39 @@ class FsBridge:
 
     async def write_text_file(self, path: str, content: str) -> None:
         await self._require_conn().write_text_file(content=content, path=path, session_id=self._active_session_id())
+
+    async def create_terminal(
+        self,
+        command: str,
+        *,
+        args: list[str] | None = None,
+        cwd: str | None = None,
+        env: list[Any] | None = None,
+        output_byte_limit: int | None = None,
+    ) -> str:
+        response = await self._require_conn().create_terminal(
+            command=command,
+            session_id=self._active_session_id(),
+            args=args,
+            cwd=cwd,
+            env=env,
+            output_byte_limit=output_byte_limit,
+        )
+        return response.terminal_id
+
+    async def terminal_output(self, terminal_id: str) -> Any:
+        return await self._require_conn().terminal_output(session_id=self._active_session_id(), terminal_id=terminal_id)
+
+    async def wait_for_terminal_exit(self, terminal_id: str) -> Any:
+        return await self._require_conn().wait_for_terminal_exit(
+            session_id=self._active_session_id(), terminal_id=terminal_id
+        )
+
+    async def release_terminal(self, terminal_id: str) -> None:
+        await self._require_conn().release_terminal(session_id=self._active_session_id(), terminal_id=terminal_id)
+
+    async def kill_terminal(self, terminal_id: str) -> None:
+        await self._require_conn().kill_terminal(session_id=self._active_session_id(), terminal_id=terminal_id)
 
 
 class ACPZedServerAgent(ACPBaseAgent):
