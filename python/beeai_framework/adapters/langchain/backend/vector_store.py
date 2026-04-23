@@ -20,8 +20,8 @@ except ModuleNotFoundError as e:
 from beeai_framework.adapters.langchain.mappers.documents import document_to_lc_document, lc_document_to_document
 from beeai_framework.backend.embedding import EmbeddingModel
 from beeai_framework.backend.vector_store import QueryLike, VectorStore
-from beeai_framework.utils.strings import validate_class_name
 from beeai_framework.logger import Logger
+from beeai_framework.utils.strings import validate_class_name
 
 logger = Logger(__name__)
 

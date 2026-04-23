@@ -16,8 +16,8 @@ except ModuleNotFoundError as e:
 from beeai_framework.adapters.langchain.mappers.documents import lc_document_to_document
 from beeai_framework.backend.document_loader import DocumentLoader
 from beeai_framework.backend.types import Document
-from beeai_framework.utils.strings import validate_class_name
 from beeai_framework.logger import Logger
+from beeai_framework.utils.strings import validate_class_name
 
 logger = Logger(__name__)
 
