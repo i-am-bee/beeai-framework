@@ -108,26 +108,46 @@ class ACPZedServer(Generic[AnyAgentLike], Server[AnyAgentLike, ACPZedServerAgent
 
 
 def _redirect_stdout_logging() -> None:
-    """ACP stdio transport requires stdout to carry only JSON-RPC frames."""
-    for handler in logging.root.handlers:
-        if getattr(handler, "stream", None) is sys.stdout:
-            handler.stream = sys.stderr  # type: ignore[attr-defined]
+    """Redirect any logging handler bound to stdout onto stderr.
+
+    ACP's stdio transport uses stdout exclusively for JSON-RPC frames; a stray log
+    line there corrupts the framing. Walks the root logger plus every named logger
+    (including those with `propagate=False`).
+    """
+    loggers: list[logging.Logger] = [logging.root]
+    loggers.extend(
+        logger for logger in logging.Logger.manager.loggerDict.values() if isinstance(logger, logging.Logger)
+    )
+    for logger in loggers:
+        for handler in logger.handlers:
+            if getattr(handler, "stream", None) is sys.stdout:
+                handler.stream = sys.stderr  # type: ignore[attr-defined]
 
 
 async def _stream_messages_since(conn: Client, session_id: str, messages: list[Any], last_seen: Any | None) -> Any:
-    """Emit `session/update` for every message appended since `last_seen`."""
+    """Emit `session/update` for every message appended since `last_seen`.
+
+    Assistant text → `agent_message_chunk`. Tool-call requests on an assistant
+    message → `agent_thought_chunk` (so the user sees the invocation even when the
+    assistant sent no accompanying text). Tool results → `agent_thought_chunk` too.
+    """
     start = find_index(messages, lambda m: m is last_seen, fallback=-1, reverse_traversal=True) + 1
     for msg in messages[start:]:
-        text = getattr(msg, "text", None) or str(msg)
-        if isinstance(msg, ToolMessage):
-            update = update_agent_thought(text_block(f"[tool result] {text}"))
-        elif isinstance(msg, AssistantMessage) and text:
-            update = update_agent_message(text_block(text))
-        else:
-            last_seen = msg
-            continue
-        await conn.session_update(session_id=session_id, update=update)
         last_seen = msg
+        if isinstance(msg, ToolMessage):
+            text = getattr(msg, "text", None) or str(msg)
+            await conn.session_update(
+                session_id=session_id, update=update_agent_thought(text_block(f"[tool result] {text}"))
+            )
+        elif isinstance(msg, AssistantMessage):
+            text = getattr(msg, "text", None)
+            if text:
+                await conn.session_update(session_id=session_id, update=update_agent_message(text_block(text)))
+            for call in msg.get_tool_calls():
+                await conn.session_update(
+                    session_id=session_id,
+                    update=update_agent_thought(text_block(f"[tool call] {call.tool_name}({call.args})")),
+                )
     return last_seen
 
 

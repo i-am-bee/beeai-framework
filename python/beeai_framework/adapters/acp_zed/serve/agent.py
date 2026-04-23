@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import asyncio
+import contextlib
 from collections.abc import Awaitable, Callable, Coroutine
 from contextvars import ContextVar
 from typing import Any
@@ -167,6 +168,11 @@ class ACPZedServerAgent(ACPBaseAgent):
             self._sessions[session_id] = await self._session_factory(session_id)
         if self._conn is None:
             raise RuntimeError("prompt() called before on_connect()")
+
+        if (existing := self._active_tasks.get(session_id)) and not existing.done():
+            existing.cancel()
+            with contextlib.suppress(asyncio.CancelledError):
+                await existing
 
         token = _active_session.set(session_id)
         task = asyncio.create_task(self._run_turn(session_id, prompt, self._conn, self._sessions[session_id]))
