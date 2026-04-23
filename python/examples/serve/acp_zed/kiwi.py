@@ -10,7 +10,7 @@ Launch from Zed (`~/.config/zed/settings.json`):
       "agent_servers": {
         "beeai-kiwi": {
           "command": "python",
-          "args": ["/absolute/path/to/examples/serve/acp_zed_kiwi.py"]
+          "args": ["/absolute/path/to/examples/serve/acp_zed/kiwi.py"]
         }
       }
     }
