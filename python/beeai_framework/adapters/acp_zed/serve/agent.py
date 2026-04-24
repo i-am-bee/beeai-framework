@@ -130,6 +130,11 @@ class FsBridge:
     async def kill_terminal(self, terminal_id: str) -> None:
         await self._require_conn().kill_terminal(session_id=self._active_session_id(), terminal_id=terminal_id)
 
+    async def request_permission(self, *, options: list[Any], tool_call: Any) -> Any:
+        return await self._require_conn().request_permission(
+            options=options, session_id=self._active_session_id(), tool_call=tool_call
+        )
+
 
 class ACPZedServerAgent(ACPBaseAgent):
     """Wrapper that exposes a BeeAI agent over the Zed Agent Client Protocol (stdio).
@@ -211,13 +216,21 @@ class ACPZedServerAgent(ACPBaseAgent):
             with contextlib.suppress(asyncio.CancelledError):
                 await existing
 
+        # Lazy import to avoid an import cycle (io.py depends on FsBridge).
+        from beeai_framework.adapters.acp_zed.serve.io import ACPZedIOContext
+
         token = _active_session.set(session_id)
-        task = asyncio.create_task(self._run_turn(session_id, prompt, self._conn, self._sessions[session_id]))
-        self._active_tasks[session_id] = task
         try:
-            stop_reason = await task
-        except asyncio.CancelledError:
-            stop_reason = "cancelled"
+            with ACPZedIOContext(self._bridge):
+                # Create the task *inside* the io context so the ContextVar propagates
+                # to `run_turn` and any `io_confirm` calls made by tools / requirements
+                # route through `session/request_permission`.
+                task = asyncio.create_task(self._run_turn(session_id, prompt, self._conn, self._sessions[session_id]))
+                self._active_tasks[session_id] = task
+                try:
+                    stop_reason = await task
+                except asyncio.CancelledError:
+                    stop_reason = "cancelled"
         finally:
             _active_session.reset(token)
             self._active_tasks.pop(session_id, None)
