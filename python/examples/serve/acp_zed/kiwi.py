@@ -2,7 +2,9 @@
 
 Wraps the `RequirementAgent` from `examples/playground/tests/kiwi.py` — it pulls
 its toolset from the public Kiwi.com MCP server and answers flight-booking
-questions inside Zed's agent panel.
+questions inside Zed's agent panel. This is a domain-specific showcase; for
+coding-focused examples that use the adapter's auto-routed shell + file
+backends, see `simple.py` and `lite.py`.
 
 Launch from Zed (`~/.config/zed/settings.json`):
 
