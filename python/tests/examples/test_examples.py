@@ -45,6 +45,7 @@ exclude = list(
             "agents/providers/watsonx_orchestrate.py",
             "workflows/remote.py",
             "serve/acp.py",
+            "serve/acp_zed/*.py",
             "serve/agent_stack.py",
             "serve/agent_stack_custom.py",
             "serve/agent_stack_await.py",
