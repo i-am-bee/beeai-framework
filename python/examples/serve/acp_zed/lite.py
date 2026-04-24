@@ -1,7 +1,10 @@
 """Expose a `LiteAgent` over Zed's Agent Client Protocol (stdio).
 
-`LiteAgent` is a pre-registered agent type in the adapter alongside
-`RequirementAgent`, `ToolCallingAgent`, and `ReActAgent` — just register and serve.
+Uses only generic BeeAI tools — the same agent definition runs unchanged over any
+other serve mode (or in a plain script). The ACP Zed adapter installs protocol-
+aware shell/file backends for the turn, so `ShellTool` routes through the editor's
+terminal widget, `FileReadTool`/`FileEditTool` go through `fs/*_text_file`, and
+`io_confirm` becomes `session/request_permission`.
 
 Launch from Zed (`~/.config/zed/settings.json`):
 
@@ -14,8 +17,7 @@ Launch from Zed (`~/.config/zed/settings.json`):
       }
     }
 
-Prereqs: `pip install "beeai-framework[acp-zed,filesystem,search]"` and credentials
-for whichever backend you wire up (OpenAI / Ollama / …).
+Prereqs: `pip install "beeai-framework[acp-zed,search]"`.
 """
 
 from __future__ import annotations
@@ -25,18 +27,11 @@ import sys
 
 from dotenv import load_dotenv
 
-from beeai_framework.adapters.acp_zed import (
-    ACPZedReadFileTool,
-    ACPZedServer,
-    ACPZedServerConfig,
-    ACPZedTerminalTool,
-    ACPZedWriteFileTool,
-)
+from beeai_framework.adapters.acp_zed import ACPZedServer, ACPZedServerConfig
 from beeai_framework.agents.lite import LiteAgent
 from beeai_framework.backend import ChatModel, ChatModelParameters, SystemMessage  # noqa: F401
 from beeai_framework.tools.code import ShellTool
-from beeai_framework.tools.filesystem import GlobTool, GrepTool
-from beeai_framework.tools.filesystem.patch import FilePatchTool
+from beeai_framework.tools.filesystem import FileEditTool, FileReadTool, GlobTool, GrepTool
 from beeai_framework.tools.search.duckduckgo import DuckDuckGoSearchTool  # noqa: F401
 from beeai_framework.tools.think import ThinkTool  # noqa: F401
 from beeai_framework.tools.weather import OpenMeteoTool  # noqa: F401
@@ -44,20 +39,18 @@ from beeai_framework.tools.weather import OpenMeteoTool  # noqa: F401
 load_dotenv()
 
 
-async def _build_agent(server: ACPZedServer[LiteAgent]) -> LiteAgent:
+async def _build_agent() -> LiteAgent:
     agent = LiteAgent(
         llm=ChatModel.from_name("openai:gpt-5.4-mini", ChatModelParameters(stream=True)),
         tools=[
             # ThinkTool(),
             # OpenMeteoTool(),
             # DuckDuckGoSearchTool(),
-            ACPZedReadFileTool(server),
-            ACPZedWriteFileTool(server),
-            ACPZedTerminalTool(server),
+            FileReadTool(),
+            FileEditTool(),
+            ShellTool(),
             GlobTool(),
             GrepTool(),
-            FilePatchTool(),
-            ShellTool(),
         ],
     )
     # await agent.memory.add(SystemMessage("You are a helpful coding and research assistant."))
@@ -71,7 +64,7 @@ def main() -> None:
             agent_description="BeeAI LiteAgent",
         )
     )
-    agent = asyncio.run(_build_agent(server))
+    agent = asyncio.run(_build_agent())
     server.register(agent).serve()
 
 

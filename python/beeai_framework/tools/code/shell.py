@@ -3,8 +3,6 @@
 
 from __future__ import annotations
 
-import asyncio
-import os
 from typing import Any, Self
 
 from pydantic import BaseModel, Field
@@ -12,6 +10,7 @@ from pydantic import BaseModel, Field
 from beeai_framework.context import RunContext
 from beeai_framework.emitter.emitter import Emitter
 from beeai_framework.tools import JSONToolOutput
+from beeai_framework.tools.code._shell_backend import get_shell_backend
 from beeai_framework.tools.errors import ToolError, ToolInputValidationError
 from beeai_framework.tools.tool import Tool
 from beeai_framework.tools.types import ToolRunOptions
@@ -24,30 +23,36 @@ class ShellToolInput(BaseModel):
             "Example: ['git', 'status', '--porcelain']. Use shlex.split on a user string if needed."
         )
     )
-    cwd: str | None = Field(default=None, description="Working directory. Defaults to the current process cwd.")
+    cwd: str | None = Field(default=None, description="Working directory.")
     env: dict[str, str] | None = Field(
         default=None, description="Additional environment variables merged over the current environment."
     )
     timeout_seconds: float | None = Field(
         default=60.0, description="Kill the process if it runs longer. Set to None to disable."
     )
-    input_text: str | None = Field(default=None, description="Optional text piped to the process on stdin.")
+    input_text: str | None = Field(
+        default=None,
+        description=(
+            "Optional text piped to the process on stdin. Some backends (e.g. editor terminals under ACP) "
+            "do not support stdin and will ignore this field."
+        ),
+    )
 
 
 class ShellTool(Tool[ShellToolInput, ToolRunOptions, JSONToolOutput[dict[str, Any]]]):
-    """Run a local subprocess and collect its output.
+    """Run a command and capture its output.
 
-    Takes the command as a list of arguments (no shell interpretation), so callers
-    don't have to worry about quoting or injection. Captures stdout, stderr, exit
-    code, and a `timed_out` flag. Under Zed's ACP adapter, prefer
-    `ACPZedTerminalTool` — it routes through the editor's terminal widget and shows
-    live output; this tool is for harnesses without a client-side terminal.
+    Delegates to whichever `ShellBackend` is installed in the current `ContextVar`.
+    The default backend runs a local subprocess; the ACP Zed adapter installs a
+    backend that routes through the editor's terminal widget (`terminal/*` methods)
+    so output renders live in the UI. The tool itself doesn't know the difference —
+    protocol-awareness is the backend's job.
     """
 
     name = "shell"
     description = (
-        "Run a local command as a subprocess and return its exit code, stdout, and stderr. "
-        "The command must be a list of arguments; it is NOT run through a shell."
+        "Run a command and return its exit code, stdout, and stderr. The command must be a list of "
+        "arguments; it is NOT run through a shell."
     )
     input_schema = ShellToolInput
 
@@ -63,35 +68,16 @@ class ShellTool(Tool[ShellToolInput, ToolRunOptions, JSONToolOutput[dict[str, An
         if not input.command:
             raise ToolInputValidationError("`command` must be a non-empty list")
 
-        merged_env = {**os.environ, **(input.env or {})} if input.env else None
+        backend = get_shell_backend()
         try:
-            process = await asyncio.create_subprocess_exec(
-                *input.command,
+            result = await backend.run(
+                command=input.command,
                 cwd=input.cwd,
-                env=merged_env,
-                stdin=asyncio.subprocess.PIPE if input.input_text is not None else None,
-                stdout=asyncio.subprocess.PIPE,
-                stderr=asyncio.subprocess.PIPE,
+                env=input.env,
+                timeout_seconds=input.timeout_seconds,
+                input_text=input.input_text,
             )
         except FileNotFoundError as e:
             raise ToolError(f"Command not found: {input.command[0]!r}") from e
 
-        stdin_bytes = input.input_text.encode() if input.input_text is not None else None
-        timed_out = False
-        try:
-            stdout_bytes, stderr_bytes = await asyncio.wait_for(
-                process.communicate(input=stdin_bytes), timeout=input.timeout_seconds
-            )
-        except TimeoutError:
-            process.kill()
-            stdout_bytes, stderr_bytes = await process.communicate()
-            timed_out = True
-
-        return JSONToolOutput(
-            {
-                "exit_code": process.returncode if process.returncode is not None else -1,
-                "stdout": stdout_bytes.decode(errors="replace"),
-                "stderr": stderr_bytes.decode(errors="replace"),
-                "timed_out": timed_out,
-            }
-        )
+        return JSONToolOutput(dict(result))
