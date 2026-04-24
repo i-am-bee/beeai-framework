@@ -28,7 +28,10 @@ try:
         HttpMcpServer,
         Implementation,
         McpServerStdio,
+        PermissionOption,
+        RequestPermissionResponse,
         SseMcpServer,
+        ToolCallUpdate,
     )
 except ModuleNotFoundError as e:
     raise ModuleNotFoundError(
@@ -130,7 +133,9 @@ class FsBridge:
     async def kill_terminal(self, terminal_id: str) -> None:
         await self._require_conn().kill_terminal(session_id=self._active_session_id(), terminal_id=terminal_id)
 
-    async def request_permission(self, *, options: list[Any], tool_call: Any) -> Any:
+    async def request_permission(
+        self, *, options: list[PermissionOption], tool_call: ToolCallUpdate
+    ) -> RequestPermissionResponse:
         return await self._require_conn().request_permission(
             options=options, session_id=self._active_session_id(), tool_call=tool_call
         )

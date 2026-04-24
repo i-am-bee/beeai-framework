@@ -11,6 +11,8 @@ a different backend in the `ContextVar`.
 
 from __future__ import annotations
 
+import asyncio
+import contextlib
 from typing import TYPE_CHECKING
 
 try:
@@ -29,7 +31,7 @@ if TYPE_CHECKING:
 
 
 class ACPFileBackend(FileBackend):
-    """Routes reads + writes through ACP `fs/read_text_file` / `fs/write_text_file`."""
+    """Route reads + writes through ACP `fs/read_text_file` / `fs/write_text_file`."""
 
     def __init__(self, bridge: FsBridge) -> None:
         self._bridge = bridge
@@ -46,12 +48,12 @@ class ACPFileBackend(FileBackend):
 
 
 class ACPShellBackend(ShellBackend):
-    """Runs commands in the editor's terminal via ACP `terminal/*`.
+    """Run commands in the editor's terminal via ACP `terminal/*`.
 
-    Unsupported at protocol level:
-    - `input_text` (stdin piping): ignored with a non-fatal no-op.
-    - `timeout_seconds`: not enforced here; callers that need a hard timeout should
-      use `asyncio.wait_for` around the tool call.
+    `input_text` (stdin) is not exposed by the ACP terminal protocol; passing it
+    raises `ToolError` rather than silently dropping it. `timeout_seconds` is
+    enforced by wrapping `wait_for_terminal_exit` in `asyncio.wait_for` and calling
+    `kill_terminal` + `release_terminal` on timeout.
     """
 
     def __init__(self, bridge: FsBridge) -> None:
@@ -65,27 +67,37 @@ class ACPShellBackend(ShellBackend):
         env: dict[str, str] | None = None,
         timeout_seconds: float | None = None,
         input_text: str | None = None,
-        output_byte_limit: int | None = None,
     ) -> ShellResult:
         if not self._bridge.can_terminal:
             raise ToolError("ACP client does not advertise terminal capability")
+        if input_text is not None:
+            raise ToolError("ACP terminal backend does not support stdin (input_text)")
 
         env_list = [EnvVariable(name=k, value=v) for k, v in (env or {}).items()] or None
         program, *args = command
-        terminal_id = await self._bridge.create_terminal(
-            program, args=args, cwd=cwd, env=env_list, output_byte_limit=output_byte_limit
-        )
+        terminal_id = await self._bridge.create_terminal(program, args=args, cwd=cwd, env=env_list)
+
+        timed_out = False
         try:
-            exit_info = await self._bridge.wait_for_terminal_exit(terminal_id)
+            try:
+                exit_info = await asyncio.wait_for(
+                    self._bridge.wait_for_terminal_exit(terminal_id), timeout=timeout_seconds
+                )
+            except TimeoutError:
+                timed_out = True
+                with contextlib.suppress(Exception):
+                    await self._bridge.kill_terminal(terminal_id)
+                exit_info = None
             output = await self._bridge.terminal_output(terminal_id)
         finally:
-            await self._bridge.release_terminal(terminal_id)
+            with contextlib.suppress(Exception):
+                await self._bridge.release_terminal(terminal_id)
 
         return ShellResult(
-            exit_code=getattr(exit_info, "exit_code", -1),
+            exit_code=getattr(exit_info, "exit_code", -1) if exit_info is not None else -1,
             stdout=getattr(output, "output", "") or "",
             stderr="",  # ACP conflates streams into `output`
-            timed_out=False,
+            timed_out=timed_out,
             truncated=bool(getattr(output, "truncated", False)),
         )
 

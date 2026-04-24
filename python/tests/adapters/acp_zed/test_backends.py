@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import asyncio
 from typing import Any
 
 import pytest
@@ -119,6 +120,52 @@ async def test_shell_backend_routes_through_terminal(bridge_with_stub: tuple[FsB
     ]
     assert conn.calls[0][1]["command"] == "pytest"
     assert conn.calls[0][1]["args"] == ["-q"]
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_shell_backend_rejects_stdin(bridge_with_stub: tuple[FsBridge, _StubConn]) -> None:
+    bridge, _ = bridge_with_stub
+    backend = ACPShellBackend(bridge)
+    tok = _active_session.set("sess-1")
+    try:
+        with pytest.raises(ToolError, match="stdin"):
+            await backend.run(command=["cat"], input_text="piped")
+    finally:
+        _active_session.reset(tok)
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_shell_backend_timeout_kills_terminal(bridge_with_stub: tuple[FsBridge, _StubConn]) -> None:
+    """On timeout, backend kills + releases the terminal and flags `timed_out`."""
+    bridge, conn = bridge_with_stub
+
+    # Override wait_for_terminal_exit to never return so the timeout fires.
+    async def _hang(**_: Any) -> Any:
+        await asyncio.sleep(60)
+
+    conn.wait_for_terminal_exit = _hang  # type: ignore[assignment]
+    # Track the additional calls.
+    original_calls_len = len(conn.calls)
+
+    async def _killed(**kwargs: Any) -> None:
+        conn.calls.append(("kill_terminal", kwargs))
+
+    conn.kill_terminal = _killed  # type: ignore[attr-defined]
+
+    backend = ACPShellBackend(bridge)
+    tok = _active_session.set("sess-1")
+    try:
+        result = await backend.run(command=["sleep", "5"], timeout_seconds=0.05)
+    finally:
+        _active_session.reset(tok)
+
+    assert result["timed_out"] is True
+    method_order = [c[0] for c in conn.calls[original_calls_len:]]
+    assert method_order[0] == "create_terminal"
+    assert "kill_terminal" in method_order
+    assert method_order[-1] == "release_terminal"
 
 
 @pytest.mark.unit
