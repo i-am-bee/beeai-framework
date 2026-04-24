@@ -75,9 +75,9 @@ class FileEditTool(Tool[FileEditToolInput, ToolRunOptions, JSONToolOutput[dict[s
         try:
             original = await backend.read_text(input.path)
         except FileNotFoundError:
-            original = "" if input.mode == "overwrite" else None
-            if original is None:
+            if input.mode != "overwrite":
                 raise ToolError(f"File not found: {input.path}") from None
+            original = ""
 
         if input.mode == "overwrite":
             if input.content is None:

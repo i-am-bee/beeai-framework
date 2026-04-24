@@ -11,7 +11,7 @@ from beeai_framework.context import RunContext
 from beeai_framework.emitter.emitter import Emitter
 from beeai_framework.tools import JSONToolOutput
 from beeai_framework.tools.code._shell_backend import get_shell_backend
-from beeai_framework.tools.errors import ToolError, ToolInputValidationError
+from beeai_framework.tools.errors import ToolInputValidationError
 from beeai_framework.tools.tool import Tool
 from beeai_framework.tools.types import ToolRunOptions
 
@@ -68,16 +68,11 @@ class ShellTool(Tool[ShellToolInput, ToolRunOptions, JSONToolOutput[dict[str, An
         if not input.command:
             raise ToolInputValidationError("`command` must be a non-empty list")
 
-        backend = get_shell_backend()
-        try:
-            result = await backend.run(
-                command=input.command,
-                cwd=input.cwd,
-                env=input.env,
-                timeout_seconds=input.timeout_seconds,
-                input_text=input.input_text,
-            )
-        except FileNotFoundError as e:
-            raise ToolError(f"Command not found: {input.command[0]!r}") from e
-
+        result = await get_shell_backend().run(
+            command=input.command,
+            cwd=input.cwd,
+            env=input.env,
+            timeout_seconds=input.timeout_seconds,
+            input_text=input.input_text,
+        )
         return JSONToolOutput(dict(result))

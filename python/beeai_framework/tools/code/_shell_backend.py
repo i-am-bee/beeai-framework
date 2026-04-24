@@ -2,9 +2,9 @@
 # SPDX-License-Identifier: Apache-2.0
 """ShellBackend ContextVar dispatch — same shape as `beeai_framework/utils/io.py`.
 
-The `ShellTool` calls `await get_shell_backend().run(...)` and doesn't care whether
-the command ends up in a local `subprocess` or is routed through an editor terminal
-via ACP's `terminal/*` methods. Serve adapters install their own backend with
+`ShellTool` calls `await get_shell_backend().run(...)` and doesn't care whether the
+command ends up in a local `subprocess` or is routed through an editor terminal via
+ACP's `terminal/*` methods. Serve adapters install their own backend with
 `setup_shell_backend(...)` for the duration of a turn; outside of that scope the
 local subprocess default applies.
 """
@@ -15,7 +15,9 @@ import asyncio
 import os
 from collections.abc import Callable
 from contextvars import ContextVar
-from typing import Any, Protocol, TypedDict
+from typing import Protocol, TypedDict
+
+from beeai_framework.tools.errors import ToolError
 
 
 class ShellResult(TypedDict, total=False):
@@ -35,12 +37,11 @@ class ShellBackend(Protocol):
         env: dict[str, str] | None = None,
         timeout_seconds: float | None = None,
         input_text: str | None = None,
-        output_byte_limit: int | None = None,
     ) -> ShellResult: ...
 
 
 class LocalShellBackend(ShellBackend):
-    """Runs the command as a local subprocess. Captures stdout + stderr separately."""
+    """Run the command as a local subprocess and capture stdout + stderr separately."""
 
     async def run(
         self,
@@ -50,17 +51,20 @@ class LocalShellBackend(ShellBackend):
         env: dict[str, str] | None = None,
         timeout_seconds: float | None = None,
         input_text: str | None = None,
-        output_byte_limit: int | None = None,
     ) -> ShellResult:
         merged_env = {**os.environ, **env} if env else None
-        process = await asyncio.create_subprocess_exec(
-            *command,
-            cwd=cwd,
-            env=merged_env,
-            stdin=asyncio.subprocess.PIPE if input_text is not None else None,
-            stdout=asyncio.subprocess.PIPE,
-            stderr=asyncio.subprocess.PIPE,
-        )
+        try:
+            process = await asyncio.create_subprocess_exec(
+                *command,
+                cwd=cwd,
+                env=merged_env,
+                stdin=asyncio.subprocess.PIPE if input_text is not None else None,
+                stdout=asyncio.subprocess.PIPE,
+                stderr=asyncio.subprocess.PIPE,
+            )
+        except FileNotFoundError as e:
+            raise ToolError(f"Command not found: {command[0]!r}") from e
+
         stdin_bytes = input_text.encode() if input_text is not None else None
         timed_out = False
         try:
@@ -101,7 +105,3 @@ __all__ = [
     "get_shell_backend",
     "setup_shell_backend",
 ]
-
-
-# Re-export `Any` in case downstream adapters want to expose richer result shapes.
-_ = Any  # keep linters happy with the unused typing import in the stub signature.
