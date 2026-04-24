@@ -37,6 +37,7 @@ __all__ = ["MCPClient", "MCPTool"]
 
 class MCPToolKwargs(TypedDict, total=False):
     smart_parsing: bool
+    exclude_none: bool
 
 
 class MCPTool(Tool[BaseModel, ToolRunOptions, JSONToolOutput]):
@@ -45,11 +46,13 @@ class MCPTool(Tool[BaseModel, ToolRunOptions, JSONToolOutput]):
     def __init__(self, session: ClientSession, tool: MCPToolInfo, **options: Unpack[MCPToolKwargs]) -> None:
         """Initialize MCPTool with client and tool configuration."""
         smart_parsing = options.pop("smart_parsing", True)
+        exclude_none = options.pop("exclude_none", True)
 
         super().__init__(dict(options))
         self._session = session
         self._tool = tool
         self._smart_parsing = smart_parsing
+        self._exclude_none = exclude_none
 
     @property
     def name(self) -> str:
@@ -74,7 +77,7 @@ class MCPTool(Tool[BaseModel, ToolRunOptions, JSONToolOutput]):
         """Execute the tool with given input."""
         logger.debug(f"Executing tool {self._tool.name} with input: {input_data}")
         result: CallToolResult = await self._session.call_tool(
-            name=self._tool.name, arguments=input_data.model_dump(exclude_none=True, exclude_unset=True)
+            name=self._tool.name, arguments=input_data.model_dump(exclude_none=self._exclude_none, exclude_unset=True)
         )
         logger.debug(f"Tool result: {result}")
 
@@ -119,7 +122,7 @@ class MCPTool(Tool[BaseModel, ToolRunOptions, JSONToolOutput]):
         return [MCPTool(session, tool, **options) for tool in tools_result.tools]
 
     async def clone(self) -> Self:
-        options = MCPToolKwargs(smart_parsing=self._smart_parsing)
+        options = MCPToolKwargs(smart_parsing=self._smart_parsing, exclude_none=self._exclude_none)
         options.update(self._options or {})  # type: ignore
 
         tool = self.__class__(
