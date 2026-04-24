@@ -1,5 +1,14 @@
 # Copyright 2025 © BeeAI a Series of LF Projects, LLC
 # SPDX-License-Identifier: Apache-2.0
+"""Per-turn context that installs ACP-routed backends for the duration of a prompt.
+
+When the adapter is serving a turn, this context manager swaps the global
+`ShellBackend`, `FileBackend`, and `io_confirm` handlers onto ACP-routed
+implementations, so generic tools (`ShellTool`, `FileReadTool`, `FileEditTool`)
+and the framework's `io_confirm` dispatch automatically — the tool code itself
+stays protocol-agnostic. Mirrors the same ContextVar pattern used by
+`beeai_framework/utils/io.py`.
+"""
 
 from __future__ import annotations
 
@@ -15,6 +24,9 @@ except ModuleNotFoundError as e:
         "Optional module [acp_zed] not found.\nRun 'pip install \"beeai-framework[acp-zed]\"' to install."
     ) from e
 
+from beeai_framework.adapters.acp_zed.serve.backends import ACPFileBackend, ACPShellBackend
+from beeai_framework.tools.code import setup_shell_backend
+from beeai_framework.tools.filesystem import setup_file_backend
 from beeai_framework.utils.io import IOConfirmKwargs, setup_io_context
 
 if TYPE_CHECKING:
@@ -22,30 +34,30 @@ if TYPE_CHECKING:
 
 
 class ACPZedIOContext:
-    """Route `io_confirm` through ACP `session/request_permission` for the life of a turn.
+    """Installs ACP backends (shell + file + io_confirm) on enter, restores on exit.
 
-    Mirrors the A2A / IBM-ACP `setup_io_context` pattern: when this context is active,
-    any agent code calling `io_confirm(...)` (e.g. `AskPermissionRequirement`) gets the
-    prompt delivered to the editor user via `session/request_permission` instead of
-    stdin, and the user's choice flows back as a `bool`.
-
-    `io_read` is overridden to raise — ACP has no free-form text input method; calling
-    it under the adapter is a programmer error worth surfacing loudly rather than
-    hanging on a stdin that's already owned by the JSON-RPC transport.
+    Any agent code that runs `ShellTool()`, `FileReadTool()`, `FileEditTool()`, or
+    `io_confirm(...)` from inside this context is transparently routed through the
+    ACP client — no ACP-specific tool subclasses required.
     """
 
     def __init__(self, bridge: FsBridge) -> None:
         self._bridge = bridge
-        self._cleanup: Callable[[], None] = lambda: None
+        self._cleanups: list[Callable[[], None]] = []
 
     def __enter__(self) -> Self:
-        # pyrefly: ignore [bad-argument-type]
-        self._cleanup = setup_io_context(read=self._read, confirm=self._confirm)
+        self._cleanups = [
+            setup_shell_backend(ACPShellBackend(self._bridge)),
+            setup_file_backend(ACPFileBackend(self._bridge)),
+            # pyrefly: ignore [bad-argument-type]
+            setup_io_context(read=self._read, confirm=self._confirm),
+        ]
         return self
 
     def __exit__(self, exc_type: Any, exc_val: Any, exc_tb: Any) -> None:
-        self._cleanup()
-        self._cleanup = lambda: None
+        for cleanup in reversed(self._cleanups):
+            cleanup()
+        self._cleanups = []
 
     async def _read(self, prompt: str) -> str:
         raise RuntimeError(
