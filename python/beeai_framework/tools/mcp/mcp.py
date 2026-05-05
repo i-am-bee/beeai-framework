@@ -46,7 +46,7 @@ class MCPTool(Tool[BaseModel, ToolRunOptions, JSONToolOutput]):
     def __init__(self, session: ClientSession, tool: MCPToolInfo, **options: Unpack[MCPToolKwargs]) -> None:
         """Initialize MCPTool with client and tool configuration."""
         smart_parsing = options.pop("smart_parsing", True)
-        exclude_none = options.pop("exclude_none", True)
+        exclude_none = options.pop("exclude_none", False)
 
         super().__init__(dict(options))
         self._session = session
