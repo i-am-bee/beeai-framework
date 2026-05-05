@@ -4,7 +4,7 @@
 import asyncio
 import contextlib
 import signal
-from collections.abc import Sequence
+from collections.abc import AsyncIterator, Sequence
 from typing import Any, Literal, Self
 
 import uvicorn
@@ -149,19 +149,21 @@ class A2AServer(
     def _add_health_endpoint(self, app: Starlette) -> None:
         """Add health endpoint to the Starlette app."""
 
-        async def on_startup() -> None:
-            self._ready = True
-
-        async def on_shutdown() -> None:
-            self._ready = False
-
         async def health_endpoint(request: Request) -> Response:
             content = "ok" if self._ready else "not ready"
             status = 200 if self._ready else 503
             return PlainTextResponse(content, status_code=status)
 
-        app.add_event_handler("startup", on_startup)
-        app.add_event_handler("shutdown", on_shutdown)
+        # Starlette 1.0 removed add_event_handler — swap in a lifespan context manager instead.
+        @contextlib.asynccontextmanager
+        async def lifespan(_app: Any) -> AsyncIterator[None]:
+            self._ready = True
+            try:
+                yield
+            finally:
+                self._ready = False
+
+        app.router.lifespan_context = lifespan
         app.routes.append(Route("/health", endpoint=health_endpoint))
 
     @override
