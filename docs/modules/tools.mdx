@@ -26,6 +26,11 @@ Ready-to-use tools that provide immediate functionality for common agent tasks:
 | [VectorStoreSearch](#vector-store-search) | Search for documents in a vector database                         |
 | [Python](#python)     | Let agent run an arbitrary Python code in a sandboxed environment                                                |
 | [Sandbox](#sandbox)    | Run custom Python functions in a sandboxed environment                                              |
+| [Shell](#shell)        | Run a command and capture its output (with pluggable backend)                                       |
+| [FileRead](#file-read) | Read a text file via a pluggable file backend                                                       |
+| [FileEdit](#file-edit) | Overwrite or search-and-replace a text file with a unified diff                                     |
+| [Glob](#glob)          | List files matching a glob pattern                                                                  |
+| [Grep](#grep)          | Recursively search files for a regex (uses ripgrep when available)                                  |
 
 ➕ [Request additional built-in tools](https://github.com/i-am-bee/beeai-framework/discussions)
 
@@ -1142,6 +1147,120 @@ Environmental variables can be overridden (or defined) in the following ways:
 <Note>
 Only `PythonTool` can access files.
 </Note>
+
+<Heading level={3} id="coding-tools">Coding-agent tool primitives</Heading>
+
+The framework ships a set of protocol-agnostic primitives for building coding agents. These tools work without any extra setup against the local filesystem and a local subprocess — but their I/O is dispatched through `ContextVar`-backed backends, which means a serve adapter (like the [Zed ACP adapter](/integrations/acp-zed)) can transparently route them through an editor's filesystem and terminal capabilities for the duration of a turn.
+
+| Primitive       | Default backend                            | Pluggable via                                 |
+|:----------------|:-------------------------------------------|:----------------------------------------------|
+| `ShellTool`     | `LocalShellBackend` (`asyncio.subprocess`) | `setup_shell_backend(...)`                    |
+| `FileReadTool`  | `LocalFileBackend` (`pathlib`)             | `setup_file_backend(...)`                     |
+| `FileEditTool`  | `LocalFileBackend` (`pathlib`)             | `setup_file_backend(...)`                     |
+| `GlobTool`      | local — `pathlib.Path.glob`                | not pluggable                                 |
+| `GrepTool`      | local — `ripgrep` if on `$PATH`, else stdlib | not pluggable                                 |
+
+Tool code stays the same regardless of where it runs; protocol-awareness is the backend's responsibility.
+
+<Heading level={4} id="shell">Shell tool</Heading>
+
+Run a command (as a list of arguments — **not** through a shell) and return its exit code, stdout, stderr, and timeout/truncation flags.
+
+```py Python [expandable]
+from beeai_framework.tools.code import ShellTool, ShellToolInput
+
+result = await ShellTool().run(
+    ShellToolInput(command=["git", "status", "--porcelain"], timeout_seconds=10)
+)
+print(result.result["stdout"])
+```
+
+Inputs:
+
+- `command` *(list[str], required)* — argv list. Use `shlex.split` if you only have a string.
+- `cwd`, `env` — working directory and extra env vars merged over `os.environ`.
+- `timeout_seconds` *(default `60`)* — kills the process if it runs longer; set to `None` to disable.
+- `input_text` — piped to stdin. Some backends (e.g. ACP terminals) don't support stdin and will raise.
+
+To swap the backend yourself (e.g. for a sandbox or remote runner):
+
+```py
+from beeai_framework.tools.code import setup_shell_backend, ShellBackend
+
+class MyBackend(ShellBackend): ...
+
+cleanup = setup_shell_backend(MyBackend())
+try:
+    ...
+finally:
+    cleanup()
+```
+
+<Heading level={4} id="file-read">FileRead tool</Heading>
+
+Read a text file via the active `FileBackend`. Path must be absolute. Optional `line` (1-based) and `limit` slice the file without loading the whole thing.
+
+```py Python
+from beeai_framework.tools.filesystem import FileReadTool, FileReadToolInput
+
+text = await FileReadTool().run(
+    FileReadToolInput(path="/abs/path/to/file.py", line=1, limit=80)
+)
+```
+
+<Heading level={4} id="file-edit">FileEdit tool</Heading>
+
+Edit a file in one of two modes, returning a unified diff in the output:
+
+- `mode="overwrite"` — write `content` verbatim. Creates the file if missing.
+- `mode="replace"` — exact-text search-and-replace. Fails (without writing) if the number of occurrences of `old` doesn't match `expected_occurrences` (default `1`), preventing the most common agent edit footgun: silent over-matching.
+
+```py Python [expandable]
+from beeai_framework.tools.filesystem import FileEditTool, FileEditToolInput
+
+result = await FileEditTool().run(
+    FileEditToolInput(
+        mode="replace",
+        path="/abs/path/to/config.py",
+        old="DEBUG = False",
+        new="DEBUG = True",
+        expected_occurrences=1,
+    )
+)
+print(result.result["diff"])
+```
+
+<Heading level={4} id="glob">Glob tool</Heading>
+
+List paths matching a glob pattern under a root directory. Hidden files (`.foo`) are excluded by default.
+
+```py Python
+from beeai_framework.tools.filesystem import GlobTool, GlobToolInput
+
+result = await GlobTool().run(GlobToolInput(pattern="**/*.py", root="src", limit=200))
+for path in result.result["matches"]:
+    print(path)
+```
+
+<Heading level={4} id="grep">Grep tool</Heading>
+
+Recursively search files for a regex. Uses `ripgrep` (`rg`) when it's on `$PATH` for speed and `.gitignore` honoring; falls back to a pure-Python walk that skips common ignored directories (`.git`, `node_modules`, `.venv`, …) when it isn't.
+
+```py Python [expandable]
+from beeai_framework.tools.filesystem import GrepTool, GrepToolInput
+
+result = await GrepTool().run(
+    GrepToolInput(pattern=r"def\s+main\b", root="src", glob="*.py", context_lines=2)
+)
+for hit in result.result["matches"]:
+    print(f"{hit['path']}:{hit['line']}: {hit['text']}")
+```
+
+The output shape is the same regardless of which backend ran — the `used_ripgrep` flag tells you which one did.
+
+<Tip>
+Combine these tools with the [ACP Zed adapter](/integrations/acp-zed) to expose a coding agent inside the [Zed](https://zed.dev/) editor — file reads/writes route through Zed's unsaved buffers, shell commands open in Zed's terminal widget, all without changing your tool code.
+</Tip>
 
 ---
 
