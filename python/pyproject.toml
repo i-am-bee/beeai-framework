@@ -26,25 +26,25 @@ boto3 = {version = "^1.37.5", optional = true}
 cachetools = ">=5.5.2"
 chevron = "^0.14.0"
 ddgs = { version="^9.10.0", optional = true }
-cryptography = {version = ">=46.0.5", optional = true}
+cryptography = {version = ">=46.0.7", optional = true}
 fastapi = {version = "^0.133.0", optional = true}
 google-auth = { version = ">=2.14,<3.0.0", optional = true }
 json-repair = "^0.52.5"
 jsonref = "^1.1.0"
 langchain = {version = ">=1.2.0,<2.0.0", optional = true}
-langchain-core = {version = ">=1.2.15,<2.0.0", optional = true}
+langchain-core = {version = ">=1.2.28,<2.0.0", optional = true}
 langchain-community = {version = ">=0.4.1,<2.0.0", optional = true}
 langchain-ollama = {version = ">=1.0.1,<2.0.0", optional = true}
 langgraph = {version = ">=1.0.10,<3.0.0", optional = true}
 langgraph-checkpoint = {version = ">=4.0.0,<5.0.0", optional = true}
-langsmith = {version = ">=0.7.6,<1.0.0", optional = true}
-litellm = "^1.80.11"
+langsmith = {version = ">=0.7.31,<1.0.0", optional = true}
+litellm = "^1.83.14"
 llama-index-core = {version = "^0.14.0", optional = true}
 markdown = {version = "^3.8.2", optional = true}
 mcp = {version = "^1.23.0", optional = true}
 pydantic = "^2.11.10"
 pydantic-settings = "^2.11.0"
-requests = "^2.32"
+requests = ">=2.33.0,<3.0.0"
 unstructured = {version = "^0.18.31", optional = true}
 uvicorn = {version = "^0.37.0", optional = true}
 types-grpcio = {version = "*", optional = true}
@@ -60,15 +60,15 @@ torch = [
   {version = "2.7.1", source = "pytorch-cpu", markers = "sys_platform != 'darwin'", optional = true}
 ]
 transformers = [
-  {version = ">=4.49.0", markers = "sys_platform == 'darwin' and platform_machine == 'arm64'", optional = true},
-  {version = ">=4.49.0,<=4.51.3", markers = "sys_platform == 'darwin' and platform_machine == 'x86_64'", optional = true},
-  {version = ">=4.49.0", markers = "sys_platform != 'darwin'", optional = true}
+  {version = ">=5.0.0", markers = "sys_platform == 'darwin' and platform_machine == 'arm64'", optional = true},
+  {version = ">=5.0.0", markers = "sys_platform == 'darwin' and platform_machine == 'x86_64'", optional = true},
+  {version = ">=5.0.0", markers = "sys_platform != 'darwin'", optional = true}
 ]
-peft = {version = "^0.17.1", optional = true}
+peft = {version = "^0.19.1", optional = true}
 outlines = {version = "^1.2.4", python = ">=3.11,<3.13", optional = true}
 nltk = {version = ">=3.9.4", optional = true}
-pillow = {version = ">=12.1.1", optional = true}
-pypdf = {version = ">=6.9.1", optional = true}
+pillow = {version = ">=12.2.0", optional = true}
+pypdf = {version = ">=6.10.2", optional = true}
 starlette = {version = ">=0.52.1", optional = true}
 
 [tool.poetry.group.dev.dependencies]

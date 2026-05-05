@@ -4,7 +4,7 @@
 import asyncio
 import os
 from collections.abc import AsyncGenerator
-from typing import Any, Unpack
+from typing import Any, Unpack, cast
 
 import outlines
 import torch
@@ -12,7 +12,14 @@ from outlines.inputs import Chat
 from outlines.types import JsonSchema
 from peft import PeftModel
 from pydantic import BaseModel
-from transformers import AutoModelForCausalLM, AutoTokenizer, StoppingCriteria, TextIteratorStreamer, set_seed
+from transformers import (
+    AutoModelForCausalLM,
+    AutoTokenizer,
+    PreTrainedTokenizerBase,
+    StoppingCriteria,
+    TextIteratorStreamer,
+    set_seed,
+)
 
 from beeai_framework.adapters.litellm.utils import to_strict_json_schema
 from beeai_framework.adapters.transformers.backend._utils import (
@@ -71,7 +78,12 @@ class TransformersChatModel(ChatModel):
         self._model_id = (
             model_id if model_id else os.getenv("TRANSFORMERS_CHAT_MODEL", "ibm-granite/granite-3.3-8b-instruct")
         )
-        self.tokenizer = AutoTokenizer.from_pretrained(model_id, token=hf_token, **(tokenizer_kwargs or {}))  # type: ignore
+        # AutoTokenizer.from_pretrained is typed as TokenizersBackend | None in transformers 5.x,
+        # but at runtime returns a PreTrainedTokenizerBase subclass.
+        self.tokenizer = cast(
+            PreTrainedTokenizerBase,
+            AutoTokenizer.from_pretrained(model_id, token=hf_token, **(tokenizer_kwargs or {})),
+        )
         model_base = AutoModelForCausalLM.from_pretrained(
             self._model_id,
             device_map="auto",
@@ -252,7 +264,9 @@ class TransformersChatModel(ChatModel):
         self, input: ChatModelInput, streamer: TextIteratorStreamer | None
     ) -> tuple[str, Any | None]:
         llm_input = self._transform_input(input)
-        inputs = self.tokenizer.apply_chat_template(
+        # apply_chat_template with return_dict=True returns a BatchEncoding (dict-like) at runtime,
+        # but the static type covers many shapes (list, str, dict). Cast for indexing.
+        inputs: Any = self.tokenizer.apply_chat_template(
             llm_input["messages"],
             tools=llm_input["tools"],
             tokenize=True,
@@ -305,7 +319,8 @@ class TransformersChatModel(ChatModel):
                 **kwargs,
             )
             generated_tokens = model_output[0, prompt_tokens:]
-            generated_text = self.tokenizer.decode(generated_tokens, skip_special_tokens=True)
+            # tokenizer.decode is typed as list[str] | str but returns str when given a 1-D tensor.
+            generated_text = cast(str, self.tokenizer.decode(generated_tokens, skip_special_tokens=True))
             return generated_text, None
 
     def _format_tool_model(self, model: type[BaseModel]) -> dict[str, Any]:
