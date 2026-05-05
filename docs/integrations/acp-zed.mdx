@@ -1,0 +1,235 @@
+---
+title: "ACP (Zed)"
+icon: "code"
+---
+
+The **ACP Zed adapter** exposes a single BeeAI agent as a [Zed Agent Client Protocol (ACP)](https://github.com/zed-industries/agent-client-protocol) program over stdio, so it shows up directly inside [Zed](https://zed.dev/)'s agent panel.
+
+Unlike the HTTP-based [ACP integration](./acp.mdx), Zed's ACP runs **one agent per stdio process**: Zed launches your Python script, talks JSON-RPC over stdin/stdout, and renders responses, tool calls, and terminal output in the editor UI.
+
+The adapter also routes BeeAI's generic coding tools (`ShellTool`, `FileReadTool`, `FileEditTool`) through Zed's filesystem and terminal capabilities for the duration of a turn — so file edits show up as diffs in unsaved buffers, and shell commands open in Zed's terminal widget.
+
+---
+
+## Prerequisites
+
+- **[Zed](https://zed.dev/)** editor installed
+- **BeeAI Framework** installed with the `acp-zed` extra:
+
+  ```bash
+  pip install "beeai-framework[acp-zed]"
+  ```
+
+- A configured LLM backend (Ollama, OpenAI, watsonx, …)
+
+---
+
+## Quick start
+
+### 1. Build and serve an agent
+
+The smallest viable coding agent — three generic tools, no ACP-specific code:
+
+{/* <!-- embedme python/examples/serve/acp_zed/simple.py --> */}
+```py Python [expandable]
+"""Smallest viable coding agent over Zed's Agent Client Protocol (stdio).
+
+Three generic tools — `FileReadTool`, `FileEditTool`, `ShellTool` — and nothing
+ACP-specific in the agent definition. When served through `ACPZedServer`, the
+adapter installs ACP-routed backends for the turn, so file reads/writes flow
+through `fs/read_text_file` / `fs/write_text_file` and shell commands open in
+Zed's terminal widget. The same agent definition would run unchanged as a CLI
+script or over any other serve mode.
+
+Launch from Zed (`~/.config/zed/settings.json`):
+
+    {
+      "agent_servers": {
+        "beeai": {
+          "command": "python",
+          "args": ["/absolute/path/to/examples/serve/acp_zed/simple.py"]
+        }
+      }
+    }
+
+Prereqs: `pip install "beeai-framework[acp-zed]"`, Ollama running with
+`granite4:micro`.
+"""
+
+from __future__ import annotations
+
+import asyncio
+import sys
+
+from dotenv import load_dotenv
+
+from beeai_framework.adapters.acp_zed import ACPZedServer
+from beeai_framework.agents.requirement import RequirementAgent
+from beeai_framework.backend import ChatModel
+from beeai_framework.memory import UnconstrainedMemory
+from beeai_framework.tools.code import ShellTool
+from beeai_framework.tools.filesystem import FileEditTool, FileReadTool
+
+load_dotenv()
+
+
+async def _build_agent() -> RequirementAgent:
+    return RequirementAgent(
+        llm=ChatModel.from_name("ollama:granite4:micro"),
+        tools=[FileReadTool(), FileEditTool(), ShellTool()],
+        memory=UnconstrainedMemory(),
+        name="beeai-coder",
+        description="A BeeAI RequirementAgent running as a Zed ACP agent.",
+    )
+
+
+def main() -> None:
+    agent = asyncio.run(_build_agent())
+    ACPZedServer().register(agent).serve()
+
+
+if __name__ == "__main__":
+    try:
+        main()
+    except KeyboardInterrupt:
+        sys.exit(0)
+
+```
+
+### 2. Register the agent in Zed
+
+Add the entry to `~/.config/zed/settings.json`:
+
+```json
+{
+  "agent_servers": {
+    "beeai": {
+      "command": "python",
+      "args": ["/absolute/path/to/examples/serve/acp_zed/simple.py"]
+    }
+  }
+}
+```
+
+Open Zed's agent panel and pick **beeai** from the dropdown — the script is launched on demand and JSON-RPC frames flow over stdio.
+
+---
+
+## How it works
+
+`ACPZedServer` wraps the agent in an `ACPZedServerAgent` (one process, one agent) and runs it under the [`acp` Python SDK](https://github.com/zed-industries/agent-client-protocol). For every `session/prompt` call from the editor it:
+
+1. Creates a session-scoped clone of the agent (so memory persists across prompts in the same chat but is isolated between chats).
+2. Installs ACP-routed backends for the duration of the turn — `ShellBackend`, `FileBackend`, and `io_confirm` are swapped onto implementations that talk to the editor.
+3. Streams assistant text via `agent_message_chunk`, tool calls and tool results via `agent_thought_chunk`, so users see the agent's intermediate steps live.
+
+The wiring lives in three places:
+
+- `ACPZedServer` / `ACPZedServerAgent` — the server + per-session lifecycle.
+- `FsBridge` — agent-side handle to the editor's `fs/*` and `terminal/*` methods, with the active `session_id` carried through a `ContextVar`.
+- `ACPZedIOContext` — the per-turn context manager that swaps backends in and out.
+
+### Supported agent types
+
+The adapter ships factories for every BeeAI agent type, so `register(agent)` works out of the box:
+
+- `RequirementAgent`
+- `ToolCallingAgent`
+- `ReActAgent`
+- `LiteAgent`
+
+Each factory streams the right events for that agent's emitter shape (e.g. `final_answer` for `LiteAgent`, `partial_update` for `ReActAgent`).
+
+### stdio framing
+
+Zed's ACP transport uses **stdout exclusively for JSON-RPC frames**. A stray `print()` or log line on stdout will corrupt the stream. The adapter rebinds any logging handler bound to `sys.stdout` onto `sys.stderr` at startup; if you have your own logging configuration, make sure it follows suit.
+
+---
+
+## Auto-routed coding tools
+
+The headline benefit of running under `ACPZedServer` is that the [generic coding tools](/modules/tools/#coding-tools) become **editor-aware** with no code changes. The same `ShellTool()` / `FileReadTool()` / `FileEditTool()` that runs against local disk in a CLI script will, when served through this adapter, transparently route through:
+
+| Tool            | Local default              | Under `ACPZedServer`                                |
+|:----------------|:---------------------------|:----------------------------------------------------|
+| `FileReadTool`  | `pathlib.Path.read_text`   | `fs/read_text_file` — respects unsaved buffers      |
+| `FileEditTool`  | `pathlib.Path.write_text`  | `fs/write_text_file` — editor renders diffs         |
+| `ShellTool`     | local `asyncio` subprocess | `terminal/*` — opens Zed's terminal widget          |
+| `io_confirm`    | console prompt             | `session/request_permission` — modal in editor      |
+
+Tools see this through a `ContextVar`-backed dispatch — no ACP-specific subclasses required. Outside an ACP turn, every tool falls back to its local default.
+
+```py
+from beeai_framework.adapters.acp_zed import ACPZedServer
+from beeai_framework.agents.lite import LiteAgent
+from beeai_framework.backend import ChatModel
+from beeai_framework.tools.code import ShellTool
+from beeai_framework.tools.filesystem import FileEditTool, FileReadTool, GlobTool, GrepTool
+
+agent = LiteAgent(
+    llm=ChatModel.from_name("openai:gpt-4o-mini"),
+    tools=[FileReadTool(), FileEditTool(), ShellTool(), GlobTool(), GrepTool()],
+)
+
+ACPZedServer().register(agent).serve()
+```
+
+`GlobTool` and `GrepTool` are not routed — they hit the local filesystem directly, since the ACP capability set has no equivalent. They still work, but they don't see Zed's unsaved buffers.
+
+### ACP-specific behavior of routed backends
+
+A few things worth knowing about the ACP backends:
+
+- **`ShellTool` stdin** — `input_text` raises `ToolError` under the ACP terminal backend; the protocol has no way to feed stdin to a terminal.
+- **`ShellTool` streams** — Zed's terminal conflates stdout and stderr. The ACP backend returns the combined output in `stdout` and leaves `stderr` empty.
+- **`ShellTool` timeouts** — enforced by `asyncio.wait_for` around `wait_for_terminal_exit`, with an explicit `kill_terminal` + `release_terminal` on timeout.
+- **`io_read` is unsupported** — ACP has no free-form text-input method; calls raise `RuntimeError`. Use a tool call or `io_confirm` (which routes through `session/request_permission`) instead.
+- **Capability gating** — every routed call checks the client's advertised `ClientCapabilities` before dispatching. Reads/writes/terminals fail fast with a `ToolError` if Zed didn't advertise the matching capability.
+
+---
+
+## Configuration
+
+`ACPZedServerConfig` is intentionally minimal — there's no port or host because Zed manages the process:
+
+```py
+from beeai_framework.adapters.acp_zed import ACPZedServer, ACPZedServerConfig
+
+ACPZedServer(
+    config=ACPZedServerConfig(
+        agent_name="beeai-coder",
+        agent_description="A coding agent backed by BeeAI.",
+    )
+).register(agent).serve()
+```
+
+If `agent_name` / `agent_description` are omitted, the adapter uses the agent's own metadata.
+
+---
+
+## More examples
+
+<CardGroup cols={2}>
+  <Card
+    title="LiteAgent + full toolset"
+    icon="hammer"
+    href="https://github.com/i-am-bee/beeai-framework/blob/main/python/examples/serve/acp_zed/lite.py"
+  >
+    Streams tokens via `LiteAgent`'s emitter callback and bridges through an `asyncio.Queue` to ACP.
+  </Card>
+  <Card
+    title="Kiwi.com flight-search"
+    icon="plane"
+    href="https://github.com/i-am-bee/beeai-framework/blob/main/python/examples/serve/acp_zed/kiwi.py"
+  >
+    Domain-specific agent that pulls its toolset from a public MCP server. No file/shell tools.
+  </Card>
+</CardGroup>
+
+---
+
+## Limitations
+
+- **One agent per process** — `serve()` raises if more than one agent is registered. Run multiple agents as separate `agent_servers` entries in `settings.json`.
+- **No image/audio prompt blocks** — the prompt converter currently extracts text and embedded-resource text only; image and audio blocks are dropped pending stable multi-part `UserMessage` support across all backends.
+- **`MCPTool` from Zed-managed servers** — `new_session` accepts `mcp_servers` from the editor but the adapter does not currently spin them up. Configure MCP servers on the agent itself instead.
