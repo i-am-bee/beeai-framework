@@ -1,3 +1,17 @@
+## python_v0.1.80 (2026-05-05)
+
+### Bug Fixes
+
+- MCP output types, requirement target extraction (#1435)
+- restrict Python version to <3.14 in PEP 621 metadata (#1433)
+- deep copy PromptTemplate config to prevent shared mutable state across agents (#1419)
+
+### Features
+
+- **serve**: add Zed ACP adapter for exposing agents over stdio (#1428)
+- **mcp**: make exclude_none configurable in MCPTool parameters (#1429)
+- validate class names in dynamic adapters (#1408)
+
 ## python_v0.1.79 (2026-03-24)
 
 - update dependencies
