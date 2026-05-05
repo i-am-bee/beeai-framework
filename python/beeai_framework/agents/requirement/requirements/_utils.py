@@ -16,7 +16,13 @@ MultiTargetType = Sequence[TargetType] | TargetType
 def _extract_targets(
     target: MultiTargetType | None,
 ) -> set[str | type | AnyTool]:
-    targets = list(target) if isinstance(target, Sequence) else [target] if target is not None else []
+    targets = (
+        list(target)
+        if isinstance(target, Sequence) and not isinstance(target, str)
+        else [target]
+        if target is not None
+        else []
+    )
     return set(targets)
 
 

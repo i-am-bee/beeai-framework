@@ -173,7 +173,7 @@ def _tool_factory(
 
         return MCPCallToolResult(
             content=[MCPTextContent(type="text", text=output.get_text_content())],
-            structuredContent=to_json_serializable(output)
+            structuredContent=(res if isinstance(res := to_json_serializable(output), dict) else {"result": res})
             if isinstance(output, CustomJsonDump)  # (eg: JSONToolOutput/SearchToolOutput)
             else None,
             _meta={"is_empty": output.is_empty()},
