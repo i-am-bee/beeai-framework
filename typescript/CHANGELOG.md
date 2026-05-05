@@ -1,5 +1,7 @@
 # Changelog
 
+## [0.1.29](https://github.com/i-am-bee/beeai-framework/compare/typescript_v0.1.28...typescript_v0.1.29) (2026-05-05)
+
 ## [0.1.28](https://github.com/i-am-bee/beeai-framework/compare/typescript_v0.1.27...typescript_v0.1.28) (2026-03-24)
 
 ### Features
