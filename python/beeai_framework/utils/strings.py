@@ -164,7 +164,7 @@ def is_valid_unicode_escape_sequence(s: str) -> bool:
         return False
 
 
-def validate_class_name(class_name: str) -> None:
+def validate_class_name(class_name: str | None) -> None:
     """Validate that a class name is a valid Python identifier and not a keyword to prevent injection."""
     if not class_name or not class_name.isidentifier() or keyword.iskeyword(class_name):
         raise ValueError(
