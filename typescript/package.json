@@ -144,13 +144,13 @@
     "ai": "^6.0.77",
     "ajv": "^8.18.0",
     "ajv-formats": "^3.0.1",
-    "axios": "^1.13.6",
+    "axios": "^1.16.0",
     "duck-duck-scrape": "^2.2.7",
-    "fast-xml-parser": "^5.5.9",
+    "fast-xml-parser": "^5.7.3",
     "header-generator": "^2.1.77",
     "joplin-turndown-plugin-gfm": "^1.0.12",
     "jsonrepair": "^3.13.1",
-    "mathjs": "^15.1.0",
+    "mathjs": "^15.2.0",
     "mustache": "^4.2.0",
     "object-hash": "^3.0.0",
     "p-queue-compat": "^1.0.234",
@@ -184,7 +184,7 @@
     "express": "^5.0.0",
     "ollama-ai-provider-v2": "^3.0.4",
     "sequelize": "^6.37.8",
-    "yaml": "^2.6.1"
+    "yaml": "^2.8.3"
   },
   "peerDependenciesMeta": {
     "@a2a-js/sdk": {
@@ -306,7 +306,7 @@
     "typescript-eslint": "^8.48.0",
     "vite-tsconfig-paths": "^5.1.4",
     "vitest": "^2.1.9",
-    "yaml": "^2.8.1"
+    "yaml": "^2.8.4"
   },
   "resolutions": {
     "zod": "^3.24.2"
