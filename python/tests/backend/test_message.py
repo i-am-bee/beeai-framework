@@ -9,6 +9,7 @@ from beeai_framework.backend import (
     AssistantMessage,
     CustomMessage,
     MessageFileContent,
+    MessageReasoningContent,
     MessageTextContent,
     SystemMessage,
     ToolMessage,
@@ -50,6 +51,22 @@ def test_assistant_message() -> None:
     assert len(content) == 1
     assert isinstance(content[0], MessageTextContent)
     assert content[0].text == text
+
+
+@pytest.mark.unit
+def test_assistant_message_with_reasoning() -> None:
+    reasoning = "Let me think about this..."
+    text = "The answer is 42."
+    message = AssistantMessage([MessageReasoningContent(text=reasoning), MessageTextContent(text=text)])
+    content = message.content
+    assert isinstance(message, AssistantMessage)
+    assert len(content) == 2
+    assert isinstance(content[0], MessageReasoningContent)
+    assert isinstance(content[1], MessageTextContent)
+    assert message.reasoning == content[0].text == reasoning
+    assert message.text == content[1].text == text
+    assert len(message.get_reasoning_messages()) == 1
+    assert len(message.get_text_messages()) == 1
 
 
 @pytest.mark.unit
