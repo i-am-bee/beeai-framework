@@ -39,6 +39,8 @@ from beeai_framework.backend.errors import ChatModelError
 from beeai_framework.backend.message import (
     AnyMessage,
     AssistantMessage,
+    AssistantMessageContent,
+    MessageReasoningContent,
     MessageTextContent,
     MessageToolCallContent,
     ToolMessage,
@@ -309,29 +311,26 @@ class LiteLLMChatModel(ChatModel, ABC):
                 )
 
         output: list[AnyMessage] = []
-        if update and update.model_dump(exclude_none=True):
-            text = update.content if update.content is not None else getattr(update, "reasoning_content", None)
+        if update:
+            reasoning_content = getattr(update, "reasoning_content", None)
+            text = update.content
             tool_calls = getattr(update, "tool_calls", None)
-            if text is not None:
-                text_id = f"{chunk.id}:text" if tool_calls else chunk.id
-                output.append(AssistantMessage(MessageTextContent(text=text), id=text_id))
 
+            parts: list[AssistantMessageContent] = []
+            if reasoning_content:
+                parts.append(MessageReasoningContent(text=reasoning_content))
             if tool_calls:
-                output.append(
-                    AssistantMessage(
-                        [
-                            MessageToolCallContent(
-                                id=call.id or "",
-                                tool_name=call.function.name or "",
-                                args=call.function.arguments,
-                            )
-                            for call in tool_calls
-                        ],
-                        id=chunk.id,
+                parts.extend(
+                    MessageToolCallContent(
+                        id=call.id or "",
+                        tool_name=call.function.name or "",
+                        args=call.function.arguments,
                     )
+                    for call in tool_calls
                 )
-            elif text is None:
-                output.append(AssistantMessage("", id=chunk.id))
+            if text is not None:
+                parts.append(MessageTextContent(text=text))
+            output = [AssistantMessage(parts, id=chunk.id)] if parts else []
 
         return ChatModelOutput(
             output=output,

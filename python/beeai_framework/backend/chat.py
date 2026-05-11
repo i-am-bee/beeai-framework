@@ -228,6 +228,11 @@ class ChatModelOptions(RunnableOptions, total=False):
     Generated chunks will be streamed without validation of the produced tool calls.
     """
 
+    reasoning_effort: str | None
+    """
+    Controls the amount of reasoning effort for models that support it (e.g., "low", "medium", "high").
+    """
+
     fallback_tool: AnyTool | None
     """
     Tool to invoke when the model makes a malformed tool call (for example, when it forgets the name of a tool).

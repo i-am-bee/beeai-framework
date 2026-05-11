@@ -33,6 +33,7 @@ class ChatModelParameters(BaseModel):
     seed: int | None = None
     stop_sequences: list[str] | None = None
     stream: bool | None = None
+    reasoning_effort: str | None = None
 
 
 class ChatModelStructureInput(ChatModelParameters, Generic[T]):
@@ -217,6 +218,9 @@ class ChatModelOutput(RunnableOutput):
 
     def get_text_content(self) -> str:
         return "".join([x.text for x in list(filter(lambda x: isinstance(x, AssistantMessage), self.output))])
+
+    def get_reasoning_content(self) -> str:
+        return "".join([x.reasoning for x in self.output if isinstance(x, AssistantMessage)])
 
 
 ChatModelCache = BaseCache[list[ChatModelOutput]]
