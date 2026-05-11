@@ -198,6 +198,7 @@ class LiteLLMChatModel(ChatModel, ABC):
                         "role": "assistant",
                         "content": msg_text_content or None,
                         "tool_calls": msg_tool_calls or None,
+                        "thinking_blocks": message.meta.get("thinking_blocks"),
                     }
                     if self.model_supports_tool_calling
                     else {
@@ -316,6 +317,17 @@ class LiteLLMChatModel(ChatModel, ABC):
             text = update.content
             tool_calls = getattr(update, "tool_calls", None)
 
+            # Anthropic requires `thinking_blocks` (with cryptographic signatures) to be sent back
+            # in conversation history; without them LiteLLM silently disables thinking on follow-up turns
+            meta = None
+            if (
+                (thinking_blocks := getattr(update, "thinking_blocks", None))
+                and isinstance(thinking_blocks, list)
+                # Streaming deltas carry partial blocks without signatures - filter those out
+                and (signed_thinking_blocks := [b for b in thinking_blocks if b.get("signature")])
+            ):
+                meta = {"thinking_blocks": signed_thinking_blocks}
+
             parts: list[AssistantMessageContent] = []
             if reasoning_content:
                 parts.append(MessageReasoningContent(text=reasoning_content))
@@ -330,7 +342,7 @@ class LiteLLMChatModel(ChatModel, ABC):
                 )
             if text is not None:
                 parts.append(MessageTextContent(text=text))
-            output = [AssistantMessage(parts, id=chunk.id)] if parts else []
+            output = [AssistantMessage(parts, id=chunk.id, meta=meta)] if parts or meta else []
 
         return ChatModelOutput(
             output=output,
