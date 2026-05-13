@@ -37,7 +37,10 @@ from beeai_framework.backend.chat import (
 )
 from beeai_framework.backend.errors import ChatModelError
 from beeai_framework.backend.message import (
+    AnyMessage,
     AssistantMessage,
+    AssistantMessageContent,
+    MessageReasoningContent,
     MessageTextContent,
     MessageToolCallContent,
     ToolMessage,
@@ -195,6 +198,7 @@ class LiteLLMChatModel(ChatModel, ABC):
                         "role": "assistant",
                         "content": msg_text_content or None,
                         "tool_calls": msg_tool_calls or None,
+                        "thinking_blocks": message.meta.get("thinking_blocks"),
                     }
                     if self.model_supports_tool_calling
                     else {
@@ -307,27 +311,40 @@ class LiteLLMChatModel(ChatModel, ABC):
                     total_cost_usd=prompt_tokens_cost_usd + completion_tokens_cost_usd,
                 )
 
-        return ChatModelOutput(
-            output=(
-                [
-                    AssistantMessage(
-                        [
-                            MessageToolCallContent(
-                                id=call.id or "",
-                                tool_name=call.function.name or "",
-                                args=call.function.arguments,
-                            )
-                            for call in update.tool_calls
-                        ],
-                        id=chunk.id,
+        reasoning_content = getattr(update, "reasoning_content", None) if update else None
+
+        if update:
+            # Anthropic requires `thinking_blocks` (with cryptographic signatures) to be sent back
+            # in conversation history; without them LiteLLM silently disables thinking on follow-up turns
+            meta = None
+            if (
+                (thinking_blocks := getattr(update, "thinking_blocks", None))
+                and isinstance(thinking_blocks, list)
+                # Streaming deltas carry partial blocks without signatures - filter those out
+                and (signed_thinking_blocks := [b for b in thinking_blocks if b.get("signature")])
+            ):
+                meta = {"thinking_blocks": signed_thinking_blocks}
+
+            parts: list[AssistantMessageContent] = []
+            if reasoning_content:
+                parts.append(MessageReasoningContent(text=reasoning_content))
+            if update.tool_calls:
+                parts.extend(
+                    MessageToolCallContent(
+                        id=call.id or "",
+                        tool_name=call.function.name or "",
+                        args=call.function.arguments,
                     )
-                    if update.tool_calls
-                    # pyrefly: ignore [bad-argument-type]
-                    else AssistantMessage(update.content or update.reasoning_content or "", id=chunk.id)
-                ]
-                if (update and update.model_dump(exclude_none=True))
-                else []
-            ),
+                    for call in update.tool_calls
+                )
+            if update.content:
+                parts.append(MessageTextContent(text=update.content))
+            output: list[AnyMessage] = [AssistantMessage(parts, id=chunk.id, meta=meta)] if parts or meta else []
+        else:
+            output: list[AnyMessage] = []
+
+        return ChatModelOutput(
+            output=output,
             # Will be set later
             output_structured=None,
             finish_reason=finish_reason,
