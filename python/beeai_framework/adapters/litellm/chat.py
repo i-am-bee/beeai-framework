@@ -310,23 +310,28 @@ class LiteLLMChatModel(ChatModel, ABC):
 
         output: list[AnyMessage] = []
         if update and update.model_dump(exclude_none=True):
-            content: list[MessageTextContent | MessageToolCallContent] = []
             text = update.content if update.content is not None else getattr(update, "reasoning_content", None)
-            if text is not None:
-                content.append(MessageTextContent(text=text))
-
             tool_calls = getattr(update, "tool_calls", None)
-            if tool_calls:
-                content.extend(
-                    MessageToolCallContent(
-                        id=call.id or "",
-                        tool_name=call.function.name or "",
-                        args=call.function.arguments,
-                    )
-                    for call in tool_calls
-                )
+            if text is not None:
+                text_id = f"{chunk.id}:text" if tool_calls else chunk.id
+                output.append(AssistantMessage(MessageTextContent(text=text), id=text_id))
 
-            output.append(AssistantMessage(content, id=chunk.id))
+            if tool_calls:
+                output.append(
+                    AssistantMessage(
+                        [
+                            MessageToolCallContent(
+                                id=call.id or "",
+                                tool_name=call.function.name or "",
+                                args=call.function.arguments,
+                            )
+                            for call in tool_calls
+                        ],
+                        id=chunk.id,
+                    )
+                )
+            elif text is None:
+                output.append(AssistantMessage("", id=chunk.id))
 
         return ChatModelOutput(
             output=output,

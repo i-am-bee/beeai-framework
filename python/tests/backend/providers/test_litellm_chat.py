@@ -50,9 +50,11 @@ def test_transform_output_preserves_text_with_tool_calls() -> None:
 
     output = DummyLiteLLMChatModel()._transform_output(cast(LiteLLMModelResponse, ModelResponse(message)))
 
-    message_output = cast(AssistantMessage, output.output[0])
-    assert message_output.text == "I will call the tool."
-    tool_call = message_output.get_tool_calls()[0]
+    assert len(output.output) == 2
+    text_output = cast(AssistantMessage, output.output[0])
+    tool_output = cast(AssistantMessage, output.output[1])
+    assert text_output.text == "I will call the tool."
+    tool_call = tool_output.get_tool_calls()[0]
     assert tool_call.id == "call-id"
     assert tool_call.tool_name == "search"
     assert tool_call.args == '{"query":"bee"}'
