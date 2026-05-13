@@ -1,9 +1,8 @@
 # Copyright 2025 © BeeAI a Series of LF Projects, LLC
 # SPDX-License-Identifier: Apache-2.0
 
-from __future__ import annotations
-
 import contextlib
+import functools
 import logging
 from abc import abstractmethod
 from collections.abc import AsyncGenerator, Callable
@@ -235,7 +234,14 @@ class ChatModelOptions(RunnableOptions, total=False):
     """
 
 
-_ChatModelKwargsAdapter = TypeAdapter(ChatModelKwargs)
+@functools.cache
+def _get_chat_model_kwargs_adapter() -> TypeAdapter[ChatModelKwargs]:
+    return TypeAdapter(ChatModelKwargs)
+
+
+class ChatModelResponseConfig(BaseModel):
+    force_tool_call_via_response_format: bool = False
+    response_format_schema: type[BaseModel] | None = None
 
 
 class ChatModel(Runnable[ChatModelOutput]):
@@ -352,7 +358,7 @@ class ChatModel(Runnable[ChatModelOutput]):
         self._settings = kwargs.get("settings", {})
         self._settings.update(**exclude_non_annotated(kwargs, ChatModelKwargs))
 
-        kwargs = _ChatModelKwargsAdapter.validate_python(kwargs)
+        kwargs = _get_chat_model_kwargs_adapter().validate_python(kwargs)
 
         parameters = type(self).get_default_parameters()
         update_model(parameters, sources=[kwargs.get("parameters")])
@@ -738,7 +744,7 @@ class ChatModel(Runnable[ChatModelOutput]):
         options: ModelLike[ChatModelParameters] | None = None,
         /,
         **kwargs: Any,
-    ) -> ChatModel:
+    ) -> "ChatModel":
         """Create a ChatModel instance from a provider and model name.
 
         This factory method allows you to instantiate a chat model by specifying
@@ -943,8 +949,3 @@ def _raise_tool_choice_error(
         generated_error=message,
         response=output,
     )
-
-
-class ChatModelResponseConfig(BaseModel):
-    force_tool_call_via_response_format: bool = False
-    response_format_schema: type[BaseModel] | None = None
