@@ -307,27 +307,30 @@ class LiteLLMChatModel(ChatModel, ABC):
                     total_cost_usd=prompt_tokens_cost_usd + completion_tokens_cost_usd,
                 )
 
+        output = []
+        if update and update.model_dump(exclude_none=True):
+            content: list[MessageTextContent | MessageToolCallContent] = []
+            text = update.content or getattr(update, "reasoning_content", None)
+            if text:
+                content.append(MessageTextContent(text=text))
+
+            tool_calls = getattr(update, "tool_calls", None)
+            if tool_calls:
+                content.extend(
+                    [
+                        MessageToolCallContent(
+                            id=call.id or "",
+                            tool_name=call.function.name or "",
+                            args=call.function.arguments,
+                        )
+                        for call in tool_calls
+                    ]
+                )
+
+            output.append(AssistantMessage(content, id=chunk.id))
+
         return ChatModelOutput(
-            output=(
-                [
-                    AssistantMessage(
-                        [
-                            MessageToolCallContent(
-                                id=call.id or "",
-                                tool_name=call.function.name or "",
-                                args=call.function.arguments,
-                            )
-                            for call in update.tool_calls
-                        ],
-                        id=chunk.id,
-                    )
-                    if update.tool_calls
-                    # pyrefly: ignore [bad-argument-type]
-                    else AssistantMessage(update.content or update.reasoning_content or "", id=chunk.id)
-                ]
-                if (update and update.model_dump(exclude_none=True))
-                else []
-            ),
+            output=output,
             # Will be set later
             output_structured=None,
             finish_reason=finish_reason,
