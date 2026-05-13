@@ -37,6 +37,7 @@ from beeai_framework.backend.chat import (
 )
 from beeai_framework.backend.errors import ChatModelError
 from beeai_framework.backend.message import (
+    AnyMessage,
     AssistantMessage,
     MessageTextContent,
     MessageToolCallContent,
@@ -307,7 +308,7 @@ class LiteLLMChatModel(ChatModel, ABC):
                     total_cost_usd=prompt_tokens_cost_usd + completion_tokens_cost_usd,
                 )
 
-        output = []
+        output: list[AnyMessage] = []
         if update and update.model_dump(exclude_none=True):
             content: list[MessageTextContent | MessageToolCallContent] = []
             text = update.content if update.content is not None else getattr(update, "reasoning_content", None)

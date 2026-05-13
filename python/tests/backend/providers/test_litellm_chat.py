@@ -2,18 +2,23 @@
 # SPDX-License-Identifier: Apache-2.0
 
 from types import SimpleNamespace
-from typing import Any
+from typing import Any, cast
 
 import pytest
+from litellm import ModelResponse as LiteLLMModelResponse
 
 from beeai_framework.adapters.litellm.chat import LiteLLMChatModel
+from beeai_framework.backend.constants import ProviderName
+from beeai_framework.backend.message import AssistantMessage
 
 
 class DummyLiteLLMChatModel(LiteLLMChatModel):
-    provider_id = "openai"
-
     def __init__(self) -> None:
         super().__init__("test-model", provider_id="openai")
+
+    @property
+    def provider_id(self) -> ProviderName:
+        return "openai"
 
 
 class ModelDumpNamespace(SimpleNamespace):
@@ -43,10 +48,11 @@ def test_transform_output_preserves_text_with_tool_calls() -> None:
         ],
     )
 
-    output = DummyLiteLLMChatModel()._transform_output(ModelResponse(message))
+    output = DummyLiteLLMChatModel()._transform_output(cast(LiteLLMModelResponse, ModelResponse(message)))
 
-    assert output.output[0].text == "I will call the tool."
-    tool_call = output.output[0].get_tool_calls()[0]
+    message_output = cast(AssistantMessage, output.output[0])
+    assert message_output.text == "I will call the tool."
+    tool_call = message_output.get_tool_calls()[0]
     assert tool_call.id == "call-id"
     assert tool_call.tool_name == "search"
     assert tool_call.args == '{"query":"bee"}'
@@ -56,7 +62,7 @@ def test_transform_output_preserves_text_with_tool_calls() -> None:
 def test_transform_output_handles_missing_reasoning_content() -> None:
     message = ModelDumpNamespace(content=None, tool_calls=None, role="assistant")
 
-    output = DummyLiteLLMChatModel()._transform_output(ModelResponse(message))
+    output = DummyLiteLLMChatModel()._transform_output(cast(LiteLLMModelResponse, ModelResponse(message)))
 
     assert len(output.output) == 1
     assert output.output[0].text == ""
