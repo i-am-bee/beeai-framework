@@ -1,6 +1,7 @@
 # Copyright 2025 © BeeAI a Series of LF Projects, LLC
 # SPDX-License-Identifier: Apache-2.0
 
+import functools
 import logging
 from abc import ABC, abstractmethod
 from collections.abc import Sequence
@@ -47,7 +48,9 @@ class EmbeddingModelKwargs(TypedDict, total=False):
     __pydantic_config__ = ConfigDict(extra="forbid", arbitrary_types_allowed=True)  # type: ignore
 
 
-_EmbeddingModelKwargsAdapter = TypeAdapter(EmbeddingModelKwargs)
+@functools.cache
+def _get_embedding_model_kwargs_adapter() -> TypeAdapter[EmbeddingModelKwargs]:
+    return TypeAdapter(EmbeddingModelKwargs)
 
 
 class EmbeddingModel(ABC):
@@ -134,7 +137,7 @@ class EmbeddingModel(ABC):
         self._settings: dict[str, Any] = kwargs.get("settings", {})
         self._settings.update(**exclude_non_annotated(kwargs, EmbeddingModelKwargs))
 
-        kwargs = _EmbeddingModelKwargsAdapter.validate_python(kwargs)
+        kwargs = _get_embedding_model_kwargs_adapter().validate_python(kwargs)
         self.middlewares: list[RunMiddlewareType] = [*kwargs.get("middlewares", [])]
 
     def create(

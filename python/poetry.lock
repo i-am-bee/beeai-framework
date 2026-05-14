@@ -10214,4 +10214,4 @@ wikipedia = ["wikipedia-api"]
 [metadata]
 lock-version = "2.1"
 python-versions = ">= 3.11,<3.14"
-content-hash = "93fac6d6a0936520fc0a6c5b445502c964809b483f434be6f938ce95c5453521"
+content-hash = "ebd042076b9dc8eb94d6bff1b80acd375594c5c70924852715a2e815b9f0323a"

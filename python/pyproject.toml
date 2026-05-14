@@ -42,7 +42,7 @@ litellm = "^1.83.14"
 llama-index-core = {version = "^0.14.0", optional = true}
 markdown = {version = "^3.8.2", optional = true}
 mcp = {version = "^1.23.0", optional = true}
-pydantic = "^2.11.10"
+pydantic = "^2.12.4"
 pydantic-settings = "^2.11.0"
 requests = ">=2.33.0,<3.0.0"
 unstructured = {version = "^0.18.31", optional = true}
