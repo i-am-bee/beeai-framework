@@ -56,15 +56,15 @@ def create_agent(model_name: str | None = None) -> RequirementAgent:
     Create a shared RequirementAgent for multi-hop QA evaluation.
 
     Args:
-        model_name: ChatModel identifier (e.g. 'vertexai:gemini-2.5-flash' or
-                    'ollama:llama3.1:8b'). Defaults to the AGENT_CHAT_MODEL_NAME
+        model_name: ChatModel identifier (e.g. 'ollama:llama3.1:8b' or
+                    'vertexai:gemini-2.5-flash'). Defaults to the AGENT_CHAT_MODEL_NAME
                     env var, falling back to EVAL_CHAT_MODEL_NAME, then
-                    'vertexai:gemini-2.5-flash'.
+                    'ollama:llama3.1:8b'.
     """
     if model_name is None:
         model_name = os.environ.get(
             "AGENT_CHAT_MODEL_NAME",
-            os.environ.get("EVAL_CHAT_MODEL_NAME", "vertexai:gemini-2.5-flash"),
+            os.environ.get("EVAL_CHAT_MODEL_NAME", "ollama:llama3.1:8b"),
         )
 
     options: dict = {"allow_parallel_tool_calls": True}

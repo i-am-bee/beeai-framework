@@ -53,7 +53,7 @@ dataset = Dataset.load(name="my_evaluation", backend="local/csv", root_dir=str(_
 
 # Create judge LLM once
 ragas_judge_llm = InstructorRagasLLM.from_name(
-    model_name=os.environ.get("EVAL_CHAT_MODEL_NAME", "vertexai:gemini-2.0-flash-lite-001")
+    model_name=os.environ.get("EVAL_CHAT_MODEL_NAME", "ollama:llama3.1:8b")
 )
 ragas_judge_llm.is_async = True
 
@@ -171,16 +171,19 @@ async def my_experiment(row):
 
 
 async def main():
-    results = await my_experiment.arun(dataset)
+    # Pass an explicit `name` so Ragas writes a single, stable CSV at
+    # data/experiments/my_results.csv (overwritten on every run). Without
+    # this, Ragas generates a new random filename per run.
+    results = await my_experiment.arun(dataset, name="my_results")
 
-    with open(_script_dir / "my_results.pkl", "wb") as f:
+    experiments_dir = _data_dir / "experiments"
+    results_pkl = experiments_dir / "my_results.pkl"
+    with open(results_pkl, "wb") as f:
         pickle.dump(results, f)
-    logger.info("Saved to my_results.pkl")
+    logger.info("Saved to %s", results_pkl)
 
-    df = results.to_pandas()
-    df.to_csv(_script_dir / "my_results.csv", index=False, encoding="utf-8-sig")
-    logger.info("Saved to my_results.csv")
-    logger.info("\n%s", df)
+    logger.info("Saved to %s", experiments_dir / "my_results.csv")
+    logger.info("\n%s", results.to_pandas())
 
 
 if __name__ == "__main__":

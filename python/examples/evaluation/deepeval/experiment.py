@@ -1,13 +1,11 @@
 import json
 import logging
 import os
-import sys
 import pickle
 from collections import Counter
 from pathlib import Path
 import asyncio
 
-import pytest
 from dotenv import load_dotenv
 from deepeval import evaluate
 from deepeval.metrics import (
@@ -23,11 +21,6 @@ from deepeval.test_case import LLMTestCase, ToolCall
 load_dotenv()
 
 logger = logging.getLogger(__name__)
-
-# Add python/ root to path for shared modules
-sys.path.insert(0, str(Path(__file__).parent.parent.parent.parent))
-# Add this folder to path for local metric imports
-sys.path.insert(0, str(Path(__file__).parent))
 
 from examples.evaluation.agent import create_agent
 from examples.evaluation.dataset import load_items
@@ -138,11 +131,10 @@ async def create_rag_test_cases():
     return test_cases
 
 
-@pytest.mark.asyncio
-async def test_rag() -> None:
+async def main() -> None:
     test_cases = await create_rag_test_cases()
 
-    eval_model_name = os.environ.get("EVAL_CHAT_MODEL_NAME", "vertexai:gemini-2.0-flash-lite-001")
+    eval_model_name = os.environ.get("EVAL_CHAT_MODEL_NAME", "ollama:llama3.1:8b")
     os.environ.setdefault("DEEPEVAL_PER_TASK_TIMEOUT_SECONDS_OVERRIDE", "60")
     eval_model = DeepEvalLLM.from_name(eval_model_name)
 
@@ -224,4 +216,4 @@ async def test_rag() -> None:
 
 
 if __name__ == "__main__":
-    asyncio.run(test_rag())
+    asyncio.run(main())

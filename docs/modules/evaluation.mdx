@@ -9,7 +9,7 @@ Evaluation lets you systematically measure how well your BeeAI agents perform on
 
 BeeAI integrates with two popular evaluation frameworks via dedicated adapters:
 
-- **[DeepEval](https://docs.confident-ai.com/)** — pytest-based evaluation with built-in and custom metrics
+- **[DeepEval](https://docs.confident-ai.com/)** — evaluation framework with built-in and custom metrics
 - **[Ragas](https://docs.ragas.io/)** — async evaluation framework focused on RAG and agent pipelines
 
 <Note>Evaluation is currently supported in Python only.</Note>
@@ -83,7 +83,7 @@ from beeai_framework.tools.search.wikipedia import WikipediaTool
 from beeai_framework.tools.weather import OpenMeteoTool
 
 agent = RequirementAgent(
-    llm=ChatModel.from_name("vertexai:gemini-2.5-flash"),
+    llm=ChatModel.from_name("ollama:llama3.1:8b"),
     tools=[WikipediaTool(), OpenMeteoTool()],
     memory=UnconstrainedMemory(),
     role="You are an expert Multi-hop QA agent.",
@@ -95,7 +95,7 @@ agent = RequirementAgent(
 
 | Variable                 | Purpose                                              | Default                       |
 |--------------------------|------------------------------------------------------|-------------------------------|
-| `AGENT_CHAT_MODEL_NAME`  | Model used by the agent under test                   | `vertexai:gemini-2.5-flash`   |
+| `AGENT_CHAT_MODEL_NAME`  | Model used by the agent under test                   | `ollama:llama3.1:8b`          |
 | `EVAL_CHAT_MODEL_NAME`   | Model used by LLM-as-judge metrics                   | Falls back to agent model     |
 | `EVAL_LOG_LLM_CALLS`     | Set to `"true"` to log evaluation LLM calls          | Disabled                      |
 
@@ -103,7 +103,7 @@ agent = RequirementAgent(
 
 ### DeepEval
 
-DeepEval experiments run as pytest tests. Each dataset item becomes a test case scored against multiple metrics:
+DeepEval experiments run as async Python scripts. Each dataset item becomes a test case scored against multiple metrics:
 
 - **Answer quality**: AnswerRelevancyMetric, AnswerLLMJudgeMetric, ExactMatchMetric, FaithfulnessMetric, ContextualRecallMetric
 - **Tool usage**: ToolCorrectnessMetric, ToolUsageMetric, ArgumentCorrectnessMetric
@@ -111,8 +111,12 @@ DeepEval experiments run as pytest tests. Each dataset item becomes a test case 
 
 ```bash
 cd python/examples/evaluation
-EVAL_CHAT_MODEL_NAME=openai:gpt-4o pytest deepeval/experiment.py -v
+EVAL_CHAT_MODEL_NAME=openai:gpt-4o python deepeval/experiment.py
 ```
+
+#### Output files
+
+A pickle of the raw DeepEval results is written next to `experiment.py` as `eval_results_raw.pkl`. The pass/fail summary is printed to the log.
 
 ### Ragas
 
@@ -125,9 +129,22 @@ Ragas experiments run as async Python scripts with metrics computed per dataset 
 
 ```bash
 cd python/examples/evaluation/ragas
-python dataset.py            # build the dataset (once)
+python dataset.py            # build the dataset (once; no module-load side effects)
 EVAL_CHAT_MODEL_NAME=openai:gpt-4o python experiment.py
 ```
+
+`dataset.py` exposes its work via `build_dataset()`; importing the module is a no-op, so it's safe to import the helper from other scripts.
+
+#### Output files
+
+Each Ragas run writes two files into `ragas/data/experiments/`, both overwritten on every run:
+
+| File              | Purpose                                                       |
+|-------------------|---------------------------------------------------------------|
+| `my_results.csv`  | Tabular results (written by Ragas via `arun(name="my_results")`) |
+| `my_results.pkl`  | Pickle of the raw Ragas `Experiment` object (for reloading)   |
+
+The stable CSV filename comes from passing `name="my_results"` to `my_experiment.arun(...)` — without it, Ragas auto-generates a new random filename (e.g. `dazzling_minsky.csv`) per run.
 
 ## Custom Metrics
 
