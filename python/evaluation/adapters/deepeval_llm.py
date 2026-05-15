@@ -17,7 +17,6 @@ from beeai_framework.utils import ModelLike
 
 TSchema = TypeVar("TSchema", bound=BaseModel)
 
-
 load_dotenv()
 
 
@@ -29,11 +28,9 @@ class DeepEvalLLM(DeepEvalBaseLLM):
     def load_model(self, *args: Any, **kwargs: Any) -> None:
         return None
 
-    # pyrefly: ignore [bad-override]
     def generate(self, prompt: str, schema: BaseModel | None = None) -> str:
         raise NotImplementedError()
 
-    # pyrefly: ignore [bad-override]
     async def a_generate(self, prompt: str, schema: TSchema | None = None) -> str:
         input_msg = UserMessage(prompt)
         response = await self._model.run(
@@ -43,21 +40,28 @@ class DeepEvalLLM(DeepEvalBaseLLM):
             temperature=0,
         ).middleware(
             GlobalTrajectoryMiddleware(
-                pretty=True, exclude_none=True, enabled=os.environ.get("EVAL_LOG_LLM_CALLS", "").lower() == "true"
+                pretty=True,
+                exclude_none=True,
+                enabled=os.environ.get("EVAL_LOG_LLM_CALLS", "").lower() == "true",
             )
         )
         text = response.get_text_content()
         return schema.model_validate_json(text) if schema else text  # type: ignore
 
-    # pyrefly: ignore [bad-override]
     def get_model_name(self) -> str:
         return f"{self._model.model_id} ({self._model.provider_id})"
 
     @staticmethod
     def from_name(
-        name: str | ProviderName | None = None, options: ModelLike[ChatModelParameters] | None = None, **kwargs: Any
+        name: str | ProviderName | None = None,
+        options: ModelLike[ChatModelParameters] | None = None,
+        **kwargs: Any,
     ) -> "DeepEvalLLM":
         name = name or KEY_FILE_HANDLER.fetch_data(ModelKeyValues.LOCAL_MODEL_NAME)
-        # pyrefly: ignore [bad-argument-type]
+        if isinstance(name, str) and name.startswith("vertexai:"):
+            merged: dict = {"allow_prompt_caching": False}
+            if isinstance(options, dict):
+                merged.update(options)
+            options = merged or options
         model = ChatModel.from_name(name, options, **kwargs)
         return DeepEvalLLM(model)

@@ -1,0 +1,159 @@
+---
+title: "Evaluation"
+icon: "chart-bar"
+---
+
+## Overview
+
+Evaluation lets you systematically measure how well your BeeAI agents perform on tasks like multi-hop question answering, tool usage, and factual accuracy. Rather than manually inspecting outputs, you define a dataset of questions with expected answers and run automated metrics to score agent responses.
+
+BeeAI integrates with two popular evaluation frameworks via dedicated adapters:
+
+- **[DeepEval](https://docs.confident-ai.com/)** — evaluation framework with built-in and custom metrics
+- **[Ragas](https://docs.ragas.io/)** — async evaluation framework focused on RAG and agent pipelines
+
+<Note>Evaluation is currently supported in Python only.</Note>
+
+## Adapters
+
+The adapters bridge BeeAI's `ChatModel` to each evaluation framework's LLM interface, so metrics can use BeeAI-powered models for judging agent outputs without requiring separate API configurations.
+
+### DeepEvalLLM
+
+Wraps a BeeAI `ChatModel` as a `DeepEvalBaseLLM`, enabling DeepEval metrics to call any BeeAI-supported model for LLM-as-judge evaluations. Supports structured output via Pydantic schemas.
+
+```py Python [expandable]
+from evaluation.adapters import DeepEvalLLM
+
+# Create from a model name string
+eval_llm = DeepEvalLLM.from_name("openai:gpt-4o")
+
+# Or wrap an existing ChatModel
+from beeai_framework.backend import ChatModel
+model = ChatModel.from_name("ollama:llama3.1:8b")
+eval_llm = DeepEvalLLM(model)
+```
+
+### InstructorRagasLLM
+
+Bridges Ragas directly to BeeAI's `ChatModel` without a LangChain intermediary. Handles both async and sync structured output generation.
+
+```py Python [expandable]
+from evaluation.adapters import InstructorRagasLLM
+
+# Create from a model name
+eval_llm = InstructorRagasLLM.from_name("openai:gpt-4o")
+```
+
+## Dataset & Agent Setup
+
+Evaluation experiments require two components: a **dataset** of test cases and an **agent** to evaluate.
+
+### Dataset
+
+The dataset is a JSON file where each item contains:
+
+| Field                  | Description                                            |
+|------------------------|--------------------------------------------------------|
+| `question`             | The input question for the agent                       |
+| `expected_answer`      | The ground-truth answer                                |
+| `supporting_sentences` | Relevant facts the agent should reference              |
+| `supporting_titles`    | Source titles for the supporting context                |
+| `expected_tool_calls`  | Tools the agent should invoke (name + expected count)  |
+
+```py Python [expandable]
+# dataset.py — load evaluation items
+import json
+from pathlib import Path
+
+def load_items() -> list[dict]:
+    with open(Path(__file__).parent / "dataset.json", encoding="utf-8") as f:
+        return json.load(f)
+```
+
+### Agent
+
+The evaluation agent is a `RequirementAgent` configured for multi-hop QA with structured JSON output. It uses tools like `WikipediaTool`, `OpenMeteoTool`, and `PythonTool` to gather information before answering.
+
+```py Python [expandable]
+from beeai_framework.agents.requirement import RequirementAgent
+from beeai_framework.backend import ChatModel
+from beeai_framework.memory import UnconstrainedMemory
+from beeai_framework.tools.search.wikipedia import WikipediaTool
+from beeai_framework.tools.weather import OpenMeteoTool
+
+agent = RequirementAgent(
+    llm=ChatModel.from_name("ollama:llama3.1:8b"),
+    tools=[WikipediaTool(), OpenMeteoTool()],
+    memory=UnconstrainedMemory(),
+    role="You are an expert Multi-hop QA agent.",
+    instructions=["Answer in JSON format with: answer, tool_used, supporting_titles, supporting_sentences, reasoning_explanation"],
+)
+```
+
+### Environment Variables
+
+| Variable                 | Purpose                                              | Default                       |
+|--------------------------|------------------------------------------------------|-------------------------------|
+| `AGENT_CHAT_MODEL_NAME`  | Model used by the agent under test                   | `ollama:llama3.1:8b`          |
+| `EVAL_CHAT_MODEL_NAME`   | Model used by LLM-as-judge metrics                   | Falls back to agent model     |
+| `EVAL_LOG_LLM_CALLS`     | Set to `"true"` to log evaluation LLM calls          | Disabled                      |
+
+## Running Evaluations
+
+### DeepEval
+
+DeepEval experiments run as async Python scripts. Each dataset item becomes a test case scored against multiple metrics:
+
+- **Answer quality**: AnswerRelevancyMetric, AnswerLLMJudgeMetric, ExactMatchMetric, FaithfulnessMetric, ContextualRecallMetric
+- **Tool usage**: ToolCorrectnessMetric, ToolUsageMetric, ArgumentCorrectnessMetric
+- **Facts**: FactsSimilarityMetric
+
+```bash
+cd python/examples/evaluation
+EVAL_CHAT_MODEL_NAME=openai:gpt-4o python deepeval/experiment.py
+```
+
+#### Output files
+
+A pickle of the raw DeepEval results is written next to `experiment.py` as `eval_results_raw.pkl`. The pass/fail summary is printed to the log.
+
+### Ragas
+
+Ragas experiments run as async Python scripts with metrics computed per dataset item:
+
+- **Context**: ContextPrecision, ContextRecall
+- **Answer**: ExactMatch, AnswerAccuracy
+- **Tool usage**: ToolCallAccuracy
+- **Facts**: FactsSimilarityMetric
+
+```bash
+cd python/examples/evaluation/ragas
+python dataset.py            # build the dataset (once; no module-load side effects)
+EVAL_CHAT_MODEL_NAME=openai:gpt-4o python experiment.py
+```
+
+`dataset.py` exposes its work via `build_dataset()`; importing the module is a no-op, so it's safe to import the helper from other scripts.
+
+#### Output files
+
+Each Ragas run writes two files into `ragas/data/experiments/`, both overwritten on every run:
+
+| File              | Purpose                                                       |
+|-------------------|---------------------------------------------------------------|
+| `my_results.csv`  | Tabular results (written by Ragas via `arun(name="my_results")`) |
+| `my_results.pkl`  | Pickle of the raw Ragas `Experiment` object (for reloading)   |
+
+The stable CSV filename comes from passing `name="my_results"` to `my_experiment.arun(...)` — without it, Ragas auto-generates a new random filename (e.g. `dazzling_minsky.csv`) per run.
+
+## Custom Metrics
+
+Both frameworks support custom metrics that extend their base classes. The evaluation examples include three custom metrics:
+
+| Metric                    | What it measures                                                              | Score   |
+|---------------------------|-------------------------------------------------------------------------------|---------|
+| **AnswerLLMJudgeMetric**  | Semantic similarity between actual and expected answers, judged by an LLM     | 0–1     |
+| **ToolUsageMetric**       | Whether the agent called the expected tools the expected number of times      | 0–1     |
+| **FactsSimilarityMetric** | Semantic similarity of supporting facts between actual and expected outputs   | 0–1     |
+
+To create your own custom metric, extend the appropriate base class (`DeepEvalBaseLLM` or Ragas `BaseMetric`) and use the adapter to call BeeAI models for LLM-based judging.
