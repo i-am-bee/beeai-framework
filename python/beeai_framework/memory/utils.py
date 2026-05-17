@@ -18,11 +18,12 @@ def extract_last_tool_call_pair(memory: BaseMemory) -> tuple[AssistantMessage, T
         return None
 
     tool_call: AssistantMessage = memory.messages[tool_call_index]  # type: ignore
+    tool_call_id = tool_call.get_tool_calls()[-1].id
 
     tool_response_index = find_index(
         memory.messages,
         lambda msg: bool(
-            isinstance(msg, ToolMessage) and msg.get_tool_results()[0].tool_call_id == tool_call.get_tool_calls()[0].id
+            isinstance(msg, ToolMessage) and any(result.tool_call_id == tool_call_id for result in msg.content)
         ),
         reverse_traversal=True,
         fallback=-1,
