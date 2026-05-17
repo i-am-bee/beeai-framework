@@ -36,3 +36,23 @@ def test_extract_last_tool_call_pair_ignores_empty_tool_messages() -> None:
     asyncio.run(memory.add_many([assistant_message, empty_tool_message, tool_message]))
 
     assert extract_last_tool_call_pair(memory) == (assistant_message, tool_message)
+
+
+def test_extract_last_tool_call_pair_uses_last_tool_call_from_message() -> None:
+    memory = UnconstrainedMemory()
+    assistant_message = AssistantMessage(
+        [
+            MessageToolCallContent(id="call_1", tool_name="weather", args='{"city":"Paris"}'),
+            MessageToolCallContent(id="call_2", tool_name="weather", args='{"city":"Berlin"}'),
+        ]
+    )
+    first_tool_message = ToolMessage(
+        MessageToolResultContent(tool_name="weather", tool_call_id="call_1", result="sunny")
+    )
+    last_tool_message = ToolMessage(
+        MessageToolResultContent(tool_name="weather", tool_call_id="call_2", result="rainy")
+    )
+
+    asyncio.run(memory.add_many([assistant_message, first_tool_message, last_tool_message]))
+
+    assert extract_last_tool_call_pair(memory) == (assistant_message, last_tool_message)
