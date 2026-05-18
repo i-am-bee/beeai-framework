@@ -31,7 +31,7 @@ def fetch_xquik_json(url: str, api_key: str) -> dict[str, Any]:
     )
     try:
         with urlopen(request, timeout=30) as response:
-            body = response.read().decode("utf-8")
+            body = response.read().decode("utf-8", errors="replace")
     except HTTPError as exc:
         detail = exc.read().decode("utf-8", errors="replace")
         raise ToolError(

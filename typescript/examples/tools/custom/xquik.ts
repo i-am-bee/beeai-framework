@@ -1,4 +1,5 @@
 import { DynamicTool, JSONToolOutput, ToolError } from "beeai-framework/tools/base";
+import { pathToFileURL } from "node:url";
 import { z } from "zod";
 
 type XquikSearchTweetsResponse = Record<string, unknown>;
@@ -44,9 +45,11 @@ export const xquikSearchTweetsTool = new DynamicTool({
   },
 });
 
-if (!process.env.XQUIK_API_KEY) {
+const isDirectRun = import.meta.url === pathToFileURL(process.argv[1] ?? "").href;
+
+if (isDirectRun && !process.env.XQUIK_API_KEY) {
   console.log("Set XQUIK_API_KEY to run this example.");
-} else {
+} else if (isDirectRun) {
   const result = await xquikSearchTweetsTool.run({
     query: "from:xquikcom",
     limit: 5,
