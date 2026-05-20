@@ -1,15 +1,18 @@
 # Copyright 2025 © BeeAI a Series of LF Projects, LLC
 # SPDX-License-Identifier: Apache-2.0
 
-from collections.abc import Iterable
-from typing import Any
+from __future__ import annotations
 
-from commitizen import git
+from collections.abc import Iterable
+from typing import TYPE_CHECKING, Any
+
 from commitizen.cz.conventional_commits import ConventionalCommitsCz  # type: ignore
 
 __all__ = ["MonorepoCommitsCz"]
 
-from commitizen.question import CzQuestion
+if TYPE_CHECKING:
+    from commitizen import git
+    from commitizen.question import CzQuestion
 
 
 class MonorepoCommitsCz(ConventionalCommitsCz):
@@ -24,6 +27,8 @@ class MonorepoCommitsCz(ConventionalCommitsCz):
     def changelog_message_builder_hook(
         self, parsed_message: dict[str, Any], commit: git.GitCommit
     ) -> dict[str, Any] | Iterable[dict[str, Any]] | None:
+        from commitizen import git
+
         changed_files = git.get_filenames_in_commit(commit.rev) or []
 
         has_python_changes = any(file.startswith("python/") for file in changed_files)

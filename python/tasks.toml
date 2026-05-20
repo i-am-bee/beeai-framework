@@ -82,7 +82,7 @@ outputs = { auto = true }
 depends = ["python:setup"]
 dir = "{{config_root}}/python"
 run = "rm -rf build dist 2>/dev/null; poetry build"
-sources = ["beeai_framework/**/*.py"]
+sources = ["beeai_framework/**/*.py", "cz_commitizen/**/*.py"]
 outputs = { auto = true }
 
 # test
