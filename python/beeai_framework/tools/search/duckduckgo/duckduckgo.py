@@ -43,9 +43,7 @@ class DuckDuckGoSearchToolOutput(SearchToolOutput):
     pass
 
 
-class DuckDuckGoSearchTool(
-    Tool[DuckDuckGoSearchToolInput, ToolRunOptions, DuckDuckGoSearchToolOutput]
-):
+class DuckDuckGoSearchTool(Tool[DuckDuckGoSearchToolInput, ToolRunOptions, DuckDuckGoSearchToolOutput]):
     name = "DuckDuckGo"
     description = "Search for online trends, news, current events, real-time information, or research topics."
     input_schema = DuckDuckGoSearchToolInput
@@ -76,11 +74,8 @@ class DuckDuckGoSearchTool(
         try:
             results = DDGS(
                 proxy=os.environ.get("BEEAI_DDG_TOOL_PROXY"),
-                verify=os.environ.get("BEEAI_DDG_TOOL_PROXY_VERIFY", "").lower()
-                != "false",
-            ).text(
-                input.query, max_results=self.max_results, safesearch=self.safe_search
-            )
+                verify=os.environ.get("BEEAI_DDG_TOOL_PROXY_VERIFY", "").lower() != "false",
+            ).text(input.query, max_results=self.max_results, safesearch=self.safe_search)
             search_results: list[SearchToolResult] = [
                 DuckDuckGoSearchToolResult(
                     title=result.get("title") or "",
