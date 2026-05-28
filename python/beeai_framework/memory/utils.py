@@ -23,7 +23,8 @@ def extract_last_tool_call_pair(memory: BaseMemory) -> tuple[AssistantMessage, T
     tool_response_index = find_index(
         memory.messages,
         lambda msg: bool(
-            isinstance(msg, ToolMessage) and any(result.tool_call_id == tool_call_id for result in msg.content)
+            isinstance(msg, ToolMessage)
+            and any(result.tool_call_id == tool_call_id for result in msg.get_tool_results())
         ),
         reverse_traversal=True,
         fallback=-1,
