@@ -25,7 +25,7 @@ aiofiles = "^24.1.0"
 boto3 = {version = "^1.37.5", optional = true}
 cachetools = ">=5.5.2"
 chevron = "^0.14.0"
-ddgs = { version="^9.14.2", optional = true }
+ddgs = { version="^9.14.4", optional = true }
 cryptography = {version = ">=46.0.7", optional = true}
 fastapi = {version = "^0.133.0", optional = true}
 google-auth = { version = ">=2.14,<3.0.0", optional = true }
@@ -95,6 +95,7 @@ pyyaml = "^6.0.3"
 types-grpcio-health-checking = ">=1.0.0,<2.0.0"
 pyrefly = "^0.44.1"
 pip-audit = "^2.10.0"
+cz-commitizen = { path = "./cz_commitizen", develop = true }
 
 [tool.poetry.extras]
 transformers = ["transformers", "torch", "peft", "outlines", "pillow"]
@@ -191,9 +192,6 @@ exclude_lines = [
 requires = ["poetry-core>=2.0.0,<3.0.0"]
 build-backend = "poetry.core.masonry.api"
 
-[tool.poetry.plugins."commitizen.plugin"]
-cz_monorepo_commits = "cz_commitizen:MonorepoCommitsCz"
-
 [tool.ruff]
 lint.select = [
     "E",     # pycodestyle errors
@@ -247,4 +245,4 @@ ban-relative-imports = "all"
 [[tool.poetry.source]]
 name = "pytorch-cpu"
 url = "https://download.pytorch.org/whl/cpu"
-priority = "explicit"
+priority = "supplemental"
