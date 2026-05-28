@@ -1,3 +1,17 @@
+## python_v0.1.81 (2026-05-28)
+
+### Bug Fixes
+
+- deps resolution
+- watsonx models
+- **python**: ignore empty tool messages (#1455)
+- preserve LiteLLM text with tool calls (#1450)
+
+### Features
+
+- **tools**: allow changing backend for DuckDuckGo Search Tool
+- add python 3.14 support (#1449)
+
 ## python_v0.1.80 (2026-05-05)
 
 ### Bug Fixes
