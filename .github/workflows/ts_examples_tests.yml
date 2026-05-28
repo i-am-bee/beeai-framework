@@ -1,10 +1,10 @@
 name: TypeScript - E2E Examples
 
 on:
-  push:
-    branches: ["main"]
-    paths:
-      - 'typescript/**'
+  #push:
+  #  branches: ["main"]
+  #  paths:
+  #    - 'typescript/**'
   workflow_dispatch:
 
 concurrency:
