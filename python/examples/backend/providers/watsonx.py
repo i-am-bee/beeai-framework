@@ -19,7 +19,7 @@ load_dotenv()
 
 # Setting can be passed here during initiation or pre-configured via environment variables
 llm = WatsonxChatModel(
-    "ibm/granite-3-3-8b-instruct",
+    "ibm/granite-4-h-small",
     # settings={
     #     "project_id": "WATSONX_PROJECT_ID",
     #     "api_key": "WATSONX_API_KEY",
@@ -30,7 +30,7 @@ llm = WatsonxChatModel(
 
 async def watsonx_from_name() -> None:
     watsonx_llm = ChatModel.from_name(
-        "watsonx:ibm/granite-3-3-8b-instruct",
+        "watsonx:ibm/granite-4-h-small",
         # {
         #     "project_id": "WATSONX_PROJECT_ID",
         #     "api_key": "WATSONX_API_KEY",
@@ -93,7 +93,7 @@ async def watson_structure() -> None:
 
 
 async def watson_tool_calling() -> None:
-    watsonx_llm = ChatModel.from_name("watsonx:ibm/granite-3-3-8b-instruct")
+    watsonx_llm = ChatModel.from_name("watsonx:ibm/granite-4-h-small")
     user_message = UserMessage(f"What is the current weather in Boston? Current date is {datetime.datetime.today()}.")
     weather_tool = OpenMeteoTool()
     response = await watsonx_llm.run([user_message], tools=[weather_tool], stream=True)
@@ -137,7 +137,7 @@ async def watsonx_embedding() -> None:
 
 
 async def watsonx_cloning() -> None:
-    llm = WatsonxChatModel("ibm/granite-3-3-8b-instruct")
+    llm = WatsonxChatModel("ibm/granite-4-h-small")
     await llm.clone()
 
     embedding_llm = WatsonxEmbeddingModel()
