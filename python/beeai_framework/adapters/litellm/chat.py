@@ -37,6 +37,7 @@ from beeai_framework.backend.chat import (
 )
 from beeai_framework.backend.errors import ChatModelError
 from beeai_framework.backend.message import (
+    AnyMessage,
     AssistantMessage,
     MessageTextContent,
     MessageToolCallContent,
@@ -307,9 +308,16 @@ class LiteLLMChatModel(ChatModel, ABC):
                     total_cost_usd=prompt_tokens_cost_usd + completion_tokens_cost_usd,
                 )
 
-        return ChatModelOutput(
-            output=(
-                [
+        output: list[AnyMessage] = []
+        if update and update.model_dump(exclude_none=True):
+            text = update.content if update.content is not None else getattr(update, "reasoning_content", None)
+            tool_calls = getattr(update, "tool_calls", None)
+            if text is not None:
+                text_id = f"{chunk.id}:text" if tool_calls else chunk.id
+                output.append(AssistantMessage(MessageTextContent(text=text), id=text_id))
+
+            if tool_calls:
+                output.append(
                     AssistantMessage(
                         [
                             MessageToolCallContent(
@@ -317,17 +325,16 @@ class LiteLLMChatModel(ChatModel, ABC):
                                 tool_name=call.function.name or "",
                                 args=call.function.arguments,
                             )
-                            for call in update.tool_calls
+                            for call in tool_calls
                         ],
                         id=chunk.id,
                     )
-                    if update.tool_calls
-                    # pyrefly: ignore [bad-argument-type]
-                    else AssistantMessage(update.content or update.reasoning_content or "", id=chunk.id)
-                ]
-                if (update and update.model_dump(exclude_none=True))
-                else []
-            ),
+                )
+            elif text is None:
+                output.append(AssistantMessage("", id=chunk.id))
+
+        return ChatModelOutput(
+            output=output,
             # Will be set later
             output_structured=None,
             finish_reason=finish_reason,
