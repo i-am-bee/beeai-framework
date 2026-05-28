@@ -43,7 +43,9 @@ class DuckDuckGoSearchToolOutput(SearchToolOutput):
     pass
 
 
-class DuckDuckGoSearchTool(Tool[DuckDuckGoSearchToolInput, ToolRunOptions, DuckDuckGoSearchToolOutput]):
+class DuckDuckGoSearchTool(
+    Tool[DuckDuckGoSearchToolInput, ToolRunOptions, DuckDuckGoSearchToolOutput]
+):
     name = "DuckDuckGo"
     description = "Search for online trends, news, current events, real-time information, or research topics."
     input_schema = DuckDuckGoSearchToolInput
@@ -66,16 +68,24 @@ class DuckDuckGoSearchTool(Tool[DuckDuckGoSearchToolInput, ToolRunOptions, DuckD
         )
 
     async def _run(
-        self, input: DuckDuckGoSearchToolInput, options: ToolRunOptions | None, context: RunContext
+        self,
+        input: DuckDuckGoSearchToolInput,
+        options: ToolRunOptions | None,
+        context: RunContext,
     ) -> DuckDuckGoSearchToolOutput:
         try:
             results = DDGS(
                 proxy=os.environ.get("BEEAI_DDG_TOOL_PROXY"),
-                verify=os.environ.get("BEEAI_DDG_TOOL_PROXY_VERIFY", "").lower() != "false",
-            ).text(input.query, max_results=self.max_results, safesearch=self.safe_search, backend="duckduckgo")
+                verify=os.environ.get("BEEAI_DDG_TOOL_PROXY_VERIFY", "").lower()
+                != "false",
+            ).text(
+                input.query, max_results=self.max_results, safesearch=self.safe_search
+            )
             search_results: list[SearchToolResult] = [
                 DuckDuckGoSearchToolResult(
-                    title=result.get("title") or "", description=result.get("body") or "", url=result.get("href") or ""
+                    title=result.get("title") or "",
+                    description=result.get("body") or "",
+                    url=result.get("href") or "",
                 )
                 for result in results
             ]
