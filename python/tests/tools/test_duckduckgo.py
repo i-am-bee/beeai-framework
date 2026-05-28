@@ -19,7 +19,9 @@ Utility functions and classes
 
 @pytest.fixture
 def tool() -> DuckDuckGoSearchTool:
-    return DuckDuckGoSearchTool()
+    tool = DuckDuckGoSearchTool()
+    tool.backend = "auto"
+    return tool
 
 
 """

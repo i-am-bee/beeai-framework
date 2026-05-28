@@ -58,10 +58,11 @@ class DuckDuckGoSearchTool(Tool[DuckDuckGoSearchToolInput, ToolRunOptions, DuckD
         super().__init__(options)
         self.max_results = max_results
         self.safe_search = safe_search
+        self.backend = "duckduckgo"
 
     def _create_emitter(self) -> Emitter:
         return Emitter.root().child(
-            namespace=["tool", "search", "duckduckgo"],
+            namespace=["tool", "search", self.backend],
             creator=self,
         )
 
@@ -72,7 +73,7 @@ class DuckDuckGoSearchTool(Tool[DuckDuckGoSearchToolInput, ToolRunOptions, DuckD
             results = DDGS(
                 proxy=os.environ.get("BEEAI_DDG_TOOL_PROXY"),
                 verify=os.environ.get("BEEAI_DDG_TOOL_PROXY_VERIFY", "").lower() != "false",
-            ).text(input.query, max_results=self.max_results, safesearch=self.safe_search, backend="duckduckgo")
+            ).text(input.query, max_results=self.max_results, safesearch=self.safe_search, backend=self.backend)
             search_results: list[SearchToolResult] = [
                 DuckDuckGoSearchToolResult(
                     title=result.get("title") or "", description=result.get("body") or "", url=result.get("href") or ""
@@ -92,6 +93,7 @@ class DuckDuckGoSearchTool(Tool[DuckDuckGoSearchToolInput, ToolRunOptions, DuckD
         )
         tool.name = self.name
         tool.description = self.description
+        tool.backend = self.backend
         tool.middlewares.extend(self.middlewares)
         tool._cache = await self.cache.clone()
         return tool
