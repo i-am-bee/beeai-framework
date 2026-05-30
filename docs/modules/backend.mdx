@@ -46,6 +46,49 @@ Meanwhile, you can use the Ollama for local models in [Python](https://github.co
 or [TypeScript](https://github.com/i-am-bee/beeai-framework/blob/main/typescript/examples/backend/providers/ollama.ts) or the [Langchain adapter](#adding-a-provider-using-the-langchain-adapter) for hosted providers.
 </Tip>
 
+### OpenAI-compatible gateways
+
+You can also point the OpenAI backend at a governed OpenAI-compatible gateway.
+For example, Tuning Engines can sit between BeeAI Framework and the underlying
+model providers so that BeeAI owns the agent/runtime behavior while Tuning
+Engines centralizes model access, policy checks, audit logs, traces, and usage
+reporting.
+
+<CodeGroup>
+
+```py Python
+import os
+
+from beeai_framework.adapters.openai import OpenAIChatModel
+from beeai_framework.backend import UserMessage
+
+llm = OpenAIChatModel(
+    "gpt-4o",
+    api_key=os.environ["TUNING_ENGINES_API_KEY"],
+    base_url="https://api.tuningengines.com/v1",
+)
+
+response = await llm.run([UserMessage("What should I check before deploying this agent?")])
+print(response.get_text_content())
+```
+
+```ts TypeScript
+import { OpenAIChatModel } from "beeai-framework/adapters/openai/backend/chat";
+import { UserMessage } from "beeai-framework/backend/message";
+
+const llm = new OpenAIChatModel("gpt-4o", {}, {
+  apiKey: process.env.TUNING_ENGINES_API_KEY,
+  baseURL: "https://api.tuningengines.com/v1",
+});
+
+const response = await llm.create({
+  messages: [new UserMessage("What should I check before deploying this agent?")],
+});
+console.info(response.getTextContent());
+```
+
+</CodeGroup>
+
 <Note>
 	Google Gemini, MistralAI, and Transformers are supported in Python only. The Transformers chat model does not support tool calling.
 </Note>
