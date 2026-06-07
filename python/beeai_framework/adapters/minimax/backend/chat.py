@@ -21,8 +21,8 @@ class MiniMaxChatModel(LiteLLMChatModel):
     MiniMax provides an OpenAI-compatible API. This adapter routes requests
     through LiteLLM's OpenAI provider with the MiniMax base URL.
 
-    Available models include MiniMax-M2.7, MiniMax-M2.7-highspeed,
-    MiniMax-M2.5, and MiniMax-M2.5-highspeed.
+    Available models include MiniMax-M3 (default), MiniMax-M2.7,
+    and MiniMax-M2.7-highspeed.
     """
 
     @property
@@ -44,14 +44,14 @@ class MiniMaxChatModel(LiteLLMChatModel):
         Args:
             model_id: The ID of the MiniMax model to use. If not provided,
                 it falls back to the MINIMAX_CHAT_MODEL environment variable,
-                and then defaults to 'MiniMax-M2.7'.
+                and then defaults to 'MiniMax-M3'.
             api_key: The MiniMax API key. Falls back to MINIMAX_API_KEY env var.
             base_url: The MiniMax API base URL. Falls back to MINIMAX_API_BASE
                 env var, then defaults to 'https://api.minimax.io/v1'.
             **kwargs: Additional settings to configure the provider.
         """
         super().__init__(
-            model_id if model_id else os.getenv("MINIMAX_CHAT_MODEL", "MiniMax-M2.7"),
+            model_id if model_id else os.getenv("MINIMAX_CHAT_MODEL", "MiniMax-M3"),
             provider_id="openai",
             **kwargs,
         )

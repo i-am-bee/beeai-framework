@@ -8,7 +8,7 @@ import { z } from "zod";
 import { OpenMeteoTool } from "beeai-framework/tools/weather/openMeteo";
 
 const llm = new MiniMaxChatModel(
-  "MiniMax-M2.7",
+  "MiniMax-M3",
   // {},
   // {
   //   apiKey: "MINIMAX_API_KEY",
@@ -25,7 +25,7 @@ llm.config({
 });
 
 async function minimaxFromName() {
-  const minimaxLLM = await ChatModel.fromName("minimax:MiniMax-M2.7");
+  const minimaxLLM = await ChatModel.fromName("minimax:MiniMax-M3");
   const response = await minimaxLLM.create({
     messages: [new UserMessage("what states are part of New England?")],
   });

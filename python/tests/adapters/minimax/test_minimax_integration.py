@@ -22,7 +22,7 @@ pytestmark = pytest.mark.skipif(
 
 @pytest.fixture
 def chat_model() -> MiniMaxChatModel:
-    return MiniMaxChatModel("MiniMax-M2.7")
+    return MiniMaxChatModel("MiniMax-M3")
 
 
 @pytest.fixture

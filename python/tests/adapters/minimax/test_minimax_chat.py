@@ -34,12 +34,12 @@ class TestMiniMaxChatModelInit:
     @patch.dict(os.environ, {"MINIMAX_API_KEY": "test-key-123"})
     def test_default_model_id(self) -> None:
         model = MiniMaxChatModel()
-        assert model.model_id == "MiniMax-M2.7"
+        assert model.model_id == "MiniMax-M3"
 
     @patch.dict(os.environ, {"MINIMAX_API_KEY": "test-key-123"})
     def test_custom_model_id(self) -> None:
-        model = MiniMaxChatModel("MiniMax-M2.5")
-        assert model.model_id == "MiniMax-M2.5"
+        model = MiniMaxChatModel("MiniMax-M2.7")
+        assert model.model_id == "MiniMax-M2.7"
 
     @patch.dict(os.environ, {"MINIMAX_API_KEY": "test-key-123"})
     def test_highspeed_model_id(self) -> None:
@@ -48,11 +48,11 @@ class TestMiniMaxChatModelInit:
 
     @patch.dict(
         os.environ,
-        {"MINIMAX_API_KEY": "test-key-123", "MINIMAX_CHAT_MODEL": "MiniMax-M2.5-highspeed"},
+        {"MINIMAX_API_KEY": "test-key-123", "MINIMAX_CHAT_MODEL": "MiniMax-M2.7-highspeed"},
     )
     def test_model_from_env(self) -> None:
         model = MiniMaxChatModel()
-        assert model.model_id == "MiniMax-M2.5-highspeed"
+        assert model.model_id == "MiniMax-M2.7-highspeed"
 
     @patch.dict(os.environ, {"MINIMAX_API_KEY": "test-key-123"})
     def test_provider_id(self) -> None:
@@ -100,12 +100,12 @@ class TestMiniMaxModelLoading:
 
     @patch.dict(os.environ, {"MINIMAX_API_KEY": "test-key-123"})
     def test_load_from_name(self) -> None:
-        model = ChatModel.from_name("minimax:MiniMax-M2.7")
+        model = ChatModel.from_name("minimax:MiniMax-M3")
         assert isinstance(model, MiniMaxChatModel)
-        assert model.model_id == "MiniMax-M2.7"
+        assert model.model_id == "MiniMax-M3"
 
     @patch.dict(os.environ, {"MINIMAX_API_KEY": "test-key-123"})
     def test_load_from_alias(self) -> None:
-        model = ChatModel.from_name("minimax:MiniMax-M2.5")
+        model = ChatModel.from_name("minimax:MiniMax-M2.7")
         assert isinstance(model, MiniMaxChatModel)
-        assert model.model_id == "MiniMax-M2.5"
+        assert model.model_id == "MiniMax-M2.7"
