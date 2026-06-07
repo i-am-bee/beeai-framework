@@ -60,13 +60,13 @@ describe("MiniMaxChatModel", () => {
   it("should instantiate with default model", () => {
     const model = new MiniMaxChatModel();
     expect(model).toBeInstanceOf(MiniMaxChatModel);
-    expect(model.modelId).toBe("MiniMax-M2.7");
+    expect(model.modelId).toBe("MiniMax-M3");
   });
 
   it("should instantiate with custom model id", () => {
-    const model = new MiniMaxChatModel("MiniMax-M2.5");
+    const model = new MiniMaxChatModel("MiniMax-M2.7");
     expect(model).toBeInstanceOf(MiniMaxChatModel);
-    expect(model.modelId).toBe("MiniMax-M2.5");
+    expect(model.modelId).toBe("MiniMax-M2.7");
   });
 
   it("should accept highspeed model", () => {
@@ -76,18 +76,18 @@ describe("MiniMaxChatModel", () => {
   });
 
   it("should use env var for model id", () => {
-    process.env.MINIMAX_CHAT_MODEL = "MiniMax-M2.5-highspeed";
+    process.env.MINIMAX_CHAT_MODEL = "MiniMax-M2.7-highspeed";
     const model = new MiniMaxChatModel();
-    expect(model.modelId).toBe("MiniMax-M2.5-highspeed");
+    expect(model.modelId).toBe("MiniMax-M2.7-highspeed");
   });
 
   it("should accept custom parameters", () => {
-    const model = new MiniMaxChatModel("MiniMax-M2.7", { temperature: 0.5 });
+    const model = new MiniMaxChatModel("MiniMax-M3", { temperature: 0.5 });
     expect(model).toBeInstanceOf(MiniMaxChatModel);
   });
 
   it("should accept custom client settings", () => {
-    const model = new MiniMaxChatModel("MiniMax-M2.7", {}, {
+    const model = new MiniMaxChatModel("MiniMax-M3", {}, {
       apiKey: "custom-key",
       baseURL: "https://proxy.example.com/v1",
     });
