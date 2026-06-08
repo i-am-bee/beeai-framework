@@ -1,0 +1,9 @@
+---
+// Mintlify <Warning> -> Starlight caution aside.
+import { Aside } from "@astrojs/starlight/components";
+const { title } = Astro.props;
+---
+
+<Aside type="caution" title={title}>
+  <slot />
+</Aside>

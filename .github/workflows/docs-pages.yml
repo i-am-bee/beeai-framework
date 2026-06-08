@@ -1,0 +1,65 @@
+name: Deploy Docs (GitHub Pages)
+
+on:
+  push:
+    branches: ["main"]
+    paths:
+      - "website/**"
+      - "python/examples/**"
+      - "typescript/examples/**"
+      - ".github/workflows/docs-pages.yml"
+  workflow_dispatch:
+
+# Permissions required to deploy to GitHub Pages via the official actions.
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Allow only one in-flight Pages deployment; let it finish rather than cancel.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: Build site
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: website
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: website/.nvmrc
+          cache: npm
+          cache-dependency-path: website/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Verify code snippets are in sync (embedme)
+        run: npm run embedme:verify
+
+      - name: Build with Astro
+        run: npm run build
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          # Path is relative to the repository root.
+          path: website/dist
+
+  deploy:
+    name: Deploy to GitHub Pages
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy
+        id: deployment
+        uses: actions/deploy-pages@v4
