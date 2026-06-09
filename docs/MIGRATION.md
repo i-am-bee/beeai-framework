@@ -1,7 +1,8 @@
 # Docs migration: Mintlify → Astro Starlight
 
-This directory is the new documentation site, replacing the Mintlify site in
-`../docs`. It is built with **[Astro Starlight](https://starlight.astro.build)**
+This directory (`docs/`) is the documentation site, which replaced the Mintlify
+site now archived in `../docs-old`. It is built with
+**[Astro Starlight](https://starlight.astro.build)**
 (MIT, free, static output) and deploys to **GitHub Pages** at the existing
 custom domain `framework.beeai.dev`.
 
@@ -12,9 +13,9 @@ custom domain `framework.beeai.dev`.
 > redirects emit, and all internal links resolve. Remaining: embedme wiring, a link
 > checker, the GitHub Pages deploy workflow, and cutover (see checklist below).
 >
-> Run `node scripts/migrate-content.mjs` to re-sync content from `../docs` until
-> the old folder is retired. `CONTRIBUTING.md` (repo-internal dev setup, not in nav
-> and unlinked) is intentionally excluded.
+> Run `node scripts/migrate-content.mjs` to re-sync content from `../docs-old`
+> until the archive is removed. `CONTRIBUTING.md` (repo-internal dev setup, not in
+> nav and unlinked) is intentionally excluded.
 
 ## Why Starlight
 
@@ -33,11 +34,11 @@ custom domain `framework.beeai.dev`.
 ## Node version
 
 Astro 6 requires Node ≥ 22.12. The repo root pins Node 20.15.1 via mise; this
-directory overrides it (`website/mise.toml` + `.nvmrc` → Node 22). Use
-`mise install` (or `nvm use`) inside `website/` before `npm install`.
+directory overrides it (`docs/mise.toml` + `.nvmrc` → Node 22). Use
+`mise install` (or `nvm use`) inside `docs/` before `npm install`.
 
 ```bash
-cd website
+cd docs
 npm install
 npm run dev      # local dev server on :3333
 npm run build    # static build into dist/
@@ -113,16 +114,18 @@ frontmatter adjusted**.
 3. ~~**embedme**~~ — done. `npm run embedme:verify` / `npm run embedme` operate on
    `src/content/docs/**/*.mdx` with `--source-root=..` (repo root), so snippets keep
    syncing from `python/examples/**` and `typescript/examples/**`. The 3 blocks that
-   were stale in the old `docs/` (all in `modules/agents/requirement-agent.mdx`) have
-   been re-synced; `embedme:verify` now passes (145 blocks in sync).
-4. **Broken-link check**: replace `mintlify broken-links` with an Astro/Starlight
-   link checker (e.g. `starlight-links-validator`).
+   were stale in the old Mintlify source (all in `modules/agents/requirement-agent.mdx`)
+   have been re-synced; `embedme:verify` now passes (145 blocks in sync).
+4. ~~**Broken-link check**~~ — done: `starlight-links-validator` runs during the
+   build (and in CI), replacing Mintlify's `broken-links`.
 5. ~~**GitHub Pages deploy workflow**~~ — done: `.github/workflows/docs-pages.yml`
-   builds `website/` with Node 22 (from `.nvmrc`), gates on `embedme:verify`, and
+   builds `docs/` with Node 22 (from `.nvmrc`), gates on `embedme:verify`, and
    publishes via `actions/deploy-pages`. The full CI sequence (`npm ci` →
    `embedme:verify` → `astro build`) was validated locally on Node 22.
-6. **Cutover**: once verified, retire the Mintlify config (`../docs/docs.json`,
-   Mintlify dep) and update `tasks.toml` / README links.
+6. **Cutover** — in progress: the new site now lives in `docs/`; the old Mintlify
+   site is archived in `../docs-old`, and its CI (`.github/workflows/docs.yml`) +
+   mise `docs:*` tasks have been retired. Remaining: delete `../docs-old` once the
+   deployed site is confirmed, and update any README links.
 
 ## One-time GitHub setup (repo admin — cannot be scripted)
 

@@ -1,4 +1,4 @@
 # The docs site (Astro 6) requires a newer Node than the framework toolchain.
-# This per-directory config overrides the repo root's Node pin for website/.
+# This per-directory config overrides the repo root's Node pin for docs/.
 [tools]
 node = "22"

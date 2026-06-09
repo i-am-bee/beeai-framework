@@ -1,3 +1,8 @@
+/**
+ * Copyright 2025 © BeeAI a Series of LF Projects, LLC
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
 // Barrel for the Mintlify-compatibility shim components.
 // The remark-auto-import plugin injects a single import from this module
 // for whichever of these names a page actually uses.

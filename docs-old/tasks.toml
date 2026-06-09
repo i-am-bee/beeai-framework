@@ -4,7 +4,7 @@
 depends = ["docs:setup:*"]
 
 ["docs:setup:yarn"]
-dir = "{{config_root}}/docs"
+dir = "{{config_root}}/docs-old"
 run = "yarn install"
 sources = ["yarn.lock", "package.json"]
 outputs = { auto = true }
@@ -16,14 +16,14 @@ depends = ["docs:check:*"]
 
 ["docs:check:links"]
 depends = ["docs:setup"]
-dir = "{{config_root}}/docs"
+dir = "{{config_root}}/docs-old"
 run = "yarn mintlify broken-links"
 sources = ["**/*.mdx"]
 outputs = { auto = true }
 
 ["docs:check:snippets"]
 depends = ["docs:setup"]
-dir = "{{config_root}}/docs"
+dir = "{{config_root}}/docs-old"
 run = "yarn embedme --source-root=.. ./**/*.mdx --verify --silent"
 sources = ["**/*.mdx", "../python/examples/**/*", "../typescript/examples/**/*"]
 outputs = { auto = true }
@@ -35,7 +35,7 @@ depends = ["docs:fix:*"]
 
 ["docs:fix:snippets"]
 depends = ["docs:setup"]
-dir = "{{config_root}}/docs"
+dir = "{{config_root}}/docs-old"
 run = "yarn embedme --source-root=.. ./**/*.mdx --silent"
 sources = ["**/*.mdx", "../python/examples/**/*", "../typescript/examples/**/*"]
 outputs = { auto = true }
@@ -43,7 +43,7 @@ outputs = { auto = true }
 # run
 
 ["docs:run"]
-dir = "{{config_root}}/docs"
+dir = "{{config_root}}/docs-old"
 run = "yarn mintlify dev --port 3333"
 
 # git hooks

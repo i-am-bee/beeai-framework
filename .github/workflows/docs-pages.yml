@@ -4,14 +4,14 @@ on:
   push:
     branches: ["main"]
     paths:
-      - "website/**"
+      - "docs/**"
       - "python/examples/**"
       - "typescript/examples/**"
       - ".github/workflows/docs-pages.yml"
   pull_request:
     branches: ["main"]
     paths:
-      - "website/**"
+      - "docs/**"
       - "python/examples/**"
       - "typescript/examples/**"
       - ".github/workflows/docs-pages.yml"
@@ -37,15 +37,15 @@ jobs:
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: website
+        working-directory: docs
     steps:
       - uses: actions/checkout@v4
 
       - uses: actions/setup-node@v4
         with:
-          node-version-file: website/.nvmrc
+          node-version-file: docs/.nvmrc
           cache: npm
-          cache-dependency-path: website/package-lock.json
+          cache-dependency-path: docs/package-lock.json
 
       - name: Install dependencies
         run: npm ci
@@ -62,7 +62,7 @@ jobs:
         uses: actions/upload-pages-artifact@v3
         with:
           # Path is relative to the repository root.
-          path: website/dist
+          path: docs/dist
 
   # Deploys to GitHub Pages only on main / manual dispatch — never on PRs.
   deploy:

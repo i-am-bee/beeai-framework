@@ -1,6 +1,6 @@
 /**
- * Migrate the Mintlify docs (../docs) into the Starlight content collection
- * (src/content/docs), preserving the file path -> URL structure exactly.
+ * Migrate the archived Mintlify docs (../docs-old) into the Starlight content
+ * collection (src/content/docs), preserving the file path -> URL structure.
  *
  * Page bodies are copied VERBATIM — Mintlify components are handled at build
  * time by the shims (src/components/mintlify) and remark plugins (plugins/).
@@ -9,7 +9,7 @@
  *   - `title` / `description` / `icon` are preserved (icon allowed via schema)
  *   - files without a title get one from their first H1, else the filename
  *
- * Re-runnable: overwrites the content dir from ../docs each time.
+ * Re-runnable: overwrites the content dir from ../docs-old each time.
  *
  * Usage:  node scripts/migrate-content.mjs
  */
@@ -19,10 +19,10 @@ import { fileURLToPath } from "node:url";
 import { redirects as REDIRECTS } from "../redirects.mjs";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
-const SRC = path.resolve(here, "../../docs");
+const SRC = path.resolve(here, "../../docs-old");
 const OUT = path.resolve(here, "../src/content/docs");
 
-// Directories/files in ../docs that are not documentation pages.
+// Directories/files in ../docs-old that are not documentation pages.
 const SKIP_DIRS = new Set(["node_modules", "snippets", "logo", ".idea", ".yarn", ".mypy_cache"]);
 // Repo-internal files that were never public docs pages (not in nav, unlinked).
 const SKIP_FILES = new Set(["CONTRIBUTING.md"]);
