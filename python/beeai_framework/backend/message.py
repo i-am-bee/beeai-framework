@@ -86,6 +86,11 @@ class MessageToolResultContent(BaseModel):
     tool_call_id: str
 
 
+class MessageReasoningContent(BaseModel):
+    type: Literal["reasoning"] = "reasoning"
+    text: str
+
+
 class MessageToolCallContent(BaseModel):
     type: Literal["tool-call"] = "tool-call"
     id: str
@@ -157,7 +162,7 @@ class Message(ABC, Generic[T]):
         return type(self)([c.model_copy() for c in self.content], self.meta.copy())
 
 
-AssistantMessageContent = MessageTextContent | MessageToolCallContent
+AssistantMessageContent = MessageTextContent | MessageToolCallContent | MessageReasoningContent
 
 
 class AssistantMessage(Message[AssistantMessageContent]):
@@ -175,8 +180,10 @@ class AssistantMessage(Message[AssistantMessageContent]):
                 (
                     MessageTextContent(text=c)
                     if isinstance(c, str)
-                    # pyrefly: ignore [bad-argument-type]
-                    else to_any_model([MessageToolCallContent, MessageTextContent], cast(AssistantMessageContent, c))
+                    else to_any_model(
+                        [MessageToolCallContent, MessageTextContent, MessageReasoningContent],
+                        cast(AssistantMessageContent, c),  # pyrefly: ignore [bad-argument-type]
+                    )
                 )
                 for c in cast_list(content)
             ]
@@ -189,11 +196,18 @@ class AssistantMessage(Message[AssistantMessageContent]):
             id=id,
         )
 
+    @property
+    def reasoning(self) -> str:
+        return "".join([x.text for x in self.get_reasoning_messages()])
+
     def get_tool_calls(self) -> list[MessageToolCallContent]:
         return [cont for cont in self.content if isinstance(cont, MessageToolCallContent)]
 
     def get_text_messages(self) -> list[MessageTextContent]:
         return [cont for cont in self.content if isinstance(cont, MessageTextContent)]
+
+    def get_reasoning_messages(self) -> list[MessageReasoningContent]:
+        return [cont for cont in self.content if isinstance(cont, MessageReasoningContent)]
 
 
 class ToolMessage(Message[MessageToolResultContent]):
