@@ -29,6 +29,8 @@ custom domain `framework.beeai.dev`.
 - Served from the custom domain `framework.beeai.dev` (see `public/CNAME`), so
   the site base path is `/`. **All existing absolute links (`/modules/...`) keep
   working unchanged.**
+- `trailingSlash: 'never'` + `build.format: 'file'` emit `page.html` (served at
+  `/page`, no trailing slash) so URLs match the previous Mintlify paths **exactly**.
 - `public/.nojekyll` ensures GitHub Pages serves Astro's `_astro/` asset dir.
 
 ## Node version

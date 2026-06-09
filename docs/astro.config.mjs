@@ -15,6 +15,11 @@ export default defineConfig({
   // Served from the custom domain (GitHub Pages CNAME), so the base path is "/".
   site: "https://framework.beeai.dev",
 
+  // Match the previous Mintlify URLs exactly: no trailing slash, and emit
+  // `page.html` (served at `/page`) instead of `page/index.html` (`/page/`).
+  trailingSlash: "never",
+  build: { format: "file" },
+
   // Mintlify-compatibility build-time transforms. Order matters:
   // headings first, then CodeGroup -> Tabs, then inject the needed imports.
   markdown: {

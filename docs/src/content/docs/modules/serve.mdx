@@ -16,13 +16,13 @@ The following table lists the currently supported providers:
 
 | Name                                                          | Installation                    |
 |:--------------------------------------------------------------|:------------------------------|
-| [A2A](/integrations/a2a/#server)                                     | `pip install beeai-framework[a2a]`        |
-| [Agent Stack](/integrations/agent-stack/#exposing-to-the-platform-server)                     | `pip install beeai-framework[agentstack]` |
-| [MCP](/integrations/mcp/#server)                                     | `pip install beeai-framework[mcp]`        |
+| [A2A](/integrations/a2a#server)                                     | `pip install beeai-framework[a2a]`        |
+| [Agent Stack](/integrations/agent-stack#exposing-to-the-platform-server)                     | `pip install beeai-framework[agentstack]` |
+| [MCP](/integrations/mcp#server)                                     | `pip install beeai-framework[mcp]`        |
 | [ACP (Zed editor, stdio)](/integrations/acp-zed)                     | `pip install beeai-framework[acp-zed]`    |
-| [IBM watsonx Orchestrate](/integrations/watsonx-orchestrate/#server) | `pip install beeai-framework`             |
-| [OpenAI Chat Completion API](/integrations/openai-api/#server)           | `pip install beeai-framework`             |
-| [OpenAI Responses API](/integrations/openai-api/#server)                 | `pip install beeai-framework`             |
+| [IBM watsonx Orchestrate](/integrations/watsonx-orchestrate#server) | `pip install beeai-framework`             |
+| [OpenAI Chat Completion API](/integrations/openai-api#server)           | `pip install beeai-framework`             |
+| [OpenAI Responses API](/integrations/openai-api#server)                 | `pip install beeai-framework`             |
 
 <Tip>
 Click on the provider name to see a dedicate page how to use it.
@@ -39,10 +39,10 @@ Once you initiate the appropriate server class (eg: `AgentStackServer`, `OpenAIS
 
 You can typically register one of the followings:
 
-- [Tools](/modules/tools/)
-- [Agents](/modules/agents/)
-- [Chat Models](/modules/backend/)
-- [Runnable](/modules/middleware/)
+- [Tools](/modules/tools)
+- [Agents](/modules/agents)
+- [Chat Models](/modules/backend)
+- [Runnable](/modules/middleware)
 
 If the given instance is not supported, the `register` method will raise an exception.
 Nevertheless, you can easily register a custom factory to make it supported.

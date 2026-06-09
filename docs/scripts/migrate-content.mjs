@@ -82,10 +82,21 @@ const LINK_FIXUPS = [
   ],
 ];
 
+// The site uses `trailingSlash: 'never'` to match the old Mintlify URLs, so
+// strip any trailing slash from absolute internal links (the source authored a
+// few like `/modules/tools/` and `/integrations/a2a/#server`). Leaves the bare
+// root `/` and external links untouched.
+function stripTrailingSlashes(body) {
+  return body.replace(
+    /\]\((\/[^)\s#]+?)\/(#[^)\s]*)?\)/g,
+    (_m, p, hash) => `](${p}${hash || ""})`,
+  );
+}
+
 function fixLinks(body, pageDir) {
   let out = absolutizeLinks(body, pageDir);
   for (const [re, repl] of LINK_FIXUPS) out = out.replace(re, repl);
-  return out;
+  return stripTrailingSlashes(out);
 }
 
 function titleFromFilename(file) {
