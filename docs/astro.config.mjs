@@ -8,12 +8,23 @@ import mdx from "@astrojs/mdx";
 import remarkHeading from "./plugins/remark-heading.mjs";
 import remarkCodegroup from "./plugins/remark-codegroup.mjs";
 import remarkAutoImport from "./plugins/remark-auto-import.mjs";
+import remarkBaseLinks from "./plugins/remark-base-links.mjs";
 import { redirects } from "./redirects.mjs";
+
+// Served from the GitHub Pages project URL (https://i-am-bee.github.io/beeai-framework/),
+// so everything lives under this base path. When the custom domain
+// (framework.beeai.dev) is wired up later, set BASE back to "/" and switch
+// `site` to the custom domain — the link/redirect prefixing below no-ops at "/".
+const BASE = "/beeai-framework";
+
+// Prefix an internal absolute path with BASE (Astro does not do this for
+// redirect targets, just as it doesn't for hand-written content links).
+const withBase = (path) => (BASE === "/" ? path : `${BASE}${path}`);
 
 // https://astro.build/config
 export default defineConfig({
-  // Served from the custom domain (GitHub Pages CNAME), so the base path is "/".
-  site: "https://framework.beeai.dev",
+  site: "https://i-am-bee.github.io",
+  base: BASE,
 
   // Match the previous Mintlify URLs exactly: no trailing slash, and emit
   // `page.html` (served at `/page`) instead of `page/index.html` (`/page/`).
@@ -24,15 +35,25 @@ export default defineConfig({
   // headings first, then CodeGroup -> Tabs, then inject the needed imports.
   markdown: {
     processor: unified({
-      remarkPlugins: [remarkHeading, remarkCodegroup, remarkAutoImport],
+      remarkPlugins: [
+        remarkHeading,
+        remarkCodegroup,
+        remarkAutoImport,
+        // Must run last: rewrites root-relative content links/images to include
+        // the base path. Tuple form so unified passes the options to the factory.
+        [remarkBaseLinks, { base: BASE }],
+      ],
     }),
   },
 
   redirects: {
     // Site root -> first documentation page (matches the old entry point).
-    "/": "/introduction/welcome",
+    "/": withBase("/introduction/welcome"),
     // Page redirects ported from docs.json (shared with migrate-content.mjs).
-    ...redirects,
+    // Targets need the base prefix; Astro doesn't add it to redirect destinations.
+    ...Object.fromEntries(
+      Object.entries(redirects).map(([from, to]) => [from, withBase(to)]),
+    ),
   },
 
   integrations: [
