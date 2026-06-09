@@ -66,15 +66,22 @@ export default function remarkCodegroup() {
         return;
       }
 
-      const codes = (node.children || []).filter((c) => c.type === "code");
+      const children = node.children || [];
+      const codes = children.filter((c) => c.type === "code");
+      // Genuine content (prose, lists, ...) an author may have placed alongside
+      // the code blocks — preserved before the tabs rather than discarded. Only
+      // embedme comments and blank whitespace are dropped.
+      const extras = children.filter(
+        (c) =>
+          c.type !== "code" &&
+          c.type !== "mdxFlowExpression" &&
+          c.type !== "mdxTextExpression" &&
+          !(c.type === "text" && !c.value.trim()),
+      );
 
       // No code inside: drop the wrapper, keep any genuine content children.
       if (codes.length === 0) {
-        const keep = (node.children || []).filter(
-          (c) =>
-            c.type !== "mdxFlowExpression" && c.type !== "mdxTextExpression",
-        );
-        parent.children.splice(index, 1, ...keep);
+        parent.children.splice(index, 1, ...extras);
         return;
       }
 
@@ -84,7 +91,7 @@ export default function remarkCodegroup() {
 
       // A single block needs no tabs.
       if (codes.length === 1) {
-        parent.children.splice(index, 1, codes[0]);
+        parent.children.splice(index, 1, ...extras, codes[0]);
         return;
       }
 
@@ -104,7 +111,7 @@ export default function remarkCodegroup() {
         ? [{ type: "mdxJsxAttribute", name: "syncKey", value: "lang" }]
         : [];
 
-      parent.children.splice(index, 1, {
+      parent.children.splice(index, 1, ...extras, {
         type: "mdxJsxFlowElement",
         name: "Tabs",
         attributes,

@@ -65,13 +65,15 @@
 
 /* <CardGroup> honours the requested column count on wide viewports. */
 @media (min-width: 72rem) {
-  .mf-card-group[style*="--mf-cols"] .card-grid {
+  .mf-card-group[data-cols] .card-grid {
     grid-template-columns: repeat(var(--mf-cols), minmax(0, 1fr));
   }
 }
 
-/* <Steps> / <Step>: numbered vertical stepper resembling Mintlify. */
+/* <Steps> / <Step>: numbered vertical stepper resembling Mintlify.
+ * Rendered as <ol>/<li>; suppress the native list marker (we draw our own). */
 .mf-steps {
+  list-style: none;
   counter-reset: mf-step;
   margin-top: 1.5rem;
   padding-left: 0.25rem;

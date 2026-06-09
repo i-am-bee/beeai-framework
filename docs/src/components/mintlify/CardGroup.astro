@@ -6,7 +6,7 @@ import { CardGrid } from "@astrojs/starlight/components";
 const { cols } = Astro.props;
 ---
 
-<div class="mf-card-group" style={cols ? `--mf-cols:${cols}` : undefined}>
+<div class="mf-card-group" data-cols={cols} style={cols ? `--mf-cols:${cols}` : undefined}>
   <CardGrid>
     <slot />
   </CardGrid>

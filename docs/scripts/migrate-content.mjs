@@ -16,6 +16,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { parse as parseYaml } from "yaml";
 import { redirects as REDIRECTS } from "../redirects.mjs";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
@@ -45,12 +46,9 @@ function walk(dir, acc = []) {
 function parseFrontmatter(text) {
   const m = text.match(/^---\r?\n([\s\S]*?)\r?\n---\r?\n?/);
   if (!m) return { data: {}, body: text };
-  const data = {};
-  for (const line of m[1].split(/\r?\n/)) {
-    const kv = line.match(/^([A-Za-z][\w-]*):\s*(.*)$/);
-    if (kv) data[kv[1]] = kv[2].trim().replace(/^["']|["']$/g, "");
-  }
-  return { data, body: text.slice(m[0].length) };
+  // Use a real YAML parser so quoting, nesting and multi-line values are handled
+  // correctly. Output is re-serialized deterministically by buildFrontmatter().
+  return { data: parseYaml(m[1]) || {}, body: text.slice(m[0].length) };
 }
 
 // Mintlify resolved relative `.mdx` links against the file's directory and its
@@ -118,6 +116,10 @@ function buildFrontmatter(data) {
   lines.push("---", "");
   return lines.join("\n");
 }
+
+// Start from a clean slate so files deleted/renamed in the source don't linger
+// as orphans in the content collection.
+fs.rmSync(OUT, { recursive: true, force: true });
 
 let migrated = 0;
 for (const file of walk(SRC)) {

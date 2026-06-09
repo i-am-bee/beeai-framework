@@ -28,6 +28,7 @@
   },
   "devDependencies": {
     "embedme": "^1.22.1",
-    "starlight-links-validator": "^0.24.0"
+    "starlight-links-validator": "^0.24.0",
+    "yaml": "^2.5.0"
   }
 }
