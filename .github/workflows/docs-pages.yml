@@ -1,0 +1,83 @@
+name: Docs
+
+on:
+  push:
+    branches: ["main"]
+    paths:
+      - "docs/**"
+      - "python/examples/**"
+      - "typescript/examples/**"
+      - ".github/workflows/docs-pages.yml"
+  pull_request:
+    branches: ["main"]
+    paths:
+      - "docs/**"
+      - "python/examples/**"
+      - "typescript/examples/**"
+      - ".github/workflows/docs-pages.yml"
+  workflow_dispatch:
+
+# Permissions required to deploy to GitHub Pages via the official actions.
+# (Pull requests get a read-only token regardless; their build job doesn't deploy.)
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Cancel superseded PR runs; never cancel an in-flight deploy on main.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  # Runs on PRs and on main: installs, verifies snippets are in sync, and builds
+  # (the build runs starlight-links-validator, so broken links fail the check).
+  build:
+    name: Build & validate
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: docs
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: docs/.nvmrc
+          cache: npm
+          cache-dependency-path: docs/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Verify code snippets are in sync (embedme)
+        run: npm run embedme:verify
+
+      - name: Build with Astro (validates internal links)
+        run: npm run build
+
+      # Only needed for an actual deploy, so skip it on pull requests.
+      - name: Upload Pages artifact
+        if: github.event_name != 'pull_request'
+        uses: actions/upload-pages-artifact@v3
+        with:
+          # Path is relative to the repository root.
+          path: docs/dist
+
+  # Deploys to GitHub Pages only on main / manual dispatch — never on PRs.
+  deploy:
+    name: Deploy to GitHub Pages
+    if: github.event_name != 'pull_request'
+    needs: build
+    runs-on: ubuntu-latest
+    # Serialize deployments; let an in-flight one finish.
+    concurrency:
+      group: pages
+      cancel-in-progress: false
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy
+        id: deployment
+        uses: actions/deploy-pages@v4

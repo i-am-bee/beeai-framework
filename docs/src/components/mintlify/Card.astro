@@ -1,0 +1,33 @@
+---
+// Mintlify <Card title icon href> -> Starlight Card, optionally wrapped in a link.
+import { Card as SLCard } from "@astrojs/starlight/components";
+
+const { title, icon, href } = Astro.props;
+
+// Map the Mintlify/FontAwesome icon names used in the docs to Starlight icon
+// names. Names with no Starlight equivalent (e.g. "python", "js") fall through
+// to undefined and the card renders without an icon — never a build error.
+const ICON_MAP: Record<string, string> = {
+  discord: "discord",
+  youtube: "youtube",
+  bluesky: "blueSky",
+  "book-open": "open-book",
+  check: "approve-check",
+};
+
+const slIcon = icon ? ICON_MAP[icon.toLowerCase()] : undefined;
+---
+
+{
+  href ? (
+    <a class="mf-card-link" href={href}>
+      <SLCard title={title} icon={slIcon}>
+        <slot />
+      </SLCard>
+    </a>
+  ) : (
+    <SLCard title={title} icon={slIcon}>
+      <slot />
+    </SLCard>
+  )
+}

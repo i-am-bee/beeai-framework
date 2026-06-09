@@ -1,15 +1,34 @@
 {
-  "name": "@beeai/framework-docs",
+  "name": "@beeai/framework-docs-site",
   "version": "0.0.1",
-  "description": "",
-  "main": "index.js",
-  "keywords": [],
-  "packageManager": "yarn@4.9.1",
-  "author": "BeeAI a Series of LF Projects, LLC",
+  "description": "BeeAI Framework documentation (Astro Starlight)",
+  "type": "module",
+  "private": true,
   "license": "Apache-2.0",
+  "author": "BeeAI a Series of LF Projects, LLC",
+  "engines": {
+    "node": ">=22.12.0"
+  },
+  "scripts": {
+    "dev": "astro dev --port 3333",
+    "start": "astro dev --port 3333",
+    "build": "astro build",
+    "preview": "astro preview",
+    "check": "astro check",
+    "astro": "astro",
+    "embedme": "embedme --source-root=.. 'src/content/docs/**/*.mdx' --silent",
+    "embedme:verify": "embedme --source-root=.. 'src/content/docs/**/*.mdx' --verify --silent"
+  },
+  "dependencies": {
+    "@astrojs/mdx": "^6.0.2",
+    "@astrojs/starlight": "^0.39.3",
+    "astro": "^6.4.4",
+    "sharp": "^0.34.5",
+    "unist-util-visit": "^5.0.0"
+  },
   "devDependencies": {
     "embedme": "^1.22.1",
-    "mintlify": "^4.2.192",
-    "typescript": "^5.9.3"
+    "starlight-links-validator": "^0.24.0",
+    "yaml": "^2.5.0"
   }
 }

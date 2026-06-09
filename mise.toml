@@ -25,7 +25,6 @@ postinstall = "{{ mise_bin }} setup"
 includes = [
     "python/tasks.toml",
     "typescript/tasks.toml",
-    "docs/tasks.toml",
 ]
 
 ## convenience tasks
@@ -63,7 +62,6 @@ set -euo pipefail
 changed=$(git diff --cached --name-only)
 if grep -q '^python/'     <<< "$changed"; then (set -x; {{mise_bin}} python:git-hooks:pre-commit);     fi
 if grep -q '^typescript/' <<< "$changed"; then (set -x; {{mise_bin}} typescript:git-hooks:pre-commit); fi
-if grep -q '^docs/'       <<< "$changed"; then (set -x; {{mise_bin}} docs:git-hooks:pre-commit);       fi
 """
 
 [tasks."git-hooks:commit-msg"]
