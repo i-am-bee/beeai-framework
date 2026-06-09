@@ -59,13 +59,13 @@
   text-decoration: none;
   color: inherit;
 }
-.mf-card-link:hover :global(.card) {
+.mf-card-link:hover .card {
   border-color: var(--sl-color-accent);
 }
 
 /* <CardGroup> honours the requested column count on wide viewports. */
 @media (min-width: 72rem) {
-  .mf-card-group[style*="--mf-cols"] :global(.card-grid) {
+  .mf-card-group[style*="--mf-cols"] .card-grid {
     grid-template-columns: repeat(var(--mf-cols), minmax(0, 1fr));
   }
 }

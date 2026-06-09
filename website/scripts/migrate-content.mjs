@@ -16,6 +16,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { redirects as REDIRECTS } from "../redirects.mjs";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const SRC = path.resolve(here, "../../docs");
@@ -51,15 +52,6 @@ function parseFrontmatter(text) {
   }
   return { data, body: text.slice(m[0].length) };
 }
-
-// Mirrors the `redirects` in astro.config.mjs: links to moved pages are
-// rewritten to their destination so they don't depend on redirect pages.
-const REDIRECTS = {
-  "/modules/events": "/modules/middleware",
-  "/modules/emitter": "/modules/middleware",
-  "/experimental/requirement-agent": "/modules/agents/requirement-agent",
-  "/integrations/beeai-platform": "/integrations/agent-stack",
-};
 
 // Mintlify resolved relative `.mdx` links against the file's directory and its
 // pages had no trailing slash; Starlight pages do, which breaks those links.
@@ -134,8 +126,8 @@ for (const file of walk(SRC)) {
   }
 
   const slug = rel.replace(/\.(mdx?|md)$/i, "");
-  const pageDir = "/" + path.posix.dirname(slug);
-  body = fixLinks(body, pageDir === "/." ? "/" : pageDir);
+  const dir = path.posix.dirname(slug);
+  body = fixLinks(body, dir === "." ? "/" : "/" + dir);
 
   const dest = path.join(OUT, rel);
   fs.mkdirSync(path.dirname(dest), { recursive: true });

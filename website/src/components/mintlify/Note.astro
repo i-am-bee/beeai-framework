@@ -1,9 +1,6 @@
 ---
-// Mintlify <Note> -> Starlight note aside.
+// Mintlify <Note> (and <Info>) -> Starlight note aside.
 import { Aside } from "@astrojs/starlight/components";
-const { title } = Astro.props;
 ---
 
-<Aside type="note" title={title}>
-  <slot />
-</Aside>
+<Aside type="note"><slot /></Aside>

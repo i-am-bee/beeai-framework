@@ -38,7 +38,8 @@ export default function remarkHeading() {
           children: node.children || [],
         };
         if (id) {
-          heading.data = { id, hProperties: { id } };
+          // hProperties.id sets the rendered heading's id (anchor + TOC).
+          heading.data = { hProperties: { id } };
         }
         parent.children[index] = heading;
       }

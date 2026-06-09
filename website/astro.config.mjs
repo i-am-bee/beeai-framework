@@ -8,6 +8,7 @@ import mdx from "@astrojs/mdx";
 import remarkHeading from "./plugins/remark-heading.mjs";
 import remarkCodegroup from "./plugins/remark-codegroup.mjs";
 import remarkAutoImport from "./plugins/remark-auto-import.mjs";
+import { redirects } from "./redirects.mjs";
 
 // https://astro.build/config
 export default defineConfig({
@@ -22,14 +23,11 @@ export default defineConfig({
     }),
   },
 
-  // Ported verbatim from docs.json "redirects".
   redirects: {
     // Site root -> first documentation page (matches the old entry point).
     "/": "/introduction/welcome",
-    "/modules/events": "/modules/middleware",
-    "/modules/emitter": "/modules/middleware",
-    "/experimental/requirement-agent": "/modules/agents/requirement-agent",
-    "/integrations/beeai-platform": "/integrations/agent-stack",
+    // Page redirects ported from docs.json (shared with migrate-content.mjs).
+    ...redirects,
   },
 
   integrations: [

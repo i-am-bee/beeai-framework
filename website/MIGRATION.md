@@ -91,8 +91,13 @@ frontmatter adjusted**.
   wanted.
 - **`<CardGroup cols={3}>`** uses Starlight's responsive grid; the 3-up layout is
   applied via CSS on wide viewports (`--mf-cols`).
-- **Brand palette** in `src/styles/custom.css` is a black/white approximation of
+- **Brand palette** in `src/styles/custom.css` is a warm-grey approximation of
   "maple" — fine-tune to taste.
+- **Card icons**: `<Card icon>` is mapped to Starlight's icon set in
+  `Card.astro` for the names that have an equivalent (brand icons, `book-open`,
+  `check`). FontAwesome names with no Starlight icon (e.g. `python`, `js`,
+  `server`) render without an icon rather than failing the build. Add custom
+  icons if those cards need them back.
 - **Sidebar page icons** (the per-page FontAwesome icons) are not shown by
   default in Starlight.
 - A `markdown.*` deprecation warning at build time comes from Starlight's own

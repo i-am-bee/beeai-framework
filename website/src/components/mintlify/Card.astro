@@ -4,21 +4,18 @@ import { Card as SLCard } from "@astrojs/starlight/components";
 
 const { title, icon, href } = Astro.props;
 
-// Map the Mintlify/FontAwesome icon names we actually use to valid Starlight
-// icon names. Unknown names are dropped so the build never fails on a bad icon.
+// Map the Mintlify/FontAwesome icon names used in the docs to Starlight icon
+// names. Names with no Starlight equivalent (e.g. "python", "js") fall through
+// to undefined and the card renders without an icon — never a build error.
 const ICON_MAP: Record<string, string> = {
   discord: "discord",
   youtube: "youtube",
   bluesky: "blueSky",
-  github: "github",
-  slack: "slack",
-  rocket: "rocket",
-  twitter: "x.com",
-  x: "x.com",
-  linkedin: "linkedin",
+  "book-open": "open-book",
+  check: "approve-check",
 };
 
-const slIcon = icon && ICON_MAP[icon] ? ICON_MAP[icon] : undefined;
+const slIcon = icon ? ICON_MAP[icon] : undefined;
 ---
 
 {
