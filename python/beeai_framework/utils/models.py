@@ -32,8 +32,8 @@ def to_any_model(classes: Sequence[type[BaseModel]], obj: ModelLike[T]) -> Any:
         with suppress(Exception):
             return to_model(cls, obj)
 
-    return ValueError(
-        "Failed to create a model instance from the passed object!" + "\n".join(cls.__name__ for cls in classes),
+    raise ValueError(
+        "Failed to create a model instance from the passed object!\n" + "\n".join(cls.__name__ for cls in classes),
     )
 
 
