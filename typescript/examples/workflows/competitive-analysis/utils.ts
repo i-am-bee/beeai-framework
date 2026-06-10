@@ -1,4 +1,3 @@
-import { TavilySearchResults } from "@langchain/community/tools/tavily_search";
 import { getEnv } from "beeai-framework/internals/env";
 import "dotenv/config";
 import { State } from "./state.js";
@@ -22,10 +21,21 @@ export async function tavilySearch(query: string, maxResults = 3): Promise<Searc
     throw new Error("TAVILY_API_KEY not found in environment");
   }
 
-  const tool = new TavilySearchResults({ apiKey, maxResults });
-  const response = await tool.invoke(query);
-  const parsed = JSON.parse(response);
-  return parsed;
+  const response = await fetch("https://api.tavily.com/search", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "Authorization": `Bearer ${apiKey}`,
+    },
+    body: JSON.stringify({ query, max_results: maxResults }),
+  });
+  if (!response.ok) {
+    throw new Error(
+      `Tavily search failed with status ${response.status}: ${await response.text()}`,
+    );
+  }
+  const parsed: { results: SearchResult[] } = await response.json();
+  return parsed.results;
 }
 
 export function deduplicateAndFormatSources(
