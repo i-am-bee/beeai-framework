@@ -203,11 +203,7 @@ export async function callCodeInterpreter({
     }
   });
 
-  if (!response) {
-    throw new ToolError("Request to code interpreter has failed.");
-  }
-
-  if (!response.ok && response.status >= 400) {
+  if (!response.ok) {
     throw new ToolError(
       `Request to code interpreter has failed with HTTP status code ${response.status}.`,
       [new Error(await response.text())],
