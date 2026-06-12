@@ -1,11 +1,16 @@
+# Copyright 2025 © BeeAI a Series of LF Projects, LLC
+# SPDX-License-Identifier: Apache-2.0
+
 import pytest
 from unittest.mock import AsyncMock, patch
-from beeai_framework.tools.code import SandboxTool
 from beeai_framework.tools.code.sandbox import SandboxToolCreateError
+from beeai_framework.tools.code.sandbox import SandboxTool
+
+
 @pytest.mark.asyncio
 async def test_sandbox_error_messages_joined_correctly():
     error_messages = ["SyntaxError on line 1", "Missing return statement"]
-    
+
     with patch(
         "beeai_framework.tools.code.sandbox.PythonTool.call_code_interpreter",
         new_callable=AsyncMock,
