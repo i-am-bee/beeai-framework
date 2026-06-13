@@ -93,9 +93,16 @@ function toLCToolArgs(input: unknown): Record<string, any> {
   }
 
   if (isString(input)) {
-    const parsed = parseBrokenJson(input, { pair: ["{", "}"] });
-    if (isPlainObject(parsed)) {
-      return parsed;
+    try {
+      const parsed = parseBrokenJson(input, { pair: ["{", "}"] });
+      if (isPlainObject(parsed)) {
+        return parsed;
+      }
+    } catch (error) {
+      Logger.root.warn(
+        "Failed to parse tool arguments: " +
+          (error instanceof Error ? error.message : String(error)),
+      );
     }
   }
 
@@ -265,14 +272,15 @@ function toBeeAIToolCall(toolCall: { id?: string; name?: string; args?: unknown 
  */
 function toBeeAIToolResult(message: LCToolMessage): ToolResultPart {
   let content: string;
-  if (typeof message.content === "string" && message.content) {
+  if (typeof message.content === "string" && message.content !== "") {
     content = message.content;
-  } else if (message.content) {
+  } else if (message.content !== undefined && message.content !== null && message.content !== "") {
     content = JSON.stringify(message.content);
-  } else if ("artifact" in message && message.artifact) {
-    content = JSON.stringify(message.artifact);
+  } else if ("artifact" in message && message.artifact !== undefined && message.artifact !== null) {
+    content =
+      typeof message.artifact === "string" ? message.artifact : JSON.stringify(message.artifact);
   } else {
-    content = "";
+    content = typeof message.content === "string" ? message.content : "";
   }
 
   return {
@@ -298,17 +306,15 @@ export function toLCMessages(messages: Message[]): LCBaseMessage[] {
   const output: LCBaseMessage[] = [];
 
   for (const msg of messages) {
-    const content = toLCContent(msg);
-
     if (msg instanceof UserMessage) {
-      output.push(new LCUserMessage({ content, id: msg.id }));
+      output.push(new LCUserMessage({ content: toLCContent(msg), id: msg.id }));
       continue;
     }
 
     if (msg instanceof AssistantMessage) {
       output.push(
         new LCAIMessage({
-          content,
+          content: toLCContent(msg),
           id: msg.id,
           tool_calls: toLCToolCalls(msg),
         }),
@@ -320,7 +326,7 @@ export function toLCMessages(messages: Message[]): LCBaseMessage[] {
       const toolResults = msg.getToolResults();
       for (let i = 0; i < toolResults.length; i++) {
         const toolResult = toolResults[i];
-        const messageId = toolResults.length > 1 ? `${msg.id}-${i}` : msg.id;
+        const messageId = toolResults.length > 1 ? msg.id + "-" + i : msg.id;
         output.push(
           new LCToolMessage({
             id: messageId,
@@ -337,11 +343,11 @@ export function toLCMessages(messages: Message[]): LCBaseMessage[] {
     }
 
     if (msg instanceof SystemMessage) {
-      output.push(new LCSystemMessage({ content, id: msg.id }));
+      output.push(new LCSystemMessage({ content: toLCContent(msg), id: msg.id }));
       continue;
     }
 
-    output.push(new LCUserMessage({ content, id: msg.id }));
+    output.push(new LCUserMessage({ content: toLCContent(msg), id: msg.id }));
   }
 
   return output;
@@ -376,7 +382,9 @@ export function toBeeAIMessages(messages: LCBaseMessage[]): Message[] {
       return new ToolMessage(toBeeAIToolResult(msg), msg.response_metadata, msg.id);
     }
 
-    throw new ValueError(`Unsupported message type: ${msg.constructor.name}`);
+    // Use .type property (LangChain 1.x) with fallback to constructor.name
+    const typeName = "type" in msg && msg.type ? String(msg.type) : msg.constructor.name;
+    throw new ValueError("Unsupported message type: " + typeName);
   });
 }
 
