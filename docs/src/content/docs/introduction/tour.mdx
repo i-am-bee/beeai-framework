@@ -599,7 +599,7 @@ async def main():
     logger.info("Starting agent application")
 
     agent = RequirementAgent(
-        llm=ChatModel.from_name("ollama:granite3.3:8b"),
+        llm=ChatModel.from_name("ollama:granite4.1:8b"),
         role="friendly AI assistant",
         instructions="Be helpful and conversational in all your interactions. Use your tools to find accurate, current information.",
         tools=[WikipediaTool(), OpenMeteoTool(), ThinkTool()],
