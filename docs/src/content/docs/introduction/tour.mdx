@@ -412,7 +412,44 @@ if __name__ == "__main__":
 ```
 
 ```ts TypeScript [expandable]
-COMING SOON
+import { RequirementAgent } from "beeai-framework/agents/requirement/agent";
+import { ChatModel } from "beeai-framework/backend/chat";
+import { WikipediaTool } from "beeai-framework/tools/search/wikipedia";
+import { OpenMeteoTool } from "beeai-framework/tools/weather/openMeteo";
+import { GlobalTrajectoryMiddleware } from "beeai-framework/middleware/trajectory";
+import { Tool } from "beeai-framework/tools/base";
+import { Logger } from "beeai-framework/logger/logger";
+
+// Set up pretty logging to the console
+Logger.defaults.pretty = true;
+
+// You create the logger and decide what to log
+const logger = Logger.root.child({ name: "my-agent", level: "trace" });
+
+logger.info("Starting agent application");
+
+const agent = new RequirementAgent({
+  llm: await ChatModel.fromName("ollama:granite3.3"),
+  role: "friendly AI assistant",
+  instructions:
+    "Be helpful and conversational in all your interactions. Use your tools to find accurate, current information.",
+  tools: [new WikipediaTool(), new OpenMeteoTool()],
+});
+
+logger.debug("About to process user message");
+
+// The `included` parameter filters what types of operations to trace:
+// - [Tool]: Show only tool executions (function calls, API calls, etc.)
+// - [ChatModel]: Show only LLM calls (model inference, token usage)
+// - [Tool, ChatModel]: Show both tools and LLM interactions
+// - [] or undefined: Show everything (agents, tools, models, requirements)
+const response = await agent
+  .run({ prompt: "What's the weather in Paris and tell me about the Eiffel Tower?" })
+  .middleware(new GlobalTrajectoryMiddleware({ included: [Tool] }));
+
+logger.info("Agent response generated");
+
+console.log(response.result.text);
 ```
 
 </CodeGroup>
