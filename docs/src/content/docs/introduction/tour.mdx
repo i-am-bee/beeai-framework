@@ -1002,7 +1002,24 @@ asyncio.run(main())
 ```
 
 ```ts TypeScript [expandable]
-COMING SOON
+import { ChatModel } from "beeai-framework/backend/chat";
+import { SlidingCache } from "beeai-framework/cache/slidingCache";
+import { UserMessage } from "beeai-framework/backend/message";
+
+// LLM with caching enabled
+const llm = await ChatModel.fromName("ollama:granite3.3");
+llm.config({ cache: new SlidingCache({ size: 50 }) }); // Cache up to 50 responses
+
+// Must send a list of messages to the llm
+const messages = [new UserMessage("Hello, how are you?")];
+
+// First call (miss)
+const res1 = await llm.create({ messages });
+// Second call with identical input (hit)
+const res2 = await llm.create({ messages });
+
+console.log("First:", res1.getTextContent());
+console.log("Second (cached):", res2.getTextContent());
 ```
 
 </CodeGroup>
@@ -1022,7 +1039,13 @@ weather_tool = OpenMeteoTool(options={"cache": UnconstrainedCache()})
 ```
 
 ```ts TypeScript [expandable]
-COMING SOON
+import { OpenMeteoTool } from "beeai-framework/tools/weather/openMeteo";
+import { UnconstrainedCache } from "beeai-framework/cache/unconstrainedCache";
+
+// Cache all results from the weather API
+const weatherTool = new OpenMeteoTool({
+  cache: new UnconstrainedCache(),
+});
 ```
 
 </CodeGroup>
@@ -1060,7 +1083,29 @@ asyncio.run(main())
 ```
 
 ```ts TypeScript [expandable]
-COMING SOON
+import { RequirementAgent } from "beeai-framework/agents/requirement/agent";
+import { ChatModel } from "beeai-framework/backend/chat";
+import { OpenMeteoTool } from "beeai-framework/tools/weather/openMeteo";
+import { UnconstrainedCache } from "beeai-framework/cache/unconstrainedCache";
+import { UnconstrainedMemory } from "beeai-framework/memory/unconstrainedMemory";
+import { SlidingCache } from "beeai-framework/cache/slidingCache";
+
+const llm = await ChatModel.fromName("ollama:granite3.3");
+llm.config({ cache: new SlidingCache({ size: 50 }) }); // Cache up to 50 responses
+
+const weatherTool = new OpenMeteoTool({
+  cache: new UnconstrainedCache(),
+});
+
+const agent = new RequirementAgent({
+  llm,
+  tools: [weatherTool], // Tool with cache
+  memory: new UnconstrainedMemory(),
+  instructions: "Provide answers efficiently using cached results when possible.",
+});
+
+await agent.run({ prompt: "What's the weather in New York?" });
+await agent.run({ prompt: "What's the weather in New York?" }); // Weather tool cache should hit
 ```
 
 </CodeGroup>
@@ -1111,7 +1156,29 @@ if __name__ == "__main__":
 ```
 
 ```ts TypeScript [expandable]
-COMING SOON
+import { RequirementAgent } from "beeai-framework/agents/requirement/agent";
+import { ChatModel } from "beeai-framework/backend/chat";
+import { UnconstrainedMemory } from "beeai-framework/memory/unconstrainedMemory";
+import { OpenMeteoTool } from "beeai-framework/tools/weather/openMeteo";
+import { FrameworkError } from "beeai-framework/errors";
+
+try {
+  const agent = new RequirementAgent({
+    llm: await ChatModel.fromName("ollama:granite3.3"),
+    memory: new UnconstrainedMemory(),
+    tools: [new OpenMeteoTool()],
+    instructions: "You provide weather information.",
+  });
+
+  const response = await agent.run({ prompt: "What's the weather in Invalid-City-Name?" });
+  console.log(response.result.text);
+} catch (e) {
+  if (e instanceof FrameworkError) {
+    console.error(`Framework error occurred: ${e.explain()}`);
+  } else {
+    console.error(`Unexpected error: ${e}`);
+  }
+}
 ```
 
 </CodeGroup>
