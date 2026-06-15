@@ -298,4 +298,8 @@ export class WatsonxChatModel extends ChatModel {
   loadSnapshot(snapshot: ReturnType<typeof this.createSnapshot>) {
     Object.assign(this, snapshot);
   }
+
+  static {
+    WatsonxChatModel.register();
+  }
 }
