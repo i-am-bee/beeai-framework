@@ -64,7 +64,7 @@ class XquikSearchTweetsTool(
 
     async def _run(
         self,
-        tool_input: XquikSearchTweetsToolInput,
+        input: XquikSearchTweetsToolInput,
         options: ToolRunOptions | None,
         context: RunContext,
     ) -> XquikSearchTweetsToolOutput:
@@ -75,9 +75,9 @@ class XquikSearchTweetsTool(
         base_url = os.getenv("XQUIK_BASE_URL", "https://xquik.com/api/v1").rstrip("/")
         params = urlencode(
             {
-                "q": tool_input.query,
-                "queryType": tool_input.query_type,
-                "limit": tool_input.limit,
+                "q": input.query,
+                "queryType": input.query_type,
+                "limit": input.limit,
             }
         )
         result = await asyncio.to_thread(fetch_xquik_json, f"{base_url}/x/tweets/search?{params}", api_key)
