@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import os
+
 from typing_extensions import Unpack
 
 from beeai_framework.adapters.litellm import LiteLLMChatModel, utils

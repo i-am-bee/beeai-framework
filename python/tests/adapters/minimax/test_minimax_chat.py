@@ -86,7 +86,7 @@ class TestMiniMaxChatModelInit:
         with patch.dict(os.environ, {}, clear=True):
             # Remove any existing MINIMAX_API_KEY
             os.environ.pop("MINIMAX_API_KEY", None)
-            with pytest.raises(ValueError, match="api_key.*required"):
+            with pytest.raises(ValueError, match=r"api_key.*required"):
                 MiniMaxChatModel()
 
     @patch.dict(os.environ, {"MINIMAX_API_KEY": "test-key-123"})

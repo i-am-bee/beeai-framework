@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { BackendProviders } from "@/backend/constants.js";
 import { MiniMaxChatModel } from "@/adapters/minimax/backend/chat.js";
 import { MiniMaxClient } from "@/adapters/minimax/backend/client.js";
@@ -87,10 +87,14 @@ describe("MiniMaxChatModel", () => {
   });
 
   it("should accept custom client settings", () => {
-    const model = new MiniMaxChatModel("MiniMax-M3", {}, {
-      apiKey: "custom-key",
-      baseURL: "https://proxy.example.com/v1",
-    });
+    const model = new MiniMaxChatModel(
+      "MiniMax-M3",
+      {},
+      {
+        apiKey: "custom-key",
+        baseURL: "https://proxy.example.com/v1",
+      },
+    );
     expect(model).toBeInstanceOf(MiniMaxChatModel);
   });
 });
