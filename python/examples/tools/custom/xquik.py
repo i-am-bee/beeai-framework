@@ -7,11 +7,12 @@ from urllib.error import HTTPError, URLError
 from urllib.parse import urlencode
 from urllib.request import Request, urlopen
 
+from pydantic import BaseModel, Field
+
 from beeai_framework.context import RunContext
 from beeai_framework.emitter import Emitter
 from beeai_framework.errors import FrameworkError
 from beeai_framework.tools import JSONToolOutput, Tool, ToolError, ToolRunOptions
-from pydantic import BaseModel, Field
 
 
 class XquikSearchTweetsToolInput(BaseModel):
@@ -49,9 +50,7 @@ def fetch_xquik_json(url: str, api_key: str) -> dict[str, Any]:
     return result
 
 
-class XquikSearchTweetsTool(
-    Tool[XquikSearchTweetsToolInput, ToolRunOptions, XquikSearchTweetsToolOutput]
-):
+class XquikSearchTweetsTool(Tool[XquikSearchTweetsToolInput, ToolRunOptions, XquikSearchTweetsToolOutput]):
     name = "XquikSearchTweets"
     description = "Searches X posts through the Xquik REST API."
     input_schema = XquikSearchTweetsToolInput
