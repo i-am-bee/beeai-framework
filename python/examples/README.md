@@ -11,7 +11,8 @@ This repository contains examples demonstrating the usage of the BeeAI Framework
 5. [Memory](#memory)
 6. [Templates](#templates)
 7. [Tools](#tools)
-8. [Serve](#serve)
+8. [Observability](#observability)
+9. [Serve](#serve)
 
 ## Agents
 
@@ -59,6 +60,11 @@ This repository contains examples demonstrating the usage of the BeeAI Framework
 - [`decorator.py`](/python/examples/tools/decorator.py): Tool creation using decorator
 - [`duckduckgo.py`](/python/examples/tools/duckduckgo.py): DDG Search Tool for searching the web
 - [`openmeteo.py`](/python/examples/tools/openmeteo.py): Open-Meteo Tool for retrieving weather data
+
+## Observability
+
+- [`simple_observe.py`](/python/examples/observability/simple_observe.py): Basic observability example
+- [`simple_on.py`](/python/examples/observability/simple_on.py): Event subscription example
 
 ## Serve
 
