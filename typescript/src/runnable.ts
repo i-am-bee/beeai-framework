@@ -39,9 +39,11 @@ export class RunnableOutput {
   // Allow arbitrary extra fields, mirroring Python's `extra="allow"`.
   [key: string]: any;
 
-  constructor(input: { output: AnyMessage[]; context?: Record<string, any> }) {
-    this.output = input.output;
-    this.context = input.context ?? {};
+  constructor(input: { output: AnyMessage[]; context?: Record<string, any> } & Record<string, any>) {
+    const { output, context, ...extra } = input;
+    this.output = output;
+    this.context = context ?? {};
+    Object.assign(this, extra);
   }
 
   /**
@@ -63,7 +65,7 @@ export class RunnableOutput {
 export abstract class Runnable<R extends RunnableOutput = RunnableOutput> implements RunInstance {
   protected readonly _middlewares: MiddlewareType<this>[];
 
-  constructor(middlewares: MiddlewareType<Runnable<R>>[] = []) {
+  constructor(middlewares: MiddlewareType<any>[] = []) {
     this._middlewares = middlewares as MiddlewareType<this>[];
   }
 
@@ -111,11 +113,11 @@ export type AnyRunnable = Runnable<any>;
  * }
  * ```
  */
-export function runnableEntry<I extends Runnable<R>, R extends RunnableOutput>(
+export function runnableEntry<I extends Runnable<R>, R extends RunnableOutput, M extends AnyMessage = AnyMessage>(
   instance: I,
-  input: AnyMessage[],
+  input: M[],
   options: RunnableOptions | undefined,
-  handler: (context: GetRunContext<I>, input: AnyMessage[]) => Promise<R>,
+  handler: (context: GetRunContext<I>, input: M[]) => Promise<R>,
 ): Run<R, I> {
   return RunContext.enter(
     instance,
