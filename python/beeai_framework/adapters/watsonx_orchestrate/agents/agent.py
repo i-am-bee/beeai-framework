@@ -1,6 +1,8 @@
 # Copyright 2025 © BeeAI a Series of LF Projects, LLC
 # SPDX-License-Identifier: Apache-2.0
 
+import json
+import time
 import uuid
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
@@ -62,20 +64,57 @@ class WatsonxOrchestrateAgent(BaseAgent[WatsonxOrchestrateAgentOutput]):
                 input_messages = map_watsonx_orchestrate_agent_input_to_bee_messages(input)
                 await self.memory.add_many(input_messages)
 
-                # TODO: support streaming
+                content_parts: list[str] = []
+                finish_reason = "stop"
+                response_id = str(uuid.uuid4())
+                model_name = self._agent_id
 
-                response = await client.post(
+                async with client.stream(
+                    "POST",
                     f"{self._agent_id}/chat/completions",
                     json=ChatCompletionRequestBody(
                         messages=flatten(
                             [beeai_message_to_watsonx_orchestrate_message(msg) for msg in self.memory.messages]
                         ),
-                        stream=False,
+                        stream=True,
                     ).model_dump(),
-                )
-                response.raise_for_status()
+                ) as streaming_response:
+                    streaming_response.raise_for_status()
+                    async for line in streaming_response.aiter_lines():
+                        line = line.strip()
+                        if not line:
+                            continue
+                        if line.startswith("data: "):
+                            raw = line[6:].strip()
+                            if raw == "[DONE]":
+                                break
+                            try:
+                                chunk = json.loads(raw)
+                            except json.JSONDecodeError:
+                                continue
+                            response_id = chunk.get("id", response_id)
+                            model_name = chunk.get("model", model_name)
+                            for choice in chunk.get("choices", []):
+                                content = (choice.get("delta") or {}).get("content") or ""
+                                content_parts.append(content)
+                                finish_reason = choice.get("finish_reason") or finish_reason
 
-                response_data = ChatCompletionResponse.model_validate(response.json())
+                response_data = ChatCompletionResponse(
+                    id=response_id,
+                    object="thread.message.delta",
+                    created=int(time.time()),
+                    model=model_name,
+                    choices=[
+                        watsonx_orchestrate_api.ChatCompletionChoice(
+                            index=0,
+                            message=watsonx_orchestrate_api.ChatMessageResponse(
+                                role="assistant",
+                                content="".join(content_parts),
+                            ),
+                            finish_reason=finish_reason,
+                        )
+                    ],
+                )
                 result = watsonx_orchestrate_message_to_beeai_message(
                     watsonx_orchestrate_api.ChatMessage(
                         role=response_data.choices[-1].message.role,
