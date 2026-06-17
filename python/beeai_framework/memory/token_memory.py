@@ -6,7 +6,10 @@ from typing import Any
 
 from beeai_framework.backend.message import AnyMessage
 from beeai_framework.memory.base_memory import BaseMemory
+from beeai_framework.memory.errors import ResourceFatalError
 from beeai_framework.utils.cloneable import Cloneable
+
+DEFAULT_MAX_TOKENS = 128_000
 
 
 def simple_estimate(msg: AnyMessage) -> int:
@@ -90,11 +93,28 @@ class TokenMemory(BaseMemory):
                     }
 
     async def add(self, message: AnyMessage, index: int | None = None) -> None:
+        if self._max_tokens is None:
+            self._max_tokens = DEFAULT_MAX_TOKENS
+
+        estimated_tokens = self.handlers["estimate"](message)
+
+        if estimated_tokens > self._max_tokens:
+            raise ResourceFatalError(
+                f"Retrieved message ({estimated_tokens} tokens) cannot fit "
+                f"inside current memory ({self._max_tokens} tokens)"
+            )
+
+        # Evict existing messages until the incoming one fits within the token budget.
+        while self._messages and self.tokens_used > self._max_tokens - estimated_tokens:
+            message_to_delete = self.handlers["removal_selector"](self._messages)
+            deleted = await self.delete(message_to_delete) if message_to_delete is not None else False
+            if not deleted:
+                raise ResourceFatalError('The "removal_selector" handler must return a valid message!')
+
         index = len(self._messages) if index is None else max(0, min(index, len(self._messages)))
         self._messages.insert(index, message)
 
         key = self._get_message_key(message)
-        estimated_tokens = self.handlers["estimate"](message)
         self._tokens_by_message[key] = {
             "tokens_count": estimated_tokens,
             "dirty": True,
