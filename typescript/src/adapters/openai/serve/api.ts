@@ -35,7 +35,7 @@ export class ChatCompletionAPI {
     if (this.apiKey) {
       const authHeader = req.headers.authorization;
       const token = Array.isArray(authHeader) ? authHeader[0] : authHeader;
-      if (!token || token.replace("Bearer ", "") !== this.apiKey) {
+      if (!token || token.replace(/^Bearer\s+/i, "") !== this.apiKey) {
         res.status(401).json({ detail: "Missing or invalid API key" });
         return;
       }
@@ -58,7 +58,7 @@ export class ChatCompletionAPI {
         res.setHeader("Connection", "keep-alive");
 
         // Simple streaming implementation mapping to SSE
-        const updateListener = async ({ update }: any) => {
+        const updateListener = ({ update }: any) => {
           const data = {
             id,
             object: "chat.completion.chunk",

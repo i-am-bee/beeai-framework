@@ -53,7 +53,7 @@ export class ResponsesAPI {
     if (this.apiKey) {
       const authHeader = req.headers.authorization;
       const token = Array.isArray(authHeader) ? authHeader[0] : authHeader;
-      if (!token || token.replace("Bearer ", "") !== this.apiKey) {
+      if (!token || token.replace(/^Bearer\s+/i, "") !== this.apiKey) {
         res.status(401).json({ detail: "Missing or invalid API key" });
         return;
       }
@@ -157,7 +157,7 @@ export class ResponsesAPI {
         sendEvent("response.content_part.added", contentPartAddedEvent);
 
         // Listen to agent emitter 'update' events for streaming deltas
-        const updateListener = async ({ update }: any) => {
+        const updateListener = ({ update }: any) => {
           const delta = update.value;
           accumulatedText += delta;
 
