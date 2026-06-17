@@ -32,9 +32,10 @@ export class ChatCompletionAPI {
     const requestBody = req.body as ChatCompletionRequestBody;
     logger.debug(`Received request: ${JSON.stringify(requestBody)}`);
 
-    const authHeader = req.headers.authorization;
     if (this.apiKey) {
-      if (!authHeader || authHeader.replace("Bearer ", "") !== this.apiKey) {
+      const authHeader = req.headers.authorization;
+      const token = Array.isArray(authHeader) ? authHeader[0] : authHeader;
+      if (!token || token.replace("Bearer ", "") !== this.apiKey) {
         res.status(401).json({ detail: "Missing or invalid API key" });
         return;
       }
@@ -57,7 +58,7 @@ export class ChatCompletionAPI {
         res.setHeader("Connection", "keep-alive");
 
         // Simple streaming implementation mapping to SSE
-        (clonedAgent.emitter as any).on("update", async ({ update }: any) => {
+        const updateListener = async ({ update }: any) => {
           const data = {
             id,
             object: "chat.completion.chunk",
@@ -75,6 +76,13 @@ export class ChatCompletionAPI {
             ],
           };
           res.write(`data: ${JSON.stringify(data)}\n\n`);
+        };
+        
+        (clonedAgent.emitter as any).on("update", updateListener);
+
+        // Cleanup if client disconnects early
+        req.on("close", () => {
+          (clonedAgent.emitter as any).off("update", updateListener);
         });
 
         await clonedAgent.run({ prompt: null });

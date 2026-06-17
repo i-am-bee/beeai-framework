@@ -24,13 +24,21 @@ export function openaiMessageToBeeAIMessage(msg: ChatMessage): Message {
     const assistantMsg = new AssistantMessage(msg.content ?? "");
     if (msg.tool_calls) {
       for (const call of msg.tool_calls) {
-        assistantMsg.content.push({
-          type: "tool-call",
-          toolCallId: call.id, // Vercel AI SDK style
-          toolName: call.function.name,
-          args: JSON.parse(call.function.arguments || "{}"),
-          input: JSON.parse(call.function.arguments || "{}"), // BeeAI style
-        } as any);
+          let args = {};
+          try {
+            args = JSON.parse(call.function.arguments || "{}");
+          } catch (e) {
+            // Model generated invalid JSON for arguments, fallback to empty object
+            // to allow execution to proceed gracefully
+          }
+          
+          assistantMsg.content.push({
+            type: "tool-call",
+            toolCallId: call.id, // Vercel AI SDK style
+            toolName: call.function.name,
+            args: args,
+            input: args, // BeeAI style
+          } as any);
       }
     }
     return assistantMsg;

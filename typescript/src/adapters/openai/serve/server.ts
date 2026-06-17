@@ -73,12 +73,20 @@ export class OpenAIServer extends Server<AnyAgent, AnyAgent, OpenAIServerConfig,
     // Also mount at root for direct access
     app.use("/", api.router);
 
-    app.listen(this.config.port, this.config.host, () => {
-      this.ready = true;
-      logger.info(
-        `OpenAI-compatible server started on http://${this.config.host}:${this.config.port}`,
-      );
-      logger.info(`Press Ctrl+C to stop the server`);
+    return new Promise((resolve, reject) => {
+      const server = app.listen(this.config.port, this.config.host, () => {
+        this.ready = true;
+        logger.info(
+          `OpenAI-compatible server started on http://${this.config.host}:${this.config.port}`,
+        );
+        logger.info(`Press Ctrl+C to stop the server`);
+        resolve();
+      });
+
+      server.on("error", (error) => {
+        logger.error(error, "Failed to start server");
+        reject(error);
+      });
     });
   }
 }
