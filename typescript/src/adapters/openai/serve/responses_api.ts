@@ -158,6 +158,7 @@ export class ResponsesAPI {
 
         // Listen to agent emitter 'update' events for streaming deltas
         const updateListener = ({ update }: any) => {
+          if (res.writableEnded) return;
           const delta = update.value;
           accumulatedText += delta;
 
