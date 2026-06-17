@@ -50,9 +50,10 @@ export class ResponsesAPI {
     const requestBody = req.body as ResponsesRequestBody;
     logger.debug(`Received request: ${JSON.stringify(requestBody)}`);
 
-    const authHeader = req.headers.authorization;
     if (this.apiKey) {
-      if (!authHeader || authHeader.replace("Bearer ", "") !== this.apiKey) {
+      const authHeader = req.headers.authorization;
+      const token = Array.isArray(authHeader) ? authHeader[0] : authHeader;
+      if (!token || token.replace("Bearer ", "") !== this.apiKey) {
         res.status(401).json({ detail: "Missing or invalid API key" });
         return;
       }
@@ -156,7 +157,7 @@ export class ResponsesAPI {
         sendEvent("response.content_part.added", contentPartAddedEvent);
 
         // Listen to agent emitter 'update' events for streaming deltas
-        (clonedAgent.emitter as any).on("update", async ({ update }: any) => {
+        const updateListener = async ({ update }: any) => {
           const delta = update.value;
           accumulatedText += delta;
 
@@ -169,6 +170,13 @@ export class ResponsesAPI {
             sequence_number: sequenceNumber,
           };
           sendEvent("response.output_text.delta", deltaEvent);
+        };
+        
+        (clonedAgent.emitter as any).on("update", updateListener);
+
+        // Cleanup if client disconnects early
+        req.on("close", () => {
+          (clonedAgent.emitter as any).off("update", updateListener);
         });
 
         try {
