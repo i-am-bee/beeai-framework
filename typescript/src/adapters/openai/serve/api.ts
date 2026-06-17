@@ -59,6 +59,7 @@ export class ChatCompletionAPI {
 
         // Simple streaming implementation mapping to SSE
         const updateListener = ({ update }: any) => {
+          if (res.writableEnded) return;
           const data = {
             id,
             object: "chat.completion.chunk",
