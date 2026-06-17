@@ -162,7 +162,7 @@
     "string-comparison": "^1.3.0",
     "string-strip-html": "^13.5.0",
     "turndown": "^7.2.2",
-    "wikipedia": "^2.4.2",
+    "wikipedia": "^2.5.0",
     "zod-to-json-schema": "^3.25.0"
   },
   "peerDependencies": {
@@ -261,7 +261,7 @@
     "@eslint/markdown": "^7.5.1",
     "@googleapis/customsearch": "^6.0.0",
     "@ibm-cloud/watsonx-ai": "^1.7.7",
-    "@langchain/community": "^0.3.58",
+    "@langchain/community": "^1.1.29",
     "@langchain/core": "^0.3.79",
     "@langchain/langgraph": "^0.4.9",
     "@langchain/ollama": "^0.2.4",
