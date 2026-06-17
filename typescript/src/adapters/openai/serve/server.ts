@@ -9,7 +9,10 @@ import { Server } from "@/serve/server.js";
 import express from "express";
 import { Logger } from "@/logger/logger.js";
 import { ChatCompletionAPI } from "./api.js";
+import { ResponsesAPI } from "./responses_api.js";
 import { ValueError } from "@/errors.js";
+
+export type OpenAIAPIType = "chat-completion" | "responses";
 
 const logger = Logger.root.child({
   name: "OpenAI server",
@@ -18,6 +21,7 @@ const logger = Logger.root.child({
 export class OpenAIServerConfig {
   host = "0.0.0.0";
   port = 9999;
+  api: OpenAIAPIType = "chat-completion";
   apiKey?: string;
 }
 
@@ -59,11 +63,14 @@ export class OpenAIServer extends Server<AnyAgent, AnyAgent, OpenAIServerConfig,
       return member;
     };
 
-    const api = new ChatCompletionAPI(modelFactory, this.config.apiKey);
-    
+    const api =
+      this.config.api === "responses"
+        ? new ResponsesAPI(modelFactory, this.config.apiKey)
+        : new ChatCompletionAPI(modelFactory, this.config.apiKey);
+
     // Mount the API under /v1 to simulate standard OpenAI structure
     app.use("/v1", api.router);
-    // Also mount at root for /chat/completions if users ping root
+    // Also mount at root for direct access
     app.use("/", api.router);
 
     app.listen(this.config.port, this.config.host, () => {
