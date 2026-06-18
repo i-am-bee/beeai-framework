@@ -40,8 +40,9 @@ async def test_message_larger_than_capacity_raises_fatal() -> None:
 @pytest.mark.asyncio
 @pytest.mark.unit
 async def test_capacity_enforced_evicts_oldest_by_default() -> None:
-    # estimate = ceil((len(role) + len(text)) / 4). "user" (4) + 8 chars = 12 -> 3 tokens.
-    memory = TokenMemory(max_tokens=6)
+    # estimate = (len(role) + len(text)) // 4. "user" (4) + 8 chars = 12 -> 3 tokens.
+    # capacity_threshold=1.0 isolates this test to pure max_tokens enforcement.
+    memory = TokenMemory(max_tokens=6, capacity_threshold=1.0)
     first = UserMessage("aaaaaaaa")  # ~3 tokens
     second = UserMessage("bbbbbbbb")  # ~3 tokens
     third = UserMessage("cccccccc")  # ~3 tokens
@@ -66,7 +67,7 @@ async def test_custom_removal_selector_is_used() -> None:
         removed_calls.append(len(messages))
         return messages[-1]
 
-    memory = TokenMemory(max_tokens=6, handlers={"removal_selector": select_last})
+    memory = TokenMemory(max_tokens=6, capacity_threshold=1.0, handlers={"removal_selector": select_last})
     await memory.add(UserMessage("aaaaaaaa"))
     await memory.add(UserMessage("bbbbbbbb"))
     await memory.add(UserMessage("cccccccc"))
@@ -82,11 +83,50 @@ async def test_removal_selector_returning_invalid_message_raises() -> None:
     def bad_selector(messages: list) -> object:
         return sentinel
 
-    memory = TokenMemory(max_tokens=6, handlers={"removal_selector": bad_selector})
+    memory = TokenMemory(max_tokens=6, capacity_threshold=1.0, handlers={"removal_selector": bad_selector})
     await memory.add(UserMessage("aaaaaaaa"))
     await memory.add(UserMessage("bbbbbbbb"))
     with pytest.raises(ResourceFatalError, match="removal_selector"):
         await memory.add(UserMessage("cccccccc"))
+
+
+@pytest.mark.asyncio
+@pytest.mark.unit
+async def test_capacity_threshold_triggers_earlier_eviction() -> None:
+    # With threshold 0.5 the effective budget is 6 * 0.5 = 3 tokens, so only the
+    # most recent ~3-token message fits even though max_tokens would allow two.
+    memory = TokenMemory(max_tokens=6, capacity_threshold=0.5)
+    first = UserMessage("aaaaaaaa")  # ~3 tokens
+    second = UserMessage("bbbbbbbb")  # ~3 tokens
+
+    await memory.add(first)
+    await memory.add(second)
+
+    assert first not in memory.messages
+    assert second in memory.messages
+    assert memory.tokens_used <= memory._max_tokens * 0.5 + 3
+
+
+@pytest.mark.asyncio
+@pytest.mark.unit
+async def test_duplicate_messages_are_tracked_independently() -> None:
+    # Two messages with identical role + text must not collide in the token map.
+    memory = TokenMemory(max_tokens=1000)
+    first = UserMessage("yes")
+    second = UserMessage("yes")
+
+    await memory.add(first)
+    tokens_after_one = memory.tokens_used
+    await memory.add(second)
+
+    # Both duplicates contribute to the total (no key collision undercount).
+    assert memory.tokens_used == tokens_after_one * 2
+    assert len(memory.messages) == 2
+
+    # Deleting one duplicate must not drop the token count of the other.
+    await memory.delete(first)
+    assert memory.tokens_used == tokens_after_one
+    assert second in memory.messages
 
 
 @pytest.mark.asyncio

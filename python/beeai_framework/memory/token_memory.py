@@ -54,8 +54,14 @@ class TokenMemory(BaseMemory):
         return int((len(msg.role) + len(msg.text)) / 4)
 
     def _get_message_key(self, message: AnyMessage) -> str:
-        """Generate a unique key for a message."""
-        return f"{message.role}:{message.text}"
+        """Generate a unique key for a message instance.
+
+        Object identity is used (rather than role + text) so that duplicate
+        messages (e.g. repeated prompts or short replies like "yes") each get
+        a distinct entry. clone() shallow-copies both the message list and the
+        token map, so the object ids stay consistent across clones.
+        """
+        return str(id(message))
 
     @property
     def messages(self) -> list[AnyMessage]:
@@ -104,8 +110,10 @@ class TokenMemory(BaseMemory):
                 f"inside current memory ({self._max_tokens} tokens)"
             )
 
-        # Evict existing messages until the incoming one fits within the token budget.
-        while self._messages and self.tokens_used > self._max_tokens - estimated_tokens:
+        # Evict existing messages until the incoming one fits within the configured
+        # capacity budget (the absolute limit scaled by capacity_threshold).
+        capacity = self._max_tokens * self._threshold
+        while self._messages and self.tokens_used > capacity - estimated_tokens:
             message_to_delete = self.handlers["removal_selector"](self._messages)
             deleted = await self.delete(message_to_delete) if message_to_delete is not None else False
             if not deleted:
