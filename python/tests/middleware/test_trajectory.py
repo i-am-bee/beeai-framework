@@ -6,6 +6,7 @@ import sys
 from typing import Any, Unpack
 
 import pytest
+from pydantic import ValidationError
 
 from beeai_framework.backend import AssistantMessage, UserMessage
 from beeai_framework.context import RunMiddlewareType
@@ -18,7 +19,6 @@ from beeai_framework.middleware.trajectory import (
     _create_target,
 )
 from beeai_framework.runnable import Runnable, RunnableOptions, RunnableOutput, runnable_entry
-
 
 # ---------------------------------------------------------------------------
 # Minimal Runnable for integration tests
@@ -83,11 +83,11 @@ class TestTraceLevel:
         assert level.absolute == 7
 
     def test_relative_cannot_be_negative(self) -> None:
-        with pytest.raises(Exception):
+        with pytest.raises(ValidationError):
             TraceLevel(relative=-1)
 
     def test_absolute_cannot_be_negative(self) -> None:
-        with pytest.raises(Exception):
+        with pytest.raises(ValidationError):
             TraceLevel(absolute=-1)
 
 
@@ -116,7 +116,9 @@ class TestGlobalTrajectoryMiddlewareInit:
         m._target.write("ignored")
 
     def test_custom_formatter_stored(self) -> None:
-        fmt = lambda x: "custom"
+        def fmt(x: Any) -> str:
+            return "custom"
+
         m = GlobalTrajectoryMiddleware(formatter=fmt)
         assert m._formatter is fmt
 
@@ -188,7 +190,10 @@ async def test_middleware_writes_to_target_when_enabled() -> None:
     r = EchoRunnable()
     await r.run([UserMessage(content="ping")]).middleware(m)
 
-    assert buf.tell() > 0, "Expected middleware to write at least one line to target"
+    output = buf.getvalue()
+    assert output, "Expected middleware to write at least one line to target"
+    # The trajectory labels each entry with the originating class name.
+    assert "EchoRunnable" in output
 
 
 @pytest.mark.asyncio
@@ -200,4 +205,4 @@ async def test_middleware_does_not_write_when_disabled() -> None:
     r = EchoRunnable()
     await r.run([UserMessage(content="ping")]).middleware(m)
 
-    assert buf.tell() == 0, "Expected no writes when middleware is disabled"
+    assert buf.getvalue() == "", "Expected no writes when middleware is disabled"
