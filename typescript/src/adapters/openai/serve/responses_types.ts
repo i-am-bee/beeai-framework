@@ -123,7 +123,7 @@ export interface ResponsesStreamOutputItemDone {
 
 export interface ResponsesStreamPartOutputText {
   text: string;
-  type: "response.output_text.done";
+  type: "output_text";
   annotations: unknown[];
 }
 

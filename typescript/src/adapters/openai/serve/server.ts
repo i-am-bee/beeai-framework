@@ -68,10 +68,8 @@ export class OpenAIServer extends Server<AnyAgent, AnyAgent, OpenAIServerConfig,
         ? new ResponsesAPI(modelFactory, this.config.apiKey)
         : new ChatCompletionAPI(modelFactory, this.config.apiKey);
 
-    // Mount the API under /v1 to simulate standard OpenAI structure
+    // Mount the API under /v1 to follow the standard OpenAI URL structure
     app.use("/v1", api.router);
-    // Also mount at root for direct access
-    app.use("/", api.router);
 
     return new Promise((resolve, reject) => {
       const server = app.listen(this.config.port, this.config.host, () => {

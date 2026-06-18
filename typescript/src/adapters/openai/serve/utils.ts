@@ -24,21 +24,21 @@ export function openaiMessageToBeeAIMessage(msg: ChatMessage): Message {
     const assistantMsg = new AssistantMessage(msg.content ?? "");
     if (msg.tool_calls) {
       for (const call of msg.tool_calls) {
-          let args = {};
-          try {
-            args = JSON.parse(call.function.arguments || "{}");
-          } catch (e) {
-            // Model generated invalid JSON for arguments, fallback to empty object
-            // to allow execution to proceed gracefully
-          }
-          
-          assistantMsg.content.push({
-            type: "tool-call",
-            toolCallId: call.id, // Vercel AI SDK style
-            toolName: call.function.name,
-            args: args,
-            input: args, // BeeAI style
-          } as any);
+        let args = {};
+        try {
+          args = JSON.parse(call.function.arguments || "{}");
+        } catch (e) {
+          // Model generated invalid JSON for arguments, fallback to empty object
+          // to allow execution to proceed gracefully
+        }
+
+        assistantMsg.content.push({
+          type: "tool-call",
+          toolCallId: call.id, // Vercel AI SDK style
+          toolName: call.function.name,
+          args: args,
+          input: args, // BeeAI style
+        } as any);
       }
     }
     return assistantMsg;
@@ -55,9 +55,7 @@ export function transformRequestMessages(inputs: ChatMessage[]): Message[] {
     const nextMsg = converted[i + 1];
     const nextNextMsg = converted[i + 2];
 
-    if (msg instanceof SystemMessage) {
-      continue;
-    }
+    // Pass system messages through so the agent memory respects them.
 
     // Ported from Python: Remove a handoff tool call if it's the last pair
     if (

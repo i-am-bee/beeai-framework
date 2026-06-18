@@ -7,7 +7,6 @@ import express, { Request, Response, Router } from "express";
 import { v4 as uuidv4 } from "uuid";
 import { AnyAgent } from "@/agents/types.js";
 import { Logger } from "@/logger/logger.js";
-import { ReActAgentRunOutput } from "@/agents/react/types.js";
 import { SystemMessage, UserMessage, Message } from "@/backend/message.js";
 import { openaiInputToBeeAIMessage } from "./responses_utils.js";
 import {
@@ -143,7 +142,7 @@ export class ResponsesAPI {
         // response.content_part.added
         const emptyPart: ResponsesStreamPartOutputText = {
           text: "",
-          type: "response.output_text.done",
+          type: "output_text",
           annotations: [],
         };
         const contentPartAddedEvent: ResponsesStreamContentPartAdded = {
@@ -156,32 +155,32 @@ export class ResponsesAPI {
         };
         sendEvent("response.content_part.added", contentPartAddedEvent);
 
-        // Listen to agent emitter 'update' events for streaming deltas
-        const updateListener = ({ update }: any) => {
-          if (res.writableEnded) return;
-          const delta = update.value;
-          accumulatedText += delta;
-
-          const deltaEvent: ResponsesStreamOutputTextDelta = {
-            type: "response.output_text.delta",
-            content_index: 0,
-            delta,
-            item_id: outputItemId,
-            output_index: 0,
-            sequence_number: sequenceNumber,
-          };
-          sendEvent("response.output_text.delta", deltaEvent);
-        };
-        
-        (clonedAgent.emitter as any).on("update", updateListener);
-
-        // Cleanup if client disconnects early
-        req.on("close", () => {
-          (clonedAgent.emitter as any).off("update", updateListener);
-        });
-
         try {
-          await clonedAgent.run({ prompt: null });
+          // Use .observe() to subscribe to the run-scoped emitter — the correct
+          // BeeAI pattern for intercepting agent events during a run.
+          await clonedAgent
+            .run({ prompt: null })
+            .observe((emitter) => {
+              // Match all events and filter for "update" — required because the
+              // emitter is typed as Emitter<unknown> at the AnyAgent abstraction.
+              emitter.match("*.*", async (data: any, event) => {
+                if (event.name !== "update") return;
+                const { update } = data as { update: { value: string } };
+                if (res.writableEnded) return;
+                const delta = update.value;
+                accumulatedText += delta;
+
+                const deltaEvent: ResponsesStreamOutputTextDelta = {
+                  type: "response.output_text.delta",
+                  content_index: 0,
+                  delta,
+                  item_id: outputItemId,
+                  output_index: 0,
+                  sequence_number: sequenceNumber,
+                };
+                sendEvent("response.output_text.delta", deltaEvent);
+              });
+            });
 
           // response.output_text.done
           const textDoneEvent: ResponsesStreamOutputTextDone = {
@@ -197,7 +196,7 @@ export class ResponsesAPI {
           // response.content_part.done
           const finalPart: ResponsesStreamPartOutputText = {
             text: accumulatedText,
-            type: "response.output_text.done",
+            type: "output_text",
             annotations: [],
           };
           const contentPartDoneEvent: ResponsesStreamContentPartDone = {
@@ -254,7 +253,7 @@ export class ResponsesAPI {
 
         res.end();
       } else {
-        const result = (await clonedAgent.run({ prompt: null })) as ReActAgentRunOutput;
+        const result = await clonedAgent.run({ prompt: null });
 
         const messageContent: ResponsesMessageContent = {
           type: "output_text",
