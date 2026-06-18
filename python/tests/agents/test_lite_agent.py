@@ -78,3 +78,18 @@ async def test_conversation_is_persisted_to_memory() -> None:
     assert any(
         isinstance(message, AssistantMessage) and message.text == "hello there" for message in agent.memory.messages
     )
+
+
+@pytest.mark.asyncio
+@pytest.mark.unit
+async def test_cloning_the_agent_does_not_share_model_state() -> None:
+    model = ScriptedChatModel([[AssistantMessage("from the clone")]], repeat_last=True)
+    agent = LiteAgent(llm=model)
+
+    clone = await agent.clone()
+    output = await clone.run("hi")
+
+    # The clone runs against its own copied model, leaving the original untouched.
+    assert isinstance(output.output[-1], AssistantMessage)
+    assert output.output[-1].text == "from the clone"
+    assert model.call_count == 0

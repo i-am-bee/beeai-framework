@@ -12,6 +12,7 @@ from beeai_framework.backend import (
     ChatModelOutput,
     MessageToolCallContent,
 )
+from beeai_framework.backend.constants import ProviderName
 from beeai_framework.backend.types import ChatModelInput
 from beeai_framework.context import RunContext
 from beeai_framework.tools import tool
@@ -25,10 +26,6 @@ class ScriptedChatModel(ChatModel):
     case the final response is replayed indefinitely.
     """
 
-    model_id = "scripted_model"
-    # pyrefly: ignore [bad-override]
-    provider_id = "ollama"
-
     def __init__(self, responses: list[list[AnyMessage]], *, repeat_last: bool = False) -> None:
         super().__init__()
         self._responses = list(responses)
@@ -37,11 +34,18 @@ class ScriptedChatModel(ChatModel):
         self.inputs: list[ChatModelInput] = []
 
     @property
+    def model_id(self) -> str:
+        return "scripted_model"
+
+    @property
+    def provider_id(self) -> ProviderName:
+        return "ollama"
+
+    @property
     def call_count(self) -> int:
         return len(self.inputs)
 
-    # pyrefly: ignore [bad-param-name-override]
-    async def _create(self, input: ChatModelInput, _: RunContext) -> ChatModelOutput:
+    async def _create(self, input: ChatModelInput, run: RunContext) -> ChatModelOutput:
         self.inputs.append(input)
         if self._responses:
             self._last = self._responses.pop(0)
@@ -49,9 +53,15 @@ class ScriptedChatModel(ChatModel):
             raise AssertionError("ScriptedChatModel ran out of scripted responses")
         return ChatModelOutput(output=list(self._last))
 
-    # pyrefly: ignore [bad-param-name-override]
-    async def _create_stream(self, input: ChatModelInput, context: RunContext) -> AsyncGenerator[ChatModelOutput]:
-        yield await self._create(input, context)
+    async def _create_stream(self, input: ChatModelInput, run: RunContext) -> AsyncGenerator[ChatModelOutput]:
+        yield await self._create(input, run)
+
+    async def clone(self) -> "ScriptedChatModel":
+        # Agents clone their llm when cloned; without this the clone would share our state.
+        cloned = ScriptedChatModel([list(response) for response in self._responses], repeat_last=self._repeat_last)
+        cloned._last = list(self._last)
+        cloned.inputs = list(self.inputs)
+        return cloned
 
 
 def tool_call_message(tool_name: str, args: dict[str, Any], *, call_id: str = "call_1") -> AssistantMessage:
