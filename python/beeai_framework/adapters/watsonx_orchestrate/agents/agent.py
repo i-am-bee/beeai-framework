@@ -84,18 +84,25 @@ class WatsonxOrchestrateAgent(BaseAgent[WatsonxOrchestrateAgentOutput]):
                         line = line.strip()
                         if not line:
                             continue
-                        if line.startswith("data: "):
-                            raw = line[6:].strip()
+                        if line.startswith("data:"):
+                            # SSE allows an optional single space after "data:".
+                            raw = line[5:].lstrip(" ").strip()
                             if raw == "[DONE]":
                                 break
                             try:
                                 chunk = json.loads(raw)
                             except json.JSONDecodeError:
                                 continue
+                            if not isinstance(chunk, dict):
+                                continue
                             response_id = chunk.get("id", response_id)
                             model_name = chunk.get("model", model_name)
-                            for choice in chunk.get("choices", []):
-                                content = (choice.get("delta") or {}).get("content") or ""
+                            choices = chunk.get("choices")
+                            for choice in choices if isinstance(choices, list) else []:
+                                if not isinstance(choice, dict):
+                                    continue
+                                delta = choice.get("delta")
+                                content = (delta.get("content") if isinstance(delta, dict) else None) or ""
                                 content_parts.append(content)
                                 finish_reason = choice.get("finish_reason") or finish_reason
 

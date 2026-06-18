@@ -7,7 +7,7 @@ import time
 import uuid
 from abc import ABC, abstractmethod
 from collections.abc import AsyncIterable, Awaitable, Callable
-from typing import Any, Generic, cast
+from typing import Any, Generic
 
 from pydantic import BaseModel
 from sse_starlette import ServerSentEvent
@@ -37,11 +37,16 @@ class WatsonxOrchestrateServerAgent(ABC, Generic[T]):
         # pyrefly: ignore [missing-attribute]
         response = await cloned_agent.run(input)
 
+        # Other agent types may not expose a "raw" dict with choices, so verify
+        # the structure defensively before reading the finish_reason.
         finish_reason = "stop"
-        raw: dict[str, Any] = getattr(response, "raw", {}) or {}
-        raw_choices = cast(list[dict[str, Any]], raw.get("choices", []))
-        if raw_choices and raw_choices[0].get("finish_reason"):
-            finish_reason = raw_choices[0]["finish_reason"]
+        raw = getattr(response, "raw", {})
+        if isinstance(raw, dict):
+            raw_choices = raw.get("choices")
+            if isinstance(raw_choices, list) and raw_choices:
+                first_choice = raw_choices[0]
+                if isinstance(first_choice, dict) and first_choice.get("finish_reason"):
+                    finish_reason = first_choice["finish_reason"]
 
         return watsonx_orchestrate_api.ChatCompletionResponse(
             id=str(uuid.uuid4()),
