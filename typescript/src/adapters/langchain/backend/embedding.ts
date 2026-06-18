@@ -26,8 +26,8 @@ export class LangChainEmbeddingModel extends EmbeddingModel {
   }
 
   get modelId(): string {
-    const lc = this.lcEmbedding as Record<string, unknown>;
-    const id = lc["model"] ?? lc["modelName"];
+    const lc = this.lcEmbedding as unknown as Record<string, unknown>;
+    const id = typeof lc["model"] === "string" ? lc["model"] : lc["modelName"];
     return typeof id === "string" ? id : "langchain";
   }
 

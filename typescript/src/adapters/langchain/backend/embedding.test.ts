@@ -22,6 +22,20 @@ class LegacyFakeEmbedding extends FakeEmbedding {
   modelName = "legacy-model";
 }
 
+class NonStringModelEmbedding extends Embeddings {
+  model = { name: "not-a-string" };
+  modelName = "legacy-model";
+  constructor() {
+    super({});
+  }
+  async embedDocuments(texts: string[]) {
+    return texts.map(() => [0]);
+  }
+  async embedQuery() {
+    return [0];
+  }
+}
+
 describe("LangChainEmbeddingModel", () => {
   it("returns model from 'model' property", () => {
     const instance = new LangChainEmbeddingModel(new FakeEmbedding("text-embedding-ada-002"));
@@ -30,6 +44,11 @@ describe("LangChainEmbeddingModel", () => {
 
   it("falls back to modelName when model is absent", () => {
     const instance = new LangChainEmbeddingModel(new LegacyFakeEmbedding());
+    expect(instance.modelId).toBe("legacy-model");
+  });
+
+  it("falls back to modelName when model is not a string", () => {
+    const instance = new LangChainEmbeddingModel(new NonStringModelEmbedding());
     expect(instance.modelId).toBe("legacy-model");
   });
 
