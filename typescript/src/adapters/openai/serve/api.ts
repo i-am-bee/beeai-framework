@@ -9,7 +9,6 @@ import { AnyAgent } from "@/agents/types.js";
 import { transformRequestMessages } from "./utils.js";
 import { ChatCompletionRequestBody, ChatCompletionResponse } from "./types.js";
 import { Logger } from "@/logger/logger.js";
-import { ReActAgentRunOutput } from "@/agents/react/types.js";
 
 const logger = Logger.root.child({
   name: "OpenAI API",
@@ -57,10 +56,37 @@ export class ChatCompletionAPI {
         res.setHeader("Cache-Control", "no-cache");
         res.setHeader("Connection", "keep-alive");
 
-        // Simple streaming implementation mapping to SSE
-        const updateListener = ({ update }: any) => {
-          if (res.writableEnded) return;
-          const data = {
+        try {
+          await clonedAgent
+            .run({ prompt: null })
+            .observe((emitter) => {
+              // Match all events and filter for "update" — required because the
+              // emitter is typed as Emitter<unknown> at the AnyAgent abstraction.
+              emitter.match("*.*", async (eventData: any, event) => {
+                if (event.name !== "update") return;
+                const { update } = eventData as { update: { value: string } };
+                if (res.writableEnded) return;
+                const data = {
+                  id,
+                  object: "chat.completion.chunk",
+                  model: requestBody.model,
+                  created: Math.floor(Date.now() / 1000),
+                  choices: [
+                    {
+                      index: 0,
+                      delta: {
+                        role: "assistant",
+                        content: update.value,
+                      },
+                      finish_reason: null,
+                    },
+                  ],
+                };
+                res.write(`data: ${JSON.stringify(data)}\n\n`);
+              });
+            });
+
+          const finalData = {
             id,
             object: "chat.completion.chunk",
             model: requestBody.model,
@@ -68,45 +94,34 @@ export class ChatCompletionAPI {
             choices: [
               {
                 index: 0,
-                delta: {
-                  role: "assistant",
-                  content: update.value,
-                },
-                finish_reason: null,
+                delta: {},
+                finish_reason: "stop",
               },
             ],
           };
-          res.write(`data: ${JSON.stringify(data)}\n\n`);
-        };
-        
-        (clonedAgent.emitter as any).on("update", updateListener);
-
-        // Cleanup if client disconnects early
-        req.on("close", () => {
-          (clonedAgent.emitter as any).off("update", updateListener);
-        });
-
-        await clonedAgent.run({ prompt: null });
-
-        const finalData = {
-          id,
-          object: "chat.completion.chunk",
-          model: requestBody.model,
-          created: Math.floor(Date.now() / 1000),
-          choices: [
-            {
-              index: 0,
-              delta: {},
-              finish_reason: "stop",
-            },
-          ],
-        };
-        res.write(`data: ${JSON.stringify(finalData)}\n\n`);
-        res.write(`data: [DONE]\n\n`);
-        res.end();
+          res.write(`data: ${JSON.stringify(finalData)}\n\n`);
+          res.write(`data: [DONE]\n\n`);
+        } catch (error) {
+          logger.error(error, "Error during streaming agent run");
+          if (!res.writableEnded) {
+            // Send an error chunk so the client can detect failure
+            const errData = {
+              id,
+              object: "chat.completion.chunk",
+              model: requestBody.model,
+              created: Math.floor(Date.now() / 1000),
+              choices: [{ index: 0, delta: {}, finish_reason: "error" }],
+              error: { message: String(error) },
+            };
+            res.write(`data: ${JSON.stringify(errData)}\n\n`);
+            res.write(`data: [DONE]\n\n`);
+          }
+        } finally {
+          res.end();
+        }
       } else {
-        const result = (await clonedAgent.run({ prompt: null })) as ReActAgentRunOutput;
-        
+        const result = await clonedAgent.run({ prompt: null });
+
         const response: ChatCompletionResponse = {
           id: `chatcmpl-${uuidv4()}`,
           object: "chat.completion",
