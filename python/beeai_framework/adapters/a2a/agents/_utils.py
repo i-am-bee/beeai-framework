@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 import base64
 import binascii
+import re
 from typing import Any
 from urllib.parse import unquote_to_bytes
 from uuid import uuid4
@@ -43,6 +44,10 @@ def _data_uri_to_base64(uri: str) -> tuple[str, str | None] | None:
     is_base64 = header.endswith(";base64")
     if is_base64:
         header = header[: -len(";base64")]
+        data = "".join(data.split())  # RFC 2045 permits whitespace in base64
+        data += "=" * (-len(data) % 4)  # restore optional padding
+    elif re.search(r"%(?![0-9A-Fa-f]{2})", data):  # malformed percent-encoding -> treat as a regular URL
+        return None
     media_type = header.split(";", 1)[0] or None
     try:
         raw = base64.b64decode(data, validate=True) if is_base64 else unquote_to_bytes(data)

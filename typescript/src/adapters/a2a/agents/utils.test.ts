@@ -39,6 +39,32 @@ describe("convertA2AMessageToFrameworkMessage", () => {
     expect(file.mediaType).toBe("text/plain");
   });
 
+  it("strips whitespace inside base64 payloads", () => {
+    // RFC 2045 permits whitespace (e.g. line breaks) inside base64 payloads.
+    const payload = `${PNG_BASE64.slice(0, 4)}\n ${PNG_BASE64.slice(4)}`;
+    const msg = convertA2AMessageToFrameworkMessage(
+      messageWithFile({ uri: `data:image/png;base64,${payload}` }),
+    );
+    const file = msg.content[0] as FilePart;
+    expect(file.data).toBe(PNG_BASE64);
+  });
+
+  it("accepts unpadded base64 payloads", () => {
+    const unpadded = Buffer.from("hello").toString("base64").replace(/=+$/, "");
+    const msg = convertA2AMessageToFrameworkMessage(
+      messageWithFile({ uri: `data:text/plain;base64,${unpadded}` }),
+    );
+    const file = msg.content[0] as FilePart;
+    expect(Buffer.from(file.data as string, "base64").toString("utf-8")).toBe("hello");
+  });
+
+  it("leaves data: URIs with malformed percent-encoding as the original URI", () => {
+    const uri = "data:text/plain,bad%2";
+    const msg = convertA2AMessageToFrameworkMessage(messageWithFile({ uri }));
+    const file = msg.content[0] as FilePart;
+    expect(file.data).toBe(uri);
+  });
+
   it("leaves regular (fetchable) URLs untouched", () => {
     const url = "https://example.com/image.png";
     const msg = convertA2AMessageToFrameworkMessage(

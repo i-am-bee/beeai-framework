@@ -47,6 +47,28 @@ def test_data_uri_to_base64_without_media_type() -> None:
 
 
 @pytest.mark.unit
+def test_data_uri_to_base64_strips_whitespace_in_base64() -> None:
+    # RFC 2045 permits whitespace (e.g. line breaks) inside base64 payloads.
+    payload = f"{PNG_BASE64[:4]}\n {PNG_BASE64[4:]}"
+    assert _data_uri_to_base64(f"data:image/png;base64,{payload}") == (PNG_BASE64, "image/png")
+
+
+@pytest.mark.unit
+def test_data_uri_to_base64_accepts_unpadded_base64() -> None:
+    unpadded = base64.b64encode(b"hello").decode("ascii").rstrip("=")
+    result = _data_uri_to_base64(f"data:text/plain;base64,{unpadded}")
+    assert result is not None
+    data, _media_type = result
+    assert base64.b64decode(data) == b"hello"
+
+
+@pytest.mark.unit
+def test_data_uri_to_base64_rejects_malformed_percent_encoding() -> None:
+    assert _data_uri_to_base64("data:text/plain,bad%2") is None
+    assert _data_uri_to_base64("data:text/plain,bad%2G") is None
+
+
+@pytest.mark.unit
 @pytest.mark.parametrize(
     "uri",
     [
