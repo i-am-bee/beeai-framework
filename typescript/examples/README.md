@@ -118,6 +118,7 @@ This repository contains examples demonstrating the usage of the BeeAI Framework
 - [`base.ts`](/typescript/examples/tools/custom/base.ts): Custom tool base implementation
 - [`dynamic.ts`](/typescript/examples/tools/custom/dynamic.ts): Dynamic tool creation
 - [`openLibrary.ts`](/typescript/examples/tools/custom/openLibrary.ts): OpenLibrary API tool
+- [`xquik.ts`](/typescript/examples/tools/custom/xquik.ts): Xquik API tool for searching X posts
 - [`python.ts`](/typescript/examples/tools/custom/python.ts): Python-based custom tool
 
 - [`langchain.ts`](/typescript/examples/tools/langchain.ts): LangChain tool integration
