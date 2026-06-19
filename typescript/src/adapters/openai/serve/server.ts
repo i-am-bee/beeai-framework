@@ -30,7 +30,12 @@ export interface OpenAIServerMetadata {
   description?: string;
 }
 
-export class OpenAIServer extends Server<AnyAgent, AnyAgent, OpenAIServerConfig, OpenAIServerMetadata> {
+export class OpenAIServer extends Server<
+  AnyAgent,
+  AnyAgent,
+  OpenAIServerConfig,
+  OpenAIServerMetadata
+> {
   private ready = false;
 
   constructor(config: OpenAIServerConfig = new OpenAIServerConfig()) {
@@ -53,9 +58,9 @@ export class OpenAIServer extends Server<AnyAgent, AnyAgent, OpenAIServerConfig,
       // Find the first agent that matches the requested model ID by name.
       // If the client doesn't pass a specific name or it doesn't match, we fallback to the first member.
       const matchedMember = this.members.find(
-        (m) => this.metadataByInput.get(m)?.name === modelId || m.meta.name === modelId
+        (m) => this.metadataByInput.get(m)?.name === modelId || m.meta.name === modelId,
       );
-      
+
       const member = matchedMember ?? this.members[0];
       if (!member) {
         throw new ValueError(`Model '${modelId}' not registered`);

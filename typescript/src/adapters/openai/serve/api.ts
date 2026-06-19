@@ -56,16 +56,26 @@ export class ChatCompletionAPI {
         res.setHeader("Cache-Control", "no-cache");
         res.setHeader("Connection", "keep-alive");
 
+        // Abort the agent run if the client disconnects early
+        const controller = new AbortController();
+        req.on("close", () => {
+          controller.abort();
+        });
+
         try {
           await clonedAgent
-            .run({ prompt: null })
+            .run({ prompt: null }, { signal: controller.signal })
             .observe((emitter) => {
               // Match all events and filter for "update" — required because the
               // emitter is typed as Emitter<unknown> at the AnyAgent abstraction.
               emitter.match("*.*", async (eventData: any, event) => {
-                if (event.name !== "update") return;
+                if (event.name !== "update") {
+                  return;
+                }
                 const { update } = eventData as { update: { value: string } };
-                if (res.writableEnded) return;
+                if (res.writableEnded || res.destroyed) {
+                  return;
+                }
                 const data = {
                   id,
                   object: "chat.completion.chunk",
@@ -86,24 +96,26 @@ export class ChatCompletionAPI {
               });
             });
 
-          const finalData = {
-            id,
-            object: "chat.completion.chunk",
-            model: requestBody.model,
-            created: Math.floor(Date.now() / 1000),
-            choices: [
-              {
-                index: 0,
-                delta: {},
-                finish_reason: "stop",
-              },
-            ],
-          };
-          res.write(`data: ${JSON.stringify(finalData)}\n\n`);
-          res.write(`data: [DONE]\n\n`);
+          if (!res.writableEnded && !res.destroyed) {
+            const finalData = {
+              id,
+              object: "chat.completion.chunk",
+              model: requestBody.model,
+              created: Math.floor(Date.now() / 1000),
+              choices: [
+                {
+                  index: 0,
+                  delta: {},
+                  finish_reason: "stop",
+                },
+              ],
+            };
+            res.write(`data: ${JSON.stringify(finalData)}\n\n`);
+            res.write(`data: [DONE]\n\n`);
+          }
         } catch (error) {
           logger.error(error, "Error during streaming agent run");
-          if (!res.writableEnded) {
+          if (!res.writableEnded && !res.destroyed) {
             // Send an error chunk so the client can detect failure
             const errData = {
               id,
@@ -113,11 +125,17 @@ export class ChatCompletionAPI {
               choices: [{ index: 0, delta: {}, finish_reason: "error" }],
               error: { message: String(error) },
             };
-            res.write(`data: ${JSON.stringify(errData)}\n\n`);
-            res.write(`data: [DONE]\n\n`);
+            try {
+              res.write(`data: ${JSON.stringify(errData)}\n\n`);
+              res.write(`data: [DONE]\n\n`);
+            } catch (writeError) {
+              logger.error(writeError, "Failed to write error response chunk");
+            }
           }
         } finally {
-          res.end();
+          if (!res.writableEnded && !res.destroyed) {
+            res.end();
+          }
         }
       } else {
         const result = await clonedAgent.run({ prompt: null });
@@ -148,7 +166,9 @@ export class ChatCompletionAPI {
       }
     } catch (error) {
       logger.error(error, "Error handling /chat/completions request");
-      res.status(500).json({ error: String(error) });
+      if (!res.headersSent) {
+        res.status(500).json({ error: String(error) });
+      }
     }
   }
 }
