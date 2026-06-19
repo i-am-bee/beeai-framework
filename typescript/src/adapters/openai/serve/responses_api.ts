@@ -96,7 +96,14 @@ export class ResponsesAPI {
 
         const sendEvent = (eventType: string, data: unknown) => {
           sequenceNumber++;
-          res.write(`event: ${eventType}\ndata: ${JSON.stringify(data)}\n\n`);
+          if (res.writableEnded || res.destroyed) {
+            return;
+          }
+          try {
+            res.write(`event: ${eventType}\ndata: ${JSON.stringify(data)}\n\n`);
+          } catch (writeErr) {
+            logger.error(writeErr, `Failed to write event ${eventType} to response`);
+          }
         };
 
         // response.created
@@ -155,18 +162,28 @@ export class ResponsesAPI {
         };
         sendEvent("response.content_part.added", contentPartAddedEvent);
 
+        // Abort the agent run if the client disconnects early
+        const controller = new AbortController();
+        req.on("close", () => {
+          controller.abort();
+        });
+
         try {
           // Use .observe() to subscribe to the run-scoped emitter — the correct
           // BeeAI pattern for intercepting agent events during a run.
           await clonedAgent
-            .run({ prompt: null })
+            .run({ prompt: null }, { signal: controller.signal })
             .observe((emitter) => {
               // Match all events and filter for "update" — required because the
               // emitter is typed as Emitter<unknown> at the AnyAgent abstraction.
               emitter.match("*.*", async (data: any, event) => {
-                if (event.name !== "update") return;
+                if (event.name !== "update") {
+                  return;
+                }
                 const { update } = data as { update: { value: string } };
-                if (res.writableEnded) return;
+                if (res.writableEnded || res.destroyed) {
+                  return;
+                }
                 const delta = update.value;
                 accumulatedText += delta;
 
@@ -251,7 +268,9 @@ export class ResponsesAPI {
           sendEvent("error", errorEvent);
         }
 
-        res.end();
+        if (!res.writableEnded && !res.destroyed) {
+          res.end();
+        }
       } else {
         const result = await clonedAgent.run({ prompt: null });
 
@@ -286,7 +305,9 @@ export class ResponsesAPI {
       }
     } catch (error) {
       logger.error(error, "Error handling /responses request");
-      res.status(500).json({ error: String(error) });
+      if (!res.headersSent) {
+        res.status(500).json({ error: String(error) });
+      }
     }
   }
 }
