@@ -4,7 +4,13 @@
  */
 
 import { ChatMessage } from "./types.js";
-import { Message, UserMessage, AssistantMessage, SystemMessage, ToolMessage } from "@/backend/message.js";
+import {
+  Message,
+  UserMessage,
+  AssistantMessage,
+  SystemMessage,
+  ToolMessage,
+} from "@/backend/message.js";
 
 export function openaiMessageToBeeAIMessage(msg: ChatMessage): Message {
   if (msg.role === "system") {
@@ -27,7 +33,7 @@ export function openaiMessageToBeeAIMessage(msg: ChatMessage): Message {
         let args = {};
         try {
           args = JSON.parse(call.function.arguments || "{}");
-        } catch (e) {
+        } catch {
           // Model generated invalid JSON for arguments, fallback to empty object
           // to allow execution to proceed gracefully
         }
