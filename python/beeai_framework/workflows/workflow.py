@@ -99,7 +99,7 @@ class Workflow(Generic[T, K]):
 
     def delete_step(self, step_name: K) -> "Workflow[T, K]":
         if step_name not in self.steps:
-            raise WorkflowError(f"Step '${step_name}' was not found.")
+            raise WorkflowError(f"Step '{step_name}' was not found.")
 
         del self.steps[step_name]
 

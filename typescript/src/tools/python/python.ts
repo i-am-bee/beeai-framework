@@ -193,7 +193,7 @@ export async function callCodeInterpreter({
     body: JSON.stringify(body),
     signal,
   }).catch((error) => {
-    if (error.cause.name == "HTTPParserError") {
+    if (error.cause?.name === "HTTPParserError") {
       throw new ToolError(
         "Request to code interpreter has failed -- ensure that CODE_INTERPRETER_URL points to the new HTTP endpoint (default port: 50081).",
         [error],
@@ -203,7 +203,11 @@ export async function callCodeInterpreter({
     }
   });
 
-  if (!response?.ok && response.status > 400) {
+  if (!response) {
+    throw new ToolError("Request to code interpreter has failed.");
+  }
+
+  if (!response.ok && response.status >= 400) {
     throw new ToolError(
       `Request to code interpreter has failed with HTTP status code ${response.status}.`,
       [new Error(await response.text())],
