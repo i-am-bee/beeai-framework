@@ -300,6 +300,6 @@ export class WatsonxChatModel extends ChatModel {
   }
 
   static {
-    WatsonxChatModel.register();
+    this.register();
   }
 }

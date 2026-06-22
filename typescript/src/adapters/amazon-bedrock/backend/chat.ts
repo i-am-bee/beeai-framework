@@ -27,6 +27,6 @@ export class AmazonBedrockChatModel extends VercelChatModel {
   }
 
   static {
-    AmazonBedrockChatModel.register();
+    this.register();
   }
 }

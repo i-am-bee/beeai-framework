@@ -27,6 +27,6 @@ export class AzureOpenAIChatModel extends VercelChatModel {
   }
 
   static {
-    AzureOpenAIChatModel.register();
+    this.register();
   }
 }

@@ -27,6 +27,6 @@ export class GoogleVertexChatModel extends VercelChatModel {
   }
 
   static {
-    GoogleVertexChatModel.register();
+    this.register();
   }
 }

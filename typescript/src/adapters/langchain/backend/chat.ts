@@ -151,6 +151,6 @@ export class LangChainChatModel extends ChatModel {
   }
 
   static {
-    LangChainChatModel.register();
+    this.register();
   }
 }

@@ -24,6 +24,6 @@ export class OpenAIChatModel extends VercelChatModel {
   }
 
   static {
-    OpenAIChatModel.register();
+    this.register();
   }
 }
