@@ -970,7 +970,7 @@ import { UserMessage } from "beeai-framework/backend/message";
 import { SlidingCache } from "beeai-framework/cache/slidingCache";
 
 const llm = await ChatModel.fromName("ollama:granite3.3");
-llm.config({ cache: new SlidingCache({ size: 50 }) }); // Cache up to 50 responses
+llm.config({ cache: new SlidingCache<any>({ size: 50 }) }); // Cache up to 50 responses
 
 const messages = [new UserMessage("Hello, how are you?")];
 
@@ -1004,7 +1004,7 @@ import { OpenMeteoTool } from "beeai-framework/tools/weather/openMeteo";
 import { UnconstrainedCache } from "beeai-framework/cache/unconstrainedCache";
 
 // Cache all results from the weather API
-const weatherTool = new OpenMeteoTool({ cache: new UnconstrainedCache() });
+const weatherTool = new OpenMeteoTool({ cache: new UnconstrainedCache<any>() });
 ```
 
 </CodeGroup>
@@ -1050,9 +1050,9 @@ import { SlidingCache } from "beeai-framework/cache/slidingCache";
 import { UnconstrainedCache } from "beeai-framework/cache/unconstrainedCache";
 
 const llm = await ChatModel.fromName("ollama:granite3.3");
-llm.config({ cache: new SlidingCache({ size: 50 }) }); // Cache up to 50 responses
+llm.config({ cache: new SlidingCache<any>({ size: 50 }) }); // Cache up to 50 responses
 
-const weatherTool = new OpenMeteoTool({ cache: new UnconstrainedCache() });
+const weatherTool = new OpenMeteoTool({ cache: new UnconstrainedCache<any>() });
 
 const agent = new RequirementAgent({
   llm,
