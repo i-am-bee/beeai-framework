@@ -424,7 +424,7 @@ import { Logger } from "beeai-framework/logger/logger";
 Logger.defaults.pretty = true;
 
 // You create the logger and decide what to log
-const logger = Logger.root.child({ name: "my-agent", level: "trace" });
+const logger = new Logger({ name: "my-agent", level: "trace" });
 
 logger.info("Starting agent application");
 
