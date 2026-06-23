@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import base64
+from typing import Any
 
 import a2a.types as a2a_types
 import pytest
@@ -10,7 +11,7 @@ from beeai_framework.adapters.a2a.agents._utils import (
     _data_uri_to_base64,
     convert_a2a_to_framework_message,
 )
-from beeai_framework.backend.message import UserMessage
+from beeai_framework.backend.message import AnyMessage, UserMessage
 
 PNG_BASE64 = base64.b64encode(b"\x89PNG\r\n\x1a\n").decode("ascii")
 
@@ -21,6 +22,12 @@ def _message_with_file(file: a2a_types.FileWithBytes | a2a_types.FileWithUri) ->
         parts=[a2a_types.Part(root=a2a_types.FilePart(file=file))],
         message_id="msg-1",
     )
+
+
+def _file_payload(message: AnyMessage) -> dict[str, Any]:
+    # The file part is stored as a CustomMessageContent with extra fields, so read it dynamically.
+    content: Any = message.content[0]
+    return content.file
 
 
 @pytest.mark.unit
@@ -87,7 +94,7 @@ def test_file_with_data_uri_is_inlined_as_base64() -> None:
     result = convert_a2a_to_framework_message(message)
 
     assert isinstance(result, UserMessage)
-    file = result.content[0].file
+    file = _file_payload(result)
     assert file["file_data"] == PNG_BASE64
     assert file["format"] == "image/png"
     assert file["filename"] == "logo.png"
@@ -99,7 +106,7 @@ def test_file_with_public_url_is_left_untouched() -> None:
     message = _message_with_file(a2a_types.FileWithUri(uri=url, mime_type="image/png", name="logo.png"))
     result = convert_a2a_to_framework_message(message)
 
-    assert result.content[0].file["file_data"] == url
+    assert _file_payload(result)["file_data"] == url
 
 
 @pytest.mark.unit
@@ -107,7 +114,7 @@ def test_file_with_bytes_is_passed_through() -> None:
     message = _message_with_file(a2a_types.FileWithBytes(bytes=PNG_BASE64, mime_type="image/png", name="logo.png"))
     result = convert_a2a_to_framework_message(message)
 
-    file = result.content[0].file
+    file = _file_payload(result)
     assert file["file_data"] == PNG_BASE64
     assert file["format"] == "image/png"
 
@@ -119,4 +126,4 @@ def test_explicit_mime_type_takes_precedence_over_data_uri() -> None:
     )
     result = convert_a2a_to_framework_message(message)
 
-    assert result.content[0].file["format"] == "image/jpeg"
+    assert _file_payload(result)["format"] == "image/jpeg"
