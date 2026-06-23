@@ -66,7 +66,7 @@ async def test_final_answer_tool_is_always_offered() -> None:
 
     await agent.run("anything")
 
-    offered_tools = {offered.name for offered in model.inputs[0].tools}
+    offered_tools = {offered.name for offered in (model.inputs[0].tools or [])}
     assert "final_answer" in offered_tools
     assert "weather_tool" in offered_tools
 
