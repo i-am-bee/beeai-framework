@@ -901,7 +901,58 @@ if __name__ == "__main__":
 ```
 
 ```ts TypeScript [expandable]
-COMING SOON
+import { RequirementAgent } from "beeai-framework/agents/requirement/agent";
+import { OllamaChatModel } from "beeai-framework/adapters/ollama/backend/chat";
+import { UnconstrainedMemory } from "beeai-framework/memory/unconstrainedMemory";
+import { WikipediaTool } from "beeai-framework/tools/search/wikipedia";
+import { OpenMeteoTool } from "beeai-framework/tools/weather/openMeteo";
+import { HandoffTool } from "beeai-framework/tools/handoff";
+import { ThinkTool } from "beeai-framework/tools/think";
+
+const llm = new OllamaChatModel("granite3.3");
+
+// Create specialized agents
+const knowledgeAgent = new RequirementAgent({
+  llm,
+  tools: [new ThinkTool(), new WikipediaTool()],
+  memory: new UnconstrainedMemory(),
+  instructions:
+    "Provide detailed, accurate information using available knowledge sources. Think through problems step by step.",
+});
+
+const weatherAgent = new RequirementAgent({
+  llm,
+  tools: [new ThinkTool(), new OpenMeteoTool()],
+  memory: new UnconstrainedMemory(),
+  instructions: "Provide comprehensive weather information and forecasts. Always think before using tools.",
+});
+
+// Create a coordinator agent that manages handoffs
+const coordinatorAgent = new RequirementAgent({
+  llm,
+  memory: new UnconstrainedMemory(),
+  tools: [
+    new HandoffTool(knowledgeAgent, {
+      name: "knowledge_specialist",
+      description: "For general knowledge and research questions",
+    }),
+    new HandoffTool(weatherAgent, {
+      name: "weather_expert",
+      description: "For weather-related queries",
+    }),
+  ],
+  instructions: `You coordinate between specialist agents.
+  - For weather queries: use weather_expert
+  - For research/knowledge questions: use knowledge_specialist
+  - For mixed queries: break them down and use multiple specialists
+
+  Always introduce yourself and explain which specialist will help.`,
+});
+
+const response = await coordinatorAgent.run({
+  prompt: "What's the weather in Paris and tell me about its history?",
+});
+console.log(response.result.text);
 ```
 
 </CodeGroup>
@@ -1115,7 +1166,18 @@ if __name__ == "__main__":
 ```
 
 ```ts TypeScript [expandable]
-COMING SOON
+import { MCPServer } from "beeai-framework/adapters/mcp/serve/server";
+import { OpenMeteoTool } from "beeai-framework/tools/weather/openMeteo";
+import { WikipediaTool } from "beeai-framework/tools/search/wikipedia";
+
+// Create an MCP server
+const server = new MCPServer();
+
+// Register tools that can be used by MCP clients
+server.registerMany([new OpenMeteoTool(), new WikipediaTool()]);
+
+// Start the server
+await server.serve();
 ```
 
 </CodeGroup>
@@ -1161,7 +1223,8 @@ if __name__ == "__main__":
 ```
 
 ```ts TypeScript [expandable]
-COMING SOON
+// AgentStack server support is not yet available in TypeScript.
+// Use the Python SDK for this integration.
 ```
 
 </CodeGroup>
@@ -1206,7 +1269,21 @@ if __name__ == "__main__":
 ```
 
 ```ts TypeScript [expandable]
-COMING SOON
+import { A2AServer } from "beeai-framework/adapters/a2a/serve/server";
+import { RequirementAgent } from "beeai-framework/agents/requirement/agent";
+import { OllamaChatModel } from "beeai-framework/adapters/ollama/backend/chat";
+import { UnconstrainedMemory } from "beeai-framework/memory/unconstrainedMemory";
+import { OpenMeteoTool } from "beeai-framework/tools/weather/openMeteo";
+
+const llm = new OllamaChatModel("granite3.3");
+const agent = new RequirementAgent({
+  llm,
+  tools: [new OpenMeteoTool()],
+  memory: new UnconstrainedMemory(),
+});
+
+// Register the agent with the A2A server and run the HTTP server
+await new A2AServer().register(agent).serve();
 ```
 
 </CodeGroup>
@@ -1248,7 +1325,8 @@ if __name__ == "__main__":
 ```
 
 ```ts TypeScript [expandable]
-COMING SOON
+// IBM watsonx Orchestrate server support is not yet available in TypeScript.
+// Use the Python SDK for this integration.
 ```
 
 </CodeGroup>
