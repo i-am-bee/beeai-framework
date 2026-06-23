@@ -39,7 +39,7 @@ async def ollama_granite_from_name() -> None:
 
 
 async def ollama_text_completion() -> None:
-    llm = OllamaChatModel("granite3.3:8b", text_completion=True)
+    llm = OllamaChatModel("granite4.1:8b", text_completion=True)
     response = await llm.run([UserMessage("hello")])
     print(response.get_text_content())
 
