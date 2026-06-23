@@ -45,6 +45,7 @@ def remove_by_reference(lst: list[Any], obj: Any) -> None:
     for i, item in enumerate(lst):
         if item is obj:
             del lst[i]
+            return
 
     raise ValueError("Object not found in list")
 
