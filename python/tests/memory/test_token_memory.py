@@ -55,6 +55,7 @@ async def test_capacity_enforced_evicts_oldest_by_default() -> None:
     assert first not in memory.messages
     assert second in memory.messages
     assert third in memory.messages
+    assert memory._max_tokens is not None
     assert memory.tokens_used <= memory._max_tokens
 
 
@@ -104,6 +105,7 @@ async def test_capacity_threshold_triggers_earlier_eviction() -> None:
 
     assert first not in memory.messages
     assert second in memory.messages
+    assert memory._max_tokens is not None
     assert memory.tokens_used <= memory._max_tokens * 0.5 + 3
 
 
