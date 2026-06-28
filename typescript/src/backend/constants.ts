@@ -34,6 +34,11 @@ export const BackendProviders = {
     module: "anthropic",
     aliases: [] as string[],
   },
+  MiniMax: {
+    name: "MiniMax",
+    module: "minimax",
+    aliases: ["minimax"] as string[],
+  },
 } as const;
 
 export type ProviderName = (typeof BackendProviders)[keyof typeof BackendProviders]["module"];

@@ -30,7 +30,7 @@ class AmazonBedrockChatModel(LiteLLMChatModel):
         **kwargs: Unpack[ChatModelKwargs],
     ) -> None:
         super().__init__(
-            (model_id if model_id else os.getenv("AWS_CHAT_MODEL", "llama-3.1-8b-instant")),
+            (model_id if model_id else os.getenv("AWS_CHAT_MODEL", "meta.llama3-70b-instruct-v1:0")),
             provider_id="bedrock",
             **kwargs,
         )
