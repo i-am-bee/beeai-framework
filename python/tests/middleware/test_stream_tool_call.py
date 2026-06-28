@@ -16,7 +16,6 @@ from beeai_framework.tools import StringToolOutput, Tool
 from beeai_framework.tools.types import ToolRunOptions
 from beeai_framework.utils.strings import to_safe_word
 
-
 # ---------------------------------------------------------------------------
 # Minimal tool fixture
 # ---------------------------------------------------------------------------
@@ -37,7 +36,7 @@ class FakeSearchTool(Tool[SearchInput, ToolRunOptions, StringToolOutput]):
             creator=self,
         )
 
-    async def _run(self, input: SearchInput, options: ToolRunOptions, run: RunContext) -> StringToolOutput:
+    async def _run(self, input: SearchInput, options: ToolRunOptions | None, context: RunContext) -> StringToolOutput:
         return StringToolOutput(result=input.query)
 
 

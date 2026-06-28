@@ -27,7 +27,8 @@ from beeai_framework.utils.strings import to_json
 
 @runtime_checkable
 class Writeable(Protocol):
-    def write(self, s: str) -> int: ...
+    # Positional-only so standard file objects (io.StringIO, sys.stdout) satisfy the protocol.
+    def write(self, s: str, /) -> int: ...
 
 
 class TraceLevel(BaseModel):
@@ -325,7 +326,6 @@ def _logger_to_writeable(logger: Logger) -> Writeable:
 
 def _create_target(input: Writeable | Logger | bool | None) -> Writeable:
     if input is None or input is True:
-        # pyrefly: ignore [bad-return]
         return sys.stdout
     elif input is False:
 

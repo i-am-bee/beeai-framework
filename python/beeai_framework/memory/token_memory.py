@@ -6,7 +6,10 @@ from typing import Any
 
 from beeai_framework.backend.message import AnyMessage
 from beeai_framework.memory.base_memory import BaseMemory
+from beeai_framework.memory.errors import ResourceFatalError
 from beeai_framework.utils.cloneable import Cloneable
+
+DEFAULT_MAX_TOKENS = 128_000
 
 
 def simple_estimate(msg: AnyMessage) -> int:
@@ -51,8 +54,14 @@ class TokenMemory(BaseMemory):
         return int((len(msg.role) + len(msg.text)) / 4)
 
     def _get_message_key(self, message: AnyMessage) -> str:
-        """Generate a unique key for a message."""
-        return f"{message.role}:{message.text}"
+        """Generate a unique key for a message instance.
+
+        Object identity is used (rather than role + text) so that duplicate
+        messages (e.g. repeated prompts or short replies like "yes") each get
+        a distinct entry. clone() shallow-copies both the message list and the
+        token map, so the object ids stay consistent across clones.
+        """
+        return str(id(message))
 
     @property
     def messages(self) -> list[AnyMessage]:
@@ -90,11 +99,30 @@ class TokenMemory(BaseMemory):
                     }
 
     async def add(self, message: AnyMessage, index: int | None = None) -> None:
+        if self._max_tokens is None:
+            self._max_tokens = DEFAULT_MAX_TOKENS
+
+        estimated_tokens = self.handlers["estimate"](message)
+
+        if estimated_tokens > self._max_tokens:
+            raise ResourceFatalError(
+                f"Retrieved message ({estimated_tokens} tokens) cannot fit "
+                f"inside current memory ({self._max_tokens} tokens)"
+            )
+
+        # Evict existing messages until the incoming one fits within the configured
+        # capacity budget (the absolute limit scaled by capacity_threshold).
+        capacity = self._max_tokens * self._threshold
+        while self._messages and self.tokens_used > capacity - estimated_tokens:
+            message_to_delete = self.handlers["removal_selector"](self._messages)
+            deleted = await self.delete(message_to_delete) if message_to_delete is not None else False
+            if not deleted:
+                raise ResourceFatalError('The "removal_selector" handler must return a valid message!')
+
         index = len(self._messages) if index is None else max(0, min(index, len(self._messages)))
         self._messages.insert(index, message)
 
         key = self._get_message_key(message)
-        estimated_tokens = self.handlers["estimate"](message)
         self._tokens_by_message[key] = {
             "tokens_count": estimated_tokens,
             "dirty": True,
