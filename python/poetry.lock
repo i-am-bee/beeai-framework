@@ -947,7 +947,7 @@ files = [
     {file = "cffi-2.0.0-cp39-cp39-win_amd64.whl", hash = "sha256:b882b3df248017dba09d6b16defe9b5c407fe32fc7c65a9c69798e6175601be9"},
     {file = "cffi-2.0.0.tar.gz", hash = "sha256:44d1b5909021139fe36001ae048dbdde8214afa20200eda0f64c068cac5d5529"},
 ]
-markers = {main = "(extra == \"a2a\" or extra == \"agentstack\" or extra == \"all\" or extra == \"beeai-platform\" or extra == \"vertexai\" or extra == \"mcp\" or extra == \"rag\" or extra == \"duckduckgo\" or extra == \"search\") and (platform_python_implementation != \"CPython\" or extra == \"a2a\" or extra == \"agentstack\" or extra == \"all\" or extra == \"beeai-platform\" or extra == \"vertexai\" or extra == \"mcp\" or extra == \"rag\") and (platform_python_implementation != \"PyPy\" or extra == \"all\" or extra == \"duckduckgo\" or extra == \"search\")", dev = "platform_python_implementation != \"PyPy\""}
+markers = {main = "extra == \"all\" or extra == \"duckduckgo\" or extra == \"search\" or platform_python_implementation != \"PyPy\"", dev = "platform_python_implementation != \"PyPy\""}
 
 [package.dependencies]
 pycparser = {version = "*", markers = "implementation_name != \"PyPy\""}
@@ -1344,7 +1344,6 @@ files = [
     {file = "cryptography-49.0.0-pp311-pypy311_pp73-win_amd64.whl", hash = "sha256:be9fcb48a55f023493482827d4f459bd263cc20efde64f204b97c123201850c6"},
     {file = "cryptography-49.0.0.tar.gz", hash = "sha256:f89660a348f4f78a92366240a61404e337586ef7f5909a2fef59ca88ef505493"},
 ]
-markers = {main = "extra == \"a2a\" or extra == \"agentstack\" or extra == \"all\" or extra == \"beeai-platform\" or extra == \"vertexai\" or extra == \"mcp\" or extra == \"rag\""}
 
 [package.dependencies]
 cffi = {version = ">=2.0.0", markers = "platform_python_implementation != \"PyPy\""}
@@ -3267,15 +3266,14 @@ files = [
 
 [[package]]
 name = "joserfc"
-version = "1.6.4"
+version = "1.6.7"
 description = "The ultimate Python library for JOSE RFCs, including JWS, JWE, JWK, JWA, JWT"
-optional = true
+optional = false
 python-versions = ">=3.9"
 groups = ["main"]
-markers = "extra == \"agentstack\" or extra == \"all\" or extra == \"beeai-platform\""
 files = [
-    {file = "joserfc-1.6.4-py3-none-any.whl", hash = "sha256:3e4a22b509b41908989237a045e25c8308d5fd47ab96bdae2dd8057c6451003a"},
-    {file = "joserfc-1.6.4.tar.gz", hash = "sha256:34ce5f499bfcc5e9ad4cc75077f9278ab3227b71da9aaf28f9ab705f8a560d3c"},
+    {file = "joserfc-1.6.7-py3-none-any.whl", hash = "sha256:9e51e4a64840aa1734a058258e80a4480e2ff2d5686e480e7c92c954a92fbe05"},
+    {file = "joserfc-1.6.7.tar.gz", hash = "sha256:6999fe89457069ecacd8cc797c88a805f83054dd883333fa0409f74b46479fd7"},
 ]
 
 [package.dependencies]
@@ -6419,7 +6417,7 @@ files = [
     {file = "pycparser-3.0-py3-none-any.whl", hash = "sha256:b727414169a36b7d524c1c3e31839a521725078d7b2ff038656844266160a992"},
     {file = "pycparser-3.0.tar.gz", hash = "sha256:600f49d217304a5902ac3c37e1281c9fe94e4d0489de643a9504c5cdfdfc6b29"},
 ]
-markers = {main = "(extra == \"a2a\" or extra == \"agentstack\" or extra == \"all\" or extra == \"beeai-platform\" or extra == \"vertexai\" or extra == \"mcp\" or extra == \"rag\" or extra == \"duckduckgo\" or extra == \"search\") and (platform_python_implementation != \"CPython\" or extra == \"a2a\" or extra == \"agentstack\" or extra == \"all\" or extra == \"beeai-platform\" or extra == \"vertexai\" or extra == \"mcp\" or extra == \"rag\") and implementation_name != \"PyPy\" and (platform_python_implementation != \"PyPy\" or extra == \"all\" or extra == \"duckduckgo\" or extra == \"search\")", dev = "platform_python_implementation != \"PyPy\" and implementation_name != \"PyPy\""}
+markers = {main = "(extra == \"all\" or extra == \"duckduckgo\" or extra == \"search\" or platform_python_implementation != \"PyPy\") and implementation_name != \"PyPy\"", dev = "platform_python_implementation != \"PyPy\" and implementation_name != \"PyPy\""}
 
 [[package]]
 name = "pydantic"
