@@ -248,7 +248,7 @@ This example forces the agent to use `ThinkTool` for reasoning followed by `Duck
 <CodeGroup>
 ```py Python [expandable]
 RequirementAgent(
-  llm=ChatModel.from_name("ollama:granite3.3"),
+  llm=ChatModel.from_name("ollama:granite4.1:8b"),
   tools=[ThinkTool(), DuckDuckGoSearchTool()],
   requirements=[
       ConditionalRequirement(ThinkTool, force_at_step=1), # Force ThinkTool at the first step
@@ -259,7 +259,7 @@ RequirementAgent(
 
 ```ts TypeScript [expandable]
 new RequirementAgent({
-  llm: await ChatModel.fromName("ollama:granite3.3"),
+  llm: await ChatModel.fromName("ollama:granite4.1:8b"),
   tools: [new ThinkTool(), new DuckDuckGoSearchTool()],
   requirements: [
     new ConditionalRequirement(ThinkTool, { forceAtStep: 1 }), // Force ThinkTool at the first step
@@ -283,7 +283,7 @@ You can achieve this by forcing the execution of the `Think` tool after every to
 <CodeGroup>
 ```py Python [expandable]
 RequirementAgent(
-  llm=ChatModel.from_name("ollama:granite3.3"),
+  llm=ChatModel.from_name("ollama:granite4.1:8b"),
   tools=[ThinkTool(), WikipediaTool(), OpenMeteoTool()],
   requirements=[ConditionalRequirement(ThinkTool, force_at_step=1, force_after=Tool)],
 )
@@ -293,7 +293,7 @@ RequirementAgent(
 import { Tool } from "beeai-framework/tools/base";
 
 new RequirementAgent({
-  llm: await ChatModel.fromName("ollama:granite3.3"),
+  llm: await ChatModel.fromName("ollama:granite4.1:8b"),
   tools: [new ThinkTool(), new WikipediaTool(), new OpenMeteoTool()],
   requirements: [
     new ConditionalRequirement(ThinkTool, { 
@@ -317,7 +317,7 @@ You may want an agent that works like ReAct but skips the "reasoning" step under
 <CodeGroup>
 ```py Python [expandable]
 RequirementAgent(
-  llm=ChatModel.from_name("ollama:granite3.3"),
+  llm=ChatModel.from_name("ollama:granite4.1:8b"),
   tools=[ThinkTool(), retrieve_basket(), create_order(), send_email()],
   requirements=[
     ConditionalRequirement(ThinkTool, force_at_step=1, force_after=retrieve_basket, priority=10),
@@ -328,7 +328,7 @@ RequirementAgent(
 
 ```ts TypeScript [expandable]
 new RequirementAgent({
-  llm: await ChatModel.fromName("ollama:granite3.3"),
+  llm: await ChatModel.fromName("ollama:granite4.1:8b"),
   tools: [new ThinkTool(), retrieveBasket(), createOrder(), sendEmail()],
   requirements: [
     new ConditionalRequirement(ThinkTool, { 
@@ -359,7 +359,7 @@ The following agent first asks the user before it runs the `remove_data` or the 
 <CodeGroup>
 ```py Python [expandable]
 RequirementAgent(
-  llm=ChatModel.from_name("ollama:granite3.3"),
+  llm=ChatModel.from_name("ollama:granite4.1:8b"),
   tools=[get_data, remove_data, update_data],
   requirements=[
     AskPermissionRequirement([remove_data, get_data])

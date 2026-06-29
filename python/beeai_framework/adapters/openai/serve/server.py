@@ -32,10 +32,16 @@ class OpenAIAPIType(StrEnum):
     RESPONSES = "responses"
 
 
+_LOOPBACK_HOSTS = ("127.0.0.1", "localhost", "::1")
+
+
 class OpenAIServerConfig(BaseModel):
     """Configuration for the OpenAIServerConfig."""
 
-    host: str = "0.0.0.0"
+    # Bind to loopback by default. The endpoints are unauthenticated unless `api_key`
+    # is set, so binding to all interfaces ("0.0.0.0") is opt-in to avoid exposing an
+    # unauthenticated server to the network by default.
+    host: str = "127.0.0.1"
     port: int = 9999
 
     api: OpenAIAPIType = OpenAIAPIType.CHAT_COMPLETION
@@ -95,6 +101,13 @@ class OpenAIServer(
                 memory_manager=self._memory_manager,
             )
         )
+
+        if self._config.api_key is None and self._config.host not in _LOOPBACK_HOSTS:
+            logger.warning(
+                f"OpenAIServer is binding to a non-loopback host ({self._config.host}) with no `api_key` set: "
+                f"the API will be reachable from the network without authentication. "
+                f"Set `api_key` in the config, or bind to 127.0.0.1, to avoid exposing it."
+            )
 
         uvicorn.run(api.app, host=self._config.host, port=self._config.port)
 
