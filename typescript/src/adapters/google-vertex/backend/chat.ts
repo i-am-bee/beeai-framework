@@ -25,4 +25,8 @@ export class GoogleVertexChatModel extends VercelChatModel {
     super(model);
     Object.assign(this.parameters, parameters ?? {});
   }
+
+  static {
+    this.register();
+  }
 }
