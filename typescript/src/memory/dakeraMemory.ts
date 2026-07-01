@@ -166,24 +166,28 @@ export class DakeraMemory extends BaseMemory<DakeraMemorySnapshot> {
     const insertAt = index !== undefined ? this.clampIndex(index) : this.messages.length;
     this.messages.splice(insertAt, 0, message);
 
-    if (!this.persist || !message.text?.trim()) {
+    if (!message.text?.trim()) {
       return;
     }
 
-    // 2. Persist to Dakera.
-    try {
-      const stored = await this.dakeraStore(message);
-      if (stored?.id) {
-        this.storedIds.push(stored.id);
+    // 2. Persist to Dakera (only when persist=true; skip for read-only mode).
+    if (this.persist) {
+      try {
+        const stored = await this.dakeraStore(message);
+        if (stored?.id) {
+          this.storedIds.push(stored.id);
+        }
+      } catch (err) {
+        // Non-fatal: remote storage failure should not crash the agent.
+        console.warn("[DakeraMemory] Failed to persist message:", err);
       }
-    } catch (err) {
-      // Non-fatal: remote storage failure should not crash the agent.
-      console.warn("[DakeraMemory] Failed to persist message:", err);
     }
 
     // 3. Retrieve top-K semantically relevant memories and inject them at the
     //    very beginning of the window (before all other messages) so the LLM
     //    always has long-term context available.
+    //    This runs regardless of `persist` — read-only mode still benefits from
+    //    recall injection; it just doesn't write new memories to Dakera.
     if (this.topK > 0) {
       try {
         await this.injectRecalledMemories(message.text);
@@ -281,7 +285,10 @@ export class DakeraMemory extends BaseMemory<DakeraMemorySnapshot> {
       metadata: {
         role: message.role,
         messageId: message.id,
-        createdAt: message.meta?.createdAt?.toISOString(),
+        createdAt:
+          message.meta?.createdAt instanceof Date
+            ? message.meta.createdAt.toISOString()
+            : (message.meta?.createdAt as string | undefined),
       },
     };
 
@@ -361,14 +368,15 @@ export class DakeraMemory extends BaseMemory<DakeraMemorySnapshot> {
    * as background context rather than conversation turns.
    */
   private async injectRecalledMemories(query: string): Promise<void> {
+    // Remove any previously injected recalled-memory messages first to avoid
+    // accumulating stale injections across multiple add() calls.  Must happen
+    // before the search so that even a no-hit response clears old context.
+    this.purgeInjected();
+
     const hits = await this.dakeraSearch(query, this.topK);
     if (hits.length === 0) {
       return;
     }
-
-    // Remove any previously injected recalled-memory messages to avoid
-    // accumulating stale injections across multiple add() calls.
-    this.purgeInjected();
 
     // Build recalled memory block as a single system message so it occupies
     // one slot in the context rather than N individual messages.

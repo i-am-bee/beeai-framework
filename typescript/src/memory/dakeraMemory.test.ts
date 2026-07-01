@@ -109,7 +109,7 @@ describe("DakeraMemory", () => {
     expect(systemMsgs.length).toBeGreaterThan(0);
   });
 
-  it("add() with persist=false skips the store call", async () => {
+  it("add() with persist=false skips the store call but still injects recalled memories", async () => {
     const fetchMock = jest
       .fn()
       .mockResolvedValue({ ok: true, status: 200, json: async () => SEARCH_RESPONSE });
@@ -118,13 +118,14 @@ describe("DakeraMemory", () => {
     const memory = new DakeraMemory({
       url: "http://localhost:3300",
       agentId: "agent1",
-      persist: false,
+      persist: false,  // read-only: no writes, but still recalls
       topK: 5,
     });
     const msg = Message.of({ role: "user", text: "read-only test" });
     await memory.add(msg);
 
-    // With persist=false, only the search call is made (no store)
+    // With persist=false, only the search call is made (no store call at all)
+    expect(fetchMock).toHaveBeenCalledTimes(1);
     const [url] = (fetchMock as jest.Mock).mock.calls[0] as [string, RequestInit];
     expect(url).toBe("http://localhost:3300/v1/memory/search");
   });
@@ -190,11 +191,19 @@ describe("DakeraMemory", () => {
     const memory = new DakeraMemory({
       url: "http://localhost:3300",
       agentId: "agent1",
+      apiKey: "test-key",
+      sessionId: "sess-1",
+      topK: 3,
+      persist: false,
     });
     const snapshot = memory.createSnapshot();
-    expect(snapshot).toHaveProperty("url");
-    expect(snapshot).toHaveProperty("agentId");
-    const memory2 = new DakeraMemory({ url: "", agentId: "" });
+    expect(snapshot).toHaveProperty("url", "http://localhost:3300");
+    expect(snapshot).toHaveProperty("agentId", "agent1");
+    expect(snapshot).toHaveProperty("topK", 3);
+    expect(snapshot).toHaveProperty("persist", false);
+
+    // loadSnapshot restores all fields — use valid required fields for the new instance
+    const memory2 = new DakeraMemory({ url: "http://placeholder:3300", agentId: "placeholder" });
     memory2.loadSnapshot(snapshot);
     expect(memory2.createSnapshot()).toEqual(snapshot);
   });
