@@ -203,6 +203,50 @@ describe("Serializer", () => {
     expect(deserialized.a === deserialized.a.c).toBeTruthy();
   });
 
+  it('Rejects deserialization path key "__proto__"', async () => {
+    const payload = `{
+      "__version": "0.0.0",
+      "__root": {
+        "__proto__": {
+          "__serializer": true,
+          "__class": "Object",
+          "__ref": "1",
+          "__value": {
+            "isAdmin": true
+          }
+        }
+      }
+    }`;
+
+    await expect(Serializer.deserialize(payload)).rejects.toThrow(
+      'Cannot assign unsafe object path key "__proto__"',
+    );
+    expect({}).not.toHaveProperty("isAdmin");
+  });
+
+  it("Preserves constructor and prototype as data keys", async () => {
+    const payload = JSON.stringify({
+      __version: "0.0.0",
+      __root: {
+        constructor: {
+          label: "metadata",
+        },
+        prototype: {
+          enabled: true,
+        },
+      },
+    });
+
+    const deserialized = await Serializer.deserialize<{
+      constructor: { label: string };
+      prototype: { enabled: boolean };
+    }>(payload);
+
+    expect(deserialized.constructor).toStrictEqual({ label: "metadata" });
+    expect(deserialized.prototype).toStrictEqual({ enabled: true });
+    expect({}).not.toHaveProperty("enabled");
+  });
+
   describe("Loading", () => {
     const json = JSON.stringify({
       __version: "0.0.0",
