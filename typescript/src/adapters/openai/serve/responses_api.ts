@@ -94,8 +94,9 @@ export class ResponsesAPI {
         const outputItemId = `msg_${uuidv4()}`;
         let accumulatedText = "";
 
-        const sendEvent = (eventType: string, data: unknown) => {
+        const sendEvent = (eventType: string, data: { sequence_number?: number }) => {
           sequenceNumber++;
+          data.sequence_number = sequenceNumber;
           if (res.writableEnded || res.destroyed) {
             return;
           }
@@ -118,7 +119,6 @@ export class ResponsesAPI {
         const createdEvent: ResponsesStreamResponseCreated = {
           type: "response.created",
           response: createdResponse,
-          sequence_number: sequenceNumber,
         };
         sendEvent("response.created", createdEvent);
 
@@ -126,7 +126,6 @@ export class ResponsesAPI {
         const inProgressEvent: ResponsesStreamResponseInProgress = {
           type: "response.in_progress",
           response: { ...createdResponse },
-          sequence_number: sequenceNumber,
         };
         sendEvent("response.in_progress", inProgressEvent);
 
@@ -142,7 +141,6 @@ export class ResponsesAPI {
           type: "response.output_item.added",
           item: outputItem,
           output_index: 0,
-          sequence_number: sequenceNumber,
         };
         sendEvent("response.output_item.added", outputItemAddedEvent);
 
@@ -158,7 +156,6 @@ export class ResponsesAPI {
           item_id: outputItemId,
           output_index: 0,
           part: emptyPart,
-          sequence_number: sequenceNumber,
         };
         sendEvent("response.content_part.added", contentPartAddedEvent);
 
@@ -174,17 +171,21 @@ export class ResponsesAPI {
           await clonedAgent
             .run({ prompt: null }, { signal: controller.signal })
             .observe((emitter) => {
-              // Match all events and filter for "update" — required because the
-              // emitter is typed as Emitter<unknown> at the AnyAgent abstraction.
+              // Match all events — required because the emitter is typed as
+              // Emitter<unknown> at the AnyAgent abstraction. We emit text deltas
+              // from "update" (ReActAgent incremental tokens) and from "success"
+              // (ToolCallingAgent emits only start/success, with the final answer
+              // in state.result). This keeps streaming working for both agents.
               emitter.match("*.*", async (data: any, event) => {
-                if (event.name !== "update") {
+                let delta: string | undefined;
+                if (event.name === "update") {
+                  delta = data?.update?.value;
+                } else if (event.name === "success") {
+                  delta = data?.state?.result?.text;
+                }
+                if (!delta || res.writableEnded || res.destroyed) {
                   return;
                 }
-                const { update } = data as { update: { value: string } };
-                if (res.writableEnded || res.destroyed) {
-                  return;
-                }
-                const delta = update.value;
                 accumulatedText += delta;
 
                 const deltaEvent: ResponsesStreamOutputTextDelta = {
@@ -193,7 +194,6 @@ export class ResponsesAPI {
                   delta,
                   item_id: outputItemId,
                   output_index: 0,
-                  sequence_number: sequenceNumber,
                 };
                 sendEvent("response.output_text.delta", deltaEvent);
               });
@@ -206,7 +206,6 @@ export class ResponsesAPI {
             text: accumulatedText,
             item_id: outputItemId,
             output_index: 0,
-            sequence_number: sequenceNumber,
           };
           sendEvent("response.output_text.done", textDoneEvent);
 
@@ -222,7 +221,6 @@ export class ResponsesAPI {
             item_id: outputItemId,
             output_index: 0,
             part: finalPart,
-            sequence_number: sequenceNumber,
           };
           sendEvent("response.content_part.done", contentPartDoneEvent);
 
@@ -238,7 +236,6 @@ export class ResponsesAPI {
             type: "response.output_item.done",
             item: completedOutputItem,
             output_index: 0,
-            sequence_number: sequenceNumber,
           };
           sendEvent("response.output_item.done", outputItemDoneEvent);
 
@@ -254,7 +251,6 @@ export class ResponsesAPI {
           const completedEvent: ResponsesStreamResponseCompleted = {
             type: "response.completed",
             response: completedResponse,
-            sequence_number: sequenceNumber,
           };
           sendEvent("response.completed", completedEvent);
         } catch (error) {
@@ -263,7 +259,6 @@ export class ResponsesAPI {
             code: "500",
             message: String(error),
             param: "",
-            sequence_number: sequenceNumber,
           };
           sendEvent("error", errorEvent);
         }
