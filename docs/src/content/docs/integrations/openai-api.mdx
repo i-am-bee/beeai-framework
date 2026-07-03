@@ -82,7 +82,7 @@ You can easily call the exposed entities via cURL.
 <CodeGroup>
 
 	```sh Responses API
-	curl --location 'http://0.0.0.0:9998/responses' \
+	curl --location 'http://127.0.0.1:9998/responses' \
 	--header 'Content-Type: application/json' \
 	--data '{
 		"model": "agent",
@@ -93,7 +93,7 @@ You can easily call the exposed entities via cURL.
 	```
 
 	```sh Chat Completion API
-	curl --location 'http://0.0.0.0:9998/chat/completions' \
+	curl --location 'http://127.0.0.1:9998/chat/completions' \
 	--header 'Content-Type: application/json' \
 	--data '{
 	    "model": "agent",
