@@ -17,4 +17,4 @@ const agent = new ToolCallingAgent({
   ],
 });
 
-await new OpenAIServer({ api: "responses", host: "0.0.0.0", port: 9999 }).register(agent).serve();
+await new OpenAIServer({ api: "responses", port: 9999 }).register(agent).serve();

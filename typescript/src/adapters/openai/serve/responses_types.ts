@@ -92,33 +92,33 @@ export interface ResponsesResponse {
 export interface ResponsesStreamResponseCreated {
   type: "response.created";
   response: ResponsesResponse;
-  sequence_number: number;
+  sequence_number?: number;
 }
 
 export interface ResponsesStreamResponseInProgress {
   type: "response.in_progress";
   response: ResponsesResponse;
-  sequence_number: number;
+  sequence_number?: number;
 }
 
 export interface ResponsesStreamResponseCompleted {
   type: "response.completed";
   response: ResponsesResponse;
-  sequence_number: number;
+  sequence_number?: number;
 }
 
 export interface ResponsesStreamOutputItemAdded {
   type: "response.output_item.added";
   item: ResponsesResponseOutput;
   output_index: number;
-  sequence_number: number;
+  sequence_number?: number;
 }
 
 export interface ResponsesStreamOutputItemDone {
   type: "response.output_item.done";
   item: ResponsesResponseOutput;
   output_index: number;
-  sequence_number: number;
+  sequence_number?: number;
 }
 
 export interface ResponsesStreamPartOutputText {
@@ -133,7 +133,7 @@ export interface ResponsesStreamContentPartAdded {
   item_id: string;
   output_index: number;
   part: ResponsesStreamPartOutputText;
-  sequence_number: number;
+  sequence_number?: number;
 }
 
 export interface ResponsesStreamContentPartDone {
@@ -142,7 +142,7 @@ export interface ResponsesStreamContentPartDone {
   item_id: string;
   output_index: number;
   part: ResponsesStreamPartOutputText;
-  sequence_number: number;
+  sequence_number?: number;
 }
 
 export interface ResponsesStreamOutputTextDelta {
@@ -151,7 +151,7 @@ export interface ResponsesStreamOutputTextDelta {
   delta: string;
   item_id: string;
   output_index: number;
-  sequence_number: number;
+  sequence_number?: number;
 }
 
 export interface ResponsesStreamOutputTextDone {
@@ -160,7 +160,7 @@ export interface ResponsesStreamOutputTextDone {
   text: string;
   item_id: string;
   output_index: number;
-  sequence_number: number;
+  sequence_number?: number;
 }
 
 export interface ResponsesStreamError {
@@ -168,5 +168,5 @@ export interface ResponsesStreamError {
   code: string;
   message: string;
   param: string;
-  sequence_number: number;
+  sequence_number?: number;
 }

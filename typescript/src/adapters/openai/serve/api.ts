@@ -66,14 +66,19 @@ export class ChatCompletionAPI {
           await clonedAgent
             .run({ prompt: null }, { signal: controller.signal })
             .observe((emitter) => {
-              // Match all events and filter for "update" — required because the
-              // emitter is typed as Emitter<unknown> at the AnyAgent abstraction.
+              // Match all events — required because the emitter is typed as
+              // Emitter<unknown> at the AnyAgent abstraction. We emit text deltas
+              // from "update" (ReActAgent incremental tokens) and from "success"
+              // (ToolCallingAgent emits only start/success, with the final answer
+              // in state.result). This keeps streaming working for both agents.
               emitter.match("*.*", async (eventData: any, event) => {
-                if (event.name !== "update") {
-                  return;
+                let delta: string | undefined;
+                if (event.name === "update") {
+                  delta = eventData?.update?.value;
+                } else if (event.name === "success") {
+                  delta = eventData?.state?.result?.text;
                 }
-                const { update } = eventData as { update: { value: string } };
-                if (res.writableEnded || res.destroyed) {
+                if (!delta || res.writableEnded || res.destroyed) {
                   return;
                 }
                 const data = {
@@ -86,7 +91,7 @@ export class ChatCompletionAPI {
                       index: 0,
                       delta: {
                         role: "assistant",
-                        content: update.value,
+                        content: delta,
                       },
                       finish_reason: null,
                     },

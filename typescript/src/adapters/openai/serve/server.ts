@@ -14,15 +14,26 @@ import { ValueError } from "@/errors.js";
 
 export type OpenAIAPIType = "chat-completion" | "responses";
 
-const logger = Logger.root.child({
+export const logger = Logger.root.child({
   name: "OpenAI server",
 });
 
+const LOOPBACK_HOSTS = ["127.0.0.1", "localhost", "::1"];
+
 export class OpenAIServerConfig {
-  host = "0.0.0.0";
+  // Bind to loopback by default. The endpoints are unauthenticated unless `apiKey`
+  // is set, so binding to all interfaces ("0.0.0.0") is opt-in to avoid exposing an
+  // unauthenticated server to the network by default.
+  host = "127.0.0.1";
   port = 9999;
   api: OpenAIAPIType = "chat-completion";
   apiKey?: string;
+
+  constructor(partial?: Partial<OpenAIServerConfig>) {
+    if (partial) {
+      Object.assign(this, partial);
+    }
+  }
 }
 
 export interface OpenAIServerMetadata {
@@ -38,8 +49,8 @@ export class OpenAIServer extends Server<
 > {
   private ready = false;
 
-  constructor(config: OpenAIServerConfig = new OpenAIServerConfig()) {
-    super(config);
+  constructor(config?: Partial<OpenAIServerConfig>) {
+    super(config ? new OpenAIServerConfig(config) : new OpenAIServerConfig());
   }
 
   public register(input: AnyAgent, metadata?: OpenAIServerMetadata) {
@@ -53,6 +64,14 @@ export class OpenAIServer extends Server<
     }
 
     const app = express();
+
+    if (this.config.apiKey === undefined && !LOOPBACK_HOSTS.includes(this.config.host)) {
+      logger.warn(
+        `OpenAIServer is binding to a non-loopback host (${this.config.host}) with no \`apiKey\` set: ` +
+          `the API will be reachable from the network without authentication. ` +
+          `Set \`apiKey\` in the config, or bind to 127.0.0.1, to avoid exposing it.`,
+      );
+    }
 
     const modelFactory = async (modelId: string): Promise<AnyAgent> => {
       // Find the first agent that matches the requested model ID by name.
