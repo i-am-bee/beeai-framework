@@ -195,12 +195,12 @@ class ChatModelOptions(RunnableOptions, total=False):
 
     temperature: float | None
     """
-    Model paramater that controls the randomness of the generated text.
+    Model parameter that controls the randomness of the generated text.
     """
 
     top_p: float | None
     """
-    Model parameter (nucleous sampling) that decides how many possible words to consider.
+    Model parameter (nucleus sampling) that decides how many possible words to consider.
     """
 
     top_k: int | None
