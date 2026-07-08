@@ -1,6 +1,7 @@
 # Copyright 2025 © BeeAI a Series of LF Projects, LLC
 # SPDX-License-Identifier: Apache-2.0
 
+import re
 from typing import Any
 
 import pytest
@@ -187,6 +188,23 @@ class TestEventsPropagation:
 
         await emitter.emit("c", "c")
         assert calls == [1]
+
+    @pytest.mark.unit
+    @pytest.mark.asyncio
+    async def test_regex_off_distinguishes_flags(self) -> None:
+        emitter, calls = Emitter(), []
+
+        emitter.on(re.compile("c"), lambda data, __: calls.append(("plain", data)))
+        emitter.on(re.compile("c", re.IGNORECASE), lambda data, __: calls.append(("ci", data)))
+
+        await emitter.emit("c", 1)
+        assert calls == [("plain", 1), ("ci", 1)]
+
+        # Removing only the case-insensitive listener must leave the plain one.
+        emitter.off(re.compile("c", re.IGNORECASE))
+        calls.clear()
+        await emitter.emit("c", 2)
+        assert calls == [("plain", 2)]
 
     @pytest.mark.unit
     @pytest.mark.asyncio
