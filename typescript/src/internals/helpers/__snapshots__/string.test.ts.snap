@@ -1,0 +1,47 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`String Utilities > findFirstPair > Works 0 1`] = `
+{
+  "inner": "is",
+  "outer": "?is?",
+}
+`;
+
+exports[`String Utilities > findFirstPair > Works 1 1`] = `
+{
+  "inner": ""a":1",
+  "outer": "{"a":1}",
+}
+`;
+
+exports[`String Utilities > findFirstPair > Works 2 1`] = `
+{
+  "inner": "[[0]]",
+  "outer": "[[[0]]]",
+}
+`;
+
+exports[`String Utilities > findFirstPair > Works 3 1`] = `
+{
+  "inner": "
+import streamlit as st
+
+st.header("My First Streamlit App")
+
+st.subheader("This is a simple app")
+
+if st.button("Click me"):
+    st.success("Button clicked!")
+",
+  "outer": "\`\`\`python-app
+import streamlit as st
+
+st.header("My First Streamlit App")
+
+st.subheader("This is a simple app")
+
+if st.button("Click me"):
+    st.success("Button clicked!")
+\`\`\`",
+}
+`;

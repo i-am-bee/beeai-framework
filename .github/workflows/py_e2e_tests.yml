@@ -1,0 +1,47 @@
+name: Python - E2E Tests
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+on:
+  workflow_dispatch:
+  #push:push:
+  #  branches: ["main"]
+  #  paths:
+  #    - 'python/**'
+
+defaults:
+  run:
+    working-directory: python
+
+jobs:
+  test:
+    timeout-minutes: 120
+    name: Tests
+    runs-on: ubuntu-latest
+    env:
+      TEST_NUM_WORKERS: ${{ vars.TEST_NUM_WORKERS }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: ./.github/actions/setup
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Install ollama
+        run: curl -fsSL https://ollama.com/install.sh | sh
+      - name: Run ollama
+        run: |
+          ollama serve &
+          ollama pull granite4:micro
+          ollama pull llama3.1:8b
+          ollama pull llama3.1
+      - name: Call ollama API
+        run: |
+          curl -d '{"model": "granite4:micro", "stream": false, "prompt":"Whatever I say, answer with Yes"}' http://localhost:11434/api/generate
+      - run: mise python:test:e2e
+        env:
+          BEEAI_OPEN_METEO_TOOL_PROXY: ${{ secrets.PROXY }}
+          BEEAI_DDG_TOOL_PROXY: ${{ secrets.BEEAI_DDG_TOOL_PROXY }}
+          BEEAI_DDG_TOOL_PROXY_VERIFY: ${{ secrets.BEEAI_DDG_TOOL_PROXY_VERIFY }}

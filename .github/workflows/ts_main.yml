@@ -1,0 +1,33 @@
+name: TypeScript - Lint, Build, Test
+
+on:
+  workflow_dispatch:
+  push:
+    branches: ["main"]
+    paths:
+      - 'typescript/**'
+  pull_request:
+    branches: ["main"]
+    paths:
+      - 'typescript/**'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  main:
+    timeout-minutes: 20
+    name: Lint & Build & Test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: ./.github/actions/setup
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - run: mise common:check
+      - run: mise typescript:check
+      - run: mise typescript:build
+      - run: mise typescript:test:unit

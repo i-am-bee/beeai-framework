@@ -1,0 +1,956 @@
+# Copyright 2025 © BeeAI a Series of LF Projects, LLC
+# SPDX-License-Identifier: Apache-2.0
+
+import contextlib
+import functools
+import logging
+from abc import abstractmethod
+from collections.abc import AsyncGenerator, Callable
+from functools import cached_property
+from typing import Any, ClassVar, Literal, NoReturn, Self
+
+from pydantic import BaseModel, ConfigDict, InstanceOf, TypeAdapter, ValidationError
+from typing_extensions import TypedDict, TypeVar, Unpack, override
+
+from beeai_framework.backend.constants import ProviderName
+from beeai_framework.backend.errors import ChatModelError, ChatModelToolCallError, EmptyChatModelResponseError
+from beeai_framework.backend.events import (
+    ChatModelErrorEvent,
+    ChatModelNewTokenEvent,
+    ChatModelStartEvent,
+    ChatModelSuccessEvent,
+    chat_model_event_types,
+)
+from beeai_framework.backend.message import AnyMessage, AssistantMessage, MessageToolCallContent, UserMessage
+from beeai_framework.backend.types import (
+    ChatModelCache,
+    ChatModelInput,
+    ChatModelOutput,
+    ChatModelParameters,
+    ChatModelToolChoice,
+)
+from beeai_framework.backend.utils import (
+    filter_tools_by_tool_choice,
+    generate_tool_union_schema,
+    load_model,
+    parse_broken_json,
+    parse_model,
+)
+from beeai_framework.cache.null_cache import NullCache
+from beeai_framework.cache.utils import CacheEntry
+from beeai_framework.context import RunContext, RunMiddlewareType
+from beeai_framework.emitter import Emitter
+from beeai_framework.logger import Logger
+from beeai_framework.retryable import Retryable, RetryableConfig, RetryableContext
+from beeai_framework.runnable import Runnable, RunnableOptions, runnable_entry
+from beeai_framework.tools.tool import AnyTool, Tool
+from beeai_framework.utils import ModelLike
+from beeai_framework.utils.asynchronous import to_async_generator
+from beeai_framework.utils.cancellation import AbortController
+from beeai_framework.utils.dicts import exclude_keys, exclude_non_annotated
+from beeai_framework.utils.lists import cast_list
+from beeai_framework.utils.models import WrappedRootModel, to_model, update_model
+from beeai_framework.utils.strings import generate_random_string, to_json
+
+T = TypeVar("T", bound=BaseModel)
+TTool = TypeVar("TTool", bound=AnyTool)
+ChatModelFinishReason: Literal["stop", "length", "function_call", "content_filter", "null"]
+ToolChoiceType = Literal["required", "none", "single", "auto"]
+logger = Logger(__name__)
+
+
+class ChatModelKwargs(TypedDict, total=False):
+    """Configuration options for initializing a ChatModel.
+
+    This TypedDict defines all the optional keyword arguments that can be passed
+    to a ChatModel constructor to customize its behavior.
+    """
+
+    tool_call_fallback_via_response_format: bool
+    """
+    Enable fallback to response format for tool calls.
+    """
+
+    retry_on_empty_response: bool
+    """
+    Automatically retry when the model returns an empty response.
+    """
+
+    model_supports_tool_calling: bool
+    """
+    Whether the underlying model supports native tool calling.
+    """
+
+    allow_parallel_tool_calls: bool
+    """
+    Allow the model to make multiple tool calls simultaneously.
+    """
+
+    ignore_parallel_tool_calls: bool
+    """
+    Ignore all but the first tool call when multiple are returned.
+    """
+
+    use_strict_tool_schema: bool
+    """
+    Use strict JSON schema validation for tool parameters.
+    """
+
+    use_strict_model_schema: bool
+    """
+    Use strict JSON schema validation for structured outputs.
+    """
+
+    supports_top_level_unions: bool
+    """
+    Whether the model supports union types at the top level.
+    """
+
+    parameters: InstanceOf[ChatModelParameters]
+    """
+    Default parameters for model generation (temperature, max_tokens, etc.).
+    """
+
+    cache: InstanceOf[ChatModelCache]
+    """
+    Cache implementation for storing and retrieving model outputs.
+    """
+
+    settings: dict[str, Any]
+    """
+    Additional provider-specific settings.
+    """
+
+    middlewares: list[RunMiddlewareType]
+    """
+    List of middleware to apply during model execution.
+    """
+
+    tool_choice_support: set[ToolChoiceType]
+    """
+    Set of supported tool choice modes (required, none, single, auto).
+    """
+
+    fix_invalid_tool_calls: bool
+    """
+    Automatically attempt to fix malformed tool calls.
+    """
+
+    allow_prompt_caching: bool
+    """
+    Enable prompt caching to optimize repeated API calls with similar prompts.
+    """
+
+    __pydantic_config__ = ConfigDict(extra="forbid", arbitrary_types_allowed=True)  # type: ignore
+
+
+class ChatModelOptions(RunnableOptions, total=False):
+    """Optional options for ChatModel's run method."""
+
+    tools: list[AnyTool] | None
+    """Tools available to the model."""
+
+    tool_choice: ChatModelToolChoice | None
+    """Controls how an LLM selects and uses tools (auto, required, none, tool name)."""
+
+    max_retries: int | None
+    """
+    Maximum number of retries.
+    """
+
+    stop_sequences: list[str] | None
+    """
+    Stop words where the model should stop generation.
+    """
+
+    response_format: dict[str, Any] | type[BaseModel] | None
+    """
+    Structured output format.
+    """
+
+    validate_response_format: bool | None
+    """
+    Whether the generated output should be validated against the given response format.
+    """
+
+    stream: bool | None
+    """
+    Flag that indicates whether streaming is enabled.
+    """
+
+    parallel_tool_calls: bool | None
+    """
+    Flag that indicates if concurrent tool call is enabled.
+    """
+
+    max_tokens: int | None
+    """
+    Model parameter that limits the maximum number of generated tokens.
+    """
+
+    frequency_penalty: float | None
+    """
+    Model parameter that discourages the repetition of words by decreasing the likelihood of a token being selected.
+    """
+
+    temperature: float | None
+    """
+    Model parameter that controls the randomness of the generated text.
+    """
+
+    top_p: float | None
+    """
+    Model parameter (nucleus sampling) that decides how many possible words to consider.
+    """
+
+    top_k: int | None
+    """
+    Model parameter that restricts the pool of possible next words to a fixed number of the most probable tokens.
+    """
+
+    n: int | None
+    """
+    Model parameter that controls the number of model completions (generations).
+    """
+
+    presence_penalty: float | None
+    """
+    Model parameter that controls how much the model penalizes new tokens that are already present in the conversation.
+    """
+
+    seed: int | None
+    """
+    Model parameter that controls deterministic sampling.
+    """
+
+    stream_partial_tool_calls: bool | None
+    """
+    Generated chunks will be streamed without validation of the produced tool calls.
+    """
+
+    reasoning_effort: str | None
+    """
+    Controls the amount of reasoning effort for models that support it (e.g., "low", "medium", "high").
+    """
+
+    fallback_tool: AnyTool | None
+    """
+    Tool to invoke when the model makes a malformed tool call (for example, when it forgets the name of a tool).
+    """
+
+
+@functools.cache
+def _get_chat_model_kwargs_adapter() -> TypeAdapter[ChatModelKwargs]:
+    return TypeAdapter(ChatModelKwargs)
+
+
+class ChatModelResponseConfig(BaseModel):
+    force_tool_call_via_response_format: bool = False
+    response_format_schema: type[BaseModel] | None = None
+
+
+class ChatModel(Runnable[ChatModelOutput]):
+    """Abstract base class for all chat model implementations.
+
+    ChatModel provides a unified interface for interacting with various LLM providers
+    (OpenAI, Anthropic, Ollama, etc.). It handles tool calling, structured outputs,
+    streaming, caching, retries, and error handling.
+
+    The class is designed to be subclassed by provider-specific implementations that
+    implement the `_create` and `_create_stream` abstract methods.
+
+    Example:
+        >>> from beeai_framework.adapters.openai import OpenAIChatModel
+        >>> from beeai_framework.backend.message import UserMessage
+        >>>
+        >>> # Create a chat model
+        >>> model = OpenAIChatModel("gpt-4")
+        >>>
+        >>> # Run the model
+        >>> result = await model.run([UserMessage("Hello, world!")])
+        >>> print(result.last_message.text)
+        >>>
+        >>> # Use with tools
+        >>> from beeai_framework.tools import tool
+        >>> @tool
+        >>> def get_weather(location: str) -> str:
+        ...     '''Get the weather for a location.'''
+        ...     return f"Weather in {location}: Sunny"
+        >>>
+        >>> result = await model.run(
+        ...     [UserMessage("What's the weather in Paris?")],
+        ...     tools=[get_weather],
+        ...     tool_choice="required"
+        ... )
+        >>>
+        >>> # Use structured output
+        >>> from pydantic import BaseModel
+        >>> class Person(BaseModel):
+        ...     name: str
+        ...     age: int
+        >>>
+        >>> result = await model.run(
+        ...     [UserMessage("Extract: John is 30 years old")],
+        ...     response_format=Person
+        ... )
+    """
+
+    tool_choice_support: ClassVar[set[ToolChoiceType]] = {"required", "none", "single", "auto"}
+    """
+    Set of supported tool choice modes for this model.
+    Default: {"required", "none", "single", "auto"}
+    """
+
+    tool_call_fallback_via_response_format: bool
+    """
+    Use response format as fallback for tool calls.
+    """
+
+    model_supports_tool_calling: bool
+    """
+    Whether the model has native tool calling support.
+    """
+
+    use_strict_model_schema: bool
+    """
+    Use strict JSON schema for structured outputs.
+    """
+
+    use_strict_tool_schema: bool
+    """
+    Use strict JSON schema for tool parameters.
+    """
+
+    retry_on_empty_response: bool
+    """
+    Retry automatically when model returns empty response.
+    """
+
+    fix_invalid_tool_calls: bool
+    """
+    Attempt to fix malformed tool calls automatically.
+    """
+
+    @property
+    @abstractmethod
+    def model_id(self) -> str:
+        """The unique identifier for this model (e.g., 'gpt-4', 'claude-3-opus')."""
+        pass
+
+    @property
+    @abstractmethod
+    def provider_id(self) -> ProviderName:
+        """The provider name for this model (e.g., 'openai', 'anthropic')."""
+        pass
+
+    def __init__(self, **kwargs: Unpack[ChatModelKwargs]) -> None:
+        """Initialize a ChatModel with the given configuration.
+
+        Args:
+            **kwargs: Configuration options as defined in ChatModelKwargs.
+                See ChatModelKwargs documentation for all available options.
+
+        Example:
+            >>> from beeai_framework.adapters.openai import OpenAIChatModel
+            >>> model = OpenAIChatModel(
+            ...     "gpt-4",
+            ...     tool_call_fallback_via_response_format=True,
+            ...     retry_on_empty_response=True,
+            ...     parameters=ChatModelParameters(temperature=0.7, max_tokens=1000)
+            ... )
+        """
+        super().__init__(middlewares=kwargs.get("middlewares", []))
+        self._settings = kwargs.get("settings", {})
+        self._settings.update(**exclude_non_annotated(kwargs, ChatModelKwargs))
+
+        kwargs = _get_chat_model_kwargs_adapter().validate_python(kwargs)
+
+        parameters = type(self).get_default_parameters()
+        update_model(parameters, sources=[kwargs.get("parameters")])
+        self.parameters = parameters
+
+        self.cache = kwargs.get("cache", NullCache[list[ChatModelOutput]]())
+        self.tool_call_fallback_via_response_format = kwargs.get("tool_call_fallback_via_response_format", True)
+        self.model_supports_tool_calling = kwargs.get("model_supports_tool_calling", True)
+        self.allow_parallel_tool_calls = kwargs.get("allow_parallel_tool_calls", False)
+        self.ignore_parallel_tool_calls = kwargs.get("ignore_parallel_tool_calls", False)
+        self.use_strict_tool_schema = kwargs.get("use_strict_tool_schema", True)
+        self.use_strict_model_schema = kwargs.get("use_strict_model_schema", False)
+        self.supports_top_level_unions = kwargs.get("supports_top_level_unions", True)
+        self.retry_on_empty_response = bool(kwargs.get("retry_on_empty_response", True))
+        self.fix_invalid_tool_calls = bool(kwargs.get("fix_invalid_tool_calls", True))
+        self.allow_prompt_caching = bool(kwargs.get("allow_prompt_caching", True))
+
+        custom_tool_choice_support = kwargs.get("tool_choice_support")
+        self._tool_choice_support: set[ToolChoiceType] = (
+            custom_tool_choice_support
+            if custom_tool_choice_support is not None
+            else type(self).tool_choice_support.copy()
+        )
+
+    @cached_property
+    def emitter(self) -> Emitter:
+        return self._create_emitter()
+
+    def _create_emitter(self) -> Emitter:
+        """Create an event emitter for this chat model.
+
+        Returns:
+            An Emitter instance configured for chat model events.
+        """
+        return Emitter.root().child(
+            namespace=["backend", self.provider_id, "chat"],
+            creator=self,
+            events=chat_model_event_types,
+        )
+
+    @abstractmethod
+    async def _create(
+        self,
+        input: ChatModelInput,
+        run: RunContext,
+    ) -> ChatModelOutput:
+        """Generate a single completion from the model (non-streaming).
+
+        This method must be implemented by subclasses to provide the actual
+        model invocation logic for non-streaming requests.
+
+        Args:
+            input: The prepared input containing messages, tools, and parameters.
+            run: The execution context for this run.
+
+        Returns:
+            The model's output containing generated messages and metadata.
+
+        Raises:
+            NotImplementedError: If the subclass doesn't implement this method.
+        """
+        raise NotImplementedError
+
+    @abstractmethod
+    def _create_stream(
+        self,
+        input: ChatModelInput,
+        run: RunContext,
+    ) -> AsyncGenerator[ChatModelOutput]:
+        """Generate a streaming completion from the model.
+
+        This method must be implemented by subclasses to provide the actual
+        model invocation logic for streaming requests.
+
+        Args:
+            input: The prepared input containing messages, tools, and parameters.
+            run: The execution context for this run.
+
+        Yields:
+            ChatModelOutput chunks as they are generated by the model.
+
+        Raises:
+            NotImplementedError: If the subclass doesn't implement this method.
+        """
+        raise NotImplementedError
+
+    def _prepare_model_input(
+        self, input: list[AnyMessage], options: ChatModelOptions
+    ) -> tuple[ChatModelInput, ChatModelResponseConfig]:
+        tools = options.get("tools")
+        tool_choice = options.get("tool_choice")
+        response_format = options.get("response_format")
+        fallback_tool = options.get("fallback_tool")
+        if fallback_tool is None and isinstance(tool_choice, Tool):
+            fallback_tool = tool_choice
+
+        force_tool_call_via_response_format = self._force_tool_call_via_response_format(
+            tool_choice=tool_choice,
+            tools=tools or [],
+            has_custom_response_format=bool(response_format),
+        )
+
+        parallel_tool_calls = options.get("parallel_tool_calls")
+        if parallel_tool_calls is None:
+            parallel_tool_calls = self.allow_parallel_tool_calls and not self.ignore_parallel_tool_calls
+        else:
+            parallel_tool_calls = parallel_tool_calls and not self.ignore_parallel_tool_calls
+
+        response_format_final, response_format_schema = (
+            generate_tool_union_schema(
+                filter_tools_by_tool_choice(tools, tool_choice),
+                strict=self.use_strict_model_schema,
+                allow_top_level_union=self.supports_top_level_unions,
+                allow_parallel_tool_calls=parallel_tool_calls,
+                fallback_tool=fallback_tool,
+            )
+            if force_tool_call_via_response_format and tools
+            else (response_format, None)
+        )
+
+        validate_response_format = options.get("validate_response_format")
+        stream = options.get("stream", self.parameters.stream)
+        return ChatModelInput(
+            messages=input,
+            tools=tools if self.model_supports_tool_calling else None,
+            response_format=response_format_final,
+            validate_response_format=True if validate_response_format is None else validate_response_format,
+            stream=stream if stream is not None else self.parameters.stream,
+            fallback_tool=fallback_tool,
+            **exclude_keys(
+                dict(options), {"tools", "response_format", "stream", "validate_response_format", "fallback_tool"}
+            ),
+        ), ChatModelResponseConfig(
+            response_format_schema=response_format_schema,
+            force_tool_call_via_response_format=force_tool_call_via_response_format,
+        )
+
+    @override
+    @runnable_entry
+    async def run(self, input: list[AnyMessage], /, **kwargs: Unpack[ChatModelOptions]) -> ChatModelOutput:
+        """Execute the chat model.
+
+        Args:
+            input: The input to the chat model
+            tools: Tools available to the model
+            tool_choice: Controls how an LLM selects and uses tools (auto, required, none, tool name)
+            max_retries: Maximum number of retries
+            stop_sequences: Stop words where the model should stop generation
+            response_format: Structured output format
+            stream: Flag that indicates whether streaming is enabled
+            parallel_tool_calls: Flag that indicates if concurrent tool call is enabled
+            max_tokens: Limits the maximum number of generated tokens
+            frequency_penalty: Discourages the repetition of words
+            temperature: Controls the randomness of the generated text
+            top_p: Sampling parameter that decides how many possible words to consider
+            top_k: Restricts the pool of possible next words
+            n: Controls the number of model completions (generations)
+            presence_penalty: Controls how much the model penalizes previously generated tokens
+            seed: Controls deterministic sampling
+            signal: The chat model abort signal
+            context: A dictionary that can be used to pass additional context to the chat model
+
+        Returns:
+            The chat model output.
+        """
+
+        model_input, model_response_config = self._prepare_model_input(input, kwargs)
+        model_input_messages_backup = model_input.messages.copy()
+
+        cache_entry = CacheEntry(self.cache, key=to_json(model_input, exclude_none=True))
+
+        try:
+            context = RunContext.get()
+            await context.emitter.emit("start", ChatModelStartEvent(input=model_input))
+
+            handler = Retryable.create(
+                lambda _: self.__run(model_input, response=model_response_config, cache=cache_entry, context=context),
+                config=RetryableConfig(
+                    max_retries=model_input.max_retries if model_input and model_input.max_retries is not None else 0,
+                    signal=context.signal,
+                    factor=0,
+                ),
+            )
+
+            @handler.on_retry
+            async def on_retry(_: RetryableContext, e: Exception) -> None:
+                nonlocal model_input
+
+                if self.fix_invalid_tool_calls and isinstance(e, ChatModelToolCallError):
+                    model_input.messages = model_input.messages.copy()
+                    if e.generated_content:
+                        model_input.messages.append(
+                            AssistantMessage(
+                                e.generated_content,
+                                {"tempMessage": True},
+                            )
+                        )
+
+                    # TODO: add a custom template
+                    tool_names = ", ".join([t.name for t in (model_input.tools or [])]) or "None"
+                    model_input.messages.append(
+                        UserMessage(
+                            f"{e.generated_error}\n\nAvailable Tools: {tool_names}",
+                            {"tempMessage": True},
+                        )
+                    )
+                elif self.retry_on_empty_response and isinstance(e, EmptyChatModelResponseError):
+                    model_input.messages = model_input.messages.copy()
+                    model_input.messages.append(AssistantMessage("", {"tempMessage": True}))
+                    await cache_entry.delete()
+
+            result = await handler.get()
+            model_input.messages = model_input_messages_backup
+
+            await context.emitter.emit("success", ChatModelSuccessEvent(value=result))
+            return result
+        except Exception as ex:
+            await cache_entry.delete()
+            error = ChatModelError.ensure(ex, model=self)
+            # pyrefly: ignore [unbound-name]
+            await context.emitter.emit("error", ChatModelErrorEvent(input=model_input, error=error))
+            raise error
+        finally:
+            # pyrefly: ignore [unbound-name]
+            await context.emitter.emit("finish", None)
+
+    async def __run(
+        self,
+        input: ChatModelInput,
+        *,
+        response: ChatModelResponseConfig,
+        cache: CacheEntry[list[ChatModelOutput]],
+        context: RunContext,
+    ) -> ChatModelOutput:
+        cache_hit = await cache.get()
+
+        if input.stream:
+            chunks: list[ChatModelOutput] = []
+            abort_controller = AbortController()
+            generator = to_async_generator(cache_hit) if cache_hit else self._create_stream(input, context)
+
+            async for value in generator:
+                chunks.append(value)
+                event_data = ChatModelNewTokenEvent(value=value, abort=lambda: abort_controller.abort())
+                await context.emitter.emit("new_token", event_data)
+                if abort_controller.signal.aborted:
+                    break
+
+            await cache.set(chunks)
+            result = ChatModelOutput.from_chunks(chunks)
+        else:
+            if cache_hit:
+                result = cache_hit[0].model_copy()
+            else:
+                result = await self._create(input, context)
+                await cache.set([result])
+
+        if result.is_empty():
+            raise EmptyChatModelResponseError()
+
+        if response.force_tool_call_via_response_format and not result.get_tool_calls():
+            assert response.response_format_schema and issubclass(response.response_format_schema, BaseModel)
+
+            final_message = AssistantMessage.from_chunks(result.output)
+            final_message.content.clear()
+
+            text = result.get_text_content()
+            tool_calls_raw = parse_broken_json(text)
+            if isinstance(tool_calls_raw, list) and self.ignore_parallel_tool_calls:
+                tool_calls_raw = tool_calls_raw[0]
+
+            try:
+                tool_calls = response.response_format_schema.model_validate(tool_calls_raw)
+                if isinstance(tool_calls, WrappedRootModel):
+                    tool_calls = tool_calls.item
+            except ValidationError as ex:
+                raise ChatModelToolCallError(
+                    generated_content=to_json(tool_calls_raw, sort_keys=False),
+                    generated_error=str(ex),
+                    response=result,
+                )
+
+            for tool_call in cast_list(tool_calls.model_dump()):
+                if not tool_call or not tool_call.get("name") or tool_call.get("parameters") is None:
+                    raise ChatModelToolCallError(
+                        "Failed to produce a valid tool call.\nTry to increase max new tokens for your chat model.",
+                        generated_content=text,
+                        generated_error="Tool call was not produced.",
+                        is_retryable=False,
+                        response=result,
+                    )
+
+                tool_call_content = MessageToolCallContent(
+                    id=f"call_{generate_random_string(8).lower()}",
+                    tool_name=tool_call["name"],
+                    args=to_json(tool_call["parameters"], sort_keys=False, indent=None),
+                )
+                final_message.content.append(tool_call_content)
+
+            result.output.clear()
+            result.output.append(final_message)
+
+        while self.ignore_parallel_tool_calls and len(result.get_tool_calls()) > 1:
+            tool_call_to_remove = result.get_tool_calls()[-1]
+            for msg in reversed(result.output):
+                if isinstance(msg, AssistantMessage):
+                    msg.content.remove(tool_call_to_remove)
+                    if not msg.content:
+                        result.output.remove(msg)
+                    break
+
+        self._assert_tool_response(input=input, output=result)
+        self._fix_tool_calls(result)
+        return result
+
+    def _fix_tool_calls(self, result: ChatModelOutput) -> None:
+        for tool_call in result.get_tool_calls():
+            if tool_call.is_valid():
+                continue
+
+            if self.fix_invalid_tool_calls:
+                if not tool_call.id:
+                    tool_call.id = f"call_{generate_random_string(8).lower()}"
+
+                with contextlib.suppress(Exception):
+                    parsed = parse_broken_json(tool_call.args)
+                    if isinstance(parsed, str):
+                        parsed = parse_broken_json(parsed)
+                    tool_call.args = to_json(parsed, sort_keys=False, indent=None)
+
+            if not tool_call.is_valid():
+                raise ChatModelToolCallError(
+                    generated_content=tool_call.args,
+                    generated_error=f"The tool call for the '{tool_call.tool_name}' tool has malformed parameters. "
+                    f"It must be a valid JSON.",
+                    response=result,
+                )
+
+    def config(
+        self,
+        *,
+        parameters: ChatModelParameters | Callable[[ChatModelParameters], ChatModelParameters] | None = None,
+        cache: ChatModelCache | Callable[[ChatModelCache], ChatModelCache] | None = None,
+    ) -> None:
+        """Configure the chat model's parameters and cache.
+
+        This method allows you to update the model's configuration after initialization.
+        You can pass either new values directly or functions that transform the existing values.
+
+        Args:
+            parameters: New parameters or a function to transform existing parameters.
+                If a function is provided, it receives the current parameters and should
+                return the updated parameters.
+            cache: New cache instance or a function to transform the existing cache.
+                If a function is provided, it receives the current cache and should
+                return the updated cache.
+
+        Example:
+            >>> model = ChatModel.from_name("openai:gpt-4")
+            >>>
+            >>> # Set new parameters directly
+            >>> model.config(parameters=ChatModelParameters(temperature=0.9, max_tokens=2000))
+            >>>
+            >>> # Transform existing parameters
+            >>> model.config(parameters=lambda p: ChatModelParameters(
+            ...     temperature=p.temperature * 1.5,
+            ...     max_tokens=p.max_tokens
+            ... ))
+            >>>
+            >>> # Update cache
+            >>> from beeai_framework.cache import SlidingCache
+            >>> model.config(cache=SlidingCache(max_size=100))
+        """
+        if cache is not None:
+            self.cache = cache(self.cache) if callable(cache) else cache
+
+        if parameters is not None:
+            self.parameters = parameters(self.parameters) if callable(parameters) else parameters
+
+    @staticmethod
+    def from_name(
+        name: str | ProviderName,
+        options: ModelLike[ChatModelParameters] | None = None,
+        /,
+        **kwargs: Any,
+    ) -> "ChatModel":
+        """Create a ChatModel instance from a provider and model name.
+
+        This factory method allows you to instantiate a chat model by specifying
+        the provider and model name as a string, without needing to import
+        provider-specific classes.
+
+        Args:
+            name: The model identifier in the format "provider:model" or just "provider".
+                Examples: "openai:gpt-4", "anthropic:claude-3-opus", "ollama:llama2"
+            options: Optional parameters for the model. Can be a ChatModelParameters
+                instance or a dictionary of options.
+            **kwargs: Additional keyword arguments passed to the model constructor.
+                See ChatModelKwargs for available options.
+
+        Returns:
+            A ChatModel instance of the appropriate provider-specific subclass.
+
+        Example:
+            >>> # Create with just model name
+            >>> model = ChatModel.from_name("openai:gpt-4")
+            >>>
+            >>> # Create with parameters
+            >>> model = ChatModel.from_name(
+            ...     "anthropic:claude-3-opus",
+            ...     ChatModelParameters(temperature=0.7, max_tokens=1000)
+            ... )
+            >>>
+            >>> # Create with additional options
+            >>> model = ChatModel.from_name(
+            ...     "openai:gpt-4",
+            ...     tool_call_fallback_via_response_format=False,
+            ...     retry_on_empty_response=True
+            ... )
+        """
+        parsed_model = parse_model(name)
+        TargetChatModel = load_model(parsed_model.provider_id, "chat")  # type: ignore # noqa: N806
+        if options and isinstance(options, ChatModelParameters):
+            kwargs["parameters"] = to_model(ChatModelParameters, options)
+        elif options:
+            kwargs.update(options)
+
+        return TargetChatModel(parsed_model.model_id, **kwargs)  # type: ignore
+
+    def _force_tool_call_via_response_format(
+        self,
+        *,
+        tool_choice: ChatModelToolChoice | None,
+        tools: list[AnyTool],
+        has_custom_response_format: bool,
+    ) -> bool:
+        if (
+            not tools
+            or tool_choice == "none"
+            or tool_choice == "auto"
+            or tool_choice is None
+            or has_custom_response_format
+            or not self.tool_call_fallback_via_response_format
+        ):
+            return False
+
+        tool_choice_supported = not tool_choice or (
+            "single" in self._tool_choice_support
+            if isinstance(tool_choice, Tool)
+            else tool_choice in self._tool_choice_support
+        )
+
+        return not self.model_supports_tool_calling or not tool_choice_supported
+
+    async def clone(self) -> Self:
+        """Create a deep copy of this ChatModel instance.
+
+        This method creates an independent copy of the model that can be
+        modified without affecting the original. Subclasses should override
+        this method to properly clone their specific state.
+
+        Returns:
+            A new ChatModel instance with the same configuration.
+
+        Note:
+            The default implementation returns self and logs a warning.
+            Provider-specific implementations should override this method
+            to create proper clones.
+
+        Example:
+            >>> original = ChatModel.from_name("openai:gpt-4")
+            >>> cloned = await original.clone()
+            >>> # Modifications to cloned won't affect original
+            >>> cloned.config(parameters=ChatModelParameters(temperature=0.9))
+        """
+        if type(self).clone == ChatModel.clone:
+            logging.warning(f"ChatModel ({type(self)!s}) does not implement the 'clone' method.")
+
+        return self
+
+    @classmethod
+    def get_default_parameters(cls) -> ChatModelParameters:
+        """Get the default parameters for this chat model class.
+
+        Returns:
+            ChatModelParameters with default values (temperature=0).
+
+        Note:
+            Subclasses can override this method to provide different defaults.
+
+        Example:
+            >>> params = ChatModel.get_default_parameters()
+            >>> print(params.temperature)  # 0
+        """
+        return ChatModelParameters(temperature=0)
+
+    def _assert_tool_response(self, *, input: ChatModelInput, output: ChatModelOutput) -> None:
+        if input.tool_choice is None or input.tool_choice == "auto" or self.model_supports_tool_calling is False:
+            return
+
+        tool_calls = output.get_tool_calls()
+        parallel_tool_calls = (
+            input.parallel_tool_calls if input.parallel_tool_calls is not None else self.allow_parallel_tool_calls
+        )
+
+        if not parallel_tool_calls and len(tool_calls) > 1:
+            raise ChatModelError(
+                "The model produced more than one tool call, but parallel tool calls are disabled.\n"
+                "Consider enabling parallel tool calls by setting 'model.allow_parallel_tool_calls' to True.",
+            )
+
+        if input.tool_choice == "none" and tool_calls:
+            _raise_tool_choice_error(
+                "The model generated a tool call, but 'tool_choice' was set to 'none'.",
+                input_tool_choice=input.tool_choice,
+                model=self,
+                output=output,
+            )
+
+        if isinstance(input.tool_choice, Tool):
+            if not tool_calls:
+                _raise_tool_choice_error(
+                    f"The model was required to produce a tool call for the '{input.tool_choice.name}' tool, "
+                    f"but no tool calls were generated.",
+                    input_tool_choice=input.tool_choice,
+                    model=self,
+                    output=output,
+                )
+
+            for tool_call in tool_calls:
+                if tool_call.tool_name != input.tool_choice.name:
+                    _raise_tool_choice_error(
+                        f"The model was required to produce a tool call for the '{input.tool_choice.name}' tool, "
+                        f"but generated one for '{tool_call.tool_name}' instead.",
+                        input_tool_choice=input.tool_choice,
+                        model=self,
+                        output=output,
+                    )
+
+        if input.tool_choice == "required" and input.tools and not output.get_tool_calls():
+            _raise_tool_choice_error(
+                "The model was required to produce a tool call, but no tool calls were generated.",
+                input_tool_choice=input.tool_choice,
+                model=self,
+                output=output,
+            )
+
+        if input.tools:
+            available_tools: set[str] = {t.name for t in input.tools}
+            for tool_call in output.get_tool_calls():
+                if tool_call.tool_name not in available_tools:
+                    raise ChatModelToolCallError(
+                        generated_error=f"The model generated a tool call for an unknown tool '{tool_call.tool_name}'."
+                        + f"\nAvailable tools: {','.join(available_tools)}",
+                        generated_content=tool_call.model_dump_json(),
+                        response=output,
+                    )
+
+
+def _raise_tool_choice_error(
+    message: str, *, input_tool_choice: str | AnyTool, model: ChatModel, output: ChatModelOutput
+) -> NoReturn:
+    input_tool_choice_str = "single" if isinstance(input_tool_choice, Tool) else input_tool_choice
+    tool_choice_support: set[str] = set(model._tool_choice_support)
+    tool_choice_support.discard(input_tool_choice_str)
+    tool_choices_set_str = (
+        "{" + ", ".join(f'"{t}"' for t in tool_choice_support) + "}" if tool_choice_support else set()
+    )
+
+    model_class = type(model).__name__
+    provider = f"{model.provider_id}:{model.model_id}"
+
+    logger.error(
+        f"{message}\n\n"
+        "This may occur if the target provider does not support "
+        f"'tool_choice={{\"{input_tool_choice_str}\"}}', but the framework is configured to support it. "
+        "To resolve this, update the supported values for the 'tool_choice' parameter.\n\n"
+        "Use one of the provided options:\n"
+        f"1. ChatModel.from_name('{provider}', tool_choice_support={tool_choices_set_str})\n"
+        f"2. model = {model_class}(...) \n"
+        f"   model.tool_choice_support = {tool_choices_set_str}\n"
+        f'3. {model_class}.tool_choice_support.discard("{input_tool_choice_str}")\n',
+    )
+
+    raise ChatModelToolCallError(
+        message,
+        generated_content=output.get_text_content(),
+        generated_error=message,
+        response=output,
+    )

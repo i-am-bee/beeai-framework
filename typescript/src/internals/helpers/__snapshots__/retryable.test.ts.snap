@@ -1,0 +1,164 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`Retryable > Grouping > Strategy (SETTLE_ALL) 1`] = `
+[
+  [
+    0,
+    "START",
+  ],
+  [
+    1,
+    "START",
+  ],
+  [
+    2,
+    "START",
+  ],
+  [
+    3,
+    "START",
+  ],
+  [
+    4,
+    "START",
+  ],
+  [
+    1,
+    "END",
+  ],
+  [
+    1,
+    "ERROR",
+  ],
+  [
+    3,
+    "END",
+  ],
+  [
+    3,
+    "ERROR",
+  ],
+  [
+    0,
+    "END",
+  ],
+  [
+    0,
+    "FATAL_ERROR",
+  ],
+  [
+    2,
+    "SUCCESS",
+  ],
+  [
+    2,
+    "END",
+  ],
+  [
+    4,
+    "SUCCESS",
+  ],
+  [
+    4,
+    "END",
+  ],
+]
+`;
+
+exports[`Retryable > Grouping > Strategy (SETTLE_ROUND) 1`] = `
+[
+  [
+    0,
+    "START",
+  ],
+  [
+    1,
+    "START",
+  ],
+  [
+    2,
+    "START",
+  ],
+  [
+    3,
+    "START",
+  ],
+  [
+    4,
+    "START",
+  ],
+  [
+    1,
+    "END",
+  ],
+  [
+    1,
+    "ERROR",
+  ],
+  [
+    3,
+    "END",
+  ],
+  [
+    3,
+    "ERROR",
+  ],
+  [
+    0,
+    "END",
+  ],
+  [
+    0,
+    "FATAL_ERROR",
+  ],
+  [
+    2,
+    "SUCCESS",
+  ],
+  [
+    2,
+    "END",
+  ],
+  [
+    4,
+    "SUCCESS",
+  ],
+  [
+    4,
+    "END",
+  ],
+]
+`;
+
+exports[`Retryable > Grouping > Strategy (THROW_IMMEDIATELY) 1`] = `
+[
+  [
+    0,
+    "START",
+  ],
+  [
+    1,
+    "START",
+  ],
+  [
+    2,
+    "START",
+  ],
+  [
+    3,
+    "START",
+  ],
+  [
+    4,
+    "START",
+  ],
+  [
+    1,
+    "END",
+  ],
+  [
+    1,
+    "ERROR",
+  ],
+]
+`;

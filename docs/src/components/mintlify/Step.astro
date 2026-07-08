@@ -1,0 +1,12 @@
+---
+// Mintlify <Step title="..."> -> one item in the stepper.
+const { title } = Astro.props;
+---
+
+<li class="mf-step">
+  <div class="mf-step-marker" aria-hidden="true"></div>
+  <div class="mf-step-content">
+    {title && <p class="mf-step-title">{title}</p>}
+    <slot />
+  </div>
+</li>

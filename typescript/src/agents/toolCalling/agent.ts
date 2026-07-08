@@ -1,0 +1,289 @@
+/**
+ * Copyright 2025 © BeeAI a Series of LF Projects, LLC
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+import { AgentError, BaseAgent } from "@/agents/base.js";
+import {
+  AnyTool,
+  DynamicTool,
+  StringToolOutput,
+  Tool,
+  ToolError,
+  ToolOutput,
+} from "@/tools/base.js";
+import { BaseMemory } from "@/memory/base.js";
+import { AgentMeta } from "@/agents/types.js";
+import { Emitter } from "@/emitter/emitter.js";
+import type {
+  ToolCallingAgentExecutionConfig,
+  ToolCallingAgentTemplates,
+  ToolCallingAgentCallbacks,
+  ToolCallingAgentRunInput,
+  ToolCallingAgentRunOptions,
+  ToolCallingAgentRunOutput,
+  ToolCallingAgentRunState,
+} from "@/agents/toolCalling/types.js";
+import { GetRunContext } from "@/context.js";
+import { ChatModel } from "@/backend/chat.js";
+import { shallowCopy } from "@/serializer/utils.js";
+import { UnconstrainedMemory } from "@/memory/unconstrainedMemory.js";
+import { AssistantMessage, SystemMessage, ToolMessage, UserMessage } from "@/backend/message.js";
+import { isEmpty, isString } from "remeda";
+import { RetryCounter } from "@/internals/helpers/counter.js";
+import { mapObj, omitUndefined } from "@/internals/helpers/object.js";
+import { Cache } from "@/cache/decoratorCache.js";
+import { PromptTemplate } from "@/template.js";
+import {
+  ToolCallingAgentSystemPrompt,
+  ToolCallingAgentTaskPrompt,
+} from "@/agents/toolCalling/prompts.js";
+import { z, ZodSchema } from "zod";
+import { Logger } from "@/logger/logger.js";
+
+export type ToolCallingAgentTemplateFactory<K extends keyof ToolCallingAgentTemplates> = (
+  template: ToolCallingAgentTemplates[K],
+) => ToolCallingAgentTemplates[K];
+
+export interface ToolCallingAgentInput {
+  llm: ChatModel;
+  memory: BaseMemory;
+  tools: AnyTool[];
+  meta?: Omit<AgentMeta, "tools">;
+  templates?: Partial<{
+    [K in keyof ToolCallingAgentTemplates]:
+      | ToolCallingAgentTemplates[K]
+      | ToolCallingAgentTemplateFactory<K>;
+  }>;
+  execution?: ToolCallingAgentExecutionConfig;
+  saveIntermediateSteps?: boolean;
+}
+
+/**
+ * @deprecated Use RequirementAgent instead.
+ */
+export class ToolCallingAgent extends BaseAgent<
+  ToolCallingAgentRunInput,
+  ToolCallingAgentRunOutput,
+  ToolCallingAgentRunOptions
+> {
+  public readonly emitter = Emitter.root.child<ToolCallingAgentCallbacks>({
+    namespace: ["agent", "toolCalling"],
+    creator: this,
+  });
+
+  constructor(public readonly input: ToolCallingAgentInput) {
+    super();
+    this.input.saveIntermediateSteps = this.input.saveIntermediateSteps ?? true;
+    Logger.root.warn(
+      "The ToolCallingAgent is deprecated and will be removed soon. Use RequirementAgent instead.",
+    );
+  }
+
+  static {
+    this.register();
+  }
+
+  protected async _run(
+    input: ToolCallingAgentRunInput,
+    options: ToolCallingAgentRunOptions = {},
+    run: GetRunContext<typeof this>,
+  ): Promise<ToolCallingAgentRunOutput> {
+    const tempMessageKey = "tempMessage" as const;
+    const execution = {
+      maxRetriesPerStep: 3,
+      totalMaxRetries: 20,
+      maxIterations: 10,
+      ...omitUndefined(this.input.execution ?? {}),
+      ...omitUndefined(options.execution ?? {}),
+    };
+
+    const state: ToolCallingAgentRunState = {
+      memory: new UnconstrainedMemory(),
+      result: undefined,
+      iteration: 0,
+    };
+    await state.memory.add(
+      new SystemMessage(
+        this.templates.system.render({
+          role: undefined,
+          instructions: undefined,
+        }),
+      ),
+    );
+    await state.memory.addMany(this.memory.messages);
+
+    if (input.prompt) {
+      const userMessage = new UserMessage(
+        this.templates.task.render({
+          prompt: input.prompt,
+          context: input.context,
+          expectedOutput: isString(input.expectedOutput) ? input.expectedOutput : undefined,
+        }),
+      );
+      await state.memory.add(userMessage);
+    }
+
+    const globalRetriesCounter = new RetryCounter(execution.totalMaxRetries || 1, AgentError);
+
+    const usePlainResponse = !input.expectedOutput || !(input.expectedOutput instanceof ZodSchema);
+    const finalAnswerToolSchema = usePlainResponse
+      ? z.object({
+          response: z.string().describe(String(input.expectedOutput ?? "")),
+        })
+      : (input.expectedOutput as ZodSchema);
+
+    const finalAnswerTool = new DynamicTool({
+      name: "final_answer",
+      description: "Sends the final answer to the user",
+      inputSchema: finalAnswerToolSchema,
+      handler: async (input) => {
+        const result = usePlainResponse ? input.response : JSON.stringify(input);
+        state.result = new AssistantMessage(result);
+        return new StringToolOutput("Message has been sent");
+      },
+    });
+
+    const tools = [...this.input.tools, finalAnswerTool];
+    let forceFinalAnswer = false;
+
+    while (!state.result) {
+      state.iteration++;
+      if (state.iteration > (execution.totalMaxRetries ?? Infinity)) {
+        throw new AgentError(
+          `Agent was not able to resolve the task in ${state.iteration} iterations.`,
+        );
+      }
+
+      await run.emitter.emit("start", { state });
+      const response = await this.input.llm.create({
+        messages: state.memory.messages.slice(),
+        tools,
+        toolChoice: forceFinalAnswer ? finalAnswerTool : tools.length > 1 ? "required" : tools[0],
+        stream: false,
+      });
+      await state.memory.addMany(response.messages);
+
+      const toolCallMessages = response.getToolCalls();
+      for (const toolCall of toolCallMessages) {
+        try {
+          const tool = tools.find((tool) => tool.name === toolCall.toolName);
+          if (!tool) {
+            throw new AgentError(`Tool ${toolCall.toolName} does not exist!`);
+          }
+
+          const toolInput: any = toolCall.input;
+          const toolResponse: ToolOutput = await tool.run(toolInput).context({
+            state,
+            toolCallMsg: toolCall,
+            [Tool.contextKeys.Memory]: this.memory,
+          });
+          await state.memory.add(
+            new ToolMessage({
+              type: "tool-result",
+              toolCallId: toolCall.toolCallId,
+              toolName: toolCall.toolName,
+              output: { type: "text", value: toolResponse.getTextContent() },
+            }),
+          );
+        } catch (e) {
+          if (e instanceof ToolError) {
+            globalRetriesCounter.use(e);
+            await state.memory.add(
+              new ToolMessage({
+                type: "tool-result",
+                toolCallId: toolCall.toolCallId,
+                toolName: toolCall.toolName,
+                output: { type: "error-text", value: e.explain() },
+              }),
+            );
+          } else {
+            throw e;
+          }
+        }
+      }
+
+      // handle empty messages for some models
+      const textMessages = response.getTextMessages();
+      if (isEmpty(toolCallMessages) && isEmpty(textMessages)) {
+        await state.memory.add(new AssistantMessage("\n", { [tempMessageKey]: true }));
+      } else {
+        await state.memory.deleteMany(
+          state.memory.messages.filter((msg) => msg.meta[tempMessageKey]),
+        );
+      }
+
+      // Fallback for providers that do not support structured outputs
+      if (!isEmpty(textMessages) && isEmpty(toolCallMessages)) {
+        forceFinalAnswer = true;
+        tools.length = 0;
+        tools.push(finalAnswerTool);
+      }
+
+      await run.emitter.emit("success", { state });
+    }
+
+    if (this.input.saveIntermediateSteps) {
+      this.memory.reset();
+      await this.memory.addMany(state.memory.messages.slice(1));
+    } else {
+      await this.memory.addMany(state.memory.messages.slice(-2));
+    }
+    return { memory: state.memory, result: state.result };
+  }
+
+  get meta(): AgentMeta {
+    const tools = this.input.tools.slice();
+
+    if (this.input.meta) {
+      return { ...this.input.meta, tools };
+    }
+
+    return {
+      name: "ToolCalling",
+      tools,
+      description: "ToolCallingAgent that uses tools to accomplish the task.",
+      ...(tools.length > 0 && {
+        extraDescription: [
+          `Tools that I can use to accomplish given task.`,
+          ...tools.map((tool) => `Tool '${tool.name}': ${tool.description}.`),
+        ].join("\n"),
+      }),
+    };
+  }
+
+  @Cache({ enumerable: false })
+  protected get templates(): ToolCallingAgentTemplates {
+    const overrides = this.input.templates ?? {};
+    const defaultTemplates: ToolCallingAgentTemplates = {
+      system: ToolCallingAgentSystemPrompt,
+      task: ToolCallingAgentTaskPrompt,
+    } as const;
+
+    return mapObj(defaultTemplates)(
+      (key, defaultTemplate: ToolCallingAgentTemplates[typeof key]) => {
+        const override = overrides[key] ?? defaultTemplate;
+        if (override instanceof PromptTemplate) {
+          return override;
+        }
+        return override(defaultTemplate) ?? defaultTemplate;
+      },
+    );
+  }
+
+  createSnapshot() {
+    return {
+      ...super.createSnapshot(),
+      input: shallowCopy(this.input),
+      emitter: this.emitter,
+    };
+  }
+
+  set memory(memory: BaseMemory) {
+    this.input.memory = memory;
+  }
+
+  get memory() {
+    return this.input.memory;
+  }
+}

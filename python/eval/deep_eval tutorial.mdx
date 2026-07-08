@@ -1,0 +1,553 @@
+# RequirementAgent Evaluation Guide
+
+## 1. Introduction
+
+### **What RequirementAgent is**
+
+RequirementAgent is a BeeAI agent specialized for working with requirements—turning vague ideas or user requests into clear, structured, and testable requirements. It can also ask clarification questions when information is missing.
+
+### **Why evaluation matters**
+
+Because RequirementAgent is used in important workflows (product specs, engineering tasks, compliance), we need a way to check that it behaves consistently: no hallucinated features, clear requirements, and adherence to rules. Evaluation lets us treat the agent like code: we can run tests and catch regressions before deployment.
+
+### **What DeepEval is**
+
+[DeepEval](<https://deepeval.com/docs/getting-started>) is an open-source framework for testing LLM outputs. It lets you define test cases (inputs + expected behavior), use LLM-based metrics (like GEval), and get pass/fail results with detailed scores.
+
+### **When to use this evaluation pipeline**
+
+Use this pipeline whenever you:
+
+- Change the model, prompts, tools, or notes for RequirementAgent
+- Want regression tests to ensure nothing broke
+- Need automated quality checks in CI/CD before promoting a new agent version
+
+[`BeeAI evaluation examples`](<https://github.com/i-am-bee/beeai-framework/tree/main/python/eval>)
+
+## 2. Evaluation Architecture (BeeAI + DeepEval)
+
+### **Pipeline Overview — "Golden → RequirementAgent → run_agent → Dataset → GEval → Results"**
+
+The evaluation flow consists of:
+
+- **Golden** – define what "good behavior" looks like
+- **RequirementAgent** – run the agent on the input
+- **`run_agent`** – convert the agent's response + tool steps into a DeepEval test case
+- **Dataset** – collect all test cases into an EvaluationDataset
+- **GEval** – apply LLM-as-a-judge metrics with your criteria
+- **Results** – see scores, pass/fail outcomes, and detailed explanations
+
+### **How tool calls & reasoning are captured**
+
+During `agent.run`, BeeAI records each step. `run_agent`:
+
+- Extracts which tools were called, with inputs and outputs
+- Uses the previous `ThinkTool` step (if any) as the "reasoning" for a tool call
+- Stores everything into DeepEval `ToolCall` objects so metrics can verify tool usage
+
+[`DeepEval test case docs`](<https://deepeval.com/docs/evaluation-test-cases>)
+
+
+## 3. Step 1: Creating a RequirementAgent for Evaluation
+
+### **A clean example agent**
+
+For evaluation, we define a simple `create_agent()` function that returns a RequirementAgent configured with:
+
+- an underlying model
+- optional tools
+- memory management
+- behavior notes
+
+```python
+import os
+from beeai_framework.agents.requirement import RequirementAgent
+from beeai_framework.backend import ChatModel
+from beeai_framework.memory import UnconstrainedMemory
+
+def create_agent() -> RequirementAgent:
+    return RequirementAgent(
+        llm=ChatModel.from_name(os.environ["EVAL_CHAT_MODEL_NAME"]),
+        tools=[],  # keep simple for initial evaluation
+        memory=UnconstrainedMemory(),
+        notes=[
+            "Write clear and structured requirements.",
+            "Ask clarification questions when requirements are ambiguous.",
+            "Do not hallucinate features or assumptions.",
+            "Keep the response in the same language as the input.",
+        ],
+    )
+```
+
+### **Explanation of LLM, tools, memory, notes**
+
+- **LLM (ChatModel)** – the base model (e.g., GPT, Granite, Llama) loaded from an environment variable so you can swap models easily.
+- **Tools** – optional helpers (search, weather, RAG, etc.) the agent can call.
+- **Memory** – controls what previous messages or context the agent can see.
+- **Notes** – instructions describing how the agent should behave (clear requirements, no hallucinations, ask for clarification, etc.). These are exactly what we want to test later.
+
+[`BeeAI agents overview`](<https://framework.beeai.dev/modules/agents>)
+
+## 4. Step 2: Defining Golden Test Cases
+
+### **How Goldens work**
+
+A Golden is a test definition that describes a single example of correct behavior: input, expected output, and (optionally) expected tool usage.
+
+### **What input / expected output / expected tools mean**
+
+- **input** – what we send to RequirementAgent
+- **expected_output** – what a "good" requirement response should roughly look like (not exact text)
+- **expected_tools** – which tools should or shouldn't be used (e.g., `[]` for none)
+
+### **Example golden list**
+
+```python
+from deepeval.dataset import Golden
+
+goldens = [
+    Golden(
+        input="We need a login feature for our application.",
+        expected_output=(
+            "Provide clear functional requirements, non-functional requirements, "
+            "and acceptance criteria for a login feature."
+        ),
+        expected_tools=[],
+    ),
+    Golden(
+        input="The system should notify users sometimes.",
+        expected_output=(
+            "Ask clarifying questions instead of assuming notification details."
+        ),
+        expected_tools=[],
+    ),
+    Golden(
+        input="需要一个用户登录功能。",  # Chinese input
+        expected_output=(
+            "Provide requirements in Chinese, matching the input language."
+        ),
+        expected_tools=[],
+    ),
+]
+```
+
+### **Best practices**
+
+- Use realistic examples from your domain
+- Focus on behavior and content, not exact phrasing
+- Include negative cases (ambiguous inputs requiring clarification)
+- Add multilingual tests if the agent supports multiple languages
+
+[`DeepEval Golden docs`](<https://docs.confident-ai.com/docs/datasets>)
+
+## 5. Step 3: Turning Goldens into a Dataset (`create_dataset`)
+
+### **How BeeAI runs the agent**
+
+`create_dataset` takes:
+
+- your Goldens
+- an `agent_factory` (like `create_agent()`)
+- the `run_agent` function
+
+For each Golden, it:
+
+- builds a fresh agent
+- runs it
+- stores the result as a DeepEval `LLMTestCase`
+
+```python
+from eval._utils import create_dataset
+from eval.agents.requirement._utils import run_agent
+
+async def build_dataset():
+    return await create_dataset(
+        name="requirement_agent_example",
+        agent_factory=create_agent,
+        agent_run=run_agent,
+        goldens=goldens,
+    )
+```
+
+### **How caching works**
+
+If caching is enabled (`EVAL_CACHE_DATASET=true`), BeeAI saves test case results to `.json` files in `.cache/<dataset_name>/`.
+
+This allows later runs to reuse results instead of hitting the LLM again, which:
+
+- Saves API costs
+- Speeds up evaluation during metric tuning
+- Ensures consistent test data across runs
+
+### **Parallel execution**
+
+`create_dataset` uses `asyncio.gather` to run multiple evaluations in parallel, which speeds up testing significantly when you have many Golden test cases.
+
+[`BeeAI eval utils (_utils.py)`](<https://github.com/i-am-bee/beeai-framework/blob/main/python/eval/_utils.py>)  
+[`DeepEval EvaluationDataset docs`](<https://deepeval.com/docs/evaluation-datasets>)
+
+## 6. Step 4: Running the Agent (`run_agent`)
+
+### **How tool calls are extracted**
+
+`run_agent` inspects `response.state.steps`. For each step that involves a tool, it creates a DeepEval `ToolCall` including:
+
+- tool name
+- description
+- input parameters
+- output
+
+```python
+from deepeval.test_case import LLMTestCase, ToolCall
+from beeai_framework.agents.requirement.utils._tool import FinalAnswerTool
+
+async def run_agent(agent, test_case: LLMTestCase) -> None:
+    response = await agent.run(test_case.input)
+    test_case.actual_output = response.last_message.text
+
+    tool_calls = []
+    for step in response.state.steps:
+        if step.tool and not isinstance(step.tool, FinalAnswerTool):
+            tool_calls.append(
+                ToolCall(
+                    name=step.tool.name,
+                    description=step.tool.description,
+                    input_parameters=step.input,
+                    output=step.output.get_text_content(),
+                )
+            )
+
+    test_case.tools_called = tool_calls
+```
+
+### **How reasoning is added**
+
+If the step before the tool was a `ThinkTool`, its content is serialized and attached as the `reasoning` field on the `ToolCall`.
+
+This allows evaluation metrics to verify not just which tools were used, but also whether the agent's reasoning for using them was appropriate.
+
+### **Why FinalAnswerTool is ignored**
+
+`FinalAnswerTool` only wraps the final message; it's not a real tool.
+
+We ignore it because evaluation is focused on meaningful tool usage (search, RAG, etc.), not the internal mechanism for returning the final answer.
+
+[`RequirementAgent internals / run state docs`](<https://framework.beeai.dev/modules/agents/requirement-agent>)
+
+
+## 7. Step 5: Defining Evaluation Metrics (GEval)
+
+### **How GEval works**
+
+`GEval` is a DeepEval metric that uses an LLM as a judge. You provide:
+
+- a metric name
+- natural-language evaluation criteria
+- which fields to compare (input, actual output, expected output, etc.)
+- a threshold score
+
+It returns a score from `0` to `1` and a pass/fail result.
+
+### **How to write criteria**
+
+Examples:
+
+- Output must be clear and unambiguous
+- No hallucinated features
+- Output language must match the input
+- No tools should be used for simple greetings
+
+Keep criteria:
+
+- Specific and measurable
+- Focused on one aspect at a time
+- Written in natural language
+- Aligned with your agent's notes/instructions
+
+### **How DeepEvalLLM bridges ChatModel ↔ DeepEval**
+
+`DeepEvalLLM` adapts BeeAI's `ChatModel` into an API DeepEval can call (`a_generate()`).
+
+This allows you to use the same model infrastructure for both running your agent and evaluating it, ensuring consistency and simplifying configuration.
+
+### **Example metric**
+
+```python
+import os
+from deepeval.metrics import GEval
+from deepeval.test_case import LLMTestCaseParams
+from eval.model import DeepEvalLLM
+
+def requirement_quality_metric():
+    return GEval(
+        name="Requirement Quality",
+        criteria="\n - ".join([
+            "Output must be clear and structured.",
+            "Do not hallucinate features.",
+            "Ask clarifying questions when input is ambiguous.",
+            "Tool usage must match expectations.",
+        ]),
+        evaluation_params=[
+            LLMTestCaseParams.INPUT,
+            LLMTestCaseParams.EXPECTED_OUTPUT,
+            LLMTestCaseParams.ACTUAL_OUTPUT,
+            LLMTestCaseParams.TOOLS_CALLED,
+            LLMTestCaseParams.EXPECTED_TOOLS,
+        ],
+        model=DeepEvalLLM.from_name(os.environ["EVAL_CHAT_MODEL_NAME"]),
+        threshold=0.7,
+        verbose_mode=True,
+    )
+```
+
+A typical metric evaluates requirement clarity and completeness, with a threshold like `0.7`.
+
+[`GEval docs`](<https://deepeval.com/docs/metrics-llm-evals>)  
+[`DeepEval custom LLM docs`](<https://deepeval.com/guides/guides-using-custom-llms>)  
+[`BeeAI DeepEvalLLM source`](<https://github.com/i-am-bee/beeai-framework/blob/main/python/eval/model.py>)
+
+## 8. Step 6: Running Evaluation
+
+### **Using `evaluate_dataset`**
+
+`evaluate_dataset(dataset, metrics)` runs DeepEval on all test cases and prints results.
+
+```python
+from eval._utils import evaluate_dataset
+
+def run_evaluation(dataset):
+    metric = requirement_quality_metric()
+    evaluate_dataset(dataset, [metric])
+```
+
+### **Explaining pass/fail thresholds**
+
+A test fails if **any metric** scores below its threshold.
+
+If any test fails, the entire pytest run fails, which is useful for CI/CD pipelines where you want to block deployments if agent quality degrades.
+
+### **How to interpret scores**
+
+- **~1.0** → behavior strongly matches criteria
+- **Around threshold (0.6-0.8)** → borderline; refine criteria or goldens
+- **Low score (<0.5)** → incorrect or unclear behavior
+
+When scores are borderline, consider:
+
+- Is the criterion too vague?
+- Is the expected output realistic?
+- Does the Golden accurately represent good behavior?
+
+[`DeepEval evaluate docs`](<https://deepeval.com/docs/evaluation-end-to-end-llm-evals>)
+
+## 9. Step 7: Complete Working Example
+### **Fully runnable script**
+A complete script includes:
+
+```python
+import os
+import asyncio
+from beeai_framework.agents.requirement import RequirementAgent
+from beeai_framework.backend import ChatModel
+from beeai_framework.memory import UnconstrainedMemory
+from deepeval.dataset import Golden
+from deepeval.metrics import GEval
+from deepeval.test_case import LLMTestCaseParams
+from eval._utils import create_dataset, evaluate_dataset
+from eval.agents.requirement._utils import run_agent
+from eval.model import DeepEvalLLM
+
+# 1. Create agent factory
+def create_agent() -> RequirementAgent:
+    return RequirementAgent(
+        llm=ChatModel.from_name(os.environ["EVAL_CHAT_MODEL_NAME"]),
+        tools=[],
+        memory=UnconstrainedMemory(),
+        notes=[
+            "Write clear and structured requirements.",
+            "Ask clarification questions when requirements are ambiguous.",
+            "Do not hallucinate features or assumptions.",
+            "Keep the response in the same language as the input.",
+        ],
+    )
+
+# 2. Define Goldens
+goldens = [
+    Golden(
+        input="We need a login feature for our application.",
+        expected_output="Provide clear functional requirements, non-functional requirements, and acceptance criteria for a login feature.",
+        expected_tools=[],
+    ),
+    Golden(
+        input="The system should notify users sometimes.",
+        expected_output="Ask clarifying questions instead of assuming notification details.",
+        expected_tools=[],
+    ),
+]
+
+# 3. Define metric
+def requirement_quality_metric():
+    return GEval(
+        name="Requirement Quality",
+        criteria="\n - ".join([
+            "Output must be clear and structured.",
+            "Do not hallucinate features.",
+            "Ask clarifying questions when input is ambiguous.",
+            "Tool usage must match expectations.",
+        ]),
+        evaluation_params=[
+            LLMTestCaseParams.INPUT,
+            LLMTestCaseParams.EXPECTED_OUTPUT,
+            LLMTestCaseParams.ACTUAL_OUTPUT,
+            LLMTestCaseParams.TOOLS_CALLED,
+            LLMTestCaseParams.EXPECTED_TOOLS,
+        ],
+        model=DeepEvalLLM.from_name(os.environ["EVAL_CHAT_MODEL_NAME"]),
+        threshold=0.7,
+        verbose_mode=True,
+    )
+
+# 4. Run evaluation
+async def main():
+    # Create dataset
+    dataset = await create_dataset(
+        name="requirement_agent_example",
+        agent_factory=create_agent,
+        agent_run=run_agent,
+        goldens=goldens,
+    )
+    
+    # Evaluate
+    metric = requirement_quality_metric()
+    evaluate_dataset(dataset, [metric])
+
+if __name__ == "__main__":
+    asyncio.run(main())
+```
+
+### **Or pytest version**
+
+A typical pytest example includes:
+
+```python
+import pytest
+from eval._utils import create_dataset, evaluate_dataset
+from eval.agents.requirement._utils import run_agent
+
+@pytest.mark.asyncio
+async def test_requirement_agent():
+    # Create dataset
+    dataset = await create_dataset(
+        name="requirement_agent_example",
+        agent_factory=create_agent,
+        agent_run=run_agent,
+        goldens=goldens,
+    ) 
+    # Define and run evaluation
+    metric = requirement_quality_metric()
+    evaluate_dataset(dataset, [metric])
+```
+Run with:
+```bash
+pytest test_requirement_agent.py -v
+```
+[`pytest docs`](<https://docs.pytest.org/>)
+
+## 10. Additional Topics
+
+### **Caching**
+Set `EVAL_CACHE_DATASET=true` to store results in `.cache/`.
+Benefits:
+- Saves API cost when tuning metrics
+- Faster iteration during development
+- Consistent test data across evaluation runs
+
+The cache stores the complete agent response including tool calls, so you can re-evaluate with different metrics without re-running the agent.
+
+### **Choosing judge models**
+
+You can use:
+
+- **The same model as the agent** – ensures consistency, but may have blind spots
+- **A more capable model as an external judge** – provides better evaluation quality, especially for complex criteria
+
+Example:
+
+```python
+# Agent uses a smaller model
+agent = RequirementAgent(llm=ChatModel.from_name("granite-8b"))
+
+# Judge uses a larger model for better evaluation
+metric = GEval(
+    model=DeepEvalLLM.from_name("gpt-4"),
+    # ... other params
+)
+```
+### **Debug mode**
+
+Set `EVAL_LOG_LLM_CALLS=true` to log all model calls for debugging.
+
+This helps you:
+
+- See exactly what prompts are sent to the LLM
+- Debug unexpected scores or behaviors
+- Understand how the evaluation metric interprets your criteria
+
+### **Checklist for writing good Golden tests**
+
+ **Realistic inputs** – use actual examples from your domain  
+ **Diverse scenarios** – cover different input types and complexities  
+ **Clear expectations** – expected_output should be specific enough to evaluate  
+ **Include edge cases** – ambiguous inputs, multilingual, unusual requests  
+ **Include "failure modes"** – examples where the agent should refuse or ask for clarification
+
+Example failure mode Golden:
+
+```python
+Golden(
+    input="Hello!",
+    expected_output="Respond politely without generating requirements.",
+    expected_tools=[],
+)
+```
+
+[`BeeAI environment config docs`](<https://agentstack.beeai.dev/introduction/quickstart#configure-the-llm-provider>)  
+[`DeepEval best practices`](<https://deepeval.com/blog>)
+
+## 11. Conclusion
+
+This evaluation pipeline allows you to:
+
+ Test RequirementAgent behavior reliably  
+ Detect regressions early  
+ Integrate agent evaluation into CI/CD
+
+### **How to extend evaluation**
+
+You can expand this pipeline to handle:
+
+- **Multi-turn conversations** – test how the agent handles follow-up questions and context
+- **More metrics** – add faithfulness, toxicity, safety, or custom domain-specific metrics
+- **More complex tool-driven workflows** – evaluate agents that use RAG, search, or external APIs
+- **A/B testing** – compare different models, prompts, or configurations
+- **Continuous monitoring** – track agent performance over time in production
+
+Example multi-metric evaluation:
+
+```python
+from deepeval.metrics import FaithfulnessMetric, ToxicityMetric
+
+metrics = [
+    requirement_quality_metric(),
+    FaithfulnessMetric(threshold=0.8),
+    ToxicityMetric(threshold=0.3),
+]
+
+evaluate_dataset(dataset, metrics)
+```
+## Additional Resources
+
+- [BeeAI Framework Documentation](<https://framework.beeai.dev/>)
+- [DeepEval Documentation](<https://deepeval.com/docs/getting-started>)
+- [BeeAI Evaluation Examples](<https://github.com/i-am-bee/beeai-framework/tree/main/python/eval>)
+- [DeepEval GitHub Repository](<https://github.com/confident-ai/deepeval>)

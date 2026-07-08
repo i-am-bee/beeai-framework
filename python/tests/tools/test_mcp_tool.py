@@ -1,0 +1,189 @@
+# Copyright 2025 © BeeAI a Series of LF Projects, LLC
+# SPDX-License-Identifier: Apache-2.0
+
+from collections.abc import Callable
+from typing import Any
+from unittest.mock import AsyncMock, MagicMock, patch
+
+import pytest
+from pydantic import BaseModel
+
+from beeai_framework.context import RunContext
+from beeai_framework.utils.strings import to_json
+
+pytest.importorskip("mcp", reason="Optional module [mcp] not installed.")
+from mcp import ClientSession, StdioServerParameters
+from mcp.types import CallToolResult, TextContent
+from mcp.types import Tool as MCPToolInfo
+
+from beeai_framework.tools import StringToolOutput, ToolError
+from beeai_framework.tools.mcp import MCPTool
+
+"""
+Utility functions and classes
+"""
+
+
+# Common Fixtures
+@pytest.fixture
+def mock_client_session() -> AsyncMock:
+    return AsyncMock(spec=ClientSession)
+
+
+@pytest.fixture
+def mock_server_params() -> AsyncMock:
+    return AsyncMock(spec=StdioServerParameters)
+
+
+# Basic Tool Test Fixtures
+@pytest.fixture
+def mock_tool_info() -> MCPToolInfo:
+    return MCPToolInfo(
+        name="test_tool",
+        description="A test tool",
+        inputSchema={
+            "type": "object",
+            "properties": {"a": {"type": "number"}, "b": {"type": "number"}},
+            "required": ["a", "b"],
+        },
+    )
+
+
+@pytest.fixture
+def call_tool_result() -> CallToolResult:
+    return CallToolResult(  # type: ignore
+        output="test_output",
+        content=[TextContent(text="test_content", type="text")],
+    )
+
+
+# Calculator Tool Test Fixtures
+@pytest.fixture
+def add_numbers_tool_info() -> MCPToolInfo:
+    return MCPToolInfo(
+        name="add_numbers",
+        description="Adds two numbers together",
+        inputSchema={
+            "type": "object",
+            "properties": {"a": {"type": "number"}, "b": {"type": "number"}},
+            "required": ["a", "b"],
+        },
+    )
+
+
+@pytest.fixture
+def add_result() -> CallToolResult:
+    return CallToolResult(  # type: ignore
+        output="8",
+        content=[TextContent(text="8", type="text")],
+    )
+
+
+# Basic Tool Tests
+class TestMCPTool:
+    @pytest.mark.asyncio
+    @pytest.mark.unit
+    async def test_mcp_tool_initialization(
+        self, mock_client_session: ClientSession, mock_tool_info: MCPToolInfo
+    ) -> None:
+        tool = MCPTool(session=mock_client_session, tool=mock_tool_info)
+
+        assert tool.name == "test_tool"
+        assert tool.description == "A test tool"
+
+    @pytest.mark.asyncio
+    @pytest.mark.unit
+    @patch.object(MCPTool, "_run")
+    async def test_mcp_tool_run(  # type: ignore
+        self,
+        mock__run,  # noqa: ANN001
+        mock_client_session: ClientSession,
+        mock_tool_info: MCPToolInfo,
+        call_tool_result: str,
+    ) -> None:
+        mock__run.return_value = StringToolOutput(str(call_tool_result))
+        tool = MCPTool(session=mock_client_session, tool=mock_tool_info)
+        input_data = {"a": 1, "b": 2}
+
+        result = await tool.run(input_data)
+
+        assert isinstance(result, StringToolOutput)
+        assert result.result == str(call_tool_result)
+
+    @pytest.mark.asyncio
+    @pytest.mark.unit
+    async def test_mcp_tool_from_client(self, mock_client_session: ClientSession, mock_tool_info: MCPToolInfo) -> None:
+        tools_result = MagicMock()
+        tools_result.tools = [mock_tool_info]
+        mock_client_session.list_tools = AsyncMock(return_value=tools_result)  # type: ignore
+
+        tools = await MCPTool.from_session(mock_client_session)
+
+        mock_client_session.list_tools.assert_awaited_once()
+        assert len(tools) == 1
+        assert tools[0].name == "test_tool"
+        assert tools[0].description == "A test tool"
+
+    @pytest.mark.asyncio
+    @pytest.mark.unit
+    async def test_mcp_tool_run_with_error(self, mock_client_session: AsyncMock, mock_tool_info: MCPToolInfo) -> None:
+        # Arrange
+        tool = MCPTool(session=mock_client_session, tool=mock_tool_info)
+
+        error_result = MagicMock(spec=CallToolResult)
+        error_result.isError = True
+        error_result.content = {"error": "test error"}
+        error_result.structuredContent = {"code": 500}
+        mock_client_session.call_tool.return_value = error_result
+
+        class Input(BaseModel):
+            pass
+
+        context = MagicMock(spec=RunContext)
+
+        # Act & Assert
+        with pytest.raises(ToolError) as exc_info:
+            # We test _run directly to isolate the change
+            await tool._run(input_data=Input(), options=None, context=context)
+
+        assert exc_info.value.message == to_json(error_result.structuredContent, indent=4, sort_keys=False)
+        mock_client_session.call_tool.assert_awaited_once()
+
+
+# Calculator Tool Tests
+class TestAddNumbersTool:
+    @pytest.mark.asyncio
+    @pytest.mark.unit
+    @patch.object(MCPTool, "_run")
+    async def test_add_numbers_mcp(  # type: ignore
+        self,
+        mock__run,  # noqa: ANN001
+        mock_client_session: ClientSession,
+        add_numbers_tool_info: MCPToolInfo,
+        add_result: Callable[..., Any],
+    ) -> None:
+        mock__run.return_value = StringToolOutput(str(add_result))
+        tool = MCPTool(session=mock_client_session, tool=add_numbers_tool_info)
+        input_data = {"a": 5, "b": 3}
+
+        result = await tool.run(input_data)
+
+        assert isinstance(result, StringToolOutput)
+
+    @pytest.mark.asyncio
+    @pytest.mark.unit
+    async def test_add_numbers_from_client(
+        self,
+        mock_client_session: ClientSession,
+        add_numbers_tool_info: MCPToolInfo,
+    ) -> None:
+        tools_result = MagicMock()
+        tools_result.tools = [add_numbers_tool_info]
+        mock_client_session.list_tools = AsyncMock(return_value=tools_result)  # type: ignore
+
+        tools = await MCPTool.from_session(mock_client_session)
+
+        mock_client_session.list_tools.assert_awaited_once()
+        assert len(tools) == 1
+        assert tools[0].name == "add_numbers"
+        assert "adds two numbers" in tools[0].description.lower()

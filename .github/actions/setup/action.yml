@@ -1,0 +1,19 @@
+name: 'Setup environment'
+description: 'Set up mise tools (Python, Node.js, ...) and install project dependencies'
+
+runs:
+  using: "composite"
+  steps:
+    - uses: actions/cache@v4
+      with:
+        path: python/.venv
+        key: poetry-venv-v1-${{ runner.os }}-${{ hashFiles('python/poetry.lock') }}
+        restore-keys: poetry-venv-v1-${{ runner.os }}-
+    - uses: actions/cache@v4
+      with:
+        path: ~/.cache/yarn
+        key: yarn-cache-v1-${{ runner.os }}-${{ hashFiles('**/yarn.lock') }}
+        restore-keys: yarn-cache-v1-${{ runner.os }}-
+    - uses: jdx/mise-action@5cb1df66ed5e1fb3c670ea0b62fd17a76979826a
+      with:
+        version: 2025.7.1

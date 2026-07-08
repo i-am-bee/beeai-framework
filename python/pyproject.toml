@@ -1,0 +1,248 @@
+[project]
+name = "beeai-framework"
+version="0.1.81"
+license = "Apache-2.0"
+readme = "README.md"
+authors = [{ name = "IBM Corp." }]
+maintainers = [
+    { name = "Fred Araujo", email = "frederico.araujo@ibm.com" },
+    { name = "Tomas Dvorak", email = "toomas2d@gmail.com" },
+    { name = "Lukáš Janeček", email = "xjacka@gmail.com" }
+]
+requires-python = ">=3.11,<3.14"
+
+[project.urls]
+homepage = "https://framework.beeai.dev/"
+repository = "https://github.com/i-am-bee/beeai-framework"
+documentation = "https://i-am-bee.github.io/beeai-framework/#/python/"
+
+[tool.poetry.dependencies]
+python = ">= 3.11,<3.14"
+a2a-sdk = {version = "^0.3.9", optional = true, extras = ["grpc", "http-server", "telemetry"]}
+acp-sdk = {version = "^1.0.3", optional = true}
+agent-client-protocol = {version = "^0.9.0", optional = true}
+aiofiles = "^24.1.0"
+boto3 = {version = "^1.37.5", optional = true}
+cachetools = ">=5.5.2"
+chevron = "^0.14.0"
+ddgs = { version="^9.14.4", optional = true }
+cryptography = {version = ">=48.0.1", optional = true}
+fastapi = {version = "^0.133.0", optional = true}
+google-auth = { version = ">=2.14,<3.0.0", optional = true }
+json-repair = "^0.52.5"
+jsonref = "^1.1.0"
+langchain = {version = ">=1.3.9,<2.0.0", optional = true}
+langchain-core = {version = ">=1.3.3,<2.0.0", optional = true}
+langchain-community = {version = ">=0.4.1,<2.0.0", optional = true}
+langchain-ollama = {version = ">=1.0.1,<2.0.0", optional = true}
+langgraph = {version = ">=1.0.10,<3.0.0", optional = true}
+langgraph-checkpoint = {version = ">=4.0.0,<5.0.0", optional = true}
+langsmith = {version = ">=0.8.18,<1.0.0", optional = true}
+litellm = "^1.84.0"
+llama-index-core = {version = "^0.14.0", optional = true}
+markdown = {version = "^3.8.2", optional = true}
+mcp = {version = "^1.23.0", optional = true}
+pydantic = "^2.12.4"
+pydantic-settings = "^2.14.2"
+requests = ">=2.34.2,<3.0.0"
+unstructured = {version = "^0.18.31", optional = true}
+uvicorn = {version = "^0.37.0", optional = true}
+types-grpcio = {version = "*", optional = true}
+types-grpcio-reflection = {version = "*", optional = true}
+types-grpcio-health-checking = {version = "*", optional = true }
+grpcio-health-checking = {version = "*", optional = true}
+wikipedia-api = {version = "^0.8.1", optional = true}
+agentstack-sdk = {version = "0.6.2", optional = true}
+deprecated = "^1.2.18"
+torch = [
+  {version = ">=2.4.1", markers = "sys_platform == 'darwin' and platform_machine == 'arm64'", optional = true},
+  {version = "2.2.2", markers = "sys_platform == 'darwin' and platform_machine == 'x86_64'", optional = true},
+  {version = "2.7.1", source = "pytorch-cpu", markers = "sys_platform != 'darwin'", optional = true}
+]
+transformers = [
+  {version = ">=5.0.0", markers = "sys_platform == 'darwin' and platform_machine == 'arm64'", optional = true},
+  {version = ">=5.0.0", markers = "sys_platform == 'darwin' and platform_machine == 'x86_64'", optional = true},
+  {version = ">=5.0.0", markers = "sys_platform != 'darwin'", optional = true}
+]
+peft = {version = "^0.19.1", optional = true}
+outlines = {version = "^1.2.4", python = ">=3.11,<3.13", optional = true}
+nltk = {version = ">=3.9.4", optional = true}
+pillow = {version = ">=12.2.0", optional = true}
+pypdf = {version = ">=6.13.0", optional = true}
+starlette = {version = ">=1.3.1", optional = true}
+
+[tool.poetry.group.dev.dependencies]
+commitizen = "^4.2.1"
+deepeval = "3.3.5"
+nbstripout = "^0.8.1"
+pydantic-settings = "^2.14"
+pylint = "^3.3.2"
+pytest = "^8.3.4"
+pytest-asyncio = "~0.25.3"
+pytest-cov = "^6.0.0"
+pytest-xdist = "^3.6.1"
+rich = ">=13.6.0,<14.0.0"
+ruff = "^0.9.6"
+tox = "^4.20"
+types-aiofiles = "^24.1.0.20250326"
+types-cachetools = "^5.5.0.20240820"
+types-chevron = "^0.14.2.20250103"
+types-PyYAML = "^6.0.12.20250402"
+types-requests = "^2.32.0.20241016"
+syrupy = "^4.9.1"
+types-deprecated = "^1.2.15.20250304"
+pyyaml = "^6.0.3"
+types-grpcio-health-checking = ">=1.0.0,<2.0.0"
+pyrefly = "^0.44.1"
+pip-audit = "^2.10.0"
+cz-commitizen = { path = "./cz_commitizen", develop = true }
+
+[tool.poetry.extras]
+transformers = ["transformers", "torch", "peft", "outlines", "pillow"]
+huggingface = ["datasets", "transformers"]
+search = ["ddgs", "wikipedia-api"]
+duckduckgo = ["ddgs"]
+wikipedia = ["wikipedia-api"]
+mcp = ["mcp", "cryptography", "starlette"]
+llama_index = ["llama-index-core", "pillow", "nltk"]
+langchain = ["langchain", "langchain-core", "langchain-community", "langchain-ollama", "langgraph", "langgraph-checkpoint", "langsmith"]
+rag = ["langchain", "llama-index-core", "langchain-core", "langchain-community", "langchain-ollama", "markdown", "unstructured", "langgraph", "langgraph-checkpoint", "langsmith", "cryptography", "nltk", "pillow", "pypdf"]
+acp = ["acp-sdk", "uvicorn", "starlette"]
+acp-zed = ["agent-client-protocol"]
+beeai-platform = ["agentstack-sdk", "a2a-sdk", "uvicorn", "cryptography", "starlette"]
+agentstack = ["agentstack-sdk", "a2a-sdk", "uvicorn", "cryptography", "starlette"]
+a2a = ["a2a-sdk", "uvicorn", "types-grpcio", "types-grpcio-reflection", "grpcio-health-checking", "types-grpcio-health-checking", "cryptography", "starlette"]
+watsonx-orchestrate = ["uvicorn", "fastapi", "starlette"]
+bedrock = ["boto3"]
+vertexai = ["google-auth"]
+all = [
+    "langchain",
+    "langchain-core",
+    "langchain-community",
+    "langchain-ollama",
+    "langgraph",
+    "langgraph-checkpoint",
+    "langsmith",
+    "datasets",
+    "transformers",
+    "ddgs",
+    "wikipedia-api",
+    "mcp",
+    "acp-sdk",
+    "agent-client-protocol",
+    "uvicorn",
+    "a2a-sdk",
+    "grpcio-health-checking",
+    "fastapi",
+    "llama-index",
+    "agentstack-sdk",
+    "torch",
+    "peft",
+    "outlines",
+    "boto3",
+    "google-auth",
+    "cryptography",
+    "nltk",
+    "pillow",
+    "pypdf",
+    "starlette"
+]
+
+
+[tool.commitizen]
+name = "cz_monorepo_commits"
+tag_format = "python_v$version"
+version_scheme = "semver"
+version_provider = "pep621"
+update_changelog_on_bump = true
+major_version_zero = true
+bump_message = "chore: python release $new_version"
+
+[tool.pytest.ini_options]
+testpaths = ["tests", "beeai_framework"]
+markers = [
+    "unit",
+    "integration",
+    "e2e",
+    "extension"
+]
+addopts = "--snapshot-patch-pycharm-diff"
+log_cli = true
+log_cli_level = "DEBUG"
+log_cli_format = "%(asctime)s [%(levelname)8s] %(message)s (%(filename)s:%(lineno)s)"
+log_cli_date_format = "%Y-%m-%d %H:%M:%S"
+asyncio_mode = "strict"
+asyncio_default_fixture_loop_scope = "function"
+filterwarnings = "ignore::DeprecationWarning:pydantic" # some dependencies still use the deprecated class-based config
+
+[tool.pytest-asyncio]
+asyncio_mode = "strict"
+default_fixture_loop_scope = "function"
+
+[tool.coverage.run]
+omit = ["tests/*", "eval/*"]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover", # re-enable the standard pragma
+    "pass",             # Skip any pass lines such as may be used for @abstractmethod
+]
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.ruff]
+lint.select = [
+    "E",     # pycodestyle errors
+    "W",     # pycodestyle warnings
+    "F",     # pyflakes
+    "UP",    # pyupgrade
+    "I",     # isort
+    "B",     # bugbear
+    "ANN",   # annotations
+    "N",     # pep8-naming
+    "C4",    # Comprehensions
+    "DTZ",   # DatetimeZ
+    "Q",     # Quotes
+    "SIM",   # Simplify
+    "RUF",   # Ruff
+    "TID",   # tidy-imports
+    "ASYNC", # async
+]
+force-exclude = true
+lint.ignore = ["ANN401", "B904", "RUF001", "DTZ002", "DTZ011"]
+lint.fixable = ["ALL"]
+lint.unfixable = []
+line-length = 120
+
+[tool.ruff.lint.per-file-ignores]
+"*.ipynb" = ["E501", "ANN001", "ANN201"]
+"examples/**/*.py" = ["E501"]
+"beeai_framework/agents/experimental/**/*.py" = ["E501"]
+
+[tool.pyrefly]
+project-excludes = [
+    "**/build/",
+    "**/examples/playground/",
+    "**/examples/notebooks/",
+]
+ignore-missing-imports = [
+    "llama-index",
+    "llama-index.*",
+    "llama-index.core.llama_dataset",
+    "llama_index",
+    "llama_index.*",
+]
+
+[tool.ruff.lint.pydocstyle]
+convention = "google"
+
+[tool.ruff.lint.flake8-tidy-imports]
+# Disallow all relative imports, "parents" | "all"
+ban-relative-imports = "all"
+
+[[tool.poetry.source]]
+name = "pytorch-cpu"
+url = "https://download.pytorch.org/whl/cpu"
+priority = "supplemental"
