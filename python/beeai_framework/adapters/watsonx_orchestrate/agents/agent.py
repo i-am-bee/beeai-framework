@@ -4,7 +4,7 @@
 import json
 import time
 import uuid
-from collections.abc import AsyncGenerator, Iterable
+from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 from typing import Literal, NamedTuple, Unpack
 
@@ -16,6 +16,10 @@ from beeai_framework.adapters.watsonx_orchestrate._utils import (
     beeai_message_to_watsonx_orchestrate_message,
     map_watsonx_orchestrate_agent_input_to_bee_messages,
     watsonx_orchestrate_message_to_beeai_message,
+)
+from beeai_framework.adapters.watsonx_orchestrate.agents.events import (
+    WatsonxOrchestrateAgentUpdateEvent,
+    watsonx_orchestrate_agent_event_types,
 )
 from beeai_framework.adapters.watsonx_orchestrate.agents.types import WatsonxOrchestrateAgentOutput
 from beeai_framework.agents import AgentOptions, BaseAgent
@@ -30,49 +34,36 @@ from beeai_framework.utils.lists import flatten
 from beeai_framework.utils.strings import to_safe_word
 
 
-class _ParsedCompletion(NamedTuple):
+class _SSEDelta(NamedTuple):
     content: str
-    finish_reason: str
-    response_id: str
-    model: str
+    finish_reason: str | None
+    response_id: str | None
+    model: str | None
 
 
-def _parse_sse_chat_completion(lines: Iterable[str], *, default_id: str, default_model: str) -> _ParsedCompletion:
-    """Accumulate an OpenAI-compatible SSE chat-completion stream into a single result.
+def _parse_chunk(raw: str) -> _SSEDelta | None:
+    """Parse a single OpenAI-compatible SSE chat-completion payload into its content delta.
 
-    Defensive against malformed payloads: blank/non-``data:`` lines, invalid JSON, and
-    chunks/choices/deltas that are not the expected dict/list shapes are skipped, so a
-    misbehaving stream cannot raise. Parsing stops at the ``[DONE]`` sentinel.
+    Returns ``None`` when the payload is not a JSON object, and defensively skips any
+    choices/deltas that are not the expected dict/list shapes, so a malformed or unexpected
+    chunk is ignored rather than raising.
     """
+    try:
+        chunk = json.loads(raw)
+    except json.JSONDecodeError:
+        return None
+    if not isinstance(chunk, dict):
+        return None
     content_parts: list[str] = []
-    finish_reason = "stop"
-    response_id = default_id
-    model_name = default_model
-    for line in lines:
-        line = line.strip()
-        if not line or not line.startswith("data:"):
+    finish_reason: str | None = None
+    choices = chunk.get("choices")
+    for choice in choices if isinstance(choices, list) else []:
+        if not isinstance(choice, dict):
             continue
-        # SSE allows an optional single space after "data:".
-        raw = line[5:].lstrip(" ").strip()
-        if raw == "[DONE]":
-            break
-        try:
-            chunk = json.loads(raw)
-        except json.JSONDecodeError:
-            continue
-        if not isinstance(chunk, dict):
-            continue
-        response_id = chunk.get("id", response_id)
-        model_name = chunk.get("model", model_name)
-        choices = chunk.get("choices")
-        for choice in choices if isinstance(choices, list) else []:
-            if not isinstance(choice, dict):
-                continue
-            delta = choice.get("delta")
-            content = (delta.get("content") if isinstance(delta, dict) else None) or ""
-            content_parts.append(content)
-            finish_reason = choice.get("finish_reason") or finish_reason
-    return _ParsedCompletion("".join(content_parts), finish_reason, response_id, model_name)
+        delta = choice.get("delta")
+        content_parts.append((delta.get("content") if isinstance(delta, dict) else None) or "")
+        finish_reason = choice.get("finish_reason") or finish_reason
+    return _SSEDelta("".join(content_parts), finish_reason, chunk.get("id"), chunk.get("model"))
 
 
 class WatsonxOrchestrateAgent(BaseAgent[WatsonxOrchestrateAgentOutput]):
@@ -104,10 +95,15 @@ class WatsonxOrchestrateAgent(BaseAgent[WatsonxOrchestrateAgentOutput]):
     async def run(
         self, input: str | list[str] | AnyMessage | list[AnyMessage] | None, /, **kwargs: Unpack[AgentOptions]
     ) -> WatsonxOrchestrateAgentOutput:
-        async def handler(_: RunContext) -> WatsonxOrchestrateAgentOutput:
+        async def handler(context: RunContext) -> WatsonxOrchestrateAgentOutput:
             async with self._create_client() as client:
                 input_messages = map_watsonx_orchestrate_agent_input_to_bee_messages(input)
                 await self.memory.add_many(input_messages)
+
+                content = ""
+                finish_reason = "stop"
+                response_id = str(uuid.uuid4())
+                model_name = self._agent_id
 
                 async with client.stream(
                     "POST",
@@ -119,24 +115,46 @@ class WatsonxOrchestrateAgent(BaseAgent[WatsonxOrchestrateAgentOutput]):
                         stream=True,
                     ).model_dump(),
                 ) as streaming_response:
+                    if streaming_response.is_error:
+                        # Read the body so the server's error detail isn't lost when raising.
+                        await streaming_response.aread()
                     streaming_response.raise_for_status()
-                    lines = [line async for line in streaming_response.aiter_lines()]
 
-                parsed = _parse_sse_chat_completion(lines, default_id=str(uuid.uuid4()), default_model=self._agent_id)
+                    async for line in streaming_response.aiter_lines():
+                        line = line.strip()
+                        if not line or not line.startswith("data:"):
+                            continue
+                        # SSE allows an optional single space after "data:".
+                        raw = line[5:].lstrip(" ").strip()
+                        if raw == "[DONE]":
+                            break
+                        delta = _parse_chunk(raw)
+                        if delta is None:
+                            continue
+                        response_id = delta.response_id or response_id
+                        model_name = delta.model or model_name
+                        if delta.finish_reason:
+                            finish_reason = delta.finish_reason
+                        if delta.content:
+                            content += delta.content
+                            await context.emitter.emit(
+                                "update",
+                                WatsonxOrchestrateAgentUpdateEvent(delta=delta.content, content=content),
+                            )
 
                 response_data = ChatCompletionResponse(
-                    id=parsed.response_id,
+                    id=response_id,
                     object="thread.message.delta",
                     created=int(time.time()),
-                    model=parsed.model,
+                    model=model_name,
                     choices=[
                         watsonx_orchestrate_api.ChatCompletionChoice(
                             index=0,
                             message=watsonx_orchestrate_api.ChatMessageResponse(
                                 role="assistant",
-                                content=parsed.content,
+                                content=content,
                             ),
-                            finish_reason=parsed.finish_reason,
+                            finish_reason=finish_reason,
                         )
                     ],
                 )
@@ -193,6 +211,7 @@ class WatsonxOrchestrateAgent(BaseAgent[WatsonxOrchestrateAgentOutput]):
         return Emitter.root().child(
             namespace=["watsonx_orchestrate", "agent", to_safe_word(self._name)],
             creator=self,
+            events=watsonx_orchestrate_agent_event_types,
         )
 
     @asynccontextmanager
