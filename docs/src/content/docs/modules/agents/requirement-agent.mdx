@@ -144,7 +144,7 @@ In `RequirementAgent`, **all capabilities (including data retrieval, web search,
 | `hidden`       | Whether the tool definition is visible to the agent for a given turn and in the system prompt | bool  |
 | `prevent_stop` | Whether rule prevents the agent from terminating for a given turn                             | bool  |
 | `forced`       | Whether tool must be invoked on a given turn                                                  | bool  |
-| `reason`       | Optinally explain to the LLM why the given rule is applied                                    | str   |
+| `reason`       | Optionally explain to the LLM why the given rule is applied                                    | str   |
 
 When requirements generate conflicting rules, the system applies this precedence:
 - **Forbidden overrides all**: If any requirement forbids a tool, that tool cannot be used.

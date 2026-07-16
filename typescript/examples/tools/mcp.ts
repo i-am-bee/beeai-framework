@@ -16,7 +16,7 @@ const client = new Client(
   },
 );
 
-// Connect the client to any MCP server with tools capablity
+// Connect the client to any MCP server with tools capability
 await client.connect(
   new StdioClientTransport({
     command: "npx",

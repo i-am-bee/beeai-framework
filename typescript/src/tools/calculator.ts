@@ -17,7 +17,7 @@ export interface CalculatorToolInput {
 }
 
 /**
- * Waring: The CalculatorTool enbales the agent (and by proxy the user) to execute arbirtary
+ * Warning: The CalculatorTool enables the agent (and by proxy the user) to execute arbitrary
  * expressions via mathjs.
  *
  * Please consider the security and stability risks documented at
