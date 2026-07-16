@@ -19,6 +19,12 @@ interface SerializableStructure<T> {
 
 export interface DeserializeOptions {
   extraClasses?: SerializableClass<unknown>[];
+  /**
+   * Function deserialization is disabled by default because it can execute
+   * arbitrary code from the payload (see GHSA-phhm-7927-g88p). Only set this
+   * to `true` if you fully trust the source of the serialized data.
+   */
+  allowFunctionDeserialization?: boolean;
 }
 
 export abstract class Serializable<T = unknown> {
@@ -54,6 +60,8 @@ export abstract class Serializable<T = unknown> {
     const { __root } = await Serializer.deserializeWithMeta<SerializableStructure<T>>(
       value,
       options?.extraClasses,
+      false,
+      { allowFunctionDeserialization: options?.allowFunctionDeserialization },
     );
     if (!__root.target) {
       // eslint-disable-next-line

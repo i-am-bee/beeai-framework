@@ -93,7 +93,9 @@ describe("Token Memory", () => {
       }),
     );
     const serialized = await instance.serialize();
-    const deserialized = await TokenMemory.fromSerialized(serialized);
+    const deserialized = await TokenMemory.fromSerialized(serialized, {
+      allowFunctionDeserialization: true,
+    });
     verifyDeserialization(instance, deserialized);
   });
 });

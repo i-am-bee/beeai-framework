@@ -103,7 +103,9 @@ describe("DuckDuckGoSearch Tool", () => {
     );
     await tool.cache!.set("B", Task.resolve(new DuckDuckGoSearchToolOutput([])));
     const serialized = await tool.serialize();
-    const deserialized = await DuckDuckGoSearchTool.fromSerialized(serialized);
+    const deserialized = await DuckDuckGoSearchTool.fromSerialized(serialized, {
+      allowFunctionDeserialization: true,
+    });
     expect(await tool.cache.get("A")).toStrictEqual(await deserialized.cache.get("A"));
     verifyDeserialization(tool, deserialized);
   });

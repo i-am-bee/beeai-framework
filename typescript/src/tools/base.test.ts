@@ -578,7 +578,9 @@ describe("Base Tool", () => {
       });
 
       const serialized = await tool.serialize();
-      const deserialized = await DynamicTool.fromSerialized(serialized);
+      const deserialized = await DynamicTool.fromSerialized(serialized, {
+        allowFunctionDeserialization: true,
+      });
       verifyDeserialization(tool, deserialized);
     });
   });

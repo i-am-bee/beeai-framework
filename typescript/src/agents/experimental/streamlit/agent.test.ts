@@ -15,7 +15,9 @@ describe("Streamlit agent", () => {
       memory: new UnconstrainedMemory(),
     });
     const serialized = await instance.serialize();
-    const deserialized = await StreamlitAgent.fromSerialized(serialized);
+    const deserialized = await StreamlitAgent.fromSerialized(serialized, {
+      allowFunctionDeserialization: true,
+    });
     verifyDeserialization(instance, deserialized);
   });
 });
