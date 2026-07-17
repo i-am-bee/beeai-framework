@@ -11,7 +11,7 @@ from beeai_framework.runnable import Runnable, RunnableOptions, RunnableOutput, 
 class GreetingRunnable(Runnable[RunnableOutput]):
     @runnable_entry
     async def run(self, input: list[AnyMessage], /, **kwargs: Unpack[RunnableOptions]) -> RunnableOutput:
-        # retrieves the current run contex
+        # retrieves the current run context
         run = RunContext.get()
 
         response = f"Hello, {run.context.get('name', 'stranger')}!"

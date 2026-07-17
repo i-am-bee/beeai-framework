@@ -125,7 +125,7 @@ async def main():
 - Use \`@st.llm_function\` for complex text-based tasks such as summarization, analysis, and keyword extraction.
 - Always define explicit and detailed instructions for the LLM to ensure accurate results.
 - For structured outputs, use a \`dataclass\` to define the return type and describe every field in the instructions.
-- For unstructured output, use \`str\` as the return type, and the fuction will simply return the raw LLM output as a string.
+- For unstructured output, use \`str\` as the return type, and the function will simply return the raw LLM output as a string.
 - **Never** use multiple LLM functions sequentially with the same input; combine tasks into one function instead.
 - Be verbose and specific in instructions for LLM functions, describing each expected output field in detail.
 
@@ -133,7 +133,7 @@ async def main():
 
 - Avoid deprecated functions like \`st.cache\`; use \`st.cache_data\` for serializable data and \`st.cache_resource\` for persistent resources (e.g., database connections).
 - When querying GitHub API, make sure to parse ISO timestamps from strings like \`created_at\`, \`closed_at\`, \`merged_at\`.
-- When using any external API that returns a JSON reply, always check that the needes fields are present in the response.
+- When using any external API that returns a JSON reply, always check that the needed fields are present in the response.
 - Do not simultaneously set value of input element using \`st.session_state.<key>\` and directly using \`st.text_input(key="<key>", value="...")\`. This results in an error.
 - If you need to clear an input field after submitting, use \`with st.form("form_name", clear_on_submit=True):\` to wrap the input elements. Do not modify \`st.session_state.<key>\` after rendering the element, as that will result in an error.
 - When a button that is **not** part of the form modifies \`st.session_state\`, it has to call \`st.rerun()\` afterwards to ensure proper UI refresh.
