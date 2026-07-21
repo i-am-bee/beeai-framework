@@ -117,8 +117,8 @@ async def main() -> None:
         try:
             reader.write("✅", "Processing with travel advisor agent")
             response = await travel_advisor.run(
-                prompt, expected_output="Detailed trip plan for a given destination. Formated as markdown."
-            ).middleware(GlobalTrajectoryMiddleware(excluded=[Requirement]))  # log tracejtory
+                prompt, expected_output="Detailed trip plan for a given destination. Formatted as markdown."
+            ).middleware(GlobalTrajectoryMiddleware(excluded=[Requirement]))  # log trajectory
             reader.write("✅", "Response received from agent")
             reader.write("🤖 Travel Advisor:\n", response.last_message.text)
         except FrameworkError as e:
