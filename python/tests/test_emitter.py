@@ -1,6 +1,7 @@
 # Copyright 2025 © BeeAI a Series of LF Projects, LLC
 # SPDX-License-Identifier: Apache-2.0
 
+import re
 from typing import Any
 
 import pytest
@@ -187,6 +188,21 @@ class TestEventsPropagation:
 
         await emitter.emit("c", "c")
         assert calls == [1]
+
+    @pytest.mark.unit
+    @pytest.mark.asyncio
+    async def test_compiled_regex_matches_anywhere_in_path(self) -> None:
+        # A compiled regex should match anywhere in the event path (like the
+        # TypeScript sibling's `.test()`), not only when anchored at the start.
+        root = Emitter.root()
+        hits: list[str] = []
+        root.on(
+            re.compile(r"watsonx"),
+            lambda _, event: hits.append(event.path),
+            EmitterOptions(match_nested=True),
+        )
+        await root.child(namespace=["backend", "watsonx", "chat"]).emit("start", 1)
+        assert hits == ["backend.watsonx.chat.start"]
 
     @pytest.mark.unit
     @pytest.mark.asyncio
