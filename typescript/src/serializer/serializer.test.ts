@@ -155,14 +155,18 @@ describe("Serializer", () => {
       verifyDeserialization(fn, target);
 
       if (R.isFunction(fn) && R.isFunction(target)) {
-        const l = fn("A");
-        const r = target("A");
-
+        // Await both sides before comparing: some of these functions are
+        // async, and comparing unresolved Promise objects with toEqual is
+        // structurally unreliable (Promises have no own enumerable
+        // properties, so the assertion's outcome can depend on timing
+        // rather than the actual resolved value).
+        const l = await fn("A");
+        const r = await target("A");
         if (R.isFunction(l) && R.isFunction(r)) {
           // @ts-expect-error intended
-          expect(l("B")).toEqual(r("B"));
+          expect(await l("B")).toEqual(await r("B"));
         } else {
-          expect(fn("A")).toEqual(target("A"));
+          expect(l).toEqual(r);
         }
       } else {
         expect(fn).toBe(target);
