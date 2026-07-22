@@ -312,7 +312,7 @@ def _match_listener(
             return False
 
         if isinstance(matcher, re.Pattern) and isinstance(listener.raw, re.Pattern):
-            if matcher.pattern != listener.raw.pattern and matcher.flags != listener.raw.flags:
+            if matcher.pattern != listener.raw.pattern or matcher.flags != listener.raw.flags:
                 return False
         elif callable(matcher) and callable(listener.raw):
             if not is_same_function(matcher, listener.raw):
