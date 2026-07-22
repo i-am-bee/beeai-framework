@@ -27,8 +27,10 @@ from beeai_framework.backend import (
     UserMessage,
 )
 from beeai_framework.backend.types import ChatModelInput
+from beeai_framework.cache import SlidingCache
 from beeai_framework.context import RunContext
 from beeai_framework.errors import AbortError
+from beeai_framework.tools import tool
 from beeai_framework.utils import AbortSignal
 
 """
@@ -200,3 +202,57 @@ def test_chat_model_from(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("AZURE_API_VERSION", "version")
     azure_openai_chat_model = ChatModel.from_name("azure_openai:gpt-4o")
     assert isinstance(azure_openai_chat_model, AzureOpenAIChatModel)
+
+
+class FailThenFixDummyModel(ChatModel):
+    """Dummy model that returns invalid tool-call JSON on the first attempt,
+    then valid JSON on subsequent attempts. Used to verify that the cache
+    is invalidated on ChatModelToolCallError so retries hit the model again."""
+
+    model_id = "fail_then_fix_model"
+    # pyrefly: ignore [bad-override]
+    provider_id = "ollama"
+
+    def __init__(self, **kwargs: Any) -> None:
+        super().__init__(**kwargs)
+        self._attempt = 0
+
+    # pyrefly: ignore [bad-param-name-override]
+    async def _create(self, input: ChatModelInput, _: RunContext) -> ChatModelOutput:
+        self._attempt += 1
+        if self._attempt == 1:
+            return ChatModelOutput(output=[AssistantMessage('{"bad": "data"}')])
+        return ChatModelOutput(output=[AssistantMessage('{"name": "tool_add", "parameters": {"a": 1, "b": 2}}')])
+
+    # pyrefly: ignore [bad-param-name-override]
+    async def _create_stream(self, input: ChatModelInput, context: RunContext) -> AsyncGenerator[ChatModelOutput]:
+        raise NotImplementedError
+        yield  # pyrefly: ignore [invalid-yield]
+
+
+@tool()
+def tool_add(a: int, b: int) -> int:
+    """Add two numbers."""
+    return a + b
+
+
+@pytest.mark.asyncio
+@pytest.mark.unit
+async def test_cache_cleared_on_tool_call_error() -> None:
+    model = FailThenFixDummyModel(
+        cache=SlidingCache(size=10),
+        model_supports_tool_calling=False,
+    )
+
+    result = await model.run(
+        [UserMessage("add 1 and 2")],
+        tools=[tool_add],
+        tool_choice="required",
+        max_retries=3,
+    )
+
+    assert model._attempt == 2, (
+        f"Expected model to be called twice (initial + 1 retry), got {model._attempt} calls. "
+        "Cache was not cleared after ChatModelToolCallError."
+    )
+    assert result.get_tool_calls(), "Expected result to contain tool calls"
