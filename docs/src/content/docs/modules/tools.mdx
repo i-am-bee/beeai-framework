@@ -29,6 +29,8 @@ Ready-to-use tools that provide immediate functionality for common agent tasks:
 | [FileEdit](#file-edit) | Overwrite or search-and-replace a text file with a unified diff                                     |
 | [Glob](#glob)          | List files matching a glob pattern                                                                  |
 | [Grep](#grep)          | Recursively search files for a regex (uses ripgrep when available)                                  |
+| [PlivoSendMessage](#plivo) | Send an SMS text message to a phone number using Plivo                                          |
+| [PlivoMakeCall](#plivo)    | Place an outbound phone call using Plivo                                                         |
 
 ➕ [Request additional built-in tools](https://github.com/i-am-bee/beeai-framework/discussions)
 
@@ -1259,6 +1261,57 @@ The output shape is the same regardless of which backend ran — the `used_ripgr
 <Tip>
 Combine these tools with the [ACP Zed adapter](/integrations/acp-zed) to expose a coding agent inside the [Zed](https://zed.dev/) editor — file reads/writes route through Zed's unsaved buffers, shell commands open in Zed's terminal widget, all without changing your tool code.
 </Tip>
+
+<Heading level={3} id="plivo">Plivo SMS and voice tools</Heading>
+
+Use the Plivo tools to let an agent send SMS text messages and place outbound phone calls through the [Plivo](https://www.plivo.com/) cloud communications platform. `PlivoSendMessage` sends an SMS to a phone number, and `PlivoMakeCall` places a call that runs the answer XML hosted at a public URL when the call connects.
+
+Both tools read your Plivo credentials from the environment. Set `PLIVO_AUTH_ID` and `PLIVO_AUTH_TOKEN` (find them in the [Plivo console](https://console.plivo.com/)), and set `PLIVO_SRC` to the sender number or ID used for outgoing SMS. See the [Plivo API documentation](https://www.plivo.com/docs/) for details.
+
+<CodeGroup>
+
+```py Python [expandable]
+import asyncio
+
+from beeai_framework.tools.plivo.call import PlivoMakeCallTool, PlivoMakeCallToolInput
+from beeai_framework.tools.plivo.sms import PlivoSendMessageTool, PlivoSendMessageToolInput
+
+
+async def main() -> None:
+    sms = PlivoSendMessageTool()
+    sms_result = await sms.run(
+        PlivoSendMessageToolInput(to="+14150000001", text="Your order has shipped.")
+    )
+    print(sms_result.get_text_content())
+
+    call = PlivoMakeCallTool()
+    call_result = await call.run(
+        PlivoMakeCallToolInput(to="+14150000001", answer_url="https://example.com/answer.xml")
+    )
+    print(call_result.get_text_content())
+
+
+if __name__ == "__main__":
+    asyncio.run(main())
+```
+
+```ts TypeScript [expandable]
+import { PlivoSendMessageTool } from "beeai-framework/tools/plivo/sms";
+import { PlivoMakeCallTool } from "beeai-framework/tools/plivo/call";
+
+const sms = new PlivoSendMessageTool();
+const smsResult = await sms.run({ to: "+14150000001", text: "Your order has shipped." });
+console.info(smsResult.getTextContent());
+
+const call = new PlivoMakeCallTool();
+const callResult = await call.run({
+  to: "+14150000001",
+  answer_url: "https://example.com/answer.xml",
+});
+console.info(callResult.getTextContent());
+```
+
+</CodeGroup>
 
 ---
 
