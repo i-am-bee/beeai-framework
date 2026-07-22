@@ -64,7 +64,9 @@ describe("OpenAPI Tool", () => {
     const tool = new OpenAPITool({ openApiSchema });
 
     const serialized = await tool.serialize();
-    const deserialized = await OpenAPITool.fromSerialized(serialized);
+    const deserialized = await OpenAPITool.fromSerialized(serialized, {
+      allowFunctionDeserialization: true,
+    });
     verifyDeserialization(tool, deserialized);
   });
 });

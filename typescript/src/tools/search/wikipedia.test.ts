@@ -75,7 +75,9 @@ describe("Wikipedia", () => {
     });
     await instance.run({ query: "Prague" });
     const serialized = await instance.serialize();
-    const deserialized = await WikipediaTool.fromSerialized(serialized);
+    const deserialized = await WikipediaTool.fromSerialized(serialized, {
+      allowFunctionDeserialization: true,
+    });
     verifyDeserialization(instance, deserialized);
   });
 });

@@ -61,7 +61,9 @@ describe("Serializer", () => {
     },
   ])("Handles basics '%s'", async (value) => {
     const json = await Serializer.serialize(value);
-    const deserialized = await Serializer.deserialize(json);
+    const deserialized = await Serializer.deserialize(json, undefined, undefined, {
+      allowFunctionDeserialization: true,
+    });
 
     if (R.isFunction(value)) {
       expect(String(deserialized)).toStrictEqual(String(value));
@@ -119,7 +121,14 @@ describe("Serializer", () => {
     } as const;
 
     const serialized = await Serializer.serialize(inputs);
-    const deserialized: typeof inputs = await Serializer.deserialize(serialized);
+    const deserialized: typeof inputs = await Serializer.deserialize(
+      serialized,
+      undefined,
+      undefined,
+      {
+        allowFunctionDeserialization: true,
+      },
+    );
     expect(deserialized).toMatchInlineSnapshot(`
       {
         "a": [Function],
@@ -146,19 +155,37 @@ describe("Serializer", () => {
       verifyDeserialization(fn, target);
 
       if (R.isFunction(fn) && R.isFunction(target)) {
-        const l = fn("A");
-        const r = target("A");
-
+        // Await both sides before comparing: some of these functions are
+        // async, and comparing unresolved Promise objects with toEqual is
+        // structurally unreliable (Promises have no own enumerable
+        // properties, so the assertion's outcome can depend on timing
+        // rather than the actual resolved value).
+        const l = await fn("A");
+        const r = await target("A");
         if (R.isFunction(l) && R.isFunction(r)) {
           // @ts-expect-error intended
-          expect(l("B")).toEqual(r("B"));
+          expect(await l("B")).toEqual(await r("B"));
         } else {
-          expect(fn("A")).toEqual(target("A"));
+          expect(l).toEqual(r);
         }
       } else {
         expect(fn).toBe(target);
       }
     }
+  });
+
+  it("Rejects function deserialization by default (GHSA-phhm-7927-g88p)", async () => {
+    const fn = (arg: string) => arg;
+    const serialized = await Serializer.serialize(fn);
+
+    await expect(Serializer.deserialize(serialized)).rejects.toThrow(
+      /Deserializing functions is disabled by default/,
+    );
+
+    const deserialized = await Serializer.deserialize<typeof fn>(serialized, undefined, undefined, {
+      allowFunctionDeserialization: true,
+    });
+    expect(deserialized("hello")).toBe("hello");
   });
 
   it("Handles circular dependencies", async () => {
@@ -324,7 +351,9 @@ describe("Serializer", () => {
 
       for (let i = 0; i < 5; ++i) {
         const serialized = await Serializer.serialize(fn);
-        fn = await Serializer.deserialize(serialized);
+        fn = await Serializer.deserialize(serialized, undefined, undefined, {
+          allowFunctionDeserialization: true,
+        });
         expect(fn(3)).toBe(6);
       }
     });

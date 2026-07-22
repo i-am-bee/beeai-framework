@@ -34,7 +34,9 @@ describe("Langchain Tools", () => {
     });
 
     const serialized = await instance.serialize();
-    const deserialized = await LangChainTool.fromSerialized(serialized);
+    const deserialized = await LangChainTool.fromSerialized(serialized, {
+      allowFunctionDeserialization: true,
+    });
     verifyDeserialization(instance, deserialized, undefined, [], ["tool.schema"]);
   });
 });
