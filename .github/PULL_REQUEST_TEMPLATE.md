@@ -33,4 +33,3 @@ Closes: #
 
 #### Documentation
 - [ ] Documentation is updated
-- [ ] Embedme embeds code examples in docs. To update after edits, run: Python `mise docs:fix`
