@@ -58,6 +58,7 @@ This repository contains examples demonstrating the usage of the BeeAI Framework
 ## Tools
 
 - [`decorator.py`](/python/examples/tools/decorator.py): Tool creation using decorator
+- [`action_bound_governance.py`](/python/examples/tools/action_bound_governance.py): Tool-side governance checkpoint bound to a canonical action hash
 - [`duckduckgo.py`](/python/examples/tools/duckduckgo.py): DDG Search Tool for searching the web
 - [`openmeteo.py`](/python/examples/tools/openmeteo.py): Open-Meteo Tool for retrieving weather data
 - [`custom/xquik.py`](/python/examples/tools/custom/xquik.py): Xquik API tool for searching X posts
