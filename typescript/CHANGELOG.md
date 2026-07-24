@@ -1,5 +1,39 @@
 # Changelog
 
+## [0.1.30](https://github.com/i-am-bee/beeai-framework/compare/typescript_v0.1.29...typescript_v0.1.30) (2026-07-24)
+
+### ⚠ BREAKING CHANGES
+
+- **serializer:** function deserialization is opt-in, disabled by default.
+
+Signed-off-by: Saheb Sandhu <sahebsandhu@Sahebs-MacBook-Air.local>
+
+- fix(serializer): await async function results in deserialization test
+
+Comparing unresolved Promise objects with toEqual is structurally
+unreliable, since Promises have no own enumerable properties. Await
+both sides before comparing so the assertion checks actual resolved
+values, not raw Promise objects.
+
+Signed-off-by: Saheb Sandhu <sahebsandhu@Sahebs-MacBook-Air.local>
+
+### Features
+
+- **adapters:** upgrade LangChain packages to 1.x ([#1491](https://github.com/i-am-bee/beeai-framework/issues/1491)) ([3ee516a](https://github.com/i-am-bee/beeai-framework/commit/3ee516a0d85ab3ccd7f67e81ffb0c5c0c2d3ce6a)), closes [#1470](https://github.com/i-am-bee/beeai-framework/issues/1470)
+- upgrade MiniMax default model to M3 (with Python/TypeScript provider) ([#1416](https://github.com/i-am-bee/beeai-framework/issues/1416)) ([4900cf0](https://github.com/i-am-bee/beeai-framework/commit/4900cf06249d1f9c95aef033a2d153eaa046428b)), closes [#1462](https://github.com/i-am-bee/beeai-framework/issues/1462)
+
+### Bug Fixes
+
+- **adapters:** inline a2a data: URIs as base64 ([#1508](https://github.com/i-am-bee/beeai-framework/issues/1508)) ([1d5900c](https://github.com/i-am-bee/beeai-framework/commit/1d5900ceeaeacf89161493857a2d616996688edb))
+- **adapters:** resolve hardcoded modelId in LangChainEmbeddingModel ([#1501](https://github.com/i-am-bee/beeai-framework/issues/1501)) ([0902b9a](https://github.com/i-am-bee/beeai-framework/commit/0902b9ab12659074181f44270e4ef56f21eb3b7f))
+- **deps:** bump wikipedia to ^2.5.0 ([5da8ffd](https://github.com/i-am-bee/beeai-framework/commit/5da8ffde92aac1e4109e518e52de0a8844030770))
+- **deps:** pin vulnerable transitive TypeScript dependencies ([#1471](https://github.com/i-am-bee/beeai-framework/issues/1471)) ([#1515](https://github.com/i-am-bee/beeai-framework/issues/1515)) ([a20b658](https://github.com/i-am-bee/beeai-framework/commit/a20b65818df9c5517aee0bedd94f4af5efd92373))
+- **serializer:** disable function deserialization by default (GHSA-phhm-7927-g88p) ([#1551](https://github.com/i-am-bee/beeai-framework/issues/1551)) ([c3db2b4](https://github.com/i-am-bee/beeai-framework/commit/c3db2b4c8dff781fc5df84574d90a305c8c18e10))
+- **serializer:** prevent unsafe deserialization paths ([#1543](https://github.com/i-am-bee/beeai-framework/issues/1543)) ([04d1c2d](https://github.com/i-am-bee/beeai-framework/commit/04d1c2dd173b1550282ec4e96252363577370b6b))
+- **tools:** address small Python and TypeScript polish issues ([#1485](https://github.com/i-am-bee/beeai-framework/issues/1485)) ([7c98eba](https://github.com/i-am-bee/beeai-framework/commit/7c98ebae71f23cac2d787d1060e05b8ef180765f))
+- **tools:** clean up LLMTool prompt template ([#1483](https://github.com/i-am-bee/beeai-framework/issues/1483)) ([e94c3d1](https://github.com/i-am-bee/beeai-framework/commit/e94c3d1f2b1e1c52e81477673f58cc33b59cc105))
+- **workflows:** call Tavily API directly in competitive-analysis example ([678dccf](https://github.com/i-am-bee/beeai-framework/commit/678dccfaa958cd63c57edb9686849c2b8dca082d))
+
 ## [0.1.29](https://github.com/i-am-bee/beeai-framework/compare/typescript_v0.1.28...typescript_v0.1.29) (2026-05-05)
 
 ## [0.1.28](https://github.com/i-am-bee/beeai-framework/compare/typescript_v0.1.27...typescript_v0.1.28) (2026-03-24)
