@@ -1,3 +1,28 @@
+## python_v0.1.82 (2026-07-24)
+
+### Bug Fixes
+
+- **emitter**: off() with a compiled regex should only remove the matching listener (#1566)
+- **emitter**: match compiled regex anywhere in the event path (#1557)
+- **cache**: clear cache entry on ChatModelToolCallError (#1555)
+- **adapters**: raise a clear error for Groq embeddings (unsupported by Groq API) (#1536)
+- **adapters**: default OpenAIServer to loopback and warn on unauthenticated bind (#1516) (#1531)
+- **adapters**: inline a2a data: URIs as base64 (#1508)
+- **memory**: enforce token capacity in TokenMemory (#1506)
+- **python**: resolve pyrefly and ruff errors in merged tests (#1522)
+- **internals**: return after removing item in remove_by_reference (#1509)
+- **adapters**: use valid Bedrock default model ID instead of Groq alias (#1518)
+- use Python join syntax in SandboxTool error reporting (#1486)
+- **deps**: bump vulnerable Python dependencies (#1471) (#1511)
+- raise ValueError instead of returning it in to_any_model (#1482)
+- **tools**: address small Python and TypeScript polish issues (#1485)
+
+### Features
+
+- **tools**: add Xquik search tool (#1550)
+- upgrade MiniMax default model to M3 (with Python/TypeScript provider) (#1416)
+- allow to set `reasoning_effort` and capture reasoning content (#1447)
+
 ## python_v0.1.81 (2026-05-28)
 
 ### Bug Fixes
