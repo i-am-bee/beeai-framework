@@ -32,6 +32,7 @@ try:
     from mcp.server.fastmcp.prompts.base import PromptArgument
     from mcp.server.fastmcp.tools.base import Tool as MCPNativeTool
     from mcp.server.lowlevel.server import LifespanResultT
+    from mcp.server.streamable_http_manager import DEFAULT_MAX_REQUEST_BODY_SIZE
     from mcp.server.transport_security import TransportSecuritySettings
     from mcp.types import CallToolResult as MCPCallToolResult
     from mcp.types import TextContent as MCPTextContent
@@ -39,7 +40,6 @@ except ModuleNotFoundError as e:
     raise ModuleNotFoundError(
         "Optional module [mcp] not found.\nRun 'pip install \"beeai-framework[mcp]\"' to install."
     ) from e
-
 
 from beeai_framework.serve.server import Server
 from beeai_framework.utils import ModelLike
@@ -65,6 +65,7 @@ class MCPSettings(mcp_server.Settings[LifespanResultT]):
     # StreamableHTTP settings
     json_response: bool = Field(False)
     stateless_http: bool = Field(False)
+    max_request_body_size: int = Field(DEFAULT_MAX_REQUEST_BODY_SIZE)
 
     # resource settings
     warn_on_duplicate_resources: bool = Field(True)
