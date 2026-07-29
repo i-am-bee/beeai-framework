@@ -12,7 +12,12 @@ const llm = new MiniMaxChatModel(
   // {},
   // {
   //   apiKey: "MINIMAX_API_KEY",
-  //   baseURL: "https://api.minimax.io/v1",
+  //   // Pick a regional gateway by name instead of hard-coding the URL:
+  //   //   "global" -> https://api.minimax.io/v1 (default)
+  //   //   "cn"     -> https://api.minimaxi.com/v1
+  //   region: "global",
+  //   // ...or override the base URL directly (takes precedence over region):
+  //   // baseURL: "https://api.minimax.io/v1",
   // },
 );
 

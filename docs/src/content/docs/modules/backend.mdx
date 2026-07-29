@@ -37,7 +37,7 @@ The following table depicts supported providers. Each provider requires specific
 | Google Gemini  |  ✅  | ✅        | GEMINI_CHAT_MODEL<br/>**GEMINI_API_KEY**<br/>GEMINI_API_HEADERS |
 | MistralAI      |  ✅  | ✅        | MISTRALAI_CHAT_MODEL<br/>MISTRALAI_EMBEDDING_MODEL<br />**MISTRALAI_API_KEY**<br />MISTRALAI_API_BASE |
 | Transformers   |  ✅  | ✅        | TRANSFORMERS_CHAT_MODEL<br/>HF_TOKEN|
-| MiniMax        |  ✅  | ❌        | MINIMAX_CHAT_MODEL<br/>**MINIMAX_API_KEY**<br/>MINIMAX_API_BASE<br/>MINIMAX_API_HEADERS |
+| MiniMax        |  ✅  | ❌        | MINIMAX_CHAT_MODEL<br/>**MINIMAX_API_KEY**<br/>MINIMAX_API_BASE<br/>MINIMAX_API_REGION<br/>MINIMAX_API_HEADERS |
 
 <Tip>
 If you don't see your provider raise an issue [here](https://github.com/i-am-bee/beeai-framework/issues).
@@ -47,6 +47,10 @@ or [TypeScript](https://github.com/i-am-bee/beeai-framework/blob/main/typescript
 
 <Note>
 	Google Gemini, MistralAI, and Transformers are supported in Python only. The Transformers chat model does not support tool calling.
+</Note>
+
+<Note>
+	MiniMax serves the same API from two regional gateways. Select one with `MINIMAX_API_REGION` (or the `region` option): `global` (default, `https://api.minimax.io/v1`) or `cn` (`https://api.minimaxi.com/v1`). An explicit `MINIMAX_API_BASE` / `base_url` always takes precedence, so you no longer have to look up and type the regional URL by hand.
 </Note>
 
 ---
