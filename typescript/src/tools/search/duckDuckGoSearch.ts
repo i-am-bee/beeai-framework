@@ -3,7 +3,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { SearchOptions, search as rawDDGSearch, SafeSearchType } from "duck-duck-scrape";
+import type { RequestOptions, SearchOptions } from "ddg-kit";
+import { search as rawDDGSearch, SafeSearchType } from "ddg-kit";
 import { Options as ThrottleOptions } from "p-throttle";
 import {
   SearchToolOptions,
@@ -12,27 +13,25 @@ import {
   SearchToolRunOptions,
 } from "./base.js";
 import { ToolEmitter, Tool, ToolInput } from "@/tools/base.js";
-import { HeaderGenerator } from "header-generator";
-import type { NeedleOptions } from "needle";
 import { z } from "zod";
 import { Cache } from "@/cache/decoratorCache.js";
 import { RunContext } from "@/context.js";
 import { paginate } from "@/internals/helpers/paginate.js";
 import { Emitter } from "@/emitter/emitter.js";
-import { getEnv, parseEnv } from "@/internals/env.js";
+import { getEnv } from "@/internals/env.js";
 
 export { SafeSearchType as DuckDuckGoSearchToolSearchType };
 
 export interface DuckDuckGoSearchToolOptions extends SearchToolOptions {
   search?: SearchOptions;
   throttle?: ThrottleOptions | false;
-  httpClientOptions?: NeedleOptions;
+  httpClientOptions?: RequestOptions;
   maxResults: number;
 }
 
 export interface DuckDuckGoSearchToolRunOptions extends SearchToolRunOptions {
   search?: SearchOptions;
-  httpClientOptions?: NeedleOptions;
+  httpClientOptions?: RequestOptions;
 }
 
 export interface DuckDuckGoSearchToolResult extends SearchToolResult {}
@@ -85,7 +84,6 @@ export class DuckDuckGoSearchTool extends Tool<
       maxResults: options?.maxResults ?? 15,
       httpClientOptions: {
         proxy: getEnv("BEEAI_DDG_TOOL_PROXY"),
-        rejectUnauthorized: parseEnv.asBoolean("BEEAI_DDG_TOOL_PROXY_VERIFY", true),
         ...options?.httpClientOptions,
       },
     });
@@ -115,7 +113,6 @@ export class DuckDuckGoSearchTool extends Tool<
     options: Partial<DuckDuckGoSearchToolRunOptions>,
     run: RunContext<this>,
   ) {
-    const headers = new HeaderGenerator().getHeaders();
     const client = await this._createClient();
 
     const results = await paginate({
@@ -130,16 +127,9 @@ export class DuckDuckGoSearchTool extends Tool<
             offset: cursor,
           },
           {
-            headers,
-            user_agent: headers["user-agent"],
             ...this.options?.httpClientOptions,
             ...options?.httpClientOptions,
             signal: run.signal,
-            uri_modifier: (rawUrl) => {
-              const url = new URL(rawUrl);
-              url.searchParams.delete("ss_mkt");
-              return url.toString();
-            },
           },
         );
 
