@@ -221,6 +221,13 @@ line-length = 120
 "examples/**/*.py" = ["E501"]
 "beeai_framework/agents/experimental/**/*.py" = ["E501"]
 
+[tool.ruff.lint.pydocstyle]
+convention = "google"
+
+[tool.ruff.lint.flake8-tidy-imports]
+# Disallow all relative imports, "parents" | "all"
+ban-relative-imports = "all"
+
 [tool.pyrefly]
 project-excludes = [
     "**/build/",
@@ -234,13 +241,6 @@ ignore-missing-imports = [
     "llama_index",
     "llama_index.*",
 ]
-
-[tool.ruff.lint.pydocstyle]
-convention = "google"
-
-[tool.ruff.lint.flake8-tidy-imports]
-# Disallow all relative imports, "parents" | "all"
-ban-relative-imports = "all"
 
 [[tool.poetry.source]]
 name = "pytorch-cpu"
