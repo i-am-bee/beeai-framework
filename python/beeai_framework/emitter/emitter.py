@@ -281,12 +281,12 @@ class Emitter:
 
     async def clone(self) -> "Emitter":
         cloned = Emitter(
-            str(self._group_id),
-            self.namespace.copy(),
-            self.creator if self.creator else None,
-            self.context.copy(),
-            self.trace.model_copy() if self.trace else None,
-            self._events.copy(),
+            group_id=self._group_id,
+            namespace=self.namespace.copy(),
+            creator=self.creator,
+            context=self.context.copy(),
+            trace=self.trace.model_copy() if self.trace else None,
+            events=self._events.copy(),
         )
         for listener in self._listeners:
             cloned.on(listener.raw, listener.callback, listener.options.model_copy() if listener.options else None)
