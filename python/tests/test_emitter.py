@@ -64,6 +64,26 @@ async def test_clone() -> None:
     assert clone.events is not emitter.events
 
 
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_clone_preserves_unset_group_id() -> None:
+    emitter = Emitter(namespace=["namespace"])
+    assert emitter._group_id is None
+
+    clone = await emitter.clone()
+
+    assert clone._group_id is None
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_clone_preserves_set_group_id() -> None:
+    emitter = Emitter(group_id="test_group", namespace=["namespace"])
+    clone = await emitter.clone()
+
+    assert clone._group_id == "test_group"
+
+
 class TestEventsPropagation:
     @pytest.mark.unit
     @pytest.mark.asyncio
