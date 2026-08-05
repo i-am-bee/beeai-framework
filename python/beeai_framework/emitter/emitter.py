@@ -292,7 +292,7 @@ class Emitter:
 
     async def clone(self) -> "Emitter":
         cloned = Emitter(
-            str(self._group_id),
+            self._group_id,
             self.namespace.copy(),
             self.creator if self.creator else None,
             self.context.copy(),
