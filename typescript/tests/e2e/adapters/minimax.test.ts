@@ -6,7 +6,12 @@
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { BackendProviders } from "@/backend/constants.js";
 import { MiniMaxChatModel } from "@/adapters/minimax/backend/chat.js";
-import { MiniMaxClient } from "@/adapters/minimax/backend/client.js";
+import {
+  MiniMaxClient,
+  MINIMAX_API_BASE,
+  MINIMAX_API_BASE_CN,
+  resolveMiniMaxBaseURL,
+} from "@/adapters/minimax/backend/client.js";
 
 describe("MiniMax Provider Registration", () => {
   it("should be registered in BackendProviders", () => {
@@ -96,5 +101,42 @@ describe("MiniMaxChatModel", () => {
       },
     );
     expect(model).toBeInstanceOf(MiniMaxChatModel);
+  });
+});
+
+describe("MiniMax regional endpoints", () => {
+  it("should expose distinct global and CN endpoints", () => {
+    expect(MINIMAX_API_BASE).toBe("https://api.minimax.io/v1");
+    expect(MINIMAX_API_BASE_CN).toBe("https://api.minimaxi.com/v1");
+    expect(MINIMAX_API_BASE).not.toBe(MINIMAX_API_BASE_CN);
+  });
+
+  it("should resolve global region variants", () => {
+    expect(resolveMiniMaxBaseURL("global")).toBe(MINIMAX_API_BASE);
+    expect(resolveMiniMaxBaseURL("global_en")).toBe(MINIMAX_API_BASE);
+  });
+
+  it("should resolve CN region variants", () => {
+    expect(resolveMiniMaxBaseURL("cn")).toBe(MINIMAX_API_BASE_CN);
+    expect(resolveMiniMaxBaseURL("cn_zh")).toBe(MINIMAX_API_BASE_CN);
+  });
+
+  it("should be case-insensitive and trim whitespace", () => {
+    expect(resolveMiniMaxBaseURL("  CN  ")).toBe(MINIMAX_API_BASE_CN);
+  });
+
+  it("should default to the global endpoint when region is missing", () => {
+    expect(resolveMiniMaxBaseURL()).toBe(MINIMAX_API_BASE);
+    expect(resolveMiniMaxBaseURL("")).toBe(MINIMAX_API_BASE);
+  });
+
+  it("should throw for an unknown region", () => {
+    expect(() => resolveMiniMaxBaseURL("mars")).toThrowError(/Unknown MiniMax region/);
+  });
+
+  it("should build a client for the CN region without throwing", () => {
+    const client = new MiniMaxClient({ apiKey: "test-key", region: "cn" });
+    expect(client).toBeDefined();
+    expect(client.instance).toBeDefined();
   });
 });
