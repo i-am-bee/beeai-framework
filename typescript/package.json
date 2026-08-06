@@ -306,7 +306,7 @@
     "typescript": "^5.9.3",
     "typescript-eslint": "^8.48.0",
     "vite-tsconfig-paths": "^5.1.4",
-    "vitest": "^2.1.9",
+    "vitest": "^3.2.6",
     "yaml": "^2.8.4"
   },
   "resolutions": {
@@ -318,7 +318,7 @@
     "undici": "^6.27.0",
     "express-rate-limit": "^8.5.2",
     "path-to-regexp": "^8.4.2",
-    "picomatch": "^4.0.4",
+    "picomatch": "^4.0.5",
     "lodash": "^4.18.1",
     "lodash-es": "^4.18.1",
     "js-yaml": "^4.2.0",
