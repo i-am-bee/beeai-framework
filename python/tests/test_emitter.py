@@ -64,6 +64,26 @@ async def test_clone() -> None:
     assert clone.events is not emitter.events
 
 
+async def test_clone_without_group_id() -> None:
+    emitter = Emitter(namespace=["app"])
+    assert emitter._group_id is None
+
+    clone = await emitter.clone()
+    assert clone._group_id is None
+    assert clone._group_id is emitter._group_id
+
+    event_meta = None
+
+    async def capture(data, event):
+        nonlocal event_meta
+        event_meta = event
+
+    clone.on("*", capture)
+    await clone.emit("test", 1)
+    assert event_meta is not None
+    assert event_meta.group_id is None
+
+
 class TestEventsPropagation:
     @pytest.mark.unit
     @pytest.mark.asyncio
