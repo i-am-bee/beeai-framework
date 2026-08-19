@@ -23,10 +23,7 @@ class EchoRunnable extends Runnable<RunnableOutput> {
   run(input: UserMessage[], options?: RunnableOptions) {
     return runnableEntry(this, input, options, async (_context, runInput) => {
       return new RunnableOutput({
-        output: [
-          ...runInput,
-          new AssistantMessage(`echoed ${runInput.length} message(s)`),
-        ],
+        output: [...runInput, new AssistantMessage(`echoed ${runInput.length} message(s)`)],
       });
     });
   }

@@ -39,7 +39,9 @@ export class RunnableOutput {
   // Allow arbitrary extra fields, mirroring Python's `extra="allow"`.
   [key: string]: any;
 
-  constructor(input: { output: AnyMessage[]; context?: Record<string, any> } & Record<string, any>) {
+  constructor(
+    input: { output: AnyMessage[]; context?: Record<string, any> } & Record<string, any>,
+  ) {
     const { output, context, ...extra } = input;
     this.output = output;
     this.context = context ?? {};
@@ -113,7 +115,11 @@ export type AnyRunnable = Runnable<any>;
  * }
  * ```
  */
-export function runnableEntry<I extends Runnable<R>, R extends RunnableOutput, M extends AnyMessage = AnyMessage>(
+export function runnableEntry<
+  I extends Runnable<R>,
+  R extends RunnableOutput,
+  M extends AnyMessage = AnyMessage,
+>(
   instance: I,
   input: M[],
   options: RunnableOptions | undefined,
