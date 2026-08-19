@@ -570,6 +570,7 @@ class ChatModel(Runnable[ChatModelOutput]):
                             {"tempMessage": True},
                         )
                     )
+                    await cache_entry.delete()
                 elif self.retry_on_empty_response and isinstance(e, EmptyChatModelResponseError):
                     model_input.messages = model_input.messages.copy()
                     model_input.messages.append(AssistantMessage("", {"tempMessage": True}))

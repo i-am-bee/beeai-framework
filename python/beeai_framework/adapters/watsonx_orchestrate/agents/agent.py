@@ -1,10 +1,12 @@
 # Copyright 2025 © BeeAI a Series of LF Projects, LLC
 # SPDX-License-Identifier: Apache-2.0
 
+import json
+import time
 import uuid
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
-from typing import Literal, Unpack
+from typing import Literal, NamedTuple, Unpack
 
 import httpx
 
@@ -14,6 +16,10 @@ from beeai_framework.adapters.watsonx_orchestrate._utils import (
     beeai_message_to_watsonx_orchestrate_message,
     map_watsonx_orchestrate_agent_input_to_bee_messages,
     watsonx_orchestrate_message_to_beeai_message,
+)
+from beeai_framework.adapters.watsonx_orchestrate.agents.events import (
+    WatsonxOrchestrateAgentUpdateEvent,
+    watsonx_orchestrate_agent_event_types,
 )
 from beeai_framework.adapters.watsonx_orchestrate.agents.types import WatsonxOrchestrateAgentOutput
 from beeai_framework.agents import AgentOptions, BaseAgent
@@ -26,6 +32,38 @@ from beeai_framework.runnable import runnable_entry
 from beeai_framework.utils.dicts import exclude_none
 from beeai_framework.utils.lists import flatten
 from beeai_framework.utils.strings import to_safe_word
+
+
+class _SSEDelta(NamedTuple):
+    content: str
+    finish_reason: str | None
+    response_id: str | None
+    model: str | None
+
+
+def _parse_chunk(raw: str) -> _SSEDelta | None:
+    """Parse a single OpenAI-compatible SSE chat-completion payload into its content delta.
+
+    Returns ``None`` when the payload is not a JSON object, and defensively skips any
+    choices/deltas that are not the expected dict/list shapes, so a malformed or unexpected
+    chunk is ignored rather than raising.
+    """
+    try:
+        chunk = json.loads(raw)
+    except json.JSONDecodeError:
+        return None
+    if not isinstance(chunk, dict):
+        return None
+    content_parts: list[str] = []
+    finish_reason: str | None = None
+    choices = chunk.get("choices")
+    for choice in choices if isinstance(choices, list) else []:
+        if not isinstance(choice, dict):
+            continue
+        delta = choice.get("delta")
+        content_parts.append((delta.get("content") if isinstance(delta, dict) else None) or "")
+        finish_reason = choice.get("finish_reason") or finish_reason
+    return _SSEDelta("".join(content_parts), finish_reason, chunk.get("id"), chunk.get("model"))
 
 
 class WatsonxOrchestrateAgent(BaseAgent[WatsonxOrchestrateAgentOutput]):
@@ -57,25 +95,69 @@ class WatsonxOrchestrateAgent(BaseAgent[WatsonxOrchestrateAgentOutput]):
     async def run(
         self, input: str | list[str] | AnyMessage | list[AnyMessage] | None, /, **kwargs: Unpack[AgentOptions]
     ) -> WatsonxOrchestrateAgentOutput:
-        async def handler(_: RunContext) -> WatsonxOrchestrateAgentOutput:
+        async def handler(context: RunContext) -> WatsonxOrchestrateAgentOutput:
             async with self._create_client() as client:
                 input_messages = map_watsonx_orchestrate_agent_input_to_bee_messages(input)
                 await self.memory.add_many(input_messages)
 
-                # TODO: support streaming
+                content = ""
+                finish_reason = "stop"
+                response_id = str(uuid.uuid4())
+                model_name = self._agent_id
 
-                response = await client.post(
+                async with client.stream(
+                    "POST",
                     f"{self._agent_id}/chat/completions",
                     json=ChatCompletionRequestBody(
                         messages=flatten(
                             [beeai_message_to_watsonx_orchestrate_message(msg) for msg in self.memory.messages]
                         ),
-                        stream=False,
+                        stream=True,
                     ).model_dump(),
-                )
-                response.raise_for_status()
+                ) as streaming_response:
+                    if streaming_response.is_error:
+                        # Read the body so the server's error detail isn't lost when raising.
+                        await streaming_response.aread()
+                    streaming_response.raise_for_status()
 
-                response_data = ChatCompletionResponse.model_validate(response.json())
+                    async for line in streaming_response.aiter_lines():
+                        line = line.strip()
+                        if not line or not line.startswith("data:"):
+                            continue
+                        # SSE allows an optional single space after "data:".
+                        raw = line[5:].lstrip(" ").strip()
+                        if raw == "[DONE]":
+                            break
+                        delta = _parse_chunk(raw)
+                        if delta is None:
+                            continue
+                        response_id = delta.response_id or response_id
+                        model_name = delta.model or model_name
+                        if delta.finish_reason:
+                            finish_reason = delta.finish_reason
+                        if delta.content:
+                            content += delta.content
+                            await context.emitter.emit(
+                                "update",
+                                WatsonxOrchestrateAgentUpdateEvent(delta=delta.content, content=content),
+                            )
+
+                response_data = ChatCompletionResponse(
+                    id=response_id,
+                    object="thread.message.delta",
+                    created=int(time.time()),
+                    model=model_name,
+                    choices=[
+                        watsonx_orchestrate_api.ChatCompletionChoice(
+                            index=0,
+                            message=watsonx_orchestrate_api.ChatMessageResponse(
+                                role="assistant",
+                                content=content,
+                            ),
+                            finish_reason=finish_reason,
+                        )
+                    ],
+                )
                 result = watsonx_orchestrate_message_to_beeai_message(
                     watsonx_orchestrate_api.ChatMessage(
                         role=response_data.choices[-1].message.role,
@@ -129,6 +211,7 @@ class WatsonxOrchestrateAgent(BaseAgent[WatsonxOrchestrateAgentOutput]):
         return Emitter.root().child(
             namespace=["watsonx_orchestrate", "agent", to_safe_word(self._name)],
             creator=self,
+            events=watsonx_orchestrate_agent_event_types,
         )
 
     @asynccontextmanager
