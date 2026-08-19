@@ -21,7 +21,7 @@ export function cosineSimilarity(vecA: number[], vecB: number[]): number {
 }
 
 export function cosineSimilarityMatrix(matrixA: number[][], matrixB: number[][]): number[][] {
-  if ((matrixA[0]?.length ?? 0) !== (matrixA[0]?.length ?? 0)) {
+  if ((matrixA[0]?.length ?? 0) !== (matrixB[0]?.length ?? 0)) {
     throw new ValueError("Matrices must have the same number of columns.");
   }
 
