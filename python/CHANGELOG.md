@@ -1,3 +1,17 @@
+## python_v0.1.83 (2026-08-19)
+
+### Bug Fixes
+
+- **emitter**: keep an unset group_id unset when cloning (#1582)
+- **adapters**: support Responses API text content parts (#1591)
+- **adapters**: add default for `max_request_body_size` field added in mcp 1.29.0 (#1573)
+- **emitter**: propagate errors from emitter (#1579)
+
+### Features
+
+- **adapters**: propagate error context through `_meta` on MCP tool errors (#1577)
+- **adapters**: add streaming support to WatsonxOrchestrateAgent (#1505)
+
 ## python_v0.1.82 (2026-07-24)
 
 ### Bug Fixes

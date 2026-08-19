@@ -1,6 +1,6 @@
 # Copyright 2025 © BeeAI a Series of LF Projects, LLC
 # SPDX-License-Identifier: Apache-2.0
-from typing import Any, TypeAlias
+from typing import Any, Literal, TypeAlias
 
 from pydantic import BaseModel, Field
 
@@ -12,13 +12,18 @@ class BaseEvent(BaseModel):
 # request
 
 
+class ResponsesRequestInputTextContent(BaseModel):
+    type: Literal["input_text"] = Field("input_text", description="The type of the content part.")
+    text: str = Field(..., description="The text content.")
+
+
 class ResponsesRequestInputMessage(BaseEvent):
     role: str = Field(
         ...,
         description="The role of the message input. One of 'user', 'assistant', 'system', or 'developer'.",
         pattern="^(user|assistant|developer|system)$",
     )
-    content: str | None = Field(
+    content: str | list[ResponsesRequestInputTextContent] | None = Field(
         None,
         description="Input to the model, used to generate a response. Can also contain previous assistant responses.",
     )
