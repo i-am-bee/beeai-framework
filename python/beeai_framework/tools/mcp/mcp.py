@@ -98,7 +98,11 @@ class MCPTool(Tool[BaseModel, ToolRunOptions, JSONToolOutput]):
                 data_result = result.content
 
         if result.isError:
-            raise ToolError(to_json(data_result, indent=4, sort_keys=False))
+            error_context = (result.meta or {}).get("error_context")
+            raise ToolError(
+                to_json(data_result, indent=4, sort_keys=False),
+                context=error_context if isinstance(error_context, dict) else None,
+            )
 
         return JSONToolOutput(data_result)
 

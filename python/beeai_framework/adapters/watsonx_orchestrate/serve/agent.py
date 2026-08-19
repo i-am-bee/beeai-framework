@@ -37,6 +37,17 @@ class WatsonxOrchestrateServerAgent(ABC, Generic[T]):
         # pyrefly: ignore [missing-attribute]
         response = await cloned_agent.run(input)
 
+        # Other agent types may not expose a "raw" dict with choices, so verify
+        # the structure defensively before reading the finish_reason.
+        finish_reason = "stop"
+        raw = getattr(response, "raw", {})
+        if isinstance(raw, dict):
+            raw_choices = raw.get("choices")
+            if isinstance(raw_choices, list) and raw_choices:
+                first_choice = raw_choices[0]
+                if isinstance(first_choice, dict) and first_choice.get("finish_reason"):
+                    finish_reason = first_choice["finish_reason"]
+
         return watsonx_orchestrate_api.ChatCompletionResponse(
             id=str(uuid.uuid4()),
             object="thread.message.delta",
@@ -48,7 +59,7 @@ class WatsonxOrchestrateServerAgent(ABC, Generic[T]):
                     message=watsonx_orchestrate_api.ChatMessageResponse(
                         role="assistant", content=response.last_message.text
                     ),
-                    finish_reason="stop",  # TODO
+                    finish_reason=finish_reason,
                 )
             ],
         )
