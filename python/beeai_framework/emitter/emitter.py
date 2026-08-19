@@ -206,7 +206,7 @@ class Emitter:
             matchers.append(lambda _: True)
         elif isinstance(matcher, re.Pattern):
             match_nested = True if match_nested is None else match_nested
-            matchers.append(lambda event: matcher.match(event.path) is not None)
+            matchers.append(lambda event: matcher.search(event.path) is not None)
         elif callable(matcher):
             match_nested = False if match_nested is None else match_nested
             matchers.append(matcher)
@@ -234,12 +234,23 @@ class Emitter:
         return lambda event: all(match_fn(event) for match_fn in matchers)
 
     async def emit(self, name: str, value: Any) -> None:
+        """Emit event, preserving the original error context on failure."""
+        event = None
         try:
             assert_valid_name(name)
             event = self._create_event(name)
             await self._invoke(value, event)
         except Exception as e:
-            raise EmitterError.ensure(e)
+            event_id = event.path if event else name
+            if original_error := getattr(value, "error", None):
+                message = f"Error during event emission. Event: {event_id}. Original error: {original_error}"
+            else:
+                message = f"Error during event emission. Event: {event_id}"
+            raise EmitterError.ensure(
+                e,
+                message=message,
+                event=event,
+            )
 
     async def _invoke(self, data: Any, event: EventMeta) -> None:
         async def run(ln: Listener) -> Any:
@@ -281,12 +292,12 @@ class Emitter:
 
     async def clone(self) -> "Emitter":
         cloned = Emitter(
-            str(self._group_id),
-            self.namespace.copy(),
-            self.creator if self.creator else None,
-            self.context.copy(),
-            self.trace.model_copy() if self.trace else None,
-            self._events.copy(),
+            group_id=self._group_id,
+            namespace=self.namespace.copy(),
+            creator=self.creator,
+            context=self.context.copy(),
+            trace=self.trace.model_copy() if self.trace else None,
+            events=self._events.copy(),
         )
         for listener in self._listeners:
             cloned.on(listener.raw, listener.callback, listener.options.model_copy() if listener.options else None)
@@ -312,7 +323,7 @@ def _match_listener(
             return False
 
         if isinstance(matcher, re.Pattern) and isinstance(listener.raw, re.Pattern):
-            if matcher.pattern != listener.raw.pattern and matcher.flags != listener.raw.flags:
+            if matcher.pattern != listener.raw.pattern or matcher.flags != listener.raw.flags:
                 return False
         elif callable(matcher) and callable(listener.raw):
             if not is_same_function(matcher, listener.raw):
