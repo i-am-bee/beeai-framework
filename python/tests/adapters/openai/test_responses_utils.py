@@ -47,6 +47,23 @@ def test_none_content_defaults_to_empty_string() -> None:
 
 
 @pytest.mark.unit
+def test_input_text_content_parts_are_converted_to_message_text_content() -> None:
+    msg = ResponsesRequestInputMessage(
+        role="user",
+        content=[
+            {"type": "input_text", "text": "hello"},
+            {"type": "input_text", "text": " world"},
+        ],
+    )
+    result = openai_input_to_beeai_message(msg)
+
+    assert isinstance(result, UserMessage)
+    text_parts = [part for part in result.content if isinstance(part, MessageTextContent)]
+    assert [part.text for part in text_parts] == ["hello", " world"]
+    assert result.text == "hello world"
+
+
+@pytest.mark.unit
 def test_openai_input_to_beeai_message_invalid_role() -> None:
     msg = ResponsesRequestInputMessage.model_construct(role="unknown", content="x")
 
