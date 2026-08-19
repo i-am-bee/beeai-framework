@@ -32,6 +32,7 @@ try:
     from mcp.server.fastmcp.prompts.base import PromptArgument
     from mcp.server.fastmcp.tools.base import Tool as MCPNativeTool
     from mcp.server.lowlevel.server import LifespanResultT
+    from mcp.server.streamable_http_manager import DEFAULT_MAX_REQUEST_BODY_SIZE
     from mcp.server.transport_security import TransportSecuritySettings
     from mcp.types import CallToolResult as MCPCallToolResult
     from mcp.types import TextContent as MCPTextContent
@@ -39,7 +40,6 @@ except ModuleNotFoundError as e:
     raise ModuleNotFoundError(
         "Optional module [mcp] not found.\nRun 'pip install \"beeai-framework[mcp]\"' to install."
     ) from e
-
 
 from beeai_framework.serve.server import Server
 from beeai_framework.utils import ModelLike
@@ -65,6 +65,7 @@ class MCPSettings(mcp_server.Settings[LifespanResultT]):
     # StreamableHTTP settings
     json_response: bool = Field(False)
     stateless_http: bool = Field(False)
+    max_request_body_size: int = Field(DEFAULT_MAX_REQUEST_BODY_SIZE)
 
     # resource settings
     warn_on_duplicate_resources: bool = Field(True)
@@ -169,7 +170,16 @@ def _tool_factory(
 ) -> MCPNativeTool:
     async def run(**kwargs: Any) -> MCPCallToolResult:
         cloned_tool = await tool.clone()
-        output: ToolOutput = await cloned_tool.run(kwargs)
+        try:
+            output: ToolOutput = await cloned_tool.run(kwargs)
+        except Exception as e:
+            error_context = getattr(e, "context", None) or {}
+            meta = {"error_context": error_context} if error_context else None
+            return MCPCallToolResult(
+                content=[MCPTextContent(type="text", text=f"Error executing tool {tool.name}: {e}")],
+                isError=True,
+                _meta=meta,
+            )
 
         return MCPCallToolResult(
             content=[MCPTextContent(type="text", text=output.get_text_content())],
@@ -195,7 +205,9 @@ def _tool_factory(
         # The FastMCP server allows either returning a structured output or a message. We want to support both.
         # Based on https://github.com/modelcontextprotocol/python-sdk
         # ... return a tuple of (content, structured_data)
-        lambda result: (result.content, result.structuredContent),
+        # Error results are passed through as CallToolResult so the lowlevel server
+        # preserves isError and _meta (the tuple path reconstructs with isError=False).
+        lambda result: result if result.isError else (result.content, result.structuredContent),
     )
 
     return mcp_tool

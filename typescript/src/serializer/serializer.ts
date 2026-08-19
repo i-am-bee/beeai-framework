@@ -3,6 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import { AsyncLocalStorage } from "node:async_hooks";
 import * as R from "remeda";
 import { Serializable, SerializableClass } from "@/internals/serializable.js";
 import { AnyConstructable, ClassConstructor, NamedFunction } from "@/internals/types.js";
@@ -35,6 +36,20 @@ import { ZodType } from "zod";
 import { toJsonSchema } from "@/internals/helpers/schema.js";
 import { createAbortController } from "@/internals/helpers/cancellation.js";
 import { hasMinLength } from "@/internals/helpers/array.js";
+
+/**
+ * Function deserialization executes the saved source string via the
+ * `Function()` constructor, which means it can run arbitrary code if the
+ * data being deserialized comes from an untrusted source. It is therefore
+ * disabled by default and must be explicitly opted into per-call via
+ * `{ allowFunctionDeserialization: true }`, scoped using AsyncLocalStorage
+ * so it doesn't leak across concurrent/unrelated deserialize() calls.
+ */
+const functionDeserializationStorage = new AsyncLocalStorage<boolean>();
+
+export function isFunctionDeserializationAllowed(): boolean {
+  return functionDeserializationStorage.getStore() ?? false;
+}
 
 export interface SerializeFactory<A = unknown, B = unknown> {
   ref: ClassConstructor<A> | NamedFunction<A>;
@@ -224,10 +239,21 @@ export class Serializer {
     raw: string,
     extraClasses?: SerializableClass<unknown>[],
     keepPlain?: boolean,
+    options?: { allowFunctionDeserialization?: boolean },
+  ): Promise<RootNode<T>> {
+    return functionDeserializationStorage.run(
+      options?.allowFunctionDeserialization ?? false,
+      async () => Serializer._deserializeWithMetaInner<T>(raw, extraClasses, keepPlain),
+    );
+  }
+
+  private static async _deserializeWithMetaInner<T = any>(
+    raw: string,
+    extraClasses?: SerializableClass<unknown>[],
+    keepPlain?: boolean,
   ): Promise<RootNode<T>> {
     keepPlain = keepPlain ?? false;
     extraClasses?.forEach((ref) => Serializer.registerSerializable(ref));
-
     const output = Serializer._createOutputBuilder<RootNode<T>>();
     const instances = new Map<string, unknown>();
 
@@ -292,8 +318,9 @@ export class Serializer {
     raw: string,
     extraClasses?: SerializableClass<unknown>[],
     keepPlain?: boolean,
+    options?: { allowFunctionDeserialization?: boolean },
   ): Promise<T> {
-    const response = await Serializer.deserializeWithMeta(raw, extraClasses, keepPlain);
+    const response = await Serializer.deserializeWithMeta(raw, extraClasses, keepPlain, options);
     return response.__root;
   }
 
@@ -448,6 +475,15 @@ Serializer.register(Function, {
     };
   },
   fromPlain: (value) => {
+    if (!isFunctionDeserializationAllowed()) {
+      throw new SerializerError(
+        "Deserializing functions is disabled by default because it can execute arbitrary " +
+          "code from the serialized payload (see GHSA-phhm-7927-g88p). If you fully trust " +
+          "the source of this data, pass `{ allowFunctionDeserialization: true }` to " +
+          "deserialize() / deserializeWithMeta(), or `{ allowFunctionDeserialization: true }` " +
+          "in DeserializeOptions when calling fromSerialized().",
+      );
+    }
     if (value.isNative) {
       return getProp(global, [value.name])!;
     }

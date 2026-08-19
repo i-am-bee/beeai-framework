@@ -130,10 +130,12 @@ class TestMCPTool:
         # Arrange
         tool = MCPTool(session=mock_client_session, tool=mock_tool_info)
 
-        error_result = MagicMock(spec=CallToolResult)
-        error_result.isError = True
-        error_result.content = {"error": "test error"}
-        error_result.structuredContent = {"code": 500}
+        structured_content = {"code": 500}
+        error_result = CallToolResult(
+            content=[TextContent(type="text", text="test error")],
+            structuredContent=structured_content,
+            isError=True,
+        )
         mock_client_session.call_tool.return_value = error_result
 
         class Input(BaseModel):
@@ -143,11 +145,35 @@ class TestMCPTool:
 
         # Act & Assert
         with pytest.raises(ToolError) as exc_info:
-            # We test _run directly to isolate the change
             await tool._run(input_data=Input(), options=None, context=context)
 
-        assert exc_info.value.message == to_json(error_result.structuredContent, indent=4, sort_keys=False)
+        assert exc_info.value.message == to_json(structured_content, indent=4, sort_keys=False)
         mock_client_session.call_tool.assert_awaited_once()
+
+    @pytest.mark.asyncio
+    @pytest.mark.unit
+    async def test_mcp_tool_run_with_error_context(
+        self, mock_client_session: AsyncMock, mock_tool_info: MCPToolInfo
+    ) -> None:
+        tool = MCPTool(session=mock_client_session, tool=mock_tool_info)
+
+        error_context = {"request_id": "abc-123", "endpoint": "/api/v1"}
+        error_result = CallToolResult(
+            content=[TextContent(type="text", text="something went wrong")],
+            isError=True,
+            _meta={"error_context": error_context},
+        )
+        mock_client_session.call_tool.return_value = error_result
+
+        class Input(BaseModel):
+            pass
+
+        context = MagicMock(spec=RunContext)
+
+        with pytest.raises(ToolError) as exc_info:
+            await tool._run(input_data=Input(), options=None, context=context)
+
+        assert exc_info.value.context == error_context
 
 
 # Calculator Tool Tests

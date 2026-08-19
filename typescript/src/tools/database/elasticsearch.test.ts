@@ -93,7 +93,9 @@ describe("ElasticSearchTool", () => {
     );
 
     const serialized = await elasticSearchTool.serialize();
-    const deserializedTool = await ElasticSearchTool.fromSerialized(serialized);
+    const deserializedTool = await ElasticSearchTool.fromSerialized(serialized, {
+      allowFunctionDeserialization: true,
+    });
 
     expect(await deserializedTool.cache.get("connection")).toStrictEqual(
       await elasticSearchTool.cache.get("connection"),
