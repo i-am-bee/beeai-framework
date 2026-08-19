@@ -8,7 +8,7 @@ const llm = new OllamaChatModel("granite4:micro");
 //  Optionally one may set llm parameters
 llm.parameters.maxTokens = 10000; // high number yields longer potential output
 llm.parameters.topP = 0; // higher number yields more complex vocabulary, recommend only changing p or k
-llm.parameters.frequencyPenalty = 0; // higher number yields reduction in word reptition
+llm.parameters.frequencyPenalty = 0; // higher number yields reduction in word repetition
 llm.parameters.temperature = 0; // higher number yields greater randomness and variation
 llm.parameters.topK = 0; // higher number yields more variance, recommend only changing p or k
 llm.parameters.n = 1; // higher number yields more choices

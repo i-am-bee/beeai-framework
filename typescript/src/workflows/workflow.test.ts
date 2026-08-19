@@ -135,7 +135,7 @@ describe("Workflow", () => {
     expect(step.d).toHaveBeenCalledTimes(1);
   });
 
-  it("reruns the first step when an asynchrounous step returns 'start'", async () => {
+  it("reruns the first step when an asynchronous step returns 'start'", async () => {
     const schema = z.object({});
 
     const step = {
@@ -185,7 +185,7 @@ describe("Workflow", () => {
     expect(step.b).toHaveBeenCalledTimes(2);
     expect(step.c).toHaveBeenCalledTimes(1);
   });
-  it("reruns the current step when an asynchrounous step returns 'self'", async () => {
+  it("reruns the current step when an asynchronous step returns 'self'", async () => {
     const schema = z.object({});
 
     const step = {

@@ -2,7 +2,7 @@ import asyncio
 
 from pydantic import BaseModel, Field
 
-from beeai_framework.adapters.groq import GroqChatModel, GroqEmbeddingModel
+from beeai_framework.adapters.groq import GroqChatModel
 from beeai_framework.backend import ChatModel, ChatModelNewTokenEvent, UserMessage
 from beeai_framework.emitter import EventMeta
 from beeai_framework.errors import AbortError
@@ -80,9 +80,6 @@ async def groq_stream_parser() -> None:
 async def groq_cloning() -> None:
     llm = GroqChatModel("llama-3.1-8b-instant")
     await llm.clone()
-
-    embedding_llm = GroqEmbeddingModel()
-    await embedding_llm.clone()
 
 
 async def main() -> None:
