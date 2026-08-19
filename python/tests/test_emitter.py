@@ -64,6 +64,52 @@ async def test_clone() -> None:
     assert clone.events is not emitter.events
 
 
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_clone_preserves_group_id() -> None:
+    emitter = Emitter(group_id="test_group", namespace=["namespace"])
+    clone = await emitter.clone()
+
+    assert clone._group_id == "test_group"
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_clone_keeps_absent_group_id_absent() -> None:
+    # Agents build their emitter without a group id, so the clone must not turn
+    # the absent value into something truthy.
+    emitter = Emitter(namespace=["namespace"])
+    assert emitter._group_id is None
+
+    clone = await emitter.clone()
+
+    assert clone._group_id is None
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_clone_emits_events_without_a_group_id() -> None:
+    emitter = Emitter(namespace=["app"])
+    clone = await emitter.clone()
+
+    group_ids: list[str | None] = []
+    clone.on("*", lambda _, event: group_ids.append(event.group_id))
+    await clone.emit("a", 1)
+
+    assert group_ids == [None]
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_child_of_clone_inherits_absent_group_id() -> None:
+    emitter = Emitter(namespace=["app"])
+    clone = await emitter.clone()
+
+    child = clone.child(namespace=["child"])
+
+    assert child._group_id is None
+
+
 class TestEventsPropagation:
     @pytest.mark.unit
     @pytest.mark.asyncio
