@@ -67,11 +67,7 @@ def create_agent(model_name: str | None = None) -> RequirementAgent:
             os.environ.get("EVAL_CHAT_MODEL_NAME", "ollama:llama3.1:8b"),
         )
 
-    options: dict = {"allow_parallel_tool_calls": True}
-    if model_name.startswith("vertexai:"):
-        options["allow_prompt_caching"] = False
-
-    llm = ChatModel.from_name(model_name, options)
+    llm = ChatModel.from_name(model_name, {"allow_parallel_tool_calls": True})
 
     return RequirementAgent(
         llm=llm,

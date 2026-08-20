@@ -25,12 +25,15 @@ class DeepEvalLLM(DeepEvalBaseLLM):
         self._model = model
         super().__init__(model.model_id, *args, **kwargs)
 
+    # pyrefly: ignore [bad-override]
     def load_model(self, *args: Any, **kwargs: Any) -> None:
         return None
 
+    # pyrefly: ignore [bad-override]
     def generate(self, prompt: str, schema: BaseModel | None = None) -> str:
         raise NotImplementedError()
 
+    # pyrefly: ignore [bad-override]
     async def a_generate(self, prompt: str, schema: TSchema | None = None) -> str:
         input_msg = UserMessage(prompt)
         response = await self._model.run(
@@ -45,9 +48,9 @@ class DeepEvalLLM(DeepEvalBaseLLM):
                 enabled=os.environ.get("EVAL_LOG_LLM_CALLS", "").lower() == "true",
             )
         )
-        text = response.get_text_content()
-        return schema.model_validate_json(text) if schema else text  # type: ignore
+        return response.get_text_content()
 
+    # pyrefly: ignore [bad-override]
     def get_model_name(self) -> str:
         return f"{self._model.model_id} ({self._model.provider_id})"
 
@@ -58,10 +61,10 @@ class DeepEvalLLM(DeepEvalBaseLLM):
         **kwargs: Any,
     ) -> "DeepEvalLLM":
         name = name or KEY_FILE_HANDLER.fetch_data(ModelKeyValues.LOCAL_MODEL_NAME)
-        if isinstance(name, str) and name.startswith("vertexai:"):
-            merged: dict = {"allow_prompt_caching": False}
-            if isinstance(options, dict):
-                merged.update(options)
-            options = merged or options
+        if not name:
+            raise ValueError(
+                "No model name provided and none configured via `deepeval set-local-model`. "
+                "Pass `name` explicitly (e.g. 'ollama:llama3.1:8b')."
+            )
         model = ChatModel.from_name(name, options, **kwargs)
         return DeepEvalLLM(model)

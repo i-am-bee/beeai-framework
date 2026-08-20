@@ -8,7 +8,7 @@ class ToolUsageMetric(BaseMetric):
     Scores 0.75 on tool existence match + 0.25 on usage count match.
     """
 
-    success: bool = False
+    success: bool = False  # pyrefly: ignore [bad-override]
 
     def __init__(self, threshold: float = 0.5):
         super().__init__()
@@ -21,6 +21,7 @@ class ToolUsageMetric(BaseMetric):
         metadata = getattr(test_case, "additional_metadata", None) or {}
         return metadata.get(key, {}) or {}
 
+    # pyrefly: ignore [bad-override]
     def measure(self, test_case: LLMTestCase) -> float:
         actual_tool_usage = self._get_tool_usage(test_case, "tool_usage")
         expected_tool_usage = self._get_tool_usage(test_case, "expected_tool_usage")
@@ -49,6 +50,7 @@ class ToolUsageMetric(BaseMetric):
         self.success = final_score >= self.threshold
         return final_score
 
+    # pyrefly: ignore [bad-override]
     async def a_measure(self, test_case: LLMTestCase) -> float:
         return self.measure(test_case)
 
@@ -56,5 +58,6 @@ class ToolUsageMetric(BaseMetric):
         return getattr(self, "success", False)
 
     @property
+    # pyrefly: ignore [bad-override]
     def __name__(self):
         return "ToolUsageMetric"

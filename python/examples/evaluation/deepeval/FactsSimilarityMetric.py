@@ -4,10 +4,11 @@ from evaluation.adapters import DeepEvalLLM
 
 
 class FactsSimilarityMetric(BaseMetric):
-    success: bool = False
+    success: bool = False  # pyrefly: ignore [bad-override]
 
     def __init__(self, model: DeepEvalLLM | None = None, threshold: float = 0.5):
         super().__init__()
+        # pyrefly: ignore [bad-override]
         self.model: DeepEvalLLM = model or DeepEvalLLM.from_name("ollama:llama3.1:8b")
         self.threshold = threshold
         self.async_mode = True
@@ -18,6 +19,7 @@ class FactsSimilarityMetric(BaseMetric):
         metadata = getattr(test_case, "additional_metadata", None) or {}
         return metadata.get("expected_facts", [])
 
+    # pyrefly: ignore [bad-override]
     async def a_measure(
         self,
         test_case: LLMTestCase,
@@ -51,6 +53,7 @@ class FactsSimilarityMetric(BaseMetric):
         self.success = score >= self.threshold
         return score
 
+    # pyrefly: ignore [bad-override]
     def measure(self, test_case: LLMTestCase) -> float:
         import asyncio
         return asyncio.run(self.a_measure(test_case))
@@ -59,5 +62,6 @@ class FactsSimilarityMetric(BaseMetric):
         return getattr(self, "success", False)
 
     @property
+    # pyrefly: ignore [bad-override]
     def __name__(self):
         return "FactsSimilarityMetric"
