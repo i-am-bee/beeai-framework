@@ -92,7 +92,7 @@ class SandboxTool(Tool[BaseModel, SandboxToolOptions, StringToolOutput]):
             )
 
             if result.get("error_messages"):
-                raise SandboxToolCreateError(result["error_messages"].join("\n"))
+                raise SandboxToolCreateError("\n".join(result["error_messages"]))
 
             return cls(
                 SandboxToolOptions(

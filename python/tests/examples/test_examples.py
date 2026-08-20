@@ -35,6 +35,7 @@ exclude = list(
             "backend/providers/langchain_compatible.py",
             "backend/providers/qwen.py" if os.getenv("DASHSCOPE_API_KEY") is None else None,
             "backend/providers/deepseek.py" if os.getenv("DEEPSEEK_CHAT_MODEL") is None else None,
+            "backend/providers/minimax.py" if os.getenv("MINIMAX_API_KEY") is None else None,
             "tools/mcp_agent.py" if os.getenv("SLACK_BOT_TOKEN") is None else None,
             "tools/mcp_tool_creation.py" if os.getenv("SLACK_BOT_TOKEN") is None else None,
             "tools/mcp_slack_agent.py" if os.getenv("SLACK_BOT_TOKEN") is None else None,

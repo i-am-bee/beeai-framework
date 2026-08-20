@@ -5,6 +5,7 @@ import datetime
 
 from pydantic import BaseModel
 
+from beeai_framework.agents.errors import AgentError
 from beeai_framework.agents.react.events import (
     ReActAgentErrorEvent,
     ReActAgentRetryEvent,
@@ -42,7 +43,7 @@ from beeai_framework.agents.react.types import (
     ReActAgentTemplates,
 )
 from beeai_framework.backend.events import ChatModelNewTokenEvent
-from beeai_framework.backend.message import AssistantMessage, SystemMessage, UserMessage
+from beeai_framework.backend.message import AnyMessage, AssistantMessage, SystemMessage, UserMessage
 from beeai_framework.backend.types import ChatModelOutput
 from beeai_framework.emitter.emitter import EventMeta
 from beeai_framework.errors import FrameworkError
@@ -302,9 +303,19 @@ class DefaultRunner(BaseRunner):
         ).get()
 
     async def _init_memory(self, input: ReActAgentRunInput) -> BaseMemory:
+        def removal_selector(messages: list[AnyMessage]) -> AnyMessage:
+            # Preserve the system prompt; evict the oldest non-system message instead.
+            non_system = [msg for msg in messages if not isinstance(msg, SystemMessage)]
+            if not non_system:
+                raise AgentError("Cannot fit the current conversation into the context window!")
+            return non_system[0]
+
         memory = TokenMemory(
-            capacity_threshold=0.85, sync_threshold=0.5, llm=self._input.llm
-        )  # TODO handlers needs to be fixed
+            capacity_threshold=0.85,
+            sync_threshold=0.5,
+            llm=self._input.llm,
+            handlers={"removal_selector": removal_selector},
+        )
 
         tool_defs = [
             ToolDefinition(

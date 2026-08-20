@@ -1,6 +1,7 @@
 # Copyright 2025 © BeeAI a Series of LF Projects, LLC
 # SPDX-License-Identifier: Apache-2.0
 
+import re
 from typing import Any
 
 import pytest
@@ -61,6 +62,52 @@ async def test_clone() -> None:
     assert clone.namespace is not emitter.namespace
     assert clone.context is not emitter.context
     assert clone.events is not emitter.events
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_clone_preserves_group_id() -> None:
+    emitter = Emitter(group_id="test_group", namespace=["namespace"])
+    clone = await emitter.clone()
+
+    assert clone._group_id == "test_group"
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_clone_keeps_absent_group_id_absent() -> None:
+    # Agents build their emitter without a group id, so the clone must not turn
+    # the absent value into something truthy.
+    emitter = Emitter(namespace=["namespace"])
+    assert emitter._group_id is None
+
+    clone = await emitter.clone()
+
+    assert clone._group_id is None
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_clone_emits_events_without_a_group_id() -> None:
+    emitter = Emitter(namespace=["app"])
+    clone = await emitter.clone()
+
+    group_ids: list[str | None] = []
+    clone.on("*", lambda _, event: group_ids.append(event.group_id))
+    await clone.emit("a", 1)
+
+    assert group_ids == [None]
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_child_of_clone_inherits_absent_group_id() -> None:
+    emitter = Emitter(namespace=["app"])
+    clone = await emitter.clone()
+
+    child = clone.child(namespace=["child"])
+
+    assert child._group_id is None
 
 
 class TestEventsPropagation:
@@ -187,6 +234,37 @@ class TestEventsPropagation:
 
         await emitter.emit("c", "c")
         assert calls == [1]
+
+    @pytest.mark.unit
+    @pytest.mark.asyncio
+    async def test_off_compiled_regex_only_removes_matching(self) -> None:
+        emitter, calls_a, calls_b = Emitter(), [], []
+        emitter.on(re.compile("aaa"), lambda data, __: calls_a.append(data))
+        emitter.on(re.compile("bbb"), lambda data, __: calls_b.append(data))
+
+        # Removing the "bbb" listener must not remove the unrelated "aaa" one...
+        emitter.off(re.compile("bbb"))
+        await emitter.emit("aaa", 1)
+        # ...and the "bbb" listener must actually be gone (emitting it is a no-op).
+        await emitter.emit("bbb", 2)
+
+        assert calls_a == [1]
+        assert calls_b == []
+
+    @pytest.mark.unit
+    @pytest.mark.asyncio
+    async def test_compiled_regex_matches_anywhere_in_path(self) -> None:
+        # A compiled regex should match anywhere in the event path (like the
+        # TypeScript sibling's `.test()`), not only when anchored at the start.
+        root = Emitter.root()
+        hits: list[str] = []
+        root.on(
+            re.compile(r"watsonx"),
+            lambda _, event: hits.append(event.path),
+            EmitterOptions(match_nested=True),
+        )
+        await root.child(namespace=["backend", "watsonx", "chat"]).emit("start", 1)
+        assert hits == ["backend.watsonx.chat.start"]
 
     @pytest.mark.unit
     @pytest.mark.asyncio

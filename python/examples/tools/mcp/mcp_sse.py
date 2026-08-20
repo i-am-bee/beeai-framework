@@ -20,7 +20,7 @@ async def main() -> None:
     ibm_tools = [tool for tool in all_ibm_tools if tool.name in {"ibmcloud_account_show"}]
 
     agent = RequirementAgent(
-        llm=ChatModel.from_name("ollama:granite3.3:8b"),
+        llm=ChatModel.from_name("ollama:granite4.1:8b"),
         tools=[*ibm_tools],
         instructions="Specify JSON as an output format for the tool calls if possible.",
         middlewares=[GlobalTrajectoryMiddleware(included=[Tool, ChatModel])],

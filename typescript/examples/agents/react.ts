@@ -18,7 +18,7 @@ const logger = new Logger({ name: "app", level: "trace" });
 
 // Other models to try:
 // "llama3.1:70b"
-// "granite3.3"
+// "granite4.1:8b"
 // "deepseek-r1:32b"
 // ensure the model is pulled before running
 const llm = new OllamaChatModel("granite4:micro");

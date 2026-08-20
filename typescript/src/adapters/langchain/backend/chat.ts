@@ -19,9 +19,8 @@ import {
   BaseChatModel,
   BaseChatModelCallOptions,
 } from "@langchain/core/language_models/chat_models";
-import { AIMessageChunk, BaseMessageLike } from "@langchain/core/messages";
-import { AssistantMessage, Message } from "@/backend/message.js";
-import { ValueError } from "@/errors.js";
+import { AIMessageChunk } from "@langchain/core/messages";
+import { toBeeAIMessages, toLCMessages } from "./utils.js";
 
 export class LangChainChatModel extends ChatModel {
   public readonly emitter: ChatModelEmitter;
@@ -75,12 +74,7 @@ export class LangChainChatModel extends ChatModel {
   }
 
   protected prepareInput(input: ChatModelInput, run: RunContext<this>) {
-    const messages: BaseMessageLike[] = input.messages.map((msg) => ({
-      role: msg.role,
-      content: msg.content,
-      type: msg.role,
-      // TODO
-    }));
+    const messages = toLCMessages(input.messages);
 
     const options: BaseChatModelCallOptions = {
       runId: run.runId,
@@ -93,26 +87,10 @@ export class LangChainChatModel extends ChatModel {
   }
 
   protected prepareOutput(output: AIMessageChunk) {
-    const messages: Message[] = [];
-    if (typeof output.content === "string") {
-      messages.push(new AssistantMessage(output.content));
-    } else {
-      messages.push(
-        new AssistantMessage(
-          output.content.map((message) => {
-            if (message.type === "text") {
-              return { type: "text", text: message.text };
-            } else if (message.type === "image_url") {
-              return { type: "text", text: message.image_url.toString() };
-            } else {
-              throw new ValueError(`Unknown message type "${message.type}"`);
-            }
-          }),
-        ),
-      );
-    }
+    const messages = toBeeAIMessages([output]);
 
-    const stop: ChatModelFinishReason = output.response_metadata.stop_sequence || "stop";
+    const stop: ChatModelFinishReason =
+      (output.response_metadata?.stop_sequence as ChatModelFinishReason) || "stop";
     return new ChatModelOutput(
       messages,
       {

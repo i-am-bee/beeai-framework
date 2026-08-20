@@ -87,10 +87,10 @@ In this example the wikipedia tool interface is extended so that the agent can s
 
 This example uses Ollama exclusively.
 
-To get started you will need to pull `granite3.3:8b` and `nomic-embed-text` (to perform text embedding). If you are unfamiliar with using Ollama then check out instructions for getting up and running at the the [Ollama Github repo](https://github.com/ollama/ollama).
+To get started you will need to pull `granite4.1:8b` and `nomic-embed-text` (to perform text embedding). If you are unfamiliar with using Ollama then check out instructions for getting up and running at the the [Ollama Github repo](https://github.com/ollama/ollama).
 
 ```shell
-ollama pull granite3.3:8b
+ollama pull granite4.1:8b
 ollama pull nomic-embed-text
 ollama serve
 ```
@@ -114,4 +114,4 @@ yarn run start examples/agents/granite/granite_wiki_bee.ts <<< "Where is IBM hea
 ```
 
 > [!NOTE]
-> The peformance of the [granite_wiki_bee](/examples/agents/granite/granite_wiki_bee.ts) is dependent on wikipedia as an information source as well as the retrieval settings included in the example. If you are encountering performance issues with a particular example, try to experiment with the retreival settings i.e. passageSize, overlap and maxResults. You can also try other embedding models via Ollama.
+> The performance of the [granite_wiki_bee](/examples/agents/granite/granite_wiki_bee.ts) is dependent on wikipedia as an information source as well as the retrieval settings included in the example. If you are encountering performance issues with a particular example, try to experiment with the retrieval settings i.e. passageSize, overlap and maxResults. You can also try other embedding models via Ollama.

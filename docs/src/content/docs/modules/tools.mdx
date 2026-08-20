@@ -687,7 +687,7 @@ Leverage the Model Context Protocol (MCP) to define, initialize, and utilize too
 		  },
 		);
 		
-		// Connect the client to any MCP server with tools capablity
+		// Connect the client to any MCP server with tools capability
 		await client.connect(
 		  new StdioClientTransport({
 		    command: "npx",
@@ -782,7 +782,7 @@ Leverage the Model Context Protocol (MCP) to define, initialize, and utilize too
 		    ibm_tools = [tool for tool in all_ibm_tools if tool.name in {"ibmcloud_account_show"}]
 		
 		    agent = RequirementAgent(
-		        llm=ChatModel.from_name("ollama:granite3.3:8b"),
+		        llm=ChatModel.from_name("ollama:granite4.1:8b"),
 		        tools=[*ibm_tools],
 		        instructions="Specify JSON as an output format for the tool calls if possible.",
 		        middlewares=[GlobalTrajectoryMiddleware(included=[Tool, ChatModel])],
@@ -1668,7 +1668,7 @@ _Source: [/python/beeai_framework/tools/weather/openmeteo.py](https://github.com
 
 ### 1. Data minimization
 
-If your tool is providing data to the agent, try to ensure that the data is relevant and free of extraneous metatdata. Preprocessing data to improve relevance and minimize unnecessary data conserves agent memory, improving overall performance.
+If your tool is providing data to the agent, try to ensure that the data is relevant and free of extraneous metadata. Preprocessing data to improve relevance and minimize unnecessary data conserves agent memory, improving overall performance.
 
 ### 2. Provide hints
 

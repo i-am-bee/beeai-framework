@@ -31,15 +31,21 @@ export function hasProps<T>(keys: (keyof T)[]) {
   return (target: T | undefined) => keys.every((key) => hasProp(target, key));
 }
 
+const UnsafePathKeys = new Set<keyof any>(["__proto__"]);
+
 export function setProp(target: unknown, paths: readonly (keyof any)[], value: unknown) {
   for (const entry of paths.entries()) {
     const [idx, key] = entry as [number, keyof object];
+    if (UnsafePathKeys.has(key)) {
+      throw new TypeError(`Cannot assign unsafe object path key "${String(key)}"`);
+    }
+
     if (!R.isPlainObject(target) && !R.isArray(target)) {
       throw new TypeError("Only plain objects and arrays are supported!");
     }
 
     const isLast = idx === paths.length - 1;
-    const newValue = isLast ? value : (target[key] ?? {});
+    const newValue = isLast ? value : hasProp(target, key) ? target[key] : {};
     Object.assign(target, { [key]: newValue });
     target = target[key];
   }

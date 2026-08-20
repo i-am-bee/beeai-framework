@@ -3,7 +3,6 @@
 
 import contextlib
 import inspect
-import logging
 import typing
 from abc import ABC, abstractmethod
 from collections.abc import Callable
@@ -192,7 +191,7 @@ class Tool(Generic[TInput, TRunOptions, TOutput], ABC):
 
     async def clone(self) -> Self:
         if type(self).clone == Tool.clone:
-            logging.warning(f"Tool '{self.name}' does not implement the 'clone' method.")
+            logger.warning(f"Tool '{self.name}' does not implement the 'clone' method.")
 
         return self
 

@@ -412,7 +412,44 @@ if __name__ == "__main__":
 ```
 
 ```ts TypeScript [expandable]
-COMING SOON
+import { RequirementAgent } from "beeai-framework/agents/requirement/agent";
+import { ChatModel } from "beeai-framework/backend/chat";
+import { WikipediaTool } from "beeai-framework/tools/search/wikipedia";
+import { OpenMeteoTool } from "beeai-framework/tools/weather/openMeteo";
+import { GlobalTrajectoryMiddleware } from "beeai-framework/middleware/trajectory";
+import { Tool } from "beeai-framework/tools/base";
+import { Logger } from "beeai-framework/logger/logger";
+
+// Set up pretty logging to the console
+Logger.defaults.pretty = true;
+
+// You create the logger and decide what to log
+const logger = new Logger({ name: "my-agent", level: "trace" });
+
+logger.info("Starting agent application");
+
+const agent = new RequirementAgent({
+  llm: await ChatModel.fromName("ollama:granite3.3"),
+  role: "friendly AI assistant",
+  instructions:
+    "Be helpful and conversational in all your interactions. Use your tools to find accurate, current information.",
+  tools: [new WikipediaTool(), new OpenMeteoTool()],
+});
+
+logger.debug("About to process user message");
+
+// The `included` parameter filters what types of operations to trace:
+// - [Tool]: Show only tool executions (function calls, API calls, etc.)
+// - [ChatModel]: Show only LLM calls (model inference, token usage)
+// - [Tool, ChatModel]: Show both tools and LLM interactions
+// - [] or undefined: Show everything (agents, tools, models, requirements)
+const response = await agent
+  .run({ prompt: "What's the weather in Paris and tell me about the Eiffel Tower?" })
+  .middleware(new GlobalTrajectoryMiddleware({ included: [Tool] }));
+
+logger.info("Agent response generated");
+
+console.log(response.result.text);
 ```
 
 </CodeGroup>
@@ -742,7 +779,8 @@ if __name__ == "__main__":
 ```
 
 ```ts TypeScript [expandable]
-COMING SOON
+// Note: TypeScript does not yet have VectorStore, DocumentLoader, or TextSplitter equivalents.
+// Knowledge base / RAG setup via beeai-framework is currently Python-only.
 ```
 
 </CodeGroup>
@@ -806,7 +844,8 @@ if __name__ == "__main__":
 ```
 
 ```ts TypeScript [expandable]
-COMING SOON
+// Note: VectorStoreSearchTool is not yet available in TypeScript.
+// RAG-enabled agents are currently Python-only in beeai-framework.
 ```
 
 </CodeGroup>
@@ -901,7 +940,58 @@ if __name__ == "__main__":
 ```
 
 ```ts TypeScript [expandable]
-COMING SOON
+import { RequirementAgent } from "beeai-framework/agents/requirement/agent";
+import { OllamaChatModel } from "beeai-framework/adapters/ollama/backend/chat";
+import { UnconstrainedMemory } from "beeai-framework/memory/unconstrainedMemory";
+import { WikipediaTool } from "beeai-framework/tools/search/wikipedia";
+import { OpenMeteoTool } from "beeai-framework/tools/weather/openMeteo";
+import { HandoffTool } from "beeai-framework/tools/handoff";
+import { ThinkTool } from "beeai-framework/tools/think";
+
+const llm = new OllamaChatModel("granite3.3");
+
+// Create specialized agents
+const knowledgeAgent = new RequirementAgent({
+  llm,
+  tools: [new ThinkTool(), new WikipediaTool()],
+  memory: new UnconstrainedMemory(),
+  instructions:
+    "Provide detailed, accurate information using available knowledge sources. Think through problems step by step.",
+});
+
+const weatherAgent = new RequirementAgent({
+  llm,
+  tools: [new ThinkTool(), new OpenMeteoTool()],
+  memory: new UnconstrainedMemory(),
+  instructions: "Provide comprehensive weather information and forecasts. Always think before using tools.",
+});
+
+// Create a coordinator agent that manages handoffs
+const coordinatorAgent = new RequirementAgent({
+  llm,
+  memory: new UnconstrainedMemory(),
+  tools: [
+    new HandoffTool(knowledgeAgent, {
+      name: "knowledge_specialist",
+      description: "For general knowledge and research questions",
+    }),
+    new HandoffTool(weatherAgent, {
+      name: "weather_expert",
+      description: "For weather-related queries",
+    }),
+  ],
+  instructions: `You coordinate between specialist agents.
+  - For weather queries: use weather_expert
+  - For research/knowledge questions: use knowledge_specialist
+  - For mixed queries: break them down and use multiple specialists
+
+  Always introduce yourself and explain which specialist will help.`,
+});
+
+const response = await coordinatorAgent.run({
+  prompt: "What's the weather in Paris and tell me about its history?",
+});
+console.log(response.result.text);
 ```
 
 </CodeGroup>
@@ -913,7 +1003,7 @@ COMING SOON
 ### Advanced Workflows
 
 <Tip>
-For complex, multi-step processes, a more advanced workflow system is coming soon! Join the discussion [here](https://github.com/i-am-bee/beeai-framework/discussions/1005)
+For complex, multi-step processes, see the [Workflows module](/modules/workflows).
 </Tip>
 
 ---
@@ -965,7 +1055,24 @@ asyncio.run(main())
 ```
 
 ```ts TypeScript [expandable]
-COMING SOON
+import { ChatModel } from "beeai-framework/backend/chat";
+import { SlidingCache } from "beeai-framework/cache/slidingCache";
+import { UserMessage } from "beeai-framework/backend/message";
+
+// LLM with caching enabled
+const llm = await ChatModel.fromName("ollama:granite3.3");
+llm.config({ cache: new SlidingCache({ size: 50 }) }); // Cache up to 50 responses
+
+// Must send a list of messages to the llm
+const messages = [new UserMessage("Hello, how are you?")];
+
+// First call (miss)
+const res1 = await llm.create({ messages });
+// Second call with identical input (hit)
+const res2 = await llm.create({ messages });
+
+console.log("First:", res1.getTextContent());
+console.log("Second (cached):", res2.getTextContent());
 ```
 
 </CodeGroup>
@@ -985,7 +1092,13 @@ weather_tool = OpenMeteoTool(options={"cache": UnconstrainedCache()})
 ```
 
 ```ts TypeScript [expandable]
-COMING SOON
+import { OpenMeteoTool } from "beeai-framework/tools/weather/openMeteo";
+import { UnconstrainedCache } from "beeai-framework/cache/unconstrainedCache";
+
+// Cache all results from the weather API
+const weatherTool = new OpenMeteoTool({
+  cache: new UnconstrainedCache(),
+});
 ```
 
 </CodeGroup>
@@ -1023,7 +1136,29 @@ asyncio.run(main())
 ```
 
 ```ts TypeScript [expandable]
-COMING SOON
+import { RequirementAgent } from "beeai-framework/agents/requirement/agent";
+import { ChatModel } from "beeai-framework/backend/chat";
+import { OpenMeteoTool } from "beeai-framework/tools/weather/openMeteo";
+import { UnconstrainedCache } from "beeai-framework/cache/unconstrainedCache";
+import { UnconstrainedMemory } from "beeai-framework/memory/unconstrainedMemory";
+import { SlidingCache } from "beeai-framework/cache/slidingCache";
+
+const llm = await ChatModel.fromName("ollama:granite3.3");
+llm.config({ cache: new SlidingCache({ size: 50 }) }); // Cache up to 50 responses
+
+const weatherTool = new OpenMeteoTool({
+  cache: new UnconstrainedCache(),
+});
+
+const agent = new RequirementAgent({
+  llm,
+  tools: [weatherTool], // Tool with cache
+  memory: new UnconstrainedMemory(),
+  instructions: "Provide answers efficiently using cached results when possible.",
+});
+
+await agent.run({ prompt: "What's the weather in New York?" });
+await agent.run({ prompt: "What's the weather in New York?" }); // Weather tool cache should hit
 ```
 
 </CodeGroup>
@@ -1074,7 +1209,29 @@ if __name__ == "__main__":
 ```
 
 ```ts TypeScript [expandable]
-COMING SOON
+import { RequirementAgent } from "beeai-framework/agents/requirement/agent";
+import { ChatModel } from "beeai-framework/backend/chat";
+import { UnconstrainedMemory } from "beeai-framework/memory/unconstrainedMemory";
+import { OpenMeteoTool } from "beeai-framework/tools/weather/openMeteo";
+import { FrameworkError } from "beeai-framework/errors";
+
+try {
+  const agent = new RequirementAgent({
+    llm: await ChatModel.fromName("ollama:granite3.3"),
+    memory: new UnconstrainedMemory(),
+    tools: [new OpenMeteoTool()],
+    instructions: "You provide weather information.",
+  });
+
+  const response = await agent.run({ prompt: "What's the weather in Invalid-City-Name?" });
+  console.log(response.result.text);
+} catch (e) {
+  if (e instanceof FrameworkError) {
+    console.error(`Framework error occurred: ${e.explain()}`);
+  } else {
+    console.error(`Unexpected error: ${e}`);
+  }
+}
 ```
 
 </CodeGroup>
@@ -1115,7 +1272,18 @@ if __name__ == "__main__":
 ```
 
 ```ts TypeScript [expandable]
-COMING SOON
+import { MCPServer } from "beeai-framework/adapters/mcp/serve/server";
+import { OpenMeteoTool } from "beeai-framework/tools/weather/openMeteo";
+import { WikipediaTool } from "beeai-framework/tools/search/wikipedia";
+
+// Create an MCP server
+const server = new MCPServer();
+
+// Register tools that can be used by MCP clients
+server.registerMany([new OpenMeteoTool(), new WikipediaTool()]);
+
+// Start the server
+await server.serve();
 ```
 
 </CodeGroup>
@@ -1161,7 +1329,8 @@ if __name__ == "__main__":
 ```
 
 ```ts TypeScript [expandable]
-COMING SOON
+// AgentStack server support is not yet available in TypeScript.
+// Use the Python SDK for this integration.
 ```
 
 </CodeGroup>
@@ -1206,7 +1375,21 @@ if __name__ == "__main__":
 ```
 
 ```ts TypeScript [expandable]
-COMING SOON
+import { A2AServer } from "beeai-framework/adapters/a2a/serve/server";
+import { RequirementAgent } from "beeai-framework/agents/requirement/agent";
+import { OllamaChatModel } from "beeai-framework/adapters/ollama/backend/chat";
+import { UnconstrainedMemory } from "beeai-framework/memory/unconstrainedMemory";
+import { OpenMeteoTool } from "beeai-framework/tools/weather/openMeteo";
+
+const llm = new OllamaChatModel("granite3.3");
+const agent = new RequirementAgent({
+  llm,
+  tools: [new OpenMeteoTool()],
+  memory: new UnconstrainedMemory(),
+});
+
+// Register the agent with the A2A server and run the HTTP server
+await new A2AServer().register(agent).serve();
 ```
 
 </CodeGroup>
@@ -1248,7 +1431,8 @@ if __name__ == "__main__":
 ```
 
 ```ts TypeScript [expandable]
-COMING SOON
+// IBM watsonx Orchestrate server support is not yet available in TypeScript.
+// Use the Python SDK for this integration.
 ```
 
 </CodeGroup>

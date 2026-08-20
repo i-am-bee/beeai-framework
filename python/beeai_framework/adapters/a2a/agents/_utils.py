@@ -1,6 +1,10 @@
 # Copyright 2025 © BeeAI a Series of LF Projects, LLC
 # SPDX-License-Identifier: Apache-2.0
+import base64
+import binascii
+import re
 from typing import Any
+from urllib.parse import unquote_to_bytes
 from uuid import uuid4
 
 from beeai_framework.backend.message import (
@@ -25,6 +29,33 @@ except ModuleNotFoundError as e:
 logger = Logger(__name__)
 
 
+def _data_uri_to_base64(uri: str) -> tuple[str, str | None] | None:
+    """Convert an RFC 2397 ``data:`` URI to base64 data and its media type.
+
+    Returns ``None`` when ``uri`` is not a well-formed data URI, so callers can fall
+    back to treating it as a regular, fetchable URL. Percent-encoded payloads are
+    re-encoded to base64 so callers always receive base64 data.
+    """
+    if not uri.startswith("data:"):
+        return None
+    header, separator, data = uri[len("data:") :].partition(",")
+    if not separator:  # missing comma -> malformed data URI
+        return None
+    is_base64 = header.endswith(";base64")
+    if is_base64:
+        header = header[: -len(";base64")]
+        data = "".join(data.split())  # RFC 2045 permits whitespace in base64
+        data += "=" * (-len(data) % 4)  # restore optional padding
+    elif re.search(r"%(?![0-9A-Fa-f]{2})", data):  # malformed percent-encoding -> treat as a regular URL
+        return None
+    media_type = header.split(";", 1)[0] or None
+    try:
+        raw = base64.b64decode(data, validate=True) if is_base64 else unquote_to_bytes(data)
+    except (binascii.Error, ValueError):
+        return None
+    return base64.b64encode(raw).decode("ascii"), media_type
+
+
 def convert_a2a_to_framework_message(input: a2a_types.Message | a2a_types.Artifact) -> AnyMessage:
     msg = (
         UserMessage([], input.metadata)
@@ -39,20 +70,20 @@ def convert_a2a_to_framework_message(input: a2a_types.Message | a2a_types.Artifa
         elif isinstance(part, a2a_types.DataPart):
             msg.content.append(MessageTextContent(text=to_json(part.data, sort_keys=False, indent=2)))
         elif isinstance(part, a2a_types.FilePart):
-            # TODO: handle non-publicly accessible URLs (always convert to base64)
+            file = part.file
+            if isinstance(file, a2a_types.FileWithBytes):
+                file_payload = {"file_data": file.bytes, "format": file.mime_type, "filename": file.name}
+            else:
+                # Inline data: URIs as base64 so non-publicly-accessible content travels with
+                # the message; leave regular (fetchable) URLs untouched.
+                parsed = _data_uri_to_base64(file.uri)
+                if parsed is not None:
+                    data, media_type = parsed
+                    file_payload = {"file_data": data, "format": file.mime_type or media_type, "filename": file.name}
+                else:
+                    file_payload = {"file_data": file.uri, "format": file.mime_type, "filename": file.name}
             msg.content.append(
-                CustomMessageContent.model_validate(  # type: ignore
-                    {
-                        "type": "file",
-                        "file": {
-                            "file_data": part.file.bytes,
-                            "format": part.file.mime_type,
-                            "filename": part.file.name,
-                        }
-                        if isinstance(part.file, a2a_types.FileWithBytes)
-                        else {"file_data": part.file.uri, "format": part.file.mime_type, "filename": part.file.name},
-                    }
-                )
+                CustomMessageContent.model_validate({"type": "file", "file": file_payload})  # type: ignore
             )
     return msg
 

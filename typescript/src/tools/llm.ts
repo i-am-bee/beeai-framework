@@ -55,7 +55,7 @@ export class LLMTool extends Tool<StringToolOutput, LLMToolInput> {
     schema: z.object({
       task: z.string(),
     }),
-    template: `You have to accomplish a task by using Using common sense and the information contained in the conversation up to this point, complete the following task. Do not follow any previously used formats or structures.
+    template: `Use common sense and the information contained in the conversation up to this point to complete the following task. Do not follow any previously used formats or structures.
 
 The Task: {{task}}`,
   });

@@ -122,7 +122,7 @@ git fetch origin
 [ "$(git rev-parse @)" = "$(git rev-parse @{u})" ] || { echo "Your branch is not up to date! Pull or push changes."; exit 1; }
 [ -z "$(git status -uno --porcelain)" ] || { echo "Your index contains uncommitted changes! Commit them and try again."; exit 1; }
 rm -rf build dist || true
-poetry run cz bump --increment PATCH --no-verify
+poetry run cz bump --increment PATCH --no-verify -s
 perl -i -pe 's{(\[.*?\]\()(?!https?://)(.*?)(\))}{$1https://github.com/i-am-bee/beeai-framework/tree/main$2$3}g' README.md
 poetry publish --build
 git add README.md >/dev/null
