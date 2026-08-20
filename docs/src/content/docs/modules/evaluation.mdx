@@ -18,6 +18,10 @@ BeeAI integrates with two popular evaluation frameworks via dedicated adapters:
 
 The adapters bridge BeeAI's `ChatModel` to each evaluation framework's LLM interface, so metrics can use BeeAI-powered models for judging agent outputs without requiring separate API configurations.
 
+<Note>
+`evaluation.adapters` lives at `python/evaluation/adapters` in the repo and is **not** part of the published `beeai-framework` package. To use it, clone the repo and run from within `python/` (e.g. via `poetry run`), or copy the adapter file(s) you need into your own project.
+</Note>
+
 ### DeepEvalLLM
 
 Wraps a BeeAI `ChatModel` as a `DeepEvalBaseLLM`, enabling DeepEval metrics to call any BeeAI-supported model for LLM-as-judge evaluations. Supports structured output via Pydantic schemas.
@@ -41,8 +45,13 @@ Bridges Ragas directly to BeeAI's `ChatModel` without a LangChain intermediary. 
 ```py Python [expandable]
 from evaluation.adapters import InstructorRagasLLM
 
-# Create from a model name
+# Create from a model name string
 eval_llm = InstructorRagasLLM.from_name("openai:gpt-4o")
+
+# Or wrap an existing ChatModel
+from beeai_framework.backend import ChatModel
+model = ChatModel.from_name("ollama:llama3.1:8b")
+eval_llm = InstructorRagasLLM(model)
 ```
 
 ## Dataset & Agent Setup
@@ -53,13 +62,13 @@ Evaluation experiments require two components: a **dataset** of test cases and a
 
 The dataset is a JSON file where each item contains:
 
-| Field                  | Description                                            |
-|------------------------|--------------------------------------------------------|
-| `question`             | The input question for the agent                       |
-| `expected_answer`      | The ground-truth answer                                |
-| `supporting_sentences` | Relevant facts the agent should reference              |
-| `supporting_titles`    | Source titles for the supporting context                |
-| `expected_tool_calls`  | Tools the agent should invoke (name + expected count)  |
+| Field                 | Description                                            |
+|-----------------------|--------------------------------------------------------|
+| `question`            | The input question for the agent                       |
+| `answer`               | The ground-truth answer                                |
+| `relevant_sentences`  | Relevant facts the agent should reference               |
+| `supporting_titles`   | Source titles for the supporting context                |
+| `wiki_times`          | Expected number of Wikipedia tool calls                 |
 
 ```py Python [expandable]
 # dataset.py — load evaluation items
