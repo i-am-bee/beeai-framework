@@ -2,3 +2,9 @@
 .vscode
 .DS_Store
 .env
+CLAUDE.md
+
+# Evaluation outputs / working dirs
+.deepeval/
+python/examples/evaluation/deepeval/eval_results_raw.pkl
+python/examples/evaluation/ragas/data/
