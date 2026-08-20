@@ -153,7 +153,7 @@ async def main() -> None:
         FactsSimilarityMetric(model=eval_model),
     ]
 
-    eval_results = evaluate(test_cases=test_cases, metrics=metrics)
+    eval_results = evaluate(test_cases=test_cases, metrics=metrics)  # pyrefly: ignore [not-callable]
 
     try:
         raw_path = Path(__file__).parent / "eval_results_raw.pkl"
@@ -192,7 +192,7 @@ async def main() -> None:
             row.append("V" if passed else "X")
             if passed:
                 success_counts[name] += 1
-        rows.append(row)
+        rows.append(row)  # pyrefly: ignore [bad-argument-type]
 
     footer = ["Success %"] + [
         f"{(success_counts[n] / total_cases * 100):.0f}%" if total_cases else "0%"

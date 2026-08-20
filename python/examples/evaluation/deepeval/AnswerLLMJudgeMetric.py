@@ -6,14 +6,16 @@ from evaluation.adapters import DeepEvalLLM
 class AnswerLLMJudgeMetric(BaseMetric):
     """Uses an LLM as a judge to compare actual vs expected answer semantically."""
 
-    success: bool = False
+    success: bool = False  # pyrefly: ignore [bad-override]
 
     def __init__(self, model: DeepEvalLLM | None = None, threshold: float = 0.5):
         super().__init__()
+        # pyrefly: ignore [bad-override]
         self.model: DeepEvalLLM = model or DeepEvalLLM.from_name("ollama:llama3.1:8b")
         self.threshold = threshold
         self.async_mode = True
 
+    # pyrefly: ignore [bad-override]
     async def a_measure(
         self,
         test_case: LLMTestCase,
@@ -52,6 +54,7 @@ class AnswerLLMJudgeMetric(BaseMetric):
         self.success = score >= self.threshold
         return score
 
+    # pyrefly: ignore [bad-override]
     def measure(self, test_case: LLMTestCase) -> float:
         import asyncio
         return asyncio.run(self.a_measure(test_case))
@@ -60,5 +63,6 @@ class AnswerLLMJudgeMetric(BaseMetric):
         return getattr(self, "success", False)
 
     @property
+    # pyrefly: ignore [bad-override]
     def __name__(self) -> str:
         return "AnswerLLMJudgeMetric"

@@ -93,9 +93,10 @@ class FactsSimilarityMetric(BaseMetric):
         # Call super() for validation (without passing llm in kwargs)
         super().__init__(name=name, **kwargs)
 
+    # pyrefly: ignore [bad-override]
     async def ascore(
-        self, 
-        actual_facts: t.List[str], 
+        self,
+        actual_facts: t.List[str],
         expected_facts: t.List[str]
     ) -> MetricResult:
         """

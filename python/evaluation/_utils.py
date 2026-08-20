@@ -92,7 +92,7 @@ def evaluate_dataset(
     if display_mode is None:
         display_mode = TestRunResultDisplay(os.environ.get("EVAL_DISPLAY_MODE", "all"))
 
-    output = evaluate(
+    output = evaluate(  # pyrefly: ignore [not-callable]
         test_cases=dataset.test_cases,
         metrics=metrics,
         display_config=DisplayConfig(
