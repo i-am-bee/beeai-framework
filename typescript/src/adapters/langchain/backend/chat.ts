@@ -127,4 +127,8 @@ export class LangChainChatModel extends ChatModel {
   loadSnapshot(snapshot: ReturnType<typeof this.createSnapshot>): void {
     Object.assign(this, snapshot);
   }
+
+  static {
+    this.register();
+  }
 }
