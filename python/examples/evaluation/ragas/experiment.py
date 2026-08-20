@@ -55,7 +55,6 @@ dataset = Dataset.load(name="my_evaluation", backend="local/csv", root_dir=str(_
 ragas_judge_llm = InstructorRagasLLM.from_name(
     model_name=os.environ.get("EVAL_CHAT_MODEL_NAME", "ollama:llama3.1:8b")
 )
-ragas_judge_llm.is_async = True
 
 
 def extract_json(text):
