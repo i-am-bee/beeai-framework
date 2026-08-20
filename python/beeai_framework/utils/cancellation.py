@@ -46,7 +46,7 @@ class AbortSignal(BaseModel):
         signal = cls()
 
         loop = asyncio.get_event_loop()
-        loop.call_later(duration, lambda *args: signal._abort(f"Operation timed out after {duration} ms"))
+        loop.call_later(duration, lambda *args: signal._abort(f"Operation timed out after {duration} s"))
 
         return signal
 
