@@ -23,6 +23,10 @@ async def minimax_from_name() -> None:
 
 
 async def minimax_sync() -> None:
+    # Select a regional gateway by name instead of hard-coding the URL:
+    #   region="global" -> https://api.minimax.io/v1 (default)
+    #   region="cn"     -> https://api.minimaxi.com/v1
+    # An explicit base_url / MINIMAX_API_BASE still takes precedence.
     llm = MiniMaxChatModel("MiniMax-M3")
     user_message = UserMessage("what is the capital of Massachusetts?")
     response = await llm.run([user_message])
