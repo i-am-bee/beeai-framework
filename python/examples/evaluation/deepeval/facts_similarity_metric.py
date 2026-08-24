@@ -6,7 +6,7 @@ from evaluation.adapters import DeepEvalLLM
 class FactsSimilarityMetric(BaseMetric):
     success: bool = False  # pyrefly: ignore [bad-override]
 
-    def __init__(self, model: DeepEvalLLM | None = None, threshold: float = 0.5):
+    def __init__(self, model: DeepEvalLLM | None = None, threshold: float = 0.5) -> None:
         super().__init__()
         # pyrefly: ignore [bad-override]
         self.model: DeepEvalLLM = model or DeepEvalLLM.from_name("ollama:llama3.1:8b")
@@ -15,7 +15,7 @@ class FactsSimilarityMetric(BaseMetric):
 
     def _get_expected(self, test_case: LLMTestCase) -> list[str]:
         if hasattr(test_case, "expected_facts"):
-            return getattr(test_case, "expected_facts")
+            return test_case.expected_facts
         metadata = getattr(test_case, "additional_metadata", None) or {}
         return metadata.get("expected_facts", [])
 
@@ -56,6 +56,7 @@ class FactsSimilarityMetric(BaseMetric):
     # pyrefly: ignore [bad-override]
     def measure(self, test_case: LLMTestCase) -> float:
         import asyncio
+
         return asyncio.run(self.a_measure(test_case))
 
     def is_successful(self) -> bool:
@@ -63,5 +64,5 @@ class FactsSimilarityMetric(BaseMetric):
 
     @property
     # pyrefly: ignore [bad-override]
-    def __name__(self):
+    def __name__(self) -> str:
         return "FactsSimilarityMetric"

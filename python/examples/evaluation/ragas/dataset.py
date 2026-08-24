@@ -21,13 +21,15 @@ def build_dataset() -> Dataset:
 
     dataset = Dataset(name="my_evaluation", backend="local/csv", root_dir=str(data_dir))
     for i, item in enumerate(load_items(), start=1):
-        dataset.append({
-            "id": f"sample_{i}",
-            "question": item["question"],
-            "answer": item["answer"],
-            "contexts": item["relevant_sentences"],
-            "supporting_titles": item["supporting_titles"],
-        })
+        dataset.append(
+            {
+                "id": f"sample_{i}",
+                "question": item["question"],
+                "answer": item["answer"],
+                "contexts": item["relevant_sentences"],
+                "supporting_titles": item["supporting_titles"],
+            }
+        )
     dataset.save()
     return dataset
 

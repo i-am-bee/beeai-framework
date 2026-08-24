@@ -29,8 +29,7 @@ AGENT_INSTRUCTIONS = [
     "RULES and CONSTRAINTS:",
     "1. SOURCE ADHERENCE (NO HALLUCINATION): Your final answer MUST be based ONLY on the "
     "context you retrieve from the provided tools (WikipediaTool). Do not use external knowledge.",
-    "2. MULTI-HOP: You must perform multi-step reasoning or use multiple tools/retrievals "
-    "if the question requires it.",
+    "2. MULTI-HOP: You must perform multi-step reasoning or use multiple tools/retrievals if the question requires it.",
     "3. FINAL FORMAT: Your ONLY final output MUST be a single, valid JSON object adhering "
     "strictly to the required keys: answer, tool_used, supporting_titles, supporting_sentences, "
     "reasoning_explanation. The final_answer must be concise and specific (e.g., just 'Delhi', "

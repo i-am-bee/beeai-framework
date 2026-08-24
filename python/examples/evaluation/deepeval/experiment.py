@@ -1,41 +1,41 @@
+import asyncio
 import json
 import logging
 import os
 import pickle
 from collections import Counter
 from pathlib import Path
-import asyncio
+from typing import Any
 
 from dotenv import load_dotenv
+
+from beeai_framework.agents.requirement import RequirementAgent
+from beeai_framework.backend import AnyMessage, AssistantMessage, ToolMessage
 from deepeval import evaluate
 from deepeval.dataset import Golden
 from deepeval.metrics import (
-    FaithfulnessMetric,
     AnswerRelevancyMetric,
+    ArgumentCorrectnessMetric,
     ContextualRecallMetric,
     ExactMatchMetric,
+    FaithfulnessMetric,
     ToolCorrectnessMetric,
-    ArgumentCorrectnessMetric,
 )
 from deepeval.test_case import LLMTestCase, ToolCall
+from evaluation._utils import create_dataset
+from evaluation.adapters import DeepEvalLLM
+from examples.evaluation.agent import create_agent
+from examples.evaluation.dataset import load_items
+from examples.evaluation.deepeval.answer_llm_judge_metric import AnswerLLMJudgeMetric
+from examples.evaluation.deepeval.facts_similarity_metric import FactsSimilarityMetric
+from examples.evaluation.deepeval.tool_usage_metric import ToolUsageMetric
 
 load_dotenv()
 
 logger = logging.getLogger(__name__)
 
-from examples.evaluation.agent import create_agent
-from examples.evaluation.dataset import load_items
-from evaluation._utils import create_dataset
-from evaluation.adapters import DeepEvalLLM
-from beeai_framework.agents.requirement import RequirementAgent
-from beeai_framework.backend import AssistantMessage, ToolMessage
 
-from examples.evaluation.deepeval.answer_llm_judge_metric import AnswerLLMJudgeMetric
-from examples.evaluation.deepeval.tool_usage_metric import ToolUsageMetric
-from examples.evaluation.deepeval.facts_similarity_metric import FactsSimilarityMetric
-
-
-def count_tool_usage(messages):
+def count_tool_usage(messages: list[AnyMessage]) -> dict[str, int]:
     tool_counter = Counter()
     for msg in messages:
         if isinstance(msg, ToolMessage):
@@ -46,7 +46,7 @@ def count_tool_usage(messages):
     return dict(tool_counter)
 
 
-def extract_real_tool_calls(messages) -> list[ToolCall]:
+def extract_real_tool_calls(messages: list[AnyMessage]) -> list[ToolCall]:
     """Derive ToolCalls with the arguments the agent actually sent, from the run's own
     AssistantMessage tool-call content — instead of the agent's self-reported JSON summary,
     which never includes call arguments (see JSON_SCHEMA_STRING in examples/evaluation/agent.py)."""
@@ -108,9 +108,7 @@ async def run_rag_agent(agent: RequirementAgent, test_case: LLMTestCase) -> None
             agent_response_json = {}
 
         agent_final_answer = (
-            agent_response_json.get("answer")
-            or agent_response_json.get("final_answer")
-            or actual_output
+            agent_response_json.get("answer") or agent_response_json.get("final_answer") or actual_output
         )
         agent_supporting_sentences = agent_response_json.get("supporting_sentences", [])
 
@@ -133,7 +131,11 @@ async def run_rag_agent(agent: RequirementAgent, test_case: LLMTestCase) -> None
 
     logger.info(
         "Test case — Question: %s | Expected: %s | Actual: %s | Expected tools: %s | Actual tools: %s",
-        question, test_case.expected_output, agent_final_answer, expected_tool_usage, agent_tool_usage_times,
+        question,
+        test_case.expected_output,
+        agent_final_answer,
+        expected_tool_usage,
+        agent_tool_usage_times,
     )
 
 
@@ -188,14 +190,11 @@ async def main() -> None:
     total_cases = len(per_test_results)
 
     for idx, test_res in enumerate(per_test_results):
-        metrics_data = (
-            getattr(test_res, "metrics_data", None)
-            or getattr(test_res, "metrics_results", None)
-            or []
-        )
+        metrics_data = getattr(test_res, "metrics_data", None) or getattr(test_res, "metrics_results", None) or []
         metric_success_map = {
-            (getattr(md, "metric_name", None) or getattr(md, "name", None) or md.__class__.__name__):
-            getattr(md, "success", False)
+            (getattr(md, "metric_name", None) or getattr(md, "name", None) or md.__class__.__name__): getattr(
+                md, "success", False
+            )
             for md in metrics_data
         }
         row = [f"Test case {idx + 1}"]
@@ -207,15 +206,14 @@ async def main() -> None:
         rows.append(row)  # pyrefly: ignore [bad-argument-type]
 
     footer = ["Success %"] + [
-        f"{(success_counts[n] / total_cases * 100):.0f}%" if total_cases else "0%"
-        for n in metric_names
+        f"{(success_counts[n] / total_cases * 100):.0f}%" if total_cases else "0%" for n in metric_names
     ]
 
-    all_rows = [["Test case"] + metric_names] + rows + [footer]
-    col_widths = [max(len(str(c)) for c in col) for col in zip(*all_rows)]
+    all_rows = [["Test case", *metric_names], *rows, footer]
+    col_widths = [max(len(str(c)) for c in col) for col in zip(*all_rows, strict=False)]
 
-    def fmt_row(r):
-        return " | ".join(str(c).ljust(w) for c, w in zip(r, col_widths))
+    def fmt_row(r: list[Any]) -> str:
+        return " | ".join(str(c).ljust(w) for c, w in zip(r, col_widths, strict=False))
 
     logger.info("\n=== Evaluation Results Table ===")
     logger.info(fmt_row(all_rows[0]))

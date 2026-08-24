@@ -10,7 +10,7 @@ class ToolUsageMetric(BaseMetric):
 
     success: bool = False  # pyrefly: ignore [bad-override]
 
-    def __init__(self, threshold: float = 0.5):
+    def __init__(self, threshold: float = 0.5) -> None:
         super().__init__()
         self.threshold = threshold
         self.async_mode = False
@@ -33,15 +33,12 @@ class ToolUsageMetric(BaseMetric):
             return self.score
 
         # Part 1: tool existence match (weight 0.75)
-        matching_tools = sum(
-            1 for tool in all_tools if tool in actual_tool_usage and tool in expected_tool_usage
-        )
+        matching_tools = sum(1 for tool in all_tools if tool in actual_tool_usage and tool in expected_tool_usage)
         existence_score = 0.75 * (matching_tools / len(all_tools))
 
         # Part 2: usage count match per expected tool (weight 0.25)
         count_scores = [
-            1.0 if actual_tool_usage.get(tool, 0) == expected_tool_usage[tool] else 0.0
-            for tool in expected_tool_usage
+            1.0 if actual_tool_usage.get(tool, 0) == expected_tool_usage[tool] else 0.0 for tool in expected_tool_usage
         ]
         count_score = 0.25 * (sum(count_scores) / len(count_scores)) if count_scores else 0.25
 
@@ -59,5 +56,5 @@ class ToolUsageMetric(BaseMetric):
 
     @property
     # pyrefly: ignore [bad-override]
-    def __name__(self):
+    def __name__(self) -> str:
         return "ToolUsageMetric"

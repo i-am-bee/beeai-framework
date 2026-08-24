@@ -4,8 +4,6 @@ import logging
 import typing as t
 
 import numpy as np
-
-logger = logging.getLogger(__name__)
 from pydantic import BaseModel, Field
 
 from ragas.metrics.collections.base import BaseMetric
@@ -14,20 +12,19 @@ from ragas.metrics.result import MetricResult
 if t.TYPE_CHECKING:
     from ragas.llms.base import InstructorBaseRagasLLM
 
+logger = logging.getLogger(__name__)
+
 
 class FactsSimilarityOutput(BaseModel):
     """Output schema for facts similarity evaluation."""
-    
+
     score: float = Field(
-        ..., 
-        ge=0.0, 
-        le=1.0,
-        description="Similarity score between 0 and 1, where 0 = completely different, 1 = identical in meaning"
-    )
-    reasoning: str = Field(
         ...,
-        description="Brief explanation of the similarity assessment"
+        ge=0.0,
+        le=1.0,
+        description="Similarity score between 0 and 1, where 0 = completely different, 1 = identical in meaning",
     )
+    reasoning: str = Field(..., description="Brief explanation of the similarity assessment")
 
 
 class FactsSimilarityMetric(BaseMetric):
@@ -74,8 +71,8 @@ class FactsSimilarityMetric(BaseMetric):
         name: str = "facts_similarity",
         threshold: float = 0.5,
         max_retries: int = 5,
-        **kwargs,
-    ):
+        **kwargs: t.Any,
+    ) -> None:
         """
         Initialize FactsSimilarityMetric with required components.
 
@@ -94,11 +91,7 @@ class FactsSimilarityMetric(BaseMetric):
         super().__init__(name=name, **kwargs)
 
     # pyrefly: ignore [bad-override]
-    async def ascore(
-        self,
-        actual_facts: t.List[str],
-        expected_facts: t.List[str]
-    ) -> MetricResult:
+    async def ascore(self, actual_facts: list[str], expected_facts: list[str]) -> MetricResult:
         """
         Calculate facts similarity score using LLM-based evaluation.
 
@@ -115,13 +108,13 @@ class FactsSimilarityMetric(BaseMetric):
                 actual_facts = [actual_facts]
             else:
                 raise ValueError(f"actual_facts must be a list of strings, got {type(actual_facts)}")
-        
+
         if not isinstance(expected_facts, list):
             if isinstance(expected_facts, str):
                 expected_facts = [expected_facts]
             else:
                 raise ValueError(f"expected_facts must be a list of strings, got {type(expected_facts)}")
-        
+
         # Validate all items are strings
         actual_facts = [str(f) for f in actual_facts if f]  # Convert to strings and filter empty
         expected_facts = [str(f) for f in expected_facts if f]  # Convert to strings and filter empty
@@ -139,18 +132,14 @@ class FactsSimilarityMetric(BaseMetric):
 
         return MetricResult(value=float(score))
 
-    async def _get_similarity_rating(
-        self, 
-        actual_facts: t.List[str], 
-        expected_facts: t.List[str]
-    ) -> float:
+    async def _get_similarity_rating(self, actual_facts: list[str], expected_facts: list[str]) -> float:
         """Get similarity rating from LLM judge with retry logic."""
         for retry in range(self.max_retries):
             try:
                 # Format facts as numbered lists
-                actual_str = "\n".join(f"{i+1}. {fact}" for i, fact in enumerate(actual_facts))
-                expected_str = "\n".join(f"{i+1}. {fact}" for i, fact in enumerate(expected_facts))
-                
+                actual_str = "\n".join(f"{i + 1}. {fact}" for i, fact in enumerate(actual_facts))
+                expected_str = "\n".join(f"{i + 1}. {fact}" for i, fact in enumerate(expected_facts))
+
                 # Create evaluation prompt
                 prompt = (
                     "You are an evaluator assessing the similarity between two lists of facts.\n\n"
@@ -167,7 +156,7 @@ class FactsSimilarityMetric(BaseMetric):
                     "- 0.5 = Partially similar (some overlap)\n"
                     "- 1.0 = Identical meaning (even if worded differently)\n"
                 )
-                
+
                 result = await self.llm.agenerate(prompt, FactsSimilarityOutput)
                 score = result.score
 

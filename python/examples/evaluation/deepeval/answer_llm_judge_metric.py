@@ -8,7 +8,7 @@ class AnswerLLMJudgeMetric(BaseMetric):
 
     success: bool = False  # pyrefly: ignore [bad-override]
 
-    def __init__(self, model: DeepEvalLLM | None = None, threshold: float = 0.5):
+    def __init__(self, model: DeepEvalLLM | None = None, threshold: float = 0.5) -> None:
         super().__init__()
         # pyrefly: ignore [bad-override]
         self.model: DeepEvalLLM = model or DeepEvalLLM.from_name("ollama:llama3.1:8b")
@@ -59,9 +59,7 @@ class AnswerLLMJudgeMetric(BaseMetric):
         # asyncio.run() cannot be nested inside an already-running event loop, and
         # async_mode=True means DeepEval always calls a_measure() directly for this
         # metric — this sync entry point is unsupported rather than unsafely bridged.
-        raise NotImplementedError(
-            "AnswerLLMJudgeMetric only supports async execution; use a_measure() instead."
-        )
+        raise NotImplementedError("AnswerLLMJudgeMetric only supports async execution; use a_measure() instead.")
 
     def is_successful(self) -> bool:
         return getattr(self, "success", False)
