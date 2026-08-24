@@ -1,14 +1,13 @@
 import os
-import tempfile
 
 from dotenv import load_dotenv
 
 from beeai_framework.agents.requirement import RequirementAgent
 from beeai_framework.backend import ChatModel
 from beeai_framework.memory import UnconstrainedMemory
-from beeai_framework.tools.code import LocalPythonStorage, PythonTool
 from beeai_framework.tools.search.wikipedia import WikipediaTool
 from beeai_framework.tools.weather import OpenMeteoTool
+from examples.evaluation.calculator_tool import CalculatorTool
 
 load_dotenv()
 
@@ -40,17 +39,6 @@ AGENT_INSTRUCTIONS = [
 ]
 
 
-def create_calculator_tool() -> PythonTool:
-    storage = LocalPythonStorage(
-        local_working_dir=tempfile.mkdtemp("code_interpreter_source"),
-        interpreter_working_dir=os.getenv("CODE_INTERPRETER_TMPDIR", "./tmp/code_interpreter_target"),
-    )
-    return PythonTool(
-        code_interpreter_url=os.getenv("CODE_INTERPRETER_URL", "http://127.0.0.1:50081"),
-        storage=storage,
-    )
-
-
 def create_agent(model_name: str | None = None) -> RequirementAgent:
     """
     Create a shared RequirementAgent for multi-hop QA evaluation.
@@ -71,7 +59,7 @@ def create_agent(model_name: str | None = None) -> RequirementAgent:
 
     return RequirementAgent(
         llm=llm,
-        tools=[WikipediaTool(), OpenMeteoTool(), create_calculator_tool()],
+        tools=[WikipediaTool(), OpenMeteoTool(), CalculatorTool()],
         memory=UnconstrainedMemory(),
         role=AGENT_ROLE,
         instructions=AGENT_INSTRUCTIONS,
