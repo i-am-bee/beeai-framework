@@ -9,13 +9,14 @@ load_dotenv()
 
 logger = logging.getLogger(__name__)
 
-# Add python/ root to path for shared evaluation module
-sys.path.insert(0, str(Path(__file__).parent.parent.parent.parent))
-# Add this folder to path for local metric imports
-sys.path.insert(0, str(Path(__file__).parent))
-
 # Suppress multiprocess resource tracker warnings on Windows - must be before other imports
-# TODO: remove once multiprocess fixes ResourceTracker.__del__ on Windows
+# TODO: remove once multiprocess fixes ResourceTracker.__del__ on Windows.
+# At interpreter shutdown, ResourceTracker.__del__ calls self._stop(), which raises
+# AttributeError: '_thread.RLock' object has no attribute '_recursion_count' — a known,
+# reproducible symptom of a Windows-specific teardown-ordering bug in the third-party
+# `multiprocess` package's resource_tracker module (not Python's stdlib multiprocessing).
+# No matching issue was found filed against uqfoundation/multiprocess at the time of
+# writing; this comment documents the actual failure so it can be re-checked later.
 if sys.platform == "win32":
     warnings.filterwarnings("ignore", category=ResourceWarning)
     os.environ["PYTHONWARNINGS"] = "ignore::ResourceWarning"
@@ -44,17 +45,22 @@ from ragas.metrics.collections import AnswerAccuracy, ContextPrecision, ContextR
 
 from examples.evaluation.agent import create_agent
 from evaluation.adapters import InstructorRagasLLM
-from FactsSimilarityMetric import FactsSimilarityMetric
+from examples.evaluation.ragas.facts_similarity_metric import FactsSimilarityMetric
 
-# Load dataset
 _script_dir = Path(__file__).parent
 _data_dir = _script_dir / "data"
-dataset = Dataset.load(name="my_evaluation", backend="local/csv", root_dir=str(_data_dir))
 
-# Create judge LLM once
-ragas_judge_llm = InstructorRagasLLM.from_name(
-    model_name=os.environ.get("EVAL_CHAT_MODEL_NAME", "ollama:llama3.1:8b")
-)
+_ragas_judge_llm: InstructorRagasLLM | None = None
+
+
+def get_ragas_judge_llm() -> InstructorRagasLLM:
+    """Lazily construct (and cache) the judge LLM on first use, instead of at import time."""
+    global _ragas_judge_llm
+    if _ragas_judge_llm is None:
+        _ragas_judge_llm = InstructorRagasLLM.from_name(
+            model_name=os.environ.get("EVAL_CHAT_MODEL_NAME", "ollama:llama3.1:8b")
+        )
+    return _ragas_judge_llm
 
 
 def extract_json(text):
@@ -110,12 +116,14 @@ async def my_experiment(row):
 
     logger.info("Agent response: %s", response.last_message.text)
 
-    context_precision_result = await ContextPrecision(llm=ragas_judge_llm).ascore(
+    judge_llm = get_ragas_judge_llm()
+
+    context_precision_result = await ContextPrecision(llm=judge_llm).ascore(
         user_input=row["question"],
         reference=row["answer"],
         retrieved_contexts=supporting_sentences
     )
-    context_recall_result = await ContextRecall(llm=ragas_judge_llm).ascore(
+    context_recall_result = await ContextRecall(llm=judge_llm).ascore(
         user_input=row["question"],
         reference=row["answer"],
         retrieved_contexts=supporting_sentences
@@ -127,14 +135,14 @@ async def my_experiment(row):
         reference=reference_answer,
         response=answer_text
     )
-    answer_accuracy_result = await AnswerAccuracy(llm=ragas_judge_llm).ascore(
+    answer_accuracy_result = await AnswerAccuracy(llm=judge_llm).ascore(
         user_input=row["question"],
         response=answer_text,
         reference=row["answer"]
     )
 
     expected_facts = row.get("contexts", [])
-    facts_similarity_result = await FactsSimilarityMetric(llm=ragas_judge_llm).ascore(
+    facts_similarity_result = await FactsSimilarityMetric(llm=judge_llm).ascore(
         actual_facts=supporting_sentences,
         expected_facts=expected_facts
     )
@@ -170,6 +178,8 @@ async def my_experiment(row):
 
 
 async def main():
+    dataset = Dataset.load(name="my_evaluation", backend="local/csv", root_dir=str(_data_dir))
+
     # Pass an explicit `name` so Ragas writes a single, stable CSV at
     # data/experiments/my_results.csv (overwritten on every run). Without
     # this, Ragas generates a new random filename per run.
