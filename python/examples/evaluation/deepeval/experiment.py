@@ -8,6 +8,7 @@ import asyncio
 
 from dotenv import load_dotenv
 from deepeval import evaluate
+from deepeval.dataset import Golden
 from deepeval.metrics import (
     FaithfulnessMetric,
     AnswerRelevancyMetric,
@@ -24,12 +25,14 @@ logger = logging.getLogger(__name__)
 
 from examples.evaluation.agent import create_agent
 from examples.evaluation.dataset import load_items
+from evaluation._utils import create_dataset
 from evaluation.adapters import DeepEvalLLM
-from beeai_framework.backend import ToolMessage
+from beeai_framework.agents.requirement import RequirementAgent
+from beeai_framework.backend import AssistantMessage, ToolMessage
 
-from AnswerLLMJudgeMetric import AnswerLLMJudgeMetric
-from ToolUsageMetric import ToolUsageMetric
-from FactsSimilarityMetric import FactsSimilarityMetric
+from examples.evaluation.deepeval.answer_llm_judge_metric import AnswerLLMJudgeMetric
+from examples.evaluation.deepeval.tool_usage_metric import ToolUsageMetric
+from examples.evaluation.deepeval.facts_similarity_metric import FactsSimilarityMetric
 
 
 def count_tool_usage(messages):
@@ -43,96 +46,105 @@ def count_tool_usage(messages):
     return dict(tool_counter)
 
 
-async def create_rag_test_cases():
-    agent = create_agent()
-    test_cases = []
-    test_data = load_items()
+def extract_real_tool_calls(messages) -> list[ToolCall]:
+    """Derive ToolCalls with the arguments the agent actually sent, from the run's own
+    AssistantMessage tool-call content — instead of the agent's self-reported JSON summary,
+    which never includes call arguments (see JSON_SCHEMA_STRING in examples/evaluation/agent.py)."""
+    tool_calls = []
+    for msg in messages:
+        if not isinstance(msg, AssistantMessage):
+            continue
+        for call in msg.get_tool_calls():
+            if call.tool_name == "final_answer":
+                continue
+            try:
+                input_parameters = json.loads(call.args)
+            except (json.JSONDecodeError, TypeError):
+                input_parameters = {}
+            tool_calls.append(ToolCall(name=call.tool_name, input_parameters=input_parameters))
+    return tool_calls
 
-    for item in test_data:
-        question = item["question"]
-        expected_output = item["answer"]
-        context = item["relevant_sentences"]
-        expected_tools = {"Wikipedia": item["wiki_times"]}
+
+def rag_goldens() -> list[Golden]:
+    """Build the 'expected' half of each test case — the Golden — from the shared dataset."""
+    goldens = []
+    for item in load_items():
         supporting_titles = item["supporting_titles"]
-        tools_used = [
-            ToolCall(name="Wikipedia", input_parameters={"query": name})
-            for name in supporting_titles
-        ]
+        goldens.append(
+            Golden(
+                input=item["question"],
+                expected_output=item["answer"],
+                context=item["relevant_sentences"],
+                expected_tools=[
+                    ToolCall(name="Wikipedia", input_parameters={"query": name}) for name in supporting_titles
+                ],
+                additional_metadata={
+                    "expected_facts": item["relevant_sentences"],
+                    "expected_tool_usage": {"Wikipedia": item["wiki_times"]},
+                    "supporting_titles": supporting_titles,
+                },
+            )
+        )
+    return goldens
+
+
+async def run_rag_agent(agent: RequirementAgent, test_case: LLMTestCase) -> None:
+    """`agent_run` callback for `evaluation._utils.create_dataset`: runs the agent and fills
+    in the 'actual' half of test_case (actual_output, retrieval_context, tools_called) by
+    parsing the agent's multi-hop QA JSON response — same parsing logic as before, just
+    moved into the shape create_dataset expects instead of a hand-rolled loop."""
+    question = test_case.input
+    expected_tool_usage = (test_case.additional_metadata or {}).get("expected_tool_usage", {})
+
+    try:
+        response = await agent.run(question)
+        memory = response.state.memory.messages
+        actual_output = response.last_message.text
+        agent_tool_usage_times = count_tool_usage(memory)
 
         try:
-            response = await agent.run(question)
-            memory = response.state.memory.messages
-            actual_output = response.last_message.text
-            agent_tool_usage_times = count_tool_usage(memory)
+            agent_response_json = json.loads(actual_output)
+        except (json.JSONDecodeError, TypeError):
+            agent_response_json = {}
 
-            try:
-                agent_response_json = json.loads(actual_output)
-            except (json.JSONDecodeError, TypeError):
-                agent_response_json = {}
-
-            agent_final_answer = (
-                agent_response_json.get("answer")
-                or agent_response_json.get("final_answer")
-                or actual_output
-            )
-            agent_supporting_sentences = agent_response_json.get("supporting_sentences", [])
-
-            tool_used_field = agent_response_json.get("tool_used", [])
-            agent_tools_used = []
-
-            if isinstance(tool_used_field, str):
-                agent_tools_used.append(ToolCall(name=tool_used_field, input_parameters={}))
-            elif isinstance(tool_used_field, list):
-                for entry in tool_used_field:
-                    tool_name = entry.get("tool") if isinstance(entry, dict) else None
-                    times_used = entry.get("times_used", 1) if isinstance(entry, dict) else 1
-                    titles = entry.get("titles", []) if isinstance(entry, dict) else []
-                    if tool_name:
-                        agent_tools_used.append(
-                            ToolCall(name=tool_name, input_parameters={"titles": titles} if titles else {})
-                        )
-                        if times_used:
-                            agent_tool_usage_times[tool_name] = times_used
-
-            if not agent_tools_used and agent_tool_usage_times:
-                for tool_name in agent_tool_usage_times:
-                    agent_tools_used.append(ToolCall(name=tool_name, input_parameters={}))
-
-        except Exception as exc:
-            logger.error("Agent failed on question: %r — %s", question, exc)
-            agent_final_answer = ""
-            agent_supporting_sentences = []
-            agent_tools_used = []
-            agent_tool_usage_times = {}
-
-        test_case = LLMTestCase(
-            input=question,
-            actual_output=agent_final_answer,
-            expected_output=expected_output,
-            retrieval_context=agent_supporting_sentences,
-            context=context,
-            tools_called=agent_tools_used,
-            expected_tools=tools_used,
-            additional_metadata={
-                "expected_facts": context,
-                "tool_usage": agent_tool_usage_times,
-                "expected_tool_usage": expected_tools,
-                "supporting_titles": supporting_titles,
-            }
+        agent_final_answer = (
+            agent_response_json.get("answer")
+            or agent_response_json.get("final_answer")
+            or actual_output
         )
+        agent_supporting_sentences = agent_response_json.get("supporting_sentences", [])
 
-        logger.info(
-            "Test case — Question: %s | Expected: %s | Actual: %s | Expected tools: %s | Actual tools: %s",
-            question, expected_output, agent_final_answer, expected_tools, agent_tool_usage_times,
-        )
+        # Real tool calls with real arguments, taken from the agent's own run — not the
+        # self-reported `tool_used` JSON field, which never includes call arguments.
+        agent_tools_used = extract_real_tool_calls(memory)
 
-        test_cases.append(test_case)
+    except Exception as exc:
+        logger.error("Agent failed on question: %r — %s", question, exc)
+        agent_final_answer = ""
+        agent_supporting_sentences = []
+        agent_tools_used = []
+        agent_tool_usage_times = {}
 
-    return test_cases
+    test_case.actual_output = agent_final_answer
+    test_case.retrieval_context = agent_supporting_sentences
+    test_case.tools_called = agent_tools_used
+    if test_case.additional_metadata is not None:
+        test_case.additional_metadata["tool_usage"] = agent_tool_usage_times
+
+    logger.info(
+        "Test case — Question: %s | Expected: %s | Actual: %s | Expected tools: %s | Actual tools: %s",
+        question, test_case.expected_output, agent_final_answer, expected_tool_usage, agent_tool_usage_times,
+    )
 
 
 async def main() -> None:
-    test_cases = await create_rag_test_cases()
+    dataset = await create_dataset(
+        name="rag_multi_hop",
+        agent_factory=create_agent,
+        agent_run=run_rag_agent,
+        goldens=rag_goldens(),
+    )
+    test_cases = dataset.test_cases
 
     eval_model_name = os.environ.get("EVAL_CHAT_MODEL_NAME", "ollama:llama3.1:8b")
     os.environ.setdefault("DEEPEVAL_PER_TASK_TIMEOUT_SECONDS_OVERRIDE", "60")
