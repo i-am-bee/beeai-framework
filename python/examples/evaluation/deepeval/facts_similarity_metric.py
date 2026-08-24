@@ -55,9 +55,10 @@ class FactsSimilarityMetric(BaseMetric):
 
     # pyrefly: ignore [bad-override]
     def measure(self, test_case: LLMTestCase) -> float:
-        import asyncio
-
-        return asyncio.run(self.a_measure(test_case))
+        # asyncio.run() cannot be nested inside an already-running event loop, and
+        # async_mode=True means DeepEval always calls a_measure() directly for this
+        # metric — this sync entry point is unsupported rather than unsafely bridged.
+        raise NotImplementedError("FactsSimilarityMetric only supports async execution; use a_measure() instead.")
 
     def is_successful(self) -> bool:
         return getattr(self, "success", False)
