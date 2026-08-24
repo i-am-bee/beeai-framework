@@ -41,7 +41,7 @@ if sys.platform == "win32":
     except Exception:
         pass
 
-from evaluation.adapters import InstructorRagasLLM
+from beeai_framework.evaluation.adapters import InstructorRagasLLM
 from examples.evaluation.agent import create_agent
 from examples.evaluation.ragas.facts_similarity_metric import FactsSimilarityMetric
 from ragas import Dataset, experiment

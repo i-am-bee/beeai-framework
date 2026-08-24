@@ -9,8 +9,8 @@ Evaluation lets you systematically measure how well your BeeAI agents perform on
 
 BeeAI integrates with two popular evaluation frameworks via dedicated adapters:
 
-- **[DeepEval](https://docs.confident-ai.com/)** — evaluation framework with built-in and custom metrics
-- **[Ragas](https://docs.ragas.io/)** — async evaluation framework focused on RAG and agent pipelines
+- **[DeepEval](https://docs.confident-ai.com/)**: evaluation framework with built-in and custom metrics
+- **[Ragas](https://docs.ragas.io/)**: async evaluation framework focused on RAG and agent pipelines
 
 <Note>Evaluation is currently supported in Python only.</Note>
 
@@ -19,7 +19,7 @@ BeeAI integrates with two popular evaluation frameworks via dedicated adapters:
 The adapters bridge BeeAI's `ChatModel` to each evaluation framework's LLM interface, so metrics can use BeeAI-powered models for judging agent outputs without requiring separate API configurations.
 
 <Note>
-`evaluation.adapters` lives at `python/evaluation/adapters` in the repo and is **not** part of the published `beeai-framework` package. To use it, clone the repo and run from within `python/` (e.g. via `poetry run`), or copy the adapter file(s) you need into your own project.
+`beeai_framework.evaluation.adapters` requires the `evaluation` extra: `pip install "beeai-framework[evaluation]"`. This installs `deepeval` and/or `ragas` alongside BeeAI so the adapters below are importable.
 </Note>
 
 ### DeepEvalLLM
@@ -27,7 +27,7 @@ The adapters bridge BeeAI's `ChatModel` to each evaluation framework's LLM inter
 Wraps a BeeAI `ChatModel` as a `DeepEvalBaseLLM`, enabling DeepEval metrics to call any BeeAI-supported model for LLM-as-judge evaluations. Supports structured output via Pydantic schemas.
 
 ```py Python [expandable]
-from evaluation.adapters import DeepEvalLLM
+from beeai_framework.evaluation.adapters import DeepEvalLLM
 
 # Create from a model name string
 eval_llm = DeepEvalLLM.from_name("openai:gpt-4o")
@@ -40,10 +40,10 @@ eval_llm = DeepEvalLLM(model)
 
 ### InstructorRagasLLM
 
-Bridges Ragas directly to BeeAI's `ChatModel` without a LangChain intermediary. Handles both async and sync structured output generation.
+Bridges Ragas directly to BeeAI's `ChatModel`. Handles both async and sync structured output generation.
 
 ```py Python [expandable]
-from evaluation.adapters import InstructorRagasLLM
+from beeai_framework.evaluation.adapters import InstructorRagasLLM
 
 # Create from a model name string
 eval_llm = InstructorRagasLLM.from_name("openai:gpt-4o")
@@ -54,11 +54,13 @@ model = ChatModel.from_name("ollama:llama3.1:8b")
 eval_llm = InstructorRagasLLM(model)
 ```
 
-## Dataset & Agent Setup
+## Example
 
-Evaluation experiments require two components: a **dataset** of test cases and an **agent** to evaluate.
+The rest of this page uses one reference example throughout: a multi-hop QA agent evaluated against a small bundled dataset. Evaluation experiments require two components: a **dataset** of test cases and an **agent** to evaluate.
 
 ### Dataset
+
+The bundled sample dataset uses [HotpotQA](https://hotpotqa.github.io/)-style multi-hop questions: each question can't be answered from a single source. The agent must retrieve and combine facts from two or more separate Wikipedia articles (e.g. comparing which of two magazines launched first, or tracing a company name to its headquarters city). This is why `wiki_times` and `supporting_titles` each have multiple entries per item, and why the example agent's evaluation depends on `WikipediaTool`.
 
 The dataset is a JSON file where each item contains:
 
@@ -71,7 +73,7 @@ The dataset is a JSON file where each item contains:
 | `wiki_times`          | Expected number of Wikipedia tool calls                 |
 
 ```py Python [expandable]
-# dataset.py — load evaluation items
+# dataset.py: load evaluation items
 import json
 from pathlib import Path
 
@@ -82,7 +84,7 @@ def load_items() -> list[dict]:
 
 ### Agent
 
-The evaluation agent is a `RequirementAgent` configured for multi-hop QA with structured JSON output. It uses tools like `WikipediaTool`, `OpenMeteoTool`, and `PythonTool` to gather information before answering.
+The evaluation agent is a `RequirementAgent` configured for multi-hop QA with structured JSON output. It uses `WikipediaTool` and `OpenMeteoTool` to gather information, plus a minimal `CalculatorTool` for arithmetic. `CalculatorTool` is a dependency-free tool that evaluates expressions through a restricted AST walk, so it can't execute arbitrary code and needs no external interpreter server.
 
 ```py Python [expandable]
 from beeai_framework.agents.requirement import RequirementAgent
@@ -90,10 +92,11 @@ from beeai_framework.backend import ChatModel
 from beeai_framework.memory import UnconstrainedMemory
 from beeai_framework.tools.search.wikipedia import WikipediaTool
 from beeai_framework.tools.weather import OpenMeteoTool
+from examples.evaluation.calculator_tool import CalculatorTool
 
 agent = RequirementAgent(
     llm=ChatModel.from_name("ollama:llama3.1:8b"),
-    tools=[WikipediaTool(), OpenMeteoTool()],
+    tools=[WikipediaTool(), OpenMeteoTool(), CalculatorTool()],
     memory=UnconstrainedMemory(),
     role="You are an expert Multi-hop QA agent.",
     instructions=["Answer in JSON format with: answer, tool_used, supporting_titles, supporting_sentences, reasoning_explanation"],
@@ -153,7 +156,7 @@ Each Ragas run writes two files into `ragas/data/experiments/`, both overwritten
 | `my_results.csv`  | Tabular results (written by Ragas via `arun(name="my_results")`) |
 | `my_results.pkl`  | Pickle of the raw Ragas `Experiment` object (for reloading)   |
 
-The stable CSV filename comes from passing `name="my_results"` to `my_experiment.arun(...)` — without it, Ragas auto-generates a new random filename (e.g. `dazzling_minsky.csv`) per run.
+The stable CSV filename comes from passing `name="my_results"` to `my_experiment.arun(...)`. Without it, Ragas auto-generates a new random filename (e.g. `dazzling_minsky.csv`) per run.
 
 ## Custom Metrics
 

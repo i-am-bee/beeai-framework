@@ -1,6 +1,6 @@
+from beeai_framework.evaluation.adapters import DeepEvalLLM
 from deepeval.metrics import BaseMetric
 from deepeval.test_case import LLMTestCase
-from evaluation.adapters import DeepEvalLLM
 
 
 class AnswerLLMJudgeMetric(BaseMetric):

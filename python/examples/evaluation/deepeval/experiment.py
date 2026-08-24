@@ -11,6 +11,7 @@ from dotenv import load_dotenv
 
 from beeai_framework.agents.requirement import RequirementAgent
 from beeai_framework.backend import AnyMessage, AssistantMessage, ToolMessage
+from beeai_framework.evaluation.adapters import DeepEvalLLM
 from deepeval import evaluate
 from deepeval.dataset import Golden
 from deepeval.metrics import (
@@ -23,7 +24,6 @@ from deepeval.metrics import (
 )
 from deepeval.test_case import LLMTestCase, ToolCall
 from evaluation._utils import create_dataset
-from evaluation.adapters import DeepEvalLLM
 from examples.evaluation.agent import create_agent
 from examples.evaluation.dataset import load_items
 from examples.evaluation.deepeval.answer_llm_judge_metric import AnswerLLMJudgeMetric

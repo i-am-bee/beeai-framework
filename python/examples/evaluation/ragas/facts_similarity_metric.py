@@ -38,8 +38,8 @@ class FactsSimilarityMetric(BaseMetric):
 
     Usage:
         >>> from ragas.llms import llm_factory
-        >>> from evaluation.adapters import InstructorRagasLLM
-        >>> from FactsSimilarityMetric import FactsSimilarityMetric
+        >>> from beeai_framework.evaluation.adapters import InstructorRagasLLM
+        >>> from examples.evaluation.ragas.facts_similarity_metric import FactsSimilarityMetric
         >>>
         >>> # Setup LLM
         >>> llm = InstructorRagasLLM.from_name("vertexai:gemini-2.0-flash-lite-001")

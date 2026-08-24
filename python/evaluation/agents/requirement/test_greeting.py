@@ -10,12 +10,12 @@ from deepeval.test_case import LLMTestCaseParams
 
 from beeai_framework.agents.requirement import RequirementAgent
 from beeai_framework.backend import ChatModel
+from beeai_framework.evaluation.adapters import DeepEvalLLM
 from beeai_framework.memory import UnconstrainedMemory
 from beeai_framework.tools.search.duckduckgo import DuckDuckGoSearchTool
 from beeai_framework.tools.weather.openmeteo import OpenMeteoTool
 from evaluation._utils import create_dataset, evaluate_dataset
 from evaluation.agents.requirement._utils import run_agent
-from evaluation.adapters import DeepEvalLLM
 
 
 def create_agent() -> RequirementAgent:

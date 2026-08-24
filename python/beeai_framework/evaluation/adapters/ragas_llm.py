@@ -3,10 +3,16 @@
 
 import asyncio
 import logging
-from typing import Any, Type, TypeVar
+from typing import Any, TypeVar
 
 from pydantic import BaseModel
-from ragas.llms.base import InstructorBaseRagasLLM
+
+try:
+    from ragas.llms.base import InstructorBaseRagasLLM
+except ModuleNotFoundError as e:
+    raise ModuleNotFoundError(
+        "Optional module [evaluation] not found.\nRun 'pip install \"beeai-framework[evaluation]\"' to install."
+    ) from e
 
 from beeai_framework.backend import ChatModel
 from beeai_framework.backend.errors import ChatModelError
@@ -20,10 +26,10 @@ T = TypeVar("T", bound=BaseModel)
 class InstructorRagasLLM(InstructorBaseRagasLLM):
     """A class that bridges Ragas with BeeAI directly (without LangChain intermediary)."""
 
-    def __init__(self, model: ChatModel):
+    def __init__(self, model: ChatModel) -> None:
         self.model = model
 
-    async def agenerate(self, prompt: str, response_model: Type[T]) -> T:
+    async def agenerate(self, prompt: str, response_model: type[T]) -> T:
         """
         The main function that performs the integration:
         1. Takes a Ragas request.
@@ -43,7 +49,7 @@ class InstructorRagasLLM(InstructorBaseRagasLLM):
 
         return response.output_structured
 
-    def generate(self, prompt: str, response_model: Type[T]) -> T:
+    def generate(self, prompt: str, response_model: type[T]) -> T:
         """Synchronous version (required to implement due to inheritance)."""
         try:
             loop = asyncio.get_running_loop()

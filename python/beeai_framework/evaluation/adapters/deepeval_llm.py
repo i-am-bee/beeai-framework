@@ -4,8 +4,14 @@
 import os
 from typing import Any, TypeVar
 
-from deepeval.key_handler import KEY_FILE_HANDLER, ModelKeyValues
-from deepeval.models import DeepEvalBaseLLM
+try:
+    from deepeval.key_handler import KEY_FILE_HANDLER, ModelKeyValues
+    from deepeval.models import DeepEvalBaseLLM
+except ModuleNotFoundError as e:
+    raise ModuleNotFoundError(
+        "Optional module [evaluation] not found.\nRun 'pip install \"beeai-framework[evaluation]\"' to install."
+    ) from e
+
 from dotenv import load_dotenv
 from pydantic import BaseModel
 
