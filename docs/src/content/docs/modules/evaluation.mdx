@@ -60,7 +60,17 @@ The rest of this page uses one reference example throughout: a multi-hop QA agen
 
 ### Dataset
 
-The bundled sample dataset uses [HotpotQA](https://hotpotqa.github.io/)-style multi-hop questions: each question can't be answered from a single source. The agent must retrieve and combine facts from two or more separate Wikipedia articles (e.g. comparing which of two magazines launched first, or tracing a company name to its headquarters city). This is why `wiki_times` and `supporting_titles` each have multiple entries per item, and why the example agent's evaluation depends on `WikipediaTool`.
+The bundled sample dataset is built from real [HotpotQA](https://hotpotqa.github.io/) records: multi-hop questions that can't be answered from a single source. The agent must retrieve and combine facts from two or more separate Wikipedia articles (e.g. comparing which of two magazines launched first, or tracing a company name to its headquarters city).
+
+HotpotQA's own records carry a `context` field (every sentence from each candidate article, including irrelevant "distractor" paragraphs) and a `supporting_facts` field (pointers, as `title` + `sent_id`, into `context`, marking which sentences actually justify the answer). This example's dataset simplifies that structure for direct use by the agent and metrics:
+
+| HotpotQA field | Our field | How it's derived |
+|-----------------|-----------|-------------------|
+| `question`, `answer` | `question`, `answer` | Copied as-is |
+| `supporting_facts` (`title` + `sent_id` pointers) | `relevant_sentences` | Each pointer is resolved against `context` and the actual sentence text is copied in, instead of kept as an index |
+| `supporting_facts.title` (deduplicated) | `supporting_titles` | The distinct article titles the supporting facts point to |
+| *(no HotpotQA equivalent)* | `wiki_times` | Count of distinct `supporting_titles`; how many Wikipedia lookups the agent is expected to make |
+| `context`'s distractor paragraphs, `type`, `level`, `id` | *(dropped)* | Not needed for this example's simpler dataset |
 
 The dataset is a JSON file where each item contains:
 
