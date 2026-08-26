@@ -1,9 +1,6 @@
 import asyncio
-import atexit
-import contextlib
 import json
 import logging
-import multiprocessing
 import os
 import pickle
 import re
@@ -15,31 +12,15 @@ from typing import Any
 import aiofiles
 from dotenv import load_dotenv
 
-# Suppress multiprocess resource tracker warnings on Windows - must run before `ragas`
-# (or anything else that may transitively import multiprocess.resource_tracker) is
-# imported below.
-# TODO: remove once multiprocess fixes ResourceTracker.__del__ on Windows.
-# At interpreter shutdown, ResourceTracker.__del__ calls self._stop(), which raises
-# AttributeError: '_thread.RLock' object has no attribute '_recursion_count' — a known,
-# reproducible symptom of a Windows-specific teardown-ordering bug in the third-party
-# `multiprocess` package's resource_tracker module (not Python's stdlib multiprocessing).
-# No matching issue was found filed against uqfoundation/multiprocess at the time of
-# writing; this comment documents the actual failure so it can be re-checked later.
+# On Windows, multiprocess's ResourceTracker.__del__ raises AttributeError at interpreter
+# shutdown (a known Windows-specific teardown-ordering bug in the third-party `multiprocess`
+# package, not stdlib multiprocessing). This is harmless: Python suppresses exceptions raised
+# inside __del__ by design (printed as "Exception ignored in: ..." to stderr, exit code
+# unaffected) — confirmed empirically, not just assumed. Silence the accompanying
+# ResourceWarning so it doesn't clutter output; no monkey-patch needed for the exit code.
 if sys.platform == "win32":
     warnings.filterwarnings("ignore", category=ResourceWarning)
     os.environ["PYTHONWARNINGS"] = "ignore::ResourceWarning"
-    try:
-        import multiprocess.resource_tracker
-
-        original_del = multiprocess.resource_tracker.ResourceTracker.__del__
-
-        def patched_del(self: Any) -> None:
-            with contextlib.suppress(AttributeError):
-                original_del(self)
-
-        multiprocess.resource_tracker.ResourceTracker.__del__ = patched_del
-    except Exception:
-        pass
 
 from beeai_framework.evaluation.adapters import InstructorRagasLLM
 from examples.evaluation.agent import create_agent
@@ -196,10 +177,4 @@ async def main() -> None:
 
 
 if __name__ == "__main__":
-
-    def cleanup() -> None:
-        with contextlib.suppress(Exception):
-            multiprocessing.util._exit_function()
-
-    atexit.register(cleanup)
     asyncio.run(main())
