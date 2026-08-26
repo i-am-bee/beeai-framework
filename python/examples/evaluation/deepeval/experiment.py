@@ -73,14 +73,14 @@ def rag_goldens() -> list[Golden]:
         goldens.append(
             Golden(
                 input=item["question"],
-                expected_output=item["answer"],
-                context=item["relevant_sentences"],
+                expected_output=item["expected_answer"],
+                context=item["supporting_sentences"],
                 expected_tools=[
                     ToolCall(name="Wikipedia", input_parameters={"query": name}) for name in supporting_titles
                 ],
                 additional_metadata={
-                    "expected_facts": item["relevant_sentences"],
-                    "expected_tool_usage": {"Wikipedia": item["wiki_times"]},
+                    "expected_facts": item["supporting_sentences"],
+                    "expected_tool_usage": {"Wikipedia": item["expected_tool_calls"]},
                     "supporting_titles": supporting_titles,
                 },
             )

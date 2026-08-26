@@ -25,8 +25,8 @@ def build_dataset() -> Dataset:
             {
                 "id": f"sample_{i}",
                 "question": item["question"],
-                "answer": item["answer"],
-                "contexts": item["relevant_sentences"],
+                "answer": item["expected_answer"],
+                "contexts": item["supporting_sentences"],
                 "supporting_titles": item["supporting_titles"],
             }
         )

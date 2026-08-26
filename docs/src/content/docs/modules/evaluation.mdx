@@ -66,21 +66,21 @@ HotpotQA's own records carry a `context` field (every sentence from each candida
 
 | HotpotQA field | Our field | How it's derived |
 |-----------------|-----------|-------------------|
-| `question`, `answer` | `question`, `answer` | Copied as-is |
-| `supporting_facts` (`title` + `sent_id` pointers) | `relevant_sentences` | Each pointer is resolved against `context` and the actual sentence text is copied in, instead of kept as an index |
+| `question`, `answer` | `question`, `expected_answer` | Copied as-is |
+| `supporting_facts` (`title` + `sent_id` pointers) | `supporting_sentences` | Each pointer is resolved against `context` and the actual sentence text is copied in, instead of kept as an index |
 | `supporting_facts.title` (deduplicated) | `supporting_titles` | The distinct article titles the supporting facts point to |
-| *(no HotpotQA equivalent)* | `wiki_times` | Count of distinct `supporting_titles`; how many Wikipedia lookups the agent is expected to make |
+| *(no HotpotQA equivalent)* | `expected_tool_calls` | Count of distinct `supporting_titles`; how many Wikipedia lookups the agent is expected to make |
 | `context`'s distractor paragraphs, `type`, `level`, `id` | *(dropped)* | Not needed for this example's simpler dataset |
 
 The dataset is a JSON file where each item contains:
 
-| Field                 | Description                                            |
-|-----------------------|--------------------------------------------------------|
-| `question`            | The input question for the agent                       |
-| `answer`               | The ground-truth answer                                |
-| `relevant_sentences`  | Relevant facts the agent should reference               |
-| `supporting_titles`   | Source titles for the supporting context                |
-| `wiki_times`          | Expected number of Wikipedia tool calls                 |
+| Field                   | Description                                            |
+|-------------------------|--------------------------------------------------------|
+| `question`              | The input question for the agent                       |
+| `expected_answer`       | The ground-truth answer                                |
+| `supporting_sentences`  | Relevant facts the agent should reference               |
+| `supporting_titles`     | Source titles for the supporting context                |
+| `expected_tool_calls`   | Expected number of Wikipedia tool calls                 |
 
 ```py Python [expandable]
 # dataset.py: load evaluation items
