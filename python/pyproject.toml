@@ -75,6 +75,8 @@ ragas = {version = "^0.4.2", optional = true}
 nest-asyncio = {version = "^1.6.0", optional = true}
 numpy = {version = "^2.2.0", optional = true}
 multiprocess = {version = "^0.70.16", optional = true}
+pandas = {version = "^2.2.0", optional = true}
+scipy = {version = "^1.13.0", optional = true}
 
 [tool.poetry.group.dev.dependencies]
 commitizen = "^4.2.1"
@@ -119,7 +121,7 @@ a2a = ["a2a-sdk", "uvicorn", "types-grpcio", "types-grpcio-reflection", "grpcio-
 watsonx-orchestrate = ["uvicorn", "fastapi", "starlette"]
 bedrock = ["boto3"]
 vertexai = ["google-auth"]
-evaluation = ["deepeval", "ragas", "nest-asyncio", "numpy", "multiprocess"]
+evaluation = ["deepeval", "ragas", "nest-asyncio", "numpy", "multiprocess", "pandas", "scipy"]
 all = [
     "langchain",
     "langchain-core",
@@ -155,7 +157,9 @@ all = [
     "ragas",
     "nest-asyncio",
     "numpy",
-    "multiprocess"
+    "multiprocess",
+    "pandas",
+    "scipy"
 ]
 
 
