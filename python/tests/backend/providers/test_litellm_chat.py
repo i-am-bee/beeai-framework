@@ -13,6 +13,7 @@ from litellm.types.utils import (
     Delta,
     Message,
     StreamingChoices,
+    Usage,
 )
 
 from beeai_framework.adapters.litellm.chat import LiteLLMChatModel
@@ -108,6 +109,30 @@ def _make_tool_call(
 
 
 class TestTransformOutput:
+    @pytest.mark.unit
+    def test_proxy_response_cost_overrides_local_estimate(
+        self,
+        model: _TestLiteLLMChatModel,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        monkeypatch.setattr(
+            "beeai_framework.adapters.litellm.chat.cost_per_token",
+            lambda **_: (0.01, 0.02),
+        )
+        response = LiteLLMModelResponse(
+            id="chatcmpl-cost",
+            model="test",
+            choices=[Choices(finish_reason="stop", index=0, message=Message(content="hello", role="assistant"))],
+            usage=Usage(prompt_tokens=10, completion_tokens=5, total_tokens=15),
+            response_cost=0.123,
+        )
+
+        result = model._transform_output(response)
+
+        assert result.cost.prompt_tokens_usd == pytest.approx(0.01)
+        assert result.cost.completion_tokens_cost_usd == pytest.approx(0.02)
+        assert result.cost.total_cost_usd == pytest.approx(0.123)
+
     @pytest.mark.unit
     def test_content_only(self, model: _TestLiteLLMChatModel) -> None:
         response = LiteLLMModelResponse(

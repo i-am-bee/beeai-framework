@@ -310,6 +310,8 @@ class LiteLLMChatModel(ChatModel, ABC):
                     completion_tokens_cost_usd=completion_tokens_cost_usd,
                     total_cost_usd=prompt_tokens_cost_usd + completion_tokens_cost_usd,
                 )
+            if (response_cost := chunk.get("response_cost")) is not None:
+                cost.total_cost_usd = float(response_cost)
 
         output: list[AnyMessage] = []
         if update:
