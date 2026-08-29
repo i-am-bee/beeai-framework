@@ -39,6 +39,11 @@ export const BackendProviders = {
     module: "minimax",
     aliases: ["minimax"] as string[],
   },
+  OrcaRouter: {
+    name: "OrcaRouter",
+    module: "orcarouter",
+    aliases: ["orcarouter"] as string[],
+  },
 } as const;
 
 export type ProviderName = (typeof BackendProviders)[keyof typeof BackendProviders]["module"];

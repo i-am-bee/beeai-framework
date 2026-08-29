@@ -25,6 +25,7 @@ ProviderName = Literal[
     "deepseek",
     "qwen",
     "minimax",
+    "orcarouter",
 ]
 ProviderHumanName = Literal[
     "AgentStack",
@@ -46,6 +47,7 @@ ProviderHumanName = Literal[
     "Deepseek",
     "Qwen",
     "MiniMax",
+    "OrcaRouter",
 ]
 
 ModelTypes = Literal["embedding", "chat"]
@@ -98,4 +100,5 @@ BackendProviders = {
     "Deepseek": ProviderDef(name="Deepseek", module="deepseek", aliases=["deepseek"]),
     "Qwen": ProviderDef(name="Qwen", module="qwen", aliases=["qwen", "dashscope"]),
     "MiniMax": ProviderDef(name="MiniMax", module="minimax", aliases=["minimax"]),
+    "OrcaRouter": ProviderDef(name="OrcaRouter", module="orcarouter", aliases=["orcarouter"]),
 }
