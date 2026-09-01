@@ -6,7 +6,7 @@ import os
 import pytest
 from deepeval.dataset import EvaluationDataset, Golden
 from deepeval.metrics import BaseMetric, GEval
-from deepeval.test_case import LLMTestCaseParams
+from deepeval.test_case import SingleTurnParams
 
 from beeai_framework.agents.requirement import RequirementAgent
 from beeai_framework.backend import ChatModel
@@ -67,11 +67,11 @@ async def test_greeting() -> None:
             ]
         ),
         evaluation_params=[
-            LLMTestCaseParams.INPUT,
-            LLMTestCaseParams.ACTUAL_OUTPUT,
-            LLMTestCaseParams.EXPECTED_OUTPUT,
-            LLMTestCaseParams.TOOLS_CALLED,
-            LLMTestCaseParams.EXPECTED_TOOLS,
+            SingleTurnParams.INPUT,
+            SingleTurnParams.ACTUAL_OUTPUT,
+            SingleTurnParams.EXPECTED_OUTPUT,
+            SingleTurnParams.TOOLS_CALLED,
+            SingleTurnParams.EXPECTED_TOOLS,
         ],
         verbose_mode=True,
         model=DeepEvalLLM.from_name(os.environ["EVAL_CHAT_MODEL_NAME"]),
