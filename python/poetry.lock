@@ -10481,11 +10481,11 @@ a2a = ["a2a-sdk", "cryptography", "grpcio-health-checking", "starlette", "types-
 acp = ["acp-sdk", "starlette", "uvicorn"]
 acp-zed = ["agent-client-protocol"]
 agentstack = ["a2a-sdk", "agentstack-sdk", "cryptography", "starlette", "uvicorn"]
-all = ["a2a-sdk", "acp-sdk", "agent-client-protocol", "agentstack-sdk", "boto3", "cryptography", "ddgs", "deepeval", "fastapi", "google-auth", "grpcio-health-checking", "langchain", "langchain-community", "langchain-core", "langchain-ollama", "langgraph", "langgraph-checkpoint", "langsmith", "mcp", "nest-asyncio", "nltk", "outlines", "peft", "pillow", "pypdf", "ragas", "starlette", "torch", "torch", "torch", "transformers", "transformers", "transformers", "uvicorn", "wikipedia-api"]
+all = ["a2a-sdk", "acp-sdk", "agent-client-protocol", "agentstack-sdk", "boto3", "cryptography", "ddgs", "deepeval", "fastapi", "google-auth", "grpcio-health-checking", "langchain", "langchain-community", "langchain-core", "langchain-ollama", "langgraph", "langgraph-checkpoint", "langsmith", "mcp", "nltk", "outlines", "peft", "pillow", "pypdf", "ragas", "starlette", "torch", "torch", "torch", "transformers", "transformers", "transformers", "uvicorn", "wikipedia-api"]
 bedrock = ["boto3"]
 beeai-platform = ["a2a-sdk", "agentstack-sdk", "cryptography", "starlette", "uvicorn"]
 duckduckgo = ["ddgs"]
-evaluation = ["deepeval", "nest-asyncio", "ragas"]
+evaluation = ["deepeval", "ragas"]
 huggingface = ["transformers", "transformers", "transformers"]
 langchain = ["langchain", "langchain-community", "langchain-core", "langchain-ollama", "langgraph", "langgraph-checkpoint", "langsmith"]
 llama-index = ["llama-index-core", "nltk", "pillow"]
@@ -10500,4 +10500,4 @@ wikipedia = ["wikipedia-api"]
 [metadata]
 lock-version = "2.1"
 python-versions = ">= 3.11,<3.14"
-content-hash = "86b114a3128b8783b54465a819c58da91936d882fe1ae339971ab0dcf7c26677"
+content-hash = "f65959dcf76c4f89c609a9d6386088259b4f25106f063e006b66bcf587f3dc82"

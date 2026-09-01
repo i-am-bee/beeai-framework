@@ -57,10 +57,10 @@ class InstructorRagasLLM(InstructorBaseRagasLLM):
             loop = None
 
         if loop and loop.is_running():
-            import nest_asyncio
-
-            nest_asyncio.apply()
-            return loop.run_until_complete(self.agenerate(prompt, response_model))
+            raise RuntimeError(
+                "InstructorRagasLLM.generate() cannot be called from a running event loop. "
+                "Use `await instructor_ragas_llm.agenerate(...)` instead."
+            )
 
         return asyncio.run(self.agenerate(prompt, response_model))
 
