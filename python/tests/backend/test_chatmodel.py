@@ -186,6 +186,13 @@ def test_chat_model_from(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("GOOGLE_VERTEX_PROJECT", "myproject")
     vertexai_chat_model = ChatModel.from_name("vertexai:gemini-2.0-flash-lite-001", vertex_location="test")
     assert isinstance(vertexai_chat_model, VertexAIChatModel)
+    # Ref: https://github.com/BerriAI/litellm/issues/17696
+    assert vertexai_chat_model.allow_prompt_caching is False
+
+    vertexai_chat_model_explicit = ChatModel.from_name(
+        "vertexai:gemini-2.0-flash-lite-001", vertex_location="test", allow_prompt_caching=True
+    )
+    assert vertexai_chat_model_explicit.allow_prompt_caching is True
 
     monkeypatch.setenv("ANTHROPIC_API_KEY", "apikey")
     anthropic_chat_model = ChatModel.from_name("anthropic:claude-3-haiku-20240307")
