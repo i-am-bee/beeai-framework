@@ -5,6 +5,7 @@ import asyncio
 import bisect
 import copy
 import functools
+import inspect
 import re
 import uuid
 from collections.abc import Callable
@@ -17,7 +18,6 @@ from pydantic import BaseModel, ConfigDict, InstanceOf
 from beeai_framework.emitter.errors import EmitterError
 from beeai_framework.emitter.types import EmitterOptions, EventTrace
 from beeai_framework.emitter.utils import assert_valid_name, assert_valid_namespace
-from beeai_framework.utils.asynchronous import ensure_async
 from beeai_framework.utils.funcs import is_same_function
 from beeai_framework.utils.types import MaybeAsync
 
@@ -255,8 +255,12 @@ class Emitter:
     async def _invoke(self, data: Any, event: EventMeta) -> None:
         async def run(ln: Listener) -> Any:
             try:
-                ln_async = ensure_async(ln.callback)
-                return await ln_async(data, event)
+                # Invoke the callback directly instead of via ensure_async(), which offloads
+                # sync callbacks to a worker thread. Thread-pool scheduling does not preserve
+                # the priority order this loop dispatches in, so listener priority silently
+                # stopped being honoured on Python >= 3.13. Awaitables are still awaited.
+                result = ln.callback(data, event)
+                return await result if inspect.isawaitable(result) else result
             except Exception as e:
                 raise EmitterError.ensure(
                     e,
