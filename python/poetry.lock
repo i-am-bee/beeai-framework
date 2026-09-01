@@ -8061,7 +8061,7 @@ description = ""
 optional = true
 python-versions = ">=3.9"
 groups = ["main"]
-markers = "(extra == \"transformers\" or extra == \"huggingface\" or extra == \"all\") and (platform_machine == \"arm64\" or platform_machine == \"x86_64\" or platform_machine != \"arm64\" and platform_machine != \"x86_64\" or sys_platform != \"darwin\") and (platform_machine == \"arm64\" or platform_machine == \"x86_64\" or extra == \"transformers\" or extra == \"all\" or sys_platform != \"darwin\")"
+markers = "sys_platform == \"darwin\" and (platform_machine == \"arm64\" or platform_machine == \"x86_64\" or platform_machine != \"arm64\" and platform_machine != \"x86_64\") and (extra == \"transformers\" or extra == \"huggingface\" or extra == \"all\") and (platform_machine == \"arm64\" or platform_machine == \"x86_64\" or extra == \"transformers\" or extra == \"all\") or (extra == \"transformers\" or extra == \"huggingface\" or extra == \"all\") and sys_platform != \"darwin\""
 files = [
     {file = "safetensors-0.7.0-cp38-abi3-macosx_10_12_x86_64.whl", hash = "sha256:c82f4d474cf725255d9e6acf17252991c3c8aac038d6ef363a4bf8be2f6db517"},
     {file = "safetensors-0.7.0-cp38-abi3-macosx_11_0_arm64.whl", hash = "sha256:94fd4858284736bb67a897a41608b5b0c2496c9bdb3bf2af1fa3409127f20d57"},
@@ -9098,7 +9098,7 @@ description = "Transformers: the model-definition framework for state-of-the-art
 optional = true
 python-versions = ">=3.10.0"
 groups = ["main"]
-markers = "(extra == \"transformers\" or extra == \"huggingface\" or extra == \"all\") and (platform_machine == \"arm64\" or platform_machine == \"x86_64\" or platform_machine != \"arm64\" and platform_machine != \"x86_64\" or sys_platform != \"darwin\") and (platform_machine == \"arm64\" or platform_machine == \"x86_64\" or extra == \"transformers\" or extra == \"all\" or sys_platform != \"darwin\")"
+markers = "sys_platform == \"darwin\" and (platform_machine == \"arm64\" or platform_machine == \"x86_64\" or platform_machine != \"arm64\" and platform_machine != \"x86_64\") and (extra == \"transformers\" or extra == \"huggingface\" or extra == \"all\") and (platform_machine == \"arm64\" or platform_machine == \"x86_64\" or extra == \"transformers\" or extra == \"all\") or (extra == \"transformers\" or extra == \"huggingface\" or extra == \"all\") and sys_platform != \"darwin\""
 files = [
     {file = "transformers-5.7.0-py3-none-any.whl", hash = "sha256:869660cd8fc92badc041f5551bf755a42f4b9558c93341bf3fa3eeed7065079c"},
     {file = "transformers-5.7.0.tar.gz", hash = "sha256:a9d35cf39804e3456c1f9bc1a79ad5ffa878640a61f51f66f71c97f4b4e2ce10"},
@@ -10481,11 +10481,11 @@ a2a = ["a2a-sdk", "cryptography", "grpcio-health-checking", "starlette", "types-
 acp = ["acp-sdk", "starlette", "uvicorn"]
 acp-zed = ["agent-client-protocol"]
 agentstack = ["a2a-sdk", "agentstack-sdk", "cryptography", "starlette", "uvicorn"]
-all = ["a2a-sdk", "acp-sdk", "agent-client-protocol", "agentstack-sdk", "boto3", "cryptography", "ddgs", "deepeval", "fastapi", "google-auth", "grpcio-health-checking", "langchain", "langchain-community", "langchain-core", "langchain-ollama", "langgraph", "langgraph-checkpoint", "langsmith", "mcp", "multiprocess", "nest-asyncio", "nltk", "numpy", "outlines", "pandas", "peft", "pillow", "pypdf", "ragas", "scipy", "starlette", "torch", "torch", "torch", "transformers", "transformers", "transformers", "uvicorn", "wikipedia-api"]
+all = ["a2a-sdk", "acp-sdk", "agent-client-protocol", "agentstack-sdk", "boto3", "cryptography", "ddgs", "deepeval", "fastapi", "google-auth", "grpcio-health-checking", "langchain", "langchain-community", "langchain-core", "langchain-ollama", "langgraph", "langgraph-checkpoint", "langsmith", "mcp", "nest-asyncio", "nltk", "outlines", "peft", "pillow", "pypdf", "ragas", "starlette", "torch", "torch", "torch", "transformers", "transformers", "transformers", "uvicorn", "wikipedia-api"]
 bedrock = ["boto3"]
 beeai-platform = ["a2a-sdk", "agentstack-sdk", "cryptography", "starlette", "uvicorn"]
 duckduckgo = ["ddgs"]
-evaluation = ["deepeval", "multiprocess", "nest-asyncio", "numpy", "pandas", "ragas", "scipy"]
+evaluation = ["deepeval", "nest-asyncio", "ragas"]
 huggingface = ["transformers", "transformers", "transformers"]
 langchain = ["langchain", "langchain-community", "langchain-core", "langchain-ollama", "langgraph", "langgraph-checkpoint", "langsmith"]
 llama-index = ["llama-index-core", "nltk", "pillow"]
@@ -10500,4 +10500,4 @@ wikipedia = ["wikipedia-api"]
 [metadata]
 lock-version = "2.1"
 python-versions = ">= 3.11,<3.14"
-content-hash = "330fe8263bf6f7eed3b5e6d49cf108c12fae74ca56dcfeed9d747c991edaf01e"
+content-hash = "86b114a3128b8783b54465a819c58da91936d882fe1ae339971ab0dcf7c26677"
