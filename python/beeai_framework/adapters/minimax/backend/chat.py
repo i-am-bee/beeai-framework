@@ -21,11 +21,8 @@ MINIMAX_API_BASE_CN = "https://api.minimaxi.com/v1"
 # instead of discovering and typing the base URL by hand.
 MINIMAX_REGION_BASE_URLS = {
     "global": MINIMAX_API_BASE,
-    "global_en": MINIMAX_API_BASE,
     "cn": MINIMAX_API_BASE_CN,
-    "cn_zh": MINIMAX_API_BASE_CN,
 }
-DEFAULT_MINIMAX_REGION = "global"
 
 
 def resolve_minimax_base_url(region: str | None) -> str:
@@ -90,8 +87,8 @@ class MiniMaxChatModel(LiteLLMChatModel):
                 to the global endpoint 'https://api.minimax.io/v1'.
             region: The MiniMax region whose endpoint is used when neither
                 ``base_url`` nor MINIMAX_API_BASE is set. Accepts 'global'
-                (alias 'global_en', https://api.minimax.io/v1) or 'cn'
-                (alias 'cn_zh', https://api.minimaxi.com/v1). Falls back to the
+                (https://api.minimax.io/v1) or 'cn'
+                (https://api.minimaxi.com/v1). Falls back to the
                 MINIMAX_API_REGION env var, then to the global endpoint.
             **kwargs: Additional settings to configure the provider.
         """
@@ -103,13 +100,21 @@ class MiniMaxChatModel(LiteLLMChatModel):
 
         region = region if region is not None else os.getenv("MINIMAX_API_REGION")
         self._assert_setting_value("api_key", api_key, envs=["MINIMAX_API_KEY"])
+        has_base_url = any(
+            (
+                base_url,
+                self._settings.get("base_url"),
+                self._settings.get("api_base"),
+                os.getenv("MINIMAX_API_BASE"),
+            )
+        )
         self._assert_setting_value(
             "base_url",
             base_url,
             envs=["MINIMAX_API_BASE"],
             aliases=["api_base"],
             allow_empty=True,
-            fallback=resolve_minimax_base_url(region),
+            fallback=None if has_base_url else resolve_minimax_base_url(region),
         )
         self._settings["extra_headers"] = utils.parse_extra_headers(
             self._settings.get("extra_headers"), os.getenv("MINIMAX_API_HEADERS")

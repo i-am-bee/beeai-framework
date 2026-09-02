@@ -19,9 +19,7 @@ export const MINIMAX_API_BASE_CN = "https://api.minimaxi.com/v1";
  */
 export const MINIMAX_REGION_BASE_URLS = {
   global: MINIMAX_API_BASE,
-  global_en: MINIMAX_API_BASE,
   cn: MINIMAX_API_BASE_CN,
-  cn_zh: MINIMAX_API_BASE_CN,
 } as const;
 
 export type MiniMaxRegion = keyof typeof MINIMAX_REGION_BASE_URLS;

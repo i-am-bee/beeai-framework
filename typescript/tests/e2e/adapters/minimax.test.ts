@@ -111,14 +111,16 @@ describe("MiniMax regional endpoints", () => {
     expect(MINIMAX_API_BASE).not.toBe(MINIMAX_API_BASE_CN);
   });
 
-  it("should resolve global region variants", () => {
+  it("should resolve the global region", () => {
     expect(resolveMiniMaxBaseURL("global")).toBe(MINIMAX_API_BASE);
-    expect(resolveMiniMaxBaseURL("global_en")).toBe(MINIMAX_API_BASE);
   });
 
-  it("should resolve CN region variants", () => {
+  it("should resolve the CN region", () => {
     expect(resolveMiniMaxBaseURL("cn")).toBe(MINIMAX_API_BASE_CN);
-    expect(resolveMiniMaxBaseURL("cn_zh")).toBe(MINIMAX_API_BASE_CN);
+  });
+
+  it.each(["global_en", "cn_zh"])("should reject for unsupported alias %s", (region) => {
+    expect(() => resolveMiniMaxBaseURL(region)).toThrowError(/Unknown MiniMax region/);
   });
 
   it("should be case-insensitive and trim whitespace", () => {
@@ -136,6 +138,16 @@ describe("MiniMax regional endpoints", () => {
 
   it("should build a client for the CN region without throwing", () => {
     const client = new MiniMaxClient({ apiKey: "test-key", region: "cn" });
+    expect(client).toBeDefined();
+    expect(client.instance).toBeDefined();
+  });
+
+  it("should ignore an invalid region when baseURL is explicit", () => {
+    const client = new MiniMaxClient({
+      apiKey: "test-key",
+      baseURL: "https://proxy.example.com/v1",
+      region: "mars" as never,
+    });
     expect(client).toBeDefined();
     expect(client.instance).toBeDefined();
   });
