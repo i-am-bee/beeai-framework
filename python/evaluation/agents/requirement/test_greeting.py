@@ -6,16 +6,16 @@ import os
 import pytest
 from deepeval.dataset import EvaluationDataset, Golden
 from deepeval.metrics import BaseMetric, GEval
-from deepeval.test_case import LLMTestCaseParams
+from deepeval.test_case import SingleTurnParams
 
 from beeai_framework.agents.requirement import RequirementAgent
 from beeai_framework.backend import ChatModel
+from beeai_framework.evaluation.adapters import DeepEvalLLM
 from beeai_framework.memory import UnconstrainedMemory
 from beeai_framework.tools.search.duckduckgo import DuckDuckGoSearchTool
 from beeai_framework.tools.weather.openmeteo import OpenMeteoTool
-from eval._utils import create_dataset, evaluate_dataset
-from eval.agents.requirement._utils import run_agent
-from eval.model import DeepEvalLLM
+from evaluation._utils import create_dataset, evaluate_dataset
+from evaluation.agents.requirement._utils import run_agent
 
 
 def create_agent() -> RequirementAgent:
@@ -67,11 +67,11 @@ async def test_greeting() -> None:
             ]
         ),
         evaluation_params=[
-            LLMTestCaseParams.INPUT,
-            LLMTestCaseParams.ACTUAL_OUTPUT,
-            LLMTestCaseParams.EXPECTED_OUTPUT,
-            LLMTestCaseParams.TOOLS_CALLED,
-            LLMTestCaseParams.EXPECTED_TOOLS,
+            SingleTurnParams.INPUT,
+            SingleTurnParams.ACTUAL_OUTPUT,
+            SingleTurnParams.EXPECTED_OUTPUT,
+            SingleTurnParams.TOOLS_CALLED,
+            SingleTurnParams.EXPECTED_TOOLS,
         ],
         verbose_mode=True,
         model=DeepEvalLLM.from_name(os.environ["EVAL_CHAT_MODEL_NAME"]),

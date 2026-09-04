@@ -53,7 +53,8 @@
           "modules/serialization",
           "modules/errors",
           "modules/templates",
-          "modules/workflows"
+          "modules/workflows",
+          "modules/evaluation"
 
         ]
       },

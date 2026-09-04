@@ -124,6 +124,7 @@ export default defineConfig({
             "modules/errors",
             "modules/templates",
             "modules/workflows",
+            "modules/evaluation",
           ],
         },
         {
