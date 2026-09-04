@@ -2,6 +2,8 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import re
+import time
+from collections.abc import Callable
 from typing import Any
 
 import pytest
@@ -305,3 +307,32 @@ async def test_emitter_listener_priority() -> None:
     emitter.on("*.*", lambda _, __: arr.append(0))
     await emitter.emit("event", None)
     assert arr == [5, 4, 3, 2, 1, 0, -1]
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_emitter_priority_is_honoured_for_slow_sync_callbacks() -> None:
+    """Sync callbacks must run in priority order, not concurrently on worker threads.
+
+    Regression test for listener priority being silently dropped: dispatching sync
+    callbacks through a thread pool let them overlap, so the observed order followed
+    completion time rather than priority. Here the highest-priority callback sleeps
+    longest, so anything that runs them concurrently yields [1, 2, 3] instead of
+    [3, 2, 1]. Deterministic on every supported Python version.
+    """
+    emitter = Emitter()
+    order: list[int] = []
+
+    def make(value: int, delay: float) -> Callable[[Any, Any], None]:
+        def callback(_: Any, __: Any) -> None:
+            time.sleep(delay)
+            order.append(value)
+
+        return callback
+
+    emitter.on("*.*", make(3, 0.05), EmitterOptions(priority=3))
+    emitter.on("*.*", make(2, 0.02), EmitterOptions(priority=2))
+    emitter.on("*.*", make(1, 0.0), EmitterOptions(priority=1))
+
+    await emitter.emit("event", None)
+    assert order == [3, 2, 1]
