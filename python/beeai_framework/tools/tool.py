@@ -1,6 +1,7 @@
 # Copyright 2025 © BeeAI a Series of LF Projects, LLC
 # SPDX-License-Identifier: Apache-2.0
 
+import asyncio
 import contextlib
 import inspect
 import typing
@@ -103,6 +104,7 @@ class Tool(Generic[TInput, TRunOptions, TOutput], ABC):
         options_dict = options.model_dump(exclude_none=True) if options else {}
         options_dict.pop("signal", None)
         options_dict.pop("retry_options", None)
+        options_dict.pop("timeout", None)
         return BaseCache.generate_key(input, options_dict)
 
     async def clear_cache(self) -> None:
@@ -132,7 +134,19 @@ class Tool(Generic[TInput, TRunOptions, TOutput], ABC):
                         if result:
                             return result
 
-                    result = await self._run(validated_input, options, context)
+                    run_timeout = options.timeout if options else None
+                    if run_timeout is not None:
+                        timeout_ctx: asyncio.Timeout | None = None
+                        try:
+                            async with asyncio.timeout(run_timeout) as timeout_ctx:
+                                result = await self._run(validated_input, options, context)
+                        except TimeoutError as e:
+                            if timeout_ctx is None or not timeout_ctx.expired():
+                                raise
+                            raise ToolError(f"Tool '{self.name}' timed out after {run_timeout}s", cause=e) from e
+                    else:
+                        result = await self._run(validated_input, options, context)
+
                     if self.cache.enabled:
                         # pyrefly: ignore [unbound-name]
                         await self.cache.set(cache_key, result)
