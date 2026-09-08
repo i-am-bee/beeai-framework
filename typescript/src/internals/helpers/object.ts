@@ -46,7 +46,16 @@ export function setProp(target: unknown, paths: readonly (keyof any)[], value: u
 
     const isLast = idx === paths.length - 1;
     const newValue = isLast ? value : hasProp(target, key) ? target[key] : {};
-    Object.assign(target, { [key]: newValue });
+    // Define the property directly rather than assigning it. `Object.assign` uses [[Set]],
+    // which walks the prototype chain and invokes an inherited setter if one exists for this
+    // key -- so a poisoned prototype could intercept the write and leave no own property
+    // behind. `defineProperty` always creates an own data property on `target` itself.
+    Object.defineProperty(target, key, {
+      value: newValue,
+      writable: true,
+      enumerable: true,
+      configurable: true,
+    });
     target = target[key];
   }
 }
