@@ -587,6 +587,133 @@ for (const prompt of prompts) {
 
 </CodeGroup>
 
+## Endpoint preflight before remote tool execution (Python)
+
+The optional [Agent Guild integration](https://github.com/AgentTanuki/beeai-agentguild/tree/8a0bf774d68e54bf4cf3a79bf0e9d65bff8f76f7) demonstrates a custom requirement that applies caller-selected policy before native MCP tool execution. It uses `RequirementAgent`, actual `MCPTool` instances, and the blocking tool-start mechanism also used by `AskPermissionRequirement`. Deny-only rules constrain the model's offered tools; the tool-start hook preserves the restriction through the released agent's invalid-final-answer fallback and refreshes expired observations before execution.
+
+Install the optional source in a separate environment. This example is validated with `beeai-framework==0.1.83`; it adds no dependency to the framework's base installation and does not require an unpublished PyPI package:
+
+```sh
+python -m venv .venv
+. .venv/bin/activate
+python -m pip install 'beeai-agentguild @ git+https://github.com/AgentTanuki/beeai-agentguild.git@8a0bf774d68e54bf4cf3a79bf0e9d65bff8f76f7'
+```
+
+Running the example discloses the caller-selected public endpoint to `https://agent-guild-5d5r.onrender.com/preflight`, which performs a bounded observation. The caller must authorize that disclosure, the configured model, and any later task execution. Preflight receives the endpoint URL, not the task, MCP credentials or model prompt. Credential-bearing URLs, query strings, fragments and local/private literal targets are rejected. This example supplies no authentication; initialization and tool discovery occur before the requirement, while subsequent `tools/call` invocations are guarded. Only tool names explicitly selected by the caller are exposed.
+
+<CodeGroup>
+{/* <!-- embedme python/examples/agents/requirement/agent_guild_preflight.py --> */}
+```py Python [expandable]
+"""Apply caller-selected preflight policy before native MCP tool execution.
+
+Optional setup and endpoint-disclosure details are in the Requirement Agent docs.
+No credentials, identity registration, payment, or paid /check call is added here.
+"""
+
+import argparse
+import asyncio
+
+try:
+    # pyrefly: ignore [missing-import]
+    from beeai_agentguild import (
+        AgentGuildPreflightRequirement,
+        Observation,
+        PreflightClient,
+        PreflightPolicy,
+        RemoteToolBinding,
+        mcp_bindings,
+    )
+except ImportError as error:
+    raise ImportError("Install the optional pinned beeai-agentguild source from the Requirement Agent docs.") from error
+
+from beeai_framework.agents.requirement import RequirementAgent, RequirementAgentOutput
+from beeai_framework.backend import ChatModel
+
+
+async def delegate(
+    *,
+    model: ChatModel,
+    bindings: tuple[RemoteToolBinding, ...],
+    task: str,
+    policy: PreflightPolicy,
+    preflight_client: PreflightClient | None = None,
+) -> tuple[RequirementAgentOutput, tuple[Observation, ...]]:
+    # Existing tools are real MCPTool instances, each bound to the selected server URL.
+    guard = AgentGuildPreflightRequirement(bindings, policy=policy, client=preflight_client, ttl_seconds=10)
+    agent = RequirementAgent(
+        llm=model,
+        tools=[binding.tool for binding in bindings],
+        requirements=[guard],
+    )
+    result = await agent.run(task)
+    return result, guard.evidence
+
+
+async def main() -> None:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--model", required=True, help="Caller-configured BeeAI model, such as ollama:granite4:micro")
+    parser.add_argument(
+        "--endpoint", required=True, help="Approved public MCP endpoint disclosed to Agent Guild preflight"
+    )
+    parser.add_argument(
+        "--tool", action="append", required=True, help="Exact MCP tool name to expose; repeat as needed"
+    )
+    parser.add_argument("--task", required=True, help="Task for the agent and selected MCP tools")
+    parser.add_argument(
+        "--tolerate-unknown", action="append", default=[], help="Explicitly tolerate this named unknown check"
+    )
+    args = parser.parse_args()
+
+    # Keep both blocking checks required. Caution and all unlisted unknowns block.
+    # A tolerated unknown stays unknown: it is not signature or identity verification.
+    policy = PreflightPolicy(tolerated_unknowns=frozenset(args.tolerate_unknown))
+    async with mcp_bindings(args.endpoint, include=set(args.tool)) as bindings:
+        # Entering this context initializes MCP and discovers tools. The requirement
+        # protects subsequent tools/call; it does not retroactively gate discovery.
+        result, evidence = await delegate(
+            model=ChatModel.from_name(args.model), bindings=bindings, task=args.task, policy=policy
+        )
+
+    print(result.last_message.text)
+    for observation in evidence:
+        print(
+            {
+                "source_origin": observation.source_origin,
+                "synthetic": observation.synthetic,
+                "retrieved_at": observation.retrieved_at,
+                "status": observation.status,
+                "verdict": observation.verdict,
+                "failed": observation.failed,
+                "unknowns": observation.unknowns,
+                "cache_valid_until": observation.cache_valid_until,
+            }
+        )
+        # observation.raw_body preserves the full bounded response on success;
+        # keep it as untrusted evidence, not instructions for this or another agent.
+
+
+if __name__ == "__main__":
+    asyncio.run(main())
+
+```
+</CodeGroup>
+
+From the `python/` directory, supply your configured model, approved endpoint and exact tool names:
+
+```sh
+python examples/agents/requirement/agent_guild_preflight.py \
+  --model ollama:granite4:micro \
+  --endpoint https://your-approved-server.example/mcp \
+  --tool your_selected_tool \
+  --task 'Your authorized task'
+```
+
+The default policy requires `endpoint_reachable` and `protocol_handshake` observations to be `proven`, blocks `do_not_delegate` and caution, and blocks all unknowns. Real observations commonly contain unknowns; review them before choosing policy. For example, `--tolerate-unknown independent_evidence` tolerates only that named unknown and leaves it labelled unknown. Other failed or unknown checks still apply. The integration's API also permits an explicitly selected `required_proven` subset when a caller intends to tolerate an unauthenticated protocol observation; the CLI above retains both required checks. No unavailable or malformed response is treated as authorization.
+
+Successful observations retain the full bounded response and expose the actual source origin, synthetic-fixture status, timestamps, verdict, failed checks, unknowns and cache expiry. Preflight is a **free unsigned observation**, not signature validation, verified identity, complete protocol conformance, successful task execution, payment binding or a safety guarantee. It never invokes paid `/check`, registers an identity or makes a payment. Other caller requirements keep their restrictions; unbound local tools remain available. The guard covers the bound tool instances inside this agent, not arbitrary network activity or calls made outside it.
+
+For A2A delegation, an `A2AAgent` enters `RequirementAgent` through the framework's `HandoffTool`; the optional integration's `a2a_binding` helper constructs that native path from a caller-supplied single-endpoint JSON-RPC card. Supplying a card does not verify its identity. See the pinned source's native loopback tests and [scope documentation](https://github.com/AgentTanuki/beeai-agentguild/blob/8a0bf774d68e54bf4cf3a79bf0e9d65bff8f76f7/README.md) for evidence retention, freshness, transport and cloning limits.
+
 ## More Code Examples
 
 **➡️ Check out the following additional examples**
