@@ -20,9 +20,9 @@
     "embedme:verify": "embedme --source-root=.. 'src/content/docs/**/*.mdx' --verify --silent"
   },
   "dependencies": {
-    "@astrojs/mdx": "^6.0.2",
-    "@astrojs/starlight": "^0.39.3",
-    "astro": "^6.4.4",
+    "@astrojs/mdx": "^8.0.0",
+    "@astrojs/starlight": "^0.42.0",
+    "astro": "^7.3.1",
     "sharp": "^0.34.5",
     "unist-util-visit": "^5.0.0"
   },
