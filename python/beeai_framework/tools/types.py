@@ -4,7 +4,7 @@
 from abc import ABC, abstractmethod
 from typing import Any, Generic
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from typing_extensions import TypeVar
 
 from beeai_framework.utils import AbortSignal
@@ -19,6 +19,15 @@ class RetryOptions(BaseModel):
 class ToolRunOptions(BaseModel):
     retry_options: RetryOptions | None = None
     signal: AbortSignal | None = None
+    timeout: float | None = Field(
+        default=None,
+        description=(
+            "Per-attempt execution deadline in seconds. Each retry gets a fresh deadline. "
+            "Only interrupts the tool at async suspension points —> Blocking calls such "
+            "as `time.sleep()` or `requests.get()` will not be interrupted, when not using "
+            "`await`."
+        ),
+    )
 
 
 T = TypeVar("T", default=Any)
