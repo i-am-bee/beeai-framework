@@ -59,6 +59,12 @@ from beeai_framework.utils.strings import is_valid_unicode_escape_sequence, to_j
 
 logger = Logger(__name__)
 
+# Maximum time (in seconds) to wait for a chat model response before raising a timeout error.
+# Prevents agent runs from hanging for LiteLLM's internal fallback of 600 seconds (or indefinitely)
+# when a backend accepts the connection but never responds. Can be overridden per model instance
+# via `settings={"timeout": <seconds>}`.
+DEFAULT_REQUEST_TIMEOUT_SECONDS = 300
+
 
 class LiteLLMChatModel(ChatModel, ABC):
     @property
@@ -87,6 +93,7 @@ class LiteLLMChatModel(ChatModel, ABC):
         run: RunContext,
     ) -> ChatModelOutput:
         litellm_input = self._transform_input(input) | {"stream": False}
+        litellm_input.setdefault("timeout", DEFAULT_REQUEST_TIMEOUT_SECONDS)
         # pyrefly: ignore [not-callable]
         raw = await acompletion(**litellm_input)
         response_output = self._transform_output(raw)
@@ -111,6 +118,7 @@ class LiteLLMChatModel(ChatModel, ABC):
     async def _create_stream(self, input: ChatModelInput, _: RunContext) -> AsyncGenerator[ChatModelOutput]:
         litellm_input = self._transform_input(input) | {"stream": True}
         set_attr_if_none(litellm_input, ["stream_options", "include_usage"], value=True)
+        litellm_input.setdefault("timeout", DEFAULT_REQUEST_TIMEOUT_SECONDS)
         # pyrefly: ignore [not-callable]
         response = await acompletion(**litellm_input)
 
