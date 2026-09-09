@@ -1,0 +1,69 @@
+---
+title: "x402 Settlement"
+icon: "seti:lock"
+---
+The **[x402 Payment Protocol](https://x402.org/)** is the open internet standard for machine-to-machine payments, HTTP 402 payment requirements, and verifiable agentic commerce. 
+
+Using the **[@correntelabs/beeai-ashlar-bridge](https://github.com/whawk46/beeai-ashlar-bridge)** integration, BeeAI Framework agents can discover paid APIs, verify on-chain counterparty credentials, and execute settlements within mathematically bounded spending mandates inside hardware-attested enclaves.
+
+---
+
+## Key Benefits
+
+- **Zero Private Key Exposure**: Agents do not hold raw private keys; settlements are executed via hardware enclaves (Intel TDX) and spending turnstiles.
+- **Authority Mandate Enforcement**: Strictly enforces per-payment and cumulative spending ceilings before ledger writes occur (conforming to x402 `authority` extension).
+- **Multi-Rail Support**: Out-of-the-box support for the **XRP Ledger (XRPL)**, **Flare Network**, and institutional stablecoins (RLUSD / FCUSD).
+- **On-Chain Credentialing**: Automatically verifies counterparty XLS-20 credentials and Filecoin living memory to unlock wholesale flat ticket fees.
+
+---
+
+## Installation
+
+```bash
+npm install beeai-framework @correntelabs/beeai-ashlar-bridge
+```
+
+---
+
+## Quick Start
+
+```typescript
+import { ReActAgent } from 'beeai-framework/agents/react/agent';
+import { UnconstrainedMemory } from 'beeai-framework/memory/unconstrainedMemory';
+import { 
+  AshlarSettlementTool, 
+  AshlarCatalogTool, 
+  AshlarComplianceTool 
+} from '@correntelabs/beeai-ashlar-bridge';
+
+// 1. Configure the Attested Settlement Turnstile
+const settlementTool = new AshlarSettlementTool({
+  principalLabel: 'corporate-treasury-operator',
+  agentLabel: 'autonomous-procurement-agent',
+  accountantLabel: 'attested-authority',
+  capMinorUnits: '10000000',          // 100.00 FCUSD/RLUSD cap
+  perPaymentMinorUnits: '1000000',    // 10.00 FCUSD per payment max
+  allowedPayees: [
+    'api.ashlar.blue',
+    'oracle.flare.network'
+  ],
+  asset: 'FCUSD',
+  xrplWalletAddress: 'rPthX1m6rzjqmujRLzcg9fenuHrNB6TceK'
+});
+
+// 2. Initialize your BeeAI Agent
+const agent = new ReActAgent({
+  llm: myChatModel,
+  tools: [settlementTool, new AshlarCatalogTool(), new AshlarComplianceTool()],
+  memory: new UnconstrainedMemory()
+});
+
+// 3. Execute Autonomous Bounded Procurement
+const response = await agent.run({
+  prompt: 'Discover available data tools on the x402 catalog and purchase the intelligence feed from api.ashlar.blue.'
+});
+
+console.log(response.result.text);
+```
+
+For complete documentation, multi-agent swarm stress tests, and benchmarks, visit the [Corrente Labs BeeAI Bridge Repository](https://github.com/whawk46/beeai-ashlar-bridge).

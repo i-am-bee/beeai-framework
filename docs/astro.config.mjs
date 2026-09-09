@@ -136,6 +136,7 @@ export default defineConfig({
             "integrations/acp-zed",
             "integrations/watsonx-orchestrate",
             "integrations/openai-api",
+            "integrations/x402-settlement",
           ],
         },
         {
