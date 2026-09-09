@@ -376,12 +376,18 @@ class _CustomTimeoutLiteLLMChatModel(LiteLLMChatModel):
         return "openai"
 
 
+@pytest.fixture()
+def timeout_model() -> _TestLiteLLMChatModel:
+    """Function-scoped fixture to avoid scope mismatch with function-scoped monkeypatch."""
+    return _TestLiteLLMChatModel()
+
+
 class TestRequestTimeout:
     @pytest.mark.unit
     @pytest.mark.asyncio
     async def test_non_streaming_uses_default_timeout(
         self,
-        model: _TestLiteLLMChatModel,
+        timeout_model: _TestLiteLLMChatModel,
         monkeypatch: pytest.MonkeyPatch,
     ) -> None:
         captured: dict[str, Any] = {}
@@ -396,7 +402,7 @@ class TestRequestTimeout:
 
         monkeypatch.setattr("beeai_framework.adapters.litellm.chat.acompletion", fake_acompletion)
 
-        response = await model.run([UserMessage("hi")])
+        response = await timeout_model.run([UserMessage("hi")])
 
         assert captured["timeout"] == DEFAULT_REQUEST_TIMEOUT_SECONDS
         assert response.get_text_content() == "hello"
@@ -405,11 +411,13 @@ class TestRequestTimeout:
     @pytest.mark.asyncio
     async def test_streaming_uses_default_timeout(
         self,
-        model: _TestLiteLLMChatModel,
+        timeout_model: _TestLiteLLMChatModel,
         monkeypatch: pytest.MonkeyPatch,
     ) -> None:
         captured: dict[str, Any] = {}
 
+        # Returns an async generator wrapper (not itself a generator) to match
+        # acompletion(stream=True) behavior which returns an awaitable async iterator.
         async def fake_acompletion_stream(**kwargs: Any) -> AsyncGenerator[ModelResponseStream]:
             captured.update(kwargs)
 
@@ -424,7 +432,7 @@ class TestRequestTimeout:
 
         monkeypatch.setattr("beeai_framework.adapters.litellm.chat.acompletion", fake_acompletion_stream)
 
-        response = await model.run([UserMessage("hi")], stream=True)
+        response = await timeout_model.run([UserMessage("hi")], stream=True)
 
         assert captured["timeout"] == DEFAULT_REQUEST_TIMEOUT_SECONDS
         assert response.get_text_content() == "hello"

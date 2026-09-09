@@ -62,8 +62,8 @@ logger = Logger(__name__)
 # Maximum time (in seconds) to wait for a chat model response before raising a timeout error.
 # Prevents agent runs from hanging for LiteLLM's internal fallback of 600 seconds (or indefinitely)
 # when a backend accepts the connection but never responds. Can be overridden per model instance
-# via `settings={"timeout": <seconds>}`.
-DEFAULT_REQUEST_TIMEOUT_SECONDS = 300
+# via `settings={"timeout": <seconds>}` or globally via the BEEAI_DEFAULT_REQUEST_TIMEOUT env var.
+DEFAULT_REQUEST_TIMEOUT_SECONDS = int(os.getenv("BEEAI_DEFAULT_REQUEST_TIMEOUT", "300"))
 
 
 class LiteLLMChatModel(ChatModel, ABC):
