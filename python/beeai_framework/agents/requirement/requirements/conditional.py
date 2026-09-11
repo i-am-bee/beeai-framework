@@ -102,7 +102,7 @@ class ConditionalRequirement(Generic[TInput], Requirement[TInput]):
     async def init(self, *, tools: list[AnyTool], ctx: RunContext) -> None:
         await super().init(tools=tools, ctx=ctx)
 
-        targets = self._before & self._after & self._force_after & {self.source}
+        targets = self._before | self._after | self._force_after | {self.source}
         _assert_all_rules_found(targets, tools)
 
         for tool in tools:
