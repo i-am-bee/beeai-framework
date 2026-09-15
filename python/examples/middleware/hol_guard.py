@@ -1,3 +1,6 @@
+# Copyright 2025 © BeeAI a Series of LF Projects, LLC
+# SPDX-License-Identifier: Apache-2.0
+
 import asyncio
 
 from beeai_framework.adapters.hol_guard import HOLGuardMiddleware
