@@ -20,6 +20,7 @@
     "embedme:verify": "embedme --source-root=.. 'src/content/docs/**/*.mdx' --verify --silent"
   },
   "dependencies": {
+    "@astrojs/markdown-remark": "^7.2.0",
     "@astrojs/mdx": "^6.0.2",
     "@astrojs/starlight": "^0.39.3",
     "astro": "^6.4.4",
