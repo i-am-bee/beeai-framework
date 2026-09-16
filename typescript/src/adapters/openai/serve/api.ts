@@ -9,6 +9,7 @@ import { AnyAgent } from "@/agents/types.js";
 import { transformRequestMessages } from "./utils.js";
 import { ChatCompletionRequestBody, ChatCompletionResponse } from "./types.js";
 import { Logger } from "@/logger/logger.js";
+import { isApiKeyValid } from "@/internals/helpers/auth.js";
 
 const logger = Logger.root.child({
   name: "OpenAI API",
@@ -31,13 +32,11 @@ export class ChatCompletionAPI {
     const requestBody = req.body as ChatCompletionRequestBody;
     logger.debug(`Received request: ${JSON.stringify(requestBody)}`);
 
-    if (this.apiKey) {
-      const authHeader = req.headers.authorization;
-      const token = Array.isArray(authHeader) ? authHeader[0] : authHeader;
-      if (!token || token.replace(/^Bearer\s+/i, "") !== this.apiKey) {
-        res.status(401).json({ detail: "Missing or invalid API key" });
-        return;
-      }
+    const authHeader = req.headers.authorization;
+    const token = Array.isArray(authHeader) ? authHeader[0] : authHeader;
+    if (!isApiKeyValid(this.apiKey, token, { stripBearerPrefix: true })) {
+      res.status(401).json({ detail: "Missing or invalid API key" });
+      return;
     }
 
     try {
