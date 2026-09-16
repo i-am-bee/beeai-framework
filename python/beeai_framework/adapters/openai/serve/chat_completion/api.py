@@ -19,6 +19,7 @@ from beeai_framework.agents.react import ReActAgentOutput
 from beeai_framework.agents.requirement import RequirementAgentOutput
 from beeai_framework.backend import AnyMessage, AssistantMessage, ChatModelOutput, SystemMessage, ToolMessage
 from beeai_framework.logger import Logger
+from beeai_framework.serve.utils import is_api_key_valid
 from beeai_framework.utils.strings import to_json
 
 logger = Logger(__name__)
@@ -62,7 +63,7 @@ class ChatCompletionAPI:
         logger.debug(f"Received request\n{request.model_dump_json()}")
 
         # API key validation
-        if self._api_key is not None and (api_key is None or api_key.replace("Bearer ", "") != self._api_key):
+        if not is_api_key_valid(self._api_key, api_key, strip_bearer_prefix=True):
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Missing or invalid API key",

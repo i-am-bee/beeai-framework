@@ -17,7 +17,7 @@ from beeai_framework.backend import AnyMessage, AssistantMessage, SystemMessage,
 from beeai_framework.logger import Logger
 from beeai_framework.memory import BaseMemory
 from beeai_framework.serve import MemoryManager, init_agent_memory
-from beeai_framework.serve.utils import UnlimitedMemoryManager
+from beeai_framework.serve.utils import UnlimitedMemoryManager, is_api_key_valid
 
 logger = Logger(__name__)
 
@@ -70,7 +70,7 @@ class WatsonxOrchestrateAPI:
         logger.debug(f"Received request\n{request.model_dump_json()} (ID: {thread_id})")
 
         # API key validation
-        if self._api_key is not None and api_key != self._api_key:
+        if not is_api_key_valid(self._api_key, api_key):
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Missing or invalid API key",
