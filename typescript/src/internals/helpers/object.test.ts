@@ -31,6 +31,24 @@ describe("setProp", () => {
     expect(({} as any).polluted).toBeUndefined();
   });
 
+  it("rejects __proto__ anywhere in the path, not just the first segment", () => {
+    // The guard runs per path segment. Narrowing it to paths[0] would keep every
+    // other test in this file green while reintroducing prototype pollution.
+    const target: any = {};
+    expect(() => setProp(target, ["a", "__proto__", "polluted"], true)).toThrowError(TypeError);
+    expect(() => setProp(target, ["a", "b", "__proto__", "polluted"], true)).toThrowError(
+      TypeError,
+    );
+    expect(({} as any).polluted).toBeUndefined();
+  });
+
+  it("does not pollute Array.prototype through an array target", () => {
+    const target: any = [];
+    setProp(target, ["constructor", "prototype", "polluted"], true);
+    expect(([] as any).polluted).toBeUndefined();
+    expect(({} as any).polluted).toBeUndefined();
+  });
+
   describe("prototype integrity", () => {
     afterEach(() => {
       delete (Object.prototype as any).intercepted;
