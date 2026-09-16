@@ -1,6 +1,7 @@
 # Copyright 2025 © BeeAI a Series of LF Projects, LLC
 # SPDX-License-Identifier: Apache-2.0
 import contextlib
+import math
 import os
 from abc import ABC
 from collections.abc import AsyncGenerator
@@ -59,6 +60,41 @@ from beeai_framework.utils.strings import is_valid_unicode_escape_sequence, to_j
 
 logger = Logger(__name__)
 
+_DEFAULT_TIMEOUT_FALLBACK = 600.0
+
+
+def _parse_timeout_env() -> float:
+    """Parse BEEAI_DEFAULT_REQUEST_TIMEOUT from the environment.
+
+    Uses float() so values like "300.5" are accepted.  Rejects non-finite
+    values (nan, inf) and non-positive values.  Falls back to the built-in
+    default and logs a warning when the value cannot be parsed.
+    """
+    raw = os.getenv("BEEAI_DEFAULT_REQUEST_TIMEOUT")
+    if raw is None:
+        return _DEFAULT_TIMEOUT_FALLBACK
+    try:
+        value = float(raw)
+        if not math.isfinite(value) or value <= 0:
+            raise ValueError("timeout must be a finite positive number")
+        return value
+    except (ValueError, TypeError):
+        logger.warning(
+            f"Ignoring invalid BEEAI_DEFAULT_REQUEST_TIMEOUT={raw!r}; "
+            f"falling back to {_DEFAULT_TIMEOUT_FALLBACK}s. "
+            "The value must be a finite positive number (int or float)."
+        )
+        return _DEFAULT_TIMEOUT_FALLBACK
+
+
+# Maximum time (in seconds) to wait for a chat model response before raising a timeout error.
+# Without an explicit timeout the framework would depend on LiteLLM's upstream default, which it
+# does not control — and in some configurations a hung backend can block indefinitely.  Setting the
+# value explicitly ensures every request terminates. Can be overridden per model instance via
+# `settings={"timeout": <seconds>}`, or by setting the BEEAI_DEFAULT_REQUEST_TIMEOUT
+# environment variable before importing this module (the value is read once at import time).
+DEFAULT_REQUEST_TIMEOUT_SECONDS: float = _parse_timeout_env()
+
 
 class LiteLLMChatModel(ChatModel, ABC):
     @property
@@ -87,6 +123,7 @@ class LiteLLMChatModel(ChatModel, ABC):
         run: RunContext,
     ) -> ChatModelOutput:
         litellm_input = self._transform_input(input) | {"stream": False}
+        litellm_input.setdefault("timeout", DEFAULT_REQUEST_TIMEOUT_SECONDS)
         # pyrefly: ignore [not-callable]
         raw = await acompletion(**litellm_input)
         response_output = self._transform_output(raw)
@@ -111,6 +148,7 @@ class LiteLLMChatModel(ChatModel, ABC):
     async def _create_stream(self, input: ChatModelInput, _: RunContext) -> AsyncGenerator[ChatModelOutput]:
         litellm_input = self._transform_input(input) | {"stream": True}
         set_attr_if_none(litellm_input, ["stream_options", "include_usage"], value=True)
+        litellm_input.setdefault("timeout", DEFAULT_REQUEST_TIMEOUT_SECONDS)
         # pyrefly: ignore [not-callable]
         response = await acompletion(**litellm_input)
 
