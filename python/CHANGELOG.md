@@ -1,3 +1,21 @@
+## python_v0.1.84 (2026-09-15)
+
+### Bug Fixes
+
+- **agents**: use union instead of intersection for ConditionalRequirement target validation (#1649)
+- **adapters**: add support for the new MCP 1.30 settings (#1652)
+- **emitter**: honour listener priority for sync callbacks (#1628)
+- **adapters**: default VertexAI allow_prompt_caching to False (#1626)
+- **adapters**: expose LiteLLM proxy response cost (#1615)
+- **internals**: serialize nested dictionary values (#1602)
+- **examples**: migrate basics_colab and agents_colab notebooks from granite3.3 to granite4.1:8b (#1540)
+
+### Features
+
+- **tools**: add recoverable timeout option for tool runs (#1640)
+- **python**: add evaluation framework (DeepEval + Ragas) (#1453)
+- **adapters**: report ReAct tool calls to WatsonX Orchestrate (#1613)
+
 ## python_v0.1.83 (2026-08-19)
 
 ### Bug Fixes

@@ -7,6 +7,7 @@ import express, { Request, Response, Router } from "express";
 import { v4 as uuidv4 } from "uuid";
 import { AnyAgent } from "@/agents/types.js";
 import { Logger } from "@/logger/logger.js";
+import { isApiKeyValid } from "@/internals/helpers/auth.js";
 import { SystemMessage, UserMessage, Message } from "@/backend/message.js";
 import { openaiInputToBeeAIMessage } from "./responses_utils.js";
 import {
@@ -49,13 +50,11 @@ export class ResponsesAPI {
     const requestBody = req.body as ResponsesRequestBody;
     logger.debug(`Received request: ${JSON.stringify(requestBody)}`);
 
-    if (this.apiKey) {
-      const authHeader = req.headers.authorization;
-      const token = Array.isArray(authHeader) ? authHeader[0] : authHeader;
-      if (!token || token.replace(/^Bearer\s+/i, "") !== this.apiKey) {
-        res.status(401).json({ detail: "Missing or invalid API key" });
-        return;
-      }
+    const authHeader = req.headers.authorization;
+    const token = Array.isArray(authHeader) ? authHeader[0] : authHeader;
+    if (!isApiKeyValid(this.apiKey, token, { stripBearerPrefix: true })) {
+      res.status(401).json({ detail: "Missing or invalid API key" });
+      return;
     }
 
     try {

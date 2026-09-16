@@ -32,7 +32,11 @@ try:
     from mcp.server.fastmcp.prompts.base import PromptArgument
     from mcp.server.fastmcp.tools.base import Tool as MCPNativeTool
     from mcp.server.lowlevel.server import LifespanResultT
-    from mcp.server.streamable_http_manager import DEFAULT_MAX_REQUEST_BODY_SIZE
+    from mcp.server.streamable_http_manager import (
+        DEFAULT_MAX_REQUEST_BODY_SIZE,
+        DEFAULT_MAX_SESSIONS,
+        DEFAULT_SESSION_IDLE_TIMEOUT,
+    )
     from mcp.server.transport_security import TransportSecuritySettings
     from mcp.types import CallToolResult as MCPCallToolResult
     from mcp.types import TextContent as MCPTextContent
@@ -65,7 +69,9 @@ class MCPSettings(mcp_server.Settings[LifespanResultT]):
     # StreamableHTTP settings
     json_response: bool = Field(False)
     stateless_http: bool = Field(False)
+    session_idle_timeout: float | None = Field(DEFAULT_SESSION_IDLE_TIMEOUT)
     max_request_body_size: int = Field(DEFAULT_MAX_REQUEST_BODY_SIZE)
+    max_sessions: int | None = Field(DEFAULT_MAX_SESSIONS)
 
     # resource settings
     warn_on_duplicate_resources: bool = Field(True)
