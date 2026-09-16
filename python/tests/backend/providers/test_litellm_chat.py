@@ -514,4 +514,3 @@ class TestParseTimeoutEnv:
     def test_inf_falls_back(self, monkeypatch: pytest.MonkeyPatch) -> None:
         monkeypatch.setenv("BEEAI_DEFAULT_REQUEST_TIMEOUT", "inf")
         assert _parse_timeout_env() == _DEFAULT_TIMEOUT_FALLBACK
-
