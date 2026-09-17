@@ -40,17 +40,17 @@ async def _default_confirm(prompt: str, **kwargs: Unpack[IOConfirmKwargs]) -> bo
 
 
 _storage: ContextVar[IOHandlers] = ContextVar("io_storage")
-# pyrefly: ignore [bad-argument-type]
-_storage.set(IOHandlers(read=_default_read, confirm=_default_confirm))
 
 
 async def io_read(prompt: str) -> str:
-    store = _storage.get()
+    # pyrefly: ignore [bad-argument-type]
+    store = _storage.get(IOHandlers(read=_default_read, confirm=_default_confirm))
     return await store.read(prompt)
 
 
 async def io_confirm(prompt: str, **kwargs: Any) -> bool:
-    store = _storage.get()
+    # pyrefly: ignore [bad-argument-type]
+    store = _storage.get(IOHandlers(read=_default_read, confirm=_default_confirm))
     # pyrefly: ignore [bad-argument-count]
     return await store.confirm(prompt, **kwargs)
 
