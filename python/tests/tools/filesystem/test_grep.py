@@ -2,6 +2,8 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import shutil
+import subprocess
+import sys
 from pathlib import Path
 
 import pytest
@@ -49,6 +51,33 @@ async def test_ripgrep_leading_hyphen_pattern(tool: GrepTool, tmp_path: Path, pa
     data = result.to_json_safe()
     assert data["used_ripgrep"] is True
     assert data["matches"] == [{"path": str(path), "line": 1, "text": f"usage: app {pattern}", "match": pattern}]
+
+
+@pytest.mark.unit
+def test_ripgrep_does_not_consume_parent_stdin(tmp_path: Path) -> None:
+    if not shutil.which("rg"):
+        pytest.skip("ripgrep not installed on this machine")
+    script = """
+import asyncio
+import sys
+from beeai_framework.tools.filesystem import GrepTool
+
+async def main():
+    await GrepTool().run({"pattern": "needle", "root": "-"})
+
+asyncio.run(main())
+sys.stdout.write(sys.stdin.read())
+"""
+    process = subprocess.run(
+        [sys.executable, "-c", script],
+        input="needle\n",
+        capture_output=True,
+        text=True,
+        check=True,
+        timeout=30,
+        cwd=tmp_path,
+    )
+    assert process.stdout == "needle\n"
 
 
 @pytest.mark.unit
