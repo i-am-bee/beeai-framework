@@ -1,15 +1,18 @@
-# Copyright 2026 © BeeAI a Series of LF Projects, LLC
+# Copyright 2025 © BeeAI a Series of LF Projects, LLC
 # SPDX-License-Identifier: Apache-2.0
 """Restrict selected MCP tool calls with a fresh, unsigned endpoint observation.
 
 Use the repository's Python environment with its existing MCP extra. No separate
-Agent Guild package is needed. Supply --disclose-endpoint only after approving
-that the full public endpoint URL is sent to Agent Guild, which probes and logs
-it. Never supply private endpoints, credentials, signed URLs or confidential paths.
+Agent Guild package is needed. --preflight-url selects a compatible observation
+service; the default is Agent Guild's free /preflight, which probes and logs the
+full public endpoint URL. Supply --disclose-endpoint only after approving that
+disclosure to the selected service and its data handling. Never supply private
+endpoints, credentials, signed URLs or confidential paths.
 
 The caller must separately authorize the model, task and selected tool. Preflight
 is evidence, never that authorization: it does not establish identity, signature
-validity, completed work, payment binding or safety. Only free /preflight is used.
+validity, completed work, payment binding or safety. No payment is attempted;
+redirects and payment challenges block execution, including at a custom service.
 MCP initialization/discovery happens before the requirement protects tools/call.
 Unknowns and unavailable/invalid evidence block by default; named unknowns may be
 explicitly tolerated. Retained response bytes are untrusted data, not instructions.
@@ -136,6 +139,7 @@ class PreflightRequirement(Requirement[RequirementAgentRunState]):
         endpoint: str,
         *,
         disclose_endpoint: bool,
+        preflight_url: str = PREFLIGHT_URL,
         tolerated_unknowns: frozenset[str] = frozenset(),
         transport: httpx.AsyncBaseTransport | None = None,
     ) -> None:
@@ -146,6 +150,7 @@ class PreflightRequirement(Requirement[RequirementAgentRunState]):
             raise ValueError("Do not bind the final-answer tool")
         self.target = target
         self.endpoint = validate_endpoint(endpoint)
+        self.preflight_url = validate_endpoint(preflight_url)
         self.tolerated_unknowns = frozenset(tolerated_unknowns)
         self.transport = transport  # Optional in-memory transport for deterministic offline tests.
         self.evidence: list[Observation] = []
@@ -162,7 +167,7 @@ class PreflightRequirement(Requirement[RequirementAgentRunState]):
                     trust_env=False,
                     transport=self.transport,
                 ) as client:
-                    async with client.stream("GET", PREFLIGHT_URL, params={"url": self.endpoint}) as response:
+                    async with client.stream("GET", self.preflight_url, params={"url": self.endpoint}) as response:
                         if (
                             response.status_code != 200
                             or response.headers.get("content-type", "").split(";")[0] != "application/json"
@@ -209,6 +214,7 @@ class PreflightRequirement(Requirement[RequirementAgentRunState]):
             self.target,
             self.endpoint,
             disclose_endpoint=True,
+            preflight_url=self.preflight_url,
             tolerated_unknowns=self.tolerated_unknowns,
             transport=self.transport,
         )
@@ -225,11 +231,13 @@ async def delegate(
     model: ChatModel,
     *,
     disclose_endpoint: bool,
+    preflight_url: str = PREFLIGHT_URL,
     tolerated_unknowns: frozenset[str] = frozenset(),
 ) -> None:
     if not disclose_endpoint:
         raise ValueError("Approve public endpoint disclosure before opening any transport")
     endpoint = validate_endpoint(endpoint)
+    preflight_url = validate_endpoint(preflight_url)
     # Discovery is a caller-authorized operation, not guarded by preflight.
     async with (
         httpx.AsyncClient(timeout=10, follow_redirects=False, trust_env=False) as client,
@@ -241,7 +249,11 @@ async def delegate(
         if len(selected) != 1:
             raise ValueError("Select exactly one discovered MCP tool by its exact name")
         guard = PreflightRequirement(
-            selected[0], endpoint, disclose_endpoint=True, tolerated_unknowns=tolerated_unknowns
+            selected[0],
+            endpoint,
+            disclose_endpoint=True,
+            preflight_url=preflight_url,
+            tolerated_unknowns=tolerated_unknowns,
         )
         agent = RequirementAgent(llm=model, tools=selected, requirements=[guard])
         result = await agent.run(task)
@@ -261,6 +273,12 @@ async def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--model", required=True, help="Caller-authorized BeeAI model")
     parser.add_argument("--endpoint", required=True, help="Approved public MCP HTTPS endpoint")
+    parser.add_argument(
+        "--preflight-url",
+        default=PREFLIGHT_URL,
+        type=validate_endpoint,
+        help="Approved compatible HTTPS observation service (default: %(default)s)",
+    )
     parser.add_argument("--tool", required=True, help="Exact authorized MCP tool name")
     parser.add_argument("--task", required=True, help="Caller-authorized task")
     parser.add_argument("--disclose-endpoint", required=True, action="store_true")
@@ -272,6 +290,7 @@ async def main() -> None:
         args.task,
         ChatModel.from_name(args.model),
         disclose_endpoint=args.disclose_endpoint,
+        preflight_url=args.preflight_url,
         tolerated_unknowns=frozenset(args.tolerate_unknown),
     )
 

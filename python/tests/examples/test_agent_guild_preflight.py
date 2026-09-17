@@ -1,9 +1,10 @@
-# Copyright 2026 © BeeAI a Series of LF Projects, LLC
+# Copyright 2025 © BeeAI a Series of LF Projects, LLC
 # SPDX-License-Identifier: Apache-2.0
 """Offline fixtures exercise actual RequirementAgent and its blocking tool boundary."""
 
 import json
 import socket
+import sys
 from collections.abc import AsyncGenerator
 from typing import Any
 
@@ -284,7 +285,10 @@ def test_explicit_disclosure_required() -> None:
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize("blocked", [False, True])
-async def test_native_mcp_session_uses_the_selected_endpoint(monkeypatch: pytest.MonkeyPatch, blocked: bool) -> None:
+@pytest.mark.parametrize("preflight_url", [PREFLIGHT_URL, "https://approved-policy.example/observe"])
+async def test_native_mcp_session_uses_the_selected_endpoint(
+    monkeypatch: pytest.MonkeyPatch, blocked: bool, preflight_url: str
+) -> None:
     from examples.agents.requirement.agent_guild_preflight import delegate
 
     actual_client = httpx.AsyncClient
@@ -292,7 +296,7 @@ async def test_native_mcp_session_uses_the_selected_endpoint(monkeypatch: pytest
     observed_urls: list[str] = []
 
     def server(request: httpx.Request) -> httpx.Response:
-        if request.method == "GET" and str(request.url).split("?")[0] == PREFLIGHT_URL:
+        if request.method == "GET" and str(request.url).split("?")[0] == preflight_url:
             observed_urls.append(request.url.params["url"])
             return httpx.Response(200, json=document(failed="protocol_handshake" if blocked else None))
         assert str(request.url) == ENDPOINT
@@ -344,8 +348,58 @@ async def test_native_mcp_session_uses_the_selected_endpoint(monkeypatch: pytest
         "synthetic fixture",
         ScriptedModel(),
         disclose_endpoint=True,
+        preflight_url=preflight_url,
         tolerated_unknowns=MCP_UNKNOWNS,
     )
     assert observed_urls and set(observed_urls) == {ENDPOINT}
     assert len(mcp_calls) == (0 if blocked else 1)
     assert all(call["name"] == "selected" for call in mcp_calls)
+
+
+@pytest.mark.asyncio
+async def test_clone_preserves_selected_observation_service() -> None:
+    @tool(name="selected", description="Synthetic operation")
+    async def selected() -> str:
+        return "unused"
+
+    requests: list[httpx.Request] = []
+
+    def respond(request: httpx.Request) -> httpx.Response:
+        requests.append(request)
+        return httpx.Response(200, json=document())
+
+    guard = PreflightRequirement(
+        selected,
+        ENDPOINT,
+        disclose_endpoint=True,
+        preflight_url="https://approved-policy.example/observe",
+        tolerated_unknowns=MCP_UNKNOWNS,
+        transport=httpx.MockTransport(respond),
+    )
+    clone = await guard.clone()
+    assert await clone.observe() is None
+    assert len(requests) == 1
+    assert str(requests[0].url).split("?")[0] == "https://approved-policy.example/observe"
+    assert requests[0].url.params["url"] == ENDPOINT
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("override", [None, "https://approved-policy.example/observe"])
+async def test_cli_selects_observation_service(monkeypatch: pytest.MonkeyPatch, override: str | None) -> None:
+    from examples.agents.requirement import agent_guild_preflight as example
+
+    calls: list[dict[str, Any]] = []
+
+    async def capture(*args: Any, **kwargs: Any) -> None:
+        calls.append(kwargs)
+
+    monkeypatch.setattr(example, "delegate", capture)
+    monkeypatch.setattr(example.ChatModel, "from_name", lambda name: ScriptedModel())
+    argv = ["example", "--model", "fixture", "--endpoint", ENDPOINT, "--tool", "selected", "--task", "fixture"]
+    argv += ["--disclose-endpoint"]
+    if override:
+        argv += ["--preflight-url", override]
+    monkeypatch.setattr(sys, "argv", argv)
+    await example.main()
+    assert len(calls) == 1
+    assert calls[0]["preflight_url"] == (override or PREFLIGHT_URL)
