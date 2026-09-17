@@ -241,22 +241,23 @@ class RunContext:
                     return_when=asyncio.FIRST_COMPLETED,
                 )
 
-                if runner_task in done:
-                    output = runner_task.result()
-                    abort_task.cancel()
+                for task in pending:
+                    task.cancel()
+
+                if pending:
                     # pyrefly: ignore [no-matching-overload]
                     await asyncio.gather(*pending, return_exceptions=True)
-                    await emitter.emit(
-                        "success",
-                        RunContextSuccessEvent(input=context.run_params, output=output),
-                    )
-                    return output
-                else:
-                    runner_task.cancel()
-                    # pyrefly: ignore [no-matching-overload]
-                    await asyncio.gather(*pending, return_exceptions=True)
+
+                if abort_task in done:
                     abort_task.result()  # Will raise AbortError
                     raise FrameworkError("Unhandled exception")
+
+                output = runner_task.result()  # May raise ToolError
+                await emitter.emit(
+                    "success",
+                    RunContextSuccessEvent(input=context.run_params, output=output),
+                )
+                return output
 
             except Exception as e:
                 error = FrameworkError.ensure(e)
