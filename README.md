@@ -194,3 +194,59 @@ Special thanks to our contributors for helping us improve BeeAI framework.
 ---
 
 Developed by contributors to the BeeAI project, this initiative is part of the [Linux Foundation AI & Data program](https://lfaidata.foundation/projects/). Its development follows open, collaborative, and community-driven practices.
+
+## FAQ
+
+### What is BeeAI Framework?
+BeeAI Framework is a comprehensive toolkit for building intelligent, autonomous agents and multi-agent systems in Python or TypeScript.
+
+### How does BeeAI compare to LangChain or CrewAI?
+- **LangChain**: Chain-focused, more presets, heavier abstraction
+- **CrewAI**: Role-playing agents, scenario-driven
+- **BeeAI**: Modular design, A2A/MCP protocol support, lightweight, production-ready with multi-language support
+
+### How do I install BeeAI Framework?
+Python:
+```bash
+pip install beeai-framework
+```
+TypeScript:
+```bash
+npm install beeai-framework
+```
+
+### What LLM providers does BeeAI support?
+BeeAI supports OpenAI, Anthropic, IBM watsonx, Ollama (local models), DeepSeek, and more via the unified Backend interface.
+
+### What are Workflows?
+Workflows orchestrate multi-agent systems with complex execution flows, supporting parallel, sequential, and conditional execution patterns.
+
+### How do I add custom Tools?
+Create a custom Tool by extending the base Tool class:
+```python
+from beeai_framework.tools import Tool
+class MyTool(Tool):
+    async def run(self, input_data):
+        # Your logic here
+        return result
+```
+
+### What is the Requirement Agent?
+Requirement Agent creates predictable, controlled behavior across different LLMs by setting rules the agent must follow. It's useful for ensuring consistent outputs.
+
+### Does BeeAI support MCP (Model Context Protocol)?
+Yes! BeeAI has built-in MCP support for integrating external tools and resources. See the [MCP documentation](https://framework.beeai.dev/integrations/mcp).
+
+### What is A2A (Agent-to-Agent Protocol)?
+A2A is a protocol for inter-agent communication, now part of the Linux Foundation. BeeAI's Serve module supports hosting agents with A2A protocol.
+
+### How do I run agents locally with Ollama?
+1. Install [Ollama](https://ollama.com)
+2. Download a model: `ollama pull granite3.3:8b`
+3. Configure: `ChatModel.from_name("ollama:granite3.3:8b")`
+
+### Where can I get help?
+- [Documentation](https://framework.beeai.dev/)
+- [Discord community](https://discord.com/invite/NradeA6ZNF)
+- [GitHub Discussions](https://github.com/orgs/i-am-bee/discussions)
+- [Template starters](https://github.com/i-am-bee/beeai-framework-py-starter) (Python) / [TypeScript starter](https://github.com/i-am-bee/beeai-framework-ts-starter)
