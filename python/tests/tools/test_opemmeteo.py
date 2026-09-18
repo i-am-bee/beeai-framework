@@ -59,3 +59,17 @@ async def test_output(tool: OpenMeteoTool) -> None:
     result = await tool.run(input={"location_name": "White Plains"})
     assert isinstance(result, JSONToolOutput)
     assert "current" in result.get_text_content()
+
+
+"""
+Unit Tests
+"""
+
+
+@pytest.mark.unit
+def test_temperature_unit_accepts_any_case() -> None:
+    """The validator that lowercases this field only registers when
+    field_validator is the outer decorator, and a model is as likely to send
+    "Celsius" as "celsius"."""
+    assert OpenMeteoToolInput(location_name="Berlin", temperature_unit="CELSIUS").temperature_unit == "celsius"
+    assert OpenMeteoToolInput(location_name="Berlin", temperature_unit="Fahrenheit").temperature_unit == "fahrenheit"
