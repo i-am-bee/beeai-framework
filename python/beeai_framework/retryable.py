@@ -53,7 +53,11 @@ async def do_retry(fn: Callable[[int], Awaitable[T]], options: dict[str, Any] | 
     async def handler(attempt: int, remaining: int) -> T:
         logger.debug(f"Entering p_retry handler({attempt}, {remaining})")
         try:
-            factor = options.get("factor", 2) or 0
+            # options["factor"] is always present but may be explicitly None (unset config),
+            # so `.get("factor", 2)` never falls back to 2. An explicit 0 must still mean
+            # "no backoff", so only None is replaced, mirroring the TS `?? 2` default.
+            factor = options.get("factor")
+            factor = 2 if factor is None else factor
 
             if attempt > 1:
                 await asyncio.sleep(factor ** (attempt - 1))
