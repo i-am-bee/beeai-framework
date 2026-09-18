@@ -33,8 +33,8 @@ class OpenMeteoToolInput(BaseModel):
         description="The unit to express temperature", default="celsius"
     )
 
-    @classmethod
     @field_validator("temperature_unit", mode="before")
+    @classmethod
     def _to_lower(cls, value: Any) -> Any:
         if isinstance(value, str):
             return value.lower()
