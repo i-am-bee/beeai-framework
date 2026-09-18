@@ -85,11 +85,10 @@ class LocalShellBackend(ShellBackend):
 
 
 _storage: ContextVar[ShellBackend] = ContextVar("shell_backend")
-_storage.set(LocalShellBackend())
 
 
 def get_shell_backend() -> ShellBackend:
-    return _storage.get()
+    return _storage.get(LocalShellBackend())
 
 
 def setup_shell_backend(backend: ShellBackend) -> Callable[[], None]:

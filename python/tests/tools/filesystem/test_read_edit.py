@@ -3,6 +3,8 @@
 
 from __future__ import annotations
 
+import asyncio
+from contextvars import Context
 from pathlib import Path
 from typing import Any
 
@@ -13,8 +15,57 @@ from beeai_framework.tools.filesystem import (
     FileBackend,
     FileEditTool,
     FileReadTool,
+    LocalFileBackend,
+    get_file_backend,
     setup_file_backend,
 )
+
+
+@pytest.mark.unit
+@pytest.mark.parametrize("operation", ["read", "overwrite", "replace"])
+def test_local_default_in_new_context(tmp_path: Path, operation: str) -> None:
+    target = tmp_path / "a.txt"
+    target.write_text("before\n")
+
+    async def run() -> None:
+        if operation == "read":
+            result = await FileReadTool().run({"path": str(target)})
+            assert result.get_text_content() == "before\n"
+        else:
+            arguments: dict[str, Any] = {"path": str(target), "mode": operation}
+            arguments.update({"content": "after\n"} if operation == "overwrite" else {"old": "before", "new": "after"})
+            await FileEditTool().run(arguments)
+            assert target.read_text() == "after\n"
+
+    Context().run(asyncio.run, run())
+
+
+@pytest.mark.unit
+def test_backend_cleanup_in_new_context(tmp_path: Path) -> None:
+    context = Context()
+    backend = LocalFileBackend()
+    nested_backend = LocalFileBackend()
+    cleanup = context.run(setup_file_backend, backend)
+    try:
+        assert context.run(get_file_backend) is backend
+        assert Context().run(get_file_backend) is not backend
+        nested_cleanup = context.run(setup_file_backend, nested_backend)
+        try:
+            assert context.run(get_file_backend) is nested_backend
+        finally:
+            context.run(nested_cleanup)
+        assert context.run(get_file_backend) is backend
+    finally:
+        context.run(cleanup)
+
+    target = tmp_path / "a.txt"
+    target.write_text("restored\n")
+
+    async def read() -> None:
+        result = await FileReadTool().run({"path": str(target)})
+        assert result.get_text_content() == "restored\n"
+
+    context.run(asyncio.run, read())
 
 
 @pytest.mark.unit

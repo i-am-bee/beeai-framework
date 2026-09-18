@@ -38,11 +38,10 @@ class LocalFileBackend(FileBackend):
 
 
 _storage: ContextVar[FileBackend] = ContextVar("file_backend")
-_storage.set(LocalFileBackend())
 
 
 def get_file_backend() -> FileBackend:
-    return _storage.get()
+    return _storage.get(LocalFileBackend())
 
 
 def setup_file_backend(backend: FileBackend) -> Callable[[], None]:
