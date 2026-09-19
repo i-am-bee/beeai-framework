@@ -488,6 +488,19 @@ Serializer.register(Function, {
       return getProp(global, [value.name])!;
     }
 
+    // `async` and `*` are function modifiers only when they appear as standalone
+    // leading tokens. Matching them as substrings corrupts the function: a parameter
+    // named `asyncValue` would be rewritten to `Value` and the function wrongly
+    // marked `async`. Mirrors the token-wise check used for `nonReservedSymbols`.
+    const splitModifiers = (input: string) => {
+      const tokens = input.trim().split(/\s+/).filter(Boolean);
+      const modifiers: string[] = [];
+      while (tokens.length > 1 && (tokens[0] === "async" || tokens[0] === "*")) {
+        modifiers.push(tokens.shift()!);
+      }
+      return { modifiers, rest: tokens.join(" ") };
+    };
+
     const toParsableForm = (): string => {
       let fn = value.fn;
 
@@ -499,10 +512,8 @@ Serializer.register(Function, {
       if (a > -1) {
         if (b === -1 || b > a || (c === -1 && c > a)) {
           const [p, p2] = halveString(fn, "=>", false);
-          fn = `(${p.replace("async", "").replace("*", "").trim()})=>${p2}`;
-          fn = [p.includes("async") && "async ", p.includes("*") && "*", fn]
-            .filter(Boolean)
-            .join(" ");
+          const { modifiers, rest } = splitModifiers(p);
+          fn = [...modifiers, `(${rest})=>${p2}`].join(" ");
         }
       }
 
@@ -531,7 +542,7 @@ Serializer.register(Function, {
         if (fnPrefix.includes("(")) {
           parameters = (fnPrefix.match(/\((.+)\)/) ?? [null, ""])[1];
         } else {
-          parameters = fnPrefix.replace("=>", "").replace("async", "").replace("*", "");
+          parameters = splitModifiers(fnPrefix.replace("=>", "")).rest;
         }
       }
 
