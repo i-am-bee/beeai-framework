@@ -421,4 +421,44 @@ describe("Serializer", () => {
       verifyDeserialization(a, b);
     });
   });
+
+  describe("function modifier parsing", () => {
+    // A parenthesis-less arrow cannot be written literally here: the bundler rewrites
+    // `x => x` to `(x) => x` before the serializer ever sees it, so the recorded source
+    // string is supplied directly.
+    const revive = (source: string) =>
+      Serializer.deserialize<any>(
+        JSON.stringify({
+          __version: "0.0.0",
+          __root: {
+            __serializer: true,
+            __class: "Function",
+            __ref: "1",
+            __value: { name: "", binds: [], fn: source, isNative: false },
+          },
+        }),
+        undefined,
+        undefined,
+        { allowFunctionDeserialization: true },
+      );
+
+    it.each([
+      ["a plain parameter", "x => x * 2"],
+      ["a parameter starting with 'async'", "asyncValue => asyncValue * 2"],
+      ["a parameter containing 'async'", "myasyncFn => myasyncFn * 2"],
+      ["a parameter containing a star-like name", "starry => starry * 2"],
+    ])("preserves %s in a parenthesis-less arrow", async (_label, source) => {
+      const fn = await revive(source);
+      // Must return synchronously: a spuriously added `async` modifier yields a Promise,
+      // and a parameter mangled by a substring strip throws ReferenceError.
+      expect(fn(21)).toBe(42);
+    });
+
+    it("still honours a genuine async modifier", async () => {
+      const fn = await revive("async x => x * 2");
+      const result = fn(21);
+      expect(result).toBeInstanceOf(Promise);
+      await expect(result).resolves.toBe(42);
+    });
+  });
 });
