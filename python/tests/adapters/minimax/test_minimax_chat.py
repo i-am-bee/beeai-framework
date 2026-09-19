@@ -6,7 +6,12 @@ from unittest.mock import patch
 
 import pytest
 
-from beeai_framework.adapters.minimax.backend.chat import MINIMAX_API_BASE, MiniMaxChatModel
+from beeai_framework.adapters.minimax.backend.chat import (
+    MINIMAX_API_BASE,
+    MINIMAX_API_BASE_CN,
+    MiniMaxChatModel,
+    resolve_minimax_base_url,
+)
 from beeai_framework.backend.chat import ChatModel
 from beeai_framework.backend.constants import BackendProviders
 
@@ -109,3 +114,77 @@ class TestMiniMaxModelLoading:
         model = ChatModel.from_name("minimax:MiniMax-M2.7")
         assert isinstance(model, MiniMaxChatModel)
         assert model.model_id == "MiniMax-M2.7"
+
+
+class TestMiniMaxRegionSelection:
+    """Test regional (global / CN) endpoint selection."""
+
+    def test_resolve_global(self) -> None:
+        assert resolve_minimax_base_url("global") == MINIMAX_API_BASE
+
+    def test_resolve_cn(self) -> None:
+        assert resolve_minimax_base_url("cn") == MINIMAX_API_BASE_CN
+
+    @pytest.mark.parametrize("region", ["global_en", "cn_zh"])
+    def test_resolve_unsupported_alias_raises(self, region: str) -> None:
+        with pytest.raises(ValueError, match=r"Unknown MiniMax region"):
+            resolve_minimax_base_url(region)
+
+    def test_resolve_is_case_insensitive_and_trimmed(self) -> None:
+        assert resolve_minimax_base_url("  CN  ") == MINIMAX_API_BASE_CN
+
+    def test_resolve_empty_defaults_to_global(self) -> None:
+        assert resolve_minimax_base_url(None) == MINIMAX_API_BASE
+        assert resolve_minimax_base_url("") == MINIMAX_API_BASE
+
+    def test_resolve_unknown_region_raises(self) -> None:
+        with pytest.raises(ValueError, match=r"Unknown MiniMax region"):
+            resolve_minimax_base_url("mars")
+
+    def test_endpoints_differ(self) -> None:
+        assert MINIMAX_API_BASE == "https://api.minimax.io/v1"
+        assert MINIMAX_API_BASE_CN == "https://api.minimaxi.com/v1"
+        assert MINIMAX_API_BASE != MINIMAX_API_BASE_CN
+
+    @patch.dict(os.environ, {"MINIMAX_API_KEY": "test-key-123"})
+    def test_region_param_selects_cn(self) -> None:
+        model = MiniMaxChatModel(region="cn")
+        assert model._settings.get("base_url") == MINIMAX_API_BASE_CN
+
+    @patch.dict(os.environ, {"MINIMAX_API_KEY": "test-key-123"})
+    def test_region_param_selects_global(self) -> None:
+        model = MiniMaxChatModel(region="global")
+        assert model._settings.get("base_url") == MINIMAX_API_BASE
+
+    @patch.dict(
+        os.environ,
+        {"MINIMAX_API_KEY": "test-key-123", "MINIMAX_API_REGION": "cn"},
+    )
+    def test_region_from_env_selects_cn(self) -> None:
+        model = MiniMaxChatModel()
+        assert model._settings.get("base_url") == MINIMAX_API_BASE_CN
+
+    @patch.dict(
+        os.environ,
+        {"MINIMAX_API_KEY": "test-key-123", "MINIMAX_API_REGION": "cn"},
+    )
+    def test_explicit_base_url_ignores_invalid_region(self) -> None:
+        model = MiniMaxChatModel(base_url="https://proxy.example.com/v1", region="mars")
+        assert model._settings.get("base_url") == "https://proxy.example.com/v1"
+
+    @patch.dict(
+        os.environ,
+        {
+            "MINIMAX_API_KEY": "test-key-123",
+            "MINIMAX_API_BASE": "https://api.minimax.io/v1",
+            "MINIMAX_API_REGION": "mars",
+        },
+    )
+    def test_api_base_env_overrides_region(self) -> None:
+        model = MiniMaxChatModel()
+        assert model._settings.get("base_url") == MINIMAX_API_BASE
+
+    @patch.dict(os.environ, {"MINIMAX_API_KEY": "test-key-123"})
+    def test_default_without_region_is_global(self) -> None:
+        model = MiniMaxChatModel()
+        assert model._settings.get("base_url") == MINIMAX_API_BASE
