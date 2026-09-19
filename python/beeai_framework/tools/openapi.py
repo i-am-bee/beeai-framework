@@ -243,7 +243,7 @@ class OpenAPITool(Tool[BaseModel, ToolRunOptions, OpenAPIToolOutput]):
             if "yaml" in content_type:
                 import yaml
 
-                content = yaml.parse(response.text)
+                content = yaml.safe_load(response.text)
             else:
                 content = response.json()
 
