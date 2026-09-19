@@ -115,3 +115,51 @@ async def test_max_results_truncates_stdlib(tool: GrepTool, fs_tree: Path, monke
     data = result.to_json_safe()
     assert len(data["matches"]) == 1
     assert data["truncated"] is True
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_exact_match_count_is_not_reported_as_truncated_stdlib(
+    tool: GrepTool, fs_tree: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """max_results reached is not the same as max_results exceeded.
+
+    fs_tree holds exactly two case-sensitive "hello" matches, so a cap of two
+    returns every match there is and nothing was cut off.
+    """
+    monkeypatch.setattr("shutil.which", lambda _: None)
+
+    result = await tool.run({"pattern": "hello", "root": str(fs_tree), "max_results": 2, "case_sensitive": True})
+    data = result.to_json_safe()
+
+    assert data["used_ripgrep"] is False
+    assert len(data["matches"]) == 2
+    assert data["truncated"] is False
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_more_matches_than_the_cap_is_still_truncated_stdlib(
+    tool: GrepTool, fs_tree: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr("shutil.which", lambda _: None)
+
+    result = await tool.run({"pattern": "hello", "root": str(fs_tree), "max_results": 1, "case_sensitive": True})
+    data = result.to_json_safe()
+
+    assert len(data["matches"]) == 1
+    assert data["truncated"] is True
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_exact_match_count_is_not_reported_as_truncated_ripgrep(tool: GrepTool, fs_tree: Path) -> None:
+    if not shutil.which("rg"):
+        pytest.skip("ripgrep not installed on this machine")
+
+    result = await tool.run({"pattern": "hello", "root": str(fs_tree), "max_results": 2, "case_sensitive": True})
+    data = result.to_json_safe()
+
+    assert data["used_ripgrep"] is True
+    assert len(data["matches"]) == 2
+    assert data["truncated"] is False

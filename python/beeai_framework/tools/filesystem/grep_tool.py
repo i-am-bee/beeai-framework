@@ -57,7 +57,9 @@ class GrepTool(Tool[GrepToolInput, ToolRunOptions, JSONToolOutput[dict[str, Any]
         return await self._run_python(input)
 
     async def _run_ripgrep(self, input: GrepToolInput) -> JSONToolOutput[dict[str, Any]]:
-        args = ["rg", "--json", "--line-number", f"--max-count={input.max_results}"]
+        # Ask for one more than needed, so a result set that exactly fills
+        # max_results is not mistaken for a truncated one.
+        args = ["rg", "--json", "--line-number", f"--max-count={input.max_results + 1}"]
         if not input.case_sensitive:
             args.append("-i")
         if input.context_lines:
@@ -95,14 +97,13 @@ class GrepTool(Tool[GrepToolInput, ToolRunOptions, JSONToolOutput[dict[str, Any]
                         "match": sub.get("match", {}).get("text", ""),
                     }
                 )
-                if len(matches) >= input.max_results:
+                if len(matches) > input.max_results:
                     break
-            if len(matches) >= input.max_results:
+            if len(matches) > input.max_results:
                 break
 
-        return JSONToolOutput(
-            {"matches": matches, "truncated": len(matches) >= input.max_results, "used_ripgrep": True}
-        )
+        truncated = len(matches) > input.max_results
+        return JSONToolOutput({"matches": matches[: input.max_results], "truncated": truncated, "used_ripgrep": True})
 
     async def _run_python(self, input: GrepToolInput) -> JSONToolOutput[dict[str, Any]]:
         flags = 0 if input.case_sensitive else re.IGNORECASE
@@ -126,7 +127,7 @@ class GrepTool(Tool[GrepToolInput, ToolRunOptions, JSONToolOutput[dict[str, Any]
                     for line_no, line in enumerate(fh, start=1):
                         if regex.search(line):
                             matches.append({"path": str(path), "line": line_no, "text": line.rstrip("\n")})
-                            if len(matches) >= input.max_results:
+                            if len(matches) > input.max_results:
                                 truncated = True
                                 break
             except (OSError, UnicodeError):
@@ -134,4 +135,4 @@ class GrepTool(Tool[GrepToolInput, ToolRunOptions, JSONToolOutput[dict[str, Any]
             if truncated:
                 break
 
-        return JSONToolOutput({"matches": matches, "truncated": truncated, "used_ripgrep": False})
+        return JSONToolOutput({"matches": matches[: input.max_results], "truncated": truncated, "used_ripgrep": False})
