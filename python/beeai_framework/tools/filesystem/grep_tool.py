@@ -64,10 +64,10 @@ class GrepTool(Tool[GrepToolInput, ToolRunOptions, JSONToolOutput[dict[str, Any]
             args.extend(["-A", str(input.context_lines), "-B", str(input.context_lines)])
         if input.glob:
             args.extend(["--glob", input.glob])
-        args.extend([input.pattern, input.root])
+        args.extend(["--", input.pattern, input.root])
 
         process = await asyncio.create_subprocess_exec(
-            *args, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE
+            *args, stdin=asyncio.subprocess.DEVNULL, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE
         )
         stdout_bytes, stderr_bytes = await process.communicate()
         # rg exits 1 when no matches; any other non-zero is a real error

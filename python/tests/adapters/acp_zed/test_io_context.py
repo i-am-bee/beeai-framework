@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+from io import StringIO
 from typing import Any
 
 import pytest
@@ -85,19 +86,15 @@ async def test_read_raises_under_context() -> None:
 
 @pytest.mark.unit
 @pytest.mark.asyncio
-async def test_context_restores_previous_handlers() -> None:
+async def test_context_restores_previous_handlers(monkeypatch: pytest.MonkeyPatch) -> None:
     """After exiting the context, the previous (default) handlers are restored."""
     bridge = FsBridge()
     bridge.bind(_StubConn(allow=True))  # type: ignore[arg-type]
+    monkeypatch.setattr("sys.stdin", StringIO("restored\n"))
     tok = _active_session.set("sess-1")
     try:
         with ACPZedIOContext(bridge):
             assert await io_confirm("x", data={}) is True
-        # Outside the context, io_read would block on stdin; just confirm it's a
-        # different function now (the default one, not our _read).
-        from beeai_framework.utils.io import _storage
-
-        restored = _storage.get()
-        assert restored.read.__name__ != "_read"
+        assert await io_read("") == "restored"
     finally:
         _active_session.reset(tok)

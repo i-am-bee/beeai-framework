@@ -1,6 +1,9 @@
 # Copyright 2025 © BeeAI a Series of LF Projects, LLC
 # SPDX-License-Identifier: Apache-2.0
 
+import shutil
+import subprocess
+import sys
 from pathlib import Path
 
 import pytest
@@ -34,6 +37,47 @@ async def test_ripgrep_path(tool: GrepTool, fs_tree: Path) -> None:
     assert data["used_ripgrep"] is True
     assert data["matches"]
     assert any("a.py" in m["path"] for m in data["matches"])
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+@pytest.mark.parametrize("pattern", ["--help", "--version", "-needle"])
+async def test_ripgrep_leading_hyphen_pattern(tool: GrepTool, tmp_path: Path, pattern: str) -> None:
+    if not shutil.which("rg"):
+        pytest.skip("ripgrep not installed on this machine")
+    path = tmp_path / "usage.txt"
+    path.write_text(f"usage: app {pattern}\n", encoding="utf-8")
+    result = await tool.run({"pattern": pattern, "root": str(tmp_path)})
+    data = result.to_json_safe()
+    assert data["used_ripgrep"] is True
+    assert data["matches"] == [{"path": str(path), "line": 1, "text": f"usage: app {pattern}", "match": pattern}]
+
+
+@pytest.mark.unit
+def test_ripgrep_does_not_consume_parent_stdin(tmp_path: Path) -> None:
+    if not shutil.which("rg"):
+        pytest.skip("ripgrep not installed on this machine")
+    script = """
+import asyncio
+import sys
+from beeai_framework.tools.filesystem import GrepTool
+
+async def main():
+    await GrepTool().run({"pattern": "needle", "root": "-"})
+
+asyncio.run(main())
+sys.stdout.write(sys.stdin.read())
+"""
+    process = subprocess.run(
+        [sys.executable, "-c", script],
+        input="needle\n",
+        capture_output=True,
+        text=True,
+        check=True,
+        timeout=30,
+        cwd=tmp_path,
+    )
+    assert process.stdout == "needle\n"
 
 
 @pytest.mark.unit

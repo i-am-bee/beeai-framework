@@ -13,8 +13,8 @@ class ChatToolFunctionDefinition(BaseModel):
     name: str
     arguments: dict[str, Any]
 
-    @classmethod
     @field_validator("arguments", mode="before")
+    @classmethod
     def parse_arguments(cls, value: Any) -> Any:
         if isinstance(value, str):
             try:

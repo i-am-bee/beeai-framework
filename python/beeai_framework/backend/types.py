@@ -207,6 +207,8 @@ class ChatModelOutput(RunnableOutput):
             total_tokens=max(self.usage.total_tokens, other.usage.total_tokens),
             prompt_tokens=max(self.usage.prompt_tokens, other.usage.prompt_tokens),
             completion_tokens=max(self.usage.completion_tokens, other.usage.completion_tokens),
+            cached_prompt_tokens=max(self.usage.cached_prompt_tokens, other.usage.cached_prompt_tokens),
+            cached_creation_tokens=max(self.usage.cached_creation_tokens, other.usage.cached_creation_tokens),
         )
 
     def get_tool_calls(self) -> list[MessageToolCallContent]:

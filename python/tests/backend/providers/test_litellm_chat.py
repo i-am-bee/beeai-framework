@@ -1,6 +1,7 @@
 # Copyright 2025 © BeeAI a Series of LF Projects, LLC
 # SPDX-License-Identifier: Apache-2.0
 
+from collections.abc import AsyncGenerator
 from types import SimpleNamespace
 from typing import Any, cast
 
@@ -16,13 +17,19 @@ from litellm.types.utils import (
     Usage,
 )
 
-from beeai_framework.adapters.litellm.chat import LiteLLMChatModel
+from beeai_framework.adapters.litellm.chat import (
+    _DEFAULT_TIMEOUT_FALLBACK,
+    DEFAULT_REQUEST_TIMEOUT_SECONDS,
+    LiteLLMChatModel,
+    _parse_timeout_env,
+)
 from beeai_framework.backend.constants import ProviderName
 from beeai_framework.backend.message import (
     AssistantMessage,
     MessageReasoningContent,
     MessageTextContent,
     MessageToolCallContent,
+    UserMessage,
 )
 
 
@@ -363,3 +370,147 @@ class TestTransformOutput:
         texts = result.output[0].get_by_type(MessageTextContent)
         assert len(texts) == 1
         assert texts[0].text == "plain"
+
+
+class _CustomTimeoutLiteLLMChatModel(LiteLLMChatModel):
+    def __init__(self) -> None:
+        super().__init__("test-model", provider_id="openai", settings={"timeout": 42})
+
+    @property
+    def provider_id(self) -> ProviderName:
+        return "openai"
+
+
+@pytest.fixture()
+def timeout_model() -> _TestLiteLLMChatModel:
+    """Function-scoped fixture to avoid scope mismatch with function-scoped monkeypatch."""
+    return _TestLiteLLMChatModel()
+
+
+class TestRequestTimeout:
+    @pytest.mark.unit
+    @pytest.mark.asyncio
+    async def test_non_streaming_uses_default_timeout(
+        self,
+        timeout_model: _TestLiteLLMChatModel,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        captured: dict[str, Any] = {}
+
+        async def fake_acompletion(**kwargs: Any) -> LiteLLMModelResponse:
+            captured.update(kwargs)
+            return LiteLLMModelResponse(
+                id="chatcmpl-timeout",
+                model="test",
+                choices=[Choices(finish_reason="stop", index=0, message=Message(content="hello", role="assistant"))],
+            )
+
+        monkeypatch.setattr("beeai_framework.adapters.litellm.chat.acompletion", fake_acompletion)
+
+        response = await timeout_model.run([UserMessage("hi")])
+
+        assert captured["timeout"] == DEFAULT_REQUEST_TIMEOUT_SECONDS
+        assert response.get_text_content() == "hello"
+
+    @pytest.mark.unit
+    @pytest.mark.asyncio
+    async def test_streaming_uses_default_timeout(
+        self,
+        timeout_model: _TestLiteLLMChatModel,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        captured: dict[str, Any] = {}
+
+        # Returns an async generator wrapper (not itself a generator) to match
+        # acompletion(stream=True) behavior which returns an awaitable async iterator.
+        async def fake_acompletion_stream(**kwargs: Any) -> AsyncGenerator[ModelResponseStream]:
+            captured.update(kwargs)
+
+            async def _gen() -> AsyncGenerator[ModelResponseStream]:
+                yield ModelResponseStream(
+                    id="chatcmpl-stream-timeout",
+                    model="test",
+                    choices=[StreamingChoices(finish_reason="stop", index=0, delta=Delta(content="hello"))],
+                )
+
+            return _gen()
+
+        monkeypatch.setattr("beeai_framework.adapters.litellm.chat.acompletion", fake_acompletion_stream)
+
+        response = await timeout_model.run([UserMessage("hi")], stream=True)
+
+        assert captured["timeout"] == DEFAULT_REQUEST_TIMEOUT_SECONDS
+        assert response.get_text_content() == "hello"
+
+    @pytest.mark.unit
+    @pytest.mark.asyncio
+    async def test_settings_override_takes_precedence(
+        self,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        captured: dict[str, Any] = {}
+
+        async def fake_acompletion(**kwargs: Any) -> LiteLLMModelResponse:
+            captured.update(kwargs)
+            return LiteLLMModelResponse(
+                id="chatcmpl-custom-timeout",
+                model="test",
+                choices=[Choices(finish_reason="stop", index=0, message=Message(content="hello", role="assistant"))],
+            )
+
+        monkeypatch.setattr("beeai_framework.adapters.litellm.chat.acompletion", fake_acompletion)
+
+        custom_model = _CustomTimeoutLiteLLMChatModel()
+        response = await custom_model.run([UserMessage("hi")])
+
+        assert captured["timeout"] == 42
+        assert response.get_text_content() == "hello"
+
+
+class TestParseTimeoutEnv:
+    """Tests for the guarded BEEAI_DEFAULT_REQUEST_TIMEOUT env var parsing."""
+
+    @pytest.mark.unit
+    def test_valid_float_value(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        monkeypatch.setenv("BEEAI_DEFAULT_REQUEST_TIMEOUT", "300.5")
+        assert _parse_timeout_env() == 300.5
+
+    @pytest.mark.unit
+    def test_valid_int_value(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        monkeypatch.setenv("BEEAI_DEFAULT_REQUEST_TIMEOUT", "120")
+        assert _parse_timeout_env() == 120.0
+
+    @pytest.mark.unit
+    def test_unset_returns_default(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        monkeypatch.delenv("BEEAI_DEFAULT_REQUEST_TIMEOUT", raising=False)
+        assert _parse_timeout_env() == _DEFAULT_TIMEOUT_FALLBACK
+
+    @pytest.mark.unit
+    def test_garbage_string_falls_back(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        monkeypatch.setenv("BEEAI_DEFAULT_REQUEST_TIMEOUT", "not-a-number")
+        assert _parse_timeout_env() == _DEFAULT_TIMEOUT_FALLBACK
+
+    @pytest.mark.unit
+    def test_empty_string_falls_back(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        monkeypatch.setenv("BEEAI_DEFAULT_REQUEST_TIMEOUT", "")
+        assert _parse_timeout_env() == _DEFAULT_TIMEOUT_FALLBACK
+
+    @pytest.mark.unit
+    def test_negative_value_falls_back(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        monkeypatch.setenv("BEEAI_DEFAULT_REQUEST_TIMEOUT", "-10")
+        assert _parse_timeout_env() == _DEFAULT_TIMEOUT_FALLBACK
+
+    @pytest.mark.unit
+    def test_zero_falls_back(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        monkeypatch.setenv("BEEAI_DEFAULT_REQUEST_TIMEOUT", "0")
+        assert _parse_timeout_env() == _DEFAULT_TIMEOUT_FALLBACK
+
+    @pytest.mark.unit
+    def test_nan_falls_back(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        monkeypatch.setenv("BEEAI_DEFAULT_REQUEST_TIMEOUT", "nan")
+        assert _parse_timeout_env() == _DEFAULT_TIMEOUT_FALLBACK
+
+    @pytest.mark.unit
+    def test_inf_falls_back(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        monkeypatch.setenv("BEEAI_DEFAULT_REQUEST_TIMEOUT", "inf")
+        assert _parse_timeout_env() == _DEFAULT_TIMEOUT_FALLBACK
