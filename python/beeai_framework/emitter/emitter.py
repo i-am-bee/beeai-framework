@@ -105,6 +105,7 @@ class Emitter:
 
         cleanup = child_emitter.pipe(self)
         self._cleanups.append(cleanup)
+        child_emitter._cleanups.append(lambda: self._cleanups.remove(cleanup) if cleanup in self._cleanups else None)
 
         return child_emitter
 

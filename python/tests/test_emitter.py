@@ -336,3 +336,43 @@ async def test_emitter_priority_is_honoured_for_slow_sync_callbacks() -> None:
 
     await emitter.emit("event", None)
     assert order == [3, 2, 1]
+
+
+@pytest.mark.unit
+def test_child_emitter_destroy_cleans_up_parent_reference() -> None:
+    parent = Emitter.root().child(namespace=["parent"])
+    initial_cleanups = len(parent._cleanups)
+
+    child = parent.child(namespace=["child"])
+    assert len(parent._cleanups) == initial_cleanups + 1
+
+    child.destroy()
+    assert len(parent._cleanups) == initial_cleanups
+
+
+@pytest.mark.unit
+def test_multiple_child_emitters_do_not_leak_cleanups() -> None:
+    parent = Emitter.root().child(namespace=["parent"])
+    initial_cleanups = len(parent._cleanups)
+
+    for i in range(10):
+        child = parent.child(namespace=[f"child_{i}"])
+        child.destroy()
+
+    assert len(parent._cleanups) == initial_cleanups
+
+
+@pytest.mark.unit
+def test_parent_destroy_cleans_up_all_children() -> None:
+    parent = Emitter.root().child(namespace=["parent"])
+    child1 = parent.child(namespace=["child1"])
+    child2 = parent.child(namespace=["child2"])
+
+    assert len(parent._cleanups) == 3  # root's child + 2 children
+    parent.destroy()
+    assert len(parent._cleanups) == 0
+
+    child1.destroy()
+    child2.destroy()
+    assert len(child1._cleanups) == 0
+    assert len(child2._cleanups) == 0
