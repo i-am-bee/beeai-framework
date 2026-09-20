@@ -104,6 +104,12 @@ ipython_config.py
 #   https://python-poetry.org/docs/basic-usage/#commit-your-poetrylock-file-to-version-control
 #poetry.lock
 
+# uv
+#   This project manages Python dependencies with Poetry; poetry.lock is the tracked
+#   lockfile. A uv.lock here is a local artifact of running uv in this directory, and
+#   has twice been committed and reverted by mistake (#851, e61ca43c).
+uv.lock
+
 # pdm
 #   Similar to Pipfile.lock, it is generally recommended to include pdm.lock in version control.
 #pdm.lock
