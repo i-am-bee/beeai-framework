@@ -55,9 +55,13 @@ wikipedia-api = {version = "^0.8.1", optional = true}
 agentstack-sdk = {version = "0.6.2", optional = true}
 deprecated = "^1.2.18"
 torch = [
-  {version = ">=2.4.1", markers = "sys_platform == 'darwin' and platform_machine == 'arm64'", optional = true},
+  # Apple Silicon must come from PyPI: the pytorch-cpu index publishes "+cpu" wheels for
+  # Linux/Windows only, so without an explicit source Poetry folds this entry into the
+  # "+cpu" package and macOS arm64 gets a wheel that does not exist for it.
+  {version = ">=2.8.0", source = "pypi", markers = "sys_platform == 'darwin' and platform_machine == 'arm64'", optional = true},
+  # 2.2.2 is the last release with macOS x86_64 wheels.
   {version = "2.2.2", markers = "sys_platform == 'darwin' and platform_machine == 'x86_64'", optional = true},
-  {version = "2.7.1", source = "pytorch-cpu", markers = "sys_platform != 'darwin'", optional = true}
+  {version = "2.8.0", source = "pytorch-cpu", markers = "sys_platform != 'darwin'", optional = true}
 ]
 transformers = [
   {version = ">=5.0.0", markers = "sys_platform == 'darwin' and platform_machine == 'arm64'", optional = true},
