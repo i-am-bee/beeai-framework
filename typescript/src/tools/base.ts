@@ -424,7 +424,7 @@ export abstract class Tool<
   ) {
     return new DynamicTool<TOutput, TS, TOptions, TRunOptions, z.output<TS>>({
       name: overrides?.name || this.name,
-      description: overrides?.name || this.description,
+      description: overrides?.description || this.description,
       options: shallowCopy(this.options),
       inputSchema: schema,
       handler: async (input: ToolInputRaw<S>, options, run): Promise<TOutput> => {
