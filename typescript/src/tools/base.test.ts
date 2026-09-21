@@ -585,3 +585,49 @@ describe("Base Tool", () => {
     });
   });
 });
+
+describe("Tool.extend metadata overrides", () => {
+  const source = new DynamicTool({
+    name: "OriginalTool",
+    description: "Original description",
+    inputSchema: z.object({ query: z.string() }),
+    handler: async ({ query }) => new StringToolOutput(query),
+  });
+
+  const schema = z.object({ text: z.string() });
+
+  it.each([
+    ["no overrides", undefined, "OriginalTool", "Original description"],
+    ["empty overrides", {}, "OriginalTool", "Original description"],
+    ["both empty", { name: "", description: "" }, "OriginalTool", "Original description"],
+    ["name only", { name: "RenamedTool" }, "RenamedTool", "Original description"],
+    ["description only", { description: "New description" }, "OriginalTool", "New description"],
+    [
+      "both independent",
+      { name: "RenamedTool", description: "New description" },
+      "RenamedTool",
+      "New description",
+    ],
+    [
+      "empty description",
+      { name: "RenamedTool", description: "" },
+      "RenamedTool",
+      "Original description",
+    ],
+    ["empty name", { name: "", description: "New description" }, "OriginalTool", "New description"],
+  ] as const)(
+    "keeps name and description independent: %s",
+    async (_, overrides, name, description) => {
+      const extended = source.extend(schema, ({ text }) => ({ query: text }), overrides);
+
+      expect(extended.name).toBe(name);
+      expect(extended.description).toBe(description);
+      expect(extended.inputSchema()).toBe(schema);
+      expect((await extended.run({ text: "local fixture" })).getTextContent()).toBe(
+        "local fixture",
+      );
+      expect(source.name).toBe("OriginalTool");
+      expect(source.description).toBe("Original description");
+    },
+  );
+});
