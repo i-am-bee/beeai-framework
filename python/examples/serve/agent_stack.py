@@ -1,5 +1,6 @@
 from beeai_framework.adapters.agentstack.backend.chat import AgentStackChatModel
 from beeai_framework.adapters.agentstack.serve.server import AgentStackMemoryManager, AgentStackServer
+from beeai_framework.agents import AgentExecutionConfig
 from beeai_framework.agents.requirement import RequirementAgent
 from beeai_framework.backend import ChatModelParameters
 from beeai_framework.memory import UnconstrainedMemory
@@ -31,6 +32,7 @@ def main() -> None:
     server = AgentStackServer(memory_manager=AgentStackMemoryManager())
     server.register(
         agent,
+        execution=AgentExecutionConfig(max_iterations=100),  # optional per-agent run defaults
         name="Framework chat agent",  # (optional)
         description="Simple chat agent",  # (optional)
         detail=AgentDetail(interaction_mode="multi-turn"),  # default is multi-turn (optional)

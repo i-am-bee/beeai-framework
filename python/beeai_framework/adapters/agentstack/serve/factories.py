@@ -13,7 +13,7 @@ from beeai_framework.adapters.agentstack.serve.server import (
 )
 from beeai_framework.adapters.agentstack.serve.types import BaseAgentStackExtensions
 from beeai_framework.adapters.agentstack.serve.utils import init_agent_stack_memory
-from beeai_framework.agents import BaseAgent
+from beeai_framework.agents import AgentOptions, BaseAgent
 from beeai_framework.agents.react import ReActAgent, ReActAgentUpdateEvent
 from beeai_framework.agents.requirement import RequirementAgent
 from beeai_framework.agents.requirement.events import RequirementAgentFinalAnswerEvent
@@ -106,9 +106,9 @@ def _react_agent_factory(
                         extra_extensions["trajectory"].trajectory_metadata(title=data.update.key, content=update)
                     )
 
-            result = await cloned_agent.run([convert_a2a_to_framework_message(message)]).middleware(
-                create_tool_trajectory_middleware(stack_context)
-            )
+            result = await cloned_agent.run(
+                [convert_a2a_to_framework_message(message)], **_get_execution_options(metadata)
+            ).middleware(create_tool_trajectory_middleware(stack_context))
 
             agent_response = convert_to_a2a_message(result.last_message)
             if isinstance(memory_manager, AgentStackMemoryManager):
@@ -155,9 +155,9 @@ def _tool_calling_agent_factory(
             embedding=extra_extensions.get("embedding"),
             extra_extensions=extra_extensions,  # type: ignore[arg-type]
         ) as stack_context:
-            result = await cloned_agent.run([convert_a2a_to_framework_message(message)]).middleware(
-                create_tool_trajectory_middleware(stack_context)
-            )
+            result = await cloned_agent.run(
+                [convert_a2a_to_framework_message(message)], **_get_execution_options(metadata)
+            ).middleware(create_tool_trajectory_middleware(stack_context))
 
             agent_response = convert_to_a2a_message(result.last_message)
             if isinstance(memory_manager, AgentStackMemoryManager):
@@ -211,9 +211,9 @@ def _requirement_agent_factory(
                 await context.yield_async(data.delta)
                 stream = True
 
-            result = await cloned_agent.run([convert_a2a_to_framework_message(message)]).middleware(
-                create_tool_trajectory_middleware(stack_context)
-            )
+            result = await cloned_agent.run(
+                [convert_a2a_to_framework_message(message)], **_get_execution_options(metadata)
+            ).middleware(create_tool_trajectory_middleware(stack_context))
 
             agent_response = convert_to_a2a_message(result.last_message)
             if isinstance(memory_manager, AgentStackMemoryManager):
@@ -280,6 +280,11 @@ def _runnable_factory(
     return agentstack_agent.agent(**runnable_metadata)(run)
 
 
+def _get_execution_options(metadata: AgentStackServerMetadata | None) -> AgentOptions:
+    execution = metadata.get("execution") if metadata else None
+    return cast(AgentOptions, execution.model_dump(exclude_none=True)) if execution is not None else AgentOptions()
+
+
 def _get_tools_settings(
     settings: Annotated[agentstack_extensions.SettingsExtensionServer, Any] | None,
 ) -> tuple[bool, list[str]]:
@@ -301,6 +306,7 @@ def _init_metadata(
     base: AgentStackServerMetadata | None = None,
 ) -> tuple[BaseAgentStackServerMetadata, type[BaseAgentStackExtensions]]:
     base_copy: AgentStackServerMetadata = base.copy() if base else AgentStackServerMetadata()
+    base_copy.pop("execution", None)
     base_extension: type[BaseAgentStackExtensions] = base_copy.pop("extensions", BaseAgentStackExtensions)
     extensions = clone_class(base_extension)
     settings: set[AgentStackSettingsContent] = base_copy.pop("settings", set())

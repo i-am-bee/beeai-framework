@@ -249,6 +249,7 @@ Key Features:
 	```py Python [expandable]
 	from beeai_framework.adapters.agentstack.backend.chat import AgentStackChatModel
 	from beeai_framework.adapters.agentstack.serve.server import AgentStackMemoryManager, AgentStackServer
+	from beeai_framework.agents import AgentExecutionConfig
 	from beeai_framework.agents.requirement import RequirementAgent
 	from beeai_framework.backend import ChatModelParameters
 	from beeai_framework.memory import UnconstrainedMemory
@@ -280,6 +281,7 @@ Key Features:
 	    server = AgentStackServer(memory_manager=AgentStackMemoryManager())
 	    server.register(
 	        agent,
+	        execution=AgentExecutionConfig(max_iterations=100),  # optional per-agent run defaults
 	        name="Framework chat agent",  # (optional)
 	        description="Simple chat agent",  # (optional)
 	        detail=AgentDetail(interaction_mode="multi-turn"),  # default is multi-turn (optional)
@@ -307,6 +309,19 @@ Key Features:
 </Tip>
 
 ### Configuration
+
+**Agent execution (Python)**
+
+Pass `execution=AgentExecutionConfig(...)` to `server.register()` to configure
+`max_iterations`, `total_max_retries`, and `max_retries_per_step` for the built-in
+`RequirementAgent`, `ToolCallingAgent`, and `ReActAgent` factories. These options
+apply to every request served by that registration, including cloned agents.
+Omitted fields and fields set to `None` retain the agent's own defaults; explicit
+integer values (including `0`) are passed through with the agent's existing semantics.
+The configuration is copied during registration, so changing the original object
+afterwards does not change the server's behavior. Non-empty execution configuration
+is rejected for other runnable types. Custom factories retain their existing signature
+and are responsible for consuming execution metadata when applicable.
 
 **Server**
 
