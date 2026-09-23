@@ -39,6 +39,7 @@ exclude = list(
             "tools/mcp_agent.py" if os.getenv("SLACK_BOT_TOKEN") is None else None,
             "tools/mcp_tool_creation.py" if os.getenv("SLACK_BOT_TOKEN") is None else None,
             "tools/mcp_slack_agent.py" if os.getenv("SLACK_BOT_TOKEN") is None else None,
+            "tools/mcp_baizhi_research.py" if os.getenv("BAIZHI_API_KEY") is None else None,
             "workflows/searx_agent.py",
             "agents/providers/acp.py",
             "agents/providers/a2a_agent.py",

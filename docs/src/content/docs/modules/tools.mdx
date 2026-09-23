@@ -816,6 +816,10 @@ Leverage the Model Context Protocol (MCP) to define, initialize, and utilize too
 
 </AccordionGroup>
 
+<Note>
+  For an authenticated hosted MCP workflow, see the [Baizhi research example](https://github.com/i-am-bee/beeai-framework/blob/main/python/examples/tools/mcp_baizhi_research.py). Set `BAIZHI_API_KEY` and, optionally, `BAIZHI_MCP_ENDPOINT` before running it. The example keeps the HTTP and MCP sessions open for the agent run, discovers paginated tools, allows only the three research tools, and limits each to one invocation. Tool arguments are sent to the hosted service and may incur service or model costs.
+</Note>
+
 
 <Tip>
 	Check out the [MCP Slack integration tutorial](/guides/mcp-slackbot)
