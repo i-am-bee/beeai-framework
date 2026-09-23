@@ -1,8 +1,8 @@
 # Copyright 2025 © BeeAI a Series of LF Projects, LLC
 # SPDX-License-Identifier: Apache-2.0
 
-from copy import copy
-from typing import Self, TypeVar
+from copy import deepcopy
+from typing import Self, TypeVar, cast
 
 from cachetools import Cache, LRUCache, TTLCache
 
@@ -42,6 +42,8 @@ class SlidingCache(BaseCache[T]):
         return len(self._items)
 
     async def clone(self) -> Self:
-        cloned = type(self)(len(self._items), self._ttl)
-        cloned._items = copy(self._items)
+        # Read all stored values without changing recency or filtering expired entries.
+        values = (Cache.__getitem__(self._items, key) for key in Cache.__iter__(self._items))
+        cloned = type(self)(cast(int, self._items.maxsize), self._ttl)
+        cloned._items = deepcopy(self._items, {id(value): value for value in values})
         return cloned
