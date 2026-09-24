@@ -17,6 +17,7 @@ from beeai_framework.adapters.agentstack.serve._dummy_context_store import (
     DummyContextStore,
 )
 from beeai_framework.adapters.agentstack.serve.types import BaseAgentStackExtensions
+from beeai_framework.agents import AgentExecutionConfig
 from beeai_framework.agents.react import ReActAgent
 from beeai_framework.agents.requirement import RequirementAgent
 from beeai_framework.agents.tool_calling import ToolCallingAgent
@@ -138,6 +139,9 @@ class AgentStackSettingsContent(StrEnum):
 
 
 class AgentStackServerMetadata(BaseAgentStackServerMetadata, total=False):
+    execution: AgentExecutionConfig
+    """Run defaults for built-in agents. Fields set to None retain the agent's defaults."""
+
     settings: set[AgentStackSettingsContent]
     """
     Provide the ability to dynamically modify an agent’s settings.
@@ -197,6 +201,14 @@ class AgentStackServer(
         if len(self._members) != 0:
             raise ValueError("AgentStackServer only supports one agent.")
         else:
+            if execution := metadata.get("execution"):
+                if execution.model_dump(exclude_none=True) and not isinstance(
+                    input, ReActAgent | ToolCallingAgent | RequirementAgent
+                ):
+                    raise ValueError(
+                        "execution is only supported for ReActAgent, ToolCallingAgent, and RequirementAgent."
+                    )
+                metadata["execution"] = execution.model_copy(deep=True)
             super().register(input)
             metadata = metadata or AgentStackServerMetadata()
             detail = metadata.setdefault("detail", AgentDetail(interaction_mode="multi-turn"))
