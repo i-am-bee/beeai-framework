@@ -30,3 +30,6 @@ export class AmazonBedrockChatModel extends VercelChatModel {
     this.register();
   }
 }
+
+// `ChatModel.fromName()` looks up `BedrockChatModel`, like it finds `BedrockEmbeddingModel`.
+export { AmazonBedrockChatModel as BedrockChatModel };
