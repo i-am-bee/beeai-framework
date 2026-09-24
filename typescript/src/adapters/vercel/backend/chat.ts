@@ -180,6 +180,10 @@ export abstract class VercelChatModel<
       ...(await this.transformInput(input)),
       abortSignal: run.signal,
     });
+    // A stream error is thrown from the loop below before these are awaited; keep them from rejecting unhandled.
+    for (const promise of [usagePromise, finishReasonPromise, responsePromise]) {
+      Promise.resolve(promise).catch(() => {});
+    }
 
     let streamEmpty = true;
     const streamedToolCalls = new Map<string, ToolCallPart>();
