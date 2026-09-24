@@ -1,0 +1,131 @@
+/**
+ * Copyright 2025 © BeeAI a Series of LF Projects, LLC
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+import { CustomMessage, Role, UserMessage } from "@/backend/message.js";
+import { isPlainObject, isString, isTruthy } from "remeda";
+import { getProp } from "@/internals/helpers/object.js";
+import { TextPart, LanguageModelUsage, ToolCallPart } from "ai";
+import { z } from "zod";
+import { parseEnv } from "@/internals/env.js";
+import { ChatModelUsage } from "@/backend/chat.js";
+import { parseBrokenJson } from "@/internals/helpers/schema.js";
+
+export function encodeCustomMessage(msg: CustomMessage): UserMessage {
+  return new UserMessage([
+    {
+      type: "text",
+      text: `#custom_role#${msg.role}#`,
+    },
+    ...(msg.content.slice() as TextPart[]),
+  ]);
+}
+
+export function decodeCustomMessage(value: string) {
+  const [_, id, role, ...content] = value.split("#");
+  if (id !== "custom_role") {
+    return;
+  }
+  return { role, content: content.join("#") };
+}
+
+function unmaskCustomMessage(msg: Record<string, any>) {
+  if (msg.role !== Role.USER) {
+    return;
+  }
+
+  for (const key of ["content", "text"]) {
+    let value = msg[key];
+    if (!value) {
+      continue;
+    }
+
+    if (Array.isArray(value)) {
+      value = value
+        .map((val) => (val.type === "text" ? val.text || val.content : null))
+        .filter(isTruthy)
+        .join("");
+    }
+
+    const decoded = decodeCustomMessage(value);
+    if (decoded) {
+      msg.role = decoded.role;
+      msg[key] = decoded.content;
+      break;
+    }
+  }
+}
+
+export function vercelFetcher(customFetch?: typeof fetch): typeof fetch {
+  return async (url, options) => {
+    if (
+      options &&
+      isString(options.body) &&
+      (getProp(options.headers, ["content-type"]) === "application/json" ||
+        getProp(options.headers, ["Content-Type"]) === "application/json")
+    ) {
+      const body = JSON.parse(options.body);
+      if (isPlainObject(body) && Array.isArray(body.messages)) {
+        body.messages.forEach((msg) => {
+          if (!isPlainObject(msg)) {
+            return;
+          }
+          unmaskCustomMessage(msg);
+        });
+      }
+      options.body = JSON.stringify(body);
+    }
+
+    const fetcher = customFetch ?? fetch;
+    return await fetcher(url, options);
+  };
+}
+
+export function parseHeadersFromEnv(env: string): Record<string, any> {
+  return parseEnv(
+    env,
+    z.preprocess((value) => {
+      return Object.fromEntries(
+        String(value || "")
+          .split(",")
+          .filter((pair) => pair.includes("="))
+          .map((pair) => pair.split("=")),
+      );
+    }, z.record(z.string())),
+  );
+}
+
+export function extractTokenUsage(usage: LanguageModelUsage): ChatModelUsage {
+  return {
+    promptTokens: usage.inputTokens ?? 0,
+    completionTokens: usage.outputTokens ?? 0,
+    totalTokens: usage.totalTokens ?? 0,
+    reasoningTokens: usage.reasoningTokens,
+    cachedPromptTokens: usage.cachedInputTokens,
+  };
+}
+
+export function mergeTokenUsage(target: ChatModelUsage, ...sources: ChatModelUsage[]): void {
+  for (const source of sources) {
+    target.totalTokens += source.totalTokens ?? 0;
+    target.promptTokens += source.promptTokens ?? 0;
+    target.completionTokens += source.completionTokens ?? 0;
+    if (source.reasoningTokens) {
+      target.reasoningTokens = (target.reasoningTokens ?? 0) + source.reasoningTokens;
+    }
+    if (source.cachedPromptTokens) {
+      target.cachedPromptTokens = (target.cachedPromptTokens ?? 0) + source.cachedPromptTokens;
+    }
+  }
+}
+
+export function isToolCallValid(obj: ToolCallPart) {
+  if (!obj.toolName || !obj.toolCallId || !obj.input) {
+    return false;
+  }
+  if (isString(obj.input)) {
+    return Boolean(parseBrokenJson(obj.input, { pair: ["{", "}"] }));
+  }
+  return Boolean(obj.input);
+}

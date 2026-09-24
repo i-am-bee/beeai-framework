@@ -1,0 +1,33 @@
+name: Python - Lint, Build, Test
+
+on:
+  workflow_dispatch:
+  push:
+    branches: ["main"]
+    paths:
+      - 'python/**'
+  pull_request:
+    branches: ["main"]
+    paths:
+      - 'python/**'
+
+defaults:
+  run:
+    working-directory: python
+
+jobs:
+  main:
+    timeout-minutes: 20
+    name: Lint & Build & Test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: ./.github/actions/setup
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - run: mise common:check
+      - run: mise python:check
+      - run: mise python:build
+      - run: mise python:test:unit

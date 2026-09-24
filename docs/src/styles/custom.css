@@ -1,0 +1,155 @@
+/*
+ * Copyright 2025 © BeeAI a Series of LF Projects, LLC
+ * SPDX-License-Identifier: Apache-2.0
+ *
+ * Brand theme: a cozy, warm-grey neutral palette (hue ~30°) rather than the
+ * stark black/white of the old Mintlify "maple" look. Saturation is kept low
+ * so it reads as a soft, comfortable grey — not a tint.
+ */
+
+/* Dark mode (Starlight applies the dark theme on :root by default). */
+:root {
+  /* Warm-grey neutral scale (lightness mirrors Starlight defaults). */
+  --sl-color-white: hsl(30, 8%, 97%);
+  --sl-color-gray-1: hsl(30, 10%, 92%);
+  --sl-color-gray-2: hsl(30, 6%, 78%);
+  --sl-color-gray-3: hsl(30, 5%, 56%);
+  --sl-color-gray-4: hsl(30, 5%, 37%);
+  --sl-color-gray-5: hsl(30, 7%, 23%);
+  --sl-color-gray-6: hsl(30, 9%, 15%);
+  --sl-color-gray-7: hsl(30, 10%, 13%);
+  --sl-color-black: hsl(30, 12%, 11%); /* warm charcoal, not pure black */
+
+  /* Accent: soft warm light-grey instead of pure white. */
+  --sl-color-accent-low: hsl(30, 9%, 19%);
+  --sl-color-accent: hsl(30, 7%, 70%);
+  --sl-color-accent-high: hsl(30, 12%, 92%);
+  --sl-color-text-accent: hsl(30, 9%, 84%);
+
+  /* Slightly tighter, docs-like content width similar to Mintlify. */
+  --sl-content-width: 50rem;
+}
+
+/* Light mode: warm off-white surfaces, warm dark-grey text & accent. */
+:root[data-theme="light"] {
+  --sl-color-white: hsl(30, 12%, 13%);
+  --sl-color-gray-1: hsl(30, 10%, 17%);
+  --sl-color-gray-2: hsl(30, 8%, 28%);
+  --sl-color-gray-3: hsl(30, 6%, 42%);
+  --sl-color-gray-4: hsl(30, 6%, 58%);
+  --sl-color-gray-5: hsl(30, 8%, 80%);
+  --sl-color-gray-6: hsl(30, 14%, 91%);
+  --sl-color-gray-7: hsl(30, 18%, 95%);
+  --sl-color-black: hsl(40, 30%, 98%); /* warm off-white background */
+
+  /* Accent: warm dark grey instead of #000. */
+  --sl-color-accent-low: hsl(30, 16%, 87%);
+  --sl-color-accent: hsl(30, 8%, 38%);
+  --sl-color-accent-high: hsl(30, 12%, 22%);
+  --sl-color-text-accent: hsl(30, 10%, 28%);
+}
+
+/* ---------------------------------------------------------------------------
+ * Mintlify-compatibility component styles (shims in src/components/mintlify)
+ * ------------------------------------------------------------------------- */
+
+/* <Card href> wrapper: make the whole card a clean, clickable surface. */
+.mf-card-link {
+  display: block;
+  text-decoration: none;
+  color: inherit;
+}
+.mf-card-link:hover .card {
+  border-color: var(--sl-color-accent);
+}
+
+/* <CardGroup> honours the requested column count on wide viewports. */
+@media (min-width: 72rem) {
+  .mf-card-group[data-cols] .card-grid {
+    grid-template-columns: repeat(var(--mf-cols), minmax(0, 1fr));
+  }
+}
+
+/* <Steps> / <Step>: numbered vertical stepper resembling Mintlify.
+ * Rendered as <ol>/<li>; suppress the native list marker (we draw our own). */
+.mf-steps {
+  list-style: none;
+  counter-reset: mf-step;
+  margin-top: 1.5rem;
+  padding-left: 0.25rem;
+}
+.mf-step {
+  counter-increment: mf-step;
+  position: relative;
+  padding-left: 2.75rem;
+  padding-bottom: 0.5rem;
+}
+.mf-step::before {
+  /* connector line */
+  content: "";
+  position: absolute;
+  left: 0.875rem;
+  top: 0.25rem;
+  bottom: 0;
+  width: 2px;
+  background: var(--sl-color-hairline-light);
+}
+.mf-step:last-child::before {
+  bottom: auto;
+  height: 1.75rem;
+}
+.mf-step-marker {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 1.75rem;
+  height: 1.75rem;
+  border-radius: 999px;
+  background: var(--sl-color-accent-low);
+  color: var(--sl-color-text-accent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  border: 1px solid var(--sl-color-accent);
+}
+.mf-step-marker::before {
+  content: counter(mf-step);
+}
+.mf-step-content > :first-child {
+  margin-top: 0;
+}
+.mf-step-title {
+  font-weight: 600;
+  font-size: var(--sl-text-lg);
+  margin-top: 0 !important;
+  margin-bottom: 0.5rem;
+}
+
+/* <Accordion> / <AccordionGroup>: native disclosure styling. */
+.mf-accordion {
+  border: 1px solid var(--sl-color-hairline-light);
+  border-radius: 0.5rem;
+  padding: 0.5rem 1rem;
+  margin-top: 1rem;
+}
+.mf-accordion-summary {
+  cursor: pointer;
+  font-weight: 600;
+}
+.mf-accordion-body {
+  margin-top: 0.75rem;
+}
+.mf-accordion-group .mf-accordion {
+  border-radius: 0;
+  margin-top: -1px;
+}
+.mf-accordion-group .mf-accordion:first-child {
+  border-top-left-radius: 0.5rem;
+  border-top-right-radius: 0.5rem;
+}
+.mf-accordion-group .mf-accordion:last-child {
+  border-bottom-left-radius: 0.5rem;
+  border-bottom-right-radius: 0.5rem;
+}

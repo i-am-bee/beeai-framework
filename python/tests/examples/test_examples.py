@@ -1,0 +1,127 @@
+import logging
+import os
+import pathlib
+import runpy
+
+import pytest
+from dotenv import load_dotenv
+
+load_dotenv()
+
+MAX_RETRIES = max(0, int(os.getenv("TEST_RETRY_COUNT", 0)))
+EXAMPLES_DIR = (pathlib.Path(__file__).parent.parent.parent / "examples").resolve()
+all_examples = list(EXAMPLES_DIR.rglob("*.py"))
+
+exclude = list(
+    filter(
+        None,
+        [
+            "_*.py",
+            "helpers/io.py",
+            "backend/providers/watsonx.py" if os.getenv("WATSONX_API_KEY") is None else None,
+            "backend/providers/mistralai.py" if os.getenv("MISTRALAI_API_KEY") is None else None,
+            "backend/providers/ollama.py" if os.getenv("OLLAMA_BASE_URL") is None else None,
+            "backend/embedding.py" if os.getenv("OLLAMA_BASE_URL") is None else None,
+            "backend/providers/openai_example.py" if os.getenv("OPENAI_API_KEY") is None else None,
+            "backend/providers/groq.py" if os.getenv("GROQ_API_KEY") is None else None,
+            "backend/providers/xai.py" if os.getenv("XAI_API_KEY") is None else None,
+            "workflows/custom/autoflow/*",
+            "backend/providers/vertexai.py" if os.getenv("GOOGLE_VERTEX_PROJECT") is None else None,
+            "backend/providers/gemini.py" if os.getenv("GEMINI_API_KEY") is None else None,
+            "backend/providers/amazon_bedrock.py" if os.getenv("AWS_ACCESS_KEY_ID") is None else None,
+            "backend/providers/anthropic.py" if os.getenv("ANTHROPIC_API_KEY") is None else None,
+            "backend/providers/azure_openai.py" if os.getenv("AZURE_API_KEY") is None else None,
+            "backend/providers/transformers_hf.py" if os.getenv("TRANSFORMERS_CHAT_MODEL") is None else None,
+            "backend/providers/langchain_compatible.py",
+            "backend/providers/qwen.py" if os.getenv("DASHSCOPE_API_KEY") is None else None,
+            "backend/providers/deepseek.py" if os.getenv("DEEPSEEK_CHAT_MODEL") is None else None,
+            "backend/providers/minimax.py" if os.getenv("MINIMAX_API_KEY") is None else None,
+            "tools/mcp_agent.py" if os.getenv("SLACK_BOT_TOKEN") is None else None,
+            "tools/mcp_tool_creation.py" if os.getenv("SLACK_BOT_TOKEN") is None else None,
+            "tools/mcp_slack_agent.py" if os.getenv("SLACK_BOT_TOKEN") is None else None,
+            "workflows/searx_agent.py",
+            "agents/providers/acp.py",
+            "agents/providers/a2a_agent.py",
+            "agents/providers/agent_stack.py",
+            "agents/providers/watsonx_orchestrate.py",
+            "workflows/remote.py",
+            "serve/acp.py",
+            "serve/acp_zed/*.py",
+            "serve/agent_stack.py",
+            "serve/agent_stack_custom.py",
+            "serve/agent_stack_await.py",
+            "serve/agent_stack_llm.py",
+            "serve/agent_stack_rag.py",
+            "agents/handoff_agent_stack.py",
+            "serve/a2a_server.py",
+            "serve/acp_with_custom_agent.py",
+            "serve/mcp_agent.py",
+            "serve/mcp_tool.py",
+            "serve/watsonx_orchestrate.py",
+            "serve/openai_server.py",
+            "serve/extend_mcp_server.py",
+            "tools/mcp/*.py",
+            "tools/python_tool.py" if os.getenv("CODE_INTERPRETER_URL") is None else None,
+            "tools/custom/sandbox.py" if os.getenv("CODE_INTERPRETER_URL") is None else None,
+            "workflows/travel_advisor.py",
+            "playground/*.py",
+            "playground/*/*.py",
+            "playground/*/*/*.py",
+            "agents/requirement/exercises/*",
+            "integrations/langgraph_example.py",
+            "agents/rag_agent.py",
+            "agents/requirement/rag.py",
+            "backend/module_loading.py",
+            # Interactive example
+            "agents/requirement/multi_agent.py",
+            "agents/experimental/human.py",
+            "middleware/prompt_injection.py",
+            "middleware/secrets_detection.py",
+            "middleware/invisible_text.py",
+        ],
+    )
+)
+
+
+def example_name(path: pathlib.Path) -> str:
+    return str(path.relative_to(EXAMPLES_DIR)).replace(os.sep, "/")
+
+
+def is_excluded(path: pathlib.Path) -> bool:
+    for pattern in exclude:
+        if "/**" in pattern:
+            raise ValueError("Double star '**' is not supported!")
+
+        if path.match(pattern):
+            return True
+    return False
+
+
+examples = sorted(
+    {example for example in all_examples if not is_excluded(example)},
+    key=example_name,
+)
+
+
+@pytest.mark.e2e
+def test_finds_examples() -> None:
+    assert examples
+
+
+@pytest.mark.e2e
+@pytest.mark.parametrize("example", examples, ids=example_name)
+def test_example_execution(example: pathlib.Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    inputs = iter(["Hello world", "q"])
+    monkeypatch.setattr("builtins.input", lambda _: next(inputs))
+
+    remaining_attempts = MAX_RETRIES + 1
+    while remaining_attempts > 0:
+        remaining_attempts -= 1
+        try:
+            runpy.run_path(str(example.resolve()), run_name="__main__")
+            break
+        except Exception as e:
+            if remaining_attempts <= 0:
+                raise e
+
+            logging.warning(f"Retrying {example} after error ({remaining_attempts} remaining)", exc_info=e)

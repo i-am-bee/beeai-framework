@@ -1,0 +1,516 @@
+# Copyright 2025 © BeeAI a Series of LF Projects, LLC
+# SPDX-License-Identifier: Apache-2.0
+
+from collections.abc import AsyncGenerator
+from types import SimpleNamespace
+from typing import Any, cast
+
+import pytest
+from litellm import ModelResponse as LiteLLMModelResponse
+from litellm import ModelResponseStream
+from litellm.types.utils import (
+    ChatCompletionMessageToolCall,
+    Choices,
+    Delta,
+    Message,
+    StreamingChoices,
+    Usage,
+)
+
+from beeai_framework.adapters.litellm.chat import (
+    _DEFAULT_TIMEOUT_FALLBACK,
+    DEFAULT_REQUEST_TIMEOUT_SECONDS,
+    LiteLLMChatModel,
+    _parse_timeout_env,
+)
+from beeai_framework.backend.constants import ProviderName
+from beeai_framework.backend.message import (
+    AssistantMessage,
+    MessageReasoningContent,
+    MessageTextContent,
+    MessageToolCallContent,
+    UserMessage,
+)
+
+
+class DummyLiteLLMChatModel(LiteLLMChatModel):
+    def __init__(self) -> None:
+        super().__init__("test-model", provider_id="openai")
+
+    @property
+    def provider_id(self) -> ProviderName:
+        return "openai"
+
+
+class ModelDumpNamespace(SimpleNamespace):
+    def model_dump(self, *args: Any, **kwargs: Any) -> dict[str, Any]:
+        return {key: value for key, value in vars(self).items() if value is not None}
+
+
+class _ModelResponse(dict[str, Any]):
+    choices: list[Any]
+    id: str
+
+    def __init__(self, message: Any) -> None:
+        super().__init__(model="test-model", usage=None)
+        self.id = "response-id"
+        self.choices = [SimpleNamespace(message=message, finish_reason="tool_calls")]
+
+
+@pytest.mark.unit
+def test_transform_output_preserves_text_with_tool_calls() -> None:
+    message = ModelDumpNamespace(
+        content="I will call the tool.",
+        tool_calls=[
+            SimpleNamespace(
+                id="call-id",
+                function=SimpleNamespace(name="search", arguments='{"query":"bee"}'),
+            )
+        ],
+    )
+
+    output = DummyLiteLLMChatModel()._transform_output(cast(LiteLLMModelResponse, _ModelResponse(message)))
+
+    assert len(output.output) == 1
+    msg = cast(AssistantMessage, output.output[0])
+    assert msg.text == "I will call the tool."
+    tool_call = msg.get_tool_calls()[0]
+    assert tool_call.id == "call-id"
+    assert tool_call.tool_name == "search"
+    assert tool_call.args == '{"query":"bee"}'
+
+
+@pytest.mark.unit
+def test_transform_output_handles_missing_reasoning_content() -> None:
+    message = ModelDumpNamespace(content=None, tool_calls=None, role="assistant")
+
+    output = DummyLiteLLMChatModel()._transform_output(cast(LiteLLMModelResponse, _ModelResponse(message)))
+
+    assert output.output == []
+
+
+class _TestLiteLLMChatModel(LiteLLMChatModel):
+    @property
+    def provider_id(self) -> ProviderName:
+        return "openai"
+
+    def __init__(self) -> None:
+        super().__init__("gpt-4o", provider_id="openai")
+
+
+@pytest.fixture(scope="module")
+def model() -> _TestLiteLLMChatModel:
+    return _TestLiteLLMChatModel()
+
+
+def _make_tool_call(
+    call_id: str = "call_1",
+    name: str = "search",
+    arguments: str = '{"q": "test"}',
+) -> ChatCompletionMessageToolCall:
+    return ChatCompletionMessageToolCall(
+        id=call_id,
+        type="function",
+        function={"name": name, "arguments": arguments},
+    )
+
+
+class TestTransformOutput:
+    @pytest.mark.unit
+    def test_proxy_response_cost_overrides_local_estimate(
+        self,
+        model: _TestLiteLLMChatModel,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        monkeypatch.setattr(
+            "beeai_framework.adapters.litellm.chat.cost_per_token",
+            lambda **_: (0.01, 0.02),
+        )
+        response = LiteLLMModelResponse(
+            id="chatcmpl-cost",
+            model="test",
+            choices=[Choices(finish_reason="stop", index=0, message=Message(content="hello", role="assistant"))],
+            usage=Usage(prompt_tokens=10, completion_tokens=5, total_tokens=15),
+            response_cost=0.123,
+        )
+
+        result = model._transform_output(response)
+
+        assert result.cost.prompt_tokens_usd == pytest.approx(0.01)
+        assert result.cost.completion_tokens_cost_usd == pytest.approx(0.02)
+        assert result.cost.total_cost_usd == pytest.approx(0.123)
+
+    @pytest.mark.unit
+    def test_content_only(self, model: _TestLiteLLMChatModel) -> None:
+        response = LiteLLMModelResponse(
+            id="chatcmpl-1",
+            model="test",
+            choices=[Choices(finish_reason="stop", index=0, message=Message(content="hello", role="assistant"))],
+        )
+        result = model._transform_output(response)
+
+        assert len(result.output) == 1
+        msg = result.output[0]
+        texts = msg.get_by_type(MessageTextContent)
+        assert len(texts) == 1
+        assert texts[0].text == "hello"
+        assert msg.get_by_type(MessageToolCallContent) == []
+
+    @pytest.mark.unit
+    def test_reasoning_content_only(self, model: _TestLiteLLMChatModel) -> None:
+        response = LiteLLMModelResponse(
+            id="chatcmpl-2",
+            model="test",
+            choices=[
+                Choices(
+                    finish_reason="stop",
+                    index=0,
+                    message=Message(content=None, role="assistant", reasoning_content="thinking deeply"),
+                )
+            ],
+        )
+        result = model._transform_output(response)
+
+        assert len(result.output) == 1
+        reasoning = result.output[0].get_by_type(MessageReasoningContent)
+        assert len(reasoning) == 1
+        assert reasoning[0].text == "thinking deeply"
+
+    @pytest.mark.unit
+    def test_tool_calls_only(self, model: _TestLiteLLMChatModel) -> None:
+        response = LiteLLMModelResponse(
+            id="chatcmpl-3",
+            model="test",
+            choices=[
+                Choices(
+                    finish_reason="tool_calls",
+                    index=0,
+                    message=Message(content=None, role="assistant", tool_calls=[_make_tool_call()]),
+                )
+            ],
+        )
+        result = model._transform_output(response)
+
+        assert len(result.output) == 1
+        msg = result.output[0]
+        tool_calls = msg.get_by_type(MessageToolCallContent)
+        assert len(tool_calls) == 1
+        assert tool_calls[0].tool_name == "search"
+        assert tool_calls[0].args == '{"q": "test"}'
+        assert msg.get_by_type(MessageTextContent) == []
+
+    @pytest.mark.unit
+    def test_content_and_reasoning_content(self, model: _TestLiteLLMChatModel) -> None:
+        response = LiteLLMModelResponse(
+            id="chatcmpl-4",
+            model="test",
+            choices=[
+                Choices(
+                    finish_reason="stop",
+                    index=0,
+                    message=Message(content="the answer is 42", role="assistant", reasoning_content="let me think"),
+                )
+            ],
+        )
+        result = model._transform_output(response)
+
+        assert len(result.output) == 1
+        reasoning = result.output[0].get_by_type(MessageReasoningContent)
+        texts = result.output[0].get_by_type(MessageTextContent)
+        assert len(reasoning) == 1
+        assert reasoning[0].text == "let me think"
+        assert len(texts) == 1
+        assert texts[0].text == "the answer is 42"
+
+    @pytest.mark.unit
+    def test_tool_calls_with_content(self, model: _TestLiteLLMChatModel) -> None:
+        response = LiteLLMModelResponse(
+            id="chatcmpl-5",
+            model="test",
+            choices=[
+                Choices(
+                    finish_reason="tool_calls",
+                    index=0,
+                    message=Message(
+                        content="I'll search for that",
+                        role="assistant",
+                        tool_calls=[_make_tool_call()],
+                    ),
+                )
+            ],
+        )
+        result = model._transform_output(response)
+
+        assert len(result.output) == 1
+        msg = result.output[0]
+        texts = msg.get_by_type(MessageTextContent)
+        tool_calls = msg.get_by_type(MessageToolCallContent)
+        assert len(texts) == 1
+        assert texts[0].text == "I'll search for that"
+        assert len(tool_calls) == 1
+        assert tool_calls[0].tool_name == "search"
+
+    @pytest.mark.unit
+    def test_tool_calls_with_reasoning(self, model: _TestLiteLLMChatModel) -> None:
+        """Core regression test: reasoning must not be dropped when tool calls are present."""
+        response = LiteLLMModelResponse(
+            id="chatcmpl-6",
+            model="test",
+            choices=[
+                Choices(
+                    finish_reason="tool_calls",
+                    index=0,
+                    message=Message(
+                        content=None,
+                        role="assistant",
+                        reasoning_content="I need to search for this",
+                        tool_calls=[_make_tool_call()],
+                    ),
+                )
+            ],
+        )
+        result = model._transform_output(response)
+
+        assert len(result.output) == 1
+        msg = result.output[0]
+        reasoning = msg.get_by_type(MessageReasoningContent)
+        tool_calls = msg.get_by_type(MessageToolCallContent)
+        assert len(reasoning) == 1
+        assert reasoning[0].text == "I need to search for this"
+        assert len(tool_calls) == 1
+        assert tool_calls[0].tool_name == "search"
+
+    @pytest.mark.unit
+    def test_all_three_present(self, model: _TestLiteLLMChatModel) -> None:
+        response = LiteLLMModelResponse(
+            id="chatcmpl-7",
+            model="test",
+            choices=[
+                Choices(
+                    finish_reason="tool_calls",
+                    index=0,
+                    message=Message(
+                        content="searching now",
+                        role="assistant",
+                        reasoning_content="I should look this up",
+                        tool_calls=[_make_tool_call()],
+                    ),
+                )
+            ],
+        )
+        result = model._transform_output(response)
+
+        assert len(result.output) == 1
+        msg = result.output[0]
+        reasoning = msg.get_by_type(MessageReasoningContent)
+        texts = msg.get_by_type(MessageTextContent)
+        tool_calls = msg.get_by_type(MessageToolCallContent)
+        assert len(reasoning) == 1
+        assert reasoning[0].text == "I should look this up"
+        assert len(texts) == 1
+        assert texts[0].text == "searching now"
+        assert len(tool_calls) == 1
+
+    @pytest.mark.unit
+    def test_empty_update(self, model: _TestLiteLLMChatModel) -> None:
+        response = LiteLLMModelResponse(
+            id="chatcmpl-8",
+            model="test",
+            choices=[Choices(finish_reason="stop", index=0, message=Message(content=None, role="assistant"))],
+        )
+        result = model._transform_output(response)
+
+        assert result.output == []
+
+    @pytest.mark.unit
+    def test_streaming_reasoning_and_tool_calls(self, model: _TestLiteLLMChatModel) -> None:
+        response = ModelResponseStream(
+            id="chatcmpl-9",
+            model="test",
+            choices=[
+                StreamingChoices(
+                    finish_reason=None,
+                    index=0,
+                    delta=Delta(
+                        content=None,
+                        reasoning_content="analyzing the query",
+                        tool_calls=[
+                            {
+                                "index": 0,
+                                "type": "function",
+                                "function": {"name": "search", "arguments": '{"q": "test"}'},
+                            }
+                        ],
+                    ),
+                )
+            ],
+        )
+        result = model._transform_output(response)
+
+        assert len(result.output) == 1
+        msg = result.output[0]
+        reasoning = msg.get_by_type(MessageReasoningContent)
+        tool_calls = msg.get_by_type(MessageToolCallContent)
+        assert len(reasoning) == 1
+        assert reasoning[0].text == "analyzing the query"
+        assert len(tool_calls) == 1
+
+    @pytest.mark.unit
+    def test_no_reasoning_attribute(self, model: _TestLiteLLMChatModel) -> None:
+        """Litellm deletes reasoning_content attr when None; getattr must handle this."""
+        response = LiteLLMModelResponse(
+            id="chatcmpl-10",
+            model="test",
+            choices=[Choices(finish_reason="stop", index=0, message=Message(content="plain", role="assistant"))],
+        )
+        msg = response.choices[0].message
+        assert not hasattr(msg, "reasoning_content")
+
+        result = model._transform_output(response)
+        texts = result.output[0].get_by_type(MessageTextContent)
+        assert len(texts) == 1
+        assert texts[0].text == "plain"
+
+
+class _CustomTimeoutLiteLLMChatModel(LiteLLMChatModel):
+    def __init__(self) -> None:
+        super().__init__("test-model", provider_id="openai", settings={"timeout": 42})
+
+    @property
+    def provider_id(self) -> ProviderName:
+        return "openai"
+
+
+@pytest.fixture()
+def timeout_model() -> _TestLiteLLMChatModel:
+    """Function-scoped fixture to avoid scope mismatch with function-scoped monkeypatch."""
+    return _TestLiteLLMChatModel()
+
+
+class TestRequestTimeout:
+    @pytest.mark.unit
+    @pytest.mark.asyncio
+    async def test_non_streaming_uses_default_timeout(
+        self,
+        timeout_model: _TestLiteLLMChatModel,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        captured: dict[str, Any] = {}
+
+        async def fake_acompletion(**kwargs: Any) -> LiteLLMModelResponse:
+            captured.update(kwargs)
+            return LiteLLMModelResponse(
+                id="chatcmpl-timeout",
+                model="test",
+                choices=[Choices(finish_reason="stop", index=0, message=Message(content="hello", role="assistant"))],
+            )
+
+        monkeypatch.setattr("beeai_framework.adapters.litellm.chat.acompletion", fake_acompletion)
+
+        response = await timeout_model.run([UserMessage("hi")])
+
+        assert captured["timeout"] == DEFAULT_REQUEST_TIMEOUT_SECONDS
+        assert response.get_text_content() == "hello"
+
+    @pytest.mark.unit
+    @pytest.mark.asyncio
+    async def test_streaming_uses_default_timeout(
+        self,
+        timeout_model: _TestLiteLLMChatModel,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        captured: dict[str, Any] = {}
+
+        # Returns an async generator wrapper (not itself a generator) to match
+        # acompletion(stream=True) behavior which returns an awaitable async iterator.
+        async def fake_acompletion_stream(**kwargs: Any) -> AsyncGenerator[ModelResponseStream]:
+            captured.update(kwargs)
+
+            async def _gen() -> AsyncGenerator[ModelResponseStream]:
+                yield ModelResponseStream(
+                    id="chatcmpl-stream-timeout",
+                    model="test",
+                    choices=[StreamingChoices(finish_reason="stop", index=0, delta=Delta(content="hello"))],
+                )
+
+            return _gen()
+
+        monkeypatch.setattr("beeai_framework.adapters.litellm.chat.acompletion", fake_acompletion_stream)
+
+        response = await timeout_model.run([UserMessage("hi")], stream=True)
+
+        assert captured["timeout"] == DEFAULT_REQUEST_TIMEOUT_SECONDS
+        assert response.get_text_content() == "hello"
+
+    @pytest.mark.unit
+    @pytest.mark.asyncio
+    async def test_settings_override_takes_precedence(
+        self,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        captured: dict[str, Any] = {}
+
+        async def fake_acompletion(**kwargs: Any) -> LiteLLMModelResponse:
+            captured.update(kwargs)
+            return LiteLLMModelResponse(
+                id="chatcmpl-custom-timeout",
+                model="test",
+                choices=[Choices(finish_reason="stop", index=0, message=Message(content="hello", role="assistant"))],
+            )
+
+        monkeypatch.setattr("beeai_framework.adapters.litellm.chat.acompletion", fake_acompletion)
+
+        custom_model = _CustomTimeoutLiteLLMChatModel()
+        response = await custom_model.run([UserMessage("hi")])
+
+        assert captured["timeout"] == 42
+        assert response.get_text_content() == "hello"
+
+
+class TestParseTimeoutEnv:
+    """Tests for the guarded BEEAI_DEFAULT_REQUEST_TIMEOUT env var parsing."""
+
+    @pytest.mark.unit
+    def test_valid_float_value(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        monkeypatch.setenv("BEEAI_DEFAULT_REQUEST_TIMEOUT", "300.5")
+        assert _parse_timeout_env() == 300.5
+
+    @pytest.mark.unit
+    def test_valid_int_value(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        monkeypatch.setenv("BEEAI_DEFAULT_REQUEST_TIMEOUT", "120")
+        assert _parse_timeout_env() == 120.0
+
+    @pytest.mark.unit
+    def test_unset_returns_default(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        monkeypatch.delenv("BEEAI_DEFAULT_REQUEST_TIMEOUT", raising=False)
+        assert _parse_timeout_env() == _DEFAULT_TIMEOUT_FALLBACK
+
+    @pytest.mark.unit
+    def test_garbage_string_falls_back(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        monkeypatch.setenv("BEEAI_DEFAULT_REQUEST_TIMEOUT", "not-a-number")
+        assert _parse_timeout_env() == _DEFAULT_TIMEOUT_FALLBACK
+
+    @pytest.mark.unit
+    def test_empty_string_falls_back(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        monkeypatch.setenv("BEEAI_DEFAULT_REQUEST_TIMEOUT", "")
+        assert _parse_timeout_env() == _DEFAULT_TIMEOUT_FALLBACK
+
+    @pytest.mark.unit
+    def test_negative_value_falls_back(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        monkeypatch.setenv("BEEAI_DEFAULT_REQUEST_TIMEOUT", "-10")
+        assert _parse_timeout_env() == _DEFAULT_TIMEOUT_FALLBACK
+
+    @pytest.mark.unit
+    def test_zero_falls_back(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        monkeypatch.setenv("BEEAI_DEFAULT_REQUEST_TIMEOUT", "0")
+        assert _parse_timeout_env() == _DEFAULT_TIMEOUT_FALLBACK
+
+    @pytest.mark.unit
+    def test_nan_falls_back(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        monkeypatch.setenv("BEEAI_DEFAULT_REQUEST_TIMEOUT", "nan")
+        assert _parse_timeout_env() == _DEFAULT_TIMEOUT_FALLBACK
+
+    @pytest.mark.unit
+    def test_inf_falls_back(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        monkeypatch.setenv("BEEAI_DEFAULT_REQUEST_TIMEOUT", "inf")
+        assert _parse_timeout_env() == _DEFAULT_TIMEOUT_FALLBACK

@@ -1,0 +1,12 @@
+cff-version: 1.2.0
+title: BeeAI Framework
+message: >-
+  If you use this software, please cite it using the
+  metadata from this file.
+type: software
+authors:
+  - name: IBM Research
+repository-code: "https://github.com/i-am-bee/beeai-framework"
+url: "https://github.com/i-am-bee"
+license: Apache-2.0
+date-released: "2024-08-23"

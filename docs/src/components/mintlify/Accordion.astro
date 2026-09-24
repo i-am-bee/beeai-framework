@@ -1,0 +1,14 @@
+---
+// Mintlify <Accordion title="..."> -> native <details> disclosure.
+const { title, defaultOpen } = Astro.props;
+---
+
+<details
+  class="mf-accordion"
+  open={defaultOpen === true || defaultOpen === "true" ? true : undefined}
+>
+  <summary class="mf-accordion-summary">{title}</summary>
+  <div class="mf-accordion-body">
+    <slot />
+  </div>
+</details>

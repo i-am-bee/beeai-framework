@@ -1,0 +1,180 @@
+import asyncio
+import json
+import logging
+import os
+import pickle
+import re
+import sys
+import warnings
+from pathlib import Path
+from typing import Any
+
+import aiofiles
+from dotenv import load_dotenv
+
+# On Windows, multiprocess's ResourceTracker.__del__ raises AttributeError at interpreter
+# shutdown (a known Windows-specific teardown-ordering bug in the third-party `multiprocess`
+# package, not stdlib multiprocessing). This is harmless: Python suppresses exceptions raised
+# inside __del__ by design (printed as "Exception ignored in: ..." to stderr, exit code
+# unaffected) — confirmed empirically, not just assumed. Silence the accompanying
+# ResourceWarning so it doesn't clutter output; no monkey-patch needed for the exit code.
+if sys.platform == "win32":
+    warnings.filterwarnings("ignore", category=ResourceWarning)
+    os.environ["PYTHONWARNINGS"] = "ignore::ResourceWarning"
+
+from beeai_framework.evaluation.adapters import InstructorRagasLLM
+from examples.evaluation.agent import create_agent
+from examples.evaluation.ragas.facts_similarity_metric import FactsSimilarityMetric
+from ragas import Dataset, experiment
+from ragas.messages import AIMessage, ToolCall
+from ragas.metrics.collections import (
+    AnswerAccuracy,
+    ContextPrecision,
+    ContextRecall,
+    ExactMatch,
+    ToolCallAccuracy,
+)
+
+load_dotenv()
+
+logger = logging.getLogger(__name__)
+
+_script_dir = Path(__file__).parent
+_data_dir = _script_dir / "data"
+
+_ragas_judge_llm: InstructorRagasLLM | None = None
+
+
+def get_ragas_judge_llm() -> InstructorRagasLLM:
+    """Lazily construct (and cache) the judge LLM on first use, instead of at import time."""
+    global _ragas_judge_llm
+    if _ragas_judge_llm is None:
+        _ragas_judge_llm = InstructorRagasLLM.from_name(
+            model_name=os.environ.get("EVAL_CHAT_MODEL_NAME", "ollama:llama3.1:8b")
+        )
+    return _ragas_judge_llm
+
+
+def extract_json(text: str) -> str:
+    json_match = re.search(r"```(?:json)?\s*(\{.*?\})\s*```", text, re.DOTALL)
+    if json_match:
+        return json_match.group(1)
+    json_match = re.search(r"(\{[^{}]*(?:\{[^{}]*\}[^{}]*)*\})", text, re.DOTALL)
+    if json_match:
+        return json_match.group(1)
+    return text
+
+
+# Define your experiment
+@experiment()
+async def my_experiment(row: dict[str, Any]) -> dict[str, Any]:
+    try:
+        response = await create_agent().run(row["question"])
+    except Exception as exc:
+        logger.error("Agent failed on question: %r — %s", row["question"], exc)
+        return {
+            **row,
+            "answer": "",
+            "tool_used": [],
+            "supporting_titles": [],
+            "supporting_sentences": [],
+            "reasoning_explanation": [],
+            "experiment_name": "baseline_v1",
+            "error": str(exc),
+        }
+
+    output_text = response.last_message.text
+    json_text = extract_json(output_text)
+
+    try:
+        data = json.loads(json_text)
+    except json.JSONDecodeError as e:
+        logger.error("JSON parsing error: %s\nRaw output: %s", e, output_text)
+        return {
+            **row,
+            "answer": "",
+            "tool_used": [],
+            "supporting_titles": [],
+            "supporting_sentences": [],
+            "reasoning_explanation": [],
+            "experiment_name": "baseline_v1",
+            "error": str(e),
+        }
+
+    answer_text = data.get("answer", "")
+    tool_used = data.get("tool_used", [])
+    supporting_titles = data.get("supporting_titles", [])
+    supporting_sentences = data.get("supporting_sentences", [])
+
+    logger.info("Agent response: %s", response.last_message.text)
+
+    judge_llm = get_ragas_judge_llm()
+
+    context_precision_result = await ContextPrecision(llm=judge_llm).ascore(
+        user_input=row["question"], reference=row["answer"], retrieved_contexts=supporting_sentences
+    )
+    context_recall_result = await ContextRecall(llm=judge_llm).ascore(
+        user_input=row["question"], reference=row["answer"], retrieved_contexts=supporting_sentences
+    )
+    reference_answer = row["answer"]
+    if isinstance(reference_answer, list):
+        reference_answer = reference_answer[0]
+    exact_match_result = await ExactMatch().ascore(reference=reference_answer, response=answer_text)
+    answer_accuracy_result = await AnswerAccuracy(llm=judge_llm).ascore(
+        user_input=row["question"], response=answer_text, reference=row["answer"]
+    )
+
+    expected_facts = row.get("contexts", [])
+    facts_similarity_result = await FactsSimilarityMetric(llm=judge_llm).ascore(
+        actual_facts=supporting_sentences, expected_facts=expected_facts
+    )
+
+    # Build tool messages for ToolCallAccuracy
+    tool_messages = []
+    for tool_info in tool_used:
+        if isinstance(tool_info, dict):
+            tool_name = tool_info.get("tool", "")
+            times_used = tool_info.get("times_used", 1)
+            tool_calls = [ToolCall(name=tool_name, args={}) for _ in range(times_used)]
+            tool_messages.append(AIMessage(content="Called tool", tool_calls=tool_calls))
+
+    # Derive reference tool calls from supporting_titles
+    reference_tool_calls = [ToolCall(name="Wikipedia", args={}) for _ in supporting_titles]
+
+    tool_call_accuracy_result = await ToolCallAccuracy().ascore(
+        user_input=tool_messages, reference_tool_calls=reference_tool_calls
+    )
+
+    return {
+        **row,
+        "ContextPrecision": context_precision_result.value,
+        "ContextRecall": context_recall_result.value,
+        "ExactMatch": exact_match_result.value,
+        "ToolCallAccuracy": tool_call_accuracy_result.value,
+        "AnswerAccuracy": answer_accuracy_result.value,
+        "FactsSimilarity": facts_similarity_result.value,
+    }
+
+
+async def main() -> None:
+    dataset = Dataset.load(name="my_evaluation", backend="local/csv", root_dir=str(_data_dir))
+
+    # Pass an explicit `name` so Ragas writes a single, stable CSV at
+    # data/experiments/my_results.csv (overwritten on every run). Without
+    # this, Ragas generates a new random filename per run.
+    results = await my_experiment.arun(dataset, name="my_results")
+
+    experiments_dir = _data_dir / "experiments"
+    results_pkl = experiments_dir / "my_results.pkl"
+    # pickle.dump() has no async API, so serialize to bytes first (fast, CPU-bound) and
+    # only the actual file write goes through aiofiles (the part that can block on I/O).
+    async with aiofiles.open(results_pkl, "wb") as f:
+        await f.write(pickle.dumps(results))
+    logger.info("Saved to %s", results_pkl)
+
+    logger.info("Saved to %s", experiments_dir / "my_results.csv")
+    logger.info("\n%s", results.to_pandas())
+
+
+if __name__ == "__main__":
+    asyncio.run(main())

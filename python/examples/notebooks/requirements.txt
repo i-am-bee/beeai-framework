@@ -1,0 +1,6 @@
+beeai-framework
+langchain-community
+ipykernel
+jupyterlab
+wikipedia
+requests==2.33.0

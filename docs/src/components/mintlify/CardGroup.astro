@@ -1,0 +1,13 @@
+---
+// Mintlify <CardGroup cols={n}> -> Starlight CardGrid.
+// Starlight's CardGrid is responsive (1 col on mobile, 2 on wider screens);
+// we expose the requested column count as a CSS var for optional tuning.
+import { CardGrid } from "@astrojs/starlight/components";
+const { cols } = Astro.props;
+---
+
+<div class="mf-card-group" data-cols={cols} style={cols ? `--mf-cols:${cols}` : undefined}>
+  <CardGrid>
+    <slot />
+  </CardGrid>
+</div>
