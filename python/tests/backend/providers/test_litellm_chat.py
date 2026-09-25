@@ -115,6 +115,23 @@ def _make_tool_call(
     )
 
 
+def _proxied_response(*, response_cost: float | None) -> LiteLLMModelResponse:
+    """Build a response the way litellm does for a proxy call.
+
+    The proxy's `x-litellm-response-cost` header lands in `_hidden_params`, never as a
+    top-level attribute, so tests must place it there to exercise the real code path.
+    """
+    response = LiteLLMModelResponse(
+        id="chatcmpl-cost",
+        model="test",
+        choices=[Choices(finish_reason="stop", index=0, message=Message(content="hello", role="assistant"))],
+        usage=Usage(prompt_tokens=10, completion_tokens=5, total_tokens=15),
+    )
+    if response_cost is not None:
+        response._hidden_params["response_cost"] = response_cost
+    return response
+
+
 class TestTransformOutput:
     @pytest.mark.unit
     def test_proxy_response_cost_overrides_local_estimate(
@@ -126,19 +143,46 @@ class TestTransformOutput:
             "beeai_framework.adapters.litellm.chat.cost_per_token",
             lambda **_: (0.01, 0.02),
         )
-        response = LiteLLMModelResponse(
-            id="chatcmpl-cost",
-            model="test",
-            choices=[Choices(finish_reason="stop", index=0, message=Message(content="hello", role="assistant"))],
-            usage=Usage(prompt_tokens=10, completion_tokens=5, total_tokens=15),
-            response_cost=0.123,
-        )
+        response = _proxied_response(response_cost=0.123)
 
         result = model._transform_output(response)
 
         assert result.cost.prompt_tokens_usd == pytest.approx(0.01)
         assert result.cost.completion_tokens_cost_usd == pytest.approx(0.02)
         assert result.cost.total_cost_usd == pytest.approx(0.123)
+
+    @pytest.mark.unit
+    def test_proxy_response_cost_applies_when_local_estimate_fails(
+        self,
+        model: _TestLiteLLMChatModel,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        """The common proxy case: a non-OpenAI model served through `provider_id="openai"` is not in
+        litellm's local price map, so `cost_per_token()` raises. The proxy's own cost must still apply."""
+
+        def unmapped(**_: object) -> tuple[float, float]:
+            raise Exception("This model isn't mapped yet. model=claude-sonnet-4-5, custom_llm_provider=openai.")
+
+        monkeypatch.setattr("beeai_framework.adapters.litellm.chat.cost_per_token", unmapped)
+
+        result = model._transform_output(_proxied_response(response_cost=0.0421))
+
+        assert result.cost.total_cost_usd == pytest.approx(0.0421)
+
+    @pytest.mark.unit
+    def test_local_estimate_used_without_proxy_cost(
+        self,
+        model: _TestLiteLLMChatModel,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        monkeypatch.setattr(
+            "beeai_framework.adapters.litellm.chat.cost_per_token",
+            lambda **_: (0.01, 0.02),
+        )
+
+        result = model._transform_output(_proxied_response(response_cost=None))
+
+        assert result.cost.total_cost_usd == pytest.approx(0.03)
 
     @pytest.mark.unit
     def test_content_only(self, model: _TestLiteLLMChatModel) -> None:
