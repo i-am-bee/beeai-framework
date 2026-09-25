@@ -174,7 +174,7 @@ class LiteAgent(BaseAgent):
         cloned = LiteAgent(
             llm=await self._llm.clone(),
             memory=await self._memory.clone(),
-            tools=self._tools.copy(),
+            tools=[await tool.clone() for tool in self._tools],
             name=self._name,
             description=self._description,
             middlewares=self.middlewares.copy(),

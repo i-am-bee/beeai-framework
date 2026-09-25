@@ -93,3 +93,21 @@ async def test_cloning_the_agent_does_not_share_model_state() -> None:
     assert isinstance(output.output[-1], AssistantMessage)
     assert output.output[-1].text == "from the clone"
     assert model.call_count == 0
+
+
+@pytest.mark.asyncio
+@pytest.mark.unit
+async def test_cloning_the_agent_does_not_share_tool_instances() -> None:
+    # Each tool owns mutable state (its result cache and middleware chain), so a clone
+    # must receive independent tool instances via Tool.clone() rather than the very same
+    # objects. Sharing them lets one agent's cached results and middlewares bleed into
+    # the other.
+    model = ScriptedChatModel([[AssistantMessage("hi")]], repeat_last=True)
+    agent = LiteAgent(llm=model, tools=[weather_tool])
+
+    clone = await agent.clone()
+
+    assert len(clone._tools) == len(agent._tools)
+    assert all(
+        cloned_tool is not original_tool for cloned_tool, original_tool in zip(clone._tools, agent._tools, strict=True)
+    )
