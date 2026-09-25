@@ -44,12 +44,13 @@ class GlobTool(Tool[GlobToolInput, ToolRunOptions, JSONToolOutput[dict[str, Any]
     ) -> JSONToolOutput[dict[str, Any]]:
         root = Path(input.root).expanduser().resolve()
         matches: list[str] = []
-        truncated = False
         for path in root.glob(input.pattern):
             if not input.include_hidden and any(part.startswith(".") for part in path.relative_to(root).parts):
                 continue
             matches.append(str(path))
-            if len(matches) >= input.limit:
-                truncated = True
+            # Collect one more than the cap so a result set that exactly fills
+            # `limit` is not mistaken for a truncated one.
+            if len(matches) > input.limit:
                 break
-        return JSONToolOutput({"matches": matches, "truncated": truncated})
+        truncated = len(matches) > input.limit
+        return JSONToolOutput({"matches": matches[: input.limit], "truncated": truncated})
