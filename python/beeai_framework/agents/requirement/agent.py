@@ -277,7 +277,7 @@ class RequirementAgent(BaseAgent[RequirementAgentOutput]):
         cloned = RequirementAgent(
             llm=await self._llm.clone(),
             memory=await self._memory.clone(),
-            tools=self._tools.copy(),
+            tools=[await tool.clone() for tool in self._tools],
             requirements=self._requirements.copy(),
             templates=self._templates.model_dump(),
             tool_call_checker=(
