@@ -4,7 +4,6 @@
  */
 
 import { BaseMemory, MemoryFatalError } from "@/memory/base.js";
-import * as R from "remeda";
 import { shallowCopy } from "@/serializer/utils.js";
 import { removeFromArray } from "@/internals/helpers/array.js";
 import { map, sum } from "remeda";
@@ -54,7 +53,7 @@ export class TokenMemory extends BaseMemory {
       tokenize: config?.handlers?.tokenize || simpleTokenize,
       removalSelector: config.handlers?.removalSelector || ((messages) => messages[0]),
     };
-    if (!R.clamp({ min: 0, max: 1 })(this.threshold)) {
+    if (!(this.threshold > 0 && this.threshold <= 1)) {
       throw new TypeError('"capacityThreshold" must be a number in range (0, 1>');
     }
   }
@@ -87,7 +86,10 @@ export class TokenMemory extends BaseMemory {
       );
     }
 
-    while (this.tokensUsed > this.maxTokens - meta.tokensCount) {
+    // Evict existing messages until the incoming one fits within the configured capacity
+    // budget (the absolute limit scaled by capacityThreshold).
+    const capacity = this.maxTokens * this.threshold;
+    while (this.messages.length > 0 && this.tokensUsed > capacity - meta.tokensCount) {
       const messageToDelete = this.handlers.removalSelector(this.messages);
       const exists = await this.delete(messageToDelete);
 
