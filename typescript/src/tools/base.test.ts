@@ -167,6 +167,23 @@ describe("Base Tool", () => {
     expect(handler).toBeCalledTimes(expected.totalCalls);
   });
 
+  it("Applies the default backoff factor when only maxRetries is set", async () => {
+    vi.useRealTimers();
+
+    const handler = vi.fn(() => {
+      throw new Error("Error!");
+    });
+    const tool = createDummyTool({ retryOptions: { maxRetries: 1 } }, handler);
+
+    const startedAt = Date.now();
+    await expect(tool.run({ query: "Hello!" })).rejects.toThrowError(ToolError);
+    const elapsed = Date.now() - startedAt;
+
+    expect(handler).toBeCalledTimes(2);
+    // The default factor is 1, so the single retry waits 1s. A factor of 0 retries instantly.
+    expect(elapsed).toBeGreaterThanOrEqual(900);
+  });
+
   it("Aborts on signal", async () => {
     vi.useRealTimers();
 
