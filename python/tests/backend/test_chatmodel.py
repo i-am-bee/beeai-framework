@@ -211,6 +211,22 @@ def test_chat_model_from(monkeypatch: pytest.MonkeyPatch) -> None:
     assert isinstance(azure_openai_chat_model, AzureOpenAIChatModel)
 
 
+@pytest.mark.unit
+def test_chat_model_does_not_share_the_settings_dict(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Two models built from one settings template must not share (or mutate) that dict."""
+    monkeypatch.delenv("OPENAI_API_KEY", raising=False)
+    monkeypatch.delenv("OPENAI_API_BASE", raising=False)
+
+    template: dict[str, Any] = {"base_url": "https://proxy.example/v1"}
+    first = OpenAIChatModel("gpt-4o", settings=template, api_key="key-one")
+    second = OpenAIChatModel("gpt-4o", settings=template, api_key="key-two")
+
+    assert first._settings is not second._settings
+    assert first._settings["api_key"] == "key-one"
+    assert second._settings["api_key"] == "key-two"
+    assert template == {"base_url": "https://proxy.example/v1"}
+
+
 class FailThenFixDummyModel(ChatModel):
     """Dummy model that returns invalid tool-call JSON on the first attempt,
     then valid JSON on subsequent attempts. Used to verify that the cache
