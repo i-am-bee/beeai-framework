@@ -57,7 +57,10 @@ class ShellTool(Tool[ShellToolInput, ToolRunOptions, JSONToolOutput[dict[str, An
     input_schema = ShellToolInput
 
     async def clone(self) -> Self:
-        return type(self)(options=self.options)
+        cloned = type(self)(options=self.options)
+        cloned._cache = await self.cache.clone()
+        cloned.middlewares.extend(self.middlewares)
+        return cloned
 
     def _create_emitter(self) -> Emitter:
         return Emitter.root().child(namespace=["tool", "code", "shell"], creator=self)
