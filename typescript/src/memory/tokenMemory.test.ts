@@ -82,6 +82,24 @@ describe("Token Memory", () => {
     });
   });
 
+  it("Preserves messages when synchronization rejects an oversized message", async () => {
+    const instance = new TokenMemory({
+      maxTokens: 4,
+      syncThreshold: 1,
+      capacityThreshold: 1,
+      handlers: {
+        estimate: () => 1,
+        tokenize: async ([msg]) => (msg.text === "B" ? 5 : 2),
+      },
+    });
+    const messages = [new UserMessage("A"), new UserMessage("B")];
+    await instance.addMany(messages);
+
+    await expect(instance.sync()).rejects.toThrow("cannot fit inside current memory");
+    expect(instance.messages).toEqual(messages);
+    expect(instance.stats()).toMatchObject({ tokensUsed: 2, messagesCount: 2, isDirty: true });
+  });
+
   it("Evicts down to the capacity threshold", async () => {
     const instance = getInstance({
       llmFactor: 1,
