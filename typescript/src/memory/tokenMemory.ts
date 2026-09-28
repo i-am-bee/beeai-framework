@@ -113,19 +113,39 @@ export class TokenMemory extends BaseMemory {
   }
 
   async sync() {
-    const messages = await Promise.all(
-      this.messages.map(async (msg) => {
-        const cache = this.tokensByMessage.get(msg);
-        if (cache?.dirty !== false) {
-          const tokensCount = await this.handlers.tokenize([msg]);
-          this.tokensByMessage.set(msg, { tokensCount, dirty: false });
-        }
-        return msg;
-      }),
-    );
+    const messages = [...this.messages];
+    const tokensByMessage = messages.map((msg) => this.tokensByMessage.get(msg));
 
-    this.messages.length = 0;
-    await this.addMany(messages);
+    try {
+      const synchronized = await Promise.all(
+        messages.map(async (msg) => {
+          const cache = this.tokensByMessage.get(msg);
+          if (cache?.dirty !== false) {
+            const tokensCount = await this.handlers.tokenize([msg]);
+            return { tokensCount, dirty: false };
+          }
+          return cache;
+        }),
+      );
+
+      messages.forEach((msg, index) => this.tokensByMessage.set(msg, synchronized[index]!));
+      this.messages.length = 0;
+      await this.addMany(messages);
+    } catch (error) {
+      this.messages.length = 0;
+      for (const msg of messages) {
+        this.messages.push(msg);
+      }
+      messages.forEach((msg, index) => {
+        const cache = tokensByMessage[index];
+        if (cache) {
+          this.tokensByMessage.set(msg, cache);
+        } else {
+          this.tokensByMessage.delete(msg);
+        }
+      });
+      throw error;
+    }
   }
 
   reset() {
