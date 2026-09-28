@@ -60,7 +60,10 @@ class FileEditTool(Tool[FileEditToolInput, ToolRunOptions, JSONToolOutput[dict[s
     input_schema = FileEditToolInput
 
     async def clone(self) -> Self:
-        return type(self)(options=self.options)
+        cloned = type(self)(options=self.options)
+        cloned._cache = await self.cache.clone()
+        cloned.middlewares.extend(self.middlewares)
+        return cloned
 
     def _create_emitter(self) -> Emitter:
         return Emitter.root().child(namespace=["tool", "filesystem", "edit_file"], creator=self)

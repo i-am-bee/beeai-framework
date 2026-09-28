@@ -348,7 +348,14 @@ class LiteLLMChatModel(ChatModel, ABC):
                     completion_tokens_cost_usd=completion_tokens_cost_usd,
                     total_cost_usd=prompt_tokens_cost_usd + completion_tokens_cost_usd,
                 )
-            if (response_cost := chunk.get("response_cost")) is not None:
+
+        # A LiteLLM proxy reports the cost it computed in the `x-litellm-response-cost` header,
+        # which litellm exposes via `_hidden_params`, not as a response attribute. Read it outside
+        # the block above: `cost_per_token()` raises for any model missing from litellm's local
+        # price map, which is routine when a non-OpenAI model is served through `provider_id="openai"`.
+        hidden_params = getattr(chunk, "_hidden_params", None) or {}
+        if (response_cost := hidden_params.get("response_cost")) is not None:
+            with contextlib.suppress(TypeError, ValueError):
                 cost.total_cost_usd = float(response_cost)
 
         output: list[AnyMessage] = []

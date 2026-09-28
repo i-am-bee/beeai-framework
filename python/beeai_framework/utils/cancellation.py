@@ -67,8 +67,11 @@ class AbortController:
         self._signal._abort(reason)
 
     async def clone(self) -> "AbortController":
+        # Carry the abort state over, but not the listeners: those belong to the original's
+        # consumers, and the clone must not fire their callbacks when it is aborted.
         cloned = AbortController()
-        cloned._signal = cloned._signal.model_copy()
+        if self._signal.aborted:
+            cloned.abort(self._signal._reason)
         return cloned
 
 
