@@ -127,8 +127,9 @@ frontmatter adjusted**.
 6. **Cutover** — in progress: the new site lives in `docs/` and deploys to GitHub
    Pages; the old Mintlify site in `../docs-old` still serves `framework.beeai.dev`,
    and its CI (`.github/workflows/docs.yml`) + mise `docs:*` tasks have been retired.
-   The build is configured for the domain root (`BASE = "/"`); the remaining steps
-   are the DNS switch below, then deleting `../docs-old`.
+   The build is still configured for the GitHub Pages project URL
+   (`BASE = "/beeai-framework"`); the remaining steps are the cutover below, then
+   deleting `../docs-old`.
 
 ## One-time GitHub setup (repo admin — cannot be scripted)
 
@@ -144,15 +145,17 @@ The deploy workflow is ready, but Pages must be enabled once in the repo:
 ## Custom domain cutover (`framework.beeai.dev`)
 
 `framework.beeai.dev` is a CNAME in the `beeai.dev` zone at DNSimple, currently
-pointing at Mintlify (`cname.vercel-dns.com`, TTL 600). The build is configured for
-the domain root (`BASE = "/"`, `site = "https://framework.beeai.dev"` in
-`astro.config.mjs`), so it only renders correctly once served from that domain; the
-`i-am-bee.github.io/beeai-framework/` preview URL breaks as soon as this config deploys.
+pointing at Mintlify (`cname.vercel-dns.com`, TTL 600). Serving from the custom domain
+needs `BASE = "/"` and `site = "https://framework.beeai.dev"` in `astro.config.mjs`.
+That build only renders correctly once served from the domain: the
+`i-am-bee.github.io/beeai-framework/` preview loses its styles as soon as it deploys.
+So make that change only once the DNS change is scheduled, not ahead of it.
 
 Do the steps in this order:
 
-1. **Deploy the root-configured build** (merge the change that sets `BASE = "/"`).
-   The public domain still points at Mintlify, so users are unaffected.
+1. **Deploy the root-configured build** by re-applying #1709's config change (revert
+   the commit that reverted it). The public domain still points at Mintlify, so users
+   are unaffected, but the preview breaks until step 3 -- do steps 1-3 together.
 2. **Settings → Pages → Custom domain:** enter `framework.beeai.dev`. GitHub will
    report the DNS check as failing until step 3 — expected.
 3. **DNSimple:** change the `framework` CNAME from `cname.vercel-dns.com` to
