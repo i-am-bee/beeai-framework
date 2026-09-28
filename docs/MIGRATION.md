@@ -124,10 +124,12 @@ frontmatter adjusted**.
    builds `docs/` with Node 22 (from `.nvmrc`), gates on `embedme:verify`, and
    publishes via `actions/deploy-pages`. The full CI sequence (`npm ci` →
    `embedme:verify` → `astro build`) was validated locally on Node 22.
-6. **Cutover** — in progress: the new site now lives in `docs/`; the old Mintlify
-   site is archived in `../docs-old`, and its CI (`.github/workflows/docs.yml`) +
-   mise `docs:*` tasks have been retired. Remaining: delete `../docs-old` once the
-   deployed site is confirmed, and update any README links.
+6. **Cutover** — in progress: the new site lives in `docs/` and deploys to GitHub
+   Pages; the old Mintlify site in `../docs-old` still serves `framework.beeai.dev`,
+   and its CI (`.github/workflows/docs.yml`) + mise `docs:*` tasks have been retired.
+   The build is still configured for the GitHub Pages project URL
+   (`BASE = "/beeai-framework"`); the remaining steps are the cutover below, then
+   deleting `../docs-old`.
 
 ## One-time GitHub setup (repo admin — cannot be scripted)
 
@@ -136,8 +138,40 @@ The deploy workflow is ready, but Pages must be enabled once in the repo:
 1. **Settings → Pages → Build and deployment → Source: "GitHub Actions".**
 2. Push to `main` (or run the workflow manually via *Actions → Deploy Docs → Run
    workflow*). The first successful run publishes the site.
-3. **Custom domain:** the `framework.beeai.dev` `CNAME` ships in the build output.
-   Keep/enter it under Settings → Pages → Custom domain. **DNS cutover** (point the
-   `framework.beeai.dev` record away from Mintlify to GitHub Pages —
-   `<org>.github.io`) is the final switch; do it once the deployed site looks right.
-   Until then, you can preview from the Actions run's deployment URL.
+3. **Custom domain.** This repo deploys Pages from GitHub Actions, so the custom
+   domain comes from the repository settings; a `CNAME` file in the build output is
+   ignored (and none is shipped).
+
+## Custom domain cutover (`framework.beeai.dev`)
+
+`framework.beeai.dev` is a CNAME in the `beeai.dev` zone at DNSimple, currently
+pointing at Mintlify (`cname.vercel-dns.com`, TTL 600). Serving from the custom domain
+needs `BASE = "/"` and `site = "https://framework.beeai.dev"` in `astro.config.mjs`.
+That build only renders correctly once served from the domain: the
+`i-am-bee.github.io/beeai-framework/` preview loses its styles as soon as it deploys.
+So make that change only once the DNS change is scheduled, not ahead of it.
+
+Do the steps in this order:
+
+1. **Deploy the root-configured build** by re-applying #1709's config change (revert
+   the commit that reverted it). The public domain still points at Mintlify, so users
+   are unaffected, but the preview breaks until step 3 -- do steps 1-3 together.
+2. **Settings → Pages → Custom domain:** enter `framework.beeai.dev`. GitHub will
+   report the DNS check as failing until step 3 — expected.
+3. **DNSimple:** change the `framework` CNAME from `cname.vercel-dns.com` to
+   `i-am-bee.github.io` (the org host, not the repository path).
+4. **Wait for the HTTPS certificate**, then enable *Enforce HTTPS*. GitHub can only
+   issue it once DNS resolves to GitHub; until then visitors may see a certificate
+   warning. This is the only user-visible downtime, so pick a quiet time.
+5. **Remove `framework.beeai.dev` from the Mintlify dashboard** so Mintlify/Vercel no
+   longer claims the domain.
+6. **Delete `../docs-old`.** Leave it until the new site is confirmed: until then,
+   rolling back is just pointing the CNAME back at `cname.vercel-dns.com`.
+
+Optional hardening: verify `beeai.dev` for the `i-am-bee` organisation under
+*Settings → Pages → Verified domains* (one TXT record). It prevents other GitHub Pages
+sites from claiming a `beeai.dev` subdomain if a record is ever left dangling.
+
+URL compatibility was checked before cutover: all 26 pages in Mintlify's sitemap exist
+at the same paths, and `canonical` / `og:url` are extensionless (`src/routeData.ts`),
+matching Mintlify's so indexed URLs don't change.

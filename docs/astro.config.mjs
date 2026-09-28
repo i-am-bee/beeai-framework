@@ -13,8 +13,9 @@ import { redirects } from "./redirects.mjs";
 
 // Served from the GitHub Pages project URL (https://i-am-bee.github.io/beeai-framework/),
 // so everything lives under this base path. When the custom domain
-// (framework.beeai.dev) is wired up later, set BASE back to "/" and switch
-// `site` to the custom domain — the link/redirect prefixing below no-ops at "/".
+// (framework.beeai.dev) is wired up, set BASE to "/" and `site` to the custom
+// domain -- the link/redirect prefixing below is a no-op at "/". Only do that once
+// the DNS change is scheduled: see "Custom domain cutover" in MIGRATION.md.
 const BASE = "/beeai-framework";
 
 // Prefix an internal absolute path with BASE (Astro does not do this for
@@ -59,6 +60,8 @@ export default defineConfig({
   integrations: [
     starlight({
       title: "BeeAI Framework",
+      // Keep canonical / og:url extensionless to match the served URLs (see the file).
+      routeMiddleware: "./src/routeData.ts",
       // Validates internal links & heading anchors at build time
       // (replaces Mintlify's `broken-links` check; also runs in CI).
       // Localhost URLs are allowed — they appear as example endpoints in prose.
