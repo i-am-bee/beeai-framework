@@ -34,7 +34,10 @@ class GlobTool(Tool[GlobToolInput, ToolRunOptions, JSONToolOutput[dict[str, Any]
     input_schema = GlobToolInput
 
     async def clone(self) -> Self:
-        return type(self)(options=self.options)
+        cloned = type(self)(options=self.options)
+        cloned._cache = await self.cache.clone()
+        cloned.middlewares.extend(self.middlewares)
+        return cloned
 
     def _create_emitter(self) -> Emitter:
         return Emitter.root().child(namespace=["tool", "filesystem", "glob"], creator=self)
