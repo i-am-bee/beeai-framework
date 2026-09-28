@@ -75,9 +75,7 @@ export class FileCache<T> extends BaseCache<T> {
   async set(key: string, value: T) {
     const provider = await this.getProvider();
     await provider.set(key, value);
-    void provider.get(key).finally(() => {
-      void this.save();
-    });
+    await provider.get(key).finally(() => this.save());
   }
 
   async get(key: string) {
