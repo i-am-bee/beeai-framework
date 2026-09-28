@@ -18,7 +18,7 @@ import { GetRunContext } from "@/context.js";
 import { ValueError } from "@/errors.js";
 import { SchemaObject } from "ajv";
 import { parse } from "yaml";
-import { isEmpty, isTruthy, clone, toCamelCase } from "remeda";
+import { isTruthy, clone, toCamelCase } from "remeda";
 
 export interface OpenAPIToolOptions extends BaseToolOptions {
   name?: string;
@@ -169,12 +169,19 @@ export class OpenAPITool extends Tool<OpenAPIToolOutput, OpenAPIToolOptions> {
       }
     });
     url.pathname = join(url.pathname, path);
+    const headers = new Headers(this.options.fetchOptions?.headers);
+    if (!headers.has("Accept")) {
+      headers.set("Accept", "application/json");
+    }
+    if (input.body !== undefined && !headers.has("Content-Type")) {
+      headers.set("Content-Type", "application/json");
+    }
     const options: RequestInit = {
       ...this.options.fetchOptions,
       signal: AbortSignal.any([run.signal, this.options.fetchOptions?.signal].filter(isTruthy)),
-      body: !isEmpty(input.body) ? input.body : undefined,
+      body: input.body !== undefined ? JSON.stringify(input.body) : undefined,
       method: input.method.toLowerCase(),
-      headers: { Accept: "application/json", ...this.options.fetchOptions?.headers },
+      headers,
     };
     await run.emitter.emit("beforeFetch", { options: options, url: url });
     try {
