@@ -44,10 +44,15 @@ def to_beeai_message_content(
     elif content.get("type") == "text":
         return MessageTextContent(text=content.get("text") or "")
     elif content.get("type") == "image":
+        url = content.get("url")
+        mime_type = content.get("mime_type")
+        data = content.get("base64") or content.get("data")
+        if not url and not (mime_type and data):
+            return None
         return MessageImageContent(
             image_url=MessageImageContentImageUrl(
-                url=content.get("url") or f"data:{content.get('mime_type')}base64,{content.get('data')}",
-                format=content.get("mime_type") or "",
+                url=url or f"data:{mime_type};base64,{data}",
+                format=mime_type or "",
             )
         )
     elif content.get("type") == "file":
@@ -115,7 +120,11 @@ def to_lc_message_content(
     if isinstance(content, MessageTextContent):
         return {"type": "text", "text": content.text}
     elif isinstance(content, MessageImageContent):
-        return {"type": "image", "source_type": "url", "url": content.image_url}
+        url = content.image_url["url"]
+        if url.startswith("data:") and ";base64," in url:
+            mime_type, data = url[5:].split(";base64,", 1)
+            return {"type": "image", "source_type": "base64", "mime_type": mime_type, "data": data}
+        return {"type": "image", "source_type": "url", "url": url}
     elif isinstance(content, MessageFileContent):
         payload: dict[str, Any] = {"type": "file"}
         if content.file_id:
