@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import pytest
+from pydantic import ValidationError
 
 from beeai_framework.tools import StringToolOutput, tool
 
@@ -69,3 +70,30 @@ async def test_tool_annotation_no_desc() -> None:
             return query
 
         await test_tool.run({"query": "Hello!"})
+
+
+@pytest.mark.unit
+def test_tool_keyword_only_schema() -> None:
+    @tool
+    def required_only(*, query: str) -> str:
+        """Return the query."""
+        return query
+
+    schema = required_only.input_schema
+    assert schema.model_validate({"query": "hello"}).query == "hello"
+    with pytest.raises(ValidationError):
+        schema.model_validate({})
+    with pytest.raises(ValidationError):
+        schema.model_validate({"query": 1})
+
+    @tool
+    def required_and_optional(*, query: str, limit: int = 3) -> str:
+        """Return the query."""
+        return query
+
+    schema = required_and_optional.input_schema
+    assert schema.model_validate({"query": "hello"}).limit == 3
+    with pytest.raises(ValidationError):
+        schema.model_validate({})
+    with pytest.raises(ValidationError):
+        schema.model_validate({"query": "hello", "limit": "invalid"})
