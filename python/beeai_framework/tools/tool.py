@@ -228,7 +228,10 @@ def get_input_schema(tool_function: Callable, *, name: str | None = None) -> typ
             ...,
         ] * non_default_args + defaults
 
-    keyword_only_params = {param: kwonlydefaults.get(param, Any) for param in kwonlyargs}
+    keyword_only_params = {
+        param: (annotations.get(param, Any), (kwonlydefaults or {}).get(param, ...))
+        for param in kwonlyargs
+    }
     params = {param: (annotations.get(param, Any), default) for param, default in zip(args, defaults, strict=False)}
 
     input_model = create_model(
