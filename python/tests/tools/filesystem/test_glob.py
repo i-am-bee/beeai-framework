@@ -59,3 +59,26 @@ async def test_limit_truncates(tool: GlobTool, fs_tree: Path) -> None:
     data = result.to_json_safe()
     assert len(data["matches"]) == 1
     assert data["truncated"] is True
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_exact_match_count_is_not_reported_as_truncated(tool: GlobTool, fs_tree: Path) -> None:
+    """limit reached is not the same as limit exceeded.
+
+    fs_tree has exactly three non-hidden ``*.py`` files, so a cap of three
+    returns every match there is and nothing was cut off.
+    """
+    result = await tool.run({"pattern": "**/*.py", "root": str(fs_tree), "limit": 3})
+    data = result.to_json_safe()
+    assert len(data["matches"]) == 3
+    assert data["truncated"] is False
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_more_matches_than_the_cap_is_still_truncated(tool: GlobTool, fs_tree: Path) -> None:
+    result = await tool.run({"pattern": "**/*.py", "root": str(fs_tree), "limit": 2})
+    data = result.to_json_safe()
+    assert len(data["matches"]) == 2
+    assert data["truncated"] is True
