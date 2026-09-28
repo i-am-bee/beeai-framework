@@ -14,10 +14,13 @@ describe("Token Memory", () => {
     localFactor: number;
     syncThreshold: number;
     maxTokens: number;
+    capacityThreshold?: number;
   }) => {
     return new TokenMemory({
       maxTokens: config.maxTokens,
       syncThreshold: config.syncThreshold,
+      // 1 isolates a case to pure maxTokens enforcement
+      capacityThreshold: config.capacityThreshold ?? 1,
       handlers: {
         estimate: (msg) => Math.ceil(msg.text.length * config.localFactor),
         tokenize: async (msgs) =>
@@ -77,6 +80,28 @@ describe("Token Memory", () => {
       tokensUsed: 10,
       messagesCount: 5,
     });
+  });
+
+  it("Evicts down to the capacity threshold", async () => {
+    const instance = getInstance({
+      llmFactor: 1,
+      localFactor: 1,
+      maxTokens: 6,
+      syncThreshold: 1,
+      capacityThreshold: 0.5,
+    });
+
+    // The budget is 6 * 0.5 = 3 tokens, so only the most recent 3-token message fits
+    // even though maxTokens on its own would allow both.
+    await instance.add(new UserMessage("aaa"));
+    await instance.add(new UserMessage("bbb"));
+
+    expect(instance.messages.map((msg) => msg.text)).toEqual(["bbb"]);
+    expect(instance.tokensUsed).toBeLessThanOrEqual(3);
+  });
+
+  it("Rejects a capacityThreshold above 1", () => {
+    expect(() => new TokenMemory({ capacityThreshold: 1.5 })).toThrowError(TypeError);
   });
 
   it("Serializes", async () => {
