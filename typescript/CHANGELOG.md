@@ -1,5 +1,29 @@
 # Changelog
 
+## [0.1.31](https://github.com/i-am-bee/beeai-framework/compare/typescript_v0.1.30...typescript_v0.1.31) (2026-09-28)
+
+### Features
+
+- **infra:** port Runnable interface to TypeScript ([#1502](https://github.com/i-am-bee/beeai-framework/issues/1502)) ([947cf31](https://github.com/i-am-bee/beeai-framework/commit/947cf31e83fd444468eacb1d75035391a735ede1))
+- **memory:** add DakeraMemory for persistent cross-session agent memory ([#1567](https://github.com/i-am-bee/beeai-framework/issues/1567)) ([f54c898](https://github.com/i-am-bee/beeai-framework/commit/f54c898acba5ea1c62d53a2e967ce11b57f22824))
+
+### Bug Fixes
+
+- **adapters:** don't crash the process when a streamed Vercel chat call fails ([#1689](https://github.com/i-am-bee/beeai-framework/issues/1689)) ([cd5b5ea](https://github.com/i-am-bee/beeai-framework/commit/cd5b5eaada2969f9219deea4f95c3ade3ae50ac3))
+- **adapters:** make ChatModel.fromName and clone() work for Amazon Bedrock ([#1691](https://github.com/i-am-bee/beeai-framework/issues/1691)) ([f767f79](https://github.com/i-am-bee/beeai-framework/commit/f767f799959a28cedc2cbfa32ea75a8c9a68fe6d))
+- **adapters:** stop sending the default temperature to OpenAI GPT-5.x/GPT-6 on Amazon Bedrock ([#1687](https://github.com/i-am-bee/beeai-framework/issues/1687)) ([874a6ec](https://github.com/i-am-bee/beeai-framework/commit/874a6ecee08b6ac3addccca2393dbda6d8f0af55))
+- **adapters:** use constant-time API key comparison and anchored Bearer strip ([#1656](https://github.com/i-am-bee/beeai-framework/issues/1656)) ([d415ccb](https://github.com/i-am-bee/beeai-framework/commit/d415ccb365fbd59c6784a917b3474fef32529e19))
+- add missing serializer registration to 6 chat adapters ([#1477](https://github.com/i-am-bee/beeai-framework/issues/1477)) ([#1496](https://github.com/i-am-bee/beeai-framework/issues/1496)) ([b3256e4](https://github.com/i-am-bee/beeai-framework/commit/b3256e41896885227a183fb7a11d85d25f0ae0c9))
+- **cache:** await persistence in FileCache.set ([#1713](https://github.com/i-am-bee/beeai-framework/issues/1713)) ([77b5228](https://github.com/i-am-bee/beeai-framework/commit/77b522813053c60634bee029ebfac72ad8b9743d))
+- **internals:** compare both matrices' column counts in cosineSimilarityMatrix ([#1559](https://github.com/i-am-bee/beeai-framework/issues/1559)) ([efb154a](https://github.com/i-am-bee/beeai-framework/commit/efb154aae5fd298d8a29b949594a0e5074de6ba5))
+- **internals:** define properties directly in setProp ([#1643](https://github.com/i-am-bee/beeai-framework/issues/1643)) ([6a8b28f](https://github.com/i-am-bee/beeai-framework/commit/6a8b28f54073790f9a8135320a0e9ed1d4cef602))
+- **memory:** apply capacityThreshold in TokenMemory eviction ([#1703](https://github.com/i-am-bee/beeai-framework/issues/1703)) ([eda0720](https://github.com/i-am-bee/beeai-framework/commit/eda0720a0c74f6b3062793c497b376b6b1a3e99d)), closes [#1506](https://github.com/i-am-bee/beeai-framework/issues/1506)
+- **memory:** preserve messages when token sync fails ([#1717](https://github.com/i-am-bee/beeai-framework/issues/1717)) ([b5258a0](https://github.com/i-am-bee/beeai-framework/commit/b5258a04550bbb0299c347533715cd6f22e73ace))
+- **serializer:** treat async/\* as tokens, not substrings, when reparsing functions ([#1658](https://github.com/i-am-bee/beeai-framework/issues/1658)) ([110df71](https://github.com/i-am-bee/beeai-framework/commit/110df7122e45614ea76849d2ff399ccf415adaba))
+- **tools:** apply the default backoff factor, not maxRetries, to tool retries ([#1702](https://github.com/i-am-bee/beeai-framework/issues/1702)) ([79d4c92](https://github.com/i-am-bee/beeai-framework/commit/79d4c929cbfcc4e86089e420804f4fdca24a2654))
+- **tools:** keep extend metadata overrides independent ([#1671](https://github.com/i-am-bee/beeai-framework/issues/1671)) ([4d89431](https://github.com/i-am-bee/beeai-framework/commit/4d8943172985046a0720a3ab90950bec74933fae))
+- **tools:** serialize OpenAPI JSON request bodies ([#1719](https://github.com/i-am-bee/beeai-framework/issues/1719)) ([a155a9d](https://github.com/i-am-bee/beeai-framework/commit/a155a9de67bb19b3ce6e7cf1031557526ad1b141))
+
 ## [0.1.30](https://github.com/i-am-bee/beeai-framework/compare/typescript_v0.1.29...typescript_v0.1.30) (2026-07-24)
 
 ### ⚠ BREAKING CHANGES
