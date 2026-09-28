@@ -134,7 +134,10 @@ class EmbeddingModel(ABC):
             ...     settings={"dimensions": 512}
             ... )
         """
-        self._settings: dict[str, Any] = kwargs.get("settings", {})
+        # Copy the caller's dict: the lines below (and the provider adapters' `_assert_setting_value`)
+        # mutate `self._settings`, so aliasing it would leak one model's settings into every other
+        # model created from the same dict.
+        self._settings: dict[str, Any] = dict(kwargs.get("settings") or {})
         self._settings.update(**exclude_non_annotated(kwargs, EmbeddingModelKwargs))
 
         kwargs = _get_embedding_model_kwargs_adapter().validate_python(kwargs)
