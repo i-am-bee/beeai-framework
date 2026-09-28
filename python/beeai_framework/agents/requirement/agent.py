@@ -218,7 +218,7 @@ class RequirementAgent(BaseAgent[RequirementAgentOutput]):
             return []
 
         *msgs, last_message = [UserMessage(input)] if isinstance(input, str) else input
-        if last_message is None and isinstance(last_message, UserMessage) and last_message.text:
+        if last_message is not None and isinstance(last_message, UserMessage) and last_message.text:
             user_message = UserMessage(
                 self._templates.task.render(
                     RequirementAgentTaskPromptInput(
