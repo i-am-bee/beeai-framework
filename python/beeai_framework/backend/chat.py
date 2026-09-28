@@ -360,7 +360,10 @@ class ChatModel(Runnable[ChatModelOutput]):
             ... )
         """
         super().__init__(middlewares=kwargs.get("middlewares", []))
-        self._settings = kwargs.get("settings", {})
+        # Copy the caller's dict: the lines below (and the provider adapters' `_assert_setting_value`)
+        # mutate `self._settings`, so aliasing it would leak one model's settings into every other
+        # model created from the same dict.
+        self._settings = dict(kwargs.get("settings") or {})
         self._settings.update(**exclude_non_annotated(kwargs, ChatModelKwargs))
 
         kwargs = _get_chat_model_kwargs_adapter().validate_python(kwargs)
