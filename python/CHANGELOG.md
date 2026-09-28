@@ -1,3 +1,39 @@
+## python_v0.1.85 (2026-09-28)
+
+### Bug Fixes
+
+- **tools**: generate typed schemas for keyword-only parameters (#1721)
+- propagate Python stream errors and cancellation (#1711)
+- **adapters**: preserve LangChain image content (#1715)
+- **adapters**: apply LiteLLM proxy response cost reported via _hidden_params (#1699)
+- **tools**: preserve cache and middleware when cloning file and shell tools (#1706)
+- **internals**: carry the abort state through AbortController.clone (#1704)
+- **backend**: copy the caller's settings dict instead of aliasing it (#1701)
+- **agents**: render the task template so backstory reaches the model (#1700)
+- **internals**: avoid blocking the event loop during confirmation (#1705)
+- **agents**: clone independent tool instances in LiteAgent and RequirementAgent (#1696)
+- **tools**: stop reporting a full result set as truncated in GlobTool (#1692)
+- **cache**: isolate sliding cache clones (#1683)
+- **deps**: resolve torch from PyPI on Apple Silicon and bump off 2.7.1 (#1673)
+- **emitter**: clean up child pipe listeners on destroy to prevent memory leak (#1670)
+- **tools**: stop reporting a full result set as truncated in GrepTool (#1668)
+- **internals**: apply the default retry backoff factor when the config leaves it unset (#1667)
+- **tools**: parse a YAML OpenAPI schema with yaml.safe_load, not yaml.parse (#1666)
+- **internals**: register the two field validators the decorator order disabled (#1664)
+- **backend**: keep cached token counts when merging chunks (#1663)
+- **internals**: restore default I/O in new contexts (#1662)
+- **internals**: prevent extra AbortError after handled tool failures (#1659)
+- **tools**: isolate grep subprocess stdin (#1661)
+- **tools**: preserve leading-hyphen grep patterns (#1660)
+- **backend**: add default 600s request timeout for LiteLLM chat model (#1647)
+- **adapters**: use constant-time API key comparison and anchored Bearer strip (#1656)
+
+### Features
+
+- **adapters**: configure AgentStack execution limits (#1685)
+- **agents**: show a self-contained preflight requirement (#1644)
+- add HOL Guard tool middleware (#1610)
+
 ## python_v0.1.84 (2026-09-15)
 
 ### Bug Fixes
