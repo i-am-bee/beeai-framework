@@ -320,7 +320,7 @@ export abstract class Tool<
       R.map((input: RetryOptions) => {
         const options: RetryableConfig = {
           maxRetries: input.maxRetries ?? defaultOptions.maxRetries,
-          factor: input.factor ?? defaultOptions.maxRetries,
+          factor: input.factor ?? defaultOptions.factor,
         };
         return R.pickBy(options, R.isDefined);
       }),
