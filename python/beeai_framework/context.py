@@ -72,18 +72,19 @@ class Run(Generic[R], Awaitable[R]):
 
         task = asyncio.create_task(run())
 
-        while True:
-            try:
+        try:
+            while True:
                 item = await self._events.get()
-                if item is not None:
-                    yield item
                 self._events.task_done()
                 if item is None:
                     break
-            except asyncio.CancelledError:
-                task.cancel()
+                yield item
 
-        await task
+            await task
+        finally:
+            if not task.done():
+                task.cancel()
+            await asyncio.gather(task, return_exceptions=True)
 
     def observe(self, fn: Callable[[Emitter], Any]) -> Self:
         self._tasks.append((fn, [self._run_context.emitter]))
@@ -111,10 +112,13 @@ class Run(Generic[R], Awaitable[R]):
         tasks = self._tasks[:]
         self._tasks.clear()
 
-        for fn, params in tasks:
-            await ensure_async(fn)(*params)
-
         try:
+            try:
+                for fn, params in tasks:
+                    await ensure_async(fn)(*params)
+            except BaseException:
+                self._run_context.destroy()
+                raise
             return await self.handler()
         finally:
             await self._events.put(None)
@@ -207,7 +211,12 @@ class RunContext:
             output: R | None = None
 
             start_event = RunContextStartEvent(input=context.run_params, output=output)
-            await emitter.emit("start", start_event)
+            try:
+                await emitter.emit("start", start_event)
+            except BaseException:
+                context.destroy()
+                emitter.destroy()
+                raise
 
             # Copy back any modifications made by middleware to run_params
             context.run_params = start_event.input
@@ -264,6 +273,10 @@ class RunContext:
                 await emitter.emit("error", error)
                 raise error
             finally:
+                for task in (runner_task, abort_task):
+                    if not task.done():
+                        task.cancel()
+                await asyncio.gather(runner_task, abort_task, return_exceptions=True)
                 await emitter.emit(
                     "finish",
                     RunContextFinishEvent(error=error, input=context.run_params, output=output),
