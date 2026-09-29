@@ -21,6 +21,7 @@ Ready-to-use tools that provide immediate functionality for common agent tasks:
 | [OpenMeteo](#openmeteo)  | Retrieve weather information for specific locations and dates                                       |
 | [DuckDuckGo](#duckduckgo) | Search for data on DuckDuckGo                                                                       |
 | [Wikipedia](#wikipedia)  | Search for data on Wikipedia                                                                        |
+| [Firecrawl](#firecrawl)  | Search the web with Firecrawl                                                                       |
 | [VectorStoreSearch](#vector-store-search) | Search for documents in a vector database                         |
 | [Python](#python)     | Let agent run an arbitrary Python code in a sandboxed environment                                                |
 | [Sandbox](#sandbox)    | Run custom Python functions in a sandboxed environment                                              |
@@ -497,6 +498,49 @@ const response = await wikipediaWithSimilarity.run({
 console.info(response);
 
 ```
+</CodeGroup>
+
+<Heading level={3} id="firecrawl">Firecrawl search tool</Heading>
+
+Use the [Firecrawl](https://www.firecrawl.dev/search?utm_source=beeai-framework&utm_medium=integration) search tool to search the web for current information, news, and research topics. Each result includes the title, URL, and query-relevant highlights. The tool needs a Firecrawl API key, passed as `api_key` or set in the `FIRECRAWL_API_KEY` environment variable.
+
+<Note>
+This tool is currently available in Python only.
+</Note>
+
+<CodeGroup>
+
+{/* <!-- embedme python/examples/tools/firecrawl.py --> */}
+```py Python [expandable]
+import asyncio
+import sys
+import traceback
+
+from beeai_framework.agents.requirement import RequirementAgent
+from beeai_framework.backend import ChatModel
+from beeai_framework.errors import FrameworkError
+from beeai_framework.memory import UnconstrainedMemory
+from beeai_framework.tools.search.firecrawl import FirecrawlSearchTool
+
+
+async def main() -> None:
+    chat_model = ChatModel.from_name("ollama:granite4:micro")
+    agent = RequirementAgent(llm=chat_model, tools=[FirecrawlSearchTool()], memory=UnconstrainedMemory())
+
+    result = await agent.run("What are the latest releases of the BeeAI Framework?")
+
+    print(result.last_message.text)
+
+
+if __name__ == "__main__":
+    try:
+        asyncio.run(main())
+    except FrameworkError as e:
+        traceback.print_exc()
+        sys.exit(e.explain())
+
+```
+
 </CodeGroup>
 
 <Heading level={3} id="vector-store-search">Vector Store Search Tool</Heading>
