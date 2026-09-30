@@ -11,7 +11,7 @@ from beeai_framework.tools.mcp.utils.session_provider import MCPClient, MCPSessi
 
 try:
     from mcp import ClientSession
-    from mcp.types import CallToolResult, TextContent
+    from mcp.types import CallToolResult, PaginatedRequestParams, TextContent
     from mcp.types import Tool as MCPToolInfo
 except ModuleNotFoundError as e:
     raise ModuleNotFoundError(
@@ -113,7 +113,11 @@ class MCPTool(Tool[BaseModel, ToolRunOptions, JSONToolOutput]):
 
         manager = MCPSessionProvider(client)
         session = await manager.session()
-        instance = await cls.from_session(session, **options)
+        try:
+            instance = await cls.from_session(session, **options)
+        except BaseException:
+            manager.destroy()
+            raise
         manager.refs += len(instance)
         return instance
 
@@ -123,7 +127,11 @@ class MCPTool(Tool[BaseModel, ToolRunOptions, JSONToolOutput]):
     @classmethod
     async def from_session(cls, session: ClientSession, **options: Unpack[MCPToolKwargs]) -> list["MCPTool"]:
         tools_result = await session.list_tools()
-        return [MCPTool(session, tool, **options) for tool in tools_result.tools]
+        tools = list(tools_result.tools)
+        while tools_result.nextCursor is not None:
+            tools_result = await session.list_tools(params=PaginatedRequestParams(cursor=tools_result.nextCursor))
+            tools.extend(tools_result.tools)
+        return [MCPTool(session, tool, **options) for tool in tools]
 
     async def clone(self) -> Self:
         options = MCPToolKwargs(smart_parsing=self._smart_parsing, exclude_none=self._exclude_none)
