@@ -5,8 +5,11 @@ import hashlib
 import os
 import shutil
 from abc import ABC, abstractmethod
+from pathlib import Path
 
 from pydantic import BaseModel
+
+from beeai_framework.tools.errors import ToolError
 
 
 class PythonFile(BaseModel):
@@ -85,8 +88,9 @@ class LocalPythonStorage(PythonStorage):
         self.init()
 
         for file in files:
+            source_path = self._resolve_safe_path(self._local_working_dir, file.filename)
             shutil.copyfile(
-                os.path.join(self._local_working_dir, file.filename),
+                str(source_path),
                 os.path.join(self._interpreter_working_dir, file.python_id),
             )
         return files
@@ -95,11 +99,21 @@ class LocalPythonStorage(PythonStorage):
         self.init()
 
         for file in files:
+            target_path = self._resolve_safe_path(self._local_working_dir, file.filename)
+            os.makedirs(target_path.parent, exist_ok=True)
             shutil.copyfile(
                 os.path.join(self._interpreter_working_dir, file.python_id),
-                os.path.join(self._local_working_dir, file.filename),
+                str(target_path),
             )
         return files
+
+    @staticmethod
+    def _resolve_safe_path(base_dir: str, filename: str) -> Path:
+        base_path = Path(base_dir).resolve()
+        target_path = base_path.joinpath(filename).resolve()
+        if not target_path.is_relative_to(base_path):
+            raise ToolError(f"Path traversal detected in filename: {filename}")
+        return target_path
 
     @staticmethod
     def _compute_hash(file_path: str) -> str:
