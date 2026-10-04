@@ -19,6 +19,7 @@ Ready-to-use tools that provide immediate functionality for common agent tasks:
 | Handoff    | Delegates a task to an expert agent                                                                                             |
 | [OpenAPI](#openapi)  | Consume external APIs with an ease                                       |
 | [OpenMeteo](#openmeteo)  | Retrieve weather information for specific locations and dates                                       |
+| [FXMacroData](#fxmacrodata)  | Retrieve macroeconomic indicators and release dates for a currency                              |
 | [DuckDuckGo](#duckduckgo) | Search for data on DuckDuckGo                                                                       |
 | [Wikipedia](#wikipedia)  | Search for data on Wikipedia                                                                        |
 | [VectorStoreSearch](#vector-store-search) | Search for documents in a vector database                         |
@@ -413,6 +414,45 @@ const result = await tool.run({
   end_date: today,
 });
 console.log(result.getTextContent());
+
+```
+</CodeGroup>
+
+<Heading level={3} id="fxmacrodata">FXMacroData tool</Heading>
+
+Use the [FXMacroData](https://fxmacrodata.com/?utm_source=github&utm_medium=referral&utm_campaign=beeai-framework&utm_content=docs) tool to retrieve macroeconomic indicators such as inflation, GDP, policy rates and employment, sourced from official publishers. The `operation` field selects `indicator_history` (published values for one indicator, optionally bounded by `start_date`, `end_date` and `limit`), `data_catalogue` (the indicators available for a currency) or `release_calendar` (upcoming release dates). USD works without an API key, with announcements delayed by 15 minutes and history limited to the last 90 days; the response then carries a `freemium_delay` object. For other currencies, set the `FXMACRODATA_API_KEY` environment variable or pass `api_key` to the constructor.
+
+<CodeGroup>
+
+{/* <!-- embedme python/examples/tools/fxmacrodata.py --> */}
+```py Python [expandable]
+import asyncio
+import sys
+import traceback
+
+from beeai_framework.agents.react import ReActAgent
+from beeai_framework.backend import ChatModel
+from beeai_framework.errors import FrameworkError
+from beeai_framework.memory import UnconstrainedMemory
+from beeai_framework.tools.fxmacrodata import FXMacroDataTool
+
+
+async def main() -> None:
+    llm = ChatModel.from_name("ollama:llama3.1")
+    # USD data works without a key. Set FXMACRODATA_API_KEY for other currencies.
+    agent = ReActAgent(llm=llm, tools=[FXMacroDataTool()], memory=UnconstrainedMemory())
+
+    result = await agent.run("What was the latest US CPI inflation print, and when is the next release?")
+
+    print(result.last_message.text)
+
+
+if __name__ == "__main__":
+    try:
+        asyncio.run(main())
+    except FrameworkError as e:
+        traceback.print_exc()
+        sys.exit(e.explain())
 
 ```
 </CodeGroup>

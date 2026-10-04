@@ -61,6 +61,7 @@ This repository contains examples demonstrating the usage of the BeeAI Framework
 - [`action_bound_governance.py`](/python/examples/tools/action_bound_governance.py): Tool-side governance checkpoint bound to a canonical action hash
 - [`duckduckgo.py`](/python/examples/tools/duckduckgo.py): DDG Search Tool for searching the web
 - [`openmeteo.py`](/python/examples/tools/openmeteo.py): Open-Meteo Tool for retrieving weather data
+- [`fxmacrodata.py`](/python/examples/tools/fxmacrodata.py): FXMacroData Tool for retrieving macroeconomic indicators and release dates
 - [`custom/xquik.py`](/python/examples/tools/custom/xquik.py): Xquik API tool for searching X posts
 
 ## Observability
