@@ -6,15 +6,16 @@ from collections.abc import Callable
 from contextlib import (
     AbstractAsyncContextManager,
 )
-from typing import Any, Literal
+from typing import Any, Literal, Self
 
 from pydantic import BaseModel, Field
 
-from beeai_framework.agents import BaseAgent
+from beeai_framework.agents import AgentExecutionConfig, BaseAgent
 from beeai_framework.backend import Role, UserMessage
 from beeai_framework.runnable import Runnable, RunnableOutput
 from beeai_framework.serve import MemoryManager
 from beeai_framework.serve.errors import FactoryAlreadyRegisteredError
+from beeai_framework.serve.utils import agent_execution_options, checked_execution_config
 from beeai_framework.template import PromptTemplate
 from beeai_framework.tools.tool import AnyTool, Tool
 from beeai_framework.tools.types import ToolOutput
@@ -123,6 +124,20 @@ class MCPServer(
             self._config.instructions,
             **self._config.settings.model_dump(exclude_none=True),
         )
+        self._execution_by_member: dict[Any, AgentExecutionConfig] = {}
+
+    def register(self, input: Any, *, execution: AgentExecutionConfig | None = None) -> Self:
+        """Register a tool, prompt, resource or runnable.
+
+        Args:
+            input: The member to expose.
+            execution: Run defaults for built-in agents. Fields set to None retain the agent's defaults.
+        """
+        execution = checked_execution_config(input, execution)
+        super().register(input)
+        if execution is not None and execution.model_dump(exclude_none=True):
+            self._execution_by_member[input] = execution
+        return self
 
     def serve(self) -> None:
         self._register_members()
@@ -143,7 +158,9 @@ class MCPServer(
     def _register_members(self) -> None:
         for member in self.members:
             factory = type(self)._get_factory(member)
-            entry = factory(member)
+            execution = self._execution_by_member.get(member)
+            # Only pass `execution` when it was given, so single-argument custom factories keep working.
+            entry = factory(member) if execution is None else factory(member, execution=execution)  # type: ignore[call-arg]
 
             if isinstance(entry, MCPNativeTool):
                 self._server._tool_manager._tools[entry.name] = entry
@@ -225,6 +242,8 @@ with contextlib.suppress(FactoryAlreadyRegisteredError):
 
 def _runnable_factory(
     runnable: Runnable[Any],
+    *,
+    execution: AgentExecutionConfig | None = None,
 ) -> MCPNativeTool:
     class Msg(BaseModel):
         role: Role | str
@@ -233,7 +252,7 @@ def _runnable_factory(
     async def run(input: str) -> Msg:
         cloned_runnable = await runnable.clone() if isinstance(runnable, Cloneable) else runnable
         # pyrefly: ignore [missing-attribute]
-        result: RunnableOutput = await cloned_runnable.run([UserMessage(input)])
+        result: RunnableOutput = await cloned_runnable.run([UserMessage(input)], **agent_execution_options(execution))
         return Msg(role=result.last_message.role, content=result.last_message.text)
 
     name = runnable.meta.name if isinstance(runnable, BaseAgent) else runnable.__class__.__name__

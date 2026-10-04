@@ -19,6 +19,7 @@ from beeai_framework.agents.requirement import RequirementAgent
 from beeai_framework.runnable import AnyRunnable, AnyRunnableTypeVar, Runnable
 from beeai_framework.serve import MemoryManager
 from beeai_framework.serve.errors import FactoryAlreadyRegisteredError
+from beeai_framework.serve.utils import checked_execution_config
 
 try:
     import a2a.server.agent_execution as a2a_agent_execution
@@ -174,6 +175,8 @@ class A2AServer(
         if len(self._members) != 0:
             raise ValueError("A2AServer only supports one agent.")
         else:
+            if "execution" in metadata:
+                metadata["execution"] = checked_execution_config(input, metadata["execution"])  # type: ignore[typeddict-item]
             super().register(input)
             self._metadata_by_agent[input] = metadata
             return self

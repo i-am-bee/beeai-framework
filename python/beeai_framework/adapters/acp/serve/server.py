@@ -12,6 +12,7 @@ from beeai_framework.agents.requirement import RequirementAgent
 from beeai_framework.agents.requirement.events import RequirementAgentSuccessEvent
 from beeai_framework.serve import MemoryManager, init_agent_memory
 from beeai_framework.serve.errors import FactoryAlreadyRegisteredError
+from beeai_framework.serve.utils import agent_execution_options, checked_execution_config
 from beeai_framework.utils.cloneable import Cloneable
 
 try:
@@ -30,7 +31,7 @@ from typing_extensions import TypedDict, TypeVar, Unpack, override
 
 from beeai_framework.adapters.acp.serve._utils import acp_msgs_to_framework_msgs
 from beeai_framework.adapters.acp.serve.agent import ACPServerAgent
-from beeai_framework.agents import AnyAgent
+from beeai_framework.agents import AgentExecutionConfig, AnyAgent
 from beeai_framework.agents.react.agent import ReActAgent
 from beeai_framework.agents.react.events import ReActAgentUpdateEvent
 
@@ -68,6 +69,8 @@ class ACPServerMetadata(TypedDict, total=False):
     dependencies: list[acp_models.Dependency]
     recommended_models: list[str]
     extra: dict[str, Any]
+    execution: AgentExecutionConfig
+    """Run defaults for built-in agents. Fields set to None retain the agent's defaults."""
 
 
 class ACPServer(Generic[AnyAgentLike], Server[AnyAgentLike, ACPServerAgent, "ACPServerConfig"]):
@@ -90,6 +93,8 @@ class ACPServer(Generic[AnyAgentLike], Server[AnyAgentLike, ACPServerAgent, "ACP
 
     @override
     def register(self, input: AnyAgentLike, **metadata: Unpack[ACPServerMetadata]) -> Self:
+        if "execution" in metadata:
+            metadata["execution"] = checked_execution_config(input, metadata["execution"])  # type: ignore[typeddict-item]
         super().register(input)
         if not metadata.get("programming_language"):
             metadata["programming_language"] = "Python"
@@ -118,6 +123,7 @@ def to_acp_agent_metadata(metadata: ACPServerMetadata) -> acp_models.Metadata:
     copy = metadata.copy()
     copy.pop("name", None)
     copy.pop("description", None)
+    copy.pop("execution", None)
     extra = copy.pop("extra", {})
 
     model = acp_models.Metadata.model_validate(copy)
@@ -139,7 +145,9 @@ def _react_agent_factory(
         cloned_agent = await agent.clone() if isinstance(agent, Cloneable) else agent
         await init_agent_memory(cloned_agent, memory_manager, str(context.session.id))
 
-        async for data, event in cloned_agent.run(acp_msgs_to_framework_msgs(input)):
+        async for data, event in cloned_agent.run(
+            acp_msgs_to_framework_msgs(input), **agent_execution_options(metadata.get("execution"))
+        ):
             match (data, event.name):
                 case (ReActAgentUpdateEvent(), "partial_update"):
                     update = data.update.value
@@ -166,6 +174,8 @@ with contextlib.suppress(FactoryAlreadyRegisteredError):
 def _tool_calling_agent_factory(
     agent: ToolCallingAgent, *, metadata: ACPServerMetadata | None = None, memory_manager: MemoryManager
 ) -> ACPServerAgent:
+    metadata = metadata or {}
+
     async def run(
         input: list[acp_models.Message], context: acp_context.Context
     ) -> AsyncGenerator[acp_types.RunYield, acp_types.RunYieldResume]:
@@ -173,7 +183,9 @@ def _tool_calling_agent_factory(
         await init_agent_memory(cloned_agent, memory_manager, str(context.session.id))
 
         last_msg: AnyMessage | None = None
-        async for data, _ in cloned_agent.run(acp_msgs_to_framework_msgs(input)):
+        async for data, _ in cloned_agent.run(
+            acp_msgs_to_framework_msgs(input), **agent_execution_options(metadata.get("execution"))
+        ):
             messages = data.state.memory.messages
             if last_msg is None:
                 last_msg = messages[-1]
@@ -186,7 +198,6 @@ def _tool_calling_agent_factory(
             if isinstance(data, ToolCallingAgentSuccessEvent) and data.state.result is not None:
                 yield acp_models.MessagePart(content=data.state.result.text, role="assistant")  # type: ignore[call-arg]
 
-    metadata = metadata or {}
     return ACPServerAgent(
         fn=run,
         name=metadata.get("name", agent.meta.name),
@@ -202,6 +213,8 @@ with contextlib.suppress(FactoryAlreadyRegisteredError):
 def _requirement_agent_factory(
     agent: RequirementAgent, *, metadata: ACPServerMetadata | None = None, memory_manager: MemoryManager
 ) -> ACPServerAgent:
+    metadata = metadata or {}
+
     async def run(
         input: list[acp_models.Message], context: acp_context.Context
     ) -> AsyncGenerator[acp_types.RunYield, acp_types.RunYieldResume]:
@@ -209,7 +222,9 @@ def _requirement_agent_factory(
         await init_agent_memory(cloned_agent, memory_manager, str(context.session.id))
 
         last_msg: AnyMessage | None = None
-        async for data, _ in cloned_agent.run(acp_msgs_to_framework_msgs(input)):
+        async for data, _ in cloned_agent.run(
+            acp_msgs_to_framework_msgs(input), **agent_execution_options(metadata.get("execution"))
+        ):
             messages = data.state.memory.messages
             if last_msg is None:
                 last_msg = messages[-1]
@@ -222,7 +237,6 @@ def _requirement_agent_factory(
             if isinstance(data, RequirementAgentSuccessEvent) and data.state.answer is not None:
                 yield acp_models.MessagePart(content=data.state.answer.text, role="assistant")  # type: ignore[call-arg]
 
-    metadata = metadata or {}
     return ACPServerAgent(
         fn=run,
         name=metadata.get("name", agent.meta.name),

@@ -131,6 +131,15 @@ Transport Options:
 - `streamable-http`: Uses HTTP POST and GET requests (replaces `sse`)
 - `sse`: Uses server-sent events over HTTP (deprecated)
 
+**Agent execution (Python)**
+
+Pass `execution=AgentExecutionConfig(...)` to `server.register()` to configure
+`max_iterations`, `total_max_retries`, and `max_retries_per_step` for the built-in
+`RequirementAgent`, `ToolCallingAgent`, and `ReActAgent`. These options apply to every
+request served by that registration. Omitted fields and fields set to `None` retain the
+agent's own defaults. The configuration is copied during registration, and non-empty
+execution configuration is rejected for other runnable types. Only an `execution` that sets at least one field is passed to the factory, so custom single-argument factories keep working.
+
 ### Custom Instances
 
 If you want to make your custom class compatible with an MCP server, you can do so by registering a custom mapper via `MCPServer.register_factory(...)`.

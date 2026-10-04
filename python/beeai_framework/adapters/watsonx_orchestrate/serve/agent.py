@@ -27,6 +27,8 @@ class WatsonxOrchestrateServerAgent(ABC, Generic[T]):
     def __init__(self, agent: T) -> None:
         super().__init__()
         self._agent: T = agent
+        self.run_options: dict[str, Any] = {}
+        """Keyword arguments for the agent's `run()`, e.g. the server's execution limits."""
 
     @property
     @abstractmethod
@@ -35,7 +37,7 @@ class WatsonxOrchestrateServerAgent(ABC, Generic[T]):
     async def run(self, input: list[AnyMessage]) -> watsonx_orchestrate_api.ChatCompletionResponse:
         cloned_agent = await self._agent.clone() if isinstance(self._agent, Cloneable) else self._agent
         # pyrefly: ignore [missing-attribute]
-        response = await cloned_agent.run(input)
+        response = await cloned_agent.run(input, **self.run_options)
 
         # Other agent types may not expose a "raw" dict with choices, so verify
         # the structure defensively before reading the finish_reason.

@@ -9,6 +9,7 @@ from beeai_framework.backend.message import (
     AnyMessage,
 )
 from beeai_framework.serve import MemoryManager, init_agent_memory
+from beeai_framework.serve.utils import agent_execution_options
 from beeai_framework.utils.cloneable import Cloneable
 
 try:
@@ -22,7 +23,7 @@ except ModuleNotFoundError as e:
         "Optional module [a2a] not found.\nRun 'pip install \"beeai-framework[a2a]\"' to install."
     ) from e
 
-from beeai_framework.agents import AgentExecutionConfig, AgentOptions, AnyAgent
+from beeai_framework.agents import AgentExecutionConfig, AnyAgent
 from beeai_framework.logger import Logger
 
 AnyAgentLike = TypeVar("AnyAgentLike", bound=AnyAgent, default=AnyAgent)
@@ -42,9 +43,7 @@ class BaseA2AAgentExecutor(BaseA2AExecutor[AnyAgentLike]):
     ) -> None:
         super().__init__(runnable=agent, agent_card=agent_card, memory_manager=memory_manager)
         self._send_trajectory = send_trajectory
-        self._execution_options = (
-            AgentOptions(**execution.model_dump(exclude_none=True)) if execution is not None else AgentOptions()
-        )
+        self._execution_options = agent_execution_options(execution)
 
     @override
     async def execute(

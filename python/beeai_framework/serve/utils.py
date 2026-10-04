@@ -7,7 +7,7 @@ from typing import Protocol
 
 from cachetools import LRUCache
 
-from beeai_framework.agents import AnyAgent
+from beeai_framework.agents import AgentExecutionConfig, AgentOptions, AnyAgent
 from beeai_framework.logger import Logger
 from beeai_framework.memory import BaseMemory
 
@@ -106,3 +106,28 @@ async def init_agent_memory(
     except Exception:
         logger.debug("Agent does not support setting a new memory, resetting existing one for the agent.")
         agent.memory.reset()
+
+
+def agent_execution_options(execution: AgentExecutionConfig | None) -> AgentOptions:
+    """Run options for a hosted built-in agent. Fields left unset keep the agent's own defaults."""
+    return AgentOptions(**execution.model_dump(exclude_none=True)) if execution is not None else AgentOptions()
+
+
+def checked_execution_config(input: object, execution: AgentExecutionConfig | None) -> AgentExecutionConfig | None:
+    """Validate and copy the `execution` registration option, as `AgentStackServer.register` does.
+
+    Raises:
+        ValueError: If limits are set for something other than a built-in agent.
+    """
+    if execution is None:
+        return None
+
+    from beeai_framework.agents.react import ReActAgent
+    from beeai_framework.agents.requirement import RequirementAgent
+    from beeai_framework.agents.tool_calling import ToolCallingAgent
+
+    if execution.model_dump(exclude_none=True) and not isinstance(
+        input, ReActAgent | ToolCallingAgent | RequirementAgent
+    ):
+        raise ValueError("execution is only supported for ReActAgent, ToolCallingAgent, and RequirementAgent.")
+    return execution.model_copy(deep=True)

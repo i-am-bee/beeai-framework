@@ -66,7 +66,7 @@ class WatsonxOrchestrateServerRequirementAgent(WatsonxOrchestrateServerAgent[Req
                 await emit(WatsonxOrchestrateServerAgentThinkEvent(text=data.input.thoughts))
 
         await (
-            cloned_agent.run(input)
+            cloned_agent.run(input, **self.run_options)
             .on(
                 lambda event: isinstance(event.creator, Tool) and event.name == "start",
                 on_tool_start,

@@ -15,6 +15,7 @@ from beeai_framework.agents.requirement.events import RequirementAgentSuccessEve
 from beeai_framework.agents.requirement.utils._tool import FinalAnswerTool
 from beeai_framework.backend import AnyMessage, ChatModel, ChatModelNewTokenEvent, ChatModelSuccessEvent
 from beeai_framework.runnable import Runnable
+from beeai_framework.serve.utils import agent_execution_options
 from beeai_framework.utils.lists import find_index
 
 
@@ -31,16 +32,18 @@ def _runnable_factory(runnable: Runnable[Any], *, metadata: OpenAIServerMetadata
         else runnable.__class__.__name__,
     )
 
-    return OpenAIModel(runnable, model_id=name)
+    return OpenAIModel(runnable, model_id=name, run_options=dict(agent_execution_options(metadata.get("execution"))))
 
 
 def _react_factory(agent: ReActAgent, *, metadata: OpenAIServerMetadata | None = None) -> OpenAIModel:
     if metadata is None:
         metadata = {}
 
+    run_options = agent_execution_options(metadata.get("execution"))
+
     async def stream(input: list[AnyMessage]) -> AsyncIterable[OpenAIEvent]:
         cloned_agent = await agent.clone()
-        async for data, _ in cloned_agent.run(input):
+        async for data, _ in cloned_agent.run(input, **run_options):
             if (
                 isinstance(data, ReActAgentUpdateEvent)
                 and isinstance(data.data, ReActAgentIterationResult)
@@ -51,17 +54,21 @@ def _react_factory(agent: ReActAgent, *, metadata: OpenAIServerMetadata | None =
             if isinstance(data, ReActAgentSuccessEvent):
                 yield OpenAIEvent(finish_reason=data.iterations[-1].raw.finish_reason)
 
-    return OpenAIModel(agent, model_id=metadata.get("name") or agent.meta.name, stream=stream)
+    return OpenAIModel(
+        agent, model_id=metadata.get("name") or agent.meta.name, stream=stream, run_options=dict(run_options)
+    )
 
 
 def _requirement_agent_factory(agent: RequirementAgent, *, metadata: OpenAIServerMetadata | None = None) -> OpenAIModel:
     if metadata is None:
         metadata = {}
 
+    run_options = agent_execution_options(metadata.get("execution"))
+
     async def stream(input: list[AnyMessage]) -> AsyncIterable[OpenAIEvent]:
         cloned_agent = await agent.clone()
         last_msg = None
-        async for data, _ in cloned_agent.run(input):
+        async for data, _ in cloned_agent.run(input, **run_options):
             messages = data.state.memory.messages
             if last_msg is None:
                 last_msg = messages[-1]
@@ -79,7 +86,9 @@ def _requirement_agent_factory(agent: RequirementAgent, *, metadata: OpenAIServe
                     text=json.dumps([m.model_dump() for m in message.content]), type="custom_tool_call", append=False
                 )
 
-    return OpenAIModel(agent, model_id=metadata.get("name") or agent.meta.name, stream=stream)
+    return OpenAIModel(
+        agent, model_id=metadata.get("name") or agent.meta.name, stream=stream, run_options=dict(run_options)
+    )
 
 
 def _chat_model_factory(llm: ChatModel, *, metadata: OpenAIServerMetadata | None = None) -> OpenAIModel:

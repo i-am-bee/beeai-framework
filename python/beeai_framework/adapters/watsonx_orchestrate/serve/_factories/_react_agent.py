@@ -51,7 +51,7 @@ class WatsonxOrchestrateServerReActAgent(WatsonxOrchestrateServerAgent[ReActAgen
 
         # Tool events are emitted by the nested tool runs, which the run's own event stream
         # (match_nested=False) does not surface, so they are subscribed to explicitly.
-        run = cloned_agent.run(input).on(
+        run = cloned_agent.run(input, **self.run_options).on(
             lambda event: isinstance(event.creator, Tool) and event.name == "start",
             on_tool_start,
             EmitterOptions(match_nested=True),
