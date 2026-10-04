@@ -24,7 +24,7 @@ except ModuleNotFoundError as e:
 from typing import Unpack
 
 from beeai_framework.agents import AgentError, AgentOptions, BaseAgent
-from beeai_framework.backend.message import AnyMessage, AssistantMessage, Message, UserMessage
+from beeai_framework.backend.message import AnyMessage, AssistantMessage, Message, Role, UserMessage
 from beeai_framework.context import RunContext
 from beeai_framework.emitter import Emitter
 from beeai_framework.memory import BaseMemory
@@ -149,9 +149,11 @@ class ACPAgent(BaseAgent[ACPAgentOutput]):
 
     def _convert_to_agent_stack_message(self, input: str | AnyMessage | acp_models.Message) -> acp_models.Message:
         if isinstance(input, str):
-            return acp_models.Message(parts=[acp_models.MessagePart(content=input, role="user")])  # type: ignore[call-arg]
+            return acp_models.Message(role="user", parts=[acp_models.MessagePart(content=input)])
         elif isinstance(input, Message):
-            return acp_models.Message(parts=[acp_models.MessagePart(content=input.text, role=input.role)])  # type: ignore[call-arg]
+            # ACP keeps the role on the message and only knows "user" and "agent".
+            role = "user" if input.role == Role.USER else "agent"
+            return acp_models.Message(role=role, parts=[acp_models.MessagePart(content=input.text)])
         elif isinstance(input, acp_models.Message):
             return input
         else:
