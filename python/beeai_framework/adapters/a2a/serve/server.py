@@ -41,7 +41,7 @@ except ModuleNotFoundError as e:
         "Optional module [a2a] not found.\nRun 'pip install \"beeai-framework[a2a]\"' to install."
     ) from e
 
-from beeai_framework.agents import BaseAgent
+from beeai_framework.agents import AgentExecutionConfig, BaseAgent
 
 # pyrefly: ignore [deprecated]
 from beeai_framework.agents.tool_calling.agent import ToolCallingAgent
@@ -91,6 +91,9 @@ class A2AServerMetadata(TypedDict, total=False):
     """
     Whether to send trajectory data to the client.
     """
+
+    execution: AgentExecutionConfig
+    """Run defaults for built-in agents. Fields set to None retain the agent's defaults."""
 
 
 class A2AServer(
@@ -258,6 +261,7 @@ def _react_agent_factory(
         agent_card=_create_agent_card(metadata or {}, agent),
         memory_manager=memory_manager,
         send_trajectory=metadata.get("send_trajectory", None) if metadata is not None else None,
+        execution=metadata.get("execution", None) if metadata is not None else None,
     )
 
 
@@ -273,6 +277,7 @@ def _tool_calling_agent_factory(
         agent_card=_create_agent_card(metadata or {}, agent),
         memory_manager=memory_manager,
         send_trajectory=metadata.get("send_trajectory", None) if metadata is not None else None,
+        execution=metadata.get("execution", None) if metadata is not None else None,
     )
 
 
@@ -288,6 +293,7 @@ def _requirement_agent_factory(
         agent_card=_create_agent_card(metadata or {}, agent),
         memory_manager=memory_manager,
         send_trajectory=metadata.get("send_trajectory", None) if metadata is not None else None,
+        execution=metadata.get("execution", None) if metadata is not None else None,
     )
 
 
