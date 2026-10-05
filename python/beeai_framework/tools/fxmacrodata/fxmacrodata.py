@@ -87,7 +87,7 @@ class FXMacroDataTool(Tool[FXMacroDataToolInput, ToolRunOptions, JSONToolOutput[
     ) -> None:
         super().__init__(options)
         # USD works without a key; other currencies need one.
-        self.api_key = api_key or os.environ.get("FXMACRODATA_API_KEY")
+        self.api_key = (api_key or os.environ.get("FXMACRODATA_API_KEY") or "").strip() or None
         self.timeout = timeout
 
     async def clone(self) -> Self:
@@ -136,6 +136,8 @@ class FXMacroDataTool(Tool[FXMacroDataToolInput, ToolRunOptions, JSONToolOutput[
 
         headers = {"Accept": "application/json"}
         if self.api_key:
+            if any(char.isspace() or ord(char) < 32 for char in self.api_key):
+                raise ToolError("FXMacroData API key contains invalid characters")
             headers["X-API-Key"] = self.api_key
 
         async with httpx.AsyncClient(timeout=self.timeout) as client:
@@ -148,5 +150,17 @@ class FXMacroDataTool(Tool[FXMacroDataToolInput, ToolRunOptions, JSONToolOutput[
                 detail = response.text
             raise ToolError(f"FXMacroData request failed with status {response.status_code}: {detail}")
 
+        if response.is_redirect:
+            raise ToolError(f"FXMacroData returned an unexpected redirect (status {response.status_code})")
+
+        try:
+            payload = response.json()
+        except ValueError:
+            raise ToolError("FXMacroData returned a response that is not JSON") from None
+        if not isinstance(payload, dict):
+            raise ToolError("FXMacroData returned an unexpected response shape")
+        if "detail" in payload and "data" not in payload:
+            raise ToolError(f"FXMacroData request failed: {payload['detail']}")
+
         # Returned as-is. Keyless USD responses include a freemium_delay object describing the delay window.
-        return JSONToolOutput(response.json())
+        return JSONToolOutput(payload)

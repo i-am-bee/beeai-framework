@@ -170,6 +170,43 @@ async def test_error_includes_api_detail(tool: FXMacroDataTool, requests: list[h
 
 @pytest.mark.unit
 @pytest.mark.asyncio
+async def test_malformed_key_is_rejected_without_echo(requests: list[httpx.Request]) -> None:
+    with pytest.raises(ToolError) as raised:
+        await FXMacroDataTool(api_key="test-key\nX-Other: 1").run(
+            input={"operation": "data_catalogue", "currency": "USD"}
+        )
+
+    assert "test-key" not in str(raised.value)
+    assert not requests
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "response",
+    [
+        httpx.Response(200, json={"detail": "Unknown indicator"}),
+        httpx.Response(200, json=["unexpected"]),
+        httpx.Response(200, text="<html></html>"),
+        httpx.Response(302, headers={"Location": "https://elsewhere.example/"}),
+    ],
+)
+async def test_unexpected_response_raises_tool_error(
+    monkeypatch: pytest.MonkeyPatch, response: httpx.Response
+) -> None:
+    actual_client = httpx.AsyncClient
+
+    def factory(*args: Any, **kwargs: Any) -> httpx.AsyncClient:
+        kwargs["transport"] = httpx.MockTransport(lambda request: response)
+        return actual_client(*args, **kwargs)
+
+    monkeypatch.setattr(httpx, "AsyncClient", factory)
+    with pytest.raises(ToolError):
+        await FXMacroDataTool(api_key="test-key").run(input={"operation": "data_catalogue", "currency": "USD"})
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
 async def test_clone_keeps_configuration() -> None:
     tool = FXMacroDataTool(api_key="test-key", timeout=5)
     cloned = await tool.clone()
