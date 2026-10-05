@@ -3,19 +3,20 @@
 
 import time
 import uuid
-from collections.abc import AsyncIterable, Callable
+from collections.abc import Callable
 from functools import cached_property
 from typing import Any
 
-from fastapi import APIRouter, FastAPI, Header, HTTPException, status
+from fastapi import APIRouter, FastAPI, Header, HTTPException, Request, status
 from fastapi.responses import JSONResponse
-from sse_starlette import ServerSentEvent
 from sse_starlette.sse import EventSourceResponse
 
 import beeai_framework.adapters.openai.serve.responses._types as responses_types
 from beeai_framework.adapters.openai.serve._openai_model import OpenAIModel
+from beeai_framework.adapters.openai.serve._permissions import ApprovalRequest, OpenAIPermissionConfig, OpenAIRunManager
+from beeai_framework.adapters.openai.serve.responses._stream import approval_output, stream_response
 from beeai_framework.adapters.openai.serve.responses._utils import openai_input_to_beeai_message
-from beeai_framework.agents import AgentError, BaseAgent
+from beeai_framework.agents import AgentError
 from beeai_framework.agents.react import ReActAgentOutput
 from beeai_framework.agents.requirement import RequirementAgentOutput
 from beeai_framework.backend import (
@@ -29,9 +30,8 @@ from beeai_framework.backend import (
 )
 from beeai_framework.logger import Logger
 from beeai_framework.memory import UnconstrainedMemory
-from beeai_framework.serve import MemoryManager, init_agent_memory
+from beeai_framework.serve import MemoryManager
 from beeai_framework.serve.utils import is_api_key_valid
-from beeai_framework.utils.strings import to_json
 
 logger = Logger(__name__)
 
@@ -44,11 +44,13 @@ class ResponsesAPI:
         api_key: str | None = None,
         fast_api_kwargs: dict[str, Any] | None = None,
         memory_manager: MemoryManager,
+        permissions: OpenAIPermissionConfig | None = None,
     ) -> None:
         self._get_openai_model = get_openai_model
         self._api_key = api_key
         self._fast_api_kwargs = fast_api_kwargs or {}
         self._memory_manager = memory_manager
+        self._runs = OpenAIRunManager(permissions)
 
         self._router = APIRouter()
         self._router.add_api_route(
@@ -64,6 +66,7 @@ class ResponsesAPI:
         config.update(self._fast_api_kwargs)
 
         app = FastAPI(**config)
+        self._runs.install_lifespan(app)
         app.include_router(self._router)
 
         return app
@@ -71,9 +74,10 @@ class ResponsesAPI:
     async def handler(
         self,
         request: responses_types.ResponsesRequestBody,
+        http_request: Request,
         api_key: str | None = Header(None, alias="Authorization"),
     ) -> Any:
-        logger.debug(f"Received request\n{request.model_dump_json()}")
+        logger.debug(f"Received request for model {request.model}, stream={request.stream}")
 
         # API key validation
         if not is_api_key_valid(self._api_key, api_key, strip_bearer_prefix=True):
@@ -83,7 +87,6 @@ class ResponsesAPI:
             )
 
         instructions = [SystemMessage(request.instructions)] if request.instructions else []
-        messages = _transform_request_input(request.input)
         context_id = (
             (
                 request.conversation.id
@@ -96,235 +99,56 @@ class ResponsesAPI:
 
         openai_model = self._get_openai_model(request.model)
 
-        history = []
-        memory = None
-        if context_id:
-            if isinstance(openai_model._runnable, BaseAgent):
-                await init_agent_memory(openai_model._runnable, self._memory_manager, context_id)
-                memory = openai_model._runnable.memory
-            else:
+        stream = bool(request.stream)
+        if isinstance(request.input, list) and any(
+            isinstance(item, responses_types.ResponsesFunctionCallOutputInput) for item in request.input
+        ):
+            if len(request.input) != 1 or request.instructions:
+                raise HTTPException(400, "Send exactly one approval output, without new instructions or messages.")
+            item = request.input[0]
+            assert isinstance(item, responses_types.ResponsesFunctionCallOutputInput)
+            run = self._runs.resume(
+                item.call_id, item.output, model_id=openai_model.model_id, stream=stream, context_id=context_id
+            )
+        else:
+            messages = _transform_request_input(request.input)
+            memory = None
+            history = []
+            if context_id:
                 try:
                     memory = await self._memory_manager.get(context_id)
                 except KeyError:
                     memory = UnconstrainedMemory()
                     await self._memory_manager.set(context_id, memory)
-
-                history = memory.messages
+                history = list(memory.messages)
+            run = self._runs.start(
+                openai_model,
+                instructions + history + messages,
+                stream=stream,
+                context_id=context_id,
+                memory=memory,
+                memory_input=messages,
+            )
 
         response_id = f"resp_{uuid.uuid4()!s}"
         if request.stream:
-            sequence_number = 0
-            outputs: list[responses_types.ResponsesResponseOutput] = []
-
-            async def stream_events() -> AsyncIterable[ServerSentEvent]:
-                output: responses_types.ResponsesResponseOutput
-                last_type = None
-                output_index = 0
-                text = ""
-                output_item_id = None
-
-                def create_event(data: responses_types.BaseEvent, *, event_name: str | None = None) -> ServerSentEvent:
-                    nonlocal sequence_number
-                    sequence_number += 1
-                    return ServerSentEvent(data=to_json(data, sort_keys=False), event=event_name or data.type)
-
-                yield create_event(
-                    responses_types.ResponsesStreamResponseCreated(
-                        sequence_number=sequence_number,
-                        response=responses_types.ResponsesResponse(
-                            id=response_id,
-                            created=int(time.time()),
-                            status="in_progress",
-                            model=openai_model.model_id,
-                        ),
-                    ),
-                    event_name="response.created",
-                )
-                yield create_event(
-                    responses_types.ResponsesStreamResponseInProgress(
-                        sequence_number=sequence_number,
-                        response=responses_types.ResponsesResponse(
-                            id=response_id,
-                            created=int(time.time()),
-                            status="in_progress",
-                            model=openai_model.model_id,
-                        ),
-                    )
-                )
-                try:
-                    # pyrefly: ignore [bad-assignment]
-                    async for message in openai_model.stream(instructions + history + messages):
-                        if output_item_id is None or message.append is False:
-                            if output_item_id is not None:
-                                output = responses_types.ResponsesMessageOutput(
-                                    id=output_item_id,
-                                    status="completed",
-                                    content=[responses_types.ResponsesMessageContent(text=text)],
-                                )
-                                yield create_event(
-                                    responses_types.ResponsesStreamOutputItemDone(
-                                        sequence_number=sequence_number,
-                                        output_index=output_index,
-                                        item=output,
-                                    )
-                                )
-                                outputs.append(output)
-                                text = ""
-                                output_index += 1
-
-                                if last_type == "message":
-                                    yield create_event(
-                                        responses_types.ResponsesStreamOutputTextDone(
-                                            sequence_number=sequence_number,
-                                            output_index=output_index,
-                                            item_id=output_item_id,
-                                            text=text,
-                                        )
-                                    )
-                                    yield create_event(
-                                        responses_types.ResponsesStreamContentPartDone(
-                                            sequence_number=sequence_number,
-                                            item_id=output_item_id,
-                                            output_index=output_index,
-                                            part=responses_types.ResponsesStreamPartOutputText(text=text),
-                                        )
-                                    )
-
-                            match message.type:
-                                case "message":
-                                    output_item_id = f"msg_{uuid.uuid4()!s}"
-                                    yield create_event(
-                                        responses_types.ResponsesStreamOutputItemAdded(
-                                            sequence_number=sequence_number,
-                                            output_index=output_index,
-                                            item=responses_types.ResponsesMessageOutput(id=output_item_id),
-                                        )
-                                    )
-                                    yield create_event(
-                                        responses_types.ResponsesStreamContentPartAdded(
-                                            sequence_number=sequence_number,
-                                            item_id=output_item_id,
-                                            output_index=output_index,
-                                            part=responses_types.ResponsesStreamPartOutputText(text=""),
-                                        )
-                                    )
-                                case "reasoning":
-                                    output_item_id = f"rs_{uuid.uuid4()!s}"
-                                    output = responses_types.ResponsesReasoningOutput(
-                                        id=output_item_id,
-                                        status="completed",
-                                        content=responses_types.ResponsesReasoningContent(text=message.text),
-                                    )
-                                    yield create_event(
-                                        responses_types.ResponsesStreamOutputItemAdded(
-                                            sequence_number=sequence_number,
-                                            output_index=output_index,
-                                            item=output,
-                                        )
-                                    )
-                                    outputs.append(output)
-                                case "custom_tool_call":
-                                    output_item_id = f"ctc_{uuid.uuid4()!s}"
-                                    output = responses_types.ResponsesCustomToolCallOutput(
-                                        id=output_item_id,
-                                        name="tools_call",
-                                        input=message.text,
-                                        call_id=str(uuid.uuid4()),
-                                    )
-                                    yield create_event(
-                                        responses_types.ResponsesStreamOutputItemAdded(
-                                            sequence_number=sequence_number,
-                                            output_index=output_index,
-                                            item=output,
-                                        )
-                                    )
-                                    outputs.append(output)
-                                case _:
-                                    raise RuntimeError(f"Unknown message type: {message.type}")
-                            last_type = message.type
-
-                        if message.type == "message":
-                            yield create_event(
-                                responses_types.ResponsesStreamOutputTextDelta(
-                                    sequence_number=sequence_number,
-                                    output_index=output_index,
-                                    item_id=output_item_id,
-                                    delta=message.text,
-                                )
-                            )
-                            text += message.text
-
-                    assert output_item_id is not None
-
-                    yield create_event(
-                        responses_types.ResponsesStreamOutputTextDone(
-                            sequence_number=sequence_number,
-                            output_index=output_index,
-                            item_id=output_item_id,
-                            text=text,
-                        )
-                    )
-                    yield create_event(
-                        responses_types.ResponsesStreamContentPartDone(
-                            sequence_number=sequence_number,
-                            item_id=output_item_id,
-                            output_index=output_index,
-                            part=responses_types.ResponsesStreamPartOutputText(text=text),
-                        )
-                    )
-                    yield create_event(
-                        responses_types.ResponsesStreamOutputItemDone(
-                            sequence_number=sequence_number,
-                            output_index=output_index,
-                            item=responses_types.ResponsesMessageOutput(
-                                id=output_item_id,
-                                status="completed",
-                                content=[responses_types.ResponsesMessageContent(text=text)],
-                            ),
-                        )
-                    )
-                    outputs.append(
-                        responses_types.ResponsesMessageOutput(
-                            id=output_item_id,
-                            status="completed",
-                            content=[responses_types.ResponsesMessageContent(text=text)],
-                        )
-                    )
-                    yield create_event(
-                        responses_types.ResponsesStreamResponseCompleted(
-                            sequence_number=sequence_number,
-                            response=responses_types.ResponsesResponse(
-                                id=response_id,
-                                created=int(time.time()),
-                                status="completed",
-                                model=openai_model.model_id,
-                                output=outputs,
-                            ),
-                        )
-                    )
-
-                    if memory:
-                        await memory.add_many(messages)
-                        await memory.add_many([_response_output_to_message(output) for output in outputs])
-
-                except AgentError as err:
-                    yield create_event(
-                        responses_types.ResponsesStreamError(
-                            sequence_number=sequence_number,
-                            code="500",
-                            message=err.message,
-                            param=to_json(err.context, sort_keys=False),
-                        )
-                    )
-
-            return EventSourceResponse(stream_events())
+            return EventSourceResponse(stream_response(run, response_id, _response_output_to_message))
         else:
             try:
-                content = await openai_model.run(instructions + history + messages)
-
-                if memory:
-                    await memory.add_many(messages)
-                    await memory.add(content.last_message)
+                content = await run.result(http_request)
+                if isinstance(content, ApprovalRequest):
+                    return JSONResponse(
+                        content=responses_types.ResponsesResponse(
+                            id=response_id,
+                            created=int(time.time()),
+                            status="completed",
+                            model=openai_model.model_id,
+                            output=[approval_output(content)],
+                        ).model_dump()
+                    )
+                if run.memory is not None:
+                    await run.memory.add_many(run.memory_messages)
+                    await run.memory.add(content.last_message)
 
                 response = responses_types.ResponsesResponse(
                     id=response_id,
@@ -368,12 +192,18 @@ class ResponsesAPI:
 
 
 def _transform_request_input(
-    inputs: str | list[responses_types.ResponsesRequestInputMessage],
+    inputs: str | list[responses_types.ResponsesRequestInputMessage | responses_types.ResponsesFunctionCallOutputInput],
 ) -> list[AnyMessage]:
     if isinstance(inputs, str):
         return [UserMessage(inputs)]
     else:
-        return [openai_input_to_beeai_message(i) for i in inputs]
+        if any(not isinstance(item, responses_types.ResponsesRequestInputMessage) for item in inputs):
+            raise HTTPException(400, "Function outputs must answer a pending approval request.")
+        return [
+            openai_input_to_beeai_message(i)
+            for i in inputs
+            if isinstance(i, responses_types.ResponsesRequestInputMessage)
+        ]
 
 
 def _response_output_to_message(output: responses_types.ResponsesResponseOutput) -> AnyMessage:

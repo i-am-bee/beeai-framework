@@ -4,16 +4,24 @@
 import time
 import uuid
 from collections.abc import AsyncIterable, Callable
+from contextlib import aclosing
 from functools import cached_property
 from typing import Any
 
-from fastapi import APIRouter, FastAPI, Header, HTTPException, status
+from fastapi import APIRouter, FastAPI, Header, HTTPException, Request, status
 from fastapi.responses import JSONResponse
 from sse_starlette import ServerSentEvent
 from sse_starlette.sse import EventSourceResponse
 
 import beeai_framework.adapters.openai.serve.chat_completion._types as chat_completion_types
 from beeai_framework.adapters.openai.serve._openai_model import OpenAIModel
+from beeai_framework.adapters.openai.serve._permissions import (
+    APPROVAL_FUNCTION,
+    APPROVAL_PREFIX,
+    ApprovalRequest,
+    OpenAIPermissionConfig,
+    OpenAIRunManager,
+)
 from beeai_framework.adapters.openai.serve.chat_completion._utils import openai_message_to_beeai_message
 from beeai_framework.agents.react import ReActAgentOutput
 from beeai_framework.agents.requirement import RequirementAgentOutput
@@ -32,10 +40,12 @@ class ChatCompletionAPI:
         model_factory: Callable[[str], OpenAIModel],
         api_key: str | None = None,
         fast_api_kwargs: dict[str, Any] | None = None,
+        permissions: OpenAIPermissionConfig | None = None,
     ) -> None:
         self._model_factory = model_factory
         self._api_key = api_key
         self._fast_api_kwargs = fast_api_kwargs or {}
+        self._runs = OpenAIRunManager(permissions)
 
         self._router = APIRouter()
         self._router.add_api_route(
@@ -51,6 +61,7 @@ class ChatCompletionAPI:
         config.update(self._fast_api_kwargs)
 
         app = FastAPI(**config)
+        self._runs.install_lifespan(app)
         app.include_router(self._router)
 
         return app
@@ -58,9 +69,10 @@ class ChatCompletionAPI:
     async def handler(
         self,
         request: chat_completion_types.ChatCompletionRequestBody,
+        http_request: Request,
         api_key: str | None = Header(None, alias="Authorization"),
     ) -> Any:
-        logger.debug(f"Received request\n{request.model_dump_json()}")
+        logger.debug(f"Received request for model {request.model}, stream={request.stream}")
 
         # API key validation
         if not is_api_key_valid(self._api_key, api_key, strip_bearer_prefix=True):
@@ -69,32 +81,77 @@ class ChatCompletionAPI:
                 detail="Missing or invalid API key",
             )
 
-        messages = _transform_request_messages(request.messages)
         runnable = self._model_factory(request.model)
+        stream = bool(request.stream)
+        last = request.messages[-1] if request.messages else None
+        if isinstance(last, chat_completion_types.ToolMessage) and last.tool_call_id.startswith(APPROVAL_PREFIX):
+            if last.role != "tool" or not isinstance(last.content, str):
+                raise HTTPException(400, "Approval output must be a JSON string.")
+            run = self._runs.resume(last.tool_call_id, last.content, model_id=runnable.model_id, stream=stream)
+        else:
+            messages = _transform_request_messages(request.messages)
+            run = self._runs.start(runnable, messages, stream=stream)
 
         if request.stream:
             id = f"chatcmpl-{uuid.uuid4()!s}"
 
             async def stream_events() -> AsyncIterable[ServerSentEvent]:
-                async for message in runnable.stream(messages):
-                    data: dict[str, Any] = {
-                        "id": id,
-                        "object": "chat.completion.chunk",
-                        "model": runnable.model_id,
-                        "created": int(time.time()),
-                        "choices": [
-                            {
-                                "index": 0,
-                                "delta": {"role": message.role, "content": message.text},
-                                "finish_reason": message.finish_reason,
+                try:
+                    async with aclosing(run.events()) as events:
+                        async for message in events:
+                            if not isinstance(message, ApprovalRequest) and message.type != "message":
+                                continue
+                            approval = isinstance(message, ApprovalRequest)
+                            delta = (
+                                {"role": "assistant", "tool_calls": [{"index": 0, **_approval_tool_call(message)}]}
+                                if approval
+                                else {"role": message.role, "content": message.text}
+                            )
+                            data: dict[str, Any] = {
+                                "id": id,
+                                "object": "chat.completion.chunk",
+                                "model": runnable.model_id,
+                                "created": int(time.time()),
+                                "choices": [
+                                    {
+                                        "index": 0,
+                                        "delta": delta,
+                                        "finish_reason": "tool_calls" if approval else message.finish_reason,
+                                    }
+                                ],
                             }
-                        ],
-                    }
-                    yield ServerSentEvent(data=to_json(data, sort_keys=False), id=data["id"], event=data["object"])
+                            yield ServerSentEvent(
+                                data=to_json(data, sort_keys=False), id=data["id"], event=data["object"]
+                            )
+                except Exception as exc:
+                    code = str(exc.status_code) if isinstance(exc, HTTPException) else "server_error"
+                    message = str(exc.detail) if isinstance(exc, HTTPException) else str(exc)
+                    yield ServerSentEvent(
+                        data=to_json({"error": {"message": message, "type": "server_error", "code": code}}),
+                        event="error",
+                    )
+                yield ServerSentEvent(data="[DONE]")
 
             return EventSourceResponse(stream_events())
         else:
-            content = await runnable.run(messages)
+            content = await run.result(http_request)
+            if isinstance(content, ApprovalRequest):
+                return JSONResponse(
+                    content=chat_completion_types.ChatCompletionResponse(
+                        id=f"chatcmpl-{uuid.uuid4()!s}",
+                        created=int(time.time()),
+                        model=runnable.model_id,
+                        choices=[
+                            chat_completion_types.ChatCompletionChoice(
+                                index=0,
+                                message=chat_completion_types.ChatMessageResponse(
+                                    role="assistant", content=None, tool_calls=[_approval_tool_call(content)]
+                                ),
+                                finish_reason="tool_calls",
+                            )
+                        ],
+                    ).model_dump()
+                )
             response = chat_completion_types.ChatCompletionResponse(
                 id=str(uuid.uuid4()),
                 object="chat.completion",
@@ -126,6 +183,14 @@ class ChatCompletionAPI:
                 ),
             )
             return JSONResponse(content=response.model_dump())
+
+
+def _approval_tool_call(approval: ApprovalRequest) -> dict[str, Any]:
+    return {
+        "id": approval.call_id,
+        "type": "function",
+        "function": {"name": APPROVAL_FUNCTION, "arguments": approval.arguments},
+    }
 
 
 def _transform_request_messages(
