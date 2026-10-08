@@ -157,7 +157,7 @@ def _react_agent_factory(
                         case "thought" | "tool_name" | "tool_input" | "tool_output":
                             yield {data.update.key: update}
                         case "final_answer":
-                            yield acp_models.MessagePart(content=update, role="assistant")  # type: ignore[call-arg]
+                            yield acp_models.MessagePart(content=update)
 
     return ACPServerAgent(
         fn=run,
@@ -196,7 +196,7 @@ def _tool_calling_agent_factory(
                 last_msg = message
 
             if isinstance(data, ToolCallingAgentSuccessEvent) and data.state.result is not None:
-                yield acp_models.MessagePart(content=data.state.result.text, role="assistant")  # type: ignore[call-arg]
+                yield acp_models.MessagePart(content=data.state.result.text)
 
     return ACPServerAgent(
         fn=run,
@@ -235,7 +235,7 @@ def _requirement_agent_factory(
                 last_msg = message
 
             if isinstance(data, RequirementAgentSuccessEvent) and data.state.answer is not None:
-                yield acp_models.MessagePart(content=data.state.answer.text, role="assistant")  # type: ignore[call-arg]
+                yield acp_models.MessagePart(content=data.state.answer.text)
 
     return ACPServerAgent(
         fn=run,
