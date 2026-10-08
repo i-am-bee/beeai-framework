@@ -1,9 +1,11 @@
 # Copyright 2025 © BeeAI a Series of LF Projects, LLC
 # SPDX-License-Identifier: Apache-2.0
 
-from collections.abc import Callable
+import asyncio
+from collections.abc import AsyncIterator, Callable
+from contextlib import asynccontextmanager
 from typing import Any
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock, call, patch
 
 import pytest
 from pydantic import BaseModel
@@ -12,8 +14,11 @@ from beeai_framework.context import RunContext
 from beeai_framework.utils.strings import to_json
 
 pytest.importorskip("mcp", reason="Optional module [mcp] not installed.")
-from mcp import ClientSession, StdioServerParameters
-from mcp.types import CallToolResult, TextContent
+import anyio
+from mcp import ClientSession, McpError, StdioServerParameters
+from mcp.server.lowlevel import Server
+from mcp.shared.memory import MessageStream, create_client_server_memory_streams
+from mcp.types import CallToolResult, ListToolsRequest, ListToolsResult, PaginatedRequestParams, TextContent
 from mcp.types import Tool as MCPToolInfo
 
 from beeai_framework.tools import StringToolOutput, ToolError
@@ -113,8 +118,7 @@ class TestMCPTool:
     @pytest.mark.asyncio
     @pytest.mark.unit
     async def test_mcp_tool_from_client(self, mock_client_session: ClientSession, mock_tool_info: MCPToolInfo) -> None:
-        tools_result = MagicMock()
-        tools_result.tools = [mock_tool_info]
+        tools_result = ListToolsResult(tools=[mock_tool_info])
         mock_client_session.list_tools = AsyncMock(return_value=tools_result)  # type: ignore
 
         tools = await MCPTool.from_session(mock_client_session)
@@ -203,8 +207,7 @@ class TestAddNumbersTool:
         mock_client_session: ClientSession,
         add_numbers_tool_info: MCPToolInfo,
     ) -> None:
-        tools_result = MagicMock()
-        tools_result.tools = [add_numbers_tool_info]
+        tools_result = ListToolsResult(tools=[add_numbers_tool_info])
         mock_client_session.list_tools = AsyncMock(return_value=tools_result)  # type: ignore
 
         tools = await MCPTool.from_session(mock_client_session)
@@ -213,3 +216,150 @@ class TestAddNumbersTool:
         assert len(tools) == 1
         assert tools[0].name == "add_numbers"
         assert "adds two numbers" in tools[0].description.lower()
+
+
+@pytest.mark.asyncio
+@pytest.mark.unit
+@pytest.mark.parametrize("cursor", ["", "opaque+/=token"])
+async def test_discovery_follows_cursors_through_empty_pages(cursor: str) -> None:
+    session = AsyncMock(spec=ClientSession)
+    first = MCPToolInfo(name="first", inputSchema={"type": "object"})
+    last = MCPToolInfo(name="last", inputSchema={"type": "object"})
+    session.list_tools.side_effect = [
+        ListToolsResult(tools=[first], nextCursor=cursor),
+        ListToolsResult(tools=[], nextCursor="last-page"),
+        ListToolsResult(tools=[last]),
+    ]
+
+    tools = await MCPTool.from_client(session, smart_parsing=False, exclude_none=True)
+
+    assert [tool.name for tool in tools] == ["first", "last"]
+    assert all(tool._session is session for tool in tools)
+    assert all(tool._smart_parsing is False and tool._exclude_none is True for tool in tools)
+    assert session.list_tools.await_args_list == [
+        call(),
+        call(params=PaginatedRequestParams(cursor=cursor)),
+        call(params=PaginatedRequestParams(cursor="last-page")),
+    ]
+
+
+@pytest.mark.asyncio
+@pytest.mark.unit
+async def test_discovery_stops_on_repeated_cursor() -> None:
+    session = AsyncMock(spec=ClientSession)
+    first = MCPToolInfo(name="first", inputSchema={"type": "object"})
+    second = MCPToolInfo(name="second", inputSchema={"type": "object"})
+    session.list_tools.side_effect = [
+        ListToolsResult(tools=[first], nextCursor="loop"),
+        ListToolsResult(tools=[second], nextCursor="loop"),
+    ]
+
+    tools = await MCPTool.from_session(session)
+
+    assert [tool.name for tool in tools] == ["first", "second"]
+    assert session.list_tools.await_count == 2
+
+
+@pytest.mark.asyncio
+@pytest.mark.unit
+async def test_discovery_empty_result() -> None:
+    session = AsyncMock(spec=ClientSession)
+    session.list_tools.return_value = ListToolsResult(tools=[])
+
+    assert await MCPTool.from_session(session) == []
+    session.list_tools.assert_awaited_once_with()
+
+
+@pytest.mark.asyncio
+@pytest.mark.unit
+async def test_discovery_propagates_later_page_error_without_constructing_tools() -> None:
+    session = AsyncMock(spec=ClientSession)
+    error = RuntimeError("Unable to list the next page")
+    session.list_tools.side_effect = [
+        ListToolsResult(tools=[MCPToolInfo(name="first", inputSchema={})], nextCursor="next"),
+        error,
+    ]
+    with patch.object(MCPTool, "__init__", return_value=None) as constructor:
+        with pytest.raises(RuntimeError) as raised:
+            await MCPTool.from_session(session)
+        assert raised.value is error
+        constructor.assert_not_called()
+
+
+@pytest.mark.asyncio
+@pytest.mark.unit
+@pytest.mark.parametrize("later_page", [False, True])
+@pytest.mark.parametrize("cancel", [False, True])
+async def test_owned_transport_closes_when_discovery_stops(later_page: bool, cancel: bool) -> None:
+    server = Server("discovery-cleanup")
+    closed = asyncio.Event()
+    waiting = asyncio.Event()
+    owner_tasks: list[asyncio.Task[Any]] = []
+
+    @server.list_tools()
+    async def list_tools(request: ListToolsRequest) -> ListToolsResult:
+        cursor = request.params.cursor if request.params else None
+        if later_page and cursor is None:
+            return ListToolsResult(tools=[MCPToolInfo(name="first", inputSchema={})], nextCursor="next")
+        if cancel:
+            waiting.set()
+            await asyncio.Event().wait()
+        raise ValueError("Discovery failed")
+
+    @asynccontextmanager
+    async def transport() -> AsyncIterator[MessageStream]:
+        owner = asyncio.current_task()
+        assert owner is not None
+        owner_tasks.append(owner)
+        try:
+            async with (
+                create_client_server_memory_streams() as (client_streams, server_streams),
+                anyio.create_task_group() as group,
+            ):
+
+                async def run_server() -> None:
+                    await server.run(*server_streams, server.create_initialization_options())
+
+                group.start_soon(run_server)
+                try:
+                    yield client_streams
+                finally:
+                    group.cancel_scope.cancel()
+        finally:
+            closed.set()
+
+    discovery = asyncio.create_task(MCPTool.from_client(transport()))
+    try:
+        if cancel:
+            await asyncio.wait_for(waiting.wait(), timeout=5)
+            discovery.cancel()
+            with pytest.raises(asyncio.CancelledError):
+                await discovery
+        else:
+            with pytest.raises(McpError, match="Discovery failed"):
+                await asyncio.wait_for(discovery, timeout=5)
+        await asyncio.wait_for(closed.wait(), timeout=5)
+    finally:
+        for task in [discovery, *owner_tasks]:
+            if not task.done():
+                task.cancel()
+        await asyncio.gather(discovery, *owner_tasks, return_exceptions=True)
+
+
+@pytest.mark.asyncio
+@pytest.mark.unit
+async def test_failed_discovery_keeps_borrowed_session_open() -> None:
+    from mcp.shared.memory import create_connected_server_and_client_session
+
+    server = Server("borrowed-session")
+
+    @server.list_tools()
+    async def list_tools(request: ListToolsRequest) -> ListToolsResult:
+        if request.params is None:
+            return ListToolsResult(tools=[], nextCursor="next")
+        raise ValueError("Discovery failed")
+
+    async with create_connected_server_and_client_session(server) as session:
+        with pytest.raises(McpError, match="Discovery failed"):
+            await MCPTool.from_client(session)
+        await session.send_ping()
