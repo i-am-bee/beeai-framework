@@ -170,6 +170,7 @@ export class RunContext<T extends RunInstance, P = any> extends Serializable {
         // Copy back any modifications made by middleware to run_params
         runContext.runParams = startEvent.input;
         finishEvent.input = startEvent.input;
+        runContext.signal.throwIfAborted();
 
         const result: R2 = await Promise.race([
           RunContext.#storage.run(
