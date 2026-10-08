@@ -24,7 +24,7 @@
     "@astrojs/mdx": "^8.0.2",
     "@astrojs/starlight": "^0.42.4",
     "astro": "^7.3.5",
-    "sharp": "^0.34.5",
+    "sharp": "^0.35.5",
     "unist-util-visit": "^5.0.0"
   },
   "devDependencies": {
