@@ -40,8 +40,12 @@ export abstract class BaseAgent<
       this,
       { signal: options?.signal, params: [input, options] as const },
       async (context) => {
+        if (this.isRunning) {
+          throw new AgentError("Agent is already running!");
+        }
+
+        this.isRunning = true;
         try {
-          this.isRunning = true;
           // @ts-expect-error
           return await this._run(input, options, context);
         } catch (e) {
