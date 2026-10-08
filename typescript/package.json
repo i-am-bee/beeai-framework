@@ -279,6 +279,7 @@
     "@types/object-hash": "^3.0.6",
     "@types/turndown": "^5.0.6",
     "@types/uuid": "^10.0.0",
+    "@vitest/runner": "^4.1.11",
     "@zilliz/milvus2-sdk-node": "^2.6.5",
     "dotenv": "^17.2.3",
     "embedme": "^1.22.1",

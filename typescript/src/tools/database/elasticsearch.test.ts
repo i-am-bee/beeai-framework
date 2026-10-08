@@ -18,7 +18,9 @@ const mockClient = {
 };
 
 vi.mock("@elastic/elasticsearch", () => ({
-  Client: vi.fn(() => mockClient),
+  Client: vi.fn(function () {
+    return mockClient;
+  }),
 }));
 
 describe("ElasticSearchTool", () => {
