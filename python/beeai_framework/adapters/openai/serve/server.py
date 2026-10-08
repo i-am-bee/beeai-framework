@@ -11,6 +11,7 @@ from pydantic import BaseModel
 from typing_extensions import TypedDict, Unpack, override
 
 from beeai_framework.adapters.openai.serve._openai_model import OpenAIModel
+from beeai_framework.adapters.openai.serve._permissions import OpenAIPermissionConfig
 from beeai_framework.adapters.openai.serve.chat_completion.api import ChatCompletionAPI
 from beeai_framework.adapters.openai.serve.responses.api import ResponsesAPI
 from beeai_framework.agents.react import ReActAgent
@@ -47,6 +48,7 @@ class OpenAIServerConfig(BaseModel):
     api: OpenAIAPIType = OpenAIAPIType.CHAT_COMPLETION
     api_key: str | None = None
     fast_api_kwargs: dict[str, Any] | None = None
+    permissions: OpenAIPermissionConfig = OpenAIPermissionConfig()
 
 
 class OpenAIServerMetadata(TypedDict, total=False):
@@ -91,7 +93,10 @@ class OpenAIServer(
 
         api = (
             ChatCompletionAPI(
-                model_factory=_find_model, api_key=self._config.api_key, fast_api_kwargs=self._config.fast_api_kwargs
+                model_factory=_find_model,
+                api_key=self._config.api_key,
+                fast_api_kwargs=self._config.fast_api_kwargs,
+                permissions=self._config.permissions,
             )
             if self._config.api == OpenAIAPIType.CHAT_COMPLETION
             else ResponsesAPI(
@@ -99,6 +104,7 @@ class OpenAIServer(
                 api_key=self._config.api_key,
                 fast_api_kwargs=self._config.fast_api_kwargs,
                 memory_manager=self._memory_manager,
+                permissions=self._config.permissions,
             )
         )
 

@@ -109,3 +109,98 @@ You can easily call the exposed entities via cURL.
 	```
 
 </CodeGroup>
+
+<Heading level={2} id="permissions">Tool approval (Python)</Heading>
+
+When an agent uses `AskPermissionRequirement` with its default handler, the Python
+OpenAI server sends the approval to the client and suspends that invocation. It
+does not read the server's terminal. An explicit requirement `handler` continues
+to take precedence.
+
+The server uses the standard OpenAI function-calling envelope with a reserved
+function named `beeai_request_approval`. Its JSON arguments contain `prompt` and
+the confirmation metadata, including `data` with the proposed tool inputs. The
+client must show this information to the user and return a JSON string containing
+exactly `{"approve": true}` or `{"approve": false}`. The client handles the approval
+UI; it must **not execute the agent's tool itself**. The server resumes the original
+invocation and executes the tool only after approval. Denial is passed back to
+`AskPermissionRequirement` so that the agent can continue without that tool call.
+
+For Chat Completions, the approval appears in `choices[0].message.tool_calls`, with
+`finish_reason: "tool_calls"`. Return the decision as a `tool` message using the
+returned `tool_call_id`. A client-side example:
+
+```python
+import json
+from openai import OpenAI
+
+client = OpenAI(base_url="http://127.0.0.1:9998", api_key="your-server-api-key")
+messages = [{"role": "user", "content": "Check the weather in Prague"}]
+while True:
+    response = client.chat.completions.create(model="agent", messages=messages)
+    message = response.choices[0].message
+    if not message.tool_calls:
+        print(message.content)
+        break
+    call = message.tool_calls[0]
+    assert call.function.name == "beeai_request_approval"
+    print(json.loads(call.function.arguments))
+    approved = input("Allow this tool call? [y/N] ").strip().lower() == "y"
+    messages.append(message.model_dump(exclude_none=True))
+    messages.append({
+        "role": "tool",
+        "tool_call_id": call.id,
+        "content": json.dumps({"approve": approved}),
+    })
+```
+
+For Responses, the approval is a `function_call` output item. Reply to `/responses`
+with the same model and conversation (if used) and exactly one `function_call_output`:
+
+```json
+{
+  "model": "agent",
+  "input": [{
+    "type": "function_call_output",
+    "call_id": "<call_id from the approval function_call>",
+    "output": "{\"approve\": true}"
+  }]
+}
+```
+
+The `call_id` identifies the retained invocation; `previous_response_id` and
+replaying the original input are not required. Do not add new instructions or user
+messages to a Responses approval reply. Approval messages are control messages and
+are not added to conversation memory.
+
+Both APIs support `stream: true`. The stream ends after delivering the approval
+function call (`tool_calls` for Chat Completions; `response.output_item.added/done`
+and `response.completed` for Responses). Submit the decision in a new request with
+the **same `stream` value**. Multiple approvals are delivered one at a time, each
+with a new ID; previously completed steps are not rerun.
+
+Configure the wait time and the maximum number of pending approvals through the
+server configuration:
+
+```python
+config = OpenAIServerConfig(
+    api_key="your-server-api-key",
+    permissions={"timeout": 300, "max_pending": 128},
+)
+```
+
+`timeout` is in seconds and defaults to 300; `max_pending` defaults to 128. Expired,
+unknown, and already answered IDs return HTTP 404. Invalid decisions return 400;
+a changed model, conversation, or streaming mode returns 409. A conversation with
+a suspended invocation cannot start another invocation until it finishes or times
+out. Excess pending approvals fail without executing the protected tool (HTTP 503,
+or an error event if streaming has already begun).
+
+Pending invocations live in the server process. Use a single worker or sticky
+routing; restarting the server invalidates pending IDs. Treat approval IDs as
+confidential, single-use capabilities and protect the endpoint with `api_key` and
+your application's authentication. The built-in shared API key does not provide
+per-user ownership. A disconnected active request and server shutdown cancel its
+invocation; a successfully delivered approval retains the paused invocation until
+the client replies or the timeout expires. Arbitrary `io_read` prompts require an
+explicit handler and raise an error instead of falling back to server stdin.
