@@ -51,6 +51,11 @@ describe("Arxiv", () => {
       instance.run({
         ids: ["xx"],
       }),
-    ).rejects.toThrowError(new ToolError(`Request to ArXiv API has failed!`));
+    ).rejects.toThrowError(
+      expect.objectContaining({
+        name: ToolError.name,
+        message: "Request to ArXiv API has failed!",
+      }),
+    );
   });
 });

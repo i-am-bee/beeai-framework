@@ -28,8 +28,12 @@ describe("Calculator", () => {
   it("Throws", async () => {
     await expect(
       instance.run({
-        expression: "import",
+        expression: "import({})",
       }),
-    ).rejects.toThrowError();
+    ).rejects.toThrowError(
+      expect.objectContaining({
+        errors: [expect.objectContaining({ message: "Function import is disabled" })],
+      }),
+    );
   });
 });

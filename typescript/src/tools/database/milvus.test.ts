@@ -15,7 +15,9 @@ const mockClient = {
 };
 
 vi.mock("@zilliz/milvus2-sdk-node", () => ({
-  MilvusClient: vi.fn(() => mockClient),
+  MilvusClient: vi.fn(function () {
+    return mockClient;
+  }),
 }));
 
 describe("MilvusDatabaseTool", () => {

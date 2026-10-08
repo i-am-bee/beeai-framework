@@ -162,7 +162,10 @@ describe("Base Tool", () => {
 
     const tool = createDummyTool(options, handler);
     await expect(tool.run({ query: "Hello!" })).rejects.toThrowError(
-      new ToolError('Tool "DummyTool" has occurred an error!', errors),
+      expect.objectContaining({
+        name: ToolError.name,
+        message: 'Tool "DummyTool" has occurred an error!',
+      }),
     );
     expect(handler).toBeCalledTimes(expected.totalCalls);
   });
