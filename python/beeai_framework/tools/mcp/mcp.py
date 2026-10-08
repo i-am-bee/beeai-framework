@@ -128,8 +128,13 @@ class MCPTool(Tool[BaseModel, ToolRunOptions, JSONToolOutput]):
     async def from_session(cls, session: ClientSession, **options: Unpack[MCPToolKwargs]) -> list["MCPTool"]:
         tools_result = await session.list_tools()
         tools = list(tools_result.tools)
-        while tools_result.nextCursor is not None:
-            tools_result = await session.list_tools(params=PaginatedRequestParams(cursor=tools_result.nextCursor))
+        seen_cursors: set[str] = set()
+        while (cursor := tools_result.nextCursor) is not None:
+            if cursor in seen_cursors:
+                logger.warning(f"MCP server repeated tools/list cursor {cursor!r}; stopping pagination.")
+                break
+            seen_cursors.add(cursor)
+            tools_result = await session.list_tools(params=PaginatedRequestParams(cursor=cursor))
             tools.extend(tools_result.tools)
         return [MCPTool(session, tool, **options) for tool in tools]
 

@@ -245,6 +245,23 @@ async def test_discovery_follows_cursors_through_empty_pages(cursor: str) -> Non
 
 @pytest.mark.asyncio
 @pytest.mark.unit
+async def test_discovery_stops_on_repeated_cursor() -> None:
+    session = AsyncMock(spec=ClientSession)
+    first = MCPToolInfo(name="first", inputSchema={"type": "object"})
+    second = MCPToolInfo(name="second", inputSchema={"type": "object"})
+    session.list_tools.side_effect = [
+        ListToolsResult(tools=[first], nextCursor="loop"),
+        ListToolsResult(tools=[second], nextCursor="loop"),
+    ]
+
+    tools = await MCPTool.from_session(session)
+
+    assert [tool.name for tool in tools] == ["first", "second"]
+    assert session.list_tools.await_count == 2
+
+
+@pytest.mark.asyncio
+@pytest.mark.unit
 async def test_discovery_empty_result() -> None:
     session = AsyncMock(spec=ClientSession)
     session.list_tools.return_value = ListToolsResult(tools=[])
