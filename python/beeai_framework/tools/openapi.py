@@ -73,6 +73,36 @@ class OpenAPITool(Tool[BaseModel, ToolRunOptions, OpenAPIToolOutput]):
             )
         )
 
+    @staticmethod
+    def _validate_path_safe(base_url: str | None, path: str) -> str:
+        """Resolve a path against the base URL and ensure the host is not overridden.
+
+        Returns the resolved URL string.
+        Raises ToolError if the path is an absolute URL or changes the target host.
+        """
+        if not base_url:
+            raise ToolError("Base URL is required to resolve path.")
+
+        if path.startswith(("http://", "https://", "//")):
+            raise ToolError(f"Absolute URLs are not allowed as path input: {path}")
+
+        # Additional guard: check for scheme-like patterns that urljoin would treat as absolute
+        path_parsed = urlparse(path)
+        if path_parsed.scheme or path_parsed.netloc:
+            raise ToolError(f"Path must be a relative path, not a URL: {path}")
+
+        resolved = urljoin(base_url, path)
+        base_parsed = urlparse(base_url)
+        resolved_parsed = urlparse(resolved)
+
+        if resolved_parsed.netloc != base_parsed.netloc or resolved_parsed.scheme != base_parsed.scheme:
+            raise ToolError(
+                f"Resolved URL host {resolved_parsed.scheme}://{resolved_parsed.netloc} "
+                f"does not match base URL host {base_parsed.scheme}://{base_parsed.netloc}"
+            )
+
+        return resolved
+
     def _create_emitter(self) -> Emitter:
         return Emitter.root().child(
             namespace=["tool", "web", "openAPI", to_safe_word(self._name)],
@@ -210,8 +240,12 @@ class OpenAPITool(Tool[BaseModel, ToolRunOptions, OpenAPIToolOutput]):
         self, tool_input: BaseModel, options: ToolRunOptions | None, context: RunContext
     ) -> OpenAPIToolOutput:
         input_dict = tool_input.model_dump()
+
+        raw_path = input_dict.get("path", self.path) or ""
+        resolved_url = self._validate_path_safe(self.url, raw_path)
+
         # pyrefly: ignore [bad-specialization]
-        parsed_url = urlparse(urljoin(self.url, input_dict.get("path", self.path)))
+        parsed_url = urlparse(resolved_url)
         # pyrefly: ignore [bad-argument-type]
         search_params = parse_qs(parsed_url.query)
         search_params.update(input_dict.get("parameters", {}))
