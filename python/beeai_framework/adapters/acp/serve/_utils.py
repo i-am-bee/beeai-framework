@@ -20,8 +20,10 @@ def acp_msg_to_framework_msg(role: Role, content: str) -> Message[Any]:
             return CustomMessage(role=role, content=content)
 
 
+def acp_role_to_framework_role(role: str) -> Role:
+    """Map an ACP message role (`user`, `agent` or `agent/<name>`) to a framework role."""
+    return Role.USER if role == "user" else Role.ASSISTANT
+
+
 def acp_msgs_to_framework_msgs(messages: list[acp_models.Message]) -> list[Message[Any]]:
-    return [
-        acp_msg_to_framework_msg(Role(message.parts[0].role), str(message))  # type: ignore[attr-defined]
-        for message in messages
-    ]
+    return [acp_msg_to_framework_msg(acp_role_to_framework_role(message.role), str(message)) for message in messages]
