@@ -7,11 +7,12 @@ from typing import Any, Self
 
 import uvicorn
 from pydantic import BaseModel
-from typing_extensions import TypedDict, TypeVar, override
+from typing_extensions import TypedDict, TypeVar, Unpack, override
 
 import beeai_framework.adapters.watsonx_orchestrate.serve._factories as factories
 from beeai_framework.adapters.watsonx_orchestrate.serve.agent import WatsonxOrchestrateServerAgent
 from beeai_framework.adapters.watsonx_orchestrate.serve.api import WatsonxOrchestrateAPI
+from beeai_framework.agents import AgentExecutionConfig
 from beeai_framework.agents.react import ReActAgent
 from beeai_framework.agents.requirement import RequirementAgent
 from beeai_framework.agents.tool_calling import ToolCallingAgent
@@ -20,6 +21,7 @@ from beeai_framework.runnable import Runnable
 from beeai_framework.serve import MemoryManager
 from beeai_framework.serve.errors import FactoryAlreadyRegisteredError
 from beeai_framework.serve.server import Server
+from beeai_framework.serve.utils import agent_execution_options, checked_execution_config
 from beeai_framework.utils import ModelLike
 from beeai_framework.utils.models import to_model
 
@@ -44,7 +46,8 @@ class WatsonxOrchestrateServerConfig(BaseModel):
 
 
 class WatsonxOrchestrateServerMetadata(TypedDict, total=False):
-    pass
+    execution: AgentExecutionConfig
+    """Run defaults for built-in agents. Fields set to None retain the agent's defaults."""
 
 
 class WatsonxOrchestrateServer(
@@ -66,28 +69,33 @@ class WatsonxOrchestrateServer(
             memory_manager=memory_manager,
         )
         self._api_cls = api_cls
+        self._execution: AgentExecutionConfig | None = None
 
     def serve(self) -> None:
         if not self._members:
             raise ValueError("No agents registered to the server.")
 
-        member = self._members[0]
-        # pyrefly: ignore [missing-attribute]
-        factory = type(self)._factories[type(member)]
-
         api = self._api_cls(
-            create_agent=lambda: factory(member),
+            create_agent=self._create_agent,
             api_key=self._config.api_key,
             fast_api_kwargs=self._config.fast_api_kwargs,
             memory_manager=self._memory_manager,
         )
         uvicorn.run(api.app, host=self._config.host, port=self._config.port)
 
+    def _create_agent(self) -> AnyWatsonxOrchestrateServerAgentLike:
+        member = self._members[0]
+        # pyrefly: ignore [missing-attribute]
+        agent = type(self)._factories[type(member)](member)
+        agent.run_options = dict(agent_execution_options(self._execution))
+        return agent
+
     @override
-    def register(self, input: AnyAgentLike) -> Self:
+    def register(self, input: AnyAgentLike, **metadata: Unpack[WatsonxOrchestrateServerMetadata]) -> Self:
         if self._members:
             raise ValueError("WatsonxOrchestrateServer only supports one agent.")
 
+        self._execution = checked_execution_config(input, metadata.get("execution"))
         return super().register(input)
 
     @override

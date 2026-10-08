@@ -19,6 +19,7 @@ from beeai_framework.agents.requirement import RequirementAgent
 from beeai_framework.runnable import AnyRunnable, AnyRunnableTypeVar, Runnable
 from beeai_framework.serve import MemoryManager
 from beeai_framework.serve.errors import FactoryAlreadyRegisteredError
+from beeai_framework.serve.utils import checked_execution_config
 
 try:
     import a2a.server.agent_execution as a2a_agent_execution
@@ -41,7 +42,7 @@ except ModuleNotFoundError as e:
         "Optional module [a2a] not found.\nRun 'pip install \"beeai-framework[a2a]\"' to install."
     ) from e
 
-from beeai_framework.agents import BaseAgent
+from beeai_framework.agents import AgentExecutionConfig, BaseAgent
 
 # pyrefly: ignore [deprecated]
 from beeai_framework.agents.tool_calling.agent import ToolCallingAgent
@@ -91,6 +92,9 @@ class A2AServerMetadata(TypedDict, total=False):
     """
     Whether to send trajectory data to the client.
     """
+
+    execution: AgentExecutionConfig
+    """Run defaults for built-in agents. Fields set to None retain the agent's defaults."""
 
 
 class A2AServer(
@@ -171,6 +175,8 @@ class A2AServer(
         if len(self._members) != 0:
             raise ValueError("A2AServer only supports one agent.")
         else:
+            if "execution" in metadata:
+                metadata["execution"] = checked_execution_config(input, metadata["execution"])  # type: ignore[typeddict-item]
             super().register(input)
             self._metadata_by_agent[input] = metadata
             return self
@@ -258,6 +264,7 @@ def _react_agent_factory(
         agent_card=_create_agent_card(metadata or {}, agent),
         memory_manager=memory_manager,
         send_trajectory=metadata.get("send_trajectory", None) if metadata is not None else None,
+        execution=metadata.get("execution", None) if metadata is not None else None,
     )
 
 
@@ -273,6 +280,7 @@ def _tool_calling_agent_factory(
         agent_card=_create_agent_card(metadata or {}, agent),
         memory_manager=memory_manager,
         send_trajectory=metadata.get("send_trajectory", None) if metadata is not None else None,
+        execution=metadata.get("execution", None) if metadata is not None else None,
     )
 
 
@@ -288,6 +296,7 @@ def _requirement_agent_factory(
         agent_card=_create_agent_card(metadata or {}, agent),
         memory_manager=memory_manager,
         send_trajectory=metadata.get("send_trajectory", None) if metadata is not None else None,
+        execution=metadata.get("execution", None) if metadata is not None else None,
     )
 
 

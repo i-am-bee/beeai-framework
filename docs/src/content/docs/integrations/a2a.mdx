@@ -168,3 +168,13 @@ The `A2AAgent` lets you easily connect with external agents using the A2A protoc
 	```
 
 </CodeGroup>
+
+**Agent execution (Python)**
+
+Pass `execution=AgentExecutionConfig(...)` to `server.register()` to configure
+`max_iterations`, `total_max_retries`, and `max_retries_per_step` for the built-in
+`RequirementAgent`, `ToolCallingAgent`, and `ReActAgent`. These options apply to every
+request served by that registration. Omitted fields and fields set to `None` retain the
+agent's own defaults. The configuration is copied during registration, and non-empty
+execution configuration is rejected for other runnable types.
+

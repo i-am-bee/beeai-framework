@@ -13,6 +13,7 @@ from typing_extensions import TypedDict, Unpack, override
 from beeai_framework.adapters.openai.serve._openai_model import OpenAIModel
 from beeai_framework.adapters.openai.serve.chat_completion.api import ChatCompletionAPI
 from beeai_framework.adapters.openai.serve.responses.api import ResponsesAPI
+from beeai_framework.agents import AgentExecutionConfig
 from beeai_framework.agents.react import ReActAgent
 from beeai_framework.agents.requirement import RequirementAgent
 from beeai_framework.backend import ChatModel
@@ -21,6 +22,7 @@ from beeai_framework.runnable import AnyRunnable, AnyRunnableTypeVar, Runnable
 from beeai_framework.serve import MemoryManager
 from beeai_framework.serve.errors import FactoryAlreadyRegisteredError
 from beeai_framework.serve.server import Server
+from beeai_framework.serve.utils import checked_execution_config
 from beeai_framework.utils import ModelLike
 from beeai_framework.utils.models import to_model
 
@@ -52,6 +54,8 @@ class OpenAIServerConfig(BaseModel):
 class OpenAIServerMetadata(TypedDict, total=False):
     name: str
     description: str
+    execution: AgentExecutionConfig
+    """Run defaults for built-in agents. Fields set to None retain the agent's defaults."""
 
 
 class OpenAIServer(
@@ -113,6 +117,8 @@ class OpenAIServer(
 
     @override
     def register(self, input: AnyRunnableTypeVar, **metadata: Unpack[OpenAIServerMetadata]) -> Self:
+        if "execution" in metadata:
+            metadata["execution"] = checked_execution_config(input, metadata["execution"])  # type: ignore[typeddict-item]
         super().register(input)
         self._metadata_by_agent[input] = metadata
         return self

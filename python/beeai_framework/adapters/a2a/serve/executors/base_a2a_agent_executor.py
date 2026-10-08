@@ -9,6 +9,7 @@ from beeai_framework.backend.message import (
     AnyMessage,
 )
 from beeai_framework.serve import MemoryManager, init_agent_memory
+from beeai_framework.serve.utils import agent_execution_options
 from beeai_framework.utils.cloneable import Cloneable
 
 try:
@@ -22,7 +23,7 @@ except ModuleNotFoundError as e:
         "Optional module [a2a] not found.\nRun 'pip install \"beeai-framework[a2a]\"' to install."
     ) from e
 
-from beeai_framework.agents import AnyAgent
+from beeai_framework.agents import AgentExecutionConfig, AnyAgent
 from beeai_framework.logger import Logger
 
 AnyAgentLike = TypeVar("AnyAgentLike", bound=AnyAgent, default=AnyAgent)
@@ -38,9 +39,11 @@ class BaseA2AAgentExecutor(BaseA2AExecutor[AnyAgentLike]):
         *,
         memory_manager: MemoryManager,
         send_trajectory: bool | None = True,
+        execution: AgentExecutionConfig | None = None,
     ) -> None:
         super().__init__(runnable=agent, agent_card=agent_card, memory_manager=memory_manager)
         self._send_trajectory = send_trajectory
+        self._execution_options = agent_execution_options(execution)
 
     @override
     async def execute(
@@ -64,9 +67,9 @@ class BaseA2AAgentExecutor(BaseA2AExecutor[AnyAgentLike]):
         await updater.start_work()
         try:
             # pyrefly: ignore [missing-attribute]
-            response = await cloned_agent.run(new_messages, signal=self._abort_controller.signal).observe(
-                lambda emitter: self._process_events(emitter, context, updater) if self._send_trajectory else ...
-            )
+            response = await cloned_agent.run(
+                new_messages, signal=self._abort_controller.signal, **self._execution_options
+            ).observe(lambda emitter: self._process_events(emitter, context, updater) if self._send_trajectory else ...)
 
             await updater.complete(
                 a2a_utils.new_agent_text_message(
