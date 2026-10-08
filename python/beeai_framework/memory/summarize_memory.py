@@ -49,7 +49,9 @@ Summary:""".format("\n".join([f"{msg.role}: {msg.text}" for msg in messages]))
 
         response = await self._model.run([prompt])
 
-        return response.output[0].get_texts()[0].text
+        # A streamed response merges its chunks into one message with a text part per
+        # chunk, so read all of them rather than the first.
+        return response.get_text_content()
 
     async def delete(self, message: AnyMessage) -> bool:
         """Delete a message from memory."""

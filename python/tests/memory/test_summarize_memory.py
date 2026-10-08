@@ -9,6 +9,7 @@ from beeai_framework.backend import (
     AssistantMessage,
     ChatModel,
     ChatModelOutput,
+    ChatModelParameters,
     SystemMessage,
     UserMessage,
 )
@@ -21,8 +22,11 @@ from beeai_framework.memory.summarize_memory import SummarizeMemory
 class _StubSummaryModel(ChatModel):
     """Minimal ChatModel that returns a fixed summary and records the prompts it received."""
 
-    def __init__(self, summary: str = "SUMMARY") -> None:
-        super().__init__()
+    def __init__(self, summary: str = "SUMMARY", parameters: ChatModelParameters | None = None) -> None:
+        if parameters is None:
+            super().__init__()
+        else:
+            super().__init__(parameters=parameters)
         self._summary = summary
         self.prompts: list[str] = []
 
@@ -40,6 +44,24 @@ class _StubSummaryModel(ChatModel):
 
     async def _create_stream(self, input: ChatModelInput, run: RunContext) -> AsyncGenerator[ChatModelOutput]:
         yield await self._create(input, run)
+
+
+class _StreamingSummaryModel(_StubSummaryModel):
+    """Streams the summary token by token, as providers do with stream=True."""
+
+    async def _create_stream(self, input: ChatModelInput, run: RunContext) -> AsyncGenerator[ChatModelOutput]:
+        for token in ["The ", "user ", "said ", "hello."]:
+            yield ChatModelOutput(output=[AssistantMessage(token, id="summary")])
+
+
+@pytest.mark.asyncio
+@pytest.mark.unit
+async def test_streamed_summary_keeps_every_chunk() -> None:
+    memory = SummarizeMemory(_StreamingSummaryModel(parameters=ChatModelParameters(stream=True)))
+
+    await memory.add(UserMessage("hello"))
+
+    assert memory.messages[0].text == "The user said hello."
 
 
 @pytest.mark.asyncio
