@@ -307,7 +307,7 @@ def tool(
                 )
 
             async def _run(self, input: Any, options: ToolRunOptions | None, context: RunContext) -> ToolOutput:
-                tool_input_dict = input.model_dump()
+                tool_input_dict = dict(input)
                 if with_context:
                     tool_input_dict["context"] = context
 
