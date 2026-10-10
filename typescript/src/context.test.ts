@@ -169,6 +169,82 @@ describe("RunContext cancellation", () => {
     }
   });
 
+  it.each(["external signal", "context"])(
+    "Rejects cancellation from %s during the handler's synchronous prefix",
+    async (mode) => {
+      const controller = new AbortController();
+      const reason = new Error("Run cancelled during initialization");
+      const instance = { emitter: new Emitter() };
+      const events: { name: string; data: unknown }[] = [];
+      let release: () => void = () => {};
+      const handler = vi.fn(async (context: RunContext<typeof instance>) => {
+        if (mode === "external signal") {
+          controller.abort(reason);
+        } else {
+          context.abort(reason);
+        }
+        await new Promise<void>((resolve) => {
+          release = resolve;
+        });
+        return "released result";
+      });
+      const run = RunContext.enter(
+        instance,
+        { signal: controller.signal, params: [] },
+        handler,
+      ).observe((emitter) => {
+        emitter.match("*.*", (data, event) => events.push({ name: event.name, data }));
+      });
+      try {
+        const error = await Promise.race([
+          run.catch((error: FrameworkError) => error),
+          delay(100).then(() => "pending"),
+        ]);
+        expect(error).toBeInstanceOf(FrameworkError);
+        expect((error as FrameworkError).getCause()).toBe(reason);
+        expect(handler).toHaveBeenCalledOnce();
+        expect(events.map((event) => event.name)).toEqual(["start", "error", "finish"]);
+        expect(events[1].data).toBe(error);
+        expect(events[2].data).toEqual({ input: [], output: error });
+        release();
+        await delay(5);
+        expect(events.map((event) => event.name)).toEqual(["start", "error", "finish"]);
+      } finally {
+        release();
+        await run.catch(() => {});
+        instance.emitter.destroy();
+      }
+    },
+  );
+
+  it("Preserves a synchronous handler error after cancellation", async () => {
+    const instance = { emitter: new Emitter() };
+    const abortReason = new Error("Cancelled");
+    const handlerError = new Error("Handler failed");
+    const events: string[] = [];
+    const run = RunContext.enter(instance, { params: [] }, (context) => {
+      context.abort(abortReason);
+      throw handlerError;
+    }).observe((emitter) => {
+      emitter.match("*.*", (_, event) => events.push(event.name));
+      emitter.match(
+        (event) => event.name === "error",
+        async () => {
+          await delay(20);
+        },
+      );
+    });
+    try {
+      const error = await run.catch((error: FrameworkError) => error);
+      expect(error).toBeInstanceOf(FrameworkError);
+      expect((error as FrameworkError).getCause()).toBe(handlerError);
+      expect(events).toEqual(["start", "error", "finish"]);
+      await delay(5);
+    } finally {
+      instance.emitter.destroy();
+    }
+  });
+
   it("Rejects a pre-cancelled public agent run without invoking the agent", async () => {
     class TestAgent extends BaseAgent<string, string> {
       memory = new UnconstrainedMemory();
