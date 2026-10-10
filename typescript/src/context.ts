@@ -172,18 +172,29 @@ export class RunContext<T extends RunInstance, P = any> extends Serializable {
         finishEvent.input = startEvent.input;
         runContext.signal.throwIfAborted();
 
-        const result: R2 = await Promise.race([
-          RunContext.#storage.run(
-            runContext,
-            startEvent.output === undefined ? fn : async () => startEvent.output,
-            runContext,
-          ),
-          new Promise<never>((_, reject) =>
-            runContext.signal.addEventListener("abort", () =>
-              setTimeout(() => reject(runContext.signal.reason), 0),
+        let abortTimer: ReturnType<typeof setTimeout> | undefined;
+        let onAbort!: () => void;
+        const abortPromise = new Promise<never>((_, reject) => {
+          onAbort = () => {
+            abortTimer = setTimeout(() => reject(runContext.signal.reason), 0);
+          };
+          runContext.signal.addEventListener("abort", onAbort);
+        });
+
+        let result: R2;
+        try {
+          result = await Promise.race([
+            RunContext.#storage.run(
+              runContext,
+              startEvent.output === undefined ? fn : async () => startEvent.output,
+              runContext,
             ),
-          ),
-        ]);
+            abortPromise,
+          ]);
+        } finally {
+          runContext.signal.removeEventListener("abort", onAbort);
+          clearTimeout(abortTimer);
+        }
         finishEvent.output = result;
         await emitter.emit("success", result);
         return result;
