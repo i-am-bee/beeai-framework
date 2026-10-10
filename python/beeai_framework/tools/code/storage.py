@@ -5,8 +5,11 @@ import hashlib
 import os
 import shutil
 from abc import ABC, abstractmethod
+from pathlib import Path
 
 from pydantic import BaseModel
+
+from beeai_framework.tools.errors import ToolError
 
 
 class PythonFile(BaseModel):
@@ -85,21 +88,41 @@ class LocalPythonStorage(PythonStorage):
         self.init()
 
         for file in files:
-            shutil.copyfile(
-                os.path.join(self._local_working_dir, file.filename),
-                os.path.join(self._interpreter_working_dir, file.python_id),
-            )
+            source_path = self._resolve_safe_path(self._local_working_dir, file.filename, follow_symlinks=False)
+            dest_path = self._resolve_safe_path(self._interpreter_working_dir, file.python_id, follow_symlinks=False)
+            shutil.copyfile(str(source_path), str(dest_path))
         return files
 
     async def download(self, files: list[PythonFile]) -> list[PythonFile]:
         self.init()
 
         for file in files:
-            shutil.copyfile(
-                os.path.join(self._interpreter_working_dir, file.python_id),
-                os.path.join(self._local_working_dir, file.filename),
-            )
+            source_path = self._resolve_safe_path(self._interpreter_working_dir, file.python_id)
+            target_path = self._resolve_safe_path(self._local_working_dir, file.filename)
+            os.makedirs(target_path.parent, exist_ok=True)
+            shutil.copyfile(str(source_path), str(target_path))
         return files
+
+    @staticmethod
+    def _resolve_safe_path(base_dir: str, name: str, *, follow_symlinks: bool = True) -> Path:
+        """Resolve a file path and ensure it stays within the base directory.
+
+        Args:
+            base_dir: The directory the path must stay within.
+            name: The untrusted filename or relative path to validate.
+            follow_symlinks: If True, resolve symlinks (use for untrusted names).
+                If False, use lexical normalization only (use for trusted names
+                where symlinks should be preserved).
+
+        Returns:
+            The validated absolute path.
+        """
+        base = Path(base_dir).resolve()
+        target = base / name
+        target = target.resolve() if follow_symlinks else Path(os.path.normpath(target))
+        if not target.is_relative_to(base):
+            raise ToolError(f"Path traversal detected: {name}")
+        return target
 
     @staticmethod
     def _compute_hash(file_path: str) -> str:
