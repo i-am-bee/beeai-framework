@@ -7,7 +7,7 @@ import { createConsoleReader } from "examples/helpers/io.js";
 import { Message } from "beeai-framework/backend/message";
 import { isEmpty } from "remeda";
 import { LLMTool } from "beeai-framework/tools/llm";
-import { GoogleSearchTool } from "beeai-framework/tools/search/googleSearch";
+import { DuckDuckGoSearchTool } from "beeai-framework/tools/search/duckDuckGoSearch";
 import { GroqChatModel } from "beeai-framework/adapters/groq/backend/chat";
 
 const schema = z.object({
@@ -66,7 +66,7 @@ const workflow = new Workflow({
     const agent = new ReActAgent({
       llm,
       memory: new UnconstrainedMemory(),
-      tools: [new GoogleSearchTool(), new LLMTool({ llm })],
+      tools: [new DuckDuckGoSearchTool(), new LLMTool({ llm })],
     });
 
     agent.emitter.on("update", (data) => {

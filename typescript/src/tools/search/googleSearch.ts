@@ -19,6 +19,7 @@ import { RunContext } from "@/context.js";
 import { paginate } from "@/internals/helpers/paginate.js";
 import { ValidationError } from "ajv";
 import { Emitter } from "@/emitter/emitter.js";
+import { Logger } from "@/logger/logger.js";
 
 export interface GoogleSearchToolOptions extends SearchToolOptions {
   apiKey?: string;
@@ -50,6 +51,10 @@ export class GoogleSearchToolOutput extends SearchToolOutput<GoogleSearchToolRes
   }
 }
 
+/**
+ * @deprecated Google's Custom Search JSON API, which this tool wraps, is closed to new customers
+ * and will be discontinued on January 1, 2027. Use DuckDuckGoSearchTool or another search tool instead.
+ */
 export class GoogleSearchTool extends Tool<
   GoogleSearchToolOutput,
   GoogleSearchToolOptions,
@@ -76,6 +81,9 @@ export class GoogleSearchTool extends Tool<
 
   public constructor(options: GoogleSearchToolOptions = { maxResults: 10 }) {
     super(options);
+    Logger.root.warn(
+      "The GoogleSearchTool is deprecated and will be removed soon. Google's Custom Search JSON API is closed to new customers and will be discontinued on January 1, 2027. Use DuckDuckGoSearchTool or another search tool instead.",
+    );
 
     this.apiKey = options.apiKey || parseEnv("GOOGLE_API_KEY", z.string());
     this.cseId = options.cseId || parseEnv("GOOGLE_CSE_ID", z.string());
