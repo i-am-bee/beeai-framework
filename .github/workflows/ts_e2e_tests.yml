@@ -35,8 +35,6 @@ jobs:
       - run: mise typescript:test:e2e
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-          GOOGLE_API_KEY: ${{ secrets.GOOGLE_SEARCH_API_KEY }}
-          GOOGLE_CSE_ID: ${{ secrets.GOOGLE_SEARCH_CSE_ID }}
           # AZURE_OPENAI_API_ENDPOINT: ${{ secrets.AZURE_OPENAI_API_ENDPOINT }}
           # AZURE_OPENAI_API_DEPLOYMENT: ${{ secrets.AZURE_OPENAI_API_DEPLOYMENT }}
           # AZURE_OPENAI_API_KEY: ${{ secrets.AZURE_OPENAI_API_KEY }}

@@ -11,26 +11,16 @@ import { UnconstrainedMemory } from "@/memory/unconstrainedMemory.js";
 import { Message } from "@/backend/message.js";
 import { createCallbackRegister } from "@tests/e2e/utils.js";
 import { omitEmptyValues } from "@/internals/helpers/object.js";
-import * as process from "node:process";
 import { createChatLLM } from "@tests/utils/llmFactory.js";
 import { ReActAgentMeta } from "@/agents/react/types.js";
-import { GoogleSearchTool } from "@/tools/search/googleSearch.js";
+import { WikipediaTool } from "@/tools/search/wikipedia.js";
 
-const googleSearchApiKey = process.env.GOOGLE_API_KEY;
-const googleSearchCseId = process.env.GOOGLE_CSE_ID;
-
-describe.runIf(Boolean(googleSearchApiKey && googleSearchCseId))("ReAct Agent", () => {
+describe("ReAct Agent", () => {
   const createAgent = () => {
     return new ReActAgent({
       llm: createChatLLM(),
       memory: new UnconstrainedMemory(),
-      tools: [
-        new GoogleSearchTool({
-          apiKey: googleSearchApiKey,
-          cseId: googleSearchCseId,
-          maxResults: 10,
-        }),
-      ],
+      tools: [new WikipediaTool()],
     });
   };
 
@@ -66,8 +56,7 @@ describe.runIf(Boolean(googleSearchApiKey && googleSearchCseId))("ReAct Agent", 
     }
   });
 
-  // TODO: re-enable once the CI Google Search credentials are valid again (GoogleSearch returns "API key not valid").
-  it.skip("Runs", async () => {
+  it("Runs", async () => {
     const callbacks = createCallbackRegister();
     const userLogger = Logger.of({ name: "user" });
     const agent = createAgent();
