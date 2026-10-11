@@ -192,10 +192,12 @@ class RequirementAgent(BaseAgent[RequirementAgentOutput]):
             backstory=kwargs.get("backstory"),
             expected_output=kwargs.get("expected_output"),
         )
-        await runner.add_messages(self.memory.messages)
-        await runner.add_messages(new_messages)
-
-        final_state = await runner.run()
+        try:
+            await runner.add_messages(self.memory.messages)
+            await runner.add_messages(new_messages)
+            final_state = await runner.run()
+        finally:
+            runner.destroy()
 
         if self._save_intermediate_steps:
             self.memory.reset()
