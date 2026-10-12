@@ -170,6 +170,9 @@ ConditionalRequirement(ThinkTool, force_at_step=1)
 # Declare: require weather check before web search
 ConditionalRequirement(DuckDuckGoSearchTool, only_after=[OpenMeteoTool])
 
+# Declare: stop offering weather lookup once web search has run
+ConditionalRequirement(OpenMeteoTool, only_before=[DuckDuckGoSearchTool])
+
 # Declare: prevent consecutive uses of same tool
 ConditionalRequirement(OpenMeteoTool(), consecutive_allowed=False)
 ```
