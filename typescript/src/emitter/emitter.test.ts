@@ -8,6 +8,50 @@ import { describe, expect } from "vitest";
 import { EventMeta } from "@/emitter/types.js";
 
 describe("Emitter", () => {
+  it("Releases a destroyed child's cleanup from its parent", () => {
+    const parent = new Emitter();
+    const child = parent.child();
+    expect(parent.createSnapshot().cleanups).toHaveLength(1);
+    child.destroy();
+    child.destroy();
+    expect(parent.createSnapshot().cleanups).toHaveLength(0);
+  });
+
+  it("Keeps active siblings piped when another child is destroyed", async () => {
+    const parent = new Emitter();
+    const first = parent.child();
+    const second = parent.child();
+    const listener = vitest.fn();
+    parent.match("*.*", listener);
+    first.destroy();
+    await first.emit("event", null);
+    await second.emit("event", null);
+    expect(listener).toHaveBeenCalledOnce();
+    expect(parent.createSnapshot().cleanups).toHaveLength(1);
+    second.destroy();
+    expect(parent.createSnapshot().cleanups).toHaveLength(0);
+  });
+
+  it("Allows children to be destroyed after their parent", () => {
+    const parent = new Emitter();
+    const children = [parent.child(), parent.child()];
+    parent.destroy();
+    for (const child of children) {
+      child.destroy();
+    }
+    expect(parent.createSnapshot().cleanups).toHaveLength(0);
+  });
+
+  it("Can destroy a child after a trusted serialization round trip", async () => {
+    const parent = new Emitter();
+    const child = parent.child();
+    const restored = await Emitter.fromSerialized(await child.serialize(), {
+      allowFunctionDeserialization: true,
+    });
+    expect(() => restored.destroy()).not.toThrow();
+    child.destroy();
+  });
+
   it("Emits", async () => {
     const emitter = new Emitter({
       namespace: ["app"],
