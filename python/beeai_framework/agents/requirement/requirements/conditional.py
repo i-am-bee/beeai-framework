@@ -177,7 +177,7 @@ class ConditionalRequirement(Generic[TInput], Requirement[TInput]):
         if invocations >= self._max_invocations:
             return resolve(False)
 
-        if self._after:
+        if self._before or self._after:
             steps_as_tool_calls: list[AnyTool | None] = [s.tool for s in steps if s.tool is not None]
             after_tools_remaining = self._after.copy()
 

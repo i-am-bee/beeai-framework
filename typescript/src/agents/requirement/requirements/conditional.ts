@@ -214,16 +214,16 @@ export class ConditionalRequirement extends Requirement {
     }
 
     // Check after/before constraints
-    if (this.after.size > 0) {
+    if (this.before.size > 0 || this.after.size > 0) {
       const stepsAsToolCalls = steps.map((step) => step.tool).filter(isTruthy);
       const afterToolsRemaining = new Set(this.after);
 
       for (const stepTool of stepsAsToolCalls) {
-        if (targetSeenIn(stepTool, this.forceAfterSet)) {
+        if (targetSeenIn(stepTool, this.before)) {
           return resolve(false);
         }
 
-        const matcher = targetSeenIn(stepTool as any, this.after);
+        const matcher = targetSeenIn(stepTool, this.after);
         if (matcher) {
           afterToolsRemaining.delete(matcher);
         }
