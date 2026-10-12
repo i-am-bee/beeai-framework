@@ -87,6 +87,18 @@ export class Emitter<T = Record<keyof any, Callback<unknown>>> extends Serializa
 
     const cleanup = child.pipe(this);
     this.cleanups.push(cleanup);
+    const parentCleanups = this.cleanups;
+    child.cleanups.push(
+      toBoundedFunction(() => {
+        const index = parentCleanups.indexOf(cleanup);
+        if (index !== -1) {
+          parentCleanups.splice(index, 1);
+        }
+      }, [
+        { value: parentCleanups, name: "parentCleanups" },
+        { value: cleanup, name: "cleanup" },
+      ]),
+    );
 
     return child;
   }
