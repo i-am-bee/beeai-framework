@@ -9,6 +9,7 @@ from beeai_framework.agents.requirement.requirements.conditional import Conditio
 from beeai_framework.agents.requirement.requirements.requirement import RequirementError, Rule
 from beeai_framework.agents.requirement.types import RequirementAgentRunState, RequirementAgentRunStateStep
 from beeai_framework.context import RunContext
+from beeai_framework.errors import FrameworkError
 from beeai_framework.memory import UnconstrainedMemory
 from beeai_framework.tools import AnyTool, StringToolOutput, tool
 
@@ -126,3 +127,27 @@ async def test_only_before_raises_when_force_at_step_cannot_be_satisfied() -> No
 
     with pytest.raises(RequirementError):
         await _rule(requirement, other_tool)
+
+
+@pytest.mark.asyncio
+@pytest.mark.unit
+async def test_only_before_accepts_tool_names() -> None:
+    requirement = await _create_requirement(only_before=["other_tool"])
+
+    assert (await _rule(requirement)).allowed is True
+    assert (await _rule(requirement, other_tool)).allowed is False
+
+
+@pytest.mark.asyncio
+@pytest.mark.unit
+@pytest.mark.parametrize(("only_success_invocations", "expected_allowed"), [(True, True), (False, False)])
+async def test_only_before_obeys_only_success_invocations(
+    only_success_invocations: bool, expected_allowed: bool
+) -> None:
+    requirement = await _create_requirement(only_before=[other_tool], only_success_invocations=only_success_invocations)
+    failed_step = RequirementAgentRunStateStep(
+        id="0", iteration=0, tool=other_tool, input={}, output=StringToolOutput(""), error=FrameworkError("Tool failed")
+    )
+    state = RequirementAgentRunState(result=None, memory=UnconstrainedMemory(), iteration=1, steps=[failed_step])
+
+    assert (await requirement.run(state))[0].allowed is expected_allowed

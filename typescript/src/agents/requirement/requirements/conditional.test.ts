@@ -9,6 +9,7 @@ import { AnyTool, DynamicTool, StringToolOutput } from "@/tools/base.js";
 import { UnconstrainedMemory } from "@/memory/unconstrainedMemory.js";
 import { RequirementAgentRunState } from "@/agents/requirement/types.js";
 import { z } from "zod";
+import { FrameworkError } from "@/errors.js";
 
 function createTool(name: string): AnyTool {
   return new DynamicTool({
@@ -106,4 +107,27 @@ describe("ConditionalRequirement", () => {
       expect(rule).toMatchObject({ allowed: true, forced: true });
     });
   });
+});
+
+describe("ConditionalRequirement onlyBefore targets", () => {
+  it("accepts tool names", async () => {
+    const requirement = await createRequirement({ onlyBefore: [toolB.name] });
+
+    expect((await requirement.run(createState()))[0].allowed).toBe(true);
+    expect((await requirement.run(createState(toolB)))[0].allowed).toBe(false);
+  });
+
+  it.each([
+    { onlySuccessInvocations: true, allowed: true },
+    { onlySuccessInvocations: false, allowed: false },
+  ])(
+    "handles a failed 'before' call with onlySuccessInvocations=$onlySuccessInvocations",
+    async ({ onlySuccessInvocations, allowed }) => {
+      const requirement = await createRequirement({ onlyBefore: [toolB], onlySuccessInvocations });
+      const state = createState(toolB);
+      state.steps[0].error = new FrameworkError("failed");
+
+      expect((await requirement.run(state))[0].allowed).toBe(allowed);
+    },
+  );
 });
