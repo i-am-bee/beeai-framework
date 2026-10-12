@@ -83,6 +83,12 @@ class StreamToolCallMiddleware(RunMiddlewareProtocol):
             fn = self._cleanups.pop(0)
             fn()
 
+    def destroy(self) -> None:
+        """Unbind from the chat model and release the middleware's emitter."""
+        self.unbind()
+        if "emitter" in vars(self):
+            self.emitter.destroy()
+
     def _create_emitter_options(self) -> EmitterOptions:
         return EmitterOptions(match_nested=self._match_nested, is_blocking=True)
 

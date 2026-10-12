@@ -131,8 +131,7 @@ class RequirementAgentRunner:
             response.output.append(AssistantMessage(generated_content))
             return response
         finally:
-            stream_middleware.unbind()
-            stream_middleware.emitter.destroy()
+            stream_middleware.destroy()
 
     def _prepare_llm_request(self, request: RequirementAgentRequest) -> tuple[list[AnyMessage], ChatModelOptions]:
         messages = [
@@ -275,7 +274,9 @@ class RequirementAgentRunner:
 
     def destroy(self) -> None:
         """Release the per-run emitters so a finished run can be garbage collected."""
-        self._reasoner.final_answer.emitter.destroy()
+        final_answer = self._reasoner.final_answer
+        if "emitter" in vars(final_answer):
+            final_answer.emitter.destroy()
 
     async def _run(self, request: RequirementAgentRequest) -> ChatModelOutput:
         """Run a single iteration of the agent."""
@@ -294,7 +295,7 @@ class RequirementAgentRunner:
                 try:
                     await stream.add(ChatModelOutput(output=[final_answer_tool_call]))
                 finally:
-                    stream.emitter.destroy()
+                    stream.destroy()
             else:
                 err = AgentError("Model produced an invalid final answer tool call.")
                 self._iteration_error_counter.use(err)
