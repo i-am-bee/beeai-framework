@@ -61,18 +61,21 @@ export class MCPTool extends Tool<MCPToolOutput> {
     });
     if (result.isError) {
       const errorContext = result._meta?.error_context;
-      throw new ToolError(MCPTool.formatError(result), [], {
+      throw new ToolError(this.formatError(result), [], {
         context: isPlainObject(errorContext) ? errorContext : undefined,
       });
     }
     return new MCPToolOutput(result);
   }
 
-  protected static formatError(result: Awaited<ReturnType<MCPClient["callTool"]>>): string {
+  protected formatError(result: Awaited<ReturnType<MCPClient["callTool"]>>): string {
     if (result.structuredContent !== undefined) {
       return JSON.stringify(result.structuredContent, null, 4);
     }
     const content = Array.isArray(result.content) ? result.content : [];
+    if (content.length === 0) {
+      return `MCP tool "${this.name}" returned an error without content`;
+    }
     const text = content
       .filter((part): part is { type: "text"; text: string } => part.type === "text")
       .map((part) => part.text)
