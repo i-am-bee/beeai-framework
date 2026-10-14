@@ -3,14 +3,21 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { BaseToolRunOptions, ToolEmitter, ToolInput, JSONToolOutput, Tool } from "@/tools/base.js";
+import {
+  BaseToolRunOptions,
+  ToolEmitter,
+  ToolInput,
+  JSONToolOutput,
+  Tool,
+  ToolError,
+} from "@/tools/base.js";
 import { Emitter } from "@/emitter/emitter.js";
 import { GetRunContext } from "@/context.js";
 import { Client as MCPClient } from "@modelcontextprotocol/sdk/client/index.js";
 import { ListToolsResult } from "@modelcontextprotocol/sdk/types.js";
 import { SchemaObject } from "ajv";
 import { paginate } from "@/internals/helpers/paginate.js";
-import { toCamelCase } from "remeda";
+import { isPlainObject, toCamelCase } from "remeda";
 
 export interface MCPToolInput {
   client: MCPClient;
@@ -52,7 +59,25 @@ export class MCPTool extends Tool<MCPToolOutput> {
     const result = await this.client.callTool({ name: this.name, arguments: input }, undefined, {
       signal: run.signal,
     });
+    if (result.isError) {
+      const errorContext = result._meta?.error_context;
+      throw new ToolError(MCPTool.formatError(result), [], {
+        context: isPlainObject(errorContext) ? errorContext : undefined,
+      });
+    }
     return new MCPToolOutput(result);
+  }
+
+  protected static formatError(result: Awaited<ReturnType<MCPClient["callTool"]>>): string {
+    if (result.structuredContent !== undefined) {
+      return JSON.stringify(result.structuredContent, null, 4);
+    }
+    const content = Array.isArray(result.content) ? result.content : [];
+    const text = content
+      .filter((part): part is { type: "text"; text: string } => part.type === "text")
+      .map((part) => part.text)
+      .join("\n");
+    return text || JSON.stringify(content, null, 4);
   }
 
   public static async fromClient(client: MCPClient): Promise<MCPTool[]> {
