@@ -146,35 +146,39 @@ export class RequirementAgent extends BaseAgent<
       this.templates,
     );
 
-    // Process input messages
-    const newMessages = this.processInput(input);
-    await runner.addMessages([...this.memory.messages]);
-    await runner.addMessages(newMessages);
+    try {
+      // Process input messages
+      const newMessages = this.processInput(input);
+      await runner.addMessages([...this.memory.messages]);
+      await runner.addMessages(newMessages);
 
-    // Run the agent
-    const finalState = await runner.run();
+      // Run the agent
+      const finalState = await runner.run();
 
-    // Update memory
-    if (this.input.saveIntermediateSteps) {
-      this.memory.reset();
-      await this.memory.addMany(finalState.memory.messages);
-    } else {
-      await this.memory.addMany(newMessages);
-      // Add last tool call pair
-      const messages = finalState.memory.messages;
-      const lastPair = messages.slice(-2);
-      await this.memory.addMany(lastPair);
+      // Update memory
+      if (this.input.saveIntermediateSteps) {
+        this.memory.reset();
+        await this.memory.addMany(finalState.memory.messages);
+      } else {
+        await this.memory.addMany(newMessages);
+        // Add last tool call pair
+        const messages = finalState.memory.messages;
+        const lastPair = messages.slice(-2);
+        await this.memory.addMany(lastPair);
+      }
+
+      if (!finalState.answer) {
+        throw new Error("Agent did not produce a final answer");
+      }
+
+      return {
+        result: finalState.answer,
+        memory: finalState.memory,
+        state: finalState,
+      };
+    } finally {
+      runner.destroy();
     }
-
-    if (!finalState.answer) {
-      throw new Error("Agent did not produce a final answer");
-    }
-
-    return {
-      result: finalState.answer,
-      memory: finalState.memory,
-      state: finalState,
-    };
   }
 
   protected processInput(input: RequirementAgentRunInput): Message[] {

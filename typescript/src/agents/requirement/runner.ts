@@ -115,6 +115,7 @@ export class RequirementAgentRunner {
       return response;
     } finally {
       streamMiddleware.unbind();
+      streamMiddleware.emitter.destroy();
     }
   }
 
@@ -215,6 +216,10 @@ export class RequirementAgentRunner {
     return toolResults;
   }
 
+  destroy(): void {
+    this.reasoner.finalAnswer.emitter.destroy();
+  }
+
   async addMessages(messages: Message[]): Promise<void> {
     await this.state.memory.addMany(messages);
   }
@@ -251,7 +256,12 @@ export class RequirementAgentRunner {
         text && request.canStop ? await this.createFinalAnswerToolCall(text) : null;
       if (finalAnswerToolCall) {
         const stream = this.createFinalAnswerStream(request.finalAnswer);
-        await stream.add(new ChatModelOutput([finalAnswerToolCall]));
+        try {
+          await stream.add(new ChatModelOutput([finalAnswerToolCall]));
+        } finally {
+          stream.unbind();
+          stream.emitter.destroy();
+        }
       } else {
         const err = new AgentError("Model produced an invalid final answer tool call.");
         this.iterationErrorCounter.use(err);
