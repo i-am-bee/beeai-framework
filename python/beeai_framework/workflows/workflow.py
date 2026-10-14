@@ -120,7 +120,10 @@ class Workflow(Generic[T, K]):
         async def handler(context: RunContext) -> WorkflowRun[T, K]:
             run = WorkflowRun[T, K](state=to_model(self._schema, state))
             # handlers = WorkflowRunContext(steps=run.steps, signal=context.signal, abort=lambda r: context.abort(r))
-            next = self._find_step(self.start_step or self.step_names[0]).current or Workflow.END
+            next = (
+                self._find_step((options.start if options else None) or self.start_step or self.step_names[0]).current
+                or Workflow.END
+            )
 
             while next and next != Workflow.END:
                 # pyrefly: ignore [no-matching-overload]
