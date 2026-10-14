@@ -15,19 +15,19 @@
 
 The source directory (`src`) contains the available modules:
 
-| Name                                                | Description                                                                                 |
-| --------------------------------------------------- | ------------------------------------------------------------------------------------------- |
-| [**agents**](/typescript/docs/agents.md)            | Base classes defining the common interface for agent.                                       |
-| [**backend**](/typescript/docs/backend.md)          | Functionalities that relates to AI models (chat, embedding, image, tool calling, ...)       |
-| [**template**](/typescript/docs/templates.md)       | Prompt Templating system based on `Mustache` with various improvements.                     |
-| [**memory**](/typescript/docs/memory.md)            | Various types of memories to use with agent.                                                |
-| [**tools**](/typescript/docs/tools.md)              | Tools that an agent can use.                                                                |
-| [**cache**](/typescript/docs/cache.md)              | Preset of different caching approaches that can be used together with tools.                |
-| [**errors**](/typescript/docs/errors.md)            | Base framework error classes used by each module.                                           |
-| [**logger**](/typescript/docs/logger.md)            | Core component for logging all actions within the framework.                                |
-| [**serializer**](/typescript/docs/serialization.md) | Core component for the ability to serialize/deserialize modules into the serialized format. |
-| [**version**](/typescript/docs/version.md)          | Constants representing the framework (e.g., the latest version)                             |
-| [**emitter**](/typescript/docs/emitter.md)          | Bringing visibility to the system by emitting events.                                       |
+| Name                                                                                           | Description                                                                                 |
+| ---------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------- |
+| [**agents**](https://framework.beeai.dev/modules/agents)                                       | Base classes defining the common interface for agent.                                       |
+| [**backend**](https://framework.beeai.dev/modules/backend)                                     | Functionalities that relates to AI models (chat, embedding, image, tool calling, ...)       |
+| [**template**](https://framework.beeai.dev/modules/templates)                                  | Prompt Templating system based on `Mustache` with various improvements.                     |
+| [**memory**](https://framework.beeai.dev/modules/memory)                                       | Various types of memories to use with agent.                                                |
+| [**tools**](https://framework.beeai.dev/modules/tools)                                         | Tools that an agent can use.                                                                |
+| [**cache**](https://framework.beeai.dev/modules/cache)                                         | Preset of different caching approaches that can be used together with tools.                |
+| [**errors**](https://framework.beeai.dev/modules/errors)                                       | Base framework error classes used by each module.                                           |
+| [**logger**](https://framework.beeai.dev/modules/logger)                                       | Core component for logging all actions within the framework.                                |
+| [**serializer**](https://framework.beeai.dev/modules/serialization)                            | Core component for the ability to serialize/deserialize modules into the serialized format. |
+| [**version**](https://github.com/i-am-bee/beeai-framework/blob/main/typescript/src/version.ts) | Constants representing the framework (e.g., the latest version)                             |
+| [**emitter**](https://github.com/i-am-bee/beeai-framework/tree/main/typescript/src/emitter)    | Bringing visibility to the system by emitting events.                                       |
 
 ## External modules
 
@@ -117,7 +117,7 @@ await workflow
 
 > [!Note]
 >
-> To run this example, be sure that you have installed [groq](/typescript/docs/backend.md) and the appropriate .env files set up.
+> To run this example, be sure that you have installed [groq](https://framework.beeai.dev/modules/backend) and the appropriate .env files set up.
 
 To run projects, use:
 
