@@ -27,6 +27,7 @@ import { Callback } from "@/emitter/types.js";
 import { GetRunContext, RunContext } from "@/context.js";
 import { shallowCopy } from "@/serializer/utils.js";
 import { toCamelCase } from "remeda";
+import { createAbortController } from "@/internals/helpers/cancellation.js";
 
 export class ToolError extends FrameworkError {}
 
@@ -53,6 +54,12 @@ export interface BaseToolOptions<TOutput = any> {
 export interface BaseToolRunOptions {
   retryOptions?: RetryOptions;
   signal?: AbortSignal;
+  /**
+   * Execution deadline in milliseconds.
+   * Each retry gets a fresh deadline.
+   * Note: Only interrupts execution at async suspension points.
+   */
+  timeout?: number;
 }
 
 export abstract class ToolOutput extends Serializable {
@@ -208,6 +215,21 @@ export abstract class Tool<
     input = shallowCopy(input);
     options = shallowCopy(options);
 
+    if (options?.timeout !== undefined) {
+      if (
+        typeof options.timeout !== "number" ||
+        Number.isNaN(options.timeout) ||
+        options.timeout <= 0 ||
+        options.timeout > 2_147_483_647
+      ) {
+        throw new ToolError(
+          `Property "timeout" must be a positive integer in range (0, 2147483647], got ${options.timeout}.`,
+          [],
+          { isRetryable: false },
+        );
+      }
+    }
+
     return RunContext.enter(
       this,
       { signal: options?.signal, params: [input, options] as const },
@@ -222,9 +244,48 @@ export abstract class Tool<
             executor: async () => {
               errorPropagated = false;
               await run.emitter.emit("start", { ...meta });
-              return this.cache.enabled
-                ? await this._runCached(input, options, run)
-                : await this._run(input, options, run);
+
+              if (options?.timeout === undefined) {
+                return this.cache.enabled
+                  ? await this._runCached(input, options, run)
+                  : await this._run(input, options, run);
+              }
+
+              const timeoutMs = options.timeout;
+              const timeoutError = new ToolError(
+                `Tool "${this.name}" timed out after ${timeoutMs}ms`,
+              );
+              const attemptController = createAbortController(run.signal);
+              const timer = setTimeout(() => attemptController.abort(timeoutError), timeoutMs);
+
+              const attemptRun = Object.create(run, {
+                signal: {
+                  get: () => attemptController.signal,
+                },
+              }) as GetRunContext<this>;
+
+              const timeoutPromise = new Promise<never>((_, reject) => {
+                attemptController.signal.addEventListener("abort", () => {
+                  if (attemptController.signal.reason === timeoutError) {
+                    reject(timeoutError);
+                  }
+                });
+              });
+
+              try {
+                const runPromise = this.cache.enabled
+                  ? this._runCached(input, options, attemptRun)
+                  : this._run(input, options, attemptRun);
+                return await Promise.race([runPromise, timeoutPromise]);
+              } catch (err) {
+                if (attemptController.signal.reason === timeoutError && !run.signal?.aborted) {
+                  throw timeoutError;
+                }
+                throw err;
+              } finally {
+                clearTimeout(timer);
+                attemptController.abort();
+              }
             },
             onError: async (error) => {
               errorPropagated = true;
@@ -271,7 +332,7 @@ export abstract class Tool<
   ): Promise<TOutput> {
     const key = ObjectHashKeyFn({
       input,
-      options: R.omit(options ?? ({} as TRunOptions), ["signal", "retryOptions"]),
+      options: R.omit(options ?? ({} as TRunOptions), ["signal", "retryOptions", "timeout"]),
     });
 
     const cacheEntry = await this.cache.get(key);

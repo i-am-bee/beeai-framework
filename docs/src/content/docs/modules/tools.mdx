@@ -164,13 +164,19 @@ console.log(result.getTextContent()); // prints data as text
 
 ### Execution timeout
 
-Pass `timeout` (in seconds) to `ToolRunOptions` to limit how long a single tool call is allowed to run. When the deadline is exceeded, a recoverable `ToolError` is raised (the agent catches it, feeds it back to the model, and continues).
+Pass `timeout` to run options (seconds in Python, milliseconds in TypeScript) to limit how long a single tool call is allowed to run. When the deadline is exceeded, a recoverable `ToolError` is raised (the agent catches it, feeds it back to the model, and continues).
 
+<CodeGroup>
 ```py Python
 result = await tool.run(input, options=ToolRunOptions(timeout=10.0))
 ```
 
-The timeout is **per-attempt**: each retry gets a fresh deadline, so `timeout=5` with `max_retries=3` bounds each individual attempt at 5 s, not the total run.
+```ts TypeScript
+const result = await tool.run(input, { timeout: 10_000 });
+```
+</CodeGroup>
+
+The timeout is **per-attempt**: each retry gets a fresh deadline, so `timeout=5` with `max_retries=3` bounds each individual attempt at 5 s (or 5,000 ms in TypeScript), not the total run.
 
 <Note>
 The timeout can only interrupt the tool at `async` suspension points. Blocking calls such as `time.sleep()` or `requests.get()` will not be interrupted, when not using `await`.

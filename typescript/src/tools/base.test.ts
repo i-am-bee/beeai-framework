@@ -604,6 +604,174 @@ describe("Base Tool", () => {
       verifyDeserialization(tool, deserialized);
     });
   });
+
+  describe("Recoverable Tool Timeout", () => {
+    beforeEach(() => {
+      vi.useRealTimers();
+    });
+
+    it("times out and throws ToolError after deadline", async () => {
+      const tool = createDummyTool({}, async () => {
+        await setTimeout(200);
+        return "done";
+      });
+
+      try {
+        await tool.run({ query: "test" }, { timeout: 30 });
+        expect.unreachable("Should have timed out");
+      } catch (e) {
+        expect(e).toBeInstanceOf(ToolError);
+        expect((e as ToolError).message).toContain('Tool "DummyTool" timed out after 30ms');
+      }
+    });
+
+    it("aborts run.signal inside _run when deadline fires", async () => {
+      let seenAbortedInsideRun = false;
+      class ContextSignalTool extends Tool<StringToolOutput> {
+        name = "ContextSignalTool";
+        description = "Testing run.signal abort";
+        emitter = Emitter.root.child<any>({});
+
+        inputSchema() {
+          return z.object({ query: z.string() });
+        }
+
+        protected async _run(
+          _input: ToolInput<this>,
+          _options: Partial<BaseToolRunOptions>,
+          run: any,
+        ): Promise<StringToolOutput> {
+          run.signal.addEventListener("abort", () => {
+            seenAbortedInsideRun = run.signal.aborted;
+          });
+          await setTimeout(200);
+          return new StringToolOutput("done");
+        }
+      }
+
+      const tool = new ContextSignalTool({});
+      try {
+        await tool.run({ query: "test" }, { timeout: 30 });
+        expect.unreachable("Should have timed out");
+      } catch (e) {
+        expect(e).toBeInstanceOf(ToolError);
+        expect((e as ToolError).message).toContain('Tool "ContextSignalTool" timed out after 30ms');
+      }
+      expect(seenAbortedInsideRun).toBe(true);
+    });
+
+    it("caller signal abort propagates original error rather than timeout ToolError", async () => {
+      const controller = new AbortController();
+      const customAbortError = new Error("Caller aborted the run");
+
+      const tool = createDummyTool({}, async () => {
+        await setTimeout(200);
+        return "done";
+      });
+
+      void setTimeout(20).then(() => controller.abort(customAbortError));
+
+      try {
+        await tool.run({ query: "test" }, { timeout: 500, signal: controller.signal });
+        expect.unreachable("Should have aborted");
+      } catch (e) {
+        expect(e).toBeInstanceOf(ToolError);
+        expect((e as ToolError).errors[0]).toBe(customAbortError);
+        expect((e as ToolError).message).not.toContain("timed out after");
+      }
+    });
+
+    it("each retry attempt gets a fresh timeout deadline", async () => {
+      let attempts = 0;
+      const tool = createDummyTool(
+        {
+          retryOptions: {
+            maxRetries: 2,
+            factor: 0,
+          },
+        },
+        async () => {
+          attempts++;
+          if (attempts < 3) {
+            await setTimeout(100);
+            return "failed-too-slow";
+          }
+          await setTimeout(10);
+          return "success-on-attempt-3";
+        },
+      );
+
+      const result = await tool.run({ query: "test" }, { timeout: 40 });
+      expect(result.getTextContent()).toBe("success-on-attempt-3");
+      expect(attempts).toBe(3);
+    });
+
+    it("cache hit bypasses timeout and timeout is excluded from cache key", async () => {
+      const handler = vi.fn().mockImplementation(async () => {
+        await setTimeout(20);
+        return "cached-value";
+      });
+
+      const tool = createDummyTool(
+        {
+          cache: new SlidingCache({ size: 10 }),
+        },
+        handler,
+      );
+
+      // First run populates the cache with timeout: 100ms
+      const first = await tool.run({ query: "cache-query" }, { timeout: 100 });
+      expect(first.getTextContent()).toBe("cached-value");
+      expect(handler).toHaveBeenCalledTimes(1);
+
+      // Second run with a super-tight timeout (1ms) should hit cache immediately without timing out
+      const second = await tool.run({ query: "cache-query" }, { timeout: 1 });
+      expect(second.getTextContent()).toBe("cached-value");
+      expect(handler).toHaveBeenCalledTimes(1);
+    });
+
+    it("internal tool timeout error propagates unchanged without being mislabeled", async () => {
+      class InternalTimeoutError extends Error {
+        name = "TimeoutError";
+      }
+
+      const tool = createDummyTool({}, async () => {
+        await setTimeout(10);
+        throw new InternalTimeoutError("Database connection timed out in 10ms");
+      });
+
+      try {
+        await tool.run({ query: "test" }, { timeout: 1000 });
+        expect.unreachable("Should have thrown internal error");
+      } catch (e) {
+        expect(e).toBeInstanceOf(ToolError);
+        expect((e as ToolError).message).not.toContain("timed out after 1000ms");
+        expect((e as ToolError).errors[0]).toBeInstanceOf(InternalTimeoutError);
+        expect((e as ToolError).errors[0].message).toBe("Database connection timed out in 10ms");
+      }
+    });
+
+    it.each([
+      ["zero", 0],
+      ["negative", -10],
+      ["NaN", NaN],
+      ["Infinity", Infinity],
+      ["-Infinity", -Infinity],
+      ["above max 32-bit signed int", 2_147_483_648],
+      ["string", "invalid" as any],
+    ])("rejects invalid timeout value: %s (%s)", async (_, timeout) => {
+      const tool = createDummyTool({}, async () => "done");
+
+      try {
+        await tool.run({ query: "test" }, { timeout });
+        expect.unreachable("Should have failed validation");
+      } catch (e) {
+        expect(e).toBeInstanceOf(ToolError);
+        expect((e as ToolError).isRetryable).toBe(false);
+        expect((e as ToolError).message).toMatch(/Property "timeout" must be a positive integer/);
+      }
+    });
+  });
 });
 
 describe("Tool.extend metadata overrides", () => {

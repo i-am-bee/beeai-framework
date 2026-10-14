@@ -88,6 +88,7 @@ The Task: {{task}}`,
           }),
         ),
       ],
+      abortSignal: run.signal,
     });
 
     return new StringToolOutput(output.getTextContent());
