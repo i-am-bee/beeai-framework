@@ -14,6 +14,7 @@ from __future__ import annotations
 import asyncio
 import os
 from collections.abc import Callable
+from contextlib import suppress
 from contextvars import ContextVar
 from typing import Protocol, TypedDict
 
@@ -68,13 +69,26 @@ class LocalShellBackend(ShellBackend):
         stdin_bytes = input_text.encode() if input_text is not None else None
         timed_out = False
         try:
-            stdout_bytes, stderr_bytes = await asyncio.wait_for(
-                process.communicate(input=stdin_bytes), timeout=timeout_seconds
-            )
-        except TimeoutError:
-            process.kill()
-            stdout_bytes, stderr_bytes = await process.communicate()
-            timed_out = True
+            try:
+                stdout_bytes, stderr_bytes = await asyncio.wait_for(
+                    process.communicate(input=stdin_bytes), timeout=timeout_seconds
+                )
+            except TimeoutError:
+                with suppress(ProcessLookupError):
+                    process.kill()
+                stdout_bytes, stderr_bytes = await process.communicate()
+                timed_out = True
+        except asyncio.CancelledError:
+            # Cancelling communicate() does not terminate the child process.
+            with suppress(ProcessLookupError):
+                process.kill()
+            # Keep draining/reaping even if cancellation is requested again.
+            cleanup = asyncio.create_task(process.communicate())
+            while not cleanup.done():
+                with suppress(asyncio.CancelledError):
+                    await asyncio.shield(cleanup)
+            cleanup.result()
+            raise
 
         return ShellResult(
             exit_code=process.returncode if process.returncode is not None else -1,
