@@ -8,6 +8,7 @@ import { CallToolRequestSchema, ListToolsRequestSchema } from "@modelcontextprot
 import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { MCPTool } from "./mcp.js";
+import { ToolError } from "./base.js";
 import { entries } from "remeda";
 import { zodToJsonSchema } from "zod-to-json-schema";
 import { z } from "zod";
@@ -89,6 +90,21 @@ describe("MCPTool", () => {
     const toolDef = toolDefinition[tool.name as keyof typeof toolDefinition];
     await tool.run(toolDef.exampleArguments);
     expect(toolDef.handler).toBeCalled();
+  });
+
+  it("should throw a ToolError when the tool result is an error", async () => {
+    server.setRequestHandler(CallToolRequestSchema, async () => ({
+      isError: true,
+      content: [{ type: "text", text: "Division by zero" }],
+      _meta: { error_context: { code: 42 } },
+    }));
+    const tool = (await MCPTool.fromClient(client))[0];
+    const toolDef = toolDefinition[tool.name as keyof typeof toolDefinition];
+
+    const error = await tool.run(toolDef.exampleArguments).catch((e) => e);
+    expect(error).toBeInstanceOf(ToolError);
+    expect(error.message).toBe("Division by zero");
+    expect(error.context).toMatchObject({ code: 42 });
   });
 
   afterEach(async () => {
