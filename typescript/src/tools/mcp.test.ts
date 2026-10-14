@@ -107,6 +107,49 @@ describe("MCPTool", () => {
     expect(error.context).toMatchObject({ code: 42 });
   });
 
+  it.each([
+    {
+      name: "structured content",
+      result: { content: [], structuredContent: { reason: "quota exceeded" } },
+      message: JSON.stringify({ reason: "quota exceeded" }, null, 4),
+    },
+    {
+      name: "non-text content",
+      result: { content: [{ type: "image", data: "AAAA", mimeType: "image/png" }] },
+      message: JSON.stringify([{ type: "image", data: "AAAA", mimeType: "image/png" }], null, 4),
+    },
+    {
+      name: "no content",
+      result: { content: [] },
+      message: 'MCP tool "add" returned an error without content',
+    },
+  ])("should describe an error result with $name", async ({ result, message }) => {
+    server.setRequestHandler(CallToolRequestSchema, async () => ({ isError: true, ...result }));
+    const tool = (await MCPTool.fromClient(client)).find(({ name }) => name === "add")!;
+
+    const error = await tool.run(toolDefinition.add.exampleArguments).catch((e) => e);
+    expect(error).toBeInstanceOf(ToolError);
+    expect(error.message).toBe(message);
+  });
+
+  it("should let a subclass format the error message", async () => {
+    server.setRequestHandler(CallToolRequestSchema, async () => ({
+      isError: true,
+      content: [{ type: "text", text: "Division by zero" }],
+    }));
+    class CustomMCPTool extends MCPTool {
+      protected formatError(): string {
+        return `${this.name} failed`;
+      }
+    }
+    const { tools } = await client.listTools();
+    const tool = new CustomMCPTool({ client, tool: tools.find(({ name }) => name === "add")! });
+
+    const error = await tool.run(toolDefinition.add.exampleArguments).catch((e) => e);
+    expect(error).toBeInstanceOf(ToolError);
+    expect(error.message).toBe("add failed");
+  });
+
   afterEach(async () => {
     await client.close();
     await server.close();
