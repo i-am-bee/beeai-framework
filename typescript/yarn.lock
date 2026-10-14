@@ -978,15 +978,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@googleapis/customsearch@npm:^6.0.0":
-  version: 6.0.0
-  resolution: "@googleapis/customsearch@npm:6.0.0"
-  dependencies:
-    googleapis-common: "npm:^8.0.0"
-  checksum: 10c0/b8bbcca267c3f9e2ac50cc07f1852f779bb918fdefcffae71bb75be4167fdd7e4d28b6ac09a8d7840bd7d5ad30edabd51293f52d3e046a5fb9662234f7b96650
-  languageName: node
-  linkType: hard
-
 "@grpc/grpc-js@npm:^1.14.4":
   version: 1.14.4
   resolution: "@grpc/grpc-js@npm:1.14.4"
@@ -3716,7 +3707,6 @@ __metadata:
     "@elastic/elasticsearch": "npm:^8.0.0"
     "@eslint/js": "npm:^9.39.1"
     "@eslint/markdown": "npm:^7.5.1"
-    "@googleapis/customsearch": "npm:^6.0.0"
     "@ibm-cloud/watsonx-ai": "npm:^1.7.7"
     "@langchain/community": "npm:^1.1.29"
     "@langchain/core": "npm:^1.1.49"
@@ -3798,7 +3788,6 @@ __metadata:
     "@ai-sdk/openai": ^3.0.26
     "@aws-sdk/client-bedrock-runtime": ^3.848.0
     "@elastic/elasticsearch": ^8.0.0
-    "@googleapis/customsearch": ^3.2.0
     "@langchain/community": ^1.1.29
     "@langchain/core": ^1.1.49
     "@modelcontextprotocol/sdk": ^1.18.2
@@ -3824,8 +3813,6 @@ __metadata:
     "@ai-sdk/openai":
       optional: true
     "@elastic/elasticsearch":
-      optional: true
-    "@googleapis/customsearch":
       optional: true
     "@ibm-cloud/watsonx-ai":
       optional: true
@@ -6322,7 +6309,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"gaxios@npm:^7.0.0, gaxios@npm:^7.0.0-rc.4":
+"gaxios@npm:^7.0.0":
   version: 7.1.3
   resolution: "gaxios@npm:7.1.3"
   dependencies:
@@ -6615,7 +6602,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"google-auth-library@npm:^10.1.0, google-auth-library@npm:^10.5.0":
+"google-auth-library@npm:^10.5.0":
   version: 10.5.0
   resolution: "google-auth-library@npm:10.5.0"
   dependencies:
@@ -6634,19 +6621,6 @@ __metadata:
   version: 1.1.3
   resolution: "google-logging-utils@npm:1.1.3"
   checksum: 10c0/e65201c7e96543bd1423b9324013736646b9eed60941e0bfa47b9bfd146d2f09cf3df1c99ca60b7d80a726075263ead049ee72de53372cb8458c3bc55c2c1e59
-  languageName: node
-  linkType: hard
-
-"googleapis-common@npm:^8.0.0":
-  version: 8.0.1
-  resolution: "googleapis-common@npm:8.0.1"
-  dependencies:
-    extend: "npm:^3.0.2"
-    gaxios: "npm:^7.0.0-rc.4"
-    google-auth-library: "npm:^10.1.0"
-    qs: "npm:^6.7.0"
-    url-template: "npm:^2.0.8"
-  checksum: 10c0/ee939fdfcaea32c528e7be64621b3e6b35e612f2456c8d4aca835e0a01ccec52f4ea2ac9509b083128398631a6cd66512c400adb4d0375a4638c55888ccdea7f
   languageName: node
   linkType: hard
 
@@ -12163,13 +12137,6 @@ __metadata:
     querystringify: "npm:^2.1.1"
     requires-port: "npm:^1.0.0"
   checksum: 10c0/bd5aa9389f896974beb851c112f63b466505a04b4807cea2e5a3b7092f6fbb75316f0491ea84e44f66fed55f1b440df5195d7e3a8203f64fcefa19d182f5be87
-  languageName: node
-  linkType: hard
-
-"url-template@npm:^2.0.8":
-  version: 2.0.8
-  resolution: "url-template@npm:2.0.8"
-  checksum: 10c0/56a15057eacbcf05d52b0caed8279c8451b3dd9d32856a1fdd91c6dc84dcb1646f12bafc756b7ade62ca5b1564da8efd7baac5add35868bafb43eb024c62805b
   languageName: node
   linkType: hard
 
