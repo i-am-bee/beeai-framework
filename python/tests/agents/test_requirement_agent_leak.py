@@ -9,10 +9,11 @@ from typing import Any
 import pytest
 
 from beeai_framework.agents.requirement.agent import RequirementAgent
-from beeai_framework.agents.requirement.events import RequirementAgentStartEvent
+from beeai_framework.agents.requirement.events import RequirementAgentStartEvent, RequirementAgentSuccessEvent
+from beeai_framework.agents.requirement.utils._tool import FinalAnswerTool
 from beeai_framework.backend import AnyMessage, AssistantMessage
 from beeai_framework.backend.errors import ChatModelError
-from beeai_framework.emitter import EventMeta
+from beeai_framework.emitter import Emitter, EmitterError, EventMeta
 from tests.agents._scripted import ScriptedChatModel, tool_call_message, weather_tool
 
 RUNS = 5
@@ -68,7 +69,7 @@ async def test_finished_runs_are_freed_after_a_plain_text_answer() -> None:
 
 @pytest.mark.asyncio
 @pytest.mark.unit
-async def test_failed_runs_are_freed() -> None:
+async def test_runs_failing_before_the_final_answer_are_freed() -> None:
     model = ScriptedChatModel([])  # raises on the first LLM call
     agent = RequirementAgent(llm=model, tools=[weather_tool])
     refs = _track_run_states(agent)
@@ -76,3 +77,42 @@ async def test_failed_runs_are_freed() -> None:
         with pytest.raises(ChatModelError):
             await agent.run("What is the weather in Prague?")
     await _assert_all_freed(refs, model)
+
+
+@pytest.mark.asyncio
+@pytest.mark.unit
+async def test_runs_failing_after_the_final_answer_are_freed() -> None:
+    model = ScriptedChatModel(
+        [[tool_call_message("final_answer", {"response": "sunny"}, call_id="call_final")] for _ in range(RUNS)]
+    )
+    agent = RequirementAgent(llm=model, tools=[weather_tool])
+    refs = _track_run_states(agent)
+
+    def fail(data: RequirementAgentSuccessEvent, meta: EventMeta) -> None:
+        raise RuntimeError("listener failed")
+
+    agent.emitter.on("success", fail)  # the final answer tool has run when the iteration's success event fires
+    for _ in range(RUNS):
+        with pytest.raises(EmitterError):
+            await agent.run("What is the weather in Prague?")
+    await _assert_all_freed(refs, model)
+
+
+@pytest.mark.asyncio
+@pytest.mark.unit
+async def test_runs_failing_before_the_final_answer_create_no_final_answer_emitter(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    created: list[FinalAnswerTool] = []
+    create_emitter = FinalAnswerTool._create_emitter
+
+    def spy(self: FinalAnswerTool) -> Emitter:
+        created.append(self)
+        return create_emitter(self)
+
+    monkeypatch.setattr(FinalAnswerTool, "_create_emitter", spy)
+    agent = RequirementAgent(llm=ScriptedChatModel([]), tools=[weather_tool])
+    for _ in range(RUNS):
+        with pytest.raises(ChatModelError):
+            await agent.run("What is the weather in Prague?")
+    assert created == []

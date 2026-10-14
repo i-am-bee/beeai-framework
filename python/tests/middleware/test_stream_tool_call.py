@@ -100,6 +100,31 @@ class TestUnbind:
         m.unbind()  # Should not raise
 
 
+@pytest.mark.unit
+class TestDestroy:
+    def test_destroy_unbinds_and_releases_the_emitter(self) -> None:
+        m = StreamToolCallMiddleware(FakeSearchTool(), key="query")
+        called: list[str] = []
+        m._cleanups.append(lambda: called.append("unbound"))
+        root_children = len(Emitter.root()._cleanups)
+        m.emitter.on("update", lambda data, meta: None)
+        assert len(Emitter.root()._cleanups) == root_children + 1
+
+        m.destroy()
+
+        assert called == ["unbound"]
+        assert len(Emitter.root()._cleanups) == root_children
+
+    def test_destroy_does_not_create_an_unused_emitter(self) -> None:
+        m = StreamToolCallMiddleware(FakeSearchTool(), key="query")
+        root_children = len(Emitter.root()._cleanups)
+
+        m.destroy()
+
+        assert "emitter" not in vars(m)
+        assert len(Emitter.root()._cleanups) == root_children
+
+
 # ---------------------------------------------------------------------------
 # _process — matching and non-matching tool names
 # ---------------------------------------------------------------------------
