@@ -500,6 +500,15 @@ Validation Errors: {{errors}}`,
     tools = [],
     ...input
   }: ChatModelInput) {
+    if (!this.cache.enabled) {
+      return {
+        key: "",
+        value: undefined,
+        resolve: <T2 extends ChatModelOutput>(_value: T2[]) => {},
+        reject: async (_error: Error) => {},
+      };
+    }
+
     const key = ObjectHashKeyFn({
       ...input,
       messages: await Serializer.serialize(messages.map((msg) => msg.toPlain())),
