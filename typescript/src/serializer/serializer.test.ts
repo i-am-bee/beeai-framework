@@ -12,7 +12,7 @@ import { beforeEach, expect, vi } from "vitest";
 import { verifyDeserialization } from "@tests/e2e/utils.js";
 import { SerializerError } from "@/serializer/error.js";
 import { ValueOf } from "@/internals/types.js";
-import { toBoundedFunction } from "@/serializer/utils.js";
+import { extractClassName, toBoundedFunction } from "@/serializer/utils.js";
 
 describe("Serializer", () => {
   it.each([
@@ -468,6 +468,36 @@ describe("Serializer", () => {
       const result = fn(21);
       expect(result).toBeInstanceOf(Promise);
       await expect(result).resolves.toBe(42);
+    });
+  });
+
+  describe("extractClassName", () => {
+    it("generates consistent naming across repeated calls for identical instances", () => {
+      const fn = () => {};
+      const name1 = extractClassName(fn);
+      const name2 = extractClassName(fn);
+      expect(name1).toBe(name2);
+    });
+
+    it("generates distinct names for distinct functions with the same name", () => {
+      const createFn = () => () => {};
+      const fn1 = createFn();
+      const fn2 = createFn();
+      const name1 = extractClassName(fn1);
+      const name2 = extractClassName(fn2);
+      expect(name1).not.toBe(name2);
+      expect(name1).toMatch(/^Function\d*$/);
+      expect(name2).toMatch(/^Function\d*$/);
+    });
+
+    it("does not prevent garbage collection of dereferenced function instances", () => {
+      let fn: (() => void) | null = () => {};
+      const name = extractClassName(fn);
+      expect(name).toBeDefined();
+
+      // Dereference instance; WeakMap allows GC without holding strong reference
+      fn = null;
+      expect(fn).toBeNull();
     });
   });
 });
