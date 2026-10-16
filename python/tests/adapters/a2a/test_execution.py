@@ -1,6 +1,8 @@
 # Copyright 2025 © BeeAI a Series of LF Projects, LLC
 # SPDX-License-Identifier: Apache-2.0
 
+import asyncio
+from collections.abc import Generator
 from typing import Any
 
 import a2a.server.agent_execution as a2a_agent_execution
@@ -16,6 +18,7 @@ from beeai_framework.agents.tool_calling import ToolCallingAgent
 from beeai_framework.backend import AnyMessage, AssistantMessage
 from beeai_framework.memory import UnconstrainedMemory
 from beeai_framework.serve.utils import UnlimitedMemoryManager
+from beeai_framework.utils.cancellation import AbortSignal
 from tests.agents._scripted import ScriptedChatModel, final_answer_message, tool_call_message, weather_tool
 
 pytestmark = [pytest.mark.unit, pytest.mark.asyncio, pytest.mark.filterwarnings("ignore::DeprecationWarning")]
@@ -39,30 +42,41 @@ def make_agent(agent_type: type = RequirementAgent) -> Any:
     return agent_type(llm=ScriptedChatModel(responses), tools=[weather_tool], memory=UnconstrainedMemory())
 
 
-async def invoke(agent: Any, metadata: A2AServerMetadata) -> a2a_types.TaskStatus:
+def make_executor(agent: Any, metadata: A2AServerMetadata | None = None) -> Any:
     memory_manager = UnlimitedMemoryManager()
-    server = A2AServer(memory_manager=memory_manager).register(agent, **metadata)
+    server = A2AServer(memory_manager=memory_manager).register(agent, **(metadata or {}))
     factory = A2AServer._get_factory(agent)
-    executor = factory(agent, metadata=server._metadata_by_agent[agent], memory_manager=memory_manager)  # type: ignore[call-arg]
+    return factory(agent, metadata=server._metadata_by_agent[agent], memory_manager=memory_manager)  # type: ignore[call-arg]
 
+
+def make_context(task_id: str = "task") -> a2a_agent_execution.RequestContext:
     message = a2a_types.Message(
-        message_id="message",
+        message_id=f"message-{task_id}",
         role=a2a_types.Role.user,
         parts=[a2a_types.Part(root=a2a_types.TextPart(text="Check Prague weather"))],
     )
-    context = a2a_agent_execution.RequestContext(
-        request=a2a_types.MessageSendParams(message=message), task_id="task", context_id="context"
+    return a2a_agent_execution.RequestContext(
+        request=a2a_types.MessageSendParams(message=message), task_id=task_id, context_id=f"context-{task_id}"
     )
-    queue = a2a_events.EventQueue()
-    await executor.execute(context, queue)
 
-    status: a2a_types.TaskStatus | None = None
+
+async def drain_status_events(queue: a2a_events.EventQueue) -> list[a2a_types.TaskStatusUpdateEvent]:
+    events: list[a2a_types.TaskStatusUpdateEvent] = []
     while not queue.queue.empty():
         event = await queue.dequeue_event(no_wait=True)
         if isinstance(event, a2a_types.TaskStatusUpdateEvent):
-            status = event.status
-    assert status is not None
-    return status
+            events.append(event)
+    return events
+
+
+async def invoke(agent: Any, metadata: A2AServerMetadata) -> a2a_types.TaskStatus:
+    executor = make_executor(agent, metadata)
+    queue = a2a_events.EventQueue()
+    await executor.execute(make_context(), queue)
+
+    events = await drain_status_events(queue)
+    assert events
+    return events[-1].status
 
 
 @pytest.mark.parametrize("agent_type", AGENTS)
@@ -99,3 +113,59 @@ async def test_only_configured_fields_are_forwarded(
     assert len(captured) == 1
     captured[0].pop("signal")
     assert captured[0] == ({} if value is None else {field: value})
+
+
+@pytest.mark.parametrize("agent_type", AGENTS)
+async def test_cancel_emits_canceled_status(agent_type: type) -> None:
+    executor = make_executor(make_agent(agent_type))
+    queue = a2a_events.EventQueue()
+    await executor.cancel(make_context(), queue)
+
+    events = await drain_status_events(queue)
+    assert [(event.status.state, event.final) for event in events] == [(a2a_types.TaskState.canceled, True)]
+
+
+@pytest.mark.parametrize("agent_type", AGENTS)
+async def test_cancel_does_not_abort_later_tasks(agent_type: type) -> None:
+    executor = make_executor(make_agent(agent_type))
+    await executor.cancel(make_context("canceled-task"), a2a_events.EventQueue())
+
+    queue = a2a_events.EventQueue()
+    await executor.execute(make_context("next-task"), queue)
+
+    events = await drain_status_events(queue)
+    assert events[-1].status.state == a2a_types.TaskState.completed
+
+
+@pytest.mark.parametrize("agent_type", AGENTS)
+async def test_cancel_aborts_only_the_canceled_task(agent_type: type, monkeypatch: pytest.MonkeyPatch) -> None:
+    signals: list[AbortSignal] = []
+    started = asyncio.Event()
+    release = asyncio.Event()
+
+    class BlockedRun:
+        def observe(self, _: Any) -> "BlockedRun":
+            return self
+
+        def __await__(self) -> Generator[Any, None, Any]:
+            return release.wait().__await__()
+
+    def blocked_run(self: Any, *args: Any, signal: AbortSignal, **kwargs: Any) -> BlockedRun:
+        signals.append(signal)
+        started.set()
+        return BlockedRun()
+
+    monkeypatch.setattr(agent_type, "run", blocked_run)
+    executor = make_executor(make_agent(agent_type))
+
+    running = []
+    for task_id in ("task-a", "task-b"):
+        started.clear()
+        running.append(asyncio.create_task(executor.execute(make_context(task_id), a2a_events.EventQueue())))
+        await started.wait()
+
+    await executor.cancel(make_context("task-a"), a2a_events.EventQueue())
+    assert [signal.aborted for signal in signals] == [True, False]
+
+    release.set()
+    await asyncio.gather(*running)

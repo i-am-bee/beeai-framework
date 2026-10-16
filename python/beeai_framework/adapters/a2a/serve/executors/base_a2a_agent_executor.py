@@ -8,6 +8,7 @@ from beeai_framework.adapters.a2a.serve.executors.base_a2a_executor import BaseA
 from beeai_framework.backend.message import (
     AnyMessage,
 )
+from beeai_framework.errors import AbortError
 from beeai_framework.serve import MemoryManager, init_agent_memory
 from beeai_framework.serve.utils import agent_execution_options
 from beeai_framework.utils.cloneable import Cloneable
@@ -66,10 +67,11 @@ class BaseA2AAgentExecutor(BaseA2AExecutor[AnyAgentLike]):
 
         await updater.start_work()
         try:
-            # pyrefly: ignore [missing-attribute]
-            response = await cloned_agent.run(
-                new_messages, signal=self._abort_controller.signal, **self._execution_options
-            ).observe(lambda emitter: self._process_events(emitter, context, updater) if self._send_trajectory else ...)
+            with self._abort_signal(context.task_id) as signal:
+                # pyrefly: ignore [missing-attribute]
+                response = await cloned_agent.run(new_messages, signal=signal, **self._execution_options).observe(
+                    lambda emitter: self._process_events(emitter, context, updater) if self._send_trajectory else ...
+                )
 
             await updater.complete(
                 a2a_utils.new_agent_text_message(
@@ -79,6 +81,9 @@ class BaseA2AAgentExecutor(BaseA2AExecutor[AnyAgentLike]):
                 )
             )
 
+        except AbortError:
+            # cancel() has already reported the canceled status for this task
+            return
         except Exception as e:
             logger.exception("Exception during execution")
             await updater.failed(
