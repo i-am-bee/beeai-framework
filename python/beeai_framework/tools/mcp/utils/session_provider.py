@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import asyncio
+import threading
 from collections.abc import Callable
 from contextlib import AbstractAsyncContextManager
 from typing import ClassVar
@@ -33,6 +34,7 @@ CleanupFn = Callable[[], None]
 
 class MCPSessionProvider:
     _instances: ClassVar[WeakKeyDictionary[ClientSession, "MCPSessionProvider"]] = WeakKeyDictionary()
+    _lock: ClassVar[threading.RLock] = threading.RLock()
 
     def __init__(self, client: MCPClient) -> None:
         self._client = client
@@ -43,19 +45,31 @@ class MCPSessionProvider:
         self._started = False
 
     @classmethod
+    def _acquire_by_session(cls, session: ClientSession) -> bool:
+        with cls._lock:
+            entry = cls._instances.get(session)
+            if entry is None:
+                return False
+            entry.refs += 1
+            return True
+
+    @classmethod
     def destroy_by_session(cls, session: ClientSession) -> None:
-        entry = cls._instances.get(session)
-        if entry is not None:
-            entry.destroy()
+        with cls._lock:
+            entry = cls._instances.get(session)
+            if entry is None or entry._session is None:
+                return
+            entry.refs = max(0, entry.refs - 1)
+            if entry.refs != 0:
+                return
+            cls._instances.pop(session, None)
+            stopping = entry._session_stopping
+        stopping.set()
 
     def destroy(self) -> None:
         if self._session is None:
             return
-
-        self.refs = max(0, self.refs - 1)
-        if self.refs == 0:
-            self._session_stopping.set()
-            type(self)._instances.pop(self._session, None)
+        MCPSessionProvider.destroy_by_session(self._session)
 
     async def session(self) -> ClientSession:
         if self._started:
@@ -67,7 +81,8 @@ class MCPSessionProvider:
             try:
                 async with self._client as (read, write, *_), ClientSession(read, write) as _session:
                     self._session = _session
-                    type(self)._instances[_session] = self
+                    with type(self)._lock:
+                        type(self)._instances[_session] = self
                     await _session.initialize()
                     self._session_initialized.set()
                     await self._session_stopping.wait()
