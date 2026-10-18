@@ -47,7 +47,7 @@ from beeai_framework.backend.message import (
 from beeai_framework.context import RunContext
 from beeai_framework.emitter import Emitter
 from beeai_framework.logger import Logger
-from beeai_framework.memory import BaseMemory
+from beeai_framework.memory import BaseMemory, UnconstrainedMemory
 from beeai_framework.runnable import runnable_entry
 
 logger = Logger(__name__)
@@ -364,9 +364,12 @@ class A2AAgent(BaseAgent[A2AAgentOutput]):
             url=self._url,
             agent_card_path=self._agent_card_path,
             agent_card=self._agent_card,
-            memory=await self.memory.clone(),
+            memory=UnconstrainedMemory(),
             grpc_client_credentials=self._grpc_client_credentials,
+            parameters=self._parameters.model_copy(),
         )
+        # the constructor and the memory setter only accept an empty memory, the clone keeps the history
+        cloned._memory = await self.memory.clone()
         cloned.emitter = await self.emitter.clone()
         return cloned
 
