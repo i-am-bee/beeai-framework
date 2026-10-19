@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import asyncio
 import os
+import signal
 from collections.abc import Callable
 from contextlib import suppress
 from contextvars import ContextVar
@@ -41,8 +42,30 @@ class ShellBackend(Protocol):
     ) -> ShellResult: ...
 
 
+class _SessionOptions(TypedDict, total=False):
+    start_new_session: bool
+
+
+_USE_PROCESS_GROUP = os.name == "posix"
+
+
+def _kill_process(process: asyncio.subprocess.Process) -> None:
+    with suppress(ProcessLookupError):
+        if _USE_PROCESS_GROUP:
+            # Descendants may keep pipes open after the direct child has exited.
+            os.killpg(process.pid, signal.SIGKILL)
+        else:
+            process.kill()
+
+
 class LocalShellBackend(ShellBackend):
-    """Run the command as a local subprocess and capture stdout + stderr separately."""
+    """Run a local command and capture stdout and stderr separately.
+
+    On POSIX each command runs in its own session, so terminal signals such as
+    Ctrl+C do not reach it directly. Timeout or cancellation immediately sends
+    SIGKILL to its process group; descendants that leave that group are not
+    covered. On Windows only the direct child is killed.
+    """
 
     async def run(
         self,
@@ -54,6 +77,7 @@ class LocalShellBackend(ShellBackend):
         input_text: str | None = None,
     ) -> ShellResult:
         merged_env = {**os.environ, **env} if env else None
+        session_options: _SessionOptions = {"start_new_session": True} if _USE_PROCESS_GROUP else {}
         try:
             process = await asyncio.create_subprocess_exec(
                 *command,
@@ -62,6 +86,7 @@ class LocalShellBackend(ShellBackend):
                 stdin=asyncio.subprocess.PIPE if input_text is not None else None,
                 stdout=asyncio.subprocess.PIPE,
                 stderr=asyncio.subprocess.PIPE,
+                **session_options,
             )
         except FileNotFoundError as e:
             raise ToolError(f"Command not found: {command[0]!r}") from e
@@ -74,14 +99,12 @@ class LocalShellBackend(ShellBackend):
                     process.communicate(input=stdin_bytes), timeout=timeout_seconds
                 )
             except TimeoutError:
-                with suppress(ProcessLookupError):
-                    process.kill()
+                _kill_process(process)
                 stdout_bytes, stderr_bytes = await process.communicate()
                 timed_out = True
         except asyncio.CancelledError:
             # Cancelling communicate() does not terminate the child process.
-            with suppress(ProcessLookupError):
-                process.kill()
+            _kill_process(process)
             # Keep draining/reaping even if cancellation is requested again.
             cleanup = asyncio.create_task(process.communicate())
             while not cleanup.done():
