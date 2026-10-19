@@ -363,3 +363,86 @@ async def test_failed_discovery_keeps_borrowed_session_open() -> None:
         with pytest.raises(McpError, match="Discovery failed"):
             await MCPTool.from_client(session)
         await session.send_ping()
+
+
+@pytest.mark.asyncio
+@pytest.mark.unit
+async def test_clone_increments_session_refs() -> None:
+    """MCPTool.clone must bump MCPSessionProvider.refs so the session outlives the original tool."""
+    import gc
+
+    from beeai_framework.tools.mcp.utils.session_provider import MCPSessionProvider
+
+    fake_session = MagicMock(name="ClientSession")
+    provider = MCPSessionProvider(client=MagicMock())
+    provider._session = fake_session
+    provider._started = True
+    provider._session_initialized = MagicMock()
+    provider._session_initialized.is_set.return_value = True
+    MCPSessionProvider._instances[fake_session] = provider
+
+    tool_mock = MagicMock()
+    tool_mock.name = "x"
+    tool = MCPTool(fake_session, tool_mock)
+    provider.refs = 1
+
+    clone = await tool.clone()
+    assert provider.refs == 2
+
+    del tool
+    gc.collect()
+    assert provider.refs == 1
+    assert provider._session is not None
+
+    del clone
+    gc.collect()
+    assert provider.refs == 0
+    MCPSessionProvider._instances.pop(fake_session, None)
+
+
+@pytest.mark.asyncio
+@pytest.mark.unit
+async def test_clone_chain_and_cache_failure() -> None:
+    """Chained clones keep refs balanced; cache.clone() failure before construct leaves refs intact."""
+    import gc
+
+    from beeai_framework.tools.mcp.utils.session_provider import MCPSessionProvider
+
+    fake_session = MagicMock(name="ClientSession")
+    provider = MCPSessionProvider(client=MagicMock())
+    provider._session = fake_session
+    provider._started = True
+    provider._session_initialized = MagicMock()
+    provider._session_initialized.is_set.return_value = True
+    MCPSessionProvider._instances[fake_session] = provider
+
+    tool_mock = MagicMock()
+    tool_mock.name = "x"
+    tool = MCPTool(fake_session, tool_mock)
+    provider.refs = 1
+
+    clone1 = await tool.clone()
+    clone2 = await clone1.clone()
+    assert provider.refs == 3
+
+    del clone2
+    gc.collect()
+    assert provider.refs == 2
+
+    del clone1
+    gc.collect()
+    assert provider.refs == 1
+
+    # cache.clone() failure: patch self.cache.clone to raise BEFORE constructing tool
+    with (
+        patch.object(type(tool.cache), "clone", new=AsyncMock(side_effect=RuntimeError("boom"))),
+        pytest.raises(RuntimeError, match="boom"),
+    ):
+        await tool.clone()
+    assert provider.refs == 1, "refs must not drift when clone raises before construction"
+
+    del tool
+    gc.collect()
+    assert provider.refs == 0
+    assert provider._session_stopping.is_set()
+    assert fake_session not in MCPSessionProvider._instances
