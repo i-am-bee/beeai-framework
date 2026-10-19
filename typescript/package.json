@@ -174,7 +174,6 @@
     "@ai-sdk/openai": "^3.0.26",
     "@aws-sdk/client-bedrock-runtime": "^3.848.0",
     "@elastic/elasticsearch": "^8.0.0",
-    "@googleapis/customsearch": "^3.2.0",
     "@langchain/community": "^1.1.29",
     "@langchain/core": "^1.1.49",
     "@modelcontextprotocol/sdk": "^1.18.2",
@@ -208,9 +207,6 @@
       "optional": true
     },
     "@elastic/elasticsearch": {
-      "optional": true
-    },
-    "@googleapis/customsearch": {
       "optional": true
     },
     "@ibm-cloud/watsonx-ai": {
@@ -258,7 +254,6 @@
     "@elastic/elasticsearch": "^8.0.0",
     "@eslint/js": "^9.39.1",
     "@eslint/markdown": "^7.5.1",
-    "@googleapis/customsearch": "^6.0.0",
     "@ibm-cloud/watsonx-ai": "^1.7.7",
     "@langchain/community": "^1.1.29",
     "@langchain/core": "^1.1.49",
