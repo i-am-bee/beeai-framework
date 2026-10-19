@@ -50,11 +50,13 @@ _USE_PROCESS_GROUP = os.name == "posix"
 
 
 def _kill_process(process: asyncio.subprocess.Process) -> None:
-    with suppress(ProcessLookupError):
-        if _USE_PROCESS_GROUP:
-            # Descendants may keep pipes open after the direct child has exited.
+    if _USE_PROCESS_GROUP:
+        # Descendants may keep pipes open after the direct child has exited.
+        # macOS reports EPERM for a group whose only member is an unreaped zombie.
+        with suppress(ProcessLookupError, PermissionError):
             os.killpg(process.pid, signal.SIGKILL)
-        else:
+    else:
+        with suppress(ProcessLookupError):
             process.kill()
 
 

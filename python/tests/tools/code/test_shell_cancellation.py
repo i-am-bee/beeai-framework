@@ -239,7 +239,7 @@ async def test_cancel_agent_reaps_shell_process(
 def wait_until(condition: Callable[[], bool]) -> None:
     deadline = time.monotonic() + 5
     while not condition():
-        assert time.monotonic() < deadline, "child readiness deadline exceeded"
+        assert time.monotonic() < deadline, "condition deadline exceeded"
         time.sleep(0.01)
 
 
@@ -312,7 +312,8 @@ async def test_descendant_is_killed_without_waiting_for_its_pipes(
                 task.result()
         else:
             assert task.result()["timed_out"] is True
-        assert not process_is_running(descendant_pid)
+        # Without /proc (e.g. macOS), a killed descendant stays visible until it is reaped.
+        await asyncio.to_thread(wait_until, lambda: not process_is_running(descendant_pid))
         last_heartbeat = heartbeat.read_text()
         await asyncio.sleep(0.08)
         assert heartbeat.read_text() == last_heartbeat
