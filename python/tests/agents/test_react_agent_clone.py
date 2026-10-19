@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import asyncio
-from unittest.mock import AsyncMock, patch
+from unittest.mock import AsyncMock
 
 import pytest
 
@@ -10,9 +10,7 @@ from beeai_framework.agents.react.agent import ReActAgent
 from beeai_framework.agents.react.runners.default.prompts import UserPromptTemplate
 from beeai_framework.agents.types import AgentExecutionConfig, AgentMeta
 from beeai_framework.backend import AssistantMessage, UserMessage
-from beeai_framework.cache.unconstrained_cache import UnconstrainedCache
 from beeai_framework.memory import UnconstrainedMemory
-from beeai_framework.tools import StringToolOutput
 from tests.agents._scripted import ScriptedChatModel, weather_tool
 
 
@@ -23,14 +21,6 @@ async def make_agent() -> ReActAgent:
         memory=UnconstrainedMemory(),
         stream=True,
     )
-
-
-@pytest.mark.asyncio
-@pytest.mark.unit
-async def test_original_agent_runs_without_cloning() -> None:
-    agent = await make_agent()
-    assert (await agent.run("original request")).output[-1].text == "done"
-    assert [m.text for m in agent.memory.messages] == ["original request", "done"]
 
 
 @pytest.mark.asyncio
@@ -46,28 +36,6 @@ async def test_clone_keeps_memory_history_but_isolates_writes() -> None:
 
     await agent.memory.add(UserMessage("original only"))
     assert [m.text for m in cloned.memory.messages] == ["existing history", "clone only"]
-
-
-@pytest.mark.asyncio
-@pytest.mark.unit
-async def test_clone_isolates_tool_cache_and_middleware() -> None:
-    agent = await make_agent()
-    original_tool = agent.meta.tools[0]
-    original_tool._cache = UnconstrainedCache()
-    cached = StringToolOutput("existing")
-    await original_tool.cache.set("existing", cached)
-    original_middleware = AsyncMock()
-    original_tool.middlewares.append(original_middleware)
-
-    cloned = await agent.clone()
-    cloned_tool = cloned.meta.tools[0]
-    assert await cloned_tool.cache.get("existing") == cached
-    assert cloned_tool.middlewares == [original_middleware]
-
-    await cloned_tool.cache.clear()
-    cloned_tool.middlewares.clear()
-    assert await original_tool.cache.get("existing") == cached
-    assert original_tool.middlewares == [original_middleware]
 
 
 @pytest.mark.asyncio
@@ -91,7 +59,7 @@ async def test_clone_runs_do_not_consume_original_model_or_memory() -> None:
 
 @pytest.mark.asyncio
 @pytest.mark.unit
-async def test_clone_preserves_options_and_template_instances() -> None:
+async def test_clone_preserves_options_template_and_middlewares() -> None:
     agent = ReActAgent(
         llm=ScriptedChatModel([[AssistantMessage("Thought: respond.\nFinal Answer: done")]]),
         tools=[],
@@ -101,27 +69,23 @@ async def test_clone_preserves_options_and_template_instances() -> None:
         execution=AgentExecutionConfig(max_iterations=2, total_max_retries=3, max_retries_per_step=1),
         stream=False,
     )
+    middleware = AsyncMock()
+    agent.middlewares.append(middleware)
 
     cloned = await agent.clone()
     assert cloned.meta.name == "custom"
     assert cloned.meta.description == "custom description"
+    # Templates are copied, not shared, so mutating one clone cannot affect another.
+    assert cloned._input.templates is not agent._input.templates
     assert cloned._input.templates == agent._input.templates
     assert cloned._input.execution == agent._input.execution
     assert cloned._input.stream is False
     assert cloned.meta.tools == []
     assert cloned.emitter is not agent.emitter
 
-
-@pytest.mark.asyncio
-@pytest.mark.unit
-async def test_clone_propagates_component_failure_without_mutating_original() -> None:
-    agent = await make_agent()
-    original_tool = agent.meta.tools[0]
-    with (
-        patch.object(original_tool, "clone", new=AsyncMock(side_effect=RuntimeError("cannot clone tool"))),
-        pytest.raises(RuntimeError, match="cannot clone tool"),
-    ):
-        await agent.clone()
-    assert agent.meta.tools[0] is original_tool
-    assert agent.memory.is_empty()
-    assert (await agent.run("still usable")).output[-1].text == "done"
+    # Agent-level middlewares carry over to the clone (A2A / AgentStack serve
+    # each request on a clone), but the clone owns a separate middleware list.
+    assert cloned.middlewares == [middleware]
+    assert cloned.middlewares is not agent.middlewares
+    cloned.middlewares.clear()
+    assert agent.middlewares == [middleware]

@@ -231,5 +231,10 @@ class ReActAgent(BaseAgent[ReActAgentOutput]):
             execution=self._input.execution.model_copy() if self._input.execution is not None else None,
             stream=self._input.stream,
         )
+        # Carry agent-level middlewares over to the clone, matching LiteAgent and
+        # RequirementAgent. Without this, a middleware appended to the source
+        # agent never runs on a clone (e.g. per-request clones in the A2A /
+        # AgentStack serve factories).
+        cloned.middlewares.extend(self.middlewares)
         cloned.emitter = await self.emitter.clone()
         return cloned
