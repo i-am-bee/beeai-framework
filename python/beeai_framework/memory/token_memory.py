@@ -80,23 +80,57 @@ class TokenMemory(BaseMemory):
         return any(info.get("dirty", True) for info in self._tokens_by_message.values())
 
     async def sync(self) -> None:
-        """Synchronize token counts with LLM."""
-        for msg in self._messages:
-            key = self._get_message_key(msg)
-            cache = self._tokens_by_message.get(key, {})
-            if cache.get("dirty", True):
-                try:
-                    result = self.handlers["tokenize"]([msg])
-                    self._tokens_by_message[key] = {
-                        "tokens_count": result,
-                        "dirty": False,
-                    }
-                except Exception as e:
-                    print(f"Error tokenizing message: {e!s}")
-                    self._tokens_by_message[key] = {
-                        "tokens_count": self.handlers["estimate"](msg),
-                        "dirty": True,
-                    }
+        """Synchronize token counts and enforce the token budget with the synchronized counts.
+
+        If synchronization fails, the messages and token metadata are restored and the error is re-raised.
+        """
+        messages = self._messages.copy()
+        tokens_by_message = self._tokens_by_message.copy()
+        max_tokens = self._max_tokens if self._max_tokens is not None else DEFAULT_MAX_TOKENS
+        try:
+            counts: dict[str, int] = {}
+            for msg in messages:
+                key = self._get_message_key(msg)
+                cache = self._tokens_by_message.get(key, {})
+                if cache.get("dirty", True):
+                    try:
+                        result = self.handlers["tokenize"]([msg])
+                        self._tokens_by_message[key] = {"tokens_count": result, "dirty": False}
+                    except Exception as e:
+                        print(f"Error tokenizing message: {e!s}")
+                        self._tokens_by_message[key] = {
+                            "tokens_count": self.handlers["estimate"](msg),
+                            "dirty": True,
+                        }
+
+                counts[key] = self._tokens_by_message[key]["tokens_count"]
+                if counts[key] > max_tokens:
+                    raise ResourceFatalError(
+                        f"Retrieved message ({counts[key]} tokens) cannot fit inside current memory "
+                        f"({max_tokens} tokens)"
+                    )
+
+            # Replay add()'s eviction rule in message order with the synchronized counts. The message being
+            # placed is never a removal candidate, so the newest message is not dropped silently. Messages are
+            # not re-added through add() to avoid re-estimation and recursive syncs.
+            capacity = max_tokens * self._threshold
+            used = 0
+            self._messages.clear()
+            for msg in messages:
+                tokens = counts[self._get_message_key(msg)]
+                while self._messages and used > capacity - tokens:
+                    message_to_delete = self.handlers["removal_selector"](self._messages)
+                    deleted = await self.delete(message_to_delete) if message_to_delete is not None else False
+                    if not deleted:
+                        raise ResourceFatalError('The "removal_selector" handler must return a valid message!')
+                    used -= counts.get(self._get_message_key(message_to_delete), 0)
+                self._messages.append(msg)
+                used += tokens
+        except Exception:
+            self._messages[:] = messages
+            self._tokens_by_message.clear()
+            self._tokens_by_message.update(tokens_by_message)
+            raise
 
     async def add(self, message: AnyMessage, index: int | None = None) -> None:
         if self._max_tokens is None:

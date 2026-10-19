@@ -181,6 +181,200 @@ async def test_invalid_capacity_threshold_raises() -> None:
 
 @pytest.mark.asyncio
 @pytest.mark.unit
+@pytest.mark.parametrize("automatic", [True, False])
+@pytest.mark.parametrize("threshold, max_tokens", [(1.0, 6), (0.5, 12)])
+async def test_sync_enforces_budget_when_estimates_are_low(automatic: bool, threshold: float, max_tokens: int) -> None:
+    memory = TokenMemory(
+        max_tokens=max_tokens,
+        capacity_threshold=threshold,
+        sync_threshold=0.25 if automatic else 2,
+        handlers={"estimate": lambda msg: 1, "tokenize": lambda msgs: 4 * len(msgs)},
+    )
+    first, second = UserMessage("first"), UserMessage("second")
+    await memory.add(first)
+    await memory.add(second)
+    if not automatic:
+        await memory.sync()
+
+    assert memory.messages == [second]
+    assert memory.tokens_used == 4
+    assert not memory.is_dirty
+
+
+@pytest.mark.asyncio
+@pytest.mark.unit
+async def test_sync_preserves_system_message_with_custom_selector() -> None:
+    memory = TokenMemory(
+        max_tokens=6,
+        capacity_threshold=1,
+        sync_threshold=2,
+        handlers={
+            "estimate": lambda msg: 1,
+            "tokenize": lambda msgs: 2 if isinstance(msgs[0], SystemMessage) else 4,
+            "removal_selector": lambda msgs: next(msg for msg in msgs if not isinstance(msg, SystemMessage)),
+        },
+    )
+    system, first, second = SystemMessage("system"), UserMessage("first"), UserMessage("second")
+    await memory.add_many([system, first, second])
+    await memory.sync()
+
+    assert memory.messages == [system, second]
+    assert memory.tokens_used == 6
+    assert not memory.is_dirty
+
+
+@pytest.mark.asyncio
+@pytest.mark.unit
+async def test_sync_raises_instead_of_dropping_the_latest_message() -> None:
+    def keep_system(messages: list) -> object:
+        # Mirrors the ReAct runner policy: evict the oldest non-system message, never the system prompt.
+        candidates = [msg for msg in messages if not isinstance(msg, SystemMessage)]
+        if not candidates:
+            raise RuntimeError("Cannot fit the current conversation into the context window!")
+        return candidates[0]
+
+    memory = TokenMemory(
+        max_tokens=6,
+        capacity_threshold=1,
+        sync_threshold=2,
+        handlers={
+            "estimate": lambda msg: 1,
+            "tokenize": lambda msgs: 5 if msgs[0].text == "prompt" else 2,
+            "removal_selector": keep_system,
+        },
+    )
+    messages = [SystemMessage("system"), UserMessage("history"), UserMessage("prompt")]
+    await memory.add_many(messages)
+
+    with pytest.raises(RuntimeError, match="Cannot fit"):
+        await memory.sync()
+    assert memory.messages == messages
+    assert memory.tokens_used == 3
+    assert memory.is_dirty
+
+
+@pytest.mark.asyncio
+@pytest.mark.unit
+@pytest.mark.parametrize("failure", ["oversized", "invalid_selector", "selector_raises"])
+async def test_failed_sync_preserves_messages_and_estimates(failure: str) -> None:
+    first, second = UserMessage("first"), UserMessage("second")
+
+    def select(messages: list) -> object:
+        if failure == "selector_raises":
+            raise RuntimeError("cannot select")
+        return UserMessage("absent") if failure == "invalid_selector" else messages[0]
+
+    memory = TokenMemory(
+        max_tokens=6,
+        capacity_threshold=1,
+        sync_threshold=2,
+        handlers={
+            "estimate": lambda msg: 1,
+            "tokenize": lambda msgs: 7 if failure == "oversized" and msgs[0] is second else 4,
+            "removal_selector": select,
+        },
+    )
+    await memory.add_many([first, second])
+    messages = memory.messages
+    with pytest.raises(RuntimeError if failure == "selector_raises" else ResourceFatalError):
+        await memory.sync()
+    assert memory.messages is messages
+    assert memory.messages == [first, second]
+    assert memory.tokens_used == 2
+    assert memory.is_dirty
+
+
+@pytest.mark.asyncio
+@pytest.mark.unit
+async def test_sync_restores_state_when_selector_fails_after_eviction() -> None:
+    calls = 0
+
+    def select(messages: list) -> object:
+        nonlocal calls
+        calls += 1
+        if calls == 2:
+            raise RuntimeError("failure after eviction")
+        return messages[0]
+
+    memory = TokenMemory(
+        max_tokens=5,
+        capacity_threshold=1,
+        sync_threshold=2,
+        handlers={"estimate": lambda msg: 1, "tokenize": lambda msgs: 3, "removal_selector": select},
+    )
+    messages = [UserMessage("first"), UserMessage("second"), UserMessage("third")]
+    await memory.add_many(messages)
+    with pytest.raises(RuntimeError, match="failure after eviction"):
+        await memory.sync()
+    assert calls == 2
+    assert memory.messages == messages
+    assert memory.tokens_used == 3
+    assert memory.is_dirty
+
+
+@pytest.mark.asyncio
+@pytest.mark.unit
+async def test_sync_tokenizer_failure_keeps_fallback_dirty_and_retryable() -> None:
+    failing = True
+
+    def tokenize(messages: list) -> int:
+        if failing:
+            raise RuntimeError("offline tokenizer")
+        return 4
+
+    memory = TokenMemory(
+        max_tokens=6, capacity_threshold=1, sync_threshold=2, handlers={"estimate": lambda msg: 1, "tokenize": tokenize}
+    )
+    first, second = UserMessage("first"), UserMessage("second")
+    await memory.add_many([first, second])
+    await memory.sync()
+    assert memory.messages == [first, second]
+    assert memory.tokens_used == 2
+    assert memory.is_dirty
+    failing = False
+    await memory.sync()
+    assert memory.messages == [second]
+    assert memory.tokens_used == 4
+    assert not memory.is_dirty
+
+
+@pytest.mark.asyncio
+@pytest.mark.unit
+async def test_sync_allows_one_message_above_scaled_but_below_absolute_budget() -> None:
+    memory = TokenMemory(
+        max_tokens=6,
+        capacity_threshold=0.5,
+        sync_threshold=2,
+        handlers={"estimate": lambda msg: 1, "tokenize": lambda msgs: 4},
+    )
+    message = UserMessage("only message")
+    await memory.add(message)
+    await memory.sync()
+    assert memory.messages == [message]
+    assert memory.tokens_used == 4
+    assert not memory.is_dirty
+
+
+@pytest.mark.asyncio
+@pytest.mark.unit
+async def test_sync_clean_entries_are_not_tokenized_again() -> None:
+    calls = []
+
+    def tokenize(messages: list) -> int:
+        calls.append(messages[0])
+        return 2
+
+    memory = TokenMemory(max_tokens=6, capacity_threshold=1, handlers={"estimate": lambda msg: 1, "tokenize": tokenize})
+    first, second = UserMessage("first"), UserMessage("second")
+    await memory.add_many([first, second])
+    await memory.sync()
+    assert memory.messages == [first, second]
+    assert memory.tokens_used == 4
+    assert calls == [first, second]
+
+
+@pytest.mark.asyncio
+@pytest.mark.unit
 async def test_clone_preserves_messages_and_handlers() -> None:
     def custom_selector(msgs: list) -> object:
         return msgs[0]
