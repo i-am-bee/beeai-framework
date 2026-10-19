@@ -190,3 +190,25 @@ async def test_context_lines_stdlib(tool: GrepTool, traceback_file: Path, monkey
             "context_after": ["    cleanup()"],
         }
     ]
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_context_lines_ripgrep(tool: GrepTool, traceback_file: Path) -> None:
+    if not shutil.which("rg"):
+        pytest.skip("ripgrep not installed on this machine")
+
+    result = await tool.run({"pattern": "raise", "root": str(traceback_file.parent), "context_lines": 1})
+    data = result.to_json_safe()
+
+    assert data["used_ripgrep"] is True
+    assert data["matches"] == [
+        {
+            "path": str(traceback_file),
+            "line": 3,
+            "text": "    raise ValueError('boom')",
+            "match": "raise",
+            "context_before": ["    setup()"],
+            "context_after": ["    cleanup()"],
+        }
+    ]

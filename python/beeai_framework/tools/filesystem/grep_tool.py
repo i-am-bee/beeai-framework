@@ -87,6 +87,8 @@ class GrepTool(Tool[GrepToolInput, ToolRunOptions, JSONToolOutput[dict[str, Any]
             raise ToolError(f"ripgrep failed (exit {process.returncode}): {stderr_bytes.decode(errors='replace')}")
 
         matches: list[dict[str, Any]] = []
+        # Text of every match and context line ripgrep printed, per file.
+        lines_by_path: dict[str, dict[int, str]] = {}
         for raw_line in stdout_bytes.splitlines():
             if not raw_line:
                 continue
@@ -94,16 +96,20 @@ class GrepTool(Tool[GrepToolInput, ToolRunOptions, JSONToolOutput[dict[str, Any]
                 event = json.loads(raw_line)
             except json.JSONDecodeError:
                 continue
-            if event.get("type") != "match":
+            if event.get("type") not in ("match", "context"):
                 continue
             data = event.get("data", {})
             path_text = data.get("path", {}).get("text", "")
+            line_text = data.get("lines", {}).get("text", "").rstrip("\n")
+            lines_by_path.setdefault(path_text, {})[data.get("line_number")] = line_text
+            if event["type"] == "context":
+                continue
             for sub in data.get("submatches", []):
                 matches.append(
                     {
                         "path": path_text,
                         "line": data.get("line_number"),
-                        "text": data.get("lines", {}).get("text", "").rstrip("\n"),
+                        "text": line_text,
                         "match": sub.get("match", {}).get("text", ""),
                     }
                 )
@@ -113,7 +119,11 @@ class GrepTool(Tool[GrepToolInput, ToolRunOptions, JSONToolOutput[dict[str, Any]
                 break
 
         truncated = len(matches) > input.max_results
-        return JSONToolOutput({"matches": matches[: input.max_results], "truncated": truncated, "used_ripgrep": True})
+        matches = matches[: input.max_results]
+        if input.context_lines:
+            for match in matches:
+                _add_context(match, lines_by_path[match["path"]], input.context_lines)
+        return JSONToolOutput({"matches": matches, "truncated": truncated, "used_ripgrep": True})
 
     async def _run_python(self, input: GrepToolInput) -> JSONToolOutput[dict[str, Any]]:
         flags = 0 if input.case_sensitive else re.IGNORECASE
