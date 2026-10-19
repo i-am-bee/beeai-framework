@@ -265,10 +265,12 @@ class AgentStackAgent(BaseAgent[AgentStackAgentOutput]):
         cloned = AgentStackAgent(
             url=self._agent._url,
             agent_card=self._agent.agent_card,
-            memory=await self._agent.memory.clone(),
+            memory=UnconstrainedMemory(),
             auth_token=self._auth_token,
             agent_stack_url=self._agent_stack_url,
         )
+        # the A2AAgent constructor only accepts an empty memory, its clone() keeps the history and parameters
+        cloned._agent = await self._agent.clone()
         cloned.emitter = await self.emitter.clone()
         return cloned
 
