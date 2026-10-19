@@ -42,6 +42,16 @@ class OpenMeteoToolInput(BaseModel):
             return value
 
 
+def _matches_qualifiers(result: dict[str, Any], qualifiers: list[str]) -> bool:
+    """Whether each qualifier names the result's country (by name or code) or one of its regions."""
+    names = {
+        str(result[key]).casefold()
+        for key in ("country", "country_code", "admin1", "admin2", "admin3", "admin4")
+        if result.get(key)
+    }
+    return all(qualifier.casefold() in names for qualifier in qualifiers)
+
+
 class OpenMeteoTool(Tool[OpenMeteoToolInput, ToolRunOptions, JSONToolOutput[dict[str, Any]]]):
     name = "OpenMeteoTool"
     description = "Retrieve current, past, or future weather forecasts for a location."
@@ -63,17 +73,22 @@ class OpenMeteoTool(Tool[OpenMeteoToolInput, ToolRunOptions, JSONToolOutput[dict
         )
 
     async def _geocode(self, input: OpenMeteoToolInput) -> dict[str, str]:
-        params = {"format": "json", "count": 1}
+        params: dict[str, Any] = {"format": "json", "count": 1}
+        # Qualifiers such as a country or region narrow down which place is meant.
+        qualifiers: list[str] = []
         if input.location_name:
             if not input.country:
                 name, *parts = input.location_name.split(",")
                 params["name"] = name.strip()
-                if parts:
-                    params["country"] = ",".join(parts).strip()
+                qualifiers.extend(part.strip() for part in parts if part.strip())
             else:
                 params["name"] = input.location_name.strip()
         if input.country:
-            params["country"] = input.country
+            qualifiers.append(input.country.strip())
+        if qualifiers:
+            # The geocoding API has no country-name filter (it ignores unknown parameters),
+            # so fetch more candidates and pick the first one matching every qualifier.
+            params["count"] = 100
 
         encoded_params = urlencode(params, doseq=True)
 
@@ -85,6 +100,8 @@ class OpenMeteoTool(Tool[OpenMeteoToolInput, ToolRunOptions, JSONToolOutput[dict
 
             response.raise_for_status()
             results = response.json().get("results", [])
+            if qualifiers:
+                results = [result for result in results if _matches_qualifiers(result, qualifiers)]
             if not results:
                 raise ToolInputValidationError(f"Location '{input.location_name}' was not found.")
             geocode: dict[str, str] = results[0]
