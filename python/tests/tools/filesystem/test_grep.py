@@ -163,3 +163,30 @@ async def test_exact_match_count_is_not_reported_as_truncated_ripgrep(tool: Grep
     assert data["used_ripgrep"] is True
     assert len(data["matches"]) == 2
     assert data["truncated"] is False
+
+
+@pytest.fixture
+def traceback_file(tmp_path: Path) -> Path:
+    path = tmp_path / "app.py"
+    path.write_text("def handler():\n    setup()\n    raise ValueError('boom')\n    cleanup()\n")
+    return path
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_context_lines_stdlib(tool: GrepTool, traceback_file: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr("shutil.which", lambda _: None)
+
+    result = await tool.run({"pattern": "raise", "root": str(traceback_file.parent), "context_lines": 1})
+    data = result.to_json_safe()
+
+    assert data["used_ripgrep"] is False
+    assert data["matches"] == [
+        {
+            "path": str(traceback_file),
+            "line": 3,
+            "text": "    raise ValueError('boom')",
+            "context_before": ["    setup()"],
+            "context_after": ["    cleanup()"],
+        }
+    ]

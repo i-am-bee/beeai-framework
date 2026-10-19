@@ -22,6 +22,13 @@ from beeai_framework.tools.types import ToolRunOptions
 _DEFAULT_SKIP_DIRS = frozenset({".git", ".hg", ".svn", "node_modules", "__pycache__", ".venv", "venv", ".tox"})
 
 
+def _add_context(match: dict[str, Any], lines: dict[int, str], context_lines: int) -> None:
+    """Attach up to `context_lines` lines before and after a match, read from `lines` (line number -> text)."""
+    line = match["line"]
+    match["context_before"] = [lines[n] for n in range(line - context_lines, line) if n in lines]
+    match["context_after"] = [lines[n] for n in range(line + 1, line + context_lines + 1) if n in lines]
+
+
 class GrepToolInput(BaseModel):
     pattern: str = Field(description="Regular expression to search for.")
     root: str = Field(default=".", description="Directory to search from.")
@@ -127,12 +134,17 @@ class GrepTool(Tool[GrepToolInput, ToolRunOptions, JSONToolOutput[dict[str, Any]
                 continue
             try:
                 with path.open("r", encoding="utf-8", errors="replace") as fh:
-                    for line_no, line in enumerate(fh, start=1):
-                        if regex.search(line):
-                            matches.append({"path": str(path), "line": line_no, "text": line.rstrip("\n")})
-                            if len(matches) > input.max_results:
-                                truncated = True
-                                break
+                    file_lines = fh.readlines()
+                stripped = {n: line.rstrip("\n") for n, line in enumerate(file_lines, start=1)}
+                for line_no, line in enumerate(file_lines, start=1):
+                    if regex.search(line):
+                        match = {"path": str(path), "line": line_no, "text": stripped[line_no]}
+                        if input.context_lines:
+                            _add_context(match, stripped, input.context_lines)
+                        matches.append(match)
+                        if len(matches) > input.max_results:
+                            truncated = True
+                            break
             except (OSError, UnicodeError):
                 continue
             if truncated:
