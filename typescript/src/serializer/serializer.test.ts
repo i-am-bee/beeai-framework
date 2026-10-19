@@ -13,6 +13,8 @@ import { verifyDeserialization } from "@tests/e2e/utils.js";
 import { SerializerError } from "@/serializer/error.js";
 import { ValueOf } from "@/internals/types.js";
 import { extractClassName, toBoundedFunction } from "@/serializer/utils.js";
+import { setFlagsFromString } from "node:v8";
+import { runInNewContext } from "node:vm";
 
 describe("Serializer", () => {
   it.each([
@@ -490,14 +492,19 @@ describe("Serializer", () => {
       expect(name2).toMatch(/^Function\d*$/);
     });
 
-    it("does not prevent garbage collection of dereferenced function instances", () => {
-      let fn: (() => void) | null = () => {};
-      const name = extractClassName(fn);
-      expect(name).toBeDefined();
-
-      // Dereference instance; WeakMap allows GC without holding strong reference
-      fn = null;
-      expect(fn).toBeNull();
+    it("does not retain functions passed to it", async () => {
+      setFlagsFromString("--expose-gc");
+      const gc = runInNewContext("gc") as () => void;
+      const refs = Array.from({ length: 10 }, () => {
+        const fn = () => {};
+        extractClassName(fn);
+        return new WeakRef(fn);
+      });
+      for (let i = 0; i < 3; i++) {
+        await new Promise((resolve) => setTimeout(resolve, 0));
+        gc();
+      }
+      expect(refs.filter((ref) => ref.deref() !== undefined)).toHaveLength(0);
     });
   });
 });
