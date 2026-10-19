@@ -212,3 +212,28 @@ async def test_context_lines_ripgrep(tool: GrepTool, traceback_file: Path) -> No
             "context_after": ["    cleanup()"],
         }
     ]
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_context_lines_ripgrep_truncated(tool: GrepTool, tmp_path: Path) -> None:
+    if not shutil.which("rg"):
+        pytest.skip("ripgrep not installed on this machine")
+
+    path = tmp_path / "log.txt"
+    path.write_text("a\nb\nHIT one\nHIT two\ne\n")
+
+    result = await tool.run({"pattern": "HIT", "root": str(tmp_path), "context_lines": 2, "max_results": 1})
+    data = result.to_json_safe()
+
+    assert data["truncated"] is True
+    assert data["matches"] == [
+        {
+            "path": str(path),
+            "line": 3,
+            "text": "HIT one",
+            "match": "HIT",
+            "context_before": ["a", "b"],
+            "context_after": ["HIT two", "e"],
+        }
+    ]

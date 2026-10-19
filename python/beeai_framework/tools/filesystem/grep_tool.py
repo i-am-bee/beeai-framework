@@ -104,7 +104,8 @@ class GrepTool(Tool[GrepToolInput, ToolRunOptions, JSONToolOutput[dict[str, Any]
             path_text = data.get("path", {}).get("text", "")
             line_text = data.get("lines", {}).get("text", "").rstrip("\n")
             lines_by_path.setdefault(path_text, {})[data.get("line_number")] = line_text
-            if event["type"] == "context":
+            # Past the cap, keep reading so the last match still gets its after-context.
+            if event["type"] == "context" or len(matches) > input.max_results:
                 continue
             for sub in data.get("submatches", []):
                 matches.append(
@@ -117,8 +118,6 @@ class GrepTool(Tool[GrepToolInput, ToolRunOptions, JSONToolOutput[dict[str, Any]
                 )
                 if len(matches) > input.max_results:
                     break
-            if len(matches) > input.max_results:
-                break
 
         truncated = len(matches) > input.max_results
         matches = matches[: input.max_results]
