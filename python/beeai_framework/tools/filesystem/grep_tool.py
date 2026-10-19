@@ -44,6 +44,8 @@ class GrepTool(Tool[GrepToolInput, ToolRunOptions, JSONToolOutput[dict[str, Any]
     Uses ripgrep (`rg`) when it's on `$PATH` for speed and `.gitignore` honoring;
     falls back to a pure-Python walk when it isn't. The output shape is the same
     either way — `{"matches": [{"path", "line", "text"}...], "truncated", "used_ripgrep"}`.
+    With `context_lines` set, each match also has `context_before` and `context_after`
+    lists holding the text of up to that many neighbouring lines.
     """
 
     name = "grep"
