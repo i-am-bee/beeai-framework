@@ -137,6 +137,16 @@ async def test_geocode_without_country_takes_the_first_place(tool: OpenMeteoTool
 
 @pytest.mark.unit
 @pytest.mark.asyncio
-async def test_geocode_with_unmatched_country_is_not_found(tool: OpenMeteoTool, geocode_requests: list[str]) -> None:
-    with pytest.raises(ToolInputValidationError, match="was not found"):
-        await tool._geocode(OpenMeteoToolInput(location_name="Paris", country="Canada"))
+@pytest.mark.parametrize(
+    "tool_input",
+    [
+        {"location_name": "Paris", "country": "Canada"},
+        {"location_name": "Paris, TX"},
+    ],
+)
+async def test_geocode_with_unmatched_qualifier_takes_the_first_place(
+    tool: OpenMeteoTool, geocode_requests: list[str], tool_input: dict[str, str]
+) -> None:
+    geocode = await tool._geocode(OpenMeteoToolInput(**tool_input))
+
+    assert geocode["country_code"] == "FR"

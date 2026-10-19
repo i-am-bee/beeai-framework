@@ -101,7 +101,8 @@ class OpenMeteoTool(Tool[OpenMeteoToolInput, ToolRunOptions, JSONToolOutput[dict
             response.raise_for_status()
             results = response.json().get("results", [])
             if qualifiers:
-                results = [result for result in results if _matches_qualifiers(result, qualifiers)]
+                # Fall back to the best overall match when no candidate matches, e.g. for "NY" or "UK".
+                results = [result for result in results if _matches_qualifiers(result, qualifiers)] or results
             if not results:
                 raise ToolInputValidationError(f"Location '{input.location_name}' was not found.")
             geocode: dict[str, str] = results[0]
