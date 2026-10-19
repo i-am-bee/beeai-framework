@@ -14,7 +14,7 @@ P = ParamSpec("P")
 
 
 def ensure_async(fn: Callable[P, T | Awaitable[T]]) -> Callable[P, Awaitable[T]]:
-    if asyncio.iscoroutinefunction(fn):
+    if inspect.iscoroutinefunction(fn):
         return fn
 
     @functools.wraps(fn)
