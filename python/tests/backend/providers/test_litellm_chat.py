@@ -31,6 +31,7 @@ from beeai_framework.backend.message import (
     MessageToolCallContent,
     UserMessage,
 )
+from beeai_framework.backend.types import ChatModelParameters
 
 
 class DummyLiteLLMChatModel(LiteLLMChatModel):
@@ -509,6 +510,88 @@ class TestRequestTimeout:
 
         assert captured["timeout"] == 42
         assert response.get_text_content() == "hello"
+
+
+class _DefaultStopSequencesLiteLLMChatModel(LiteLLMChatModel):
+    def __init__(self) -> None:
+        super().__init__("gpt-4o", provider_id="openai", parameters=ChatModelParameters(stop_sequences=["quit"]))
+
+    @property
+    def provider_id(self) -> ProviderName:
+        return "openai"
+
+
+class TestStopSequences:
+    """`stop_sequences` must reach the provider as LiteLLM's `stop` parameter."""
+
+    @staticmethod
+    def _capturing_acompletion(captured: dict[str, Any]) -> Any:
+        async def fake_acompletion(**kwargs: Any) -> LiteLLMModelResponse:
+            captured.update(kwargs)
+            return LiteLLMModelResponse(
+                id="chatcmpl-stop",
+                model="test",
+                choices=[Choices(finish_reason="stop", index=0, message=Message(content="hello", role="assistant"))],
+            )
+
+        return fake_acompletion
+
+    @pytest.mark.unit
+    @pytest.mark.asyncio
+    async def test_per_run_stop_sequences_are_forwarded(
+        self,
+        timeout_model: _TestLiteLLMChatModel,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        captured: dict[str, Any] = {}
+        monkeypatch.setattr("beeai_framework.adapters.litellm.chat.acompletion", self._capturing_acompletion(captured))
+
+        await timeout_model.run([UserMessage("hi")], stop_sequences=["q", "quit"])
+
+        assert captured["stop"] == ["q", "quit"]
+        assert "stop_sequences" not in captured
+
+    @pytest.mark.unit
+    @pytest.mark.asyncio
+    async def test_default_parameters_stop_sequences_are_forwarded(
+        self,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        captured: dict[str, Any] = {}
+        monkeypatch.setattr("beeai_framework.adapters.litellm.chat.acompletion", self._capturing_acompletion(captured))
+
+        await _DefaultStopSequencesLiteLLMChatModel().run([UserMessage("hi")])
+
+        assert captured["stop"] == ["quit"]
+        assert "stop_sequences" not in captured
+
+    @pytest.mark.unit
+    @pytest.mark.asyncio
+    async def test_per_run_value_overrides_default_parameters(
+        self,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        captured: dict[str, Any] = {}
+        monkeypatch.setattr("beeai_framework.adapters.litellm.chat.acompletion", self._capturing_acompletion(captured))
+
+        await _DefaultStopSequencesLiteLLMChatModel().run([UserMessage("hi")], stop_sequences=["stop now"])
+
+        assert captured["stop"] == ["stop now"]
+
+    @pytest.mark.unit
+    @pytest.mark.asyncio
+    async def test_no_stop_sequences_sends_nothing(
+        self,
+        timeout_model: _TestLiteLLMChatModel,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        captured: dict[str, Any] = {}
+        monkeypatch.setattr("beeai_framework.adapters.litellm.chat.acompletion", self._capturing_acompletion(captured))
+
+        await timeout_model.run([UserMessage("hi")])
+
+        assert "stop" not in captured
+        assert "stop_sequences" not in captured
 
 
 class TestParseTimeoutEnv:

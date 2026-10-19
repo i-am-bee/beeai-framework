@@ -281,6 +281,8 @@ class LiteLLMChatModel(ChatModel, ABC):
                 "validate_response_format",
                 "stream_partial_tool_calls",
                 "fallback_tool",
+                # translated to the provider's own name below
+                "stop_sequences",
             },
         )
         params = include_keys(
@@ -290,6 +292,13 @@ class LiteLLMChatModel(ChatModel, ABC):
             | input.model_dump(exclude_none=True, exclude_unset=True),  # get custom manually set parameters
             set(self.supported_params),
         )
+
+        # LiteLLM (and the OpenAI-compatible providers behind it) names stop words `stop`,
+        # while the framework models them as `stop_sequences`. Without the translation the
+        # sequences never reach the provider.
+        stop_sequences = input.stop_sequences if input.stop_sequences is not None else self.parameters.stop_sequences
+        if stop_sequences and "stop" in self.supported_params:
+            params["stop"] = stop_sequences
 
         tool_choice: dict[str, Any] | str | AnyTool | None = input.tool_choice
         if input.tool_choice == "none" and input.tool_choice not in self._tool_choice_support:
