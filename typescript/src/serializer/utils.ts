@@ -77,17 +77,22 @@ export function isRootNode<T>(data: unknown): data is RootNode<T> {
 }
 
 export const extractClassName = (() => {
-  const registry = new Map<string, unknown[]>();
+  const registry = new WeakMap<object, string>();
+  const counters = new Map<string, number>();
+
   const register = (name: string, factory: any) => {
-    if (!registry.has(name)) {
-      registry.set(name, []);
+    if (factory !== null && (typeof factory === "object" || typeof factory === "function")) {
+      let key = registry.get(factory);
+      if (key !== undefined) {
+        return key;
+      }
+      const count = counters.get(name) ?? 0;
+      counters.set(name, count + 1);
+      key = [name, count].filter(Boolean).join("");
+      registry.set(factory, key);
+      return key;
     }
-    const target = registry.get(name)!;
-    let index = target.indexOf(factory);
-    if (index === -1) {
-      index = target.push(factory) - 1;
-    }
-    return [name, index].filter(Boolean).join("");
+    return name;
   };
 
   return (value: unknown): string => {
