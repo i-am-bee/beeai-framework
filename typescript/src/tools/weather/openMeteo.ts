@@ -223,12 +223,14 @@ export class OpenMeteoTool extends Tool<OpenMeteoToolOutput, ToolOptions, ToolRu
   protected async _geocode(location: LocationSearch, signal: AbortSignal) {
     const { apiKey } = this.options;
 
+    const country = location.country?.trim();
     const params = createURLParams({
       name: location.name,
       language: location.language,
-      country: location.country,
       format: "json",
-      count: 1,
+      // The geocoding API has no country-name filter (it ignores unknown parameters),
+      // so fetch more candidates and pick the first one matching the country.
+      count: country ? 100 : 1,
     });
     const response = await fetch(`https://geocoding-api.open-meteo.com/v1/search?${params}`, {
       headers: {
@@ -244,10 +246,25 @@ export class OpenMeteoTool extends Tool<OpenMeteoToolOutput, ToolOptions, ToolRu
       ]);
     }
 
-    const { results } = await response.json();
+    let { results } = await response.json();
+    if (country && results?.length) {
+      // Fall back to the best overall match when no candidate matches, e.g. for "UK".
+      const matching = results.filter((result: Record<string, unknown>) =>
+        matchesCountry(result, country),
+      );
+      results = matching.length > 0 ? matching : results;
+    }
     if (!results || results.length === 0) {
       throw new ToolError(`Location '${location.name}' was not found.`);
     }
     return results[0];
   }
+}
+
+/** Whether the country names the result's country (by name or code) or one of its regions. */
+function matchesCountry(result: Record<string, unknown>, country: string): boolean {
+  const target = country.toLowerCase();
+  return ["country", "country_code", "admin1", "admin2", "admin3", "admin4"].some(
+    (key) => typeof result[key] === "string" && result[key].toLowerCase() === target,
+  );
 }
