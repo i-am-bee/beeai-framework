@@ -22,6 +22,13 @@ from beeai_framework.tools.types import ToolRunOptions
 _DEFAULT_SKIP_DIRS = frozenset({".git", ".hg", ".svn", "node_modules", "__pycache__", ".venv", "venv", ".tox"})
 
 
+def _add_context(match: dict[str, Any], lines: dict[int, str], context_lines: int) -> None:
+    """Attach up to `context_lines` lines before and after a match, read from `lines` (line number -> text)."""
+    line = match["line"]
+    match["context_before"] = [lines[n] for n in range(line - context_lines, line) if n in lines]
+    match["context_after"] = [lines[n] for n in range(line + 1, line + context_lines + 1) if n in lines]
+
+
 class GrepToolInput(BaseModel):
     pattern: str = Field(description="Regular expression to search for.")
     root: str = Field(default=".", description="Directory to search from.")
@@ -37,6 +44,8 @@ class GrepTool(Tool[GrepToolInput, ToolRunOptions, JSONToolOutput[dict[str, Any]
     Uses ripgrep (`rg`) when it's on `$PATH` for speed and `.gitignore` honoring;
     falls back to a pure-Python walk when it isn't. The output shape is the same
     either way — `{"matches": [{"path", "line", "text"}...], "truncated", "used_ripgrep"}`.
+    With `context_lines` set, each match also has `context_before` and `context_after`
+    lists holding the text of up to that many neighbouring lines.
     """
 
     name = "grep"
@@ -80,6 +89,8 @@ class GrepTool(Tool[GrepToolInput, ToolRunOptions, JSONToolOutput[dict[str, Any]
             raise ToolError(f"ripgrep failed (exit {process.returncode}): {stderr_bytes.decode(errors='replace')}")
 
         matches: list[dict[str, Any]] = []
+        # Text of every match and context line ripgrep printed, per file.
+        lines_by_path: dict[str, dict[int, str]] = {}
         for raw_line in stdout_bytes.splitlines():
             if not raw_line:
                 continue
@@ -87,26 +98,33 @@ class GrepTool(Tool[GrepToolInput, ToolRunOptions, JSONToolOutput[dict[str, Any]
                 event = json.loads(raw_line)
             except json.JSONDecodeError:
                 continue
-            if event.get("type") != "match":
+            if event.get("type") not in ("match", "context"):
                 continue
             data = event.get("data", {})
             path_text = data.get("path", {}).get("text", "")
+            line_text = data.get("lines", {}).get("text", "").rstrip("\n")
+            lines_by_path.setdefault(path_text, {})[data.get("line_number")] = line_text
+            # Past the cap, keep reading so the last match still gets its after-context.
+            if event["type"] == "context" or len(matches) > input.max_results:
+                continue
             for sub in data.get("submatches", []):
                 matches.append(
                     {
                         "path": path_text,
                         "line": data.get("line_number"),
-                        "text": data.get("lines", {}).get("text", "").rstrip("\n"),
+                        "text": line_text,
                         "match": sub.get("match", {}).get("text", ""),
                     }
                 )
                 if len(matches) > input.max_results:
                     break
-            if len(matches) > input.max_results:
-                break
 
         truncated = len(matches) > input.max_results
-        return JSONToolOutput({"matches": matches[: input.max_results], "truncated": truncated, "used_ripgrep": True})
+        matches = matches[: input.max_results]
+        if input.context_lines:
+            for match in matches:
+                _add_context(match, lines_by_path[match["path"]], input.context_lines)
+        return JSONToolOutput({"matches": matches, "truncated": truncated, "used_ripgrep": True})
 
     async def _run_python(self, input: GrepToolInput) -> JSONToolOutput[dict[str, Any]]:
         flags = 0 if input.case_sensitive else re.IGNORECASE
@@ -127,12 +145,17 @@ class GrepTool(Tool[GrepToolInput, ToolRunOptions, JSONToolOutput[dict[str, Any]
                 continue
             try:
                 with path.open("r", encoding="utf-8", errors="replace") as fh:
-                    for line_no, line in enumerate(fh, start=1):
-                        if regex.search(line):
-                            matches.append({"path": str(path), "line": line_no, "text": line.rstrip("\n")})
-                            if len(matches) > input.max_results:
-                                truncated = True
-                                break
+                    file_lines = fh.readlines()
+                stripped = {n: line.rstrip("\n") for n, line in enumerate(file_lines, start=1)}
+                for line_no, line in enumerate(file_lines, start=1):
+                    if regex.search(line):
+                        match = {"path": str(path), "line": line_no, "text": stripped[line_no]}
+                        if input.context_lines:
+                            _add_context(match, stripped, input.context_lines)
+                        matches.append(match)
+                        if len(matches) > input.max_results:
+                            truncated = True
+                            break
             except (OSError, UnicodeError):
                 continue
             if truncated:

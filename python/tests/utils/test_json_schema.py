@@ -252,17 +252,15 @@ def test_json_schema_model(test_json_schema: dict[str, list[str] | str | Any]) -
         "contact": "name@email.com",
     }
 
-    assert str(model.model_fields["object"].annotation) == "typing.Optional[typing.Literal['user']]"
+    assert model.model_fields["object"].annotation == Literal["user"] | NoneType
     assert model.model_fields["name"].annotation is str, "Expected annotation to be `str`"
     assert model.model_fields["age"].annotation is int, "Expected annotation to be `int`"
     assert model.model_fields["is_active"].annotation is bool, "Expected annotation to be `bool`"
-    assert (
-        str(model.model_fields["roles"].annotation) == "typing.Optional[list[typing.Literal['admin', 'user', 'guest']]]"
-    )
+    assert model.model_fields["roles"].annotation == list[Literal["admin", "user", "guest"]] | NoneType
     assert get_args(model.model_fields["address"].annotation)[0].model_fields["city"].annotation is str
     assert get_args(model.model_fields["address"].annotation)[0].model_fields["street"].annotation == str | NoneType
     assert get_args(model.model_fields["address"].annotation)[0].model_fields["zipcode"].annotation == int | NoneType
-    assert str(model.model_fields["hobby"].annotation) == "typing.Optional[str]"
+    assert model.model_fields["hobby"].annotation == str | NoneType
     assert model.model_fields["contact"].annotation == str | int, "Expected annotation to be `Union[str, int]`"
 
 

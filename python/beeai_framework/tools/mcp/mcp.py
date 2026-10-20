@@ -118,7 +118,8 @@ class MCPTool(Tool[BaseModel, ToolRunOptions, JSONToolOutput]):
         except BaseException:
             manager.destroy()
             raise
-        manager.refs += len(instance)
+        with MCPSessionProvider._lock:
+            manager.refs += len(instance)
         return instance
 
     def __del__(self) -> None:
@@ -142,11 +143,13 @@ class MCPTool(Tool[BaseModel, ToolRunOptions, JSONToolOutput]):
         options = MCPToolKwargs(smart_parsing=self._smart_parsing, exclude_none=self._exclude_none)
         options.update(self._options or {})  # type: ignore
 
+        cloned_cache = await self.cache.clone()
         tool = self.__class__(
             session=self._session,
             tool=self._tool.model_copy(),
             **options,
         )
+        MCPSessionProvider._acquire_by_session(self._session)
         tool.middlewares.extend(self.middlewares)
-        tool._cache = await self.cache.clone()
+        tool._cache = cloned_cache
         return tool

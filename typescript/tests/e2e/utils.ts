@@ -15,7 +15,6 @@ import { Callback } from "@/emitter/types.js";
 import { RunContext } from "@/context.js";
 import { Emitter } from "@/emitter/emitter.js";
 import { toJsonSchema } from "@/internals/helpers/schema.js";
-import { customsearch_v1 } from "@googleapis/customsearch";
 import { LangChainTool } from "@/adapters/langchain/tools.js";
 import { Client as esClient } from "@elastic/elasticsearch";
 import { VercelChatModel } from "@/adapters/vercel/backend/chat.js";
@@ -119,7 +118,6 @@ export function verifyDeserialization(
 verifyDeserialization.ignoredKeys = new Set<string>([LangChainTool.serializedSchemaKey]);
 verifyDeserialization.ignoredClasses = [
   Logger,
-  customsearch_v1.Customsearch,
   LCBaseLLM,
   RunContext,
   Emitter,
