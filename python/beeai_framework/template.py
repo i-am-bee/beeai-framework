@@ -98,9 +98,13 @@ class PromptTemplate(Generic[T]):
         return chevron.render(template=self._config.template, data=data)
 
     def fork(
-        self, customizer: Callable[[PromptTemplateInput[Any]], PromptTemplateInput[Any]] | None
+        self, customizer: Callable[[PromptTemplateInput[Any]], PromptTemplateInput[Any] | None] | None
     ) -> "PromptTemplate[Any]":
-        new_config = customizer(self._config) if customizer else self._config
+        # The customizer gets a copy, so editing it in place cannot change this template
+        config = self._config.model_copy(deep=True)
+        new_config = customizer(config) if customizer else config
+        if new_config is None:
+            new_config = config
         if not isinstance(new_config, PromptTemplateInput):
             raise ValueError("Return type from customizer must be a PromptTemplateInput or nothing.")
         # pyrefly: ignore [deprecated]
