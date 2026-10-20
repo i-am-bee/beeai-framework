@@ -39,7 +39,7 @@ class TestMiniMaxChatModelInit:
     @patch.dict(os.environ, {"MINIMAX_API_KEY": "test-key-123"})
     def test_default_model_id(self) -> None:
         model = MiniMaxChatModel()
-        assert model.model_id == "MiniMax-M3"
+        assert model.model_id == "MiniMax-M3.1-Flash"
 
     @patch.dict(os.environ, {"MINIMAX_API_KEY": "test-key-123"})
     def test_custom_model_id(self) -> None:

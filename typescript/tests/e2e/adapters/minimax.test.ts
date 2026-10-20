@@ -65,7 +65,7 @@ describe("MiniMaxChatModel", () => {
   it("should instantiate with default model", () => {
     const model = new MiniMaxChatModel();
     expect(model).toBeInstanceOf(MiniMaxChatModel);
-    expect(model.modelId).toBe("MiniMax-M3");
+    expect(model.modelId).toBe("MiniMax-M3.1-Flash");
   });
 
   it("should instantiate with custom model id", () => {

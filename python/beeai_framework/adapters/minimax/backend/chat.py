@@ -56,8 +56,8 @@ class MiniMaxChatModel(LiteLLMChatModel):
     the MINIMAX_API_REGION environment variable, or override it entirely with
     an explicit ``base_url`` / MINIMAX_API_BASE.
 
-    Available models include MiniMax-M3 (default), MiniMax-M2.7,
-    and MiniMax-M2.7-highspeed.
+    Recommended models are MiniMax-M3.1-Flash (default) and MiniMax-M3.
+    Explicit model IDs and MINIMAX_CHAT_MODEL overrides are preserved.
     """
 
     @property
@@ -80,7 +80,7 @@ class MiniMaxChatModel(LiteLLMChatModel):
         Args:
             model_id: The ID of the MiniMax model to use. If not provided,
                 it falls back to the MINIMAX_CHAT_MODEL environment variable,
-                and then defaults to 'MiniMax-M3'.
+                and then defaults to 'MiniMax-M3.1-Flash'.
             api_key: The MiniMax API key. Falls back to MINIMAX_API_KEY env var.
             base_url: The MiniMax API base URL. Falls back to MINIMAX_API_BASE
                 env var, then to the endpoint selected by ``region``, and finally
@@ -93,10 +93,18 @@ class MiniMaxChatModel(LiteLLMChatModel):
             **kwargs: Additional settings to configure the provider.
         """
         super().__init__(
-            model_id if model_id else os.getenv("MINIMAX_CHAT_MODEL", "MiniMax-M3"),
+            model_id if model_id else os.getenv("MINIMAX_CHAT_MODEL", "MiniMax-M3.1-Flash"),
             provider_id="openai",
             **kwargs,
         )
+
+        if self.model_id == "MiniMax-M3.1-Flash":
+            # LiteLLM's OpenAI registry does not yet recognize Flash's effort support.
+            self.supported_params = [*self.supported_params, "reasoning_effort"]
+            self._settings["allowed_openai_params"] = [
+                *(self._settings.get("allowed_openai_params") or []),
+                "reasoning_effort",
+            ]
 
         region = region if region is not None else os.getenv("MINIMAX_API_REGION")
         self._assert_setting_value("api_key", api_key, envs=["MINIMAX_API_KEY"])
