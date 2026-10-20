@@ -2,6 +2,8 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import asyncio
+import gc
+import weakref
 from collections.abc import AsyncIterator, Callable
 from contextlib import asynccontextmanager
 from typing import Any
@@ -363,6 +365,65 @@ async def test_failed_discovery_keeps_borrowed_session_open() -> None:
         with pytest.raises(McpError, match="Discovery failed"):
             await MCPTool.from_client(session)
         await session.send_ping()
+
+
+@pytest.mark.asyncio
+@pytest.mark.unit
+@pytest.mark.parametrize("run", [False, True])
+async def test_tools_are_collected_and_transport_closes(run: bool) -> None:
+    """A tool that has run must not stay alive through its emitter, or its session is never released."""
+    server = Server("tool-lifecycle")
+    closed = asyncio.Event()
+    owner_tasks: list[asyncio.Task[Any]] = []
+
+    @server.list_tools()
+    async def list_tools() -> list[MCPToolInfo]:
+        return [MCPToolInfo(name="echo", inputSchema={"type": "object"})]
+
+    @server.call_tool()
+    async def call_tool(name: str, arguments: dict[str, Any]) -> list[TextContent]:
+        return [TextContent(type="text", text="ok")]
+
+    @asynccontextmanager
+    async def transport() -> AsyncIterator[MessageStream]:
+        owner = asyncio.current_task()
+        assert owner is not None
+        owner_tasks.append(owner)
+        try:
+            async with (
+                create_client_server_memory_streams() as (client_streams, server_streams),
+                anyio.create_task_group() as group,
+            ):
+
+                async def run_server() -> None:
+                    await server.run(*server_streams, server.create_initialization_options())
+
+                group.start_soon(run_server)
+                try:
+                    yield client_streams
+                finally:
+                    group.cancel_scope.cancel()
+        finally:
+            closed.set()
+
+    try:
+        [tool] = await MCPTool.from_client(transport())
+        clone = await tool.clone()
+        if run:
+            await tool.run({})
+            await clone.run({})
+        refs = [weakref.ref(tool), weakref.ref(clone)]
+        del tool, clone
+
+        gc.collect()
+
+        assert [ref() for ref in refs] == [None, None]
+        await asyncio.wait_for(closed.wait(), timeout=5)
+    finally:
+        for task in owner_tasks:
+            if not task.done():
+                task.cancel()
+        await asyncio.gather(*owner_tasks, return_exceptions=True)
 
 
 @pytest.mark.asyncio
