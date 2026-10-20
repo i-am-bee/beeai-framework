@@ -54,41 +54,48 @@ class BaseA2AAgentExecutor(BaseA2AExecutor[AnyAgentLike]):
     ) -> None:
         agent: AnyAgentLike = self._runnable
         updater = a2a_server_tasks.TaskUpdater(event_queue, context.task_id, context.context_id)  # type: ignore[arg-type]
-        if not context.current_task:
-            if not context.message:
-                raise ValueError("No message found in the request context.")
-            context.current_task = a2a_utils.new_task(context.message)
-            await updater.submit()
+        # registered before any await, so a cancel() that arrives during the setup still aborts this run
+        with self._abort_signal(context.task_id) as signal:
+            if not context.current_task:
+                if not context.message:
+                    raise ValueError("No message found in the request context.")
+                context.current_task = a2a_utils.new_task(context.message)
+                await updater.submit()
 
-        cloned_agent = await agent.clone() if isinstance(agent, Cloneable) else agent
-        # pyrefly: ignore [bad-argument-type]
-        await init_agent_memory(cloned_agent, self._memory_manager, context.context_id)
-        new_messages = _extract_request_messages(context)
+            cloned_agent = await agent.clone() if isinstance(agent, Cloneable) else agent
+            # pyrefly: ignore [bad-argument-type]
+            await init_agent_memory(cloned_agent, self._memory_manager, context.context_id)
+            new_messages = _extract_request_messages(context)
 
-        await updater.start_work()
-        try:
-            with self._abort_signal(context.task_id) as signal:
+            # cancel() has already reported the canceled status for this task
+            if signal.aborted:
+                return
+
+            await updater.start_work()
+            try:
                 # pyrefly: ignore [missing-attribute]
                 response = await cloned_agent.run(new_messages, signal=signal, **self._execution_options).observe(
                     lambda emitter: self._process_events(emitter, context, updater) if self._send_trajectory else ...
                 )
+                if signal.aborted:
+                    return
 
-            await updater.complete(
-                a2a_utils.new_agent_text_message(
-                    response.last_message.text,
-                    context.context_id,
-                    context.task_id,
+                await updater.complete(
+                    a2a_utils.new_agent_text_message(
+                        response.last_message.text,
+                        context.context_id,
+                        context.task_id,
+                    )
                 )
-            )
 
-        except AbortError:
-            # cancel() has already reported the canceled status for this task
-            return
-        except Exception as e:
-            logger.exception("Exception during execution")
-            await updater.failed(
-                message=a2a_utils.new_agent_text_message(str(e)),
-            )
+            except Exception as e:
+                # an AbortError not caused by cancel() still fails the task
+                if isinstance(e, AbortError) and signal.aborted:
+                    return
+                logger.exception("Exception during execution")
+                await updater.failed(
+                    message=a2a_utils.new_agent_text_message(str(e)),
+                )
 
 
 def _extract_request_messages(context: a2a_agent_execution.RequestContext) -> list[AnyMessage]:
