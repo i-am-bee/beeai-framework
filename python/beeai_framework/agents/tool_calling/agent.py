@@ -165,7 +165,7 @@ class ToolCallingAgent(BaseAgent[ToolCallingAgentOutput]):
         while state.result is None:
             state.iteration += 1
 
-            if run_config.max_iterations and state.iteration > run_config.max_iterations:
+            if run_config.max_iterations is not None and state.iteration > run_config.max_iterations:
                 raise AgentError(f"Agent was not able to resolve the task in {state.iteration} iterations.")
 
             await run_context.emitter.emit(

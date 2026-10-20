@@ -97,7 +97,8 @@ class LiteAgent(BaseAgent):
         ctx = RunContext.get()
 
         iteration = 0
-        max_iterations = kwargs.get("max_iterations") or inf
+        _max_iter = kwargs.get("max_iterations")
+        max_iterations = _max_iter if _max_iter is not None else inf
 
         max_retries_per_step = kwargs.get("max_retries_per_step", 3) or 0
 
