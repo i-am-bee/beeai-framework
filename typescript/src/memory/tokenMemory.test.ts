@@ -100,6 +100,64 @@ describe("Token Memory", () => {
     expect(instance.stats()).toMatchObject({ tokensUsed: 2, messagesCount: 2, isDirty: true });
   });
 
+  it("Does not keep a message rejected by the automatic sync", async () => {
+    // The estimate says the message fits, but the automatic sync measures it above maxTokens.
+    const instance = new TokenMemory({
+      maxTokens: 6,
+      syncThreshold: 0.25,
+      capacityThreshold: 1,
+      handlers: {
+        estimate: () => 1,
+        tokenize: async ([msg]) => (msg.text === "big" ? 7 : 1),
+      },
+    });
+    const first = new UserMessage("ok");
+    await instance.add(first);
+
+    await expect(instance.add(new UserMessage("big"))).rejects.toThrow(
+      "cannot fit inside current memory",
+    );
+    expect(instance.messages).toEqual([first]);
+    expect(instance.stats()).toMatchObject({ tokensUsed: 1, messagesCount: 1 });
+
+    const later = new UserMessage("next");
+    await instance.add(later);
+    expect(instance.messages).toEqual([first, later]);
+    expect(instance.stats()).toMatchObject({ tokensUsed: 2, messagesCount: 2, isDirty: false });
+  });
+
+  it.each(["sync rejects the new message", "removalSelector fails after evicting"])(
+    "Restores evicted messages when add fails (%s)",
+    async (failure) => {
+      let calls = 0;
+      const instance = new TokenMemory({
+        maxTokens: 2,
+        syncThreshold: 2,
+        capacityThreshold: 1,
+        handlers: {
+          estimate: (msg) =>
+            msg.text === "new" && failure === "removalSelector fails after evicting" ? 2 : 1,
+          tokenize: async ([msg]) => (msg.text === "new" ? 3 : 1),
+          removalSelector: (msgs) => {
+            calls += 1;
+            if (failure === "removalSelector fails after evicting" && calls === 2) {
+              throw new Error("selector failed");
+            }
+            return msgs[0];
+          },
+        },
+      });
+      const messages = [new UserMessage("a"), new UserMessage("b")];
+      await instance.addMany(messages);
+      await instance.sync();
+      (instance as unknown as { syncThreshold: number }).syncThreshold = 0.25;
+
+      await expect(instance.add(new UserMessage("new"))).rejects.toThrow();
+      expect(instance.messages).toEqual(messages);
+      expect(instance.stats()).toMatchObject({ tokensUsed: 2, messagesCount: 2, isDirty: false });
+    },
+  );
+
   it("Evicts down to the capacity threshold", async () => {
     const instance = getInstance({
       llmFactor: 1,
