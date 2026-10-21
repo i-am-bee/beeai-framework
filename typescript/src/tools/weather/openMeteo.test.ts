@@ -66,6 +66,47 @@ describe("OpenMeteoTool geocoding", () => {
     expect(requested().forecast.get("latitude")).toBe("52.2");
   });
 
+  describe("with a qualifier after a comma", () => {
+    const geocodeNames = () =>
+      fetchMock.mock.calls
+        .map(([url]) => new URL(url))
+        .filter((url) => url.hostname.startsWith("geocoding-api"))
+        .map((url) => url.searchParams.get("name"));
+
+    const answerFullName = (results: unknown[]) =>
+      fetchMock.mockImplementation(async (url: string) => {
+        if (!url.includes("geocoding-api")) {
+          return Response.json({});
+        }
+        const name = new URL(url).searchParams.get("name") ?? "";
+        return Response.json({ results: name.includes(",") ? results : CAMBRIDGE_RESULTS });
+      });
+
+    it("keeps the API's own match without retrying", async () => {
+      answerFullName([CAMBRIDGE_RESULTS[1]]);
+      await run({ name: "Cambridge, MA" });
+
+      expect(geocodeNames()).toEqual(["Cambridge, MA"]);
+      expect(fetchMock.mock.calls.at(-1)?.[0]).toContain("latitude=42.37");
+    });
+
+    it("retries with the bare name and matches the qualifier", async () => {
+      answerFullName([]);
+      await run({ name: "Cambridge, Massachusetts" });
+
+      expect(geocodeNames()).toEqual(["Cambridge, Massachusetts", "Cambridge"]);
+      expect(fetchMock.mock.calls.at(-1)?.[0]).toContain("latitude=42.37");
+    });
+
+    it("falls back to the top candidate when the qualifier matches nothing", async () => {
+      answerFullName([]);
+      await run({ name: "Cambridge, UK" });
+
+      expect(geocodeNames()).toEqual(["Cambridge, UK", "Cambridge"]);
+      expect(fetchMock.mock.calls.at(-1)?.[0]).toContain("latitude=52.2");
+    });
+  });
+
   it("asks for a single candidate without a country", async () => {
     await run({ name: "Cambridge" });
 
