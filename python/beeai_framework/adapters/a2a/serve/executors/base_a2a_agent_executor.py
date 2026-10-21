@@ -54,7 +54,7 @@ class BaseA2AAgentExecutor(BaseA2AExecutor[AnyAgentLike]):
         agent: AnyAgentLike = self._runnable
         updater = a2a_server_tasks.TaskUpdater(event_queue, context.task_id, context.context_id)  # type: ignore[arg-type]
         # registered before any await, so a cancel() that arrives during the setup still aborts this run
-        with self._abort_signal(context.task_id) as signal:
+        with self._abort_signal(context.task_id, event_queue) as signal:
             if not context.current_task:
                 if not context.message:
                     raise ValueError("No message found in the request context.")
