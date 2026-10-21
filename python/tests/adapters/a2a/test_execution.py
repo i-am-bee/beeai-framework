@@ -2,12 +2,15 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import asyncio
+import contextlib
 from typing import Any
 
 import a2a.server.agent_execution as a2a_agent_execution
 import a2a.server.events as a2a_events
 import a2a.types as a2a_types
 import pytest
+from a2a.server.request_handlers import DefaultRequestHandler
+from a2a.server.tasks import InMemoryTaskStore
 
 import beeai_framework.adapters.a2a.serve.executors.base_a2a_agent_executor as base_a2a_agent_executor
 from beeai_framework.adapters.a2a.serve.server import A2AServer, A2AServerMetadata
@@ -169,6 +172,51 @@ async def test_cancel_aborts_only_the_canceled_task(agent_type: type, monkeypatc
     completed = [event.status.state for event in await drain_status_events(queues["task-b"])]
     assert completed[-1] == a2a_types.TaskState.completed
     assert a2a_types.TaskState.canceled not in completed
+
+
+@pytest.mark.parametrize("agent_type", AGENTS)
+async def test_cancel_reaches_streaming_subscribers(agent_type: type, monkeypatch: pytest.MonkeyPatch) -> None:
+    started = asyncio.Event()
+    release = asyncio.Event()
+    create = ScriptedChatModel._create
+
+    async def blocked_create(self: ScriptedChatModel, *args: Any) -> Any:
+        started.set()
+        await release.wait()
+        return await create(self, *args)
+
+    monkeypatch.setattr(ScriptedChatModel, "_create", blocked_create)
+    executor = make_executor(make_agent(agent_type))
+    handler = DefaultRequestHandler(agent_executor=executor, task_store=InMemoryTaskStore())
+
+    task_ids: list[str] = []
+    states: list[a2a_types.TaskState] = []
+
+    async def subscribe() -> None:
+        message = a2a_types.Message(
+            message_id="message-stream",
+            role=a2a_types.Role.user,
+            parts=[a2a_types.Part(root=a2a_types.TextPart(text="Check Prague weather"))],
+        )
+        async for event in handler.on_message_send_stream(a2a_types.MessageSendParams(message=message)):
+            if isinstance(event, a2a_types.TaskStatusUpdateEvent):
+                task_ids.append(event.task_id)
+                states.append(event.status.state)
+
+    stream = asyncio.create_task(subscribe())
+    try:
+        await asyncio.wait_for(started.wait(), timeout=5)
+        task = await handler.on_cancel_task(a2a_types.TaskIdParams(id=task_ids[0]))
+        assert task is not None
+        assert task.status.state == a2a_types.TaskState.canceled
+        await asyncio.wait_for(stream, timeout=2)
+    finally:
+        release.set()
+        stream.cancel()
+        with contextlib.suppress(asyncio.CancelledError):
+            await stream
+
+    assert states == [a2a_types.TaskState.submitted, a2a_types.TaskState.working, a2a_types.TaskState.canceled]
 
 
 @pytest.mark.parametrize("agent_type", AGENTS)

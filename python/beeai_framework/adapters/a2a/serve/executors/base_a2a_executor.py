@@ -47,6 +47,7 @@ class BaseA2AExecutor(a2a_agent_execution.AgentExecutor, Generic[AnyRunnableType
         self._runnable = runnable
         self.agent_card = agent_card
         self._abort_controllers: dict[str, AbortController] = {}
+        self._event_queues: dict[str, a2a_events.EventQueue] = {}
         self._memory_manager = memory_manager
 
     @override
@@ -59,7 +60,7 @@ class BaseA2AExecutor(a2a_agent_execution.AgentExecutor, Generic[AnyRunnableType
             raise ValueError("No message found in the request context.")
 
         # registered before any await, so a cancel() that arrives during the setup still aborts this run
-        with self._abort_signal(context.task_id) as signal:
+        with self._abort_signal(context.task_id, event_queue) as signal:
             cloned_runnable = await self._runnable.clone() if isinstance(self._runnable, Cloneable) else self._runnable
             memory = None
             if context.context_id:
@@ -109,21 +110,26 @@ class BaseA2AExecutor(a2a_agent_execution.AgentExecutor, Generic[AnyRunnableType
     ) -> None:
         if context.task_id and (controller := self._abort_controllers.get(context.task_id)):
             controller.abort()
+        # a2a-sdk passes a queue tapped from the running task, its events never reach the streaming subscribers
+        if context.task_id and context.task_id in self._event_queues:
+            event_queue = self._event_queues[context.task_id]
 
         updater = a2a_server_tasks.TaskUpdater(event_queue, context.task_id, context.context_id)  # type: ignore[arg-type]
         await updater.cancel()
 
     @contextlib.contextmanager
-    def _abort_signal(self, task_id: str | None) -> Iterator[AbortSignal]:
+    def _abort_signal(self, task_id: str | None, event_queue: a2a_events.EventQueue) -> Iterator[AbortSignal]:
         controller = AbortController()
         if task_id:
             self._abort_controllers[task_id] = controller
+            self._event_queues[task_id] = event_queue
         try:
             yield controller.signal
         finally:
             # a follow-up request for the same task may have registered its own controller meanwhile
             if task_id and self._abort_controllers.get(task_id) is controller:
                 del self._abort_controllers[task_id]
+                del self._event_queues[task_id]
 
     async def _process_events(
         self, emitter: Emitter, context: a2a_agent_execution.RequestContext, updater: a2a_server_tasks.TaskUpdater
