@@ -11507,10 +11507,10 @@ cffi = ["cffi (>=1.17,<2.0) ; platform_python_implementation != \"PyPy\" and pyt
 a2a = ["a2a-sdk", "cryptography", "grpcio-health-checking", "starlette", "types-grpcio", "types-grpcio-health-checking", "types-grpcio-reflection", "uvicorn"]
 acp = ["acp-sdk", "starlette", "uvicorn"]
 acp-zed = ["agent-client-protocol"]
-agentstack = ["a2a-sdk", "agentstack-sdk", "cryptography", "starlette", "uvicorn"]
+agentstack = ["a2a-sdk", "agentstack-sdk", "cryptography", "mcp", "starlette", "uvicorn"]
 all = ["a2a-sdk", "acp-sdk", "agent-client-protocol", "agentstack-sdk", "boto3", "cryptography", "ddgs", "deepeval", "fastapi", "google-auth", "grpcio-health-checking", "langchain", "langchain-community", "langchain-core", "langchain-ollama", "langgraph", "langgraph-checkpoint", "langsmith", "mcp", "nltk", "outlines", "peft", "pillow", "pypdf", "ragas", "starlette", "torch", "torch", "torch", "transformers", "transformers", "transformers", "uvicorn", "wikipedia-api"]
 bedrock = ["boto3"]
-beeai-platform = ["a2a-sdk", "agentstack-sdk", "cryptography", "starlette", "uvicorn"]
+beeai-platform = ["a2a-sdk", "agentstack-sdk", "cryptography", "mcp", "starlette", "uvicorn"]
 duckduckgo = ["ddgs"]
 evaluation = ["deepeval", "ragas"]
 huggingface = ["transformers", "transformers", "transformers"]
@@ -11527,4 +11527,4 @@ wikipedia = ["wikipedia-api"]
 [metadata]
 lock-version = "2.1"
 python-versions = ">= 3.11,<3.14"
-content-hash = "67e6c246e56b97a9abfd93281a5fe5b90788d346f58da38a353599875b10167d"
+content-hash = "4845c3df7f34b845b3eeebd79dd4c04e7c1191e3dd17efb419e7abb52d799504"
