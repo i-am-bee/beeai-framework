@@ -221,14 +221,36 @@ export class OpenMeteoTool extends Tool<OpenMeteoToolOutput, ToolOptions, ToolRu
 
   @Cache()
   protected async _geocode(location: LocationSearch, signal: AbortSignal) {
-    const { apiKey } = this.options;
+    const name = location.name.trim();
+    const country = location.country?.trim();
+    let results = await this._searchLocations(name, location, country ? [country] : [], signal);
+    if (results.length === 0 && name.includes(",")) {
+      // The API resolves qualifiers it knows ("Paris, TX") but finds nothing for others
+      // ("London, UK"), so retry with the bare name and match the qualifiers ourselves.
+      const [base, ...parts] = name.split(",").map((part) => part.trim());
+      const qualifiers = [...parts.filter(Boolean), ...(country ? [country] : [])];
+      results = await this._searchLocations(base, location, qualifiers, signal);
+    }
+    if (results.length === 0) {
+      throw new ToolError(`Location '${location.name}' was not found.`);
+    }
+    return results[0];
+  }
 
+  protected async _searchLocations(
+    name: string,
+    location: LocationSearch,
+    qualifiers: string[],
+    signal: AbortSignal,
+  ): Promise<Record<string, any>[]> {
+    const { apiKey } = this.options;
     const params = createURLParams({
-      name: location.name,
+      name,
       language: location.language,
-      country: location.country,
       format: "json",
-      count: 1,
+      // The geocoding API has no country-name filter (it ignores unknown parameters),
+      // so fetch more candidates and pick the first one matching every qualifier.
+      count: qualifiers.length > 0 ? 100 : 1,
     });
     const response = await fetch(`https://geocoding-api.open-meteo.com/v1/search?${params}`, {
       headers: {
@@ -243,11 +265,25 @@ export class OpenMeteoTool extends Tool<OpenMeteoToolOutput, ToolOptions, ToolRu
         new Error(await response.text()),
       ]);
     }
-
-    const { results } = await response.json();
-    if (!results || results.length === 0) {
-      throw new ToolError(`Location '${location.name}' was not found.`);
+    const { results = [] } = await response.json();
+    if (qualifiers.length === 0) {
+      return results;
     }
-    return results[0];
+    // Fall back to the best overall match when no candidate matches, e.g. for "UK".
+    const matching = results.filter((result: Record<string, unknown>) =>
+      matchesQualifiers(result, qualifiers),
+    );
+    return matching.length > 0 ? matching : results;
   }
+}
+
+/** Whether each qualifier names the result's country (by name or code) or one of its regions. */
+function matchesQualifiers(result: Record<string, unknown>, qualifiers: string[]): boolean {
+  const names = new Set(
+    ["country", "country_code", "admin1", "admin2", "admin3", "admin4"]
+      .map((key) => result[key])
+      .filter((value): value is string => typeof value === "string")
+      .map((value) => value.toLowerCase()),
+  );
+  return qualifiers.every((qualifier) => names.has(qualifier.toLowerCase()));
 }
