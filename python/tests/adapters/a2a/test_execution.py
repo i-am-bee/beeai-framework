@@ -265,3 +265,38 @@ async def test_runnable_abort_not_requested_by_cancel_is_reported() -> None:
     event = await queue.dequeue_event(no_wait=True)
     assert isinstance(event, a2a_types.Message)
     assert "request timed out" in event.parts[0].root.text  # type: ignore[union-attr]
+
+
+class WaitsForRelease(Runnable[RunnableOutput]):
+    def __init__(self) -> None:
+        super().__init__()
+        self.started = asyncio.Event()
+        self.release = asyncio.Event()
+
+    @property
+    def emitter(self) -> Emitter:
+        return Emitter.root().child(namespace=["waits_for_release"], creator=self)
+
+    # a plain coroutine that ignores the abort signal, so the run finishes after cancel()
+    # pyrefly: ignore [bad-override]
+    async def run(self, input: Any, /, **kwargs: Any) -> RunnableOutput:
+        self.started.set()
+        await self.release.wait()
+        return RunnableOutput(output=[AssistantMessage("late reply")])
+
+
+async def test_runnable_cancel_after_run_skips_the_reply() -> None:
+    runnable = WaitsForRelease()
+    executor = make_executor(runnable)
+
+    queue = a2a_events.EventQueue()
+    running = asyncio.create_task(executor.execute(make_context(), queue))
+    await runnable.started.wait()
+    await executor.cancel(make_context(), queue)
+    runnable.release.set()
+    await running
+
+    events = [await queue.dequeue_event(no_wait=True) for _ in range(queue.queue.qsize())]
+    assert [type(event) for event in events] == [a2a_types.TaskStatusUpdateEvent]
+    memory = await executor._memory_manager.get("context-task")
+    assert [message.text for message in memory.messages] == ["Check Prague weather"]

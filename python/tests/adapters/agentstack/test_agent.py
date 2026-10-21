@@ -32,3 +32,17 @@ async def test_clone_preserves_memory() -> None:
 
     assert [message.text for message in cloned.memory.messages] == ["Hello", "Hi"]
     assert cloned.memory is not agent.memory
+
+
+async def test_clone_preserves_connection_settings() -> None:
+    agent = AgentStackAgent(
+        agent_card=make_card(),
+        memory=UnconstrainedMemory(),
+        auth_token="dummy-token",
+        agent_stack_url="http://localhost:8333",
+    )
+
+    cloned = await agent.clone()
+
+    assert cloned._auth_token == "dummy-token"
+    assert cloned._agent_stack_url == "http://localhost:8333"
