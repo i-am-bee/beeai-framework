@@ -80,7 +80,10 @@ export class RequirementAgentRunner {
   protected incrementIteration(): void {
     this.state.iteration++;
 
-    if (this.runConfig.maxIterations && this.state.iteration > this.runConfig.maxIterations) {
+    if (
+      this.runConfig.maxIterations != null &&
+      this.state.iteration > this.runConfig.maxIterations
+    ) {
       throw new AgentError(
         `Agent was not able to resolve the task in ${this.state.iteration} iterations.`,
       );
