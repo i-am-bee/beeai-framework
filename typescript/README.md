@@ -37,6 +37,23 @@ Use these packages to extend the base BeeAI framework functionality:
 | -------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------- |
 | [**instrumentation**](https://github.com/Arize-ai/openinference/tree/main/js/packages/openinference-instrumentation-beeai) | Integrate monitoring tools into your application. |
 
+## Emitter lifecycle
+
+Emitters created with `Emitter.child()` forward events to their parent while they
+are alive. A parent keeps weak child registrations, so releasing an agent, tool,
+or model also allows its emitter and creator to be garbage-collected. Previously,
+the parent's pipe cleanup retained these objects even after a request finished.
+
+Keep a reference to children that should continue emitting events. Use `destroy()`
+to disconnect deterministically: destroying a child removes its parent registration;
+destroying a parent disconnects its children without destroying their local listeners.
+Garbage collection and removal of unused registrations happen asynchronously.
+
+Snapshots save the upward parent relationship and rebuild its pipe on restoration;
+they do not make parents own their children. Include any children that must be
+restored in the serialized object graph. A cloned child gets an independent parent
+connection, and a cloned parent does not take over the original parent's children.
+
 ## Installation
 
 Install the framework using npm:
