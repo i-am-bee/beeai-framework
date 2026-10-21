@@ -375,6 +375,68 @@ async def test_sync_clean_entries_are_not_tokenized_again() -> None:
 
 @pytest.mark.asyncio
 @pytest.mark.unit
+async def test_rejected_add_does_not_poison_later_adds() -> None:
+    # The estimate says the message fits, but the automatic sync measures it above max_tokens.
+    memory = TokenMemory(
+        max_tokens=6,
+        capacity_threshold=1,
+        sync_threshold=0.25,
+        handlers={"estimate": lambda msg: 1, "tokenize": lambda msgs: 7 if msgs[0].text == "big" else 1},
+    )
+    first = UserMessage("ok")
+    await memory.add(first)
+
+    with pytest.raises(ResourceFatalError, match="cannot fit"):
+        await memory.add(UserMessage("big"))
+    assert memory.messages == [first]
+    assert memory.tokens_used == 1
+
+    later = UserMessage("next")
+    await memory.add(later)
+    assert memory.messages == [first, later]
+    assert memory.tokens_used == 2
+    assert not memory.is_dirty
+
+
+@pytest.mark.asyncio
+@pytest.mark.unit
+@pytest.mark.parametrize("failure", ["sync_rejects_new_message", "selector_fails_after_eviction"])
+async def test_failed_add_restores_evicted_messages(failure: str) -> None:
+    calls = 0
+
+    def select(messages: list) -> object:
+        nonlocal calls
+        calls += 1
+        if failure == "selector_fails_after_eviction" and calls == 2:
+            raise RuntimeError("selector failed")
+        return messages[0]
+
+    memory = TokenMemory(
+        max_tokens=2,
+        capacity_threshold=1,
+        sync_threshold=2,
+        handlers={
+            "estimate": lambda msg: 2 if msg.text == "new" and failure == "selector_fails_after_eviction" else 1,
+            "tokenize": lambda msgs: 3 if msgs[0].text == "new" else 1,
+            "removal_selector": select,
+        },
+    )
+    messages = [UserMessage("a"), UserMessage("b")]
+    await memory.add_many(messages)
+    await memory.sync()
+    memory._sync_threshold = 0.25
+    original = memory.messages
+
+    with pytest.raises(RuntimeError if failure == "selector_fails_after_eviction" else ResourceFatalError):
+        await memory.add(UserMessage("new"))
+    assert memory.messages is original
+    assert memory.messages == messages
+    assert memory.tokens_used == 2
+    assert not memory.is_dirty
+
+
+@pytest.mark.asyncio
+@pytest.mark.unit
 async def test_clone_preserves_messages_and_handlers() -> None:
     def custom_selector(msgs: list) -> object:
         return msgs[0]

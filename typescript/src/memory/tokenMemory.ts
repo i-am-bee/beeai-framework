@@ -32,6 +32,11 @@ interface TokenByMessage {
   dirty: boolean;
 }
 
+interface TokenMemoryState {
+  messages: Message[];
+  metas: [Message, TokenByMessage | undefined][];
+}
+
 export class TokenMemory extends BaseMemory {
   public readonly messages: Message[] = [];
 
@@ -86,25 +91,34 @@ export class TokenMemory extends BaseMemory {
       );
     }
 
-    // Evict existing messages until the incoming one fits within the configured capacity
-    // budget (the absolute limit scaled by capacityThreshold).
-    const capacity = this.maxTokens * this.threshold;
-    while (this.messages.length > 0 && this.tokensUsed > capacity - meta.tokensCount) {
-      const messageToDelete = this.handlers.removalSelector(this.messages);
-      const exists = await this.delete(messageToDelete);
+    // add() either succeeds or leaves the memory unchanged. A failure after eviction has started (an invalid or
+    // failing removalSelector, or the automatic sync rejecting the new message) restores the evicted messages and
+    // does not keep the rejected one, which would otherwise make every later add() fail.
+    const state = this.captureState(message);
+    try {
+      // Evict existing messages until the incoming one fits within the configured capacity
+      // budget (the absolute limit scaled by capacityThreshold).
+      const capacity = this.maxTokens * this.threshold;
+      while (this.messages.length > 0 && this.tokensUsed > capacity - meta.tokensCount) {
+        const messageToDelete = this.handlers.removalSelector(this.messages);
+        const exists = await this.delete(messageToDelete);
 
-      if (!messageToDelete || !exists) {
-        throw new MemoryFatalError('The "removalSelector" handler must return a valid message!');
+        if (!messageToDelete || !exists) {
+          throw new MemoryFatalError('The "removalSelector" handler must return a valid message!');
+        }
       }
-    }
 
-    this.tokensByMessage.set(message, meta);
+      this.tokensByMessage.set(message, meta);
 
-    index = ensureRange(index ?? this.messages.length, { min: 0, max: this.messages.length });
-    this.messages.splice(index, 0, message);
+      index = ensureRange(index ?? this.messages.length, { min: 0, max: this.messages.length });
+      this.messages.splice(index, 0, message);
 
-    if (this.isDirty && this.tokensUsed / this.maxTokens >= this.syncThreshold) {
-      await this.sync();
+      if (this.isDirty && this.tokensUsed / this.maxTokens >= this.syncThreshold) {
+        await this.sync();
+      }
+    } catch (error) {
+      this.restoreState(state);
+      throw error;
     }
   }
 
@@ -113,10 +127,10 @@ export class TokenMemory extends BaseMemory {
   }
 
   async sync() {
-    const messages = [...this.messages];
-    const tokensByMessage = messages.map((msg) => this.tokensByMessage.get(msg));
+    const state = this.captureState();
 
     try {
+      const messages = [...this.messages];
       const synchronized = await Promise.all(
         messages.map(async (msg) => {
           const cache = this.tokensByMessage.get(msg);
@@ -132,19 +146,31 @@ export class TokenMemory extends BaseMemory {
       this.messages.length = 0;
       await this.addMany(messages);
     } catch (error) {
-      this.messages.length = 0;
-      for (const msg of messages) {
-        this.messages.push(msg);
-      }
-      messages.forEach((msg, index) => {
-        const cache = tokensByMessage[index];
-        if (cache) {
-          this.tokensByMessage.set(msg, cache);
-        } else {
-          this.tokensByMessage.delete(msg);
-        }
-      });
+      this.restoreState(state);
       throw error;
+    }
+  }
+
+  private captureState(...pending: Message[]): TokenMemoryState {
+    const messages = [...this.messages];
+    return {
+      messages,
+      metas: [...messages, ...pending].map((msg) => [msg, this.tokensByMessage.get(msg)]),
+    };
+  }
+
+  private restoreState({ messages, metas }: TokenMemoryState) {
+    this.messages.length = 0;
+    // Push one by one: spreading a long history into push() can exceed the argument limit.
+    for (const msg of messages) {
+      this.messages.push(msg);
+    }
+    for (const [msg, meta] of metas) {
+      if (meta) {
+        this.tokensByMessage.set(msg, meta);
+      } else {
+        this.tokensByMessage.delete(msg);
+      }
     }
   }
 
