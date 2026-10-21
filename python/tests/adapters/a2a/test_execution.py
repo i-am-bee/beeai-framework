@@ -2,7 +2,6 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import asyncio
-from collections.abc import Generator
 from typing import Any
 
 import a2a.server.agent_execution as a2a_agent_execution
@@ -10,15 +9,18 @@ import a2a.server.events as a2a_events
 import a2a.types as a2a_types
 import pytest
 
+import beeai_framework.adapters.a2a.serve.executors.base_a2a_agent_executor as base_a2a_agent_executor
 from beeai_framework.adapters.a2a.serve.server import A2AServer, A2AServerMetadata
 from beeai_framework.agents import AgentExecutionConfig
 from beeai_framework.agents.react import ReActAgent
 from beeai_framework.agents.requirement import RequirementAgent
 from beeai_framework.agents.tool_calling import ToolCallingAgent
 from beeai_framework.backend import AnyMessage, AssistantMessage
+from beeai_framework.emitter import Emitter
+from beeai_framework.errors import AbortError
 from beeai_framework.memory import UnconstrainedMemory
+from beeai_framework.runnable import Runnable, RunnableOutput, runnable_entry
 from beeai_framework.serve.utils import UnlimitedMemoryManager
-from beeai_framework.utils.cancellation import AbortSignal
 from tests.agents._scripted import ScriptedChatModel, final_answer_message, tool_call_message, weather_tool
 
 pytestmark = [pytest.mark.unit, pytest.mark.asyncio, pytest.mark.filterwarnings("ignore::DeprecationWarning")]
@@ -139,33 +141,127 @@ async def test_cancel_does_not_abort_later_tasks(agent_type: type) -> None:
 
 @pytest.mark.parametrize("agent_type", AGENTS)
 async def test_cancel_aborts_only_the_canceled_task(agent_type: type, monkeypatch: pytest.MonkeyPatch) -> None:
-    signals: list[AbortSignal] = []
     started = asyncio.Event()
     release = asyncio.Event()
+    create = ScriptedChatModel._create
 
-    class BlockedRun:
-        def observe(self, _: Any) -> "BlockedRun":
-            return self
-
-        def __await__(self) -> Generator[Any, None, Any]:
-            return release.wait().__await__()
-
-    def blocked_run(self: Any, *args: Any, signal: AbortSignal, **kwargs: Any) -> BlockedRun:
-        signals.append(signal)
+    async def blocked_create(self: ScriptedChatModel, *args: Any) -> Any:
         started.set()
-        return BlockedRun()
+        await release.wait()
+        return await create(self, *args)
 
-    monkeypatch.setattr(agent_type, "run", blocked_run)
+    monkeypatch.setattr(ScriptedChatModel, "_create", blocked_create)
     executor = make_executor(make_agent(agent_type))
 
+    queues = {task_id: a2a_events.EventQueue() for task_id in ("task-a", "task-b")}
     running = []
-    for task_id in ("task-a", "task-b"):
+    for task_id, queue in queues.items():
         started.clear()
-        running.append(asyncio.create_task(executor.execute(make_context(task_id), a2a_events.EventQueue())))
+        running.append(asyncio.create_task(executor.execute(make_context(task_id), queue)))
         await started.wait()
 
-    await executor.cancel(make_context("task-a"), a2a_events.EventQueue())
-    assert [signal.aborted for signal in signals] == [True, False]
-
+    await executor.cancel(make_context("task-a"), queues["task-a"])
     release.set()
     await asyncio.gather(*running)
+
+    canceled = [event.status.state for event in await drain_status_events(queues["task-a"])]
+    assert canceled == [a2a_types.TaskState.submitted, a2a_types.TaskState.working, a2a_types.TaskState.canceled]
+    completed = [event.status.state for event in await drain_status_events(queues["task-b"])]
+    assert completed[-1] == a2a_types.TaskState.completed
+    assert a2a_types.TaskState.canceled not in completed
+
+
+@pytest.mark.parametrize("agent_type", AGENTS)
+async def test_cancel_during_setup_emits_only_canceled(agent_type: type, monkeypatch: pytest.MonkeyPatch) -> None:
+    started = asyncio.Event()
+    release = asyncio.Event()
+    init_agent_memory = base_a2a_agent_executor.init_agent_memory
+
+    async def blocked_init_agent_memory(*args: Any) -> None:
+        started.set()
+        await release.wait()
+        await init_agent_memory(*args)
+
+    monkeypatch.setattr(base_a2a_agent_executor, "init_agent_memory", blocked_init_agent_memory)
+    executor = make_executor(make_agent(agent_type))
+
+    queue = a2a_events.EventQueue()
+    running = asyncio.create_task(executor.execute(make_context(), queue))
+    await started.wait()
+    await executor.cancel(make_context(), queue)
+    release.set()
+    await running
+
+    events = await drain_status_events(queue)
+    assert [event.status.state for event in events] == [a2a_types.TaskState.submitted, a2a_types.TaskState.canceled]
+
+
+@pytest.mark.parametrize("agent_type", AGENTS)
+async def test_abort_not_requested_by_cancel_fails_the_task(agent_type: type, monkeypatch: pytest.MonkeyPatch) -> None:
+    async def aborted_create(self: ScriptedChatModel, *args: Any) -> Any:
+        raise AbortError("model request timed out")
+
+    monkeypatch.setattr(ScriptedChatModel, "_create", aborted_create)
+    status = await invoke(make_agent(agent_type), {})
+    assert status.state == a2a_types.TaskState.failed
+
+
+class Echo(Runnable[RunnableOutput]):
+    def __init__(self) -> None:
+        super().__init__()
+        self.calls = 0
+
+    @property
+    def emitter(self) -> Emitter:
+        return Emitter.root().child(namespace=["echo"], creator=self)
+
+    @runnable_entry
+    async def run(self, input: Any, /, **kwargs: Any) -> RunnableOutput:
+        self.calls += 1
+        return RunnableOutput(output=[AssistantMessage("echo")])
+
+
+async def test_runnable_cancel_during_setup_skips_the_run(monkeypatch: pytest.MonkeyPatch) -> None:
+    runnable = Echo()
+    executor = make_executor(runnable)
+    started = asyncio.Event()
+    release = asyncio.Event()
+    get_memory = executor._memory_manager.get
+
+    async def blocked_get_memory(*args: Any) -> Any:
+        started.set()
+        await release.wait()
+        return await get_memory(*args)
+
+    monkeypatch.setattr(executor._memory_manager, "get", blocked_get_memory)
+
+    queue = a2a_events.EventQueue()
+    running = asyncio.create_task(executor.execute(make_context(), queue))
+    await started.wait()
+    await executor.cancel(make_context(), queue)
+    release.set()
+    await running
+
+    assert runnable.calls == 0
+    events = [await queue.dequeue_event(no_wait=True) for _ in range(queue.queue.qsize())]
+    assert [type(event) for event in events] == [a2a_types.TaskStatusUpdateEvent]
+
+
+class TimedOut(Runnable[RunnableOutput]):
+    @property
+    def emitter(self) -> Emitter:
+        return Emitter.root().child(namespace=["timed_out"], creator=self)
+
+    @runnable_entry
+    async def run(self, input: Any, /, **kwargs: Any) -> RunnableOutput:
+        raise AbortError("request timed out")
+
+
+async def test_runnable_abort_not_requested_by_cancel_is_reported() -> None:
+    executor = make_executor(TimedOut())
+    queue = a2a_events.EventQueue()
+    await executor.execute(make_context(), queue)
+
+    event = await queue.dequeue_event(no_wait=True)
+    assert isinstance(event, a2a_types.Message)
+    assert "request timed out" in event.parts[0].root.text  # type: ignore[union-attr]

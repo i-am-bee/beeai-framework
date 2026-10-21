@@ -10,7 +10,6 @@ from typing_extensions import TypeVar, override
 from beeai_framework.adapters.a2a.agents._utils import convert_a2a_to_framework_message
 from beeai_framework.adapters.a2a.serve.context import A2AContext
 from beeai_framework.emitter import Emitter
-from beeai_framework.errors import AbortError
 from beeai_framework.memory import UnconstrainedMemory
 from beeai_framework.runnable import AnyRunnableTypeVar
 from beeai_framework.serve import MemoryManager
@@ -59,38 +58,48 @@ class BaseA2AExecutor(a2a_agent_execution.AgentExecutor, Generic[AnyRunnableType
         if not context.message:
             raise ValueError("No message found in the request context.")
 
-        cloned_runnable = await self._runnable.clone() if isinstance(self._runnable, Cloneable) else self._runnable
-        memory = None
-        if context.context_id:
-            try:
-                memory = await self._memory_manager.get(context.context_id)
-            except KeyError:
-                memory = UnconstrainedMemory()
-                await self._memory_manager.set(context.context_id, memory)
+        # registered before any await, so a cancel() that arrives during the setup still aborts this run
+        with self._abort_signal(context.task_id) as signal:
+            cloned_runnable = await self._runnable.clone() if isinstance(self._runnable, Cloneable) else self._runnable
+            memory = None
+            if context.context_id:
+                try:
+                    memory = await self._memory_manager.get(context.context_id)
+                except KeyError:
+                    memory = UnconstrainedMemory()
+                    await self._memory_manager.set(context.context_id, memory)
 
-            await memory.add(convert_a2a_to_framework_message(context.message))
+                await memory.add(convert_a2a_to_framework_message(context.message))
 
-        messages = memory.messages if memory else [convert_a2a_to_framework_message(context.message)]
+            messages = memory.messages if memory else [convert_a2a_to_framework_message(context.message)]
 
-        try:
-            with A2AContext(context=context, event_queue=event_queue), self._abort_signal(context.task_id) as signal:
-                # pyrefly: ignore [missing-attribute]
-                data = await cloned_runnable.run(messages, signal=signal)
-                if memory is not None:
-                    await memory.add(data.last_message)
-
-                await event_queue.enqueue_event(
-                    a2a_utils.new_agent_text_message(
-                        text=data.last_message.text, context_id=context.context_id, task_id=context.task_id
-                    )
-                )
-
-        except AbortError:
             # cancel() has already reported the canceled status for this task
-            return
-        except Exception as e:
-            logger.exception("Exception during execution")
-            await event_queue.enqueue_event(a2a_utils.new_agent_text_message(str(e)))
+            if signal.aborted:
+                return
+
+            try:
+                with A2AContext(context=context, event_queue=event_queue):
+                    # pyrefly: ignore [missing-attribute]
+                    data = await cloned_runnable.run(messages, signal=signal)
+                    # cancel() has already reported the canceled status for this task
+                    if signal.aborted:
+                        return
+                    if memory is not None:
+                        await memory.add(data.last_message)
+
+                    await event_queue.enqueue_event(
+                        a2a_utils.new_agent_text_message(
+                            text=data.last_message.text, context_id=context.context_id, task_id=context.task_id
+                        )
+                    )
+
+            except Exception as e:
+                # cancel() has already reported the canceled status; any abort it didn't cause
+                # (e.g. a timeout) leaves the signal untouched and is still reported
+                if signal.aborted:
+                    return
+                logger.exception("Exception during execution")
+                await event_queue.enqueue_event(a2a_utils.new_agent_text_message(str(e)))
 
     @override
     async def cancel(
