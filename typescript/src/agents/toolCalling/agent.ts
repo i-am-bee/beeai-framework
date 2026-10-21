@@ -149,7 +149,7 @@ export class ToolCallingAgent extends BaseAgent<
 
     while (!state.result) {
       state.iteration++;
-      if (state.iteration > (execution.totalMaxRetries ?? Infinity)) {
+      if (execution.maxIterations != null && state.iteration > execution.maxIterations) {
         throw new AgentError(
           `Agent was not able to resolve the task in ${state.iteration} iterations.`,
         );
