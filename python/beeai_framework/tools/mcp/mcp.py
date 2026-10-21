@@ -13,6 +13,8 @@ try:
     from mcp import ClientSession
     from mcp.types import CallToolResult, PaginatedRequestParams, TextContent
     from mcp.types import Tool as MCPToolInfo
+
+    from beeai_framework.tools.mcp.utils.compat import get_field
 except ModuleNotFoundError as e:
     raise ModuleNotFoundError(
         "Optional module [mcp] not found.\nRun 'pip install \"beeai-framework[mcp]\"' to install."
@@ -64,7 +66,7 @@ class MCPTool(Tool[BaseModel, ToolRunOptions, JSONToolOutput]):
 
     @property
     def input_schema(self) -> type[BaseModel]:
-        return JSONSchemaModel.create(self.name, self._tool.inputSchema)
+        return JSONSchemaModel.create(self.name, get_field(self._tool, "input_schema"))
 
     def _create_emitter(self) -> Emitter:
         return Emitter.root().child(
@@ -82,8 +84,9 @@ class MCPTool(Tool[BaseModel, ToolRunOptions, JSONToolOutput]):
         logger.debug(f"Tool result: {result}")
 
         data_result: Any = None
-        if result.structuredContent is not None:
-            data_result = result.structuredContent
+        structured_content = get_field(result, "structured_content")
+        if structured_content is not None:
+            data_result = structured_content
         else:
             if self._smart_parsing:
                 chunks: list[Any] = []
@@ -97,7 +100,7 @@ class MCPTool(Tool[BaseModel, ToolRunOptions, JSONToolOutput]):
             else:
                 data_result = result.content
 
-        if result.isError:
+        if get_field(result, "is_error"):
             error_context = (result.meta or {}).get("error_context")
             raise ToolError(
                 to_json(data_result, indent=4, sort_keys=False),
@@ -130,7 +133,7 @@ class MCPTool(Tool[BaseModel, ToolRunOptions, JSONToolOutput]):
         tools_result = await session.list_tools()
         tools = list(tools_result.tools)
         seen_cursors: set[str] = set()
-        while (cursor := tools_result.nextCursor) is not None:
+        while (cursor := get_field(tools_result, "next_cursor")) is not None:
             if cursor in seen_cursors:
                 logger.warning(f"MCP server repeated tools/list cursor {cursor!r}; stopping pagination.")
                 break
