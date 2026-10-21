@@ -36,7 +36,7 @@ def user_customizer(config: PromptTemplateInput[Any]) -> PromptTemplateInput[Any
 
 def no_result_customizer(config: PromptTemplateInput[Any]) -> PromptTemplateInput[Any]:
     new_config = config.model_copy()
-    config.template += """\nPlease reformat your input."""
+    new_config.template += """\nPlease reformat your input."""
     return new_config
 
 
