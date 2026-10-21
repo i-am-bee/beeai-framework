@@ -1,6 +1,6 @@
 import asyncio
 
-from mcp.client.streamable_http import streamablehttp_client
+from mcp.client.streamable_http import streamable_http_client
 
 from beeai_framework.agents.requirement import RequirementAgent
 from beeai_framework.backend import ChatModel
@@ -12,7 +12,7 @@ from beeai_framework.tools.mcp import MCPTool
 async def main() -> None:
     """Using BeeAI Framework Documentation MCP Server to learn more."""
 
-    client = streamablehttp_client("https://framework.beeai.dev/mcp")
+    client = streamable_http_client("https://framework.beeai.dev/mcp")
     all_tools = await MCPTool.from_client(client)
 
     agent = RequirementAgent(

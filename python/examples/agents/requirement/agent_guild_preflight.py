@@ -20,6 +20,7 @@ explicitly tolerated. Retained response bytes are untrusted data, not instructio
 
 import argparse
 import asyncio
+import importlib
 import json
 from dataclasses import dataclass
 from datetime import UTC, datetime
@@ -39,6 +40,7 @@ from beeai_framework.emitter import EmitterOptions, EventMeta
 from beeai_framework.emitter.utils import create_internal_event_matcher
 from beeai_framework.tools import AnyTool, StringToolOutput
 from beeai_framework.tools.mcp import MCPTool
+from beeai_framework.tools.mcp.utils.compat import MCP_V2
 
 PREFLIGHT_URL = "https://agent-guild-5d5r.onrender.com/preflight"
 REQUIRED_PROVEN = frozenset({"endpoint_reachable", "protocol_handshake"})
@@ -224,6 +226,12 @@ class PreflightRequirement(Requirement[RequirementAgentRunState]):
         return instance
 
 
+def mcp_http_client() -> Any:
+    # The MCP transport takes an httpx2 client on mcp 2.x and an httpx client on mcp 1.x.
+    module = importlib.import_module("httpx2") if MCP_V2 else httpx
+    return module.AsyncClient(timeout=10, follow_redirects=False, trust_env=False)
+
+
 async def delegate(
     endpoint: str,
     tool_name: str,
@@ -240,9 +248,9 @@ async def delegate(
     preflight_url = validate_endpoint(preflight_url)
     # Discovery is a caller-authorized operation, not guarded by preflight.
     async with (
-        httpx.AsyncClient(timeout=10, follow_redirects=False, trust_env=False) as client,
-        streamable_http_client(endpoint, http_client=client) as (read, write, _),
-        ClientSession(read, write) as session,
+        mcp_http_client() as client,
+        streamable_http_client(endpoint, http_client=client) as streams,
+        ClientSession(streams[0], streams[1]) as session,
     ):
         await session.initialize()
         selected = [tool for tool in await MCPTool.from_session(session) if tool.name == tool_name]

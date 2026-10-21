@@ -25,7 +25,7 @@ import asyncio
 import sys
 
 from dotenv import load_dotenv
-from mcp.client.streamable_http import streamablehttp_client
+from mcp.client.streamable_http import streamable_http_client
 
 from beeai_framework.adapters.acp_zed import ACPZedServer, ACPZedServerConfig
 from beeai_framework.agents.requirement import RequirementAgent
@@ -36,7 +36,7 @@ load_dotenv()
 
 
 async def _build_agent() -> RequirementAgent:
-    mcp_tools = await MCPTool.from_client(streamablehttp_client("https://mcp.kiwi.com"))
+    mcp_tools = await MCPTool.from_client(streamable_http_client("https://mcp.kiwi.com"))
     return RequirementAgent(
         llm=ChatModel.from_name("watsonx:ibm/granite-4-h-small", ChatModelParameters(temperature=0)),
         tools=[*mcp_tools],
