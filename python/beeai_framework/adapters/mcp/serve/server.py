@@ -2,7 +2,8 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import contextlib
-from collections.abc import Callable
+import inspect
+from collections.abc import Callable, Mapping
 from contextlib import (
     AbstractAsyncContextManager,
 )
@@ -12,6 +13,7 @@ from pydantic import BaseModel, Field
 
 from beeai_framework.agents import AgentExecutionConfig, BaseAgent
 from beeai_framework.backend import Role, UserMessage
+from beeai_framework.logger import Logger
 from beeai_framework.runnable import Runnable, RunnableOutput
 from beeai_framework.serve import MemoryManager
 from beeai_framework.serve.errors import FactoryAlreadyRegisteredError
@@ -25,13 +27,7 @@ from beeai_framework.utils.strings import CustomJsonDump, to_json_serializable
 from beeai_framework.utils.types import MaybeAsync
 
 try:
-    import mcp.server.fastmcp.prompts as mcp_prompts
-    import mcp.server.fastmcp.resources as mcp_resources
-    import mcp.server.fastmcp.server as mcp_server
     from mcp.server.auth.settings import AuthSettings
-    from mcp.server.fastmcp.prompts.base import Prompt as MCPPrompt
-    from mcp.server.fastmcp.prompts.base import PromptArgument
-    from mcp.server.fastmcp.tools.base import Tool as MCPNativeTool
     from mcp.server.lowlevel.server import LifespanResultT
     from mcp.server.streamable_http_manager import (
         DEFAULT_MAX_REQUEST_BODY_SIZE,
@@ -41,6 +37,25 @@ try:
     from mcp.server.transport_security import TransportSecuritySettings
     from mcp.types import CallToolResult as MCPCallToolResult
     from mcp.types import TextContent as MCPTextContent
+
+    from beeai_framework.tools.mcp.utils.compat import MCP_V2
+
+    if MCP_V2:  # FastMCP was renamed to MCPServer (mcp.server.mcpserver) in mcp 2.x
+        import mcp.server.mcpserver.prompts as mcp_prompts  # pyrefly: ignore [missing-import]
+        import mcp.server.mcpserver.resources as mcp_resources  # pyrefly: ignore [missing-import]
+        import mcp.server.mcpserver.server as mcp_server  # pyrefly: ignore [missing-import]
+        from mcp.server.mcpserver.prompts.base import Prompt as MCPPrompt  # pyrefly: ignore [missing-import]
+        from mcp.server.mcpserver.prompts.base import PromptArgument  # pyrefly: ignore [missing-import]
+        from mcp.server.mcpserver.server import MCPServer as MCPNativeServer  # pyrefly: ignore [missing-import]
+        from mcp.server.mcpserver.tools.base import Tool as MCPNativeTool  # pyrefly: ignore [missing-import]
+    else:
+        import mcp.server.fastmcp.prompts as mcp_prompts  # pyrefly: ignore [missing-import]
+        import mcp.server.fastmcp.resources as mcp_resources  # pyrefly: ignore [missing-import]
+        import mcp.server.fastmcp.server as mcp_server  # pyrefly: ignore [missing-import]
+        from mcp.server.fastmcp.prompts.base import Prompt as MCPPrompt  # pyrefly: ignore [missing-import]
+        from mcp.server.fastmcp.prompts.base import PromptArgument  # pyrefly: ignore [missing-import]
+        from mcp.server.fastmcp.server import FastMCP as MCPNativeServer  # pyrefly: ignore [missing-import]
+        from mcp.server.fastmcp.tools.base import Tool as MCPNativeTool  # pyrefly: ignore [missing-import]
 except ModuleNotFoundError as e:
     raise ModuleNotFoundError(
         "Optional module [mcp] not found.\nRun 'pip install \"beeai-framework[mcp]\"' to install."
@@ -50,11 +65,20 @@ from beeai_framework.serve.server import Server
 from beeai_framework.utils import ModelLike
 from beeai_framework.utils.models import to_model
 
+logger = Logger(__name__)
+
 MCPServerTool = MaybeAsync[[Any], ToolOutput]
 MCPServerEntry = mcp_prompts.Prompt | mcp_resources.Resource | MCPServerTool | MCPNativeTool
 
 
+# pyrefly: ignore [invalid-inheritance] -- the base class depends on the installed mcp major version
 class MCPSettings(mcp_server.Settings[LifespanResultT]):
+    """Settings for the native MCP server.
+
+    On mcp 1.x all of them are passed to the server constructor. On mcp 2.x the transport settings
+    (host, port, paths, StreamableHTTP options, transport security) are passed when the server is run.
+    """
+
     # Server settings
     debug: bool = Field(False)
     log_level: Literal["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"] = Field("INFO")
@@ -87,7 +111,7 @@ class MCPSettings(mcp_server.Settings[LifespanResultT]):
         default_factory=list, description="List of dependencies to install in the server environment"
     )
 
-    lifespan: Callable[[mcp_server.FastMCP], AbstractAsyncContextManager[LifespanResultT]] | None = Field(
+    lifespan: Callable[[Any], AbstractAsyncContextManager[LifespanResultT]] | None = Field(
         None, description="Lifespan context manager"
     )
 
@@ -119,12 +143,31 @@ class MCPServer(
         self, *, config: ModelLike[MCPServerConfig] | None = None, memory_manager: MemoryManager | None = None
     ) -> None:
         super().__init__(config=to_model(MCPServerConfig, config or MCPServerConfig()), memory_manager=memory_manager)
-        self._server = mcp_server.FastMCP(
-            self._config.name,
-            self._config.instructions,
-            **self._config.settings.model_dump(exclude_none=True),
-        )
+        settings = {name: value for name, value in self._config.settings if value is not None}
+        server_options = _accepted_kwargs(MCPNativeServer.__init__, settings)
+        self._server = MCPNativeServer(self._config.name, instructions=self._config.instructions, **server_options)
+        self._transport_options = _accepted_kwargs(self._transport_runner(), settings)
+
+        explicit = self._config.settings.model_fields_set & settings.keys()
+        ignored = explicit - server_options.keys() - self._transport_options.keys()
+        if ignored:
+            logger.warning(
+                f"MCP settings {sorted(ignored)} are not supported by the installed mcp package "
+                f"for the '{self._config.transport}' transport and will be ignored."
+            )
         self._execution_by_member: dict[Any, AgentExecutionConfig] = {}
+
+    def _transport_runner(self) -> Callable[..., Any] | None:
+        """The server method that takes the transport settings (mcp 2.x only; 1.x takes them in the constructor)."""
+        if not MCP_V2:
+            return None
+        match self._config.transport:
+            case "sse":
+                return self._server.run_sse_async
+            case "streamable-http":
+                return self._server.run_streamable_http_async
+            case _:
+                return None
 
     def register(self, input: Any, *, execution: AgentExecutionConfig | None = None) -> Self:
         """Register a tool, prompt, resource or runnable.
@@ -141,7 +184,7 @@ class MCPServer(
 
     def serve(self) -> None:
         self._register_members()
-        self._server.run(transport=self._config.transport)
+        self._server.run(self._config.transport, **self._transport_options)
 
     async def aserve(self) -> None:
         self._register_members()
@@ -149,9 +192,9 @@ class MCPServer(
             case "stdio":
                 return await self._server.run_stdio_async()
             case "sse":
-                return await self._server.run_sse_async()
+                return await self._server.run_sse_async(**self._transport_options)
             case "streamable-http":
-                return await self._server.run_streamable_http_async()
+                return await self._server.run_streamable_http_async(**self._transport_options)
             case _:
                 raise ValueError(f"Transport {self._config.transport} is not supported by this server.")
 
@@ -222,18 +265,27 @@ def _tool_factory(
     mcp_tool = MCPNativeTool.from_function(run, name=tool.name, description=tool.description, structured_output=False)
     mcp_tool.parameters = tool.input_schema.model_json_schema()
     mcp_tool.fn_metadata.arg_model = CustomToolSchema
-    object.__setattr__(
-        mcp_tool.fn_metadata,
-        "convert_result",
-        # The FastMCP server allows either returning a structured output or a message. We want to support both.
-        # Based on https://github.com/modelcontextprotocol/python-sdk
-        # ... return a tuple of (content, structured_data)
-        # Error results are passed through as CallToolResult so the lowlevel server
-        # preserves isError and _meta (the tuple path reconstructs with isError=False).
-        lambda result: result if result.isError else (result.content, result.structuredContent),
-    )
+    if not MCP_V2:  # mcp 2.x passes a returned CallToolResult through as is (including is_error and _meta)
+        object.__setattr__(
+            mcp_tool.fn_metadata,
+            "convert_result",
+            # The FastMCP server allows either returning a structured output or a message. We want to support both.
+            # Based on https://github.com/modelcontextprotocol/python-sdk
+            # ... return a tuple of (content, structured_data)
+            # Error results are passed through as CallToolResult so the lowlevel server
+            # preserves isError and _meta (the tuple path reconstructs with isError=False).
+            lambda result: result if result.isError else (result.content, result.structuredContent),
+        )
 
     return mcp_tool
+
+
+def _accepted_kwargs(fn: Callable[..., Any] | None, values: Mapping[str, Any]) -> dict[str, Any]:
+    """Select the values that `fn` takes as keyword arguments."""
+    if fn is None:
+        return {}
+    parameters = inspect.signature(fn).parameters
+    return {name: value for name, value in values.items() if name in parameters}
 
 
 with contextlib.suppress(FactoryAlreadyRegisteredError):

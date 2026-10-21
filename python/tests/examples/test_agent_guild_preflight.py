@@ -2,6 +2,8 @@
 # SPDX-License-Identifier: Apache-2.0
 """Offline fixtures exercise actual RequirementAgent and its blocking tool boundary."""
 
+import functools
+import importlib
 import json
 import socket
 import sys
@@ -21,6 +23,7 @@ from beeai_framework.backend.message import MessageToolCallContent
 from beeai_framework.backend.types import ChatModelInput, ChatModelOutput
 from beeai_framework.context import RunContext
 from beeai_framework.tools import tool
+from beeai_framework.tools.mcp.utils.compat import MCP_V2
 from examples.agents.requirement.agent_guild_preflight import (
     PREFLIGHT_URL,
     PreflightRequirement,
@@ -291,23 +294,23 @@ async def test_native_mcp_session_uses_the_selected_endpoint(
 ) -> None:
     from examples.agents.requirement.agent_guild_preflight import delegate
 
-    actual_client = httpx.AsyncClient
     mcp_calls: list[dict[str, Any]] = []
     observed_urls: list[str] = []
 
-    def server(request: httpx.Request) -> httpx.Response:
+    # `http` is httpx, or httpx2 for the MCP transport on mcp 2.x; their APIs match.
+    def server(http: Any, request: Any) -> Any:
         if request.method == "GET" and str(request.url).split("?")[0] == preflight_url:
             observed_urls.append(request.url.params["url"])
-            return httpx.Response(200, json=document(failed="protocol_handshake" if blocked else None))
+            return http.Response(200, json=document(failed="protocol_handshake" if blocked else None))
         assert str(request.url) == ENDPOINT
         if request.method == "GET":
-            return httpx.Response(405)
+            return http.Response(405)
         if request.method == "DELETE":
-            return httpx.Response(200)
+            return http.Response(200)
         assert request.method == "POST"
         msg = json.loads(request.content)
         if "id" not in msg:
-            return httpx.Response(202)
+            return http.Response(202)
         method = msg["method"]
         if method == "initialize":
             result = {
@@ -335,13 +338,20 @@ async def test_native_mcp_session_uses_the_selected_endpoint(
             result = {"content": [{"type": "text", "text": "synthetic completed"}], "isError": False}
         else:
             raise AssertionError(method)
-        return httpx.Response(200, json={"jsonrpc": "2.0", "id": msg["id"], "result": result})
+        return http.Response(200, json={"jsonrpc": "2.0", "id": msg["id"], "result": result})
 
-    def factory(*args: Any, **kwargs: Any) -> httpx.AsyncClient:
-        kwargs["transport"] = httpx.MockTransport(server)
-        return actual_client(*args, **kwargs)
+    def mock_clients(http: Any) -> None:
+        actual_client = http.AsyncClient
 
-    monkeypatch.setattr(httpx, "AsyncClient", factory)
+        def factory(*args: Any, **kwargs: Any) -> Any:
+            kwargs["transport"] = http.MockTransport(functools.partial(server, http))
+            return actual_client(*args, **kwargs)
+
+        monkeypatch.setattr(http, "AsyncClient", factory)
+
+    mock_clients(httpx)
+    if MCP_V2:
+        mock_clients(importlib.import_module("httpx2"))
     await delegate(
         ENDPOINT,
         "selected",

@@ -1,5 +1,6 @@
 # Copyright 2025 © BeeAI a Series of LF Projects, LLC
 # SPDX-License-Identifier: Apache-2.0
+import asyncio
 import contextlib
 import json
 from typing import Any
@@ -21,6 +22,8 @@ try:
         TextContent,
     )
     from mcp.types import Tool as MCPToolInfo
+
+    from beeai_framework.tools.mcp.utils.compat import get_field
 except ModuleNotFoundError as e:
     raise ModuleNotFoundError(
         "Optional module [mcp] not found.\nRun 'pip install \"beeai-framework[mcp]\"' to install."
@@ -30,7 +33,7 @@ from typing import Self
 
 from pydantic import BaseModel
 
-from beeai_framework.context import RunContext
+from beeai_framework.context import RunContext, storage
 from beeai_framework.emitter import Emitter
 from beeai_framework.logger import Logger
 from beeai_framework.tools.tool import Tool
@@ -52,10 +55,10 @@ def _omit_binary(value: Any) -> Any:
     if isinstance(value, list):
         return [_omit_binary(item) for item in value]
     if isinstance(value, ImageContent | AudioContent):
-        return {**value.model_dump(exclude_none=True), "data": _placeholder(value.data, value.mimeType)}
+        return {**value.model_dump(exclude_none=True), "data": _placeholder(value.data, get_field(value, "mime_type"))}
     if isinstance(value, EmbeddedResource) and isinstance(value.resource, BlobResourceContents):
         resource = value.resource.model_dump(mode="json", exclude_none=True)
-        resource["blob"] = _placeholder(value.resource.blob, value.resource.mimeType)
+        resource["blob"] = _placeholder(value.resource.blob, get_field(value.resource, "mime_type"))
         return {**value.model_dump(mode="json", exclude_none=True), "resource": resource}
     return value
 
@@ -100,7 +103,7 @@ class MCPTool(Tool[BaseModel, ToolRunOptions, MCPToolOutput]):
 
     @property
     def input_schema(self) -> type[BaseModel]:
-        return JSONSchemaModel.create(self.name, self._tool.inputSchema)
+        return JSONSchemaModel.create(self.name, get_field(self._tool, "input_schema"))
 
     def _create_emitter(self) -> Emitter:
         return Emitter.root().child(
@@ -112,14 +115,15 @@ class MCPTool(Tool[BaseModel, ToolRunOptions, MCPToolOutput]):
     async def _run(self, input_data: Any, options: ToolRunOptions | None, context: RunContext) -> MCPToolOutput:
         """Execute the tool with given input."""
         logger.debug(f"Executing tool {self._tool.name} with input: {input_data}")
-        result: CallToolResult = await self._session.call_tool(
-            name=self._tool.name, arguments=input_data.model_dump(exclude_none=self._exclude_none, exclude_unset=True)
+        result = await asyncio.create_task(
+            self._call_tool(input_data.model_dump(exclude_none=self._exclude_none, exclude_unset=True))
         )
         logger.debug(f"Tool result: {result}")
 
         data_result: Any = None
-        if result.structuredContent is not None:
-            data_result = result.structuredContent
+        structured_content = get_field(result, "structured_content")
+        if structured_content is not None:
+            data_result = structured_content
         else:
             if self._smart_parsing:
                 chunks: list[Any] = []
@@ -133,7 +137,7 @@ class MCPTool(Tool[BaseModel, ToolRunOptions, MCPToolOutput]):
             else:
                 data_result = result.content
 
-        if result.isError:
+        if get_field(result, "is_error"):
             error_context = (result.meta or {}).get("error_context")
             raise ToolError(
                 to_json(data_result, indent=4, sort_keys=False),
@@ -141,6 +145,12 @@ class MCPTool(Tool[BaseModel, ToolRunOptions, MCPToolOutput]):
             )
 
         return MCPToolOutput(data_result)
+
+    async def _call_tool(self, arguments: dict[str, Any]) -> CallToolResult:
+        # mcp 2.x keeps snapshots of the caller's contextvars (in-flight requests, timers) after the call returns.
+        # Without the run context in them they don't keep this tool, and so its session, alive.
+        storage.set(None)  # type: ignore[arg-type]
+        return await self._session.call_tool(name=self._tool.name, arguments=arguments)
 
     @classmethod
     async def from_client(cls, client: MCPClient | ClientSession, **options: Unpack[MCPToolKwargs]) -> list["MCPTool"]:
@@ -166,7 +176,7 @@ class MCPTool(Tool[BaseModel, ToolRunOptions, MCPToolOutput]):
         tools_result = await session.list_tools()
         tools = list(tools_result.tools)
         seen_cursors: set[str] = set()
-        while (cursor := tools_result.nextCursor) is not None:
+        while (cursor := get_field(tools_result, "next_cursor")) is not None:
             if cursor in seen_cursors:
                 logger.warning(f"MCP server repeated tools/list cursor {cursor!r}; stopping pagination.")
                 break

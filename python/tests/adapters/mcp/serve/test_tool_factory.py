@@ -1,6 +1,8 @@
 # Copyright 2025 © BeeAI a Series of LF Projects, LLC
 # SPDX-License-Identifier: Apache-2.0
 
+import importlib
+from collections.abc import Awaitable, Callable
 from typing import Any
 
 import pytest
@@ -9,13 +11,21 @@ pytest.importorskip("mcp", reason="Optional module [mcp] not installed.")
 from mcp.types import CallToolResult, TextContent
 from pydantic import BaseModel
 
-from beeai_framework.adapters.mcp.serve.server import _tool_factory
+from beeai_framework.adapters.mcp.serve.server import MCPNativeTool, _tool_factory
 from beeai_framework.context import RunContext
 from beeai_framework.emitter import Emitter
 from beeai_framework.tools import ToolError
+from beeai_framework.tools.mcp.utils.compat import MCP_V2, get_field
 from beeai_framework.tools.tool import Tool
 from beeai_framework.tools.types import StringToolOutput, ToolRunOptions
 from beeai_framework.utils.strings import to_safe_word
+
+
+async def run_tool(mcp_tool: MCPNativeTool, arguments: dict[str, Any]) -> Any:
+    run: Callable[..., Awaitable[Any]] = mcp_tool.run
+    if MCP_V2:  # mcp 2.x requires a request context
+        return await run(arguments, importlib.import_module("mcp.server.mcpserver").Context())
+    return await run(arguments)
 
 
 class DummyInput(BaseModel):
@@ -63,10 +73,10 @@ class TestToolFactory:
     @pytest.mark.unit
     async def test_success_returns_result_with_meta(self) -> None:
         mcp_tool = _tool_factory(SuccessTool())
-        result = await mcp_tool.run({"value": "test"})
+        result = await run_tool(mcp_tool, {"value": "test"})
 
         assert isinstance(result, CallToolResult)
-        assert not result.isError
+        assert not get_field(result, "is_error")
         assert result.meta == {"is_empty": False}
         assert len(result.content) == 1
         assert isinstance(result.content[0], TextContent)
@@ -76,10 +86,10 @@ class TestToolFactory:
     @pytest.mark.unit
     async def test_error_returns_error_result_with_context_in_meta(self) -> None:
         mcp_tool = _tool_factory(FailingTool())
-        result = await mcp_tool.run({"value": "test"})
+        result = await run_tool(mcp_tool, {"value": "test"})
 
         assert isinstance(result, CallToolResult)
-        assert result.isError
+        assert get_field(result, "is_error")
         assert isinstance(result.content[0], TextContent)
         assert "something went wrong" in result.content[0].text
         assert result.meta is not None
@@ -89,10 +99,10 @@ class TestToolFactory:
     @pytest.mark.unit
     async def test_error_without_explicit_context_still_has_tool_name(self) -> None:
         mcp_tool = _tool_factory(FailingToolNoContext())
-        result = await mcp_tool.run({"value": "test"})
+        result = await run_tool(mcp_tool, {"value": "test"})
 
         assert isinstance(result, CallToolResult)
-        assert result.isError
+        assert get_field(result, "is_error")
         # ToolError.ensure() always adds the tool name to context
         assert result.meta == {"error_context": {"name": "failing_tool_no_ctx"}}
 
@@ -100,7 +110,7 @@ class TestToolFactory:
     @pytest.mark.unit
     async def test_error_message_includes_tool_name(self) -> None:
         mcp_tool = _tool_factory(FailingTool())
-        result = await mcp_tool.run({"value": "test"})
+        result = await run_tool(mcp_tool, {"value": "test"})
 
         assert isinstance(result.content[0], TextContent)
         assert result.content[0].text.startswith("Error executing tool failing_tool: ")
@@ -118,11 +128,11 @@ class TestToolFactory:
         converted = convert_result(error_result)
 
         assert isinstance(converted, CallToolResult)
-        assert converted.isError
+        assert get_field(converted, "is_error")
         assert converted.meta == {"error_context": {"key": "val"}}
 
     @pytest.mark.unit
-    def test_convert_result_returns_tuple_for_success(self) -> None:
+    def test_convert_result_for_success(self) -> None:
         mcp_tool = _tool_factory(SuccessTool())
         convert_result = mcp_tool.fn_metadata.convert_result
 
@@ -133,8 +143,12 @@ class TestToolFactory:
         )
         converted = convert_result(success_result)
 
+        if MCP_V2:  # the result is passed through as is
+            assert converted is success_result
+            return
+
         assert isinstance(converted, tuple)
         assert len(converted) == 2
         content, structured = converted
         assert content == success_result.content
-        assert structured == success_result.structuredContent
+        assert structured == get_field(success_result, "structured_content")
