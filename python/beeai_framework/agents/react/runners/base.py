@@ -86,7 +86,7 @@ class BaseRunner(ABC):
         meta: ReActAgentIterationMeta = ReActAgentIterationMeta(iteration=len(self._iterations) + 1)
         max_iterations = (
             self._options.execution.max_iterations
-            if self._options.execution and self._options.execution.max_iterations
+            if self._options.execution and self._options.execution.max_iterations is not None
             else math.inf
         )
 

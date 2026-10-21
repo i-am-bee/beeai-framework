@@ -86,7 +86,7 @@ class RequirementAgentRunner:
     def _increment_iteration(self) -> None:
         self._state.iteration += 1
 
-        if self._run_config.max_iterations and self._state.iteration > self._run_config.max_iterations:
+        if self._run_config.max_iterations is not None and self._state.iteration > self._run_config.max_iterations:
             raise AgentError(f"Agent was not able to resolve the task in {self._state.iteration} iterations.")
 
     def __create_final_answer_stream(self, final_answer_tool: FinalAnswerTool) -> StreamToolCallMiddleware:

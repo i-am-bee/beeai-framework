@@ -131,14 +131,10 @@ async def test_requirement_boundary_semantics_match_direct_run(limit: int, sdk_m
     server = AgentStackServer(memory_manager=UnlimitedMemoryManager()).register(
         agent, execution=AgentExecutionConfig(max_iterations=limit)
     )
-    if limit < 0:
-        with pytest.raises(AgentError, match="iterations"):
-            await agent.run("Check Prague weather", max_iterations=limit)
-        with pytest.raises(AgentError, match="iterations"):
-            await invoke(server)
-    else:
-        await invoke(server)
+    with pytest.raises(AgentError, match="iterations"):
         await agent.run("Check Prague weather", max_iterations=limit)
+    with pytest.raises(AgentError, match="iterations"):
+        await invoke(server)
 
 
 class Echo(Runnable[RunnableOutput]):

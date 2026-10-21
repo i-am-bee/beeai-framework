@@ -313,3 +313,22 @@ describe("RequirementAgent owned emitter lifecycle", () => {
     },
   );
 });
+describe("RequirementAgent maxIterations", () => {
+  it.each([
+    [0, false],
+    [1, true],
+    [undefined, true],
+  ])("with maxIterations=%s resolves=%s", async (maxIterations, resolves) => {
+    const f = fixture();
+    try {
+      const run = f.agent.run({ prompt: "hello" }, { execution: { maxIterations } });
+      if (resolves) {
+        await expect(run).resolves.toBeDefined();
+      } else {
+        await expect(run).rejects.toThrow("not able to resolve the task");
+      }
+    } finally {
+      f.cleanup();
+    }
+  });
+});

@@ -91,6 +91,16 @@ async def test_raises_when_max_iterations_exceeded() -> None:
 
 @pytest.mark.asyncio
 @pytest.mark.unit
+async def test_raises_when_max_iterations_is_zero() -> None:
+    model = ScriptedChatModel([[final_answer_message("done")]])
+    agent = ToolCallingAgent(llm=model)
+
+    with pytest.raises(AgentError, match="iterations"):
+        await agent.run("solve this", max_iterations=0)
+
+
+@pytest.mark.asyncio
+@pytest.mark.unit
 async def test_conversation_is_persisted_to_memory() -> None:
     model = ScriptedChatModel([[final_answer_message("hello there")]])
     agent = ToolCallingAgent(llm=model)

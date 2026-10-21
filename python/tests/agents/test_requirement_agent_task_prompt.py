@@ -3,6 +3,7 @@
 
 import pytest
 
+from beeai_framework.agents import AgentError
 from beeai_framework.agents.requirement.agent import RequirementAgent
 from beeai_framework.backend import UserMessage
 from tests.agents._scripted import ScriptedChatModel, final_answer_message
@@ -39,3 +40,13 @@ async def test_backstory_reaches_the_model_for_a_message_list_input() -> None:
     prompt = next(message.text for message in model.inputs[0].messages if isinstance(message, UserMessage))
     assert "The user is a five-year-old child." in prompt
     assert "Your task: What is 2+2?" in prompt
+
+
+@pytest.mark.asyncio
+@pytest.mark.unit
+async def test_raises_when_max_iterations_is_zero() -> None:
+    model = ScriptedChatModel([[final_answer_message("4")]], repeat_last=True)
+    agent = RequirementAgent(llm=model)
+
+    with pytest.raises(AgentError, match="iterations"):
+        await agent.run("What is 2+2?", max_iterations=0)
