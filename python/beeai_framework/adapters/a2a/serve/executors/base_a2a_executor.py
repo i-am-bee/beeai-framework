@@ -10,7 +10,6 @@ from typing_extensions import TypeVar, override
 from beeai_framework.adapters.a2a.agents._utils import convert_a2a_to_framework_message
 from beeai_framework.adapters.a2a.serve.context import A2AContext
 from beeai_framework.emitter import Emitter
-from beeai_framework.errors import AbortError
 from beeai_framework.memory import UnconstrainedMemory
 from beeai_framework.runnable import AnyRunnableTypeVar
 from beeai_framework.serve import MemoryManager
@@ -95,8 +94,9 @@ class BaseA2AExecutor(a2a_agent_execution.AgentExecutor, Generic[AnyRunnableType
                     )
 
             except Exception as e:
-                # an AbortError not caused by cancel() is still reported as an error
-                if isinstance(e, AbortError) and signal.aborted:
+                # cancel() has already reported the canceled status; any abort it didn't cause
+                # (e.g. a timeout) leaves the signal untouched and is still reported
+                if signal.aborted:
                     return
                 logger.exception("Exception during execution")
                 await event_queue.enqueue_event(a2a_utils.new_agent_text_message(str(e)))

@@ -8,7 +8,6 @@ from beeai_framework.adapters.a2a.serve.executors.base_a2a_executor import BaseA
 from beeai_framework.backend.message import (
     AnyMessage,
 )
-from beeai_framework.errors import AbortError
 from beeai_framework.serve import MemoryManager, init_agent_memory
 from beeai_framework.serve.utils import agent_execution_options
 from beeai_framework.utils.cloneable import Cloneable
@@ -89,8 +88,9 @@ class BaseA2AAgentExecutor(BaseA2AExecutor[AnyAgentLike]):
                 )
 
             except Exception as e:
-                # an AbortError not caused by cancel() still fails the task
-                if isinstance(e, AbortError) and signal.aborted:
+                # cancel() has already reported the canceled status; any abort it didn't cause
+                # (e.g. a timeout) leaves the signal untouched and is still reported
+                if signal.aborted:
                     return
                 logger.exception("Exception during execution")
                 await updater.failed(
