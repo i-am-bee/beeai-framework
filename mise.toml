@@ -1,7 +1,7 @@
 [tools]
 # Python
 python = "3.11"
-"pipx:poetry" = "2.1.1"
+"pipx:poetry" = "2.5.1"
 
 # Node.js
 node = "20.15.1"
