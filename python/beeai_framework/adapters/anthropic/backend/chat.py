@@ -30,7 +30,7 @@ class AnthropicChatModel(LiteLLMChatModel):
         **kwargs: Unpack[ChatModelKwargs],
     ) -> None:
         super().__init__(
-            (model_id if model_id else os.getenv("ANTHROPIC_CHAT_MODEL", "claude-3-haiku-20240307")),
+            (model_id if model_id else os.getenv("ANTHROPIC_CHAT_MODEL", "claude-haiku-4-5")),
             provider_id="anthropic",
             **kwargs,
         )
