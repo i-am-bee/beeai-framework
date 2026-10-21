@@ -222,6 +222,19 @@ class ReActAgent(BaseAgent[ReActAgentOutput]):
         )
 
     async def clone(self) -> "ReActAgent":
-        cloned = ReActAgent(**self._input.model_dump())
+        cloned = ReActAgent(
+            llm=await self._input.llm.clone(),
+            tools=[await tool.clone() for tool in self._input.tools],
+            memory=await self._input.memory.clone(),
+            meta=self._input.meta.model_copy() if self._input.meta is not None else None,
+            templates=self._input.templates.copy() if self._input.templates is not None else None,
+            execution=self._input.execution.model_copy() if self._input.execution is not None else None,
+            stream=self._input.stream,
+        )
+        # Carry agent-level middlewares over to the clone, matching LiteAgent and
+        # RequirementAgent. Without this, a middleware appended to the source
+        # agent never runs on a clone (e.g. per-request clones in the A2A /
+        # AgentStack serve factories).
+        cloned.middlewares.extend(self.middlewares)
         cloned.emitter = await self.emitter.clone()
         return cloned
