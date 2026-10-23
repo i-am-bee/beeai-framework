@@ -28,11 +28,36 @@ class ChatModelErrorEvent(BaseModel):
     error: InstanceOf[FrameworkError]
 
 
+class ChatModelFallbackEvent(BaseModel):
+    """Emitted by FallbackChatModel when escalating to the next provider."""
+
+    model_config = {"arbitrary_types_allowed": True}
+
+    failed_model_id: str
+    """model_id of the model that raised the error."""
+
+    failed_provider_id: str
+    """provider_id of the model that raised the error."""
+
+    target_model_id: str
+    """model_id of the next model being attempted."""
+
+    target_provider_id: str
+    """provider_id of the next model being attempted."""
+
+    error: Exception
+    """The exception that triggered the fallback."""
+
+    attempt_index: int
+    """Zero-based index of this fallback step (0 = primary → first fallback)."""
+
+
 chat_model_event_types: dict[str, type] = {
     "new_token": ChatModelNewTokenEvent,
     "success": ChatModelSuccessEvent,
     "start": ChatModelStartEvent,
     "error": ChatModelErrorEvent,
+    "fallback": ChatModelFallbackEvent,
     "finish": NoneType,
 }
 

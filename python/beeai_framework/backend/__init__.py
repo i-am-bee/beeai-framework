@@ -7,6 +7,7 @@ from beeai_framework.backend.embedding import EmbeddingModel
 from beeai_framework.backend.errors import BackendError, ChatModelError, EmbeddingModelError, MessageError
 from beeai_framework.backend.events import (
     ChatModelErrorEvent,
+    ChatModelFallbackEvent,
     ChatModelNewTokenEvent,
     ChatModelStartEvent,
     ChatModelSuccessEvent,
@@ -14,6 +15,7 @@ from beeai_framework.backend.events import (
     EmbeddingModelStartEvent,
     EmbeddingModelSuccessEvent,
 )
+from beeai_framework.backend.fallback_chat import FallbackChatModel
 from beeai_framework.backend.message import (
     AnyMessage,
     AssistantMessage,
@@ -48,11 +50,13 @@ __all__ = [
     "ChatModel",
     "ChatModelError",
     "ChatModelErrorEvent",
+    "ChatModelFallbackEvent",
     "ChatModelNewTokenEvent",
     "ChatModelOutput",
     "ChatModelParameters",
     "ChatModelStartEvent",
     "ChatModelSuccessEvent",
+    "FallbackChatModel",
     "CustomMessage",
     "CustomMessage",
     "CustomMessageContent",
