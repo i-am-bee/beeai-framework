@@ -267,7 +267,7 @@ def _prompt_template_factory(instance: PromptTemplate[Any]) -> MCPPrompt:
         title=instance.name,
         description=instance.description,
         arguments=[
-            PromptArgument(name=k, description=v.description, required=v.default is None and v.default_factory is None)
+            PromptArgument(name=k, description=v.description, required=v.is_required())
             for k, v in instance.input_schema.model_fields.items()
         ],
         fn=lambda **kwargs: instance.render(kwargs),
