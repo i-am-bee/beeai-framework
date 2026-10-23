@@ -153,8 +153,8 @@ async def test_cascading_failure_all_models_fail() -> None:
 @pytest.mark.unit
 async def test_non_retryable_error_propagates_immediately() -> None:
     """A non-retryable ChatModelError from the primary bypasses fallback entirely."""
-    non_retryable = ChatModelError("bad schema — not retryable")
-    assert not non_retryable.is_retryable  # default is False
+    non_retryable = ChatModelError("bad schema - not retryable")
+    assert not non_retryable.retryable  # ChatModelError sets retryable=False by default
 
     primary = DummyChatModel("m1", "openai")
     secondary = DummyChatModel("m2", "ollama")
@@ -210,7 +210,7 @@ def test_minimum_two_models_required() -> None:
 @pytest.mark.asyncio
 @pytest.mark.unit
 async def test_custom_retry_predicate_rejects_429() -> None:
-    """A custom predicate that returns False for 429 causes 429 to propagate immediately."""
+    """A custom predicate that returns False for 429 causes immediate propagation."""
     exc = _make_http_error(429)
 
     primary = DummyChatModel("m1", "openai")
@@ -222,7 +222,8 @@ async def test_custom_retry_predicate_rejects_429() -> None:
     # Predicate: reject everything (never fall back)
     model = FallbackChatModel([primary, secondary], retry_predicate=lambda _: False)
 
-    with pytest.raises(httpx.HTTPStatusError):
+    # ChatModel.run() always wraps unhandled exceptions in ChatModelError
+    with pytest.raises(ChatModelError):
         await model.run([UserMessage("hi")])
 
     secondary._create.assert_not_called()
