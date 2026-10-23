@@ -69,7 +69,7 @@ class DummyChatModel(ChatModel):
         self, input: ChatModelInput, run: RunContext
     ) -> AsyncGenerator[ChatModelOutput]:
         raise NotImplementedError
-        yield  # pragma: no cover — make it an async generator
+        yield  # pyrefly: ignore [invalid-yield]
 
 
 # ---------------------------------------------------------------------------
