@@ -1,0 +1,74 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<feed xmlns:opensearch="http://a9.com/-/spec/opensearch/1.1/" xmlns:arxiv="http://arxiv.org/schemas/atom" xmlns="http://www.w3.org/2005/Atom">
+  <id>https://arxiv.org/api/dkRi77VSHXcoY19vdhqpJT5HzbM</id>
+  <title>arXiv Query: search_query=&amp;id_list=1706.03762,2301.10000&amp;start=0&amp;max_results=2</title>
+  <updated>2026-10-23T10:52:43Z</updated>
+  <link href="https://arxiv.org/api/query?search_query=&amp;start=0&amp;max_results=2&amp;id_list=1706.03762,2301.10000" type="application/atom+xml"/>
+  <opensearch:itemsPerPage>2</opensearch:itemsPerPage>
+  <opensearch:totalResults>2</opensearch:totalResults>
+  <opensearch:startIndex>0</opensearch:startIndex>
+  <entry>
+    <id>http://arxiv.org/abs/1706.03762v7</id>
+    <title>Attention Is All You Need</title>
+    <updated>2023-08-02T00:41:18Z</updated>
+    <link href="https://arxiv.org/abs/1706.03762v7" rel="alternate" type="text/html"/>
+    <link href="https://arxiv.org/pdf/1706.03762v7" rel="related" type="application/pdf" title="pdf"/>
+    <summary>The dominant sequence transduction models are based on complex recurrent or convolutional neural networks in an encoder-decoder configuration. The best performing models also connect the encoder and decoder through an attention mechanism. We propose a new simple network architecture, the Transformer, based solely on attention mechanisms, dispensing with recurrence and convolutions entirely. Experiments on two machine translation tasks show these models to be superior in quality while being more parallelizable and requiring significantly less time to train. Our model achieves 28.4 BLEU on the WMT 2014 English-to-German translation task, improving over the existing best results, including ensembles by over 2 BLEU. On the WMT 2014 English-to-French translation task, our model establishes a new single-model state-of-the-art BLEU score of 41.8 after training for 3.5 days on eight GPUs, a small fraction of the training costs of the best models from the literature. We show that the Transformer generalizes well to other tasks by applying it successfully to English constituency parsing both with large and limited training data.</summary>
+    <category term="cs.CL" scheme="http://arxiv.org/schemas/atom"/>
+    <category term="cs.LG" scheme="http://arxiv.org/schemas/atom"/>
+    <published>2017-06-12T17:57:34Z</published>
+    <arxiv:comment>15 pages, 5 figures</arxiv:comment>
+    <arxiv:primary_category term="cs.CL"/>
+    <author>
+      <name>Ashish Vaswani</name>
+    </author>
+    <author>
+      <name>Noam Shazeer</name>
+    </author>
+    <author>
+      <name>Niki Parmar</name>
+    </author>
+    <author>
+      <name>Jakob Uszkoreit</name>
+    </author>
+    <author>
+      <name>Llion Jones</name>
+    </author>
+    <author>
+      <name>Aidan N. Gomez</name>
+    </author>
+    <author>
+      <name>Lukasz Kaiser</name>
+    </author>
+    <author>
+      <name>Illia Polosukhin</name>
+    </author>
+  </entry>
+  <entry>
+    <id>http://arxiv.org/abs/2301.10000v6</id>
+    <title>No-go for the formation of heavy mass Primordial Black Holes in Single Field Inflation</title>
+    <updated>2024-08-10T02:54:06Z</updated>
+    <link href="https://arxiv.org/abs/2301.10000v6" rel="alternate" type="text/html"/>
+    <link href="https://arxiv.org/pdf/2301.10000v6" rel="related" type="application/pdf" title="pdf"/>
+    <summary>We examine the possibility of Primordial Black Holes (PBHs) formation in single-field models of inflation. Using the adiabatic or wave function renormalization scheme in the short-range modes, we show that one-loop correction to the power spectrum is free from quadratic UV divergence. We consider a framework in which PBHs are produced during the transition from Slow Roll (SR) to Ultra Slow Roll (USR) followed by the end of inflation. We demonstrate that the renormalized power spectrum softens the contribution of the logarithmic IR divergence and severely restricts the possible mass range of produced PBHs in the said transition, namely, $M_{\rm PBH}\sim 10^{2}{\rm gm}$ ala a no-go theorem. In particular, we find that the produced PBHs are short-lived ($t^{\rm evap}_{\rm PBH}\sim 10^{-20}{\rm sec}$) and the corresponding number of e-folds in the USR region is restricted to $ΔN_{\rm USR}\approx 2$.</summary>
+    <category term="astro-ph.CO" scheme="http://arxiv.org/schemas/atom"/>
+    <category term="gr-qc" scheme="http://arxiv.org/schemas/atom"/>
+    <category term="hep-ph" scheme="http://arxiv.org/schemas/atom"/>
+    <category term="hep-th" scheme="http://arxiv.org/schemas/atom"/>
+    <published>2023-01-24T14:51:30Z</published>
+    <arxiv:comment>46 pages, 4 figures, Substantially revised version, Reference added and all the typos corrected, Comments are welcome, Revised version accepted for publication in European Physical Journal C</arxiv:comment>
+    <arxiv:primary_category term="astro-ph.CO"/>
+    <arxiv:journal_ref>Eur. Phys. J. C 84 (2024) 884</arxiv:journal_ref>
+    <author>
+      <name>Sayantan Choudhury</name>
+    </author>
+    <author>
+      <name>Mayukh R. Gangopadhyay</name>
+    </author>
+    <author>
+      <name>M. Sami</name>
+    </author>
+    <arxiv:doi>10.1140/epjc/s10052-024-13218-2</arxiv:doi>
+    <link rel="related" href="https://doi.org/10.1140/epjc/s10052-024-13218-2" title="doi"/>
+  </entry>
+</feed>
