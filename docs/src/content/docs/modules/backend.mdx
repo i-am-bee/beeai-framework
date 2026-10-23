@@ -875,6 +875,103 @@ while (true) {
 
 </CodeGroup>
 
+### Fallback models
+
+`FallbackChatModel` wraps a list of chat models and tries them in order until one succeeds. This is useful to stay available when a provider is down, rate limited, or returns an error.
+
+Each model runs with its own configuration (parameters, retries, tool calling support, cache), and the next model is used only after the previous one has exhausted its retries. Every time a fallback happens, a `fallback` event is emitted.
+
+{/* <!-- embedme python/examples/backend/fallback.py --> */}
+```python Python
+import asyncio
+import sys
+import traceback
+
+from beeai_framework.adapters.ollama import OllamaChatModel
+from beeai_framework.backend import ChatModelFallbackEvent, FallbackChatModel, UserMessage
+from beeai_framework.emitter import EventMeta
+from beeai_framework.errors import FrameworkError
+
+
+async def main() -> None:
+    llm = FallbackChatModel(
+        [
+            # The first model does not exist, so the request falls back to the next one.
+            OllamaChatModel("non-existing-model"),
+            OllamaChatModel("granite4:micro"),
+        ]
+    )
+
+    def on_fallback(data: ChatModelFallbackEvent, event: EventMeta) -> None:
+        print(f"Model '{data.failed_model.model_id}' failed, using '{data.next_model.model_id}' instead.")
+
+    response = await llm.run([UserMessage("What is the capital of France?")]).on("fallback", on_fallback)
+    print("LLM 🤖 : ", response.get_text_content())
+
+
+if __name__ == "__main__":
+    try:
+        asyncio.run(main())
+    except FrameworkError as e:
+        traceback.print_exc()
+        sys.exit(e.explain())
+```
+
+<Note>
+When streaming, the fallback can happen only before the failing model produced its first chunk. A failure in the middle of the stream is raised immediately to avoid duplicated output.
+</Note>
+
+#### Choosing which errors trigger the fallback
+
+By default, every error except an abort triggers the fallback. To change this, pass a `should_fallback` function. It receives the error and returns `True` to try the next model or `False` to raise the error immediately.
+
+The error is wrapped by the framework, so use `error.get_cause()` to get the original exception raised by the provider. The following example falls back only when the model is unavailable:
+
+{/* <!-- embedme python/examples/backend/fallback_should_fallback.py --> */}
+```python Python
+import asyncio
+import sys
+import traceback
+
+from litellm.exceptions import APIConnectionError, NotFoundError, RateLimitError, ServiceUnavailableError
+
+from beeai_framework.adapters.ollama import OllamaChatModel
+from beeai_framework.backend import FallbackChatModel, UserMessage
+from beeai_framework.errors import FrameworkError
+
+
+def should_fallback(error: Exception) -> bool:
+    # The error is wrapped by the framework, the original exception raised by the provider is its cause.
+    cause = error.get_cause() if isinstance(error, FrameworkError) else error
+
+    # Fall back only when the model is unavailable. Other errors (e.g., an invalid request)
+    # would fail for the next model as well, so they are raised immediately.
+    return isinstance(cause, NotFoundError | RateLimitError | ServiceUnavailableError | APIConnectionError)
+
+
+async def main() -> None:
+    llm = FallbackChatModel(
+        [OllamaChatModel("non-existing-model"), OllamaChatModel("granite4:micro")],
+        should_fallback=should_fallback,
+    )
+
+    response = await llm.run([UserMessage("What is the capital of France?")])
+    print("LLM 🤖 : ", response.get_text_content())
+
+
+if __name__ == "__main__":
+    try:
+        asyncio.run(main())
+    except FrameworkError as e:
+        traceback.print_exc()
+        sys.exit(e.explain())
+```
+
+<Note>
+`FallbackChatModel` is currently available in Python only.
+</Note>
+
+
 ---
 
 ## Embedding model
