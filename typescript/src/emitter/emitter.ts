@@ -46,6 +46,13 @@ interface Listener<T = any> {
   readonly options?: EmitterOptions;
 }
 
+interface ParentPipe {
+  parent: Emitter<any>;
+  callback: Callback<any>;
+  cleanup: CleanupFn;
+  parentCleanup: CleanupFn;
+}
+
 export class Emitter<T = Record<keyof any, Callback<unknown>>> extends Serializable {
   protected listeners: Listener[] = [];
   protected readonly groupId?: string;
@@ -54,6 +61,23 @@ export class Emitter<T = Record<keyof any, Callback<unknown>>> extends Serializa
   public readonly context: object;
   public readonly trace?: EventTrace;
   protected readonly cleanups: CleanupFn[] = [];
+  private parentPipe?: ParentPipe;
+  // Field initializers don't run for instances made with Object.create(Emitter.prototype)
+  // (serializer placeholders, clone(), fromSnapshot), so this stays undefined for those.
+  private initialized = true;
+
+  private static readonly childRefs = new WeakMap<CleanupFn, WeakRef<Emitter<any>>>();
+  private static readonly childRegistry = new FinalizationRegistry<{
+    parent: WeakRef<Emitter<any>>;
+    cleanup: WeakRef<CleanupFn>;
+  }>(({ parent, cleanup }) => {
+    const owner = parent.deref();
+    const callback = cleanup.deref();
+    if (owner && callback) {
+      removeFromArray(owner.cleanups, callback);
+      Emitter.childRefs.delete(callback);
+    }
+  });
 
   constructor(input: EmitterInput = {}) {
     super();
@@ -85,33 +109,24 @@ export class Emitter<T = Record<keyof any, Callback<unknown>>> extends Serializa
         : this.namespace.slice(),
     });
 
-    const cleanup = child.pipe(this);
-    this.cleanups.push(cleanup);
-    const parentCleanups = this.cleanups;
-    child.cleanups.push(
-      toBoundedFunction(() => {
-        const index = parentCleanups.indexOf(cleanup);
-        if (index !== -1) {
-          parentCleanups.splice(index, 1);
-        }
-      }, [
-        { value: parentCleanups, name: "parentCleanups" },
-        { value: cleanup, name: "cleanup" },
-      ]),
-    );
+    child.attachParent(this);
 
     return child;
   }
 
   pipe(target: Emitter<any>): CleanupFn {
-    return this.on(
+    return this.createPipe(target).cleanup;
+  }
+
+  private createPipe(target: Emitter<any>) {
+    const callback = toBoundedFunction(
+      (data: unknown, event: EventMeta) => target.invoke(data, event),
+      [{ value: target, name: "target" }],
+    );
+    const cleanup = this.on(
       // @ts-expect-error
       "*.*",
-      toBoundedFunction(
-        // @ts-expect-error
-        (...args) => target.invoke(...args),
-        [{ value: target, name: "target" }],
-      ),
+      callback,
       {
         isBlocking: true,
         once: false,
@@ -119,12 +134,55 @@ export class Emitter<T = Record<keyof any, Callback<unknown>>> extends Serializa
         matchNested: false,
       },
     );
+    return { callback, cleanup };
+  }
+
+  private static createChildCleanup(childRef: WeakRef<Emitter<any>>): CleanupFn {
+    // Keep this closure outside attachParent's scope: it must not capture the child
+    // or the original pipe cleanup, including through a shared closure context.
+    return toBoundedFunction(() => {
+      const child = childRef.deref();
+      if (child instanceof Emitter) {
+        child.detachParent();
+      }
+    }, [{ value: childRef, name: "childRef" }, Emitter]);
+  }
+
+  private attachParent(parent: Emitter<any>) {
+    const childRef = new WeakRef(this);
+    const parentCleanup = Emitter.createChildCleanup(childRef);
+    this.parentPipe = { parent, ...this.createPipe(parent), parentCleanup };
+    // During deserialization, a child may refer to an uninitialized parent placeholder.
+    if (!parent.cleanups) {
+      Object.assign(parent, { cleanups: [] });
+    }
+    parent.cleanups.push(parentCleanup);
+    Emitter.childRefs.set(parentCleanup, childRef);
+    Emitter.childRegistry.register(
+      this,
+      {
+        parent: new WeakRef(parent),
+        cleanup: new WeakRef(parentCleanup),
+      },
+      parentCleanup,
+    );
+  }
+
+  private detachParent() {
+    const pipe = this.parentPipe;
+    this.parentPipe = undefined;
+    if (pipe) {
+      pipe.cleanup();
+      removeFromArray(pipe.parent.cleanups, pipe.parentCleanup);
+      Emitter.childRefs.delete(pipe.parentCleanup);
+      Emitter.childRegistry.unregister(pipe.parentCleanup);
+    }
   }
 
   destroy() {
+    this.detachParent();
     this.listeners.length = 0;
-    this.cleanups.forEach((child) => child());
-    this.cleanups.length = 0;
+    this.cleanups.splice(0).forEach((cleanup) => cleanup());
   }
 
   reset() {
@@ -268,13 +326,62 @@ export class Emitter<T = Record<keyof any, Callback<unknown>>> extends Serializa
       creator: this.creator,
       context: this.context,
       trace: this.trace,
-      listeners: this.listeners.map(pick(["raw", "options", "callback"])),
-      cleanups: this.cleanups,
+      listeners: this.listeners
+        .filter((listener) => listener.callback !== this.parentPipe?.callback)
+        .map(pick(["raw", "options", "callback"])),
+      cleanups: this.cleanups.slice(),
+      childCleanupIndices: this.cleanups.flatMap((cleanup, index) =>
+        Emitter.childRefs.has(cleanup) ? [index] : [],
+      ),
+      parent: this.parentPipe?.parent,
     };
   }
 
-  loadSnapshot({ listeners, ...snapshot }: ReturnType<typeof this.createSnapshot>): void {
-    Object.assign(this, snapshot, { listeners: [] });
+  loadSnapshot(
+    input: Omit<ReturnType<typeof this.createSnapshot>, "parent" | "childCleanupIndices"> & {
+      parent?: Emitter<any>;
+      childCleanupIndices?: number[];
+    },
+  ): void {
+    // Cyclic graphs are finalized by loading a temporary instance into a placeholder.
+    const temporary = input instanceof Emitter ? input : undefined;
+    const {
+      listeners,
+      parent,
+      childCleanupIndices = [],
+      ...snapshot
+    } = temporary ? temporary.createSnapshot() : input;
+    const pending = !this.initialized ? (this.cleanups?.slice() ?? []) : [];
+    if (this.initialized) {
+      this.detachParent();
+      this.cleanups.slice().forEach((cleanup) => {
+        if (Emitter.childRefs.has(cleanup)) {
+          cleanup();
+        }
+      });
+    }
+    const children =
+      temporary?.cleanups
+        .map((cleanup) => Emitter.childRefs.get(cleanup)?.deref())
+        .filter((child): child is Emitter<any> => child !== undefined) ?? [];
+    temporary?.detachParent();
+    children.forEach((child) => child.detachParent());
+
+    Object.assign(this, snapshot, {
+      listeners: [],
+      cleanups: snapshot.cleanups
+        .filter(
+          (cleanup, index) =>
+            !childCleanupIndices.includes(index) && !Emitter.childRefs.has(cleanup),
+        )
+        .concat(pending),
+    });
+    this.parentPipe = undefined;
+    this.initialized = true;
     listeners.forEach(({ raw, callback, options }) => this.match(raw, callback, options));
+    if (parent) {
+      this.attachParent(parent);
+    }
+    children.forEach((child) => child.attachParent(this));
   }
 }
