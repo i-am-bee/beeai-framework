@@ -62,6 +62,8 @@ export class Emitter<T = Record<keyof any, Callback<unknown>>> extends Serializa
   public readonly trace?: EventTrace;
   protected readonly cleanups: CleanupFn[] = [];
   private parentPipe?: ParentPipe;
+  // Field initializers don't run for instances made with Object.create(Emitter.prototype)
+  // (serializer placeholders, clone(), fromSnapshot), so this stays undefined for those.
   private initialized = true;
 
   private static readonly childRefs = new WeakMap<CleanupFn, WeakRef<Emitter<any>>>();
