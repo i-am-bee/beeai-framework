@@ -242,13 +242,13 @@
   },
   "devDependencies": {
     "@a2a-js/sdk": "^0.3.5",
-    "@ai-sdk/amazon-bedrock": "^4.0.52",
-    "@ai-sdk/anthropic": "^3.0.39",
-    "@ai-sdk/azure": "^3.0.27",
-    "@ai-sdk/google-vertex": "^4.0.47",
-    "@ai-sdk/groq": "^3.0.22",
-    "@ai-sdk/openai": "^3.0.26",
-    "@ai-sdk/xai": "^3.0.49",
+    "@ai-sdk/amazon-bedrock": "4.0.198",
+    "@ai-sdk/anthropic": "3.0.132",
+    "@ai-sdk/azure": "3.0.140",
+    "@ai-sdk/google-vertex": "4.0.215",
+    "@ai-sdk/groq": "3.0.76",
+    "@ai-sdk/openai": "3.0.129",
+    "@ai-sdk/xai": "3.0.142",
     "@commitlint/cli": "^20.1.0",
     "@commitlint/config-conventional": "^20.0.0",
     "@elastic/elasticsearch": "^8.0.0",
@@ -300,7 +300,7 @@
     "typescript": "^5.9.3",
     "typescript-eslint": "^8.48.0",
     "vite-tsconfig-paths": "^5.1.4",
-    "vitest": "^4.1.11",
+    "vitest": "^4.1.12",
     "yaml": "^2.8.4"
   },
   "resolutions": {
@@ -322,10 +322,11 @@
     "ajv@^8.11.0": "8.20.0",
     "ajv@^8.17.1": "8.20.0",
     "uuid@^11.1.0": "11.1.1",
-    "tar@^7.4.3": "7.5.16",
+    "tar@^7.4.3": "7.5.22",
     "minimatch@^9.0.4": "9.0.9",
     "minimatch@^10.1.2": "10.2.5",
-    "brace-expansion@^1.1.7": "1.1.15",
-    "brace-expansion@^2.0.1": "2.1.1"
+    "brace-expansion@^1.1.7": "1.1.21",
+    "brace-expansion@^2.0.1": "2.1.7",
+    "@ai-sdk/provider-utils": "4.0.60"
   }
 }
