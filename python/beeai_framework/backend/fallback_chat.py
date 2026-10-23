@@ -35,9 +35,7 @@ def _default_retry_predicate(exc: Exception) -> bool:
         return True
     if isinstance(exc, httpx.HTTPStatusError):
         return exc.response.status_code in {429, 500, 502, 503, 504}
-    if isinstance(exc, (httpx.TimeoutException, httpx.ConnectError)):
-        return True
-    return False
+    return isinstance(exc, httpx.TimeoutException | httpx.ConnectError)
 
 
 class FallbackChatModel(ChatModel):
@@ -228,4 +226,3 @@ class FallbackChatModel(ChatModel):
     def __repr__(self) -> str:
         models_repr = ", ".join(f"{m.provider_id}:{m.model_id}" for m in self._models)
         return f"FallbackChatModel([{models_repr}])"
-

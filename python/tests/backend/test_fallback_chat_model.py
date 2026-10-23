@@ -22,10 +22,9 @@ from beeai_framework.backend import (
     FallbackChatModel,
     UserMessage,
 )
-from beeai_framework.backend.errors import ChatModelError, ChatModelToolCallError
+from beeai_framework.backend.errors import ChatModelError
 from beeai_framework.backend.types import ChatModelInput
 from beeai_framework.context import RunContext
-
 
 # ---------------------------------------------------------------------------
 # Shared test helpers
@@ -47,7 +46,7 @@ def _make_http_error(status_code: int) -> httpx.HTTPStatusError:
 
 
 class DummyChatModel(ChatModel):
-    """Minimal stub – _create and _create_stream are set per test."""
+    """Minimal stub - _create and _create_stream are set per test."""
 
     def __init__(self, model: str = "dummy-model", provider: str = "ollama") -> None:
         super().__init__()
@@ -65,9 +64,7 @@ class DummyChatModel(ChatModel):
     async def _create(self, input: ChatModelInput, run: RunContext) -> ChatModelOutput:
         raise NotImplementedError
 
-    async def _create_stream(
-        self, input: ChatModelInput, run: RunContext
-    ) -> AsyncGenerator[ChatModelOutput]:
+    async def _create_stream(self, input: ChatModelInput, run: RunContext) -> AsyncGenerator[ChatModelOutput]:
         raise NotImplementedError
         yield  # pyrefly: ignore [invalid-yield]
 
