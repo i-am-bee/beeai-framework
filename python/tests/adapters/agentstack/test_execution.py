@@ -8,6 +8,8 @@ from unittest.mock import AsyncMock, MagicMock
 import a2a.types as a2a_types
 import pytest
 
+pytest.importorskip("agentstack_sdk", reason="Optional module [agentstack] not installed.")
+
 from beeai_framework.adapters.agentstack.serve.server import AgentStackServer, AgentStackServerMetadata
 from beeai_framework.agents import AgentError, AgentExecutionConfig
 from beeai_framework.agents.react import ReActAgent

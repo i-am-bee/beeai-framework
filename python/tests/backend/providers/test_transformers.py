@@ -5,6 +5,8 @@ import os
 
 import pytest
 
+pytest.importorskip("outlines", reason="Optional module [transformers] not installed.")
+
 from beeai_framework.adapters.transformers.backend.chat import TransformersChatModel
 from beeai_framework.backend import (
     AnyMessage,
