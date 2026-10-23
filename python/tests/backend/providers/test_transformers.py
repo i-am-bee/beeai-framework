@@ -5,7 +5,6 @@ import os
 
 import pytest
 
-from beeai_framework.adapters.transformers.backend.chat import TransformersChatModel
 from beeai_framework.backend import (
     AnyMessage,
     AssistantMessage,
@@ -14,6 +13,12 @@ from beeai_framework.backend import (
     UserMessage,
 )
 from beeai_framework.tools.weather import OpenMeteoTool
+
+# The adapter's runtime dependencies are not installed with beeai-framework.
+for module in ("torch", "peft", "outlines", "transformers"):
+    pytest.importorskip(module, reason=f"{module} is not installed")
+
+from beeai_framework.adapters.transformers.backend.chat import TransformersChatModel  # noqa: E402
 
 
 @pytest.mark.skipif(

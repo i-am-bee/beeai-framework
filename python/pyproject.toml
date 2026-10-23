@@ -54,22 +54,7 @@ grpcio-health-checking = {version = "*", optional = true}
 wikipedia-api = {version = "^0.8.1", optional = true}
 agentstack-sdk = {version = "0.6.2", optional = true}
 deprecated = "^1.2.18"
-torch = [
-  # Apple Silicon must come from PyPI: the pytorch-cpu index publishes "+cpu" wheels for
-  # Linux/Windows only, so without an explicit source Poetry folds this entry into the
-  # "+cpu" package and macOS arm64 gets a wheel that does not exist for it.
-  {version = ">=2.8.0", source = "pypi", markers = "sys_platform == 'darwin' and platform_machine == 'arm64'", optional = true},
-  # 2.2.2 is the last release with macOS x86_64 wheels.
-  {version = "2.2.2", markers = "sys_platform == 'darwin' and platform_machine == 'x86_64'", optional = true},
-  {version = "2.8.0", source = "pytorch-cpu", markers = "sys_platform != 'darwin'", optional = true}
-]
-transformers = [
-  {version = ">=5.0.0", markers = "sys_platform == 'darwin' and platform_machine == 'arm64'", optional = true},
-  {version = ">=5.0.0", markers = "sys_platform == 'darwin' and platform_machine == 'x86_64'", optional = true},
-  {version = ">=5.0.0", markers = "sys_platform != 'darwin'", optional = true}
-]
-peft = {version = "^0.19.1", optional = true}
-outlines = {version = "^1.2.4", python = ">=3.11,<3.13", optional = true}
+transformers = {version = ">=5.0.0", optional = true}
 nltk = {version = ">=3.10.3", optional = true}
 pillow = {version = ">=12.3.0", optional = true}
 pypdf = {version = ">=6.16.1", optional = true}
@@ -103,7 +88,7 @@ pip-audit = "^2.10.0"
 cz-commitizen = { path = "./cz_commitizen", develop = true }
 
 [tool.poetry.extras]
-transformers = ["transformers", "torch", "peft", "outlines", "pillow"]
+transformers = ["transformers", "pillow"]
 huggingface = ["datasets", "transformers"]
 search = ["ddgs", "wikipedia-api"]
 duckduckgo = ["ddgs"]
@@ -142,9 +127,6 @@ all = [
     "fastapi",
     "llama-index",
     "agentstack-sdk",
-    "torch",
-    "peft",
-    "outlines",
     "boto3",
     "google-auth",
     "cryptography",
@@ -243,14 +225,16 @@ project-excludes = [
     "**/examples/notebooks/",
 ]
 ignore-missing-imports = [
+    # The Transformers adapter's runtime dependencies are installed by the user, not by beeai-framework.
+    "outlines",
+    "outlines.*",
+    "peft",
+    "peft.*",
+    "torch",
+    "torch.*",
     "llama-index",
     "llama-index.*",
     "llama-index.core.llama_dataset",
     "llama_index",
     "llama_index.*",
 ]
-
-[[tool.poetry.source]]
-name = "pytorch-cpu"
-url = "https://download.pytorch.org/whl/cpu"
-priority = "supplemental"

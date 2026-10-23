@@ -6,20 +6,28 @@ import os
 from collections.abc import AsyncGenerator
 from typing import Any, Unpack, cast
 
-import outlines
-import torch
-from outlines.inputs import Chat
-from outlines.types import JsonSchema
-from peft import PeftModel
 from pydantic import BaseModel
-from transformers import (
-    AutoModelForCausalLM,
-    AutoTokenizer,
-    PreTrainedTokenizerBase,
-    StoppingCriteria,
-    TextIteratorStreamer,
-    set_seed,
-)
+
+try:
+    import outlines
+    import torch
+    from outlines.inputs import Chat
+    from outlines.types import JsonSchema
+    from peft import PeftModel
+    from transformers import (
+        AutoModelForCausalLM,
+        AutoTokenizer,
+        PreTrainedTokenizerBase,
+        StoppingCriteria,
+        TextIteratorStreamer,
+        set_seed,
+    )
+except ModuleNotFoundError as e:
+    raise ModuleNotFoundError(
+        "The Transformers adapter needs torch, peft and outlines, which beeai-framework does not install.\n"
+        "Install the PyTorch build for your hardware (https://pytorch.org/get-started/locally/), then run "
+        "'pip install \"beeai-framework[transformers]\" peft outlines'."
+    ) from e
 
 from beeai_framework.adapters.litellm.utils import to_strict_json_schema
 from beeai_framework.adapters.transformers.backend._utils import (
