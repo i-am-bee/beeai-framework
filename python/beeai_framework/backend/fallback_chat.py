@@ -31,7 +31,7 @@ def _default_retry_predicate(exc: Exception) -> bool:
     Non-retryable (propagate immediately):
     * Everything else — validation errors, bad schemas, non-HTTP logic bugs.
     """
-    if isinstance(exc, FrameworkError) and exc.is_retryable:
+    if isinstance(exc, FrameworkError) and exc.retryable:
         return True
     if isinstance(exc, httpx.HTTPStatusError):
         return exc.response.status_code in {429, 500, 502, 503, 504}
