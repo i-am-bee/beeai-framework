@@ -1,8 +1,10 @@
 # Copyright 2025 © BeeAI a Series of LF Projects, LLC
 # SPDX-License-Identifier: Apache-2.0
 
+import gc
 import re
 import time
+import weakref
 from collections.abc import Callable
 from typing import Any
 
@@ -376,3 +378,36 @@ def test_parent_destroy_cleans_up_all_children() -> None:
     child2.destroy()
     assert len(child1._cleanups) == 0
     assert len(child2._cleanups) == 0
+
+
+@pytest.mark.unit
+def test_child_emitter_does_not_keep_its_creator_alive() -> None:
+    class Creator:
+        emitter: Emitter
+
+    parent = Emitter.root().child(namespace=["parent"])
+    initial_cleanups = len(parent._cleanups)
+    creator = Creator()
+    creator.emitter = parent.child(namespace=["child"], creator=creator)  # the same cycle as a tool and its emitter
+    creator_ref = weakref.ref(creator)
+
+    del creator
+    gc.collect()
+
+    assert creator_ref() is None
+    assert len(parent._cleanups) == initial_cleanups
+
+
+@pytest.mark.asyncio
+@pytest.mark.unit
+async def test_parent_destroy_detaches_live_children() -> None:
+    parent = Emitter.root().child(namespace=["parent"])
+    child = parent.child(namespace=["child"])
+    received: list[str] = []
+    parent.on("*.*", lambda _, event: received.append(event.name))
+
+    await child.emit("before", None)
+    parent.destroy()
+
+    assert received == ["before"]
+    assert child._listeners == []
