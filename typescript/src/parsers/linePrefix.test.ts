@@ -418,6 +418,145 @@ Outcome: 39`,
     });
   });
 
+  describe("Chunk boundaries", () => {
+    // The same grammar as the one used by the default ReAct runner
+    const createReActParser = () =>
+      new LinePrefixParser(
+        {
+          thought: {
+            prefix: "Thought:",
+            next: ["tool_name", "final_answer"],
+            isStart: true,
+            field: new ZodParserField(z.string().min(1)),
+          },
+          tool_name: {
+            prefix: "Function Name:",
+            next: ["tool_input"],
+            field: new ZodParserField(z.pipeline(z.string().trim(), z.enum(["Search", "Calc"]))),
+          },
+          tool_input: {
+            prefix: "Function Input:",
+            next: ["tool_output"],
+            isEnd: true,
+            field: new JSONParserField({
+              schema: z.object({}).passthrough(),
+              base: {},
+              matchPair: ["{", "}"],
+            }),
+          },
+          tool_output: {
+            prefix: "Function Output:",
+            next: ["final_answer"],
+            isEnd: true,
+            field: new ZodParserField(z.string()),
+          },
+          final_answer: {
+            prefix: "Final Answer:",
+            next: [],
+            isStart: true,
+            isEnd: true,
+            field: new ZodParserField(z.string().min(1)),
+          },
+        } as const,
+        {
+          waitForStartNode: true,
+          endOnRepeat: true,
+          fallback: (stash) =>
+            stash
+              ? [
+                  { key: "thought", value: "I now know the final answer." },
+                  { key: "final_answer", value: stash },
+                ]
+              : [],
+        },
+      );
+
+    const parse = async (chunks: string[]) => {
+      const parser = createReActParser();
+      try {
+        for (const chunk of chunks) {
+          await parser.add(chunk);
+        }
+        return { state: await parser.end() };
+      } catch (e) {
+        if (e instanceof LinePrefixParserError) {
+          return { error: e.reason };
+        }
+        throw e;
+      }
+    };
+
+    it("Parses the ReAct output when the indentation of a line arrives as a separate chunk", async () => {
+      expect(await parse(["Thought: a\n", " ", "Final Answer: b"])).toStrictEqual({
+        state: { thought: "a", final_answer: "b" },
+      });
+    });
+
+    it.each([
+      ["whitespace-only chunk", ["Thought: a\n", " ", "Final Answer: b"]],
+      ["multiple spaces", ["Thought: a\n", "  ", "Final Answer: b"]],
+      ["tab", ["Thought: a\n", "\t", "Final Answer: b"]],
+      ["newline and indentation in one chunk", ["Thought: a", "\n ", "Final Answer: b"]],
+      ["indentation split from the prefix", ["Thought: a\n", "  ", "Final", " Answer: b"]],
+      [
+        "tool call",
+        ["Thought: a\n", " ", "Function Name:", "  Search\n", " ", 'Function Input: {"q":1}\n'],
+      ],
+    ])("Recognizes a prefix after a whitespace-only chunk (%s)", async (_, chunks) => {
+      const expected = await parse([chunks.join("")]);
+      expect(expected).toHaveProperty("state");
+      expect(await parse(chunks)).toStrictEqual(expected);
+    });
+
+    const inputs = [
+      "Thought: a\n Final Answer: b",
+      "Thought: a\n\t\nFinal Answer: b",
+      '  Thought: need data\n  Function Name:  Search\n  Function Input: {"q": "cats"}\n',
+      "Thought: first\n   second\n\nFinal Answer: done\n  more",
+      "Preamble\nThought: x\nFinal Answer: y\n",
+      "Just a plain answer",
+    ];
+
+    it.each(inputs)("Result does not depend on the split point: %j", async (input) => {
+      const expected = await parse([input]);
+      expect(expected).toHaveProperty("state");
+
+      for (let i = 0; i <= input.length; i++) {
+        expect(await parse([input.slice(0, i), input.slice(i)]), `split at ${i}`).toStrictEqual(
+          expected,
+        );
+
+        for (let j = i; j <= input.length; j++) {
+          expect(
+            await parse([input.slice(0, i), input.slice(i, j), input.slice(j)]),
+            `split at ${i} and ${j}`,
+          ).toStrictEqual(expected);
+        }
+      }
+    });
+
+    it.each(inputs)("Result does not depend on random chunking: %j", async (input) => {
+      const expected = await parse([input]);
+
+      // deterministic pseudo-random generator (LCG) to keep the test reproducible
+      let seed = 42;
+      const random = () => {
+        seed = (Math.imul(seed, 1103515245) + 12345) & 0x7fffffff;
+        return seed / 0x7fffffff;
+      };
+
+      for (let run = 0; run < 100; run++) {
+        const chunks: string[] = [];
+        for (let i = 0; i < input.length; ) {
+          const size = 1 + Math.floor(random() * 6);
+          chunks.push(input.slice(i, i + size));
+          i += size;
+        }
+        expect(await parse(chunks), JSON.stringify(chunks)).toStrictEqual(expected);
+      }
+    });
+  });
+
   describe("Error handling", () => {
     it("Throws when no node is provided", () => {
       expect(() => new LinePrefixParser({})).toThrowError(ValueError);
