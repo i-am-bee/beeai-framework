@@ -14,7 +14,7 @@ export type MiniMaxChatModelId = NonNullable<MiniMaxParameters[0]>;
 
 export class MiniMaxChatModel extends VercelChatModel {
   constructor(
-    modelId: MiniMaxChatModelId = getEnv("MINIMAX_CHAT_MODEL", "MiniMax-M3"),
+    modelId: MiniMaxChatModelId = getEnv("MINIMAX_CHAT_MODEL", "MiniMax-M3.1-Flash"),
     parameters: ChatModelParameters = {},
     client?: MiniMaxClient | MiniMaxClientSettings,
   ) {
