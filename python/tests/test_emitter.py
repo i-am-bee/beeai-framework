@@ -1,8 +1,10 @@
 # Copyright 2025 © BeeAI a Series of LF Projects, LLC
 # SPDX-License-Identifier: Apache-2.0
 
+import gc
 import re
 import time
+import weakref
 from collections.abc import Callable
 from typing import Any
 
@@ -376,3 +378,22 @@ def test_parent_destroy_cleans_up_all_children() -> None:
     child2.destroy()
     assert len(child1._cleanups) == 0
     assert len(child2._cleanups) == 0
+
+
+@pytest.mark.unit
+def test_child_emitter_does_not_pin_its_creator() -> None:
+    class Creator:
+        pass
+
+    parent = Emitter(namespace=["parent"], creator=object())
+    creator = Creator()
+    creator_ref = weakref.ref(creator)
+
+    child = parent.child(namespace=["child"], creator=creator)
+    assert child.creator is creator
+
+    del child
+    del creator
+    gc.collect()
+
+    assert creator_ref() is None, "the parent's cleanups must not keep a child's creator alive"

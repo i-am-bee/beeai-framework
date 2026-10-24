@@ -8,6 +8,7 @@ import functools
 import inspect
 import re
 import uuid
+import weakref
 from collections.abc import Callable
 from datetime import UTC, datetime
 from typing import Any, TypeAlias, overload
@@ -103,9 +104,21 @@ class Emitter:
             events=events or self.events,
         )
 
-        cleanup = child_emitter.pipe(self)
-        self._cleanups.append(cleanup)
-        child_emitter._cleanups.append(lambda: self._cleanups.remove(cleanup) if cleanup in self._cleanups else None)
+        child_ref = weakref.ref(child_emitter)
+
+        def detach_child(ref: weakref.ReferenceType = child_ref) -> None:
+            # Hold the child weakly. A cleanup closing over the child directly would keep the
+            # child — and its creator (a Tool, an agent's clone, ...) — alive for the life of
+            # the parent, because the parent stores this cleanup in `_cleanups`.
+            child = ref()
+            if child is not None:
+                child.destroy()
+
+        child_emitter.pipe(self)
+        self._cleanups.append(detach_child)
+        child_emitter._cleanups.append(
+            lambda: self._cleanups.remove(detach_child) if detach_child in self._cleanups else None
+        )
 
         return child_emitter
 
@@ -123,7 +136,8 @@ class Emitter:
 
     def destroy(self) -> None:
         self._listeners.clear()
-        for cleanup in self._cleanups:
+        # A cleanup can remove itself from this list (a child detaching), so iterate a copy.
+        for cleanup in list(self._cleanups):
             cleanup()
         self._cleanups.clear()
 
