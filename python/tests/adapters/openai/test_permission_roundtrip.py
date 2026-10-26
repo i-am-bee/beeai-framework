@@ -15,13 +15,19 @@ from openai.types.responses import ResponseCompletedEvent, ResponseFunctionToolC
 
 from beeai_framework.adapters.openai.serve._factories import _requirement_agent_factory
 from beeai_framework.adapters.openai.serve._openai_model import OpenAIModel
-from beeai_framework.adapters.openai.serve._permissions import ApprovalRequest, OpenAIPermissionConfig, OpenAIRunManager
+from beeai_framework.adapters.openai.serve._permissions import (
+    APPROVAL_PREFIX,
+    ApprovalRequest,
+    OpenAIPermissionConfig,
+    OpenAIRunManager,
+)
 from beeai_framework.adapters.openai.serve._types import OpenAIEvent
-from beeai_framework.adapters.openai.serve.chat_completion.api import ChatCompletionAPI
+from beeai_framework.adapters.openai.serve.chat_completion._types import ChatCompletionRequestBody
+from beeai_framework.adapters.openai.serve.chat_completion.api import ChatCompletionAPI, _transform_request_messages
 from beeai_framework.adapters.openai.serve.responses.api import ResponsesAPI
 from beeai_framework.agents.requirement import RequirementAgent
 from beeai_framework.agents.requirement.requirements.ask_permission import AskPermissionRequirement
-from beeai_framework.backend import AnyMessage, AssistantMessage
+from beeai_framework.backend import AnyMessage, AssistantMessage, MessageToolCallContent, ToolMessage
 from beeai_framework.emitter import Emitter
 from beeai_framework.errors import FrameworkError
 from beeai_framework.runnable import Runnable, RunnableOptions, RunnableOutput, runnable_entry
@@ -421,6 +427,88 @@ async def test_openai_sdk_roundtrip(kind: str, streaming: bool) -> None:
             else:
                 assert response.output_text == "approved"
         assert runnable.starts == runnable.executions == 1
+
+
+async def test_chat_history_approvals_do_not_reach_the_agent_on_later_turns() -> None:
+    class RecordingRunnable(PermissionRunnable):
+        def __init__(self) -> None:
+            super().__init__()
+            self.inputs: list[list[AnyMessage]] = []
+
+        @runnable_entry
+        async def run(self, input: list[AnyMessage], /, **kwargs: Unpack[RunnableOptions]) -> RunnableOutput:
+            self.inputs.append(list(input))
+            allowed = await io_confirm("Run the tool?", data={"city": "Prague"})
+            return RunnableOutput(output=[AssistantMessage("approved" if allowed else "denied")])
+
+    runnable = RecordingRunnable()
+    api = make_api("chat", OpenAIModel(runnable, model_id="agent"))
+    async with client_for(api) as client:
+        sdk = AsyncOpenAI(api_key="test", base_url="http://test", http_client=client)
+        messages: list[Any] = []
+
+        # The client loop from the documentation, repeated for every user turn.
+        async def ask(text: str) -> str | None:
+            messages.append({"role": "user", "content": text})
+            while True:
+                response = await sdk.chat.completions.create(model="agent", messages=messages)
+                message = response.choices[0].message
+                if not message.tool_calls:
+                    messages.append({"role": "assistant", "content": message.content})
+                    return message.content
+                call = message.tool_calls[0]
+                assert call.type == "function" and call.function.name == "beeai_request_approval"
+                messages.append(message.model_dump(exclude_none=True))
+                messages.append({"role": "tool", "tool_call_id": call.id, "content": json.dumps({"approve": True})})
+
+        assert await ask("first") == "approved"
+        assert await ask("second") == "approved"
+        assert await ask("third") == "approved"
+
+    assert [message["role"] for message in messages].count("tool") == 3
+    assert len(runnable.inputs) == 3
+    for received in runnable.inputs:
+        assert not any(isinstance(message, ToolMessage) for message in received)
+        assert not any(isinstance(content, MessageToolCallContent) for m in received for content in m.content)
+    assert [m.text for m in runnable.inputs[-1]] == ["first", "approved", "second", "approved", "third"]
+
+
+async def test_chat_history_keeps_regular_tool_calls_next_to_approvals() -> None:
+    approval_id = f"{APPROVAL_PREFIX}abc"
+    request = ChatCompletionRequestBody.model_validate(
+        {
+            "model": "agent",
+            "messages": [
+                {"role": "user", "content": "hello"},
+                {
+                    "role": "assistant",
+                    "content": "Let me check.",
+                    "tool_calls": [
+                        {"id": "call_weather", "type": "function", "function": {"name": "weather", "arguments": "{}"}},
+                        {
+                            "id": approval_id,
+                            "type": "function",
+                            "function": {"name": "beeai_request_approval", "arguments": "{}"},
+                        },
+                    ],
+                },
+                {"role": "tool", "tool_call_id": "call_weather", "content": "sunny"},
+                {"role": "tool", "tool_call_id": approval_id, "content": '{"approve": true}'},
+                {"role": "assistant", "content": "It is sunny."},
+                {"role": "user", "content": "thanks"},
+            ],
+        }
+    )
+    messages = _transform_request_messages(request.messages)
+    assert len(messages) == 5
+    assert [messages[0].text, messages[3].text, messages[4].text] == ["hello", "It is sunny.", "thanks"]
+    assistant = messages[1]
+    assert isinstance(assistant, AssistantMessage)
+    assert assistant.text == "Let me check."
+    assert [call.id for call in assistant.get_tool_calls()] == ["call_weather"]
+    tool_message = messages[2]
+    assert isinstance(tool_message, ToolMessage)
+    assert [result.tool_call_id for result in tool_message.get_tool_results()] == ["call_weather"]
 
 
 async def test_stream_cancellation_cleans_up_io_context() -> None:

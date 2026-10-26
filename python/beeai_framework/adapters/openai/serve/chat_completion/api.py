@@ -193,11 +193,33 @@ def _approval_tool_call(approval: ApprovalRequest) -> dict[str, Any]:
     }
 
 
+def _without_approval_messages(
+    inputs: list[chat_completion_types.ChatMessage],
+) -> list[chat_completion_types.ChatMessage]:
+    """Drop approval tool calls and their answers that a client keeps in its history.
+
+    Approvals are control messages between the client and the server. The agent has no such tool,
+    so they must not reach it on later turns.
+    """
+    messages: list[chat_completion_types.ChatMessage] = []
+    for msg in inputs:
+        if isinstance(msg, chat_completion_types.ToolMessage) and msg.tool_call_id.startswith(APPROVAL_PREFIX):
+            continue
+        if isinstance(msg, chat_completion_types.AssistantMessage) and msg.tool_calls:
+            tool_calls = [call for call in msg.tool_calls if not call.id.startswith(APPROVAL_PREFIX)]
+            if len(tool_calls) != len(msg.tool_calls):
+                if not tool_calls and not msg.content and not msg.refusal:
+                    continue
+                msg = msg.model_copy(update={"tool_calls": tool_calls or None})
+        messages.append(msg)
+    return messages
+
+
 def _transform_request_messages(
     inputs: list[chat_completion_types.ChatMessage],
 ) -> list[AnyMessage]:
     messages: list[AnyMessage] = []
-    converted_messages = [openai_message_to_beeai_message(msg) for msg in inputs]
+    converted_messages = [openai_message_to_beeai_message(msg) for msg in _without_approval_messages(inputs)]
 
     for msg, next_msg, next_next_msg in zip(
         converted_messages,
