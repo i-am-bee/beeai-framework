@@ -1,14 +1,25 @@
 name: 'Setup environment'
 description: 'Set up mise tools (Python, Node.js, ...) and install project dependencies'
 
+inputs:
+  python-version:
+    description: 'Python version to use instead of the one in mise.toml'
+    required: false
+    default: ''
+
 runs:
   using: "composite"
   steps:
+    - if: inputs.python-version != ''
+      shell: bash
+      env:
+        PYTHON_VERSION: ${{ inputs.python-version }}
+      run: echo "MISE_PYTHON_VERSION=$PYTHON_VERSION" >> "$GITHUB_ENV"
     - uses: actions/cache@v4
       with:
         path: python/.venv
-        key: poetry-venv-v1-${{ runner.os }}-${{ hashFiles('python/poetry.lock') }}
-        restore-keys: poetry-venv-v1-${{ runner.os }}-
+        key: poetry-venv-v1-${{ runner.os }}-py${{ inputs.python-version || 'default' }}-${{ hashFiles('python/poetry.lock') }}
+        restore-keys: poetry-venv-v1-${{ runner.os }}-py${{ inputs.python-version || 'default' }}-
     - uses: actions/cache@v4
       with:
         path: ~/.cache/yarn

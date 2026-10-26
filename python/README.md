@@ -47,8 +47,7 @@ pip install beeai-framework
 ```
 
 The `agentstack-sdk` and `unstructured` optional dependencies require Python < 3.14.
-The `outlines` optional dependency requires Python < 3.13. These dependencies are
-skipped on newer Python versions, including when you install the `all` extra.
+They are skipped on Python 3.14, including when you install the `all` extra.
 Use an older supported Python version if you need these integrations.
 
 ### Multi-Agent Example

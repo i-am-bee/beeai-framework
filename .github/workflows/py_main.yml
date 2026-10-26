@@ -44,12 +44,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-python@v6
+      - uses: ./.github/actions/setup
         with:
           python-version: "3.14"
-      - name: Install Poetry
-        run: python -m pip install poetry==2.5.1
-      - name: Install core and test integrations
-        run: poetry install --no-interaction --extras "a2a mcp acp acp-zed search langchain"
-      - run: poetry build
-      - run: poetry run pytest -m unit -n auto
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - run: mise python:build
+      - run: mise python:test:unit
