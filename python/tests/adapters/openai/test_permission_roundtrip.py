@@ -179,6 +179,23 @@ async def test_malformed_decision_is_not_consumed(kind: str, decision: str) -> N
         assert runnable.executions == 1
 
 
+@pytest.mark.parametrize("role", ["assistant", "user"])
+async def test_chat_approval_must_be_a_tool_message(role: str) -> None:
+    runnable = PermissionRunnable()
+    api = make_api("chat", OpenAIModel(runnable, model_id="agent"))
+    async with client_for(api) as client:
+        call_id, _ = approval(
+            result(await client.post("/chat/completions", json=payload("chat", False)), "chat", False), "chat"
+        )
+        # Any message carrying a tool_call_id is parsed as a ToolMessage, whatever its role.
+        wrong = payload("chat", False, call_id)
+        wrong["messages"][0]["role"] = role
+        assert (await client.post("/chat/completions", json=wrong)).status_code == 400
+        assert runnable.executions == 0
+        assert (await client.post("/chat/completions", json=payload("chat", False, call_id))).status_code == 200
+        assert runnable.executions == 1
+
+
 async def test_replayed_and_unknown_decisions(kind: str, streaming: bool) -> None:
     runnable = PermissionRunnable()
     api = make_api(kind, OpenAIModel(runnable, model_id="agent"))

@@ -22,6 +22,8 @@ async def _clone_runnable(runnable: T) -> T:
     if isinstance(cloned, RequirementAgent):
         # RequirementAgent.clone shares requirements. Remembered approvals must belong
         # to this invocation, never to another caller of the registered agent.
+        # TODO: Stopgap that reaches into private state. Move this into RequirementAgent.clone
+        # (cloning requirements with their state), which also fixes the A2A/ACP/AgentStack adapters.
         cloned._requirements = [
             copy(requirement) if isinstance(requirement, AskPermissionRequirement) else requirement
             for requirement in cloned._requirements

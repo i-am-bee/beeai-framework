@@ -199,18 +199,21 @@ config = OpenAIServerConfig(
 )
 ```
 
-`timeout` is in seconds and defaults to 300; `max_pending` defaults to 128. Expired,
-unknown, and already answered IDs return HTTP 404. Invalid decisions return 400;
-a changed model, conversation, or streaming mode returns 409. A conversation with
-a suspended invocation cannot start another invocation until it finishes or times
-out. Excess pending approvals fail without executing the protected tool (HTTP 503,
-or an error event if streaming has already begun).
+`timeout` is in seconds and defaults to 300; `max_pending` defaults to 128. The
+`max_pending` limit is shared by all callers of the server, not applied per client
+or conversation. Expired, unknown, and already answered IDs return HTTP 404. Invalid
+decisions return 400; a changed model, conversation, or streaming mode returns 409.
+A Responses conversation runs one invocation at a time: while an invocation for
+that conversation is running or waiting for approval, a new request to it returns
+HTTP 409. Excess pending approvals fail without executing the protected tool (HTTP
+503, or an error event if streaming has already begun).
 
 Pending invocations live in the server process. Use a single worker or sticky
 routing; restarting the server invalidates pending IDs. Treat approval IDs as
 confidential, single-use capabilities and protect the endpoint with `api_key` and
 your application's authentication. The built-in shared API key does not provide
 per-user ownership. A disconnected active request and server shutdown cancel its
-invocation; a successfully delivered approval retains the paused invocation until
-the client replies or the timeout expires. Arbitrary `io_read` prompts require an
+invocation, and so does a streamed response that the client does not start reading
+within `timeout`. A successfully delivered approval retains the paused invocation
+until the client replies or the timeout expires. Arbitrary `io_read` prompts require an
 explicit handler and raise an error instead of falling back to server stdin.

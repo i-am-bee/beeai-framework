@@ -253,7 +253,9 @@ class OpenAIRunManager:
             run.context_id == context_id and run.model_id == model.model_id and not run.task.done()
             for run in self._runs
         ):
-            raise HTTPException(409, "This conversation already has an active invocation; answer its approval first.")
+            raise HTTPException(
+                409, "This conversation already has an active invocation; wait for it or answer its pending approval."
+            )
         run = OpenAIRun(
             self, model, messages, stream=stream, context_id=context_id, memory=memory, memory_input=memory_input or []
         )
