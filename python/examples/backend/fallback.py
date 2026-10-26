@@ -11,14 +11,14 @@ from beeai_framework.errors import FrameworkError
 async def main() -> None:
     llm = FallbackChatModel(
         [
-            # The first model does not exist, so the request falls back to the next one.
-            OllamaChatModel("non-existing-model"),
+            # Nothing listens on this port, so the request falls back to the next model.
+            OllamaChatModel("llama3.1", base_url="http://localhost:1"),
             OllamaChatModel("granite4:micro"),
         ]
     )
 
     def on_fallback(data: ChatModelFallbackEvent, event: EventMeta) -> None:
-        print(f"Model '{data.failed_model.model_id}' failed, using '{data.next_model.model_id}' instead.")
+        print(f"Model '{data.failed_model.model_id}' failed ({data.error.get_cause()!r}), falling back.")
 
     response = await llm.run([UserMessage("What is the capital of France?")]).on("fallback", on_fallback)
     print("LLM 🤖 : ", response.get_text_content())

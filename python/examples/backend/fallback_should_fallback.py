@@ -2,20 +2,18 @@ import asyncio
 import sys
 import traceback
 
-from litellm.exceptions import APIConnectionError, NotFoundError, RateLimitError, ServiceUnavailableError
+from litellm.exceptions import NotFoundError
 
 from beeai_framework.adapters.ollama import OllamaChatModel
 from beeai_framework.backend import FallbackChatModel, UserMessage
 from beeai_framework.errors import FrameworkError
 
 
-def should_fallback(error: Exception) -> bool:
-    # The error is wrapped by the framework, the original exception raised by the provider is its cause.
-    cause = error.get_cause() if isinstance(error, FrameworkError) else error
-
-    # Fall back only when the model is unavailable. Other errors (e.g., an invalid request)
-    # would fail for the next model as well, so they are raised immediately.
-    return isinstance(cause, NotFoundError | RateLimitError | ServiceUnavailableError | APIConnectionError)
+def should_fallback(error: FrameworkError) -> bool:
+    # Keep the default behavior (rate limits, server errors, timeouts, and connection errors)
+    # and also fall back when the model is not available on the provider.
+    # The original exception raised by the provider is the cause of the framework error.
+    return FallbackChatModel.default_should_fallback(error) or isinstance(error.get_cause(), NotFoundError)
 
 
 async def main() -> None:
