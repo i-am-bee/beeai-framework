@@ -7,7 +7,7 @@ import { ChatModelError } from "beeai-framework/backend/errors";
 import { OpenMeteoTool } from "beeai-framework/tools/weather/openMeteo";
 
 const llm = new AnthropicChatModel(
-  "claude-3-5-sonnet-latest",
+  "claude-haiku-4-5",
   // {},
   // {
   //   baseURL: "ANTHROPIC_API_BASE_URL",
