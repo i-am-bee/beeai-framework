@@ -1,6 +1,7 @@
 # Copyright 2025 © BeeAI a Series of LF Projects, LLC
 # SPDX-License-Identifier: Apache-2.0
 
+import gc
 from typing import Any
 
 import pytest
@@ -106,6 +107,7 @@ class TestDestroy:
         m = StreamToolCallMiddleware(FakeSearchTool(), key="query")
         called: list[str] = []
         m._cleanups.append(lambda: called.append("unbound"))
+        gc.collect()  # a collected emitter leaves the root, so collect leftovers before counting
         root_children = len(Emitter.root()._cleanups)
         m.emitter.on("update", lambda data, meta: None)
         assert len(Emitter.root()._cleanups) == root_children + 1
@@ -117,6 +119,7 @@ class TestDestroy:
 
     def test_destroy_does_not_create_an_unused_emitter(self) -> None:
         m = StreamToolCallMiddleware(FakeSearchTool(), key="query")
+        gc.collect()
         root_children = len(Emitter.root()._cleanups)
 
         m.destroy()
