@@ -7,7 +7,7 @@ import { ChatModelError } from "beeai-framework/backend/errors";
 import { OpenMeteoTool } from "beeai-framework/tools/weather/openMeteo";
 
 const llm = new GoogleVertexChatModel(
-  "gemini-1.5-flash-001",
+  "gemini-3.8-flash",
   // {},
   // {
   //   location: "GOOGLE_VERTEX_LOCATION",
@@ -26,7 +26,7 @@ llm.config({
 });
 
 async function googleVertexFromName() {
-  const googleVertexLLM = await ChatModel.fromName("google-vertex:gemini-1.5-flash-001");
+  const googleVertexLLM = await ChatModel.fromName("google-vertex:gemini-3.8-flash");
   const response = await googleVertexLLM.create({
     messages: [new UserMessage("what states are part of New England?")],
   });

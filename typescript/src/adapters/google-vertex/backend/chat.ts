@@ -17,7 +17,7 @@ export type GoogleVertexChatModelId = NonNullable<GoogleVertexParameters[0]>;
 
 export class GoogleVertexChatModel extends VercelChatModel {
   constructor(
-    modelId: GoogleVertexChatModelId = getEnv("GOOGLE_VERTEX_CHAT_MODEL", "gemini-1.5-pro"),
+    modelId: GoogleVertexChatModelId = getEnv("GOOGLE_VERTEX_CHAT_MODEL", "gemini-3.8-flash"),
     parameters: ChatModelParameters = {},
     client?: GoogleVertexClientSettings | GoogleVertexClient,
   ) {

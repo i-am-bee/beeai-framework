@@ -14,7 +14,7 @@ export type AnthropicChatModelId = NonNullable<AnthropicParameters[0]>;
 
 export class AnthropicChatModel extends VercelChatModel {
   constructor(
-    modelId: AnthropicChatModelId = getEnv("ANTHROPIC_CHAT_MODEL", "claude-3-5-sonnet-latest"),
+    modelId: AnthropicChatModelId = getEnv("ANTHROPIC_CHAT_MODEL", "claude-haiku-4-5"),
     parameters: ChatModelParameters = {},
     client?: AnthropicClientSettings | AnthropicClient,
   ) {
