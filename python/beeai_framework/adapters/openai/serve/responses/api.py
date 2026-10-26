@@ -16,7 +16,7 @@ from beeai_framework.adapters.openai.serve._openai_model import OpenAIModel
 from beeai_framework.adapters.openai.serve._permissions import ApprovalRequest, OpenAIPermissionConfig, OpenAIRunManager
 from beeai_framework.adapters.openai.serve.responses._stream import approval_output, stream_response
 from beeai_framework.adapters.openai.serve.responses._utils import openai_input_to_beeai_message
-from beeai_framework.agents import AgentError
+from beeai_framework.agents import AgentError, BaseAgent
 from beeai_framework.agents.react import ReActAgentOutput
 from beeai_framework.agents.requirement import RequirementAgentOutput
 from beeai_framework.backend import (
@@ -29,7 +29,7 @@ from beeai_framework.backend import (
     UserMessage,
 )
 from beeai_framework.logger import Logger
-from beeai_framework.memory import UnconstrainedMemory
+from beeai_framework.memory import BaseMemory, UnconstrainedMemory
 from beeai_framework.serve import MemoryManager
 from beeai_framework.serve.utils import is_api_key_valid
 
@@ -118,7 +118,7 @@ class ResponsesAPI:
                 try:
                     memory = await self._memory_manager.get(context_id)
                 except KeyError:
-                    memory = UnconstrainedMemory()
+                    memory = await _create_conversation_memory(openai_model)
                     await self._memory_manager.set(context_id, memory)
                 history = list(memory.messages)
             run = self._runs.start(
@@ -189,6 +189,19 @@ class ResponsesAPI:
                     model=openai_model.model_id,
                 )
             return JSONResponse(content=response.model_dump())
+
+
+async def _create_conversation_memory(model: OpenAIModel) -> BaseMemory:
+    """Create an empty conversation memory of the same kind as the agent's own memory.
+
+    Agents configured with a bounded memory (e.g. SlidingMemory, TokenMemory) keep a bounded history.
+    The registered agent and its memory are left untouched.
+    """
+    if isinstance(model._runnable, BaseAgent):
+        memory = await model._runnable.memory.clone()
+        memory.reset()
+        return memory
+    return UnconstrainedMemory()
 
 
 def _transform_request_input(

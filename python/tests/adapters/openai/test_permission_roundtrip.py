@@ -32,6 +32,7 @@ from beeai_framework.agents.requirement.requirements.ask_permission import AskPe
 from beeai_framework.backend import AnyMessage, AssistantMessage, MessageToolCallContent, ToolMessage
 from beeai_framework.emitter import Emitter
 from beeai_framework.errors import FrameworkError
+from beeai_framework.memory import SlidingMemory, SlidingMemoryConfig
 from beeai_framework.runnable import Runnable, RunnableOptions, RunnableOutput, runnable_entry
 from beeai_framework.serve.utils import UnlimitedMemoryManager
 from beeai_framework.tools import tool
@@ -353,6 +354,22 @@ async def test_responses_memory_and_conversation_binding(streaming: bool) -> Non
         )
         assert valid.status_code == 200
         assert [message.text for message in memory.messages] == ["hello", "approved"]
+
+
+async def test_responses_conversation_memory_follows_the_agent_memory(streaming: bool) -> None:
+    agent_memory = SlidingMemory(SlidingMemoryConfig(size=2))
+    agent = RequirementAgent(llm=ScriptedChatModel([[final_answer_message("done")]]), memory=agent_memory)
+    api = make_api("responses", _requirement_agent_factory(agent, metadata={"name": "agent"}))
+    assert isinstance(api, ResponsesAPI)
+    async with client_for(api) as client:
+        for text in ("first", "second", "third"):
+            request = {"model": "agent", "stream": streaming, "input": text, "conversation": "c"}
+            response = result(await client.post("/responses", json=request), "responses", streaming)
+            assert answer(response, "responses") == "done"
+    memory = await api._memory_manager.get("c")
+    assert isinstance(memory, SlidingMemory) and memory is not agent_memory
+    assert [message.text for message in memory.messages] == ["third", "done"]
+    assert agent.memory is agent_memory and agent_memory.is_empty()
 
 
 async def test_manager_model_binding_and_concurrent_isolation() -> None:
