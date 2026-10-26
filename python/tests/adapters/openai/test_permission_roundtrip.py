@@ -3,15 +3,16 @@
 
 import asyncio
 import json
-from collections.abc import AsyncIterator
+from collections.abc import AsyncIterator, Callable
 from contextlib import aclosing, asynccontextmanager
 from typing import Any, Unpack
 
 import httpx
 import pytest
-from fastapi import HTTPException
+from fastapi import HTTPException, Request
 from openai import AsyncOpenAI, AsyncStream
 from openai.types.responses import ResponseCompletedEvent, ResponseFunctionToolCall
+from sse_starlette import EventSourceResponse, ServerSentEvent
 
 from beeai_framework.adapters.openai.serve._factories import _requirement_agent_factory
 from beeai_framework.adapters.openai.serve._openai_model import OpenAIModel
@@ -24,6 +25,7 @@ from beeai_framework.adapters.openai.serve._permissions import (
 from beeai_framework.adapters.openai.serve._types import OpenAIEvent
 from beeai_framework.adapters.openai.serve.chat_completion._types import ChatCompletionRequestBody
 from beeai_framework.adapters.openai.serve.chat_completion.api import ChatCompletionAPI, _transform_request_messages
+from beeai_framework.adapters.openai.serve.responses._types import ResponsesRequestBody
 from beeai_framework.adapters.openai.serve.responses.api import ResponsesAPI
 from beeai_framework.agents.requirement import RequirementAgent
 from beeai_framework.agents.requirement.requirements.ask_permission import AskPermissionRequirement
@@ -509,6 +511,80 @@ async def test_chat_history_keeps_regular_tool_calls_next_to_approvals() -> None
     tool_message = messages[2]
     assert isinstance(tool_message, ToolMessage)
     assert [result.tool_call_id for result in tool_message.get_tool_results()] == ["call_weather"]
+
+
+async def wait_until(condition: Callable[[], bool]) -> None:
+    for _ in range(200):
+        if condition():
+            return
+        await asyncio.sleep(0.01)
+    pytest.fail("The condition was not met within 2 seconds.")
+
+
+async def test_unread_stream_does_not_block_its_conversation() -> None:
+    async def streaming(input: list[AnyMessage]) -> AsyncIterator[OpenAIEvent]:
+        for word in ("one ", "two ", "three"):
+            yield OpenAIEvent(text=word)
+
+    api = make_api(
+        "responses",
+        OpenAIModel(PermissionRunnable(), model_id="agent", stream=streaming),
+        permissions=OpenAIPermissionConfig(timeout=0.2),
+    )
+    assert isinstance(api, ResponsesAPI)
+    body = ResponsesRequestBody(model="agent", input="hello", stream=True, conversation="c")
+    request = Request({"type": "http"})
+    try:
+        # The client goes away before the response starts, so the SSE body is never read.
+        dropped = await api.handler(body, request, api_key="Bearer test")
+        assert isinstance(dropped, EventSourceResponse)
+        with pytest.raises(HTTPException) as exc:
+            await api.handler(body, request, api_key="Bearer test")
+        assert exc.value.status_code == 409
+
+        await wait_until(lambda: not api._runs._runs)
+        response = await api.handler(body, request, api_key="Bearer test")
+        assert isinstance(response, EventSourceResponse)
+        events = [event async for event in response.body_iterator]
+        last = events[-1]
+        assert isinstance(last, ServerSentEvent) and last.event == "response.completed"
+        memory = await api._memory_manager.get("c")
+        assert [message.text for message in memory.messages] == ["hello", "one two three"]
+        assert not api._runs._runs
+    finally:
+        await api._runs.close()
+
+
+async def test_unread_resumed_stream_is_closed(kind: str) -> None:
+    cleaned = asyncio.Event()
+
+    async def streaming(input: list[AnyMessage]) -> AsyncIterator[OpenAIEvent]:
+        try:
+            yield OpenAIEvent(text="before")
+            await io_confirm("Continue?")
+            for word in ("after ", "approval"):
+                yield OpenAIEvent(text=word)
+        finally:
+            cleaned.set()
+
+    api = make_api(
+        kind,
+        OpenAIModel(PermissionRunnable(), model_id="agent", stream=streaming),
+        permissions=OpenAIPermissionConfig(timeout=0.2),
+    )
+    async with client_for(api) as client:
+        call_id, _ = approval(result(await client.post(path(kind), json=payload(kind, True)), kind, True), kind)
+        resume = payload(kind, True, call_id)
+        request = Request({"type": "http"})
+        if isinstance(api, ChatCompletionAPI):
+            dropped = await api.handler(ChatCompletionRequestBody.model_validate(resume), request, "Bearer test")
+        else:
+            dropped = await api.handler(ResponsesRequestBody.model_validate(resume), request, "Bearer test")
+        assert isinstance(dropped, EventSourceResponse)
+        assert api._runs._runs and not api._runs._pending
+
+        await wait_until(lambda: not api._runs._runs)
+        assert cleaned.is_set()
 
 
 async def test_stream_cancellation_cleans_up_io_context() -> None:

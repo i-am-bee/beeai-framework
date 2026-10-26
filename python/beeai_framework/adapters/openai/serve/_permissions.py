@@ -72,12 +72,15 @@ class OpenAIRun:
         self._decision: asyncio.Future[bool] | None = None
         self._approval: ApprovalRequest | None = None
         self._timer: asyncio.TimerHandle | None = None
+        self._watchdog: asyncio.TimerHandle | None = None
         self._confirm_lock = asyncio.Lock()
         self._error: HTTPException | None = None
         self.task = asyncio.create_task(self._drive(model, messages))
         self.task.add_done_callback(self._done)
+        self._watch()
 
     def _done(self, task: asyncio.Task[None]) -> None:
+        self._unwatch()
         self.manager._runs.discard(self)
         # Retrieve failures even when the client has already received an approval.
         if not task.cancelled():
@@ -137,12 +140,34 @@ class OpenAIRun:
         self._clear_approval()
         self.task.cancel()
 
+    def _watch(self) -> None:
+        """Close the run unless a response starts reading it within the timeout.
+
+        A streamed response body runs only once the client reads it. If the client goes away before
+        that, nothing else would ever close the run, and its conversation would stay blocked.
+        """
+        self._unwatch()
+        self._watchdog = asyncio.get_running_loop().call_later(self.manager.config.timeout, self._abandon)
+
+    def _unwatch(self) -> None:
+        if self._watchdog is not None:
+            self._watchdog.cancel()
+            self._watchdog = None
+
+    def _abandon(self) -> None:
+        self._watchdog = None
+        self._error = HTTPException(408, "The response was not read in time.")
+        self._clear_approval()
+        self.task.cancel()
+
     async def close(self) -> None:
+        self._unwatch()
         self._clear_approval()
         self.task.cancel()
         await asyncio.gather(self.task, return_exceptions=True)
 
     async def _next(self) -> OpenAIEvent | RunnableOutput | ApprovalRequest | None:
+        self._unwatch()
         if self._error is not None:
             raise self._error
         if not self._queue.empty():
@@ -248,6 +273,7 @@ class OpenAIRunManager:
         # Consume before waking the invocation: duplicate/concurrent replies cannot execute twice.
         run._clear_approval()
         run._decision.set_result(decision)
+        run._watch()
         return run
 
     async def close(self) -> None:
