@@ -83,6 +83,7 @@ def register_signals(controller: AbortController, signals: list[AbortSignal]) ->
         if signal.aborted:
             controller.abort(signal.reason)
         else:
+
             def on_abort() -> None:
                 controller.abort(signal.reason)
 
