@@ -75,15 +75,30 @@ class AbortController:
         return cloned
 
 
-def register_signals(controller: AbortController, signals: list[AbortSignal]) -> None:
+def register_signals(controller: AbortController, signals: list[AbortSignal]) -> Callable[[], None]:
+    """Forward source signals to a controller and return an idempotent cleanup function."""
+    listeners: list[tuple[AbortSignal, Callable[[], None]]] = []
+
     def register(signal: AbortSignal) -> None:
         if signal.aborted:
             controller.abort(signal.reason)
         else:
-            signal.add_event_listener(lambda: controller.abort(signal.reason))
+
+            def on_abort() -> None:
+                controller.abort(signal.reason)
+
+            signal.add_event_listener(on_abort)
+            listeners.append((signal, on_abort))
 
     for signal in filter(lambda x: x is not None, signals):
         register(signal)
+
+    def cleanup() -> None:
+        while listeners:
+            signal, callback = listeners.pop()
+            signal.remove_event_listener(callback)
+
+    return cleanup
 
 
 async def abort_signal_handler(

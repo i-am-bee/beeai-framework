@@ -163,7 +163,7 @@ class RunContext:
             extra_signals.append(parent.signal)
         if signal:
             extra_signals.append(signal)
-        register_signals(self._controller, extra_signals)
+        self._cleanup_signals = register_signals(self._controller, extra_signals)
 
     @classmethod
     def get(cls) -> "RunContext":
@@ -182,6 +182,7 @@ class RunContext:
         return self._controller.signal
 
     def destroy(self) -> None:
+        self._cleanup_signals()
         self.emitter.destroy()
         self._controller.abort("Context has been destroyed.")
 
