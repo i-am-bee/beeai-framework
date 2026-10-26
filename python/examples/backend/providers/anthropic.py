@@ -11,7 +11,7 @@ from beeai_framework.parsers.field import ParserField
 from beeai_framework.parsers.line_prefix import LinePrefixParser, LinePrefixParserNode
 from beeai_framework.utils import AbortSignal
 
-MODEL_NAME: Final[str] = "claude-3-haiku-20240307"
+MODEL_NAME: Final[str] = "claude-haiku-4-5"
 
 
 async def anthropic_from_name() -> None:

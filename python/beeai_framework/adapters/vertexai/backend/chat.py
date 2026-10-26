@@ -34,7 +34,7 @@ class VertexAIChatModel(LiteLLMChatModel):
             kwargs["allow_prompt_caching"] = False
 
         super().__init__(
-            model_id if model_id else os.getenv("GOOGLE_VERTEX_CHAT_MODEL", "gemini-2.0-flash-lite-001"),
+            model_id if model_id else os.getenv("GOOGLE_VERTEX_CHAT_MODEL", "gemini-3.8-flash"),
             provider_id="vertex_ai",
             **kwargs,
         )

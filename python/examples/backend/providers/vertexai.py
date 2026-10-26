@@ -12,28 +12,28 @@ from beeai_framework.utils import AbortSignal
 
 
 async def vertexai_from_name() -> None:
-    llm = ChatModel.from_name("vertexai:gemini-2.0-flash-lite-001")
+    llm = ChatModel.from_name("vertexai:gemini-3.8-flash")
     user_message = UserMessage("what states are part of New England?")
     response = await llm.run([user_message])
     print(response.get_text_content())
 
 
 async def vertexai_sync() -> None:
-    llm = VertexAIChatModel("gemini-2.0-flash-lite-001")
+    llm = VertexAIChatModel("gemini-3.8-flash")
     user_message = UserMessage("what is the capital of Massachusetts?")
     response = await llm.run([user_message])
     print(response.get_text_content())
 
 
 async def vertexai_stream() -> None:
-    llm = VertexAIChatModel("gemini-2.0-flash-lite-001")
+    llm = VertexAIChatModel("gemini-3.8-flash")
     user_message = UserMessage("How many islands make up the country of Cape Verde?")
     response = await llm.run([user_message], stream=True)
     print(response.get_text_content())
 
 
 async def vertexai_stream_abort() -> None:
-    llm = VertexAIChatModel("gemini-2.0-flash-lite-001")
+    llm = VertexAIChatModel("gemini-3.8-flash")
     user_message = UserMessage("What is the smallest of the Cape Verde islands?")
 
     try:
@@ -51,14 +51,14 @@ async def vertexai_structure() -> None:
     class TestSchema(BaseModel):
         answer: str = Field(description="your final answer")
 
-    llm = VertexAIChatModel("gemini-2.0-flash-lite-001")
+    llm = VertexAIChatModel("gemini-3.8-flash")
     user_message = UserMessage("How many islands make up the country of Cape Verde?")
     response = await llm.run([user_message], response_format=TestSchema)
     print(response.output_structured)
 
 
 async def vertexai_stream_parser() -> None:
-    llm = VertexAIChatModel("gemini-2.0-flash-lite-001")
+    llm = VertexAIChatModel("gemini-3.8-flash")
 
     parser = LinePrefixParser(
         nodes={
@@ -78,7 +78,7 @@ async def vertexai_stream_parser() -> None:
 
 
 async def vertexai_cloning() -> None:
-    llm = VertexAIChatModel("gemini-2.0-flash-lite-001")
+    llm = VertexAIChatModel("gemini-3.8-flash")
     await llm.clone()
 
 
