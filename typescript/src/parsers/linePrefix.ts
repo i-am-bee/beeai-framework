@@ -169,7 +169,9 @@ export class LinePrefixParser<T extends Input<StringKey<T>>> extends Serializabl
       const parsedLine =
         isTerminationNode || (lastNode && !line.newLine) ? null : this.extractLine(line.value);
 
-      if (isLastLine && (parsedLine?.partial || !line.value)) {
+      // The last line can still grow with the next chunk, so keep it in the buffer when it is a partial
+      // prefix or has no visible characters yet (e.g., only the indentation of the next line).
+      if (isLastLine && (parsedLine?.partial || !line.value.trim())) {
         break;
       }
       this.lines.shift();
