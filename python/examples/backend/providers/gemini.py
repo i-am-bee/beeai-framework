@@ -19,21 +19,21 @@ async def gemini_from_name() -> None:
 
 
 async def gemini_sync() -> None:
-    llm = GeminiChatModel("gemini-2.5-flash")
+    llm = GeminiChatModel("gemini-3.8-flash")
     user_message = UserMessage("what is the capital of Massachusetts?")
     response = await llm.run([user_message])
     print(response.get_text_content())
 
 
 async def gemini_stream() -> None:
-    llm = GeminiChatModel("gemini-2.5-flash")
+    llm = GeminiChatModel("gemini-3.8-flash")
     user_message = UserMessage("How many islands make up the country of Cape Verde?")
     response = await llm.run([user_message], stream=True)
     print(response.get_text_content())
 
 
 async def gemini_stream_abort() -> None:
-    llm = GeminiChatModel("gemini-2.5-flash")
+    llm = GeminiChatModel("gemini-3.8-flash")
     user_message = UserMessage("What is the smallest of the Cape Verde islands?")
 
     try:
@@ -51,14 +51,14 @@ async def gemini_structure() -> None:
     class TestSchema(BaseModel):
         answer: str = Field(description="your final answer")
 
-    llm = GeminiChatModel("gemini-2.5-flash")
+    llm = GeminiChatModel("gemini-3.8-flash")
     user_message = UserMessage("How many islands make up the country of Cape Verde?")
     response = await llm.run([user_message], response_format=TestSchema)
     print(response.output_structured)
 
 
 async def gemini_stream_parser() -> None:
-    llm = GeminiChatModel("gemini-2.5-flash")
+    llm = GeminiChatModel("gemini-3.8-flash")
 
     parser = LinePrefixParser(
         nodes={
@@ -87,7 +87,7 @@ async def gemini_embedding() -> None:
 
 
 async def gemini_cloning() -> None:
-    llm = GeminiChatModel("gemini-2.5-flash")
+    llm = GeminiChatModel("gemini-3.8-flash")
     await llm.clone()
 
     embedding_llm = GeminiEmbeddingModel()

@@ -1,3 +1,6 @@
+# Needs torch, peft and outlines next to beeai-framework[transformers]; they are not installed with the
+# framework. Install the PyTorch build for your hardware (https://pytorch.org/get-started/locally/),
+# then run: pip install "beeai-framework[transformers]" peft outlines
 import asyncio
 
 from pydantic import BaseModel, Field

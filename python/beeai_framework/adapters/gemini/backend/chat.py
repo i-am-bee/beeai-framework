@@ -31,7 +31,7 @@ class GeminiChatModel(LiteLLMChatModel):
             kwargs["allow_prompt_caching"] = False
 
         super().__init__(
-            model_id if model_id else os.getenv("GEMINI_CHAT_MODEL", "gemini-2.5-flash"),
+            model_id if model_id else os.getenv("GEMINI_CHAT_MODEL", "gemini-3.8-flash"),
             provider_id="gemini",
             **kwargs,
         )

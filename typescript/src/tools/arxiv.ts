@@ -14,7 +14,6 @@ import {
   ToolInputValidationError,
 } from "@/tools/base.js";
 import { z } from "zod";
-import { createURLParams } from "@/internals/fetcher.js";
 import { Cache } from "@/cache/decoratorCache.js";
 import { XMLParser } from "fast-xml-parser";
 import { getProp } from "@/internals/helpers/object.js";
@@ -94,10 +93,10 @@ export class ArXivToolOutput extends JSONToolOutput<ArXivResponse> {
 }
 
 const extractId = (value: string) =>
-  value
-    .replace("https://arxiv.org/abs/", "")
-    .replace("https://arxiv.org/pdf/", "")
-    .replace(/v\d$/, "");
+  value.replace(/^https?:\/\/arxiv\.org\/(abs|pdf)\//, "").replace(/v\d+$/, "");
+
+// Encodes a single value; the structural characters of the query (":", "+AND+", ",") are added by the caller.
+const encodeValue = (value: string | number) => encodeURIComponent(value).replace(/%20/g, "+");
 
 export class ArXivTool extends Tool<ArXivToolOutput, ToolOptions, ToolRunOptions> {
   name = "ArXiv";
@@ -146,26 +145,35 @@ export class ArXivTool extends Tool<ArXivToolOutput, ToolOptions, ToolRunOptions
     }
   }
 
-  protected _prepareParams(input: ToolInput<typeof this>) {
-    return createURLParams({
-      start: input.start,
-      max_results: input.maxResults,
-      id_list: isEmpty(input.ids ?? []) ? undefined : input.ids?.map(extractId),
-      search_query:
-        input.search_query &&
-        [
-          input.search_query.include
-            .map((tag) => `${FilterTypeMapping[tag.field]}:${tag.value}`)
-            .join(Separators.AND),
-          (input.search_query.exclude ?? [])
-            .map((tag) => `${FilterTypeMapping[tag.field]}:${tag.value}`)
-            .join(Separators.ANDNOT),
-        ]
-          .filter(Boolean)
-          .join(Separators.ANDNOT),
-      sortBy: SortType.RELEVANCE,
-      sortOrder: SortOrder.DESCENDING,
-    });
+  protected _prepareQuery(input: ToolInput<typeof this>) {
+    const toFilter = (tag: { field: ValueOf<typeof FilterType>; value: string }) =>
+      `${FilterTypeMapping[tag.field]}:${encodeValue(tag.value)}`;
+
+    const searchQuery =
+      input.search_query &&
+      [
+        input.search_query.include.map(toFilter).join(Separators.AND),
+        (input.search_query.exclude ?? []).map(toFilter).join(Separators.ANDNOT),
+      ]
+        .filter(Boolean)
+        .join(Separators.ANDNOT);
+
+    const params: Record<string, string | undefined> = {
+      start: encodeValue(input.start),
+      max_results: encodeValue(input.maxResults),
+      // the API expects a single comma-separated list, a repeated parameter returns only one of the ids
+      id_list: isEmpty(input.ids ?? [])
+        ? undefined
+        : input.ids?.map((id) => encodeValue(extractId(id))).join(","),
+      search_query: searchQuery,
+      sortBy: encodeValue(SortType.RELEVANCE),
+      sortOrder: encodeValue(SortOrder.DESCENDING),
+    };
+
+    return Object.entries(params)
+      .filter((entry): entry is [string, string] => entry[1] !== undefined)
+      .map(([key, value]) => `${key}=${value}`)
+      .join("&");
   }
 
   protected async _run(
@@ -173,8 +181,7 @@ export class ArXivTool extends Tool<ArXivToolOutput, ToolOptions, ToolRunOptions
     _options: Partial<BaseToolRunOptions>,
     run: RunContext<this>,
   ) {
-    const params = this._prepareParams(input);
-    const url = `https://export.arxiv.org/api/query?${decodeURIComponent(params.toString())}`;
+    const url = `https://export.arxiv.org/api/query?${this._prepareQuery(input)}`;
     const response = await fetch(url, {
       signal: run.signal,
     });
@@ -189,7 +196,7 @@ export class ArXivTool extends Tool<ArXivToolOutput, ToolOptions, ToolRunOptions
       attributeNamePrefix: "@_",
       attributesGroupName: false,
       cdataPropName: "#cdata",
-      ignoreAttributes: true,
+      ignoreAttributes: false,
       numberParseOptions: { hex: false, leadingZeros: true },
       parseAttributeValue: false,
       parseTagValue: true,
@@ -234,9 +241,13 @@ export class ArXivTool extends Tool<ArXivToolOutput, ToolOptions, ToolRunOptions
             doi: entry.doi,
             comment: entry.comment,
             journalReference: entry.journal_ref,
-            primaryCategory: entry.primary_category,
-            categories: castArray(entry.category).filter(Boolean),
-            links: castArray(entry.link).filter(Boolean),
+            primaryCategory: entry.primary_category?.["@_term"],
+            categories: castArray(entry.category ?? [])
+              .map((category: any) => category?.["@_term"])
+              .filter(Boolean),
+            links: castArray(entry.link ?? [])
+              .map((link: any) => link?.["@_href"])
+              .filter(Boolean),
           },
           isDefined,
         ),

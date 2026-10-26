@@ -28,7 +28,7 @@ export async function pRetry<T>(
     try {
       const factor = options?.factor ?? 2;
       if (attempt > 1) {
-        const ms = Math.round(Math.pow(factor, attempt - 1)) * 1000;
+        const ms = Math.round(Math.pow(factor, attempt - 1) * 1000);
         await setTimeout(ms, undefined, {
           signal: options?.signal,
         });
