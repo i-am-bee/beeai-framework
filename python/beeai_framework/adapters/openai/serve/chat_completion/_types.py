@@ -185,7 +185,8 @@ class ChatCompletionRequestBody(BaseModel):
 
 class ChatMessageResponse(BaseModel):
     role: str = Field(..., description="The role of the message sender", pattern="^(user|assistant)$")
-    content: str = Field(..., description="The content of the message")
+    content: str | None = Field(..., description="The content of the message")
+    tool_calls: list[dict[str, Any]] | None = None
 
 
 class ChatCompletionChoice(BaseModel):
