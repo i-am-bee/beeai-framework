@@ -17,13 +17,22 @@ import {
 import { AgentStackAgentEvents } from "./events.js";
 import { ACPAgent } from "@/adapters/acp/agents/agent.js";
 import { toCamelCase } from "remeda";
+import { Logger } from "@/logger/logger.js";
 
+/**
+ * @deprecated AgentStack is no longer maintained and the AgentStack integration will be removed in a future
+ * release. Use A2AAgent (`beeai-framework/adapters/a2a/agents/agent`) for agents exposed over the A2A
+ * protocol, or ACPAgent (`beeai-framework/adapters/acp/agents/agent`), which this class wraps.
+ */
 export class AgentStackAgent extends BaseAgent<AgentStackAgentRunInput, AgentStackAgentRunOutput> {
   public readonly emitter: Emitter<AgentStackAgentEvents>;
   protected agent: ACPAgent;
 
   constructor(protected readonly input: AgentStackAgentInput) {
     super();
+    Logger.root.warn(
+      "The AgentStackAgent is deprecated and will be removed soon. AgentStack is no longer maintained. Use A2AAgent (for agents exposed over the A2A protocol) or ACPAgent instead.",
+    );
     this.agent = new ACPAgent(input);
     this.emitter = Emitter.root.child<AgentStackAgentEvents>({
       namespace: ["agent", "agentStack", toCamelCase(this.input.agentName)],

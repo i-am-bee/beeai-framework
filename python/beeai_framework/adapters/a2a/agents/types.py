@@ -7,7 +7,7 @@ try:
     import a2a.types as a2a_types
 except ModuleNotFoundError as e:
     raise ModuleNotFoundError(
-        "Optional module [agentstack] not found.\nRun 'pip install \"beeai-framework[agentstack]\"' to install."
+        "Optional module [a2a] not found.\nRun 'pip install \"beeai-framework[a2a]\"' to install."
     ) from e
 
 

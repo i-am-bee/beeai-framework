@@ -10,7 +10,8 @@ import beeai_framework.adapters.agentstack.agents.events as _new_module
 
 warnings.warn(
     "beeai_framework.adapters.beeai_platform.agents.events is deprecated and will be removed in a future release. "
-    "Please use beeai_framework.adapters.agentstack.agents.events instead.",
+    "Please use beeai_framework.adapters.agentstack.agents.events instead. "
+    "Note that the AgentStack integration itself is deprecated too; migrate to beeai_framework.adapters.a2a.",
     DeprecationWarning,
     stacklevel=2,
 )

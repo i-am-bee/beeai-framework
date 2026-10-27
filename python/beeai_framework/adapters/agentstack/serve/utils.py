@@ -11,7 +11,7 @@ try:
     from beeai_framework.adapters.a2a.agents._utils import convert_a2a_to_framework_message
 except ModuleNotFoundError as e:
     raise ModuleNotFoundError(
-        "Optional module [agentstack not found.\nRun 'pip install \"beeai-framework[agentstack]\"' to install."
+        "Optional module [agentstack] not found.\nRun 'pip install \"beeai-framework[agentstack]\"' to install."
     ) from e
 
 
