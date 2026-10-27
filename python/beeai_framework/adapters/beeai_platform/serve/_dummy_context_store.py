@@ -10,7 +10,8 @@ import beeai_framework.adapters.agentstack.serve._dummy_context_store as _new_mo
 
 warnings.warn(
     "beeai_framework.adapters.beeai_platform.serve._dummy_context_store is deprecated and will be removed in a future release. "  # noqa: E501
-    "Please use beeai_framework.adapters.agentstack.serve._dummy_context_store instead.",
+    "Please use beeai_framework.adapters.agentstack.serve._dummy_context_store instead. "
+    "Note that the AgentStack integration itself is deprecated too; migrate to beeai_framework.adapters.a2a.",
     DeprecationWarning,
     stacklevel=2,
 )
