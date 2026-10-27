@@ -128,7 +128,6 @@ all = [
     "grpcio-health-checking",
     "fastapi",
     "llama-index",
-    "agentstack-sdk",
     "boto3",
     "google-auth",
     "cryptography",
