@@ -72,7 +72,7 @@ describe.each(["global", "cn"] as const)("MiniMax %s requests", (region) => {
         expect(url).toBe(
           `https://${region === "cn" ? "api.minimaxi.com" : "api.minimax.io"}/v1/chat/completions`,
         );
-        expect(body.model).toBe(modelId ?? "MiniMax-M3.1-Flash");
+        expect(body.model).toBe(modelId ?? "MiniMax-M3");
         expect(body.messages).toEqual([{ role: "user", content: "Hello" }]);
         expect(Boolean(body.stream)).toBe(stream);
         for (const key of ["thinking", "reasoning_effort", "service_tier", "reasoning_split"]) {
@@ -83,11 +83,20 @@ describe.each(["global", "cn"] as const)("MiniMax %s requests", (region) => {
   );
 });
 
-it("uses Flash through the provider factory", async () => {
+it("uses M3 through the provider factory", async () => {
   const model = await ChatModel.fromName("minimax");
   await model.create({ messages: [new UserMessage("Hello")] });
-  expect(requests[0].body.model).toBe("MiniMax-M3.1-Flash");
+  expect(requests[0].body.model).toBe("MiniMax-M3");
 });
+
+it.each(["MiniMax-M3.1-Flash", "custom-model"])(
+  "passes reasoning effort through for %s",
+  async (modelId) => {
+    const model = new MiniMaxChatModel(modelId, { reasoningEffort: "high" });
+    await model.create({ messages: [new UserMessage("Hello")] });
+    expect(requests[0].body.reasoning_effort).toBe("high");
+  },
+);
 
 it.each(["MiniMax-M3", "MiniMax-M2.7-highspeed", "custom-model"])(
   "preserves the saved model %s and custom endpoint",

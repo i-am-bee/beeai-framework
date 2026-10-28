@@ -67,7 +67,7 @@ async def test_model_request(
     assert len(requests) == 1
     assert requests[0].url.host == host
     body = json.loads(requests[0].content)
-    assert body["model"] == (model_id or "MiniMax-M3.1-Flash")
+    assert body["model"] == (model_id or "MiniMax-M3")
     assert body.get("stream", False) is stream
     assert body["messages"] == [{"role": "user", "content": [{"type": "text", "text": "Hello"}]}]
     assert "thinking" not in body
@@ -91,7 +91,7 @@ async def test_saved_model_and_custom_endpoint(
 
 async def test_factory_default(requests: list[httpx.Request]) -> None:
     await ChatModel.from_name("minimax").run([UserMessage("Hello")])
-    assert json.loads(requests[0].content)["model"] == "MiniMax-M3.1-Flash"
+    assert json.loads(requests[0].content)["model"] == "MiniMax-M3"
 
 
 @pytest.mark.parametrize(
@@ -113,17 +113,20 @@ async def test_explicit_thinking_settings(
 
 @pytest.mark.parametrize("effort", ["low", "medium", "high", "xhigh", "max"])
 @pytest.mark.parametrize("stream", [False, True])
-async def test_reasoning_effort_parameter(requests: list[httpx.Request], effort: str, stream: bool) -> None:
-    await MiniMaxChatModel().run([UserMessage("Hello")], reasoning_effort=effort, stream=stream)
+@pytest.mark.parametrize("model_id", ["MiniMax-M3.1-Flash", "custom-model"])
+async def test_reasoning_effort_parameter(
+    requests: list[httpx.Request], effort: str, stream: bool, model_id: str
+) -> None:
+    await MiniMaxChatModel(model_id).run([UserMessage("Hello")], reasoning_effort=effort, stream=stream)
     assert json.loads(requests[0].content)["reasoning_effort"] == effort
 
 
 @pytest.mark.parametrize("source", ["parameters", "settings"])
 async def test_saved_reasoning_effort(requests: list[httpx.Request], source: str) -> None:
     model = (
-        MiniMaxChatModel(parameters=ChatModelParameters(reasoning_effort="medium"))
+        MiniMaxChatModel("custom-model", parameters=ChatModelParameters(reasoning_effort="medium"))
         if source == "parameters"
-        else MiniMaxChatModel(settings={"reasoning_effort": "medium"})
+        else MiniMaxChatModel("custom-model", settings={"reasoning_effort": "medium"})
     )
     await model.run([UserMessage("Hello")])
     assert json.loads(requests[0].content)["reasoning_effort"] == "medium"
