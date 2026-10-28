@@ -6,8 +6,9 @@ from typing import Any
 
 import pytest
 
-from beeai_framework.context import RunContext, RunInstance
-from beeai_framework.emitter import Emitter
+from beeai_framework.context import RunContext, RunContextStartEvent, RunInstance
+from beeai_framework.emitter import Emitter, EmitterOptions, EventMeta
+from beeai_framework.emitter.utils import create_internal_event_matcher
 from beeai_framework.tools.errors import ToolError
 
 
@@ -18,6 +19,71 @@ class DummyRunInstance:
     @property
     def emitter(self) -> Emitter:
         return self._emitter
+
+
+@pytest.mark.asyncio
+@pytest.mark.unit
+@pytest.mark.parametrize("depth", [2, 3, 4])
+async def test_nested_listener_receives_each_descendant_run_once(depth: int) -> None:
+    instances = [DummyRunInstance() for _ in range(depth)]
+    nested: list[RunInstance] = []
+    same_run: list[RunInstance] = []
+
+    def record_nested(_: Any, meta: EventMeta) -> None:
+        assert isinstance(meta.creator, RunContext)
+        nested.append(meta.creator.instance)
+
+    def record_same_run(_: Any, meta: EventMeta) -> None:
+        assert isinstance(meta.creator, RunContext)
+        same_run.append(meta.creator.instance)
+
+    def observe(context: RunContext) -> None:
+        matcher = create_internal_event_matcher("start")
+        context.emitter.on(matcher, record_nested, EmitterOptions(match_nested=True, is_blocking=True))
+        context.emitter.on(matcher, record_same_run, EmitterOptions(match_nested=False, is_blocking=True))
+
+    async def run_level(level: int) -> int:
+        async def handler(_: RunContext) -> int:
+            return await run_level(level + 1) if level + 1 < depth else level
+
+        run = RunContext.enter(instances[level], handler)
+        if level == 0:
+            run.middleware(observe)
+        return await run
+
+    assert await run_level(0) == depth - 1
+    assert nested == instances
+    assert same_run == instances[:1]
+
+
+@pytest.mark.asyncio
+@pytest.mark.unit
+async def test_nested_start_middleware_can_stop_a_grandchild_handler() -> None:
+    instances = [DummyRunInstance() for _ in range(3)]
+    leaf_ran = False
+
+    def intercept(data: RunContextStartEvent, meta: EventMeta) -> None:
+        if isinstance(meta.creator, RunContext) and meta.creator.instance is instances[-1]:
+            data.output = "blocked"
+
+    def observe(context: RunContext) -> None:
+        context.emitter.on(
+            create_internal_event_matcher("start"), intercept, EmitterOptions(match_nested=True, is_blocking=True)
+        )
+
+    async def leaf(_: RunContext) -> str:
+        nonlocal leaf_ran
+        leaf_ran = True
+        return "executed"
+
+    async def child(_: RunContext) -> str:
+        return await RunContext.enter(instances[2], leaf)
+
+    async def parent(_: RunContext) -> str:
+        return await RunContext.enter(instances[1], child)
+
+    assert await RunContext.enter(instances[0], parent).middleware(observe) == "blocked"
+    assert not leaf_ran
 
 
 @pytest.mark.asyncio
