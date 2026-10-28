@@ -114,7 +114,7 @@ def agent_execution_options(execution: AgentExecutionConfig | None) -> AgentOpti
 
 
 def checked_execution_config(input: object, execution: AgentExecutionConfig | None) -> AgentExecutionConfig | None:
-    """Validate and copy the `execution` registration option, as `AgentStackServer.register` does.
+    """Validate and copy the `execution` registration option passed to a server's `register`.
 
     Raises:
         ValueError: If limits are set for something other than a built-in agent.

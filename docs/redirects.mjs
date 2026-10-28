@@ -5,5 +5,7 @@ export const redirects = {
   "/modules/events": "/modules/middleware",
   "/modules/emitter": "/modules/middleware",
   "/experimental/requirement-agent": "/modules/agents/requirement-agent",
-  "/integrations/beeai-platform": "/integrations/agent-stack",
+  // The AgentStack (formerly BeeAI Platform) integration was removed; A2A replaces it.
+  "/integrations/beeai-platform": "/integrations/a2a",
+  "/integrations/agent-stack": "/integrations/a2a",
 };
