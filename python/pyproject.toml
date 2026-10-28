@@ -40,7 +40,7 @@ langgraph-checkpoint = {version = ">=4.0.0,<5.0.0", optional = true}
 langsmith = {version = ">=0.8.18,<1.0.0", optional = true}
 # Pinned exactly: litellm 1.107.0 was a malicious release (supply-chain compromise, 2026-10-21).
 # Bump deliberately, only to versions verified as published by the maintainers.
-litellm = "1.89.7"
+litellm = "1.100.4"
 llama-index-core = {version = "^0.14.0", optional = true}
 markdown = {version = "^3.8.2", optional = true}
 mcp = {version = "^1.30.0", optional = true}
@@ -68,7 +68,7 @@ ragas = {version = "^0.4.2", optional = true}
 commitizen = "^4.2.1"
 nbstripout = "^0.8.1"
 pydantic-settings = "^2.14"
-pylint = "^3.3.2"
+pylint = "^4.0.9"
 pytest = "^8.3.4"
 pytest-asyncio = "~0.25.3"
 pytest-cov = "^6.0.0"
