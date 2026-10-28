@@ -85,7 +85,7 @@ class ChatCompletionAPI:
         stream = bool(request.stream)
         last = request.messages[-1] if request.messages else None
         if isinstance(last, chat_completion_types.ToolMessage) and last.tool_call_id.startswith(APPROVAL_PREFIX):
-            if last.role != "tool" or not isinstance(last.content, str):
+            if not isinstance(last.content, str):
                 raise HTTPException(400, "Approval output must be a JSON string.")
             run = self._runs.resume(last.tool_call_id, last.content, model_id=runnable.model_id, stream=stream)
         else:
