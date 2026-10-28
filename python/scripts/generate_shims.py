@@ -52,35 +52,6 @@ MAPPINGS.extend(
     ]
 )
 
-# BeeAI Platform -> AgentStack
-MAPPINGS.extend(
-    [
-        Entry(
-            source=f"adapters/beeai_platform/{path}",
-            target=f"adapters/agentstack/{path}",
-            name_mapper=("BeeAIPlatform", "AgentStack"),
-            hint="Note that the AgentStack integration itself is deprecated too; "
-            "migrate to beeai_framework.adapters.a2a.",
-        )
-        for path in [
-            "__init__.py",
-            "context.py",
-            "agents/__init__.py",
-            "agents/agent.py",
-            "agents/events.py",
-            "agents/types.py",
-            "backend/__init__.py",
-            "backend/chat.py",
-            "serve/__init__.py",
-            "serve/_dummy_context_store.py",
-            "serve/factories.py",
-            "serve/server.py",
-            "serve/types.py",
-            "serve/utils.py",
-        ]
-    ]
-)
-
 
 def to_import_path(path: str) -> str:
     base, ext = os.path.splitext(path)

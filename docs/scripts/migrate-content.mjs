@@ -70,14 +70,9 @@ function absolutizeLinks(body, pageDir) {
 // Targeted fixes for links that were already broken in the Mintlify source
 // (surfaced by starlight-links-validator):
 //  - tools.mdx links to #think / #handoff sections that don't exist -> de-link
-//  - serve.mdx links to agent-stack#server; the real anchor slug differs
 const LINK_FIXUPS = [
   [/\[Think\]\(#think\)/g, "Think"],
   [/\[Handoff\]\(#handoff\)/g, "Handoff"],
-  [
-    /\/integrations\/agent-stack\/#server/g,
-    "/integrations/agent-stack/#exposing-to-the-platform-server",
-  ],
 ];
 
 // The site uses `trailingSlash: 'never'` to match the old Mintlify URLs, so

@@ -1288,57 +1288,6 @@ await server.serve();
 
 </CodeGroup>
 
-### Agent Stack
-
-<Warning>
-The Agent Stack integration is deprecated because AgentStack is no longer maintained, and it will be removed in a future release. Prefer the [A2A server](#agent2agent-a2a-protocol) below.
-</Warning>
-
-Expose your agent as a **Agent Stack server**:
-
-<Tip>
-Make sure you have done the following:
-
-pip install `'beeai-framework[a2a]' 'beeai-framework[agentstack]'`  and you have a compatible version of `uvicorn` installed.
-</Tip>
-
-<CodeGroup>
-
-```py Python [expandable]
-from beeai_framework.adapters.agentstack.serve.server import AgentStackServer
-from beeai_framework.agents.requirement import RequirementAgent
-from beeai_framework.backend import ChatModel
-from beeai_framework.memory import UnconstrainedMemory
-from beeai_framework.middleware.trajectory import GlobalTrajectoryMiddleware
-from beeai_framework.tools.search.wikipedia import WikipediaTool
-from beeai_framework.tools.weather import OpenMeteoTool
-
-def main():
-    llm = ChatModel.from_name("ollama:granite3.3")
-    agent = RequirementAgent(
-        llm=llm,
-        tools=[WikipediaTool(), OpenMeteoTool()],
-        memory=UnconstrainedMemory(),
-        middlewares=[GlobalTrajectoryMiddleware()],
-        instructions="You are a helpful research assistant with access to Wikipedia and weather data."
-    )
-
-    # Runs HTTP server that registers to Agent Stack
-    server = AgentStackServer(config={"configure_telemetry": False})
-    server.register(agent)
-    server.serve()
-
-if __name__ == "__main__":
-    main()
-```
-
-```ts TypeScript [expandable]
-// AgentStack server support is not yet available in TypeScript.
-// Use the Python SDK for this integration.
-```
-
-</CodeGroup>
-
 ### Agent2Agent (A2A) Protocol
 
 Expose your agent as an **A2A server**:

@@ -72,7 +72,7 @@ const agent = new RequirementAgent({
     "Plan activities for a given destination based on current weather and events.",
     "Input to Wikipedia should be a name of the target city.",
   ],
-  name: "PlannerAgent", // optional, useful for Handoff or registering agent to AgentStack or others
+  name: "PlannerAgent", // optional, useful for Handoff or when serving the agent
   description: "Assistant to plan your day in a given destination.", // optional
   requirements: [
     new ConditionalRequirement(ThinkTool, {
