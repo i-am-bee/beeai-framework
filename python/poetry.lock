@@ -7,7 +7,7 @@ description = "A2A Python SDK"
 optional = true
 python-versions = ">=3.10"
 groups = ["main"]
-markers = "extra == \"beeai-platform\" or extra == \"agentstack\" or extra == \"a2a\" or extra == \"all\""
+markers = "extra == \"a2a\" or extra == \"all\""
 files = [
     {file = "a2a_sdk-0.3.21-py3-none-any.whl", hash = "sha256:5d817dd424a4396587416241de1342a97d6a8bb1c0b31a47d8dc6546b389ab68"},
     {file = "a2a_sdk-0.3.21.tar.gz", hash = "sha256:627aa841187540f5975625c7f0383754795d55fe3e774073f2741c5bdd7c9972"},
@@ -88,42 +88,6 @@ pydantic = ">=2.7"
 
 [package.extras]
 logfire = ["logfire (>=0.14)", "opentelemetry-sdk (>=1.28.0)"]
-
-[[package]]
-name = "agentstack-sdk"
-version = "0.6.2"
-description = "Agent Stack SDK"
-optional = true
-python-versions = "<3.14,>=3.11"
-groups = ["main"]
-markers = "extra == \"beeai-platform\" or extra == \"agentstack\""
-files = [
-    {file = "agentstack_sdk-0.6.2-py3-none-any.whl", hash = "sha256:22b807171b3dc36f4566f3eef26abb02cc27fcde4bd3b5bd70909bcde306d75d"},
-    {file = "agentstack_sdk-0.6.2.tar.gz", hash = "sha256:bdc7c38a0cff5f3a2c5b28c0b98a760e51c3e881003a1ccb7835af9bbf6119dc"},
-]
-
-[package.dependencies]
-a2a-sdk = "0.3.21"
-anyio = ">=4.9.0"
-async-lru = ">=2.0.4"
-asyncclick = ">=8.1.8"
-authlib = ">=1.3.0"
-cachetools = ">=6.2.3"
-fastapi = ">=0.116.1"
-httpx = "*"
-janus = ">=2.0.0"
-mcp = ">=1.12.3"
-objprint = ">=0.3.0"
-opentelemetry-api = ">=1.35.0"
-opentelemetry-exporter-otlp-proto-http = ">=1.35.0"
-opentelemetry-instrumentation-fastapi = ">=0.56b0"
-opentelemetry-instrumentation-httpx = ">=0.60b1"
-opentelemetry-instrumentation-openai = ">=0.52.3"
-opentelemetry-sdk = ">=1.35.0"
-sse-starlette = ">=2.2.1"
-starlette = ">=0.47.2"
-tenacity = ">=9.1.2"
-uvicorn = ">=0.35.0"
 
 [[package]]
 name = "aiofiles"
@@ -444,7 +408,7 @@ description = "ASGI specs, helper code, and adapters"
 optional = true
 python-versions = ">=3.9"
 groups = ["main"]
-markers = "extra == \"acp\" or extra == \"all\" or extra == \"beeai-platform\" or extra == \"agentstack\""
+markers = "extra == \"acp\" or extra == \"all\""
 files = [
     {file = "asgiref-3.11.1-py3-none-any.whl", hash = "sha256:e8667a091e69529631969fd45dc268fa79b99c92c5fcdda727757e52146ec133"},
     {file = "asgiref-3.11.1.tar.gz", hash = "sha256:5f184dc43b7e763efe848065441eac62229c9f7b0475f41f80e207a114eda4ce"},
@@ -472,7 +436,7 @@ description = "Simple LRU cache for asyncio"
 optional = true
 python-versions = ">=3.10"
 groups = ["main"]
-markers = "extra == \"acp\" or extra == \"all\" or extra == \"beeai-platform\" or extra == \"agentstack\""
+markers = "extra == \"acp\" or extra == \"all\""
 files = [
     {file = "async_lru-2.3.0-py3-none-any.whl", hash = "sha256:eea27b01841909316f2cc739807acea1c623df2be8c5cfad7583286397bb8315"},
     {file = "async_lru-2.3.0.tar.gz", hash = "sha256:89bdb258a0140d7313cf8f4031d816a042202faa61d0ab310a0a538baa1c24b6"},
@@ -492,22 +456,6 @@ files = [
 ]
 
 [[package]]
-name = "asyncclick"
-version = "8.3.0.7"
-description = "Composable command line interface toolkit, async fork"
-optional = true
-python-versions = ">=3.11"
-groups = ["main"]
-markers = "extra == \"beeai-platform\" or extra == \"agentstack\""
-files = [
-    {file = "asyncclick-8.3.0.7-py3-none-any.whl", hash = "sha256:7607046de39a3f315867cad818849f973e29d350c10d92f251db3ff7600c6c7d"},
-    {file = "asyncclick-8.3.0.7.tar.gz", hash = "sha256:8a80d8ac613098ee6a9a8f0248f60c66c273e22402cf3f115ed7f071acfc71d3"},
-]
-
-[package.dependencies]
-colorama = {version = "*", markers = "platform_system == \"Windows\""}
-
-[[package]]
 name = "attrs"
 version = "26.1.0"
 description = "Classes Without Boilerplate"
@@ -518,23 +466,6 @@ files = [
     {file = "attrs-26.1.0-py3-none-any.whl", hash = "sha256:c647aa4a12dfbad9333ca4e71fe62ddc36f4e63b2d260a37a8b83d2f043ac309"},
     {file = "attrs-26.1.0.tar.gz", hash = "sha256:d03ceb89cb322a8fd706d4fb91940737b6642aa36998fe130a9bc96c985eff32"},
 ]
-
-[[package]]
-name = "authlib"
-version = "1.7.1"
-description = "The ultimate Python library in building OAuth and OpenID Connect servers and clients."
-optional = true
-python-versions = ">=3.10"
-groups = ["main"]
-markers = "extra == \"beeai-platform\" or extra == \"agentstack\""
-files = [
-    {file = "authlib-1.7.1-py2.py3-none-any.whl", hash = "sha256:8470f4aa6b5590ac41bd81d6e6ee12448ce36a0da0af19bbed69fb53fb4e8ad9"},
-    {file = "authlib-1.7.1.tar.gz", hash = "sha256:8c09b0f9d080c823e594b52316af70f79a1fa4eed64d0363a076233c04ef063a"},
-]
-
-[package.dependencies]
-cryptography = "*"
-joserfc = ">=1.6.0"
 
 [[package]]
 name = "backoff"
@@ -963,7 +894,7 @@ description = "Foreign Function Interface for Python calling C code."
 optional = true
 python-versions = ">=3.9"
 groups = ["main"]
-markers = "(extra == \"beeai-platform\" or extra == \"agentstack\" or extra == \"a2a\" or extra == \"all\" or extra == \"vertexai\" or extra == \"mcp\" or extra == \"rag\" or extra == \"search\" or extra == \"duckduckgo\") and (extra == \"beeai-platform\" or extra == \"agentstack\" or extra == \"a2a\" or extra == \"all\" or extra == \"vertexai\" or extra == \"mcp\" or extra == \"rag\" or platform_python_implementation != \"CPython\") and (platform_python_implementation != \"PyPy\" or extra == \"search\" or extra == \"duckduckgo\" or extra == \"all\")"
+markers = "(extra == \"a2a\" or extra == \"all\" or extra == \"vertexai\" or extra == \"mcp\" or extra == \"rag\" or extra == \"search\" or extra == \"duckduckgo\") and (extra == \"a2a\" or extra == \"all\" or extra == \"vertexai\" or extra == \"mcp\" or extra == \"rag\" or platform_python_implementation != \"CPython\") and (platform_python_implementation != \"PyPy\" or extra == \"search\" or extra == \"duckduckgo\" or extra == \"all\")"
 files = [
     {file = "cffi-2.0.0-cp310-cp310-macosx_10_13_x86_64.whl", hash = "sha256:0cf2d91ecc3fcc0625c2c530fe004f82c110405f101548512cce44322fa8ac44"},
     {file = "cffi-2.0.0-cp310-cp310-macosx_11_0_arm64.whl", hash = "sha256:f73b96c41e3b2adedc34a7356e64c8eb96e03a3782b535e043a986276ce12a49"},
@@ -1417,7 +1348,7 @@ description = "cryptography is a package which provides cryptographic recipes an
 optional = true
 python-versions = "!=3.9.0,!=3.9.1,>=3.9"
 groups = ["main"]
-markers = "extra == \"beeai-platform\" or extra == \"agentstack\" or extra == \"a2a\" or extra == \"all\" or extra == \"vertexai\" or extra == \"mcp\" or extra == \"rag\""
+markers = "extra == \"a2a\" or extra == \"all\" or extra == \"vertexai\" or extra == \"mcp\" or extra == \"rag\""
 files = [
     {file = "cryptography-50.0.0-cp311-abi3-macosx_11_0_arm64.whl", hash = "sha256:031e2d5dd4bb9caa3ca9c82e5a197fd8ae680232cee62603d1a813f3f07e3d03"},
     {file = "cryptography-50.0.0-cp311-abi3-manylinux2014_aarch64.manylinux_2_17_aarch64.whl", hash = "sha256:fd9192b7b70c573d7f214eb1ae35e00d359f6f5e4b27c7e21e30de1fc6204645"},
@@ -1942,7 +1873,7 @@ description = "FastAPI framework, high performance, easy to learn, fast to code,
 optional = true
 python-versions = ">=3.10"
 groups = ["main"]
-markers = "extra == \"beeai-platform\" or extra == \"agentstack\" or extra == \"a2a\" or extra == \"all\" or extra == \"acp\" or extra == \"watsonx-orchestrate\""
+markers = "extra == \"a2a\" or extra == \"all\" or extra == \"acp\" or extra == \"watsonx-orchestrate\""
 files = [
     {file = "fastapi-0.133.1-py3-none-any.whl", hash = "sha256:658f34ba334605b1617a65adf2ea6461901bdb9af3a3080d63ff791ecf7dc2e2"},
     {file = "fastapi-0.133.1.tar.gz", hash = "sha256:ed152a45912f102592976fde6cbce7dae1a8a1053da94202e51dd35d184fadd6"},
@@ -2489,7 +2420,7 @@ description = "Google API client core library"
 optional = true
 python-versions = ">=3.9"
 groups = ["main"]
-markers = "extra == \"beeai-platform\" or extra == \"agentstack\" or extra == \"a2a\" or extra == \"all\""
+markers = "extra == \"a2a\" or extra == \"all\""
 files = [
     {file = "google_api_core-2.30.3-py3-none-any.whl", hash = "sha256:a85761ba72c444dad5d611c2220633480b2b6be2521eca69cca2dbb3ffd6bfe8"},
     {file = "google_api_core-2.30.3.tar.gz", hash = "sha256:e601a37f148585319b26db36e219df68c5d07b6382cff2d580e83404e44d641b"},
@@ -2516,7 +2447,7 @@ description = "Google Authentication Library"
 optional = true
 python-versions = ">=3.8"
 groups = ["main"]
-markers = "extra == \"beeai-platform\" or extra == \"agentstack\" or extra == \"a2a\" or extra == \"all\" or extra == \"vertexai\""
+markers = "extra == \"a2a\" or extra == \"all\" or extra == \"vertexai\""
 files = [
     {file = "google_auth-2.50.0-py3-none-any.whl", hash = "sha256:04382175e28b94f49694977f0a792688b59a668def1499e9d8de996dc9ce5b15"},
     {file = "google_auth-2.50.0.tar.gz", hash = "sha256:f35eafb191195328e8ce10a7883970877e7aeb49c2bfaa54aa0e394316d353d0"},
@@ -2545,7 +2476,7 @@ description = "Common protobufs used in Google APIs"
 optional = true
 python-versions = ">=3.9"
 groups = ["main"]
-markers = "extra == \"beeai-platform\" or extra == \"agentstack\" or extra == \"a2a\" or extra == \"all\" or extra == \"acp\""
+markers = "extra == \"a2a\" or extra == \"all\" or extra == \"acp\""
 files = [
     {file = "googleapis_common_protos-1.74.0-py3-none-any.whl", hash = "sha256:702216f78610bb510e3f12ac3cafd281b7ac45cc5d86e90ad87e4d301a3426b5"},
     {file = "googleapis_common_protos-1.74.0.tar.gz", hash = "sha256:57971e4eeeba6aad1163c1f0fc88543f965bb49129b8bb55b2b7b26ecab084f1"},
@@ -2691,7 +2622,7 @@ description = "HTTP/2-based RPC framework"
 optional = true
 python-versions = ">=3.9"
 groups = ["main"]
-markers = "extra == \"beeai-platform\" or extra == \"agentstack\" or extra == \"a2a\" or extra == \"all\" or extra == \"evaluation\""
+markers = "extra == \"a2a\" or extra == \"all\" or extra == \"evaluation\""
 files = [
     {file = "grpcio-1.80.0-cp310-cp310-linux_armv7l.whl", hash = "sha256:886457a7768e408cdce226ad1ca67d2958917d306523a0e21e1a2fdaa75c9c9c"},
     {file = "grpcio-1.80.0-cp310-cp310-macosx_11_0_universal2.whl", hash = "sha256:7b641fc3f1dc647bfd80bd713addc68f6d145956f64677e56d9ebafc0bd72388"},
@@ -2786,7 +2717,7 @@ description = "Standard Protobuf Reflection Service for gRPC"
 optional = true
 python-versions = ">=3.9"
 groups = ["main"]
-markers = "extra == \"beeai-platform\" or extra == \"agentstack\" or extra == \"a2a\" or extra == \"all\""
+markers = "extra == \"a2a\" or extra == \"all\""
 files = [
     {file = "grpcio_reflection-1.80.0-py3-none-any.whl", hash = "sha256:a7d0b77961b1c722400b1509968f1ad3a64e9d78280d4cf5b88b6cfe5b41eb61"},
     {file = "grpcio_reflection-1.80.0.tar.gz", hash = "sha256:e9c76aabc4324279945b70bc76a3d41bc4f9396bffcf1cfc1011a571c2c56221"},
@@ -2803,7 +2734,7 @@ description = "Protobuf code generator for gRPC"
 optional = true
 python-versions = ">=3.9"
 groups = ["main"]
-markers = "extra == \"beeai-platform\" or extra == \"agentstack\" or extra == \"a2a\" or extra == \"all\""
+markers = "extra == \"a2a\" or extra == \"all\""
 files = [
     {file = "grpcio_tools-1.80.0-cp310-cp310-linux_armv7l.whl", hash = "sha256:727477b9afa4b53f5ec70cafb41c3965d893835e0d4ea9b542fe3d0d005602bf"},
     {file = "grpcio_tools-1.80.0-cp310-cp310-macosx_11_0_universal2.whl", hash = "sha256:85fe8d15f146c62cb76f38d963e256392d287442b9232717d30ae9e3bbda9bc3"},
@@ -3089,7 +3020,7 @@ description = "Consume Server-Sent Event (SSE) messages with HTTPX."
 optional = true
 python-versions = ">=3.9"
 groups = ["main"]
-markers = "extra == \"beeai-platform\" or extra == \"agentstack\" or extra == \"a2a\" or extra == \"all\" or extra == \"acp\" or extra == \"langchain\" or extra == \"rag\" or extra == \"evaluation\" or extra == \"mcp\""
+markers = "extra == \"a2a\" or extra == \"all\" or extra == \"acp\" or extra == \"langchain\" or extra == \"rag\" or extra == \"evaluation\" or extra == \"mcp\""
 files = [
     {file = "httpx_sse-0.4.3-py3-none-any.whl", hash = "sha256:0ac1c9fe3c0afad2e0ebb25a934a59f4c7823b60792691f779fad2c5568830fc"},
     {file = "httpx_sse-0.4.3.tar.gz", hash = "sha256:9b1ed0127459a66014aec3c56bebd93da3c1bc8bb6618c8082039a44889a755d"},
@@ -3283,7 +3214,7 @@ description = "Mixed sync-async queue to interoperate between asyncio tasks and 
 optional = true
 python-versions = ">=3.9"
 groups = ["main"]
-markers = "extra == \"acp\" or extra == \"all\" or extra == \"beeai-platform\" or extra == \"agentstack\""
+markers = "extra == \"acp\" or extra == \"all\""
 files = [
     {file = "janus-2.0.0-py3-none-any.whl", hash = "sha256:7e6449d34eab04cd016befbd7d8c0d8acaaaab67cb59e076a69149f9031745f9"},
     {file = "janus-2.0.0.tar.gz", hash = "sha256:0970f38e0e725400496c834a368a67ee551dc3b5ad0a257e132f5b46f2e77770"},
@@ -3451,25 +3382,6 @@ files = [
     {file = "joblib-1.5.3-py3-none-any.whl", hash = "sha256:5fc3c5039fc5ca8c0276333a188bbd59d6b7ab37fe6632daa76bc7f9ec18e713"},
     {file = "joblib-1.5.3.tar.gz", hash = "sha256:8561a3269e6801106863fd0d6d84bb737be9e7631e33aaed3fb9ce5953688da3"},
 ]
-
-[[package]]
-name = "joserfc"
-version = "1.6.8"
-description = "The ultimate Python library for JOSE RFCs, including JWS, JWE, JWK, JWA, JWT"
-optional = true
-python-versions = ">=3.9"
-groups = ["main"]
-markers = "extra == \"beeai-platform\" or extra == \"agentstack\""
-files = [
-    {file = "joserfc-1.6.8-py3-none-any.whl", hash = "sha256:22fb31a69094a5e6f44632002a9df2c30c941fc6c8ce1b037e92c03de954cf9f"},
-    {file = "joserfc-1.6.8.tar.gz", hash = "sha256:878620c553a6ebdd76ccdc356782fee3f735f21a356d079a546b42a4670ace5f"},
-]
-
-[package.dependencies]
-cryptography = ">=45.0.1"
-
-[package.extras]
-drafts = ["pycryptodome"]
 
 [[package]]
 name = "json-repair"
@@ -4414,7 +4326,7 @@ description = "Model Context Protocol SDK"
 optional = true
 python-versions = ">=3.10"
 groups = ["main"]
-markers = "extra == \"mcp\" or extra == \"beeai-platform\" or extra == \"agentstack\" or extra == \"all\""
+markers = "extra == \"mcp\" or extra == \"all\""
 files = [
     {file = "mcp-1.30.0-py3-none-any.whl", hash = "sha256:666edb5009503e1047c9d60346a756f94b261f05cc2625f23d41c728ffc484d0"},
     {file = "mcp-1.30.0.tar.gz", hash = "sha256:445414625fce5c295faa505bb11bacece661ab6f4028d57c935db57820b7a3e4"},
@@ -5093,19 +5005,6 @@ files = [
 ]
 
 [[package]]
-name = "objprint"
-version = "0.3.0"
-description = "A library that can print Python objects in human readable format"
-optional = true
-python-versions = ">=3.9"
-groups = ["main"]
-markers = "extra == \"beeai-platform\" or extra == \"agentstack\""
-files = [
-    {file = "objprint-0.3.0-py3-none-any.whl", hash = "sha256:489083bfc8baf0526f8fd6af74673799511532636f0ce4141133255ded773405"},
-    {file = "objprint-0.3.0.tar.gz", hash = "sha256:b5d83f9d62db5b95353bb42959106e1cd43010dcaa3eed1ad8d7d0b2df9b2d5a"},
-]
-
-[[package]]
 name = "obstore"
 version = "0.9.4"
 description = ""
@@ -5254,7 +5153,7 @@ description = "OpenTelemetry Python API"
 optional = true
 python-versions = ">=3.10"
 groups = ["main"]
-markers = "extra == \"beeai-platform\" or extra == \"agentstack\" or extra == \"a2a\" or extra == \"all\" or extra == \"acp\" or extra == \"evaluation\""
+markers = "extra == \"a2a\" or extra == \"all\" or extra == \"acp\" or extra == \"evaluation\""
 files = [
     {file = "opentelemetry_api-1.45.1-py3-none-any.whl", hash = "sha256:b31553efa588ae44bc306f863c785c5333a9ecc091248c6ee68b4b6c87fdedfb"},
     {file = "opentelemetry_api-1.45.1.tar.gz", hash = "sha256:aa38ed19bcc084ba42782a73255b3582283eced7ad6dddbd6695189e69adfb75"},
@@ -5270,7 +5169,7 @@ description = "OpenTelemetry Exporters HTTP transport"
 optional = true
 python-versions = ">=3.10"
 groups = ["main"]
-markers = "extra == \"acp\" or extra == \"all\" or extra == \"beeai-platform\" or extra == \"agentstack\""
+markers = "extra == \"acp\" or extra == \"all\""
 files = [
     {file = "opentelemetry_exporter_http_transport-0.66b1-py3-none-any.whl", hash = "sha256:2f95404bdee7f9d2d529c7de56c7bd86d014d774d8fbf137810e0167f8a492bf"},
     {file = "opentelemetry_exporter_http_transport-0.66b1.tar.gz", hash = "sha256:443080203bf52586ce0b2ad901e8951c61833eab1aa539ae6f1f16fe9e8e7952"},
@@ -5291,7 +5190,7 @@ description = "OpenTelemetry OTLP HTTP export utilities"
 optional = true
 python-versions = ">=3.10"
 groups = ["main"]
-markers = "extra == \"acp\" or extra == \"all\" or extra == \"beeai-platform\" or extra == \"agentstack\""
+markers = "extra == \"acp\" or extra == \"all\""
 files = [
     {file = "opentelemetry_exporter_otlp_common-0.66b1-py3-none-any.whl", hash = "sha256:00ff8592c3a7cb729ff3fdc7ffa12372c243bdf2163e80c180994d0c7bd83ee9"},
     {file = "opentelemetry_exporter_otlp_common-0.66b1.tar.gz", hash = "sha256:6b1403487a2185ac1feb45fd5546fdf8630ce71c36bcefaadf51e2130e9e23f9"},
@@ -5310,7 +5209,7 @@ description = "OpenTelemetry Protobuf encoding"
 optional = true
 python-versions = ">=3.10"
 groups = ["main"]
-markers = "extra == \"acp\" or extra == \"all\" or extra == \"beeai-platform\" or extra == \"agentstack\""
+markers = "extra == \"acp\" or extra == \"all\""
 files = [
     {file = "opentelemetry_exporter_otlp_proto_common-1.45.1-py3-none-any.whl", hash = "sha256:2f446183ae7047b036226f1d846c41a834b0e8755ad13b51a51dd38952eb466c"},
     {file = "opentelemetry_exporter_otlp_proto_common-1.45.1.tar.gz", hash = "sha256:2e4adcc3a67bcf57804fc49514f0ef64974ca7590aa3491da389852b4a0628f6"},
@@ -5326,7 +5225,7 @@ description = "OpenTelemetry Collector Protobuf over HTTP Exporter"
 optional = true
 python-versions = ">=3.10"
 groups = ["main"]
-markers = "extra == \"acp\" or extra == \"all\" or extra == \"beeai-platform\" or extra == \"agentstack\""
+markers = "extra == \"acp\" or extra == \"all\""
 files = [
     {file = "opentelemetry_exporter_otlp_proto_http-1.45.1-py3-none-any.whl", hash = "sha256:24a97cf3753c7fb52fad44a696e452ff371686339e2acf3309e2eda3d0230700"},
     {file = "opentelemetry_exporter_otlp_proto_http-1.45.1.tar.gz", hash = "sha256:45c218405ce3fd879596924b1874bf9a8f6880206d61065c5a912c8e5c297fb7"},
@@ -5354,7 +5253,7 @@ description = "Instrumentation Tools & Auto Instrumentation for OpenTelemetry Py
 optional = true
 python-versions = ">=3.10"
 groups = ["main"]
-markers = "extra == \"acp\" or extra == \"all\" or extra == \"beeai-platform\" or extra == \"agentstack\""
+markers = "extra == \"acp\" or extra == \"all\""
 files = [
     {file = "opentelemetry_instrumentation-0.66b1-py3-none-any.whl", hash = "sha256:4c4aa14dc9a24a02325a9d4c42c4d0208dbb1374c2b1b8fe6c9392d59f3e1008"},
     {file = "opentelemetry_instrumentation-0.66b1.tar.gz", hash = "sha256:e79a510f7d87c72d95e964ddb42193a0d9a75668c027d980eab032ea1322a5ce"},
@@ -5373,7 +5272,7 @@ description = "ASGI instrumentation for OpenTelemetry"
 optional = true
 python-versions = ">=3.10"
 groups = ["main"]
-markers = "extra == \"acp\" or extra == \"all\" or extra == \"beeai-platform\" or extra == \"agentstack\""
+markers = "extra == \"acp\" or extra == \"all\""
 files = [
     {file = "opentelemetry_instrumentation_asgi-0.66b1-py3-none-any.whl", hash = "sha256:78b3f9bdf0fa38c65935a2ab46d59e0f9de873a51e0c95b0329f106e2ccb5274"},
     {file = "opentelemetry_instrumentation_asgi-0.66b1.tar.gz", hash = "sha256:78cdc5e45e897e16a8dac9d282e8d5bdf9af2d58e1313fa0bdd4a134c6f9dafc"},
@@ -5396,7 +5295,7 @@ description = "OpenTelemetry FastAPI Instrumentation"
 optional = true
 python-versions = ">=3.10"
 groups = ["main"]
-markers = "extra == \"acp\" or extra == \"all\" or extra == \"beeai-platform\" or extra == \"agentstack\""
+markers = "extra == \"acp\" or extra == \"all\""
 files = [
     {file = "opentelemetry_instrumentation_fastapi-0.66b1-py3-none-any.whl", hash = "sha256:97f8ac8fd7537517f9e6988bd0aca04bfa5aad564bcd46c245530739e2be72d1"},
     {file = "opentelemetry_instrumentation_fastapi-0.66b1.tar.gz", hash = "sha256:584cf9d2c4417ff8b2d6ff2bc606bfe13c8b3456018bf94f50f2cf658492505b"},
@@ -5419,7 +5318,7 @@ description = "OpenTelemetry HTTPX Instrumentation"
 optional = true
 python-versions = ">=3.10"
 groups = ["main"]
-markers = "extra == \"acp\" or extra == \"all\" or extra == \"beeai-platform\" or extra == \"agentstack\""
+markers = "extra == \"acp\" or extra == \"all\""
 files = [
     {file = "opentelemetry_instrumentation_httpx-0.66b1-py3-none-any.whl", hash = "sha256:0342a4002c6dbc6c4bf22cc7e698f50f5c8b77f63325c6f40c94ab87e016bf4d"},
     {file = "opentelemetry_instrumentation_httpx-0.66b1.tar.gz", hash = "sha256:5865a72c68098c85955a271ab8744b480a36e3ee492d35b8cadb93c7c4dbb618"},
@@ -5436,35 +5335,13 @@ wrapt = ">=1.0.0,<3.0.0"
 instruments-any = ["httpx (>=0.18.0)", "httpx2 (>=2.0.0)"]
 
 [[package]]
-name = "opentelemetry-instrumentation-openai"
-version = "0.60.0"
-description = "OpenTelemetry OpenAI instrumentation"
-optional = true
-python-versions = "<4,>=3.10"
-groups = ["main"]
-markers = "extra == \"beeai-platform\" or extra == \"agentstack\""
-files = [
-    {file = "opentelemetry_instrumentation_openai-0.60.0-py3-none-any.whl", hash = "sha256:90abd3647c59add0ef295787d8cc0a46300a96b0308a67ef838479e0b2bccdff"},
-    {file = "opentelemetry_instrumentation_openai-0.60.0.tar.gz", hash = "sha256:7e1a65e76b10f715675d77cf08fdef389b9ac942c9a53ab0e95e19d5d4335154"},
-]
-
-[package.dependencies]
-opentelemetry-api = ">=1.38.0,<2"
-opentelemetry-instrumentation = ">=0.59b0"
-opentelemetry-semantic-conventions = ">=0.59b0"
-opentelemetry-semantic-conventions-ai = ">=0.5.1,<0.6.0"
-
-[package.extras]
-instruments = ["openai"]
-
-[[package]]
 name = "opentelemetry-proto"
 version = "1.45.1"
 description = "OpenTelemetry Python Proto"
 optional = true
 python-versions = ">=3.10"
 groups = ["main"]
-markers = "extra == \"acp\" or extra == \"all\" or extra == \"beeai-platform\" or extra == \"agentstack\""
+markers = "extra == \"acp\" or extra == \"all\""
 files = [
     {file = "opentelemetry_proto-1.45.1-py3-none-any.whl", hash = "sha256:f38e2a8413053c180cd3d2637fbb279673ec2f6a6e09c995aafa2f452c52b46e"},
     {file = "opentelemetry_proto-1.45.1.tar.gz", hash = "sha256:79e0fb95e4616691a469439238aa9224d75779b3e108e895d1aa125ab29ca77c"},
@@ -5480,7 +5357,7 @@ description = "OpenTelemetry Python SDK"
 optional = true
 python-versions = ">=3.10"
 groups = ["main"]
-markers = "extra == \"beeai-platform\" or extra == \"agentstack\" or extra == \"a2a\" or extra == \"all\" or extra == \"acp\" or extra == \"evaluation\""
+markers = "extra == \"a2a\" or extra == \"all\" or extra == \"acp\" or extra == \"evaluation\""
 files = [
     {file = "opentelemetry_sdk-1.45.1-py3-none-any.whl", hash = "sha256:c604c11dc429810812348989115fa44bd558772a3d7442afc43d024f2c250ca4"},
     {file = "opentelemetry_sdk-1.45.1.tar.gz", hash = "sha256:63d24a6ca645019a631e6a51999c73e93adcac1196ca640b8ae78a7cc4762bf3"},
@@ -5501,7 +5378,7 @@ description = "OpenTelemetry Semantic Conventions"
 optional = true
 python-versions = ">=3.10"
 groups = ["main"]
-markers = "extra == \"beeai-platform\" or extra == \"agentstack\" or extra == \"a2a\" or extra == \"all\" or extra == \"acp\" or extra == \"evaluation\""
+markers = "extra == \"a2a\" or extra == \"all\" or extra == \"acp\" or extra == \"evaluation\""
 files = [
     {file = "opentelemetry_semantic_conventions-0.66b1-py3-none-any.whl", hash = "sha256:d4cddeb4315490b35213f55e2bdc9ac54bb1e4d318927475bed62b35545e581b"},
     {file = "opentelemetry_semantic_conventions-0.66b1.tar.gz", hash = "sha256:497ca63bf383723411e8eaf60c8779e9877633c936bb641080adab59d0eb6ec8"},
@@ -5512,30 +5389,13 @@ opentelemetry-api = "1.45.1"
 typing-extensions = ">=4.5.0"
 
 [[package]]
-name = "opentelemetry-semantic-conventions-ai"
-version = "0.5.1"
-description = "OpenTelemetry Semantic Conventions Extension for Large Language Models"
-optional = true
-python-versions = "<4,>=3.9"
-groups = ["main"]
-markers = "extra == \"beeai-platform\" or extra == \"agentstack\""
-files = [
-    {file = "opentelemetry_semantic_conventions_ai-0.5.1-py3-none-any.whl", hash = "sha256:25aeb22bd261543b4898a73824026d96770e5351209c7d07a0b1314762b1f6e4"},
-    {file = "opentelemetry_semantic_conventions_ai-0.5.1.tar.gz", hash = "sha256:153906200d8c1d2f8e09bd78dbef526916023de85ac3dab35912bfafb69ff04c"},
-]
-
-[package.dependencies]
-opentelemetry-sdk = ">=1.38.0,<2"
-opentelemetry-semantic-conventions = ">=0.59b0"
-
-[[package]]
 name = "opentelemetry-util-http"
 version = "0.66b1"
 description = "Web util for OpenTelemetry"
 optional = true
 python-versions = ">=3.10"
 groups = ["main"]
-markers = "extra == \"acp\" or extra == \"all\" or extra == \"beeai-platform\" or extra == \"agentstack\""
+markers = "extra == \"acp\" or extra == \"all\""
 files = [
     {file = "opentelemetry_util_http-0.66b1-py3-none-any.whl", hash = "sha256:8f443d7abcaf29c4a07b373bbd31b5b39132c0ed3c27d015a59dc0323d5b1c58"},
     {file = "opentelemetry_util_http-0.66b1.tar.gz", hash = "sha256:047dea1a628031f857a5a32261dc0e955bc162d39993ed1cffb8f2cff5ba8a62"},
@@ -6344,7 +6204,7 @@ description = "Beautiful, Pythonic protocol buffers"
 optional = true
 python-versions = ">=3.9"
 groups = ["main"]
-markers = "extra == \"beeai-platform\" or extra == \"agentstack\" or extra == \"a2a\" or extra == \"all\""
+markers = "extra == \"a2a\" or extra == \"all\""
 files = [
     {file = "proto_plus-1.27.2-py3-none-any.whl", hash = "sha256:6432f75893d3b9e70b9c412f1d2f03f65b11fb164b793d14ae2ca01821d22718"},
     {file = "proto_plus-1.27.2.tar.gz", hash = "sha256:b2adde53adadf75737c44d3dcb0104fde65250dfc83ad59168b4aa3e574b6a24"},
@@ -6363,7 +6223,7 @@ description = ""
 optional = true
 python-versions = ">=3.9"
 groups = ["main"]
-markers = "extra == \"beeai-platform\" or extra == \"agentstack\" or extra == \"a2a\" or extra == \"all\" or extra == \"acp\""
+markers = "extra == \"a2a\" or extra == \"all\" or extra == \"acp\""
 files = [
     {file = "protobuf-6.33.6-cp310-abi3-win32.whl", hash = "sha256:7d29d9b65f8afef196f8334e80d6bc1d5d4adedb449971fefd3723824e6e77d3"},
     {file = "protobuf-6.33.6-cp310-abi3-win_amd64.whl", hash = "sha256:0cd27b587afca21b7cfa59a74dcbd48a50f0a6400cfb59391340ad729d91d326"},
@@ -6581,7 +6441,7 @@ description = "Pure-Python implementation of ASN.1 types and DER/BER/CER codecs 
 optional = true
 python-versions = ">=3.8"
 groups = ["main"]
-markers = "extra == \"beeai-platform\" or extra == \"agentstack\" or extra == \"a2a\" or extra == \"all\" or extra == \"vertexai\""
+markers = "extra == \"a2a\" or extra == \"all\" or extra == \"vertexai\""
 files = [
     {file = "pyasn1-0.6.4-py3-none-any.whl", hash = "sha256:deda9277cfd454080ec40b207fb6df82206a3a2688735233cdcd8d3d565f088b"},
     {file = "pyasn1-0.6.4.tar.gz", hash = "sha256:9c447d8431c947fe4c8febc4ed9e760bc29011a5b01e5c74b67025bd9fb8ce81"},
@@ -6594,7 +6454,7 @@ description = "A collection of ASN.1-based protocols modules"
 optional = true
 python-versions = ">=3.8"
 groups = ["main"]
-markers = "extra == \"beeai-platform\" or extra == \"agentstack\" or extra == \"a2a\" or extra == \"all\" or extra == \"vertexai\""
+markers = "extra == \"a2a\" or extra == \"all\" or extra == \"vertexai\""
 files = [
     {file = "pyasn1_modules-0.4.2-py3-none-any.whl", hash = "sha256:29253a9207ce32b64c3ac6600edc75368f98473906e8fd1043bd6b5b1de2c14a"},
     {file = "pyasn1_modules-0.4.2.tar.gz", hash = "sha256:677091de870a80aae844b1ca6134f54652fa2c8c5a52aa396440ac3106e941e6"},
@@ -6610,7 +6470,7 @@ description = "C parser in Python"
 optional = true
 python-versions = ">=3.10"
 groups = ["main"]
-markers = "(extra == \"beeai-platform\" or extra == \"agentstack\" or extra == \"a2a\" or extra == \"all\" or extra == \"vertexai\" or extra == \"mcp\" or extra == \"rag\" or platform_python_implementation != \"CPython\") and (extra == \"beeai-platform\" or extra == \"agentstack\" or extra == \"a2a\" or extra == \"all\" or extra == \"vertexai\" or extra == \"mcp\" or extra == \"rag\" or extra == \"search\" or extra == \"duckduckgo\") and (platform_python_implementation != \"PyPy\" or extra == \"search\" or extra == \"duckduckgo\" or extra == \"all\") and implementation_name != \"PyPy\""
+markers = "(extra == \"a2a\" or extra == \"all\" or extra == \"vertexai\" or extra == \"mcp\" or extra == \"rag\" or platform_python_implementation != \"CPython\") and (extra == \"a2a\" or extra == \"all\" or extra == \"vertexai\" or extra == \"mcp\" or extra == \"rag\" or extra == \"search\" or extra == \"duckduckgo\") and (platform_python_implementation != \"PyPy\" or extra == \"search\" or extra == \"duckduckgo\" or extra == \"all\") and implementation_name != \"PyPy\""
 files = [
     {file = "pycparser-3.0-py3-none-any.whl", hash = "sha256:b727414169a36b7d524c1c3e31839a521725078d7b2ff038656844266160a992"},
     {file = "pycparser-3.0.tar.gz", hash = "sha256:600f49d217304a5902ac3c37e1281c9fe94e4d0489de643a9504c5cdfdfc6b29"},
@@ -6859,7 +6719,7 @@ description = "JSON Web Token implementation in Python"
 optional = true
 python-versions = ">=3.9"
 groups = ["main"]
-markers = "extra == \"mcp\" or extra == \"beeai-platform\" or extra == \"agentstack\" or extra == \"all\""
+markers = "extra == \"mcp\" or extra == \"all\""
 files = [
     {file = "pyjwt-2.15.1-py3-none-any.whl", hash = "sha256:42d59d631f7768a1028a64c7ff581a9bf7519804daf91fc5b6c56e30eec5e193"},
     {file = "pyjwt-2.15.1.tar.gz", hash = "sha256:4f259e80cdfb6b3fc18a7de51fd1ef9ec79652f25019bae68975ca2468a34df8"},
@@ -7209,7 +7069,7 @@ description = "A streaming multipart parser for Python"
 optional = true
 python-versions = ">=3.10"
 groups = ["main"]
-markers = "extra == \"acp\" or extra == \"all\" or extra == \"mcp\" or extra == \"beeai-platform\" or extra == \"agentstack\""
+markers = "extra == \"acp\" or extra == \"all\" or extra == \"mcp\""
 files = [
     {file = "python_multipart-0.0.32-py3-none-any.whl", hash = "sha256:ff6d3f776f16878c894e52e107296ffc890e913c611b1a4ec6c44e2821fe2e23"},
     {file = "python_multipart-0.0.32.tar.gz", hash = "sha256:be54b7f3fa167bb83e4fcd936b887b708f4e57fe75911c02aebf53efaf8d938e"},
@@ -7253,7 +7113,7 @@ description = "Python for Window Extensions"
 optional = true
 python-versions = "*"
 groups = ["main"]
-markers = "(sys_platform == \"win32\" or extra == \"evaluation\" or extra == \"all\") and (sys_platform == \"win32\" or platform_system == \"Windows\") and (extra == \"mcp\" or extra == \"beeai-platform\" or extra == \"agentstack\" or extra == \"all\" or extra == \"evaluation\") and (extra == \"mcp\" or extra == \"beeai-platform\" or extra == \"agentstack\" or extra == \"all\" or platform_system == \"Windows\")"
+markers = "(sys_platform == \"win32\" or extra == \"evaluation\" or extra == \"all\") and (sys_platform == \"win32\" or platform_system == \"Windows\") and (extra == \"mcp\" or extra == \"all\" or extra == \"evaluation\") and (extra == \"mcp\" or extra == \"all\" or platform_system == \"Windows\")"
 files = [
     {file = "pywin32-311-cp310-cp310-win32.whl", hash = "sha256:d03ff496d2a0cd4a5893504789d4a15399133fe82517455e78bad62efbb7f0a3"},
     {file = "pywin32-311-cp310-cp310-win_amd64.whl", hash = "sha256:797c2772017851984b97180b0bebe4b620bb86328e8a884bb626156295a63b3b"},
@@ -8409,7 +8269,7 @@ description = "Most extensible Python build backend with support for C/C++ exten
 optional = true
 python-versions = ">=3.10"
 groups = ["main"]
-markers = "extra == \"beeai-platform\" or extra == \"agentstack\" or extra == \"a2a\" or extra == \"all\" or extra == \"llama-index\" or extra == \"rag\" or extra == \"evaluation\""
+markers = "extra == \"a2a\" or extra == \"all\" or extra == \"llama-index\" or extra == \"rag\" or extra == \"evaluation\""
 files = [
     {file = "setuptools-84.1.0-py3-none-any.whl", hash = "sha256:5231689c6ac8156cd155cfb98c3fd6fb252c3e7e9bd3d78b64d3c55f132624c9"},
     {file = "setuptools-84.1.0.tar.gz", hash = "sha256:23657205b63d4d31395ab917815247f694aafad28cd21316bf5fd45a51048ea0"},
@@ -8823,7 +8683,7 @@ description = "SSE plugin for Starlette"
 optional = true
 python-versions = ">=3.10"
 groups = ["main"]
-markers = "extra == \"beeai-platform\" or extra == \"agentstack\" or extra == \"a2a\" or extra == \"all\" or extra == \"mcp\""
+markers = "extra == \"a2a\" or extra == \"all\" or extra == \"mcp\""
 files = [
     {file = "sse_starlette-3.4.1-py3-none-any.whl", hash = "sha256:6b43cf21f1d574d582a6e1b0cfbde1c94dc86a32a701a7168c99c4475c6bd1d0"},
     {file = "sse_starlette-3.4.1.tar.gz", hash = "sha256:f780bebcf6c8997fe514e3bd8e8c648d8284976b391c8bed0bcb1f611632b555"},
@@ -8847,7 +8707,7 @@ description = "The little ASGI library that shines."
 optional = true
 python-versions = ">=3.10"
 groups = ["main"]
-markers = "extra == \"mcp\" or extra == \"beeai-platform\" or extra == \"agentstack\" or extra == \"all\" or extra == \"a2a\" or extra == \"acp\" or extra == \"watsonx-orchestrate\""
+markers = "extra == \"mcp\" or extra == \"all\" or extra == \"a2a\" or extra == \"acp\" or extra == \"watsonx-orchestrate\""
 files = [
     {file = "starlette-1.3.1-py3-none-any.whl", hash = "sha256:c7372aae11c3c3f26a42df7bd626cec2f47d03483d261d369516a615a53714c6"},
     {file = "starlette-1.3.1.tar.gz", hash = "sha256:05d0213193f2fbaae60e2ecb593b4add4262ad4e46536b54abe36f11a71724e0"},
@@ -8898,7 +8758,7 @@ description = "Retry code until it succeeds"
 optional = true
 python-versions = ">=3.10"
 groups = ["main"]
-markers = "extra == \"langchain\" or extra == \"rag\" or extra == \"all\" or extra == \"evaluation\" or extra == \"llama-index\" or extra == \"beeai-platform\" or extra == \"agentstack\""
+markers = "extra == \"langchain\" or extra == \"rag\" or extra == \"all\" or extra == \"evaluation\" or extra == \"llama-index\""
 files = [
     {file = "tenacity-9.1.4-py3-none-any.whl", hash = "sha256:6095a360c919085f28c6527de529e76a06ad89b23659fa881ae0649b867a9d55"},
     {file = "tenacity-9.1.4.tar.gz", hash = "sha256:adb31d4c263f2bd041081ab33b498309a57c77f9acf2db65aadf0898179cf93a"},
@@ -9701,7 +9561,7 @@ description = "The lightning-fast ASGI server."
 optional = true
 python-versions = ">=3.9"
 groups = ["main"]
-markers = "(sys_platform != \"emscripten\" or extra == \"acp\" or extra == \"all\" or extra == \"beeai-platform\" or extra == \"agentstack\" or extra == \"a2a\" or extra == \"watsonx-orchestrate\") and (extra == \"mcp\" or extra == \"beeai-platform\" or extra == \"agentstack\" or extra == \"all\" or extra == \"acp\" or extra == \"a2a\" or extra == \"watsonx-orchestrate\")"
+markers = "(extra == \"mcp\" or extra == \"all\" or extra == \"acp\" or extra == \"a2a\" or extra == \"watsonx-orchestrate\") and (sys_platform != \"emscripten\" or extra == \"acp\" or extra == \"all\" or extra == \"a2a\" or extra == \"watsonx-orchestrate\")"
 files = [
     {file = "uvicorn-0.37.0-py3-none-any.whl", hash = "sha256:913b2b88672343739927ce381ff9e2ad62541f9f8289664fa1d1d3803fa2ce6c"},
     {file = "uvicorn-0.37.0.tar.gz", hash = "sha256:4115c8add6d3fd536c8ee77f0e14a7fd2ebba939fed9b02583a97f80648f9e13"},
@@ -10695,10 +10555,8 @@ cffi = ["cffi (>=1.17,<2.0) ; platform_python_implementation != \"PyPy\" and pyt
 a2a = ["a2a-sdk", "cryptography", "grpcio-health-checking", "starlette", "types-grpcio", "types-grpcio-health-checking", "types-grpcio-reflection", "uvicorn"]
 acp = ["acp-sdk", "starlette", "uvicorn"]
 acp-zed = ["agent-client-protocol"]
-agentstack = ["a2a-sdk", "agentstack-sdk", "cryptography", "mcp", "starlette", "uvicorn"]
 all = ["a2a-sdk", "acp-sdk", "agent-client-protocol", "boto3", "cryptography", "ddgs", "deepeval", "fastapi", "google-auth", "grpcio-health-checking", "langchain", "langchain-community", "langchain-core", "langchain-ollama", "langgraph", "langgraph-checkpoint", "langsmith", "mcp", "nltk", "pillow", "pypdf", "ragas", "starlette", "transformers", "uvicorn", "wikipedia-api"]
 bedrock = ["boto3"]
-beeai-platform = ["a2a-sdk", "agentstack-sdk", "cryptography", "mcp", "starlette", "uvicorn"]
 duckduckgo = ["ddgs"]
 evaluation = ["deepeval", "ragas"]
 huggingface = ["transformers"]
@@ -10715,4 +10573,4 @@ wikipedia = ["wikipedia-api"]
 [metadata]
 lock-version = "2.1"
 python-versions = ">= 3.11,<3.14"
-content-hash = "da9548b4f3c4598929e96adb4bb193641fa851080208b5d264d23f64dd38788a"
+content-hash = "7d00228421343b809c0c98e05bc8abe1e34bfbdca56d752a8b5098f864aaa5b7"

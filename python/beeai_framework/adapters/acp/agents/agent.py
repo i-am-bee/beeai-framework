@@ -57,10 +57,10 @@ class ACPAgent(BaseAgent[ACPAgentOutput]):
                 acp_client.Client(base_url=self._url, manage_client=False, session=self._session) as client,
             ):
                 inputs = (
-                    [self._convert_to_agent_stack_message(i) for i in input]
+                    [self._convert_to_acp_message(i) for i in input]
                     if isinstance(input, list)
                     # pyrefly: ignore [bad-argument-type]
-                    else [self._convert_to_agent_stack_message(input)]
+                    else [self._convert_to_acp_message(input)]
                 )
 
                 last_event = None
@@ -147,7 +147,7 @@ class ACPAgent(BaseAgent[ACPAgentOutput]):
         else:
             raise ValueError("Unsupported input type")
 
-    def _convert_to_agent_stack_message(self, input: str | AnyMessage | acp_models.Message) -> acp_models.Message:
+    def _convert_to_acp_message(self, input: str | AnyMessage | acp_models.Message) -> acp_models.Message:
         if isinstance(input, str):
             return acp_models.Message(role="user", parts=[acp_models.MessagePart(content=input)])
         elif isinstance(input, Message):

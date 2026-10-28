@@ -83,8 +83,8 @@ async def test_clone_preserves_options_template_and_middlewares() -> None:
     assert cloned.meta.tools == []
     assert cloned.emitter is not agent.emitter
 
-    # Agent-level middlewares carry over to the clone (A2A / AgentStack serve
-    # each request on a clone), but the clone owns a separate middleware list.
+    # Agent-level middlewares carry over to the clone (A2A serves each request
+    # on a clone), but the clone owns a separate middleware list.
     assert cloned.middlewares == [middleware]
     assert cloned.middlewares is not agent.middlewares
     cloned.middlewares.clear()
