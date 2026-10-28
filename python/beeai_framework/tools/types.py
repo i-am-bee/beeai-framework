@@ -69,4 +69,4 @@ class JSONToolOutput(ToolOutput, Generic[T]):
         return to_json(self.result, sort_keys=False)
 
     def is_empty(self) -> bool:
-        return not self.result
+        return not self.result and type(self.result) not in (bool, int, float)
