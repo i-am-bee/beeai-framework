@@ -219,7 +219,7 @@ def _iterate_causes(error: BaseException) -> Generator[BaseException]:
     while current is not None and id(current) not in seen:
         seen.add(id(current))
         yield current
-        current = current.__cause__ or current.__context__
+        current = current.__cause__
 
 
 def _get_status_code(exception: BaseException) -> int | None:

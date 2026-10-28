@@ -433,3 +433,18 @@ async def test_fallback_clone() -> None:
     assert cloned.should_fallback is model.should_fallback
     assert cloned.parameters.max_tokens == 7
     assert all(a is not b for a, b in zip(cloned.models, model.models, strict=True))
+
+
+@pytest.mark.asyncio
+@pytest.mark.unit
+async def test_fallback_ignores_errors_from_earlier_retry_attempts() -> None:
+    # The second attempt fails with a non-retryable error. The 503 from the first attempt is only its
+    # implicit __context__ (the retry happens inside an `except` block), so it must not trigger the fallback.
+    primary = DummyChatModel("primary", [StatusError(503), TypeError("bug in user code")])
+    secondary = DummyChatModel("secondary")
+    model = FallbackChatModel([primary, secondary])
+
+    with pytest.raises(ChatModelError):
+        await model.run([UserMessage("Hi")], max_retries=1)
+    assert len(primary.calls) == 2
+    assert len(secondary.calls) == 0
