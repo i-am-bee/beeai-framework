@@ -187,10 +187,10 @@ async def test_chat_approval_must_be_a_tool_message(role: str) -> None:
         call_id, _ = approval(
             result(await client.post("/chat/completions", json=payload("chat", False)), "chat", False), "chat"
         )
-        # Any message carrying a tool_call_id is parsed as a ToolMessage, whatever its role.
+        # A message with another role is parsed as that role, so it is a new turn, never an approval.
         wrong = payload("chat", False, call_id)
         wrong["messages"][0]["role"] = role
-        assert (await client.post("/chat/completions", json=wrong)).status_code == 400
+        assert (await client.post("/chat/completions", json=wrong)).status_code == 200
         assert runnable.executions == 0
         assert (await client.post("/chat/completions", json=payload("chat", False, call_id))).status_code == 200
         assert runnable.executions == 1
