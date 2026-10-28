@@ -125,6 +125,10 @@ class GlobalTrajectoryMiddleware(RunMiddlewareProtocol):
             )
             async def handle_nested_event(data: Any, meta: EventMeta) -> None:
                 assert isinstance(meta.creator, RunContext)
+                # Descendants are forwarded through every ancestor; handle direct children only,
+                # deeper runs are handled by the emitter bound for their parent.
+                if emitter.trace is not None and (not meta.trace or meta.trace.parent_run_id != emitter.trace.run_id):
+                    return
                 if meta.creator.emitter is not emitter:
                     await handle_top_level_event(data, meta)  # type: ignore
                     self._bind_emitter(meta.creator.emitter)
