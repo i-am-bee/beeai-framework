@@ -58,6 +58,7 @@ export interface ChatModelParameters {
   seed?: number;
   stopSequences?: string[];
   stream?: boolean;
+  reasoningEffort?: "low" | "medium" | "high" | "xhigh";
 }
 
 interface ResponseObjectJson {

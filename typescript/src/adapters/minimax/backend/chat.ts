@@ -7,7 +7,8 @@ import { OpenAIProvider } from "@ai-sdk/openai";
 import { MiniMaxClient, MiniMaxClientSettings } from "@/adapters/minimax/backend/client.js";
 import { VercelChatModel } from "@/adapters/vercel/backend/chat.js";
 import { getEnv } from "@/internals/env.js";
-import { ChatModelParameters } from "@/backend/chat.js";
+import { ChatModelInput, ChatModelParameters } from "@/backend/chat.js";
+import { generateText } from "ai";
 
 type MiniMaxParameters = Parameters<OpenAIProvider["chat"]>;
 export type MiniMaxChatModelId = NonNullable<MiniMaxParameters[0]>;
@@ -21,6 +22,26 @@ export class MiniMaxChatModel extends VercelChatModel {
     const model = MiniMaxClient.ensure(client).instance.chat(modelId);
     super(model);
     Object.assign(this.parameters, parameters ?? {});
+  }
+
+  protected async transformInput(
+    input: ChatModelInput,
+  ): Promise<Parameters<typeof generateText<Record<string, any>>>[0]> {
+    const transformed = (await super.transformInput(input)) as Parameters<
+      typeof generateText<Record<string, any>>
+    >[0] &
+      Pick<ChatModelParameters, "reasoningEffort">;
+    const { reasoningEffort, providerOptions, ...rest } = transformed;
+    if (reasoningEffort === undefined) {
+      return transformed;
+    }
+    return {
+      ...rest,
+      providerOptions: {
+        ...providerOptions,
+        openai: { ...providerOptions?.openai, reasoningEffort },
+      },
+    };
   }
 
   static {
