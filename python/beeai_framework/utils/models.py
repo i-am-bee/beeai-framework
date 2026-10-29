@@ -94,7 +94,7 @@ class JSONSchemaModel(ABC, BaseModel):
 
             target_field = Field(
                 description=param.get("description"),
-                default=default if default else const if const else None,
+                default=default if default is not None else const if const else None,
                 pattern=param.get("pattern"),
                 ge=param.get("minimum"),
                 le=param.get("maximum"),
@@ -154,7 +154,7 @@ class JSONSchemaModel(ABC, BaseModel):
                 if not target_type:
                     target_type = type
 
-                if (not is_required and not default) or explicitly_nullable:
+                if (not is_required and default is None) or explicitly_nullable:
                     target_type = Optional[target_type] if target_type else type(None)  # noqa: UP007
 
             return (  # type: ignore
