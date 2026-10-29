@@ -5,6 +5,7 @@ from collections.abc import AsyncGenerator
 from types import SimpleNamespace
 from typing import Any, cast
 
+import litellm
 import pytest
 from litellm import ModelResponse as LiteLLMModelResponse
 from litellm import ModelResponseStream
@@ -13,6 +14,7 @@ from litellm.types.utils import (
     Choices,
     Delta,
     Message,
+    PromptTokensDetailsWrapper,
     StreamingChoices,
     Usage,
 )
@@ -184,6 +186,27 @@ class TestTransformOutput:
         result = model._transform_output(_proxied_response(response_cost=None))
 
         assert result.cost.total_cost_usd == pytest.approx(0.03)
+
+    @pytest.mark.unit
+    def test_local_estimate_prices_cached_prompt_tokens_at_the_cache_rate(self, model: _TestLiteLLMChatModel) -> None:
+        prices = litellm.model_cost["gpt-4o"]
+        response = LiteLLMModelResponse(
+            id="chatcmpl-cached",
+            model="gpt-4o",
+            choices=[Choices(finish_reason="stop", index=0, message=Message(content="hello", role="assistant"))],
+            usage=Usage(
+                prompt_tokens=1000,
+                completion_tokens=10,
+                total_tokens=1010,
+                prompt_tokens_details=PromptTokensDetailsWrapper(cached_tokens=800),
+            ),
+        )
+
+        result = model._transform_output(response)
+
+        expected_prompt_cost = 200 * prices["input_cost_per_token"] + 800 * prices["cache_read_input_token_cost"]
+        assert result.cost.prompt_tokens_usd == pytest.approx(expected_prompt_cost)
+        assert result.cost.completion_tokens_cost_usd == pytest.approx(10 * prices["output_cost_per_token"])
 
     @pytest.mark.unit
     def test_content_only(self, model: _TestLiteLLMChatModel) -> None:
