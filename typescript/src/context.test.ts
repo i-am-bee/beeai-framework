@@ -6,7 +6,8 @@
 import { setTimeout as delay } from "node:timers/promises";
 import { describe, expect, it, vi } from "vitest";
 import { BaseAgent } from "@/agents/base.js";
-import { RunContext, RunContextCallbacks } from "@/context.js";
+import { Run, RunContext, RunContextCallbacks } from "@/context.js";
+import { EventMeta } from "@/emitter/types.js";
 import { Emitter } from "@/emitter/emitter.js";
 import { InferCallbackValue } from "@/emitter/types.js";
 import { FrameworkError } from "@/errors.js";
@@ -271,4 +272,49 @@ describe("RunContext cancellation", () => {
       agent.destroy();
     }
   });
+});
+
+describe("RunContext nested events", () => {
+  it.each([2, 3, 4])(
+    "Delivers each descendant run's start to a nested listener once (depth %i)",
+    async (depth) => {
+      const instances = Array.from({ length: depth }, () => ({ emitter: new Emitter() }));
+      const nested: unknown[] = [];
+      const sameRun: unknown[] = [];
+
+      const runLevel = (level: number): Run<number, any> => {
+        const run = RunContext.enter(instances[level], { params: [] }, async () =>
+          level + 1 < depth ? await runLevel(level + 1) : level,
+        );
+        return level === 0
+          ? run.observe((emitter) => {
+              const isStart = (event: EventMeta) =>
+                event.name === "start" && event.creator instanceof RunContext;
+              emitter.match(
+                isStart,
+                (_, event) => {
+                  nested.push((event.creator as RunContext<any>).instance);
+                },
+                { matchNested: true },
+              );
+              emitter.match(
+                isStart,
+                (_, event) => {
+                  sameRun.push((event.creator as RunContext<any>).instance);
+                },
+                { matchNested: false },
+              );
+            })
+          : run;
+      };
+
+      try {
+        expect(await runLevel(0)).toBe(depth - 1);
+        expect(nested).toEqual(instances);
+        expect(sameRun).toEqual(instances.slice(0, 1));
+      } finally {
+        instances.forEach((instance) => instance.emitter.destroy());
+      }
+    },
+  );
 });

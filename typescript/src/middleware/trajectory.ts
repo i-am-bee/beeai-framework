@@ -207,6 +207,11 @@ export class GlobalTrajectoryMiddleware<T extends RunInstance = any> extends Mid
         if (!(meta.creator instanceof RunContext)) {
           return;
         }
+        // Descendants are forwarded through every ancestor; handle direct children only,
+        // deeper runs are handled by the emitter bound for their parent.
+        if (emitter.trace && meta.trace?.parentRunId !== emitter.trace.runId) {
+          return;
+        }
         if (meta.creator.emitter !== emitter) {
           await handleTopLevelEvent(data, meta);
           this.bindEmitter(meta.creator.emitter);
