@@ -339,6 +339,8 @@ export abstract class VercelChatModel<
     return {
       ...this.parameters,
       ...input,
+      // AI SDK reads maxOutputTokens; maxTokens is ignored
+      maxOutputTokens: input.maxTokens ?? this.parameters.maxTokens,
       toolChoice,
       model: this.model,
       tools: mapToObj(tools, ({ name, ...tool }) => [name, tool]),
