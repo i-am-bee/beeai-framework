@@ -4,6 +4,8 @@
 import a2a.types as a2a_types
 import pytest
 
+pytest.importorskip("agentstack_sdk", reason="Optional module [agentstack] not installed.")
+
 from beeai_framework.adapters.agentstack.agents import AgentStackAgent
 from beeai_framework.backend import AssistantMessage, UserMessage
 from beeai_framework.memory import UnconstrainedMemory

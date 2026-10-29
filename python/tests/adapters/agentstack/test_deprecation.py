@@ -7,6 +7,8 @@ from pathlib import Path
 
 import pytest
 
+pytest.importorskip("agentstack_sdk", reason="Optional module [agentstack] not installed.")
+
 pytestmark = pytest.mark.unit
 
 # The warning is emitted once per process (on the first import of the package), so each scenario runs in a
