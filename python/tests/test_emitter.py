@@ -10,7 +10,7 @@ from typing import Any
 
 import pytest
 
-from beeai_framework.emitter import EmitterOptions
+from beeai_framework.emitter import EmitterOptions, EventTrace
 from beeai_framework.emitter.emitter import Emitter, EventMeta
 from beeai_framework.emitter.errors import EmitterError
 
@@ -33,6 +33,26 @@ def test_root_initialization() -> None:
     assert emitter is Emitter.root()  # caching
     assert emitter.creator is not None
     assert emitter.namespace == []
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+@pytest.mark.parametrize("match_nested", [None, False, True])
+async def test_pipe_filters_descendant_runs_unless_requested(match_nested: bool | None) -> None:
+    source = Emitter(trace=EventTrace(id="group", run_id="parent"))
+    child = source.child(trace=EventTrace(id="group", run_id="child", parent_run_id="parent"))
+    target = Emitter()
+    received: list[str] = []
+    target.on("*.*", lambda data, _: received.append(data))
+    if match_nested is None:
+        source.pipe(target)
+    else:
+        source.pipe(target, match_nested=match_nested)
+
+    await source.emit("update", "parent")
+    await child.emit("update", "child")
+
+    assert received == (["parent", "child"] if match_nested else ["parent"])
 
 
 @pytest.mark.unit

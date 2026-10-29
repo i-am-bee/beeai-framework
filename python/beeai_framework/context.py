@@ -155,7 +155,7 @@ class RunContext:
         )
 
         if parent:
-            self.emitter.pipe(parent.emitter)
+            self.emitter.pipe(parent.emitter, match_nested=True)
 
         self._controller = AbortController()
         extra_signals = []

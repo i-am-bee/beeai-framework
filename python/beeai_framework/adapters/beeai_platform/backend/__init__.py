@@ -10,7 +10,8 @@ import beeai_framework.adapters.agentstack.backend as _new_module
 
 warnings.warn(
     "beeai_framework.adapters.beeai_platform.backend is deprecated and will be removed in a future release. "
-    "Please use beeai_framework.adapters.agentstack.backend instead.",
+    "Please use beeai_framework.adapters.agentstack.backend instead. "
+    "Note that the AgentStack integration itself is deprecated too; migrate to beeai_framework.adapters.a2a.",
     DeprecationWarning,
     stacklevel=2,
 )

@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import json
-from typing import Any, TypeAlias
+from typing import Annotated, Any, Literal, TypeAlias
 
 from pydantic import BaseModel, Field, field_validator
 
@@ -91,7 +91,7 @@ class RefusalContentPart(BaseModel):
 
 
 class DeveloperMessage(BaseModel):
-    role: str = Field(
+    role: Literal["developer"] = Field(
         "developer",
         description="The role of the messages author, in this case 'developer'.",
     )
@@ -107,7 +107,7 @@ class DeveloperMessage(BaseModel):
 
 
 class SystemMessage(BaseModel):
-    role: str = Field(
+    role: Literal["system"] = Field(
         "system",
         description="The role of the messages author, in this case 'system'.",
     )
@@ -123,7 +123,7 @@ class SystemMessage(BaseModel):
 
 
 class UserMessage(BaseModel):
-    role: str = Field(
+    role: Literal["user"] = Field(
         "user",
         description="The role of the messages author, in this case 'user'.",
     )
@@ -139,7 +139,7 @@ class UserMessage(BaseModel):
 
 
 class AssistantMessage(BaseModel):
-    role: str = Field(
+    role: Literal["assistant"] = Field(
         "assistant",
         description="The role of the messages author, in this case 'assistant'.",
     )
@@ -162,7 +162,7 @@ class AssistantMessage(BaseModel):
 
 
 class ToolMessage(BaseModel):
-    role: str = Field("tool", description="The role of the messages author, in this case 'tool'.")
+    role: Literal["tool"] = Field("tool", description="The role of the messages author, in this case 'tool'.")
     content: str | list[TextContentPart] = Field(
         ...,
         description="The content of the message. It can be null if no content is provided.",
@@ -174,7 +174,12 @@ class ToolMessage(BaseModel):
 
 
 ContentPart: TypeAlias = TextContentPart | AudioContentPart | FileContentPart | RefusalContentPart | ImageContentPart
-ChatMessage: TypeAlias = UserMessage | DeveloperMessage | SystemMessage | ToolMessage | AssistantMessage
+# Discriminated on "role", so each message is parsed as the type its role names. Without it,
+# UserMessage (first in the union) accepted every message, whatever its role.
+ChatMessage: TypeAlias = Annotated[
+    UserMessage | DeveloperMessage | SystemMessage | ToolMessage | AssistantMessage,
+    Field(discriminator="role"),
+]
 
 
 class ChatCompletionRequestBody(BaseModel):
@@ -185,7 +190,8 @@ class ChatCompletionRequestBody(BaseModel):
 
 class ChatMessageResponse(BaseModel):
     role: str = Field(..., description="The role of the message sender", pattern="^(user|assistant)$")
-    content: str = Field(..., description="The content of the message")
+    content: str | None = Field(..., description="The content of the message")
+    tool_calls: list[dict[str, Any]] | None = None
 
 
 class ChatCompletionChoice(BaseModel):

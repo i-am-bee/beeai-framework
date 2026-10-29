@@ -122,7 +122,8 @@ class Emitter:
 
         return child_emitter
 
-    def pipe(self, target: "Emitter") -> CleanupFn:
+    def pipe(self, target: "Emitter", *, match_nested: bool = False) -> CleanupFn:
+        """Forward events to a target, optionally including descendant runs."""
         return self.on(
             "*.*",
             target._invoke,
@@ -130,7 +131,7 @@ class Emitter:
                 is_blocking=True,
                 once=False,
                 persistent=True,
-                match_nested=False,
+                match_nested=match_nested,
             ),
         )
 

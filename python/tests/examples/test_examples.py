@@ -78,6 +78,7 @@ exclude = list(
             "middleware/prompt_injection.py",
             "middleware/secrets_detection.py",
             "middleware/invisible_text.py",
+            "middleware/acgs.py",
         ],
     )
 )

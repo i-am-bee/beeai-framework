@@ -8,6 +8,7 @@ from typing import Any, Unpack
 import pytest
 from pydantic import ValidationError
 
+from beeai_framework.agents.requirement import RequirementAgent
 from beeai_framework.backend import AssistantMessage, UserMessage
 from beeai_framework.context import RunMiddlewareType
 from beeai_framework.emitter import Emitter
@@ -19,6 +20,9 @@ from beeai_framework.middleware.trajectory import (
     _create_target,
 )
 from beeai_framework.runnable import Runnable, RunnableOptions, RunnableOutput, runnable_entry
+from beeai_framework.tools import Tool, tool
+from beeai_framework.tools.handoff import HandoffTool
+from tests.agents._scripted import ScriptedChatModel, final_answer_message, tool_call_message
 
 # ---------------------------------------------------------------------------
 # Minimal Runnable for integration tests
@@ -206,3 +210,36 @@ async def test_middleware_does_not_write_when_disabled() -> None:
     await r.run([UserMessage(content="ping")]).middleware(m)
 
     assert buf.getvalue() == "", "Expected no writes when middleware is disabled"
+
+
+def _delegating_agent(target: HandoffTool | Tool, args: dict[str, Any], *, name: str) -> RequirementAgent:
+    llm = ScriptedChatModel([[tool_call_message(target.name, args)], [final_answer_message("done")]])
+    return RequirementAgent(llm=llm, tools=[target], name=name, description=f"{name} agent.")
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_nested_handoffs_are_logged_once() -> None:
+    # Run events are forwarded through every ancestor context, so a sub-agent nested two levels deep
+    # must still be logged once per event, not once per ancestor.
+    @tool(name="inner_tool", description="A tool the innermost agent calls.")
+    def inner_tool(text: str) -> str:
+        return "ok"
+
+    expert = _delegating_agent(inner_tool, {"text": "hello"}, name="Expert")
+    mid = _delegating_agent(HandoffTool(expert), {"task": "do it"}, name="Mid")
+    outer_handoff = HandoffTool(mid)
+    buf = io.StringIO()
+    outer = RequirementAgent(
+        llm=ScriptedChatModel(
+            [[tool_call_message(outer_handoff.name, {"task": "do it"})], [final_answer_message("done")]]
+        ),
+        tools=[outer_handoff],
+        middlewares=[GlobalTrajectoryMiddleware(target=buf, included=[Tool])],
+    )
+
+    await outer.run("go")
+
+    lines = [line for line in buf.getvalue().splitlines() if line.strip()]
+    assert any("inner_tool" in line for line in lines)
+    assert len(lines) == len(set(lines)), "\n".join(lines)
