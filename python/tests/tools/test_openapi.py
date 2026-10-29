@@ -1,6 +1,10 @@
 # Copyright 2025 © BeeAI a Series of LF Projects, LLC
 # SPDX-License-Identifier: Apache-2.0
 
+import json
+from typing import Any
+from urllib.parse import parse_qs
+
 import httpx
 import pytest
 
@@ -91,3 +95,62 @@ async def test_unset_optional_query_parameters_are_omitted(monkeypatch: pytest.M
         "https://example.invalid/pets?species=cat",
         "https://example.invalid/pets?species=cat&limit=0",
     ]
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    ("content_type", "expected_body"),
+    [
+        ("application/json", {"name": "Bee", "tags": ["a", "b"]}),
+        ("application/x-www-form-urlencoded", {"name": ["Bee"], "tags": ["a", "b"]}),
+    ],
+)
+async def test_request_body_is_encoded_per_content_type(
+    monkeypatch: pytest.MonkeyPatch, content_type: str, expected_body: dict[str, Any]
+) -> None:
+    schema = {
+        "openapi": "3.0.0",
+        "info": {"title": "Pets", "version": "1.0"},
+        "servers": [{"url": "https://example.invalid"}],
+        "paths": {
+            "/pets": {
+                "post": {
+                    "operationId": "addPet",
+                    "requestBody": {
+                        "required": True,
+                        "content": {
+                            content_type: {
+                                "schema": {
+                                    "type": "object",
+                                    "required": ["name", "tags"],
+                                    "properties": {
+                                        "name": {"type": "string"},
+                                        "tags": {"type": "array", "items": {"type": "string"}},
+                                    },
+                                }
+                            }
+                        },
+                    },
+                    "responses": {"200": {"description": "ok"}},
+                }
+            }
+        },
+    }
+    requests: list[httpx.Request] = []
+
+    async def fake_send(self: httpx.AsyncClient, request: httpx.Request, **kwargs: object) -> httpx.Response:
+        requests.append(request)
+        return httpx.Response(200, text="{}")
+
+    monkeypatch.setattr(httpx.AsyncClient, "send", fake_send)
+
+    [tool] = OpenAPITool.from_schema(schema)
+    await tool.run({"body": {"name": "Bee", "tags": ["a", "b"]}})
+
+    [request] = requests
+    assert request.headers["Content-Type"] == content_type
+    if content_type == "application/json":
+        assert json.loads(request.content) == expected_body
+    else:
+        assert parse_qs(request.content.decode()) == expected_body
