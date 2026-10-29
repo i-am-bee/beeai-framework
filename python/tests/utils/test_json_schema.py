@@ -363,6 +363,22 @@ def test_preserve_default_type_not_optional() -> None:
 
 
 @pytest.mark.unit
+@pytest.mark.parametrize(
+    ("json_type", "default", "python_type"),
+    [("boolean", False, bool), ("integer", 0, int), ("number", 0.0, float), ("string", "", str)],
+)
+def test_preserve_falsy_default(json_type: str, default: Any, python_type: type) -> None:
+    json_schema = {"type": "object", "properties": {"an_arg": {"type": json_type, "default": default}}}
+
+    model = JSONSchemaModel.create("falsy_defaultArguments", json_schema)
+    field_info = model.model_fields["an_arg"]
+
+    assert field_info.annotation is python_type
+    assert field_info.default == default
+    assert model().model_dump() == {"an_arg": default}
+
+
+@pytest.mark.unit
 def test_simplify_schema() -> None:
     schema = {
         "additionalProperties": False,
