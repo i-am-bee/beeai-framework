@@ -409,3 +409,28 @@ def test_simplify_schema() -> None:
         "title": "list_application_needs",
         "type": "object",
     }
+
+
+@pytest.mark.unit
+def test_type_list_is_a_union_of_types() -> None:
+    model = JSONSchemaModel.create(
+        "type_list",
+        {
+            "type": "object",
+            "properties": {
+                "title": {"type": ["string", "null"]},
+                "id": {"type": ["string", "integer"]},
+                "tags": {"type": ["array", "null"], "items": {"type": "string"}},
+            },
+            "required": ["id"],
+        },
+    )
+
+    assert model.model_fields["title"].annotation == str | None
+    assert model.model_fields["id"].annotation == str | int
+    assert model.model_fields["tags"].annotation == list[str] | None
+
+    assert model(title="Dr.", id=5, tags=["a"]).model_dump() == {"title": "Dr.", "id": 5, "tags": ["a"]}
+    assert model(title=None, id="x", tags=None).model_dump() == {"title": None, "id": "x", "tags": None}
+    with pytest.raises(ValidationError):
+        model(title=["Dr."], id=5)

@@ -120,7 +120,13 @@ class JSONSchemaModel(ABC, BaseModel):
                 raw_type = param.get("type")
                 target_type: type | Any
                 if isinstance(raw_type, list):
-                    target_type = list[*[type_mapping.get(v) for v in raw_type]]  # type: ignore
+                    # A list of types means "any of these types"; "null" is handled by explicitly_nullable below.
+                    variants: list[Any] = [
+                        create_field(f"{param_name}_{idx}", {**param, "type": t}, {f"{param_name}_{idx}"})[0]
+                        for idx, t in enumerate(raw_type)
+                        if t != "null"
+                    ]
+                    target_type = Union[*variants] if len(variants) > 1 else variants[0] if variants else type(None)  # type: ignore
                 else:
                     target_type = type_mapping.get(raw_type)  # type: ignore[arg-type]
 
