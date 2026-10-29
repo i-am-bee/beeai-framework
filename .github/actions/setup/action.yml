@@ -14,7 +14,10 @@ runs:
       shell: bash
       env:
         PYTHON_VERSION: ${{ inputs.python-version }}
-      run: echo "MISE_PYTHON_VERSION=$PYTHON_VERSION" >> "$GITHUB_ENV"
+      # The flavor stops mise from picking the free-threaded build, which it cannot install.
+      run: |
+        echo "MISE_PYTHON_VERSION=$PYTHON_VERSION" >> "$GITHUB_ENV"
+        echo "MISE_PYTHON_PRECOMPILED_FLAVOR=install_only_stripped" >> "$GITHUB_ENV"
     - uses: actions/cache@v4
       with:
         path: python/.venv
