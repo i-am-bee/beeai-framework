@@ -19,6 +19,7 @@ from litellm.types.utils import (
     Usage,
 )
 
+from beeai_framework.adapters.anthropic.backend.chat import AnthropicChatModel
 from beeai_framework.adapters.litellm.chat import (
     _DEFAULT_TIMEOUT_FALLBACK,
     DEFAULT_REQUEST_TIMEOUT_SECONDS,
@@ -664,3 +665,51 @@ class TestParseTimeoutEnv:
     def test_inf_falls_back(self, monkeypatch: pytest.MonkeyPatch) -> None:
         monkeypatch.setenv("BEEAI_DEFAULT_REQUEST_TIMEOUT", "inf")
         assert _parse_timeout_env() == _DEFAULT_TIMEOUT_FALLBACK
+
+
+class TestAnthropicImplicitTemperature:
+    """The implicit `temperature=0` must not turn a valid Anthropic request into a 400."""
+
+    @staticmethod
+    async def _captured_request(**run_kwargs: Any) -> dict[str, Any]:
+        captured: dict[str, Any] = {}
+        monkeypatch = pytest.MonkeyPatch()
+        monkeypatch.setattr(
+            "beeai_framework.adapters.litellm.chat.acompletion",
+            TestStopSequences._capturing_acompletion(captured),
+        )
+        try:
+            await AnthropicChatModel("claude-sonnet-4-6", api_key="test").run([UserMessage("hi")], **run_kwargs)
+        finally:
+            monkeypatch.undo()
+        return captured
+
+    @pytest.mark.unit
+    @pytest.mark.asyncio
+    async def test_reasoning_effort_drops_the_implicit_temperature(self) -> None:
+        captured = await self._captured_request(reasoning_effort="low")
+
+        assert "temperature" not in captured
+        assert captured["reasoning_effort"] == "low"
+
+    @pytest.mark.unit
+    @pytest.mark.asyncio
+    async def test_top_p_drops_the_implicit_temperature(self) -> None:
+        captured = await self._captured_request(top_p=0.9)
+
+        assert "temperature" not in captured
+        assert captured["top_p"] == 0.9
+
+    @pytest.mark.unit
+    @pytest.mark.asyncio
+    async def test_explicit_temperature_is_kept(self) -> None:
+        captured = await self._captured_request(temperature=0.3, top_p=0.9)
+
+        assert captured["temperature"] == 0.3
+
+    @pytest.mark.unit
+    @pytest.mark.asyncio
+    async def test_temperature_is_still_sent_by_default(self) -> None:
+        captured = await self._captured_request()
+
+        assert captured["temperature"] == 0
