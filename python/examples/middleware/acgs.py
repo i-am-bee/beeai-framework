@@ -5,6 +5,8 @@ from typing import Any
 
 from pydantic import BaseModel
 
+# FinalAnswerTool is skipped below so the agent's final answer is not checked as a tool call.
+# It has no public import path yet, so it comes from a private module; update this import if that module moves.
 from beeai_framework.agents.requirement.utils._tool import FinalAnswerTool
 from beeai_framework.context import RunContext, RunContextStartEvent, RunMiddlewareProtocol
 from beeai_framework.emitter import EmitterOptions, EventMeta
