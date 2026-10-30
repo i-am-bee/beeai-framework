@@ -19,7 +19,9 @@ from litellm.types.utils import (
     Usage,
 )
 
+from beeai_framework.adapters.amazon_bedrock.backend.chat import AmazonBedrockChatModel
 from beeai_framework.adapters.anthropic.backend.chat import AnthropicChatModel
+from beeai_framework.adapters.gemini.backend.chat import GeminiChatModel
 from beeai_framework.adapters.litellm.chat import (
     _DEFAULT_TIMEOUT_FALLBACK,
     DEFAULT_REQUEST_TIMEOUT_SECONDS,
@@ -713,3 +715,34 @@ class TestAnthropicImplicitTemperature:
         captured = await self._captured_request()
 
         assert captured["temperature"] == 0
+
+
+class TestClonePromptCaching:
+    """Agents and the serve adapters run a clone of the model, so the clone must keep `allow_prompt_caching`."""
+
+    @pytest.mark.unit
+    @pytest.mark.asyncio
+    @pytest.mark.parametrize(
+        ("model_cls", "allow_prompt_caching"),
+        # each value is the opposite of the provider's default
+        [(AmazonBedrockChatModel, False), (GeminiChatModel, True)],
+    )
+    async def test_clone_keeps_allow_prompt_caching(
+        self,
+        model_cls: type[AmazonBedrockChatModel | GeminiChatModel],
+        allow_prompt_caching: bool,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        captured: dict[str, Any] = {}
+        monkeypatch.setattr(
+            "beeai_framework.adapters.litellm.chat.acompletion", TestStopSequences._capturing_acompletion(captured)
+        )
+        model = model_cls(api_key="test", allow_prompt_caching=allow_prompt_caching)
+
+        cloned = await model.clone()
+        # RequirementAgent sends these with every request
+        options: dict[str, Any] = {"cache_control_injection_points": [{"location": "message", "index": 0}]}
+        await cloned.run([UserMessage("hi")], **options)
+
+        assert cloned.allow_prompt_caching is allow_prompt_caching
+        assert ("cache_control_injection_points" in captured) is allow_prompt_caching
