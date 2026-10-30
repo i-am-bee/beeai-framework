@@ -8,6 +8,25 @@ import { describe, expect } from "vitest";
 import { EventMeta } from "@/emitter/types.js";
 
 describe("Emitter", () => {
+  it.each([undefined, false, true])(
+    "Filters descendant runs in pipe unless requested (matchNested: %s)",
+    async (matchNested) => {
+      const source = new Emitter({ trace: { id: "group", runId: "parent" } });
+      const child = source.child({ trace: { id: "group", runId: "child", parentRunId: "parent" } });
+      const target = new Emitter();
+      const received: unknown[] = [];
+      target.match("*.*", (data) => {
+        received.push(data);
+      });
+      source.pipe(target, matchNested === undefined ? undefined : { matchNested });
+
+      await source.emit("update", "parent");
+      await child.emit("update", "child");
+
+      expect(received).toEqual(matchNested ? ["parent", "child"] : ["parent"]);
+    },
+  );
+
   it("Releases a destroyed child's cleanup from its parent", () => {
     const parent = new Emitter();
     const child = parent.child();
