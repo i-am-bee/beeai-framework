@@ -96,7 +96,7 @@ class OpenAPITool(Tool[BaseModel, ToolRunOptions, OpenAPIToolOutput]):
         base_parsed = urlparse(base_url)
         joined_path = f"{base_parsed.path.rstrip('/')}/{path_parsed.path.lstrip('/')}" if path else base_parsed.path
         query = "&".join(q for q in (base_parsed.query, path_parsed.query) if q)
-        resolved = urlunparse(base_parsed._replace(path=joined_path, query=query, fragment=""))
+        resolved = base_parsed._replace(path=joined_path, query=query, fragment="").geturl()
         resolved_parsed = urlparse(resolved)
 
         if resolved_parsed.netloc != base_parsed.netloc or resolved_parsed.scheme != base_parsed.scheme:
