@@ -13,7 +13,8 @@ class BaseEvent(BaseModel):
 
 
 class ResponsesRequestInputTextContent(BaseModel):
-    type: Literal["input_text"] = Field("input_text", description="The type of the content part.")
+    # `output_text` is how clients replay earlier assistant output (e.g. the OpenAI Agents SDK's `to_input_list()`).
+    type: Literal["input_text", "output_text"] = Field("input_text", description="The type of the content part.")
     text: str = Field(..., description="The text content.")
 
 
