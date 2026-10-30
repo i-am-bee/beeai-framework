@@ -92,6 +92,37 @@ describe("MCPTool", () => {
     expect(toolDef.handler).toBeCalled();
   });
 
+  it("should leave binary payloads out of the text sent to the model", async () => {
+    const data = "A".repeat(200_000); // a ~150 KB screenshot, base64-encoded
+    server.setRequestHandler(CallToolRequestSchema, async () => ({
+      content: [
+        { type: "text", text: "Took a screenshot" },
+        { type: "image", data, mimeType: "image/png" },
+        { type: "audio", data, mimeType: "audio/wav" },
+        {
+          type: "resource",
+          resource: { uri: "file:///shot.png", blob: data, mimeType: "image/png" },
+        },
+      ],
+    }));
+    const tool = (await MCPTool.fromClient(client))[0];
+
+    const output = await tool.run({ a: 1, b: 2 });
+
+    const text = output.getTextContent();
+    expect(text).not.toContain(data);
+    expect(text.length).toBeLessThan(2_000);
+    expect(text).toContain("Took a screenshot");
+    expect(text.match(/<150000 bytes of /g)).toHaveLength(3);
+    expect(output.result.content[1].data).toBe(data);
+  });
+
+  it("should keep text-only output unchanged", async () => {
+    const tool = (await MCPTool.fromClient(client))[0];
+    const output = await tool.run({ a: 2, b: 3 });
+    expect(output.getTextContent()).toBe(JSON.stringify(output.result));
+  });
+
   it("should throw a ToolError when the tool result is an error", async () => {
     server.setRequestHandler(CallToolRequestSchema, async () => ({
       isError: true,
