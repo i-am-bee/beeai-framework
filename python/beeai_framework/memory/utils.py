@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 from typing import Any
 
-from beeai_framework.backend import AnyMessage, AssistantMessage, ToolMessage
+from beeai_framework.backend import AnyMessage, AssistantMessage, MessageToolCallContent, ToolMessage
 from beeai_framework.memory import BaseMemory
 from beeai_framework.utils.lists import find_index
 
@@ -18,7 +18,8 @@ def extract_last_tool_call_pair(memory: BaseMemory) -> tuple[AssistantMessage, T
         return None
 
     tool_call: AssistantMessage = memory.messages[tool_call_index]  # type: ignore
-    tool_call_id = tool_call.get_tool_calls()[-1].id
+    last_call = tool_call.get_tool_calls()[-1]
+    tool_call_id = last_call.id
 
     tool_response_index = find_index(
         memory.messages,
@@ -33,6 +34,21 @@ def extract_last_tool_call_pair(memory: BaseMemory) -> tuple[AssistantMessage, T
         return None
 
     tool_response: ToolMessage = memory.messages[tool_response_index]  # type: ignore
+
+    # With parallel tool calls the message holds other calls whose results are not part of the pair. Chat APIs
+    # (OpenAI, Anthropic) reject a tool call without its result, so the pair keeps only the last call and its result.
+    if len(tool_call.get_tool_calls()) > 1:
+        tool_call = AssistantMessage(
+            [c for c in tool_call.content if not isinstance(c, MessageToolCallContent) or c is last_call],
+            meta=dict(tool_call.meta),
+            id=tool_call.id,
+        )
+    if len(tool_response.content) > 1:
+        tool_response = ToolMessage(
+            [result for result in tool_response.content if result.tool_call_id == tool_call_id],
+            meta=dict(tool_response.meta),
+            id=tool_response.id,
+        )
     return tool_call, tool_response
 
 

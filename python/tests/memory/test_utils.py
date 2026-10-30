@@ -55,4 +55,33 @@ def test_extract_last_tool_call_pair_uses_last_tool_call_from_message() -> None:
 
     asyncio.run(memory.add_many([assistant_message, first_tool_message, last_tool_message]))
 
-    assert extract_last_tool_call_pair(memory) == (assistant_message, last_tool_message)
+    pair = extract_last_tool_call_pair(memory)
+    assert pair is not None
+    call, response = pair
+    # Only the last call is kept: a call without its result is rejected by chat APIs.
+    assert [c.id for c in call.get_tool_calls()] == ["call_2"]
+    assert response is last_tool_message
+
+
+def test_extract_last_tool_call_pair_keeps_only_the_matching_result() -> None:
+    memory = UnconstrainedMemory()
+    assistant_message = AssistantMessage(
+        [
+            MessageToolCallContent(id="call_1", tool_name="weather", args='{"city":"Paris"}'),
+            MessageToolCallContent(id="call_2", tool_name="weather", args='{"city":"Berlin"}'),
+        ]
+    )
+    tool_message = ToolMessage(
+        [
+            MessageToolResultContent(tool_name="weather", tool_call_id="call_1", result="sunny"),
+            MessageToolResultContent(tool_name="weather", tool_call_id="call_2", result="rainy"),
+        ]
+    )
+
+    asyncio.run(memory.add_many([assistant_message, tool_message]))
+
+    pair = extract_last_tool_call_pair(memory)
+    assert pair is not None
+    call, response = pair
+    assert [c.id for c in call.get_tool_calls()] == ["call_2"]
+    assert [r.tool_call_id for r in response.get_tool_results()] == ["call_2"]
