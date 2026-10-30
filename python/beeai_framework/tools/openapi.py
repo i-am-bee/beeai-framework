@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 from typing import Any, Self, Union
-from urllib.parse import parse_qs, urlencode, urljoin, urlparse, urlunparse
+from urllib.parse import parse_qs, quote, urlencode, urlparse, urlunparse
 
 import httpx
 from pydantic import BaseModel, Field, InstanceOf, RootModel
@@ -91,8 +91,12 @@ class OpenAPITool(Tool[BaseModel, ToolRunOptions, OpenAPIToolOutput]):
         if path_parsed.scheme or path_parsed.netloc:
             raise ToolError(f"Path must be a relative path, not a URL: {path}")
 
-        resolved = urljoin(base_url, path)
+        # The operation path is appended to the server URL (as OpenAPI defines it), so the
+        # server's own path and query survive; urljoin would drop them for an absolute path.
         base_parsed = urlparse(base_url)
+        joined_path = f"{base_parsed.path.rstrip('/')}/{path_parsed.path.lstrip('/')}" if path else base_parsed.path
+        query = "&".join(q for q in (base_parsed.query, path_parsed.query) if q)
+        resolved = base_parsed._replace(path=joined_path, query=query, fragment="").geturl()
         resolved_parsed = urlparse(resolved)
 
         if resolved_parsed.netloc != base_parsed.netloc or resolved_parsed.scheme != base_parsed.scheme:
@@ -102,6 +106,34 @@ class OpenAPITool(Tool[BaseModel, ToolRunOptions, OpenAPIToolOutput]):
             )
 
         return resolved
+
+    @staticmethod
+    def _serialize_value(value: Any) -> str:
+        # Python's str(True) is "True"; OpenAPI (and JSON) booleans are lowercase.
+        if isinstance(value, bool):
+            return "true" if value else "false"
+        return str(value)
+
+    def _parameter_locations(self, path: str, method: str) -> dict[str, str]:
+        """Map each parameter name of the operation to its `in` location (path, query, header or cookie)."""
+        path_spec = self.open_api_schema.get("paths", {}).get(path) or {}
+        method_spec = path_spec.get(method) or path_spec.get(method.lower()) or {}
+
+        def resolve(parameter: Any) -> dict[str, Any]:
+            if isinstance(parameter, dict) and "$ref" in parameter:
+                resolved: Any = self.open_api_schema
+                for segment in parameter["$ref"].split("/"):
+                    if segment != "#":
+                        resolved = resolved.get(segment) if isinstance(resolved, dict) else None
+                return resolved if isinstance(resolved, dict) else {}
+            return parameter if isinstance(parameter, dict) else {}
+
+        locations: dict[str, str] = {}
+        for parameter in [*path_spec.get("parameters", []), *method_spec.get("parameters", [])]:
+            resolved_parameter = resolve(parameter)
+            if "name" in resolved_parameter:
+                locations[resolved_parameter["name"]] = resolved_parameter.get("in", "query")
+        return locations
 
     def _create_emitter(self) -> Emitter:
         return Emitter.root().child(
@@ -242,24 +274,50 @@ class OpenAPITool(Tool[BaseModel, ToolRunOptions, OpenAPIToolOutput]):
         input_dict = tool_input.model_dump()
 
         raw_path = input_dict.get("path", self.path) or ""
-        resolved_url = self._validate_path_safe(self.url, raw_path)
+        method = input_dict.get("method", self.method) or ""
+
+        locations = self._parameter_locations(raw_path, method)
+        # An unset optional parameter dumps as None; leave it out instead of sending "None".
+        parameters = {k: v for k, v in (input_dict.get("parameters") or {}).items() if v is not None}
+        query_params: dict[str, Any] = {}
+        request_headers: dict[str, str] = {}
+        cookies: list[str] = []
+        path = raw_path
+        for name, value in parameters.items():
+            # A parameter the spec does not describe goes to the path if it has a `{name}` slot, else to the query.
+            location = locations.get(name) or ("path" if f"{{{name}}}" in raw_path else "query")
+            if location == "path":
+                path = path.replace(f"{{{name}}}", quote(self._serialize_value(value), safe=""))
+            elif location == "header":
+                request_headers[name] = self._serialize_value(value)
+            elif location == "cookie":
+                cookies.append(f"{name}={self._serialize_value(value)}")
+            else:
+                values = value if isinstance(value, list) else [value]
+                query_params[name] = [self._serialize_value(v) for v in values]
+
+        resolved_url = self._validate_path_safe(self.url, path)
 
         # pyrefly: ignore [bad-specialization]
         parsed_url = urlparse(resolved_url)
         # pyrefly: ignore [bad-argument-type]
         search_params = parse_qs(parsed_url.query)
-        # An unset optional parameter dumps as None; leave it out instead of sending "None".
-        search_params.update({k: v for k, v in (input_dict.get("parameters") or {}).items() if v is not None})
+        search_params.update(query_params)
         new_params = urlencode(search_params, doseq=True)
         url = urlunparse(parsed_url._replace(query=new_params))
+
+        headers = {"Accept": "application/json", **self.headers, **request_headers}
+        if cookies:
+            existing = next((k for k in headers if k.lower() == "cookie"), None)
+            headers[existing or "Cookie"] = "; ".join(([headers[existing]] if existing else []) + cookies)
 
         await self.emitter.emit("before_fetch", BeforeFetchEvent(url=str(url), input=input_dict))
         try:
             async with httpx.AsyncClient() as client:
                 response = await client.request(
-                    method=input_dict.get("method", self.method) or "",
+                    method=method,
                     url=str(url),
-                    headers={"Accept": "application/json", **self.headers},
+                    headers=headers,
                     data=input_dict.get("body"),
                 )
                 output = OpenAPIToolOutput(response.status_code, response.text)
