@@ -260,7 +260,7 @@ import { ChatModelError } from "beeai-framework/backend/errors";
 import { OpenMeteoTool } from "beeai-framework/tools/weather/openMeteo";
 
 const llm = new OpenAIChatModel(
-  "gpt-5-nano",
+  "gpt-5.6-luna",
   {},
   // {
   //   baseURL: "OPENAI_BASE_URL",
@@ -277,7 +277,7 @@ llm.config({
 });
 
 async function openaiFromName() {
-  const openaiLLM = await ChatModel.fromName("openai:gpt-5-nano");
+  const openaiLLM = await ChatModel.fromName("openai:gpt-5.6-luna");
   const response = await openaiLLM.create({
     messages: [new UserMessage("what states are part of New England?")],
   });
