@@ -91,7 +91,7 @@ cz-commitizen = { path = "./cz_commitizen", develop = true }
 
 [tool.poetry.extras]
 transformers = ["transformers", "pillow"]
-huggingface = ["datasets", "transformers"]
+huggingface = ["transformers"]
 search = ["ddgs", "wikipedia-api"]
 duckduckgo = ["ddgs"]
 wikipedia = ["wikipedia-api"]
@@ -116,7 +116,6 @@ all = [
     "langgraph",
     "langgraph-checkpoint",
     "langsmith",
-    "datasets",
     "transformers",
     "ddgs",
     "wikipedia-api",
@@ -127,7 +126,7 @@ all = [
     "a2a-sdk",
     "grpcio-health-checking",
     "fastapi",
-    "llama-index",
+    "llama-index-core",
     "boto3",
     "google-auth",
     "cryptography",
