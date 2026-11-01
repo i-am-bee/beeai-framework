@@ -282,7 +282,7 @@
     "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-unused-imports": "^4.3.0",
     "express": "^5.1.0",
-    "glob": "^13.0.0",
+    "glob": "^14.0.2",
     "ibm-cloud-sdk-core": "^5.4.5",
     "langchain": "^1.4.5",
     "ollama-ai-provider-v2": "^3.0.4",
