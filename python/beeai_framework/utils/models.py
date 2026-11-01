@@ -6,7 +6,7 @@ import copy
 from abc import ABC
 from collections.abc import Generator, Sequence
 from contextlib import suppress
-from typing import Any, Generic, Literal, Optional, Self, TypeGuard, TypeVar, Union
+from typing import Annotated, Any, Generic, Literal, Optional, Self, TypeGuard, TypeVar, Union
 
 from pydantic import BaseModel, ConfigDict, Field, GetJsonSchemaHandler, RootModel, ValidationError, create_model
 from pydantic.fields import FieldInfo
@@ -91,13 +91,15 @@ class JSONSchemaModel(ABC, BaseModel):
             one_of = param.get("oneOf")
             default = param.get("default")
             const = param.get("const")
+            # With a type list, each keyword is applied below to the types it constrains.
+            scoped = isinstance(param.get("type"), list)
 
             target_field = Field(
                 description=param.get("description"),
                 default=default if default is not None else const,
-                pattern=param.get("pattern"),
-                ge=param.get("minimum"),
-                le=param.get("maximum"),
+                pattern=None if scoped else param.get("pattern"),
+                ge=None if scoped else param.get("minimum"),
+                le=None if scoped else param.get("maximum"),
             )
 
             if one_of:
@@ -121,11 +123,23 @@ class JSONSchemaModel(ABC, BaseModel):
                 target_type: type | Any
                 if isinstance(raw_type, list):
                     # A list of types means "any of these types"; "null" is handled by explicitly_nullable below.
-                    variants: list[Any] = [
-                        create_field(f"{param_name}_{idx}", {**param, "type": t}, {f"{param_name}_{idx}"})[0]
-                        for idx, t in enumerate(raw_type)
-                        if t != "null"
-                    ]
+                    variants: list[Any] = []
+                    for idx, t in enumerate(raw_type):
+                        if t == "null":
+                            continue
+                        unscoped = {k: v for k, v in param.items() if k not in ("pattern", "minimum", "maximum")}
+                        tmp_name = f"{param_name}_{idx}"
+                        variant = create_field(tmp_name, {**unscoped, "type": t}, {tmp_name})[0]
+                        constraints = (
+                            {"pattern": param.get("pattern")}
+                            if t == "string"
+                            else {"ge": param.get("minimum"), "le": param.get("maximum")}
+                            if t in ("integer", "number")
+                            else {}
+                        )
+                        constraints = {k: v for k, v in constraints.items() if v is not None}
+                        # pyrefly: ignore [not-a-type]
+                        variants.append(Annotated[variant, Field(**constraints)] if constraints else variant)
                     target_type = Union[*variants] if len(variants) > 1 else variants[0] if variants else type(None)  # type: ignore
                 else:
                     target_type = type_mapping.get(raw_type)  # type: ignore[arg-type]
