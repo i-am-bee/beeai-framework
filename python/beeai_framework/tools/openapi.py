@@ -248,7 +248,8 @@ class OpenAPITool(Tool[BaseModel, ToolRunOptions, OpenAPIToolOutput]):
         parsed_url = urlparse(resolved_url)
         # pyrefly: ignore [bad-argument-type]
         search_params = parse_qs(parsed_url.query)
-        search_params.update(input_dict.get("parameters", {}))
+        # An unset optional parameter dumps as None; leave it out instead of sending "None".
+        search_params.update({k: v for k, v in (input_dict.get("parameters") or {}).items() if v is not None})
         new_params = urlencode(search_params, doseq=True)
         url = urlunparse(parsed_url._replace(query=new_params))
 

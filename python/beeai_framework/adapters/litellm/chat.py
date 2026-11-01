@@ -351,6 +351,7 @@ class LiteLLMChatModel(ChatModel, ABC):
                     custom_llm_provider=self._litellm_provider_id,
                     prompt_tokens=usage.prompt_tokens,
                     completion_tokens=usage.completion_tokens,
+                    usage_object=usage,
                 )
                 cost = ChatModelCost(
                     prompt_tokens_usd=prompt_tokens_cost_usd,

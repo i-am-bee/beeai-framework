@@ -120,6 +120,12 @@ export class JSONToolOutput<T> extends ToolOutput {
   }
 
   isEmpty() {
+    if (
+      typeof this.result === "boolean" ||
+      (typeof this.result === "number" && Number.isFinite(this.result))
+    ) {
+      return false;
+    }
     return !this.result || R.isEmpty(this.result);
   }
 

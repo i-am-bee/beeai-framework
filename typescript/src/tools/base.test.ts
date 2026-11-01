@@ -24,6 +24,35 @@ import { Serializer } from "@/serializer/serializer.js";
 import { verifyDeserialization } from "@tests/e2e/utils.js";
 import { Emitter } from "@/emitter/emitter.js";
 
+describe("JSON tool output", () => {
+  test.each([0, -0, false, true, 1, -2, 0.5])(
+    "preserves scalar %j through serialization",
+    async (value) => {
+      const output = new JSONToolOutput(value);
+      const restored = await JSONToolOutput.fromSerialized<JSONToolOutput<typeof value>>(
+        await output.serialize(),
+      );
+      expect(restored.result).toBe(value === 0 ? 0 : value);
+      expect(restored.isEmpty()).toBe(false);
+      expect(restored.getTextContent()).toBe(JSON.stringify(value));
+    },
+  );
+
+  test("keeps serialization behavior for non-JSON scalars", () => {
+    expect(new JSONToolOutput(undefined).getTextContent()).toBeUndefined();
+    for (const value of [NaN, Infinity, -Infinity]) {
+      const output = new JSONToolOutput(value);
+      expect(output.isEmpty()).toBe(true);
+      expect(output.getTextContent()).toBe("null");
+    }
+    for (const value of [0n, 1n]) {
+      const output = new JSONToolOutput(value);
+      expect(output.isEmpty()).toBe(true);
+      expect(() => output.getTextContent()).toThrow(TypeError);
+    }
+  });
+});
+
 describe("Base Tool", () => {
   beforeEach(() => {
     vi.clearAllTimers();

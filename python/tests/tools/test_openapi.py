@@ -53,3 +53,41 @@ async def test_from_url_parses_yaml_schema(monkeypatch: pytest.MonkeyPatch) -> N
     assert len(tools) == 1
     assert tools[0].name == "ping"
     assert tools[0].url == "https://example.invalid"
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_unset_optional_query_parameters_are_omitted(monkeypatch: pytest.MonkeyPatch) -> None:
+    schema = {
+        "openapi": "3.0.0",
+        "info": {"title": "Pets", "version": "1.0"},
+        "servers": [{"url": "https://example.invalid"}],
+        "paths": {
+            "/pets": {
+                "get": {
+                    "operationId": "listPets",
+                    "parameters": [
+                        {"name": "species", "in": "query", "required": True, "schema": {"type": "string"}},
+                        {"name": "limit", "in": "query", "schema": {"type": "integer"}},
+                    ],
+                    "responses": {"200": {"description": "ok"}},
+                }
+            }
+        },
+    }
+    urls: list[str] = []
+
+    async def fake_request(self: httpx.AsyncClient, method: str, url: str, **kwargs: object) -> httpx.Response:
+        urls.append(url)
+        return httpx.Response(200, text="[]")
+
+    monkeypatch.setattr(httpx.AsyncClient, "request", fake_request)
+
+    [tool] = OpenAPITool.from_schema(schema)
+    await tool.run({"parameters": {"species": "cat"}})
+    await tool.run({"parameters": {"species": "cat", "limit": 0}})
+
+    assert urls == [
+        "https://example.invalid/pets?species=cat",
+        "https://example.invalid/pets?species=cat&limit=0",
+    ]
