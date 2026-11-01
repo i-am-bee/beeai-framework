@@ -204,3 +204,80 @@ async def test_tool_injects_run_context_with_custom_schema() -> None:
     output = await render.run({"label": "notebook"})
 
     assert output.get_text_content() == "notebook"
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+@pytest.mark.parametrize("asynchronous", [False, True])
+@pytest.mark.parametrize("keyword_only", [False, True])
+async def test_tool_excludes_injected_context_from_inferred_schema(asynchronous: bool, keyword_only: bool) -> None:
+    def render(label: str, context: RunContext) -> str:
+        """Return the label with its injected run context."""
+        assert isinstance(context, RunContext)
+        return label
+
+    async def render_async(label: str, context: RunContext) -> str:
+        """Return the label with its injected run context."""
+        return render(label, context)
+
+    def render_keyword_only(label: str, *, context: RunContext) -> str:
+        """Return the label with its injected keyword-only run context."""
+        return render(label, context)
+
+    async def render_async_keyword_only(label: str, *, context: RunContext) -> str:
+        """Return the label with its injected keyword-only run context."""
+        return render(label, context)
+
+    function = (
+        (render_async_keyword_only if asynchronous else render_keyword_only)
+        if keyword_only
+        else (render_async if asynchronous else render)
+    )
+    wrapped = tool(function, with_context=True)
+    schema = wrapped.input_schema.model_json_schema()
+    assert set(schema["properties"]) == {"label"}
+    assert schema["required"] == ["label"]
+
+    output = await wrapped.run({"label": "notebook"})
+    assert output.get_text_content() == "notebook"
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_tool_keeps_context_argument_without_injection() -> None:
+    @tool
+    def render(context: str) -> str:
+        """Return a caller-provided context."""
+        return context
+
+    assert "context" in render.input_schema.model_json_schema()["properties"]
+    output = await render.run({"context": "caller context"})
+    assert output.get_text_content() == "caller context"
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_tool_injects_context_with_any_annotation() -> None:
+    @tool(with_context=True)
+    def render(label: str, context: Any) -> str:
+        """Return the label with its injected run context."""
+        assert isinstance(context, RunContext)
+        return label
+
+    assert set(render.input_schema.model_json_schema()["properties"]) == {"label"}
+    output = await render.run({"label": "notebook"})
+    assert output.get_text_content() == "notebook"
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_tool_injects_context_into_extra_keyword_arguments() -> None:
+    @tool(with_context=True)
+    def render(label: str, **kwargs: Any) -> str:
+        """Return the label with context passed through keyword arguments."""
+        assert isinstance(kwargs["context"], RunContext)
+        return label
+
+    assert set(render.input_schema.model_json_schema()["properties"]) == {"label"}
+    output = await render.run({"label": "notebook"})
+    assert output.get_text_content() == "notebook"
