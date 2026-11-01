@@ -239,6 +239,56 @@ async def test_interprets_new_lines(should_throw: bool) -> None:
         assert parser.final_state["thought"] == expected
 
 
+def get_thought_final_answer_parser() -> LinePrefixParser:
+    config = {
+        "thought": LinePrefixParserNode(
+            prefix="Thought:", next=["final_answer"], is_start=True, field=ParserField.from_type(str)
+        ),
+        "final_answer": LinePrefixParserNode(
+            prefix="Final Answer:", next=[], is_end=True, field=ParserField.from_type(str)
+        ),
+    }
+    return LinePrefixParser(config)
+
+
+@pytest.mark.asyncio
+@pytest.mark.unit
+@pytest.mark.parametrize(
+    "chunks",
+    [
+        ["Thought: a\n", " ", "Final Answer: b"],
+        ["Thought: a\n", "\t", "Final Answer: b"],
+        ["Thought: a", "\n", " ", " ", "Final Answer: b"],
+        ["Thought: a\n  ", "Final Answer: b"],
+        ["Thought: a\n", "  ", "\t", "Final Answer: b"],
+    ],
+)
+async def test_keeps_whitespace_only_line_until_prefix_arrives(chunks: list[str]) -> None:
+    parser = get_thought_final_answer_parser()
+    for chunk in chunks:
+        await parser.add(chunk)
+    state = await parser.end()
+
+    assert state == {"thought": "a", "final_answer": "b"}
+
+
+@pytest.mark.asyncio
+@pytest.mark.unit
+@pytest.mark.parametrize("indent", ["", " ", "    ", "\t"])
+async def test_split_point_does_not_change_result(indent: str) -> None:
+    text = f"Thought: a\n{indent}Final Answer: b"
+
+    expected_parser = get_thought_final_answer_parser()
+    await expected_parser.add(text)
+    expected = await expected_parser.end()
+
+    for split in range(1, len(text)):
+        parser = get_thought_final_answer_parser()
+        await parser.add(text[:split])
+        await parser.add(text[split:])
+        assert await parser.end() == expected, f"split at {split}"
+
+
 @pytest.mark.asyncio
 @pytest.mark.unit
 async def test_ignores_unrelated_text_and_non_starting_nodes() -> None:

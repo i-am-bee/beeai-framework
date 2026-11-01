@@ -199,7 +199,9 @@ from beeai_framework.errors import FrameworkError
 
 Add any additional custom errors you need in your code to the import, for example
 ```py Python [expandable]
-from beeai_framework.errors import FrameworkError, ChatModelError,ToolError
+from beeai_framework.backend.errors import ChatModelError
+from beeai_framework.errors import FrameworkError
+from beeai_framework.tools.errors import ToolError
 ```
 
 ### Creating custom errors

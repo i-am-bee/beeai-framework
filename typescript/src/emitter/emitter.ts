@@ -114,11 +114,14 @@ export class Emitter<T = Record<keyof any, Callback<unknown>>> extends Serializa
     return child;
   }
 
-  pipe(target: Emitter<any>): CleanupFn {
-    return this.createPipe(target).cleanup;
+  /**
+   * Forward events to a target emitter, optionally including events from descendant runs.
+   */
+  pipe(target: Emitter<any>, options: { matchNested?: boolean } = {}): CleanupFn {
+    return this.createPipe(target, options.matchNested ?? false).cleanup;
   }
 
-  private createPipe(target: Emitter<any>) {
+  private createPipe(target: Emitter<any>, matchNested = false) {
     const callback = toBoundedFunction(
       (data: unknown, event: EventMeta) => target.invoke(data, event),
       [{ value: target, name: "target" }],
@@ -131,7 +134,7 @@ export class Emitter<T = Record<keyof any, Callback<unknown>>> extends Serializa
         isBlocking: true,
         once: false,
         persistent: true,
-        matchNested: false,
+        matchNested,
       },
     );
     return { callback, cleanup };

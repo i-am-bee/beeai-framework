@@ -16,7 +16,7 @@ from beeai_framework.utils import AbortSignal
 
 
 async def minimax_from_name() -> None:
-    llm = ChatModel.from_name("minimax:MiniMax-M3")
+    llm = ChatModel.from_name("minimax:MiniMax-M3.1-Flash")
     user_message = UserMessage("what states are part of New England?")
     response = await llm.run([user_message])
     print(response.get_text_content())
@@ -27,21 +27,21 @@ async def minimax_sync() -> None:
     #   region="global" -> https://api.minimax.io/v1 (default)
     #   region="cn"     -> https://api.minimaxi.com/v1
     # An explicit base_url / MINIMAX_API_BASE still takes precedence.
-    llm = MiniMaxChatModel("MiniMax-M3")
+    llm = MiniMaxChatModel("MiniMax-M3.1-Flash")
     user_message = UserMessage("what is the capital of Massachusetts?")
     response = await llm.run([user_message])
     print(response.get_text_content())
 
 
 async def minimax_stream() -> None:
-    llm = MiniMaxChatModel("MiniMax-M3")
+    llm = MiniMaxChatModel("MiniMax-M3.1-Flash")
     user_message = UserMessage("How many islands make up the country of Cape Verde?")
     response = await llm.run([user_message], stream=True)
     print(response.get_text_content())
 
 
 async def minimax_stream_abort() -> None:
-    llm = MiniMaxChatModel("MiniMax-M3")
+    llm = MiniMaxChatModel("MiniMax-M3.1-Flash")
     user_message = UserMessage("What is the smallest of the Cape Verde islands?")
 
     try:
@@ -59,14 +59,14 @@ async def minimax_structure() -> None:
     class TestSchema(BaseModel):
         answer: str = Field(description="your final answer")
 
-    llm = MiniMaxChatModel("MiniMax-M3")
+    llm = MiniMaxChatModel("MiniMax-M3.1-Flash")
     user_message = UserMessage("How many islands make up the country of Cape Verde?")
     response = await llm.run([user_message], response_format=TestSchema)
     print(response.output_structured)
 
 
 async def minimax_stream_parser() -> None:
-    llm = MiniMaxChatModel("MiniMax-M3")
+    llm = MiniMaxChatModel("MiniMax-M3.1-Flash")
 
     parser = LinePrefixParser(
         nodes={

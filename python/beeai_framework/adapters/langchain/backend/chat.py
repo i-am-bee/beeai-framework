@@ -122,5 +122,12 @@ class LangChainChatModel(ChatModel):
             use_strict_model_schema=self.use_strict_model_schema,
             use_strict_tool_schema=self.use_strict_tool_schema,
             tool_choice_support=self._tool_choice_support.copy(),
+            middlewares=self.middlewares.copy(),
+            allow_parallel_tool_calls=self.allow_parallel_tool_calls,
+            ignore_parallel_tool_calls=self.ignore_parallel_tool_calls,
+            supports_top_level_unions=self.supports_top_level_unions,
+            fix_invalid_tool_calls=self.fix_invalid_tool_calls,
+            retry_on_empty_response=self.retry_on_empty_response,
+            allow_prompt_caching=self.allow_prompt_caching,
         )
         return cloned

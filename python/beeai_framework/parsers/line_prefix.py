@@ -132,7 +132,7 @@ class LinePrefixParser:
             if not (is_termination_node or (last_node and not line.new_line)):
                 parsed_line = self._extract_line(line.value)
 
-            if is_last_line and ((parsed_line is not None and parsed_line.partial) or not line.value):
+            if is_last_line and ((parsed_line is not None and parsed_line.partial) or not line.value.strip()):
                 break
 
             self._lines.pop(0)

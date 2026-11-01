@@ -453,6 +453,7 @@ class LiteLLMChatModel(ChatModel, ABC):
             supports_top_level_unions=self.supports_top_level_unions,
             fix_invalid_tool_calls=self.fix_invalid_tool_calls,
             retry_on_empty_response=self.retry_on_empty_response,
+            allow_prompt_caching=self.allow_prompt_caching,
             **self._settings,
         )
         return cloned

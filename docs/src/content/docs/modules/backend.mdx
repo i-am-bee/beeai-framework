@@ -50,6 +50,8 @@ or [TypeScript](https://github.com/i-am-bee/beeai-framework/blob/main/typescript
 </Note>
 
 <Note>
+	MiniMax defaults to `MiniMax-M3`; `MiniMax-M3.1-Flash` is also available by explicit model ID. Explicit model IDs and `MINIMAX_CHAT_MODEL` overrides, including legacy and custom IDs, are preserved.
+
 	MiniMax serves the same API from two regional gateways. Select one with `MINIMAX_API_REGION` (or the `region` option): `global` (default, `https://api.minimax.io/v1`) or `cn` (`https://api.minimaxi.com/v1`). An explicit `MINIMAX_API_BASE` / `base_url` always takes precedence, so you no longer have to look up and type the regional URL by hand.
 </Note>
 
@@ -260,7 +262,7 @@ import { ChatModelError } from "beeai-framework/backend/errors";
 import { OpenMeteoTool } from "beeai-framework/tools/weather/openMeteo";
 
 const llm = new OpenAIChatModel(
-  "gpt-5-nano",
+  "gpt-5.6-luna",
   {},
   // {
   //   baseURL: "OPENAI_BASE_URL",
@@ -277,7 +279,7 @@ llm.config({
 });
 
 async function openaiFromName() {
-  const openaiLLM = await ChatModel.fromName("openai:gpt-5-nano");
+  const openaiLLM = await ChatModel.fromName("openai:gpt-5.6-luna");
   const response = await openaiLLM.create({
     messages: [new UserMessage("what states are part of New England?")],
   });
@@ -1005,7 +1007,7 @@ const model = await EmbeddingModel.fromName("ollama:nomic-embed-text");
 
 <CodeGroup>
 ```py Python [expandable]
-from beeai_framework.adapters.ollama.backend import OllamaEmbeddingModel
+from beeai_framework.adapters.ollama.backend.embedding import OllamaEmbeddingModel
 
 model = OllamaEmbeddingModel("nomic-embed-text")
 ```

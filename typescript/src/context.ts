@@ -135,7 +135,7 @@ export class RunContext<T extends RunInstance, P = any> extends Serializable {
       },
     });
     if (parent) {
-      this.emitter.pipe(parent.emitter);
+      this.emitter.pipe(parent.emitter, { matchNested: true });
     }
   }
 

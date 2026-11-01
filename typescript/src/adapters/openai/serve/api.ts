@@ -70,34 +70,39 @@ export class ChatCompletionAPI {
               // from "update" (ReActAgent incremental tokens) and from "success"
               // (ToolCallingAgent emits only start/success, with the final answer
               // in state.result). This keeps streaming working for both agents.
-              emitter.match("*.*", async (eventData: any, event) => {
-                let delta: string | undefined;
-                if (event.name === "update") {
-                  delta = eventData?.update?.value;
-                } else if (event.name === "success") {
-                  delta = eventData?.state?.result?.text;
-                }
-                if (!delta || res.writableEnded || res.destroyed) {
-                  return;
-                }
-                const data = {
-                  id,
-                  object: "chat.completion.chunk",
-                  model: requestBody.model,
-                  created: Math.floor(Date.now() / 1000),
-                  choices: [
-                    {
-                      index: 0,
-                      delta: {
-                        role: "assistant",
-                        content: delta,
+              // Only this run's events: a sub-agent's answer (e.g. after a handoff) is not the reply.
+              emitter.match(
+                "*.*",
+                async (eventData: any, event) => {
+                  let delta: string | undefined;
+                  if (event.name === "update") {
+                    delta = eventData?.update?.value;
+                  } else if (event.name === "success") {
+                    delta = eventData?.state?.result?.text;
+                  }
+                  if (!delta || res.writableEnded || res.destroyed) {
+                    return;
+                  }
+                  const data = {
+                    id,
+                    object: "chat.completion.chunk",
+                    model: requestBody.model,
+                    created: Math.floor(Date.now() / 1000),
+                    choices: [
+                      {
+                        index: 0,
+                        delta: {
+                          role: "assistant",
+                          content: delta,
+                        },
+                        finish_reason: null,
                       },
-                      finish_reason: null,
-                    },
-                  ],
-                };
-                res.write(`data: ${JSON.stringify(data)}\n\n`);
-              });
+                    ],
+                  };
+                  res.write(`data: ${JSON.stringify(data)}\n\n`);
+                },
+                { matchNested: false },
+              );
             });
 
           if (!res.writableEnded && !res.destroyed) {

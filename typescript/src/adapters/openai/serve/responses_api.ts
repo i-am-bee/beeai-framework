@@ -175,27 +175,32 @@ export class ResponsesAPI {
               // from "update" (ReActAgent incremental tokens) and from "success"
               // (ToolCallingAgent emits only start/success, with the final answer
               // in state.result). This keeps streaming working for both agents.
-              emitter.match("*.*", async (data: any, event) => {
-                let delta: string | undefined;
-                if (event.name === "update") {
-                  delta = data?.update?.value;
-                } else if (event.name === "success") {
-                  delta = data?.state?.result?.text;
-                }
-                if (!delta || res.writableEnded || res.destroyed) {
-                  return;
-                }
-                accumulatedText += delta;
+              // Only this run's events: a sub-agent's answer (e.g. after a handoff) is not the reply.
+              emitter.match(
+                "*.*",
+                async (data: any, event) => {
+                  let delta: string | undefined;
+                  if (event.name === "update") {
+                    delta = data?.update?.value;
+                  } else if (event.name === "success") {
+                    delta = data?.state?.result?.text;
+                  }
+                  if (!delta || res.writableEnded || res.destroyed) {
+                    return;
+                  }
+                  accumulatedText += delta;
 
-                const deltaEvent: ResponsesStreamOutputTextDelta = {
-                  type: "response.output_text.delta",
-                  content_index: 0,
-                  delta,
-                  item_id: outputItemId,
-                  output_index: 0,
-                };
-                sendEvent("response.output_text.delta", deltaEvent);
-              });
+                  const deltaEvent: ResponsesStreamOutputTextDelta = {
+                    type: "response.output_text.delta",
+                    content_index: 0,
+                    delta,
+                    item_id: outputItemId,
+                    output_index: 0,
+                  };
+                  sendEvent("response.output_text.delta", deltaEvent);
+                },
+                { matchNested: false },
+              );
             });
 
           // response.output_text.done

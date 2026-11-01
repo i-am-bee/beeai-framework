@@ -20,14 +20,9 @@ pytestmark = pytest.mark.skipif(
 )
 
 
-@pytest.fixture
-def chat_model() -> MiniMaxChatModel:
-    return MiniMaxChatModel("MiniMax-M3")
-
-
-@pytest.fixture
-def highspeed_model() -> MiniMaxChatModel:
-    return MiniMaxChatModel("MiniMax-M2.7-highspeed")
+@pytest.fixture(params=["MiniMax-M3.1-Flash", "MiniMax-M3"])
+def chat_model(request: pytest.FixtureRequest) -> MiniMaxChatModel:
+    return MiniMaxChatModel(request.param)
 
 
 class TestMiniMaxIntegration:
@@ -40,14 +35,6 @@ class TestMiniMaxIntegration:
         )
         text = output.get_text_content()
         assert "4" in text
-
-    @pytest.mark.asyncio
-    async def test_highspeed_model(self, highspeed_model: MiniMaxChatModel) -> None:
-        output = await highspeed_model.run(
-            [UserMessage("Say hello in one word.")],
-        )
-        text = output.get_text_content()
-        assert len(text) > 0
 
     @pytest.mark.asyncio
     async def test_streaming(self, chat_model: MiniMaxChatModel) -> None:

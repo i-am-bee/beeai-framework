@@ -242,6 +242,7 @@ class OpenAPITool(Tool[BaseModel, ToolRunOptions, OpenAPIToolOutput]):
         input_dict = tool_input.model_dump()
 
         raw_path = input_dict.get("path", self.path) or ""
+        method = input_dict.get("method", self.method) or ""
         resolved_url = self._validate_path_safe(self.url, raw_path)
 
         # pyrefly: ignore [bad-specialization]
@@ -253,14 +254,20 @@ class OpenAPITool(Tool[BaseModel, ToolRunOptions, OpenAPIToolOutput]):
         new_params = urlencode(search_params, doseq=True)
         url = urlunparse(parsed_url._replace(query=new_params))
 
+        body = input_dict.get("body")
+        # The input schema prefers an application/json request body, so send it as JSON, not form-encoded.
+        request_body = self.open_api_schema.get("paths", {}).get(raw_path, {}).get(method, {}).get("requestBody", {})
+        send_json = "application/json" in request_body.get("content", {})
+
         await self.emitter.emit("before_fetch", BeforeFetchEvent(url=str(url), input=input_dict))
         try:
             async with httpx.AsyncClient() as client:
                 response = await client.request(
-                    method=input_dict.get("method", self.method) or "",
+                    method=method,
                     url=str(url),
                     headers={"Accept": "application/json", **self.headers},
-                    data=input_dict.get("body"),
+                    json=body if send_json else None,
+                    data=None if send_json else body,
                 )
                 output = OpenAPIToolOutput(response.status_code, response.text)
                 await self.emitter.emit("after_fetch", AfterFetchEvent(url=str(url), data=output))
