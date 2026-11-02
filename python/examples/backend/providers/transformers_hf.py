@@ -1,6 +1,6 @@
-# Needs torch, peft and outlines next to beeai-framework[transformers]; they are not installed with the
-# framework. Install the PyTorch build for your hardware (https://pytorch.org/get-started/locally/),
-# then run: pip install "beeai-framework[transformers]" peft outlines
+# Needs: pip install "beeai-framework[transformers]"
+# On Linux this installs the CUDA build of PyTorch. For the smaller CPU-only build, first run:
+# pip install torch --index-url https://download.pytorch.org/whl/cpu
 import asyncio
 
 from pydantic import BaseModel, Field

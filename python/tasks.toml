@@ -6,7 +6,11 @@ depends = ["python:setup:*"]
 ["python:setup:poetry"]
 dir = "{{config_root}}/python"
 env.POETRY_VIRTUALENVS_IN_PROJECT = "true"
-run = 'poetry env use "$(which python)" && poetry install --no-interaction --all-extras'
+# Every extra except "transformers", whose torch pulls several GB of CUDA libraries on Linux.
+run = '''
+poetry env use "$(which python)" && \
+poetry install --no-interaction --extras "$(python -c 'import tomllib; extras = tomllib.load(open("pyproject.toml", "rb"))["tool"]["poetry"]["extras"]; print(" ".join(e for e in extras if e != "transformers"))')"
+'''
 sources = ["python/poetry.lock", "python/pyproject.toml"]
 outputs = { auto = true }
 
