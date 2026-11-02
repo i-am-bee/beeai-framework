@@ -24,8 +24,9 @@ try:
     )
 except ModuleNotFoundError as e:
     raise ModuleNotFoundError(
-        "The Transformers adapter needs optional modules. Install them with "
-        "'pip install \"beeai-framework[transformers]\"'."
+        "The Transformers adapter needs torch, peft and outlines, which beeai-framework does not install.\n"
+        "Install the PyTorch build for your hardware (https://pytorch.org/get-started/locally/), then run "
+        "'pip install \"beeai-framework[transformers]\" peft outlines'."
     ) from e
 
 from beeai_framework.adapters.litellm.utils import to_strict_json_schema
