@@ -31,7 +31,7 @@ class TestValidatePathSafe:
 
     def test_normal_absolute_path_allowed(self) -> None:
         result = OpenAPITool._validate_path_safe("https://api.example.com/v1", "/users")
-        assert result == "https://api.example.com/users"
+        assert result == "https://api.example.com/v1/users"
 
     def test_normal_relative_path_allowed(self) -> None:
         result = OpenAPITool._validate_path_safe("https://api.example.com/v1/", "users")
