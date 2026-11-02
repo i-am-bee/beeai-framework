@@ -40,6 +40,18 @@ def _tool_exchange(messages: list[AnyMessage], index: int) -> slice:
     return slice(start, end) if start <= index < end else slice(index, index + 1)
 
 
+def _joined_exchange(messages: list[AnyMessage], position: int, message: AnyMessage) -> list[AnyMessage]:
+    """Return the tool exchange that a tool message inserted at position joins (empty if none).
+
+    These messages must not be evicted to make room for it, or the result would be stored without its call.
+    """
+    if not isinstance(message, ToolMessage) or position == 0:
+        return []
+    exchange = messages[_tool_exchange(messages, position - 1)]
+    first = exchange[0]
+    return exchange if isinstance(first, AssistantMessage) and first.get_tool_calls() else []
+
+
 def simple_estimate(msg: AnyMessage) -> int:
     return ceil(len(_prompt_text(msg)) / 4)
 
@@ -146,8 +158,11 @@ class TokenMemory(BaseMemory):
             self._messages.clear()
             for msg in messages:
                 tokens = counts[self._get_message_key(msg)]
+                joined = _joined_exchange(self._messages, len(self._messages), msg)
                 while self._messages and used > capacity - tokens:
                     message_to_delete = self.handlers["removal_selector"](self._messages)
+                    if any(m is message_to_delete for m in joined):
+                        break  # over budget until the exchange is complete, rather than strand the result
                     deleted = await self._evict(message_to_delete) if message_to_delete is not None else []
                     if not deleted:
                         raise ResourceFatalError('The "removal_selector" handler must return a valid message!')
@@ -185,8 +200,12 @@ class TokenMemory(BaseMemory):
             # Evict existing messages until the incoming one fits within the configured
             # capacity budget (the absolute limit scaled by capacity_threshold).
             capacity = self._max_tokens * self._threshold
+            position = len(self._messages) if index is None else max(0, min(index, len(self._messages)))
+            joined = _joined_exchange(self._messages, position, message)
             while self._messages and self.tokens_used > capacity - estimated_tokens:
                 message_to_delete = self.handlers["removal_selector"](self._messages)
+                if any(m is message_to_delete for m in joined):
+                    break  # over budget until the exchange is complete, rather than strand the result
                 deleted = await self._evict(message_to_delete) if message_to_delete is not None else []
                 if not deleted:
                     raise ResourceFatalError('The "removal_selector" handler must return a valid message!')
