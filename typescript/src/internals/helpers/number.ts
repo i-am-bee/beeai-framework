@@ -10,7 +10,8 @@ export function safeSum(...numbers: (number | undefined | null)[]): number {
 }
 
 export function takeBigger(...numbers: (number | undefined | null)[]): number {
-  return Math.max(...(numbers?.filter(R.isNonNullish) || [0])) || 0;
+  const values = numbers.filter(R.isNonNullish);
+  return values.length > 0 ? Math.max(...values) || 0 : 0;
 }
 
 export function ensureRange(value: number, options: { min?: number; max?: number }): number {

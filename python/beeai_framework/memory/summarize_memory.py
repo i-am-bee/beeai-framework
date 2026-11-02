@@ -4,8 +4,27 @@
 from collections.abc import Iterable
 
 from beeai_framework.backend.chat import ChatModel
-from beeai_framework.backend.message import AnyMessage, SystemMessage, UserMessage
+from beeai_framework.backend.message import AnyMessage, AssistantMessage, SystemMessage, ToolMessage, UserMessage
 from beeai_framework.memory.base_memory import BaseMemory
+from beeai_framework.utils.strings import to_json
+
+
+def _format_message(message: AnyMessage) -> str:
+    """Render a message for the summary prompt, including tool calls and tool results.
+
+    ``Message.text`` only joins text parts, so a tool call or tool result (which is how agents
+    such as RequirementAgent store tool use and their final answer) would otherwise be blank.
+    """
+    parts = [message.text] if message.text else []
+    if isinstance(message, AssistantMessage):
+        parts.extend(f"[called {call.tool_name}({call.args})]" for call in message.get_tool_calls())
+    elif isinstance(message, ToolMessage):
+        parts.extend(
+            f"[{result.tool_name} returned: "
+            f"{result.result if isinstance(result.result, str) else to_json(result.result, sort_keys=False)}]"
+            for result in message.get_tool_results()
+        )
+    return f"{message.role}: {' '.join(parts)}"
 
 
 class SummarizeMemory(BaseMemory):
@@ -44,7 +63,7 @@ class SummarizeMemory(BaseMemory):
 Previous messages:
 {}
 
-Summary:""".format("\n".join([f"{msg.role}: {msg.text}" for msg in messages]))
+Summary:""".format("\n".join([_format_message(msg) for msg in messages]))
         )
 
         response = await self._model.run([prompt])

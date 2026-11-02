@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { ChatModel, ChatModelInput, ChatModelOutput } from "@/backend/chat.js";
+import { ChatModel, ChatModelInput, ChatModelOutput, ChatModelUsage } from "@/backend/chat.js";
 import { AssistantMessage, UserMessage } from "@/backend/message.js";
 import { Emitter } from "@/emitter/emitter.js";
 import { GetRunContext } from "@/context.js";
@@ -63,5 +63,75 @@ describe("ChatModel caching", () => {
     } finally {
       serializeSpy.mockRestore();
     }
+  });
+});
+
+describe("ChatModelOutput usage merging", () => {
+  const chunk = (usage?: ChatModelUsage) =>
+    new ChatModelOutput([new AssistantMessage("chunk")], usage, "stop");
+
+  it("does not report -Infinity for optional fields the provider never set", () => {
+    const usage: ChatModelUsage = {
+      promptTokens: 10,
+      completionTokens: 5,
+      totalTokens: 15,
+      reasoningTokens: undefined,
+      cachedPromptTokens: undefined,
+    };
+
+    const merged = ChatModelOutput.fromChunks([chunk(usage), chunk({ ...usage })]);
+
+    expect(merged.usage).toEqual({
+      promptTokens: 10,
+      completionTokens: 5,
+      totalTokens: 15,
+      reasoningTokens: 0,
+      cachedPromptTokens: 0,
+    });
+    expect(Object.values(merged.usage!).every(Number.isFinite)).toBe(true);
+    expect(JSON.parse(JSON.stringify(merged.usage))).toEqual({
+      promptTokens: 10,
+      completionTokens: 5,
+      totalTokens: 15,
+      reasoningTokens: 0,
+      cachedPromptTokens: 0,
+    });
+  });
+
+  it("keeps optional fields absent when no chunk carries them", () => {
+    const usage: ChatModelUsage = { promptTokens: 10, completionTokens: 5, totalTokens: 15 };
+
+    const merged = ChatModelOutput.fromChunks([chunk(usage), chunk({ ...usage })]);
+
+    expect(merged.usage).toEqual(usage);
+    expect(merged.usage).not.toHaveProperty("reasoningTokens");
+    expect(merged.usage).not.toHaveProperty("cachedPromptTokens");
+  });
+
+  it("takes the biggest value of every field across chunks", () => {
+    const merged = ChatModelOutput.fromChunks([
+      chunk({
+        promptTokens: 10,
+        completionTokens: 2,
+        totalTokens: 12,
+        reasoningTokens: 1,
+        cachedPromptTokens: undefined,
+      }),
+      chunk({
+        promptTokens: 10,
+        completionTokens: 5,
+        totalTokens: 15,
+        reasoningTokens: 3,
+        cachedPromptTokens: 8,
+      }),
+    ]);
+
+    expect(merged.usage).toEqual({
+      promptTokens: 10,
+      completionTokens: 5,
+      totalTokens: 15,
+      reasoningTokens: 3,
+      cachedPromptTokens: 8,
+    });
   });
 });
