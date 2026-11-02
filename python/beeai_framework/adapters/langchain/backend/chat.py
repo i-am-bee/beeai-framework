@@ -108,7 +108,10 @@ class LangChainChatModel(ChatModel):
                 completion_tokens=usage_metadata.get("output_tokens") or 0,
                 total_tokens=usage_metadata.get("total_tokens") or 0,
                 cached_prompt_tokens=input_token_details.get("cache_read") or 0,
-                cached_creation_tokens=input_token_details.get("cache_creation") or 0,
+                # langchain-anthropic reports cache writes by TTL and sets "cache_creation" to 0 then.
+                cached_creation_tokens=input_token_details.get("cache_creation")
+                or (input_token_details.get("ephemeral_5m_input_tokens") or 0)
+                + (input_token_details.get("ephemeral_1h_input_tokens") or 0),
             )
             if usage_metadata
             else ChatModelUsage(),

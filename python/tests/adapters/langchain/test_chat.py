@@ -95,6 +95,32 @@ def test_transform_output_reports_cached_tokens() -> None:
 
 
 @pytest.mark.unit
+def test_transform_output_reports_anthropic_cache_writes_by_ttl() -> None:
+    model = LangChainChatModel(GenericFakeChatModel(messages=iter([])))
+    message = AIMessage(
+        content="hi",
+        usage_metadata={
+            "input_tokens": 100,
+            "output_tokens": 10,
+            "total_tokens": 110,
+            # What langchain-anthropic reports when the response has cache writes.
+            "input_token_details": {
+                "cache_read": 60,
+                "cache_creation": 0,
+                "ephemeral_5m_input_tokens": 20,
+                "ephemeral_1h_input_tokens": 10,
+            },
+        },
+    )
+
+    output = model._transform_output({"output": message, "output_structured": None})  # type: ignore[typeddict-item]
+
+    assert output.usage is not None
+    assert output.usage.cached_prompt_tokens == 60
+    assert output.usage.cached_creation_tokens == 30
+
+
+@pytest.mark.unit
 def test_transform_output_without_token_details_has_no_cached_tokens() -> None:
     model = LangChainChatModel(GenericFakeChatModel(messages=iter([])))
     message = AIMessage(content="hi", usage_metadata={"input_tokens": 5, "output_tokens": 1, "total_tokens": 6})
