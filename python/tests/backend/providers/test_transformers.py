@@ -14,7 +14,7 @@ from beeai_framework.backend import (
 )
 from beeai_framework.tools.weather import OpenMeteoTool
 
-# The adapter needs the "transformers" extra, which the dev setup skips (torch is several GB on Linux).
+# The adapter's runtime dependencies are not installed with beeai-framework.
 for module in ("torch", "peft", "outlines", "transformers"):
     pytest.importorskip(module, reason=f"{module} is not installed")
 
