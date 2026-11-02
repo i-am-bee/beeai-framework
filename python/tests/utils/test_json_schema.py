@@ -450,3 +450,56 @@ def test_type_list_is_a_union_of_types() -> None:
     assert model(title=None, id="x", tags=None).model_dump() == {"title": None, "id": "x", "tags": None}
     with pytest.raises(ValidationError):
         model(title=["Dr."], id=5)
+
+
+@pytest.mark.unit
+def test_property_without_type_accepts_any_value() -> None:
+    # FastMCP's schema for a `value: Any` parameter has no "type".
+    model = JSONSchemaModel.create(
+        "putArguments",
+        {
+            "type": "object",
+            "properties": {"key": {"type": "string"}, "value": {"title": "Value"}, "note": {}},
+            "required": ["key", "value"],
+        },
+    )
+
+    for value in ({"a": 1}, [1, 2], "text", 3, None):
+        assert model(key="k", value=value).model_dump() == {"key": "k", "value": value, "note": None}
+    assert model(key="k", value=1, note="n").model_dump()["note"] == "n"
+
+
+@pytest.mark.unit
+def test_non_string_const_is_a_literal() -> None:
+    model = JSONSchemaModel.create(
+        "const_values",
+        {
+            "type": "object",
+            "properties": {"version": {"const": 2}, "enabled": {"const": True}},
+            "required": ["version", "enabled"],
+        },
+    )
+
+    assert model(version=2, enabled=True).model_dump() == {"version": 2, "enabled": True}
+    with pytest.raises(ValidationError):
+        model(version=3, enabled=True)
+    with pytest.raises(ValidationError):
+        model(version=2, enabled=False)
+
+
+@pytest.mark.unit
+def test_omitted_const_defaults_to_its_value() -> None:
+    model = JSONSchemaModel.create(
+        "const_defaults",
+        {
+            "type": "object",
+            "properties": {
+                "zero": {"const": 0},
+                "off": {"const": False},
+                "empty": {"const": ""},
+                "two": {"const": 2},
+            },
+        },
+    )
+
+    assert model().model_dump() == {"zero": 0, "off": False, "empty": "", "two": 2}

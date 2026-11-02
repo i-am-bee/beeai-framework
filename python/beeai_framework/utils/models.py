@@ -94,7 +94,7 @@ class JSONSchemaModel(ABC, BaseModel):
 
             target_field = Field(
                 description=param.get("description"),
-                default=default if default is not None else const if const else None,
+                default=default if default is not None else const,
                 pattern=param.get("pattern"),
                 ge=param.get("minimum"),
                 le=param.get("maximum"),
@@ -148,11 +148,12 @@ class JSONSchemaModel(ABC, BaseModel):
                 if enum is not None and isinstance(enum, list):
                     # pyrefly: ignore [invalid-literal]
                     target_type = Literal[tuple(enum)]
-                if isinstance(const, str):
+                if isinstance(const, str | int | bool):
                     # pyrefly: ignore [not-a-type]
                     target_type = Literal[const]
                 if not target_type:
-                    target_type = type
+                    # No (known) "type" means any JSON value, e.g. FastMCP's schema for an `Any` parameter.
+                    target_type = Any
 
                 if (not is_required and default is None) or explicitly_nullable:
                     target_type = Optional[target_type] if target_type else type(None)  # noqa: UP007
