@@ -10,7 +10,7 @@ from typing import Any
 from unittest.mock import AsyncMock, MagicMock, call, patch
 
 import pytest
-from pydantic import BaseModel
+from pydantic import AnyUrl, BaseModel
 
 from beeai_framework.context import RunContext
 from beeai_framework.utils.strings import to_json
@@ -20,7 +20,17 @@ import anyio
 from mcp import ClientSession, McpError, StdioServerParameters
 from mcp.server.lowlevel import Server
 from mcp.shared.memory import MessageStream, create_client_server_memory_streams
-from mcp.types import CallToolResult, ListToolsRequest, ListToolsResult, PaginatedRequestParams, TextContent
+from mcp.types import (
+    AudioContent,
+    BlobResourceContents,
+    CallToolResult,
+    EmbeddedResource,
+    ImageContent,
+    ListToolsRequest,
+    ListToolsResult,
+    PaginatedRequestParams,
+    TextContent,
+)
 from mcp.types import Tool as MCPToolInfo
 
 from beeai_framework.tools import StringToolOutput, ToolError
@@ -507,3 +517,49 @@ async def test_clone_chain_and_cache_failure() -> None:
     assert provider.refs == 0
     assert provider._session_stopping.is_set()
     assert fake_session not in MCPSessionProvider._instances
+
+
+@pytest.mark.asyncio
+@pytest.mark.unit
+@pytest.mark.parametrize("smart_parsing", [True, False])
+async def test_binary_content_is_left_out_of_the_model_text(
+    mock_client_session: AsyncMock, mock_tool_info: MCPToolInfo, smart_parsing: bool
+) -> None:
+    data = "A" * 200_000  # a ~150 KB screenshot, base64-encoded
+    mock_client_session.call_tool = AsyncMock(
+        return_value=CallToolResult(
+            content=[
+                TextContent(type="text", text="Took a screenshot"),
+                ImageContent(type="image", data=data, mimeType="image/png"),
+                AudioContent(type="audio", data=data, mimeType="audio/wav"),
+                EmbeddedResource(
+                    type="resource",
+                    resource=BlobResourceContents(uri=AnyUrl("file:///shot.png"), blob=data, mimeType="image/png"),
+                ),
+            ]
+        )
+    )
+    tool = MCPTool(session=mock_client_session, tool=mock_tool_info, smart_parsing=smart_parsing)
+
+    output = await tool.run(input={"a": 1, "b": 2})
+
+    text = output.get_text_content()
+    assert data not in text
+    assert len(text) < 2_000
+    assert "Took a screenshot" in text
+    assert text.count("<150000 bytes of") == 3
+    # the full payload stays available to code
+    assert output.result[1].data == data
+
+
+@pytest.mark.asyncio
+@pytest.mark.unit
+async def test_text_only_output_is_unchanged(mock_client_session: AsyncMock, mock_tool_info: MCPToolInfo) -> None:
+    mock_client_session.call_tool = AsyncMock(
+        return_value=CallToolResult(content=[TextContent(type="text", text='{"temperature": 21}')])
+    )
+    tool = MCPTool(session=mock_client_session, tool=mock_tool_info)
+
+    output = await tool.run(input={"a": 1, "b": 2})
+
+    assert output.get_text_content() == to_json({"temperature": 21}, sort_keys=False)

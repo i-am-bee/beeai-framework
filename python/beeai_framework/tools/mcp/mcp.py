@@ -11,7 +11,15 @@ from beeai_framework.tools.mcp.utils.session_provider import MCPClient, MCPSessi
 
 try:
     from mcp import ClientSession
-    from mcp.types import CallToolResult, PaginatedRequestParams, TextContent
+    from mcp.types import (
+        AudioContent,
+        BlobResourceContents,
+        CallToolResult,
+        EmbeddedResource,
+        ImageContent,
+        PaginatedRequestParams,
+        TextContent,
+    )
     from mcp.types import Tool as MCPToolInfo
 except ModuleNotFoundError as e:
     raise ModuleNotFoundError(
@@ -32,7 +40,35 @@ from beeai_framework.utils.strings import to_json, to_safe_word
 
 logger = Logger(__name__)
 
-__all__ = ["MCPClient", "MCPTool"]
+__all__ = ["MCPClient", "MCPTool", "MCPToolOutput"]
+
+
+def _omit_binary(value: Any) -> Any:
+    """Replace base64 payloads (images, audio, blob resources) with a short placeholder.
+
+    The model only receives the tool result as text, so a screenshot would otherwise reach it as
+    hundreds of kilobytes of base64 that it cannot interpret.
+    """
+    if isinstance(value, list):
+        return [_omit_binary(item) for item in value]
+    if isinstance(value, ImageContent | AudioContent):
+        return {**value.model_dump(exclude_none=True), "data": _placeholder(value.data, value.mimeType)}
+    if isinstance(value, EmbeddedResource) and isinstance(value.resource, BlobResourceContents):
+        resource = value.resource.model_dump(mode="json", exclude_none=True)
+        resource["blob"] = _placeholder(value.resource.blob, value.resource.mimeType)
+        return {**value.model_dump(mode="json", exclude_none=True), "resource": resource}
+    return value
+
+
+def _placeholder(data: str, mime_type: str | None) -> str:
+    return f"<{len(data) * 3 // 4} bytes of {mime_type or 'binary data'} omitted>"
+
+
+class MCPToolOutput(JSONToolOutput[Any]):
+    """Keeps the full MCP result in ``result`` but leaves binary payloads out of the text sent to the model."""
+
+    def get_text_content(self) -> str:
+        return to_json(_omit_binary(self.result), sort_keys=False)
 
 
 class MCPToolKwargs(TypedDict, total=False):
@@ -40,7 +76,7 @@ class MCPToolKwargs(TypedDict, total=False):
     exclude_none: bool
 
 
-class MCPTool(Tool[BaseModel, ToolRunOptions, JSONToolOutput]):
+class MCPTool(Tool[BaseModel, ToolRunOptions, MCPToolOutput]):
     """Tool implementation for Model Context Protocol."""
 
     def __init__(self, session: ClientSession, tool: MCPToolInfo, **options: Unpack[MCPToolKwargs]) -> None:
@@ -73,7 +109,7 @@ class MCPTool(Tool[BaseModel, ToolRunOptions, JSONToolOutput]):
         )
 
     # pyrefly: ignore [bad-param-name-override]
-    async def _run(self, input_data: Any, options: ToolRunOptions | None, context: RunContext) -> JSONToolOutput:
+    async def _run(self, input_data: Any, options: ToolRunOptions | None, context: RunContext) -> MCPToolOutput:
         """Execute the tool with given input."""
         logger.debug(f"Executing tool {self._tool.name} with input: {input_data}")
         result: CallToolResult = await self._session.call_tool(
@@ -104,7 +140,7 @@ class MCPTool(Tool[BaseModel, ToolRunOptions, JSONToolOutput]):
                 context=error_context if isinstance(error_context, dict) else None,
             )
 
-        return JSONToolOutput(data_result)
+        return MCPToolOutput(data_result)
 
     @classmethod
     async def from_client(cls, client: MCPClient | ClientSession, **options: Unpack[MCPToolKwargs]) -> list["MCPTool"]:
