@@ -97,7 +97,8 @@ class LangChainChatModel(ChatModel):
 
     def _transform_output(self, response: LCModelResponse) -> ChatModelOutput:
         message = response["output"]
-        usage_metadata: dict[str, int] = message.usage_metadata if hasattr(message, "usage_metadata") else {}
+        usage_metadata: dict[str, Any] = getattr(message, "usage_metadata", None) or {}
+        input_token_details: dict[str, int] = usage_metadata.get("input_token_details") or {}
         return ChatModelOutput(
             output=to_beeai_messages([message]),
             output_structured=response["output_structured"],
@@ -106,6 +107,8 @@ class LangChainChatModel(ChatModel):
                 prompt_tokens=usage_metadata.get("input_tokens") or 0,
                 completion_tokens=usage_metadata.get("output_tokens") or 0,
                 total_tokens=usage_metadata.get("total_tokens") or 0,
+                cached_prompt_tokens=input_token_details.get("cache_read") or 0,
+                cached_creation_tokens=input_token_details.get("cache_creation") or 0,
             )
             if usage_metadata
             else ChatModelUsage(),
