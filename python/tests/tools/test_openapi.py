@@ -100,6 +100,38 @@ async def test_unset_optional_query_parameters_are_omitted(monkeypatch: pytest.M
 
 @pytest.mark.unit
 @pytest.mark.asyncio
+async def test_parameters_left_out_entirely(monkeypatch: pytest.MonkeyPatch) -> None:
+    # An LLM may omit `parameters` when every parameter is optional.
+    schema = {
+        "openapi": "3.0.0",
+        "info": {"title": "Pets", "version": "1.0"},
+        "servers": [{"url": "https://example.invalid"}],
+        "paths": {
+            "/pets": {
+                "get": {
+                    "operationId": "listPets",
+                    "parameters": [{"name": "limit", "in": "query", "schema": {"type": "integer"}}],
+                    "responses": {"200": {"description": "ok"}},
+                }
+            }
+        },
+    }
+    urls: list[str] = []
+
+    async def fake_request(self: httpx.AsyncClient, method: str, url: str, **kwargs: object) -> httpx.Response:
+        urls.append(url)
+        return httpx.Response(200, text="[]")
+
+    monkeypatch.setattr(httpx.AsyncClient, "request", fake_request)
+
+    [tool] = OpenAPITool.from_schema(schema)
+    await tool.run({})
+
+    assert urls == ["https://example.invalid/pets"]
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
 @pytest.mark.parametrize(
     ("content_type", "expected_body"),
     [
