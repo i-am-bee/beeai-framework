@@ -40,7 +40,8 @@ class TestPromptTemplateFactory:
     async def test_renders_with_only_the_required_arguments(self) -> None:
         prompt = _prompt_template_factory(make_template())
 
-        messages = await prompt.render({"topic": "rust"})
+        # mcp 2.x made the `context` argument required; this prompt does not use it.
+        messages = await prompt.render({"topic": "rust"}, None)  # type: ignore[arg-type]
 
         assert len(messages) == 1
         assert isinstance(messages[0].content, TextContent)

@@ -5,29 +5,19 @@ import asyncio
 import threading
 from collections.abc import Callable
 from contextlib import AbstractAsyncContextManager
-from typing import ClassVar
+from typing import Any, ClassVar
 from weakref import WeakKeyDictionary
 
-from anyio.streams.memory import MemoryObjectReceiveStream, MemoryObjectSendStream
 from mcp.client.session import ClientSession
-from mcp.client.streamable_http import GetSessionIdCallback
-from mcp.shared.message import SessionMessage
 
 from beeai_framework.logger import Logger
 
 logger = Logger(__name__)
 
-MCPClient = AbstractAsyncContextManager[
-    tuple[
-        MemoryObjectReceiveStream[SessionMessage | Exception],
-        MemoryObjectSendStream[SessionMessage],
-    ]
-    | tuple[
-        MemoryObjectReceiveStream[SessionMessage | Exception],
-        MemoryObjectSendStream[SessionMessage],
-        GetSessionIdCallback,  # for streamable http
-    ]
-]
+# An MCP client transport (e.g. `stdio_client(...)`, `sse_client(...)`, `streamable_http_client(...)`).
+# It yields `(read_stream, write_stream)`; streamable HTTP on mcp 1.x also yields a `get_session_id` callback.
+# The stream classes differ between mcp 1.x (anyio memory streams) and 2.x (stream protocols).
+MCPClient = AbstractAsyncContextManager[tuple[Any, Any] | tuple[Any, Any, Any]]
 
 CleanupFn = Callable[[], None]
 

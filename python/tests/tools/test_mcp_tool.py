@@ -4,25 +4,27 @@
 import asyncio
 import gc
 import weakref
-from collections.abc import AsyncIterator, Callable
+from collections.abc import AsyncIterator, Awaitable, Callable
 from contextlib import asynccontextmanager
 from typing import Any
 from unittest.mock import AsyncMock, MagicMock, call, patch
 
 import pytest
-from pydantic import AnyUrl, BaseModel
+from pydantic import BaseModel
 
 from beeai_framework.context import RunContext
 from beeai_framework.utils.strings import to_json
 
 pytest.importorskip("mcp", reason="Optional module [mcp] not installed.")
 import anyio
-from mcp import ClientSession, McpError, StdioServerParameters
+import mcp
+from mcp import ClientSession, StdioServerParameters
 from mcp.server.lowlevel import Server
 from mcp.shared.memory import MessageStream, create_client_server_memory_streams
 from mcp.types import (
     AudioContent,
     BlobResourceContents,
+    CallToolRequestParams,
     CallToolResult,
     EmbeddedResource,
     ImageContent,
@@ -35,10 +37,76 @@ from mcp.types import Tool as MCPToolInfo
 
 from beeai_framework.tools import StringToolOutput, ToolError
 from beeai_framework.tools.mcp import MCPTool
+from beeai_framework.tools.mcp.utils.compat import MCP_V2
+
+# `McpError` was renamed to `MCPError` in mcp 2.x.
+MCPError: type[Exception] = getattr(mcp, "MCPError", None) or getattr(mcp, "McpError")  # noqa: B009
 
 """
 Utility functions and classes
 """
+
+
+def tool_info(**fields: Any) -> MCPToolInfo:
+    """Build an MCP tool definition from wire (camelCase) fields; mcp 2.x uses snake_case attributes."""
+    return MCPToolInfo.model_validate(fields)
+
+
+def list_tools_server(
+    name: str,
+    list_tools: Callable[[str | None], Awaitable[ListToolsResult]],
+    call_tool: Callable[[str, dict[str, Any]], Awaitable[CallToolResult]] | None = None,
+) -> Server:
+    """Create a lowlevel server that answers tools/list with `list_tools(cursor)` and tools/call with `call_tool`."""
+    if MCP_V2:  # mcp 2.x replaced the handler decorators with `on_*` constructor parameters
+
+        async def on_list_tools(ctx: Any, params: PaginatedRequestParams | None) -> ListToolsResult:
+            return await list_tools(params.cursor if params else None)
+
+        handlers: dict[str, Any] = {"on_list_tools": on_list_tools}
+        if call_tool is not None:
+
+            async def on_call_tool(ctx: Any, params: CallToolRequestParams) -> CallToolResult:
+                assert call_tool is not None
+                return await call_tool(params.name, params.arguments or {})
+
+            handlers["on_call_tool"] = on_call_tool
+        return Server(name, **handlers)
+
+    server = Server(name)
+
+    @getattr(server, "list_tools")()  # noqa: B009
+    async def handler(request: ListToolsRequest) -> ListToolsResult:
+        return await list_tools(request.params.cursor if request.params else None)
+
+    if call_tool is not None:
+
+        @getattr(server, "call_tool")()  # noqa: B009
+        async def call_handler(name: str, arguments: dict[str, Any]) -> CallToolResult:
+            assert call_tool is not None
+            return await call_tool(name, arguments)
+
+    return server
+
+
+@asynccontextmanager
+async def connected_session(server: Server) -> AsyncIterator[ClientSession]:
+    """Connect an initialized client session to `server` over in-memory streams."""
+    async with (
+        create_client_server_memory_streams() as (client_streams, server_streams),
+        anyio.create_task_group() as tg,
+    ):
+
+        async def run_server() -> None:
+            await server.run(*server_streams, server.create_initialization_options())
+
+        tg.start_soon(run_server)
+        try:
+            async with ClientSession(*client_streams) as session:
+                await session.initialize()
+                yield session
+        finally:
+            tg.cancel_scope.cancel()
 
 
 # Common Fixtures
@@ -55,7 +123,7 @@ def mock_server_params() -> AsyncMock:
 # Basic Tool Test Fixtures
 @pytest.fixture
 def mock_tool_info() -> MCPToolInfo:
-    return MCPToolInfo(
+    return tool_info(
         name="test_tool",
         description="A test tool",
         inputSchema={
@@ -77,7 +145,7 @@ def call_tool_result() -> CallToolResult:
 # Calculator Tool Test Fixtures
 @pytest.fixture
 def add_numbers_tool_info() -> MCPToolInfo:
-    return MCPToolInfo(
+    return tool_info(
         name="add_numbers",
         description="Adds two numbers together",
         inputSchema={
@@ -235,8 +303,8 @@ class TestAddNumbersTool:
 @pytest.mark.parametrize("cursor", ["", "opaque+/=token"])
 async def test_discovery_follows_cursors_through_empty_pages(cursor: str) -> None:
     session = AsyncMock(spec=ClientSession)
-    first = MCPToolInfo(name="first", inputSchema={"type": "object"})
-    last = MCPToolInfo(name="last", inputSchema={"type": "object"})
+    first = tool_info(name="first", inputSchema={"type": "object"})
+    last = tool_info(name="last", inputSchema={"type": "object"})
     session.list_tools.side_effect = [
         ListToolsResult(tools=[first], nextCursor=cursor),
         ListToolsResult(tools=[], nextCursor="last-page"),
@@ -259,8 +327,8 @@ async def test_discovery_follows_cursors_through_empty_pages(cursor: str) -> Non
 @pytest.mark.unit
 async def test_discovery_stops_on_repeated_cursor() -> None:
     session = AsyncMock(spec=ClientSession)
-    first = MCPToolInfo(name="first", inputSchema={"type": "object"})
-    second = MCPToolInfo(name="second", inputSchema={"type": "object"})
+    first = tool_info(name="first", inputSchema={"type": "object"})
+    second = tool_info(name="second", inputSchema={"type": "object"})
     session.list_tools.side_effect = [
         ListToolsResult(tools=[first], nextCursor="loop"),
         ListToolsResult(tools=[second], nextCursor="loop"),
@@ -288,7 +356,7 @@ async def test_discovery_propagates_later_page_error_without_constructing_tools(
     session = AsyncMock(spec=ClientSession)
     error = RuntimeError("Unable to list the next page")
     session.list_tools.side_effect = [
-        ListToolsResult(tools=[MCPToolInfo(name="first", inputSchema={})], nextCursor="next"),
+        ListToolsResult(tools=[tool_info(name="first", inputSchema={})], nextCursor="next"),
         error,
     ]
     with patch.object(MCPTool, "__init__", return_value=None) as constructor:
@@ -303,20 +371,19 @@ async def test_discovery_propagates_later_page_error_without_constructing_tools(
 @pytest.mark.parametrize("later_page", [False, True])
 @pytest.mark.parametrize("cancel", [False, True])
 async def test_owned_transport_closes_when_discovery_stops(later_page: bool, cancel: bool) -> None:
-    server = Server("discovery-cleanup")
     closed = asyncio.Event()
     waiting = asyncio.Event()
     owner_tasks: list[asyncio.Task[Any]] = []
 
-    @server.list_tools()
-    async def list_tools(request: ListToolsRequest) -> ListToolsResult:
-        cursor = request.params.cursor if request.params else None
+    async def list_tools(cursor: str | None) -> ListToolsResult:
         if later_page and cursor is None:
-            return ListToolsResult(tools=[MCPToolInfo(name="first", inputSchema={})], nextCursor="next")
+            return ListToolsResult(tools=[tool_info(name="first", inputSchema={"type": "object"})], nextCursor="next")
         if cancel:
             waiting.set()
             await asyncio.Event().wait()
         raise ValueError("Discovery failed")
+
+    server = list_tools_server("discovery-cleanup", list_tools)
 
     @asynccontextmanager
     async def transport() -> AsyncIterator[MessageStream]:
@@ -348,7 +415,7 @@ async def test_owned_transport_closes_when_discovery_stops(later_page: bool, can
             with pytest.raises(asyncio.CancelledError):
                 await discovery
         else:
-            with pytest.raises(McpError, match="Discovery failed"):
+            with pytest.raises(MCPError, match="Discovery failed"):
                 await asyncio.wait_for(discovery, timeout=5)
         await asyncio.wait_for(closed.wait(), timeout=5)
     finally:
@@ -361,18 +428,13 @@ async def test_owned_transport_closes_when_discovery_stops(later_page: bool, can
 @pytest.mark.asyncio
 @pytest.mark.unit
 async def test_failed_discovery_keeps_borrowed_session_open() -> None:
-    from mcp.shared.memory import create_connected_server_and_client_session
-
-    server = Server("borrowed-session")
-
-    @server.list_tools()
-    async def list_tools(request: ListToolsRequest) -> ListToolsResult:
-        if request.params is None:
+    async def list_tools(cursor: str | None) -> ListToolsResult:
+        if cursor is None:
             return ListToolsResult(tools=[], nextCursor="next")
         raise ValueError("Discovery failed")
 
-    async with create_connected_server_and_client_session(server) as session:
-        with pytest.raises(McpError, match="Discovery failed"):
+    async with connected_session(list_tools_server("borrowed-session", list_tools)) as session:
+        with pytest.raises(MCPError, match="Discovery failed"):
             await MCPTool.from_client(session)
         await session.send_ping()
 
@@ -382,17 +444,16 @@ async def test_failed_discovery_keeps_borrowed_session_open() -> None:
 @pytest.mark.parametrize("run", [False, True])
 async def test_tools_are_collected_and_transport_closes(run: bool) -> None:
     """A tool that has run must not stay alive through its emitter, or its session is never released."""
-    server = Server("tool-lifecycle")
     closed = asyncio.Event()
     owner_tasks: list[asyncio.Task[Any]] = []
 
-    @server.list_tools()
-    async def list_tools() -> list[MCPToolInfo]:
-        return [MCPToolInfo(name="echo", inputSchema={"type": "object"})]
+    async def list_tools(cursor: str | None) -> ListToolsResult:
+        return ListToolsResult(tools=[tool_info(name="echo", inputSchema={"type": "object"})])
 
-    @server.call_tool()
-    async def call_tool(name: str, arguments: dict[str, Any]) -> list[TextContent]:
-        return [TextContent(type="text", text="ok")]
+    async def call_tool(name: str, arguments: dict[str, Any]) -> CallToolResult:
+        return CallToolResult(content=[TextContent(type="text", text="ok")])
+
+    server = list_tools_server("tool-lifecycle", list_tools, call_tool)
 
     @asynccontextmanager
     async def transport() -> AsyncIterator[MessageStream]:
@@ -534,7 +595,7 @@ async def test_binary_content_is_left_out_of_the_model_text(
                 AudioContent(type="audio", data=data, mimeType="audio/wav"),
                 EmbeddedResource(
                     type="resource",
-                    resource=BlobResourceContents(uri=AnyUrl("file:///shot.png"), blob=data, mimeType="image/png"),
+                    resource=BlobResourceContents(uri="file:///shot.png", blob=data, mimeType="image/png"),  # type: ignore[arg-type]
                 ),
             ]
         )
