@@ -74,6 +74,64 @@ async def test_raises_when_selector_returns_unknown_message() -> None:
 
 @pytest.mark.asyncio
 @pytest.mark.unit
+@pytest.mark.parametrize("invalid_selection", ["unknown", "duplicate"])
+async def test_failed_eviction_preserves_history(invalid_selection: str) -> None:
+    first, second = UserMessage("first"), UserMessage("second")
+    invalid = UserMessage("ghost") if invalid_selection == "unknown" else first
+    memory = SlidingMemory(
+        SlidingMemoryConfig(size=2, handlers={"removal_selector": lambda messages: [first, invalid]})
+    )
+    await memory.add(first)
+    await memory.add(second)
+    history = memory.messages
+
+    with pytest.raises(ResourceError, match="non existing"):
+        await memory.add(UserMessage("rejected"))
+
+    assert memory.messages is history
+    assert history == [first, second]
+
+    # Correcting the selector must allow retrying without having lost history.
+    assert memory.config.handlers is not None
+    memory.config.handlers["removal_selector"] = lambda messages: messages[0]
+    newest = UserMessage("newest")
+    await memory.add(newest)
+    assert history == [second, newest]
+
+
+@pytest.mark.asyncio
+@pytest.mark.unit
+async def test_insufficient_eviction_preserves_history() -> None:
+    memory = SlidingMemory(SlidingMemoryConfig(size=3))
+    first, second, third = UserMessage("first"), UserMessage("second"), UserMessage("third")
+    await memory.add_many([first, second, third])
+    history = memory.messages
+    memory.config.size = 1
+
+    with pytest.raises(ResourceError, match="overflow"):
+        await memory.add(UserMessage("rejected"))
+
+    assert memory.messages is history
+    assert history == [first, second, third]
+
+
+@pytest.mark.asyncio
+@pytest.mark.unit
+async def test_multiple_evictions_preserve_history_reference_and_insertion_index() -> None:
+    memory = SlidingMemory(SlidingMemoryConfig(size=3, handlers={"removal_selector": lambda messages: messages[:2]}))
+    first, second, third = UserMessage("first"), UserMessage("second"), UserMessage("third")
+    await memory.add_many([first, second, third])
+    history = memory.messages
+    inserted = UserMessage("inserted")
+
+    await memory.add(inserted, index=0)
+
+    assert memory.messages is history
+    assert history == [inserted, third]
+
+
+@pytest.mark.asyncio
+@pytest.mark.unit
 async def test_add_at_explicit_index() -> None:
     memory = SlidingMemory(SlidingMemoryConfig(size=5))
     first, second, inserted = UserMessage("first"), UserMessage("second"), UserMessage("inserted")
