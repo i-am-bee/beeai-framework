@@ -1,3 +1,79 @@
+## python_v0.1.86 (2026-11-02)
+
+### BREAKING CHANGE
+
+- `beeai-framework[transformers]` (and `[all]`) no longer installs torch, peft or
+outlines. Users of TransformersChatModel must install them separately, e.g. the PyTorch build for
+their hardware followed by `pip install "beeai-framework[transformers]" peft outlines`.
+
+### Bug Fixes
+
+- **adapters**: report cached token usage in the LangChain chat adapter (#1906)
+- **internals**: accept any value for a JSON Schema property without a type (#1903)
+- **memory**: include tool calls and results in the SummarizeMemory prompt (#1902)
+- **tools**: keep MCP image and audio payloads out of the model text (#1901)
+- **deps**: install torch, peft and outlines with the transformers extra (#1905)
+- **tools**: route OpenAPITool parameters by their location (#1885)
+- **deps**: install llama-index-core with the all extra (#1897)
+- **tools**: send OpenAPITool JSON request bodies as JSON (#1882)
+- **adapters**: keep chat model options when cloning LiteLLM and LangChain models (#1890)
+- **internals**: keep falsy defaults in JSONSchemaModel (#1883)
+- **python**: keep a whitespace-only last line buffered in LinePrefixParser (#1884)
+- **python**: don't send the implicit temperature=0 to Anthropic next to top_p or reasoning_effort (#1878)
+- **tools**: omit unset optional query parameters in OpenAPITool (#1873)
+- **internals**: treat a JSON Schema type list as a union (#1872)
+- **adapters**: price cached prompt tokens at the cache rate (#1874)
+- **adapters**: parse OpenAI chat messages by their role (#1868)
+- **emitter**: forward descendant run events to parent contexts (#1867)
+- **tools**: preserve false and zero JSON results (#1866)
+- **adapters**: support OpenAI permission round trips (#1743)
+- **internals**: release abort signal listeners when runs finish (#1844)
+- **adapters**: replace retired default models in the Python Anthropic, Gemini and Vertex AI chat models (#1857)
+- **emitter**: let child emitters be collected while the parent lives (#1820)
+- **deps**: update brotli for CVE-2026-111497 (#1851)
+- **deps**: pin litellm to 1.89.7 (#1848)
+- **deps**: update Python dependencies with security advisories (#1846)
+- **deps**: stop installing torch with the transformers extra (#1845)
+- **adapters**: mark the required MCP prompt arguments correctly (#1836)
+- **adapters**: deliver the canceled status to A2A streaming subscribers (#1831)
+- **deps**: keep agentstack installs on MCP 1.x (#1830)
+- **memory**: roll back failed TokenMemory.add() across Python and TypeScript (#1819)
+- **agents**: prevent infinite loop when max_iterations is 0 (#1821)
+- **adapters**: close the remaining cancellation gaps in the A2A server (#1811)
+- stop PromptTemplate.fork customizers from mutating the original (#1817)
+- **memory**: enforce token budget after TokenMemory sync (#1802)
+- **agents**: isolate ReActAgent clones from original state (#1795)
+- **adapters**: preserve memory when cloning AgentStackAgent (#1804)
+- **tools**: kill POSIX shell process groups on cancellation and timeout (#1803)
+- **adapters**: cancel only the requested task in the A2A server (#1794)
+- **litellm**: forward stop_sequences to the provider as stop (#1791)
+- **tools**: honor the country in OpenMeteoTool geocoding (#1800)
+- **tools**: make GrepTool's context_lines return the surrounding lines (#1799)
+- **adapters**: preserve parameters and memory when cloning A2AAgent (#1797)
+- **tools/mcp**: increment session refs on MCPTool.clone() (#1792)
+- **internals**: forward-compat fixes for Python 3.14 (#1801)
+- **workflows**: honor the per-run start option (#1782)
+- **tools**: reap shell subprocesses on cancellation (#1784)
+- **middleware**: add StreamToolCallMiddleware.destroy() and skip unused emitters (#1778)
+- **agents**: release per-run emitters in RequirementAgent (#1769)
+- **agents**: enforce only_before in ConditionalRequirement (#1775)
+- **tools**: prevent path traversal in LocalPythonStorage (#1734)
+- **tools**: prevent SSRF and base URL override in OpenAPITool (#1748)
+- **tools**: discover all MCP tool pages (#1728)
+- **adapters**: make the ACP adapter work with acp-sdk 1.0 and uvicorn 0.37 (#1739)
+- **memory**: keep the full summary text when the chat model streams (#1727)
+- **tools**: preserve validated nested arguments in decorated functions (#1741)
+
+### Features
+
+- **adapters**: default MiniMax text models to M3.1 Flash (#1815)
+- **backend**: add FallbackChatModel (#1806)
+- **examples**: add ACGS tool-call middleware example (#1862)
+- **adapters**: deprecate the AgentStack integration (#1864)
+- **examples**: add on-demand skill loader tool example (#1840)
+- **adapters**: add MiniMax regional (CN) endpoint selection (#1576)
+- **adapters**: forward execution limits in the serve adapters (#1737)
+
 ## python_v0.1.85 (2026-09-28)
 
 ### Bug Fixes

@@ -1,5 +1,49 @@
 # Changelog
 
+## [0.1.32](https://github.com/i-am-bee/beeai-framework/compare/typescript_v0.1.31...typescript_v0.1.32) (2026-11-02)
+
+### ⚠ BREAKING CHANGES
+
+- **tools:** GoogleSearchTool has been removed as Google's Custom Search JSON API is
+  discontinued for new users and sunsets on January 1, 2027. Downstream agents should use
+  DuckDuckGoSearchTool or WikipediaTool instead.
+
+### Features
+
+- **adapters:** add MiniMax regional (CN) endpoint selection ([#1576](https://github.com/i-am-bee/beeai-framework/issues/1576)) ([f1e1944](https://github.com/i-am-bee/beeai-framework/commit/f1e19449a914ea5165ae47d895bbc4308cf1f126))
+- **adapters:** default MiniMax text models to M3.1 Flash ([#1815](https://github.com/i-am-bee/beeai-framework/issues/1815)) ([c31de98](https://github.com/i-am-bee/beeai-framework/commit/c31de98905c5b4e5f9c47fe6a10c72c411036550))
+- **adapters:** deprecate the AgentStack integration ([#1864](https://github.com/i-am-bee/beeai-framework/issues/1864)) ([0d510d9](https://github.com/i-am-bee/beeai-framework/commit/0d510d9a399d04f302eb68bb2cbf230047695bc6))
+- **tools:** add per-attempt timeout to tool run options ([#1767](https://github.com/i-am-bee/beeai-framework/issues/1767)) ([8369752](https://github.com/i-am-bee/beeai-framework/commit/8369752cf5c2b4d2fec9968808ad16a9de381287)), closes [#1640](https://github.com/i-am-bee/beeai-framework/issues/1640) [#1653](https://github.com/i-am-bee/beeai-framework/issues/1653)
+- **tools:** deprecate GoogleSearchTool ([#1765](https://github.com/i-am-bee/beeai-framework/issues/1765)) ([3eb123d](https://github.com/i-am-bee/beeai-framework/commit/3eb123d1f9ac82297c6645d3b8f98626f55b736a))
+- **tools:** remove deprecated GoogleSearchTool ([#1789](https://github.com/i-am-bee/beeai-framework/issues/1789)) ([47bcc55](https://github.com/i-am-bee/beeai-framework/commit/47bcc558736113b29ce2422221c26f7d5eda5abb)), closes [#1772](https://github.com/i-am-bee/beeai-framework/issues/1772)
+
+### Bug Fixes
+
+- **adapters:** pass maxTokens to the AI SDK as maxOutputTokens in the Vercel chat model ([#1877](https://github.com/i-am-bee/beeai-framework/issues/1877)) ([830a695](https://github.com/i-am-bee/beeai-framework/commit/830a69565afe580ed76dcfc92b0fd24b2b26b5fa))
+- **adapters:** replace retired default models in the TypeScript Anthropic and Vertex AI chat models ([#1858](https://github.com/i-am-bee/beeai-framework/issues/1858)) ([0605ac8](https://github.com/i-am-bee/beeai-framework/commit/0605ac8f115526d3d33796d48c5c54d2fb484170))
+- **agents:** dispose owned requirement run emitters ([#1779](https://github.com/i-am-bee/beeai-framework/issues/1779)) ([4b905c7](https://github.com/i-am-bee/beeai-framework/commit/4b905c7705c6eaa71951565e47c76cbefb6f782c))
+- **agents:** enforce only_before in ConditionalRequirement ([#1775](https://github.com/i-am-bee/beeai-framework/issues/1775)) ([8247ff5](https://github.com/i-am-bee/beeai-framework/commit/8247ff5a7ffbfac513b7e18b7fb20fcfb6ab7014)), closes [#1771](https://github.com/i-am-bee/beeai-framework/issues/1771)
+- **agents:** enforce tool-calling iteration limit ([#1829](https://github.com/i-am-bee/beeai-framework/issues/1829)) ([f92dd43](https://github.com/i-am-bee/beeai-framework/commit/f92dd439dbcf0a3234a7ef8ca3ffcca9bdf8c82b))
+- **agents:** keep whitespace-only lines buffered in LinePrefixParser ([#1841](https://github.com/i-am-bee/beeai-framework/issues/1841)) ([fe541fc](https://github.com/i-am-bee/beeai-framework/commit/fe541fc541e682aca0ce3a716d0a0d4cb47e748e))
+- **agents:** prevent infinite loop when max_iterations is 0 ([#1821](https://github.com/i-am-bee/beeai-framework/issues/1821)) ([5f94713](https://github.com/i-am-bee/beeai-framework/commit/5f94713f18047b4396c00b2ae81711a507d14b1c))
+- **agents:** reject concurrent lazy runs ([#1733](https://github.com/i-am-bee/beeai-framework/issues/1733)) ([c3c90af](https://github.com/i-am-bee/beeai-framework/commit/c3c90af844baddcca3ebf8926e3b65735f8af08d))
+- **backend:** return 0 from takeBigger without numeric operands ([#1907](https://github.com/i-am-bee/beeai-framework/issues/1907)) ([707edb2](https://github.com/i-am-bee/beeai-framework/commit/707edb2dc2e899d6d51716cf3339d82b6432ea89))
+- **deps:** refresh vulnerable TypeScript dependencies within their ranges ([#1839](https://github.com/i-am-bee/beeai-framework/issues/1839)) ([cbe6bb3](https://github.com/i-am-bee/beeai-framework/commit/cbe6bb391b957308b2caf9947c8facd3df536ed3))
+- **deps:** update vulnerable TypeScript dev dependencies and resolutions ([#1849](https://github.com/i-am-bee/beeai-framework/issues/1849)) ([b37f3c4](https://github.com/i-am-bee/beeai-framework/commit/b37f3c40eab25417148664903f06238094a96fed))
+- **emitter:** forward run events from every descendant run to ancestors ([#1886](https://github.com/i-am-bee/beeai-framework/issues/1886)) ([2e7a504](https://github.com/i-am-bee/beeai-framework/commit/2e7a5047be36dea9e9f77af721e9e0ff66ec34b7))
+- **emitter:** release destroyed TypeScript child emitters ([#1770](https://github.com/i-am-bee/beeai-framework/issues/1770)) ([bc35451](https://github.com/i-am-bee/beeai-framework/commit/bc354510edc387a07f033736b0243b23c6b5f0a3))
+- **emitter:** release unowned child emitters ([#1834](https://github.com/i-am-bee/beeai-framework/issues/1834)) ([d689640](https://github.com/i-am-bee/beeai-framework/commit/d6896400a47b7586be80dccea5d5f4ef805f1ddb))
+- **internals:** handle cancellation during callback initialization ([#1754](https://github.com/i-am-bee/beeai-framework/issues/1754)) ([d67e606](https://github.com/i-am-bee/beeai-framework/commit/d67e606e3d0b0a571a2ecb01761a0c4f950e0a1c))
+- **internals:** reject runs cancelled before callback execution ([#1742](https://github.com/i-am-bee/beeai-framework/issues/1742)) ([48a77ad](https://github.com/i-am-bee/beeai-framework/commit/48a77ad69d60cd679a9dd157e2b7feab4936e10a))
+- **internals:** round the retry delay after scaling it to milliseconds ([#1854](https://github.com/i-am-bee/beeai-framework/issues/1854)) ([502352a](https://github.com/i-am-bee/beeai-framework/commit/502352a3a2194cec681553fde2622a4d277728c6))
+- **memory:** roll back failed TokenMemory.add() across Python and TypeScript ([#1819](https://github.com/i-am-bee/beeai-framework/issues/1819)) ([8934e18](https://github.com/i-am-bee/beeai-framework/commit/8934e18239d1e08d0c84afb1d031a467f3930395))
+- **serializer:** prevent function retention in serializer and bypass null cache ([#1790](https://github.com/i-am-bee/beeai-framework/issues/1790)) ([279dbfb](https://github.com/i-am-bee/beeai-framework/commit/279dbfbcbeb1a61d653df024750e70d5608a95ff)), closes [#1786](https://github.com/i-am-bee/beeai-framework/issues/1786)
+- **tools:** honor the country in the TypeScript OpenMeteoTool geocoding ([#1818](https://github.com/i-am-bee/beeai-framework/issues/1818)) ([e57d45e](https://github.com/i-am-bee/beeai-framework/commit/e57d45e9c7f53df101b0c7ac0ab7087d643949e3)), closes [#1800](https://github.com/i-am-bee/beeai-framework/issues/1800)
+- **tools:** keep the category and link data and encode the query in ArXivTool ([#1852](https://github.com/i-am-bee/beeai-framework/issues/1852)) ([642b69c](https://github.com/i-am-bee/beeai-framework/commit/642b69cf41d19b529199b5bf92e3ce618e6a06e3))
+- **tools:** name the MCP tool in errors without content ([#1788](https://github.com/i-am-bee/beeai-framework/issues/1788)) ([52ebdb5](https://github.com/i-am-bee/beeai-framework/commit/52ebdb518e5ed105666029bc4b1a2ad0bd9ab8dd))
+- **tools:** preserve JSON scalar tool results ([#1871](https://github.com/i-am-bee/beeai-framework/issues/1871)) ([b3be4d3](https://github.com/i-am-bee/beeai-framework/commit/b3be4d3be7b8776b5902fcabaca02a708d85ec43))
+- **tools:** propagate MCP tool errors in TypeScript ([#1785](https://github.com/i-am-bee/beeai-framework/issues/1785)) ([96ad357](https://github.com/i-am-bee/beeai-framework/commit/96ad357dbe4a0087a1a896ef2a962b4d86616d3f))
+
 ## [0.1.31](https://github.com/i-am-bee/beeai-framework/compare/typescript_v0.1.30...typescript_v0.1.31) (2026-09-28)
 
 ### Features
