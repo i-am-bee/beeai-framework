@@ -38,13 +38,16 @@ BeeAI Framework is a comprehensive toolkit for building intelligent, autonomous 
 
 ### Prerequisite
 
-✅ Python >= 3.11
+✅ Python >= 3.11, < 3.15
 
 ### Installation
 
 ```shell
 pip install beeai-framework
 ```
+
+The `rag` extra's `unstructured` dependency requires Python < 3.14 and is skipped on Python 3.14.
+Use an older supported Python version if you need it.
 
 ### Multi-Agent Example
 
