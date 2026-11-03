@@ -86,11 +86,12 @@ class SlidingMemory(BaseMemory):
             if not isinstance(to_remove, list):
                 to_remove = [to_remove]
 
-            # Remove selected messages
+            # Validate the whole eviction before changing the stored history.
+            remaining_messages = self._messages.copy()
             for msg in to_remove:
                 try:
-                    msg_index = self._messages.index(msg)
-                    self._messages.pop(msg_index)
+                    msg_index = remaining_messages.index(msg)
+                    remaining_messages.pop(msg_index)
                 except ValueError:
                     raise ResourceError(
                         "Cannot delete non existing message.",
@@ -98,10 +99,12 @@ class SlidingMemory(BaseMemory):
                     ) from ValueError
 
             # Check if we still have overflow
-            if self._is_overflow():
+            if len(remaining_messages) + 1 > self.config.size:
                 raise ResourceError(
                     "Custom memory removalSelector did not return enough messages. Memory overflow has occurred."
                 )
+
+            self._messages[:] = remaining_messages
 
         # Add new message
         if index is None:
