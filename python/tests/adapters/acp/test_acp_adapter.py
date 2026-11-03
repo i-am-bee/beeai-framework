@@ -64,6 +64,6 @@ async def test_server_agent_answers() -> None:
 )
 def test_client_puts_the_role_on_the_message(message: Any, expected_role: str) -> None:
     client = ACPAgent("weather", url="http://unused", memory=UnconstrainedMemory())
-    converted = client._convert_to_agent_stack_message(message)
+    converted = client._convert_to_acp_message(message)
     assert converted.role == expected_role
     assert str(converted) == "hello"

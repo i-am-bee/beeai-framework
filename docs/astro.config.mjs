@@ -133,7 +133,6 @@ export default defineConfig({
         {
           label: "Integrations",
           items: [
-            "integrations/agent-stack",
             "integrations/mcp",
             "integrations/a2a",
             "integrations/acp-zed",

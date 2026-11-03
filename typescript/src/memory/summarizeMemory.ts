@@ -3,12 +3,32 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { AssistantMessage, Message, SystemMessage } from "@/backend/message.js";
+import { AssistantMessage, Message, SystemMessage, ToolMessage } from "@/backend/message.js";
 import { BaseMemory } from "@/memory/base.js";
 import { PromptTemplate } from "@/template.js";
 import { shallowCopy } from "@/serializer/utils.js";
 import { z } from "zod";
 import { ChatModel } from "@/backend/chat.js";
+
+// `message.text` only joins text parts, so tool calls and tool results (how agents store tool use and their
+// final answer) would reach the summarizer as blank lines.
+function formatMessage(message: Message): string {
+  const parts = message.text ? [message.text] : [];
+  if (message instanceof AssistantMessage) {
+    parts.push(
+      ...message
+        .getToolCalls()
+        .map((call) => `[called ${call.toolName}(${JSON.stringify(call.input) ?? ""})]`),
+    );
+  } else if (message instanceof ToolMessage) {
+    parts.push(
+      ...message
+        .getToolResults()
+        .map((result) => `[${result.toolName} returned: ${JSON.stringify(result.output) ?? ""}]`),
+    );
+  }
+  return `${message.role}: ${parts.join(" ")}`;
+}
 
 export interface SummarizeMemoryInput {
   llm: ChatModel;
@@ -63,7 +83,7 @@ export class SummarizeMemory extends BaseMemory {
           }),
         ),
         new AssistantMessage(`New lines of conversation:
-${message.role}: ${message.text}
+${formatMessage(message)}
 
 New summary:
 `),

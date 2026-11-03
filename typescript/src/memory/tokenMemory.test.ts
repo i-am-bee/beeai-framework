@@ -4,7 +4,7 @@
  */
 
 import { TokenMemory } from "@/memory/tokenMemory.js";
-import { Message, UserMessage } from "@/backend/message.js";
+import { AssistantMessage, Message, ToolMessage, UserMessage } from "@/backend/message.js";
 import { verifyDeserialization } from "@tests/e2e/utils.js";
 import { sum } from "remeda";
 
@@ -179,6 +179,106 @@ describe("Token Memory", () => {
   it("Rejects a capacityThreshold above 1", () => {
     expect(() => new TokenMemory({ capacityThreshold: 1.5 })).toThrowError(TypeError);
   });
+
+  const toolExchange = (id: string, result: string) => [
+    new AssistantMessage({
+      type: "tool-call",
+      toolCallId: id,
+      toolName: "fetch",
+      input: { url: "https://example.com" },
+    }),
+    new ToolMessage({
+      type: "tool-result",
+      toolCallId: id,
+      toolName: "fetch",
+      output: { type: "text", value: result },
+    }),
+  ];
+
+  it("Counts tool calls and results against the budget", async () => {
+    const instance = new TokenMemory({ maxTokens: 2000 });
+    for (let i = 0; i < 5; i++) {
+      await instance.addMany([
+        new UserMessage(`fetch page ${i}`),
+        ...toolExchange(`call_${i}`, "x".repeat(4000)),
+      ]);
+    }
+
+    // Each result is ~1000 tokens, so the 1500-token capacity holds one exchange, not all five.
+    expect(instance.tokensUsed).toBeLessThanOrEqual(2000 * 0.75);
+    expect(instance.messages.filter((msg) => msg instanceof ToolMessage)).toHaveLength(1);
+  });
+
+  it("Evicts a tool call together with its result", async () => {
+    const instance = new TokenMemory({ maxTokens: 200 });
+    await instance.addMany(toolExchange("call_1", "x".repeat(200)));
+
+    // Evicting the call alone (~11 tokens) would make room, but the result must not stay behind without it.
+    const question = new UserMessage("y".repeat(340));
+    await instance.add(question);
+
+    expect(instance.messages).toEqual([question]);
+  });
+
+  const toolResult = (id: string, result: string) =>
+    new ToolMessage({
+      type: "tool-result",
+      toolCallId: id,
+      toolName: "fetch",
+      output: { type: "text", value: result },
+    });
+
+  // syncThreshold 2 never syncs, so add() alone decides; the default syncs after each add and replays eviction.
+  it.each([
+    ["add", 2],
+    ["sync", 0.25],
+  ])("Keeps the call of an oversized tool result (%s)", async (_, syncThreshold) => {
+    const instance = new TokenMemory({ maxTokens: 2000, syncThreshold });
+    const [call] = toolExchange("call_1", "");
+    const result = toolResult("call_1", "x".repeat(7200));
+    await instance.addMany([new UserMessage("fetch the page"), call!]);
+
+    // The ~1800-token result exceeds the 1500-token capacity alone; its call stays even though that is over budget.
+    await instance.add(result);
+
+    expect(instance.messages).toEqual([call, result]);
+  });
+
+  it.each([
+    ["add", 2],
+    ["sync", 0.25],
+  ])(
+    "Keeps the call and first result when a second result arrives (%s)",
+    async (_, syncThreshold) => {
+      const instance = new TokenMemory({ maxTokens: 2000, syncThreshold });
+      const call = new AssistantMessage([
+        {
+          type: "tool-call",
+          toolCallId: "call_1",
+          toolName: "fetch",
+          input: { url: "https://example.com/a" },
+        },
+        {
+          type: "tool-call",
+          toolCallId: "call_2",
+          toolName: "fetch",
+          input: { url: "https://example.com/b" },
+        },
+      ]);
+      const first = toolResult("call_1", "x".repeat(2800));
+      const second = toolResult("call_2", "x".repeat(3600));
+      await instance.addMany([new UserMessage("fetch both pages"), call, first]);
+
+      await instance.add(second);
+
+      expect(instance.messages).toEqual([call, first, second]);
+
+      // The next message outside the exchange evicts the whole exchange.
+      const reply = new AssistantMessage("done");
+      await instance.add(reply);
+      expect(instance.messages).toEqual([reply]);
+    },
+  );
 
   it("Serializes", async () => {
     const instance = getInstance({
