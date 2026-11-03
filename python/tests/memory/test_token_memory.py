@@ -3,7 +3,14 @@
 
 import pytest
 
-from beeai_framework.backend import AssistantMessage, SystemMessage, UserMessage
+from beeai_framework.backend import (
+    AssistantMessage,
+    MessageToolCallContent,
+    MessageToolResultContent,
+    SystemMessage,
+    ToolMessage,
+    UserMessage,
+)
 from beeai_framework.memory.errors import ResourceFatalError
 from beeai_framework.memory.token_memory import DEFAULT_MAX_TOKENS, TokenMemory
 
@@ -452,3 +459,80 @@ async def test_clone_preserves_messages_and_handlers() -> None:
     # Mutating the clone must not affect the original.
     await cloned.add(UserMessage("only in clone"))
     assert len(cloned.messages) == len(memory.messages) + 1
+
+
+def _exchange(call_id: str, result: str) -> list[AssistantMessage | ToolMessage]:
+    return [
+        AssistantMessage(MessageToolCallContent(id=call_id, tool_name="fetch", args='{"url": "https://example.com"}')),
+        ToolMessage(MessageToolResultContent(tool_call_id=call_id, tool_name="fetch", result=result)),
+    ]
+
+
+@pytest.mark.asyncio
+@pytest.mark.unit
+async def test_tool_calls_and_results_count_against_the_budget() -> None:
+    memory = TokenMemory(max_tokens=2000)
+    for i in range(5):
+        await memory.add_many([UserMessage(f"fetch page {i}"), *_exchange(f"call_{i}", "x" * 4000)])
+
+    # Each result is ~1000 tokens, so the 1500-token capacity holds one exchange, not all five.
+    assert memory.tokens_used <= 2000 * 0.75
+    assert sum(isinstance(m, ToolMessage) for m in memory.messages) == 1
+
+
+@pytest.mark.asyncio
+@pytest.mark.unit
+async def test_evicts_a_tool_call_with_its_result() -> None:
+    memory = TokenMemory(max_tokens=200)
+    call, result = _exchange("call_1", "x" * 200)
+    await memory.add_many([call, result])
+
+    # Evicting the call alone (~11 tokens) would make room, but the result must not stay behind without it.
+    question = UserMessage("y" * 376)
+    await memory.add(question)
+
+    assert memory.messages == [question]
+
+
+def _result(call_id: str, result: str) -> ToolMessage:
+    return ToolMessage(MessageToolResultContent(tool_call_id=call_id, tool_name="fetch", result=result))
+
+
+# sync_threshold=2 never syncs, so add() alone decides; the default syncs after each add and replays eviction.
+@pytest.mark.asyncio
+@pytest.mark.unit
+@pytest.mark.parametrize("sync_threshold", [2, 0.25], ids=["add", "sync"])
+async def test_oversized_result_keeps_its_call(sync_threshold: float) -> None:
+    memory = TokenMemory(max_tokens=2000, sync_threshold=sync_threshold)
+    call, _ = _exchange("call_1", "")
+    result = _result("call_1", "x" * 7200)
+    await memory.add_many([UserMessage("fetch the page"), call])
+
+    # The ~1800-token result exceeds the 1500-token capacity alone; its call stays even though that is over budget.
+    await memory.add(result)
+
+    assert memory.messages == [call, result]
+
+
+@pytest.mark.asyncio
+@pytest.mark.unit
+@pytest.mark.parametrize("sync_threshold", [2, 0.25], ids=["add", "sync"])
+async def test_second_result_keeps_the_call_and_first_result(sync_threshold: float) -> None:
+    memory = TokenMemory(max_tokens=2000, sync_threshold=sync_threshold)
+    call = AssistantMessage(
+        [
+            MessageToolCallContent(id="call_1", tool_name="fetch", args='{"url": "https://example.com/a"}'),
+            MessageToolCallContent(id="call_2", tool_name="fetch", args='{"url": "https://example.com/b"}'),
+        ]
+    )
+    first, second = _result("call_1", "x" * 2800), _result("call_2", "x" * 3600)
+    await memory.add_many([UserMessage("fetch both pages"), call, first])
+
+    await memory.add(second)
+
+    assert memory.messages == [call, first, second]
+
+    # The next message outside the exchange evicts the whole exchange.
+    reply = AssistantMessage("done")
+    await memory.add(reply)
+    assert memory.messages == [reply]

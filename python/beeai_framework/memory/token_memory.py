@@ -4,7 +4,7 @@
 from math import ceil
 from typing import Any
 
-from beeai_framework.backend.message import AnyMessage
+from beeai_framework.backend.message import AnyMessage, AssistantMessage, ToolMessage
 from beeai_framework.memory.base_memory import BaseMemory
 from beeai_framework.memory.errors import ResourceFatalError
 from beeai_framework.utils.cloneable import Cloneable
@@ -12,8 +12,48 @@ from beeai_framework.utils.cloneable import Cloneable
 DEFAULT_MAX_TOKENS = 128_000
 
 
+def _prompt_text(msg: AnyMessage) -> str:
+    """The text a message puts into the prompt. `msg.text` leaves out tool calls and tool results."""
+    parts = [msg.text]
+    if isinstance(msg, AssistantMessage):
+        parts.extend(f"{call.tool_name}{call.args}" for call in msg.get_tool_calls())
+    elif isinstance(msg, ToolMessage):
+        parts.extend(str(result.result) for result in msg.get_tool_results())
+    return "".join(parts)
+
+
+def _tool_exchange(messages: list[AnyMessage], index: int) -> slice:
+    """Return the span of the tool exchange the message at index belongs to (itself if none).
+
+    An exchange is an assistant message with tool calls followed by the tool messages that answer it. Chat APIs
+    (OpenAI, Anthropic) reject a tool result without its call, so the memory evicts an exchange as a whole.
+    """
+    start = index
+    while start > 0 and isinstance(messages[start], ToolMessage):
+        start -= 1
+    first = messages[start]
+    if not (isinstance(first, AssistantMessage) and first.get_tool_calls()):
+        return slice(index, index + 1)
+    end = start + 1
+    while end < len(messages) and isinstance(messages[end], ToolMessage):
+        end += 1
+    return slice(start, end) if start <= index < end else slice(index, index + 1)
+
+
+def _joined_exchange(messages: list[AnyMessage], position: int, message: AnyMessage) -> list[AnyMessage]:
+    """Return the tool exchange that a tool message inserted at position joins (empty if none).
+
+    These messages must not be evicted to make room for it, or the result would be stored without its call.
+    """
+    if not isinstance(message, ToolMessage) or position == 0:
+        return []
+    exchange = messages[_tool_exchange(messages, position - 1)]
+    first = exchange[0]
+    return exchange if isinstance(first, AssistantMessage) and first.get_tool_calls() else []
+
+
 def simple_estimate(msg: AnyMessage) -> int:
-    return ceil(len(msg.text) / 4)
+    return ceil(len(_prompt_text(msg)) / 4)
 
 
 def simple_tokenize(msgs: list[AnyMessage]) -> int:
@@ -51,7 +91,7 @@ class TokenMemory(BaseMemory):
 
     @staticmethod
     def _default_estimate(msg: AnyMessage) -> int:
-        return int((len(msg.role) + len(msg.text)) / 4)
+        return int((len(msg.role) + len(_prompt_text(msg))) / 4)
 
     def _get_message_key(self, message: AnyMessage) -> str:
         """Generate a unique key for a message instance.
@@ -118,12 +158,15 @@ class TokenMemory(BaseMemory):
             self._messages.clear()
             for msg in messages:
                 tokens = counts[self._get_message_key(msg)]
+                joined = _joined_exchange(self._messages, len(self._messages), msg)
                 while self._messages and used > capacity - tokens:
                     message_to_delete = self.handlers["removal_selector"](self._messages)
-                    deleted = await self.delete(message_to_delete) if message_to_delete is not None else False
+                    if any(m is message_to_delete for m in joined):
+                        break  # over budget until the exchange is complete, rather than strand the result
+                    deleted = await self._evict(message_to_delete) if message_to_delete is not None else []
                     if not deleted:
                         raise ResourceFatalError('The "removal_selector" handler must return a valid message!')
-                    used -= counts.get(self._get_message_key(message_to_delete), 0)
+                    used -= sum(counts.get(self._get_message_key(m), 0) for m in deleted)
                 self._messages.append(msg)
                 used += tokens
         except Exception:
@@ -157,9 +200,13 @@ class TokenMemory(BaseMemory):
             # Evict existing messages until the incoming one fits within the configured
             # capacity budget (the absolute limit scaled by capacity_threshold).
             capacity = self._max_tokens * self._threshold
+            position = len(self._messages) if index is None else max(0, min(index, len(self._messages)))
+            joined = _joined_exchange(self._messages, position, message)
             while self._messages and self.tokens_used > capacity - estimated_tokens:
                 message_to_delete = self.handlers["removal_selector"](self._messages)
-                deleted = await self.delete(message_to_delete) if message_to_delete is not None else False
+                if any(m is message_to_delete for m in joined):
+                    break  # over budget until the exchange is complete, rather than strand the result
+                deleted = await self._evict(message_to_delete) if message_to_delete is not None else []
                 if not deleted:
                     raise ResourceFatalError('The "removal_selector" handler must return a valid message!')
 
@@ -178,6 +225,17 @@ class TokenMemory(BaseMemory):
         except Exception:
             self._restore(messages, tokens_by_message)
             raise
+
+    async def _evict(self, message: AnyMessage) -> list[AnyMessage]:
+        """Delete a message chosen by the removal selector together with the rest of its tool exchange."""
+        try:
+            index = self._messages.index(message)
+        except ValueError:
+            return []
+        exchange = self._messages[_tool_exchange(self._messages, index)]
+        for msg in exchange:
+            await self.delete(msg)
+        return exchange
 
     async def delete(self, message: AnyMessage) -> bool:
         try:
