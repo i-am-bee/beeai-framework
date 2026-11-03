@@ -24,7 +24,45 @@ export interface MCPToolInput {
   tool: ListToolsResult["tools"][number];
 }
 
-export class MCPToolOutput extends JSONToolOutput<any> {}
+function placeholder(data: string, mimeType?: string) {
+  return `<${Math.floor((data.length * 3) / 4)} bytes of ${mimeType || "binary data"} omitted>`;
+}
+
+function omitBinary(input: unknown): unknown {
+  if (Array.isArray(input)) {
+    return input.map(omitBinary);
+  }
+  if (!isPlainObject(input)) {
+    return input;
+  }
+  const value = input as Record<string, any>;
+  if ((value.type === "image" || value.type === "audio") && typeof value.data === "string") {
+    return { ...value, data: placeholder(value.data, value.mimeType) };
+  }
+  if (value.type === "resource" && typeof value.resource?.blob === "string") {
+    return {
+      ...value,
+      resource: {
+        ...value.resource,
+        blob: placeholder(value.resource.blob, value.resource.mimeType),
+      },
+    };
+  }
+  if (Array.isArray(value.content)) {
+    return { ...value, content: omitBinary(value.content) };
+  }
+  return value;
+}
+
+export class MCPToolOutput extends JSONToolOutput<any> {
+  /**
+   * Keeps the full MCP result in `result`, but leaves base64 payloads (images, audio, blob resources)
+   * out of the text sent to the model, which cannot read them and would spend its context on them.
+   */
+  getTextContent(): string {
+    return JSON.stringify(omitBinary(this.result));
+  }
+}
 
 export class MCPTool extends Tool<MCPToolOutput> {
   public readonly name: string;
