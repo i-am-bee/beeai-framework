@@ -213,8 +213,11 @@ class Tool(Generic[TInput, TRunOptions, TOutput], ABC):
 # this method was inspired by the discussion that was had in this issue:
 # https://github.com/pydantic/pydantic/issues/1391
 @typing.no_type_check
-def get_input_schema(tool_function: Callable, *, name: str | None = None) -> type[BaseModel]:
+def get_input_schema(
+    tool_function: Callable, *, name: str | None = None, exclude: set[str] | None = None
+) -> type[BaseModel]:
     input_model_name = name or tool_function.__name__
+    excluded = exclude or set()
 
     args, _, varkw, defaults, kwonlyargs, kwonlydefaults, annotations = inspect.getfullargspec(tool_function)
     defaults = defaults or []
@@ -229,9 +232,15 @@ def get_input_schema(tool_function: Callable, *, name: str | None = None) -> typ
         ] * non_default_args + defaults
 
     keyword_only_params = {
-        param: (annotations.get(param, Any), (kwonlydefaults or {}).get(param, ...)) for param in kwonlyargs
+        param: (annotations.get(param, Any), (kwonlydefaults or {}).get(param, ...))
+        for param in kwonlyargs
+        if param not in excluded
     }
-    params = {param: (annotations.get(param, Any), default) for param, default in zip(args, defaults, strict=False)}
+    params = {
+        param: (annotations.get(param, Any), default)
+        for param, default in zip(args, defaults, strict=False)
+        if param not in excluded
+    }
 
     input_model = create_model(
         input_model_name,
@@ -284,7 +293,7 @@ def tool(
     def create_tool(fn: TFunction) -> AnyTool:
         tool_name = name or fn.__name__
         tool_description = description or inspect.getdoc(fn)
-        tool_input = input_schema or get_input_schema(fn)
+        tool_input = input_schema or get_input_schema(fn, exclude={"context"} if with_context else None)
 
         if tool_description is None:
             raise ValueError("No tool description provided.")
