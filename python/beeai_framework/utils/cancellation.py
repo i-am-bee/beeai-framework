@@ -2,8 +2,8 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import asyncio
-import contextlib
 from collections.abc import Awaitable, Callable
+from dataclasses import dataclass
 from typing import TypeVar
 
 from pydantic import BaseModel
@@ -13,12 +13,17 @@ from beeai_framework.errors import AbortError
 T = TypeVar("T")
 
 
+@dataclass(eq=False)
+class _AbortListener:
+    callback: Callable[[], None]
+
+
 class AbortSignal(BaseModel):
     def __init__(self) -> None:
         super().__init__()
         self._aborted = False
         self._reason: str | None = None
-        self._listeners: list[Callable[[], None]] = []
+        self._listeners: list[_AbortListener] = []
 
     @property
     def aborted(self) -> bool:
@@ -29,17 +34,21 @@ class AbortSignal(BaseModel):
         return self._reason or "Action has been aborted"
 
     def add_event_listener(self, callback: Callable[[], None]) -> None:
-        self._listeners.append(callback)
+        self._listeners.append(_AbortListener(callback))
 
     def remove_event_listener(self, callback: Callable[[], None]) -> None:
-        with contextlib.suppress(ValueError):
-            self._listeners.remove(callback)
+        for index, listener in enumerate(self._listeners):
+            if listener.callback is callback or listener.callback == callback:
+                self._listeners.pop(index)
+                break
 
     def _abort(self, reason: str | None = None) -> None:
         self._aborted = True
         self._reason = reason
-        for callback in self._listeners:
-            callback()
+        # Cleanup may remove registrations while dispatching; new ones wait for the next abort.
+        for listener in self._listeners.copy():
+            if listener in self._listeners:
+                listener.callback()
 
     @classmethod
     def timeout(cls, duration: float) -> "AbortSignal":
