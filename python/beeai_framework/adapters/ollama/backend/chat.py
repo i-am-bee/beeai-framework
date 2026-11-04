@@ -41,6 +41,7 @@ class OllamaChatModel(LiteLLMChatModel):
         self._assert_setting_value(
             "base_url", base_url, envs=["OLLAMA_API_BASE"], fallback="http://localhost:11434", aliases=["api_base"]
         )
+        self._settings["base_url"] = self._settings["base_url"].rstrip("/")
         if not self._settings["base_url"].endswith("/v1"):
             self._settings["base_url"] += "/v1"
 
