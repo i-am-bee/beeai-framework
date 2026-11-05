@@ -28,6 +28,7 @@ from beeai_framework.adapters.litellm.chat import (
     LiteLLMChatModel,
     _parse_timeout_env,
 )
+from beeai_framework.adapters.vertexai.backend.chat import VertexAIChatModel
 from beeai_framework.backend.constants import ProviderName
 from beeai_framework.backend.message import (
     AssistantMessage,
@@ -746,3 +747,75 @@ class TestClonePromptCaching:
 
         assert cloned.allow_prompt_caching is allow_prompt_caching
         assert ("cache_control_injection_points" in captured) is allow_prompt_caching
+
+
+class TestClaudeOnCloudProvidersImplicitTemperature:
+    """Claude on Bedrock and Vertex rejects `temperature` next to `top_p` just like the Anthropic API."""
+
+    @staticmethod
+    def _bedrock(model_id: str, **kwargs: Any) -> AmazonBedrockChatModel:
+        return AmazonBedrockChatModel(model_id, access_key_id="k", secret_access_key="s", region="us-east-1", **kwargs)
+
+    @staticmethod
+    def _vertex(model_id: str, **kwargs: Any) -> VertexAIChatModel:
+        return VertexAIChatModel(model_id, project="p", location="us-east5", **kwargs)
+
+    @staticmethod
+    async def _captured_request(model: Any, **run_kwargs: Any) -> dict[str, Any]:
+        captured: dict[str, Any] = {}
+        monkeypatch = pytest.MonkeyPatch()
+        monkeypatch.setattr(
+            "beeai_framework.adapters.litellm.chat.acompletion",
+            TestStopSequences._capturing_acompletion(captured),
+        )
+        try:
+            await model.run([UserMessage("hi")], **run_kwargs)
+        finally:
+            monkeypatch.undo()
+        return captured
+
+    @pytest.mark.unit
+    @pytest.mark.asyncio
+    @pytest.mark.parametrize(
+        "make_model",
+        [
+            lambda: TestClaudeOnCloudProvidersImplicitTemperature._bedrock("anthropic.claude-sonnet-4-5-v1:0"),
+            lambda: TestClaudeOnCloudProvidersImplicitTemperature._vertex("claude-sonnet-4-5"),
+        ],
+    )
+    async def test_top_p_drops_the_implicit_temperature(self, make_model: Any) -> None:
+        captured = await self._captured_request(make_model(), top_p=0.9)
+
+        assert "temperature" not in captured
+        assert captured["top_p"] == 0.9
+
+    @pytest.mark.unit
+    @pytest.mark.asyncio
+    async def test_explicit_temperature_is_kept(self) -> None:
+        captured = await self._captured_request(
+            self._bedrock("anthropic.claude-sonnet-4-5-v1:0"), temperature=0.3, top_p=0.9
+        )
+
+        assert captured["temperature"] == 0.3
+
+    @pytest.mark.unit
+    @pytest.mark.asyncio
+    async def test_temperature_passed_in_model_parameters_is_kept(self) -> None:
+        model = self._bedrock("anthropic.claude-sonnet-4-5-v1:0", parameters=ChatModelParameters(temperature=0.4))
+        captured = await self._captured_request(model, top_p=0.9)
+
+        assert captured["temperature"] == 0.4
+
+    @pytest.mark.unit
+    @pytest.mark.asyncio
+    async def test_temperature_is_still_sent_by_default(self) -> None:
+        captured = await self._captured_request(self._bedrock("anthropic.claude-sonnet-4-5-v1:0"))
+
+        assert captured["temperature"] == 0
+
+    @pytest.mark.unit
+    @pytest.mark.asyncio
+    async def test_non_claude_models_keep_the_implicit_temperature(self) -> None:
+        captured = await self._captured_request(self._bedrock("meta.llama3-70b-instruct-v1:0"), top_p=0.9)
+
+        assert captured["temperature"] == 0
