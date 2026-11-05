@@ -24,6 +24,7 @@ ProviderName = Literal[
     "deepseek",
     "qwen",
     "minimax",
+    "nvidia",
 ]
 ProviderHumanName = Literal[
     "BeeAI",
@@ -44,6 +45,7 @@ ProviderHumanName = Literal[
     "Deepseek",
     "Qwen",
     "MiniMax",
+    "NVIDIA",
 ]
 
 ModelTypes = Literal["embedding", "chat"]
@@ -95,4 +97,5 @@ BackendProviders = {
     "Deepseek": ProviderDef(name="Deepseek", module="deepseek", aliases=["deepseek"]),
     "Qwen": ProviderDef(name="Qwen", module="qwen", aliases=["qwen", "dashscope"]),
     "MiniMax": ProviderDef(name="MiniMax", module="minimax", aliases=["minimax"]),
+    "NVIDIA": ProviderDef(name="NVIDIA", module="nvidia", aliases=["nvidia"]),
 }
