@@ -38,6 +38,7 @@ The following table depicts supported providers. Each provider requires specific
 | MistralAI      |  ✅  | ✅        | MISTRALAI_CHAT_MODEL<br/>MISTRALAI_EMBEDDING_MODEL<br />**MISTRALAI_API_KEY**<br />MISTRALAI_API_BASE |
 | Transformers   |  ✅  | ✅        | TRANSFORMERS_CHAT_MODEL<br/>HF_TOKEN|
 | MiniMax        |  ✅  | ❌        | MINIMAX_CHAT_MODEL<br/>**MINIMAX_API_KEY**<br/>MINIMAX_API_BASE<br/>MINIMAX_API_REGION<br/>MINIMAX_API_HEADERS |
+| NVIDIA         |  ✅  | ❌        | NVIDIA_CHAT_MODEL<br/>**NVIDIA_API_KEY**<br/>NVIDIA_API_BASE<br/>NVIDIA_API_HEADERS |
 
 <Tip>
 If you don't see your provider raise an issue [here](https://github.com/i-am-bee/beeai-framework/issues).
@@ -55,6 +56,12 @@ or [TypeScript](https://github.com/i-am-bee/beeai-framework/blob/main/typescript
 	MiniMax defaults to `MiniMax-M3`; `MiniMax-M3.1-Flash` is also available by explicit model ID. Explicit model IDs and `MINIMAX_CHAT_MODEL` overrides, including legacy and custom IDs, are preserved.
 
 	MiniMax serves the same API from two regional gateways. Select one with `MINIMAX_API_REGION` (or the `region` option): `global` (default, `https://api.minimax.io/v1`) or `cn` (`https://api.minimaxi.com/v1`). An explicit `MINIMAX_API_BASE` / `base_url` always takes precedence, so you no longer have to look up and type the regional URL by hand.
+</Note>
+
+<Note>
+	NVIDIA defaults to `nvidia/nemotron-3.5-super-vl-120b-a12b`; `nvidia/nemotron-3.5-lightning-30b-a3b` and `nvidia/nemotron-3.5-bolt-e4b` are also available by explicit model ID. Explicit model IDs and `NVIDIA_CHAT_MODEL` overrides are preserved.
+
+	Requests go to the NVIDIA API catalog (`https://integrate.api.nvidia.com/v1`) by default. Set `NVIDIA_API_BASE` (or the `base_url` option) to use a self-hosted NIM endpoint instead.
 </Note>
 
 ---
