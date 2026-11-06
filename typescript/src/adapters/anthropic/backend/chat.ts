@@ -7,7 +7,7 @@ import { VercelChatModel } from "@/adapters/vercel/backend/chat.js";
 import { AnthropicClient, AnthropicClientSettings } from "@/adapters/anthropic/backend/client.js";
 import { getEnv } from "@/internals/env.js";
 import { AnthropicProvider } from "@ai-sdk/anthropic";
-import { ChatModelParameters } from "@/backend/chat.js";
+import { ChatModelInput, ChatModelParameters } from "@/backend/chat.js";
 
 type AnthropicParameters = Parameters<AnthropicProvider["languageModel"]>;
 export type AnthropicChatModelId = NonNullable<AnthropicParameters[0]>;
@@ -21,6 +21,15 @@ export class AnthropicChatModel extends VercelChatModel {
     const model = AnthropicClient.ensure(client).instance.languageModel(modelId);
     super(model);
     Object.assign(this.parameters, parameters ?? {});
+  }
+
+  protected async transformInput(input: ChatModelInput) {
+    const transformed = await super.transformInput(input);
+    // Anthropic's AI SDK adapter ignores topP when temperature is set.
+    // Override the framework default, but preserve a temperature chosen by the caller.
+    return transformed.topP !== undefined && transformed.temperature === undefined
+      ? { ...transformed, temperature: undefined }
+      : transformed;
   }
 
   static {
