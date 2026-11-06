@@ -50,12 +50,14 @@ from beeai_framework.backend.types import (
     ChatModelCost,
     ChatModelInput,
     ChatModelOutput,
+    ChatModelParameters,
     ChatModelUsage,
 )
 from beeai_framework.context import RunContext
 from beeai_framework.logger import Logger
 from beeai_framework.tools.tool import AnyTool, Tool
 from beeai_framework.utils.dicts import exclude_keys, exclude_none, include_keys, set_attr_if_none
+from beeai_framework.utils.models import update_model
 from beeai_framework.utils.strings import is_valid_unicode_escape_sequence, to_json
 
 logger = Logger(__name__)
@@ -116,6 +118,25 @@ class LiteLLMChatModel(ChatModel, ABC):
         litellm.drop_params = True
         # disable LiteLLM caching in favor of our own
         litellm.disable_cache()
+
+    def _unset_implicit_temperature(self, kwargs: ChatModelKwargs) -> None:
+        """Forget the `temperature=0` default, keeping a temperature the caller passed in `parameters`."""
+        parameters = ChatModelParameters()
+        update_model(parameters, sources=[kwargs.get("parameters")])
+        self.parameters = parameters
+
+    def _drop_implicit_temperature(self, input: ChatModelInput, params: dict[str, Any]) -> None:
+        """Remove a `temperature` nobody asked for when the request also sets `top_p`, `reasoning_effort` or `thinking`.
+
+        Anthropic models reject `temperature` next to `top_p` and require 1 when thinking is on.
+        """
+        temperature_is_explicit = (
+            "temperature" in input.model_fields_set
+            or "temperature" in self.parameters.model_fields_set
+            or "temperature" in self._settings
+        )
+        if not temperature_is_explicit and any(key in params for key in ("top_p", "reasoning_effort", "thinking")):
+            params.pop("temperature", None)
 
     async def _create(
         self,
