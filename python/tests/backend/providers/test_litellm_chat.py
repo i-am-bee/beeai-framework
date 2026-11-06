@@ -791,6 +791,21 @@ class TestClaudeOnCloudProvidersImplicitTemperature:
 
     @pytest.mark.unit
     @pytest.mark.asyncio
+    @pytest.mark.parametrize(
+        "make_model",
+        [
+            lambda: TestClaudeOnCloudProvidersImplicitTemperature._bedrock("anthropic.claude-sonnet-4-5-v1:0"),
+            lambda: TestClaudeOnCloudProvidersImplicitTemperature._vertex("claude-sonnet-4-5"),
+        ],
+    )
+    async def test_reasoning_effort_drops_the_implicit_temperature(self, make_model: Any) -> None:
+        captured = await self._captured_request(make_model(), reasoning_effort="low")
+
+        assert "temperature" not in captured
+        assert captured["reasoning_effort"] == "low"
+
+    @pytest.mark.unit
+    @pytest.mark.asyncio
     async def test_explicit_temperature_is_kept(self) -> None:
         captured = await self._captured_request(
             self._bedrock("anthropic.claude-sonnet-4-5-v1:0"), temperature=0.3, top_p=0.9
