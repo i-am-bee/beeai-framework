@@ -150,3 +150,14 @@ def test_transform_output_reports_the_finish_reason(response_metadata: dict[str,
     output = model._transform_output({"output": message, "output_structured": None})  # type: ignore[typeddict-item]
 
     assert output.finish_reason == expected
+
+
+class _NamedFakeChatModel(GenericFakeChatModel):
+    model: str = "granite4:latest"
+
+
+@pytest.mark.unit
+def test_model_id_uses_the_model_attribute() -> None:
+    model = LangChainChatModel(_NamedFakeChatModel(messages=iter([])))
+
+    assert model.model_id == "granite4:latest"
