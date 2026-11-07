@@ -9,6 +9,7 @@ import a2a.server.agent_execution as a2a_agent_execution
 import a2a.server.events as a2a_events
 import a2a.types as a2a_types
 import pytest
+from a2a.server.context import ServerCallContext
 from a2a.server.request_handlers import DefaultRequestHandler
 from a2a.server.tasks import InMemoryTaskStore
 
@@ -18,7 +19,7 @@ from beeai_framework.agents import AgentExecutionConfig
 from beeai_framework.agents.react import ReActAgent
 from beeai_framework.agents.requirement import RequirementAgent
 from beeai_framework.agents.tool_calling import ToolCallingAgent
-from beeai_framework.backend import AnyMessage, AssistantMessage
+from beeai_framework.backend import AnyMessage, AssistantMessage, MessageTextContent, MessageToolCallContent
 from beeai_framework.emitter import Emitter
 from beeai_framework.errors import AbortError
 from beeai_framework.memory import UnconstrainedMemory
@@ -54,32 +55,41 @@ def make_executor(agent: Any, metadata: A2AServerMetadata | None = None) -> Any:
     return factory(agent, metadata=server._metadata_by_agent[agent], memory_manager=memory_manager)  # type: ignore[call-arg]
 
 
-def make_context(task_id: str = "task") -> a2a_agent_execution.RequestContext:
-    message = a2a_types.Message(
-        message_id=f"message-{task_id}",
-        role=a2a_types.Role.user,
-        parts=[a2a_types.Part(root=a2a_types.TextPart(text="Check Prague weather"))],
-    )
+def make_message(text: str = "Check Prague weather", message_id: str = "message-task") -> a2a_types.Message:
+    return a2a_types.Message(message_id=message_id, role=a2a_types.Role.ROLE_USER, parts=[a2a_types.Part(text=text)])
+
+
+def make_context(task_id: str = "task", task: a2a_types.Task | None = None) -> a2a_agent_execution.RequestContext:
     return a2a_agent_execution.RequestContext(
-        request=a2a_types.MessageSendParams(message=message), task_id=task_id, context_id=f"context-{task_id}"
+        call_context=ServerCallContext(),
+        request=a2a_types.SendMessageRequest(message=make_message(message_id=f"message-{task_id}")),
+        task_id=task_id,
+        context_id=f"context-{task_id}",
+        task=task,
     )
 
 
-async def drain_status_events(queue: a2a_events.EventQueue) -> list[a2a_types.TaskStatusUpdateEvent]:
-    events: list[a2a_types.TaskStatusUpdateEvent] = []
-    while not queue.queue.empty():
-        event = await queue.dequeue_event(no_wait=True)
-        if isinstance(event, a2a_types.TaskStatusUpdateEvent):
-            events.append(event)
-    return events
+class RecordingQueue(a2a_events.EventQueue):
+    """Keeps the enqueued events, a2a-sdk 1.x builds its own queues only inside the request handler."""
+
+    def __init__(self) -> None:
+        self.events: list[a2a_events.Event] = []
+
+    async def enqueue_event(self, event: a2a_events.Event) -> None:
+        self.events.append(event)
+
+
+def status_events(queue: RecordingQueue) -> list[a2a_types.Task | a2a_types.TaskStatusUpdateEvent]:
+    # the initial Task carries the submitted state, which a2a-sdk 0.3 sent as a status update
+    return [event for event in queue.events if isinstance(event, a2a_types.Task | a2a_types.TaskStatusUpdateEvent)]
 
 
 async def invoke(agent: Any, metadata: A2AServerMetadata) -> a2a_types.TaskStatus:
     executor = make_executor(agent, metadata)
-    queue = a2a_events.EventQueue()
+    queue = RecordingQueue()
     await executor.execute(make_context(), queue)
 
-    events = await drain_status_events(queue)
+    events = status_events(queue)
     assert events
     return events[-1].status
 
@@ -89,15 +99,15 @@ async def invoke(agent: Any, metadata: A2AServerMetadata) -> a2a_types.TaskStatu
 async def test_defaults_and_successful_execution(agent_type: type, config: AgentExecutionConfig | None) -> None:
     metadata: A2AServerMetadata = {} if config is None else {"execution": config}
     status = await invoke(make_agent(agent_type), metadata)
-    assert status.state == a2a_types.TaskState.completed
+    assert status.state == a2a_types.TaskState.TASK_STATE_COMPLETED
 
 
 @pytest.mark.parametrize("agent_type", AGENTS)
 async def test_iteration_limit_changes_hosted_behavior(agent_type: type) -> None:
     status = await invoke(make_agent(agent_type), {"execution": AgentExecutionConfig(max_iterations=1)})
-    assert status.state == a2a_types.TaskState.failed
-    assert status.message is not None
-    assert "iterations" in status.message.parts[0].root.text  # type: ignore[union-attr]
+    assert status.state == a2a_types.TaskState.TASK_STATE_FAILED
+    assert status.HasField("message")
+    assert "iterations" in status.message.parts[0].text
 
 
 @pytest.mark.parametrize("agent_type", AGENTS)
@@ -114,7 +124,7 @@ async def test_only_configured_fields_are_forwarded(
 
     monkeypatch.setattr(agent_type, "run", capture)
     status = await invoke(make_agent(agent_type), {"execution": AgentExecutionConfig(**{field: value})})
-    assert status.state == a2a_types.TaskState.failed
+    assert status.state == a2a_types.TaskState.TASK_STATE_FAILED
     assert len(captured) == 1
     captured[0].pop("signal")
     assert captured[0] == ({} if value is None else {field: value})
@@ -123,23 +133,23 @@ async def test_only_configured_fields_are_forwarded(
 @pytest.mark.parametrize("agent_type", AGENTS)
 async def test_cancel_emits_canceled_status(agent_type: type) -> None:
     executor = make_executor(make_agent(agent_type))
-    queue = a2a_events.EventQueue()
+    queue = RecordingQueue()
     await executor.cancel(make_context(), queue)
 
-    events = await drain_status_events(queue)
-    assert [(event.status.state, event.final) for event in events] == [(a2a_types.TaskState.canceled, True)]
+    events = status_events(queue)
+    assert [event.status.state for event in events] == [a2a_types.TaskState.TASK_STATE_CANCELED]
 
 
 @pytest.mark.parametrize("agent_type", AGENTS)
 async def test_cancel_does_not_abort_later_tasks(agent_type: type) -> None:
     executor = make_executor(make_agent(agent_type))
-    await executor.cancel(make_context("canceled-task"), a2a_events.EventQueue())
+    await executor.cancel(make_context("canceled-task"), RecordingQueue())
 
-    queue = a2a_events.EventQueue()
+    queue = RecordingQueue()
     await executor.execute(make_context("next-task"), queue)
 
-    events = await drain_status_events(queue)
-    assert events[-1].status.state == a2a_types.TaskState.completed
+    events = status_events(queue)
+    assert events[-1].status.state == a2a_types.TaskState.TASK_STATE_COMPLETED
 
 
 @pytest.mark.parametrize("agent_type", AGENTS)
@@ -156,7 +166,7 @@ async def test_cancel_aborts_only_the_canceled_task(agent_type: type, monkeypatc
     monkeypatch.setattr(ScriptedChatModel, "_create", blocked_create)
     executor = make_executor(make_agent(agent_type))
 
-    queues = {task_id: a2a_events.EventQueue() for task_id in ("task-a", "task-b")}
+    queues = {task_id: RecordingQueue() for task_id in ("task-a", "task-b")}
     running = []
     for task_id, queue in queues.items():
         started.clear()
@@ -167,11 +177,15 @@ async def test_cancel_aborts_only_the_canceled_task(agent_type: type, monkeypatc
     release.set()
     await asyncio.gather(*running)
 
-    canceled = [event.status.state for event in await drain_status_events(queues["task-a"])]
-    assert canceled == [a2a_types.TaskState.submitted, a2a_types.TaskState.working, a2a_types.TaskState.canceled]
-    completed = [event.status.state for event in await drain_status_events(queues["task-b"])]
-    assert completed[-1] == a2a_types.TaskState.completed
-    assert a2a_types.TaskState.canceled not in completed
+    canceled = [event.status.state for event in status_events(queues["task-a"])]
+    assert canceled == [
+        a2a_types.TaskState.TASK_STATE_SUBMITTED,
+        a2a_types.TaskState.TASK_STATE_WORKING,
+        a2a_types.TaskState.TASK_STATE_CANCELED,
+    ]
+    completed = [event.status.state for event in status_events(queues["task-b"])]
+    assert completed[-1] == a2a_types.TaskState.TASK_STATE_COMPLETED
+    assert a2a_types.TaskState.TASK_STATE_CANCELED not in completed
 
 
 @pytest.mark.parametrize("agent_type", AGENTS)
@@ -187,36 +201,42 @@ async def test_cancel_reaches_streaming_subscribers(agent_type: type, monkeypatc
 
     monkeypatch.setattr(ScriptedChatModel, "_create", blocked_create)
     executor = make_executor(make_agent(agent_type))
-    handler = DefaultRequestHandler(agent_executor=executor, task_store=InMemoryTaskStore())
+    handler = DefaultRequestHandler(
+        agent_executor=executor, task_store=InMemoryTaskStore(), agent_card=executor.agent_card
+    )
 
     task_ids: list[str] = []
     states: list[a2a_types.TaskState] = []
 
     async def subscribe() -> None:
-        message = a2a_types.Message(
-            message_id="message-stream",
-            role=a2a_types.Role.user,
-            parts=[a2a_types.Part(root=a2a_types.TextPart(text="Check Prague weather"))],
-        )
-        async for event in handler.on_message_send_stream(a2a_types.MessageSendParams(message=message)):
-            if isinstance(event, a2a_types.TaskStatusUpdateEvent):
+        request = a2a_types.SendMessageRequest(message=make_message(message_id="message-stream"))
+        async for event in handler.on_message_send_stream(request, ServerCallContext()):
+            if isinstance(event, a2a_types.Task):
+                task_ids.append(event.id)
+                states.append(event.status.state)
+            elif isinstance(event, a2a_types.TaskStatusUpdateEvent):
                 task_ids.append(event.task_id)
                 states.append(event.status.state)
 
     stream = asyncio.create_task(subscribe())
     try:
         await asyncio.wait_for(started.wait(), timeout=5)
-        task = await handler.on_cancel_task(a2a_types.TaskIdParams(id=task_ids[0]))
+        task = await handler.on_cancel_task(a2a_types.CancelTaskRequest(id=task_ids[0]), ServerCallContext())
         assert task is not None
-        assert task.status.state == a2a_types.TaskState.canceled
+        assert task.status.state == a2a_types.TaskState.TASK_STATE_CANCELED
         await asyncio.wait_for(stream, timeout=2)
     finally:
         release.set()
         stream.cancel()
         with contextlib.suppress(asyncio.CancelledError):
             await stream
+        await handler.aclose()
 
-    assert states == [a2a_types.TaskState.submitted, a2a_types.TaskState.working, a2a_types.TaskState.canceled]
+    assert states == [
+        a2a_types.TaskState.TASK_STATE_SUBMITTED,
+        a2a_types.TaskState.TASK_STATE_WORKING,
+        a2a_types.TaskState.TASK_STATE_CANCELED,
+    ]
 
 
 @pytest.mark.parametrize("agent_type", AGENTS)
@@ -233,15 +253,18 @@ async def test_cancel_during_setup_emits_only_canceled(agent_type: type, monkeyp
     monkeypatch.setattr(base_a2a_agent_executor, "init_agent_memory", blocked_init_agent_memory)
     executor = make_executor(make_agent(agent_type))
 
-    queue = a2a_events.EventQueue()
+    queue = RecordingQueue()
     running = asyncio.create_task(executor.execute(make_context(), queue))
     await started.wait()
     await executor.cancel(make_context(), queue)
     release.set()
     await running
 
-    events = await drain_status_events(queue)
-    assert [event.status.state for event in events] == [a2a_types.TaskState.submitted, a2a_types.TaskState.canceled]
+    events = status_events(queue)
+    assert [event.status.state for event in events] == [
+        a2a_types.TaskState.TASK_STATE_SUBMITTED,
+        a2a_types.TaskState.TASK_STATE_CANCELED,
+    ]
 
 
 @pytest.mark.parametrize("agent_type", AGENTS)
@@ -251,7 +274,58 @@ async def test_abort_not_requested_by_cancel_fails_the_task(agent_type: type, mo
 
     monkeypatch.setattr(ScriptedChatModel, "_create", aborted_create)
     status = await invoke(make_agent(agent_type), {})
-    assert status.state == a2a_types.TaskState.failed
+    assert status.state == a2a_types.TaskState.TASK_STATE_FAILED
+
+
+@pytest.mark.parametrize("agent_type", AGENTS)
+async def test_new_task_is_enqueued_before_its_updates(agent_type: type) -> None:
+    executor = make_executor(make_agent(agent_type))
+    queue = RecordingQueue()
+    await executor.execute(make_context(), queue)
+
+    task = queue.events[0]
+    assert isinstance(task, a2a_types.Task)
+    assert [message.message_id for message in task.history] == ["message-task"]
+
+
+@pytest.mark.parametrize("agent_type", AGENTS)
+async def test_follow_up_message_reaches_the_agent(agent_type: type, monkeypatch: pytest.MonkeyPatch) -> None:
+    captured: list[list[AnyMessage]] = []
+
+    def capture(self: Any, input: list[AnyMessage], *args: Any, **kwargs: Any) -> Any:
+        captured.append(input)
+        raise RuntimeError("captured run input")
+
+    monkeypatch.setattr(agent_type, "run", capture)
+    task = a2a_types.Task(
+        id="task",
+        context_id="context-task",
+        status=a2a_types.TaskStatus(state=a2a_types.TaskState.TASK_STATE_INPUT_REQUIRED),
+        history=[make_message("Check the weather", message_id="message-first")],
+    )
+    await make_executor(make_agent(agent_type)).execute(make_context(task=task), RecordingQueue())
+
+    assert [message.text for message in captured[0]] == ["Check the weather", "Check Prague weather"]
+
+
+@pytest.mark.parametrize("agent_type", [RequirementAgent, ToolCallingAgent])
+async def test_trajectory_sends_text_as_text_parts(agent_type: type) -> None:
+    tool_call = MessageToolCallContent(id="call_1", tool_name="weather_tool", args='{"city": "Prague"}')
+    responses: list[list[AnyMessage]] = [
+        [AssistantMessage([MessageTextContent(text="Checking the weather"), tool_call])],
+        [final_answer_message("sunny in Prague")],
+    ]
+    agent = agent_type(llm=ScriptedChatModel(responses), tools=[weather_tool], memory=UnconstrainedMemory())
+    queue = RecordingQueue()
+    await make_executor(agent, {"send_trajectory": True}).execute(make_context(), queue)
+
+    parts = next(
+        event.status.message.parts
+        for event in queue.events
+        if isinstance(event, a2a_types.TaskStatusUpdateEvent) and event.status.message.parts
+    )
+    assert [part.WhichOneof("content") for part in parts] == ["text", "data"]
+    assert parts[0].text == "Checking the weather"
 
 
 class Echo(Runnable[RunnableOutput]):
@@ -283,7 +357,7 @@ async def test_runnable_cancel_during_setup_skips_the_run(monkeypatch: pytest.Mo
 
     monkeypatch.setattr(executor._memory_manager, "get", blocked_get_memory)
 
-    queue = a2a_events.EventQueue()
+    queue = RecordingQueue()
     running = asyncio.create_task(executor.execute(make_context(), queue))
     await started.wait()
     await executor.cancel(make_context(), queue)
@@ -291,8 +365,7 @@ async def test_runnable_cancel_during_setup_skips_the_run(monkeypatch: pytest.Mo
     await running
 
     assert runnable.calls == 0
-    events = [await queue.dequeue_event(no_wait=True) for _ in range(queue.queue.qsize())]
-    assert [type(event) for event in events] == [a2a_types.TaskStatusUpdateEvent]
+    assert [type(event) for event in queue.events] == [a2a_types.TaskStatusUpdateEvent]
 
 
 class TimedOut(Runnable[RunnableOutput]):
@@ -307,12 +380,12 @@ class TimedOut(Runnable[RunnableOutput]):
 
 async def test_runnable_abort_not_requested_by_cancel_is_reported() -> None:
     executor = make_executor(TimedOut())
-    queue = a2a_events.EventQueue()
+    queue = RecordingQueue()
     await executor.execute(make_context(), queue)
 
-    event = await queue.dequeue_event(no_wait=True)
+    [event] = queue.events
     assert isinstance(event, a2a_types.Message)
-    assert "request timed out" in event.parts[0].root.text  # type: ignore[union-attr]
+    assert "request timed out" in event.parts[0].text
 
 
 class WaitsForRelease(Runnable[RunnableOutput]):
@@ -337,14 +410,13 @@ async def test_runnable_cancel_after_run_skips_the_reply() -> None:
     runnable = WaitsForRelease()
     executor = make_executor(runnable)
 
-    queue = a2a_events.EventQueue()
+    queue = RecordingQueue()
     running = asyncio.create_task(executor.execute(make_context(), queue))
     await runnable.started.wait()
     await executor.cancel(make_context(), queue)
     runnable.release.set()
     await running
 
-    events = [await queue.dequeue_event(no_wait=True) for _ in range(queue.queue.qsize())]
-    assert [type(event) for event in events] == [a2a_types.TaskStatusUpdateEvent]
+    assert [type(event) for event in queue.events] == [a2a_types.TaskStatusUpdateEvent]
     memory = await executor._memory_manager.get("context-task")
     assert [message.text for message in memory.messages] == ["Check Prague weather"]

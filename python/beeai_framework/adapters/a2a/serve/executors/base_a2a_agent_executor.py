@@ -13,11 +13,11 @@ from beeai_framework.serve.utils import agent_execution_options
 from beeai_framework.utils.cloneable import Cloneable
 
 try:
+    import a2a.helpers as a2a_helpers
     import a2a.server.agent_execution as a2a_agent_execution
     import a2a.server.events as a2a_events
     import a2a.server.tasks as a2a_server_tasks
     import a2a.types as a2a_types
-    import a2a.utils as a2a_utils
 except ModuleNotFoundError as e:
     raise ModuleNotFoundError(
         "Optional module [a2a] not found.\nRun 'pip install \"beeai-framework[a2a]\"' to install."
@@ -54,12 +54,14 @@ class BaseA2AAgentExecutor(BaseA2AExecutor[AnyAgentLike]):
         agent: AnyAgentLike = self._runnable
         updater = a2a_server_tasks.TaskUpdater(event_queue, context.task_id, context.context_id)  # type: ignore[arg-type]
         # registered before any await, so a cancel() that arrives during the setup still aborts this run
-        with self._abort_signal(context.task_id, event_queue) as signal:
+        with self._abort_signal(context.task_id) as signal:
             if not context.current_task:
                 if not context.message:
                     raise ValueError("No message found in the request context.")
-                context.current_task = a2a_utils.new_task(context.message)
-                await updater.submit()
+                # a2a-sdk 1.x rejects status updates of a new task until the task itself is enqueued
+                task = a2a_helpers.new_task_from_user_message(context.message)
+                context.current_task = task
+                await event_queue.enqueue_event(task)
 
             cloned_agent = await agent.clone() if isinstance(agent, Cloneable) else agent
             # pyrefly: ignore [bad-argument-type]
@@ -80,10 +82,10 @@ class BaseA2AAgentExecutor(BaseA2AExecutor[AnyAgentLike]):
                     return
 
                 await updater.complete(
-                    a2a_utils.new_agent_text_message(
+                    a2a_helpers.new_text_message(
                         response.last_message.text,
-                        context.context_id,
-                        context.task_id,
+                        context_id=context.context_id,
+                        task_id=context.task_id,
                     )
                 )
 
@@ -94,18 +96,13 @@ class BaseA2AAgentExecutor(BaseA2AExecutor[AnyAgentLike]):
                     return
                 logger.exception("Exception during execution")
                 await updater.failed(
-                    message=a2a_utils.new_agent_text_message(str(e)),
+                    message=a2a_helpers.new_text_message(str(e)),
                 )
 
 
 def _extract_request_messages(context: a2a_agent_execution.RequestContext) -> list[AnyMessage]:
-    return [
-        convert_a2a_to_framework_message(message)
-        for message in (
-            context.current_task.history
-            if context.current_task and context.current_task.history
-            else [context.message]
-            if context.message
-            else []
-        )
-    ]
+    messages = list(context.current_task.history) if context.current_task else []
+    # a2a-sdk 1.x stores the incoming message in the task history only after the first update of this request
+    if context.message and all(message.message_id != context.message.message_id for message in messages):
+        messages.append(context.message)
+    return [convert_a2a_to_framework_message(message) for message in messages]

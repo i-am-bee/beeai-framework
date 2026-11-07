@@ -32,7 +32,10 @@ try:
     import a2a.client as a2a_client
     import a2a.types as a2a_types
     import a2a.utils as a2a_utils
+    import a2a.utils.errors as a2a_errors
     import grpc
+    from a2a.server.tasks.task_manager import append_artifact_to_task
+    from google.protobuf.json_format import MessageToDict
 except ModuleNotFoundError as e:
     raise ModuleNotFoundError(
         "Optional module [a2a] not found.\nRun 'pip install \"beeai-framework[a2a]\"' to install."
@@ -51,6 +54,13 @@ from beeai_framework.memory import BaseMemory, UnconstrainedMemory
 from beeai_framework.runnable import runnable_entry
 
 logger = Logger(__name__)
+
+_TERMINAL_TASK_STATES = (
+    a2a_types.TaskState.TASK_STATE_COMPLETED,
+    a2a_types.TaskState.TASK_STATE_FAILED,
+    a2a_types.TaskState.TASK_STATE_CANCELED,
+    a2a_types.TaskState.TASK_STATE_REJECTED,
+)
 
 
 class A2AAgentOptions(AgentOptions, total=False):
@@ -156,7 +166,7 @@ class A2AAgent(BaseAgent[A2AAgentOutput]):
             # create a2a client
             client: a2a_client.Client = a2a_client.ClientFactory(
                 config=a2a_client.ClientConfig(
-                    streaming=kwargs.get("streaming", self._agent_card.capabilities.streaming or False),
+                    streaming=kwargs.get("streaming", self._agent_card.capabilities.streaming),
                     polling=False,
                     httpx_client=httpx_client,
                     grpc_channel_factory=(
@@ -164,31 +174,35 @@ class A2AAgent(BaseAgent[A2AAgentOutput]):
                         if self._grpc_client_credentials
                         else grpc.aio.insecure_channel(url)
                     ),
-                    supported_transports=[
-                        a2a_types.TransportProtocol.jsonrpc,
-                        a2a_types.TransportProtocol.grpc,
-                        a2a_types.TransportProtocol.http_json,
+                    supported_protocol_bindings=[
+                        a2a_utils.TransportProtocol.JSONRPC,
+                        a2a_utils.TransportProtocol.GRPC,
+                        a2a_utils.TransportProtocol.HTTP_JSON,
                     ],
                 )
             ).create(self._agent_card)
 
-            if self._agent_card.supports_authenticated_extended_card:
-                self._agent_card = await client.get_card()
+            a2a_context = kwargs.get("a2a_context")
+            if self._agent_card.capabilities.extended_agent_card:
+                self._agent_card = await client.get_extended_agent_card(
+                    a2a_types.GetExtendedAgentCardRequest(), context=a2a_context
+                )
 
-            last_event: a2a_client.ClientEvent | a2a_types.Message | None = None
+            last_event: a2a_types.StreamResponse | None = None
             messages: list[a2a_types.Message] = []
             task: a2a_types.Task | None = None
 
             # send request
             try:
-                async for event in client.send_message(self.convert_to_a2a_message(input)):
+                request = a2a_types.SendMessageRequest(message=self.convert_to_a2a_message(input))
+                async for event in client.send_message(request, context=a2a_context):
                     last_event = event
 
-                    [task_id, context_id] = (
-                        [event.task_id, event.context_id]
-                        if isinstance(event, a2a_types.Message)
-                        else [event[0].id, event[0].context_id]
-                    )
+                    if event.HasField("message"):
+                        task_id, context_id = event.message.task_id, event.message.context_id
+                    else:
+                        task = _merge_task_event(task, event)
+                        task_id, context_id = task.id, task.context_id
 
                     if task_id and task_id != self._task_id:
                         self._task_id = task_id
@@ -197,22 +211,14 @@ class A2AAgent(BaseAgent[A2AAgentOutput]):
                     if task_id and task_id not in self._reference_task_ids:
                         self._reference_task_ids.append(task_id)
 
-                    if isinstance(event, a2a_types.Message):
-                        messages.append(event)
+                    if event.HasField("message"):
+                        messages.append(event.message)
 
-                    elif isinstance(event, tuple):
-                        task, update_event = event
+                    elif event.HasField("status_update") and event.status_update.status.state in _TERMINAL_TASK_STATES:
+                        self._task_id = None
 
-                        if (
-                            update_event
-                            and isinstance(update_event, a2a_types.TaskStatusUpdateEvent)
-                            and update_event.final
-                            and update_event.status.state is not a2a_types.TaskState.input_required
-                        ):
-                            self._task_id = None
-
-                            if update_event.status.message:
-                                messages.append(update_event.status.message)
+                        if event.status_update.status.HasField("message"):
+                            messages.append(event.status_update.status.message)
 
                     await context.emitter.emit("update", A2AAgentUpdateEvent(value=event))
 
@@ -220,12 +226,7 @@ class A2AAgent(BaseAgent[A2AAgentOutput]):
                 if last_event is None:
                     raise AgentError("No result received from agent.")
 
-                if task and task.status.state in [
-                    a2a_types.TaskState.completed,
-                    a2a_types.TaskState.failed,
-                    a2a_types.TaskState.canceled,
-                    a2a_types.TaskState.rejected,
-                ]:
+                if task and task.status.state in _TERMINAL_TASK_STATES:
                     self._task_id = None
 
                 # insert input into memory
@@ -235,15 +236,17 @@ class A2AAgent(BaseAgent[A2AAgentOutput]):
                 results: Sequence[a2a_types.Message | a2a_types.Artifact] = []
                 if self._parameters.extract_messages_from is None:
                     if task:
-                        if task.status.state is not a2a_types.TaskState.completed:
-                            logger.warning(f"Task status ({task.status.state}) is not complete.")
+                        if task.status.state != a2a_types.TaskState.TASK_STATE_COMPLETED:
+                            logger.warning(
+                                f"Task status ({a2a_types.TaskState.Name(task.status.state)}) is not complete."
+                            )
 
-                        agent_history = [h for h in (task.history or []) if h.role == a2a_types.Role.agent]
+                        agent_history = [h for h in task.history if h.role == a2a_types.Role.ROLE_AGENT]
                         if task.artifacts:
-                            results = task.artifacts
+                            results = list(task.artifacts)
                         elif agent_history:
                             results = agent_history
-                        elif task.status.message:
+                        elif task.status.HasField("message"):
                             results = [task.status.message]
                         else:
                             results = []
@@ -253,17 +256,17 @@ class A2AAgent(BaseAgent[A2AAgentOutput]):
                     match self._parameters.extract_messages_from:
                         case "task-artifacts":
                             if task:
-                                results = task.artifacts or []
+                                results = list(task.artifacts)
                             else:
                                 logger.error("Cannot extract artifact from task, because task is not provided.")
                         case "task-history":
                             if task:
-                                results = task.history or []
+                                results = list(task.history)
                             else:
                                 logger.error("Cannot extract history from task, because task is not provided.")
                         case "task-status":
                             if task:
-                                results = [task.status.message] if task.status.message else []
+                                results = [task.status.message] if task.status.HasField("message") else []
                             else:
                                 logger.error("Cannot extract status message from task, because task is not provided.")
                         case "messages":
@@ -277,24 +280,15 @@ class A2AAgent(BaseAgent[A2AAgentOutput]):
                 else:
                     return A2AAgentOutput(output=[AssistantMessage("No response from agent.")], event=last_event)
 
-            except a2a_client.A2AClientError as err:
-                message = (
-                    err.message
-                    if hasattr(err, "message")
-                    else str(err.error)
-                    if hasattr(err, "error")
-                    else "Unknown error"
-                )
-                await context.emitter.emit("error", A2AAgentErrorEvent(message=message))
-                error_context = None
-                if isinstance(last_event, a2a_types.Message):
-                    error_context = last_event.model_dump(mode="json", exclude_none=True)
-                elif isinstance(last_event, tuple) and last_event[1]:
-                    # pyrefly: ignore [missing-attribute]
-                    error_context = last_event[1].model_dump(mode="json", exclude_none=True)
+            # a2a-sdk 1.x raises the protocol errors reported by the agent as A2AError, not A2AClientError
+            except a2a_errors.A2AError as err:
+                await context.emitter.emit("error", A2AAgentErrorEvent(message=err.message))
+                payload = last_event.WhichOneof("payload") if last_event else None
                 raise AgentError(
-                    message,
-                    context=error_context if isinstance(last_event, tuple) and last_event[1] else None,
+                    err.message,
+                    context=MessageToDict(getattr(last_event, payload), preserving_proto_field_name=True)
+                    if last_event and payload
+                    else None,
                     cause=err,
                 )
 
@@ -402,3 +396,22 @@ def _convert_to_framework_message(
         return convert_a2a_to_framework_message(input)
     else:
         raise ValueError(f"Unsupported input type {type(input)}")
+
+
+def _merge_task_event(task: a2a_types.Task | None, event: a2a_types.StreamResponse) -> a2a_types.Task:
+    # a2a-sdk 1.x streams the task events as they come, the task is rebuilt as its server-side TaskManager does
+    if event.HasField("task"):
+        merged = a2a_types.Task()
+        merged.CopyFrom(event.task)
+        return merged
+
+    update = event.status_update if event.HasField("status_update") else event.artifact_update
+    if task is None:
+        task = a2a_types.Task(id=update.task_id, context_id=update.context_id)
+    if event.HasField("status_update"):
+        if task.status.HasField("message"):
+            task.history.append(task.status.message)
+        task.status.CopyFrom(event.status_update.status)
+    else:
+        append_artifact_to_task(task, event.artifact_update)
+    return task
