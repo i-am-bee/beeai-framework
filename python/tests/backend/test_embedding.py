@@ -5,6 +5,7 @@ from typing import Any
 
 import pytest
 
+from beeai_framework.adapters.ollama import OllamaEmbeddingModel
 from beeai_framework.adapters.openai import OpenAIEmbeddingModel
 
 
@@ -22,3 +23,21 @@ def test_embedding_model_does_not_share_the_settings_dict(monkeypatch: pytest.Mo
     assert first._settings["api_key"] == "key-one"
     assert second._settings["api_key"] == "key-two"
     assert template == {"dimensions": 512}
+
+
+@pytest.mark.unit
+def test_ollama_embedding_model_reads_api_headers_from_env(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("OLLAMA_API_HEADERS", "X-Proxy-Token=abc,X-Other=1")
+
+    model = OllamaEmbeddingModel("nomic-embed-text")
+
+    assert model._settings["extra_headers"] == {"X-Proxy-Token": "abc", "X-Other": "1"}
+
+
+@pytest.mark.unit
+def test_ollama_embedding_model_merges_explicit_headers_over_env(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("OLLAMA_API_HEADERS", "X-Proxy-Token=abc")
+
+    model = OllamaEmbeddingModel("nomic-embed-text", settings={"extra_headers": {"X-Proxy-Token": "explicit"}})
+
+    assert model._settings["extra_headers"]["X-Proxy-Token"] == "explicit"
