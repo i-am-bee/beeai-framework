@@ -9,8 +9,9 @@ from typing import Any
 from typing_extensions import TypedDict, Unpack
 
 from beeai_framework.utils.asynchronous import ensure_async
+from beeai_framework.utils.strings import to_json
 
-__all__ = ["IOHandlers", "io_read", "setup_io_context"]
+__all__ = ["IOHandlers", "format_confirm_prompt", "io_read", "setup_io_context"]
 
 
 class IOConfirmKwargs(TypedDict, total=False):
@@ -35,8 +36,19 @@ class IOHandlers:
 _default_read = ensure_async(input)
 
 
+def format_confirm_prompt(prompt: str, data: Any) -> str:
+    """Append the tool input to a confirmation prompt so the user can review it.
+
+    Handlers that cannot render structured data (the default console prompt and the
+    ACP server's free-text confirmation) use this to keep the tool input visible.
+    """
+    if not data:
+        return prompt
+    return f"{prompt}\n{to_json(data, indent=2)}"
+
+
 async def _default_confirm(prompt: str, **kwargs: Unpack[IOConfirmKwargs]) -> bool:
-    return (await _default_read(prompt)).lower().startswith("yes")
+    return (await _default_read(format_confirm_prompt(prompt, kwargs.get("data")))).lower().startswith("yes")
 
 
 _storage: ContextVar[IOHandlers] = ContextVar("io_storage")
