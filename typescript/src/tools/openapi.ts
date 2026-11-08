@@ -161,13 +161,24 @@ export class OpenAPITool extends Tool<OpenAPIToolOutput, OpenAPIToolOptions> {
     const url = new URL(this.url);
     Object.keys(input.parameters ?? {}).forEach((key) => {
       const value = input.parameters[key];
-      const newPath = path.replace(`{${key}}`, value);
-      if (newPath == path) {
+      const placeholder = `{${key}}`;
+      if (!path.includes(placeholder)) {
         url.searchParams.append(key, value);
-      } else {
-        path = newPath;
+        return;
       }
+      const serialized = String(value);
+      // Dot segments would be normalized away and step outside the operation path.
+      if (serialized === "." || serialized === "..") {
+        throw new ToolError(`Invalid value for path parameter '${key}': ${serialized}`);
+      }
+      // Encode so the value stays inside its segment; fill every occurrence of the placeholder.
+      path = path.split(placeholder).join(encodeURIComponent(serialized));
     });
+    // A value can still complete a dot segment together with the template (e.g. "/{id}.." with
+    // an empty id), so check the substituted path before it is normalized.
+    if (path.split("/").some((segment) => segment === "." || segment === "..")) {
+      throw new ToolError(`Invalid path after substituting parameters: ${path}`);
+    }
     url.pathname = join(url.pathname, path);
     const headers = new Headers(this.options.fetchOptions?.headers);
     if (!headers.has("Accept")) {
