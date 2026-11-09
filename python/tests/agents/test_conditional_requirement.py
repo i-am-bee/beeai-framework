@@ -12,6 +12,11 @@ from beeai_framework.context import RunContext
 from beeai_framework.errors import FrameworkError
 from beeai_framework.memory import UnconstrainedMemory
 from beeai_framework.tools import AnyTool, StringToolOutput, tool
+from beeai_framework.tools.think import ThinkTool
+
+
+class SpecializedThinkTool(ThinkTool):
+    pass
 
 
 @tool()
@@ -33,6 +38,33 @@ def third_tool() -> str:
     """A third real tool used for tests."""
 
     return "third"
+
+
+@pytest.mark.asyncio
+@pytest.mark.unit
+async def test_init_rebinds_when_the_tool_instance_is_replaced() -> None:
+    """A later init must use the new instance, as Agent.clone() and HandoffTool replace tools."""
+    requirement = ConditionalRequirement(ThinkTool, max_invocations=1)
+    ctx = RunContext.__new__(RunContext)
+    first, second = ThinkTool(), ThinkTool()
+
+    await requirement.init(tools=[first], ctx=ctx)
+    await requirement.init(tools=[second], ctx=ctx)
+
+    assert (await _rule(requirement, second)).allowed is False
+    # Cloned agents share requirement objects and may overlap, so each run's matching tool must count.
+    assert (await _rule(requirement, first)).allowed is False
+
+
+@pytest.mark.asyncio
+@pytest.mark.unit
+@pytest.mark.parametrize("other_tool_type", [ThinkTool, SpecializedThinkTool])
+async def test_init_still_rejects_multiple_tools_matching_the_target_class(
+    other_tool_type: type[ThinkTool],
+) -> None:
+    requirement = ConditionalRequirement(ThinkTool)
+    with pytest.raises(ValueError, match="More than one occurrence"):
+        await requirement.init(tools=[ThinkTool(), other_tool_type()], ctx=RunContext.__new__(RunContext))
 
 
 @pytest.mark.asyncio
