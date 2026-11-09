@@ -9,6 +9,7 @@ from deprecated import deprecated
 from pydantic import BaseModel, Field, create_model
 
 from beeai_framework.agents import AgentError, AgentOptions, BaseAgent
+from beeai_framework.agents._utils import text_to_final_answer_input
 from beeai_framework.agents.tool_calling.events import (
     ToolCallingAgentStartEvent,
     ToolCallingAgentSuccessEvent,
@@ -37,7 +38,6 @@ from beeai_framework.backend.message import (
     ToolMessage,
     UserMessage,
 )
-from beeai_framework.backend.utils import parse_broken_json
 from beeai_framework.context import RunContext
 from beeai_framework.emitter import Emitter
 from beeai_framework.memory.base_memory import BaseMemory
@@ -50,7 +50,7 @@ from beeai_framework.tools.tool import tool as create_tool
 from beeai_framework.tools.types import StringToolOutput
 from beeai_framework.utils.counter import RetryCounter
 from beeai_framework.utils.models import update_model
-from beeai_framework.utils.strings import find_first_pair, generate_random_string, to_json
+from beeai_framework.utils.strings import generate_random_string, to_json
 
 
 @deprecated(reason="Use RequirementAgent instead.", version="0.1.73")
@@ -183,10 +183,9 @@ class ToolCallingAgent(BaseAgent[ToolCallingAgentOutput]):
 
             if not final_answer_as_tool and not tool_call_messages and text_messages:
                 full_text = "".join(msg.text for msg in text_messages)
-                json_object_pair = find_first_pair(full_text, ("{", "}"))
-                final_answer_input = parse_broken_json(json_object_pair.outer) if json_object_pair else None
-                if not final_answer_input and final_answer_schema_cls is not expected_output:
-                    final_answer_input = {"response": full_text}
+                final_answer_input = text_to_final_answer_input(
+                    full_text, final_answer_schema_cls, wrap_text=final_answer_schema_cls is not expected_output
+                )
 
                 if not final_answer_input:
                     tools = [final_answer_tool]

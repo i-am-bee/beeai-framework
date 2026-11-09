@@ -2,17 +2,46 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import asyncio
+import contextlib
 import json
 from asyncio import create_task
 from typing import Any
 
-from pydantic import BaseModel, InstanceOf
+from pydantic import BaseModel, InstanceOf, ValidationError
 
 from beeai_framework.backend import MessageToolCallContent
 from beeai_framework.backend.errors import ChatModelToolCallError
+from beeai_framework.backend.utils import parse_broken_json
 from beeai_framework.errors import FrameworkError
 from beeai_framework.tools import AnyTool, StringToolOutput, ToolError, ToolOutput
-from beeai_framework.utils.strings import to_json
+from beeai_framework.utils.strings import find_first_pair, to_json
+
+
+def text_to_final_answer_input(text: str, schema: type[BaseModel], *, wrap_text: bool) -> dict[str, Any] | None:
+    """Turn a plain-text model reply into input for the final answer tool.
+
+    The first ``{...}`` in the text is used as the tool input only if it parses to a non-empty JSON object.
+    When ``wrap_text`` is set (the default schema with a string ``response`` field), that object must also
+    be valid input for ``schema``; otherwise the whole text becomes the ``response``. This keeps answers that
+    merely contain braces, such as code, JSON examples or templates, instead of treating them as tool input.
+    Returns ``None`` when no usable input is found and ``wrap_text`` is not set.
+    """
+    candidate: Any = None
+    json_object_pair = find_first_pair(text, ("{", "}"))
+    if json_object_pair:
+        with contextlib.suppress(Exception):
+            candidate = parse_broken_json(json_object_pair.outer)
+
+    if not isinstance(candidate, dict) or not candidate:
+        return {"response": text} if wrap_text else None
+
+    if wrap_text:
+        try:
+            schema.model_validate(candidate)
+        except ValidationError:
+            return {"response": text}
+
+    return candidate
 
 
 async def run_tool(

@@ -23,7 +23,8 @@ class ToolSuccessEvent(BaseModel):
 
 class ToolErrorEvent(BaseModel):
     error: InstanceOf[FrameworkError]
-    input: SerializeAsAny[BaseModel] | dict[str, Any]
+    # Any: the input that failed validation can be any JSON value (for example a list)
+    input: SerializeAsAny[BaseModel] | dict[str, Any] | Any
     options: ToolRunOptions | None = None
 
 
