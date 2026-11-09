@@ -38,6 +38,7 @@ The following table depicts supported providers. Each provider requires specific
 | MistralAI      |  ✅  | ✅        | MISTRALAI_CHAT_MODEL<br/>MISTRALAI_EMBEDDING_MODEL<br />**MISTRALAI_API_KEY**<br />MISTRALAI_API_BASE |
 | Transformers   |  ✅  | ✅        | TRANSFORMERS_CHAT_MODEL<br/>HF_TOKEN|
 | MiniMax        |  ✅  | ❌        | MINIMAX_CHAT_MODEL<br/>**MINIMAX_API_KEY**<br/>MINIMAX_API_BASE<br/>MINIMAX_API_REGION<br/>MINIMAX_API_HEADERS |
+| Runcrate       |  ✅  | ❌        | RUNCRATE_CHAT_MODEL<br/>**RUNCRATE_API_KEY**<br/>RUNCRATE_API_BASE<br/>RUNCRATE_API_HEADERS |
 
 <Tip>
 If you don't see your provider raise an issue [here](https://github.com/i-am-bee/beeai-framework/issues).
@@ -46,7 +47,9 @@ or [TypeScript](https://github.com/i-am-bee/beeai-framework/blob/main/typescript
 </Tip>
 
 <Note>
-	Google Gemini, MistralAI, and Transformers are supported in Python only. The Transformers chat model does not support tool calling.
+	Google Gemini, MistralAI, Runcrate, and Transformers are supported in Python only. The Transformers chat model does not support tool calling.
+
+	Runcrate is an AI cloud that serves open models through an OpenAI-compatible API. Model IDs are listed at `https://api.runcrate.ai/v1/models`; the default is `deepseek-ai/DeepSeek-V4.1-Flash`. For tool calling, pick a model that lists `tools` in its `supported_features`.
 </Note>
 
 <Note>
