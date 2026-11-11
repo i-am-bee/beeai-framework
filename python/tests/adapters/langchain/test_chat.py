@@ -139,6 +139,7 @@ def test_transform_output_without_token_details_has_no_cached_tokens() -> None:
         ({"done_reason": "stop"}, "stop"),
         ({"finish_reason": "tool_calls"}, "tool_calls"),
         ({"stop_reason": "max_tokens"}, "max_tokens"),
+        ({"stopReason": "end_turn"}, "end_turn"),
         ({}, None),
     ],
 )

@@ -103,10 +103,11 @@ class LangChainChatModel(ChatModel):
         return ChatModelOutput(
             output=to_beeai_messages([message]),
             output_structured=response["output_structured"],
-            # Ollama reports "done_reason", OpenAI "finish_reason" and Anthropic "stop_reason".
+            # Ollama reports "done_reason", OpenAI "finish_reason", Anthropic "stop_reason", Bedrock "stopReason".
             finish_reason=response_metadata.get("done_reason")
             or response_metadata.get("finish_reason")
-            or response_metadata.get("stop_reason"),
+            or response_metadata.get("stop_reason")
+            or response_metadata.get("stopReason"),
             usage=ChatModelUsage(
                 prompt_tokens=usage_metadata.get("input_tokens") or 0,
                 completion_tokens=usage_metadata.get("output_tokens") or 0,
