@@ -33,5 +33,6 @@ class OllamaEmbeddingModel(LiteLLMEmbeddingModel):
         self._assert_setting_value(
             "api_base", base_url, envs=["OLLAMA_API_BASE"], fallback="http://localhost:11434", aliases=["base_url"]
         )
+        self._settings["api_base"] = self._settings["api_base"].rstrip("/")
         if not self._settings["api_base"].endswith("/v1"):
             self._settings["api_base"] += "/v1"
