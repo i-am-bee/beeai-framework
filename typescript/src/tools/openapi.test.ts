@@ -114,4 +114,68 @@ describe("OpenAPI Tool", () => {
     expect(new Headers(customOptions.headers).get("Content-Type")).toBe("application/vnd.api+json");
     expect(new Headers(customOptions.headers).get("X-Test")).toBe("1");
   });
+
+  describe("path parameters", () => {
+    const operation = (type: string) => ({
+      get: { parameters: [{ name: "id", in: "path", required: true, schema: { type } }] },
+    });
+    const pathParamSchema = JSON.stringify({
+      openapi: "3.0.0",
+      info: { title: "Test API", version: "1.0.0" },
+      servers: [{ url: "https://example.com/api" }],
+      paths: {
+        "/users/{id}": operation("string"),
+        "/items/{id}": operation("integer"),
+        "/pairs/{id}/{id}": operation("string"),
+        "/dots/{id}..": operation("string"),
+      },
+    });
+
+    const callTool = async (path: string, id: unknown) => {
+      const fetchMock = vi.fn(async (_url: string, _options: RequestInit) => new Response("ok"));
+      vi.stubGlobal("fetch", fetchMock);
+      const result = new OpenAPITool({ openApiSchema: pathParamSchema }).run({
+        path,
+        method: "get",
+        parameters: { id },
+      });
+      return { fetchMock, result };
+    };
+
+    const fetchedUrl = async (path: string, id: unknown) => {
+      const { fetchMock, result } = await callTool(path, id);
+      await result;
+      return new URL(fetchMock.mock.calls[0][0]);
+    };
+
+    it("substitutes a plain value under the server base path", async () => {
+      expect((await fetchedUrl("/users/{id}", "42")).pathname).toBe("/api/users/42");
+    });
+
+    it("substitutes a number", async () => {
+      expect((await fetchedUrl("/items/{id}", 42)).pathname).toBe("/api/items/42");
+    });
+
+    it("fills every occurrence of a placeholder", async () => {
+      expect((await fetchedUrl("/pairs/{id}/{id}", "a")).pathname).toBe("/api/pairs/a/a");
+    });
+
+    it("percent-encodes values so they stay one path segment", async () => {
+      const url = await fetchedUrl("/users/{id}", "../../admin?x=1#y");
+      expect(url.pathname).toBe("/api/users/..%2F..%2Fadmin%3Fx%3D1%23y");
+      expect(url.search).toBe("");
+    });
+
+    it.each([".", ".."])("rejects the dot segment %j", async (id) => {
+      const { fetchMock, result } = await callTool("/users/{id}", id);
+      await expect(result).rejects.toThrow(`Invalid value for path parameter 'id'`);
+      expect(fetchMock).not.toHaveBeenCalled();
+    });
+
+    it("rejects a value that completes a dot segment with the template", async () => {
+      const { fetchMock, result } = await callTool("/dots/{id}..", "");
+      await expect(result).rejects.toThrow("Invalid path after substituting parameters");
+      expect(fetchMock).not.toHaveBeenCalled();
+    });
+  });
 });
