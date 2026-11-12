@@ -130,3 +130,23 @@ def test_transform_output_without_token_details_has_no_cached_tokens() -> None:
     assert output.usage is not None
     assert output.usage.cached_prompt_tokens == 0
     assert output.usage.cached_creation_tokens == 0
+
+
+@pytest.mark.unit
+@pytest.mark.parametrize(
+    ("response_metadata", "expected"),
+    [
+        ({"done_reason": "stop"}, "stop"),
+        ({"finish_reason": "tool_calls"}, "tool_calls"),
+        ({"stop_reason": "max_tokens"}, "max_tokens"),
+        ({"stopReason": "end_turn"}, "end_turn"),
+        ({}, None),
+    ],
+)
+def test_transform_output_reports_the_finish_reason(response_metadata: dict[str, str], expected: str | None) -> None:
+    model = LangChainChatModel(GenericFakeChatModel(messages=iter([])))
+    message = AIMessage(content="hi", response_metadata=response_metadata)
+
+    output = model._transform_output({"output": message, "output_structured": None})  # type: ignore[typeddict-item]
+
+    assert output.finish_reason == expected

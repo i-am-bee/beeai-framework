@@ -99,10 +99,15 @@ class LangChainChatModel(ChatModel):
         message = response["output"]
         usage_metadata: dict[str, Any] = getattr(message, "usage_metadata", None) or {}
         input_token_details: dict[str, int] = usage_metadata.get("input_token_details") or {}
+        response_metadata: dict[str, Any] = message.response_metadata or {}
         return ChatModelOutput(
             output=to_beeai_messages([message]),
             output_structured=response["output_structured"],
-            finish_reason=message.response_metadata.get("done_reason"),
+            # Ollama reports "done_reason", OpenAI "finish_reason", Anthropic "stop_reason", Bedrock "stopReason".
+            finish_reason=response_metadata.get("done_reason")
+            or response_metadata.get("finish_reason")
+            or response_metadata.get("stop_reason")
+            or response_metadata.get("stopReason"),
             usage=ChatModelUsage(
                 prompt_tokens=usage_metadata.get("input_tokens") or 0,
                 completion_tokens=usage_metadata.get("output_tokens") or 0,
