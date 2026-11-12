@@ -5,11 +5,18 @@ import asyncio
 from contextvars import Context
 from io import StringIO
 from threading import Event
+from typing import Any
 
 import pytest
 from typing_extensions import Unpack
 
-from beeai_framework.utils.io import IOConfirmKwargs, io_confirm, io_read, setup_io_context
+from beeai_framework.utils.io import (
+    IOConfirmKwargs,
+    format_confirm_prompt,
+    io_confirm,
+    io_read,
+    setup_io_context,
+)
 
 
 @pytest.mark.unit
@@ -23,6 +30,53 @@ def test_read_default_in_new_context(monkeypatch: pytest.MonkeyPatch) -> None:
 def test_confirm_default_in_new_context(monkeypatch: pytest.MonkeyPatch, answer: str, expected: bool) -> None:
     monkeypatch.setattr("sys.stdin", StringIO(answer))
     assert Context().run(asyncio.run, io_confirm("Confirm: ", title="Permission")) is expected
+
+
+@pytest.mark.unit
+def test_confirm_default_shows_the_tool_input(monkeypatch: pytest.MonkeyPatch) -> None:
+    prompts: list[str] = []
+
+    async def read(prompt: str) -> str:
+        prompts.append(prompt)
+        return "yes"
+
+    monkeypatch.setattr("beeai_framework.utils.io._default_read", read)
+    assert (
+        Context().run(
+            asyncio.run,
+            io_confirm("The agent wants to use the weather tool.", data={"city": "Prague"}),
+        )
+        is True
+    )
+    assert len(prompts) == 1
+    assert prompts[0].startswith("The agent wants to use the weather tool.")
+    assert '"city": "Prague"' in prompts[0]
+
+
+@pytest.mark.unit
+def test_confirm_default_without_the_tool_input_keeps_the_prompt(monkeypatch: pytest.MonkeyPatch) -> None:
+    prompts: list[str] = []
+
+    async def read(prompt: str) -> str:
+        prompts.append(prompt)
+        return "yes"
+
+    monkeypatch.setattr("beeai_framework.utils.io._default_read", read)
+    assert Context().run(asyncio.run, io_confirm("Confirm: ")) is True
+    assert prompts == ["Confirm: "]
+
+
+@pytest.mark.unit
+@pytest.mark.parametrize(
+    ("data", "expected"),
+    [
+        (None, "Confirm: "),
+        ({}, "Confirm: "),
+        ({"city": "Prague"}, 'Confirm: \n{\n  "city": "Prague"\n}'),
+    ],
+)
+def test_format_confirm_prompt_appends_the_tool_input(data: Any, expected: str) -> None:
+    assert format_confirm_prompt("Confirm: ", data) == expected
 
 
 @pytest.mark.unit

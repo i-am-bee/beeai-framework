@@ -8,7 +8,7 @@ from acp_sdk import Message, MessageAwaitRequest, MessagePart
 from acp_sdk.server import Context
 from typing_extensions import Unpack
 
-from beeai_framework.utils.io import IOConfirmKwargs, setup_io_context
+from beeai_framework.utils.io import IOConfirmKwargs, format_confirm_prompt, setup_io_context
 
 
 class ACPIOContext:
@@ -32,5 +32,5 @@ class ACPIOContext:
         return str(response.message) if response else ""
 
     async def _confirm(self, prompt: str, **kwargs: Unpack[IOConfirmKwargs]) -> bool:
-        response = await self._read(prompt)
+        response = await self._read(format_confirm_prompt(prompt, kwargs.get("data")))
         return response.lower().startswith("yes") or response.lower().startswith("true")
