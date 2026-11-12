@@ -4,6 +4,7 @@
 import pytest
 
 from beeai_framework.adapters.openai.serve.responses._types import (
+    ResponsesRequestBody,
     ResponsesRequestInputMessage,
 )
 from beeai_framework.adapters.openai.serve.responses._utils import (
@@ -61,6 +62,32 @@ def test_input_text_content_parts_are_converted_to_message_text_content() -> Non
     text_parts = [part for part in result.content if isinstance(part, MessageTextContent)]
     assert [part.text for part in text_parts] == ["hello", " world"]
     assert result.text == "hello world"
+
+
+@pytest.mark.unit
+def test_replayed_assistant_output_text_is_accepted() -> None:
+    # The item shape the OpenAI Agents SDK sends back on the next turn (`result.to_input_list()`).
+    request = ResponsesRequestBody.model_validate(
+        {
+            "model": "agent",
+            "input": [
+                {"role": "user", "content": "hi"},
+                {
+                    "id": "msg_1",
+                    "type": "message",
+                    "role": "assistant",
+                    "status": "completed",
+                    "content": [{"type": "output_text", "text": "Hello!", "annotations": [], "logprobs": []}],
+                },
+                {"role": "user", "content": [{"type": "input_text", "text": "And now?"}]},
+            ],
+        }
+    )
+
+    assert isinstance(request.input, list)
+    messages = [openai_input_to_beeai_message(item) for item in request.input]  # type: ignore[arg-type]
+    assert [type(message) for message in messages] == [UserMessage, AssistantMessage, UserMessage]
+    assert messages[1].text == "Hello!"
 
 
 @pytest.mark.unit
