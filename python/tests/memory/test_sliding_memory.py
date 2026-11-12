@@ -3,7 +3,13 @@
 
 import pytest
 
-from beeai_framework.backend.message import UserMessage
+from beeai_framework.backend.message import (
+    AssistantMessage,
+    MessageToolCallContent,
+    MessageToolResultContent,
+    ToolMessage,
+    UserMessage,
+)
 from beeai_framework.memory.errors import ResourceError
 from beeai_framework.memory.sliding_memory import SlidingMemory, SlidingMemoryConfig
 
@@ -179,3 +185,41 @@ async def test_clone_is_independent() -> None:
 
     assert memory.messages == [original]
     assert len(clone.messages) == 2
+
+
+def _call(*ids: str) -> AssistantMessage:
+    return AssistantMessage([MessageToolCallContent(id=i, tool_name="weather", args="{}") for i in ids])
+
+
+def _result(call_id: str) -> ToolMessage:
+    return ToolMessage(MessageToolResultContent(tool_call_id=call_id, tool_name="weather", result="sunny"))
+
+
+@pytest.mark.asyncio
+@pytest.mark.unit
+async def test_evicts_a_tool_call_with_its_results() -> None:
+    # A tool result left without its call (or the reverse) is rejected by the chat APIs.
+    memory = SlidingMemory(SlidingMemoryConfig(size=4))
+    call, result_a, result_b = _call("a", "b"), _result("a"), _result("b")
+    question, answer = UserMessage("next question"), AssistantMessage("answer")
+
+    await memory.add_many([call, result_a, result_b, question])
+    await memory.add(answer)
+
+    assert memory.messages == [question, answer]
+
+
+@pytest.mark.asyncio
+@pytest.mark.unit
+async def test_selected_tool_result_takes_its_call_along() -> None:
+    first = UserMessage("first")
+    memory = SlidingMemory(SlidingMemoryConfig(size=4, handlers={"removal_selector": lambda messages: messages[2]}))
+    call, result = _call("a"), _result("a")
+    last = UserMessage("last")
+
+    await memory.add_many([first, call, result, UserMessage("second")])
+    await memory.add(last)
+
+    assert memory.messages[0] is first
+    assert call not in memory.messages and result not in memory.messages
+    assert memory.messages[-1] is last

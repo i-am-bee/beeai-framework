@@ -3,7 +3,6 @@
 from pydantic import ConfigDict
 
 try:
-    import a2a.client as a2a_client
     import a2a.types as a2a_types
 except ModuleNotFoundError as e:
     raise ModuleNotFoundError(
@@ -17,4 +16,4 @@ from beeai_framework.agents import AgentOutput
 class A2AAgentOutput(AgentOutput):
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
-    event: a2a_client.ClientEvent | a2a_types.Message
+    event: a2a_types.StreamResponse

@@ -5,7 +5,6 @@
 from pydantic import BaseModel, ConfigDict
 
 try:
-    import a2a.client as a2a_client
     import a2a.types as a2a_types
 except ModuleNotFoundError as e:
     raise ModuleNotFoundError(
@@ -16,7 +15,7 @@ except ModuleNotFoundError as e:
 class A2AAgentUpdateEvent(BaseModel):
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
-    value: a2a_client.ClientEvent | a2a_types.Message
+    value: a2a_types.StreamResponse
 
 
 class A2AAgentErrorEvent(BaseModel):

@@ -5,7 +5,7 @@ import uuid
 from typing import Any
 
 from beeai_framework.agents import AgentError, AgentExecutionConfig
-from beeai_framework.agents._utils import run_tools
+from beeai_framework.agents._utils import run_tools, text_to_final_answer_input
 from beeai_framework.agents.requirement.events import (
     RequirementAgentFinalAnswerEvent,
     RequirementAgentStartEvent,
@@ -20,7 +20,7 @@ from beeai_framework.agents.requirement.types import (
     RequirementAgentTemplates,
 )
 from beeai_framework.agents.requirement.utils._llm import RequirementsReasoner, _create_system_message
-from beeai_framework.agents.requirement.utils._tool import FinalAnswerTool, FinalAnswerToolSchema
+from beeai_framework.agents.requirement.utils._tool import FinalAnswerTool
 from beeai_framework.agents.tool_calling.utils import ToolCallChecker
 from beeai_framework.backend import (
     AnyMessage,
@@ -33,7 +33,6 @@ from beeai_framework.backend import (
 )
 from beeai_framework.backend.chat import ChatModelOptions
 from beeai_framework.backend.errors import ChatModelToolCallError
-from beeai_framework.backend.utils import parse_broken_json
 from beeai_framework.context import RunContext
 from beeai_framework.memory import UnconstrainedMemory
 from beeai_framework.memory.utils import TEMP_MESSAGE_META_KEY, delete_messages_by_meta_key
@@ -41,7 +40,7 @@ from beeai_framework.middleware.stream_tool_call import StreamToolCallMiddleware
 from beeai_framework.tools import AnyTool
 from beeai_framework.utils.counter import RetryCounter
 from beeai_framework.utils.lists import ensure_strictly_increasing, find_last_index
-from beeai_framework.utils.strings import find_first_pair, generate_random_string, to_json
+from beeai_framework.utils.strings import generate_random_string, to_json
 
 
 class RequirementAgentRunner:
@@ -174,11 +173,10 @@ class RequirementAgentRunner:
     async def _create_final_answer_tool_call(self, full_text: str) -> AssistantMessage | None:
         """Try to convert a text message to a valid final answer tool call."""
 
-        json_object_pair = find_first_pair(full_text, ("{", "}"))
-        final_answer_input = parse_broken_json(json_object_pair.outer) if json_object_pair else None
-        if not final_answer_input and not self._reasoner.final_answer.custom_schema:
-            final_answer_input = FinalAnswerToolSchema(response=full_text).model_dump()
-
+        final_answer = self._reasoner.final_answer
+        final_answer_input = text_to_final_answer_input(
+            full_text, final_answer.input_schema, wrap_text=not final_answer.custom_schema
+        )
         if not final_answer_input:
             return None
 

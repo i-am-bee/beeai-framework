@@ -6,6 +6,7 @@ import os
 from typing_extensions import Unpack
 
 from beeai_framework.adapters.litellm.embedding import LiteLLMEmbeddingModel
+from beeai_framework.adapters.litellm.utils import parse_extra_headers
 from beeai_framework.backend.constants import ProviderName
 from beeai_framework.backend.embedding import EmbeddingModelKwargs
 
@@ -33,5 +34,10 @@ class OllamaEmbeddingModel(LiteLLMEmbeddingModel):
         self._assert_setting_value(
             "api_base", base_url, envs=["OLLAMA_API_BASE"], fallback="http://localhost:11434", aliases=["base_url"]
         )
+        self._settings["api_base"] = self._settings["api_base"].rstrip("/")
         if not self._settings["api_base"].endswith("/v1"):
             self._settings["api_base"] += "/v1"
+
+        self._settings["extra_headers"] = parse_extra_headers(
+            self._settings.get("extra_headers"), os.getenv("OLLAMA_API_HEADERS")
+        )
