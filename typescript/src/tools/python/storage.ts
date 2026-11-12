@@ -12,6 +12,7 @@ import path from "node:path";
 import { Cache } from "@/cache/decoratorCache.js";
 import { Serializable } from "@/internals/serializable.js";
 import { shallowCopy } from "@/serializer/utils.js";
+import { ToolError } from "@/tools/base.js";
 
 export interface PythonFile {
   id: string;
@@ -146,15 +147,60 @@ export class LocalPythonStorage extends PythonStorage {
   async download(files: PythonDownloadFile[]) {
     await this.init();
 
-    await Promise.all(
-      files.map((file) =>
-        copyFile(
-          path.join(this.input.interpreterWorkingDir.toString(), file.pythonId),
-          path.join(this.input.localWorkingDir.toString(), file.filename),
+    // Both names come from the code interpreter response; check every path before any copy starts.
+    const copies = await Promise.all(
+      files.map(async (file) => ({
+        source: await LocalPythonStorage.resolveInside(
+          this.input.interpreterWorkingDir,
+          file.pythonId,
         ),
-      ),
+        target: await LocalPythonStorage.resolveInside(this.input.localWorkingDir, file.filename),
+      })),
     );
+    await Promise.all(copies.map(({ source, target }) => copyFile(source, target)));
     return files.map((file) => ({ ...file, id: file.pythonId }));
+  }
+
+  /**
+   * Resolve `name` against `baseDir`, following symlinks, and ensure the result is strictly inside
+   * `baseDir`. When the path does not exist yet, its parent directory is resolved instead.
+   */
+  protected static async resolveInside(baseDir: PathLike, name: string): Promise<string> {
+    const base = await fs.promises.realpath(baseDir.toString());
+    const lexical = path.resolve(base, name);
+    LocalPythonStorage.assertInside(base, lexical, name);
+    let resolved: string;
+    try {
+      resolved = await fs.promises.realpath(lexical);
+    } catch (err) {
+      if ((err as NodeJS.ErrnoException).code !== "ENOENT") {
+        throw err;
+      }
+      // copyFile would follow a dangling symlink to wherever it points, so refuse it.
+      const isLink = await fs.promises.lstat(lexical).then(
+        (stats) => stats.isSymbolicLink(),
+        () => false,
+      );
+      if (isLink) {
+        throw new ToolError(`Path traversal detected: ${name}`);
+      }
+      const parent = await fs.promises.realpath(path.dirname(lexical));
+      resolved = path.join(parent, path.basename(lexical));
+    }
+    LocalPythonStorage.assertInside(base, resolved, name);
+    return resolved;
+  }
+
+  protected static assertInside(base: string, target: string, name: string): void {
+    const relative = path.relative(base, target);
+    if (
+      !relative ||
+      relative === ".." ||
+      relative.startsWith(`..${path.sep}`) ||
+      path.isAbsolute(relative)
+    ) {
+      throw new ToolError(`Path traversal detected: ${name}`);
+    }
   }
 
   protected async computeHash(file: PathLike) {
