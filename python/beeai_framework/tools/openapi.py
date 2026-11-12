@@ -348,6 +348,10 @@ class OpenAPITool(Tool[BaseModel, ToolRunOptions, OpenAPIToolOutput]):
                 )
                 output = OpenAPIToolOutput(response.status_code, response.text)
                 await self.emitter.emit("after_fetch", AfterFetchEvent(url=str(url), data=output))
+                if not response.is_success:
+                    raise ToolError(
+                        f"Request to {url} failed with status {response.status_code}: {response.text[:500]}"
+                    )
                 return output
         except httpx.HTTPError as err:
             raise ToolError(f"Request to {url} has failed.", cause=err)

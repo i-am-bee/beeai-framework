@@ -383,3 +383,37 @@ async def test_array_path_and_header_parameters_use_simple_style(monkeypatch: py
 
     assert url == "https://example.invalid/pets/1%2C2"
     assert headers["X-Tags"] == "a,b"
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+@pytest.mark.parametrize("status", [302, 404, 500])
+async def test_non_success_status_raises_tool_error(monkeypatch: pytest.MonkeyPatch, status: int) -> None:
+    async def fake_request(self: httpx.AsyncClient, method: str, url: str, **kwargs: object) -> httpx.Response:
+        return httpx.Response(status, text='{"error": "nope"}')
+
+    monkeypatch.setattr(httpx.AsyncClient, "request", fake_request)
+
+    [tool] = OpenAPITool.from_schema(_schema("https://example.invalid", "/pets", {}))
+
+    with pytest.raises(ToolError, match=str(status)):
+        await tool.run({})
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_non_success_error_truncates_long_body(monkeypatch: pytest.MonkeyPatch) -> None:
+    async def fake_request(self: httpx.AsyncClient, method: str, url: str, **kwargs: object) -> httpx.Response:
+        return httpx.Response(502, text="<html>" + "x" * 5000)
+
+    monkeypatch.setattr(httpx.AsyncClient, "request", fake_request)
+
+    [tool] = OpenAPITool.from_schema(_schema("https://example.invalid", "/pets", {}))
+
+    with pytest.raises(ToolError) as exc_info:
+        await tool.run({})
+
+    message = str(exc_info.value)
+    assert "502" in message
+    assert "<html>xxx" in message
+    assert "x" * 600 not in message
