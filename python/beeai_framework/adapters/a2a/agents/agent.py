@@ -241,7 +241,7 @@ class A2AAgent(BaseAgent[A2AAgentOutput]):
                                 f"Task status ({a2a_types.TaskState.Name(task.status.state)}) is not complete."
                             )
 
-                        agent_history = [h for h in task.history if h.role == a2a_types.Role.ROLE_AGENT]
+                        agent_history = [h for h in _history_with_status(task) if h.role == a2a_types.Role.ROLE_AGENT]
                         if task.artifacts:
                             results = list(task.artifacts)
                         elif agent_history:
@@ -261,7 +261,7 @@ class A2AAgent(BaseAgent[A2AAgentOutput]):
                                 logger.error("Cannot extract artifact from task, because task is not provided.")
                         case "task-history":
                             if task:
-                                results = list(task.history)
+                                results = _history_with_status(task)
                             else:
                                 logger.error("Cannot extract history from task, because task is not provided.")
                         case "task-status":
@@ -398,6 +398,17 @@ def _convert_to_framework_message(
         raise ValueError(f"Unsupported input type {type(input)}")
 
 
+def _history_with_status(task: a2a_types.Task) -> list[a2a_types.Message]:
+    # The current status message is moved to the history only by the next status update, so the final one is
+    # still in `task.status` (a2a-sdk 0.3's client added it to the history right away)
+    history = list(task.history)
+    if task.status.HasField("message") and all(
+        message.message_id != task.status.message.message_id for message in history
+    ):
+        history.append(task.status.message)
+    return history
+
+
 def _merge_task_event(task: a2a_types.Task | None, event: a2a_types.StreamResponse) -> a2a_types.Task:
     # a2a-sdk 1.x streams the task events as they come, the task is rebuilt as its server-side TaskManager does
     if event.HasField("task"):
@@ -412,6 +423,8 @@ def _merge_task_event(task: a2a_types.Task | None, event: a2a_types.StreamRespon
         if task.status.HasField("message"):
             task.history.append(task.status.message)
         task.status.CopyFrom(event.status_update.status)
+        if event.status_update.metadata:
+            task.metadata.MergeFrom(event.status_update.metadata)
     else:
         append_artifact_to_task(task, event.artifact_update)
     return task

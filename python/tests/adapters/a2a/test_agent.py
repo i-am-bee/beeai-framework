@@ -131,6 +131,31 @@ async def test_run_rebuilds_the_streamed_task() -> None:
     assert [message.text for message in agent.memory.messages] == ["Weather in Prague?", "Sunny in Prague"]
 
 
+@pytest.mark.parametrize("streaming", [True, False])
+async def test_run_returns_the_final_status_message(streaming: bool) -> None:
+    # e.g. an A2AServer with `send_trajectory=True`: progress and the answer are status messages, no artifacts
+    async def handler(context: RequestContext, event_queue: EventQueue) -> None:
+        task_id, context_id = context.task_id or "", context.context_id or ""
+        await event_queue.enqueue_event(new_task(task_id, context_id, a2a_types.TaskState.TASK_STATE_SUBMITTED))
+        await event_queue.enqueue_event(
+            new_text_status_update_event(task_id, context_id, a2a_types.TaskState.TASK_STATE_WORKING, "Checking")
+        )
+        await event_queue.enqueue_event(
+            new_text_status_update_event(
+                task_id, context_id, a2a_types.TaskState.TASK_STATE_COMPLETED, "Sunny in Prague"
+            )
+        )
+
+    card = make_card(streaming=streaming)
+    agent = A2AAgent(agent_card=card, memory=UnconstrainedMemory())
+
+    async with serve(card, handler) as client:
+        response = await agent.run("Weather in Prague?", httpx_client=client)
+
+    assert response.last_message.text == "Sunny in Prague"
+    assert [message.text for message in agent.memory.messages] == ["Weather in Prague?", "Checking", "Sunny in Prague"]
+
+
 async def test_run_returns_the_message_reply() -> None:
     async def handler(context: RequestContext, event_queue: EventQueue) -> None:
         await event_queue.enqueue_event(new_text_message("Hi there", context_id=context.context_id))
