@@ -2,7 +2,7 @@
 name = "cz-commitizen"
 version = "0.0.0"
 description = "Internal Commitizen plugin for the beeai-framework monorepo. Not published."
-requires-python = ">=3.11,<3.14"
+requires-python = ">=3.11,<3.15"
 dependencies = ["commitizen>=4.2.1"]
 
 [project.entry-points."commitizen.plugin"]

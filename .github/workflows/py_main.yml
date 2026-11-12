@@ -8,12 +8,14 @@ on:
       - 'python/**'
       - 'mise.toml'
       - '.github/actions/setup/**'
+      - '.github/workflows/py_main.yml'
   pull_request:
     branches: ["main"]
     paths:
       - 'python/**'
       - 'mise.toml'
       - '.github/actions/setup/**'
+      - '.github/workflows/py_main.yml'
 
 defaults:
   run:
@@ -33,5 +35,19 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - run: mise common:check
       - run: mise python:check
+      - run: mise python:build
+      - run: mise python:test:unit
+
+  python-314:
+    timeout-minutes: 20
+    name: Python 3.14 - Build & Unit Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup
+        with:
+          python-version: "3.14"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - run: mise python:build
       - run: mise python:test:unit
