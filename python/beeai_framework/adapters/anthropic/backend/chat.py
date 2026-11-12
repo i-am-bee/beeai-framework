@@ -53,14 +53,6 @@ class AnthropicChatModel(LiteLLMChatModel):
     def _transform_input(self, input: ChatModelInput) -> dict[str, Any]:
         params = super()._transform_input(input)
 
-        # `temperature` defaults to 0 for every provider, but Anthropic rejects it next to
-        # `top_p` and requires 1 when thinking is on. Only a value nobody asked for is dropped.
-        temperature_is_explicit = (
-            "temperature" in input.model_fields_set
-            or "temperature" in self.parameters.model_fields_set
-            or "temperature" in self._settings
-        )
-        if not temperature_is_explicit and any(key in params for key in ("top_p", "reasoning_effort", "thinking")):
-            params.pop("temperature", None)
+        self._drop_implicit_temperature(input, params)
 
         return params
