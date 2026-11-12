@@ -22,6 +22,15 @@ def test_to_json_serializable_recurses_into_dict_values() -> None:
     json.dumps(result)
 
 
+def test_to_json_serializable_converts_tuples_to_lists() -> None:
+    value = {"items": (NestedModel(value="first"), NestedModel(value="second"))}
+
+    result = to_json_serializable(value)
+
+    assert result == {"items": [{"value": "first"}, {"value": "second"}]}
+    json.dumps(result)
+
+
 def test_to_json_serializable_preserves_none_by_default() -> None:
     assert to_json_serializable({"value": None, "items": [None]}) == {"value": None, "items": [None]}
 
