@@ -7,15 +7,14 @@ from typing_extensions import override
 from beeai_framework.adapters.a2a.serve.executors.base_a2a_agent_executor import BaseA2AAgentExecutor
 from beeai_framework.agents.requirement.events import RequirementAgentStartEvent, RequirementAgentSuccessEvent
 from beeai_framework.agents.tool_calling import ToolCallingAgentStartEvent, ToolCallingAgentSuccessEvent
-from beeai_framework.backend import AssistantMessage, MessageToolCallContent, ToolMessage
+from beeai_framework.backend import AssistantMessage, MessageTextContent, MessageToolCallContent, ToolMessage
 from beeai_framework.emitter import Emitter, EventMeta
 from beeai_framework.utils.lists import find_index
 
 try:
+    import a2a.helpers as a2a_helpers
     import a2a.server.agent_execution as a2a_agent_execution
     import a2a.server.tasks as a2a_server_tasks
-    import a2a.types as a2a_types
-    import a2a.utils as a2a_utils
 except ModuleNotFoundError as e:
     raise ModuleNotFoundError(
         "Optional module [a2a] not found.\nRun 'pip install \"beeai-framework[a2a]\"' to install."
@@ -54,13 +53,11 @@ class ToolCallingAgentExecutor(BaseA2AAgentExecutor):
                     continue
 
                 await updater.start_work(
-                    a2a_utils.new_agent_parts_message(
+                    a2a_helpers.new_message(
                         parts=[
-                            a2a_types.Part(
-                                root=a2a_types.TextPart(text=content)
-                                if isinstance(content, str)
-                                else a2a_types.DataPart(data=content.model_dump())
-                            )
+                            a2a_helpers.new_text_part(content.text)
+                            if isinstance(content, MessageTextContent)
+                            else a2a_helpers.new_data_part(content.model_dump(mode="json"))
                             for content in message.content
                         ]
                     ),

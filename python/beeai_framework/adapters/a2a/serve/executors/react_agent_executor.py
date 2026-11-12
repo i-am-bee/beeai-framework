@@ -1,6 +1,7 @@
 # Copyright 2025 © BeeAI a Series of LF Projects, LLC
 # SPDX-License-Identifier: Apache-2.0
 
+from pydantic_core import to_jsonable_python
 from typing_extensions import TypeVar, override
 
 from beeai_framework.adapters.a2a.serve.executors.base_a2a_agent_executor import BaseA2AAgentExecutor
@@ -10,10 +11,9 @@ from beeai_framework.emitter import Emitter, EventMeta
 from beeai_framework.utils.strings import to_json
 
 try:
+    import a2a.helpers as a2a_helpers
     import a2a.server.agent_execution as a2a_agent_execution
     import a2a.server.tasks as a2a_server_tasks
-    import a2a.types as a2a_types
-    import a2a.utils as a2a_utils
 except ModuleNotFoundError as e:
     raise ModuleNotFoundError(
         "Optional module [a2a] not found.\nRun 'pip install \"beeai-framework[a2a]\"' to install."
@@ -48,13 +48,13 @@ class ReActAgentExecutor(BaseA2AAgentExecutor):
                     text = data.data.thought
 
             await updater.start_work(
-                a2a_utils.new_agent_text_message(
+                a2a_helpers.new_text_message(
                     text,
-                    context.context_id,
-                    context.task_id,
+                    context_id=context.context_id,
+                    task_id=context.task_id,
                 )
                 if isinstance(data.data, ReActAgentIterationResult)
-                else a2a_utils.new_agent_parts_message(parts=[a2a_types.Part(root=a2a_types.DataPart(data=data.data))]),
+                else a2a_helpers.new_message(parts=[a2a_helpers.new_data_part(to_jsonable_python(data.data))]),
             )
 
         emitter.on("update", process_event)

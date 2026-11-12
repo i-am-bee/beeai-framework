@@ -16,9 +16,7 @@ async def main() -> None:
     for prompt in reader:
         # Run the agent and observe events
         def print_update(data: A2AAgentUpdateEvent, event: EventMeta) -> None:
-            value = data.value
-            debug_info = value[1] if isinstance(value, tuple) else value
-            reader.write("Agent 🤖 (debug) : ", str(debug_info))
+            reader.write("Agent 🤖 (debug) : ", str(data.value))
 
         response = await agent.run(prompt).on("update", print_update)
 
