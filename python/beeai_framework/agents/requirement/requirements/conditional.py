@@ -105,6 +105,9 @@ class ConditionalRequirement(Generic[TInput], Requirement[TInput]):
         targets = self._before | self._after | self._force_after | {self.source}
         _assert_all_rules_found(targets, tools)
 
+        # Bind to this run's tools. Agent.clone() and HandoffTool keep the requirement but replace the
+        # tool instances, so a leftover instance of the same class would be reported as a duplicate.
+        self._source_tool = None
         for tool in tools:
             if _target_seen_in(tool, {self.source}):
                 if self._source_tool and self._source_tool is not tool:
@@ -141,7 +144,7 @@ class ConditionalRequirement(Generic[TInput], Requirement[TInput]):
             [step for step in state.steps if not step.error] if self._only_success_invocations else list(state.steps)
         )
         last_step_tool = steps[-1].tool if steps and steps[-1].tool is not None else None
-        invocations = sum(1 if step.tool is source_tool else 0 for step in steps)
+        invocations = sum(1 if _target_seen_in(step.tool, self.source) else 0 for step in steps)
 
         def resolve(allowed: bool) -> list[Rule]:
             current_step = len(steps) + 1
@@ -171,7 +174,7 @@ class ConditionalRequirement(Generic[TInput], Requirement[TInput]):
                 )
             ]
 
-        if not self._consecutive_allowed and source_tool is last_step_tool:
+        if not self._consecutive_allowed and _target_seen_in(last_step_tool, self.source):
             return resolve(False)
 
         if invocations >= self._max_invocations:
