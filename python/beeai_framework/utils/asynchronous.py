@@ -55,10 +55,14 @@ def run_sync(awaitable: Awaitable[T], *, timeout: int | None = None) -> T:
     - If we're already inside the loop's thread, raise an error (to avoid dead-lock).
     - If no loop is running, create one temporarily.
     - If a loop is running in another thread, schedule thread-safely.
+
+    Apply asyncio.wait_for cancellation semantics when a timeout is given.
     """
     try:
         loop = asyncio.get_running_loop()
     except RuntimeError:
+        if timeout is not None:
+            return asyncio.run(asyncio.wait_for(awaitable, timeout), debug=False)
         if asyncio.iscoroutine(awaitable):
             return asyncio.run(awaitable, debug=False)  # type: ignore[no-any-return]
         else:
