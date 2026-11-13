@@ -42,5 +42,5 @@ class AzureOpenAIChatModel(LiteLLMChatModel):
         )
         self._assert_setting_value("api_version", api_version, envs=["AZURE_OPENAI_API_VERSION", "AZURE_API_VERSION"])
         self._settings["extra_headers"] = parse_extra_headers(
-            self._settings.get("extra_headers"), os.getenv("AZURE_OPENAI_API_HEADERS")
+            self._settings.get("extra_headers"), os.getenv("AZURE_OPENAI_API_HEADERS") or os.getenv("AZURE_API_HEADERS")
         )
