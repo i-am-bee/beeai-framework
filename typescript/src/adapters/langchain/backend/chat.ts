@@ -22,6 +22,39 @@ import {
 import { AIMessageChunk } from "@langchain/core/messages";
 import { toBeeAIMessages, toLCMessages } from "./utils.js";
 
+const FINISH_REASONS: Record<string, ChatModelFinishReason> = {
+  stop: "stop",
+  end_turn: "stop",
+  stop_sequence: "stop",
+  length: "length",
+  max_tokens: "length",
+  model_context_window_exceeded: "length",
+  tool_calls: "tool-calls",
+  function_call: "tool-calls",
+  tool_use: "tool-calls",
+  content_filter: "content-filter",
+  content_filtered: "content-filter",
+  guardrail_intervened: "content-filter",
+  refusal: "content-filter",
+  safety: "content-filter",
+  error: "error",
+};
+
+function toFinishReason(metadata?: Record<string, unknown>): ChatModelFinishReason | undefined {
+  // Ollama reports "done_reason", OpenAI "finish_reason", Anthropic "stop_reason",
+  // Bedrock "stopReason" and Google "finishReason".
+  const raw =
+    metadata?.done_reason ??
+    metadata?.finish_reason ??
+    metadata?.stop_reason ??
+    metadata?.stopReason ??
+    metadata?.finishReason;
+  if (typeof raw !== "string" || !raw) {
+    return undefined;
+  }
+  return FINISH_REASONS[raw.toLowerCase()] ?? "other";
+}
+
 export class LangChainChatModel extends ChatModel {
   public readonly emitter: ChatModelEmitter;
 
@@ -89,8 +122,7 @@ export class LangChainChatModel extends ChatModel {
   protected prepareOutput(output: AIMessageChunk) {
     const messages = toBeeAIMessages([output]);
 
-    const stop: ChatModelFinishReason =
-      (output.response_metadata?.stop_sequence as ChatModelFinishReason) || "stop";
+    const stop = toFinishReason(output.response_metadata);
     return new ChatModelOutput(
       messages,
       {
