@@ -178,3 +178,27 @@ class TestAzureOpenAIChatModel:
         monkeypatch.setenv("AZURE_OPENAI_CHAT_MODEL", "new_model")
         model = AzureOpenAIChatModel()
         assert model.model_id == "new_model"
+
+    @pytest.mark.unit
+    @pytest.mark.parametrize("env_name", ["AZURE_OPENAI_API_HEADERS", "AZURE_API_HEADERS"])
+    def test_extra_headers_from_env(self, monkeypatch: pytest.MonkeyPatch, env_name: str) -> None:
+        """Test that both documented header environment variables are read."""
+        monkeypatch.delenv("AZURE_OPENAI_API_HEADERS", raising=False)
+        monkeypatch.delenv("AZURE_API_HEADERS", raising=False)
+        monkeypatch.setenv(env_name, "X-Test=1")
+        settings = {"api_key": "k", "base_url": "b", "api_version": "v"}
+
+        model = AzureOpenAIChatModel(model_id="gpt-4o", settings=settings)
+
+        assert model._settings["extra_headers"] == {"X-Test": "1"}
+
+    @pytest.mark.unit
+    def test_extra_headers_env_precedence(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        """Test precedence order: AZURE_OPENAI_API_HEADERS > AZURE_API_HEADERS."""
+        monkeypatch.setenv("AZURE_OPENAI_API_HEADERS", "X-Test=openai")
+        monkeypatch.setenv("AZURE_API_HEADERS", "X-Test=azure")
+        settings = {"api_key": "k", "base_url": "b", "api_version": "v"}
+
+        model = AzureOpenAIChatModel(model_id="gpt-4o", settings=settings)
+
+        assert model._settings["extra_headers"] == {"X-Test": "openai"}
