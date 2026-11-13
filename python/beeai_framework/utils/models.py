@@ -187,7 +187,18 @@ class JSONSchemaModel(ABC, BaseModel):
             properties["root"] = schema
 
         for param_name, param in properties.items():
-            fields[param_name] = create_field(param_name, param, set(schema.get("required", [])))
+            field_type, field_info = create_field(param_name, param, set(schema.get("required", [])))
+            field_name = param_name
+            if param_name.startswith("_") or (param_name.startswith("model_") and hasattr(BaseModel, param_name)):
+                # Pydantic rejects these field names (e.g. "_id"); store the field under another name and keep
+                # the property name as its alias for validation and dumping.
+                field_name = f"field_{param_name.lstrip('_')}"
+                while field_name in properties or field_name in fields:
+                    field_name += "_"
+                field_info = FieldInfo.merge_field_infos(field_info, Field(alias=param_name))
+                updated_config["validate_by_name"] = True
+                updated_config["serialize_by_alias"] = True
+            fields[field_name] = (field_type, field_info)
 
         model: type[JSONSchemaModel] = create_model(  # type: ignore
             schema_name, __base__=cls, **fields, __config__=updated_config
