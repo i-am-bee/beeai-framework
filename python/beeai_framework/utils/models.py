@@ -109,8 +109,10 @@ class JSONSchemaModel(ABC, BaseModel):
                 target_types: list[type] = []
                 for idx, t in enumerate(param["anyOf"]):
                     tmp_name = f"{param_name}_{idx}"
-                    field, _ = create_field(tmp_name, t, {tmp_name})
-                    target_types.append(field)
+                    field, field_info = create_field(tmp_name, t, {tmp_name})
+                    # Keep branch constraints without field-only attributes such as defaults.
+                    # pyrefly: ignore [not-a-type]
+                    target_types.append(Annotated[field, *field_info.metadata] if field_info.metadata else field)
 
                 if len(target_types) == 1:
                     return create_field(param_name, remap_key(param, source="anyOf", target="type"), required)
