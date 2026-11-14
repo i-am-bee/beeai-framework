@@ -180,3 +180,13 @@ async def test_run_survives_malformed_chunks(monkeypatch: pytest.MonkeyPatch) ->
     output = await agent.run("hi")
 
     assert output.output[-1].text == "ok"
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+@pytest.mark.parametrize("instance_url", ["https://example.com/instances/abc", "https://example.com/instances/abc/"])
+async def test_client_base_url_ignores_trailing_slash(instance_url: str) -> None:
+    agent = WatsonxOrchestrateAgent(agent_id="a1", instance_url=instance_url)
+
+    async with agent._create_client() as client:
+        assert str(client.base_url) == "https://example.com/instances/abc/v1/orchestrate/"
