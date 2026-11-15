@@ -3,13 +3,15 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { v4 as uuidv4 } from "uuid";
-
 import { AnyAgent } from "@/agents/types.js";
-import { AgentExecutor, RequestContext, ExecutionEventBus } from "@a2a-js/sdk/server";
-import { Message, TaskStatusUpdateEvent } from "@a2a-js/sdk";
+import { AgentEvent, AgentExecutor, RequestContext, ExecutionEventBus } from "@a2a-js/sdk/server";
+import { Message, Role, Task, TaskState, TaskStatusUpdateEvent } from "@a2a-js/sdk";
 import { Logger } from "@/logger/logger.js";
-import { convertA2AMessageToFrameworkMessage } from "@/adapters/a2a/agents/utils.js";
+import {
+  convertA2AMessageToFrameworkMessage,
+  createA2AMessage,
+  createA2APart,
+} from "@/adapters/a2a/agents/utils.js";
 import { Callback, Emitter } from "@/emitter/emitter.js";
 import { ToolCallingAgentCallbacks, ToolCallingAgentRunState } from "@/agents/toolCalling/types.js";
 import { ReActAgentCallbacks } from "@/agents/react/types.js";
@@ -19,6 +21,29 @@ const logger = Logger.root.child({
   name: "A2A server",
 });
 
+function createStatusUpdate(
+  taskId: string,
+  contextId: string,
+  state: TaskState,
+  message?: Message,
+): TaskStatusUpdateEvent {
+  return {
+    taskId,
+    contextId,
+    status: { state, message, timestamp: new Date().toISOString() },
+    metadata: undefined,
+  };
+}
+
+function createAgentMessage(text: string, taskId: string, contextId: string): Message {
+  return createA2AMessage({
+    role: Role.ROLE_AGENT,
+    parts: [createA2APart({ $case: "text", value: text })],
+    taskId,
+    contextId,
+  });
+}
+
 export abstract class BaseA2AAgentExecutor implements AgentExecutor {
   protected readonly abortControllers = new Map<string, [string, AbortController]>();
 
@@ -26,14 +51,16 @@ export abstract class BaseA2AAgentExecutor implements AgentExecutor {
 
   async execute(requestContext: RequestContext, eventBus: ExecutionEventBus): Promise<void> {
     const userMessage = requestContext.userMessage;
-    const existingTask = requestContext.task || {
-      kind: "task",
-      id: uuidv4(),
-      contextId: userMessage.contextId || uuidv4(),
+    // a2a-js 1.x checks that the events carry the task id it assigned to the request
+    const existingTask: Task = requestContext.task || {
+      id: requestContext.taskId,
+      contextId: requestContext.contextId,
       status: {
-        state: "submitted",
+        state: TaskState.TASK_STATE_SUBMITTED,
+        message: undefined,
         timestamp: new Date().toISOString(),
       },
+      artifacts: [],
       history: [userMessage],
       metadata: userMessage.metadata,
     };
@@ -41,21 +68,12 @@ export abstract class BaseA2AAgentExecutor implements AgentExecutor {
     const taskId = existingTask.id;
     const contextId = existingTask.contextId;
 
-    // Publish initial Task event if it's a new task
-    eventBus.publish(existingTask);
+    // a2a-js 1.x requires a task or a message as the first event, also on follow-up turns
+    eventBus.publish(AgentEvent.task(existingTask));
 
-    // Publish "working" status update
-    const workingStatusUpdate: TaskStatusUpdateEvent = {
-      kind: "status-update",
-      taskId: taskId,
-      contextId: contextId,
-      status: {
-        state: "working",
-        timestamp: new Date().toISOString(),
-      },
-      final: false,
-    };
-    eventBus.publish(workingStatusUpdate);
+    eventBus.publish(
+      AgentEvent.statusUpdate(createStatusUpdate(taskId, contextId, TaskState.TASK_STATE_WORKING)),
+    );
 
     const abortController = new AbortController();
     this.abortControllers.set(taskId, [contextId, abortController]);
@@ -82,60 +100,27 @@ export abstract class BaseA2AAgentExecutor implements AgentExecutor {
           await this.process_events(emitter, requestContext, eventBus);
         });
 
-      const agentMessage: Message = {
-        kind: "message",
-        role: "agent",
-        messageId: uuidv4(),
-        parts: [{ kind: "text", text: response.result.text }],
-        taskId: taskId,
-        contextId: contextId,
-      };
+      const agentMessage = createAgentMessage(response.result.text, taskId, contextId);
 
-      // Append agent message to task history
-      if (!existingTask.history) {
-        existingTask.history = [];
-      }
-      existingTask.history.push(agentMessage);
-      eventBus.publish(existingTask);
-
-      // Publish completed status update with agent message
-      const finalUpdate: TaskStatusUpdateEvent = {
-        kind: "status-update",
-        taskId: taskId,
-        contextId: contextId,
-        status: {
-          state: "completed",
-          message: agentMessage,
-          timestamp: new Date().toISOString(),
-        },
-        final: true,
-      };
-      eventBus.publish(finalUpdate);
+      // Publish completed status update with agent message, which a2a-js adds to the task history
+      // (a second task event in the same stream is rejected since 1.x)
+      eventBus.publish(
+        AgentEvent.statusUpdate(
+          createStatusUpdate(taskId, contextId, TaskState.TASK_STATE_COMPLETED, agentMessage),
+        ),
+      );
 
       eventBus.finished();
     } catch (error) {
       logger.error(error, "Agent execution error");
       const errorMessage = error instanceof Error ? error.message : String(error);
       // Publish failed status update
-      const errorUpdate: TaskStatusUpdateEvent = {
-        kind: "status-update",
-        taskId: taskId,
-        contextId: contextId,
-        status: {
-          state: "failed",
-          message: {
-            kind: "message",
-            role: "agent",
-            messageId: uuidv4(),
-            parts: [{ kind: "text", text: `Agent error: ${errorMessage}` }],
-            taskId: taskId,
-            contextId: contextId,
-          },
-          timestamp: new Date().toISOString(),
-        },
-        final: true,
-      };
-      eventBus.publish(errorUpdate);
+      const failedMessage = createAgentMessage(`Agent error: ${errorMessage}`, taskId, contextId);
+      eventBus.publish(
+        AgentEvent.statusUpdate(
+          createStatusUpdate(taskId, contextId, TaskState.TASK_STATE_FAILED, failedMessage),
+        ),
+      );
       eventBus.finished();
     }
   }
@@ -151,17 +136,11 @@ export abstract class BaseA2AAgentExecutor implements AgentExecutor {
   public cancelTask = async (taskId: string, eventBus: ExecutionEventBus): Promise<void> => {
     if (this.abortControllers.has(taskId)) {
       const [contextId, abortController] = this.abortControllers.get(taskId)!;
-      const cancelledUpdate: TaskStatusUpdateEvent = {
-        kind: "status-update",
-        taskId: taskId,
-        contextId: contextId,
-        status: {
-          state: "canceled",
-          timestamp: new Date().toISOString(),
-        },
-        final: true,
-      };
-      eventBus.publish(cancelledUpdate);
+      eventBus.publish(
+        AgentEvent.statusUpdate(
+          createStatusUpdate(taskId, contextId, TaskState.TASK_STATE_CANCELED),
+        ),
+      );
       abortController.abort();
     }
   };
@@ -183,25 +162,18 @@ export class ToolCallingAgentExecutor extends BaseA2AAgentExecutor {
 
       const index = lastMsg ? messages.lastIndexOf(lastMsg) : -1;
       for (const message of messages.slice(index + 1)) {
-        const update: TaskStatusUpdateEvent = {
-          kind: "status-update",
-          taskId: requestContext.taskId,
-          contextId: requestContext.contextId,
-          status: {
-            state: "working",
-            message: {
-              kind: "message",
-              role: "agent",
-              messageId: uuidv4(),
-              parts: [{ kind: "text", text: JSON.stringify(message.toPlain()) }],
-              taskId: requestContext.taskId,
-              contextId: requestContext.contextId,
-            },
-            timestamp: new Date().toISOString(),
-          },
-          final: false,
-        };
-        eventBus.publish(update);
+        const { taskId, contextId } = requestContext;
+        const text = JSON.stringify(message.toPlain());
+        eventBus.publish(
+          AgentEvent.statusUpdate(
+            createStatusUpdate(
+              taskId,
+              contextId,
+              TaskState.TASK_STATE_WORKING,
+              createAgentMessage(text, taskId, contextId),
+            ),
+          ),
+        );
         lastMsg = message;
       }
     };
@@ -217,25 +189,17 @@ export class ReActAgentExecutor extends BaseA2AAgentExecutor {
     eventBus: ExecutionEventBus,
   ): Promise<void> {
     emitter.on("update", async ({ update }) => {
-      const updateEvent: TaskStatusUpdateEvent = {
-        kind: "status-update",
-        taskId: requestContext.taskId,
-        contextId: requestContext.contextId,
-        status: {
-          state: "working",
-          message: {
-            kind: "message",
-            role: "agent",
-            messageId: uuidv4(),
-            parts: [{ kind: "text", text: update.value }],
-            taskId: requestContext.taskId,
-            contextId: requestContext.contextId,
-          },
-          timestamp: new Date().toISOString(),
-        },
-        final: false,
-      };
-      eventBus.publish(updateEvent);
+      const { taskId, contextId } = requestContext;
+      eventBus.publish(
+        AgentEvent.statusUpdate(
+          createStatusUpdate(
+            taskId,
+            contextId,
+            TaskState.TASK_STATE_WORKING,
+            createAgentMessage(update.value, taskId, contextId),
+          ),
+        ),
+      );
     });
   }
 }

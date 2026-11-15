@@ -6,13 +6,7 @@
 import { Message } from "@/backend/message.js";
 import { BaseMemory } from "@/memory/base.js";
 import { BaseAgentRunOptions } from "@/agents/base.js";
-import {
-  AgentCard,
-  Message as A2AMessage,
-  Task,
-  TaskArtifactUpdateEvent,
-  TaskStatusUpdateEvent,
-} from "@a2a-js/sdk";
+import { AgentCard, Message as A2AMessage, StreamResponse } from "@a2a-js/sdk";
 
 export interface A2AAgentRunInput {
   input: string | Message | Message[] | A2AMessage;
@@ -20,7 +14,7 @@ export interface A2AAgentRunInput {
 
 export interface A2AAgentRunOutput {
   result: Message;
-  event: A2AMessage | Task | TaskStatusUpdateEvent | TaskArtifactUpdateEvent;
+  event: StreamResponse;
 }
 
 export interface A2AAgentInput {
