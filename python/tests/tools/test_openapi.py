@@ -232,6 +232,50 @@ async def test_path_parameters_are_substituted_not_sent_as_query(monkeypatch: py
 
 @pytest.mark.unit
 @pytest.mark.asyncio
+async def test_path_item_parameters_apply_to_the_operation(monkeypatch: pytest.MonkeyPatch) -> None:
+    # OpenAPI lets a Path Item declare parameters shared by all of its operations;
+    # an operation parameter with the same name and location overrides them.
+    schema = _schema(
+        "https://example.invalid",
+        "/pets/{petId}",
+        {"parameters": [{"name": "verbose", "in": "query", "schema": {"type": "boolean"}}]},
+    )
+    schema["paths"]["/pets/{petId}"]["parameters"] = [
+        {"name": "petId", "in": "path", "required": True, "schema": {"type": "integer"}},
+        {"name": "verbose", "in": "query", "schema": {"type": "string"}},
+    ]
+
+    url, _ = await _run_and_capture(monkeypatch, schema, {"petId": 7, "verbose": True})
+
+    assert url == "https://example.invalid/pets/7?verbose=true"
+
+
+@pytest.mark.unit
+def test_input_schema_skips_path_item_fields_that_are_not_operations() -> None:
+    schema = _schema("https://example.invalid", "/pets", {})
+    schema["paths"]["/pets/{petId}"] = {
+        "summary": "A single pet",
+        "parameters": [{"name": "petId", "in": "path", "required": True, "schema": {"type": "integer"}}],
+        "get": {"operationId": "getPet", "responses": {"200": {"description": "ok"}}},
+    }
+
+    tool = OpenAPITool(schema)
+    tool.input_schema.model_validate({"path": "/pets/{petId}", "method": "get", "parameters": {"petId": 7}})
+
+
+@pytest.mark.unit
+def test_from_schema_skips_path_item_extensions() -> None:
+    schema = _schema("https://example.invalid", "/pets", {})
+    schema["paths"]["/pets"]["x-amazon-apigateway-any-method"] = {"responses": {"200": {"description": "ok"}}}
+
+    [tool] = OpenAPITool.from_schema(schema)
+
+    assert tool.name == "op"
+    tool.input_schema.model_validate({})
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
 async def test_header_and_cookie_parameters_are_sent_as_headers(monkeypatch: pytest.MonkeyPatch) -> None:
     schema = _schema(
         "https://example.invalid",
