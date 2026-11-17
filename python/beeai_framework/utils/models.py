@@ -20,6 +20,34 @@ T = TypeVar("T", bound=BaseModel)
 ModelLike = Union[T, dict[str, Any]]  # noqa: UP007
 
 
+def _cut_recursive_refs(schema: dict[str, Any]) -> None:
+    """Replace the references left by a self-referencing schema with the type of their definition.
+
+    Pydantic cannot emit a custom JSON schema with its own "$defs", so the levels below a cycle
+    accept any value of the definition's type.
+    """
+    defs = schema.pop("$defs", None) or {}
+
+    def cut(node: Any) -> Any:
+        if isinstance(node, list):
+            return [cut(value) for value in node]
+        if not isinstance(node, dict):
+            return node
+        ref = node.get("$ref")
+        if isinstance(ref, str) and ref.startswith("#/$defs/"):
+            target = defs.get(ref.removeprefix("#/$defs/"), {})
+            node = {k: v for k, v in node.items() if k != "$ref"}
+            for key in ("type", "title"):
+                if key in target:
+                    node.setdefault(key, target[key])
+            if node.get("type") == "object":
+                node.setdefault("additionalProperties", True)
+        return {k: cut(v) for k, v in node.items()}
+
+    if defs:
+        schema.update(cut(schema))
+
+
 def to_model(cls: type[T], obj: ModelLike[T]) -> T:
     return obj if isinstance(obj, cls) else cls.model_validate(obj, strict=False, from_attributes=True)
 
@@ -72,6 +100,7 @@ class JSONSchemaModel(ABC, BaseModel):
         from beeai_framework.backend.utils import inline_schema_refs
 
         schema = inline_schema_refs(copy.deepcopy(schema))
+        _cut_recursive_refs(schema)
         simplify_json_schema(schema)
 
         type_mapping: dict[str, Any] = {
