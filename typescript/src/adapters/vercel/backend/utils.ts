@@ -90,7 +90,10 @@ export function parseHeadersFromEnv(env: string): Record<string, any> {
         String(value || "")
           .split(",")
           .filter((pair) => pair.includes("="))
-          .map((pair) => pair.split("=")),
+          .map((pair) => {
+            const separator = pair.indexOf("=");
+            return [pair.slice(0, separator).trim(), pair.slice(separator + 1).trim()];
+          }),
       );
     }, z.record(z.string())),
   );
