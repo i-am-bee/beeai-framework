@@ -3,7 +3,7 @@
 
 from collections.abc import AsyncGenerator
 from types import SimpleNamespace
-from typing import Any, cast
+from typing import Any, ClassVar, cast
 
 import litellm
 import pytest
@@ -38,6 +38,7 @@ from beeai_framework.backend.message import (
     UserMessage,
 )
 from beeai_framework.backend.types import ChatModelParameters
+from beeai_framework.tools import tool
 
 
 class DummyLiteLLMChatModel(LiteLLMChatModel):
@@ -834,3 +835,96 @@ class TestClaudeOnCloudProvidersImplicitTemperature:
         captured = await self._captured_request(self._bedrock("meta.llama3-70b-instruct-v1:0"), top_p=0.9)
 
         assert captured["temperature"] == 0
+
+
+class TestAnthropicForcedToolChoice:
+    """Claude 5.5-era models answer a forced `tool_choice` with a 400, so it must never reach LiteLLM."""
+
+    AFFECTED: ClassVar[list[str]] = [
+        "claude-opus-5-5",
+        "claude-sonnet-5-5",
+        "claude-fable-5-1",
+        "claude-mythos-5-1",
+        "claude-opus-5-5-20261101",
+    ]
+
+    @staticmethod
+    def _tool() -> Any:
+        @tool
+        def get_weather(city: str) -> str:
+            """Get the weather of a city."""
+            return "sunny"
+
+        return get_weather
+
+    @staticmethod
+    async def _captured_request(model: AnthropicChatModel, **run_kwargs: Any) -> dict[str, Any]:
+        captured: dict[str, Any] = {}
+        monkeypatch = pytest.MonkeyPatch()
+        monkeypatch.setattr(
+            "beeai_framework.adapters.litellm.chat.acompletion",
+            TestStopSequences._capturing_acompletion(captured),
+        )
+        try:
+            await model.run([UserMessage("hi")], **run_kwargs)
+        except Exception:
+            pass
+        finally:
+            monkeypatch.undo()
+        return captured
+
+    @pytest.mark.unit
+    @pytest.mark.asyncio
+    @pytest.mark.parametrize("model_id", AFFECTED)
+    async def test_required_is_sent_as_structured_output(self, model_id: str) -> None:
+        captured = await self._captured_request(
+            AnthropicChatModel(model_id, api_key="test"), tools=[self._tool()], tool_choice="required"
+        )
+
+        assert "tool_choice" not in captured
+        assert "tools" not in captured
+        assert "response_format" not in captured
+        assert captured["output_config"]["format"]["type"] == "json_schema"
+
+    @pytest.mark.unit
+    @pytest.mark.asyncio
+    @pytest.mark.parametrize("model_id", AFFECTED)
+    async def test_single_tool_is_sent_as_structured_output(self, model_id: str) -> None:
+        t = self._tool()
+        captured = await self._captured_request(AnthropicChatModel(model_id, api_key="test"), tools=[t], tool_choice=t)
+
+        assert "tool_choice" not in captured
+        assert "tools" not in captured
+        assert captured["output_config"]["format"]["type"] == "json_schema"
+
+    @pytest.mark.unit
+    @pytest.mark.asyncio
+    @pytest.mark.parametrize("model_id", ["claude-opus-5", "claude-sonnet-5"])
+    async def test_unaffected_models_still_force_the_tool(self, model_id: str) -> None:
+        captured = await self._captured_request(
+            AnthropicChatModel(model_id, api_key="test"), tools=[self._tool()], tool_choice="required"
+        )
+
+        assert captured["tool_choice"] == "required"
+        assert "output_config" not in captured
+
+    @pytest.mark.unit
+    @pytest.mark.asyncio
+    async def test_auto_is_kept_on_affected_models(self) -> None:
+        captured = await self._captured_request(
+            AnthropicChatModel("claude-opus-5-5", api_key="test"), tools=[self._tool()], tool_choice="auto"
+        )
+
+        assert captured["tool_choice"] == "auto"
+        assert captured["tools"]
+
+    @pytest.mark.unit
+    def test_support_is_narrowed_only_for_affected_models(self) -> None:
+        assert AnthropicChatModel("claude-opus-5-5", api_key="t")._tool_choice_support == {"auto", "none"}
+        assert AnthropicChatModel("claude-opus-5", api_key="t")._tool_choice_support >= {"required", "single"}
+
+    @pytest.mark.unit
+    def test_explicit_tool_choice_support_is_kept(self) -> None:
+        model = AnthropicChatModel("claude-opus-5-5", api_key="t", tool_choice_support={"required", "auto"})
+
+        assert model._tool_choice_support == {"required", "auto"}

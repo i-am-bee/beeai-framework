@@ -5,6 +5,7 @@ import os
 from typing import Any
 
 from dotenv import load_dotenv
+from litellm.llms.anthropic.chat.transformation import AnthropicConfig
 from typing_extensions import Unpack
 
 from beeai_framework.adapters.litellm import utils
@@ -16,6 +17,15 @@ from beeai_framework.logger import Logger
 
 logger = Logger(__name__)
 load_dotenv()
+
+# Claude models that answer a forced `tool_choice` (`any` / `tool`) with an HTTP 400.
+# Matched as a prefix so dated snapshots are covered while `claude-opus-5` / `claude-sonnet-5` are not.
+_NO_FORCED_TOOL_CHOICE_PREFIXES = (
+    "claude-opus-5-5",
+    "claude-sonnet-5-5",
+    "claude-fable-5-1",
+    "claude-mythos-5-1",
+)
 
 
 class AnthropicChatModel(LiteLLMChatModel):
@@ -45,6 +55,14 @@ class AnthropicChatModel(LiteLLMChatModel):
             self._settings.get("extra_headers"), os.getenv("ANTHROPIC_API_HEADERS")
         )
 
+        if self._rejects_forced_tool_choice and kwargs.get("tool_choice_support") is None:
+            self._tool_choice_support.discard("required")
+            self._tool_choice_support.discard("single")
+
+    @property
+    def _rejects_forced_tool_choice(self) -> bool:
+        return self.model_id.removeprefix("anthropic/").startswith(_NO_FORCED_TOOL_CHOICE_PREFIXES)
+
     @classmethod
     def get_default_parameters(cls) -> ChatModelParameters:
         # Leaves `temperature` unset, so `_transform_input` can tell the implicit 0 from a chosen one
@@ -54,5 +72,14 @@ class AnthropicChatModel(LiteLLMChatModel):
         params = super()._transform_input(input)
 
         self._drop_implicit_temperature(input, params)
+
+        # Without forced tool choice `ChatModel` asks for the tool call through the response format.
+        # Send it as Anthropic's structured outputs (`output_config.format`).
+        if self._rejects_forced_tool_choice and input.response_format:
+            output_format = AnthropicConfig().map_response_format_to_anthropic_output_format(
+                params.pop("response_format", None)
+            )
+            if output_format:
+                params["output_config"] = {**(params.get("output_config") or {}), "format": dict(output_format)}
 
         return params
