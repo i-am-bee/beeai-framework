@@ -184,3 +184,21 @@ async def test_clone_is_independent() -> None:
 
     assert len(memory.messages) == 1
     assert clone.messages == []
+
+
+@pytest.mark.asyncio
+@pytest.mark.unit
+async def test_empty_batch_preserves_memory_without_resummarizing() -> None:
+    model = _StubSummaryModel()
+    memory = SummarizeMemory(model)
+
+    await memory.add_many([])
+    assert memory.is_empty()
+
+    await memory.add(UserMessage("hello"))
+    previous = memory.messages[0]
+    await memory.add_many(iter(()))
+
+    assert memory.messages == [previous]
+    assert memory.messages[0] is previous
+    assert len(model.prompts) == 1
