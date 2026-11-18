@@ -127,6 +127,15 @@ describe("Sliding Memory", () => {
     expect(memory.messages).toEqual([pending, response]);
   });
 
+  it("Evicts an older exchange that reuses the id of the pending call", async () => {
+    const memory = new SlidingMemory({ size: 4 });
+    const pending = call("");
+    const response = result("");
+    await memory.addMany([call(""), result(""), new UserMessage("next"), pending]);
+    await memory.add(response);
+    expect(memory.messages.slice(-2)).toEqual([pending, response]);
+  });
+
   it("Leaves an exchange unchanged when the window cannot fit another result", async () => {
     const memory = new SlidingMemory({ size: 2 });
     const pending = call("a", "b");

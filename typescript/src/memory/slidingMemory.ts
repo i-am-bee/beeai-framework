@@ -82,6 +82,15 @@ export class SlidingMemory extends BaseMemory {
           ? message.getToolResults().map((result) => result.toolCallId)
           : [],
       );
+      // only the latest call can own the incoming result; an older exchange may reuse its id
+      const pendingCall = remaining
+        .slice()
+        .reverse()
+        .find(
+          (msg) =>
+            msg instanceof AssistantMessage &&
+            msg.getToolCalls().some((call) => pendingIds.has(call.toolCallId)),
+        );
 
       for (const candidate of selected) {
         // A selector can include both a call and its result, already removed as a group.
@@ -98,13 +107,7 @@ export class SlidingMemory extends BaseMemory {
         }
         const [start, end] = toolExchange(remaining, index);
         const exchange = remaining.slice(start, end);
-        if (
-          exchange.some(
-            (msg) =>
-              msg instanceof AssistantMessage &&
-              msg.getToolCalls().some((call) => pendingIds.has(call.toolCallId)),
-          )
-        ) {
+        if (pendingCall && exchange.includes(pendingCall)) {
           throw new MemoryFatalError(
             `The tool exchange cannot fit inside current memory (${size} messages).`,
           );
