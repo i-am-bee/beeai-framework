@@ -14,6 +14,13 @@ from beeai_framework.tools import StringToolOutput, Tool, ToolError, ToolRunOpti
 from beeai_framework.utils import JSONSchemaModel
 from beeai_framework.utils.strings import to_safe_word
 
+_HTTP_METHODS = ("get", "put", "post", "delete", "options", "head", "patch", "trace")
+
+
+def _is_operation(method: str, method_spec: Any) -> bool:
+    # A Path Item also holds fields that are not operations (parameters, summary, servers, x-* extensions).
+    return method.lower() in _HTTP_METHODS and isinstance(method_spec, dict)
+
 
 class OpenAPIToolOutput(StringToolOutput):
     def __init__(self, status: int, result: str = "") -> None:
@@ -180,13 +187,32 @@ class OpenAPITool(Tool[BaseModel, ToolRunOptions, OpenAPIToolOutput]):
             new_schema.pop("components", None)
             return new_schema
 
-        skip_default_parameters = False
-        items = list(self.open_api_schema.get("paths", {}).values())
-        if len(items) == 1 and len(items[0].values()) == 1:
-            skip_default_parameters = True
+        def parameter_key(parameter: dict[str, Any]) -> tuple[Any, Any]:
+            if "$ref" in parameter:
+                parameter = get_referenced_object(self.open_api_schema, parameter["$ref"])
+            return parameter.get("name"), parameter.get("in")
+
+        operations_count = sum(
+            _is_operation(method, method_spec)
+            for path_spec in self.open_api_schema.get("paths", {}).values()
+            for method, method_spec in path_spec.items()
+        )
+        skip_default_parameters = operations_count == 1
 
         for path, path_spec in self.open_api_schema.get("paths", {}).items():
             for method, method_spec in path_spec.items():
+                if not _is_operation(method, method_spec):
+                    continue
+
+                # Path Item parameters apply to every operation under the path; an operation parameter
+                # with the same name and location overrides them.
+                operation_parameters = list(
+                    {
+                        parameter_key(p): p
+                        for p in [*(path_spec.get("parameters") or []), *(method_spec.get("parameters") or [])]
+                    }.values()
+                )
+
                 properties = (
                     {}
                     if skip_default_parameters
@@ -215,15 +241,15 @@ class OpenAPITool(Tool[BaseModel, ToolRunOptions, OpenAPIToolOutput]):
                         request_body = get_referenced_object(self.open_api_schema, request_body["$ref"])
                     properties["body"] = resolve_schema_refs(request_body)
 
-                if method_spec.get("parameters"):
+                if operation_parameters:
                     parameters = {
                         "type": "object",
                         "additionalProperties": False,
-                        "required": [p["name"] for p in method_spec["parameters"] if p.get("required")],
+                        "required": [p["name"] for p in operation_parameters if p.get("required")],
                         "properties": {},
                     }
 
-                    for p in method_spec["parameters"]:
+                    for p in operation_parameters:
                         if "$ref" not in p:
                             parameters["properties"][p["name"]] = {**p.get("schema", {}), "description": p["name"]}  # type: ignore
                         else:
@@ -373,9 +399,13 @@ class OpenAPITool(Tool[BaseModel, ToolRunOptions, OpenAPIToolOutput]):
         tools: list[OpenAPITool] = []
         for path, path_spec in open_api_schema.get("paths", {}).items():
             for method, method_spec in path_spec.items():
-                if isinstance(method_spec, dict):
+                if _is_operation(method, method_spec):
                     new_schema = open_api_schema.copy()
-                    new_schema["paths"] = {path: {method: method_spec}}
+                    # Keep the Path Item parameters; they apply to this operation too.
+                    path_item: dict[str, Any] = {method: method_spec}
+                    if "parameters" in path_spec:
+                        path_item["parameters"] = path_spec["parameters"]
+                    new_schema["paths"] = {path: path_item}
                     tools.append(
                         OpenAPITool(
                             open_api_schema=new_schema,
