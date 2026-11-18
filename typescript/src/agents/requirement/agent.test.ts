@@ -6,10 +6,11 @@ import { RequirementAgent } from "./agent.js";
 import { RequirementAgentRunner } from "./runner.js";
 import { RequirementsReasoner } from "./utils/llm.js";
 import { ChatModel, ChatModelInput, ChatModelOutput } from "@/backend/chat.js";
-import { AssistantMessage } from "@/backend/message.js";
+import { AssistantMessage, ToolMessage } from "@/backend/message.js";
 import { GetRunContext } from "@/context.js";
 import { Emitter } from "@/emitter/emitter.js";
 import { Tool, ToolEvents, StringToolOutput } from "@/tools/base.js";
+import { OpenAPITool } from "@/tools/openapi.js";
 import { vi } from "vitest";
 import { z } from "zod";
 
@@ -329,6 +330,58 @@ describe("RequirementAgent maxIterations", () => {
       }
     } finally {
       f.cleanup();
+    }
+  });
+});
+
+describe("RequirementAgent OpenAPI responses", () => {
+  it.each([
+    { status: 401, expected: "HTTP 401" },
+    { status: 204, expected: "No results were found!" },
+  ])("passes the outcome of HTTP $status to the model", async ({ status, expected }) => {
+    const fetchMock = vi.fn().mockResolvedValue(new Response(null, { status }));
+    vi.stubGlobal("fetch", fetchMock);
+    const tool = new OpenAPITool({
+      openApiSchema: JSON.stringify({
+        openapi: "3.0.0",
+        info: { title: "test_api", version: "1.0.0" },
+        servers: [{ url: "https://example.com" }],
+        paths: { "/items": { get: { responses: { "204": { description: "No content" } } } } },
+      }),
+    });
+    const model = new ScriptedModel();
+    const create = vi.spyOn(model, "_create").mockResolvedValueOnce(
+      new ChatModelOutput([
+        new AssistantMessage([
+          {
+            type: "tool-call",
+            toolCallId: "read-items",
+            toolName: tool.name,
+            input: { path: "/items", method: "get" },
+          },
+        ]),
+      ]),
+    );
+    const agent = new RequirementAgent({ llm: model, tools: [tool] });
+
+    try {
+      const result = await agent.run({ prompt: "Read the items." });
+      expect(result.result.text).toBe("hello");
+      expect(fetchMock).toHaveBeenCalledOnce();
+      const messages = create.mock.calls[1]?.[0].messages ?? [];
+      const toolResult = messages
+        .filter((message): message is ToolMessage => message instanceof ToolMessage)
+        .flatMap((message) => message.getToolResults())
+        .find((part) => part.toolCallId === "read-items");
+      expect(toolResult?.output).toEqual({
+        type: "text",
+        value: expect.stringContaining(expected),
+      });
+    } finally {
+      agent.destroy();
+      model.destroy();
+      tool.emitter.destroy();
+      vi.unstubAllGlobals();
     }
   });
 });

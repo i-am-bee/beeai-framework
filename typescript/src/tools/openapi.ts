@@ -221,15 +221,23 @@ export class OpenAPITool extends Tool<OpenAPIToolOutput, OpenAPIToolOptions> {
       headers,
     };
     await run.emitter.emit("beforeFetch", { options: options, url: url });
+    let output: OpenAPIToolOutput;
     try {
       const response = await fetch(url.toString(), options);
       const text = await response.text();
-      const output = new OpenAPIToolOutput(response.status, response.statusText, text);
+      output = new OpenAPIToolOutput(response.status, response.statusText, text);
       await run.emitter.emit("afterFetch", { data: output, url });
-      return output;
     } catch (err) {
       throw new ToolError(`Request to ${url} has failed.`, [err]);
     }
+
+    if (output.status < 200 || output.status >= 300) {
+      // A failed response can arrive after a write has already taken effect.
+      throw new ToolError(`OpenAPI request failed with HTTP ${output.status}.`, [], {
+        isRetryable: false,
+      });
+    }
+    return output;
   }
   createSnapshot() {
     return {

@@ -3,6 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import { ToolError } from "@/tools/base.js";
 import { OpenAPITool } from "@/tools/openapi.js";
 import { verifyDeserialization } from "@tests/e2e/utils.js";
 
@@ -113,6 +114,63 @@ describe("OpenAPI Tool", () => {
     expect(customOptions.body).toBe('{"name":"Bee"}');
     expect(new Headers(customOptions.headers).get("Content-Type")).toBe("application/vnd.api+json");
     expect(new Headers(customOptions.headers).get("X-Test")).toBe("1");
+  });
+
+  it.each([302, 401, 500])("reports HTTP %i as a tool error", async (status) => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response(null, { status })));
+    const tool = new OpenAPITool({ openApiSchema });
+    const afterFetch = vi.fn();
+    const success = vi.fn();
+    tool.emitter.on("afterFetch", afterFetch);
+    tool.emitter.on("success", success);
+
+    try {
+      await expect(tool.run({ path: "/fact", method: "get" })).rejects.toMatchObject({
+        name: ToolError.name,
+        message: `OpenAPI request failed with HTTP ${status}.`,
+      });
+      expect(afterFetch).toHaveBeenCalledExactlyOnceWith(
+        expect.objectContaining({ data: expect.objectContaining({ status }) }),
+        expect.anything(),
+      );
+      expect(success).not.toHaveBeenCalled();
+    } finally {
+      tool.emitter.destroy();
+    }
+  });
+
+  it("accepts an empty HTTP 204 response as a successful result", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response(null, { status: 204 })));
+    const tool = new OpenAPITool({ openApiSchema });
+
+    try {
+      const output = await tool.run({ path: "/fact", method: "get" });
+      expect(output.status).toBe(204);
+      expect(output.isEmpty()).toBe(true);
+    } finally {
+      tool.emitter.destroy();
+    }
+  });
+
+  it("does not automatically replay a POST after receiving an HTTP error", async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(new Response(null, { status: 500 }))
+      .mockResolvedValue(new Response(null, { status: 201 }));
+    vi.stubGlobal("fetch", fetchMock);
+    const schema = JSON.parse(openApiSchema);
+    schema.paths["/fact"] = { post: schema.paths["/fact"].get };
+    const tool = new OpenAPITool({
+      openApiSchema: JSON.stringify(schema),
+      retryOptions: { maxRetries: 1 },
+    });
+
+    try {
+      await expect(tool.run({ path: "/fact", method: "post" })).rejects.toThrow(/HTTP 500/);
+      expect(fetchMock).toHaveBeenCalledOnce();
+    } finally {
+      tool.emitter.destroy();
+    }
   });
 
   describe("path parameters", () => {
