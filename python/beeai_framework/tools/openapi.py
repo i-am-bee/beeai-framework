@@ -374,6 +374,12 @@ class OpenAPITool(Tool[BaseModel, ToolRunOptions, OpenAPIToolOutput]):
                 )
                 output = OpenAPIToolOutput(response.status_code, response.text)
                 await self.emitter.emit("after_fetch", AfterFetchEvent(url=str(url), data=output))
+                if not response.is_success:
+                    # The operation path, not the resolved URL, so a credential in the server URL is not echoed
+                    message = f"{method.upper()} {raw_path} failed with HTTP {response.status_code}"
+                    if response.text:
+                        message += f": {response.text[:500]}"
+                    raise ToolError(message)
                 return output
         except httpx.HTTPError as err:
             raise ToolError(f"Request to {url} has failed.", cause=err)
