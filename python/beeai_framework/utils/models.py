@@ -226,7 +226,8 @@ class JSONSchemaModel(ABC, BaseModel):
                 field_name = f"field_{param_name.lstrip('_')}"
                 while field_name in properties or field_name in fields:
                     field_name += "_"
-                field_info = FieldInfo.merge_field_infos(field_info, Field(alias=param_name))
+                # pyrefly: ignore [not-a-type]
+                field_type = Annotated[field_type, Field(alias=param_name)]
                 updated_config["validate_by_name"] = True
                 updated_config["serialize_by_alias"] = True
             fields[field_name] = (field_type, field_info)
