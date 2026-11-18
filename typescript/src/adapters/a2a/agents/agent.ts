@@ -51,7 +51,7 @@ const clientFactory = new ClientFactory(
   }),
 );
 
-export class A2AAgent extends BaseAgent<A2AAgentRunInput, A2AAgentRunOutput> {
+export class A2AAgent extends BaseAgent<A2AAgentRunInput, A2AAgentRunOutput, A2AAgentRunOptions> {
   private _memory!: BaseMemory;
   public readonly emitter: Emitter<A2AAgentEvents>;
   protected url: string | undefined;
