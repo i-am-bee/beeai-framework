@@ -85,15 +85,14 @@ class CacheFn(Generic[P, R]):
         cache_key = key_builder(args, kwargs)
 
         entry = self._entries.get(cache_key)
-        now = time.time()
         if entry:
             value, expires_at = entry
-            if expires_at is None or expires_at > now:
+            if expires_at is None or expires_at > time.time():
                 return value
 
         result = await self._fn(*args, **kwargs)
         ttl = self._pending_ttl if self._pending_ttl is not None else self._default_ttl
         self._pending_ttl = None
-        expires_at = now + ttl if ttl is not None else None
+        expires_at = time.time() + ttl if ttl is not None else None
         self._entries[cache_key] = (result, expires_at)
         return result
