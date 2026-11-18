@@ -2,10 +2,10 @@
 # SPDX-License-Identifier: Apache-2.0
 
 from types import NoneType
-from typing import Any, Literal, get_args
+from typing import Annotated, Any, Literal, get_args
 
 import pytest
-from pydantic import ValidationError
+from pydantic import BaseModel, Field, ValidationError
 from pydantic._internal._model_construction import ModelMetaclass
 
 from beeai_framework.utils import JSONSchemaModel
@@ -526,3 +526,60 @@ def test_type_list_applies_each_keyword_to_its_own_types() -> None:
             model(id=bad)
     with pytest.raises(ValidationError):
         model(id="abc", count=-1)
+
+
+@pytest.mark.unit
+def test_any_of_preserves_pydantic_branch_constraints() -> None:
+    class Arguments(BaseModel):
+        value: Annotated[int, Field(ge=1, le=10)] | Annotated[str, Field(pattern="^item-[0-9]+$")] | None
+
+    schema = Arguments.model_json_schema()
+    model = JSONSchemaModel.create("constrained_union", schema)
+
+    for value in (1, 10, "item-12", None):
+        assert model(value=value).model_dump() == Arguments(value=value).model_dump()
+    for value in (0, 11, "invalid"):
+        with pytest.raises(ValidationError):
+            Arguments(value=value)
+        with pytest.raises(ValidationError):
+            model(value=value)
+    assert model.model_json_schema() == schema
+
+
+@pytest.mark.unit
+@pytest.mark.parametrize("keyword", ["anyOf", "oneOf"])
+def test_union_preserves_distinct_constraints_on_the_same_type(keyword: str) -> None:
+    model = JSONSchemaModel.create(
+        "disjoint_ranges",
+        {
+            "type": "object",
+            "properties": {
+                "value": {
+                    keyword: [
+                        {"type": "integer", "minimum": 1, "maximum": 3},
+                        {"type": "integer", "minimum": 7, "maximum": 9},
+                    ]
+                }
+            },
+            "required": ["value"],
+        },
+    )
+
+    for value in (1, 3, 7, 9):
+        assert model(value=value).model_dump() == {"value": value}
+    for value in (0, 5, 10):
+        with pytest.raises(ValidationError):
+            model(value=value)
+
+
+@pytest.mark.unit
+def test_any_of_preserves_constraints_in_array_items() -> None:
+    class Arguments(BaseModel):
+        values: list[Annotated[int, Field(ge=1)] | Annotated[str, Field(pattern="^item-[0-9]+$")]]
+
+    model = JSONSchemaModel.create("constrained_items", Arguments.model_json_schema())
+
+    assert model(values=[1, "item-12"]).model_dump() == {"values": [1, "item-12"]}
+    for values in ([0], ["invalid"]):
+        with pytest.raises(ValidationError):
+            model(values=values)

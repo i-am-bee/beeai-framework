@@ -6,11 +6,11 @@ import gc
 import weakref
 from collections.abc import AsyncIterator, Awaitable, Callable
 from contextlib import asynccontextmanager
-from typing import Any
+from typing import Annotated, Any
 from unittest.mock import AsyncMock, MagicMock, call, patch
 
 import pytest
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from beeai_framework.context import RunContext
 from beeai_framework.utils.strings import to_json
@@ -36,6 +36,7 @@ from mcp.types import (
 from mcp.types import Tool as MCPToolInfo
 
 from beeai_framework.tools import StringToolOutput, ToolError
+from beeai_framework.tools.errors import ToolInputValidationError
 from beeai_framework.tools.mcp import MCPTool
 from beeai_framework.tools.mcp.utils.compat import MCP_V2
 
@@ -166,6 +167,29 @@ def add_result() -> CallToolResult:
 
 # Basic Tool Tests
 class TestMCPTool:
+    @pytest.mark.asyncio
+    @pytest.mark.unit
+    async def test_mcp_tool_validates_any_of_before_calling_session(self, mock_client_session: AsyncMock) -> None:
+        class Arguments(BaseModel):
+            value: Annotated[int, Field(ge=1, le=10)] | Annotated[str, Field(pattern="^item-[0-9]+$")] | None
+
+        tool = MCPTool(
+            session=mock_client_session,
+            tool=tool_info(name="lookup", inputSchema=Arguments.model_json_schema()),
+        )
+        mock_client_session.call_tool.return_value = CallToolResult(content=[TextContent(type="text", text="ok")])
+
+        for value in (0, 11, "invalid"):
+            with pytest.raises(ToolInputValidationError):
+                await tool.run({"value": value})
+        mock_client_session.call_tool.assert_not_awaited()
+
+        for value in (1, 10, "item-12", None):
+            await tool.run({"value": value})
+        assert mock_client_session.call_tool.await_args_list == [
+            call(name="lookup", arguments={"value": value}) for value in (1, 10, "item-12", None)
+        ]
+
     @pytest.mark.asyncio
     @pytest.mark.unit
     async def test_mcp_tool_initialization(
