@@ -35,6 +35,9 @@ class SpendBudgetMiddleware(RunMiddlewareProtocol):
     # Shared by every instance, by run id: the runs in progress and their parents, the runs a middleware
     # is bound to, and the holds of model calls in flight. A model call is reserved once, on the
     # nearest enclosing run that has this middleware, even when a nested agent has its own.
+    # They are class-level, not per instance, because a handoff starts the nested agent with its own
+    # middleware instance: only a shared map lets that instance find the parent run and charge the
+    # parent's budget. Keys are run ids, so concurrent runs never share an entry.
     _parents: ClassVar[dict[str, str | None]] = {}
     _bound: ClassVar[dict[str, tuple["SpendBudgetMiddleware", Any]]] = {}
     _holds: ClassVar[dict[str, tuple["SpendBudgetMiddleware", Any]]] = {}
