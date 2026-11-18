@@ -233,9 +233,12 @@ export class OpenAPITool extends Tool<OpenAPIToolOutput, OpenAPIToolOptions> {
 
     if (output.status < 200 || output.status >= 300) {
       // A failed response can arrive after a write has already taken effect.
-      throw new ToolError(`OpenAPI request failed with HTTP ${output.status}.`, [], {
-        isRetryable: false,
-      });
+      // The operation path, not the resolved URL, so a credential in the server URL is not echoed
+      let message = `${String(input.method).toUpperCase()} ${input.path || ""} failed with HTTP ${output.status}`;
+      if (output.result) {
+        message += `: ${output.result.slice(0, 500)}`;
+      }
+      throw new ToolError(message, [], { isRetryable: false });
     }
     return output;
   }

@@ -116,6 +116,18 @@ describe("OpenAPI Tool", () => {
     expect(new Headers(customOptions.headers).get("X-Test")).toBe("1");
   });
 
+  it("includes the response body in the HTTP error", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue(new Response('{"detail":"bad thing"}', { status: 400 })),
+    );
+    const tool = new OpenAPITool({ openApiSchema });
+    await expect(tool.run({ path: "/fact", method: "get" })).rejects.toMatchObject({
+      name: ToolError.name,
+      message: 'GET /fact failed with HTTP 400: {"detail":"bad thing"}',
+    });
+  });
+
   it.each([302, 401, 500])("reports HTTP %i as a tool error", async (status) => {
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response(null, { status })));
     const tool = new OpenAPITool({ openApiSchema });
@@ -127,7 +139,7 @@ describe("OpenAPI Tool", () => {
     try {
       await expect(tool.run({ path: "/fact", method: "get" })).rejects.toMatchObject({
         name: ToolError.name,
-        message: `OpenAPI request failed with HTTP ${status}.`,
+        message: `GET /fact failed with HTTP ${status}`,
       });
       expect(afterFetch).toHaveBeenCalledExactlyOnceWith(
         expect.objectContaining({ data: expect.objectContaining({ status }) }),
