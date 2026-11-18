@@ -47,7 +47,11 @@ class SummarizeMemory(BaseMemory):
 
     async def add_many(self, messages: Iterable[AnyMessage], start: int | None = None) -> None:
         """Add multiple messages and summarize."""
-        messages_to_summarize = self._messages + list(messages)
+        new_messages = list(messages)
+        if not new_messages:
+            return
+
+        messages_to_summarize = self._messages + new_messages
         summary = await self._summarize_messages(messages_to_summarize)
 
         self._messages = [SystemMessage(summary)]
