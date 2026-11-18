@@ -1,5 +1,7 @@
 # Copyright 2025 © BeeAI a Series of LF Projects, LLC
 # SPDX-License-Identifier: Apache-2.0
+import copy
+from collections.abc import Iterator
 from importlib import import_module
 from typing import Any, Literal, TypeVar, Union
 
@@ -111,13 +113,78 @@ def parse_broken_json(input: str, fallback: Any | None = None, *, stream_stable:
         raise
 
 
+_LOCAL_DEFS_PREFIX = "#/$defs/"
+_RECURSIVE_REF_KEY = "__beeai_recursive_ref__"
+
+
+def _local_def_name(node: Any) -> str | None:
+    ref = node.get("$ref") if isinstance(node, dict) else None
+    if isinstance(ref, str) and ref.startswith(_LOCAL_DEFS_PREFIX):
+        return ref.removeprefix(_LOCAL_DEFS_PREFIX)
+    return None
+
+
+def _walk(node: Any) -> Iterator[dict[str, Any]]:
+    if isinstance(node, dict):
+        yield node
+        for value in node.values():
+            yield from _walk(value)
+    elif isinstance(node, list):
+        for value in node:
+            yield from _walk(value)
+
+
+def _find_cyclic_refs(defs: dict[str, Any]) -> dict[str, set[str]]:
+    """For each definition that refers to itself (directly or through other definitions),
+    return the names of the definitions it refers to that lead back to it."""
+    edges: dict[str, set[str]] = {}
+    for name, body in defs.items():
+        refs = (_local_def_name(node) for node in _walk(body))
+        edges[name] = {ref for ref in refs if ref is not None and ref in defs}
+
+    def reachable(start: str) -> set[str]:
+        seen: set[str] = set()
+        stack = list(edges[start])
+        while stack:
+            name = stack.pop()
+            if name not in seen:
+                seen.add(name)
+                stack.extend(edges[name])
+        return seen
+
+    reach = {name: reachable(name) for name in defs}
+    return {name: {target for target in edges[name] if name in reach[target]} for name in defs if name in reach[name]}
+
+
 def inline_schema_refs(schema: dict[str, Any], *, force: bool = False) -> dict[str, Any]:
     if schema.get("$defs") is not None or force is True:
+        defs = schema.get("$defs")
+        cyclic = _find_cyclic_refs(defs) if isinstance(defs, dict) else {}
+        if cyclic:
+            # A self-referencing schema cannot be fully inlined. Keep the references that close a cycle
+            # (and the definitions they point to) and inline everything else.
+            schema = copy.deepcopy(schema)
+            for name, targets in cyclic.items():
+                for node in _walk(schema["$defs"][name]):
+                    if _local_def_name(node) in targets:
+                        node[_RECURSIVE_REF_KEY] = node.pop("$ref")
+
         # pyrefly: ignore [bad-assignment]
         schema = jsonref.replace_refs(
             schema, base_uri="", load_on_repr=True, merge_props=True, proxies=False, lazy_load=False
         )
-        schema.pop("$defs", None)
+        defs = schema.pop("$defs", None)
+
+        if cyclic:
+            # A reference at the root (e.g. Pydantic's schema for a recursive model) leaves a JsonRef wrapper.
+            schema = dict(schema)
+            for node in _walk(schema):
+                if _RECURSIVE_REF_KEY in node:
+                    node["$ref"] = node.pop(_RECURSIVE_REF_KEY)
+            schema["$defs"] = {name: defs[name] for name in cyclic}
+            for node in _walk(schema["$defs"]):
+                if _RECURSIVE_REF_KEY in node:
+                    node["$ref"] = node.pop(_RECURSIVE_REF_KEY)
 
     return schema
 
