@@ -53,19 +53,18 @@ export class OpenAPITool extends Tool<OpenAPIToolOutput, OpenAPIToolOptions> {
 
   public readonly openApiSchema: any;
 
-  inputSchema(): SchemaObject {
-    const getReferencedObject = (json: any, refPath: string) => {
-      const pathSegments = refPath.split("/");
-      let currentObject = json;
-      for (const segment of pathSegments) {
-        if (segment === "#") {
-          continue;
-        }
-        currentObject = currentObject[segment];
+  protected getReferencedObject(refPath: string) {
+    let currentObject = this.openApiSchema;
+    for (const segment of refPath.split("/")) {
+      if (segment === "#") {
+        continue;
       }
-      return currentObject;
-    };
+      currentObject = currentObject[segment];
+    }
+    return currentObject;
+  }
 
+  inputSchema(): SchemaObject {
     return {
       type: "object",
       required: ["path", "method"],
@@ -98,9 +97,9 @@ export class OpenAPITool extends Tool<OpenAPIToolOutput, OpenAPIToolOptions> {
                           ? { ...acc, [p.name]: { ...p.schema, description: p.name } }
                           : {
                               ...acc,
-                              [getReferencedObject(this.openApiSchema, p.$ref)?.name]: {
-                                ...getReferencedObject(this.openApiSchema, p.$ref)?.schema,
-                                description: getReferencedObject(this.openApiSchema, p.$ref)?.name,
+                              [this.getReferencedObject(p.$ref)?.name]: {
+                                ...this.getReferencedObject(p.$ref)?.schema,
+                                description: this.getReferencedObject(p.$ref)?.name,
                               },
                             },
                       {},
@@ -159,10 +158,35 @@ export class OpenAPITool extends Tool<OpenAPIToolOutput, OpenAPIToolOptions> {
   ) {
     let path: string = input.path || "";
     const url = new URL(this.url);
+    const headers = new Headers(this.options.fetchOptions?.headers);
+    const cookies: string[] = [];
+    const parameters =
+      this.openApiSchema.paths?.[path]?.[input.method.toLowerCase()]?.parameters ?? [];
+    const locations = new Map<string, string>(
+      parameters.map((parameter: any) => {
+        const resolved = parameter.$ref ? this.getReferencedObject(parameter.$ref) : parameter;
+        return [resolved.name, resolved.in];
+      }),
+    );
     Object.keys(input.parameters ?? {}).forEach((key) => {
       const value = input.parameters[key];
       const placeholder = `{${key}}`;
-      if (!path.includes(placeholder)) {
+      const location = locations.get(key) ?? (path.includes(placeholder) ? "path" : "query");
+      if (location === "header") {
+        // These header parameters are ignored by OpenAPI; configured headers take precedence.
+        if (
+          !["accept", "content-type", "authorization"].includes(key.toLowerCase()) &&
+          !headers.has(key)
+        ) {
+          headers.set(key, String(value));
+        }
+        return;
+      }
+      if (location === "cookie") {
+        cookies.push(`${key}=${encodeURIComponent(String(value))}`);
+        return;
+      }
+      if (location !== "path") {
         url.searchParams.append(key, value);
         return;
       }
@@ -180,7 +204,9 @@ export class OpenAPITool extends Tool<OpenAPIToolOutput, OpenAPIToolOptions> {
       throw new ToolError(`Invalid path after substituting parameters: ${path}`);
     }
     url.pathname = join(url.pathname, path);
-    const headers = new Headers(this.options.fetchOptions?.headers);
+    if (cookies.length > 0) {
+      headers.set("Cookie", [headers.get("Cookie"), ...cookies].filter(isTruthy).join("; "));
+    }
     if (!headers.has("Accept")) {
       headers.set("Accept", "application/json");
     }
