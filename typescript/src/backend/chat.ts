@@ -598,7 +598,9 @@ export class ChatModelOutput extends Serializable {
       this.dedupe();
     }
 
-    this.finishReason = other.finishReason;
+    if (other.finishReason) {
+      this.finishReason = other.finishReason;
+    }
     if (this.usage && other.usage) {
       this.usage = customMerge([this.usage, other.usage], {
         totalTokens: takeBigger,
