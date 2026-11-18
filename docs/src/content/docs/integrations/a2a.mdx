@@ -176,3 +176,16 @@ request served by that registration. Omitted fields and fields set to `None` ret
 agent's own defaults. The configuration is copied during registration, and non-empty
 execution configuration is rejected for other runnable types.
 
+**Protocol versions (Python)**
+
+The Python adapter is built on a2a-sdk 1.x. `A2AServer` also serves clients that still
+speak the 0.3 protocol, such as `A2AAgent` from earlier beeai-framework releases, while
+`A2AServerConfig.enable_v0_3_compat` is on (the default): the agent card lists the 0.3
+interface too, and the 0.3 requests are accepted. Set it to `False` to serve 1.0 only.
+The agent card is served at `/.well-known/agent-card.json`; the deprecated
+`/.well-known/agent.json` path is no longer served. `A2AAgent` also works with agents that
+still serve 0.3.
+
+Numbers in data parts and metadata travel as doubles, so whole numbers are returned as
+`int`, including values that were sent as floats (`2.0` is returned as `2`).
+

@@ -35,6 +35,7 @@ logger = Logger(__name__)
 
 def _narrow_integers(value: Any) -> Any:
     # protobuf stores every number as a double, so whole numbers come back as floats (4326 -> 4326.0)
+    # 2 and 2.0 are encoded the same, so a real 2.0 also comes back as 2: the difference can't be recovered
     if isinstance(value, float) and value.is_integer():
         return int(value)
     elif isinstance(value, dict):
