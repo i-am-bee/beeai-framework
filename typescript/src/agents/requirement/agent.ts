@@ -11,7 +11,7 @@ import { Emitter } from "@/emitter/emitter.js";
 import { ChatModel } from "@/backend/chat.js";
 import type { GetRunContext, MiddlewareType } from "@/context.js";
 import { UnconstrainedMemory } from "@/memory/unconstrainedMemory.js";
-import { Message, UserMessage } from "@/backend/message.js";
+import { AssistantMessage, Message, ToolMessage, UserMessage } from "@/backend/message.js";
 import { shallowCopy } from "@/serializer/utils.js";
 import { mapObj } from "@/internals/helpers/object.js";
 import { PromptTemplate } from "@/template.js";
@@ -161,10 +161,16 @@ export class RequirementAgent extends BaseAgent<
         await this.memory.addMany(finalState.memory.messages);
       } else {
         await this.memory.addMany(newMessages);
-        // Add last tool call pair
+        // Keep the complete final exchange: parallel calls produce one tool message per result.
         const messages = finalState.memory.messages;
-        const lastPair = messages.slice(-2);
-        await this.memory.addMany(lastPair);
+        let start = messages.length - 1;
+        while (start > 0 && messages[start] instanceof ToolMessage) {
+          start--;
+        }
+        while (start > 0 && messages[start - 1] instanceof AssistantMessage) {
+          start--;
+        }
+        await this.memory.addMany(messages.slice(start));
       }
 
       if (!finalState.answer) {
