@@ -82,7 +82,7 @@ export class A2AAgent extends BaseAgent<A2AAgentRunInput, A2AAgentRunOutput> {
   }
 
   get name() {
-    return this.agentCard ? this.agentCard.name : `agent_${this.url?.split(":")[-1]}`;
+    return this.agentCard ? this.agentCard.name : `agent_${this.url?.split(":").at(-1)}`;
   }
 
   protected async _run(
@@ -207,6 +207,10 @@ export class A2AAgent extends BaseAgent<A2AAgentRunInput, A2AAgentRunOutput> {
   }
 
   protected setRunParams(contextId?: string, taskId?: string, clearContext = false) {
+    // a task belongs to its context, so a pending task is dropped when the context changes
+    if (contextId && contextId !== this.contextId && !taskId) {
+      this.taskId = undefined;
+    }
     if (contextId) {
       this.contextId = contextId;
     }

@@ -286,6 +286,36 @@ describe("A2AAgent", () => {
     }
   });
 
+  it("drops a pending task when the run switches to another context", async () => {
+    const received: { taskId?: string; contextId?: string }[] = [];
+    const server = await serveExecutor(async (context, bus) => {
+      received.push({ taskId: context.taskId, contextId: context.contextId });
+      bus.publish(AgentEvent.task(createTask(context)));
+      publishStatus(
+        bus,
+        context,
+        received.length === 1
+          ? TaskState.TASK_STATE_INPUT_REQUIRED
+          : TaskState.TASK_STATE_COMPLETED,
+        received.length === 1 ? "which city?" : "done",
+      );
+      bus.finished();
+    });
+    try {
+      const agent = new A2AAgent({
+        agentCard: server.agentCard,
+        memory: new UnconstrainedMemory(),
+      });
+      expect((await runCollecting(agent, "weather?")).output.result.text).toBe("which city?");
+      const output = await agent.run({ input: "hello" }, { contextId: "other-context" });
+      expect(output.result.text).toBe("done");
+      expect(received[1].contextId).toBe("other-context");
+      expect(received[1].taskId).not.toBe(received[0].taskId);
+    } finally {
+      await server.close();
+    }
+  });
+
   it("does not keep the task id of a message reply that stores no task", async () => {
     const server = await serveExecutor(async (context, bus) => {
       bus.publish(
