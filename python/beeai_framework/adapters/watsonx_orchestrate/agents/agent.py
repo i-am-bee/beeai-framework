@@ -80,7 +80,7 @@ class WatsonxOrchestrateAgent(BaseAgent[WatsonxOrchestrateAgentOutput]):
     ) -> None:
         super().__init__()
         self._memory = memory or UnconstrainedMemory()
-        self._instance_url = instance_url
+        self._instance_url = instance_url.rstrip("/")
         self._name = name or f"watsonx_orchestrate_agent_{agent_id}"
         self._thread_id: str = thread_id or str(uuid.uuid4().hex)
         self._auth_type = auth_type
