@@ -43,7 +43,7 @@ class BaseMemory(ABC):
 
     async def delete_many(self, messages: Iterable[AnyMessage]) -> None:
         """Delete multiple messages from memory."""
-        for msg in messages:
+        for msg in list(messages):
             await self.delete(msg)
 
     async def splice(self, start: int, delete_count: int, *items: AnyMessage) -> list[AnyMessage]:
