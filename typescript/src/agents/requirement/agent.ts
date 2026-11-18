@@ -151,6 +151,8 @@ export class RequirementAgent extends BaseAgent<
       const newMessages = this.processInput(input);
       await runner.addMessages([...this.memory.messages]);
       await runner.addMessages(newMessages);
+      // messages that are already in memory or were just added, so the final exchange never re-adds them
+      const knownMessages = new Set<Message>([...this.memory.messages, ...newMessages]);
 
       // Run the agent
       const finalState = await runner.run();
@@ -167,7 +169,11 @@ export class RequirementAgent extends BaseAgent<
         while (start > 0 && messages[start] instanceof ToolMessage) {
           start--;
         }
-        while (start > 0 && messages[start - 1] instanceof AssistantMessage) {
+        while (
+          start > 0 &&
+          messages[start - 1] instanceof AssistantMessage &&
+          !knownMessages.has(messages[start - 1])
+        ) {
           start--;
         }
         await this.memory.addMany(messages.slice(start));

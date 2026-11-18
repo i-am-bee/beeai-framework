@@ -5,9 +5,10 @@
 
 import { RequirementAgent } from "./agent.js";
 import { ChatModel, ChatModelInput, ChatModelOutput } from "@/backend/chat.js";
-import { AssistantMessage, ToolMessage } from "@/backend/message.js";
+import { AssistantMessage, ToolMessage, UserMessage } from "@/backend/message.js";
 import { Emitter } from "@/emitter/emitter.js";
 import { DynamicTool, StringToolOutput } from "@/tools/base.js";
+import { UnconstrainedMemory } from "@/memory/unconstrainedMemory.js";
 
 class ScriptedModel extends ChatModel {
   modelId = "scripted";
@@ -143,4 +144,28 @@ describe.each([false, true])("RequirementAgent final exchange (stream: %s)", (st
       }
     },
   );
+});
+
+it("does not re-add an assistant message that was already in memory", async () => {
+  const model = new ScriptedModel([
+    [new AssistantMessage(call("final_answer", "answer", { response: "done" }))],
+  ]);
+  const memory = new UnconstrainedMemory();
+  const greeting = new AssistantMessage("Hello, how can I help?");
+  await memory.addMany([new UserMessage("hi"), greeting]);
+  const agent = new RequirementAgent({ llm: model, memory, saveIntermediateSteps: false });
+  try {
+    const output = await agent.run({ prompt: null });
+    expect(output.result.text).toBe("done");
+    expect(agent.memory.messages.filter((msg) => msg === greeting)).toHaveLength(1);
+    expect(agent.memory.messages.map((msg) => msg.role)).toEqual([
+      "user",
+      "assistant",
+      "assistant",
+      "tool",
+    ]);
+  } finally {
+    agent.destroy();
+    model.destroy();
+  }
 });
