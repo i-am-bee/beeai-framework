@@ -4,10 +4,10 @@
  */
 
 import { Callback } from "@/emitter/types.js";
-import { Message, Task, TaskArtifactUpdateEvent, TaskStatusUpdateEvent } from "@a2a-js/sdk";
+import { StreamResponse } from "@a2a-js/sdk";
 
 export interface A2AAgentUpdateEvent {
-  value: Message | Task | TaskStatusUpdateEvent | TaskArtifactUpdateEvent;
+  value: StreamResponse;
 }
 
 export interface A2AAgentErrorEvent {

@@ -3,7 +3,6 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { v4 as uuid4 } from "uuid";
 import { Emitter } from "@/emitter/emitter.js";
 import { AgentError, BaseAgent } from "@/agents/base.js";
 import { GetRunContext } from "@/context.js";
@@ -18,16 +17,41 @@ import {
   AgentCard,
   Message as A2AMessage,
   Task,
+  TaskState,
   Artifact,
   Part,
-  FileWithUri,
-  FileWithBytes,
+  Role,
+  StreamResponse,
 } from "@a2a-js/sdk";
-import { A2AClient } from "@a2a-js/sdk/client";
+import {
+  ClientFactory,
+  ClientFactoryOptions,
+  DefaultAgentCardResolver,
+  JsonRpcTransportFactory,
+  RestTransportFactory,
+} from "@a2a-js/sdk/client";
 import { Message } from "@/backend/message.js";
-import { convertA2AMessageToFrameworkMessage } from "./utils.js";
+import { convertA2AMessageToFrameworkMessage, createA2AMessage, createA2APart } from "./utils.js";
 
-export class A2AAgent extends BaseAgent<A2AAgentRunInput, A2AAgentRunOutput> {
+const INTERRUPTED_TASK_STATES = new Set([
+  TaskState.TASK_STATE_INPUT_REQUIRED,
+  TaskState.TASK_STATE_AUTH_REQUIRED,
+]);
+
+// a2a-js talks to agents that still serve 0.3 only when its compat layer is enabled
+const legacyCompat = { enabled: true };
+const cardResolver = new DefaultAgentCardResolver({ legacyCompat });
+const clientFactory = new ClientFactory(
+  ClientFactoryOptions.createFrom(ClientFactoryOptions.default, {
+    cardResolver,
+    transports: [
+      new JsonRpcTransportFactory({ legacyCompat }),
+      new RestTransportFactory({ legacyCompat }),
+    ],
+  }),
+);
+
+export class A2AAgent extends BaseAgent<A2AAgentRunInput, A2AAgentRunOutput, A2AAgentRunOptions> {
   private _memory!: BaseMemory;
   public readonly emitter: Emitter<A2AAgentEvents>;
   protected url: string | undefined;
@@ -58,7 +82,7 @@ export class A2AAgent extends BaseAgent<A2AAgentRunInput, A2AAgentRunOutput> {
   }
 
   get name() {
-    return this.agentCard ? this.agentCard.name : `agent_${this.url?.split(":")[-1]}`;
+    return this.agentCard ? this.agentCard.name : `agent_${this.url?.split(":").at(-1)}`;
   }
 
   protected async _run(
@@ -72,20 +96,36 @@ export class A2AAgent extends BaseAgent<A2AAgentRunInput, A2AAgentRunOutput> {
       await this.loadAgentCard();
     }
 
-    const client = new A2AClient(this.agentCard!);
-
-    let lastEvent = null;
-    const messages: (A2AMessage | Artifact)[] = [];
+    let lastEvent: StreamResponse | null = null;
+    const messages: A2AMessage[] = [];
     let task: Task | null = null;
 
     try {
-      const stream = client.sendMessageStream({ message: this.convertToA2AMessage(input.input) });
+      const client = await clientFactory.createFromAgentCard(this.agentCard!);
+      const message = this.convertToA2AMessage(input.input);
+      const stream = client.sendMessageStream({
+        tenant: "",
+        message,
+        configuration: undefined,
+        metadata: undefined,
+      });
 
       for await (const event of stream) {
         lastEvent = event;
+        const payload = event.payload;
+        if (!payload) {
+          continue;
+        }
 
-        const taskId = event.kind === "task" ? event.id : event.taskId;
-        const contextId = event.contextId;
+        let taskId: string, contextId: string;
+        if (payload.$case === "message") {
+          ({ taskId, contextId } = payload.value);
+          messages.push(payload.value);
+        } else {
+          task = mergeTaskEvent(task, payload);
+          ({ id: taskId, contextId } = task);
+        }
+
         if (taskId && taskId !== this.taskId) {
           this.taskId = taskId;
         }
@@ -96,24 +136,6 @@ export class A2AAgent extends BaseAgent<A2AAgentRunInput, A2AAgentRunOutput> {
           this.referenceTaskIds.push(taskId);
         }
 
-        if (event.kind === "status-update" || event.kind === "artifact-update") {
-          const content = event.kind === "status-update" ? event.status.message : event.artifact;
-          if (content) {
-            messages.push(content);
-          }
-          if (
-            event.kind === "status-update" &&
-            event.final &&
-            event.status.state !== "input-required"
-          ) {
-            this.taskId = undefined;
-          }
-        } else if (event.kind === "message") {
-          messages.push(event);
-        } else if (event.kind === "task") {
-          task = event;
-        }
-
         await context.emitter.emit("update", { value: event });
       }
 
@@ -121,17 +143,26 @@ export class A2AAgent extends BaseAgent<A2AAgentRunInput, A2AAgentRunOutput> {
         throw new AgentError("No result received from agent.");
       }
 
+      // only a task that waits for input is continued by the next turn; a message reply may carry
+      // a task id without a stored task, and a terminal task can't receive messages anymore
+      this.taskId =
+        task?.status && INTERRUPTED_TASK_STATES.has(task.status.state) ? task.id : undefined;
+
       // add input messages to memory
       const inputMessages = Array.isArray(input.input) ? input.input : [input.input];
       await this.memory.addMany(inputMessages.map(this.convertToFrameworkMessage));
 
       let results: (A2AMessage | Artifact)[];
       if (task) {
-        if (task.artifacts) {
+        // a follow-up turn gets the whole task again, the earlier replies are already in memory
+        const history = historyWithStatus(task);
+        const sentIndex = history.findIndex((m) => m.messageId === message.messageId);
+        const agentHistory = history.slice(sentIndex + 1).filter((m) => m.role === Role.ROLE_AGENT);
+        if (task.artifacts.length > 0) {
           results = task.artifacts;
-        } else if (task.history) {
-          results = task.history;
-        } else if (task.status.message) {
+        } else if (agentHistory.length > 0) {
+          results = agentHistory;
+        } else if (task.status?.message) {
           results = [task.status.message];
         } else {
           results = [];
@@ -155,6 +186,8 @@ export class A2AAgent extends BaseAgent<A2AAgentRunInput, A2AAgentRunOutput> {
         };
       }
     } catch (err) {
+      // the task may be gone on the server, resending its id would fail every following run
+      this.taskId = undefined;
       let message: string;
 
       if (err.message) {
@@ -174,10 +207,15 @@ export class A2AAgent extends BaseAgent<A2AAgentRunInput, A2AAgentRunOutput> {
   }
 
   protected setRunParams(contextId?: string, taskId?: string, clearContext = false) {
+    // a task belongs to its context, so a pending task is dropped when the context changes
+    if (contextId && contextId !== this.contextId && !taskId) {
+      this.taskId = undefined;
+    }
     if (contextId) {
       this.contextId = contextId;
     }
-    this.taskId = taskId;
+    // keep the task of a previous turn (e.g. one that requires more input) unless another is given
+    this.taskId = taskId || this.taskId;
     if (clearContext) {
       this.contextId = undefined;
       this.taskId = undefined;
@@ -195,10 +233,8 @@ export class A2AAgent extends BaseAgent<A2AAgentRunInput, A2AAgentRunOutput> {
     }
 
     try {
-      const client = await A2AClient.fromCardUrl(new URL(this.agentCardPath, this.url).href, {
-        agentCardPath: this.agentCardPath,
-      });
-      this.agentCard = await client.getAgentCard();
+      // the full card URL with an empty path, as the card path may be relative to the agent URL
+      this.agentCard = await cardResolver.resolve(new URL(this.agentCardPath, this.url).href, "");
     } catch (error) {
       throw new AgentError(`Can not load agent card: ${error.message}`, [error], {
         isFatal: true,
@@ -234,32 +270,22 @@ export class A2AAgent extends BaseAgent<A2AAgentRunInput, A2AAgentRunOutput> {
 
   protected convertToA2AMessage(input: string | Message | Message[] | A2AMessage): A2AMessage {
     if (typeof input === "string") {
-      return {
-        kind: "message",
-        role: "user",
-        parts: [
-          {
-            kind: "text",
-            text: input,
-          },
-        ],
-        messageId: uuid4(),
+      return createA2AMessage({
+        role: Role.ROLE_USER,
+        parts: [createA2APart({ $case: "text", value: input })],
         contextId: this.contextId,
         taskId: this.taskId,
         referenceTaskIds: this.referenceTaskIds,
-      };
+      });
     } else if (input instanceof Message) {
-      const parts = input.content.map(convertFrameworkContentToA2APart);
-      return {
-        kind: "message",
-        role: input.role == "assistant" ? "agent" : "user",
-        parts: parts,
-        messageId: uuid4(),
+      return createA2AMessage({
+        role: input.role == "assistant" ? Role.ROLE_AGENT : Role.ROLE_USER,
+        parts: input.content.map(convertFrameworkContentToA2APart),
         contextId: this.contextId,
         taskId: this.taskId,
         referenceTaskIds: this.referenceTaskIds,
-      };
-    } else if ("kind" in input && input.kind === "message") {
+      });
+    } else if (!Array.isArray(input) && "messageId" in input) {
       return input;
     } else if (Array.isArray(input) && input.length > 0) {
       return this.convertToA2AMessage(input[input.length - 1]);
@@ -273,7 +299,7 @@ export class A2AAgent extends BaseAgent<A2AAgentRunInput, A2AAgentRunOutput> {
       return new UserMessage(input);
     } else if (input instanceof Message) {
       return input;
-    } else if (("kind" in input && input.kind === "message") || "artifactId" in input) {
+    } else if ("messageId" in input || "artifactId" in input) {
       return convertA2AMessageToFrameworkMessage(input);
     } else {
       throw new AgentError("Unsupported input type");
@@ -281,38 +307,97 @@ export class A2AAgent extends BaseAgent<A2AAgentRunInput, A2AAgentRunOutput> {
   }
 }
 
+type TaskEventPayload = Extract<
+  NonNullable<StreamResponse["payload"]>,
+  { $case: "task" | "statusUpdate" | "artifactUpdate" }
+>;
+
+// a2a-js 1.x streams the task events as they come, the task is rebuilt as its server-side ResultManager does
+function mergeTaskEvent(task: Task | null, payload: TaskEventPayload): Task {
+  if (payload.$case === "task") {
+    return structuredClone(payload.value);
+  }
+
+  const update = payload.value;
+  const merged: Task = task ?? {
+    id: update.taskId,
+    contextId: update.contextId,
+    status: undefined,
+    artifacts: [],
+    history: [],
+    metadata: undefined,
+  };
+  if (update.metadata) {
+    merged.metadata = { ...merged.metadata, ...update.metadata };
+  }
+
+  if (payload.$case === "statusUpdate") {
+    merged.status = payload.value.status;
+    const message = payload.value.status?.message;
+    if (message && !merged.history.some((m) => m.messageId === message.messageId)) {
+      merged.history.push(message);
+    }
+  } else if (payload.value.artifact) {
+    const { artifact, append } = payload.value;
+    const index = merged.artifacts.findIndex((a) => a.artifactId === artifact.artifactId);
+    if (index === -1) {
+      merged.artifacts.push(artifact);
+    } else if (append) {
+      const existing = merged.artifacts[index];
+      merged.artifacts[index] = {
+        ...existing,
+        parts: [...existing.parts, ...artifact.parts],
+        name: artifact.name || existing.name,
+        description: artifact.description || existing.description,
+        metadata: artifact.metadata
+          ? { ...existing.metadata, ...artifact.metadata }
+          : existing.metadata,
+      };
+    } else {
+      merged.artifacts[index] = artifact;
+    }
+  }
+  return merged;
+}
+
+// a task received whole (e.g. from a Python server) can still hold its last message only in its status
+function historyWithStatus(task: Task): A2AMessage[] {
+  const message = task.status?.message;
+  if (message && !task.history.some((m) => m.messageId === message.messageId)) {
+    return [...task.history, message];
+  }
+  return task.history;
+}
+
 function convertFrameworkContentToA2APart(content: MessageContentPart): Part {
   const { type, ...rest } = content;
   switch (type) {
     case "text":
-      return { kind: "text", text: content.text };
+      return createA2APart({ $case: "text", value: content.text });
     case "file":
     case "image": {
       const data = type === "file" ? content.data : content.image;
-      const decoder = new TextDecoder("utf-8");
-      const file =
-        data instanceof URL
-          ? ({ uri: data.href } as FileWithUri)
-          : ({
-              bytes: typeof data === "string" ? data : decoder.decode(data),
-            } as FileWithBytes);
-      return {
-        kind: "file",
-        file: {
-          ...file,
-          mimeType: content.mediaType,
-          name: "filename" in content ? content.filename : undefined,
-        },
-        metadata: {
-          providerOptions: content.providerOptions,
-        },
+      const options = {
+        mediaType: content.mediaType,
+        filename: "filename" in content ? content.filename : undefined,
+        metadata: { providerOptions: content.providerOptions },
       };
+      if (data instanceof URL) {
+        return createA2APart({ $case: "url", value: data.href }, options);
+      }
+      // URLs kept as strings (e.g. an a2a `url` part converted to the framework) stay URLs
+      if (typeof data === "string" && /^(https?|data):/i.test(data)) {
+        return createA2APart({ $case: "url", value: data }, options);
+      }
+      // a2a-js 1.x carries the raw bytes, string file data in the framework is base64
+      const raw =
+        typeof data === "string"
+          ? Buffer.from(data, "base64")
+          : Buffer.from(data instanceof ArrayBuffer ? new Uint8Array(data) : data);
+      return createA2APart({ $case: "raw", value: raw }, options);
     }
     case "tool-call":
     case "tool-result":
-      return {
-        kind: "data",
-        data: rest,
-      };
+      return createA2APart({ $case: "data", value: rest });
   }
 }

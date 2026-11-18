@@ -16,14 +16,17 @@ import {
 } from "@a2a-js/sdk/server";
 import { ReActAgentExecutor, ToolCallingAgentExecutor } from "./agent_executor.js";
 import {
+  A2A_PROTOCOL_VERSION,
   AGENT_CARD_PATH,
   AgentCapabilities,
   AgentCard,
+  AgentInterface,
   AgentProvider,
   AgentSkill,
 } from "@a2a-js/sdk";
-import { A2AExpressApp } from "@a2a-js/sdk/server/express";
-import express, { Request, Response } from "express";
+import { A2A_LEGACY_PROTOCOL_VERSION } from "@a2a-js/sdk/compat/v0_3";
+import { agentCardHandler, jsonRpcHandler, UserBuilder } from "@a2a-js/sdk/server/express";
+import express, { Express, Request, Response } from "express";
 import { ToolCallingAgent } from "@/agents/toolCalling/agent.js";
 import { ValueError } from "@/errors.js";
 import { Logger } from "@/logger/logger.js";
@@ -37,6 +40,8 @@ export class A2AServerConfig {
   host = "0.0.0.0";
   port = 9999;
   protocol: "jsonrpc" = "jsonrpc" as const;
+  // also serve clients still on the 0.3 protocol, such as an A2AAgent on @a2a-js/sdk 0.3
+  enableV03Compat = true;
 }
 
 interface A2AServerMetadata {
@@ -77,6 +82,25 @@ export class A2AServer extends Server<AnyAgent, AgentExecutor, A2AServerConfig, 
   }
 
   public async serve(): Promise<void> {
+    const { app: expressApp, agentCard } = await this.createApp();
+
+    expressApp.listen(this.config.port, this.config.host, () => {
+      this.ready = true;
+      logger.info(
+        `[${agentCard.name}] Server started on http://${this.config.host}:${this.config.port}`,
+      );
+      logger.info(
+        `[${agentCard.name}] Agent Card: http://${this.config.host}:${this.config.port}/${AGENT_CARD_PATH}`,
+      );
+      logger.info(`[${agentCard.name}] Press Ctrl+C to stop the server`);
+    });
+  }
+
+  /**
+   * Builds the Express app that `serve()` listens with. When it is served by other means, `/health`
+   * reports ready only through the `healthCheck` given in the metadata.
+   */
+  public async createApp(): Promise<{ app: Express; agentCard: AgentCard }> {
     if (this.members.length === 0) {
       throw new ValueError("No agents registered to the server.");
     }
@@ -98,8 +122,8 @@ export class A2AServer extends Server<AnyAgent, AgentExecutor, A2AServerConfig, 
       config.pushNotificationSender,
     );
 
-    const appBuilder = new A2AExpressApp(requestHandler);
-    const expressApp = appBuilder.setupRoutes(express());
+    const legacyCompat = { enabled: this.config.enableV03Compat };
+    const expressApp = express();
 
     expressApp.get("/health", async (_req: Request, res: Response) => {
       const timeout = (ms: number) =>
@@ -115,33 +139,43 @@ export class A2AServer extends Server<AnyAgent, AgentExecutor, A2AServerConfig, 
         res.status(503).send("not ready");
       }
     });
+    expressApp.use(
+      `/${AGENT_CARD_PATH}`,
+      agentCardHandler({ agentCardProvider: requestHandler, legacyCompat }),
+    );
+    expressApp.use(
+      "/",
+      jsonRpcHandler({ requestHandler, userBuilder: UserBuilder.noAuthentication, legacyCompat }),
+    );
 
-    expressApp.listen(this.config.port, this.config.host, () => {
-      this.ready = true;
-      logger.info(
-        `[${agentCard.name}] Server started on http://${this.config.host}:${this.config.port}`,
-      );
-      logger.info(
-        `[${agentCard.name}] Agent Card: http://${this.config.host}:${this.config.port}/${AGENT_CARD_PATH}`,
-      );
-      logger.info(`[${agentCard.name}] Press Ctrl+C to stop the server`);
-    });
+    return { app: expressApp, agentCard };
   }
 
   private createAgentCard(config: A2AServerMetadata, agent: AnyAgent): AgentCard {
+    const url = config.url || `http://${this.config.host}:${this.config.port}`;
+    const supportedInterfaces: AgentInterface[] = [
+      { url, protocolBinding: "JSONRPC", tenant: "", protocolVersion: A2A_PROTOCOL_VERSION },
+    ];
+    if (this.config.enableV03Compat) {
+      // a2a-js serves 0.3 requests only when the card also lists the 0.3 interface
+      supportedInterfaces.push({
+        ...supportedInterfaces[0],
+        protocolVersion: A2A_LEGACY_PROTOCOL_VERSION,
+      });
+    }
+
     return {
       name: config.name || agent.meta.name,
       description: config.description || agent.meta.description,
-      url: config.url || `http://${this.config.host}:${this.config.port}`,
+      supportedInterfaces,
       version: config.version || "1.0.0",
-      protocolVersion: "0.1.0",
       provider: config.provider,
       defaultInputModes: config.defaultInputModes || ["text"],
       defaultOutputModes: config.defaultOutputModes || ["text", "task-status"],
       capabilities: config.capabilities || {
         streaming: true,
         pushNotifications: false,
-        stateTransitionHistory: false,
+        extensions: [],
       },
       skills: config.skills || [
         {
@@ -149,9 +183,15 @@ export class A2AServer extends Server<AnyAgent, AgentExecutor, A2AServerConfig, 
           name: agent.meta.name,
           description: agent.meta.description,
           tags: [],
+          examples: [],
+          inputModes: [],
+          outputModes: [],
+          securityRequirements: [],
         },
       ],
-      supportsAuthenticatedExtendedCard: false,
+      securitySchemes: {},
+      securityRequirements: [],
+      signatures: [],
     };
   }
 }

@@ -3,9 +3,39 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import { randomUUID } from "node:crypto";
 import { AssistantMessage, Message, UserMessage } from "@/backend/message.js";
-import { Message as A2AMessage, Artifact } from "@a2a-js/sdk";
+import { Message as A2AMessage, Artifact, Part, Role } from "@a2a-js/sdk";
 import { FilePart } from "ai";
+
+type A2AMessageInput = Pick<A2AMessage, "role" | "parts"> &
+  Partial<Omit<A2AMessage, "role" | "parts">>;
+
+// a2a-sdk 1.x types are generated from protobuf and every field is required, unset strings are empty
+export function createA2AMessage(input: A2AMessageInput): A2AMessage {
+  return {
+    messageId: input.messageId || randomUUID(),
+    contextId: input.contextId ?? "",
+    taskId: input.taskId ?? "",
+    role: input.role,
+    parts: input.parts,
+    metadata: input.metadata,
+    extensions: input.extensions ?? [],
+    referenceTaskIds: input.referenceTaskIds ?? [],
+  };
+}
+
+export function createA2APart(
+  content: Part["content"],
+  options: Partial<Omit<Part, "content">> = {},
+): Part {
+  return {
+    content,
+    metadata: options.metadata,
+    filename: options.filename ?? "",
+    mediaType: options.mediaType ?? "",
+  };
+}
 
 interface ParsedDataUri {
   data: string;
@@ -53,33 +83,35 @@ function dataUriToBase64(uri: string): ParsedDataUri | undefined {
 
 export function convertA2AMessageToFrameworkMessage(input: A2AMessage | Artifact): Message {
   const msg =
-    "kind" in input && input.kind === "message" && input.role === "user"
+    "role" in input && input.role === Role.ROLE_USER
       ? new UserMessage([], input.metadata)
       : new AssistantMessage([], input.metadata);
 
   for (const part of input.parts) {
-    if (part.kind === "text") {
-      msg.content.push({ type: "text", text: part.text });
-    } else if (part.kind === "data") {
-      msg.content.push({ type: "text", text: JSON.stringify(part.data, null, 2) });
-    } else if (part.kind === "file") {
+    const content = part.content;
+    if (content?.$case === "text") {
+      msg.content.push({ type: "text", text: content.value });
+    } else if (content?.$case === "data") {
+      msg.content.push({ type: "text", text: JSON.stringify(content.value, null, 2) });
+    } else if (content?.$case === "raw" || content?.$case === "url") {
       let fileData: FilePart;
-      if ("bytes" in part.file) {
+      if (content.$case === "raw") {
+        // a2a-sdk 1.x carries the raw bytes, the framework expects base64 file data
         fileData = {
           type: "file",
-          data: part.file.bytes,
-          mediaType: part.file.mimeType || "application/octet-stream",
-          filename: part.file.name,
+          data: Buffer.from(content.value).toString("base64"),
+          mediaType: part.mediaType || "application/octet-stream",
+          filename: part.filename || undefined,
         };
       } else {
         // Inline data: URIs as base64 so non-publicly-accessible content travels with
         // the message; leave regular (fetchable) URLs untouched.
-        const parsed = dataUriToBase64(part.file.uri);
+        const parsed = dataUriToBase64(content.value);
         fileData = {
           type: "file",
-          data: parsed ? parsed.data : part.file.uri,
-          mediaType: part.file.mimeType || parsed?.mediaType || "application/octet-stream",
-          filename: part.file.name,
+          data: parsed ? parsed.data : content.value,
+          mediaType: part.mediaType || parsed?.mediaType || "application/octet-stream",
+          filename: part.filename || undefined,
         };
       }
 

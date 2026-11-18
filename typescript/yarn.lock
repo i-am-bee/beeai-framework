@@ -5,17 +5,37 @@ __metadata:
   version: 8
   cacheKey: 10c0
 
-"@a2a-js/sdk@npm:^0.3.5":
-  version: 0.3.5
-  resolution: "@a2a-js/sdk@npm:0.3.5"
+"@a2a-js/sdk@npm:^1.3.0":
+  version: 1.3.0
+  resolution: "@a2a-js/sdk@npm:1.3.0"
   dependencies:
-    uuid: "npm:^11.1.0"
+    jose: "npm:^6.2.3"
   peerDependencies:
+    "@bufbuild/protobuf": ^2.10.2
+    "@grpc/grpc-js": ^1.11.0
+    better-sqlite3: ^12.0.0 || ^13.0.0
     express: ^4.21.2 || ^5.1.0
+    kysely: ^0.28.17 || ^0.29.0
+    mysql2: ^3.0.0
+    pg: ^8.0.0
   peerDependenciesMeta:
+    "@bufbuild/protobuf":
+      optional: true
+    "@grpc/grpc-js":
+      optional: true
+    better-sqlite3:
+      optional: true
     express:
       optional: true
-  checksum: 10c0/0af930f03cd7001c48a3db5a6b161b00727a8e06bd7a51fd2e2c21fc13cf6a91cc68339e780f670de746b632481de3736a9ac5d9c2863090960b6c01f53e680c
+    kysely:
+      optional: true
+    mysql2:
+      optional: true
+    pg:
+      optional: true
+  bin:
+    a2a-db: dist/cli/a2a_db.js
+  checksum: 10c0/a90ded15bac9d77b3e56ba73fb6c6be218b0b8320cdc7b01156c467e111bd1f9ba45c1525817d662ea4cfe041528b32def97e2ecd8a26d5d134549afa7229296
   languageName: node
   linkType: hard
 
@@ -3762,7 +3782,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "beeai-framework@workspace:."
   dependencies:
-    "@a2a-js/sdk": "npm:^0.3.5"
+    "@a2a-js/sdk": "npm:^1.3.0"
     "@ai-sdk/amazon-bedrock": "npm:4.0.198"
     "@ai-sdk/anthropic": "npm:3.0.132"
     "@ai-sdk/azure": "npm:3.0.140"
@@ -3848,7 +3868,7 @@ __metadata:
     yaml: "npm:^2.8.4"
     zod-to-json-schema: "npm:^3.25.0"
   peerDependencies:
-    "@a2a-js/sdk": ^0.3.4
+    "@a2a-js/sdk": ^1.3.0
     "@ai-sdk/amazon-bedrock": ^4.0.52
     "@ai-sdk/anthropic": ^3.0.39
     "@ai-sdk/azure": ^3.0.27
@@ -7454,6 +7474,13 @@ __metadata:
   version: 6.1.3
   resolution: "jose@npm:6.1.3"
   checksum: 10c0/b9577b4a7a5e84131011c23823db9f5951eae3ba796771a6a2401ae5dd50daf71104febc8ded9c38146aa5ebe94a92ac09c725e699e613ef26949b9f5a8bc30f
+  languageName: node
+  linkType: hard
+
+"jose@npm:^6.2.3":
+  version: 6.2.17
+  resolution: "jose@npm:6.2.17"
+  checksum: 10c0/1a00d44656e38664c54a8b2d903b6c947b3fc4275f7ede2462f74e50ce320359ea324deba15652dcc158c14ed99135a2382a4c5718be350923a9e583bea727db
   languageName: node
   linkType: hard
 
@@ -12232,15 +12259,6 @@ __metadata:
   version: 1.0.2
   resolution: "util-deprecate@npm:1.0.2"
   checksum: 10c0/41a5bdd214df2f6c3ecf8622745e4a366c4adced864bc3c833739791aeeeb1838119af7daed4ba36428114b5c67dcda034a79c882e97e43c03e66a4dd7389942
-  languageName: node
-  linkType: hard
-
-"uuid@npm:11.1.1":
-  version: 11.1.1
-  resolution: "uuid@npm:11.1.1"
-  bin:
-    uuid: dist/esm/bin/uuid
-  checksum: 10c0/9e3af58eba872ece5a5e76f4773a94fc78a0ef2c2444c38dbe6b42f41dadf76c01850fd783604f27986f6195e6286aef064d45987d401b2a33127b98ddf7c0c5
   languageName: node
   linkType: hard
 
