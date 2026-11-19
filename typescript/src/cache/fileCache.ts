@@ -103,12 +103,13 @@ export class FileCache<T> extends BaseCache<T> {
 
   async createSnapshot() {
     return {
+      enabled: this.enabled,
       input: { fullPath: this.input.fullPath },
       provider: await this.getProvider(),
     };
   }
 
   loadSnapshot(snapshot: Awaited<ReturnType<typeof this.createSnapshot>>): void {
-    Object.assign(this, snapshot);
+    Object.assign(this, { enabled: true }, snapshot);
   }
 }
