@@ -1,6 +1,7 @@
 # Copyright 2025 © BeeAI a Series of LF Projects, LLC
 # SPDX-License-Identifier: Apache-2.0
 
+import contextlib
 from collections.abc import AsyncGenerator
 from types import SimpleNamespace
 from typing import Any, ClassVar, cast
@@ -37,7 +38,7 @@ from beeai_framework.backend.message import (
     MessageToolCallContent,
     UserMessage,
 )
-from beeai_framework.backend.types import ChatModelParameters
+from beeai_framework.backend.types import ChatModelInput, ChatModelParameters
 from beeai_framework.tools import tool
 
 
@@ -928,3 +929,95 @@ class TestAnthropicForcedToolChoice:
         model = AnthropicChatModel("claude-opus-5-5", api_key="t", tool_choice_support={"required", "auto"})
 
         assert model._tool_choice_support == {"required", "auto"}
+
+
+class TestAnthropicRequestBody:
+    """Checks the HTTP body LiteLLM sends, after it has filtered the kwargs passed to `acompletion`."""
+
+    @staticmethod
+    def _tools() -> list[Any]:
+        @tool
+        def get_weather(city: str) -> str:
+            """Get the weather of a city."""
+            return "sunny"
+
+        @tool
+        def get_time(city: str) -> str:
+            """Get the time of a city."""
+            return "noon"
+
+        return [get_weather, get_time]
+
+    @staticmethod
+    async def _sent_body(model_id: str, **run_kwargs: Any) -> dict[str, Any]:
+        import json
+        import threading
+        from http.server import BaseHTTPRequestHandler, HTTPServer
+
+        bodies: list[dict[str, Any]] = []
+
+        class Handler(BaseHTTPRequestHandler):
+            def do_POST(self) -> None:
+                bodies.append(json.loads(self.rfile.read(int(self.headers["Content-Length"]))))
+                reply = json.dumps(
+                    {
+                        "id": "msg_1",
+                        "type": "message",
+                        "role": "assistant",
+                        "model": model_id,
+                        "content": [{"type": "text", "text": "{}"}],
+                        "stop_reason": "end_turn",
+                        "usage": {"input_tokens": 1, "output_tokens": 1},
+                    }
+                ).encode()
+                self.send_response(200)
+                self.send_header("Content-Type", "application/json")
+                self.send_header("Content-Length", str(len(reply)))
+                self.end_headers()
+                self.wfile.write(reply)
+
+            def log_message(self, *args: Any) -> None:
+                pass
+
+        server = HTTPServer(("127.0.0.1", 0), Handler)
+        thread = threading.Thread(target=server.serve_forever, daemon=True)
+        thread.start()
+        try:
+            model = AnthropicChatModel(model_id, api_key="test", base_url=f"http://127.0.0.1:{server.server_port}")
+            with contextlib.suppress(Exception):
+                await model.run([UserMessage("hi")], **run_kwargs)
+        finally:
+            server.shutdown()
+            server.server_close()
+        assert bodies, "no request reached the server"
+        return bodies[0]
+
+    @pytest.mark.unit
+    @pytest.mark.asyncio
+    @pytest.mark.parametrize("model_id", ["claude-sonnet-5-5", "anthropic/claude-opus-5-5-20261101"])
+    async def test_required_with_several_tools_reaches_the_api_as_output_config(self, model_id: str) -> None:
+        body = await self._sent_body(model_id, tools=self._tools(), tool_choice="required")
+
+        assert "tools" not in body
+        assert "tool_choice" not in body
+        schema = body["output_config"]["format"]["schema"]
+        assert body["output_config"]["format"]["type"] == "json_schema"
+        assert "anyOf" in schema
+
+    @pytest.mark.unit
+    def test_registration_does_not_overwrite_a_known_model(self) -> None:
+        known = "claude-haiku-4-5"
+        before = dict(litellm.model_cost.get(known, {}))
+        AnthropicChatModel(known, api_key="t")
+        assert litellm.model_cost.get(known, {}) == before
+
+    @pytest.mark.unit
+    @pytest.mark.asyncio
+    async def test_response_format_without_schema_is_not_dropped(self) -> None:
+        model = AnthropicChatModel("claude-sonnet-5-5", api_key="test")
+        params = model._transform_input(
+            ChatModelInput(messages=[UserMessage("hi")], response_format={"type": "json_object"})  # type: ignore[arg-type]
+        )
+
+        assert "output_config" not in params
+        assert params["response_format"] == {"type": "json_object"}

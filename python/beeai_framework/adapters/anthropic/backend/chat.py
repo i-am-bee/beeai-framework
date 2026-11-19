@@ -4,6 +4,7 @@
 import os
 from typing import Any
 
+import litellm
 from dotenv import load_dotenv
 from litellm.llms.anthropic.chat.transformation import AnthropicConfig
 from typing_extensions import Unpack
@@ -26,6 +27,14 @@ _NO_FORCED_TOOL_CHOICE_PREFIXES = (
     "claude-fable-5-1",
     "claude-mythos-5-1",
 )
+
+
+def _register_output_config_support(model_id: str) -> None:
+    """Tell LiteLLM the model accepts `output_config`, which it otherwise drops for models it does not know."""
+    name = model_id.removeprefix("anthropic/")
+    if name in litellm.model_cost or f"anthropic/{name}" in litellm.model_cost:
+        return  # LiteLLM already knows the model; do not overwrite its entry
+    litellm.register_model({name: {"litellm_provider": "anthropic", "mode": "chat", "supports_output_config": True}})
 
 
 class AnthropicChatModel(LiteLLMChatModel):
@@ -59,6 +68,9 @@ class AnthropicChatModel(LiteLLMChatModel):
             self._tool_choice_support.discard("required")
             self._tool_choice_support.discard("single")
 
+        if self._rejects_forced_tool_choice:
+            _register_output_config_support(self.model_id)
+
     @property
     def _rejects_forced_tool_choice(self) -> bool:
         return self.model_id.removeprefix("anthropic/").startswith(_NO_FORCED_TOOL_CHOICE_PREFIXES)
@@ -77,9 +89,10 @@ class AnthropicChatModel(LiteLLMChatModel):
         # Send it as Anthropic's structured outputs (`output_config.format`).
         if self._rejects_forced_tool_choice and input.response_format:
             output_format = AnthropicConfig().map_response_format_to_anthropic_output_format(
-                params.pop("response_format", None)
+                params.get("response_format")
             )
             if output_format:
+                params.pop("response_format", None)
                 params["output_config"] = {**(params.get("output_config") or {}), "format": dict(output_format)}
 
         return params
