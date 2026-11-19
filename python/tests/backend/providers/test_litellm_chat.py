@@ -5,6 +5,7 @@ import contextlib
 from collections.abc import AsyncGenerator
 from types import SimpleNamespace
 from typing import Any, ClassVar, cast
+from unittest.mock import MagicMock
 
 import litellm
 import pytest
@@ -1005,11 +1006,25 @@ class TestAnthropicRequestBody:
         assert "anyOf" in schema
 
     @pytest.mark.unit
-    def test_registration_does_not_overwrite_a_known_model(self) -> None:
-        known = "claude-haiku-4-5"
-        before = dict(litellm.model_cost.get(known, {}))
-        AnthropicChatModel(known, api_key="t")
-        assert litellm.model_cost.get(known, {}) == before
+    @pytest.mark.parametrize(
+        ("known_key", "model_id"),
+        [
+            ("claude-sonnet-5-5", "claude-sonnet-5-5"),
+            ("anthropic/claude-opus-5-5-x", "claude-opus-5-5-x"),
+        ],
+    )
+    def test_registration_does_not_overwrite_a_known_model(
+        self, monkeypatch: pytest.MonkeyPatch, known_key: str, model_id: str
+    ) -> None:
+        sentinel = {"litellm_provider": "anthropic", "mode": "chat", "sentinel": True}
+        monkeypatch.setattr(litellm, "model_cost", {known_key: sentinel})
+        register = MagicMock()
+        monkeypatch.setattr(litellm, "register_model", register)
+
+        AnthropicChatModel(model_id, api_key="t")
+
+        register.assert_not_called()
+        assert litellm.model_cost == {known_key: {"litellm_provider": "anthropic", "mode": "chat", "sentinel": True}}
 
     @pytest.mark.unit
     @pytest.mark.asyncio
