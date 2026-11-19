@@ -78,7 +78,7 @@ const state = {
     if (!ctx.instances.has(target)) {
       ctx.instances.set(target, {
         cache: new Map(),
-        options: ctx.options,
+        options: { ...ctx.options },
       });
     }
     return ctx.instances.get(target)!;
