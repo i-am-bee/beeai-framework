@@ -71,6 +71,25 @@ describe("Emitter", () => {
     child.destroy();
   });
 
+  it.each(["g", "y", "gy"])("reuses %s regex matchers without dropping events", async (flags) => {
+    const emitter = new Emitter({ namespace: ["agent"] });
+    const matcher = new RegExp("^agent\\.update$", flags);
+    const first = vitest.fn();
+    const second = vitest.fn();
+    emitter.match(matcher, first);
+    emitter.match(matcher, second);
+
+    await emitter.emit("update", 1);
+    await emitter.emit("other", 0);
+    await emitter.emit("update", 2);
+    await emitter.emit("update", 3);
+
+    expect(first.mock.calls.map(([data]) => data)).toEqual([1, 2, 3]);
+    expect(second.mock.calls.map(([data]) => data)).toEqual([1, 2, 3]);
+    expect(matcher.lastIndex).toBe(0);
+    emitter.destroy();
+  });
+
   it("Emits", async () => {
     const emitter = new Emitter({
       namespace: ["app"],
