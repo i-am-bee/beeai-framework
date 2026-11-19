@@ -12,6 +12,7 @@ import {
 } from "@ai-zen/node-fetch-event-source";
 import { FetchEventSourceInit } from "@ai-zen/node-fetch-event-source/lib/cjs/fetch.js";
 import { emitterToGenerator } from "@/internals/helpers/promise.js";
+import { createAbortController } from "@/internals/helpers/cancellation.js";
 import { doNothing, isArray, isPlainObject, isTruthy } from "remeda";
 import { Callback, Emitter } from "@/emitter/emitter.js";
 import { shallowCopy } from "@/serializer/utils.js";
@@ -99,47 +100,54 @@ export class RestfulClient<K extends Record<string, string>> extends Serializabl
         headers: await this.getHeaders(init?.headers),
       },
     };
-    await emitter.emit("streamStart", { input });
+    const controller = createAbortController(init.signal ?? undefined);
+    input.options.signal = controller.signal;
+    try {
+      await emitter.emit("streamStart", { input });
 
-    return yield* emitterToGenerator(async ({ emit }) =>
-      fetchEventSource(input.url, {
-        ...input.options,
-        async onopen(response) {
-          const contentType = response.headers.get("content-type") || "";
-          if (response.ok && contentType.includes(EventStreamContentType)) {
-            await emitter.emit("streamOpen", { input });
-            return;
-          }
-          throw new RestfulClientError("Failed to stream!", [], {
-            context: {
-              url: response.url,
-              err: await response.text(),
-              response,
-            },
-            isRetryable: response.status >= 400 && response.status < 500 && response.status !== 429,
-          });
-        },
-        async onmessage(msg) {
-          if (msg?.event === "error") {
-            throw new RestfulClientError(`Error during streaming has occurred.`, [], {
-              context: msg,
+      return yield* emitterToGenerator(async ({ emit }) =>
+        fetchEventSource(input.url, {
+          ...input.options,
+          async onopen(response) {
+            const contentType = response.headers.get("content-type") || "";
+            if (response.ok && contentType.includes(EventStreamContentType)) {
+              await emitter.emit("streamOpen", { input });
+              return;
+            }
+            throw new RestfulClientError("Failed to stream!", [], {
+              context: {
+                url: response.url,
+                err: await response.text(),
+                response,
+              },
+              isRetryable:
+                response.status >= 400 && response.status < 500 && response.status !== 429,
             });
-          }
-          await emitter.emit("streamMessage", { input, data: msg });
-          emit(msg);
-        },
-        onclose() {},
-        onerror(err) {
-          throw new RestfulClientError(`Error during streaming has occurred.`, [err]);
-        },
-      })
-        .then(() => emitter.emit("streamSuccess", { input }))
-        .catch(async (error) => {
-          await emitter.emit("streamError", { input, error }).catch(doNothing());
-          throw error;
+          },
+          async onmessage(msg) {
+            if (msg?.event === "error") {
+              throw new RestfulClientError(`Error during streaming has occurred.`, [], {
+                context: msg,
+              });
+            }
+            await emitter.emit("streamMessage", { input, data: msg });
+            emit(msg);
+          },
+          onclose() {},
+          onerror(err) {
+            throw new RestfulClientError(`Error during streaming has occurred.`, [err]);
+          },
         })
-        .finally(() => emitter.emit("streamDone", { input })),
-    );
+          .then(() => emitter.emit("streamSuccess", { input }))
+          .catch(async (error) => {
+            await emitter.emit("streamError", { input, error }).catch(doNothing());
+            throw error;
+          })
+          .finally(() => emitter.emit("streamDone", { input })),
+      );
+    } finally {
+      controller.abort();
+    }
   }
 
   async fetch(path: keyof K, init?: RequestInit & { searchParams?: URLSearchParams }) {
