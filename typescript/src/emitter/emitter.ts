@@ -229,7 +229,11 @@ export class Emitter<T = Record<keyof any, Callback<unknown>>> extends Serializa
         matchers.push(() => true);
       } else if (matcher instanceof RegExp) {
         matchNested ??= true;
-        matchers.push((event) => matcher.test(event.path));
+        const expression = new RegExp(matcher.source, matcher.flags);
+        matchers.push((event) => {
+          expression.lastIndex = 0;
+          return expression.test(event.path);
+        });
       } else if (typeof matcher === "function") {
         matchNested ??= false;
         matchers.push(matcher);
