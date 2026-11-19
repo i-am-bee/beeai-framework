@@ -295,15 +295,14 @@ export class Emitter<T = Record<keyof any, Callback<unknown>>> extends Serializa
 
   protected async invoke(data: unknown, event: EventMeta) {
     const executions: unknown[] = [];
-    // Iterate in reverse to match Python's behavior (reversed list iteration)
-    for (let i = this.listeners.length - 1; i >= 0; i--) {
-      const listener = this.listeners[i];
-      if (!listener.match(event)) {
+    // Callbacks can remove listeners while an event is being dispatched.
+    for (const listener of this.listeners.slice().reverse()) {
+      if (!this.listeners.includes(listener) || !listener.match(event)) {
         continue;
       }
 
       if (listener.options?.once) {
-        this.listeners.splice(i, 1);
+        removeFromArray(this.listeners, listener);
       }
 
       const run = async () => listener.callback(data, event);
