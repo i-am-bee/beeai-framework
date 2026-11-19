@@ -7,6 +7,33 @@ import { Workflow } from "@/workflows/workflow.js";
 import { z } from "zod";
 
 describe("Workflow", () => {
+  it.each([false, true])("propagates fulfillment callback errors (async: %s)", async (async) => {
+    const workflow = new Workflow({ schema: z.object({}) }).addStep("step", () => {});
+    const error = new Error("consumer failure");
+    const recover = vi.fn(() => null);
+
+    const result = workflow.run({}).then(() => {
+      if (async) {
+        return Promise.reject(error);
+      }
+      throw error;
+    }, recover);
+
+    await expect(result).rejects.toBe(error);
+    expect(recover).not.toHaveBeenCalled();
+  });
+
+  it("still handles a rejected workflow with the supplied rejection callback", async () => {
+    const error = new Error("step failure");
+    const workflow = new Workflow({ schema: z.object({}) }).addStep("step", () => {
+      throw error;
+    });
+    const recover = vi.fn(() => "recovered");
+
+    await expect(workflow.run({}).then(undefined, recover)).resolves.toBe("recovered");
+    expect(recover).toHaveBeenCalledWith(expect.objectContaining({ errors: [error] }));
+  });
+
   it("runs the next step when a synchronous step does not return a value", async () => {
     const schema = z.object({});
 
