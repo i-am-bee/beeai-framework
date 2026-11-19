@@ -674,7 +674,7 @@ class TestAnthropicImplicitTemperature:
     """The implicit `temperature=0` must not turn a valid Anthropic request into a 400."""
 
     @staticmethod
-    async def _captured_request(**run_kwargs: Any) -> dict[str, Any]:
+    async def _captured_request(model_id: str = "claude-sonnet-4-6", **run_kwargs: Any) -> dict[str, Any]:
         captured: dict[str, Any] = {}
         monkeypatch = pytest.MonkeyPatch()
         monkeypatch.setattr(
@@ -682,7 +682,7 @@ class TestAnthropicImplicitTemperature:
             TestStopSequences._capturing_acompletion(captured),
         )
         try:
-            await AnthropicChatModel("claude-sonnet-4-6", api_key="test").run([UserMessage("hi")], **run_kwargs)
+            await AnthropicChatModel(model_id, api_key="test").run([UserMessage("hi")], **run_kwargs)
         finally:
             monkeypatch.undo()
         return captured
@@ -716,6 +716,32 @@ class TestAnthropicImplicitTemperature:
         captured = await self._captured_request()
 
         assert captured["temperature"] == 0
+
+    @pytest.mark.unit
+    @pytest.mark.asyncio
+    @pytest.mark.parametrize(
+        "model_id",
+        [
+            "claude-opus-4-7",
+            "claude-sonnet-5",
+            "claude-opus-5-5",
+            "claude-sonnet-5-5-20261101",
+            "claude-haiku-5-5",
+            "claude-fable-5-1",
+            "claude-mythos-5-1",
+        ],
+    )
+    async def test_models_without_sampling_params_drop_the_implicit_temperature(self, model_id: str) -> None:
+        captured = await self._captured_request(model_id)
+
+        assert "temperature" not in captured
+
+    @pytest.mark.unit
+    @pytest.mark.asyncio
+    async def test_models_without_sampling_params_keep_an_explicit_temperature(self) -> None:
+        captured = await self._captured_request("claude-sonnet-5", temperature=1)
+
+        assert captured["temperature"] == 1
 
 
 class TestClonePromptCaching:
@@ -827,6 +853,20 @@ class TestClaudeOnCloudProvidersImplicitTemperature:
         captured = await self._captured_request(self._bedrock("anthropic.claude-sonnet-4-5-v1:0"))
 
         assert captured["temperature"] == 0
+
+    @pytest.mark.unit
+    @pytest.mark.asyncio
+    @pytest.mark.parametrize(
+        "make_model",
+        [
+            lambda: TestClaudeOnCloudProvidersImplicitTemperature._bedrock("us.anthropic.claude-sonnet-5-v1:0"),
+            lambda: TestClaudeOnCloudProvidersImplicitTemperature._vertex("claude-opus-5-5@20261101"),
+        ],
+    )
+    async def test_models_without_sampling_params_drop_the_implicit_temperature(self, make_model: Any) -> None:
+        captured = await self._captured_request(make_model())
+
+        assert "temperature" not in captured
 
     @pytest.mark.unit
     @pytest.mark.asyncio

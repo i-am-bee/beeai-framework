@@ -3,6 +3,7 @@
 import contextlib
 import math
 import os
+import re
 from abc import ABC
 from collections.abc import AsyncGenerator
 from itertools import chain
@@ -63,6 +64,12 @@ from beeai_framework.utils.strings import is_valid_unicode_escape_sequence, to_j
 logger = Logger(__name__)
 
 _DEFAULT_TIMEOUT_FALLBACK = 600.0
+
+# Claude models that answer any `temperature` other than 1 with a 400: Opus 4.7+, Sonnet 5+, Haiku 5+, Fable, Mythos.
+# Also matches Bedrock (`anthropic.claude-sonnet-5-v1:0`) and Vertex AI (`claude-opus-5-5@...`) model IDs.
+_CLAUDE_WITHOUT_SAMPLING_PARAMS = re.compile(
+    r"claude-(?:fable|mythos|opus-4-[7-9]|(?:opus|sonnet|haiku)-(?:[5-9]|\d\d))"
+)
 
 
 def _parse_timeout_env() -> float:
@@ -126,7 +133,8 @@ class LiteLLMChatModel(ChatModel, ABC):
         self.parameters = parameters
 
     def _drop_implicit_temperature(self, input: ChatModelInput, params: dict[str, Any]) -> None:
-        """Remove a `temperature` nobody asked for when the request also sets `top_p`, `reasoning_effort` or `thinking`.
+        """Remove a `temperature` nobody asked for when the request also sets `top_p`, `reasoning_effort` or `thinking`,
+        or when the model rejects sampling parameters altogether.
 
         Anthropic models reject `temperature` next to `top_p` and require 1 when thinking is on.
         """
@@ -135,7 +143,10 @@ class LiteLLMChatModel(ChatModel, ABC):
             or "temperature" in self.parameters.model_fields_set
             or "temperature" in self._settings
         )
-        if not temperature_is_explicit and any(key in params for key in ("top_p", "reasoning_effort", "thinking")):
+        if not temperature_is_explicit and (
+            any(key in params for key in ("top_p", "reasoning_effort", "thinking"))
+            or _CLAUDE_WITHOUT_SAMPLING_PARAMS.search(self.model_id.lower())
+        ):
             params.pop("temperature", None)
 
     async def _create(
