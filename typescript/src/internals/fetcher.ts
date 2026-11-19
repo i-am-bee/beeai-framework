@@ -149,8 +149,11 @@ export class RestfulClient<K extends Record<string, string>> extends Serializabl
 
     const target = this.getUrl(path);
     if (init?.searchParams) {
+      for (const key of new Set(init.searchParams.keys())) {
+        target.searchParams.delete(key);
+      }
       for (const [key, value] of init.searchParams) {
-        target.searchParams.set(key, value);
+        target.searchParams.append(key, value);
       }
     }
 
