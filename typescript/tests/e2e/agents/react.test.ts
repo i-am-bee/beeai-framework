@@ -11,11 +11,11 @@ import { UnconstrainedMemory } from "@/memory/unconstrainedMemory.js";
 import { Message } from "@/backend/message.js";
 import { createCallbackRegister } from "@tests/e2e/utils.js";
 import { omitEmptyValues } from "@/internals/helpers/object.js";
-import { createChatLLM } from "@tests/utils/llmFactory.js";
+import { createChatLLM, hasChatLLMCredentials } from "@tests/utils/llmFactory.js";
 import { ReActAgentMeta } from "@/agents/react/types.js";
 import { WikipediaTool } from "@/tools/search/wikipedia.js";
 
-describe("ReAct Agent", () => {
+describe.runIf(hasChatLLMCredentials())("ReAct Agent", () => {
   const createAgent = () => {
     return new ReActAgent({
       llm: createChatLLM(),

@@ -39,8 +39,9 @@ jobs:
           # AZURE_OPENAI_API_DEPLOYMENT: ${{ secrets.AZURE_OPENAI_API_DEPLOYMENT }}
           # AZURE_OPENAI_API_KEY: ${{ secrets.AZURE_OPENAI_API_KEY }}
           # AZURE_OPENAI_API_VERSION: ${{ secrets.AZURE_OPENAI_API_VERSION }}
-          WATSONX_API_KEY: ${{ secrets.WATSONX_API_KEY }}
-          WATSONX_PROJECT_ID: ${{ secrets.WATSONX_PROJECT_ID }}
-          WATSONX_REGION: ${{ secrets.WATSONX_REGION }}
+          # The watsonx API key is no longer valid; restore these once the secret is rotated.
+          # WATSONX_API_KEY: ${{ secrets.WATSONX_API_KEY }}
+          # WATSONX_PROJECT_ID: ${{ secrets.WATSONX_PROJECT_ID }}
+          # WATSONX_REGION: ${{ secrets.WATSONX_REGION }}
           # WATSONX_SPACE_ID: ${{ secrets.WATSONX_SPACE_ID }}
           # WATSONX_DEPLOYMENT_ID: ${{ secrets.WATSONX_DEPLOYMENT_ID }}

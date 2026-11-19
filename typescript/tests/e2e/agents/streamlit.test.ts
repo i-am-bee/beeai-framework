@@ -7,13 +7,13 @@ import { FrameworkError } from "@/errors.js";
 import { beforeEach, expect, vi } from "vitest";
 import { UnconstrainedMemory } from "@/memory/unconstrainedMemory.js";
 import { createCallbackRegister } from "@tests/e2e/utils.js";
-import { createChatLLM } from "@tests/utils/llmFactory.js";
+import { createChatLLM, hasChatLLMCredentials } from "@tests/utils/llmFactory.js";
 import { StreamlitAgent } from "@/agents/experimental/streamlit/agent.js";
 import { BaseMemory } from "@/memory/base.js";
 import { Message } from "@/backend/message.js";
 import { ChatModelOutput } from "@/backend/chat.js";
 
-describe("Streamlit Agent", () => {
+describe.runIf(hasChatLLMCredentials())("Streamlit Agent", () => {
   const createAgent = () => {
     return new StreamlitAgent({
       llm: createChatLLM(),
