@@ -192,7 +192,7 @@ export class RestfulClient<K extends Record<string, string>> extends Serializabl
     const final = {};
     for (const override of [await this.input.headers?.(), extra].filter(isTruthy)) {
       if (isArray(override) || override instanceof Headers) {
-        Object.assign(final, Object.fromEntries(override.entries()));
+        Object.assign(final, Object.fromEntries(new Headers(override).entries()));
       } else {
         Object.assign(final, override);
       }
