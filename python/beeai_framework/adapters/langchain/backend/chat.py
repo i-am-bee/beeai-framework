@@ -44,9 +44,13 @@ class LangChainChatModel(ChatModel):
     def provider_id(self) -> ProviderName:
         return "langchain"
 
+    def _stop_sequences(self, input: ChatModelInput) -> list[str] | None:
+        # Per-call stop sequences take precedence over the model-level ones.
+        return input.stop_sequences if input.stop_sequences is not None else self.parameters.stop_sequences
+
     def _prepare_model(self, input: ChatModelInput) -> LCRunnable[LanguageModelInput, LCModelResponse]:
         parameters = self.parameters.model_dump(exclude_none=True, exclude={"stop_sequences", "stream", "tool_choice"})
-        parameters["stop"] = input.stop_sequences
+        parameters["stop"] = self._stop_sequences(input)
 
         # Note: setting via bind might not work for certain providers
         for key, value in parameters.items():
@@ -69,7 +73,7 @@ class LangChainChatModel(ChatModel):
     async def _create(self, input: ChatModelInput, run: RunContext) -> ChatModelOutput:
         input_messages = to_lc_messages(input.messages)
         model = self._prepare_model(input)
-        lc_response = await model.ainvoke(input=input_messages, stop=input.stop_sequences)
+        lc_response = await model.ainvoke(input=input_messages, stop=self._stop_sequences(input))
         return self._transform_output(lc_response)
 
     async def _create_stream(self, input: ChatModelInput, run: RunContext) -> AsyncGenerator[ChatModelOutput]:
@@ -77,7 +81,7 @@ class LangChainChatModel(ChatModel):
         model = self._prepare_model(input)
 
         tmp_chunk: ChatModelOutput | None = None
-        async for _chunk in model.astream(input=input_messages, stop=input.stop_sequences):
+        async for _chunk in model.astream(input=input_messages, stop=self._stop_sequences(input)):
             if _chunk is None:
                 continue
 

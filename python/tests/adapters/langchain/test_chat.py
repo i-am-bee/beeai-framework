@@ -161,3 +161,29 @@ def test_model_id_uses_the_model_attribute() -> None:
     model = LangChainChatModel(_NamedFakeChatModel(messages=iter([])))
 
     assert model.model_id == "granite4:latest"
+
+
+class _StopRecordingFakeChatModel(GenericFakeChatModel):
+    seen_stop: Any = "unset"
+
+    def _generate(self, messages: Any, stop: Any = None, run_manager: Any = None, **kwargs: Any) -> Any:
+        self.seen_stop = stop
+        return super()._generate(messages, stop=stop, run_manager=run_manager, **kwargs)
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    ("model_stop", "call_stop", "expected"),
+    [(["END"], None, ["END"]), (["END"], ["STOP"], ["STOP"]), (None, ["STOP"], ["STOP"])],
+)
+async def test_stop_sequences_fall_back_to_model_parameters(
+    model_stop: list[str] | None, call_stop: list[str] | None, expected: list[str]
+) -> None:
+    fake = _StopRecordingFakeChatModel(messages=iter([AIMessage(content="hi")]))
+    model = LangChainChatModel(fake)
+    model.parameters.stop_sequences = model_stop
+
+    await model.run([UserMessage("hello")], stop_sequences=call_stop)
+
+    assert fake.seen_stop == expected
