@@ -206,7 +206,7 @@ export class RestfulClient<K extends Record<string, string>> extends Serializabl
     if (url.pathname.endsWith("/")) {
       url.pathname += extraPath.replace(/^\//, "");
     } else {
-      url.pathname += extraPath;
+      url.pathname += extraPath && !extraPath.startsWith("/") ? `/${extraPath}` : extraPath;
     }
     return url;
   }
