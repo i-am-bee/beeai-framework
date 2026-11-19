@@ -127,9 +127,9 @@ frontmatter adjusted**.
 6. **Cutover** — in progress: the new site lives in `docs/` and deploys to GitHub
    Pages; the old Mintlify site in `../docs-old` still serves `framework.beeai.dev`,
    and its CI (`.github/workflows/docs.yml`) + mise `docs:*` tasks have been retired.
-   The build is still configured for the GitHub Pages project URL
-   (`BASE = "/beeai-framework"`); the remaining steps are the cutover below, then
-   deleting `../docs-old`.
+   The build is configured for the custom domain root (`BASE = "/"`, step 1 of the
+   cutover below); the remaining steps are 2-5 of the cutover, then deleting
+   `../docs-old`.
 
 ## One-time GitHub setup (repo admin — cannot be scripted)
 
