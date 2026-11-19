@@ -12,6 +12,16 @@ import { ChatModel } from "@/backend/chat.js";
 import { GroqChatModel } from "@/adapters/groq/backend/chat.js";
 import { AzureOpenAIChatModel } from "@/adapters/azure-openai/backend/chat.js";
 
+export function hasChatLLMCredentials(): boolean {
+  return Boolean(
+    process.env.OPENAI_API_KEY ||
+      process.env.AZURE_OPENAI_API_KEY ||
+      (process.env.WATSONX_API_KEY && process.env.WATSONX_PROJECT_ID) ||
+      process.env.GROQ_API_KEY ||
+      process.env.OLLAMA_BASE_URL,
+  );
+}
+
 export function createChatLLM(): ChatModel {
   if (process.env.OPENAI_API_KEY) {
     return new OpenAIChatModel("gpt-4o");
