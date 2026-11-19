@@ -90,6 +90,32 @@ describe("Emitter", () => {
     emitter.destroy();
   });
 
+  it.each([
+    { isBlocking: false, once: false },
+    { isBlocking: true, once: false },
+    { isBlocking: false, once: true },
+    { isBlocking: true, once: true },
+  ])("allows a listener to remove another listener (%j)", async (options) => {
+    const emitter = new Emitter();
+    const remaining = vitest.fn();
+    const removed = vitest.fn();
+    emitter.on("update", remaining, { priority: -1 });
+    const cleanup = emitter.on("update", removed);
+    const first = vitest.fn(() => cleanup());
+    emitter.on("update", first, { ...options, priority: 1 });
+
+    await emitter.emit("update", 1);
+    expect(first).toHaveBeenCalledOnce();
+    expect(removed).not.toHaveBeenCalled();
+    expect(remaining).toHaveBeenCalledOnce();
+
+    await emitter.emit("update", 2);
+    expect(first).toHaveBeenCalledTimes(options.once ? 1 : 2);
+    expect(removed).not.toHaveBeenCalled();
+    expect(remaining).toHaveBeenCalledTimes(2);
+    emitter.destroy();
+  });
+
   it("Emits", async () => {
     const emitter = new Emitter({
       namespace: ["app"],
