@@ -107,7 +107,7 @@ export class LazyPromise<R> implements Promise<R> {
     onfulfilled?: ((value: R) => PromiseLike<TResult1> | TResult1) | undefined | null,
     onrejected?: ((reason: any) => PromiseLike<TResult2> | TResult2) | undefined | null,
   ): Promise<TResult1 | TResult2> {
-    return this.before().then(this.handler).then(onfulfilled).catch(onrejected);
+    return this.before().then(this.handler).then(onfulfilled, onrejected);
   }
 
   catch<TResult = never>(
