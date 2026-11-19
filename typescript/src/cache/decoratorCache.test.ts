@@ -113,6 +113,32 @@ describe("@Cache decorator", () => {
     expect(a.getNumber).toEqual(4);
   });
 
+  it("Keeps cache controls local to an instance", () => {
+    class Counter {
+      calls = 0;
+
+      @Cache()
+      get value() {
+        return ++this.calls;
+      }
+    }
+
+    const first = new Counter();
+    const second = new Counter();
+    const firstCache = Cache.getInstance(first, "value");
+    firstCache.disable();
+    try {
+      expect(first.value).toBe(1);
+      expect(first.value).toBe(2);
+      expect(second.value).toBe(1);
+      expect(second.value).toBe(1);
+      expect(Cache.getInstance(second, "value").isEnabled()).toBe(true);
+      expect(Cache.getInstance(new Counter(), "value").isEnabled()).toBe(true);
+    } finally {
+      firstCache.enable();
+    }
+  });
+
   it("Clears cache", () => {
     class A {
       static number = 0;
@@ -289,6 +315,25 @@ describe("@Cache decorator", () => {
       expect(cached(3)).toBe(3);
 
       expect(fn).toHaveBeenCalledTimes(3);
+    });
+
+    it("Keeps each function's TTL independent", () => {
+      vi.useFakeTimers();
+      try {
+        const shortFn = vi.fn(() => "short");
+        const longFn = vi.fn(() => "long");
+        const short = CacheFn.create(shortFn, { ttl: 10 });
+        const long = CacheFn.create(longFn, { ttl: 1000 });
+        short();
+        long();
+        vi.advanceTimersByTime(11);
+        short();
+        long();
+        expect(shortFn).toHaveBeenCalledTimes(2);
+        expect(longFn).toHaveBeenCalledTimes(1);
+      } finally {
+        vi.useRealTimers();
+      }
     });
 
     it("Updates TTL", async () => {
