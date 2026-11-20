@@ -7,6 +7,7 @@ import { ChatModelInput, ChatModelParameters } from "@/backend/chat.js";
 import { UserMessage } from "@/backend/message.js";
 import { z } from "zod";
 import { AnthropicChatModel } from "@/adapters/anthropic/backend/chat.js";
+import { DynamicTool, StringToolOutput } from "@/tools/base.js";
 
 describe("AnthropicChatModel", () => {
   const original = process.env.ANTHROPIC_CHAT_MODEL;
@@ -120,4 +121,82 @@ describe("AnthropicChatModel sampling parameters", () => {
   it("retains the default temperature without topP", async () => {
     expect((await sentBody()).temperature).toBe(0);
   });
+});
+
+describe("AnthropicChatModel forced tool choice", () => {
+  const weather = new DynamicTool({
+    name: "get_weather",
+    description: "Get the weather of a city.",
+    inputSchema: z.object({ city: z.string() }),
+    handler: async () => new StringToolOutput("sunny"),
+  });
+  const time = new DynamicTool({
+    name: "get_time",
+    description: "Get the current time in a timezone.",
+    inputSchema: z.object({ timezone: z.string() }),
+    handler: async () => new StringToolOutput("12:00"),
+  });
+
+  async function run(modelId: string, toolChoice: ChatModelInput["toolChoice"]) {
+    let body: Record<string, any> = {};
+    const llm = new AnthropicChatModel(
+      modelId,
+      {},
+      {
+        apiKey: "test",
+        fetch: async (_url, init) => {
+          body = JSON.parse(String(init?.body));
+          const content = body.tools?.length
+            ? [{ type: "tool_use", id: "t1", name: "get_weather", input: { city: "Prague" } }]
+            : [{ type: "text", text: '{"name":"get_weather","parameters":{"city":"Prague"}}' }];
+          return Response.json({
+            id: "msg_test",
+            type: "message",
+            role: "assistant",
+            model: modelId,
+            content,
+            stop_reason: body.tools?.length ? "tool_use" : "end_turn",
+            stop_sequence: null,
+            usage: { input_tokens: 1, output_tokens: 1 },
+          });
+        },
+      },
+    );
+    const output = await llm.create({
+      messages: [new UserMessage("What's the weather in Prague?")],
+      tools: [weather, time],
+      toolChoice,
+    });
+    return { body, toolCalls: output.getToolCalls().map((call) => call.toolName) };
+  }
+
+  it.each([
+    "claude-sonnet-5-5",
+    "claude-opus-5-5-20261101",
+    "claude-fable-5-1",
+    "claude-mythos-5-1",
+  ])(
+    "asks %s for the tool call through structured output instead of a forced tool choice",
+    async (modelId) => {
+      for (const toolChoice of ["required", weather] as const) {
+        const { body, toolCalls } = await run(modelId, toolChoice);
+        expect(body).not.toHaveProperty("tool_choice");
+        expect(body).not.toHaveProperty("tools");
+        expect(body.output_config?.format ?? body.output_format).toMatchObject({
+          type: "json_schema",
+        });
+        expect(toolCalls).toEqual(["get_weather"]);
+      }
+    },
+  );
+
+  it.each(["claude-opus-5", "claude-sonnet-4-5"])(
+    "keeps the forced tool choice on %s",
+    async (modelId) => {
+      const { body, toolCalls } = await run(modelId, "required");
+      expect(body.tool_choice).toMatchObject({ type: "any" });
+      expect(body.tools).toHaveLength(2);
+      expect(toolCalls).toEqual(["get_weather"]);
+    },
+  );
 });
