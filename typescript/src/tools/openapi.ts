@@ -64,51 +64,68 @@ export class OpenAPITool extends Tool<OpenAPIToolOutput, OpenAPIToolOptions> {
     return currentObject;
   }
 
+  protected getParameters(path: string, method: string): any[] {
+    const pathSpec = this.openApiSchema.paths?.[path];
+    const parameters = new Map<string, any>();
+    for (const parameter of [
+      ...(pathSpec?.parameters ?? []),
+      ...(pathSpec?.[method]?.parameters ?? []),
+    ]) {
+      const resolved = parameter.$ref ? this.getReferencedObject(parameter.$ref) : parameter;
+      // An operation overrides a shared parameter with the same name and location.
+      parameters.set(JSON.stringify([resolved.name, resolved.in]), resolved);
+    }
+    return Array.from(parameters.values());
+  }
+
   inputSchema(): SchemaObject {
     return {
       type: "object",
       required: ["path", "method"],
       oneOf: Object.entries(this.openApiSchema.paths).flatMap(([path, pathSpec]: [string, any]) =>
-        Object.entries(pathSpec).map(([method, methodSpec]: [string, any]) => ({
-          additionalProperties: false,
-          properties: {
-            path: {
-              const: path,
-              description:
-                "Do not replace variables in path, instead of, put them to the parameters object.",
-            },
-            method: { const: method, description: methodSpec.summary || methodSpec.description },
-            ...(methodSpec.requestBody?.content?.["application/json"]?.schema
-              ? {
-                  body: methodSpec.requestBody?.content?.["application/json"]?.schema,
-                }
-              : {}),
-            ...(methodSpec.parameters
-              ? {
-                  parameters: {
-                    type: "object",
-                    additionalProperties: false,
-                    required: methodSpec.parameters
-                      .filter((p: any) => p.required === true)
-                      .map((p: any) => p.name),
-                    properties: methodSpec.parameters.reduce(
-                      (acc: any, p: any) =>
-                        !p.$ref
-                          ? { ...acc, [p.name]: { ...p.schema, description: p.name } }
-                          : {
-                              ...acc,
-                              [this.getReferencedObject(p.$ref)?.name]: {
-                                ...this.getReferencedObject(p.$ref)?.schema,
-                                description: this.getReferencedObject(p.$ref)?.name,
-                              },
-                            },
-                      {},
-                    ),
-                  },
-                }
-              : {}),
-          },
-        })),
+        Object.entries(pathSpec)
+          .filter(([method]) =>
+            ["get", "put", "post", "delete", "options", "head", "patch", "trace"].includes(method),
+          )
+          .map(([method, methodSpec]: [string, any]) => {
+            const parameters = this.getParameters(path, method);
+            return {
+              additionalProperties: false,
+              properties: {
+                path: {
+                  const: path,
+                  description:
+                    "Do not replace variables in path, instead of, put them to the parameters object.",
+                },
+                method: {
+                  const: method,
+                  description: methodSpec.summary || methodSpec.description,
+                },
+                ...(methodSpec.requestBody?.content?.["application/json"]?.schema
+                  ? {
+                      body: methodSpec.requestBody?.content?.["application/json"]?.schema,
+                    }
+                  : {}),
+                ...(parameters.length > 0
+                  ? {
+                      parameters: {
+                        type: "object",
+                        additionalProperties: false,
+                        required: parameters
+                          .filter((p: any) => p.required === true)
+                          .map((p: any) => p.name),
+                        properties: Object.fromEntries(
+                          parameters.map((p: any) => [
+                            p.name,
+                            { ...p.schema, description: p.name },
+                          ]),
+                        ),
+                      },
+                    }
+                  : {}),
+              },
+            };
+          }),
       ),
     } as const satisfies SchemaObject;
   }
@@ -160,13 +177,9 @@ export class OpenAPITool extends Tool<OpenAPIToolOutput, OpenAPIToolOptions> {
     const url = new URL(this.url);
     const headers = new Headers(this.options.fetchOptions?.headers);
     const cookies: string[] = [];
-    const parameters =
-      this.openApiSchema.paths?.[path]?.[input.method.toLowerCase()]?.parameters ?? [];
+    const parameters = this.getParameters(path, input.method.toLowerCase());
     const locations = new Map<string, string>(
-      parameters.map((parameter: any) => {
-        const resolved = parameter.$ref ? this.getReferencedObject(parameter.$ref) : parameter;
-        return [resolved.name, resolved.in];
-      }),
+      parameters.map((parameter: any) => [parameter.name, parameter.in]),
     );
     Object.keys(input.parameters ?? {}).forEach((key) => {
       const value = input.parameters[key];

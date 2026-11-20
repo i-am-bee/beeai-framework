@@ -40,6 +40,83 @@ afterEach(() => {
 });
 
 describe("OpenAPITool parameter locations", () => {
+  it("inherits Path Item parameters and lets the operation override them", async () => {
+    const tool = createTool({
+      ...schema(),
+      paths: {
+        "/pets/{petId}": {
+          parameters: [
+            { name: "petId", in: "path", required: true, schema: { type: "string" } },
+            { name: "X-Region", in: "header", schema: { type: "string" } },
+            { name: "theme", in: "cookie", schema: { type: "string" } },
+            { name: "verbose", in: "query", schema: { type: "string" } },
+          ],
+          get: {
+            parameters: [{ name: "verbose", in: "query", schema: { type: "boolean" } }],
+            responses: { "200": { description: "Pet" } },
+          },
+        },
+      },
+    });
+
+    await tool.run({
+      path: "/pets/{petId}",
+      method: "get",
+      parameters: { "petId": "a/b", "X-Region": "east", "theme": "dark", "verbose": false },
+    });
+
+    const { url, headers } = request();
+    expect(url.toString()).toBe(
+      "https://example.invalid/api/pets/a%2Fb?configured=keep&verbose=false",
+    );
+    expect(headers.get("X-Region")).toBe("east");
+    expect(headers.get("Cookie")).toBe("theme=dark");
+  });
+
+  it("inherits referenced parameters and resolves required operation overrides", async () => {
+    const tool = createTool({
+      ...schema(),
+      components: {
+        parameters: {
+          Region: { name: "X-Region", in: "header", schema: { type: "string" } },
+          RequiredRegion: {
+            name: "X-Region",
+            in: "header",
+            required: true,
+            schema: { type: "string", enum: ["east"] },
+          },
+        },
+      },
+      paths: {
+        "/pets": {
+          parameters: [{ $ref: "#/components/parameters/Region" }],
+          get: {
+            parameters: [{ $ref: "#/components/parameters/RequiredRegion" }],
+            responses: { "200": { description: "Pets" } },
+          },
+        },
+      },
+    });
+    await expect(tool.run({ path: "/pets", method: "get", parameters: {} })).rejects.toThrow();
+    expect(fetch).not.toHaveBeenCalled();
+    await tool.run({ path: "/pets", method: "get", parameters: { "X-Region": "east" } });
+    expect(request().headers.get("X-Region")).toBe("east");
+  });
+
+  it.each([
+    ["summary", "Pets"],
+    ["description", "Pet operations"],
+    ["servers", [{ url: "https://example.invalid" }]],
+    ["x-owner", { team: "pets" }],
+  ])("does not expose Path Item %s as an operation", (key, value) => {
+    const spec = schema();
+    const tool = createTool({
+      ...spec,
+      paths: { "/pets": { ...spec.paths["/pets"], [key as string]: value } },
+    });
+    expect(tool.inputSchema().oneOf).toMatchObject([{ properties: { method: { const: "get" } } }]);
+  });
+
   it.each(["header", "cookie"])(
     "sends a %s parameter in its declared location",
     async (location) => {
