@@ -42,6 +42,7 @@ from beeai_framework.context import RunContext
 from beeai_framework.emitter import Emitter
 from beeai_framework.memory.base_memory import BaseMemory
 from beeai_framework.memory.unconstrained_memory import UnconstrainedMemory
+from beeai_framework.memory.utils import extract_last_tool_exchange
 from beeai_framework.runnable import runnable_entry
 from beeai_framework.template import PromptTemplate
 from beeai_framework.tools.errors import ToolError
@@ -271,7 +272,7 @@ class ToolCallingAgent(BaseAgent[ToolCallingAgentOutput]):
         else:
             if user_message is not None:
                 await self.memory.add(user_message)
-            await self.memory.add_many(state.memory.messages[-2:])
+            await self.memory.add_many(extract_last_tool_exchange(state.memory))
 
         return ToolCallingAgentOutput(output=[state.result], output_structured=state.result, state=state)
 

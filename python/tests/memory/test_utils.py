@@ -3,6 +3,8 @@
 
 import asyncio
 
+import pytest
+
 from beeai_framework.backend.message import (
     AssistantMessage,
     MessageToolCallContent,
@@ -10,7 +12,9 @@ from beeai_framework.backend.message import (
     ToolMessage,
 )
 from beeai_framework.memory.unconstrained_memory import UnconstrainedMemory
-from beeai_framework.memory.utils import extract_last_tool_call_pair
+from beeai_framework.memory.utils import extract_last_tool_call_pair, extract_last_tool_exchange
+
+pytestmark = pytest.mark.unit
 
 
 def test_extract_last_tool_call_pair_returns_matching_tool_response() -> None:
@@ -55,15 +59,10 @@ def test_extract_last_tool_call_pair_uses_last_tool_call_from_message() -> None:
 
     asyncio.run(memory.add_many([assistant_message, first_tool_message, last_tool_message]))
 
-    pair = extract_last_tool_call_pair(memory)
-    assert pair is not None
-    call, response = pair
-    # Only the last call is kept: a call without its result is rejected by chat APIs.
-    assert [c.id for c in call.get_tool_calls()] == ["call_2"]
-    assert response is last_tool_message
+    assert extract_last_tool_call_pair(memory) == (assistant_message, last_tool_message)
 
 
-def test_extract_last_tool_call_pair_keeps_only_the_matching_result() -> None:
+def test_extract_last_tool_exchange_keeps_every_parallel_call_and_result() -> None:
     memory = UnconstrainedMemory()
     assistant_message = AssistantMessage(
         [
@@ -71,17 +70,59 @@ def test_extract_last_tool_call_pair_keeps_only_the_matching_result() -> None:
             MessageToolCallContent(id="call_2", tool_name="weather", args='{"city":"Berlin"}'),
         ]
     )
-    tool_message = ToolMessage(
-        [
-            MessageToolResultContent(tool_name="weather", tool_call_id="call_1", result="sunny"),
-            MessageToolResultContent(tool_name="weather", tool_call_id="call_2", result="rainy"),
-        ]
+    first_tool_message = ToolMessage(
+        MessageToolResultContent(tool_name="weather", tool_call_id="call_1", result="sunny")
+    )
+    last_tool_message = ToolMessage(
+        MessageToolResultContent(tool_name="weather", tool_call_id="call_2", result="rainy")
     )
 
-    asyncio.run(memory.add_many([assistant_message, tool_message]))
+    asyncio.run(memory.add_many([assistant_message, first_tool_message, last_tool_message]))
 
-    pair = extract_last_tool_call_pair(memory)
-    assert pair is not None
-    call, response = pair
-    assert [c.id for c in call.get_tool_calls()] == ["call_2"]
-    assert [r.tool_call_id for r in response.get_tool_results()] == ["call_2"]
+    exchange = extract_last_tool_exchange(memory)
+    assert len(exchange) == 3
+    assert exchange[0] is assistant_message
+    assert exchange[1] is first_tool_message
+    assert exchange[2] is last_tool_message
+
+
+def test_extract_last_tool_exchange_skips_earlier_exchanges_and_unrelated_messages() -> None:
+    memory = UnconstrainedMemory()
+    earlier_call = AssistantMessage(MessageToolCallContent(id="call_0", tool_name="weather", args='{"city":"Rome"}'))
+    earlier_result = ToolMessage(MessageToolResultContent(tool_name="weather", tool_call_id="call_0", result="hot"))
+    assistant_message = AssistantMessage(
+        MessageToolCallContent(id="call_1", tool_name="weather", args='{"city":"Paris"}')
+    )
+    empty_tool_message = ToolMessage([])
+    unrelated_tool_message = ToolMessage(
+        MessageToolResultContent(tool_name="weather", tool_call_id="call_9", result="foggy")
+    )
+    tool_message = ToolMessage(MessageToolResultContent(tool_name="weather", tool_call_id="call_1", result="sunny"))
+    trailing_text = AssistantMessage("Done.")
+
+    asyncio.run(
+        memory.add_many(
+            [
+                earlier_call,
+                earlier_result,
+                assistant_message,
+                empty_tool_message,
+                unrelated_tool_message,
+                tool_message,
+                trailing_text,
+            ]
+        )
+    )
+
+    exchange = extract_last_tool_exchange(memory)
+    assert len(exchange) == 2
+    assert exchange[0] is assistant_message
+    assert exchange[1] is tool_message
+
+
+def test_extract_last_tool_exchange_returns_nothing_without_a_tool_call() -> None:
+    memory = UnconstrainedMemory()
+
+    asyncio.run(memory.add_many([AssistantMessage("Hello")]))
+
+    assert extract_last_tool_exchange(memory) == []
