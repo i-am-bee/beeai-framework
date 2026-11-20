@@ -6,8 +6,49 @@
 import { Emitter } from "@/emitter/emitter.js";
 import { describe, expect } from "vitest";
 import { EventMeta } from "@/emitter/types.js";
+import { execFile } from "node:child_process";
+import { fileURLToPath } from "node:url";
+import { promisify } from "node:util";
 
 describe("Emitter", () => {
+  it.each([
+    { blocking: false, blockingFails: false },
+    { blocking: true, blockingFails: false },
+    { blocking: true, blockingFails: true },
+  ])("handles listener rejections while dispatching (%j)", async ({ blocking, blockingFails }) => {
+    const { stdout } = await promisify(execFile)(
+      process.execPath,
+      [
+        "--import",
+        "tsx",
+        "--input-type=module",
+        "--eval",
+        `
+          import { Emitter } from ${JSON.stringify(new URL("./emitter.ts", import.meta.url).href)};
+          const unhandled = [];
+          process.on("unhandledRejection", (error) => unhandled.push(error.message));
+          process.on("rejectionHandled", () => {});
+          const emitter = new Emitter();
+          emitter.on("update", async () => { throw new Error("observer failed"); }, { priority: 1 });
+          emitter.on("update", async () => {
+            await new Promise((resolve) => setImmediate(resolve));
+            if (${blockingFails}) throw new Error("blocking listener failed");
+          }, { isBlocking: ${blocking} });
+          const caught = await emitter.emit("update", null).catch((error) => error.message);
+          await new Promise((resolve) => setImmediate(resolve));
+          emitter.destroy();
+          console.log(JSON.stringify({ caught, unhandled }));
+        `,
+      ],
+      { cwd: fileURLToPath(new URL("../..", import.meta.url)) },
+    );
+
+    expect(JSON.parse(stdout)).toEqual({
+      caught: blockingFails ? "blocking listener failed" : "observer failed",
+      unhandled: [],
+    });
+  });
+
   it.each([undefined, false, true])(
     "Filters descendant runs in pipe unless requested (matchNested: %s)",
     async (matchNested) => {

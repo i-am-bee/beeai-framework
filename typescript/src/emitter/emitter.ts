@@ -306,7 +306,14 @@ export class Emitter<T = Record<keyof any, Callback<unknown>>> extends Serializa
       }
 
       const run = async () => listener.callback(data, event);
-      executions.push(listener.options?.isBlocking ? await run() : run());
+      const execution = run();
+      if (listener.options?.isBlocking) {
+        await execution;
+      } else {
+        // Observe failures before a later blocking listener yields; Promise.all still propagates them.
+        void execution.catch(() => {});
+        executions.push(execution);
+      }
     }
     await Promise.all(executions);
   }
