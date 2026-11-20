@@ -958,7 +958,7 @@ class TestAnthropicRequestBody:
         bodies: list[dict[str, Any]] = []
 
         class Handler(BaseHTTPRequestHandler):
-            def do_POST(self) -> None:
+            def do_POST(self) -> None:  # noqa: N802 (name required by BaseHTTPRequestHandler)
                 bodies.append(json.loads(self.rfile.read(int(self.headers["Content-Length"]))))
                 reply = json.dumps(
                     {
@@ -977,7 +977,7 @@ class TestAnthropicRequestBody:
                 self.end_headers()
                 self.wfile.write(reply)
 
-            def log_message(self, *args: Any) -> None:
+            def log_message(self, format: str, *args: Any) -> None:
                 pass
 
         server = HTTPServer(("127.0.0.1", 0), Handler)
