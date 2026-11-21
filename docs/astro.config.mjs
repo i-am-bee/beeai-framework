@@ -11,12 +11,11 @@ import remarkAutoImport from "./plugins/remark-auto-import.mjs";
 import remarkBaseLinks from "./plugins/remark-base-links.mjs";
 import { redirects } from "./redirects.mjs";
 
-// Served from the GitHub Pages project URL (https://i-am-bee.github.io/beeai-framework/),
-// so everything lives under this base path. When the custom domain
-// (framework.beeai.dev) is wired up, set BASE to "/" and `site` to the custom
-// domain -- the link/redirect prefixing below is a no-op at "/". Only do that once
-// the DNS change is scheduled: see "Custom domain cutover" in MIGRATION.md.
-const BASE = "/beeai-framework";
+// Served from the custom domain root (https://framework.beeai.dev). The link and
+// redirect prefixing below is a no-op at "/". To serve from the GitHub Pages
+// project URL instead, set BASE to "/beeai-framework" and `site` to
+// "https://i-am-bee.github.io".
+const BASE = "/";
 
 // Prefix an internal absolute path with BASE (Astro does not do this for
 // redirect targets, just as it doesn't for hand-written content links).
@@ -24,7 +23,7 @@ const withBase = (path) => (BASE === "/" ? path : `${BASE}${path}`);
 
 // https://astro.build/config
 export default defineConfig({
-  site: "https://i-am-bee.github.io",
+  site: "https://framework.beeai.dev",
   base: BASE,
 
   // Match the previous Mintlify URLs exactly: no trailing slash, and emit
