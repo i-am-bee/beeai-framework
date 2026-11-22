@@ -149,10 +149,16 @@ class LiteLLMChatModel(ChatModel, ABC):
 
         # LiteLLM drops `output_config` (and falls back to a forced tool call) for models it does not know
         name = self.model_id.removeprefix("anthropic/")
-        if name not in litellm.model_cost and f"{self._litellm_provider_id}/{name}" not in litellm.model_cost:
+        # (also when LiteLLM's remote model map lists it without the capability: merge the flag, keep its pricing)
+        known = [key for key in (name, f"{self._litellm_provider_id}/{name}") if key in litellm.model_cost]
+        if not known:
             litellm.register_model(
                 {name: {"litellm_provider": self._litellm_provider_id, "mode": "chat", "supports_output_config": True}}
             )
+        else:
+            for key in known:
+                if not litellm.model_cost[key].get("supports_output_config"):
+                    litellm.register_model({key: {**litellm.model_cost[key], "supports_output_config": True}})
 
     def _send_as_output_config(self, input: ChatModelInput, params: dict[str, Any]) -> None:
         """Replace the `response_format` of a model that rejects forced tool use with `output_config.format`."""

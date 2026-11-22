@@ -11,6 +11,7 @@ import litellm
 import pytest
 from litellm import ModelResponse as LiteLLMModelResponse
 from litellm import ModelResponseStream
+from litellm.litellm_core_utils.get_model_cost_map import GetModelCostMap
 from litellm.types.utils import (
     ChatCompletionMessageToolCall,
     Choices,
@@ -1056,7 +1057,7 @@ class TestAnthropicRequestBody:
     def test_registration_does_not_overwrite_a_known_model(
         self, monkeypatch: pytest.MonkeyPatch, known_key: str, model_id: str
     ) -> None:
-        sentinel = {"litellm_provider": "anthropic", "mode": "chat", "sentinel": True}
+        sentinel = {"litellm_provider": "anthropic", "mode": "chat", "sentinel": True, "supports_output_config": True}
         monkeypatch.setattr(litellm, "model_cost", {known_key: sentinel})
         register = MagicMock()
         monkeypatch.setattr(litellm, "register_model", register)
@@ -1064,7 +1065,36 @@ class TestAnthropicRequestBody:
         AnthropicChatModel(model_id, api_key="t")
 
         register.assert_not_called()
-        assert litellm.model_cost == {known_key: {"litellm_provider": "anthropic", "mode": "chat", "sentinel": True}}
+        assert litellm.model_cost == {known_key: sentinel}
+
+    @pytest.mark.unit
+    @pytest.mark.parametrize(
+        ("known_key", "model_id"),
+        [
+            ("claude-sonnet-5-5", "claude-sonnet-5-5"),
+            ("anthropic/claude-opus-5-5-x", "claude-opus-5-5-x"),
+        ],
+    )
+    def test_known_model_without_the_capability_gets_it_merged(
+        self, monkeypatch: pytest.MonkeyPatch, known_key: str, model_id: str
+    ) -> None:
+        """LiteLLM's remote model map can list a model with `supports_native_structured_output: False` only."""
+        # start from the bundled map so the result does not depend on the remote one fetched at import
+        monkeypatch.setattr(litellm, "model_cost", GetModelCostMap.load_local_model_cost_map())
+        entry = {
+            "litellm_provider": "anthropic",
+            "mode": "chat",
+            "input_cost_per_token": 1e-06,
+            "supports_native_structured_output": False,
+        }
+        litellm.model_cost[known_key] = entry
+
+        AnthropicChatModel(model_id, api_key="t")
+
+        merged = litellm.model_cost[known_key]
+        assert merged["supports_output_config"] is True
+        assert merged["input_cost_per_token"] == 1e-06
+        assert merged["supports_native_structured_output"] is False
 
     @pytest.mark.unit
     @pytest.mark.asyncio
