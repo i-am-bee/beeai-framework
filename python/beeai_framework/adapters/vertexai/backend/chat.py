@@ -59,9 +59,11 @@ class VertexAIChatModel(LiteLLMChatModel):
             # Claude rejects `temperature` next to `top_p` and requires 1 when thinking is on, so the
             # implicit `temperature=0` default is dropped for those requests (see `_transform_input`).
             self._unset_implicit_temperature(kwargs)
+            self._avoid_forced_tool_choice(kwargs)
 
     def _transform_input(self, input: ChatModelInput) -> dict[str, Any]:
         params = super()._transform_input(input)
         if "claude" in self.model_id.lower():
             self._drop_implicit_temperature(input, params)
+            self._send_as_output_config(input, params)
         return params
