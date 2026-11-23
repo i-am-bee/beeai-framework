@@ -126,8 +126,14 @@ class OpenMeteoTool(Tool[OpenMeteoToolInput, ToolRunOptions, JSONToolOutput[dict
         params["latitude"] = geocode.get("latitude", "")
         params["longitude"] = geocode.get("longitude", "")
         current_date = datetime.now(tz=UTC).date()
-        params["start_date"] = str(input.start_date or current_date)
-        params["end_date"] = str(input.end_date or current_date)
+        start_date = input.start_date or current_date
+        end_date = input.end_date or start_date
+        if end_date < start_date:
+            raise ToolInputValidationError(
+                f"The 'end_date' ({end_date}) has to occur on or after the 'start_date' ({start_date})."
+            )
+        params["start_date"] = str(start_date)
+        params["end_date"] = str(end_date)
         params["temperature_unit"] = input.temperature_unit
         return params
 

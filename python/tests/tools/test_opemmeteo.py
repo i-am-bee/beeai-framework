@@ -1,6 +1,7 @@
 # Copyright 2025 © BeeAI a Series of LF Projects, LLC
 # SPDX-License-Identifier: Apache-2.0
 
+from datetime import UTC, datetime, timedelta
 from typing import Any
 
 import httpx
@@ -67,6 +68,35 @@ async def test_output(tool: OpenMeteoTool) -> None:
 """
 Unit Tests
 """
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_start_date_defaults_end_date_to_start_date(tool: OpenMeteoTool, monkeypatch: pytest.MonkeyPatch) -> None:
+    async def geocode(input: OpenMeteoToolInput) -> dict[str, int]:
+        return {"latitude": 1, "longitude": 2}
+
+    monkeypatch.setattr(tool, "_geocode", geocode)
+    start_date = datetime.now(UTC).date() + timedelta(days=3)
+
+    params = await tool.get_params(OpenMeteoToolInput(location_name="Test", start_date=start_date))
+
+    assert params["end_date"] == params["start_date"]
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_end_date_cannot_precede_start_date(tool: OpenMeteoTool, monkeypatch: pytest.MonkeyPatch) -> None:
+    async def geocode(input: OpenMeteoToolInput) -> dict[str, int]:
+        return {"latitude": 1, "longitude": 2}
+
+    monkeypatch.setattr(tool, "_geocode", geocode)
+    start_date = datetime.now(UTC).date() + timedelta(days=3)
+
+    with pytest.raises(ToolInputValidationError):
+        await tool.get_params(
+            OpenMeteoToolInput(location_name="Test", start_date=start_date, end_date=start_date - timedelta(days=1))
+        )
 
 
 @pytest.mark.unit
