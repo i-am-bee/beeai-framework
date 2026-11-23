@@ -84,9 +84,19 @@ class GrepTool(Tool[GrepToolInput, ToolRunOptions, JSONToolOutput[dict[str, Any]
             *args, stdin=asyncio.subprocess.DEVNULL, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE
         )
         stdout_bytes, stderr_bytes = await process.communicate()
-        # rg exits 1 when no matches; any other non-zero is a real error
         if process.returncode not in (0, 1):
-            raise ToolError(f"ripgrep failed (exit {process.returncode}): {stderr_bytes.decode(errors='replace')}")
+            searches = 0
+            for raw_line in stdout_bytes.splitlines():
+                try:
+                    event = json.loads(raw_line)
+                except json.JSONDecodeError:
+                    continue
+                if event.get("type") == "summary":
+                    searches = event.get("data", {}).get("stats", {}).get("searches", 0) or 0
+
+            # rg can exit 2 after a partial search when some paths are unreadable.
+            if searches == 0:
+                raise ToolError(f"ripgrep failed (exit {process.returncode}): {stderr_bytes.decode(errors='replace')}")
 
         matches: list[dict[str, Any]] = []
         # Text of every match and context line ripgrep printed, per file.
