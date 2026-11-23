@@ -1,2 +1,3 @@
 llm-guard==0.3.16
 acgs-lite>=3.0.1,<4
+llm-agent-budget>=0.1.3,<0.2

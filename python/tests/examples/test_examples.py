@@ -72,6 +72,7 @@ exclude = list(
             "middleware/secrets_detection.py",
             "middleware/invisible_text.py",
             "middleware/acgs.py",
+            "middleware/spend_budget.py",
         ],
     )
 )
