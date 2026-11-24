@@ -28,6 +28,25 @@ def _parameter_description(parameter: dict[str, Any]) -> str:
     return str(parameter.get("description") or schema.get("description") or parameter["name"])
 
 
+_COMPONENT_SCHEMAS_PREFIX = "#/components/schemas/"
+
+
+def _component_schema_refs_to_defs(node: Any) -> Any:
+    """Return a copy of `node` with `#/components/schemas/X` references rewritten to `#/$defs/X`."""
+    if isinstance(node, list):
+        return [_component_schema_refs_to_defs(value) for value in node]
+    if not isinstance(node, dict):
+        return node
+    return {
+        key: (
+            "#/$defs/" + value.removeprefix(_COMPONENT_SCHEMAS_PREFIX)
+            if key == "$ref" and isinstance(value, str) and value.startswith(_COMPONENT_SCHEMAS_PREFIX)
+            else _component_schema_refs_to_defs(value)
+        )
+        for key, value in node.items()
+    }
+
+
 class OpenAPIToolOutput(StringToolOutput):
     def __init__(self, status: int, result: str = "") -> None:
         super().__init__()
@@ -194,14 +213,24 @@ class OpenAPITool(Tool[BaseModel, ToolRunOptions, OpenAPIToolOutput]):
 
         schemas: list[dict[str, Any]] = []
 
-        def resolve_schema_refs(input: Any) -> Any:
+        def resolve_schema_refs(input: Any, defs: dict[str, Any]) -> Any:
             if not input:
                 return input
 
-            input = input.copy()
-            input["components"] = self.open_api_schema.get("components", {}).copy()
+            # Point the component schema references at "$defs", where `inline_schema_refs` looks for
+            # self-referencing schemas (a tree, a comment thread) and keeps them instead of looping forever.
+            components = self.open_api_schema.get("components", {})
+            input = _component_schema_refs_to_defs(input)
+            if isinstance(components.get("schemas"), dict):
+                input["$defs"] = _component_schema_refs_to_defs(components["schemas"])
+            input["components"] = _component_schema_refs_to_defs(
+                {key: value for key, value in components.items() if key != "schemas"}
+            )
             new_schema = inline_schema_refs(input, force=True)
             new_schema.pop("components", None)
+            # The definitions kept for a cycle go to the top of the operation's schema (`defs`), the only place
+            # `JSONSchemaModel.create` reads them from.
+            defs.update(new_schema.pop("$defs", None) or {})
             return new_schema
 
         def parameter_key(parameter: dict[str, Any]) -> tuple[Any, Any]:
@@ -230,6 +259,7 @@ class OpenAPITool(Tool[BaseModel, ToolRunOptions, OpenAPIToolOutput]):
                     }.values()
                 )
 
+                defs: dict[str, Any] = {}
                 properties = (
                     {}
                     if skip_default_parameters
@@ -254,7 +284,7 @@ class OpenAPITool(Tool[BaseModel, ToolRunOptions, OpenAPIToolOutput]):
                 ):
                     if request_body.get("$ref"):
                         request_body = get_referenced_object(self.open_api_schema, request_body["$ref"])
-                    properties["body"] = resolve_schema_refs(request_body)
+                    properties["body"] = resolve_schema_refs(request_body, defs)
 
                 if operation_parameters:
                     parameters = {
@@ -278,7 +308,7 @@ class OpenAPITool(Tool[BaseModel, ToolRunOptions, OpenAPIToolOutput]):
                                     "description": _parameter_description(ref_obj),
                                 }
 
-                    properties["parameters"] = resolve_schema_refs(parameters)
+                    properties["parameters"] = resolve_schema_refs(parameters, defs)
 
                 required = []
                 if not skip_default_parameters:
@@ -292,6 +322,7 @@ class OpenAPITool(Tool[BaseModel, ToolRunOptions, OpenAPIToolOutput]):
                         "required": required,
                         "additionalProperties": False,
                         "properties": properties,
+                        **({"$defs": defs} if defs else {}),
                     }
                 )
 
