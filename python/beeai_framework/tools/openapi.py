@@ -145,6 +145,17 @@ class OpenAPITool(Tool[BaseModel, ToolRunOptions, OpenAPIToolOutput]):
                 locations[resolved_parameter["name"]] = resolved_parameter.get("in", "query")
         return locations
 
+    def _request_body(self, method_spec: dict[str, Any]) -> dict[str, Any]:
+        """The operation's Request Body Object, following a `$ref` such as `#/components/requestBodies/Pet`."""
+        request_body: Any = method_spec.get("requestBody") or {}
+        if isinstance(request_body, dict) and "$ref" in request_body:
+            resolved: Any = self.open_api_schema
+            for segment in request_body["$ref"].split("/"):
+                if segment != "#":
+                    resolved = resolved.get(segment) if isinstance(resolved, dict) else None
+            request_body = resolved
+        return request_body if isinstance(request_body, dict) else {}
+
     def _create_emitter(self) -> Emitter:
         return Emitter.root().child(
             namespace=["tool", "web", "openAPI", to_safe_word(self._name)],
@@ -230,12 +241,10 @@ class OpenAPITool(Tool[BaseModel, ToolRunOptions, OpenAPIToolOutput]):
                     }
                 )
 
+                body_content = self._request_body(method_spec).get("content", {})
                 if request_body := (
-                    method_spec.get("requestBody", {}).get("content", {}).get("application/json", {}).get("schema")
-                    or method_spec.get("requestBody", {})
-                    .get("content", {})
-                    .get("application/x-www-form-urlencoded", {})
-                    .get("schema")
+                    body_content.get("application/json", {}).get("schema")
+                    or body_content.get("application/x-www-form-urlencoded", {}).get("schema")
                 ):
                     if request_body.get("$ref"):
                         request_body = get_referenced_object(self.open_api_schema, request_body["$ref"])
@@ -348,7 +357,7 @@ class OpenAPITool(Tool[BaseModel, ToolRunOptions, OpenAPIToolOutput]):
         body = input_dict.get("body")
         # The input schema prefers an application/json request body, so send it as JSON, not form-encoded.
         path_spec = self.open_api_schema.get("paths", {}).get(raw_path, {})
-        request_body = (path_spec.get(method) or path_spec.get(method.lower()) or {}).get("requestBody", {})
+        request_body = self._request_body(path_spec.get(method) or path_spec.get(method.lower()) or {})
         send_json = "application/json" in request_body.get("content", {})
 
         # Configured headers win over the model's header parameters, compared case-insensitively.
