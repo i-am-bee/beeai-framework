@@ -18,6 +18,48 @@ MCPTool allows you to consume external tools exposed via MCP protocol.
 
 See the [MCP Tool page](/modules/tools#mcp) for more information.
 
+### Connect to ClickHouse Loom
+
+[ClickHouse Loom](https://github.com/ClickHouse/loom) exposes stored agent memory
+and indexed documents through MCP. Run a Loom server and set `LOOM_BASE_URL`
+to its base URL. Set `LOOM_TOKEN` to a token with read access to the namespaces
+the BeeAI application needs. Keep the token in the environment and use HTTPS
+for a remote Loom server. See the [Loom MCP reference](https://github.com/ClickHouse/loom/blob/main/docs/reference/mcp.md)
+for server authentication and toolsets.
+
+The example calls `loom_search` through BeeAI to check retrieval without a
+chat-model call. Keep the MCP session open while a tool or agent uses it.
+
+```python
+import asyncio
+import os
+
+import httpx
+from mcp import ClientSession
+from mcp.client.streamable_http import streamable_http_client
+
+from beeai_framework.tools.mcp import MCPTool
+
+
+async def main() -> None:
+    url = f"{os.environ['LOOM_BASE_URL'].rstrip('/')}/mcp"
+    headers = {"Authorization": f"Bearer {os.environ['LOOM_TOKEN']}"}
+    async with httpx.AsyncClient(headers=headers) as http_client:
+        async with streamable_http_client(url, http_client=http_client) as (read, write, _):
+            async with ClientSession(read, write) as session:
+                await session.initialize()
+                tools = await MCPTool.from_client(session)
+                search = next((tool for tool in tools if tool.name == "loom_search"), None)
+                if search is None:
+                    raise RuntimeError("Loom did not expose the loom_search tool")
+                result = await search.run({"query": "deployment checklist", "limit": 3})
+                print(result.get_text_content())
+
+
+if __name__ == "__main__":
+    asyncio.run(main())
+```
+
 <Heading level={2} id="server">MCP Server</Heading>
 
 MCPServer allows you to expose your components (Tools, Agents, Chat Models, Runnable) to external systems that support the Model Context Protocol (MCP) standard, enabling seamless integration with LLM tools ecosystems.
