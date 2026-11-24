@@ -22,6 +22,12 @@ def _is_operation(method: str, method_spec: Any) -> bool:
     return method.lower() in _HTTP_METHODS and isinstance(method_spec, dict)
 
 
+def _parameter_description(parameter: dict[str, Any]) -> str:
+    # The model only sees this text, so prefer the spec's own words over the bare parameter name.
+    schema = parameter.get("schema") or {}
+    return str(parameter.get("description") or schema.get("description") or parameter["name"])
+
+
 class OpenAPIToolOutput(StringToolOutput):
     def __init__(self, status: int, result: str = "") -> None:
         super().__init__()
@@ -251,13 +257,16 @@ class OpenAPITool(Tool[BaseModel, ToolRunOptions, OpenAPIToolOutput]):
 
                     for p in operation_parameters:
                         if "$ref" not in p:
-                            parameters["properties"][p["name"]] = {**p.get("schema", {}), "description": p["name"]}  # type: ignore
+                            parameters["properties"][p["name"]] = {  # type: ignore
+                                **p.get("schema", {}),
+                                "description": _parameter_description(p),
+                            }
                         else:
                             ref_obj = get_referenced_object(self.open_api_schema, p["$ref"])
                             if ref_obj and "name" in ref_obj and "schema" in ref_obj:
                                 parameters["properties"][ref_obj["name"]] = {  # type: ignore
                                     **ref_obj["schema"],
-                                    "description": ref_obj.get("description", None) or ref_obj["name"],
+                                    "description": _parameter_description(ref_obj),
                                 }
 
                     properties["parameters"] = resolve_schema_refs(parameters)
