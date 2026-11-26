@@ -1,6 +1,7 @@
 # Copyright 2025 © BeeAI a Series of LF Projects, LLC
 # SPDX-License-Identifier: Apache-2.0
 
+import os
 import shutil
 import subprocess
 import sys
@@ -51,6 +52,32 @@ async def test_ripgrep_leading_hyphen_pattern(tool: GrepTool, tmp_path: Path, pa
     data = result.to_json_safe()
     assert data["used_ripgrep"] is True
     assert data["matches"] == [{"path": str(path), "line": 1, "text": f"usage: app {pattern}", "match": pattern}]
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_ripgrep_returns_matches_when_a_subdirectory_is_unreadable(tool: GrepTool, tmp_path: Path) -> None:
+    if sys.platform == "win32":
+        pytest.skip("chmod does not make directories unreadable on Windows")
+    if not shutil.which("rg"):
+        pytest.skip("ripgrep not installed on this machine")
+
+    path = tmp_path / "readable.txt"
+    path.write_text("needle\n", encoding="utf-8")
+    unreadable = tmp_path / "unreadable"
+    unreadable.mkdir()
+    (unreadable / "hidden.txt").write_text("needle\n", encoding="utf-8")
+    unreadable.chmod(0)
+    try:
+        if os.access(unreadable, os.R_OK | os.X_OK):
+            pytest.skip("process can still read chmod(0) directories")
+        result = await tool.run({"pattern": "needle", "root": str(tmp_path)})
+    finally:
+        unreadable.chmod(0o700)
+
+    data = result.to_json_safe()
+    assert data["used_ripgrep"] is True
+    assert data["matches"] == [{"path": str(path), "line": 1, "text": "needle", "match": "needle"}]
 
 
 @pytest.mark.unit
