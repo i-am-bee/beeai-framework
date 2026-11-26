@@ -9,6 +9,7 @@ from langchain_core.messages import AIMessage
 
 from beeai_framework.adapters.langchain.backend.chat import LangChainChatModel
 from beeai_framework.backend.message import UserMessage
+from beeai_framework.backend.types import ChatModelInput
 from beeai_framework.middleware.trajectory import GlobalTrajectoryMiddleware
 from beeai_framework.tools import tool
 
@@ -187,3 +188,45 @@ async def test_stop_sequences_fall_back_to_model_parameters(
     await model.run([UserMessage("hello")], stop_sequences=call_stop)
 
     assert fake.seen_stop == expected
+
+
+class _StopFieldFakeChatModel(_StopRecordingFakeChatModel):
+    stop: list[str] | None = None
+
+    def _generate(self, messages: Any, stop: Any = None, run_manager: Any = None, **kwargs: Any) -> Any:
+        # LangChain integrations fall back to their own "stop" field when the call passes none.
+        return super()._generate(messages, stop=stop or self.stop, run_manager=run_manager, **kwargs)
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_stop_sequences_keep_the_langchain_model_stop() -> None:
+    fake = _StopFieldFakeChatModel(messages=iter([AIMessage(content="hi")]), stop=["END"])
+
+    await LangChainChatModel(fake).run([UserMessage("hello")])
+
+    assert fake.stop == ["END"]
+    assert fake.seen_stop == ["END"]
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_call_stop_sequences_do_not_stick_to_the_langchain_model() -> None:
+    fake = _StopFieldFakeChatModel(messages=iter([AIMessage(content="hi")]), stop=["END"])
+
+    await LangChainChatModel(fake).run([UserMessage("hello")], stop_sequences=["STOP"])
+
+    assert fake.stop == ["END"]
+
+
+@pytest.mark.unit
+@pytest.mark.parametrize(("call_stop", "expected"), [(None, ["END"]), (["STOP"], ["STOP"])])
+def test_prepared_model_carries_the_stop_sequences(call_stop: list[str] | None, expected: list[str]) -> None:
+    fake = _StopFieldFakeChatModel(messages=iter([]), stop=["END"])
+    input = ChatModelInput(messages=[UserMessage("hello")], stop_sequences=call_stop)
+
+    prepared = LangChainChatModel(fake)._prepare_model(input)
+
+    # The structured output path does not forward invoke kwargs, so the model itself must hold them.
+    assert prepared.first.stop == expected  # type: ignore[attr-defined]
+    assert fake.stop == ["END"]

@@ -50,25 +50,31 @@ class LangChainChatModel(ChatModel):
 
     def _prepare_model(self, input: ChatModelInput) -> LCRunnable[LanguageModelInput, LCModelResponse]:
         parameters = self.parameters.model_dump(exclude_none=True, exclude={"stop_sequences", "stream", "tool_choice"})
-        parameters["stop"] = self._stop_sequences(input)
 
         # Note: setting via bind might not work for certain providers
         for key, value in parameters.items():
             if hasattr(self._model, key):
                 setattr(self._model, key, value)
 
+        # Stop sequences may differ per call, so set them on a copy to keep the user's own "stop".
+        # They cannot be passed only at invoke time: "with_structured_output" does not forward them.
+        llm = self._model
+        stop = self._stop_sequences(input)
+        if stop is not None and hasattr(llm, "stop"):
+            llm = llm.model_copy(update={"stop": stop})
+
         if input.tools:
             tools = [beeai_tool_to_lc_tool(tool) for tool in (input.tools or [])]
             tool_choice = str(input.tool_choice) if input.tool_choice else None
-            return self._model.bind_tools(
-                tools, tool_choice=tool_choice, strict=self.use_strict_tool_schema
-            ) | RunnableLambda(lambda data: LCModelResponse(output=data, output_structured=None))
+            return llm.bind_tools(tools, tool_choice=tool_choice, strict=self.use_strict_tool_schema) | RunnableLambda(
+                lambda data: LCModelResponse(output=data, output_structured=None)
+            )
         elif input.response_format:
-            return self._model.with_structured_output(schema=input.response_format, include_raw=True) | RunnableLambda(
+            return llm.with_structured_output(schema=input.response_format, include_raw=True) | RunnableLambda(
                 lambda data: LCModelResponse(output=data["raw"], output_structured=data["parsed"])
             )
         else:
-            return self._model | RunnableLambda(lambda data: LCModelResponse(output=data, output_structured=None))
+            return llm | RunnableLambda(lambda data: LCModelResponse(output=data, output_structured=None))
 
     async def _create(self, input: ChatModelInput, run: RunContext) -> ChatModelOutput:
         input_messages = to_lc_messages(input.messages)
