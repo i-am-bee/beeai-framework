@@ -52,6 +52,12 @@ Utility functions and classes
 """
 
 
+def _text(result: CallToolResult) -> str:
+    content = result.content[0]
+    assert isinstance(content, TextContent)
+    return content.text
+
+
 def tool_info(**fields: Any) -> MCPToolInfo:
     """Build an MCP tool definition from wire (camelCase) fields; mcp 2.x uses snake_case attributes."""
     return MCPToolInfo.model_validate(fields)
@@ -578,7 +584,7 @@ async def test_owned_transport_reopens_after_server_stream_closes() -> None:
     [tool] = await MCPTool.from_client(transport_factory)
     try:
         first_result = await tool._call_tool({})
-        assert first_result.content[0].text == "first"
+        assert _text(first_result) == "first"
 
         # Simulate a stdio process exiting after a successful request. The next
         # write fails before reaching a handler and is therefore safe to retry.
@@ -586,7 +592,7 @@ async def test_owned_transport_reopens_after_server_stream_closes() -> None:
         await asyncio.gather(server_tasks[0], return_exceptions=True)
 
         next_result = await tool._call_tool({})
-        assert next_result.content[0].text == "reconnected"
+        assert _text(next_result) == "reconnected"
         assert run_number == 2
     finally:
         del tool
@@ -650,12 +656,12 @@ async def test_streamable_http_recovers_after_server_restart() -> None:
         tool = tools[0]
         try:
             first_result = await tool._call_tool({})
-            assert first_result.content[0].text == "first"
+            assert _text(first_result) == "first"
 
             async with restarted_manager.run():
                 active_manager[0] = restarted_manager
                 restarted_result = await tool._call_tool({})
-                assert restarted_result.content[0].text == "restarted"
+                assert _text(restarted_result) == "restarted"
                 del tool
                 tool = None
                 gc.collect()
@@ -744,14 +750,14 @@ asyncio.run(main())
     [tool] = await MCPTool.from_client(transport_factory)
     try:
         first_result = await tool._call_tool({})
-        assert first_result.content[0].text == "run1"
+        assert _text(first_result) == "run1"
         old_pid = int(pid_path.read_text())
 
         os.kill(old_pid, signal.SIGTERM)
         await wait_for_process_exit(old_pid)
 
         restarted_result = await asyncio.wait_for(tool._call_tool({}), timeout=10)
-        assert restarted_result.content[0].text == "run2"
+        assert _text(restarted_result) == "run2"
         assert int(counter_path.read_text()) == 2
         assert int(pid_path.read_text()) != old_pid
     finally:
