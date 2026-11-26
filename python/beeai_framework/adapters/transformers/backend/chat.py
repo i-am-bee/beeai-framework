@@ -45,6 +45,7 @@ from beeai_framework.backend.message import (
 from beeai_framework.backend.types import (
     ChatModelInput,
     ChatModelOutput,
+    ChatModelParameters,
 )
 from beeai_framework.backend.utils import parse_broken_json
 from beeai_framework.context import RunContext
@@ -255,16 +256,30 @@ class TransformersChatModel(ChatModel):
             "parallel_tool_calls": (bool(input.parallel_tool_calls) if tools else None),
         }
 
-    def _get_stopping_criteria(self, input: ChatModelInput, prompt_tokens: int) -> list[StoppingCriteria]:
+    def _resolve_parameters(self, input: ChatModelInput) -> ChatModelParameters:
+        # Values set on the call win over the model-level `parameters`, which win over the defaults.
+        return ChatModelParameters(
+            **(
+                self.parameters.model_dump(exclude_unset=True, exclude_none=True)
+                | input.model_dump(
+                    # pyrefly: ignore [no-matching-overload]
+                    include=set(ChatModelParameters.model_fields),
+                    exclude_unset=True,
+                    exclude_none=True,
+                )
+            )
+        )
+
+    def _get_stopping_criteria(self, stop_sequences: list[str] | None, prompt_tokens: int) -> list[StoppingCriteria]:
         return (
             [
                 CustomStoppingCriteria(
                     self.tokenizer.encode(stop_word, add_prefix_space=False),
                     prompt_tokens,
                 )
-                for stop_word in input.stop_sequences
+                for stop_word in stop_sequences
             ]
-            if input.stop_sequences is not None
+            if stop_sequences is not None
             else []
         )
 
@@ -285,20 +300,21 @@ class TransformersChatModel(ChatModel):
         prompt_tokens = inputs["input_ids"].shape[1]
         inputs_on_device = {k: v.to(self._device_first_layer) for k, v in inputs.items()}
 
-        if input.seed is not None:
-            set_seed(input.seed)
+        params = self._resolve_parameters(input)
+        if params.seed is not None:
+            set_seed(params.seed)
 
         kwargs = {
             "streamer": streamer,
-            "max_new_tokens": input.max_tokens,
-            "temperature": input.temperature,
-            "top_k": input.top_k,
-            "top_p": input.top_p,
-            "num_beams": get_num_beams(input),
-            "frequency_penalty": input.frequency_penalty,
-            "presence_penalty": input.presence_penalty,
-            "do_sample": get_do_sample(input),
-            "stopping_criteria": self._get_stopping_criteria(input, prompt_tokens),
+            "max_new_tokens": params.max_tokens,
+            "temperature": params.temperature,
+            "top_k": params.top_k,
+            "top_p": params.top_p,
+            "num_beams": get_num_beams(params),
+            "frequency_penalty": params.frequency_penalty,
+            "presence_penalty": params.presence_penalty,
+            "do_sample": get_do_sample(params),
+            "stopping_criteria": self._get_stopping_criteria(params.stop_sequences, prompt_tokens),
         }
         if input.response_format:
             generator = outlines.Generator(
