@@ -139,10 +139,11 @@ async def test_parameters_left_out_entirely(monkeypatch: pytest.MonkeyPatch) -> 
         ("application/x-www-form-urlencoded", {"name": ["Bee"], "tags": ["a", "b"]}),
     ],
 )
+@pytest.mark.parametrize("referenced", [False, True], ids=["inline", "ref"])
 async def test_request_body_is_encoded_per_content_type(
-    monkeypatch: pytest.MonkeyPatch, content_type: str, expected_body: dict[str, Any]
+    monkeypatch: pytest.MonkeyPatch, content_type: str, expected_body: dict[str, Any], referenced: bool
 ) -> None:
-    schema = {
+    schema: dict[str, Any] = {
         "openapi": "3.0.0",
         "info": {"title": "Pets", "version": "1.0"},
         "servers": [{"url": "https://example.invalid"}],
@@ -170,6 +171,11 @@ async def test_request_body_is_encoded_per_content_type(
             }
         },
     }
+    if referenced:
+        # A Request Body Object can live in components and be referenced from the operation.
+        operation = schema["paths"]["/pets"]["post"]
+        schema["components"] = {"requestBodies": {"Pet": operation["requestBody"]}}
+        operation["requestBody"] = {"$ref": "#/components/requestBodies/Pet"}
     requests: list[httpx.Request] = []
 
     async def fake_send(self: httpx.AsyncClient, request: httpx.Request, **kwargs: object) -> httpx.Response:
